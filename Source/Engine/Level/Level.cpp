@@ -144,17 +144,22 @@ public:
     void Dispose() override;
 };
 
-LevelService LevelServiceInstanceService;
+namespace 
+{
+    LevelService    LevelServiceInstance;
+}
 
 CriticalSection Level::ScenesLock;
-Array<Scene*> Level::Scenes;
-bool Level::TickEnabled = true;
+Array<Scene*>   Level::Scenes;
+bool            Level::TickEnabled = true;
+
 Delegate<Actor*> Level::ActorSpawned;
 Delegate<Actor*> Level::ActorDeleted;
 Delegate<Actor*, Actor*> Level::ActorParentChanged;
 Delegate<Actor*> Level::ActorOrderInParentChanged;
 Delegate<Actor*> Level::ActorNameChanged;
 Delegate<Actor*> Level::ActorActiveChanged;
+
 Delegate<Scene*, const Guid&> Level::SceneSaving;
 Delegate<Scene*, const Guid&> Level::SceneSaved;
 Delegate<Scene*, const Guid&> Level::SceneSaveError;
@@ -163,6 +168,7 @@ Delegate<Scene*, const Guid&> Level::SceneLoaded;
 Delegate<Scene*, const Guid&> Level::SceneLoadError;
 Delegate<Scene*, const Guid&> Level::SceneUnloading;
 Delegate<Scene*, const Guid&> Level::SceneUnloaded;
+
 #if USE_EDITOR
 Action Level::ScriptsReloadStart;
 Action Level::ScriptsReload;
@@ -170,6 +176,7 @@ Action Level::ScriptsReloaded;
 Action Level::ScriptsReloadEnd;
 #endif
 String Level::Layers[32];
+
 
 bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
 {
@@ -195,7 +202,7 @@ bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
             actor->BeginPlay(&beginData);
             beginData.OnDone();
         }
-        CallSceneEvent(SceneEventType::OnSceneLoaded, (Scene*)actor, actor->GetID());
+        CallSceneEvent(SceneEventType::OnSceneLoaded, static_cast<Scene*>(actor), actor->GetID());
     }
     else
     {
@@ -369,7 +376,7 @@ void Level::DrawActors(RenderContextBatch& renderContextBatch, byte category)
     for (Scene* scene : Scenes)
     {
         if (scene->IsActiveInHierarchy())
-            scene->Rendering.Draw(renderContextBatch, (SceneRendering::DrawCategory)category);
+            scene->Rendering.Draw(renderContextBatch, static_cast<SceneRendering::DrawCategory>(category));
     }
 }
 
@@ -433,7 +440,7 @@ class UnloadSceneAction : public SceneAction
 public:
     Guid TargetScene;
 
-    UnloadSceneAction(Scene* scene)
+    explicit UnloadSceneAction(Scene* scene)
     {
         TargetScene = scene->GetID();
     }
@@ -464,12 +471,12 @@ class SaveSceneAction : public SceneAction
 {
 public:
     Scene* TargetScene;
-    bool PrettyJson;
+    bool   PrettyJson;
 
-    SaveSceneAction(Scene* scene, bool prettyJson = true)
+    explicit SaveSceneAction(Scene* scene, bool prettyJson = true)
     {
         TargetScene = scene;
-        PrettyJson = prettyJson;
+        PrettyJson  = prettyJson;
     }
 
     bool Do() const override
@@ -935,7 +942,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
 
     // Loaded scene objects list
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
-    const int32 dataCount = (int32)data.Size();
+    const int32 dataCount = static_cast<int32>(data.Size());
     sceneObjects->Resize(dataCount);
     sceneObjects->At(0) = scene;
 

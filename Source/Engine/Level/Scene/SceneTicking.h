@@ -16,8 +16,8 @@ public:
     /// </summary>
     struct FLAXENGINE_API Tick
     {
-        typedef void (*Signature)();
-        typedef void (*SignatureObj)(void*);
+        using Signature    = void (*)();
+        using SignatureObj = void (*)(void*);
 
         template<class T, void(T::*Method)()>
         static void MethodCaller(void* callee)
@@ -48,13 +48,14 @@ public:
     {
     public:
         Array<Script*> Scripts;
-        Array<Tick> Ticks;
+        Array<Tick>    Ticks;
 #if USE_EDITOR
         Array<Script*> ScriptsExecuteInEditor;
-        Array<Tick> TicksExecuteInEditor;
+        Array<Tick>    TicksExecuteInEditor;
 #endif
 
-        TickData(int32 capacity);
+        explicit TickData(int32 capacity);
+        virtual ~TickData();
 
         virtual void TickScripts(const Array<Script*>& scripts) = 0;
 
@@ -88,28 +89,28 @@ public:
         void Clear();
     };
 
-    class FLAXENGINE_API FixedUpdateTickData : public TickData
+    class FLAXENGINE_API FixedUpdateTickData final : public TickData
     {
     public:
         FixedUpdateTickData();
         void TickScripts(const Array<Script*>& scripts) override;
     };
 
-    class FLAXENGINE_API UpdateTickData : public TickData
+    class FLAXENGINE_API UpdateTickData final : public TickData
     {
     public:
         UpdateTickData();
         void TickScripts(const Array<Script*>& scripts) override;
     };
 
-    class FLAXENGINE_API LateUpdateTickData : public TickData
+    class FLAXENGINE_API LateUpdateTickData final : public TickData
     {
     public:
         LateUpdateTickData();
         void TickScripts(const Array<Script*>& scripts) override;
     };
 
-    class FLAXENGINE_API LateFixedUpdateTickData : public TickData
+    class FLAXENGINE_API LateFixedUpdateTickData final : public TickData
     {
     public:
         LateFixedUpdateTickData();
