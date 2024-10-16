@@ -172,33 +172,61 @@ void Script::SetOrderInParent(int32 index)
 }
 
 
-//TODO(mtszkarbowiak) Handle coroutine start failure.
-
-ScriptingObjectReference<CoroutineHandle> Script::ExecuteCoroutineOnce(ScriptingObjectReference<CoroutineBuilder> builder)
+namespace 
 {
-    return this
-        ->GetParent()
-        ->GetScene()
-        ->SceneCoroutinesExecutor
-        ->ExecuteOnce(MoveTemp(builder));
+    CoroutineExecutor* TryGetScriptCoroutineExecutor(const Script* script)
+    {
+        Actor* parent = script->GetParent();
+        if (parent == nullptr)
+            return nullptr;
+
+        Scene* scene = parent->GetScene();
+        if (scene == nullptr)
+            return nullptr;
+
+        return scene->SceneCoroutinesExecutor;
+    }
+
+    void LogCoroutineExecutionFailure()
+    {
+        LOG(Error, "Failed to execute coroutine. Scene executor is not available.");
+    }
 }
 
-ScriptingObjectReference<CoroutineHandle> Script::ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineBuilder> builder, const int32 repeats)
+auto Script::ExecuteCoroutineOnce(ScriptingObjectReference<CoroutineBuilder> builder) const -> ScriptingObjectReference<CoroutineHandle>
 {
-    return this
-        ->GetParent()
-        ->GetScene()
-        ->SceneCoroutinesExecutor
-        ->ExecuteRepeats(MoveTemp(builder), repeats);
+    CoroutineExecutor* executor = TryGetScriptCoroutineExecutor(this);
+    if (executor == nullptr)
+    {
+        LogCoroutineExecutionFailure();
+        return nullptr;
+    }
+    else
+        return executor->ExecuteOnce(MoveTemp(builder));
 }
 
-ScriptingObjectReference<CoroutineHandle> Script::ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineBuilder> builder)
+auto Script::ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineBuilder> builder, const int32 repeats) const -> ScriptingObjectReference<CoroutineHandle>
 {
-    return this
-        ->GetParent()
-        ->GetScene()
-        ->SceneCoroutinesExecutor
-        ->ExecuteLooped(MoveTemp(builder));
+    CoroutineExecutor* executor = TryGetScriptCoroutineExecutor(this);
+    if (executor == nullptr)
+    {
+        LogCoroutineExecutionFailure();
+        return nullptr;
+    }
+    else
+        return executor->ExecuteRepeats(MoveTemp(builder), repeats);
+}
+
+auto Script::ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineBuilder> builder) const -> ScriptingObjectReference<CoroutineHandle>
+{
+    CoroutineExecutor* executor = TryGetScriptCoroutineExecutor(this);
+    if (executor == nullptr)
+    {
+        LogCoroutineExecutionFailure();
+        return nullptr;
+    }
+    else
+        return executor->ExecuteLooped(MoveTemp(builder));
 }
 
 
