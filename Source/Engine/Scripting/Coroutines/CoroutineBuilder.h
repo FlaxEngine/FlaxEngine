@@ -46,8 +46,12 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutinePredicate final : public Scripti
 };
 
 /// <summary>
-/// Utility class to store coroutine steps and build a coroutine. This class must not be modified once execution has started.
+/// Utility class to store coroutine steps and build a coroutine.
 /// </summary>
+/// <remarks>
+/// Modifying the builder during the execution may cause undefined behavior.
+/// One builder may be shared between executions, reducing execution overhead.
+/// </remarks>
 API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(CoroutineBuilder, ScriptingObject);

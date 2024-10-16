@@ -6,6 +6,7 @@
 #include "Engine/Content/AssetInfo.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Physics/Colliders/MeshCollider.h"
 #include "Engine/Level/Actors/StaticModel.h"
 #include "Engine/Level/ActorsCache.h"
@@ -372,6 +373,8 @@ void Scene::BeginPlay(SceneBeginData* data)
         if (model == nullptr)
             CreateCsgModel();
     }
+
+    this->SceneCoroutinesExecutor = New<CoroutineExecutor>();
 }
 
 void Scene::EndPlay()
@@ -383,6 +386,14 @@ void Scene::EndPlay()
 
     // Base
     Actor::EndPlay();
+
+    {
+        const int32 runningCoroutines = this->SceneCoroutinesExecutor->GetCoroutinesCount();
+        if (runningCoroutines > 0) {
+            LOG(Warning, "There are still {} running coroutines in the scene during EndPlay.", runningCoroutines);
+        }
+    }
+    this->SceneCoroutinesExecutor = nullptr;
 }
 
 void Scene::OnTransformChanged()

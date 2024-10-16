@@ -2,8 +2,11 @@
 
 #pragma once
 
-#include "Engine/Level/SceneObject.h"
 #include "ScriptingObject.h"
+#include "ScriptingObjectReference.h"
+#include "Coroutines/CoroutineBuilder.h"
+#include "Coroutines/CoroutineHandle.h"
+#include "Engine/Level/SceneObject.h"
 
 /// <summary>
 /// Base class for all scripts.
@@ -130,6 +133,42 @@ public:
     API_FUNCTION(Attributes="NoAnimate") virtual void OnDebugDrawSelected()
     {
     }
+
+
+    /// <summary>
+    /// Executes the given coroutine once.
+    /// </summary>
+    /// <param name="builder"> The coroutine builder. Detailed explanation available in the type. </param>
+    /// <returns> The handle to coroutine execution, which has started with this method call. </returns>
+    /// <remarks>
+    /// This method uses shared per-scene executor. The order of execution is not guaranteed.
+    /// </remarks>
+    API_FUNCTION()
+    ScriptingObjectReference<CoroutineHandle> ExecuteCoroutineOnce(ScriptingObjectReference<CoroutineBuilder> builder);
+
+    /// <summary>
+    /// Executes the given coroutine once.
+    /// </summary>
+    /// <param name="builder"> The coroutine builder. Detailed explanation available in the type. </param>
+    /// <param name="repeats"> How many times the coroutine is to be repeated. Check executor for more info.</param>
+    /// <returns> The handle to coroutine execution, which has started with this method call. </returns>
+    /// <remarks>
+    /// This method uses shared per-scene executor. The order of execution is not guaranteed.
+    /// </remarks>
+    API_FUNCTION()
+    ScriptingObjectReference<CoroutineHandle> ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineBuilder> builder, int32 repeats);
+
+    /// <summary>
+    /// Executes the given coroutine once.
+    /// </summary>
+    /// <param name="builder"> The coroutine builder. Detailed explanation available in the type. </param>
+    /// <returns> The handle to coroutine execution, which has started with this method call. </returns>
+    /// <remarks>
+    /// This method uses shared per-scene executor. The order of execution is not guaranteed.
+    /// </remarks>
+    API_FUNCTION()
+    ScriptingObjectReference<CoroutineHandle> ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineBuilder> builder);
+    
 
 private:
     void SetupType();

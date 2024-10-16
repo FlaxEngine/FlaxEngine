@@ -171,6 +171,37 @@ void Script::SetOrderInParent(int32 index)
     }
 }
 
+
+//TODO(mtszkarbowiak) Handle coroutine start failure.
+
+ScriptingObjectReference<CoroutineHandle> Script::ExecuteCoroutineOnce(ScriptingObjectReference<CoroutineBuilder> builder)
+{
+    return this
+        ->GetParent()
+        ->GetScene()
+        ->SceneCoroutinesExecutor
+        ->ExecuteOnce(MoveTemp(builder));
+}
+
+ScriptingObjectReference<CoroutineHandle> Script::ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineBuilder> builder, const int32 repeats)
+{
+    return this
+        ->GetParent()
+        ->GetScene()
+        ->SceneCoroutinesExecutor
+        ->ExecuteRepeats(MoveTemp(builder), repeats);
+}
+
+ScriptingObjectReference<CoroutineHandle> Script::ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineBuilder> builder)
+{
+    return this
+        ->GetParent()
+        ->GetScene()
+        ->SceneCoroutinesExecutor
+        ->ExecuteLooped(MoveTemp(builder));
+}
+
+
 void Script::SetupType()
 {
     // Enable tick functions based on the method overriden in C# or Visual Script
