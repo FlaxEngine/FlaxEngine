@@ -668,6 +668,8 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged -= OnEditorOptionsChanged;
             GameCooker.Event -= OnGameCookerEvent;
             ScriptsBuilder.CompilationFailed -= OnScriptsCompilationFailed;
+            Editor.Instance.PlayModeBeginning -= OnPlayModeBeginning;
+            Editor.Instance.PlayModeEnd -= OnPlayModeEnd;
 
             // Cleanup
             _textBuffer.Clear();
