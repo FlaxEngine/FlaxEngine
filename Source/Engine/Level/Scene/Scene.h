@@ -82,6 +82,18 @@ public:
     /// <param name="timeoutMs">The timeout to wait before building CSG (in milliseconds).</param>
     API_FUNCTION() void BuildCSG(float timeoutMs = 50);
 
+
+    /// <summary>
+    /// Shared coroutine executor for the scene.
+    /// </summary>
+    /// <remarks>
+    /// Use this executor to run coroutines in the scene context which do not require specific ordering.
+    /// If ordering is required, declare custom executor and subscribe events in the target script, service, etc.
+    /// </remarks>
+    API_FIELD(ReadOnly)
+    ScriptingObjectReference<CoroutineExecutor> SceneCoroutinesExecutor;
+
+
 #if USE_EDITOR
 
     /// <summary>
@@ -105,17 +117,6 @@ public:
     /// <seealso cref="Asset.GetReferences"/>
     /// <returns>The collection of the asset ids referenced by this asset.</returns>
     API_FUNCTION() Array<Guid, HeapAllocation> GetAssetReferences() const;
-
-
-    /// <summary>
-    /// Shared coroutine executor for the scene.
-    /// </summary>
-    /// <remarks>
-    /// Use this executor to run coroutines in the scene context which do not require specific ordering.
-    /// If ordering is required, declare custom executor and subscribe events in the target script, service, etc.
-    /// </remarks>
-    API_FIELD(ReadOnly)
-    ScriptingObjectReference<CoroutineExecutor> SceneCoroutinesExecutor;
 
 #endif
 
