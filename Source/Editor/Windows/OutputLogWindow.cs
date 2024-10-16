@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Docking;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
 using FlaxEngine;
@@ -148,6 +149,7 @@ namespace FlaxEditor.Windows
         private VScrollBar _vScroll;
         private OutputTextBox _output;
         private ContextMenu _contextMenu;
+        private DockWindow _previousWindow;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DebugLogWindow"/> class.
@@ -210,10 +212,31 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged += OnEditorOptionsChanged;
             OnEditorOptionsChanged(Editor.Options.Options);
 
+            Editor.Instance.PlayModeBeginning += OnPlayModeBeginning;
+            Editor.Instance.PlayModeEnd += OnPlayModeEnd;
+
             InputActions.Add(options => options.Search, _searchBox.Focus);
 
             GameCooker.Event += OnGameCookerEvent;
             ScriptsBuilder.CompilationFailed += OnScriptsCompilationFailed;
+        }
+
+        private void OnPlayModeBeginning()
+        {
+            if (!Editor.Instance.Options.Options.Interface.FocusOutputLogOnBeginPlay)
+                return;
+
+            _previousWindow = this.ParentDockPanel.SelectedTab;
+
+            this.ParentDockPanel.SelectTab(this);
+        }
+
+        private void OnPlayModeEnd()
+        {
+            if (!Editor.Instance.Options.Options.Interface.FocusOutputLogOnBeginPlay || !this.ParentDockPanel.ContainsTab(_previousWindow))
+                return;
+
+            _previousWindow.Focus();
         }
 
         private void OnViewButtonClicked()
