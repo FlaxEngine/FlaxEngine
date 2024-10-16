@@ -78,6 +78,8 @@ TEST_CASE("CoroutineTimeAccumulation")
     CHECK(result == 2);
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 4th frame (end of 3 frame wait, 3rd func exec)
     CHECK(result == 3);
+
+    CHECK(handle->HasFinished());
 }
 
 TEST_CASE("CoroutineWaitForSuspensionPoint")
@@ -111,6 +113,8 @@ TEST_CASE("CoroutineWaitUntil")
 
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // after signal (wait until hit, 2nd func exec)
     CHECK(result == 2);
+
+    CHECK(handle->HasFinished());
 }
 
 TEST_CASE("CoroutineExecuteRepeating")
@@ -134,7 +138,9 @@ TEST_CASE("CoroutineExecuteRepeating")
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f);
     CHECK(result == 4);
 
-    //TODO(mtszkarbowiak) Add check if the handle is still running. (Expected no)
+    CHECK(!handle->HasFinished());
+    executor->Continue(CoroutineSuspendPoint::Update, 0.0f);
+    CHECK(handle->HasFinished());
 }
 
 TEST_CASE("CoroutineExecuteLoop")
@@ -158,7 +164,10 @@ TEST_CASE("CoroutineExecuteLoop")
 
     CHECK(result == 4);
 
-    //TODO(mtszkarbowiak) Add check if the handle is still running. (Expected yes)
+    CHECK(!handle->HasFinished());
+    const bool canceled = handle->Cancel();
+    CHECK(canceled);
+    CHECK(handle->HasFinished());
 }
 
 TEST_CASE("CoroutineHandlePauseResume")
@@ -179,19 +188,23 @@ TEST_CASE("CoroutineHandlePauseResume")
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 1st call (func exec)
     CHECK(result == 2);
 
+    CHECK(!handle->IsPaused());
     const bool paused0 = handle->Pause();
     CHECK(paused0);
     const bool paused1 = handle->Pause();
     CHECK(!paused1);
+    CHECK(handle->IsPaused());
 
     CHECK(result == 2);
     executor->Continue(CoroutineSuspendPoint::Update, 0.0f); // 2nd call (wait, func exec)
     CHECK(result == 2);
 
+    CHECK(handle->IsPaused());
     const bool resumed0 = handle->Resume();
     CHECK(resumed0);
     const bool resumed1 = handle->Resume();
     CHECK(!resumed1);
+    CHECK(!handle->IsPaused());
 
     CHECK(executor->GetCoroutinesCount() == 1);
 
@@ -200,6 +213,7 @@ TEST_CASE("CoroutineHandlePauseResume")
     CHECK(result == 3);
 
     CHECK(executor->GetCoroutinesCount() == 0);
+    CHECK(handle->HasFinished());
 }
 
 TEST_CASE("CoroutineHandleCancel")
