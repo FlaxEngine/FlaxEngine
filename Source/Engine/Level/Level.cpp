@@ -252,59 +252,101 @@ void LayersAndTagsSettings::Apply()
     }
 }
 
-#define TICK_LEVEL(tickingStage, name) \
-    PROFILE_CPU_NAMED(name); \
-    ScopeLock lock(Level::ScenesLock); \
-    auto& scenes = Level::Scenes; \
-    if (!Time::GetGamePaused() && Level::TickEnabled) \
-    { \
-        for (int32 i = 0; i < scenes.Count(); i++) \
-        { \
-            if (scenes[i]->GetIsActive()) \
-                scenes[i]->Ticking.tickingStage.Tick(); \
-        } \
+
+template<typename TickGetter>
+FORCE_INLINE void TickLevel()
+{
+    ScopeLock lock{ Level::ScenesLock };
+    auto& scenes = Level::Scenes;
+    if (!Time::GetGamePaused() && Level::TickEnabled)
+    {
+        for (int32 i = 0; i < scenes.Count(); i++)
+        {
+            if (scenes[i]->GetIsActive())
+                TickGetter::Get(scenes[i]).Tick();
+        }
     }
 #if USE_EDITOR
-#define TICK_LEVEL_EDITOR(tickingStage) \
-    else if (!Editor::IsPlayMode) \
-    { \
-        for (int32 i = 0; i < scenes.Count(); i++) \
-        { \
-            if (scenes[i]->GetIsActive()) \
-                scenes[i]->Ticking.tickingStage.TickExecuteInEditor(); \
-        } \
+    else if (!Editor::IsPlayMode)
+    {
+        for (int32 i = 0; i < scenes.Count(); i++)
+        {
+            if (scenes[i]->GetIsActive())
+                TickGetter::Get(scenes[i]).TickExecuteInEditor();
+        }
     }
-#else
-#define TICK_LEVEL_EDITOR(tickingStage)
 #endif
+}
 
 void LevelService::Update()
 {
-    TICK_LEVEL(Update, "Level::Update")
-    TICK_LEVEL_EDITOR(Update)
+    {
+        PROFILE_CPU_NAMED("Level::Update");
+
+        struct TickGetter
+        {
+            static SceneTicking::UpdateTickData& Get(Scene* scene)
+            {
+                return scene->Ticking.Update;
+            }
+        };
+
+        TickLevel<TickGetter>();
+    }
 }
 
 void LevelService::LateUpdate()
 {
-    TICK_LEVEL(LateUpdate, "Level::LateUpdate")
-    TICK_LEVEL_EDITOR(LateUpdate)
+    {
+        PROFILE_CPU_NAMED("Level::LateUpdate");
+
+        struct TickGetter
+        {
+            static SceneTicking::UpdateTickData& Get(Scene* scene)
+            {
+                return scene->Ticking.Update;
+            }
+        };
+
+        TickLevel<TickGetter>();
+    }
+
     flushActions();
 }
 
 void LevelService::FixedUpdate()
 {
-    TICK_LEVEL(FixedUpdate, "Level::FixedUpdate")
-    TICK_LEVEL_EDITOR(FixedUpdate)
+    {
+        PROFILE_CPU_NAMED("Level::FixedUpdate");
+
+        struct TickGetter
+        {
+            static SceneTicking::FixedUpdateTickData& Get(Scene* scene)
+            {
+                return scene->Ticking.FixedUpdate;
+            }
+        };
+
+        TickLevel<TickGetter>();
+    }
 }
 
 void LevelService::LateFixedUpdate()
 {
-    TICK_LEVEL(LateFixedUpdate, "Level::LateFixedUpdate")
-    TICK_LEVEL_EDITOR(LateFixedUpdate)
-}
+    {
+        PROFILE_CPU_NAMED("Level::LateFixedUpdate");
 
-#undef TICK_LEVEL
-#undef TICK_LEVEL_EDITOR
+        struct TickGetter
+        {
+            static SceneTicking::LateFixedUpdateTickData& Get(Scene* scene)
+            {
+                return scene->Ticking.LateFixedUpdate;
+            }
+        };
+
+        TickLevel<TickGetter>();
+    }
+}
 
 void LevelService::Dispose()
 {
