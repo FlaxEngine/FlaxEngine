@@ -2147,6 +2147,6 @@ void DebugDraw::DrawText(const StringView& text, const Transform& transform, con
 
 void DebugDraw::Clear(void* context)
 {
-    DebugDraw::UpdateContext(nullptr, MAX_float);
+    DebugDraw::UpdateContext(context, MAX_float);
 }
 #endif
