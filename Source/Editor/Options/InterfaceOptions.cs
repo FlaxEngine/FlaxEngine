@@ -218,6 +218,15 @@ namespace FlaxEditor.Options
         public bool ShowTreeLines { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets tooltip text alignment.
+        /// </summary>
+        [DefaultValue(TextAlignment.Center)]
+        [EditorDisplay("Interface"), EditorOrder(321)]
+        public TextAlignment TooltipTextAlignment { get; set; } = TextAlignment.Center;
+
+
+
+        /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
         /// </summary>
         [DefaultValue(TimestampsFormats.None)]
