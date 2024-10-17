@@ -99,10 +99,11 @@ namespace
     bool Inited = false;
     Array<CommandData> Commands;
 
-    void OnBinaryModuleLoaded(BinaryModule* module)
+    void FindDebugCommands(BinaryModule* module)
     {
         if (module == GetBinaryModuleCorlib())
             return;
+        PROFILE_CPU();
 
 #if USE_CSHARP
         if (auto* managedModule = dynamic_cast<ManagedBinaryModule*>(module))
@@ -200,9 +201,9 @@ namespace
         const auto& modules = BinaryModule::GetModules();
         for (BinaryModule* module : modules)
         {
-            OnBinaryModuleLoaded(module);
+            FindDebugCommands(module);
         }
-        Scripting::BinaryModuleLoaded.Bind(&OnBinaryModuleLoaded);
+        Scripting::BinaryModuleLoaded.Bind(&FindDebugCommands);
         Scripting::ScriptsReloading.Bind(&OnScriptsReloading);
     }
 }
@@ -219,7 +220,7 @@ public:
     {
         // Cleanup
         ScopeLock lock(Locker);
-        Scripting::BinaryModuleLoaded.Unbind(&OnBinaryModuleLoaded);
+        Scripting::BinaryModuleLoaded.Unbind(&FindDebugCommands);
         Scripting::ScriptsReloading.Unbind(&OnScriptsReloading);
         Commands.Clear();
         Inited = true;
@@ -252,12 +253,12 @@ void DebugCommands::Execute(StringView command)
         InitCommands();
 
     // Find command to run
-    for (const CommandData& command : Commands)
+    for (const CommandData& cmd : Commands)
     {
-        if (name.Length() == command.Name.Length() &&
-            StringUtils::CompareIgnoreCase(name.Get(), command.Name.Get(), name.Length()) == 0)
+        if (name.Length() == cmd.Name.Length() &&
+            StringUtils::CompareIgnoreCase(name.Get(), cmd.Name.Get(), name.Length()) == 0)
         {
-            command.Invoke(args);
+            cmd.Invoke(args);
             return;
         }
     }

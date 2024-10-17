@@ -13,7 +13,7 @@ API_CLASS(static) class FLAXENGINE_API DebugCommands
 
 public:
     /// <summary>
-    /// Executees the command.
+    /// Executes the command.
     /// </summary>
     /// <param name="command">The command line (optionally with arguments).</param>
     API_FUNCTION() static void Execute(StringView command);
