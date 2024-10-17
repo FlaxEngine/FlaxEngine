@@ -540,7 +540,7 @@ namespace FlaxEditor.Windows
 
             // Focus on play
             {
-                var pfMenu = menu.AddChildMenu("Play Mode Focus Override").ContextMenu;
+                var pfMenu = menu.AddChildMenu("Focus On Play Override").ContextMenu;
 
                 GenerateFocusOptionsContextMenu(pfMenu);
             }
