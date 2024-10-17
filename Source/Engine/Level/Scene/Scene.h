@@ -143,4 +143,9 @@ protected:
     void Initialize() override;
     void BeginPlay(SceneBeginData* data) override;
     void OnTransformChanged() override;
+
+    void ContinueCoroutinesUpdate();
+    void ContinueCoroutinesFixedUpdate();
+    void ContinueCoroutinesLateUpdate();
+    void ContinueCoroutinesLateFixedUpdate();
 };

@@ -120,9 +120,10 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
 
     while (_repeats > 0 || _repeats == InfiniteRepeats)
     {
-        while (_stepIndex < _builder->GetSteps().Count())
+        const Array<Step>& steps = _builder->GetSteps();
+        while (_stepIndex < steps.Count())
         {
-            const Step& step = _builder->GetSteps()[_stepIndex];
+            const Step& step = steps[_stepIndex];
 
             if (!TryMakeStep(step, point, deltaCopy, this->_accumulator))
                 return false; // The coroutine is waiting for the next frame or seconds.
