@@ -362,8 +362,7 @@ void Scene::BeginPlay(SceneBeginData* data)
     Ticking.LateUpdate     .AddTick<Scene, &Scene::ContinueCoroutinesLateUpdate>(this);
     Ticking.FixedUpdate    .AddTick<Scene, &Scene::ContinueCoroutinesFixedUpdate>(this);
     Ticking.LateFixedUpdate.AddTick<Scene, &Scene::ContinueCoroutinesLateFixedUpdate>(this);
-    ASSERT(SceneCoroutinesExecutor != nullptr);
-
+    
     // Base
     Actor::BeginPlay(data);
 
@@ -418,7 +417,6 @@ void Scene::OnTransformChanged()
 void Scene::ContinueCoroutinesUpdate()
 {
     const float deltaTime = Time::GetDeltaTime();
-    LOG(Info, "Scene::ContinueCoroutinesUpdate: deltaTime = {}", deltaTime);
     SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::Update, 1, deltaTime);
 }
 
