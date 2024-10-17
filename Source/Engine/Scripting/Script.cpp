@@ -176,20 +176,28 @@ namespace
 {
     CoroutineExecutor* TryGetScriptCoroutineExecutor(const Script* script)
     {
-        Actor* parent = script->GetParent();
-        if (parent == nullptr)
+        Actor* actor = script->GetActor();
+        if (actor == nullptr)
+        {
+            LOG(Error, "Failed to execute coroutine. Script actor is not available.");
             return nullptr;
+        }
 
-        Scene* scene = parent->GetScene();
-        if (scene == nullptr)
+        Scene* scene = actor->GetScene();
+        if (scene == nullptr) 
+        {
+            LOG(Error, "Failed to execute coroutine. Actor scene is not available.");
             return nullptr;
+        }
 
-        return scene->SceneCoroutinesExecutor;
-    }
+        CoroutineExecutor* executor = scene->SceneCoroutinesExecutor;
+        if (executor == nullptr)
+        {
+            LOG(Error, "Failed to execute coroutine. Scene coroutine executor is not available.");
+            return nullptr;
+        }
 
-    void LogCoroutineExecutionFailure()
-    {
-        LOG(Error, "Failed to execute coroutine. Scene executor is not available.");
+        return executor;
     }
 }
 
@@ -198,11 +206,10 @@ auto Script::ExecuteCoroutineOnce(ScriptingObjectReference<CoroutineBuilder> bui
     CoroutineExecutor* executor = TryGetScriptCoroutineExecutor(this);
     if (executor == nullptr)
     {
-        LogCoroutineExecutionFailure();
         return nullptr;
     }
-    else
-        return executor->ExecuteOnce(MoveTemp(builder));
+
+    return executor->ExecuteOnce(MoveTemp(builder));
 }
 
 auto Script::ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineBuilder> builder, const int32 repeats) const -> ScriptingObjectReference<CoroutineHandle>
@@ -210,11 +217,10 @@ auto Script::ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineBuilder> 
     CoroutineExecutor* executor = TryGetScriptCoroutineExecutor(this);
     if (executor == nullptr)
     {
-        LogCoroutineExecutionFailure();
         return nullptr;
     }
-    else
-        return executor->ExecuteRepeats(MoveTemp(builder), repeats);
+
+    return executor->ExecuteRepeats(MoveTemp(builder), repeats);
 }
 
 auto Script::ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineBuilder> builder) const -> ScriptingObjectReference<CoroutineHandle>
@@ -222,11 +228,10 @@ auto Script::ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineBuilder> b
     CoroutineExecutor* executor = TryGetScriptCoroutineExecutor(this);
     if (executor == nullptr)
     {
-        LogCoroutineExecutionFailure();
         return nullptr;
     }
-    else
-        return executor->ExecuteLooped(MoveTemp(builder));
+
+    return executor->ExecuteLooped(MoveTemp(builder));
 }
 
 
