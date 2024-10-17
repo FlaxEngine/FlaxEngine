@@ -275,7 +275,7 @@ bool DeployDataStep::Perform(CookingData& data)
                     DEPLOY_NATIVE_FILE("libmonosgen-2.0.dylib");
                     DEPLOY_NATIVE_FILE("libSystem.IO.Compression.Native.dylib");
                     DEPLOY_NATIVE_FILE("libSystem.Native.dylib");
-                    DEPLOY_NATIVE_FILE("libSystem.NET.Security.Native.dylib");
+                    DEPLOY_NATIVE_FILE("libSystem.Net.Security.Native.dylib");
                     DEPLOY_NATIVE_FILE("libSystem.Security.Cryptography.Native.Apple.dylib");
                     break;
 #undef DEPLOY_NATIVE_FILE
