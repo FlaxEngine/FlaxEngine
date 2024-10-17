@@ -80,12 +80,12 @@ public:
 public:
     bool operator==(const Color32& other) const
     {
-        return R == other.R && G == other.G && B == other.B && A == other.A;
+        return Raw == other.Raw;
     }
 
     bool operator!=(const Color32& other) const
     {
-        return R != other.R || G != other.G || B != other.B || A != other.A;
+        return Raw != other.Raw;
     }
 
     Color32 operator+(const Color32& b) const
@@ -138,7 +138,7 @@ public:
     // Returns true if color is fully transparent (all components are equal zero).
     bool IsTransparent() const
     {
-        return R + G + B + A == 0;
+        return Raw == 0;
     }
 
     // Returns true if color has opacity channel in use (different from 255).
@@ -222,7 +222,7 @@ namespace Math
 {
     FORCE_INLINE static bool NearEqual(const Color32& a, const Color32& b)
     {
-        return a == b;
+        return a.Raw == b.Raw;
     }
 }
 
