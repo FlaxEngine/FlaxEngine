@@ -689,6 +689,12 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="size">The font size.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     API_FUNCTION() static void DrawText(const StringView& text, const Transform& transform, const Color& color = Color::White, int32 size = 32, float duration = 0.0f);
+
+    /// <summary>
+    /// Clear all debug draw displayed on sceen.
+    /// </summary>
+    /// <returns></returns>
+    API_FUNCTION() static void Clear(void* context = nullptr);
 };
 
 #define DEBUG_DRAW_AXIS_FROM_DIRECTION(origin, direction, size, duration, depthTest)                 DebugDraw::DrawAxisFromDirection(origin, direction, size, duration, depthTest);
@@ -721,6 +727,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 #define DEBUG_DRAW_WIRE_ARC(position, orientation, radius, angle, color, duration, depthTest)               DebugDraw::DrawWireArc(position, orientation, radius, angle, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, capScale, color, duration, depthTest)           DebugDraw::DrawWireArrow(position, orientation, scale, capScale, color, duration, depthTest)
 #define DEBUG_DRAW_TEXT(text, position, color, size, duration)                                              DebugDraw::DrawText(text, position, color, size, duration)
+#define DEBUG_DRAW_CLEAR(context)                                                                           DebugDraw::Clear(context)
 
 #else
 
@@ -753,5 +760,6 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 #define DEBUG_DRAW_WIRE_ARC(position, orientation, radius, angle, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, capScale, color, duration, depthTest)
 #define DEBUG_DRAW_TEXT(text, position, color, size, duration)
+#define DEBUG_DRAW_CLEAR(context)
 
 #endif

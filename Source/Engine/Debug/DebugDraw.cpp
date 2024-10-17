@@ -2145,4 +2145,8 @@ void DebugDraw::DrawText(const StringView& text, const Transform& transform, con
     t.TimeLeft = duration;
 }
 
+void DebugDraw::Clear(void* context)
+{
+    DebugDraw::UpdateContext(context, MAX_float);
+}
 #endif
