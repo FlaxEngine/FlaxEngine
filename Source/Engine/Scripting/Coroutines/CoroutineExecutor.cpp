@@ -191,8 +191,6 @@ bool CoroutineExecutor::Execution::TryMakeStep(
             if (!isAccumulating)
                 return false;
 
-            LOG(Info, "Accumulating {} to {}.", delta.time, accumulator.time);
-
             accumulator.time += delta.time;        // Transfer delta time to the accumulator.
             delta = Delta{ 0.0f, 0 }; // Reset the delta time after transferring it to the accumulator.
 
