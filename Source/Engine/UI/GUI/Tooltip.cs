@@ -239,19 +239,12 @@ namespace FlaxEngine.GUI
             // Padding for text
             var textRect = GetClientArea();
 
-            float textX = 0;
-            switch (Editor.Instance.Options.Options.Interface.TooltipTextAlignment)
+            float textX = Editor.Instance.Options.Options.Interface.TooltipTextAlignment switch
             {
-                case TextAlignment.Near:
-                    textX = 15;
-                    break;
-                case TextAlignment.Center:
-                    textX = 5;
-                    break;
-                case TextAlignment.Far:
-                    textX = -5;
-                    break;
-            }
+                TextAlignment.Near => 15,
+                TextAlignment.Center => 5,
+                TextAlignment.Far => -5,
+            };
 
             textRect.X += textX;
             textRect.Width -= 10;
