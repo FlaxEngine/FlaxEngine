@@ -56,7 +56,7 @@ void SceneTicking::TickData::RemoveTickExecuteInEditor(void* callee)
 {
     for (int32 i = 0; i < TicksExecuteInEditor.Count(); i++)
     {
-        if (TicksExecuteInEditor[i].Callee != callee)
+        if (TicksExecuteInEditor.Get()[i].Callee != callee)
             continue;
 
         TicksExecuteInEditor.RemoveAt(i);
@@ -69,7 +69,7 @@ void SceneTicking::TickData::TickExecuteInEditor()
     TickScripts(ScriptsExecuteInEditor);
 
     for (int32 i = 0; i < TicksExecuteInEditor.Count(); i++)
-        TicksExecuteInEditor[i].Call();
+        TicksExecuteInEditor.Get()[i].Call();
 }
 
 #endif
