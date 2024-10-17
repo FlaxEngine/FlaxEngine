@@ -174,6 +174,8 @@ void Script::SetOrderInParent(int32 index)
 
 namespace 
 {
+    constexpr CoroutineSuspendPoint DefaultCoroutineSuspendPoint = CoroutineSuspendPoint::Update;
+
     CoroutineExecutor* TryGetScriptCoroutineExecutor(const Script* script)
     {
         Actor* actor = script->GetActor();
@@ -209,7 +211,7 @@ auto Script::ExecuteCoroutineOnce(ScriptingObjectReference<CoroutineBuilder> bui
         return nullptr;
     }
 
-    return executor->ExecuteOnce(MoveTemp(builder));
+    return executor->ExecuteOnce(MoveTemp(builder), DefaultCoroutineSuspendPoint);
 }
 
 auto Script::ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineBuilder> builder, const int32 repeats) const -> ScriptingObjectReference<CoroutineHandle>
@@ -220,7 +222,7 @@ auto Script::ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineBuilder> 
         return nullptr;
     }
 
-    return executor->ExecuteRepeats(MoveTemp(builder), repeats);
+    return executor->ExecuteRepeats(MoveTemp(builder), DefaultCoroutineSuspendPoint, repeats);
 }
 
 auto Script::ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineBuilder> builder) const -> ScriptingObjectReference<CoroutineHandle>
@@ -231,7 +233,7 @@ auto Script::ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineBuilder> b
         return nullptr;
     }
 
-    return executor->ExecuteLooped(MoveTemp(builder));
+    return executor->ExecuteLooped(MoveTemp(builder), DefaultCoroutineSuspendPoint);
 }
 
 

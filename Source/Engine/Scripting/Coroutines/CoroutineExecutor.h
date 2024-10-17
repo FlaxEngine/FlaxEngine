@@ -16,32 +16,42 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     /// Adds a coroutine to the executor to be executed once.
     /// </summary>
     API_FUNCTION()
-    ScriptingObjectReference<CoroutineHandle> ExecuteOnce(ScriptingObjectReference<CoroutineBuilder> builder);
+    ScriptingObjectReference<CoroutineHandle> ExecuteOnce(
+        ScriptingObjectReference<CoroutineBuilder> builder,
+        CoroutineSuspendPoint accumulationPoint
+    );
 
     /// <summary>
     /// Adds a coroutine to the executor to be executed multiple times.
     /// </summary>
     API_FUNCTION()
-    ScriptingObjectReference<CoroutineHandle> ExecuteRepeats(ScriptingObjectReference<CoroutineBuilder> builder, int32 repeats);
+    ScriptingObjectReference<CoroutineHandle> ExecuteRepeats(
+        ScriptingObjectReference<CoroutineBuilder> builder,
+        CoroutineSuspendPoint accumulationPoint,
+        int32 repeats
+    );
 
     /// <summary>
     /// Adds a coroutine to the executor to be executed indefinitely.
     /// </summary>
     API_FUNCTION()
-    ScriptingObjectReference<CoroutineHandle> ExecuteLooped(ScriptingObjectReference<CoroutineBuilder> builder);
+    ScriptingObjectReference<CoroutineHandle> ExecuteLooped(
+        ScriptingObjectReference<CoroutineBuilder> builder,
+        CoroutineSuspendPoint accumulationPoint
+    );
 
 
     /// <summary>
     /// Continues the execution of all coroutines at the given suspension point.
     /// </summary>
-    /// <param name="point"> Game loop suspension point for the coroutines to try to continue execution. </param>
-    /// <param name="deltaTime">
-    /// Total time passed since the last Update event.
-    /// Warning: Do not use fixed-delta, because only delta time is used for the coroutines to accumulate time.
-    /// </param>
-    /// <remarks> Manually calling this method may cause undefined behaviors. It is exposed for the engine internals. </remarks>
+    /// <param name="point"> Unlocked game suspension point. </param>
+    /// <param name="frames"> Accumulated frames. </param>
+    /// <param name="deltaTime"> Accumulated time. </param>
+    /// <remarks>
+    /// By default, the coroutines accumulate time and frames at the Update point.
+    /// </remarks>
     API_FUNCTION()
-    void Continue(CoroutineSuspendPoint point, float deltaTime);
+    void Continue(CoroutineSuspendPoint point, int32 frames, float deltaTime);
 
     /// <summary>
     /// Returns the number of coroutines currently being executed.
@@ -53,6 +63,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
 
 private:
     using BuilderReference = ScriptingObjectReference<CoroutineBuilder>;
+    using SuspendPoint     = CoroutineSuspendPoint;
 
     struct Delta
     {
@@ -67,6 +78,7 @@ private:
         ExecutionID      _id;
         int32            _stepIndex;
         int32            _repeats;
+        SuspendPoint     _accumulationPoint;
         bool             _isPaused;
 
     public:
@@ -75,9 +87,10 @@ private:
         Execution() = delete;
 
         explicit Execution(
-            BuilderReference&& builder,
-            ExecutionID        id,
-            int32              repeats = 1
+            BuilderReference&&    builder,
+            CoroutineSuspendPoint accumulationPoint,
+            ExecutionID           id,
+            int32                 repeats = 1
         );
 
         /// <summary>
@@ -94,11 +107,12 @@ private:
         void SetPaused(bool value);
 
     private:
-        static bool TryMakeStep(
+        FORCE_INLINE static bool TryMakeStep(
             const CoroutineBuilder::Step& step, 
             CoroutineSuspendPoint point,
+            bool   isAccumulating,
             Delta& delta,
-            Delta&       accumulator
+            Delta& accumulator
         );
     };
 

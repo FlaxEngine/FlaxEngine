@@ -418,23 +418,24 @@ void Scene::OnTransformChanged()
 void Scene::ContinueCoroutinesUpdate()
 {
     const float deltaTime = Time::GetDeltaTime();
-    SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::Update, deltaTime);
+    LOG(Info, "Scene::ContinueCoroutinesUpdate: deltaTime = {}", deltaTime);
+    SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::Update, 1, deltaTime);
 }
 
 void Scene::ContinueCoroutinesFixedUpdate()
 {
     const float deltaTime = Time::GetDeltaTime();
-    SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::FixedUpdate, deltaTime);
+    SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::FixedUpdate, 0, 0.0f);
 }
 
 void Scene::ContinueCoroutinesLateUpdate()
 {
     const float deltaTime = Time::GetDeltaTime();
-    SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::LateUpdate, deltaTime);
+    SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::LateUpdate, 0, 0.0f);
 }
 
 void Scene::ContinueCoroutinesLateFixedUpdate()
 {
     const float deltaTime = Time::GetDeltaTime();
-    SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::LateFixedUpdate, deltaTime);
+    SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::LateFixedUpdate, 0, 0.0f);
 }

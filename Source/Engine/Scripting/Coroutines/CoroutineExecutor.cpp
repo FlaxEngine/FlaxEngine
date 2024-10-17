@@ -5,15 +5,13 @@
 #include "Engine/Debug/DebugLog.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
-// Universal shared point for all coroutines to accumulate any kind of time.
-// Update is used, because it is the only point that is guaranteed to be called exactly once every frame.
-constexpr static CoroutineSuspendPoint DeltaAccumulationPoint = CoroutineSuspendPoint::Update;
-
-
-ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteOnce(ScriptingObjectReference<CoroutineBuilder> builder)
+ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteOnce(
+    ScriptingObjectReference<CoroutineBuilder> builder,
+    const CoroutineSuspendPoint accumulationPoint
+)
 {
     const ExecutionID id = _uuidGenerator.Generate();
-    Execution execution{ MoveTemp(builder), id };
+    Execution execution{ MoveTemp(builder), accumulationPoint, id };
     execution.ContinueCoroutine(CoroutineSuspendPoint::Update, Delta{ 0.0f, 0 });
     _executions.Add(MoveTemp(execution));
 
@@ -23,7 +21,11 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteOnce(Scripti
     return handle;
 }
 
-ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeats(ScriptingObjectReference<CoroutineBuilder> builder, const int32 repeats)
+ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeats(
+    ScriptingObjectReference<CoroutineBuilder> builder,
+    const CoroutineSuspendPoint accumulationPoint,
+    const int32 repeats
+)
 {
     if (repeats <= 0) 
     {
@@ -35,7 +37,7 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeats(Scri
     }
 
     const ExecutionID id = _uuidGenerator.Generate();
-    Execution execution{ MoveTemp(builder), id, repeats };
+    Execution execution{ MoveTemp(builder), accumulationPoint, id, repeats };
     execution.ContinueCoroutine(CoroutineSuspendPoint::Update, Delta{ 0.0f, 0 });
     _executions.Add(MoveTemp(execution));
 
@@ -45,10 +47,13 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeats(Scri
     return handle;
 }
 
-ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteLooped(ScriptingObjectReference<CoroutineBuilder> builder)
+ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteLooped(
+    ScriptingObjectReference<CoroutineBuilder> builder,
+    const CoroutineSuspendPoint accumulationPoint
+)
 {
     const ExecutionID id = _uuidGenerator.Generate();
-    Execution execution{ MoveTemp(builder), id, Execution::InfiniteRepeats };
+    Execution execution{ MoveTemp(builder), accumulationPoint, id, Execution::InfiniteRepeats };
     execution.ContinueCoroutine(CoroutineSuspendPoint::Update, Delta{ 0.0f, 0 });
     _executions.Add(MoveTemp(execution));
 
@@ -60,12 +65,14 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteLooped(Scrip
 
 
 void CoroutineExecutor::Continue(
-    const CoroutineSuspendPoint point, 
-    const float deltaTime)
+    const CoroutineSuspendPoint point,
+    const int32 frames,
+    const float deltaTime
+)
 {
     PROFILE_CPU();
 
-    const Delta delta{ deltaTime, 1 };
+    const Delta delta{ deltaTime, frames };
 
     for (int32 i = 0; i < _executions.Count();)
     {
@@ -93,14 +100,16 @@ using Step     = CoroutineBuilder::Step;
 using StepType = CoroutineBuilder::StepType;
 
 CoroutineExecutor::Execution::Execution(
-    BuilderReference&& builder, 
-    const ExecutionID  id, 
+    BuilderReference&& builder,
+    const SuspendPoint accumulationPoint,
+    const ExecutionID  id,
     const int32        repeats
 )   : _builder{ MoveTemp(builder) }
     , _accumulator{ 0.0f, 0 }
     , _id{ id }
     , _stepIndex{ 0 }
     , _repeats{ repeats }
+    , _accumulationPoint{ accumulationPoint }
     , _isPaused{ false }
 {
 }
@@ -124,8 +133,9 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
         while (_stepIndex < steps.Count())
         {
             const Step& step = steps[_stepIndex];
+            const bool isAccumulating = point == _accumulationPoint;
 
-            if (!TryMakeStep(step, point, deltaCopy, this->_accumulator))
+            if (!TryMakeStep(step, point, isAccumulating, deltaCopy, this->_accumulator))
                 return false; // The coroutine is waiting for the next frame or seconds.
 
             ++_stepIndex;
@@ -158,6 +168,7 @@ void CoroutineExecutor::Execution::SetPaused(const bool value)
 bool CoroutineExecutor::Execution::TryMakeStep(
     const CoroutineBuilder::Step& step, 
     const CoroutineSuspendPoint   point,
+    const bool                    isAccumulating,
     Delta&                        delta,
     Delta&                        accumulator
 )
@@ -177,8 +188,10 @@ bool CoroutineExecutor::Execution::TryMakeStep(
 
         case StepType::WaitSeconds:
         {
-            if (point != DeltaAccumulationPoint)
+            if (!isAccumulating)
                 return false;
+
+            LOG(Info, "Accumulating {} to {}.", delta.time, accumulator.time);
 
             accumulator.time += delta.time;        // Transfer delta time to the accumulator.
             delta = Delta{ 0.0f, 0 }; // Reset the delta time after transferring it to the accumulator.
@@ -193,7 +206,7 @@ bool CoroutineExecutor::Execution::TryMakeStep(
 
         case StepType::WaitFrames:
         {
-            if (point != DeltaAccumulationPoint)
+            if (!isAccumulating)
                 return false;
 
             accumulator.frames += delta.frames;    // Transfer delta frames to the accumulator.
