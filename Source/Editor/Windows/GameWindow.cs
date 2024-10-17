@@ -39,6 +39,28 @@ namespace FlaxEditor.Windows
         private bool _useAspect = false;
         private bool _freeAspect = true;
 
+        private List<PlayModeFocusOptions> _focusOptions = new List<PlayModeFocusOptions>()
+        {
+            new PlayModeFocusOptions
+            {
+                Name = "None",
+                Tooltip = "Don't change focus.",
+                FocusOption = InterfaceOptions.PlayModeFocus.None,
+            },
+            new PlayModeFocusOptions
+            {
+                Name = "Game Panel",
+                Tooltip = "Focus the Game panel.",
+                FocusOption = InterfaceOptions.PlayModeFocus.GamePanel,
+            },
+            new PlayModeFocusOptions
+            {
+                Name = "Game Panel Then Back",
+                Tooltip = "Focus the Game panel. On play mode end focus the previous panel again.",
+                FocusOption = InterfaceOptions.PlayModeFocus.GamePanelThenBack,
+            },
+        };
+
         /// <summary>
         /// Gets the viewport.
         /// </summary>
@@ -162,9 +184,9 @@ namespace FlaxEditor.Windows
         public bool CenterMouseOnFocus { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether auto-focus game window on play mode start.
+        /// Gets or sets a value indicating what panel should be focused when play mode start.
         /// </summary>
-        public bool FocusOnPlay { get; set; }
+        public InterfaceOptions.PlayModeFocus FocusOnPlayOption { get; set; }
 
         private enum ViewportScaleType
         {
@@ -191,6 +213,29 @@ namespace FlaxEditor.Windows
 
             /// <summary>
             /// If the scaling is active.
+            /// </summary>
+            public bool Active;
+        }
+
+        private class PlayModeFocusOptions
+        {
+            /// <summary>
+            /// The name.
+            /// </summary>
+            public string Name;
+
+            /// <summary>
+            /// The tooltip.
+            /// </summary>
+            public string Tooltip;
+
+            /// <summary>
+            /// The type of focus.
+            /// </summary>
+            public InterfaceOptions.PlayModeFocus FocusOption;
+
+            /// <summary>
+            /// If the option is active.
             /// </summary>
             public bool Active;
         }
@@ -430,7 +475,7 @@ namespace FlaxEditor.Windows
         private void OnOptionsChanged(EditorOptions options)
         {
             CenterMouseOnFocus = options.Interface.CenterMouseOnGameWinFocus;
-            FocusOnPlay = options.Interface.FocusGameWinOnPlay;
+            FocusOnPlayOption = options.Interface.FocusOnPlayMode;
         }
 
         private void PlayingStateOnSceneDuplicating()
@@ -488,6 +533,41 @@ namespace FlaxEditor.Windows
             }
         }
 
+        // TODO: Move this to other generate method
+        private void GenerateFocusOptionsContextMenu(ContextMenu pfMenu)
+        {
+            foreach (PlayModeFocusOptions f in _focusOptions)
+            {
+                f.Active = f.FocusOption == FocusOnPlayOption;
+
+                var button = pfMenu.AddButton(f.Name);
+                button.CloseMenuOnClick = false;
+                button.Tag = f;
+                button.TooltipText = f.Tooltip;
+                button.Icon = f.Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                button.Clicked += () =>
+                {
+                    foreach (var child in pfMenu.Items)
+                    {
+                        if (child is ContextMenuButton cmb && cmb.Tag is PlayModeFocusOptions p)
+                        {
+                            if (cmb == button)
+                            {
+                                p.Active = true;
+                                button.Icon = Style.Current.CheckBoxTick;
+                                FocusOnPlayOption = p.FocusOption;
+                            }
+                            else if (p.Active)
+                            {
+                                cmb.Icon = SpriteHandle.Invalid;
+                                p.Active = false;
+                            }
+                        }
+                    }
+                };
+            }
+        }
+
         /// <inheritdoc />
         public override void OnShowContextMenu(ContextMenu menu)
         {
@@ -495,10 +575,9 @@ namespace FlaxEditor.Windows
 
             // Focus on play
             {
-                var focus = menu.AddButton("Start Focused");
-                focus.CloseMenuOnClick = false;
-                var checkbox = new CheckBox(140, 2, FocusOnPlay) { Parent = focus };
-                checkbox.StateChanged += state => FocusOnPlay = state.Checked;
+                var pfMenu = menu.AddChildMenu("Play Mode Focus Override").ContextMenu;
+
+                GenerateFocusOptionsContextMenu(pfMenu);
             }
 
             menu.AddSeparator();

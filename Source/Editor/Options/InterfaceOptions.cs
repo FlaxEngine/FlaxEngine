@@ -139,6 +139,27 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
+        /// Options for on play mode start panel focus.
+        /// </summary>
+        public enum PlayModeFocus
+        {
+            /// <summary>
+            /// Don't change any focus.
+            /// </summary>
+            None,
+
+            /// <summary>
+            /// Focus the Game panel.
+            /// </summary>
+            GamePanel,
+
+            /// <summary>
+            /// Focus the Game panel. On play mode end focus the previous panel again.
+            /// </summary>
+            GamePanelThenBack,  
+        }
+
+        /// <summary>
         /// Gets or sets the Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.
         /// </summary>
         [DefaultValue(1.0f), Limit(0.1f, 10.0f)]
@@ -341,11 +362,11 @@ namespace FlaxEditor.Options
         public bool OutputLogScrollToBottom { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating whether auto-focus game window on play mode start.
+        /// Gets or sets a value indicating what panel should be focused when play mode start.
         /// </summary>
-        [DefaultValue(true)]
-        [EditorDisplay("Play In-Editor", "Focus Game Window On Play"), EditorOrder(500), Tooltip("Determines whether auto-focus game window on play mode start.")]
-        public bool FocusGameWinOnPlay { get; set; } = true;
+        [DefaultValue(PlayModeFocus.GamePanel)]
+        [EditorDisplay("Play In-Editor", "Focus On Play"), EditorOrder(500), Tooltip("Set what panel to focus on play mode start.")]
+        public PlayModeFocus FocusOnPlayMode { get; set; } = PlayModeFocus.GamePanel;
 
         /// <summary>
         /// Gets or sets a value indicating what action should be taken upon pressing the play button.
