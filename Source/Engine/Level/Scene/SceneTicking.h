@@ -16,7 +16,7 @@ public:
     /// </summary>
     struct FLAXENGINE_API Tick
     {
-        using Signature    = void (*)();
+        using Signature = void (*)();
         using SignatureObj = void (*)(void*);
 
         template<class T, void(T::*Method)()>
@@ -48,10 +48,10 @@ public:
     {
     public:
         Array<Script*> Scripts;
-        Array<Tick>    Ticks;
+        Array<Tick> Ticks;
 #if USE_EDITOR
         Array<Script*> ScriptsExecuteInEditor;
-        Array<Tick>    TicksExecuteInEditor;
+        Array<Tick> TicksExecuteInEditor;
 #endif
 
         explicit TickData(int32 capacity);

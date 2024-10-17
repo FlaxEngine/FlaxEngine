@@ -77,10 +77,10 @@ void SceneTicking::TickData::TickExecuteInEditor()
 void SceneTicking::TickData::Clear()
 {
     Scripts.Clear();
-    Ticks  .Clear();
+    Ticks.Clear();
 #if USE_EDITOR
     ScriptsExecuteInEditor.Clear();
-    TicksExecuteInEditor  .Clear();
+    TicksExecuteInEditor.Clear();
 #endif
 }
 
@@ -133,11 +133,11 @@ void SceneTicking::AddScript(Script* obj)
     ASSERT_LOW_LAYER(obj && obj->GetParent() && obj->GetParent()->GetScene());
 
     if (obj->_tickFixedUpdate)
-        FixedUpdate    .AddScript(obj);
+        FixedUpdate.AddScript(obj);
     if (obj->_tickUpdate)
-        Update         .AddScript(obj);
+        Update.AddScript(obj);
     if (obj->_tickLateUpdate)
-        LateUpdate     .AddScript(obj);
+        LateUpdate.AddScript(obj);
     if (obj->_tickLateFixedUpdate)
         LateFixedUpdate.AddScript(obj);
 }
@@ -147,19 +147,19 @@ void SceneTicking::RemoveScript(Script* obj)
     ASSERT_LOW_LAYER(obj && obj->GetParent() && obj->GetParent()->GetScene());
 
     if (obj->_tickFixedUpdate)
-        FixedUpdate    .RemoveScript(obj);
+        FixedUpdate.RemoveScript(obj);
     if (obj->_tickUpdate)
-        Update         .RemoveScript(obj);
+        Update.RemoveScript(obj);
     if (obj->_tickLateUpdate)
-        LateUpdate     .RemoveScript(obj);
+        LateUpdate.RemoveScript(obj);
     if (obj->_tickLateFixedUpdate)
         LateFixedUpdate.RemoveScript(obj);
 }
 
 void SceneTicking::Clear()
 {
-    FixedUpdate    .Clear();
-    Update         .Clear();
-    LateUpdate     .Clear();
+    FixedUpdate.Clear();
+    Update.Clear();
+    LateUpdate.Clear();
     LateFixedUpdate.Clear();
 }

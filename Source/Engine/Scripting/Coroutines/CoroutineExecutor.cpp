@@ -80,14 +80,9 @@ void CoroutineExecutor::Continue(
         const bool reachedEnd = execution.ContinueCoroutine(point, delta);
 
         if (reachedEnd)
-        {
             _executions.RemoveAt(i);
-        }
         else
-        {
-            // Increment the index only if the coroutine was not removed.
-            i++;
-        }
+            i++; // Increment the index only if the coroutine was not removed.
     }
 }
 
@@ -226,10 +221,7 @@ bool CoroutineExecutor::Execution::TryMakeStep(
         }
 
         case StepType::None:
-        default:
-        {
-            CRASH;
-        }
+        default: CRASH;
 
         //TODO(mtszkarbowiak) Optimize filtering accumulation steps by caching the expected suspend point. (Or filtering it by bit-field)
     }

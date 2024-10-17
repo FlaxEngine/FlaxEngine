@@ -6,15 +6,18 @@
 namespace 
 {
     using ExecutorReference = ScriptingObjectReference<CoroutineExecutor>;
-    using HandleReference   = ScriptingObjectReference<CoroutineHandle>;
+    using HandleReference = ScriptingObjectReference<CoroutineHandle>;
 
-    ExecutorReference NewCoroutineExecutor() { return ScriptingObject::NewObject<CoroutineExecutor>(); }
+    ExecutorReference NewCoroutineExecutor()
+    {
+        return ScriptingObject::NewObject<CoroutineExecutor>();
+    }
 }
 
 TEST_CASE("CoroutinesBuilder")
 {
     const ExecutorReference executor = NewCoroutineExecutor();
-    const HandleReference   handle = executor->ExecuteOnce(
+    const HandleReference handle = executor->ExecuteOnce(
         ScriptingObject::NewObject<CoroutineBuilder>()
             ->ThenWaitFrames(1)
             ->ThenWaitSeconds(1.0f)

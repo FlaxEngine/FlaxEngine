@@ -63,7 +63,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
 
 private:
     using BuilderReference = ScriptingObjectReference<CoroutineBuilder>;
-    using SuspendPoint     = CoroutineSuspendPoint;
+    using SuspendPoint = CoroutineSuspendPoint;
 
     struct Delta
     {
@@ -101,7 +101,7 @@ private:
         /// </returns>
         bool ContinueCoroutine(CoroutineSuspendPoint point, const Delta& delta);
 
-        auto GetID()    const -> ExecutionID;
+        auto GetID() const -> ExecutionID;
         auto IsPaused() const -> bool;
 
         void SetPaused(bool value);

@@ -358,9 +358,9 @@ void Scene::BeginPlay(SceneBeginData* data)
 {
     // Prepare coroutines executor before begin play event
     SceneCoroutinesExecutor = New<CoroutineExecutor>();
-    Ticking.Update         .AddTick<Scene, &Scene::ContinueCoroutinesUpdate>(this);
-    Ticking.LateUpdate     .AddTick<Scene, &Scene::ContinueCoroutinesLateUpdate>(this);
-    Ticking.FixedUpdate    .AddTick<Scene, &Scene::ContinueCoroutinesFixedUpdate>(this);
+    Ticking.Update.AddTick<Scene, &Scene::ContinueCoroutinesUpdate>(this);
+    Ticking.LateUpdate.AddTick<Scene, &Scene::ContinueCoroutinesLateUpdate>(this);
+    Ticking.FixedUpdate.AddTick<Scene, &Scene::ContinueCoroutinesFixedUpdate>(this);
     Ticking.LateFixedUpdate.AddTick<Scene, &Scene::ContinueCoroutinesLateFixedUpdate>(this);
     
     // Base
@@ -409,7 +409,7 @@ void Scene::OnTransformChanged()
     // Base
     Actor::OnTransformChanged();
 
-    _box    = BoundingBox(_transform.Translation);
+    _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
 }
 
