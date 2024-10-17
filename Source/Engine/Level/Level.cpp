@@ -304,9 +304,9 @@ void LevelService::LateUpdate()
 
         struct TickGetter
         {
-            static SceneTicking::UpdateTickData& Get(Scene* scene)
+            static SceneTicking::LateUpdateTickData& Get(Scene* scene)
             {
-                return scene->Ticking.Update;
+                return scene->Ticking.LateUpdate;
             }
         };
 
