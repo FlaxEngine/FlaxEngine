@@ -533,41 +533,6 @@ namespace FlaxEditor.Windows
             }
         }
 
-        // TODO: Move this to other generate method
-        private void GenerateFocusOptionsContextMenu(ContextMenu pfMenu)
-        {
-            foreach (PlayModeFocusOptions f in _focusOptions)
-            {
-                f.Active = f.FocusOption == FocusOnPlayOption;
-
-                var button = pfMenu.AddButton(f.Name);
-                button.CloseMenuOnClick = false;
-                button.Tag = f;
-                button.TooltipText = f.Tooltip;
-                button.Icon = f.Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-                button.Clicked += () =>
-                {
-                    foreach (var child in pfMenu.Items)
-                    {
-                        if (child is ContextMenuButton cmb && cmb.Tag is PlayModeFocusOptions p)
-                        {
-                            if (cmb == button)
-                            {
-                                p.Active = true;
-                                button.Icon = Style.Current.CheckBoxTick;
-                                FocusOnPlayOption = p.FocusOption;
-                            }
-                            else if (p.Active)
-                            {
-                                cmb.Icon = SpriteHandle.Invalid;
-                                p.Active = false;
-                            }
-                        }
-                    }
-                };
-            }
-        }
-
         /// <inheritdoc />
         public override void OnShowContextMenu(ContextMenu menu)
         {
@@ -677,6 +642,40 @@ namespace FlaxEditor.Windows
 
             menu.MinimumWidth = 200;
             menu.AddSeparator();
+        }
+
+        private void GenerateFocusOptionsContextMenu(ContextMenu pfMenu)
+        {
+            foreach (PlayModeFocusOptions f in _focusOptions)
+            {
+                f.Active = f.FocusOption == FocusOnPlayOption;
+
+                var button = pfMenu.AddButton(f.Name);
+                button.CloseMenuOnClick = false;
+                button.Tag = f;
+                button.TooltipText = f.Tooltip;
+                button.Icon = f.Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                button.Clicked += () =>
+                {
+                    foreach (var child in pfMenu.Items)
+                    {
+                        if (child is ContextMenuButton cmb && cmb.Tag is PlayModeFocusOptions p)
+                        {
+                            if (cmb == button)
+                            {
+                                p.Active = true;
+                                button.Icon = Style.Current.CheckBoxTick;
+                                FocusOnPlayOption = p.FocusOption;
+                            }
+                            else if (p.Active)
+                            {
+                                cmb.Icon = SpriteHandle.Invalid;
+                                p.Active = false;
+                            }
+                        }
+                    }
+                };
+            }
         }
 
         private void CreateViewportSizingContextMenu(ContextMenu vsMenu)
