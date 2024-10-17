@@ -631,9 +631,9 @@ void EngineImpl::InitPaths()
         FileSystem::CreateDirectory(Globals::ProjectContentFolder);
     if (!FileSystem::DirectoryExists(Globals::ProjectSourceFolder))
         FileSystem::CreateDirectory(Globals::ProjectSourceFolder);
-    if (CommandLine::Options.ClearCache)
+    if (CommandLine::Options.ClearCache.IsTrue())
         FileSystem::DeleteDirectory(Globals::ProjectCacheFolder, true);
-    else if (CommandLine::Options.ClearCookerCache)
+    else if (CommandLine::Options.ClearCookerCache.IsTrue())
         FileSystem::DeleteDirectory(Globals::ProjectCacheFolder / TEXT("Cooker"), true);
     if (!FileSystem::DirectoryExists(Globals::ProjectCacheFolder))
         FileSystem::CreateDirectory(Globals::ProjectCacheFolder);

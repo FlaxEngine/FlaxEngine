@@ -106,9 +106,9 @@ GPUDevice* GPUDeviceDX11::Create()
 #else
     D3D_FEATURE_LEVEL maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 #endif
-    if (CommandLine::Options.D3D10)
+    if (CommandLine::Options.D3D10.IsTrue())
         maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_10_0;
-    else if (CommandLine::Options.D3D11)
+    else if (CommandLine::Options.D3D11.IsTrue())
         maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 #if !USE_EDITOR && PLATFORM_WINDOWS
 	auto winSettings = WindowsPlatformSettings::Get();
@@ -209,11 +209,11 @@ GPUDevice* GPUDeviceDX11::Create()
     }
     GPUAdapterDX selectedAdapter = adapters[selectedAdapterIndex];
     uint32 vendorId = 0;
-    if (CommandLine::Options.NVIDIA)
+    if (CommandLine::Options.NVIDIA.IsTrue())
         vendorId = GPU_VENDOR_ID_NVIDIA;
-    else if (CommandLine::Options.AMD)
+    else if (CommandLine::Options.AMD.IsTrue())
         vendorId = GPU_VENDOR_ID_AMD;
-    else if (CommandLine::Options.Intel)
+    else if (CommandLine::Options.Intel.IsTrue())
         vendorId = GPU_VENDOR_ID_INTEL;
     if (vendorId != 0)
     {

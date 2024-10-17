@@ -104,7 +104,7 @@ bool GraphicsService::Init()
     GPUDevice* device = nullptr;
 
     // Null
-    if (!device && CommandLine::Options.Null)
+    if (!device && CommandLine::Options.Null.IsTrue())
     {
 #if GRAPHICS_API_NULL
         device = CreateGPUDeviceNull();
@@ -114,7 +114,7 @@ bool GraphicsService::Init()
     }
 
     // Vulkan
-    if (!device && CommandLine::Options.Vulkan)
+    if (!device && CommandLine::Options.Vulkan.IsTrue())
     {
 #if GRAPHICS_API_VULKAN
         device = CreateGPUDeviceVulkan();
@@ -124,7 +124,7 @@ bool GraphicsService::Init()
     }
 
     // DirectX 12
-    if (!device && CommandLine::Options.D3D12)
+    if (!device && CommandLine::Options.D3D12.IsTrue())
     {
 #if GRAPHICS_API_DIRECTX12
         if (Platform::IsWindows10())
@@ -137,7 +137,7 @@ bool GraphicsService::Init()
     }
 
     // DirectX 11 and DirectX 10
-    if (!device && (CommandLine::Options.D3D11 || CommandLine::Options.D3D10))
+    if (!device && (CommandLine::Options.D3D11.IsTrue() || CommandLine::Options.D3D10.IsTrue()))
     {
 #if GRAPHICS_API_DIRECTX11
         device = CreateGPUDeviceDX11();
@@ -193,10 +193,10 @@ bool GraphicsService::Init()
     // Initialize
     if (device->IsDebugToolAttached
 #if USE_EDITOR || !BUILD_RELEASE
-        || CommandLine::Options.ShaderProfile
+        || CommandLine::Options.ShaderProfile.IsTrue()
 #endif
 #if USE_EDITOR
-        || CommandLine::Options.ShaderDebug
+        || CommandLine::Options.ShaderDebug.IsTrue()
 #endif
         )
     {

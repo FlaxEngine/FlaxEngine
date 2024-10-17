@@ -193,8 +193,8 @@ bool ShaderCacheManagerService::Init()
     CacheVersion cacheVersion;
     const String cacheVerFile = rootDir / TEXT("CacheVersion");
 #if USE_EDITOR
-    const bool shaderDebug = CommandLine::Options.ShaderDebug;
-    const bool shaderProfile = CommandLine::Options.ShaderProfile;
+    const bool shaderDebug = CommandLine::Options.ShaderDebug.IsTrue();
+    const bool shaderProfile = CommandLine::Options.ShaderProfile.IsTrue();
 #else
     const bool shaderDebug = false;
 #endif

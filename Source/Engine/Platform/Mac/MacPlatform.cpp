@@ -54,7 +54,7 @@ String ComputerName;
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
         return DialogResult::None;
 	NSAlert* alert = [[NSAlert alloc] init];
     ASSERT(alert);
