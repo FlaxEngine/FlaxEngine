@@ -17,7 +17,7 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteOnce(
 
     ScriptingObjectReference<CoroutineHandle> handle = NewObject<CoroutineHandle>();
     handle->ExecutionID = id;
-    handle->Executor    = ScriptingObjectReference<CoroutineExecutor>{ this };
+    handle->Executor = ScriptingObjectReference<CoroutineExecutor>{ this };
     return handle;
 }
 
@@ -43,7 +43,7 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeats(
 
     ScriptingObjectReference<CoroutineHandle> handle = NewObject<CoroutineHandle>();
     handle->ExecutionID = id;
-    handle->Executor    = ScriptingObjectReference<CoroutineExecutor>{ this };
+    handle->Executor = ScriptingObjectReference<CoroutineExecutor>{ this };
     return handle;
 }
 
@@ -59,7 +59,7 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteLooped(
 
     ScriptingObjectReference<CoroutineHandle> handle = NewObject<CoroutineHandle>();
     handle->ExecutionID = id;
-    handle->Executor    = ScriptingObjectReference<CoroutineExecutor>{ this };
+    handle->Executor = ScriptingObjectReference<CoroutineExecutor>{ this };
     return handle;
 }
 
@@ -76,7 +76,7 @@ void CoroutineExecutor::Continue(
 
     for (int32 i = 0; i < _executions.Count();)
     {
-        Execution& execution  = _executions[i];
+        Execution& execution = _executions[i];
         const bool reachedEnd = execution.ContinueCoroutine(point, delta);
 
         if (reachedEnd)
@@ -102,8 +102,8 @@ using StepType = CoroutineBuilder::StepType;
 CoroutineExecutor::Execution::Execution(
     BuilderReference&& builder,
     const SuspendPoint accumulationPoint,
-    const ExecutionID  id,
-    const int32        repeats
+    const ExecutionID id,
+    const int32 repeats
 )   : _builder{ MoveTemp(builder) }
     , _accumulator{ 0.0f, 0 }
     , _id{ id }
@@ -167,10 +167,10 @@ void CoroutineExecutor::Execution::SetPaused(const bool value)
 
 bool CoroutineExecutor::Execution::TryMakeStep(
     const CoroutineBuilder::Step& step, 
-    const CoroutineSuspendPoint   point,
-    const bool                    isAccumulating,
-    Delta&                        delta,
-    Delta&                        accumulator
+    const CoroutineSuspendPoint point,
+    const bool isAccumulating,
+    Delta& delta,
+    Delta& accumulator
 )
 {
     switch (step.GetType())

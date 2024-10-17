@@ -387,8 +387,8 @@ void Scene::BeginPlay(SceneBeginData* data)
 void Scene::EndPlay()
 {
     // Improve scene cleanup performance by removing all data from scene rendering and ticking containers
-    Ticking   .Clear();
-    Rendering .Clear();
+    Ticking.Clear();
+    Rendering.Clear();
     Navigation.Clear();
 
     // Base

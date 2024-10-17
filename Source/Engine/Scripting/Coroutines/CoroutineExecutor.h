@@ -74,12 +74,12 @@ private:
     class Execution final
     {
         BuilderReference _builder;
-        Delta            _accumulator;
-        ExecutionID      _id;
-        int32            _stepIndex;
-        int32            _repeats;
-        SuspendPoint     _accumulationPoint;
-        bool             _isPaused;
+        Delta _accumulator;
+        ExecutionID _id;
+        int32 _stepIndex;
+        int32 _repeats;
+        SuspendPoint _accumulationPoint;
+        bool _isPaused;
 
     public:
         constexpr static int32 InfiniteRepeats = -1; //TODO Use Nullable instead of sentinel when PR #2969 is merged.
@@ -87,10 +87,10 @@ private:
         Execution() = delete;
 
         explicit Execution(
-            BuilderReference&&    builder,
+            BuilderReference&& builder,
             CoroutineSuspendPoint accumulationPoint,
-            ExecutionID           id,
-            int32                 repeats = 1
+            ExecutionID id,
+            int32 repeats = 1
         );
 
         /// <summary>
@@ -110,7 +110,7 @@ private:
         FORCE_INLINE static bool TryMakeStep(
             const CoroutineBuilder::Step& step, 
             CoroutineSuspendPoint point,
-            bool   isAccumulating,
+            bool isAccumulating,
             Delta& delta,
             Delta& accumulator
         );

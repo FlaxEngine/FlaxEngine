@@ -16,17 +16,17 @@ API_ENUM() enum class CoroutineSuspendPoint : uint8
     /// <summary>
     /// Suspension point during or after the OnUpdate event.
     /// </summary>
-	Update          = 0,
+	Update = 0,
 
     /// <summary>
     /// Suspension point during or after the OnLateUpdate event.
     /// </summary>
-	LateUpdate      = 1,
+	LateUpdate = 1,
 
     /// <summary>
     /// Suspension point during or after the OnFixedUpdate event.
     /// </summary>
-	FixedUpdate     = 2,
+	FixedUpdate = 2,
 
     /// <summary>
     /// Suspension point during or after the OnLateFixedUpdate event.

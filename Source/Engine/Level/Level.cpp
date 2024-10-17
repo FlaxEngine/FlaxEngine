@@ -108,8 +108,8 @@ struct ScriptsReloadObject
 namespace LevelImpl
 {
     Array<SceneAction*> _sceneActions;
-    CriticalSection     _sceneActionsLocker;
-    DateTime            _lastSceneLoadTime(0);
+    CriticalSection _sceneActionsLocker;
+    DateTime _lastSceneLoadTime(0);
 #if USE_EDITOR
     Array<ScriptsReloadObject> ScriptsReloadObjects;
 #endif
@@ -152,8 +152,8 @@ namespace
 }
 
 CriticalSection Level::ScenesLock;
-Array<Scene*>   Level::Scenes;
-bool            Level::TickEnabled = true;
+Array<Scene*> Level::Scenes;
+bool Level::TickEnabled = true;
 
 Delegate<Actor*> Level::ActorSpawned;
 Delegate<Actor*> Level::ActorDeleted;
@@ -282,72 +282,64 @@ FORCE_INLINE void TickLevel()
 
 void LevelService::Update()
 {
+    PROFILE_CPU_NAMED("Level::Update");
+
+    struct TickGetter
     {
-        PROFILE_CPU_NAMED("Level::Update");
-
-        struct TickGetter
+        static SceneTicking::UpdateTickData& Get(Scene* scene)
         {
-            static SceneTicking::UpdateTickData& Get(Scene* scene)
-            {
-                return scene->Ticking.Update;
-            }
-        };
+            return scene->Ticking.Update;
+        }
+    };
 
-        TickLevel<TickGetter>();
-    }
+    TickLevel<TickGetter>();
 }
 
 void LevelService::LateUpdate()
 {
+    PROFILE_CPU_NAMED("Level::LateUpdate");
+
+    struct TickGetter
     {
-        PROFILE_CPU_NAMED("Level::LateUpdate");
-
-        struct TickGetter
+        static SceneTicking::LateUpdateTickData& Get(Scene* scene)
         {
-            static SceneTicking::LateUpdateTickData& Get(Scene* scene)
-            {
-                return scene->Ticking.LateUpdate;
-            }
-        };
+            return scene->Ticking.LateUpdate;
+        }
+    };
 
-        TickLevel<TickGetter>();
-    }
+    TickLevel<TickGetter>();
 
     FlushActions();
 }
 
 void LevelService::FixedUpdate()
 {
+    PROFILE_CPU_NAMED("Level::FixedUpdate");
+
+    struct TickGetter
     {
-        PROFILE_CPU_NAMED("Level::FixedUpdate");
-
-        struct TickGetter
+        static SceneTicking::FixedUpdateTickData& Get(Scene* scene)
         {
-            static SceneTicking::FixedUpdateTickData& Get(Scene* scene)
-            {
-                return scene->Ticking.FixedUpdate;
-            }
-        };
+            return scene->Ticking.FixedUpdate;
+        }
+    };
 
-        TickLevel<TickGetter>();
-    }
+    TickLevel<TickGetter>();
 }
 
 void LevelService::LateFixedUpdate()
 {
+    PROFILE_CPU_NAMED("Level::LateFixedUpdate");
+
+    struct TickGetter
     {
-        PROFILE_CPU_NAMED("Level::LateFixedUpdate");
-
-        struct TickGetter
+        static SceneTicking::LateFixedUpdateTickData& Get(Scene* scene)
         {
-            static SceneTicking::LateFixedUpdateTickData& Get(Scene* scene)
-            {
-                return scene->Ticking.LateFixedUpdate;
-            }
-        };
+            return scene->Ticking.LateFixedUpdate;
+        }
+    };
 
-        TickLevel<TickGetter>();
-    }
+    TickLevel<TickGetter>();
 }
 
 void LevelService::Dispose()
@@ -515,12 +507,12 @@ class SaveSceneAction : public SceneAction
 {
 public:
     Scene* TargetScene;
-    bool   PrettyJson;
+    bool PrettyJson;
 
     explicit SaveSceneAction(Scene* scene, const bool prettyJson = true)
     {
         TargetScene = scene;
-        PrettyJson  = prettyJson;
+        PrettyJson = prettyJson;
     }
 
     bool Do() const override
