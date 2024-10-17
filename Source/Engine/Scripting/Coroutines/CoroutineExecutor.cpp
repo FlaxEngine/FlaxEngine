@@ -235,9 +235,6 @@ bool CoroutineExecutor::Execution::TryMakeStep(
     }
 }
 
-// Cancel, Pause and Resume currently have O(n) based on the number of coroutines.
-// Subject to change if the number of coroutines becomes a bottleneck.
-
 bool CoroutineExecutor::HasFinished(const CoroutineHandle& handle) const
 {
     PROFILE_CPU();
@@ -264,13 +261,16 @@ bool CoroutineExecutor::IsPaused(const CoroutineHandle& handle) const
     return false;
 }
 
+// Cancel, Pause and Resume currently have O(n) based on the number of coroutines.
+// Subject to change, if the number of coroutines becomes a bottleneck.
+
 bool CoroutineExecutor::Cancel(CoroutineHandle& handle)
 {
     PROFILE_CPU();
 
     for (int32 i = 0; i < _executions.Count(); i++)
     {
-        if (_executions[i].GetID() != handle.ExecutionID)
+        if (_executions.Get()[i].GetID() != handle.ExecutionID)
             continue;
 
         _executions.RemoveAt(i);
@@ -288,11 +288,13 @@ bool CoroutineExecutor::Pause(CoroutineHandle& handle)
 
     for (int32 i = 0; i < _executions.Count(); i++)
     {
-        if (_executions[i].GetID() != handle.ExecutionID)
+        Execution& execution = _executions.Get()[i];
+
+        if (execution.GetID() != handle.ExecutionID)
             continue;
 
-        const bool wasPaused = _executions[i].IsPaused();
-        _executions[i].SetPaused(true);
+        const bool wasPaused = execution.IsPaused();
+        execution.SetPaused(true);
         return !wasPaused;
     }
 
@@ -305,11 +307,13 @@ bool CoroutineExecutor::Resume(CoroutineHandle& handle)
 
     for (int32 i = 0; i < _executions.Count(); i++)
     {
-        if (_executions[i].GetID() != handle.ExecutionID)
+        Execution& execution = _executions.Get()[i];
+
+        if (execution.GetID() != handle.ExecutionID)
             continue;
 
-        const bool wasPaused = _executions[i].IsPaused();
-        _executions[i].SetPaused(false);
+        const bool wasPaused = execution.IsPaused();
+        execution.SetPaused(false);
         return wasPaused;
     }
 
