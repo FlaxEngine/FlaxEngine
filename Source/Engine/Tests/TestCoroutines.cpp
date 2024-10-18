@@ -91,7 +91,28 @@ TEST_CASE("CoroutineTimeAccumulation")
 
 TEST_CASE("CoroutineWaitForSuspensionPoint")
 {
-    //TODO(mtszkarbowiak) Test CoroutineWaitForSuspensionPoint
+    int result = 0;
+    const ExecutorReference executor = NewCoroutineExecutor();
+
+    const HandleReference handle = executor->ExecuteOnce(
+        ScriptingObject::NewObject<CoroutineBuilder>()
+            ->ThenRunFunc([&result]{ ++result; })
+            ->ThenWaitForPoint(CoroutineSuspendPoint::LateUpdate)
+            ->ThenRunFunc([&result]{ ++result; })
+            ->ThenWaitForPoint(CoroutineSuspendPoint::Update)
+            ->ThenRunFunc([&result] { ++result; }),
+        CoroutineSuspendPoint::Update
+    );
+
+    CHECK(result == 1);
+    executor->Continue(CoroutineSuspendPoint::Update, 1, 0.0f); // 1st func exec (wait for LateUpdate)
+    CHECK(result == 1);
+    executor->Continue(CoroutineSuspendPoint::LateUpdate, 1, 0.0f); // 1st func exec (unlocked, 2nd func exec, wait for Update)
+    CHECK(result == 2);
+    executor->Continue(CoroutineSuspendPoint::Update, 1, 0.0f); // 2nd func exec (unlocked)
+    CHECK(result == 3);
+
+    CHECK(handle->HasFinished());
 }
 
 TEST_CASE("CoroutineWaitUntil")

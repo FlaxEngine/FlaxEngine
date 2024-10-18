@@ -21,6 +21,12 @@ ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitFrames(cons
     return this;
 }
 
+ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitForPoint(const CoroutineSuspendPoint point)
+{
+    _steps.Add(Step{ point });
+    return this;
+}
+
 ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitUntil(ScriptingObjectReference<CoroutinePredicate> predicate)
 {
     _steps.Add(Step{ MoveTemp(predicate) });

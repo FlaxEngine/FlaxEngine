@@ -78,6 +78,9 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
     API_FUNCTION()
     ScriptingObjectReference<CoroutineBuilder> ThenWaitFrames(int32 frames);
 
+    /// <summary> Suspends the coroutine until the given suspend point. </summary>
+    ScriptingObjectReference<CoroutineBuilder> ThenWaitForPoint(CoroutineSuspendPoint point);
+
     /// <summary> Suspends the coroutine until the predicate is true. </summary>
     API_FUNCTION()
     ScriptingObjectReference<CoroutineBuilder> ThenWaitUntil(ScriptingObjectReference<CoroutinePredicate> predicate);
