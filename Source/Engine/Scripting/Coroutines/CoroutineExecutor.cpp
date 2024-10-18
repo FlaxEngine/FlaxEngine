@@ -6,12 +6,12 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 
 ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteOnce(
-    ScriptingObjectReference<CoroutineBuilder> builder,
+    ScriptingObjectReference<CoroutineSequence> sequence,
     const CoroutineSuspendPoint accumulationPoint
 )
 {
     const ExecutionID id = _uuidGenerator.Generate();
-    Execution execution{ MoveTemp(builder), accumulationPoint, id };
+    Execution execution{ MoveTemp(sequence), accumulationPoint, id };
     execution.ContinueCoroutine(CoroutineSuspendPoint::Update, Delta{ 0.0f, 0 });
     _executions.Add(MoveTemp(execution));
 
@@ -22,7 +22,7 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteOnce(
 }
 
 ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeats(
-    ScriptingObjectReference<CoroutineBuilder> builder,
+    ScriptingObjectReference<CoroutineSequence> sequence,
     const CoroutineSuspendPoint accumulationPoint,
     const int32 repeats
 )
@@ -37,7 +37,7 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeats(
     }
 
     const ExecutionID id = _uuidGenerator.Generate();
-    Execution execution{ MoveTemp(builder), accumulationPoint, id, repeats };
+    Execution execution{ MoveTemp(sequence), accumulationPoint, id, repeats };
     execution.ContinueCoroutine(CoroutineSuspendPoint::Update, Delta{ 0.0f, 0 });
     _executions.Add(MoveTemp(execution));
 
@@ -48,12 +48,12 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeats(
 }
 
 ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteLooped(
-    ScriptingObjectReference<CoroutineBuilder> builder,
+    ScriptingObjectReference<CoroutineSequence> sequence,
     const CoroutineSuspendPoint accumulationPoint
 )
 {
     const ExecutionID id = _uuidGenerator.Generate();
-    Execution execution{ MoveTemp(builder), accumulationPoint, id, Execution::InfiniteRepeats };
+    Execution execution{ MoveTemp(sequence), accumulationPoint, id, Execution::InfiniteRepeats };
     execution.ContinueCoroutine(CoroutineSuspendPoint::Update, Delta{ 0.0f, 0 });
     _executions.Add(MoveTemp(execution));
 
@@ -91,15 +91,15 @@ int32 CoroutineExecutor::GetCoroutinesCount() const
     return _executions.Count();
 }
 
-using Step     = CoroutineBuilder::Step;
-using StepType = CoroutineBuilder::StepType;
+using Step = CoroutineSequence::Step;
+using StepType = CoroutineSequence::StepType;
 
 CoroutineExecutor::Execution::Execution(
-    BuilderReference&& builder,
+    SequenceReference&& sequence,
     const SuspendPoint accumulationPoint,
     const ExecutionID id,
     const int32 repeats
-)   : _builder{ MoveTemp(builder) }
+)   : _sequence{ MoveTemp(sequence) }
     , _accumulator{ 0.0f, 0 }
     , _id{ id }
     , _stepIndex{ 0 }
@@ -119,12 +119,12 @@ bool CoroutineExecutor::Execution::ContinueCoroutine(
 
     Delta deltaCopy = delta;
 
-    ASSERT(_builder->GetSteps().Count() > 0); // Coroutines must have at least one step.
+    ASSERT(_sequence->GetSteps().Count() > 0); // Coroutines must have at least one step.
     ASSERT(_repeats != 0); // Coroutines must have at least one repeat.
 
     while (_repeats > 0 || _repeats == InfiniteRepeats)
     {
-        const Array<Step>& steps = _builder->GetSteps();
+        const Array<Step>& steps = _sequence->GetSteps();
         while (_stepIndex < steps.Count())
         {
             const Step& step = steps[_stepIndex];
@@ -161,7 +161,7 @@ void CoroutineExecutor::Execution::SetPaused(const bool value)
 }
 
 bool CoroutineExecutor::Execution::TryMakeStep(
-    const CoroutineBuilder::Step& step, 
+    const CoroutineSequence::Step& step, 
     const CoroutineSuspendPoint point,
     const bool isAccumulating,
     Delta& delta,

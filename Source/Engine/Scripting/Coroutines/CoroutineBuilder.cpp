@@ -3,37 +3,37 @@
 #include "CoroutineBuilder.h"
 
 
-ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenRun(ScriptingObjectReference<CoroutineRunnable> runnable)
+ScriptingObjectReference<CoroutineSequence> CoroutineSequence::ThenRun(ScriptingObjectReference<CoroutineRunnable> runnable)
 {
     _steps.Add(Step{ MoveTemp(runnable) });
     return this;
 }
 
-ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitSeconds(const float seconds)
+ScriptingObjectReference<CoroutineSequence> CoroutineSequence::ThenWaitSeconds(const float seconds)
 {
     _steps.Add(Step{ seconds });
     return this;
 }
 
-ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitFrames(const int32 frames)
+ScriptingObjectReference<CoroutineSequence> CoroutineSequence::ThenWaitFrames(const int32 frames)
 {
     _steps.Add(Step{ frames });
     return this;
 }
 
-ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitForPoint(const CoroutineSuspendPoint point)
+ScriptingObjectReference<CoroutineSequence> CoroutineSequence::ThenWaitForPoint(const CoroutineSuspendPoint point)
 {
     _steps.Add(Step{ point });
     return this;
 }
 
-ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitUntil(ScriptingObjectReference<CoroutinePredicate> predicate)
+ScriptingObjectReference<CoroutineSequence> CoroutineSequence::ThenWaitUntil(ScriptingObjectReference<CoroutinePredicate> predicate)
 {
     _steps.Add(Step{ MoveTemp(predicate) });
     return this;
 }
 
-ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenRunFunc(const Function<void()>& runnable)
+ScriptingObjectReference<CoroutineSequence> CoroutineSequence::ThenRunFunc(const Function<void()>& runnable)
 {
     ScriptingObjectReference<CoroutineRunnable> runnableReference = NewObject<CoroutineRunnable>();
     runnableReference->OnRun.Bind(runnable);
@@ -41,7 +41,7 @@ ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenRunFunc(const F
     return this;
 }
 
-ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitUntilFunc(const Function<void(bool&)>& predicate)
+ScriptingObjectReference<CoroutineSequence> CoroutineSequence::ThenWaitUntilFunc(const Function<void(bool&)>& predicate)
 {
     ScriptingObjectReference<CoroutinePredicate> predicateReference = NewObject<CoroutinePredicate>();
     predicateReference->OnCheck.Bind(predicate);
@@ -51,38 +51,38 @@ ScriptingObjectReference<CoroutineBuilder> CoroutineBuilder::ThenWaitUntilFunc(c
 
 // Step is a type union initialized using specific constructor argument type. Be careful not to trigger implicit type conversion.
 
-CoroutineBuilder::Step::Step(RunnableReference&& runnable)
+CoroutineSequence::Step::Step(RunnableReference&& runnable)
     : _runnable{ MoveTemp(runnable) }
     , _type{ StepType::Run }
 {
 }
 
-CoroutineBuilder::Step::Step(const CoroutineSuspendPoint suspensionPoint)
+CoroutineSequence::Step::Step(const CoroutineSuspendPoint suspensionPoint)
     : _suspensionPoint{ suspensionPoint }
     , _type{ StepType::WaitSuspensionPoint }
 {
 }
 
-CoroutineBuilder::Step::Step(const int32 framesDelay)
+CoroutineSequence::Step::Step(const int32 framesDelay)
     : _framesDelay{ framesDelay }
     , _type{ StepType::WaitFrames }
 {
 }
 
-CoroutineBuilder::Step::Step(const float secondsDelay)
+CoroutineSequence::Step::Step(const float secondsDelay)
     : _secondsDelay{ secondsDelay }
     , _type{ StepType::WaitSeconds }
 {
 }
 
-CoroutineBuilder::Step::Step(PredicateReference&& predicate)
+CoroutineSequence::Step::Step(PredicateReference&& predicate)
     : _predicate{ MoveTemp(predicate) }
     , _type{ StepType::WaitUntil }
 {
 }
 
 
-CoroutineBuilder::Step::Step(const Step& other)
+CoroutineSequence::Step::Step(const Step& other)
     : _type{ StepType::None } // Temp value
 {
     ASSERT(other._type != StepType::None);
@@ -90,7 +90,7 @@ CoroutineBuilder::Step::Step(const Step& other)
     EmplaceCopy(other);
 }
 
-CoroutineBuilder::Step::Step(Step&& other) noexcept
+CoroutineSequence::Step::Step(Step&& other) noexcept
     : _type{ StepType::None } // Temp value
 {
     ASSERT(other._type != StepType::None);
@@ -98,7 +98,7 @@ CoroutineBuilder::Step::Step(Step&& other) noexcept
     EmplaceMove(MoveTemp(other));
 }
 
-void CoroutineBuilder::Step::Clear()
+void CoroutineSequence::Step::Clear()
 {
     switch (_type)
     {
@@ -121,7 +121,7 @@ void CoroutineBuilder::Step::Clear()
     _type = StepType::None;
 }
 
-void CoroutineBuilder::Step::EmplaceCopy(const Step& other)
+void CoroutineSequence::Step::EmplaceCopy(const Step& other)
 {
     ASSERT(_type == StepType::None);
     _type = other._type;
@@ -152,7 +152,7 @@ void CoroutineBuilder::Step::EmplaceCopy(const Step& other)
     }
 }
 
-void CoroutineBuilder::Step::EmplaceMove(Step&& other) noexcept
+void CoroutineSequence::Step::EmplaceMove(Step&& other) noexcept
 {
     ASSERT(_type == StepType::None);
     _type = other._type;
@@ -183,14 +183,14 @@ void CoroutineBuilder::Step::EmplaceMove(Step&& other) noexcept
     }
 }
 
-CoroutineBuilder::Step::~Step()
+CoroutineSequence::Step::~Step()
 {
     Clear();
 
     ASSERT(_type == StepType::None);
 }
 
-auto CoroutineBuilder::Step::operator=(const Step& other) -> Step&
+auto CoroutineSequence::Step::operator=(const Step& other) -> Step&
 {
     if (this == &other)
         return *this;
@@ -202,7 +202,7 @@ auto CoroutineBuilder::Step::operator=(const Step& other) -> Step&
     return *this;
 }
 
-auto CoroutineBuilder::Step::operator=(Step&& other) noexcept -> Step&
+auto CoroutineSequence::Step::operator=(Step&& other) noexcept -> Step&
 {
     if (this == &other)
         return *this;
@@ -215,36 +215,36 @@ auto CoroutineBuilder::Step::operator=(Step&& other) noexcept -> Step&
 }
 
 
-CoroutineBuilder::StepType CoroutineBuilder::Step::GetType() const
+CoroutineSequence::StepType CoroutineSequence::Step::GetType() const
 {
     return _type;
 }
 
-auto CoroutineBuilder::Step::GetRunnable() const -> const RunnableReference&
+auto CoroutineSequence::Step::GetRunnable() const -> const RunnableReference&
 {
     ASSERT(_type == StepType::Run);
     return _runnable;
 }
 
-auto CoroutineBuilder::Step::GetPredicate() const -> const PredicateReference&
+auto CoroutineSequence::Step::GetPredicate() const -> const PredicateReference&
 {
     ASSERT(_type == StepType::WaitUntil);
     return _predicate;
 }
 
-auto CoroutineBuilder::Step::GetFramesDelay() const -> int32
+auto CoroutineSequence::Step::GetFramesDelay() const -> int32
 {
     ASSERT(_type == StepType::WaitFrames);
     return _framesDelay;
 }
 
-auto CoroutineBuilder::Step::GetSecondsDelay() const -> float
+auto CoroutineSequence::Step::GetSecondsDelay() const -> float
 {
     ASSERT(_type == StepType::WaitSeconds);
     return _secondsDelay;
 }
 
-auto CoroutineBuilder::Step::GetSuspensionPoint() const -> CoroutineSuspendPoint
+auto CoroutineSequence::Step::GetSuspensionPoint() const -> CoroutineSuspendPoint
 {
     ASSERT(_type == StepType::WaitSuspensionPoint);
     return _suspensionPoint;

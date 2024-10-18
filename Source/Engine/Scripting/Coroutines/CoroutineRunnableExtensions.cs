@@ -10,10 +10,10 @@ namespace FlaxEngine
     public static class CoroutineExtensions
     {
         /// <summary>
-        /// Invokes <seealso cref="CoroutineBuilder.ThenRun(CoroutineRunnable)"/> with object created using the provided action.
+        /// Invokes <seealso cref="CoroutineSequence.ThenRun(CoroutineRunnable)"/> with object created using the provided action.
         /// </summary>
-        public static CoroutineBuilder ThenRun(
-            this CoroutineBuilder builder,
+        public static CoroutineSequence ThenRun(
+            this CoroutineSequence builder,
             Action run)
         {
             CoroutineRunnable runnable = new();
@@ -25,10 +25,10 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Invokes <seealso cref="CoroutineBuilder.ThenWaitUntil(CoroutinePredicate)"/> with object created using the provided condition.
+        /// Invokes <seealso cref="CoroutineSequence.ThenWaitUntil(CoroutinePredicate)"/> with object created using the provided condition.
         /// </summary>
-        public static CoroutineBuilder ThenWaitUntil(
-            this CoroutineBuilder builder,
+        public static CoroutineSequence ThenWaitUntil(
+            this CoroutineSequence builder,
             Func<bool> condition)
         {
             CoroutinePredicate predicate = new();

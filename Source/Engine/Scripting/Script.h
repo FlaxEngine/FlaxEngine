@@ -4,7 +4,7 @@
 
 #include "ScriptingObject.h"
 #include "ScriptingObjectReference.h"
-#include "Coroutines/CoroutineBuilder.h"
+#include "Coroutines/CoroutineSequence.h"
 #include "Coroutines/CoroutineHandle.h"
 #include "Engine/Level/SceneObject.h"
 
@@ -138,36 +138,36 @@ public:
     /// <summary>
     /// Executes the given coroutine once.
     /// </summary>
-    /// <param name="builder"> The coroutine builder. Detailed explanation available in the type. </param>
+    /// <param name="sequence"> The coroutine builder. Detailed explanation available in the type. </param>
     /// <returns> If the execution has started, corresponding handle is returned. Otherwise invalid handle. </returns>
     /// <remarks>
     /// This method uses shared per-scene executor. The order of execution is not guaranteed.
     /// </remarks>
     API_FUNCTION()
-    ScriptingObjectReference<CoroutineHandle> ExecuteCoroutineOnce(ScriptingObjectReference<CoroutineBuilder> builder) const;
+    ScriptingObjectReference<CoroutineHandle> ExecuteCoroutineOnce(ScriptingObjectReference<CoroutineSequence> sequence) const;
 
     /// <summary>
     /// Executes the given coroutine once.
     /// </summary>
-    /// <param name="builder"> The coroutine builder. Detailed explanation available in the type. </param>
+    /// <param name="sequence"> The coroutine builder. Detailed explanation available in the type. </param>
     /// <param name="repeats"> How many times the coroutine is to be repeated. Check executor for more info.</param>
     /// <returns> If the execution has started, corresponding handle is returned. Otherwise invalid handle. </returns>
     /// <remarks>
     /// This method uses shared per-scene executor. The order of execution is not guaranteed.
     /// </remarks>
     API_FUNCTION()
-    ScriptingObjectReference<CoroutineHandle> ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineBuilder> builder, int32 repeats) const;
+    ScriptingObjectReference<CoroutineHandle> ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineSequence> sequence, int32 repeats) const;
 
     /// <summary>
     /// Executes the given coroutine once.
     /// </summary>
-    /// <param name="builder"> The coroutine builder. Detailed explanation available in the type. </param>
+    /// <param name="sequence"> The coroutine builder. Detailed explanation available in the type. </param>
     /// <returns> If the execution has started, corresponding handle is returned. Otherwise invalid handle. </returns>
     /// <remarks>
     /// This method uses shared per-scene executor. The order of execution is not guaranteed.
     /// </remarks>
     API_FUNCTION()
-    ScriptingObjectReference<CoroutineHandle> ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineBuilder> builder) const;
+    ScriptingObjectReference<CoroutineHandle> ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineSequence> sequence) const;
     
 
 private:

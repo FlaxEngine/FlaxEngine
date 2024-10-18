@@ -18,7 +18,7 @@ TEST_CASE("CoroutinesBuilder")
 {
     const ExecutorReference executor = NewCoroutineExecutor();
     const HandleReference handle = executor->ExecuteOnce(
-        ScriptingObject::NewObject<CoroutineBuilder>()
+        ScriptingObject::NewObject<CoroutineSequence>()
             ->ThenWaitFrames(1)
             ->ThenWaitSeconds(1.0f)
             ->ThenRunFunc([]() -> void {}),
@@ -34,7 +34,7 @@ TEST_CASE("CoroutinesSwitching")
     CHECK(executor->GetCoroutinesCount() == 0);
 
     const HandleReference handle1 = executor->ExecuteOnce(
-        ScriptingObject::NewObject<CoroutineBuilder>()
+        ScriptingObject::NewObject<CoroutineSequence>()
             ->ThenWaitFrames(1)
             ->ThenWaitSeconds(1.0f)
             ->ThenRunFunc([]() -> void {}),
@@ -44,7 +44,7 @@ TEST_CASE("CoroutinesSwitching")
     CHECK(executor->GetCoroutinesCount() == 1);
 
     const HandleReference handle2 = executor->ExecuteOnce(
-        ScriptingObject::NewObject<CoroutineBuilder>()
+        ScriptingObject::NewObject<CoroutineSequence>()
             ->ThenWaitFrames(1)
             ->ThenWaitSeconds(1.0f)
             ->ThenRunFunc([]() -> void {}),
@@ -60,7 +60,7 @@ TEST_CASE("CoroutineTimeAccumulation")
     const ExecutorReference executor = NewCoroutineExecutor();
 
     const HandleReference handle = executor->ExecuteOnce(
-        ScriptingObject::NewObject<CoroutineBuilder>()
+        ScriptingObject::NewObject<CoroutineSequence>()
             ->ThenRunFunc([&result]{ ++result; })
             ->ThenWaitSeconds(1.0f)
             ->ThenRunFunc([&result]{ ++result; })
@@ -95,7 +95,7 @@ TEST_CASE("CoroutineWaitForSuspensionPoint")
     const ExecutorReference executor = NewCoroutineExecutor();
 
     const HandleReference handle = executor->ExecuteOnce(
-        ScriptingObject::NewObject<CoroutineBuilder>()
+        ScriptingObject::NewObject<CoroutineSequence>()
             ->ThenRunFunc([&result]{ ++result; })
             ->ThenWaitForPoint(CoroutineSuspendPoint::LateUpdate)
             ->ThenRunFunc([&result]{ ++result; })
@@ -122,7 +122,7 @@ TEST_CASE("CoroutineWaitUntil")
 
     const ExecutorReference executor = NewCoroutineExecutor();
     const HandleReference handle = executor->ExecuteOnce(
-        ScriptingObject::NewObject<CoroutineBuilder>()
+        ScriptingObject::NewObject<CoroutineSequence>()
             ->ThenRunFunc([&result]{ ++result; })
             ->ThenWaitUntilFunc([&signal](bool& canContinue){ canContinue = signal == 1; })
             ->ThenRunFunc([&result]{ ++result; }),
@@ -153,7 +153,7 @@ TEST_CASE("CoroutineExecuteRepeating")
     constexpr int32 repeats = 4;
     const ExecutorReference executor = NewCoroutineExecutor();
     const HandleReference handle = executor->ExecuteRepeats(
-        ScriptingObject::NewObject<CoroutineBuilder>()
+        ScriptingObject::NewObject<CoroutineSequence>()
             ->ThenRunFunc([&result] { ++result; })
             ->ThenWaitFrames(1),
         CoroutineSuspendPoint::Update,
@@ -179,7 +179,7 @@ TEST_CASE("CoroutineExecuteLoop")
 
     const ExecutorReference executor = NewCoroutineExecutor();
     const HandleReference handle = executor->ExecuteLooped(
-        ScriptingObject::NewObject<CoroutineBuilder>()
+        ScriptingObject::NewObject<CoroutineSequence>()
             ->ThenRunFunc([&result]{  ++result; })
             ->ThenWaitFrames(1),
         CoroutineSuspendPoint::Update
@@ -207,7 +207,7 @@ TEST_CASE("CoroutineHandlePauseResume")
     const ExecutorReference executor = NewCoroutineExecutor();
 
     HandleReference handle = executor->ExecuteOnce(
-        ScriptingObject::NewObject<CoroutineBuilder>()
+        ScriptingObject::NewObject<CoroutineSequence>()
             ->ThenRunFunc([&result]() -> void { ++result;  })
             ->ThenWaitFrames(1) // r = 1
             ->ThenRunFunc([&result]() -> void { ++result; })

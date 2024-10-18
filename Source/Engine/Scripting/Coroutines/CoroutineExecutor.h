@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "CoroutineBuilder.h"
+#include "CoroutineSequence.h"
 #include "CoroutineHandle.h"
 
 /// <summary>
@@ -17,7 +17,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     /// </summary>
     API_FUNCTION()
     ScriptingObjectReference<CoroutineHandle> ExecuteOnce(
-        ScriptingObjectReference<CoroutineBuilder> builder,
+        ScriptingObjectReference<CoroutineSequence> sequence,
         CoroutineSuspendPoint accumulationPoint
     );
 
@@ -26,7 +26,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     /// </summary>
     API_FUNCTION()
     ScriptingObjectReference<CoroutineHandle> ExecuteRepeats(
-        ScriptingObjectReference<CoroutineBuilder> builder,
+        ScriptingObjectReference<CoroutineSequence> sequence,
         CoroutineSuspendPoint accumulationPoint,
         int32 repeats
     );
@@ -36,7 +36,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     /// </summary>
     API_FUNCTION()
     ScriptingObjectReference<CoroutineHandle> ExecuteLooped(
-        ScriptingObjectReference<CoroutineBuilder> builder,
+        ScriptingObjectReference<CoroutineSequence> sequence,
         CoroutineSuspendPoint accumulationPoint
     );
 
@@ -62,7 +62,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     using ExecutionID = uint64;
 
 private:
-    using BuilderReference = ScriptingObjectReference<CoroutineBuilder>;
+    using SequenceReference = ScriptingObjectReference<CoroutineSequence>;
     using SuspendPoint = CoroutineSuspendPoint;
 
     struct Delta
@@ -73,7 +73,7 @@ private:
 
     class Execution final
     {
-        BuilderReference _builder;
+        SequenceReference _sequence;
         Delta _accumulator;
         ExecutionID _id;
         int32 _stepIndex;
@@ -87,7 +87,7 @@ private:
         Execution() = delete;
 
         explicit Execution(
-            BuilderReference&& builder,
+            SequenceReference&& sequence,
             CoroutineSuspendPoint accumulationPoint,
             ExecutionID id,
             int32 repeats = 1
@@ -108,7 +108,7 @@ private:
 
     private:
         FORCE_INLINE static bool TryMakeStep(
-            const CoroutineBuilder::Step& step, 
+            const CoroutineSequence::Step& step, 
             CoroutineSuspendPoint point,
             bool isAccumulating,
             Delta& delta,

@@ -52,13 +52,13 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutinePredicate final : public Scripti
 /// Modifying the builder during the execution may cause undefined behavior.
 /// One builder may be shared between executions, reducing execution overhead.
 /// </remarks>
-API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public ScriptingObject
+API_CLASS(Sealed) class FLAXENGINE_API CoroutineSequence final : public ScriptingObject
 {
-    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(CoroutineBuilder, ScriptingObject);
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(CoroutineSequence, ScriptingObject);
 
     /// <summary> Executes the code. </summary>
     API_FUNCTION()
-    ScriptingObjectReference<CoroutineBuilder> ThenRun(ScriptingObjectReference<CoroutineRunnable> runnable);
+    ScriptingObjectReference<CoroutineSequence> ThenRun(ScriptingObjectReference<CoroutineRunnable> runnable);
 
     /// <summary>
     /// Suspends the coroutine for the given number of seconds.
@@ -68,7 +68,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
     /// 0 is a valid value where the coroutine will be resumed on the closest time accumulation point.
     /// </param>
     API_FUNCTION()
-    ScriptingObjectReference<CoroutineBuilder> ThenWaitSeconds(float seconds);
+    ScriptingObjectReference<CoroutineSequence> ThenWaitSeconds(float seconds);
 
     /// <summary> Suspends the coroutine for the given number of frames. </summary>
     /// <param name="frames">
@@ -76,21 +76,21 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineBuilder final : public Scripting
     /// 0 is a valid value where the coroutine will be resumed on the closest frame accumulation point.
     /// </param>
     API_FUNCTION()
-    ScriptingObjectReference<CoroutineBuilder> ThenWaitFrames(int32 frames);
+    ScriptingObjectReference<CoroutineSequence> ThenWaitFrames(int32 frames);
 
     /// <summary> Suspends the coroutine until the given suspend point. </summary>
-    ScriptingObjectReference<CoroutineBuilder> ThenWaitForPoint(CoroutineSuspendPoint point);
+    ScriptingObjectReference<CoroutineSequence> ThenWaitForPoint(CoroutineSuspendPoint point);
 
     /// <summary> Suspends the coroutine until the predicate is true. </summary>
     API_FUNCTION()
-    ScriptingObjectReference<CoroutineBuilder> ThenWaitUntil(ScriptingObjectReference<CoroutinePredicate> predicate);
+    ScriptingObjectReference<CoroutineSequence> ThenWaitUntil(ScriptingObjectReference<CoroutinePredicate> predicate);
 
 
     /// <summary> QOL wrapper for running runnable action in native scripts. </summary>
-    ScriptingObjectReference<CoroutineBuilder> ThenRunFunc(const Function<void()>& runnable);
+    ScriptingObjectReference<CoroutineSequence> ThenRunFunc(const Function<void()>& runnable);
 
     /// <summary> QOL wrapper for waiting until predicate in native scripts. </summary>
-    ScriptingObjectReference<CoroutineBuilder> ThenWaitUntilFunc(const Function<void(bool&)>& predicate);
+    ScriptingObjectReference<CoroutineSequence> ThenWaitUntilFunc(const Function<void(bool&)>& predicate);
 
 
     using RunnableReference  = ScriptingObjectReference<CoroutineRunnable>;

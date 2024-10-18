@@ -203,7 +203,7 @@ namespace
     }
 }
 
-auto Script::ExecuteCoroutineOnce(ScriptingObjectReference<CoroutineBuilder> builder) const -> ScriptingObjectReference<CoroutineHandle>
+auto Script::ExecuteCoroutineOnce(ScriptingObjectReference<CoroutineSequence> sequence) const -> ScriptingObjectReference<CoroutineHandle>
 {
     CoroutineExecutor* executor = TryGetScriptCoroutineExecutor(this);
     if (executor == nullptr)
@@ -211,10 +211,10 @@ auto Script::ExecuteCoroutineOnce(ScriptingObjectReference<CoroutineBuilder> bui
         return nullptr;
     }
 
-    return executor->ExecuteOnce(MoveTemp(builder), DefaultCoroutineSuspendPoint);
+    return executor->ExecuteOnce(MoveTemp(sequence), DefaultCoroutineSuspendPoint);
 }
 
-auto Script::ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineBuilder> builder, const int32 repeats) const -> ScriptingObjectReference<CoroutineHandle>
+auto Script::ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineSequence> sequence, const int32 repeats) const -> ScriptingObjectReference<CoroutineHandle>
 {
     CoroutineExecutor* executor = TryGetScriptCoroutineExecutor(this);
     if (executor == nullptr)
@@ -222,10 +222,10 @@ auto Script::ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineBuilder> 
         return nullptr;
     }
 
-    return executor->ExecuteRepeats(MoveTemp(builder), DefaultCoroutineSuspendPoint, repeats);
+    return executor->ExecuteRepeats(MoveTemp(sequence), DefaultCoroutineSuspendPoint, repeats);
 }
 
-auto Script::ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineBuilder> builder) const -> ScriptingObjectReference<CoroutineHandle>
+auto Script::ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineSequence> sequence) const -> ScriptingObjectReference<CoroutineHandle>
 {
     CoroutineExecutor* executor = TryGetScriptCoroutineExecutor(this);
     if (executor == nullptr)
@@ -233,7 +233,7 @@ auto Script::ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineBuilder> b
         return nullptr;
     }
 
-    return executor->ExecuteLooped(MoveTemp(builder), DefaultCoroutineSuspendPoint);
+    return executor->ExecuteLooped(MoveTemp(sequence), DefaultCoroutineSuspendPoint);
 }
 
 
