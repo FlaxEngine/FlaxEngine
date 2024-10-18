@@ -6,6 +6,8 @@
 #include "Engine/Content/AssetInfo.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Engine/Time.h"
 #include "Engine/Physics/Colliders/MeshCollider.h"
 #include "Engine/Level/Actors/StaticModel.h"
 #include "Engine/Level/ActorsCache.h"
@@ -354,6 +356,13 @@ void Scene::Initialize()
 
 void Scene::BeginPlay(SceneBeginData* data)
 {
+    // Prepare coroutines executor before begin play event
+    SceneCoroutinesExecutor = New<CoroutineExecutor>();
+    Ticking.Update.AddTick<Scene, &Scene::ContinueCoroutinesUpdate>(this);
+    Ticking.LateUpdate.AddTick<Scene, &Scene::ContinueCoroutinesLateUpdate>(this);
+    Ticking.FixedUpdate.AddTick<Scene, &Scene::ContinueCoroutinesFixedUpdate>(this);
+    Ticking.LateFixedUpdate.AddTick<Scene, &Scene::ContinueCoroutinesLateFixedUpdate>(this);
+    
     // Base
     Actor::BeginPlay(data);
 
@@ -383,6 +392,16 @@ void Scene::EndPlay()
 
     // Base
     Actor::EndPlay();
+
+    // Cleanup coroutines executor after end play event
+    ASSERT(this->SceneCoroutinesExecutor != nullptr);
+    {
+        const int32 runningCoroutines = this->SceneCoroutinesExecutor->GetCoroutinesCount();
+        if (runningCoroutines > 0) {
+            LOG(Warning, "There are still {} running coroutines in the scene during EndPlay.", runningCoroutines);
+        }
+    }
+    this->SceneCoroutinesExecutor = nullptr;
 }
 
 void Scene::OnTransformChanged()
@@ -392,4 +411,29 @@ void Scene::OnTransformChanged()
 
     _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
+}
+
+
+void Scene::ContinueCoroutinesUpdate()
+{
+    const float deltaTime = Time::GetDeltaTime();
+    SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::Update, 1, deltaTime);
+}
+
+void Scene::ContinueCoroutinesFixedUpdate()
+{
+    const float deltaTime = Time::GetDeltaTime();
+    SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::FixedUpdate, 0, 0.0f);
+}
+
+void Scene::ContinueCoroutinesLateUpdate()
+{
+    const float deltaTime = Time::GetDeltaTime();
+    SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::LateUpdate, 0, 0.0f);
+}
+
+void Scene::ContinueCoroutinesLateFixedUpdate()
+{
+    const float deltaTime = Time::GetDeltaTime();
+    SceneCoroutinesExecutor->Continue(CoroutineSuspendPoint::LateFixedUpdate, 0, 0.0f);
 }
