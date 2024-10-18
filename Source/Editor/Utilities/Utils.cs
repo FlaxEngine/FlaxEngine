@@ -1432,6 +1432,7 @@ namespace FlaxEditor.Utilities
             inputActions.Add(options => options.SelectAll, Editor.Instance.SceneEditing.SelectAllScenes);
             inputActions.Add(options => options.DeselectAll, Editor.Instance.SceneEditing.DeselectAllScenes);
             inputActions.Add(options => options.Delete, Editor.Instance.SceneEditing.Delete);
+            inputActions.Add(options => options.GroupSelectedActors, Editor.Instance.SceneEditing.CreateParentForSelectedActors);
             inputActions.Add(options => options.Search, () => Editor.Instance.Windows.SceneWin.Search());
             inputActions.Add(options => options.MoveActorToViewport, Editor.Instance.UI.MoveActorToViewport);
             inputActions.Add(options => options.AlignActorWithViewport, Editor.Instance.UI.AlignActorWithViewport);
