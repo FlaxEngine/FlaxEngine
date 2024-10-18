@@ -3,9 +3,9 @@
 #pragma once
 
 #include "CoroutineSuspendPoint.h"
+#include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Types/Variant.h"
-#include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 

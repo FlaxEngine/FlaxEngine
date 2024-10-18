@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "CoroutineSequence.h"
 #include "CoroutineHandle.h"
+#include "CoroutineSequence.h"
 
 /// <summary>
 /// Utility class that can track and execute coroutines' stages using incoming events.

@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#include "CoroutineBuilder.h"
+#include "CoroutineSequence.h"
 
 
 ScriptingObjectReference<CoroutineSequence> CoroutineSequence::ThenRun(ScriptingObjectReference<CoroutineRunnable> runnable)

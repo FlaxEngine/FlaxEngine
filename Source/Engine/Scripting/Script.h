@@ -4,8 +4,8 @@
 
 #include "ScriptingObject.h"
 #include "ScriptingObjectReference.h"
-#include "Coroutines/CoroutineSequence.h"
 #include "Coroutines/CoroutineHandle.h"
+#include "Coroutines/CoroutineSequence.h"
 #include "Engine/Level/SceneObject.h"
 
 /// <summary>
