@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include "Engine/Core/Compiler.h"
 #include "Engine/Core/Types/BaseTypes.h"
 
