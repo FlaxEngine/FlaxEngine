@@ -242,6 +242,10 @@ DebugCommandsService DebugCommandsServiceInstance;
 
 void DebugCommands::Execute(StringView command)
 {
+    // TODO: fix missing string handle on 1st command execution (command gets invalid after InitCommands due to dotnet GC or dotnet interop handles flush)
+    String commandCopy = command;
+    command = commandCopy;
+
     // Preprocess command text
     while (command.HasChars() && StringUtils::IsWhitespace(command[0]))
         command = StringView(command.Get() + 1, command.Length() - 1);
@@ -281,6 +285,9 @@ void DebugCommands::Search(StringView searchText, Array<StringView>& matches, bo
 {
     if (searchText.IsEmpty())
         return;
+    // TODO: fix missing string handle on 1st command execution (command gets invalid after InitCommands due to dotnet GC or dotnet interop handles flush)
+    String searchTextCopy = searchText;
+    searchText = searchTextCopy;
 
     ScopeLock lock(Locker);
     if (!Inited)
