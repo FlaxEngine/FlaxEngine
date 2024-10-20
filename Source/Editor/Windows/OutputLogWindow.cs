@@ -125,6 +125,78 @@ namespace FlaxEditor.Windows
             }
         }
 
+        /// <summary>
+        /// Command line input textbox control which can execute debug commands.
+        /// </summary>
+        private class CommandLineBox : TextBox
+        {
+            public CommandLineBox(float x, float y, float width)
+            : base(false, x, y, width)
+            {
+                WatermarkText = ">";
+            }
+
+            /// <inheritdoc />
+            public override bool OnKeyDown(KeyboardKeys key)
+            {
+                switch (key)
+                {
+                case KeyboardKeys.Return:
+                {
+                    // Run command
+                    DebugCommands.Execute(Text);
+                    SetText(string.Empty);
+                    return true;
+                }
+                case KeyboardKeys.Tab:
+                {
+                    // Auto-complete
+                    DebugCommands.Search(Text, out var matches, true);
+                    if (matches.Length == 0)
+                    {
+                        // Nothing found
+                    }
+                    else if (matches.Length == 1)
+                    {
+                        // Exact match
+                        SetText(matches[0]);
+                        SetSelection(Text.Length);
+                    }
+                    else
+                    {
+                        // Find the most common part
+                        Array.Sort(matches);
+                        int minLength = Text.Length;
+                        int maxLength = matches[0].Length;
+                        int sharedLength = minLength + 1;
+                        bool allMatch = true;
+                        for (; allMatch && sharedLength < maxLength; sharedLength++)
+                        {
+                            var shared = matches[0].Substring(0, sharedLength);
+                            for (int i = 1; i < matches.Length; i++)
+                            {
+                                if (!matches[i].StartsWith(shared, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    sharedLength -= 2;
+                                    allMatch = false;
+                                    break;
+                                }
+                            }
+                        }
+                        if (sharedLength > minLength)
+                        {
+                            // Use the largest shared part of all matches
+                            SetText(matches[0].Substring(0, sharedLength));
+                            SetSelection(sharedLength);
+                        }
+                    }
+                    return true;
+                }
+                }
+                return base.OnKeyDown(key);
+            }
+        }
+
         private InterfaceOptions.TimestampsFormats _timestampsFormats;
         private bool _showLogType;
 
@@ -147,6 +219,7 @@ namespace FlaxEditor.Windows
         private HScrollBar _hScroll;
         private VScrollBar _vScroll;
         private OutputTextBox _output;
+        private CommandLineBox _commandLineBox;
         private ContextMenu _contextMenu;
 
         /// <summary>
@@ -173,13 +246,13 @@ namespace FlaxEditor.Windows
                 Parent = this,
             };
             _searchBox.TextChanged += Refresh;
-            _hScroll = new HScrollBar(this, Height - _scrollSize, Width - _scrollSize, _scrollSize)
+            _hScroll = new HScrollBar(this, Height - _scrollSize - TextBox.DefaultHeight - 2, Width - _scrollSize, _scrollSize)
             {
                 ThumbThickness = 10,
                 Maximum = 0,
             };
             _hScroll.ValueChanged += OnHScrollValueChanged;
-            _vScroll = new VScrollBar(this, Width - _scrollSize, Height - _viewDropdown.Height - 2, _scrollSize)
+            _vScroll = new VScrollBar(this, Width - _scrollSize, Height - _viewDropdown.Height - 4 - TextBox.DefaultHeight, _scrollSize)
             {
                 ThumbThickness = 10,
                 Maximum = 0,
@@ -197,6 +270,10 @@ namespace FlaxEditor.Windows
             };
             _output.TargetViewOffsetChanged += OnOutputTargetViewOffsetChanged;
             _output.TextChanged += OnOutputTextChanged;
+            _commandLineBox = new CommandLineBox(2, Height - 2 - TextBox.DefaultHeight, Width - 4)
+            {
+                Parent = this,
+            };
 
             // Setup context menu
             _contextMenu = new ContextMenu();
@@ -422,6 +499,8 @@ namespace FlaxEditor.Windows
             {
                 _searchBox.Width = Width - _viewDropdown.Right - 4;
                 _output.Size = new Float2(_vScroll.X - 2, _hScroll.Y - 4 - _viewDropdown.Bottom);
+                _commandLineBox.Width = Width - 4;
+                _commandLineBox.Y = Height - 2 - _commandLineBox.Height;
             }
         }
 
@@ -664,6 +743,7 @@ namespace FlaxEditor.Windows
             _hScroll = null;
             _vScroll = null;
             _output = null;
+            _commandLineBox = null;
             _contextMenu = null;
 
             base.OnDestroy();

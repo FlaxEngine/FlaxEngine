@@ -266,6 +266,37 @@ void DebugCommands::Execute(StringView command)
     LOG(Error, "Unknown command '{}'", name);
 }
 
+void DebugCommands::Search(StringView searchText, Array<StringView>& matches, bool startsWith)
+{
+    if (searchText.IsEmpty())
+        return;
+
+    ScopeLock lock(Locker);
+    if (!Inited)
+        InitCommands();
+
+    if (startsWith)
+    {
+        for (auto& command : Commands)
+        {
+            if (command.Name.StartsWith(searchText, StringSearchCase::IgnoreCase))
+            {
+                matches.Add(command.Name);
+            }
+        }
+    }
+    else
+    {
+        for (auto& command : Commands)
+        {
+            if (command.Name.Contains(searchText.Get(), StringSearchCase::IgnoreCase))
+            {
+                matches.Add(command.Name);
+            }
+        }
+    }
+}
+
 bool DebugCommands::Iterate(const StringView& searchText, int32& index)
 {
     ScopeLock lock(Locker);
@@ -286,7 +317,7 @@ bool DebugCommands::Iterate(const StringView& searchText, int32& index)
     return false;
 }
 
-String DebugCommands::GetCommandName(int32 index)
+StringView DebugCommands::GetCommandName(int32 index)
 {
     ScopeLock lock(Locker);
     CHECK_RETURN(Commands.IsValidIndex(index), String::Empty);
