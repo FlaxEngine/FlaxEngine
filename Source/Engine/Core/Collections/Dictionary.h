@@ -498,7 +498,9 @@ public:
         FindPosition(key, pos);
         if (pos.ObjectIndex == -1)
             return nullptr;
-        return static_cast<ValueType*>(&_allocation.Get()[pos.ObjectIndex].Value);
+
+        //TODO Get rid of const_cast (Do we assume const means pure or read-only?)
+        return const_cast<ValueType*>(&_allocation.Get()[pos.ObjectIndex].Value);
     }
 
 public:
