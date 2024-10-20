@@ -53,6 +53,11 @@ struct CommandData
         }
 
         // Parse arguments
+        if (args == StringView(TEXT("?"), 1))
+        {
+            LOG(Warning, "TODO: debug commands help/docs printing"); // TODO: debug commands help/docs printing (use CodeDocsModule that parses XML docs)
+            return;
+        }
         Array<Variant> params;
         params.Resize(sigParams.Count());
         Array<String> argsSeparated;
@@ -140,6 +145,8 @@ namespace
                         continue;
                     if (!useClass && !method->HasAttribute(attribute))
                         continue;
+                    if (useClass && method->GetVisibility() != MVisibility::Public)
+                        continue;
 
                     auto& commandData = Commands.AddOne();
                     BUILD_NAME(commandData, method->GetName());
@@ -155,6 +162,8 @@ namespace
                         continue;
                     if (!useClass && !field->HasAttribute(attribute))
                         continue;
+                    if (useClass && field->GetVisibility() != MVisibility::Public)
+                        continue;
 
                     auto& commandData = Commands.AddOne();
                     BUILD_NAME(commandData, field->GetName());
@@ -169,6 +178,8 @@ namespace
                     if (!property->IsStatic())
                         continue;
                     if (!useClass && !property->HasAttribute(attribute))
+                        continue;
+                    if (useClass && property->GetVisibility() != MVisibility::Public)
                         continue;
 
                     auto& commandData = Commands.AddOne();
