@@ -301,7 +301,8 @@ namespace Flax.Build.Projects.VisualStudioCode
                     json.BeginArray("configurations");
                     {
                         var cppProject = solution.Projects.FirstOrDefault(x => x.BaseName == solution.Name || x.Name == solution.Name);
-                        var csharpProject = solution.Projects.FirstOrDefault(x => x.BaseName == solution.MainProject.Targets[0].Modules[0] || x.Name == solution.MainProject.Targets[0].Modules[0]);
+                        var mainProjectModule = solution.MainProject?.Targets.Length != 0 ? solution.MainProject.Targets[0].Modules[0] : null;
+                        var csharpProject = mainProjectModule != null ? solution.Projects.FirstOrDefault(x => x.BaseName == mainProjectModule || x.Name == mainProjectModule) : null;
 
                         if (cppProject != null)
                         {
