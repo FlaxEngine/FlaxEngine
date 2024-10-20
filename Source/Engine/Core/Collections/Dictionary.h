@@ -102,7 +102,7 @@ public:
         }
     };
 
-    typedef typename AllocationType::template Data<Bucket> AllocationData;
+    using AllocationData = typename AllocationType::template Data<Bucket>;
 
 private:
     int32 _elementsCount = 0;
@@ -110,7 +110,7 @@ private:
     int32 _size = 0;
     AllocationData _allocation;
 
-    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, int32 fromSize)
+    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, const int32 fromSize)
     {
         if IF_CONSTEXPR (AllocationType::HasSwap)
             to.Swap(from);
@@ -149,7 +149,7 @@ public:
     /// Initializes a new instance of the <see cref="Dictionary"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    Dictionary(int32 capacity)
+    Dictionary(const int32 capacity)
     {
         SetCapacity(capacity);
     }
@@ -328,7 +328,7 @@ public:
 
         FORCE_INLINE bool operator!() const
         {
-            return !(bool)*this;
+            return !static_cast<bool>(*this);
         }
 
         FORCE_INLINE bool operator==(const Iterator& v) const
@@ -498,7 +498,7 @@ public:
         FindPosition(key, pos);
         if (pos.ObjectIndex == -1)
             return nullptr;
-        return (ValueType*)&_allocation.Get()[pos.ObjectIndex].Value;
+        return static_cast<ValueType*>(&_allocation.Get()[pos.ObjectIndex].Value);
     }
 
 public:
@@ -598,7 +598,7 @@ public:
     /// </summary>
     /// <param name="minCapacity">The minimum required capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void EnsureCapacity(int32 minCapacity, bool preserveContents = true)
+    void EnsureCapacity(const int32 minCapacity, const bool preserveContents = true)
     {
         if (_size >= minCapacity)
             return;
@@ -862,14 +862,14 @@ public:
         return Iterator(this, _size);
     }
 
-    const Iterator begin() const
+    Iterator begin() const
     {
         Iterator i(this, -1);
         ++i;
         return i;
     }
 
-    FORCE_INLINE const Iterator end() const
+    FORCE_INLINE Iterator end() const
     {
         return Iterator(this, _size);
     }

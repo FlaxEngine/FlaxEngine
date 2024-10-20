@@ -130,7 +130,7 @@ public:
     /// Initializes a new instance of the <see cref="HashSet"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    HashSet(int32 capacity)
+    HashSet(const int32 capacity)
     {
         SetCapacity(capacity);
     }
@@ -309,7 +309,7 @@ public:
 
         FORCE_INLINE bool operator !() const
         {
-            return !(bool)*this;
+            return !static_cast<bool>(*this);
         }
 
         FORCE_INLINE bool operator==(const Iterator& v) const
@@ -415,7 +415,7 @@ public:
     /// </summary>
     /// <param name="capacity">New capacity</param>
     /// <param name="preserveContents">Enable/disable preserving collection contents during resizing</param>
-    void SetCapacity(int32 capacity, bool preserveContents = true)
+    void SetCapacity(int32 capacity, const bool preserveContents = true)
     {
         if (capacity == Capacity())
             return;
@@ -474,7 +474,7 @@ public:
     /// </summary>
     /// <param name="minCapacity">The minimum required capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void EnsureCapacity(int32 minCapacity, bool preserveContents = true)
+    void EnsureCapacity(int32 minCapacity, const bool preserveContents = true)
     {
         if (_size >= minCapacity)
             return;
@@ -656,14 +656,14 @@ public:
         return Iterator(this, _size);
     }
 
-    const Iterator begin() const
+    Iterator begin() const
     {
         Iterator i(this, -1);
         ++i;
         return i;
     }
 
-    FORCE_INLINE const Iterator end() const
+    FORCE_INLINE Iterator end() const
     {
         return Iterator(this, _size);
     }
