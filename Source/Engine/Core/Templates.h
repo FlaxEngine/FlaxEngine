@@ -201,17 +201,17 @@ template<typename T> struct TAddConst { typedef const T Type; };
 namespace THelpers
 {
     template<typename T>
-    struct TTtypeIdentity { using Type = T; };
+    struct TTypeIdentity { using Type = T; };
 
     template<typename T>
-    auto TTryAddLValueReference(int) -> TTtypeIdentity<T&>;
+    auto TTryAddLValueReference(int) -> TTypeIdentity<T&>;
     template <typename T>
-    auto TTryAddLValueReference(...) -> TTtypeIdentity<T>;
+    auto TTryAddLValueReference(...) -> TTypeIdentity<T>;
 
     template<typename T>
-    auto TTryAddRValueReference(int) -> TTtypeIdentity<T&&>;
+    auto TTryAddRValueReference(int) -> TTypeIdentity<T&&>;
     template<typename T>
-    auto TTryAddRValueReference(...) -> TTtypeIdentity<T>;
+    auto TTryAddRValueReference(...) -> TTypeIdentity<T>;
 }
  
 template<typename T>
