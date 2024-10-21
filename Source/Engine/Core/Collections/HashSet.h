@@ -425,17 +425,10 @@ public:
         const int32 oldSize = _size;
         const int32 oldElementsCount = _elementsCount;
         _deletedCount = _elementsCount = 0;
-        if (capacity != 0 && (capacity & (capacity - 1)) != 0)
-        {
-            // Align capacity value to the next power of two (http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
-            capacity--;
-            capacity |= capacity >> 1;
-            capacity |= capacity >> 2;
-            capacity |= capacity >> 4;
-            capacity |= capacity >> 8;
-            capacity |= capacity >> 16;
-            capacity++;
-        }
+
+        if (capacity != 0 && !MemoryUtils::IsPow2(capacity))
+            capacity = MemoryUtils::NextPow2(capacity);
+
         if (capacity)
         {
             _allocation.Allocate(capacity);
@@ -443,6 +436,7 @@ public:
             for (int32 i = 0; i < capacity; i++)
                 data[i]._state = Bucket::Empty;
         }
+
         _size = capacity;
         Bucket* oldData = oldAllocation.Get();
         if (oldElementsCount != 0 && capacity != 0 && preserveContents)
