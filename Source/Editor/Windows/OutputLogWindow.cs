@@ -80,12 +80,9 @@ namespace FlaxEditor.Windows
             /// </summary>
             public TextBlockStyle ErrorStyle;
 
-            /// <inheritdoc />
-            public override bool OnKeyDown(KeyboardKeys key)
+            public OutputTextBox()
             {
-                if (Window.InputActions.Process(Editor.Instance, this, key))
-                    return true;
-                return base.OnKeyDown(key);
+                _consumeAllKeyDownEvents = false;
             }
 
             /// <inheritdoc />
@@ -502,6 +499,23 @@ namespace FlaxEditor.Windows
                 _commandLineBox.Width = Width - 4;
                 _commandLineBox.Y = Height - 2 - _commandLineBox.Height;
             }
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            var input = Editor.Options.Options.Input;
+            if (input.Search.Process(this, key))
+            {
+                if (!_searchBox.ContainsFocus)
+                {
+                    _searchBox.Focus();
+                    _searchBox.SelectAll();
+                }
+                return true;
+            }
+
+            return base.OnKeyDown(key);
         }
 
         /// <inheritdoc />

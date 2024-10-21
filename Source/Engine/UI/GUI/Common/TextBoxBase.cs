@@ -128,6 +128,11 @@ namespace FlaxEngine.GUI
         protected bool _changeCursor = true;
 
         /// <summary>
+        /// True if always return true as default for key events, otherwise won't consume them.
+        /// </summary>
+        protected bool _consumeAllKeyDownEvents = true;
+
+        /// <summary>
         /// Event fired when text gets changed
         /// </summary>
         public event Action TextChanged;
@@ -1542,7 +1547,7 @@ namespace FlaxEngine.GUI
                 return false;
             }
 
-            return true;
+            return _consumeAllKeyDownEvents;
         }
     }
 }
