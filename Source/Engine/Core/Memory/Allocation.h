@@ -31,6 +31,12 @@ public:
         {
         }
 
+        Data(const Data&) = delete;
+        Data(Data&&) = delete;
+
+        auto operator=(const Data&) -> Data& = delete;
+        auto operator=(Data&&) -> Data& = delete;
+
         FORCE_INLINE T* Get()
         {
             return reinterpret_cast<T*>(_data);
@@ -93,6 +99,12 @@ public:
         {
             Allocator::Free(_data);
         }
+
+        Data(const Data&) = delete;
+        Data(Data&&) = delete;
+
+        auto operator=(const Data&)->Data & = delete;
+        auto operator=(Data&&)->Data & = delete;
 
         FORCE_INLINE T* Get()
         {
@@ -196,6 +208,12 @@ public:
         FORCE_INLINE ~Data()
         {
         }
+
+        Data(const Data&) = delete;
+        Data(Data&&) = delete;
+
+        auto operator=(const Data&)->Data & = delete;
+        auto operator=(Data&&)->Data & = delete;
 
         FORCE_INLINE T* Get()
         {
