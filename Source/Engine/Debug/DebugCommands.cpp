@@ -69,6 +69,7 @@ struct CommandData
         }
 
         // Call command
+        LOG(Info, "> {}{}{}", Name, args.Length() != 0 ? TEXT(" ") : TEXT(""), args);
         Variant result;
         if (Method)
         {
