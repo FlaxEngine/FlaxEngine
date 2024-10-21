@@ -511,11 +511,12 @@ bool WindowsPlatformTools::OnDeployBinaries(CookingData& data)
 
         // Rename app
         const String newName = EditorUtilities::GetOutputName();
-        if (newName != StringUtils::GetFileNameWithoutExtension(files[0]))
+        const StringView oldName = StringUtils::GetFileNameWithoutExtension(files[0]);
+        if (newName != oldName)
         {
             if (FileSystem::MoveFile(data.NativeCodeOutputPath / newName + TEXT(".exe"), files[0], true))
             {
-                data.Error(TEXT("Failed to change output executable name."));
+                data.Error(String::Format(TEXT("Failed to change output executable name from '{}' to '{}'."), oldName, newName));
                 return true;
             }
         }
