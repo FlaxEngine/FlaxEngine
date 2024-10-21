@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include <type_traits>
 #include "Engine/Core/Compiler.h"
+#include "Engine/Core/Templates.h"
 #include "Engine/Core/Types/BaseTypes.h"
 
 /// <summary>
@@ -19,7 +19,7 @@ public:
     template<typename T>
     FORCE_INLINE static bool IsPow2(T value)
     {
-        static_assert(std::is_integral<T>::value, "T must be an integral type");
+        static_assert(TIsIntegral<T>::Value, "T must be an integral type");
         return (value & (value - 1)) == 0;
     }
 
