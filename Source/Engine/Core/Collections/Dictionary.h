@@ -149,7 +149,7 @@ public:
     /// Initializes a new instance of the <see cref="Dictionary"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    Dictionary(const int32 capacity)
+    explicit Dictionary(const int32 capacity)
     {
         SetCapacity(capacity);
     }
