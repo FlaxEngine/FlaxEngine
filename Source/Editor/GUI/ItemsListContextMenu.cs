@@ -248,26 +248,30 @@ namespace FlaxEditor.GUI
         /// </summary>
         /// <param name="width">The control width.</param>
         /// <param name="height">The control height.</param>
-        public ItemsListContextMenu(float width = 320, float height = 220)
+        /// <param name="withSearch">Enables search field.</param>
+        public ItemsListContextMenu(float width = 320, float height = 220, bool withSearch = true)
         {
             // Context menu dimensions
             Size = new Float2(width, height);
 
-            // Search box
-            _searchBox = new SearchBox(false, 1, 1)
+            if (withSearch)
             {
-                Parent = this,
-                Width = Width - 3,
-            };
-            _searchBox.TextChanged += OnSearchFilterChanged;
-            _searchBox.ClearSearchButton.Clicked += () => PerformLayout();
+                // Search box
+                _searchBox = new SearchBox(false, 1, 1)
+                {
+                    Parent = this,
+                    Width = Width - 3,
+                };
+                _searchBox.TextChanged += OnSearchFilterChanged;
+                _searchBox.ClearSearchButton.Clicked += () => PerformLayout();
+            }
 
             // Panel with scrollbar
             _scrollPanel = new Panel(ScrollBars.Vertical)
             {
                 Parent = this,
                 AnchorPreset = AnchorPresets.StretchAll,
-                Bounds = new Rectangle(0, _searchBox.Bottom + 1, Width, Height - _searchBox.Bottom - 2),
+                Bounds = withSearch ? new Rectangle(0, _searchBox.Bottom + 1, Width, Height - _searchBox.Bottom - 2) : new Rectangle(Float2.Zero, Size),
             };
 
             // Items list panel
@@ -446,7 +450,7 @@ namespace FlaxEditor.GUI
                 }
             }
 
-            _searchBox.Clear();
+            _searchBox?.Clear();
             UnlockChildrenRecursive();
             PerformLayout(true);
         }
@@ -510,7 +514,7 @@ namespace FlaxEditor.GUI
                 if (RootWindow.FocusedControl == null)
                 {
                     // Focus search box if nothing is focused
-                    _searchBox.Focus();
+                    _searchBox?.Focus();
                     return true;
                 }
 
@@ -536,7 +540,7 @@ namespace FlaxEditor.GUI
                     var focusedIndex = items.IndexOf(focusedItem);
                     if (focusedIndex == 0)
                     {
-                        _searchBox.Focus();
+                        _searchBox?.Focus();
                     }
                     else if (focusedIndex > 0)
                     {
@@ -556,7 +560,7 @@ namespace FlaxEditor.GUI
                 break;
             }
 
-            if (_waitingForInput)
+            if (_waitingForInput && _searchBox != null)
             {
                 _waitingForInput = false;
                 _searchBox.Focus();

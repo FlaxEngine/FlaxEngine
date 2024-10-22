@@ -3,10 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
@@ -127,10 +129,13 @@ namespace FlaxEditor.Windows
         /// </summary>
         private class CommandLineBox : TextBox
         {
-            public CommandLineBox(float x, float y, float width)
+            private OutputLogWindow _window;
+
+            public CommandLineBox(float x, float y, float width, OutputLogWindow window)
             : base(false, x, y, width)
             {
                 WatermarkText = ">";
+                _window = window;
             }
 
             /// <inheritdoc />
@@ -141,8 +146,22 @@ namespace FlaxEditor.Windows
                 case KeyboardKeys.Return:
                 {
                     // Run command
-                    DebugCommands.Execute(Text);
+                    var command = Text.Trim();
+                    if (command.Length == 0)
+                        return true;
+                    DebugCommands.Execute(command);
                     SetText(string.Empty);
+
+                    // Update history buffer
+                    if (_window._commandHistory == null)
+                        _window._commandHistory = new List<string>();
+                    else if (_window._commandHistory.Count != 0 && _window._commandHistory.Last() == command)
+                        _window._commandHistory.RemoveAt(_window._commandHistory.Count - 1);
+                    _window._commandHistory.Add(command);
+                    if (_window._commandHistory.Count > CommandHistoryLimit)
+                        _window._commandHistory.RemoveAt(0);
+                    _window.SaveHistory();
+
                     return true;
                 }
                 case KeyboardKeys.Tab:
@@ -189,6 +208,48 @@ namespace FlaxEditor.Windows
                     }
                     return true;
                 }
+                case KeyboardKeys.ArrowUp:
+                {
+                    if (TextLength == 0)
+                    {
+                        if (_window._commandHistory != null && _window._commandHistory.Count != 0)
+                        {
+                            // Show command history popup
+                            var cm = new ItemsListContextMenu(180, 220, false);
+                            ItemsListContextMenu.Item lastItem = null;
+                            var count = _window._commandHistory.Count;
+                            for (int i = 0; i < count; i++)
+                            {
+                                var command = _window._commandHistory[i];
+                                cm.AddItem(lastItem = new ItemsListContextMenu.Item
+                                {
+                                    Name = command,
+                                });
+                            }
+                            cm.ItemClicked += item =>
+                            {
+                                SetText(item.Name);
+                                SetSelection(Text.Length);
+                            };
+                            var totalHeight = count * lastItem.Height + cm.ItemsPanel.Margin.Height + cm.ItemsPanel.Spacing * (count - 1);
+                            if (cm.Height > totalHeight)
+                                cm.Height = totalHeight; // Limit popup height if history is small
+                            cm.Show(this, Float2.Zero, ContextMenuDirection.RightUp);
+                            lastItem.Focus();
+                            cm.ScrollViewTo(lastItem);
+                        }
+                    }
+                    else
+                    {
+                        // TODO: focus similar commands (via popup)
+                    }
+                    return true;
+                }
+                case KeyboardKeys.ArrowDown:
+                {
+                    // Ignore
+                    return true;
+                }
                 }
                 return base.OnKeyDown(key);
             }
@@ -210,6 +271,9 @@ namespace FlaxEditor.Windows
         private List<TextBlock> _textBlocks = new List<TextBlock>();
         private DateTime _startupTime;
         private Regex _compileRegex = new Regex("(?<path>^(?:[a-zA-Z]\\:|\\\\\\\\[ \\-\\.\\w\\.]+\\\\[ \\-\\.\\w.$]+)\\\\(?:[ \\-\\.\\w]+\\\\)*\\w([ \\w.])+)\\((?<line>\\d{1,}),\\d{1,},\\d{1,},\\d{1,}\\): (?<level>error|warning) (?<message>.*)", RegexOptions.Compiled);
+        private List<string> _commandHistory;
+        private const string CommandHistoryKey = "CommandHistory";
+        private const int CommandHistoryLimit = 30;
 
         private Button _viewDropdown;
         private TextBox _searchBox;
@@ -267,7 +331,7 @@ namespace FlaxEditor.Windows
             };
             _output.TargetViewOffsetChanged += OnOutputTargetViewOffsetChanged;
             _output.TextChanged += OnOutputTextChanged;
-            _commandLineBox = new CommandLineBox(2, Height - 2 - TextBox.DefaultHeight, Width - 4)
+            _commandLineBox = new CommandLineBox(2, Height - 2 - TextBox.DefaultHeight, Width - 4, this)
             {
                 Parent = this,
             };
@@ -392,6 +456,14 @@ namespace FlaxEditor.Windows
         {
             if (!Editor.IsHeadlessMode && Editor.Options.Options.Interface.FocusOutputLogOnCompilationError)
                 FocusOrShow();
+        }
+
+        private void SaveHistory()
+        {
+            if (_commandHistory == null || _commandHistory.Count == 0)
+                Editor.ProjectCache.RemoveCustomData(CommandHistoryKey);
+            else
+                Editor.ProjectCache.SetCustomData(CommandHistoryKey, FlaxEngine.Json.JsonSerializer.Serialize(_commandHistory));
         }
 
         /// <summary>
@@ -710,6 +782,25 @@ namespace FlaxEditor.Windows
         public override void OnInit()
         {
             _startupTime = Time.StartupTime;
+
+            // Load debug commands history
+            if (Editor.ProjectCache.TryGetCustomData(CommandHistoryKey, out string history))
+            {
+                try
+                {
+                    _commandHistory = (List<string>)FlaxEngine.Json.JsonSerializer.Deserialize(history, typeof(List<string>));
+                    for (int i = _commandHistory.Count - 1; i >= 0; i--)
+                    {
+                        if (string.IsNullOrEmpty(_commandHistory[i]))
+                            _commandHistory.RemoveAt(i);
+                    }
+                }
+                catch
+                {
+                    // Ignore errors
+                    _commandHistory = null;
+                }
+            }
         }
 
         /// <inheritdoc />
@@ -750,6 +841,7 @@ namespace FlaxEditor.Windows
             _outLogTypes = null;
             _outLogTimes = null;
             _compileRegex = null;
+            _commandHistory = null;
 
             // Unlink controls
             _viewDropdown = null;
