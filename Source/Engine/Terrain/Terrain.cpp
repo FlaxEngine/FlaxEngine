@@ -30,6 +30,7 @@ Terrain::Terrain(const SpawnParams& params)
     , _boundsExtent(Vector3::Zero)
     , _cachedScale(1.0f)
 {
+    _name = TEXT("Terrain");
     _drawCategory = SceneRendering::SceneDrawAsync;
     _physicalMaterials.Resize(8);
 }

@@ -31,6 +31,7 @@ TextRender::TextRender(const SpawnParams& params)
     , _vb1(0, sizeof(VB1ElementType))
     , _vb2(0, sizeof(VB2ElementType))
 {
+    _name = TEXT("Text Render");
     _color = Color::White;
     _localBox = BoundingBox(Vector3::Zero);
     _layoutOptions.Bounds = Rectangle(-100, -100, 200, 200);

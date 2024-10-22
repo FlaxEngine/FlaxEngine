@@ -17,6 +17,7 @@
 WheeledVehicle::WheeledVehicle(const SpawnParams& params)
     : RigidBody(params)
 {
+    _name = TEXT("Wheeled Vehicle");
     _useCCD = 1;
 }
 

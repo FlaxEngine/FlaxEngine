@@ -7,6 +7,7 @@ CapsuleCollider::CapsuleCollider(const SpawnParams& params)
     , _radius(20.0f)
     , _height(100.0f)
 {
+    _name = TEXT("Capsule Collider");
 }
 
 void CapsuleCollider::SetRadius(const float value)

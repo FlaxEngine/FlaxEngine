@@ -11,6 +11,7 @@ DistanceJoint::DistanceJoint(const SpawnParams& params)
     , _maxDistance(10.0f)
     , _tolerance(25.0f)
 {
+    _name = TEXT("Distance Joint");
 }
 
 void DistanceJoint::SetFlags(DistanceJointFlag value)

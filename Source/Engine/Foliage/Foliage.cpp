@@ -28,6 +28,7 @@
 Foliage::Foliage(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Foliage");
     _disableFoliageTypeEvents = false;
 
     // When using separate quad-tree for each foliage type we can run async job to draw them in separate, otherwise just draw whole foliage in async as one

@@ -20,6 +20,7 @@
 Cloth::Cloth(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Cloth");
     // Use the first mesh by default
     _mesh.LODIndex = _mesh.MeshIndex = 0;
 

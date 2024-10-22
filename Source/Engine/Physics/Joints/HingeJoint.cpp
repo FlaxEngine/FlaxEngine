@@ -8,6 +8,7 @@ HingeJoint::HingeJoint(const SpawnParams& params)
     : Joint(params)
     , _flags(HingeJointFlag::Limit | HingeJointFlag::Drive)
 {
+    _name = TEXT("Hinge Joint");
     _limit.Lower = -90.0f;
     _limit.Upper = 90.0f;
 }

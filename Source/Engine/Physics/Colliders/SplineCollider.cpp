@@ -16,6 +16,7 @@
 SplineCollider::SplineCollider(const SpawnParams& params)
     : Collider(params)
 {
+    _name = TEXT("Spline Collider");
     CollisionData.Changed.Bind<SplineCollider, &SplineCollider::OnCollisionDataChanged>(this);
     CollisionData.Loaded.Bind<SplineCollider, &SplineCollider::OnCollisionDataLoaded>(this);
 }

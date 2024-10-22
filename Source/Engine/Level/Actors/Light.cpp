@@ -83,6 +83,7 @@ void Light::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 LightWithShadow::LightWithShadow(const SpawnParams& params)
     : Light(params)
 {
+    _name = TEXT("Light With Shadow");
 }
 
 void LightWithShadow::InvalidateShadow()

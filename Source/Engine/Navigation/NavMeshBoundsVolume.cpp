@@ -12,6 +12,7 @@
 NavMeshBoundsVolume::NavMeshBoundsVolume(const SpawnParams& params)
     : BoxVolume(params)
 {
+    _name = TEXT("Nav Mesh Bounds Volume");
 }
 
 void NavMeshBoundsVolume::Serialize(SerializeStream& stream, const void* otherObj)

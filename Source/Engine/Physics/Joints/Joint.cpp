@@ -19,6 +19,7 @@ Joint::Joint(const SpawnParams& params)
     , _targetAnchor(Vector3::Zero)
     , _targetAnchorRotation(Quaternion::Identity)
 {
+    _name = TEXT("Joint");
     Target.Changed.Bind<Joint, &Joint::OnTargetChanged>(this);
 }
 

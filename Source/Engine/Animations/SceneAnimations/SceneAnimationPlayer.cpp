@@ -30,6 +30,7 @@
 SceneAnimationPlayer::SceneAnimationPlayer(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Scene Animation Player");
     Animation.Changed.Bind<SceneAnimationPlayer, &SceneAnimationPlayer::OnAnimationModified>(this);
     Animation.Loaded.Bind<SceneAnimationPlayer, &SceneAnimationPlayer::OnAnimationModified>(this);
 }

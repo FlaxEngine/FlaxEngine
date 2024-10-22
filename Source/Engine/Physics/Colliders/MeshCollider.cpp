@@ -12,6 +12,7 @@
 MeshCollider::MeshCollider(const SpawnParams& params)
     : Collider(params)
 {
+    _name = TEXT("Mesh Collider");
     CollisionData.Changed.Bind<MeshCollider, &MeshCollider::OnCollisionDataChanged>(this);
     CollisionData.Loaded.Bind<MeshCollider, &MeshCollider::OnCollisionDataLoaded>(this);
 }

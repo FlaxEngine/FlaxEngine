@@ -8,6 +8,7 @@
 D6Joint::D6Joint(const SpawnParams& params)
     : Joint(params)
 {
+    _name = TEXT("D6 Joint");
     for (int32 i = 0; i < static_cast<int32>(D6JointAxis::MAX); i++)
         _motion[i] = D6JointMotion::Locked;
     _limitLinear.Extent = 100.0f;

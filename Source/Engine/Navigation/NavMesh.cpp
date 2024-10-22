@@ -17,6 +17,7 @@ NavMesh::NavMesh(const SpawnParams& params)
     : Actor(params)
     , IsDataDirty(false)
 {
+    _name = TEXT("Nav Mesh");
     DataAsset.Loaded.Bind<NavMesh, &NavMesh::OnDataAssetLoaded>(this);
 }
 

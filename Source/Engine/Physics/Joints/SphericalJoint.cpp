@@ -8,6 +8,7 @@ SphericalJoint::SphericalJoint(const SpawnParams& params)
     : Joint(params)
     , _flags(SphericalJointFlag::Limit)
 {
+    _name = TEXT("Spherical Joint");
 }
 
 void SphericalJoint::SetFlags(const SphericalJointFlag value)

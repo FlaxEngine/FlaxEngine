@@ -13,6 +13,7 @@
 NavModifierVolume::NavModifierVolume(const SpawnParams& params)
     : BoxVolume(params)
 {
+    _name = TEXT("Nav Modifier Volume");
     _size = 100.0f;
 }
 

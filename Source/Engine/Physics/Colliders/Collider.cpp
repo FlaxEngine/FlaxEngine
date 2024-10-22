@@ -21,6 +21,7 @@ Collider::Collider(const SpawnParams& params)
     , _cachedScale(1.0f)
     , _contactOffset(2.0f)
 {
+    _name = TEXT("Collider");
     Material.Loaded.Bind<Collider, &Collider::OnMaterialChanged>(this);
     Material.Unload.Bind<Collider, &Collider::OnMaterialChanged>(this);
     Material.Changed.Bind<Collider, &Collider::OnMaterialChanged>(this);
