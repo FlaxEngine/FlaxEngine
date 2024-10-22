@@ -134,7 +134,8 @@ namespace FlaxEditor.GUI.ContextMenu
         /// </summary>
         /// <param name="parent">Parent control to attach to it.</param>
         /// <param name="location">Popup menu origin location in parent control coordinates.</param>
-        public virtual void Show(Control parent, Float2 location)
+        /// <param name="direction">The custom popup direction. Null to use automatic direction.</param>
+        public virtual void Show(Control parent, Float2 location, ContextMenuDirection? direction = null)
         {
             Assert.IsNotNull(parent);
 
@@ -166,7 +167,7 @@ namespace FlaxEditor.GUI.ContextMenu
             var monitorBounds = Platform.GetMonitorBounds(locationSS);
             var rightBottomLocationSS = locationSS + dpiSize;
             bool isUp = false, isLeft = false;
-            if (UseAutomaticDirectionFix)
+            if (UseAutomaticDirectionFix && direction == null)
             {
                 var parentMenu = parent as ContextMenu;
                 if (monitorBounds.Bottom < rightBottomLocationSS.Y)
@@ -192,6 +193,26 @@ namespace FlaxEditor.GUI.ContextMenu
                     else
                         locationSS.X -= dpiSize.X;
                 }
+            }
+            else if (direction.HasValue)
+            {
+                switch (direction.Value)
+                {
+                case ContextMenuDirection.RightUp:
+                    isUp = true;
+                    break;
+                case ContextMenuDirection.LeftDown:
+                    isLeft = true;
+                    break;
+                case ContextMenuDirection.LeftUp:
+                    isLeft = true;
+                    isUp = true;
+                    break;
+                }
+                if (isLeft)
+                    locationSS.X -= dpiSize.X;
+                if (isUp)
+                    locationSS.Y -= dpiSize.Y;
             }
 
             // Update direction flag
