@@ -3440,39 +3440,13 @@ PxVehicleAntiRollBarData CreatePxPxVehicleAntiRollBarData(const WheeledVehicle::
     return antiRollBar;
 }
 
-bool SortWheelsFrontToBack(WheeledVehicle::Wheel const& a, WheeledVehicle::Wheel const& b)
+bool SortWheelsFrontToBack(WheeledVehicle::Wheel* const& a, WheeledVehicle::Wheel* const& b)
 {
-    return a.Collider && b.Collider && a.Collider->GetLocalPosition().Z > b.Collider->GetLocalPosition().Z;
+    return a->Collider && b->Collider && a->Collider->GetLocalPosition().Z > b->Collider->GetLocalPosition().Z;
 }
 
 void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
 {
-    // Physx vehicles needs to have all wheels sorted to apply controls correctly.
-    // Its needs to know what wheels are on front to turn wheel to correctly side
-    // and needs to know wheel side to apply throttle to correctly direction for each track when using tanks.
-    // Anti roll bars needs to have all wheels sorted to get correctly wheel index too.
-    if (actor->_driveType != WheeledVehicle::DriveTypes::NoDrive)
-    {
-        Sorting::QuickSort(actor->_wheels.Get(), actor->_wheels.Count(), SortWheelsFrontToBack);
-
-        // Sort wheels by side
-        if (actor->_driveType == WheeledVehicle::DriveTypes::Tank)
-        {
-            for (int32 i = 0; i < actor->_wheels.Count() - 1; i += 2)
-            {
-                auto a = actor->_wheels[i];
-                auto b = actor->_wheels[i + 1];
-                if (!a.Collider || !b.Collider)
-                    continue;
-                if (a.Collider->GetLocalPosition().X > b.Collider->GetLocalPosition().X)
-                {
-                    actor->_wheels[i] = b;
-                    actor->_wheels[i + 1] = a;
-                }
-            }
-        }
-    }
-
     // Get wheels
     Array<WheeledVehicle::Wheel*, FixedAllocation<PX_MAX_NB_WHEELS>> wheels;
     for (auto& wheel : actor->_wheels)
@@ -3503,6 +3477,33 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         // No woman, no cry
         return nullptr;
     }
+
+    // Physx vehicles needs to have all wheels sorted to apply controls correctly.
+    // Its needs to know what wheels are on front to turn wheel to correctly side
+    // and needs to know wheel side to apply throttle to correctly direction for each track when using tanks.
+    // Anti roll bars needs to have all wheels sorted to get correctly wheel index too.
+    if (actor->_driveType != WheeledVehicle::DriveTypes::NoDrive)
+    {
+        Sorting::QuickSort(wheels.Get(), wheels.Count(), SortWheelsFrontToBack);
+
+        // Sort wheels by side
+        if (actor->_driveType == WheeledVehicle::DriveTypes::Tank)
+        {
+            for (int32 i = 0; i < wheels.Count() - 1; i += 2)
+            {
+                auto a = wheels[i];
+                auto b = wheels[i + 1];
+                if (!a->Collider || !b->Collider)
+                    continue;
+                if (a->Collider->GetLocalPosition().X > b->Collider->GetLocalPosition().X)
+                {
+                    wheels[i] = b;
+                    wheels[i + 1] = a;
+                }
+            }
+        }
+    }
+    
     actor->_wheelsData.Resize(wheels.Count());
     auto actorPhysX = (PxRigidDynamic*)actor->GetPhysicsActor();
 
