@@ -794,10 +794,9 @@ namespace FlaxEditor.Surface
             string singularPlural = connectedParameterNodeCount > 1 ? "s" : "";
 
             string msg = $"Delete parameter {param.Name}?\nParameter is being used in a graph {connectedParameterNodeCount} time{singularPlural}.\n\nYou can disable this warning in the editor settings.";
-            string caption = "Delete parameter" + singularPlural;
 
             if (connectedParameterNodeCount > 0)
-                if (MessageBox.Show(msg, caption, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
+                if (MessageBox.Show(msg, "Delete parameter", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
                     return;
 
             var action = new AddRemoveParamAction
