@@ -542,6 +542,12 @@ public:
     API_FUNCTION() void SetThrottle(float value);
 
     /// <summary>
+    /// Get the vehicle throttle. It is the analog accelerator pedal value in range (0,1) where 1 represents the pedal fully pressed and 0 represents the pedal in its rest state.
+    /// </summary>
+    /// <returns>The vehicle throttle.</returns>
+    API_FUNCTION() float GetThrottle();
+
+    /// <summary>
     /// Sets the input for vehicle steering. Steer is the analog steer value in range (-1,1) where -1 represents the steering wheel at left lock and +1 represents the steering wheel at right lock.
     /// </summary>
     /// <param name="value">The value (-1,1 range).</param>
