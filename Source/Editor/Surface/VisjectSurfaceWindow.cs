@@ -775,6 +775,8 @@ namespace FlaxEditor.Surface
 
         private void DeleteParameter(int index)
         {
+            bool displayWarning = Editor.Instance.Options.Options.Interface.WarnOnDeletingUsedVisjectParameter;
+
             var window = (IVisjectSurfaceWindow)Values[0];
             SurfaceParameter param = window.VisjectSurface.Parameters[index];
 
@@ -786,18 +788,20 @@ namespace FlaxEditor.Surface
             {
                 if (nodes[i] is IParametersDependantNode node)
                 {
-                    if ((Guid)nodes[i].Values[0] == param.ID && nodes[i].GetBoxes().Any(b => b.Connections.Count > 0))
+                    if (displayWarning && (Guid)nodes[i].Values[0] == param.ID && nodes[i].GetBoxes().Any(b => b.Connections.Count > 0))
                         connectedParameterNodeCount++;
                 }
             }
 
-            string singularPlural = connectedParameterNodeCount > 1 ? "s" : "";
+            if (displayWarning)
+            {
+                string singularPlural = connectedParameterNodeCount > 1 ? "s" : "";
+                string msg = $"Delete parameter {param.Name}?\nParameter is being used in a graph {connectedParameterNodeCount} time{singularPlural}.\n\nYou can disable this warning in the editor settings.";
 
-            string msg = $"Delete parameter {param.Name}?\nParameter is being used in a graph {connectedParameterNodeCount} time{singularPlural}.\n\nYou can disable this warning in the editor settings.";
-
-            if (connectedParameterNodeCount > 0)
-                if (MessageBox.Show(msg, "Delete parameter", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
-                    return;
+                if (connectedParameterNodeCount > 0)
+                    if (MessageBox.Show(msg, "Delete parameter", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
+                        return;
+            }
 
             var action = new AddRemoveParamAction
             {
