@@ -31,6 +31,11 @@ namespace FlaxEngine.GUI
         protected Float2 _offset;
 
         /// <summary>
+        /// The child controls alignment within layout area.
+        /// </summary>
+        protected TextAlignment _alignment = TextAlignment.Near;
+
+        /// <summary>
         /// Gets or sets the left margin.
         /// </summary>
         [HideInEditor, NoSerialize]
@@ -167,6 +172,23 @@ namespace FlaxEngine.GUI
                 if (_margin != value)
                 {
                     _margin = value;
+                    PerformLayout();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the child controls alignment within layout area.
+        /// </summary>
+        [EditorOrder(50), VisibleIf(nameof(AutoSize), true)]
+        public TextAlignment Alignment
+        {
+            get => _alignment;
+            set
+            {
+                if (_alignment != value)
+                {
+                    _alignment = value;
                     PerformLayout();
                 }
             }
