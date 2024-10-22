@@ -10,6 +10,7 @@
 Light::Light(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Light");
     _drawCategory = SceneRendering::PreRender;
 }
 
