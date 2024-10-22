@@ -7,6 +7,7 @@
 ModelInstanceActor::ModelInstanceActor(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Model Instance Actor");
 }
 
 void ModelInstanceActor::SetEntries(const Array<ModelInstanceEntry>& value)
