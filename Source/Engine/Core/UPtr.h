@@ -32,6 +32,11 @@ public:
         ASSERT(IsEmpty());
     }
 
+    ~UPtr()
+    {
+        Reset();
+    }
+
     FORCE_INLINE void Swap(UPtr& other)
     {
         _allocation.Swap(other._allocation);
@@ -42,6 +47,49 @@ public:
     /// Initializes empty UPtr.
     /// </summary>
     FORCE_INLINE UPtr() = default;
+
+
+    /// <summary>
+    /// This class is not copyable.
+    /// </summary>
+    UPtr(const UPtr&) = delete;
+
+    /// <summary>
+    /// This class is not copyable.
+    /// </summary>
+    UPtr& operator=(const UPtr&) = delete;
+
+
+    /// <summary>
+    /// Initializes UPtr by moving the pointer from another UPtr.
+    /// </summary>
+    FORCE_INLINE UPtr(UPtr&& other) noexcept
+        : _allocation()
+    {
+        ASSERT(Alloc::HasContext == false);
+        ::Swap(other);
+    }
+
+    template<typename TAllocContext>
+    FORCE_INLINE UPtr(UPtr&& other, TAllocContext&& context)
+        : _allocation(Forward<TAllocContext>(context))
+    {
+        ASSERT(Alloc::HasContext);
+        ::Swap(other);
+    }
+
+    /// <summary>
+    /// Reassigns UPtr by moving the pointer from another UPtr.
+    /// </summary>
+    FORCE_INLINE UPtr& operator=(UPtr&& other) noexcept
+    {
+        if (this != &other)
+        {
+            Reset();
+            ::Swap(other);
+        }
+        return *this;
+    }
 
     /// <summary>
     /// Initializes UPtr by passing constructor arguments and emplacement.
@@ -68,7 +116,6 @@ public:
         T* target = _allocation.Get();
         new (target) T(Forward<TInitArgs>(initArgs)...);
     }
-
 
     FORCE_INLINE bool IsEmpty() const
     {
