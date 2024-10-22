@@ -60,6 +60,16 @@ public:
             _allocation.Allocate(capacity);
     }
 
+    template<typename TAllocContext>
+    explicit Array(const int32 capacity, TAllocContext&& context)
+        : _count(0)
+        , _capacity(capacity)
+        , _allocation(Forward<TAllocContext>(context)) // Use universal reference to avoid copy of the context
+    {
+        if (capacity > 0)
+            _allocation.Allocate(capacity);
+    }
+
     /// <summary>
     /// Initializes a new instance of the <see cref="Array"/> class.
     /// </summary>

@@ -160,6 +160,10 @@ public:
         T* _data = nullptr;
 
     public:
+        Data()
+        {
+        }
+
         FORCE_INLINE explicit Data(Context& context)
         {
             _context = &context;
@@ -188,6 +192,9 @@ public:
 
         FORCE_INLINE void Allocate(const uintptr capacity)
         {
+            ASSERT_LOW_LAYER(_context); // Allocating without context is not allowed.
+            ASSERT_LOW_LAYER(!_data); // Allocating already allocated memory is not allowed.
+
             _data = static_cast<T*>(_context->BumpAllocate(capacity * sizeof(T)));
 
             // If the allocation failed, try to allocate using the backup allocator.
