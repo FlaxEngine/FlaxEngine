@@ -80,6 +80,24 @@ namespace FlaxEngine.GUI
                     size.X = maxWidth;
                 Size = size;
             }
+            else if (_alignment != TextAlignment.Near && hasAnyTop)
+            {
+                // Apply layout alignment
+                var offset = Height - top - _margin.Bottom;
+                if (_alignment == TextAlignment.Center)
+                    offset *= 0.5f;
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    Control c = _children[i];
+                    if (c.Visible)
+                    {
+                        if (Mathf.IsZero(c.AnchorMin.Y) && Mathf.IsZero(c.AnchorMax.Y))
+                        {
+                            c.Y += offset;
+                        }
+                    }
+                }
+            }
         }
     }
 }
