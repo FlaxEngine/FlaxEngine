@@ -39,6 +39,7 @@ MMethod* UICanvas_ParentChanged = nullptr;
 UICanvas::UICanvas(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("UI Canvas");
 #if !COMPILE_WITHOUT_CSHARP
     Platform::MemoryBarrier();
     if (UICanvas_Serialize == nullptr)
