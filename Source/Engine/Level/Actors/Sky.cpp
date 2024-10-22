@@ -34,6 +34,7 @@ Sky::Sky(const SpawnParams& params)
     , _psSky(nullptr)
     , _psFog(nullptr)
 {
+    _name = TEXT("Sky");
     _drawNoCulling = 1;
     _drawCategory = SceneRendering::PreRender;
 

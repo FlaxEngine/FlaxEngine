@@ -10,6 +10,7 @@ Spline::Spline(const SpawnParams& params)
     : Actor(params)
     , _localBounds(Vector3::Zero, Vector3::Zero)
 {
+    _name = TEXT("Spline");
 }
 
 bool Spline::GetIsLoop() const

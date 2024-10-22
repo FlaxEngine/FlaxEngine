@@ -13,6 +13,7 @@ Decal::Decal(const SpawnParams& params)
     : Actor(params)
     , _size(100.0f)
 {
+    _name = TEXT("Decal");
     _drawCategory = SceneRendering::PreRender;
     _bounds.Extents = _size * 0.5f;
     _bounds.Transformation = _transform;

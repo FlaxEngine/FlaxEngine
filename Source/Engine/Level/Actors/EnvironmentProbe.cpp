@@ -22,6 +22,7 @@ EnvironmentProbe::EnvironmentProbe(const SpawnParams& params)
     , _radius(3000.0f)
     , _isUsingCustomProbe(false)
 {
+    _name = TEXT("Environment Probe");
     _drawCategory = SceneRendering::PreRender;
     _sphere = BoundingSphere(Vector3::Zero, _radius);
     BoundingBox::FromSphere(_sphere, _box);

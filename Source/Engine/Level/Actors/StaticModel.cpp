@@ -28,6 +28,7 @@ StaticModel::StaticModel(const SpawnParams& params)
     , _vertexColorsCount(0)
     , _sortOrder(0)
 {
+    _name = TEXT("Static Model");
     _drawCategory = SceneRendering::SceneDrawAsync;
     Model.Changed.Bind<StaticModel, &StaticModel::OnModelChanged>(this);
     Model.Loaded.Bind<StaticModel, &StaticModel::OnModelLoaded>(this);

@@ -5,6 +5,7 @@
 EmptyActor::EmptyActor(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Empty Actor");
 }
 
 #if USE_EDITOR

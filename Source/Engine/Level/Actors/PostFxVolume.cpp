@@ -13,6 +13,7 @@ PostFxVolume::PostFxVolume(const SpawnParams& params)
     , _blendWeight(1.0f)
     , _isBounded(true)
 {
+    _name = TEXT("Post Fx Volume");
 }
 
 void PostFxVolume::Collect(RenderContext& renderContext)
