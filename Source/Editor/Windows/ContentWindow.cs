@@ -641,7 +641,7 @@ namespace FlaxEditor.Windows
             string singularPlural = toDelete.Count > 1 ? "s" : "";
 
             string msg = toDelete.Count == 1
-                         ? string.Format("Delete \'{0}\'?\n\nThis action cannot be undone.\nFiles will be deleted permanently.", items[0].Path)
+                         ? string.Format("Delete \'{0}\'?\n\nThis action cannot be undone.\nFile will be deleted permanently.", items[0].Path)
                          : string.Format("Delete {0} selected items?\n\nThis action cannot be undone.\nFiles will be deleted permanently.", items.Count);
 
             // Ask user
