@@ -190,6 +190,11 @@ void WheeledVehicle::SetThrottle(float value)
     _throttle = Math::Clamp(value, -1.0f, 1.0f);
 }
 
+float WheeledVehicle::GetThrottle()
+{
+    return _throttle;
+}
+
 void WheeledVehicle::SetSteering(float value)
 {
     _steering = Math::Clamp(value, -1.0f, 1.0f);
