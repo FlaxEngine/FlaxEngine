@@ -1352,10 +1352,16 @@ namespace Flax.Build.Bindings
             desc.Name = ParseName(ref context);
 
             // Read ';' or default value or array size or bit-field size
-            token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.Equal, TokenType.LeftBracket, TokenType.Colon });
+            token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.Equal, TokenType.LeftBracket, TokenType.LeftCurlyBrace, TokenType.Colon });
             if (token.Type == TokenType.Equal)
             {
                 context.Tokenizer.SkipUntil(TokenType.SemiColon, out desc.DefaultValue, false);
+            }
+            // Handle ex: API_FIELD() Type FieldName {DefaultValue};
+            else if (token.Type == TokenType.LeftCurlyBrace)
+            {
+                context.Tokenizer.SkipUntil(TokenType.SemiColon, out desc.DefaultValue, false);
+                desc.DefaultValue = '{' + desc.DefaultValue;
             }
             else if (token.Type == TokenType.LeftBracket)
             {

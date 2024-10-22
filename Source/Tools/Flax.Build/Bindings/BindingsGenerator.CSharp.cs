@@ -153,6 +153,28 @@ namespace Flax.Build.Bindings
             case "false": return value;
             }
 
+            // Handle float{_} style type of default values
+            if (valueType != null && value.StartsWith($"{valueType.Type}") && value.EndsWith("}"))
+            {
+                value = value.Replace($"{valueType.Type}", "").Replace("{", "").Replace("}", "").Trim();
+                if (string.IsNullOrEmpty(value))
+                {
+                    value = $"default({valueType.Type})";
+                    return value;
+                }
+            }
+
+            // Handle C++ bracket default values that are not arrays
+            if (value.StartsWith("{") && value.EndsWith("}") && valueType != null && !valueType.IsArray && valueType.Type != "Array")
+            {
+                value = value.Replace("{", "").Replace("}", "").Trim();
+                if (string.IsNullOrEmpty(value))
+                {
+                    value = $"default({valueType.Type})";
+                    return value;
+                }
+            }
+
             // Numbers
             if (float.TryParse(value, out _) || (value[value.Length - 1] == 'f' && float.TryParse(value.Substring(0, value.Length - 1), out _)))
             {
