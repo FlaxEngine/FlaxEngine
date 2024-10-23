@@ -4,6 +4,7 @@ using System.ComponentModel;
 using FlaxEditor.GUI.Docking;
 using FlaxEditor.Utilities;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.Options
 {
@@ -222,9 +223,15 @@ namespace FlaxEditor.Options
         /// </summary>
         [DefaultValue(TextAlignment.Center)]
         [EditorDisplay("Interface"), EditorOrder(321)]
-        public TextAlignment TooltipTextAlignment { get; set; } = TextAlignment.Center;
+        public TextAlignment TooltipTextAlignment { get => _tooltipTextAlignment;
+            set
+            {
+                _tooltipTextAlignment = value;
+                Style.Current.SharedTooltip.HorizontalTextAlignment = value;
+            }
+        }
 
-
+        private TextAlignment _tooltipTextAlignment = TextAlignment.Center;
 
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.

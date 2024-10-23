@@ -1,7 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-using FlaxEditor;
-using FlaxEditor.Options;
 using System;
 
 namespace FlaxEngine.GUI
@@ -18,6 +16,11 @@ namespace FlaxEngine.GUI
         private Control _showTarget;
         private string _currentText;
         private Window _window;
+
+        /// <summary>
+        /// The horizontal alignment of the text.
+        /// </summary>
+        public TextAlignment HorizontalTextAlignment = TextAlignment.Center;
 
         /// <summary>
         /// Gets or sets the time in seconds that mouse have to be over the target to show the tooltip.
@@ -238,7 +241,7 @@ namespace FlaxEngine.GUI
 
             // Padding for text
             var textRect = GetClientArea();
-            float textX = Editor.Instance.Options.Options.Interface.TooltipTextAlignment switch
+            float textX = HorizontalTextAlignment switch
             {
                 TextAlignment.Near => 15,
                 TextAlignment.Center => 5,
@@ -254,7 +257,7 @@ namespace FlaxEngine.GUI
                               _currentText,
                               textRect,
                               style.Foreground,
-                              Editor.Instance.Options.Options.Interface.TooltipTextAlignment,
+                              HorizontalTextAlignment,
                               TextAlignment.Center,
                               TextWrapping.WrapWords
                              );
