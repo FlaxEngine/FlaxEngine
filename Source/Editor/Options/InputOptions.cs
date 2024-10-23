@@ -160,6 +160,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("Scene"), EditorOrder(573)]
         public InputBinding PilotActor = new InputBinding(KeyboardKeys.None);
 
+        [DefaultValue(typeof(InputBinding), "Ctrl+G")]
+        [EditorDisplay("Scene"), EditorOrder(574)]
+        public InputBinding GroupSelectedActors = new InputBinding(KeyboardKeys.G, KeyboardKeys.Control);
+
         #endregion
 
         #region Tools

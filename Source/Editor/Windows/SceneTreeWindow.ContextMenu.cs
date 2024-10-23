@@ -133,7 +133,7 @@ namespace FlaxEditor.Windows
 
             contextMenu.AddSeparator();
 
-            b = contextMenu.AddButton("Create parent for selected actors", Editor.SceneEditing.CreateParentForSelectedActors);
+            b = contextMenu.AddButton("Parent to new Actor", inputOptions.GroupSelectedActors, Editor.SceneEditing.CreateParentForSelectedActors);
             b.Enabled = canEditScene && hasSthSelected;
 
             b = contextMenu.AddButton("Create Prefab", Editor.Prefabs.CreatePrefab);
