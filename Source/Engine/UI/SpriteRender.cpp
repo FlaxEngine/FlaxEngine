@@ -16,6 +16,7 @@ SpriteRender::SpriteRender(const SpawnParams& params)
     , _color(Color::White)
     , _size(100.0f)
 {
+    _name = TEXT("Sprite Render");
     _quadModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Quad"));
     Material.Loaded.Bind<SpriteRender, &SpriteRender::OnMaterialLoaded>(this);
     Image.Changed.Bind<SpriteRender, &SpriteRender::SetImageParam>(this);

@@ -11,6 +11,7 @@ NavLink::NavLink(const SpawnParams& params)
     , Radius(30.0f)
     , BiDirectional(true)
 {
+    _name = TEXT("Nav Link");
 }
 
 void NavLink::UpdateBounds()

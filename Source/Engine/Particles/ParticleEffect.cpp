@@ -15,6 +15,7 @@ ParticleEffect::ParticleEffect(const SpawnParams& params)
     , _lastUpdateFrame(0)
     , _lastMinDstSqr(MAX_Real)
 {
+    _name = TEXT("Particle Effect");
     _box = BoundingBox(_transform.Translation);
     BoundingSphere::FromBox(_box, _sphere);
 

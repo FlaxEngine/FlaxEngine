@@ -8,6 +8,7 @@ BoxVolume::BoxVolume(const SpawnParams& params)
     : Actor(params)
     , _size(1000.0f)
 {
+    _name = TEXT("Box Volume");
 }
 
 void BoxVolume::SetSize(const Vector3& value)

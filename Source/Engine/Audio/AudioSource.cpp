@@ -22,6 +22,7 @@ AudioSource::AudioSource(const SpawnParams& params)
     , _startTime(0.0f)
     , _allowSpatialization(true)
 {
+    _name = TEXT("Audio Source");
     Clip.Changed.Bind<AudioSource, &AudioSource::OnClipChanged>(this);
     Clip.Loaded.Bind<AudioSource, &AudioSource::OnClipLoaded>(this);
 }
