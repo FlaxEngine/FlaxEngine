@@ -12,21 +12,21 @@
 
 namespace THelpers
 {
-	template <typename T, bool IsTriviallyDestructible = __is_enum(T)>
-	struct TIsTriviallyDestructibleImpl
-	{
-		enum { Value = true };
-	};
+    template <typename T, bool IsTriviallyDestructible = __is_enum(T)>
+    struct TIsTriviallyDestructibleImpl
+    {
+        enum { Value = true };
+    };
 
-	template <typename T>
-	struct TIsTriviallyDestructibleImpl<T, false>
-	{
+    template <typename T>
+    struct TIsTriviallyDestructibleImpl<T, false>
+    {
 #if defined(__clang__) && __clang_major__ >= 15
         enum { Value = __is_trivially_destructible(T) };
 #else
         enum { Value = __has_trivial_destructor(T) };
 #endif
-	};
+    };
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -39,13 +39,13 @@ struct TAnd;
 template<bool Left, typename... Right>
 struct TAndValue
 {
-	enum { Value = TAnd<Right...>::Value };
+    enum { Value = TAnd<Right...>::Value };
 };
 
 template<typename... Right>
 struct TAndValue<false, Right...>
 {
-	enum { Value = false };
+    enum { Value = false };
 };
 
 template<typename Left, typename... Right>
@@ -56,7 +56,7 @@ struct TAnd<Left, Right...> : TAndValue<Left::Value, Right...>
 template<>
 struct TAnd<>
 {
-	enum { Value = true };
+    enum { Value = true };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -69,13 +69,13 @@ struct TOr;
 template<bool Left, typename... Right>
 struct TOrValue
 {
-	enum { Value = TOr<Right...>::Value };
+    enum { Value = TOr<Right...>::Value };
 };
 
 template<typename... Right>
 struct TOrValue<true, Right...>
 {
-	enum { Value = true };
+    enum { Value = true };
 };
 
 template<typename Left, typename... Right>
@@ -86,7 +86,7 @@ struct TOr<Left, Right...> : TOrValue<Left::Value, Right...>
 template<>
 struct TOr<>
 {
-	enum { Value = false };
+    enum { Value = false };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -142,7 +142,7 @@ template<typename T> struct TIsPointer<T*> { enum { Value = true }; };
 template<typename T>
 struct TIsEnum
 {
-	enum { Value = __is_enum(T) };
+    enum { Value = __is_enum(T) };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -152,7 +152,7 @@ struct TIsEnum
 template<typename T>
 struct TIsPODType 
 { 
-	enum { Value = TOrValue<__is_pod(T) || __is_enum(T), TIsPointer<T>>::Value };
+    enum { Value = TOrValue<__is_pod(T) || __is_enum(T), TIsPointer<T>>::Value };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -160,7 +160,7 @@ struct TIsPODType
 template<class Base, class Derived>
 struct TIsBaseOf
 {
-	enum { Value = __is_base_of(Base, Derived) };
+    enum { Value = __is_base_of(Base, Derived) };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -196,22 +196,39 @@ template<typename T> struct TAddConst { typedef const T Type; };
 
 ////////////////////////////////////////////////////////////////////////////////////
 
+template<typename T, typename...>
+struct TIsAnyOf;
+
+template<typename T, typename First, typename... Rest>
+struct TIsAnyOf<T, First, Rest...>
+{
+    enum { Value = TIsTheSame<T, First>::Value || TIsAnyOf<T, Rest...>::Value };
+};
+
+template<typename T>
+struct TIsAnyOf<T>
+{
+    enum { Value = false };
+};
+
+////////////////////////////////////////////////////////////////////////////////////
+
 // Creates a lvalue or rvalue reference type.
 
 namespace THelpers
 {
     template<typename T>
-    struct TTtypeIdentity { using Type = T; };
+    struct TTypeIdentity { using Type = T; };
 
     template<typename T>
-    auto TTryAddLValueReference(int) -> TTtypeIdentity<T&>;
+    auto TTryAddLValueReference(int) -> TTypeIdentity<T&>;
     template <typename T>
-    auto TTryAddLValueReference(...) -> TTtypeIdentity<T>;
+    auto TTryAddLValueReference(...) -> TTypeIdentity<T>;
 
     template<typename T>
-    auto TTryAddRValueReference(int) -> TTtypeIdentity<T&&>;
+    auto TTryAddRValueReference(int) -> TTypeIdentity<T&&>;
     template<typename T>
-    auto TTryAddRValueReference(...) -> TTtypeIdentity<T>;
+    auto TTryAddRValueReference(...) -> TTypeIdentity<T>;
 }
  
 template<typename T>
@@ -231,7 +248,7 @@ struct TAddRValueReference : decltype(THelpers::TTryAddRValueReference<T>(0))
 template<typename T>
 struct TIsCopyConstructible
 {
-	enum { Value = __is_constructible(T, typename TAddLValueReference<typename TAddConst<T>::Type>::Type) };
+    enum { Value = __is_constructible(T, typename TAddLValueReference<typename TAddConst<T>::Type>::Type) };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -253,7 +270,7 @@ struct TIsTriviallyCopyConstructible
 template<typename T> 
 struct TIsTriviallyConstructible
 { 
-	enum { Value = TIsPODType<T>::Value };
+    enum { Value = TIsPODType<T>::Value };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -263,7 +280,7 @@ struct TIsTriviallyConstructible
 template <typename T>
 struct TIsTriviallyDestructible
 {
-	enum { Value = THelpers::TIsTriviallyDestructibleImpl<T>::Value };
+    enum { Value = THelpers::TIsTriviallyDestructibleImpl<T>::Value };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -295,7 +312,7 @@ template<typename T> struct TAreTypesEqual<T, T>       { enum { Value = true }; 
 template<typename T>
 inline typename TRemoveReference<T>::Type&& MoveTemp(T&& obj)
 {
-    return (typename TRemoveReference<T>::Type&&)obj;
+    return static_cast<typename TRemoveReference<T>::Type&&>(obj);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -384,6 +401,14 @@ inline typename TEnableIf<TAreTypesEqual<T, unsigned int>::Value, T>::Type Rever
     bits = ((bits & 0x55555555) << 1) | ((bits & 0xaaaaaaaa) >> 1);
     return bits;
 }
+
+////////////////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+struct TIsIntegral
+{
+    enum { Value = TIsAnyOf<T, int8, uint8, int16, uint16, int32, uint32, int64, uint64>::Value };
+};
 
 ////////////////////////////////////////////////////////////////////////////////////
 

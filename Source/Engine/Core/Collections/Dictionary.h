@@ -102,7 +102,7 @@ public:
         }
     };
 
-    typedef typename AllocationType::template Data<Bucket> AllocationData;
+    using AllocationData = typename AllocationType::template Data<Bucket>;
 
 private:
     int32 _elementsCount = 0;
@@ -110,7 +110,7 @@ private:
     int32 _size = 0;
     AllocationData _allocation;
 
-    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, int32 fromSize)
+    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, const int32 fromSize)
     {
         if IF_CONSTEXPR (AllocationType::HasSwap)
             to.Swap(from);
@@ -149,7 +149,7 @@ public:
     /// Initializes a new instance of the <see cref="Dictionary"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    Dictionary(int32 capacity)
+    explicit Dictionary(const int32 capacity)
     {
         SetCapacity(capacity);
     }
@@ -328,7 +328,7 @@ public:
 
         FORCE_INLINE bool operator!() const
         {
-            return !(bool)*this;
+            return !static_cast<bool>(*this);
         }
 
         FORCE_INLINE bool operator==(const Iterator& v) const
@@ -498,7 +498,9 @@ public:
         FindPosition(key, pos);
         if (pos.ObjectIndex == -1)
             return nullptr;
-        return (ValueType*)&_allocation.Get()[pos.ObjectIndex].Value;
+
+        //TODO Get rid of const_cast (Do we assume const means pure or read-only?)
+        return const_cast<ValueType*>(&_allocation.Get()[pos.ObjectIndex].Value);
     }
 
 public:
@@ -548,17 +550,10 @@ public:
         const int32 oldSize = _size;
         const int32 oldElementsCount = _elementsCount;
         _deletedCount = _elementsCount = 0;
-        if (capacity != 0 && (capacity & (capacity - 1)) != 0)
-        {
-            // Align capacity value to the next power of two (http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
-            capacity--;
-            capacity |= capacity >> 1;
-            capacity |= capacity >> 2;
-            capacity |= capacity >> 4;
-            capacity |= capacity >> 8;
-            capacity |= capacity >> 16;
-            capacity++;
-        }
+
+        if (capacity != 0 && !MemoryUtils::IsPow2(capacity))
+            capacity = MemoryUtils::NextPow2(capacity);
+
         if (capacity)
         {
             _allocation.Allocate(capacity);
@@ -566,6 +561,7 @@ public:
             for (int32 i = 0; i < capacity; i++)
                 data[i]._state = Bucket::Empty;
         }
+
         _size = capacity;
         Bucket* oldData = oldAllocation.Get();
         if (oldElementsCount != 0 && capacity != 0 && preserveContents)
@@ -598,7 +594,7 @@ public:
     /// </summary>
     /// <param name="minCapacity">The minimum required capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void EnsureCapacity(int32 minCapacity, bool preserveContents = true)
+    void EnsureCapacity(const int32 minCapacity, const bool preserveContents = true)
     {
         if (_size >= minCapacity)
             return;
@@ -862,14 +858,14 @@ public:
         return Iterator(this, _size);
     }
 
-    const Iterator begin() const
+    Iterator begin() const
     {
         Iterator i(this, -1);
         ++i;
         return i;
     }
 
-    FORCE_INLINE const Iterator end() const
+    FORCE_INLINE Iterator end() const
     {
         return Iterator(this, _size);
     }

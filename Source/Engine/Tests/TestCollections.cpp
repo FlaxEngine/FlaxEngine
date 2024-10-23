@@ -3,8 +3,9 @@
 #include "Engine/Core/RandomStream.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/BitArray.h"
-#include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Collections/HashSet.h"
+#include "Engine/Core/Memory/BumpFastAllocation.h"
 #include <ThirdParty/catch2/catch.hpp>
 
 TEST_CASE("Array")
@@ -14,20 +15,28 @@ TEST_CASE("Array")
         Array<int32> a1;
         Array<int32, InlinedAllocation<8>> a2;
         Array<int32, FixedAllocation<8>> a3;
+
+        BumpFastAllocation::Context context(1024);
+        Array<int32, BumpFastAllocation> a4(8, context);
+
         for (int32 i = 0; i < 7; i++)
         {
             a1.Add(i);
             a2.Add(i);
             a3.Add(i);
+            a4.Add(i);
         }
+
         CHECK(a1.Count() == 7);
         CHECK(a2.Count() == 7);
         CHECK(a3.Count() == 7);
+        CHECK(a4.Count() == 7);
         for (int32 i = 0; i < 7; i++)
         {
             CHECK(a1[i] == i);
             CHECK(a2[i] == i);
             CHECK(a3[i] == i);
+            CHECK(a4[i] == i);
         }
     }
 
