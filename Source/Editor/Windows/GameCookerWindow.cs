@@ -328,6 +328,19 @@ namespace FlaxEditor.Windows
 
                         group.Object(new ReadOnlyValueContainer(platformObj));
 
+                        layout.Space(2);
+                        var openOutputButton = layout.Button("Open output folder").Button;
+                        openOutputButton.TooltipText = "Opens the defined out folder if the path exists.";
+                        openOutputButton.Clicked += () =>
+                        {
+                            string output = StringUtils.ConvertRelativePathToAbsolute(Globals.ProjectFolder, StringUtils.NormalizePath(proxy.PerPlatformOptions[_platform].Output));
+                            if (Directory.Exists(output))
+                                FlaxEngine.FileSystem.ShowFileExplorer(output);
+                            else
+                                FlaxEditor.Editor.LogWarning($"Can not open path: {output} because it does not exist.");
+                        };
+                        layout.Space(2);
+
                         _buildButton = layout.Button("Build").Button;
                         _buildButton.Clicked += OnBuildClicked;
                     }
