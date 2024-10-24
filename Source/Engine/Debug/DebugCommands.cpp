@@ -2,6 +2,7 @@
 
 #include "DebugCommands.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Threading/Threading.h"
@@ -31,11 +32,13 @@ struct CommandData
 
         // Get command signature
         Array<ScriptingTypeMethodSignature::Param, InlinedAllocation<16>> sigParams;
+        VariantType sigValue;
         if (Method)
         {
             ScriptingTypeMethodSignature sig;
             Module->GetMethodSignature(Method, sig);
             sigParams = MoveTemp(sig.Params);
+            sigValue = MoveTemp(sig.ReturnType);
         }
         else if (Field)
         {
@@ -44,6 +47,7 @@ struct CommandData
             auto& p = sigParams.AddOne();
             p.IsOut = false;
             p.Type = sig.ValueType;
+            sigValue = MoveTemp(sig.ValueType);
         }
         else if (MethodSet && args.HasChars())
         {
@@ -51,6 +55,12 @@ struct CommandData
             Module->GetMethodSignature(MethodSet, sig);
             sigParams = MoveTemp(sig.Params);
             sigParams.Resize(1);
+        }
+        else if (MethodGet && args.IsEmpty())
+        {
+            ScriptingTypeMethodSignature sig;
+            Module->GetMethodSignature(MethodGet, sig);
+            sigValue = MoveTemp(sig.ReturnType);
         }
 
         // Parse arguments
@@ -91,11 +101,72 @@ struct CommandData
         {
             Module->InvokeMethod(MethodSet, Variant::Null, ToSpan(params), result);
         }
+        else if (args.HasChars())
+        {
+            LOG(Warning, "Property {} doesn't have a setter (read-only)", Name);
+        }
+        else if (args.IsEmpty())
+        {
+            LOG(Warning, "Property {} doesn't have a getter (write-only)", Name);
+        }
 
         // Print result
         if (result != Variant())
         {
-            LOG_STR(Info, result.ToString());
+            String str = result.ToString();
+            if (result.Type.Type == VariantType::Array)
+            {
+                // Prettify array printing
+                auto& resultArray = result.AsArray();
+                StringBuilder sb;
+                sb.Append('[');
+                for (int32 i = 0; i < resultArray.Count(); i++)
+                {
+                    if (i > 0)
+                        sb.Append(',').Append(' ');
+                    sb.Append(resultArray[i].ToString());
+                    if (i > 30) // Limit on too large values
+                    {
+                        sb.Append(TEXT("..."));
+                        break;
+                    }
+                }
+                sb.Append(']');
+                str = sb.ToString();
+            }
+            else if (result.Type.Type == VariantType::Structure)
+            {
+                // Prettify structure printing
+                ScriptingTypeHandle resultType = Scripting::FindScriptingType(result.Type.GetTypeName());
+                if (resultType)
+                {
+                    Array<void*> fields;
+                    resultType.Module->GetFields(resultType, fields);
+                    StringBuilder sb;
+                    sb.Append('{');
+                    Variant fieldValue;
+                    ScriptingTypeFieldSignature fieldSig;
+                    bool first = true;
+                    for (void* field : fields)
+                    {
+                        if (!resultType.Module->GetFieldValue(field, result, fieldValue))
+                        {
+                            resultType.Module->GetFieldSignature(field, fieldSig);
+                            if (!first)
+                                sb.Append(',');
+                            first = false;
+                            sb.Append(' ').Append(String(fieldSig.Name)).Append(':').Append(' ').Append(fieldValue.ToString());
+                        }
+                    }
+                    sb.Append(' ').Append('}');
+                    str = sb.ToString();
+                }
+            }
+            LOG_STR(Info, str);
+        }
+        else if (args.IsEmpty() && sigValue.Type != VariantType::Void && sigValue.Type != VariantType::Null)
+        {
+            LOG_STR(Info, TEXT("null"));
         }
     }
 };
