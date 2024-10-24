@@ -427,7 +427,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public bool IsParameterReferenced(SurfaceParameter param, VisjectSurface surface)
+            public bool IsParamreferenced(SurfaceParameter param, VisjectSurface surface)
             {
                 for (int i = 0; i < surface.Nodes.Count; i++)
                 {
@@ -958,7 +958,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public bool IsParameterReferenced(SurfaceParameter param, VisjectSurface surface)
+            public bool IsParamreferenced(SurfaceParameter param, VisjectSurface surface)
             {
                 for (int i = 0; i < surface.Nodes.Count; i++)
                 {
