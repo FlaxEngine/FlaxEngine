@@ -16,6 +16,7 @@ class FLAXENGINE_API MMethod
     friend MClass;
     friend MProperty;
     friend MEvent;
+    friend MCore;
 
 protected:
 #if USE_MONO

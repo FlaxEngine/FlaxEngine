@@ -11,6 +11,7 @@
 class FLAXENGINE_API MField
 {
     friend MClass;
+    friend MCore;
 
 protected:
 #if USE_MONO
