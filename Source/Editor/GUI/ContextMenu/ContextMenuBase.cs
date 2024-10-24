@@ -148,18 +148,22 @@ namespace FlaxEditor.GUI.ContextMenu
         public virtual void Show(Control parent, Float2 location, ContextMenuDirection? direction = null)
         {
             Assert.IsNotNull(parent);
-
-            // Ensure to be closed
-            Hide();
+            bool isAlreadyVisible = Visible && _window;
+            if (!isAlreadyVisible)
+                Hide();
 
             // Peek parent control window
             var parentWin = parent.RootWindow;
             if (parentWin == null)
+            {
+                Hide();
                 return;
+            }
 
             // Check if show menu inside the other menu - then link as a child to prevent closing the calling menu window on lost focus
             if (_parentCM == null && parentWin.ChildrenCount == 1 && parentWin.Children[0] is ContextMenuBase parentCM)
             {
+                Hide();
                 parentCM.ShowChild(this, parentCM.PointFromScreen(parent.PointToScreen(location)), false);
                 return;
             }
@@ -231,40 +235,47 @@ namespace FlaxEditor.GUI.ContextMenu
             else
                 _direction = isLeft ? ContextMenuDirection.LeftDown : ContextMenuDirection.RightDown;
 
-            // Create window
-            var desc = CreateWindowSettings.Default;
-            desc.Position = locationSS;
-            desc.StartPosition = WindowStartPosition.Manual;
-            desc.Size = dpiSize;
-            desc.Fullscreen = false;
-            desc.HasBorder = false;
-            desc.SupportsTransparency = false;
-            desc.ShowInTaskbar = false;
-            desc.ActivateWhenFirstShown = UseInput;
-            desc.AllowInput = UseInput;
-            desc.AllowMinimize = false;
-            desc.AllowMaximize = false;
-            desc.AllowDragAndDrop = false;
-            desc.IsTopmost = true;
-            desc.IsRegularWindow = false;
-            desc.HasSizingFrame = false;
-            OnWindowCreating(ref desc);
-            _window = Platform.CreateWindow(ref desc);
-            if (UseVisibilityControl)
+            if (isAlreadyVisible)
             {
-                _window.GotFocus += OnWindowGotFocus;
-                _window.LostFocus += OnWindowLostFocus;
+                _window.ClientBounds = new Rectangle(locationSS, dpiSize);
             }
+            else
+            {
+                // Create window
+                var desc = CreateWindowSettings.Default;
+                desc.Position = locationSS;
+                desc.StartPosition = WindowStartPosition.Manual;
+                desc.Size = dpiSize;
+                desc.Fullscreen = false;
+                desc.HasBorder = false;
+                desc.SupportsTransparency = false;
+                desc.ShowInTaskbar = false;
+                desc.ActivateWhenFirstShown = UseInput;
+                desc.AllowInput = UseInput;
+                desc.AllowMinimize = false;
+                desc.AllowMaximize = false;
+                desc.AllowDragAndDrop = false;
+                desc.IsTopmost = true;
+                desc.IsRegularWindow = false;
+                desc.HasSizingFrame = false;
+                OnWindowCreating(ref desc);
+                _window = Platform.CreateWindow(ref desc);
+                if (UseVisibilityControl)
+                {
+                    _window.GotFocus += OnWindowGotFocus;
+                    _window.LostFocus += OnWindowLostFocus;
+                }
 
-            // Attach to the window
-            _parentCM = parent as ContextMenuBase;
-            Parent = _window.GUI;
+                // Attach to the window
+                _parentCM = parent as ContextMenuBase;
+                Parent = _window.GUI;
 
-            // Show
-            Visible = true;
-            if (_window == null)
-                return;
-            _window.Show();
+                // Show
+                Visible = true;
+                if (_window == null)
+                    return;
+                _window.Show();
+            }
             PerformLayout();
             if (UseVisibilityControl)
             {
