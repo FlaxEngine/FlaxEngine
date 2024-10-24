@@ -223,11 +223,15 @@ namespace FlaxEditor.Options
         /// </summary>
         [DefaultValue(TextAlignment.Center)]
         [EditorDisplay("Interface"), EditorOrder(321)]
-        public TextAlignment TooltipTextAlignment { get => _tooltipTextAlignment;
+        public TextAlignment TooltipTextAlignment
+        {
+            get => _tooltipTextAlignment;
             set
             {
                 _tooltipTextAlignment = value;
-                Style.Current.SharedTooltip.HorizontalTextAlignment = value;
+                var tooltip = Style.Current?.SharedTooltip;
+                if (tooltip != null)
+                    tooltip.HorizontalTextAlignment = value;
             }
         }
 
