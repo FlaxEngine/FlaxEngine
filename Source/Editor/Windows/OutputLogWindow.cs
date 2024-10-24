@@ -129,13 +129,157 @@ namespace FlaxEditor.Windows
         /// </summary>
         private class CommandLineBox : TextBox
         {
+            private sealed class Item : ItemsListContextMenu.Item
+            {
+                public CommandLineBox Owner;
+
+                public Item()
+                {
+                }
+
+                protected override void GetTextRect(out Rectangle rect)
+                {
+                    rect = new Rectangle(2, 0, Width - 4, Height);
+                }
+
+                public override bool OnCharInput(char c)
+                {
+                    if (Owner != null && (!Owner._searchPopup?.Visible ?? true))
+                    {
+                        // Redirect input into search textbox while typing and using command history
+                        Owner.Set(Owner.Text + c);
+                        return true;
+                    }
+                    return false;
+                }
+
+                public override bool OnKeyDown(KeyboardKeys key)
+                {
+                    switch (key)
+                    {
+                    case KeyboardKeys.Delete:
+                    case KeyboardKeys.Backspace:
+                        if (Owner != null && (!Owner._searchPopup?.Visible ?? true))
+                        {
+                            // Redirect input into search textbox while typing and using command history
+                            Owner.OnKeyDown(key);
+                            return true;
+                        }
+                        break;
+                    }
+                    return base.OnKeyDown(key);
+                }
+
+                public override void OnDestroy()
+                {
+                    Owner = null;
+                    base.OnDestroy();
+                }
+            }
+
             private OutputLogWindow _window;
+            private ItemsListContextMenu _searchPopup;
+            private bool _isSettingText;
 
             public CommandLineBox(float x, float y, float width, OutputLogWindow window)
             : base(false, x, y, width)
             {
                 WatermarkText = ">";
                 _window = window;
+            }
+
+            private void Set(string command)
+            {
+                _isSettingText = true;
+                SetText(command);
+                SetSelection(command.Length);
+                _isSettingText = false;
+            }
+
+            private void ShowPopup(ref ItemsListContextMenu cm, IEnumerable<string> commands, string searchText = null)
+            {
+                if (cm == null)
+                    cm = new ItemsListContextMenu(180, 220, false);
+                else
+                    cm.ClearItems();
+
+                // Add items
+                ItemsListContextMenu.Item lastItem = null;
+                foreach (var command in commands)
+                {
+                    cm.AddItem(lastItem = new Item
+                    {
+                        Name = command,
+                        Owner = this,
+                    });
+                    lastItem.Focused += item =>
+                    {
+                        // Set command
+                        Set(item.Name);
+                    };
+                }
+                cm.ItemClicked += item =>
+                {
+                    // Execute command
+                    OnKeyDown(KeyboardKeys.Return);
+                };
+
+                // Setup popup
+                var count = commands.Count();
+                var totalHeight = count * lastItem.Height + cm.ItemsPanel.Margin.Height + cm.ItemsPanel.Spacing * (count - 1);
+                cm.Height = 220;
+                if (cm.Height > totalHeight)
+                    cm.Height = totalHeight; // Limit popup height if list is small
+                if (searchText != null)
+                {
+                    cm.SortItems();
+                    cm.Search(searchText);
+                    cm.UseVisibilityControl = false;
+                    cm.UseInput = false;
+                }
+
+                // Show popup
+                cm.Show(this, Float2.Zero, ContextMenuDirection.RightUp);
+                cm.ScrollViewTo(lastItem);
+                if (searchText != null)
+                {
+                    RootWindow.Window.LostFocus += OnRootWindowLostFocus;
+                }
+                else
+                {
+                    lastItem.Focus();
+                }
+            }
+
+            private void OnRootWindowLostFocus()
+            {
+                // Prevent popup from staying active when editor window looses focus
+                _searchPopup?.Hide();
+                if (RootWindow?.Window != null)
+                    RootWindow.Window.LostFocus -= OnRootWindowLostFocus;
+            }
+
+            /// <inheritdoc />
+            protected override void OnTextChanged()
+            {
+                base.OnTextChanged();
+
+                // Skip when editing text from code
+                if (_isSettingText)
+                    return;
+
+                // Show commands search popup based on current text input
+                var text = Text.Trim();
+                if (text.Length != 0)
+                {
+                    DebugCommands.Search(text, out var matches);
+                    if (matches.Length != 0)
+                    {
+                        ShowPopup(ref _searchPopup, matches, text);
+                        return;
+                    }
+                }
+                _searchPopup?.Hide();
             }
 
             /// <inheritdoc />
@@ -146,6 +290,7 @@ namespace FlaxEditor.Windows
                 case KeyboardKeys.Return:
                 {
                     // Run command
+                    _searchPopup?.Hide();
                     var command = Text.Trim();
                     if (command.Length == 0)
                         return true;
@@ -175,8 +320,7 @@ namespace FlaxEditor.Windows
                     else if (matches.Length == 1)
                     {
                         // Exact match
-                        SetText(matches[0]);
-                        SetSelection(Text.Length);
+                        Set(matches[0]);
                     }
                     else
                     {
@@ -202,56 +346,59 @@ namespace FlaxEditor.Windows
                         if (sharedLength > minLength)
                         {
                             // Use the largest shared part of all matches
-                            SetText(matches[0].Substring(0, sharedLength));
-                            SetSelection(sharedLength);
+                            Set(matches[0].Substring(0, sharedLength));
                         }
                     }
                     return true;
                 }
                 case KeyboardKeys.ArrowUp:
                 {
-                    if (TextLength == 0)
+                    if (_searchPopup != null && _searchPopup.Visible)
+                    {
+                        // Route navigation to active popup
+                        var focusedItem = _searchPopup.RootWindow.FocusedControl as Item;
+                        if (focusedItem == null)
+                            _searchPopup.SelectItem((Item)_searchPopup.ItemsPanel.Children.Last());
+                        else
+                            _searchPopup.OnKeyDown(key);
+                    }
+                    else if (TextLength == 0)
                     {
                         if (_window._commandHistory != null && _window._commandHistory.Count != 0)
                         {
                             // Show command history popup
-                            var cm = new ItemsListContextMenu(180, 220, false);
-                            ItemsListContextMenu.Item lastItem = null;
-                            var count = _window._commandHistory.Count;
-                            for (int i = 0; i < count; i++)
-                            {
-                                var command = _window._commandHistory[i];
-                                cm.AddItem(lastItem = new ItemsListContextMenu.Item
-                                {
-                                    Name = command,
-                                });
-                            }
-                            cm.ItemClicked += item =>
-                            {
-                                SetText(item.Name);
-                                SetSelection(Text.Length);
-                            };
-                            var totalHeight = count * lastItem.Height + cm.ItemsPanel.Margin.Height + cm.ItemsPanel.Spacing * (count - 1);
-                            if (cm.Height > totalHeight)
-                                cm.Height = totalHeight; // Limit popup height if history is small
-                            cm.Show(this, Float2.Zero, ContextMenuDirection.RightUp);
-                            lastItem.Focus();
-                            cm.ScrollViewTo(lastItem);
+                            _searchPopup?.Hide();
+                            ItemsListContextMenu cm = null;
+                            ShowPopup(ref cm, _window._commandHistory);
                         }
-                    }
-                    else
-                    {
-                        // TODO: focus similar commands (via popup)
                     }
                     return true;
                 }
                 case KeyboardKeys.ArrowDown:
                 {
-                    // Ignore
+                    if (_searchPopup != null && _searchPopup.Visible)
+                    {
+                        // Route navigation to active popup
+                        var focusedItem = _searchPopup.RootWindow.FocusedControl as Item;
+                        if (focusedItem == null)
+                            _searchPopup.SelectItem((Item)_searchPopup.ItemsPanel.Children.First());
+                        else
+                            _searchPopup.OnKeyDown(key);
+                    }
                     return true;
                 }
                 }
+
                 return base.OnKeyDown(key);
+            }
+
+            /// <inheritdoc />
+            public override void OnDestroy()
+            {
+                _searchPopup?.Dispose();
+                _searchPopup = null;
+
+                base.OnDestroy();
             }
         }
 

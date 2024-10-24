@@ -99,6 +99,16 @@ namespace FlaxEditor.GUI.ContextMenu
         public List<Window> ExternalPopups = new List<Window>();
 
         /// <summary>
+        /// Optional flag that can disable popup visibility based on window focus and use external control via Hide.
+        /// </summary>
+        public bool UseVisibilityControl = true;
+
+        /// <summary>
+        /// Optional flag that can disable popup input capturing. Useful for transparent or visual-only popups.
+        /// </summary>
+        public bool UseInput = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ContextMenuBase"/> class.
         /// </summary>
         public ContextMenuBase()
@@ -230,8 +240,8 @@ namespace FlaxEditor.GUI.ContextMenu
             desc.HasBorder = false;
             desc.SupportsTransparency = false;
             desc.ShowInTaskbar = false;
-            desc.ActivateWhenFirstShown = true;
-            desc.AllowInput = true;
+            desc.ActivateWhenFirstShown = UseInput;
+            desc.AllowInput = UseInput;
             desc.AllowMinimize = false;
             desc.AllowMaximize = false;
             desc.AllowDragAndDrop = false;
@@ -240,8 +250,11 @@ namespace FlaxEditor.GUI.ContextMenu
             desc.HasSizingFrame = false;
             OnWindowCreating(ref desc);
             _window = Platform.CreateWindow(ref desc);
-            _window.GotFocus += OnWindowGotFocus;
-            _window.LostFocus += OnWindowLostFocus;
+            if (UseVisibilityControl)
+            {
+                _window.GotFocus += OnWindowGotFocus;
+                _window.LostFocus += OnWindowLostFocus;
+            }
 
             // Attach to the window
             _parentCM = parent as ContextMenuBase;
@@ -253,9 +266,12 @@ namespace FlaxEditor.GUI.ContextMenu
                 return;
             _window.Show();
             PerformLayout();
-            _previouslyFocused = parentWin.FocusedControl;
-            Focus();
-            OnShow();
+            if (UseVisibilityControl)
+            {
+                _previouslyFocused = parentWin.FocusedControl;
+                Focus();
+                OnShow();
+            }
         }
 
         /// <summary>
@@ -508,7 +524,7 @@ namespace FlaxEditor.GUI.ContextMenu
             base.Update(deltaTime);
 
             // Let root context menu to check if none of the popup windows
-            if (_parentCM == null && !IsForeground)
+            if (_parentCM == null && UseVisibilityControl && !IsForeground)
             {
                 Hide();
             }
