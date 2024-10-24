@@ -937,9 +937,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 // Deselect if that parameter is selected
                 if ((Guid)Values[0] == param.ID)
-                {
                     _combobox.SelectedIndex = -1;
-                }
 
                 UpdateCombo();
             }
