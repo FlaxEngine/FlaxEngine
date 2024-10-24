@@ -885,9 +885,11 @@ void Actor::BeginPlay(SceneBeginData* data)
     }
 
     // Update children
-    for (int32 i = 0; i < Children.Count(); i++)
+    // Cache actors to ensure all actors are called even if moved in start.
+    Array<Actor*> cachedActors = Children;
+    for (int32 i = 0; i < cachedActors.Count(); i++)
     {
-        auto e = Children.Get()[i];
+        auto e = cachedActors.Get()[i];
         if (!e->IsDuringPlay())
             e->BeginPlay(data);
     }
