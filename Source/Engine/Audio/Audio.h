@@ -11,7 +11,7 @@
 /// <summary>
 /// The audio service used for music and sound effects playback.
 /// </summary>
-API_CLASS(Static) class FLAXENGINE_API Audio
+API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API Audio
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(Audio);
     friend class AudioStreamingHandler;

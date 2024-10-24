@@ -10,7 +10,7 @@
 /// <summary>
 /// Game ticking and timing system.
 /// </summary>
-API_CLASS(Static) class FLAXENGINE_API Time
+API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API Time
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(Time);
     friend class Engine;

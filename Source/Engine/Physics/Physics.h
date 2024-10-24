@@ -41,7 +41,7 @@ public:
     /// <summary>
     /// Gets the current gravity force.
     /// </summary>
-    API_PROPERTY() static Vector3 GetGravity();
+    API_PROPERTY(Attributes="DebugCommand") static Vector3 GetGravity();
 
     /// <summary>
     /// Sets the current gravity force.

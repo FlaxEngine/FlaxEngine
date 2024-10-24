@@ -8,7 +8,7 @@
 /// <summary>
 /// Global engine variables container.
 /// </summary>
-API_CLASS(Static) class FLAXENGINE_API Globals
+API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API Globals
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(Globals);
 

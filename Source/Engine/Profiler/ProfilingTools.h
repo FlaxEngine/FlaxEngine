@@ -127,7 +127,7 @@ public:
     /// <summary>
     /// Controls the engine profiler (CPU, GPU, etc.) usage.
     /// </summary>
-    API_PROPERTY() static bool GetEnabled();
+    API_PROPERTY(Attributes="DebugCommand") static bool GetEnabled();
 
     /// <summary>
     /// Controls the engine profiler (CPU, GPU, etc.) usage.
