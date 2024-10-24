@@ -67,7 +67,7 @@ public:
         : _allocation()
     {
         ASSERT(Alloc::HasContext == false);
-        ::Swap(other);
+        ::Swap(other._allocation, _allocation);
     }
 
     template<typename TAllocContext>
@@ -75,7 +75,7 @@ public:
         : _allocation(Forward<TAllocContext>(context))
     {
         ASSERT(Alloc::HasContext);
-        ::Swap(other);
+        ::Swap(other._allocation, _allocation);
     }
 
     /// <summary>
@@ -86,7 +86,7 @@ public:
         if (this != &other)
         {
             Reset();
-            ::Swap(other);
+            ::Swap(other._allocation, _allocation);
         }
         return *this;
     }
