@@ -12,6 +12,7 @@
 class FLAXENGINE_API MProperty
 {
     friend MClass;
+    friend MCore;
 
 protected:
 #if USE_MONO
