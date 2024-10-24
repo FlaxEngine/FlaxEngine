@@ -13,6 +13,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 using FlaxEngine.Utilities;
+using System.Linq;
 
 namespace FlaxEditor.Surface.Archetypes
 {
@@ -423,6 +424,20 @@ namespace FlaxEditor.Surface.Archetypes
                     _combobox.SelectedIndex = -1;
 
                 UpdateCombo();
+            }
+
+            /// <inheritdoc />
+            public bool IsParameterReferenced(SurfaceParameter param, VisjectSurface surface)
+            {
+                for (int i = 0; i < surface.Nodes.Count; i++)
+                {
+                    if (surface.Nodes[i] is IParametersDependantNode node)
+                    {
+                        return (Guid)surface.Nodes[i].Values[0] == param.ID && surface.Nodes[i].GetBoxes().Any(b => b.Connections.Count > 0);
+                    }
+                }
+
+                return false;
             }
 
             /// <inheritdoc />
@@ -940,6 +955,20 @@ namespace FlaxEditor.Surface.Archetypes
                     _combobox.SelectedIndex = -1;
 
                 UpdateCombo();
+            }
+
+            /// <inheritdoc />
+            public bool IsParameterReferenced(SurfaceParameter param, VisjectSurface surface)
+            {
+                for (int i = 0; i < surface.Nodes.Count; i++)
+                {
+                    if (surface.Nodes[i] is IParametersDependantNode node)
+                    {
+                        return (Guid)surface.Nodes[i].Values[0] == param.ID && surface.Nodes[i].GetBoxes().Any(b => b.Connections.Count > 0);
+                    }
+                }
+
+                return false;
             }
 
             /// <inheritdoc />
