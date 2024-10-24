@@ -1212,6 +1212,16 @@ bool ManagedBinaryModule::IsLoaded() const
 #endif
 }
 
+void ManagedBinaryModule::GetMethods(const ScriptingTypeHandle& typeHandle, Array<void*>& methods)
+{
+    const ScriptingType& type = typeHandle.GetType();
+    if (type.ManagedClass)
+    {
+        const auto& mMethods = type.ManagedClass->GetMethods();
+        methods.Add((void* const*)mMethods.Get(), mMethods.Count());
+    }
+}
+
 void* ManagedBinaryModule::FindMethod(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name, int32 numParams)
 {
     const ScriptingType& type = typeHandle.GetType();
@@ -1379,6 +1389,23 @@ void ManagedBinaryModule::GetMethodSignature(void* method, ScriptingTypeMethodSi
 #else
 #define ManagedBinaryModuleFieldIsPropertyBit (uintptr)(1ul << 31)
 #endif
+#define GetManagedBinaryModulePropertyHandle(ptr) ((uintptr)ptr & ~ManagedBinaryModuleFieldIsPropertyBit)
+#define SetManagedBinaryModulePropertyHandle(ptr) (void*)((uintptr)ptr | ManagedBinaryModuleFieldIsPropertyBit)
+
+void ManagedBinaryModule::GetFields(const ScriptingTypeHandle& typeHandle, Array<void*>& fields)
+{
+    const ScriptingType& type = typeHandle.GetType();
+    if (type.ManagedClass)
+    {
+        const auto& mFields = type.ManagedClass->GetFields();
+        const auto& mProperties = type.ManagedClass->GetProperties();
+        fields.EnsureCapacity(fields.Count() + mFields.Count() + mProperties.Count());
+        for (MField* field : mFields)
+            fields.Add(field);
+        for (MProperty* property : mProperties)
+            fields.Add(SetManagedBinaryModulePropertyHandle(property));
+    }
+}
 
 void* ManagedBinaryModule::FindField(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name)
 {
@@ -1388,7 +1415,7 @@ void* ManagedBinaryModule::FindField(const ScriptingTypeHandle& typeHandle, cons
     {
         result = type.ManagedClass->GetProperty(name.Get());
         if (result)
-            result = (void*)((uintptr)result | ManagedBinaryModuleFieldIsPropertyBit);
+            result = SetManagedBinaryModulePropertyHandle(result);
     }
     return result;
 }
@@ -1398,7 +1425,7 @@ void ManagedBinaryModule::GetFieldSignature(void* field, ScriptingTypeFieldSigna
 #if USE_CSHARP
     if ((uintptr)field & ManagedBinaryModuleFieldIsPropertyBit)
     {
-        const auto mProperty = (MProperty*)((uintptr)field & ~ManagedBinaryModuleFieldIsPropertyBit);
+        const auto mProperty = (MProperty*)GetManagedBinaryModulePropertyHandle(field);
         fieldSignature.Name = mProperty->GetName();
         fieldSignature.ValueType = MoveTemp(MUtils::UnboxVariantType(mProperty->GetType()));
         fieldSignature.IsStatic = mProperty->IsStatic();
