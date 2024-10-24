@@ -4,6 +4,7 @@ using System.ComponentModel;
 using FlaxEditor.GUI.Docking;
 using FlaxEditor.Utilities;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.Options
 {
@@ -216,6 +217,21 @@ namespace FlaxEditor.Options
         [DefaultValue(true)]
         [EditorDisplay("Interface"), EditorOrder(320), Tooltip("Toggles tree line visibility in places like the Scene or Content Panel.")]
         public bool ShowTreeLines { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets tooltip text alignment.
+        /// </summary>
+        [DefaultValue(TextAlignment.Center)]
+        [EditorDisplay("Interface"), EditorOrder(321)]
+        public TextAlignment TooltipTextAlignment { get => _tooltipTextAlignment;
+            set
+            {
+                _tooltipTextAlignment = value;
+                Style.Current.SharedTooltip.HorizontalTextAlignment = value;
+            }
+        }
+
+        private TextAlignment _tooltipTextAlignment = TextAlignment.Center;
 
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.

@@ -77,7 +77,7 @@ namespace Flax.Deps.Dependencies
                         var buildDir = Path.Combine(root, "build-" + architecture.ToString());
                         var solutionPath = Path.Combine(buildDir, "OpenAL.sln");
 
-                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DBUILD_SHARED_LIBS=OFF");
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=\"/D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR /EHsc\" -DCMAKE_CXX_FLAGS=\"/D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR /EHsc\"");
                         Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopy)

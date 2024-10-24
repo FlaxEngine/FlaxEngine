@@ -1080,11 +1080,7 @@ void TrySetupMaterialParameter(MaterialInstance* instance, Span<const Char*> par
 String GetAdditionalImportPath(const String& autoImportOutput, Array<String>& importedFileNames, const String& name)
 {
     String filename = name;
-    for (int32 j = filename.Length() - 1; j >= 0; j--)
-    {
-        if (EditorUtilities::IsInvalidPathChar(filename[j]))
-            filename[j] = ' ';
-    }
+    EditorUtilities::ValidatePathChars(filename);
     if (importedFileNames.Contains(filename))
     {
         int32 counter = 1;

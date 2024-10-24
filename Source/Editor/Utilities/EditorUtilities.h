@@ -58,6 +58,13 @@ public:
     static bool IsInvalidPathChar(Char c);
 
     /// <summary>
+    /// Validates path characters and replaces any incorrect ones.
+    /// </summary>
+    /// <param name="filename">The input and output filename string to process.</param>
+    /// <param name="invalidCharReplacement">The character to use for replacement for any invalid characters in the path. Use '0' to remove them.</param>
+    static void ValidatePathChars(String& filename, char invalidCharReplacement = ' ');
+
+    /// <summary>
     /// Replaces the given text with other one in the files.
     /// </summary>
     /// <param name="folderPath">The relative or absolute path to the directory to search.</param>

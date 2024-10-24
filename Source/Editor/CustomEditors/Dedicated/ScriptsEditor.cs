@@ -95,7 +95,21 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var cm = new ItemsListContextMenu(180);
             for (int i = 0; i < scripts.Count; i++)
             {
-                cm.AddItem(new TypeSearchPopup.TypeItemView(scripts[i]));
+                var script = scripts[i];
+                var item = new TypeSearchPopup.TypeItemView(script);
+                if (script.GetAttributes(false).FirstOrDefault(x => x is RequireActorAttribute) is RequireActorAttribute requireActor)
+                {
+                    var actors = ScriptsEditor.ParentEditor.Values;
+                    foreach (var a in actors)
+                    {
+                        if (a.GetType() != requireActor.RequiredType)
+                        {
+                            item.Enabled = false;
+                            break;
+                        }
+                    }
+                }
+                cm.AddItem(item);
             }
             cm.TextChanged += text =>
             {

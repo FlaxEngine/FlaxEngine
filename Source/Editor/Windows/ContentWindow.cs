@@ -638,12 +638,14 @@ namespace FlaxEditor.Windows
             var toDelete = new List<ContentItem>(items);
             toDelete.Sort((a, b) => a.IsFolder ? 1 : b.IsFolder ? -1 : a.Compare(b));
 
+            string singularPlural = toDelete.Count > 1 ? "s" : "";
+
             string msg = toDelete.Count == 1
-                         ? string.Format("Are you sure to delete \'{0}\'?\nThis action cannot be undone. Files will be deleted permanently.", items[0].Path)
-                         : string.Format("Are you sure to delete {0} selected items?\nThis action cannot be undone. Files will be deleted permanently.", items.Count);
+                         ? string.Format("Delete \'{0}\'?\n\nThis action cannot be undone.\nFile will be deleted permanently.", items[0].Path)
+                         : string.Format("Delete {0} selected items?\n\nThis action cannot be undone.\nFiles will be deleted permanently.", items.Count);
 
             // Ask user
-            if (MessageBox.Show(msg, "Delete asset(s)", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
+            if (MessageBox.Show(msg, "Delete asset" + singularPlural, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
                 return;
 
             // Clear navigation
