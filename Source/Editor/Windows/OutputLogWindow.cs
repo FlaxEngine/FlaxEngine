@@ -212,6 +212,11 @@ namespace FlaxEditor.Windows
                         Name = command,
                         Owner = this,
                     });
+                    var flags = DebugCommands.GetCommandFlags(command);
+                    if (flags.HasFlag(DebugCommands.CommandFlags.Exec))
+                        lastItem.TintColor = new Color(0.85f, 0.85f, 1.0f, 1.0f);
+                    else if (flags.HasFlag(DebugCommands.CommandFlags.Read) && !flags.HasFlag(DebugCommands.CommandFlags.Write))
+                        lastItem.TintColor = new Color(0.85f, 0.85f, 0.85f, 1.0f);
                     lastItem.Focused += item =>
                     {
                         // Set command
@@ -257,6 +262,15 @@ namespace FlaxEditor.Windows
                 _searchPopup?.Hide();
                 if (RootWindow?.Window != null)
                     RootWindow.Window.LostFocus -= OnRootWindowLostFocus;
+            }
+
+            /// <inheritdoc />
+            public override void OnGotFocus()
+            {
+                // Precache debug commands to reduce time-to-interactive
+                DebugCommands.InitAsync();
+
+                base.OnGotFocus();
             }
 
             /// <inheritdoc />

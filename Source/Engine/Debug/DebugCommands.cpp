@@ -5,6 +5,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Threading/Task.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Scripting/Scripting.h"
@@ -103,6 +104,7 @@ namespace
 {
     CriticalSection Locker;
     bool Inited = false;
+    Task* AsyncTask = nullptr;
     Array<CommandData> Commands;
 
     void FindDebugCommands(BinaryModule* module)
@@ -208,15 +210,45 @@ namespace
 
     void InitCommands()
     {
+        ASSERT_LOW_LAYER(!Inited);
         PROFILE_CPU();
-        Inited = true;
+
+        // Cache existing modules
         const auto& modules = BinaryModule::GetModules();
         for (BinaryModule* module : modules)
         {
             FindDebugCommands(module);
         }
+
+        // Link for modules load/reload actions
         Scripting::BinaryModuleLoaded.Bind(&FindDebugCommands);
         Scripting::ScriptsReloading.Bind(&OnScriptsReloading);
+
+        // Mark as done
+        Locker.Lock();
+        Inited = true;
+        AsyncTask = nullptr;
+        Locker.Unlock();
+    }
+
+    void EnsureInited()
+    {
+        // Check current state
+        Locker.Lock();
+        bool inited = Inited;
+        Locker.Unlock();
+        if (inited)
+            return;
+
+        // Wait for any async task
+        if (AsyncTask)
+            AsyncTask->Wait();
+
+        // Do sync init if still not inited
+        Locker.Lock();
+        if (!Inited)
+            InitCommands();
+        Locker.Unlock();
     }
 }
 
@@ -231,6 +263,8 @@ public:
     void Dispose() override
     {
         // Cleanup
+        if (AsyncTask)
+            AsyncTask->Wait();
         ScopeLock lock(Locker);
         Scripting::BinaryModuleLoaded.Unbind(&FindDebugCommands);
         Scripting::ScriptsReloading.Unbind(&OnScriptsReloading);
@@ -264,9 +298,8 @@ void DebugCommands::Execute(StringView command)
     }
 
     // Ensure that commands cache has been created
+    EnsureInited();
     ScopeLock lock(Locker);
-    if (!Inited)
-        InitCommands();
 
     // Find command to run
     for (const CommandData& cmd : Commands)
@@ -290,9 +323,8 @@ void DebugCommands::Search(StringView searchText, Array<StringView>& matches, bo
     String searchTextCopy = searchText;
     searchText = searchTextCopy;
 
+    EnsureInited();
     ScopeLock lock(Locker);
-    if (!Inited)
-        InitCommands();
 
     if (startsWith)
     {
@@ -316,13 +348,45 @@ void DebugCommands::Search(StringView searchText, Array<StringView>& matches, bo
     }
 }
 
-bool DebugCommands::Iterate(const StringView& searchText, int32& index)
+void DebugCommands::InitAsync()
 {
     ScopeLock lock(Locker);
+    if (Inited)
+        return;
+    AsyncTask = Task::StartNew(InitCommands);
+}
+
+DebugCommands::CommandFlags DebugCommands::GetCommandFlags(StringView command)
+{
+    CommandFlags result = CommandFlags::None;
+    // TODO: fix missing string handle on 1st command execution (command gets invalid after InitCommands due to dotnet GC or dotnet interop handles flush)
+    String commandCopy = command;
+    command = commandCopy;
+    EnsureInited();
+    for (auto& e : Commands)
+    {
+        if (e.Name == command)
+        {
+            if (e.Method)
+                result |= CommandFlags::Exec;
+            else if (e.Field)
+                result |= CommandFlags::ReadWrite;
+            if (e.MethodGet)
+                result |= CommandFlags::Read;
+            if (e.MethodSet)
+                result |= CommandFlags::Write;
+            break;
+        }
+    }
+    return result;
+}
+
+bool DebugCommands::Iterate(const StringView& searchText, int32& index)
+{
+    EnsureInited();
     if (index >= 0)
     {
-        if (!Inited)
-            InitCommands();
+        ScopeLock lock(Locker);
         while (index < Commands.Count())
         {
             auto& command = Commands.Get()[index];
