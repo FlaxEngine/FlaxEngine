@@ -422,7 +422,7 @@ void DebugCommands::Search(StringView searchText, Array<StringView>& matches, bo
 void DebugCommands::InitAsync()
 {
     ScopeLock lock(Locker);
-    if (Inited)
+    if (Inited || AsyncTask)
         return;
     AsyncTask = Task::StartNew(InitCommands);
 }
