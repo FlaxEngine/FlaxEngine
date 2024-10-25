@@ -19,7 +19,7 @@ private:
 
     union
     {
-        T     _value;
+        T _value;
         Dummy _dummy;
     };
     bool _hasValue;
@@ -32,15 +32,12 @@ public:
         : _dummy()
         , _hasValue(false)
     {
-        // Value is not initialized.
     }
 
     ~Nullable()
     {
         if (_hasValue)
-        {
             _value.~T();
-        }
     }
 
     /// <summary>
@@ -82,9 +79,7 @@ public:
     Nullable(Nullable&& other) noexcept
     {
         if (other._hasValue)
-        {
             new (&_value) T(MoveTemp(other._value)); // Placement new (move constructor)
-        }
         _hasValue = other._hasValue;
 
         other.Reset();
@@ -94,12 +89,10 @@ public:
     /// Reassigns the wrapped value by copying.
     /// </summary>
     template<typename U = T, typename = typename TEnableIf<TIsCopyConstructible<U>::Value>::Type>
-    auto operator=(const T& value) -> Nullable&
+    Nullable& operator=(const T& value)
     {
         if (_hasValue)
-        {
             _value.~T();
-        }
 
         new (&_value) T(value); // Placement new (copy constructor)
         _hasValue = true;
@@ -110,12 +103,10 @@ public:
     /// <summary>
     /// Reassigns the wrapped value by moving.
     /// </summary>
-    auto operator=(T&& value) noexcept -> Nullable&
+    Nullable& operator=(T&& value) noexcept
     {
         if (_hasValue)
-        {
             _value.~T();
-        }
 
         new (&_value) T(MoveTemp(value)); // Placement new (move constructor)
         _hasValue = true;
@@ -127,17 +118,13 @@ public:
     /// Reassigns the wrapped value by copying another <see cref="Nullable{T}"/>.
     /// </summary>
     template<typename U = T, typename = typename TEnableIf<TIsCopyConstructible<U>::Value>::Type>
-    auto operator=(const Nullable& other) -> Nullable&
+    Nullable& operator=(const Nullable& other)
     {
         if (_hasValue)
-        {
             _value.~T();
-        }
 
         if (other._hasValue)
-        {
             new (&_value) T(other._value); // Placement new (copy constructor)
-        }
 
         _hasValue = other._hasValue; // Set the flag AFTER the value is copied.
 
@@ -147,17 +134,13 @@ public:
     /// <summary>
     /// Reassigns the wrapped value by moving another <see cref="Nullable{T}"/>.
     /// </summary>
-    auto operator=(Nullable&& other) noexcept -> Nullable&
+    Nullable& operator=(Nullable&& other) noexcept
     {
         if (this == &other)
-        {
             return *this;
-        }
 
         if (_hasValue)
-        {
             _value.~T();
-        }
 
         if (other._hasValue)
         {
@@ -228,10 +211,7 @@ public:
     FORCE_INLINE void SetValue(const T& value)
     {
         if (_hasValue)
-        {
             _value.~T();
-        }
-
         new (&_value) T(value); // Placement new (copy constructor)
         _hasValue = true; // Set the flag AFTER the value is copied.
     }
@@ -243,10 +223,7 @@ public:
     FORCE_INLINE void SetValue(T&& value) noexcept
     {
         if (_hasValue)
-        {
             _value.~T();
-        }
-
         new (&_value) T(MoveTemp(value)); // Placement new (move constructor)
         _hasValue = true; // Set the flag AFTER the value is moved.
     }
@@ -259,10 +236,7 @@ public:
     FORCE_INLINE bool TrySet(const T& value)
     {
         if (_hasValue)
-        {
             return false;
-        }
-
         new (&_value) T(value); // Placement new (copy constructor)
         _hasValue = true; // Set the flag AFTER the value is copied.
         return true;
@@ -275,10 +249,7 @@ public:
     FORCE_INLINE bool TrySet(T&& value) noexcept
     {
         if (_hasValue)
-        {
             return false;
-        }
-
         new (&_value) T(MoveTemp(value)); // Placement new (move constructor)
         _hasValue = true; // Set the flag AFTER the value is moved.
         return true;
@@ -290,10 +261,7 @@ public:
     FORCE_INLINE void Reset()
     {
         if (!_hasValue)
-        {
             return;
-        }
-
         _hasValue = false; // Reset the flag BEFORE the value is (potentially) destructed.
         _value.~T();
     }
@@ -316,12 +284,7 @@ public:
     /// <returns><c>true</c> if both values are equal.</returns>
     FORCE_INLINE bool operator==(const Nullable& other) const
     {
-        if (other._hasValue != _hasValue)
-        {
-            return false;
-        }
-
-        return _value == other._value;
+        return other._hasValue == _hasValue && _value == other._value;
     }
 
     /// <summary>
@@ -343,7 +306,6 @@ public:
         return _hasValue;
     }
 
-
     /// <summary>
     /// Matches the wrapped value with a handler for the value or a handler for the null value.
     /// </summary>
@@ -354,13 +316,8 @@ public:
     FORCE_INLINE auto Match(ValueVisitor valueHandler, NullVisitor nullHandler) const
     {
         if (_hasValue)
-        {
             return valueHandler(_value);
-        }
-        else
-        {
-            return nullHandler();
-        }
+        return nullHandler();
     }
 };
 
@@ -409,11 +366,10 @@ public:
         _value = value ? Value::True : Value::False;
     }
 
-
     /// <summary>
     /// Reassigns the wrapped value by implicitly casting a boolean value.
     /// </summary>
-    auto operator=(const bool value) noexcept -> Nullable&
+    Nullable& operator=(const bool value) noexcept
     {
         _value = value ? Value::True : Value::False;
         return *this;
@@ -422,13 +378,12 @@ public:
     /// <summary>
     /// Reassigns the wrapped value by copying another nullable boolean.
     /// </summary>
-    auto operator=(const Nullable& value) -> Nullable& = default;
+    Nullable& operator=(const Nullable& value) = default;
 
     /// <summary>
     /// Reassigns the wrapped value by moving another nullable boolean.
     /// </summary>
-    auto operator=(Nullable&& value) -> Nullable& = default;
-
+    Nullable& operator=(Nullable&& value) = default;
 
     /// <summary>
     /// Checks if wrapped bool has a valid value.
@@ -494,7 +449,6 @@ public:
         value = _value == Value::True;
         _value = Value::Null;
     }
-
 
     /// <summary>
     /// Checks if the current object has a valid value and it's set to <c>true</c>. If the value is <c>false</c> or not valid, the method returns <c>false</c>.
