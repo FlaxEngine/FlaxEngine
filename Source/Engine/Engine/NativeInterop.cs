@@ -55,6 +55,9 @@ namespace FlaxEngine.Interop
         private static Dictionary<Assembly, string> assemblyOwnedNativeLibraries = new();
         internal static AssemblyLoadContext scriptingAssemblyLoadContext;
 
+        private delegate TInternal ToNativeDelegate<T, TInternal>(T value);
+        private delegate T ToManagedDelegate<T, TInternal>(TInternal value);
+
         [System.Diagnostics.DebuggerStepThrough]
         private static IntPtr NativeLibraryImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? dllImportSearchPath)
         {
@@ -490,6 +493,7 @@ namespace FlaxEngine.Interop
             internal delegate void MarshalFieldTypedDelegate(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize);
             internal delegate void* GetBasePointer(ref T fieldOwner);
 
+            internal static Delegate toManagedDelegate;
             internal static FieldInfo[] marshallableFields;
             internal static int[] marshallableFieldOffsets;
             internal static MarshalFieldTypedDelegate[] toManagedFieldMarshallers;
@@ -612,16 +616,32 @@ namespace FlaxEngine.Interop
                 MethodInfo toManagedMethod;
                 if (type.IsValueType)
                 {
-                    string methodName;
-                    if (type == typeof(IntPtr))
-                        methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManagedPointer);
-                    else if (type == typeof(ManagedHandle))
-                        methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManagedHandle);
-                    else if (marshallableFields != null)
-                        methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManagedWithMarshallableFields);
+                    // Non-POD structures use internal layout (eg. SpriteHandleManaged in C++ with SpriteHandleMarshaller.SpriteHandleInternal in C#) so convert C++ data into C# data
+                    var attr = type.GetCustomAttribute<System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute>();
+                    toManagedMethod = attr?.NativeType.GetMethod("ToManaged", BindingFlags.Static | BindingFlags.NonPublic);
+                    if (toManagedMethod != null)
+                    {
+                        // TODO: optimize via delegate call rather than method invoke
+                        var internalType = toManagedMethod.GetParameters()[0].ParameterType;
+                        var types = new Type[] { type, internalType };
+                        toManagedDelegate = toManagedMethod.CreateDelegate(typeof(ToManagedDelegate<,>).MakeGenericType(types));
+                        //toManagedDelegate = toManagedMethod.CreateDelegate();//.CreateDelegate(typeof(ToManagedDelegate<,>).MakeGenericType(type, toManagedMethod.GetParameters()[0].ParameterType));
+                        string methodName = nameof(MarshalInternalHelper<ValueTypePlaceholder, ValueTypePlaceholder>.ToManagedMarshaller);
+                        toManagedMethod = typeof(MarshalInternalHelper<,>).MakeGenericType(types).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+                    }
                     else
-                        methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManaged);
-                    toManagedMethod = typeof(MarshalHelperValueType<>).MakeGenericType(type).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+                    {
+                        string methodName;
+                        if (type == typeof(IntPtr))
+                            methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManagedPointer);
+                        else if (type == typeof(ManagedHandle))
+                            methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManagedHandle);
+                        else if (marshallableFields != null)
+                            methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManagedWithMarshallableFields);
+                        else
+                            methodName = nameof(MarshalHelperValueType<ValueTypePlaceholder>.ToManaged);
+                        toManagedMethod = typeof(MarshalHelperValueType<>).MakeGenericType(type).GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic);
+                    }
                 }
                 else if (type.IsArray)
                 {
@@ -1065,6 +1085,17 @@ namespace FlaxEngine.Interop
             }
         }
 
+        internal static class MarshalInternalHelper<T, TInternal> where T : struct
+                                                                  where TInternal : struct
+        {
+            internal static void ToManagedMarshaller(ref T managedValue, IntPtr nativePtr, bool byRef)
+            {
+                ToManagedDelegate<T, TInternal> toManaged = Unsafe.As<ToManagedDelegate<T, TInternal>>(MarshalHelper<T>.toManagedDelegate);
+                TInternal intern = Unsafe.Read<TInternal>(nativePtr.ToPointer());
+                managedValue = toManaged(Unsafe.Read<TInternal>(nativePtr.ToPointer()));
+            }
+        }
+
         internal static class MarshalHelperValueType<T> where T : struct
         {
             internal static void ToNativeWrapper(object managedObject, IntPtr nativePtr)
@@ -1504,8 +1535,6 @@ namespace FlaxEngine.Interop
             private static (IntPtr ptr, int size)[] pinnedAllocations = new (IntPtr ptr, int size)[256];
             private static uint pinnedAllocationsPointer = 0;
 
-            private delegate TInternal ToNativeDelegate<T, TInternal>(T value);
-
             private delegate IntPtr UnboxerDelegate(object value, object converter);
 
             private static ConcurrentDictionary<Type, (UnboxerDelegate deleg, object toNativeDeleg)> unboxers = new(1, 3);
@@ -1683,6 +1712,7 @@ namespace FlaxEngine.Interop
         internal static class TypeHelpers<T>
         {
             public static readonly int MarshalSize;
+
             static TypeHelpers()
             {
                 Type type = typeof(T);

@@ -1855,7 +1855,6 @@ namespace Flax.Build.Bindings
                         {{structureInfo.Name}}Internal unmanaged;
                         public void FromManaged({{structureInfo.Name}} managed) => this.managed = managed;
                         public {{structureInfo.Name}}Internal ToUnmanaged() { unmanaged = {{marshallerFullName}}.ToNative(managed); return unmanaged; }
-                        //public void FromUnmanaged({{structureInfo.Name}}Internal unmanaged) { {{marshallerFullName}}.Free(this.unmanaged.Value); this.unmanaged = unmanaged; }
                         public void FromUnmanaged({{structureInfo.Name}}Internal unmanaged) => this.unmanaged = unmanaged;
                         public {{structureInfo.Name}} ToManaged() { managed = {{marshallerFullName}}.ToManaged(unmanaged); return managed; }
                         public void Free() => NativeToManaged.Free(unmanaged);
