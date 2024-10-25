@@ -340,6 +340,18 @@ namespace FlaxEditor.Options
         [EditorDisplay("Output Log", "Text Shadow Offset"), EditorOrder(445), Tooltip("The output log text shadow offset. Set to 0 to disable this feature.")]
         public Float2 OutputLogTextShadowOffset { get; set; } = new Float2(1);
 
+        // [Deprecated in v1.10]
+        [Serialize, Obsolete, NoUndo]
+        private bool FocusGameWinOnPlay
+        {
+            get => throw new Exception();
+            set
+            {
+                // Upgrade value
+                FocusOnPlayMode = value ? PlayModeFocus.GameWindow : PlayModeFocus.None;
+            }
+        }
+
         /// <summary>
         /// Gets or sets a value indicating whether auto-focus output log window on code compilation error.
         /// </summary>
