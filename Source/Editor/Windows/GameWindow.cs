@@ -55,7 +55,7 @@ namespace FlaxEditor.Windows
             },
             new PlayModeFocusOptions
             {
-                Name = "Game Window Then Back",
+                Name = "Game Window Then Restore",
                 Tooltip = "Focus the Game Window. On play mode end restore focus to the previous window.",
                 FocusOption = InterfaceOptions.PlayModeFocus.GameWindowThenRestore,
             },
