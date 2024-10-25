@@ -2,7 +2,6 @@
 
 using System.ComponentModel;
 using FlaxEditor.GUI.Docking;
-using FlaxEditor.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.Options
