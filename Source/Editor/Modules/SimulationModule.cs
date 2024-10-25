@@ -279,11 +279,11 @@ namespace FlaxEditor.Modules
                     case Options.InterfaceOptions.PlayModeFocus.None:
                         break;
 
-                    case Options.InterfaceOptions.PlayModeFocus.GamePanel:
+                    case Options.InterfaceOptions.PlayModeFocus.GameWindow:
                         gameWin.FocusGameViewport();
                         break;
 
-                    case Options.InterfaceOptions.PlayModeFocus.GamePanelThenBack:
+                    case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestore:
                         _previousWindow = gameWin.ParentDockPanel.SelectedTab;
                         gameWin.FocusGameViewport();
                         break;
@@ -305,10 +305,10 @@ namespace FlaxEditor.Modules
                 case Options.InterfaceOptions.PlayModeFocus.None:
                     break;
 
-                case Options.InterfaceOptions.PlayModeFocus.GamePanel:
+                case Options.InterfaceOptions.PlayModeFocus.GameWindow:
                     break;
 
-                case Options.InterfaceOptions.PlayModeFocus.GamePanelThenBack:
+                case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestore:
                     if (!Editor.Windows.GameWin.ParentDockPanel.ContainsTab(_previousWindow))
                         break;
 

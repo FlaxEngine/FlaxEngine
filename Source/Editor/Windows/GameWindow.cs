@@ -49,15 +49,15 @@ namespace FlaxEditor.Windows
             },
             new PlayModeFocusOptions
             {
-                Name = "Game Panel",
-                Tooltip = "Focus the Game panel.",
-                FocusOption = InterfaceOptions.PlayModeFocus.GamePanel,
+                Name = "Game Window",
+                Tooltip = "Focus the Game Window.",
+                FocusOption = InterfaceOptions.PlayModeFocus.GameWindow,
             },
             new PlayModeFocusOptions
             {
-                Name = "Game Panel Then Back",
-                Tooltip = "Focus the Game panel. On play mode end focus the previous panel again.",
-                FocusOption = InterfaceOptions.PlayModeFocus.GamePanelThenBack,
+                Name = "Game Window Then Back",
+                Tooltip = "Focus the Game Window. On play mode end restore focus to the previous window.",
+                FocusOption = InterfaceOptions.PlayModeFocus.GameWindowThenRestore,
             },
         };
 
