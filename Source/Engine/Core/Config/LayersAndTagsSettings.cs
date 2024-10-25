@@ -35,7 +35,7 @@ namespace FlaxEditor.Content.Settings
         /// The layers names.
         /// </summary>
         [EditorOrder(10), EditorDisplay("Terrain Layers", EditorDisplayAttribute.InlineStyle), Collection(CanResize = false, Display = CollectionAttribute.DisplayType.Inline)]
-        public string[] TerrainLayers = new string[8];
+        public string[] TerrainLayers = Enumerable.Repeat(string.Empty, 8).ToArray();
 
         /// <summary>
         /// Gets the current terrain layer names. Returns "Layer" + index for layers without a name.
