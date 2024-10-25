@@ -48,7 +48,7 @@ namespace FlaxEditor.Content.Settings
             for (int i = 0; i < layerNames.Length; i++)
             {
                 if (string.IsNullOrEmpty(layerNames[i]))
-                    layerNames[i] = $"Terrain Layer {i}";
+                    layerNames[i] = $"Layer {i}";
             }
 
             return layerNames;
