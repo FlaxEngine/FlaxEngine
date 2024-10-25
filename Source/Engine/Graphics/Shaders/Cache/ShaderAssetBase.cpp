@@ -249,12 +249,12 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         options.SourceLength = sourceLength;
         options.Profile = shaderProfile;
         options.Output = &cacheStream;
-        if (CommandLine::Options.ShaderDebug)
+        if (CommandLine::Options.ShaderDebug.IsTrue())
         {
             options.GenerateDebugData = true;
             options.NoOptimize = true;
         }
-        else if (CommandLine::Options.ShaderProfile)
+        else if (CommandLine::Options.ShaderProfile.IsTrue())
         {
             options.GenerateDebugData = true;
         }

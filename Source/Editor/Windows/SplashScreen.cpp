@@ -147,7 +147,7 @@ SplashScreen::~SplashScreen()
 void SplashScreen::Show()
 {
     // Skip if already shown or in headless mode
-    if (IsVisible() || CommandLine::Options.Headless)
+    if (IsVisible() || CommandLine::Options.Headless.IsTrue())
         return;
 
     LOG(Info, "Showing splash screen");

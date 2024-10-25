@@ -616,7 +616,7 @@ bool WindowsPlatform::Init()
         return true;
 
     // Init console output (engine is linked with /SUBSYSTEM:WINDOWS so it lacks of proper console output on Windows)
-    if (CommandLine::Options.Std)
+    if (CommandLine::Options.Std.IsTrue())
     {
         // Attaches output of application to parent console, returns true if running in console-mode
         // [Reference: https://www.tillett.info/2013/05/13/how-to-create-a-windows-program-that-works-as-both-as-a-gui-and-console-application]

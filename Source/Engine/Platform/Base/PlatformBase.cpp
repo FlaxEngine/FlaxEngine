@@ -365,7 +365,7 @@ void PlatformBase::Fatal(const Char* msg, void* context)
 void PlatformBase::Error(const Char* msg)
 {
 #if PLATFORM_HAS_HEADLESS_MODE
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
     {
 #if PLATFORM_TEXT_IS_CHAR16
         StringAnsi ansi(msg);
@@ -385,7 +385,7 @@ void PlatformBase::Error(const Char* msg)
 void PlatformBase::Warning(const Char* msg)
 {
 #if PLATFORM_HAS_HEADLESS_MODE
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
     {
         std::cout << "Warning: " << msg << std::endl;
     }
@@ -399,7 +399,7 @@ void PlatformBase::Warning(const Char* msg)
 void PlatformBase::Info(const Char* msg)
 {
 #if PLATFORM_HAS_HEADLESS_MODE
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
     {
         std::cout << "Info: " << msg << std::endl;
     }
