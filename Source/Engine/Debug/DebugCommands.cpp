@@ -26,6 +26,61 @@ struct CommandData
     void* MethodSet = nullptr;
     void* Field = nullptr;
 
+    static void PrettyPrint(StringBuilder& sb, const Variant& value)
+    {
+        if (value.Type.Type == VariantType::Array)
+        {
+            // Prettify array printing
+            auto& resultArray = value.AsArray();
+            sb.Append('[');
+            for (int32 i = 0; i < resultArray.Count(); i++)
+            {
+                if (i > 0)
+                    sb.Append(',').Append(' ');
+                PrettyPrint(sb, resultArray[i]);
+                if (i > 30) // Limit on too large values
+                {
+                    sb.Append(TEXT("..."));
+                    break;
+                }
+            }
+            sb.Append(']');
+        }
+        else if (value.Type.Type == VariantType::Structure)
+        {
+            // Prettify structure printing
+            ScriptingTypeHandle resultType = Scripting::FindScriptingType(value.Type.GetTypeName());
+            if (resultType)
+            {
+                Array<void*> fields;
+                resultType.Module->GetFields(resultType, fields);
+                sb.Append('{');
+                Variant fieldValue;
+                ScriptingTypeFieldSignature fieldSig;
+                bool first = true;
+                for (void* field : fields)
+                {
+                    resultType.Module->GetFieldSignature(field, fieldSig);
+                    if (fieldSig.IsStatic)
+                        continue;
+                    if (!resultType.Module->GetFieldValue(field, value, fieldValue))
+                    {
+                        if (!first)
+                            sb.Append(',');
+                        first = false;
+                        sb.Append(' ').Append(String(fieldSig.Name)).Append(':').Append(' ');
+                        PrettyPrint(sb, fieldValue);
+                    }
+                }
+                sb.Append(' ').Append('}');
+            }
+        }
+        else
+        {
+            sb.Append(value.ToString());
+        }
+    }
+
     void Invoke(StringView args) const
     {
         PROFILE_CPU();
@@ -113,56 +168,9 @@ struct CommandData
         // Print result
         if (result != Variant())
         {
-            String str = result.ToString();
-            if (result.Type.Type == VariantType::Array)
-            {
-                // Prettify array printing
-                auto& resultArray = result.AsArray();
-                StringBuilder sb;
-                sb.Append('[');
-                for (int32 i = 0; i < resultArray.Count(); i++)
-                {
-                    if (i > 0)
-                        sb.Append(',').Append(' ');
-                    sb.Append(resultArray[i].ToString());
-                    if (i > 30) // Limit on too large values
-                    {
-                        sb.Append(TEXT("..."));
-                        break;
-                    }
-                }
-                sb.Append(']');
-                str = sb.ToString();
-            }
-            else if (result.Type.Type == VariantType::Structure)
-            {
-                // Prettify structure printing
-                ScriptingTypeHandle resultType = Scripting::FindScriptingType(result.Type.GetTypeName());
-                if (resultType)
-                {
-                    Array<void*> fields;
-                    resultType.Module->GetFields(resultType, fields);
-                    StringBuilder sb;
-                    sb.Append('{');
-                    Variant fieldValue;
-                    ScriptingTypeFieldSignature fieldSig;
-                    bool first = true;
-                    for (void* field : fields)
-                    {
-                        if (!resultType.Module->GetFieldValue(field, result, fieldValue))
-                        {
-                            resultType.Module->GetFieldSignature(field, fieldSig);
-                            if (!first)
-                                sb.Append(',');
-                            first = false;
-                            sb.Append(' ').Append(String(fieldSig.Name)).Append(':').Append(' ').Append(fieldValue.ToString());
-                        }
-                    }
-                    sb.Append(' ').Append('}');
-                    str = sb.ToString();
-                }
-            }
-            LOG_STR(Info, str);
+            StringBuilder sb;
+            PrettyPrint(sb, result);
+            LOG_STR(Info, sb.ToStringView());
         }
         else if (args.IsEmpty() && sigValue.Type != VariantType::Void && sigValue.Type != VariantType::Null)
         {
