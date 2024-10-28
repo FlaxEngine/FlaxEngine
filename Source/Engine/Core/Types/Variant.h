@@ -421,6 +421,7 @@ private:
     void AllocStructure();
     void CopyStructure(void* src);
     void FreeStructure();
+    static Variant Enum(const VariantType& type, const uint64 value);
 };
 
 namespace Math
