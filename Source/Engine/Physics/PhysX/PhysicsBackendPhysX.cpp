@@ -2801,7 +2801,14 @@ float PhysicsBackend::ComputeShapeSqrDistanceToPoint(void* shape, const Vector3&
 {
     auto shapePhysX = (PxShape*)shape;
     const PxTransform trans(C2P(position), C2P(orientation));
+#if USE_LARGE_WORLDS
+    PxVec3 closestPointPx;
+    float result = PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry(), trans, &closestPointPx);
+    *closestPoint = P2C(closestPointPx);
+    return result;
+#else
     return PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry(), trans, (PxVec3*)closestPoint);
+#endif
 }
 
 bool PhysicsBackend::RayCastShape(void* shape, const Vector3& position, const Quaternion& orientation, const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance)
