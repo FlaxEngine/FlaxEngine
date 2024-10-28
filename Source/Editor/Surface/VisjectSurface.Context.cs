@@ -2,8 +2,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Surface.Undo;
-using FlaxEngine;
 
 namespace FlaxEditor.Surface
 {
@@ -58,6 +58,28 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
+        /// Opens the surface context with the given owning nodes IDs path.
+        /// </summary>
+        /// <param name="nodePath">The node ids path.</param>
+        /// <returns>Found context or null if cannot.</returns>
+        public VisjectSurfaceContext OpenContext(Span<uint> nodePath)
+        {
+            OpenContext(RootContext.Context);
+            if (nodePath != null && nodePath.Length != 0)
+            {
+                for (int i = 0; i < nodePath.Length; i++)
+                {
+                    var node = Context.FindNode(nodePath[i]);
+                    if (node is ISurfaceContext context)
+                        OpenContext(context);
+                    else
+                        return null;
+                }
+            }
+            return Context;
+        }
+
+        /// <summary>
         /// Creates the Visject surface context for the given surface data source context.
         /// </summary>
         /// <param name="parent">The parent context.</param>
@@ -101,7 +123,12 @@ namespace FlaxEditor.Surface
             if (_root == null)
                 _root = surfaceContext;
             else if (ContextStack.Contains(surfaceContext))
-                throw new ArgumentException("Context has been already added to the stack.");
+            {
+                // Go up until the given context
+                while (ContextStack.First() != surfaceContext)
+                    CloseContext();
+                return;
+            }
 
             // Change stack
             ContextStack.Push(surfaceContext);
