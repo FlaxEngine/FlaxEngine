@@ -356,9 +356,10 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
         if (_rootMotionMode == RootMotionExtraction::Enable && nodeToChannel != -1)
         {
             // Get the root bone transformation
-            Transform rootBefore = refPose;
+            Transform rootBefore = refPose, rootNow = refPose;
             const NodeAnimationData& rootChannel = anim->Data.Channels[nodeToChannel];
             rootChannel.Evaluate(animPrevPos, &rootBefore, false);
+            rootChannel.Evaluate(animPos, &rootNow, false);
 
             // Check if animation looped
             if (animPos < animPrevPos)
@@ -375,18 +376,18 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
                 // (end - before + now - begin)
                 // It sums the motion since the last update to anim end and since the start to now
                 if (motionPosition)
-                    srcNode.Translation = (rootEnd.Translation - rootBefore.Translation + rootNode.Translation - rootBegin.Translation) * motionPositionMask;
+                    srcNode.Translation = (rootEnd.Translation - rootBefore.Translation + rootNow.Translation - rootBegin.Translation) * motionPositionMask;
                 if (motionRotation)
-                    srcNode.Orientation = (rootBefore.Orientation.Conjugated() * rootEnd.Orientation) * (rootBegin.Orientation.Conjugated() * rootNode.Orientation);
+                    srcNode.Orientation = (rootBefore.Orientation.Conjugated() * rootEnd.Orientation) * (rootBegin.Orientation.Conjugated() * rootNow.Orientation);
             }
             else
             {
                 // Simple motion delta
                 // (now - before)
                 if (motionPosition)
-                    srcNode.Translation = (rootNode.Translation - rootBefore.Translation) * motionPositionMask;
+                    srcNode.Translation = (rootNow.Translation - rootBefore.Translation) * motionPositionMask;
                 if (motionRotation)
-                    srcNode.Orientation = rootBefore.Orientation.Conjugated() * rootNode.Orientation;
+                    srcNode.Orientation = rootBefore.Orientation.Conjugated() * rootNow.Orientation;
             }
 
             // Convert root motion from local-space to the actor-space (eg. if root node is not actually a root and its parents have rotation/scale)
