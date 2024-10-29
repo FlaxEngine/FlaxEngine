@@ -13,8 +13,8 @@ template<int Capacity>
 class FixedAllocation
 {
 public:
-    enum { HasSwap = false };
-    enum { HasContext = false };
+    enum { HasSwap = false }; //TODO(mtszkarbowiak) Replace with move semantics
+    enum { HasContext = false }; //TODO(mtszkarbowiak) Replace with SFINAE
 
     template<typename T>
     class alignas(sizeof(void*)) Data
@@ -81,8 +81,8 @@ public:
 class HeapAllocation
 {
 public:
-    enum { HasSwap = true };
-    enum { HasContext = false };
+    enum { HasSwap = true }; //TODO(mtszkarbowiak) Replace with move semantics
+    enum { HasContext = false }; //TODO(mtszkarbowiak) Replace with SFINAE
 
     template<typename T>
     class Data
@@ -187,8 +187,8 @@ template<int Capacity, typename OtherAllocator = HeapAllocation>
 class InlinedAllocation
 {
 public:
-    enum { HasSwap = false };
-    enum { HasContext = false };
+    enum { HasSwap = false }; //TODO(mtszkarbowiak) Replace with move semantics
+    enum { HasContext = false }; //TODO(mtszkarbowiak) Replace with SFINAE
 
     template<typename T>
     class alignas(sizeof(void*)) Data
@@ -292,4 +292,4 @@ public:
     };
 };
 
-typedef HeapAllocation DefaultAllocation;
+typedef HeapAllocation DefaultAllocation; //TODO(mtszkarbowiak) Use use :D

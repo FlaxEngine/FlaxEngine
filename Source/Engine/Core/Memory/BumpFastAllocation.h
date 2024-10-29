@@ -21,8 +21,8 @@
 class BumpFastAllocation
 {
 public:
-    enum { HasSwap = true };
-    enum { HasContext = true };
+    enum { HasSwap = true }; //TODO(mtszkarbowiak) Replace with move semantics
+    enum { HasContext = true }; //TODO(mtszkarbowiak) Replace with SFINAE
 
     class Context
     {
