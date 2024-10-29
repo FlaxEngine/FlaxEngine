@@ -812,11 +812,11 @@ public:
     static FLAXENGINE_API T TriangleArea(const Vector3Base& v0, const Vector3Base& v1, const Vector3Base& v2);
 
     /// <summary>
-    /// Calculates the angle (in radians) between from and to. This is always the smallest value.
+    /// Calculates the angle (in degrees) between from and to. This is always the smallest value.
     /// </summary>
     /// <param name="from">The first vector.</param>
     /// <param name="to">The second vector.</param>
-    /// <returns>The angle (in radians).</returns>
+    /// <returns>The angle (in degrees).</returns>
     static FLAXENGINE_API T Angle(const Vector3Base& from, const Vector3Base& to);
 
     /// <summary>
