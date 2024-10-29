@@ -831,6 +831,7 @@ namespace Flax.Build.Bindings
             }
 
             // Read return type
+            // Handle if "auto" later
             desc.ReturnType = ParseType(ref context);
 
             // Read name
@@ -841,14 +842,20 @@ namespace Flax.Build.Bindings
             // Read parameters
             desc.Parameters.AddRange(ParseFunctionParameters(ref context));
 
-            // Read ';' or 'const' or 'override' or '= 0' or '{'
+            // Read ';' or 'const' or 'override' or '= 0' or '{' or '-'
             while (true)
             {
-                var token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.LeftCurlyBrace, TokenType.Equal, TokenType.Identifier });
+                var token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.LeftCurlyBrace, TokenType.Equal, TokenType.Sub, TokenType.Identifier });
                 if (token.Type == TokenType.Equal)
                 {
                     context.Tokenizer.SkipUntil(TokenType.SemiColon);
                     break;
+                }
+                // Support auto FunctionName() -> Type
+                else if (token.Type == TokenType.Sub && desc.ReturnType.ToString() == "auto")
+                {
+                    context.Tokenizer.SkipUntil(TokenType.GreaterThan);
+                    desc.ReturnType = ParseType(ref context);
                 }
                 else if (token.Type == TokenType.Identifier)
                 {
