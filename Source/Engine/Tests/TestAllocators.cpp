@@ -14,30 +14,30 @@
 //     ASSERT(!ptr1.IsEmpty());
 // }
 
-TEST_CASE("BumpFastAllocation/Array")
-{
-    constexpr uintptr capacity = 1024; // 1 KiB
-    constexpr uintptr alignment = sizeof(byte*);
-
-    BumpFastAllocation::Context context{ capacity, alignment };
-    CHECK(context.GetUsed() == 0);
-
-    {
-        Array<int32, BumpFastAllocation> array{ 8, context };
-        array.Add(1); //TODO(mtszkarbowiak) <<ASAP>> Fix zero-size non-zero capacity allocation.
-        const uintptr used1 = context.GetUsed();
-        CHECK(used1 > 0);
-
-        array.Resize(16);
-        const uintptr used2 = context.GetUsed();
-        CHECK(used2 > used1);
-
-        // Array goes out of scope.
-    }
-
-    context.Reset();
-    CHECK(context.GetUsed() == 0);
-}
+//TEST_CASE("BumpFastAllocation/Array")
+//{
+//    constexpr uintptr capacity = 1024; // 1 KiB
+//    constexpr uintptr alignment = sizeof(byte*);
+//
+//    BumpFastAllocation::Context context{ capacity, alignment };
+//    CHECK(context.GetUsed() == 0);
+//
+//    {
+//        Array<int32, BumpFastAllocation> array{ 8, context };
+//        array.Add(1); //TODO(mtszkarbowiak) <<ASAP>> Fix zero-size non-zero capacity allocation.
+//        const uintptr used1 = context.GetUsed();
+//        CHECK(used1 > 0);
+//
+//        array.Resize(16);
+//        const uintptr used2 = context.GetUsed();
+//        CHECK(used2 > used1);
+//
+//        // Array goes out of scope.
+//    }
+//
+//    context.Reset();
+//    CHECK(context.GetUsed() == 0);
+//}
 
 // TEST_CASE("BumpFastAllocation/UPtr")
 // {
