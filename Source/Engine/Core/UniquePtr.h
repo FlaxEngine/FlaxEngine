@@ -12,9 +12,9 @@
 /// Short name is used to make it easier to type and read.
 /// </remarks>
 template<typename T, typename Alloc = HeapAllocation>
-class UPtr
+class UniquePtr
 {
-    static_assert(Alloc::HasSwap, "UPtr allocator must support swapping.");
+    static_assert(Alloc::HasSwap, "UniquePtr allocator must support swapping.");
 
 private:
     using AllocationData = typename Alloc::template Data<T>;
@@ -32,12 +32,12 @@ public:
         ASSERT(IsEmpty());
     }
 
-    ~UPtr()
+    ~UniquePtr()
     {
         Reset();
     }
 
-    FORCE_INLINE void Swap(UPtr& other)
+    FORCE_INLINE void Swap(UniquePtr& other)
     {
         _allocation.Swap(other._allocation);
     }
@@ -46,24 +46,24 @@ public:
     /// <summary>
     /// Initializes empty UPtr.
     /// </summary>
-    FORCE_INLINE UPtr() = default;
+    FORCE_INLINE UniquePtr() = default;
 
 
     /// <summary>
     /// This class is not copyable.
     /// </summary>
-    UPtr(const UPtr&) = delete;
+    UniquePtr(const UniquePtr&) = delete;
 
     /// <summary>
     /// This class is not copyable.
     /// </summary>
-    UPtr& operator=(const UPtr&) = delete;
+    UniquePtr& operator=(const UniquePtr&) = delete;
 
 
     /// <summary>
     /// Initializes UPtr by moving the pointer from another UPtr.
     /// </summary>
-    FORCE_INLINE UPtr(UPtr&& other) noexcept
+    FORCE_INLINE UniquePtr(UniquePtr&& other) noexcept
         : _allocation()
     {
         ASSERT(Alloc::HasContext == false);
@@ -71,7 +71,7 @@ public:
     }
 
     template<typename TAllocContext>
-    FORCE_INLINE UPtr(UPtr&& other, TAllocContext&& context)
+    FORCE_INLINE UniquePtr(UniquePtr&& other, TAllocContext&& context)
         : _allocation(Forward<TAllocContext>(context))
     {
         ASSERT(Alloc::HasContext);
@@ -81,7 +81,7 @@ public:
     /// <summary>
     /// Reassigns UPtr by moving the pointer from another UPtr.
     /// </summary>
-    FORCE_INLINE UPtr& operator=(UPtr&& other) noexcept
+    FORCE_INLINE UniquePtr& operator=(UniquePtr&& other) noexcept
     {
         if (this != &other)
         {
@@ -95,7 +95,7 @@ public:
     /// Initializes UPtr by passing constructor arguments and emplacement.
     /// </summary>
     template<typename... TInitArgs>
-    FORCE_INLINE explicit UPtr(TInitArgs&&... initArgs)
+    FORCE_INLINE explicit UniquePtr(TInitArgs&&... initArgs)
         : _allocation()
     {
         static_assert(Alloc::HasContext == false, "This constructor is not available for allocators with context.");
@@ -108,7 +108,7 @@ public:
     /// Initializes UPtr by passing constructor arguments and emplacement into the allocator using the provided context.
     /// </summary>
     template<typename... TInitArgs, typename TAllocContext>
-    FORCE_INLINE explicit UPtr(TInitArgs&&... initArgs, TAllocContext&& context)
+    FORCE_INLINE explicit UniquePtr(TInitArgs&&... initArgs, TAllocContext&& context)
         : _allocation(Forward<TAllocContext>(context))
     {
         static_assert(Alloc::HasContext, "This constructor is only available for allocators with context.");
