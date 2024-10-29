@@ -886,6 +886,17 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
+            public override void SetValuesPaste(object[] values)
+            {
+                // Fix Guids pasted as string
+                // TODO: let copy/paste system in Visject handle value types to be strongly typed
+                for (int i = 5; i < values.Length; i += 2)
+                    values[i] = Guid.Parse((string)values[i]);
+
+                base.SetValuesPaste(values);
+            }
+
+            /// <inheritdoc />
             public override void OnValuesChanged()
             {
                 base.OnValuesChanged();
