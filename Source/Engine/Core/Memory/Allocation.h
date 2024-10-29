@@ -42,12 +42,12 @@ public:
         auto operator=(Data&&) -> Data& = delete;
 
 
-        FORCE_INLINE byte* Get()
+        FORCE_INLINE void* Get()
         {
             return _data;
         }
 
-        FORCE_INLINE const byte* Get() const
+        FORCE_INLINE const void* Get() const
         {
             return _data;
         }
@@ -87,7 +87,7 @@ public:
     class Data
     {
     private:
-        byte* _data = nullptr;
+        void* _data = nullptr;
 
     public:
         FORCE_INLINE Data() = default;
@@ -114,7 +114,7 @@ public:
         /// </remarks>
         FORCE_INLINE Data(Data&& moved)
         {
-            ::Swap<byte*>(this->_data, moved._data);
+            ::Swap<void*>(this->_data, moved._data);
         }
 
         /// <summary>
@@ -130,17 +130,17 @@ public:
         {
             if (this != &moved)
             {
-                ::Swap<byte*>(this->_data, moved._data);
+                ::Swap<void*>(this->_data, moved._data);
             }
         }
 
 
-        FORCE_INLINE byte* Get()
+        FORCE_INLINE void* Get()
         {
             return _data;
         }
 
-        FORCE_INLINE const byte* Get() const
+        FORCE_INLINE const void* Get() const
         {
             return _data;
         }
@@ -222,7 +222,7 @@ public:
         using OtherData = typename OtherAllocator::Data;
 
         bool _useOther = false;
-        byte _data[Capacity * sizeof(T)];
+        byte _data[Capacity];
         OtherData _other;
 
     public:
@@ -248,12 +248,12 @@ public:
         auto operator=(Data&&)->Data & = delete;
 
 
-        FORCE_INLINE byte* Get()
+        FORCE_INLINE void* Get()
         {
             return _useOther ? _other.Get() : (_data);
         }
 
-        FORCE_INLINE const byte* Get() const
+        FORCE_INLINE const void* Get() const
         {
             return _useOther ? _other.Get() : (_data);
         }
@@ -329,8 +329,8 @@ using DefaultAllocation = HeapAllocation;
 // - (optional) type Context
 //
 // Allocation Policy Data Interface:
-// - Get -> byte*
-// - Get const -> const byte*
+// - Get -> void*
+// - Get const -> const void*
 // - Allocate(const int32 capacity)
 // - Free
 // - default constructor
