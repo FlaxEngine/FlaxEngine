@@ -338,3 +338,55 @@ using DefaultAllocation = HeapAllocation;
 // - (optional) move operators
 //
 // TODO(mtszkarbowiak) Remove the note.
+
+template<typename T>
+class AllocationOperation
+{
+public:
+    /// <summary>
+    /// Moves linearly-allocated elements from the source allocation to the target allocation.
+    /// </summary>
+    template<
+        typename Allocation = DefaultAllocation::Data,
+        std::enable_if_t<std::is_move_assignable<Allocation>::value, int> = 0
+    >
+    static void MoveLinearAllocation(
+        Allocation* src,
+        Allocation* target, 
+        const int32 count, 
+        const int32 capacity
+    )
+    {
+        *target = MoveTemp(*src);
+    }
+
+    /// <summary>
+    /// Moves linearly-allocated elements from the source allocation to the target allocation.
+    /// </summary>
+    template<
+        typename Allocation = DefaultAllocation::Data,
+        std::enable_if_t<!std::is_move_assignable<Allocation>::value, int> = 0
+    >
+    static void MoveLinearAllocation(
+        Allocation* src,
+        Allocation* target,
+        const int32 count,
+        const int32 capacity
+    )
+    {
+        target->Allocate(capacity);
+
+        Memory::MoveItems(
+            reinterpret_cast<T*>(target->Get()),
+            reinterpret_cast<T*>(src->Get()),
+            count
+        );
+
+        Memory::DestructItems(
+            reinterpret_cast<T*>(src->Get()),
+            count
+        );  
+
+        src->Free();
+    }
+};
