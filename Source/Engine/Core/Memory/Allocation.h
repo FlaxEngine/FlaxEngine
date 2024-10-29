@@ -13,64 +13,67 @@ template<int Capacity>
 class FixedAllocation
 {
 public:
-    enum { HasSwap = false }; //TODO(mtszkarbowiak) Replace with move semantics
     enum { HasContext = false }; //TODO(mtszkarbowiak) Replace with SFINAE
 
-    template<typename T>
     class alignas(sizeof(void*)) Data
     {
     private:
-        byte _data[Capacity * sizeof(T)];
+        byte _data[Capacity];
 
     public:
-        FORCE_INLINE Data()
-        {
-        }
+        /// <summary> Initializes new fixed allocation, by doing nothing. </summary>
+        FORCE_INLINE Data() = default;
 
-        FORCE_INLINE ~Data()
-        {
-        }
+        /// <summary> Deallocates the fixed allocation, by doing nothing. </summary>
+        FORCE_INLINE ~Data() = default;
 
+
+        /// <summary> No allocation can be copied, because it has no information about type. </summary>
         Data(const Data&) = delete;
+
+        /// <summary> No allocation can be copied, because it has no information about type. </summary>
+        auto operator=(const Data&)->Data & = delete;
+
+
+        /// <summary> Inlined allocations must not be moved, because they are not aware of the type. </summary>
         Data(Data&&) = delete;
 
-        auto operator=(const Data&) -> Data& = delete;
+        /// <summary> Inlined allocations must not be moved, because they are not aware of the type. </summary>
         auto operator=(Data&&) -> Data& = delete;
 
+
+        template<typename T>
         FORCE_INLINE T* Get()
         {
             return reinterpret_cast<T*>(_data);
         }
 
+        template<typename T>
         FORCE_INLINE const T* Get() const
         {
             return reinterpret_cast<const T*>(_data);
         }
 
-        FORCE_INLINE int32 CalculateCapacityGrow(const int32 capacity, const int32 minCapacity) const
+        //TODO(mtszkarbowiak) Move this method to the allocation policy.
+        /*FORCE_INLINE int32 CalculateCapacityGrow(const int32 capacity, const int32 minCapacity) const 
         {
             ASSERT(minCapacity <= Capacity);
             return Capacity;
-        }
+        }*/
 
         FORCE_INLINE void Allocate(const int32 capacity)
         {
             ASSERT_LOW_LAYER(capacity <= Capacity);
         }
 
-        FORCE_INLINE void Relocate(const int32 capacity, const int32 oldCount, const int32 newCount)
+        // Type erased! Relocating is no longer possible.
+        /*FORCE_INLINE void Relocate(const int32 capacity, const int32 oldCount, const int32 newCount)
         {
             ASSERT_LOW_LAYER(capacity <= Capacity);
-        }
+        }*/
 
         FORCE_INLINE void Free()
         {
-        }
-
-        void Swap(Data& other)
-        {
-            CRASH
-            // Not supported
         }
     };
 };
@@ -81,42 +84,73 @@ public:
 class HeapAllocation
 {
 public:
-    enum { HasSwap = true }; //TODO(mtszkarbowiak) Replace with move semantics
     enum { HasContext = false }; //TODO(mtszkarbowiak) Replace with SFINAE
 
-    template<typename T>
     class Data
     {
     private:
-        T* _data = nullptr;
+        void* _data = nullptr;
 
     public:
-        FORCE_INLINE Data()
-        {
-        }
+        FORCE_INLINE Data() = default;
 
         FORCE_INLINE ~Data()
         {
             Allocator::Free(_data);
         }
 
+
+        /// <summary> No allocation can be copied, because it has no information about type. </summary>
         Data(const Data&) = delete;
-        Data(Data&&) = delete;
 
+        /// <summary> No allocation can be copied, because it has no information about type. </summary>
         auto operator=(const Data&)->Data & = delete;
-        auto operator=(Data&&)->Data & = delete;
 
+        /// <summary>
+        /// Initializes a new heap allocation data by moving.
+        /// </summary>
+        /// <remarks>
+        /// For simple heap allocations, the move operation is trivial.
+        /// It is caused by the fact that the pointer works as a handle.
+        /// Moving the handle does not influence the data itself.
+        /// </remarks>
+        FORCE_INLINE Data(Data&& moved)
+        {
+            ::Swap<void*>(this->_data, moved._data);
+        }
+
+        /// <summary>
+        /// Reassigns a new heap allocation data by moving.
+        /// </summary>
+        /// <remarks>
+        /// For simple heap allocations, the move operation is trivial.
+        /// It is caused by the fact that the pointer works as a handle.
+        /// Moving the handle does not influence the data itself.
+        /// </remarks>
+        /// <summary></summary>
+        FORCE_INLINE auto operator=(Data&& moved) -> Data&
+        {
+            if (this != &moved)
+            {
+                ::Swap<void*>(this->_data, moved._data);
+            }
+        }
+
+
+        template<typename T>
         FORCE_INLINE T* Get()
         {
             return _data;
         }
 
+        template<typename T>
         FORCE_INLINE const T* Get() const
         {
             return _data;
         }
 
-        FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, const int32 minCapacity) const
+        //TODO(mtszkarbowiak) Move this method to the allocation policy.
+        /*FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, const int32 minCapacity) const
         {
             if (capacity < minCapacity)
                 capacity = minCapacity;
@@ -134,12 +168,14 @@ public:
             }
 
             return capacity;
-        }
+        }*/
 
         FORCE_INLINE void Allocate(const int32 capacity)
         {
             ASSERT_LOW_LAYER(!_data);
-            _data = static_cast<T*>(Allocator::Allocate(capacity * sizeof(T)));
+
+            // _data = static_cast<T*>(Allocator::Allocate(capacity * sizeof(T)));
+            _data = Allocator::Allocate(capacity);
 
 #if !BUILD_RELEASE
             if (!_data)
@@ -147,7 +183,7 @@ public:
 #endif
         }
 
-        FORCE_INLINE void Relocate(const int32 capacity, const int32 oldCount, const int32 newCount)
+        /*FORCE_INLINE void Relocate(const int32 capacity, const int32 oldCount, const int32 newCount)
         {
             T* newData = capacity != 0 ? static_cast<T*>(Allocator::Allocate(capacity * sizeof(T))) : nullptr;
 
@@ -165,17 +201,12 @@ public:
 
             Allocator::Free(_data);
             _data = newData;
-        }
+        }*/
 
         FORCE_INLINE void Free()
         {
             Allocator::Free(_data);
             _data = nullptr;
-        }
-
-        FORCE_INLINE void Swap(Data& other)
-        {
-            ::Swap(_data, other._data);
         }
     };
 };
@@ -184,13 +215,11 @@ public:
 /// The memory allocation policy that uses inlined memory of the fixed size and supports using additional allocation to increase its capacity (eg. via heap allocation).
 /// </summary>
 template<int Capacity, typename OtherAllocator = HeapAllocation>
-class InlinedAllocation
+class InlinedAllocation //TODO(mtszkarbowiak) Deprecate this class and swap for PolymorphicAllocation<FixedAllocation<Capacity>, OtherAllocator=HeapAllocation>
 {
 public:
-    enum { HasSwap = false }; //TODO(mtszkarbowiak) Replace with move semantics
     enum { HasContext = false }; //TODO(mtszkarbowiak) Replace with SFINAE
 
-    template<typename T>
     class alignas(sizeof(void*)) Data
     {
     private:
@@ -209,26 +238,37 @@ public:
         {
         }
 
+
+        /// <summary> No allocation can be copied, because it has no information about type. </summary>
         Data(const Data&) = delete;
+
+        /// <summary> No allocation can be copied, because it has no information about type. </summary>
+        auto operator=(const Data&)->Data & = delete;
+
+        /// <summary> Inlined allocations must not be moved, because they are not aware of the type. </summary>
         Data(Data&&) = delete;
 
-        auto operator=(const Data&)->Data & = delete;
+        /// <summary> Inlined allocations must not be moved, because they are not aware of the type. </summary>
         auto operator=(Data&&)->Data & = delete;
 
+
+        template<typename T>
         FORCE_INLINE T* Get()
         {
             return _useOther ? _other.Get() : reinterpret_cast<T*>(_data);
         }
 
+        template<typename T>
         FORCE_INLINE const T* Get() const
         {
             return _useOther ? _other.Get() : reinterpret_cast<const T*>(_data);
         }
 
-        FORCE_INLINE int32 CalculateCapacityGrow(const int32 capacity, const int32 minCapacity) const
+        //TODO(mtszkarbowiak) Move this method to the allocation policy.
+        /*FORCE_INLINE int32 CalculateCapacityGrow(const int32 capacity, const int32 minCapacity) const
         {
             return minCapacity <= Capacity ? Capacity : _other.CalculateCapacityGrow(capacity, minCapacity);
-        }
+        }*/
 
         FORCE_INLINE void Allocate(int32 capacity)
         {
@@ -239,7 +279,7 @@ public:
             }
         }
 
-        FORCE_INLINE void Relocate(const int32 capacity, const int32 oldCount, const int32 newCount)
+        /*FORCE_INLINE void Relocate(const int32 capacity, const int32 oldCount, const int32 newCount)
         {
             // Check if the new allocation will fit into inlined storage
             if (capacity <= Capacity)
@@ -273,7 +313,7 @@ public:
                     Memory::DestructItems(reinterpret_cast<T*>(_data), oldCount);
                 }
             }
-        }
+        }*/
 
         FORCE_INLINE void Free()
         {
@@ -283,13 +323,7 @@ public:
                 _other.Free();
             }
         }
-
-        void Swap(Data& other)
-        {
-            CRASH;
-            // Not supported
-        }
     };
 };
 
-typedef HeapAllocation DefaultAllocation; //TODO(mtszkarbowiak) Use use :D
+using DefaultAllocation = HeapAllocation;
