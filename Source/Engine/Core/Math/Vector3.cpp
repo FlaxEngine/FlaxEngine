@@ -320,7 +320,7 @@ float Float3::Angle(const Float3& from, const Float3& to)
 {
     const float dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0f, 1.0f);
     if (Math::Abs(dot) > 1.0f - ZeroTolerance)
-        return dot > 0.0f ? 0.0f : PI;
+        return dot > 0.0f ? 0.0f : 180.0f;
     return Math::Acos(dot) * RadiansToDegrees;
 }
 
@@ -648,7 +648,7 @@ double Double3::Angle(const Double3& from, const Double3& to)
 {
     const double dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0, 1.0);
     if (Math::Abs(dot) > 1.0 - ZeroTolerance)
-        return dot > 0.0 ? 0.0 : PI;
+        return dot > 0.0f ? 0.0f : 180.0f;
     return Math::Acos(dot) * RadiansToDegrees;
 }
 
