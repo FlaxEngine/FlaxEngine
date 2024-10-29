@@ -42,16 +42,14 @@ public:
         auto operator=(Data&&) -> Data& = delete;
 
 
-        template<typename T>
-        FORCE_INLINE T* Get()
+        FORCE_INLINE byte* Get()
         {
-            return reinterpret_cast<T*>(_data);
+            return _data;
         }
 
-        template<typename T>
-        FORCE_INLINE const T* Get() const
+        FORCE_INLINE const byte* Get() const
         {
-            return reinterpret_cast<const T*>(_data);
+            return _data;
         }
 
         //TODO(mtszkarbowiak) Move this method to the allocation policy.
@@ -89,7 +87,7 @@ public:
     class Data
     {
     private:
-        void* _data = nullptr;
+        byte* _data = nullptr;
 
     public:
         FORCE_INLINE Data() = default;
@@ -116,7 +114,7 @@ public:
         /// </remarks>
         FORCE_INLINE Data(Data&& moved)
         {
-            ::Swap<void*>(this->_data, moved._data);
+            ::Swap<byte*>(this->_data, moved._data);
         }
 
         /// <summary>
@@ -132,19 +130,17 @@ public:
         {
             if (this != &moved)
             {
-                ::Swap<void*>(this->_data, moved._data);
+                ::Swap<byte*>(this->_data, moved._data);
             }
         }
 
 
-        template<typename T>
-        FORCE_INLINE T* Get()
+        FORCE_INLINE byte* Get()
         {
             return _data;
         }
 
-        template<typename T>
-        FORCE_INLINE const T* Get() const
+        FORCE_INLINE const byte* Get() const
         {
             return _data;
         }
@@ -223,7 +219,7 @@ public:
     class alignas(sizeof(void*)) Data
     {
     private:
-        using OtherData = typename OtherAllocator::template Data<T>;
+        using OtherData = typename OtherAllocator::Data;
 
         bool _useOther = false;
         byte _data[Capacity * sizeof(T)];
@@ -252,16 +248,14 @@ public:
         auto operator=(Data&&)->Data & = delete;
 
 
-        template<typename T>
-        FORCE_INLINE T* Get()
+        FORCE_INLINE byte* Get()
         {
-            return _useOther ? _other.Get() : reinterpret_cast<T*>(_data);
+            return _useOther ? _other.Get() : (_data);
         }
 
-        template<typename T>
-        FORCE_INLINE const T* Get() const
+        FORCE_INLINE const byte* Get() const
         {
-            return _useOther ? _other.Get() : reinterpret_cast<const T*>(_data);
+            return _useOther ? _other.Get() : (_data);
         }
 
         //TODO(mtszkarbowiak) Move this method to the allocation policy.
@@ -327,3 +321,20 @@ public:
 };
 
 using DefaultAllocation = HeapAllocation;
+
+// Notes:
+//
+// Allocation Policy Interface:
+// - type Data
+// - (optional) type Context
+//
+// Allocation Policy Data Interface:
+// - Get -> byte*
+// - Get const -> const byte*
+// - Allocate(const int32 capacity)
+// - Free
+// - default constructor
+// - (optional) context constructor
+// - (optional) move operators
+//
+// TODO(mtszkarbowiak) Remove the note.
