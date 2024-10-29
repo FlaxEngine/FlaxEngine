@@ -261,7 +261,13 @@ void CharacterController::UpdateBounds()
 
 void CharacterController::AddMovement(const Vector3& translation, const Quaternion& rotation)
 {
-    Move(translation);
+    Vector3 displacement = translation;
+
+    // Apply gravity
+    const float deltaTime = Time::GetCurrentSafe()->DeltaTime.GetTotalSeconds();
+    displacement += GetPhysicsScene()->GetGravity() * deltaTime;
+
+    Move(displacement);
 
     if (!rotation.IsIdentity())
     {
