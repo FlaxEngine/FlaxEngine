@@ -3,13 +3,12 @@
 #pragma once
 
 #include "Allocation.h"
-#include "Engine/Core/Log.h"
-#include "Engine/Core/Collections/BitArray.h"
 
  // This flag enables safety checks for freed memory.
 #define ASSERT_SAFE_BUMP_ALLOC 0
 
 #if ASSERT_SAFE_BUMP_ALLOC
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/HashSet.h"
 #endif
 
