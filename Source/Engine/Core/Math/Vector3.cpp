@@ -325,6 +325,15 @@ float Float3::Angle(const Float3& from, const Float3& to)
 }
 
 template<>
+float Float3::SignedAngle(const Float3& from, const Float3& to, const Float3& axis)
+{
+    const float angle = Angle(from, to);
+    const Float3 cross = Cross(from, to);
+    const float sign = Math::Sign(axis.X * cross.X + axis.Y * cross.Y + axis.Z * cross.Z);
+    return angle * sign;
+}
+
+template<>
 Float3 Float3::SnapToGrid(const Float3& pos, const Float3& gridSize)
 {
     return Float3(Math::Ceil((pos.X - (gridSize.X * 0.5f)) / gridSize.X) * gridSize.X,
@@ -653,6 +662,15 @@ double Double3::Angle(const Double3& from, const Double3& to)
 }
 
 template<>
+double Double3::SignedAngle(const Double3& from, const Double3& to, const Double3& axis)
+{
+    const double angle = Angle(from, to);
+    const Double3 cross = Cross(from, to);
+    const double sign = Math::Sign(axis.X * cross.X + axis.Y * cross.Y + axis.Z * cross.Z);
+    return angle * sign;
+}
+
+template<>
 Double3 Double3::SnapToGrid(const Double3& pos, const Double3& gridSize)
 {
     return Double3(Math::Ceil((pos.X - (gridSize.X * 0.5)) / gridSize.X) * gridSize.X,
@@ -877,6 +895,12 @@ int32 Int3::TriangleArea(const Int3& v0, const Int3& v1, const Int3& v2)
 
 template<>
 int32 Int3::Angle(const Int3& from, const Int3& to)
+{
+    return 0;
+}
+
+template<>
+int32 Int3::SignedAngle(const Int3& from, const Int3& to, const Int3& axis)
 {
     return 0;
 }
