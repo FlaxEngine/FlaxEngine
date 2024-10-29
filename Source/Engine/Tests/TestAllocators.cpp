@@ -2,7 +2,7 @@
 
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Memory/BumpFastAllocation.h"
-#include "Engine/Core/UPtr.h"
+// #include "Engine/Core/UniquePtr.h"
 #include <catch2/catch.hpp>
 
 // TEST_CASE("HeapAllocation/UPtr")
