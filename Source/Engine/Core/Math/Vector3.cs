@@ -1345,7 +1345,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Calculates the angle (in degrees) between <paramref name="from"/> and <paramref name="to"/>. This is always the smallest value.
+        /// Calculates the angle (in degrees) between <paramref name="from"/> and <paramref name="to"/> vectors. This is always the smallest value.
         /// </summary>
         /// <param name="from">The first vector.</param>
         /// <param name="to">The second vector.</param>
@@ -1356,6 +1356,21 @@ namespace FlaxEngine
             if (Mathr.Abs(dot) > (1.0f - Mathr.Epsilon))
                 return dot > 0.0f ? 0.0f : 180.0f;
             return (Real)Math.Acos(dot) * Mathr.RadiansToDegrees;
+        }
+
+        /// <summary>
+        /// Calculates the signed angle (in degrees) between <paramref name="from"/> and <paramref name="to"/> vectors. This is always the smallest value. The sign of the result depends on: the order of input vectors, and the direction of the <paramref name="axis"/> vector.
+        /// </summary>
+        /// <param name="from">The first vector.</param>
+        /// <param name="to">The second vector.</param>
+        /// <param name="axis">The axis around which the vectors are rotated.</param>
+        /// <returns>The angle (in degrees).</returns>
+        public static Real SignedAngle(Vector3 from, Vector3 to, Vector3 axis)
+        {
+            Real angle = Angle(from, to);
+            Vector3 cross = Cross(from, to);
+            Real sign = Mathr.Sign(axis.X * cross.X + axis.Y * cross.Y + axis.Z * cross.Z);
+            return angle * sign;
         }
 
         /// <summary>
