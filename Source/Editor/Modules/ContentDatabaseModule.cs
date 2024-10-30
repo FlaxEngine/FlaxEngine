@@ -490,6 +490,60 @@ namespace FlaxEditor.Modules
                 return;
             }
 
+            var projects = Editor.ContentDatabase.Projects;
+            var contentPaths = new List<string>();
+            var sourcePaths = new List<string>();
+            foreach (var project in projects)
+            {
+                if (project.Content != null)
+                    contentPaths.Add(project.Content.Path);
+                if (project.Source != null)
+                    sourcePaths.Add(project.Source.Path);
+            }
+
+            // Check if moving from content to source folder. Item may lose reference in Asset Database. Warn user.
+            foreach (var contentPath in contentPaths)
+            {
+                if (item.Path.Contains(contentPath, StringComparison.Ordinal))
+                {
+                    bool isFound = false;
+                    foreach (var sourcePath in sourcePaths)
+                    {
+                        if (newParent.Path.Contains(sourcePath, StringComparison.Ordinal))
+                        {
+                            isFound = true;
+                            var result = MessageBox.Show(Editor.Windows.MainWindow, "Moving item from \"Content\" to \"Source\" folder may lose asset database reference.\nDo you want to continue?", "Moving item", MessageBoxButtons.OKCancel);
+                            if (result == DialogResult.Cancel)
+                                return;
+                            break;
+                        }
+                    }
+                    if (isFound)
+                        break;
+                }
+            }
+            // Check if moving from source to content folder. Item may lose reference in Asset Database. Warn user.
+            foreach (var sourcePath in sourcePaths)
+            {
+                if (item.Path.Contains(sourcePath, StringComparison.Ordinal))
+                {
+                    bool isFound = false;
+                    foreach (var contentPath in contentPaths)
+                    {
+                        if (newParent.Path.Contains(contentPath, StringComparison.Ordinal))
+                        {
+                            isFound = true;
+                            var result = MessageBox.Show(Editor.Windows.MainWindow, "Moving item from \"Source\" to \"Content\" folder may lose asset database reference.\nDo you want to continue?", "Moving item", MessageBoxButtons.OKCancel);
+                            if (result == DialogResult.Cancel)
+                                return;
+                            break;
+                        }
+                    }
+                    if (isFound)
+                        break;
+                }
+            }
+
             // Perform renaming
             {
                 string oldPath = item.Path;
