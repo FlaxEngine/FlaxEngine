@@ -76,7 +76,7 @@ public:
         if (_capacity > 0)
         {
             _allocation.Allocate(_capacity);
-            Memory::ConstructItems(_allocation.Get(), other.Get(), (int32)other._count);
+            Memory::ConstructItems(_allocation.Get(), other.Get(), static_cast<int32>(other._count));
         }
     }
 
@@ -102,7 +102,7 @@ public:
     {
         if (this != &other)
         {
-            Memory::DestructItems(_allocation.Get(), (int32)_count);
+            Memory::DestructItems(_allocation.Get(), static_cast<int32>(_count));
             if (_capacity < other.Count())
             {
                 _allocation.Free();
@@ -110,7 +110,7 @@ public:
                 _allocation.Allocate(_capacity);
             }
             _count = other.Count();
-            Memory::ConstructItems(_allocation.Get(), other.Get(), (int32)_count);
+            Memory::ConstructItems(_allocation.Get(), other.Get(), static_cast<int32>(_count));
         }
         return *this;
     }
@@ -124,7 +124,7 @@ public:
     {
         if (this != &other)
         {
-            Memory::DestructItems(_allocation.Get(), (int32)_count);
+            Memory::DestructItems(_allocation.Get(), static_cast<int32>(_count));
             _allocation.Free();
             _count = other._count;
             _capacity = other._capacity;
@@ -140,7 +140,7 @@ public:
     /// </summary>
     ~RenderListBuffer()
     {
-        Memory::DestructItems(_allocation.Get(), (int32)_count);
+        Memory::DestructItems(_allocation.Get(), static_cast<int32>(_count));
     }
 
 public:
@@ -149,7 +149,7 @@ public:
     /// </summary>
     FORCE_INLINE int32 Count() const
     {
-        return (int32)Platform::AtomicRead((volatile int64*)&_count);
+        return static_cast<int32>(Platform::AtomicRead((volatile int64*)&_count));
     }
 
     /// <summary>
@@ -157,7 +157,7 @@ public:
     /// </summary>
     FORCE_INLINE int32 Capacity() const
     {
-        return (int32)Platform::AtomicRead((volatile int64*)&_capacity);
+        return static_cast<int32>(Platform::AtomicRead((volatile int64*)&_capacity));
     }
 
     /// <summary>
@@ -232,7 +232,7 @@ public:
     void Clear()
     {
         _locker.Lock();
-        Memory::DestructItems(_allocation.Get(), (int32)_count);
+        Memory::DestructItems(_allocation.Get(), static_cast<int32>(_count));
         _count = 0;
         _locker.Unlock();
     }
@@ -248,8 +248,8 @@ public:
             return;
         _locker.Lock();
         ASSERT(capacity >= 0);
-        const int32 count = preserveContents ? ((int32)_count < capacity ? (int32)_count : capacity) : 0;
-        _allocation.Relocate(capacity, (int32)_count, count);
+        const int32 count = preserveContents ? (static_cast<int32>(_count) < capacity ? static_cast<int32>(_count) : capacity) : 0;
+        _allocation.Relocate(capacity, static_cast<int32>(_count), count);
         Platform::AtomicStore(&_capacity, capacity);
         Platform::AtomicStore(&_count, count);
         _locker.Unlock();
@@ -265,12 +265,12 @@ public:
         _locker.Lock();
         if (_count > size)
         {
-            Memory::DestructItems(_allocation.Get() + size, (int32)_count - size);
+            Memory::DestructItems(_allocation.Get() + size, static_cast<int32>(_count) - size);
         }
         else
         {
             EnsureCapacity(size, preserveContents);
-            Memory::ConstructItems(_allocation.Get() + _count, size - (int32)_count);
+            Memory::ConstructItems(_allocation.Get() + _count, size - static_cast<int32>(_count));
         }
         _count = size;
         _locker.Unlock();
@@ -283,11 +283,11 @@ public:
     void EnsureCapacity(int32 minCapacity)
     {
         _locker.Lock();
-        int32 capacity = (int32)Platform::AtomicRead(&_capacity);
+        int32 capacity = static_cast<int32>(Platform::AtomicRead(&_capacity));
         if (capacity < minCapacity)
         {
             capacity = _allocation.CalculateCapacityGrow(capacity, minCapacity);
-            const int32 count = (int32)_count;
+            const int32 count = static_cast<int32>(_count);
             _allocation.Relocate(capacity, count, count);
             Platform::AtomicStore(&_capacity, capacity);
         }
@@ -324,8 +324,8 @@ private:
     int32 AddOne()
     {
         Platform::InterlockedIncrement(&_threadsAdding);
-        int32 count = (int32)Platform::AtomicRead(&_count);
-        int32 capacity = (int32)Platform::AtomicRead(&_capacity);
+        int32 count = static_cast<int32>(Platform::AtomicRead(&_count));
+        int32 capacity = static_cast<int32>(Platform::AtomicRead(&_capacity));
         const int32 minCapacity = GetMinCapacity(count);
         if (minCapacity > capacity || Platform::AtomicRead(&_threadsResizing)) // Resize if not enough space or someone else is already doing it (don't add mid-resizing)
         {
@@ -340,7 +340,7 @@ private:
 
             // Thread-safe resizing
             _locker.Lock();
-            capacity = (int32)Platform::AtomicRead(&_capacity);
+            capacity = static_cast<int32>(Platform::AtomicRead(&_capacity));
             if (capacity < minCapacity)
             {
                 if (Platform::AtomicRead(&_threadsAdding))
@@ -350,7 +350,7 @@ private:
                     goto RETRY;
                 }
                 capacity = _allocation.CalculateCapacityGrow(capacity, minCapacity);
-                count = (int32)Platform::AtomicRead(&_count);
+                count = static_cast<int32>(Platform::AtomicRead(&_count));
                 _allocation.Relocate(capacity, count, count);
                 Platform::AtomicStore(&_capacity, capacity);
             }
@@ -362,7 +362,7 @@ private:
             // Let other thread enter resizing-area
             _locker.Unlock();
         }
-        return (int32)Platform::InterlockedIncrement(&_count) - 1;
+        return static_cast<int32>(Platform::InterlockedIncrement(&_count)) - 1;
     }
 
     FORCE_INLINE static int32 GetMinCapacity(const int32 count)
