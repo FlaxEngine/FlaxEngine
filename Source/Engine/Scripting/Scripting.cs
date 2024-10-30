@@ -316,7 +316,8 @@ namespace FlaxEngine
 
             lock (UpdateActions)
             {
-                for (int i = 0; i < UpdateActions.Count; i++)
+                int count = UpdateActions.Count;
+                for (int i = 0; i < count; i++)
                 {
                     try
                     {
@@ -327,7 +328,18 @@ namespace FlaxEngine
                         Debug.LogException(ex);
                     }
                 }
-                UpdateActions.Clear();
+                int newlyAdded = UpdateActions.Count - count;
+                if (newlyAdded == 0)
+                    UpdateActions.Clear();
+                else
+                {
+                    // Someone added another action within current callback
+                    var tmp = new List<Action>();
+                    for (int i = newlyAdded; i < UpdateActions.Count; i++)
+                        tmp.Add(UpdateActions[i]);
+                    UpdateActions.Clear();
+                    UpdateActions.AddRange(tmp);
+                }
             }
 
             MainThreadTaskScheduler.Execute();
