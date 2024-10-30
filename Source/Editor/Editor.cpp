@@ -612,9 +612,9 @@ int32 Editor::LoadProduct()
     // Validate project min supported version (older engine may try to load newer project)
     // Special check if project specifies only build number, then major/minor fields are set to 0
     const auto engineVersion = FLAXENGINE_VERSION;
-    for (auto e : projects)
+    for (auto i = projects.Begin(); i != projects.End(); ++i)
     {
-        const auto project = e.Item;
+        const ProjectInfo* project = i->Item;
         if (project->MinEngineVersion > engineVersion ||
             (project->MinEngineVersion.Major() == 0 && project->MinEngineVersion.Minor() == 0 && project->MinEngineVersion.Build() > engineVersion.Build())
         )

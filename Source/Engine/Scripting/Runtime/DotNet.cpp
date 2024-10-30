@@ -335,8 +335,8 @@ void MCore::UnloadEngine()
 void MCore::ReloadScriptingAssemblyLoadContext()
 {
     // Clear any cached class attributes (see https://github.com/FlaxEngine/FlaxEngine/issues/1108)
-    for (auto e : CachedClassHandles)
-        e.Value->_attributes.Clear();
+    for (auto i = CachedClassHandles.Begin(); i.IsNotEnd(); ++i)
+        i->Value->_attributes.Clear();
 
     static void* ReloadScriptingAssemblyLoadContextPtr = GetStaticMethodPointer(TEXT("ReloadScriptingAssemblyLoadContext"));
     CallStaticMethod<void>(ReloadScriptingAssemblyLoadContextPtr);

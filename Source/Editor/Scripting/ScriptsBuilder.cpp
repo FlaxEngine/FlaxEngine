@@ -582,9 +582,9 @@ bool ScriptsBuilderService::Init()
     auto project = Editor::Project;
     HashSet<ProjectInfo*> projects;
     project->GetAllProjects(projects);
-    for (auto e : projects)
+    for (auto i = projects.Begin(); i.IsNotEnd(); ++i)
     {
-        ProjectInfo* project = e.Item;
+        ProjectInfo* project = i->Item;
         if (project->Name == TEXT("Flax"))
             continue;
         auto watcher = New<FileSystemWatcher>(project->ProjectFolderPath / TEXT("Source"), true);
