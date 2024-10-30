@@ -42,7 +42,7 @@ public:
     /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    RenderListBuffer(int32 capacity)
+    explicit RenderListBuffer(int32 capacity)
         : _count(0)
         , _capacity(capacity)
     {

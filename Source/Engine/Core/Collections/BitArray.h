@@ -46,7 +46,7 @@ public:
     /// Initializes a new instance of the <see cref="BitArray"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    BitArray(const int32 capacity)
+    explicit BitArray(const int32 capacity)
         : _count(0)
         , _capacity(capacity)
     {

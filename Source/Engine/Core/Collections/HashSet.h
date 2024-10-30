@@ -130,7 +130,7 @@ public:
     /// Initializes a new instance of the <see cref="HashSet"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    HashSet(const int32 capacity)
+    explicit HashSet(const int32 capacity)
     {
         SetCapacity(capacity);
     }

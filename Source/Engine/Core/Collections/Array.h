@@ -52,7 +52,7 @@ public:
     /// Initializes a new instance of the <see cref="Array"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    Array(int32 capacity)
+    explicit Array(int32 capacity)
         : _count(0)
         , _capacity(capacity)
     {
