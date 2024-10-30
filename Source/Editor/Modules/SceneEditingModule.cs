@@ -553,9 +553,14 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// Create parent for selected actors.
         /// </summary>
-        public void CreateParentForSelectedActors()
+#nullable enable
+        public void CreateParentForSelectedActors(Type? parentType = null)
+#nullable disable
         {
-            Actor actor = new EmptyActor();
+            if (parentType == null)
+                parentType = typeof(EmptyActor);
+
+            Actor actor = (Actor)FlaxEngine.Object.New(parentType);
             Editor.SceneEditing.Spawn(actor, null, false);
             List<SceneGraphNode> selection = Editor.SceneEditing.Selection;
             var actors = selection.Where(x => x is ActorNode).Select(x => ((ActorNode)x).Actor);
