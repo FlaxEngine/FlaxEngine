@@ -178,6 +178,9 @@ public:
         return static_cast<float>(number);
     }
 
+    // Test nameless arguments
+    API_FUNCTION() void TestNamelessArguments(int32, float, bool){}
+
     int32 TestInterfaceMethod(const String& str) override
     {
         return str.Length();
