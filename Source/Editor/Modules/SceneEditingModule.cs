@@ -5,7 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Actions;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.Windows.Search;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.Modules
 {
@@ -54,6 +56,8 @@ namespace FlaxEditor.Modules
         /// Occurs after selection delete action.
         /// </summary>
         public event Action SelectionDeleteEnd;
+
+        private ActorAdder _actorAdder;
 
         internal SceneEditingModule(Editor editor)
         : base(editor)
@@ -170,6 +174,20 @@ namespace FlaxEditor.Modules
             Selection.Remove(node);
 
             SelectionChange(before);
+        }
+
+        // TODO: Is this the right place for this method? A new module seems overkill, maybe ask in the discord
+        /// <summary>
+        /// Shows the actor adder popup.
+        /// </summary>
+        /// <param name="control">The target control to show the actor adder over.</param>
+        public void ShowActorAdder(Control control)
+        {
+            var actorAdder = _actorAdder ?? (_actorAdder = new ActorAdder());
+            if (control == null)
+                control = Editor.Instance.Windows.MainWindow.GUI;
+            var position = (control.Size - new Float2(actorAdder.Width, 300.0f)) * 0.5f;
+            actorAdder.Show(control, position);
         }
 
         /// <summary>

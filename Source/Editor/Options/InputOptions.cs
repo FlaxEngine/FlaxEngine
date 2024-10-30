@@ -76,6 +76,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("Common"), EditorOrder(220)]
         public InputBinding ContentFinder = new InputBinding(KeyboardKeys.O, KeyboardKeys.Control);
 
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alt+A")]
+        [EditorDisplay("Common"), EditorOrder(220)]
+        public InputBinding ActorAdder = new InputBinding(KeyboardKeys.A, KeyboardKeys.Control, KeyboardKeys.Alt);
+
         [DefaultValue(typeof(InputBinding), "R")]
         [EditorDisplay("Common"), EditorOrder(230)]
         public InputBinding RotateSelection = new InputBinding(KeyboardKeys.R);

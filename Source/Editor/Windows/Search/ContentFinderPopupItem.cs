@@ -276,3 +276,109 @@ namespace FlaxEditor.Windows.Search
         }
     }
 
+    /// <summary>
+    /// Item displayed in the results list of the <see cref="ActorAdder"/>.
+    /// </summary>
+    internal class ActorAdderPopupItem : PopupItemBase
+    {
+        public Type ActorType;
+
+        /// <inheritdoc />
+        public ActorAdderPopupItem(string name, object item, Type type, SearchableEditorPopup finder, float width, float height)
+        : base(name, item, finder, width, height)
+        {
+            ActorType = type;
+        }
+
+        /// <inheritdoc />
+        protected override bool ShowTooltip => true;
+
+        public override void Select()
+        {
+            Actor selectedSceneActor = null;
+
+            if (Editor.Instance.SceneEditing.Selection.Any(s => s is ActorNode))
+                selectedSceneActor = ((ActorNode)Editor.Instance.SceneEditing.Selection.First(s => s is ActorNode)).Actor;
+
+            AddActorToScene(ActorType, selectedSceneActor);
+        }
+
+        // Helper function to make context menu "Add to scene root" easier to implement
+        private void AddActorToScene(Type actorType, Actor parent = null)
+        {
+            Actor newActor = (Actor)FlaxEngine.Object.New(ActorType);
+            Editor.Instance.SceneEditing.Spawn(newActor, parent, false);
+
+            Editor.Instance.SceneEditing.Select(newActor);
+            Editor.Instance.Scene.GetActorNode(newActor).TreeNode.StartRenaming(Editor.Instance.Windows.SceneWin, Editor.Instance.Windows.SceneWin.SceneTreePanel);
+        }
+
+        /// <inheritdoc />
+        public override bool OnShowTooltip(out string text, out Float2 location, out Rectangle area)
+        {
+            if (TooltipText == null)
+                TooltipText = Editor.Instance.CodeDocs.GetTooltip(ActorType);
+
+            return base.OnShowTooltip(out text, out location, out area);
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseDown(location, button))
+                return true;
+            if (button == MouseButton.Right)// && Item is ContentItem)
+                return true;
+
+            return false;
+        }
+
+        // /*
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseUp(location, button))
+                return true;
+            if (button == MouseButton.Right)
+            {
+                // Show context menu
+                var cm = new ContextMenu { Tag = _finder.SelectedItem };
+                ContextMenuButton b = cm.AddButton("Add to scene");
+                b.Clicked += () => Select();
+                b.TooltipText = "Add the actor to the scene root or to the current selection if there is any.\nSame as pressing the Enter key.";
+                cm.AddButton("Add to scene root").Clicked += () => AddActorToScene(ActorType);
+                cm.AddSeparator();
+                b = cm.AddButton("Convert selected actor");
+                b.Enabled = Editor.Instance.SceneEditing.SelectionCount > 0;
+                b.Clicked += () => Editor.Instance.SceneEditing.Convert(ActorType);
+                b = cm.AddButton("Create parent for selected actors");
+                b.Enabled = Editor.Instance.SceneEditing.SelectionCount > 0;
+                b.Clicked += () => Editor.Instance.SceneEditing.CreateParentForSelectedActors(ActorType);
+                cm.AddSeparator();
+                cm.AddButton("Create prefab with actor as root").Clicked += () => Editor.Instance.Prefabs.CreatePrefab((Actor)FlaxEngine.Object.New(ActorType));
+                cm.Show(this, location);
+                Cm = cm;
+
+                _finder.ResultPanel.VScrollBar.ValueChanged += () =>
+                {
+                    if (Cm != null)
+                        Cm.Hide();
+                };
+
+                return true;
+            }
+            return false;
+        }
+        // */
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            // Draw context menu hint
+            if (Cm != null && Cm.Visible)
+                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), Color.Gray);
+
+            base.Draw();
+        }
+    }
+}

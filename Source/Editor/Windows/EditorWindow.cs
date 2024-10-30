@@ -20,9 +20,14 @@ namespace FlaxEditor.Windows
         public readonly Editor Editor;
 
         /// <summary>
-        /// Gets a value indicating whether this window can open content finder popup.
+        /// Gets a value indicating whether this window can open the content finder popup.
         /// </summary>
         protected virtual bool CanOpenContentFinder => true;
+
+        /// <summary>
+        /// Gets a value indicating whether this window can open the actor adder popup.
+        /// </summary>
+        protected virtual bool CanOpenActorAdder => true;
 
         /// <summary>
         /// Gets a value indicating whether this window can use UI navigation (tab/enter).
@@ -47,6 +52,13 @@ namespace FlaxEditor.Windows
                 {
                     Editor.ContentFinding.ShowFinder(RootWindow);
                 }
+            });
+
+            InputActions.Add(options => options.ActorAdder, () =>
+            {
+                if (CanOpenActorAdder)
+                    Editor.SceneEditing.ShowActorAdder(RootWindow);
+
             });
 
             // Register
