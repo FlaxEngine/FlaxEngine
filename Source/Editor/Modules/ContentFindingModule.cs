@@ -162,7 +162,7 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// Shows the content finder popup.
         /// </summary>
-        /// <param name="control">The target control to show finder over it.</param>
+        /// <param name="control">The target control to show the finder over.</param>
         public void ShowFinder(Control control)
         {
             var finder = _finder ?? (_finder = new ContentFinder());
