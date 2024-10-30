@@ -87,8 +87,7 @@ void AnimationBucketInit(AnimGraphInstanceData::Bucket& bucket)
 
 void MultiBlendBucketInit(AnimGraphInstanceData::Bucket& bucket)
 {
-    bucket.MultiBlend.TimePosition = 0.0f;
-    bucket.MultiBlend.LastUpdateFrame = 0;
+    Platform::MemoryClear(&bucket.MultiBlend, sizeof(bucket.MultiBlend));
 }
 
 void BlendPoseBucketInit(AnimGraphInstanceData::Bucket& bucket)
