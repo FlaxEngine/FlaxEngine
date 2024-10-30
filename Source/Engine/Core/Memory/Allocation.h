@@ -53,11 +53,11 @@ public:
         }
 
         //TODO(mtszkarbowiak) Move this method to the allocation policy.
-        /*FORCE_INLINE int32 CalculateCapacityGrow(const int32 capacity, const int32 minCapacity) const 
+        FORCE_INLINE int32 CalculateCapacityGrow(const int32 capacity, const int32 minCapacity) const 
         {
             ASSERT(minCapacity <= Capacity);
             return Capacity;
-        }*/
+        }
 
         FORCE_INLINE void Allocate(const int32 capacity)
         {
@@ -112,7 +112,7 @@ public:
         /// It is caused by the fact that the pointer works as a handle.
         /// Moving the handle does not influence the data itself.
         /// </remarks>
-        FORCE_INLINE Data(Data&& moved)
+        FORCE_INLINE Data(Data&& moved) noexcept
         {
             ::Swap<void*>(this->_data, moved._data);
         }
@@ -126,12 +126,13 @@ public:
         /// Moving the handle does not influence the data itself.
         /// </remarks>
         /// <summary></summary>
-        FORCE_INLINE auto operator=(Data&& moved) -> Data&
+        FORCE_INLINE auto operator=(Data&& moved) noexcept -> Data&
         {
             if (this != &moved)
             {
                 ::Swap<void*>(this->_data, moved._data);
             }
+            return *this;
         }
 
 
@@ -146,7 +147,7 @@ public:
         }
 
         //TODO(mtszkarbowiak) Move this method to the allocation policy.
-        /*FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, const int32 minCapacity) const
+        FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, const int32 minCapacity) const
         {
             if (capacity < minCapacity)
                 capacity = minCapacity;
@@ -164,7 +165,7 @@ public:
             }
 
             return capacity;
-        }*/
+        }
 
         FORCE_INLINE void Allocate(const int32 capacity)
         {
@@ -259,10 +260,10 @@ public:
         }
 
         //TODO(mtszkarbowiak) Move this method to the allocation policy.
-        /*FORCE_INLINE int32 CalculateCapacityGrow(const int32 capacity, const int32 minCapacity) const
+        FORCE_INLINE int32 CalculateCapacityGrow(const int32 capacity, const int32 minCapacity) const
         {
             return minCapacity <= Capacity ? Capacity : _other.CalculateCapacityGrow(capacity, minCapacity);
-        }*/
+        }
 
         FORCE_INLINE void Allocate(int32 capacity)
         {
