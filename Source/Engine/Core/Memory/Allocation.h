@@ -348,12 +348,12 @@ public:
     /// Moves linearly-allocated elements from the source allocation to the target allocation.
     /// </summary>
     template<
-        typename Allocation = DefaultAllocation::Data,
-        std::enable_if_t<std::is_move_assignable<Allocation>::value, int> = 0
+        typename AllocationData = DefaultAllocation::Data,
+        std::enable_if_t<std::is_move_assignable<AllocationData>::value, int> = 0
     >
-    static void MoveLinearAllocation(
-        Allocation* src,
-        Allocation* target, 
+    static void MoveLinearAllocation( //TODO(mtszkarbowiak) Handle changing capacity only.
+        AllocationData* src,
+        AllocationData* target, 
         const int32 count, 
         const int32 capacity
     )
@@ -365,25 +365,25 @@ public:
     /// Moves linearly-allocated elements from the source allocation to the target allocation.
     /// </summary>
     template<
-        typename Allocation = DefaultAllocation::Data,
-        std::enable_if_t<!std::is_move_assignable<Allocation>::value, int> = 0
+        typename AllocationData = DefaultAllocation::Data,
+        std::enable_if_t<!std::is_move_assignable<AllocationData>::value, int> = 0
     >
     static void MoveLinearAllocation(
-        Allocation* src,
-        Allocation* target,
+        AllocationData* src,
+        AllocationData* target,
         const int32 count,
         const int32 capacity
     )
     {
         target->Allocate(capacity);
 
-        Memory::MoveItems(
+        Memory::MoveItems<T, T>(
             reinterpret_cast<T*>(target->Get()),
             reinterpret_cast<T*>(src->Get()),
             count
         );
 
-        Memory::DestructItems(
+        Memory::DestructItems<T>(
             reinterpret_cast<T*>(src->Get()),
             count
         );  
