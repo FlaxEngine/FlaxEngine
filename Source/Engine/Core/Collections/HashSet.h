@@ -270,7 +270,7 @@ public:
         {
         }
 
-        Iterator(Iterator&& i)
+        Iterator(Iterator&& i) noexcept
             : _collection(i._collection)
             , _index(i._index)
         {
@@ -329,7 +329,7 @@ public:
             return *this;
         }
 
-        Iterator& operator=(Iterator&& v)
+        Iterator& operator=(Iterator&& v) noexcept
         {
             _collection = v._collection;
             _index = v._index;
