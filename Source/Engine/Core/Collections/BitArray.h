@@ -215,7 +215,7 @@ public:
         ASSERT(index >= 0 && index < _count);
         const ItemType offset = index / sizeof(ItemType);
         const ItemType bitMask = static_cast<ItemType>((int32)(1 << (index & (static_cast<int32>(sizeof(ItemType)) - 1))));
-        const ItemType item = static_cast<ItemType*>(_allocation.Get())[offset];
+        const ItemType item = static_cast<const ItemType*>(_allocation.Get())[offset];
         return (item & bitMask) != 0;
     }
 
@@ -229,7 +229,7 @@ public:
         ASSERT(index >= 0 && index < _count);
         const ItemType offset = index / sizeof(ItemType);
         const ItemType bitMask = static_cast<ItemType>((int32)(1 << (index & (static_cast<int32>(sizeof(ItemType)) - 1))));
-        ItemType& item = reinterpret_cast<ItemType*>(_allocation.Get())[offset];
+        ItemType& item = reinterpret_cast<ItemType&>(_allocation.Get())[offset];
         if (value)
             item |= bitMask;
         else

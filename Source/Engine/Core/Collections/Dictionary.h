@@ -500,7 +500,7 @@ public:
         FindPosition(key, pos);
         if (pos.ObjectIndex == -1)
             return nullptr;
-        return static_cast<ValueType*>(&_allocation.Get()[pos.ObjectIndex].Value);
+        return static_cast<const ValueType*>(&_allocation.Get()[pos.ObjectIndex].Value);
     }
 
 public:
