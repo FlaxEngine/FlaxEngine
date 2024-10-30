@@ -279,4 +279,4 @@ public:
     };
 };
 
-typedef HeapAllocation DefaultAllocation;
+using DefaultAllocation = HeapAllocation;

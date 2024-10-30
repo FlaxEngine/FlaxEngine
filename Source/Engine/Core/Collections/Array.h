@@ -17,8 +17,8 @@ API_CLASS(InBuild) class Array
 {
     friend Array;
 public:
-    typedef T ItemType;
-    typedef typename AllocationType::template Data<T> AllocationData;
+    using ItemType = T;
+    using AllocationData = typename AllocationType::template Data<T>;
 
 private:
     int32 _count;

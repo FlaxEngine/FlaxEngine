@@ -85,7 +85,7 @@ public:
         }
     };
 
-    typedef typename AllocationType::template Data<Bucket> AllocationData;
+    using AllocationData = typename AllocationType::template Data<Bucket>;
 
 private:
     int32 _elementsCount = 0;

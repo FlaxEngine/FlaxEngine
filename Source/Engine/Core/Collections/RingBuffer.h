@@ -14,8 +14,8 @@ template<typename T, typename AllocationType = HeapAllocation>
 class RingBuffer
 {
 public:
-    typedef T ItemType;
-    typedef typename AllocationType::template Data<T> AllocationData;
+    using ItemType = T;
+    using AllocationData = typename AllocationType::template Data<T>;
 
 private:
     int32 _front = 0, _back = 0, _count = 0, _capacity = 0;

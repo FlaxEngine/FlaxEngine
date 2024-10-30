@@ -17,8 +17,8 @@ class RenderListBuffer
 {
     friend RenderListBuffer;
 public:
-    typedef T ItemType;
-    typedef typename AllocationType::template Data<T> AllocationData;
+    using ItemType = T;
+    using AllocationData = typename AllocationType::template Data<T>;
 
 private:
     volatile int64 _count;
