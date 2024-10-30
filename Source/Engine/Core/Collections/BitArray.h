@@ -14,8 +14,8 @@ API_CLASS(InBuild) class BitArray
 {
     friend BitArray;
 public:
-    typedef uint64 ItemType;
-    typedef typename AllocationType::template Data<ItemType> AllocationData;
+    using ItemType = uint64;
+    using AllocationData = typename AllocationType::Data;
 
 private:
     int32 _count;
@@ -152,7 +152,7 @@ public:
     /// </summary>
     FORCE_INLINE ItemType* Get()
     {
-        return _allocation.Get();
+        return static_cast<ItemType*>(_allocation.Get());
     }
 
     /// <summary>
@@ -160,7 +160,7 @@ public:
     /// </summary>
     FORCE_INLINE const ItemType* Get() const
     {
-        return _allocation.Get();
+        return static_cast<const ItemType*>(_allocation.Get());
     }
 
     /// <summary>
@@ -214,7 +214,7 @@ public:
     {
         ASSERT(index >= 0 && index < _count);
         const ItemType offset = index / sizeof(ItemType);
-        const ItemType bitMask = (ItemType)(int32)(1 << (index & ((int32)sizeof(ItemType) - 1)));
+        const ItemType bitMask = (ItemType)(int32)(1 << (index & ((int32)sizeof(ItemType) - 1))); //TODO(mtszkarbowiak) Fix casts. A lot of casts.
         const ItemType item = ((ItemType*)_allocation.Get())[offset];
         return (item & bitMask) != 0;
     }
@@ -256,7 +256,7 @@ public:
             return;
         ASSERT(capacity >= 0);
         const int32 count = preserveContents ? (_count < capacity ? _count : capacity) : 0;
-        _allocation.Relocate(ToItemCapacity(capacity), ToItemCount(_count), ToItemCount(count));
+        AllocationOperation<ItemType>::MoveLinearAllocation<AllocationData>(&_allocation, &_allocation, ToItemCount(_count), ToItemCount(count));
         _capacity = capacity;
         _count = count;
     }
@@ -266,7 +266,7 @@ public:
     /// </summary>
     /// <param name="size">The new collection size.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize might not contain the previous data.</param>
-    void Resize(int32 size, bool preserveContents = true)
+    void Resize(int32 size, bool preserveContents = true) //TODO(mtszkarbowiak) Fix consts. A lot of consts.
     {
         if (_count <= size)
             EnsureCapacity(size, preserveContents);

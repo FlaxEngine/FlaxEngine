@@ -144,7 +144,7 @@ public:
         other._count = 0;
         other._capacity = 0;
 
-        AllocationOperation<T>::template MoveLinearAllocation(&other._allocation, &_allocation, _count, _capacity);
+        AllocationOperation<T>::template MoveLinearAllocation<typename AllocationType::Data>(&other._allocation, &_allocation, _count, _capacity);
     }
 
     /// <summary>
@@ -202,7 +202,7 @@ public:
             other._count = 0;
             other._capacity = 0;
 
-            AllocationOperation<T>::template MoveLinearAllocation(&other._allocation, &_allocation, _count, _capacity);
+            AllocationOperation<T>::template MoveLinearAllocation<typename AllocationType::Data>(&other._allocation, &_allocation, _count, _capacity);
         }
         return *this;
     }
@@ -409,9 +409,9 @@ public:
     {
         if (capacity == _capacity)
             return;
-        ASSERT(capacity >= 0);
+        ASSERT(capacity >= 0); //TODO(mtszkarbowiak) Assertion that if contents are preserved then capacity must be greater than current count.
         const int32 count = preserveContents ? (_count < capacity ? _count : capacity) : 0;
-        _allocation.Relocate(capacity, _count, count);
+        AllocationOperation<T>::template MoveLinearAllocation<typename AllocationType::Data>(&_allocation, &_allocation, _count, capacity);
         _capacity = capacity;
         _count = count;
     }
@@ -752,16 +752,7 @@ public:
     /// <param name="other">The other collection.</param>
     void Swap(Array& other)
     {
-        if IF_CONSTEXPR (AllocationType::HasSwap)
-        {
-            _allocation.Swap(other._allocation);
-            ::Swap(_count, other._count);
-            ::Swap(_capacity, other._capacity);
-        }
-        else
-        {
-            ::Swap(other, *this);
-        }
+        ::Swap(other, *this); //TODO(mtszkarbowiak) Review this.
     }
 
     /// <summary>

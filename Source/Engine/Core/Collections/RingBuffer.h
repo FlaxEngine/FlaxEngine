@@ -11,11 +11,11 @@
 /// Template for ring buffer with variable capacity.
 /// </summary>
 template<typename T, typename AllocationType = HeapAllocation>
-class RingBuffer
+class RingBuffer //TODO(mtszkarbowiak) Fix rule of five.
 {
 public:
     typedef T ItemType;
-    typedef typename AllocationType::template Data<T> AllocationData;
+    typedef typename AllocationType::Data AllocationData; //TODO(mtszkarbowiak) Fix alias.
 
 private:
     int32 _front = 0, _back = 0, _count = 0, _capacity = 0;
@@ -29,7 +29,12 @@ public:
 
     FORCE_INLINE T* Get()
     {
-        return _allocation.Get();
+        return reinterpret_cast<T*>(_allocation.Get());
+    }
+
+    FORCE_INLINE const T* Get() const
+    {
+        return reinterpret_cast<const T*>(_allocation.Get());
     }
 
     FORCE_INLINE int32 Count() const
@@ -50,46 +55,49 @@ public:
             AllocationData alloc;
             alloc.Allocate(capacity);
             const int32 frontCount = Math::Min(_capacity - _front, _count);
-            Memory::MoveItems(alloc.Get(), _allocation.Get() + _front, frontCount);
-            Memory::DestructItems(_allocation.Get() + _front, frontCount);
+            Memory::MoveItems<T>(Get(), Get() + _front, frontCount);
+            Memory::DestructItems<T>(Get() + _front, frontCount);
             const int32 backCount = _count - frontCount;
-            Memory::MoveItems(alloc.Get() + frontCount, _allocation.Get(), backCount);
-            Memory::DestructItems(_allocation.Get(), backCount);
-            _allocation.Swap(alloc);
+            Memory::MoveItems<T>(Get() + frontCount, Get(), backCount);
+            Memory::DestructItems<T>(Get(), backCount);
+
+            // _allocation.Swap(alloc); // Was ring buffer only for swappable allocations? Lot of stuff to fix :<
+            ::Swap(_allocation, alloc);
+
             _front = 0;
             _back = _count;
             _capacity = capacity;
         }
-        Memory::ConstructItems(_allocation.Get() + _back, &data, 1);
+        Memory::ConstructItems<T>(Get() + _back, &data, 1);
         _back = (_back + 1) % _capacity;
         _count++;
     }
 
     FORCE_INLINE T& PeekFront()
     {
-        return _allocation.Get()[_front];
+        return Get()[_front];
     }
 
     FORCE_INLINE const T& PeekFront() const
     {
-        return _allocation.Get()[_front];
+        return Get()[_front];
     }
 
-    FORCE_INLINE T& operator[](int32 index)
+    FORCE_INLINE T& operator[](int32 index) //TODO(mtszkarbowiak) Fix consts.
     {
         ASSERT(index >= 0 && index < _count);
-        return _allocation.Get()[(_front + index) % _capacity];
+        return Get()[(_front + index) % _capacity];
     }
 
     FORCE_INLINE const T& operator[](int32 index) const
     {
         ASSERT(index >= 0 && index < _count);
-        return _allocation.Get()[(_front + index) % _capacity];
+        return Get()[(_front + index) % _capacity];
     }
 
     void PopFront()
     {
-        Memory::DestructItems(_allocation.Get() + _front, 1);
+        Memory::DestructItems(Get() + _front, 1);
         _front = (_front + 1) % _capacity;
         _count--;
     }

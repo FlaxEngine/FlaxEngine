@@ -24,7 +24,7 @@ public:
     {
         friend HashSet;
 
-        enum State : byte
+        enum State : byte //TODO(mtszkarbowiak) Use shared enum to reduce number of generated types.
         {
             Empty,
             Deleted,
@@ -37,6 +37,50 @@ public:
     private:
         State _state;
 
+    public:
+        Bucket() : _state(Empty)
+        {
+            // T is not initialized
+        }
+
+        explicit Bucket(Bucket&& other) noexcept
+        {
+            _state = other._state;
+            if (other.IsOccupied())
+            {
+                Memory::MoveItems(&Item, &other.Item, 1);
+                Memory::DestructItem(&other.Item);
+                other._state = Empty;
+            }
+        }
+
+        Bucket(const Bucket&) = delete;
+
+        auto operator=(Bucket&& other) noexcept -> Bucket&
+        {
+            if (this != &other)
+            {
+                Free();
+                _state = other._state;
+                if (other.IsOccupied())
+                {
+                    Memory::MoveItems(&Item, &other.Item, 1);
+                    Memory::DestructItem(&other.Item);
+                    other._state = Empty;
+                }
+            }
+            return *this;
+        }
+
+        auto operator=(const Bucket&) -> Bucket& = delete;
+
+        ~Bucket()
+        {
+            Free();
+        }
+
+
+    private: // shared with HashSet
         FORCE_INLINE void Free()
         {
             if (_state == Occupied)
@@ -85,7 +129,7 @@ public:
         }
     };
 
-    typedef typename AllocationType::template Data<Bucket> AllocationData;
+    using AllocationData = typename AllocationType::Data;
 
 private:
     int32 _elementsCount = 0;
@@ -93,29 +137,14 @@ private:
     int32 _size = 0;
     AllocationData _allocation;
 
-    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, int32 fromSize)
+    FORCE_INLINE Bucket* GetData(const int32 index = 0)
     {
-        if IF_CONSTEXPR (AllocationType::HasSwap)
-            to.Swap(from);
-        else
-        {
-            to.Allocate(fromSize);
-            Bucket* toData = to.Get();
-            Bucket* fromData = from.Get();
-            for (int32 i = 0; i < fromSize; i++)
-            {
-                Bucket& fromBucket = fromData[i];
-                if (fromBucket.IsOccupied())
-                {
-                    Bucket& toBucket = toData[i];
-                    Memory::MoveItems(&toBucket.Item, &fromBucket.Item, 1);
-                    toBucket._state = Bucket::Occupied;
-                    Memory::DestructItem(&fromBucket.Item);
-                    fromBucket._state = Bucket::Empty;
-                }
-            }
-            from.Free();
-        }
+        return reinterpret_cast<Bucket*>(_allocation.Get()) + index;
+    }
+
+    FORCE_INLINE const Bucket* GetData(const int32 index = 0) const
+    {
+        return reinterpret_cast<const Bucket*>(_allocation.Get()) + index;
     }
 
 public:
@@ -147,7 +176,8 @@ public:
         other._elementsCount = 0;
         other._deletedCount = 0;
         other._size = 0;
-        MoveToEmpty(_allocation, other._allocation, _size);
+
+        AllocationOperation<Bucket>::template MoveLinearAllocation(&other._allocation, &_allocation, _size, _size);
     }
 
     /// <summary>
@@ -182,13 +212,15 @@ public:
         {
             Clear();
             _allocation.Free();
+
             _elementsCount = other._elementsCount;
             _deletedCount = other._deletedCount;
             _size = other._size;
             other._elementsCount = 0;
             other._deletedCount = 0;
             other._size = 0;
-            MoveToEmpty(_allocation, other._allocation, _size);
+
+            AllocationOperation<T>::template MoveLinearAllocation(&other._allocation, &_allocation, _size, _size);
         }
         return *this;
     }
@@ -199,6 +231,7 @@ public:
     ~HashSet()
     {
         Clear();
+        // Allocator destructor is expected to automatically free the memory.
     }
 
 public:
@@ -294,12 +327,12 @@ public:
 
         FORCE_INLINE Bucket& operator*() const
         {
-            return _collection->_allocation.Get()[_index];
+            return _collection->GetData()[_index];
         }
 
         FORCE_INLINE Bucket* operator->() const
         {
-            return &_collection->_allocation.Get()[_index];
+            return &_collection->GetData()[_index];
         }
 
         FORCE_INLINE explicit operator bool() const
@@ -341,7 +374,7 @@ public:
             const int32 capacity = _collection->_size;
             if (_index != capacity)
             {
-                const Bucket* data = _collection->_allocation.Get();
+                const Bucket* data = _collection->GetData();
                 do
                 {
                     _index++;
@@ -386,7 +419,7 @@ public:
     {
         if (_elementsCount + _deletedCount != 0)
         {
-            Bucket* data = _allocation.Get();
+            Bucket* data = GetData();
             for (int32 i = 0; i < _size; i++)
                 data[i].Free();
             _elementsCount = _deletedCount = 0;
@@ -421,7 +454,7 @@ public:
             return;
         ASSERT(capacity >= 0);
         AllocationData oldAllocation;
-        MoveToEmpty(oldAllocation, _allocation, _size);
+        AllocationOperation<Bucket>::template MoveLinearAllocation(&_allocation, &oldAllocation, _size, capacity);
         const int32 oldSize = _size;
         const int32 oldElementsCount = _elementsCount;
         _deletedCount = _elementsCount = 0;
@@ -432,13 +465,13 @@ public:
         if (capacity)
         {
             _allocation.Allocate(capacity);
-            Bucket* data = _allocation.Get();
+            Bucket* data = GetData();
             for (int32 i = 0; i < capacity; i++)
                 data[i]._state = Bucket::Empty;
         }
 
         _size = capacity;
-        Bucket* oldData = oldAllocation.Get();
+        Bucket* oldData = GetData();
         if (oldElementsCount != 0 && capacity != 0 && preserveContents)
         {
             FindPositionResult pos;
@@ -449,7 +482,7 @@ public:
                 {
                     FindPosition(oldBucket.Item, pos);
                     ASSERT(pos.FreeSlotIndex != -1);
-                    Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
+                    Bucket* bucket = GetData(pos.FreeSlotIndex);
                     Memory::MoveItems(&bucket->Item, &oldBucket.Item, 1);
                     bucket->_state = Bucket::Occupied;
                     _elementsCount++;
@@ -552,7 +585,7 @@ public:
         FindPosition(item, pos);
         if (pos.ObjectIndex != -1)
         {
-            _allocation.Get()[pos.ObjectIndex].Delete();
+            GetData(pos.ObjectIndex)->Delete();
             _elementsCount--;
             _deletedCount++;
             return true;
@@ -570,8 +603,8 @@ public:
         ASSERT(i._collection == this);
         if (i)
         {
-            ASSERT(_allocation.Get()[i._index].IsOccupied());
-            _allocation.Get()[i._index].Delete();
+            ASSERT(GetData(i._index)->IsOccupied());
+            GetData(i._index)->Delete();
             _elementsCount--;
             _deletedCount++;
             return true;
@@ -689,7 +722,7 @@ private:
         int32 bucketIndex = GetHash(item) & tableSizeMinusOne;
         int32 insertPos = -1;
         int32 numChecks = 0;
-        const Bucket* data = _allocation.Get();
+        const Bucket* data = GetData();
         result.FreeSlotIndex = -1;
         while (numChecks < _size)
         {
@@ -745,7 +778,7 @@ private:
         // Insert
         ASSERT(pos.FreeSlotIndex != -1);
         _elementsCount++;
-        return &_allocation.Get()[pos.FreeSlotIndex];
+        return GetData(pos.FreeSlotIndex);
     }
 
     void Compact()
@@ -753,7 +786,7 @@ private:
         if (_elementsCount == 0)
         {
             // Fast path if it's empty
-            Bucket* data = _allocation.Get();
+            Bucket* data = GetData();
             for (int32 i = 0; i < _size; i++)
                 data[i]._state = Bucket::Empty;
         }
@@ -761,12 +794,12 @@ private:
         {
             // Rebuild entire table completely
             AllocationData oldAllocation;
-            MoveToEmpty(oldAllocation, _allocation, _size);
+            AllocationOperation<Bucket>::template MoveLinearAllocation(&oldAllocation, &_allocation, _size, _size);
             _allocation.Allocate(_size);
-            Bucket* data = _allocation.Get();
+            Bucket* data = GetData();
             for (int32 i = 0; i < _size; i++)
                 data[i]._state = Bucket::Empty;
-            Bucket* oldData = oldAllocation.Get();
+            Bucket* oldData = GetData();
             FindPositionResult pos;
             for (int32 i = 0; i < _size; i++)
             {
@@ -775,7 +808,7 @@ private:
                 {
                     FindPosition(oldBucket.Item, pos);
                     ASSERT(pos.FreeSlotIndex != -1);
-                    Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
+                    Bucket* bucket = GetData(pos.FreeSlotIndex);
                     Memory::MoveItems(&bucket->Item, &oldBucket.Item, 1);
                     bucket->_state = Bucket::Occupied;
                 }

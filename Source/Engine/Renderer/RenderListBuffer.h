@@ -17,8 +17,8 @@ class RenderListBuffer
 {
     friend RenderListBuffer;
 public:
-    typedef T ItemType;
-    typedef typename AllocationType::template Data<T> AllocationData;
+    typedef T ItemType; //TODO(mtszkarbowiak) Use alias.
+    typedef typename AllocationType::Data AllocationData;
 
 private:
     volatile int64 _count;
@@ -42,7 +42,7 @@ public:
     /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    RenderListBuffer(int32 capacity)
+    explicit RenderListBuffer(int32 capacity)
         : _count(0)
         , _capacity(capacity)
     {
@@ -102,7 +102,7 @@ public:
     {
         if (this != &other)
         {
-            Memory::DestructItems(_allocation.Get(), (int32)_count);
+            Memory::DestructItems(_allocation.Get(), (int32)_count); //TODO(mtszkarbowiak) Fix casts and consts.
             if (_capacity < other.Count())
             {
                 _allocation.Free();
@@ -140,7 +140,7 @@ public:
     /// </summary>
     ~RenderListBuffer()
     {
-        Memory::DestructItems(_allocation.Get(), (int32)_count);
+        Memory::DestructItems<T>(Get(), (int32)_count);
     }
 
 public:
@@ -173,7 +173,7 @@ public:
     /// </summary>
     FORCE_INLINE T* Get()
     {
-        return _allocation.Get();
+        return reinterpret_cast<T*>(_allocation.Get());
     }
 
     /// <summary>
@@ -181,7 +181,7 @@ public:
     /// </summary>
     FORCE_INLINE const T* Get() const
     {
-        return _allocation.Get();
+        return reinterpret_cast<const T*>(_allocation.Get());
     }
 
     /// <summary>
@@ -191,7 +191,7 @@ public:
     FORCE_INLINE T& operator[](int32 index)
     {
         ASSERT(index >= 0 && index < Count());
-        return _allocation.Get()[index];
+        return Get()[index];
     }
 
     /// <summary>
@@ -201,28 +201,28 @@ public:
     FORCE_INLINE const T& operator[](int32 index) const
     {
         ASSERT(index >= 0 && index < Count());
-        return _allocation.Get()[index];
+        return Get()[index];
     }
 
 public:
     FORCE_INLINE T* begin()
     {
-        return &_allocation.Get()[0];
+        return Get();
     }
 
     FORCE_INLINE T* end()
     {
-        return &_allocation.Get()[Count()];
+        return Get() + Count();
     }
 
     FORCE_INLINE const T* begin() const
     {
-        return &_allocation.Get()[0];
+        return Get();
     }
 
     FORCE_INLINE const T* end() const
     {
-        return &_allocation.Get()[Count()];
+        return Get() + Count();
     }
 
 public:
@@ -232,7 +232,7 @@ public:
     void Clear()
     {
         _locker.Lock();
-        Memory::DestructItems(_allocation.Get(), (int32)_count);
+        Memory::DestructItems<T>(Get(), (int32)_count);
         _count = 0;
         _locker.Unlock();
     }
@@ -250,6 +250,7 @@ public:
         ASSERT(capacity >= 0);
         const int32 count = preserveContents ? ((int32)_count < capacity ? (int32)_count : capacity) : 0;
         _allocation.Relocate(capacity, (int32)_count, count);
+        AllocationOperation<T>::template ConstructItems<AllocationType>(_allocation.Get() + count, capacity - count);sdfsdf
         Platform::AtomicStore(&_capacity, capacity);
         Platform::AtomicStore(&_count, count);
         _locker.Unlock();
@@ -302,7 +303,7 @@ public:
     FORCE_INLINE int32 Add(const T& item)
     {
         const int32 index = AddOne();
-        Memory::ConstructItems(_allocation.Get() + index, &item, 1);
+        Memory::ConstructItems<T>(Get() + index, &item, 1);
         Platform::InterlockedDecrement(&_threadsAdding);
         return index;
     }
@@ -315,7 +316,7 @@ public:
     FORCE_INLINE int32 Add(T&& item)
     {
         const int32 index = AddOne();
-        Memory::MoveItems(_allocation.Get() + index, &item, 1);
+        Memory::MoveItems<T>(Get() + index, &item, 1);
         Platform::InterlockedDecrement(&_threadsAdding);
         return index;
     }
@@ -351,7 +352,7 @@ private:
                 }
                 capacity = _allocation.CalculateCapacityGrow(capacity, minCapacity);
                 count = (int32)Platform::AtomicRead(&_count);
-                _allocation.Relocate(capacity, count, count);
+                AllocationOperation<T>::MoveLinearAllocation(&_allocation, &_allocation, count, count); //TODO(mtszkarbowiak) Count-count or count-capacity? Wtf?
                 Platform::AtomicStore(&_capacity, capacity);
             }
 
