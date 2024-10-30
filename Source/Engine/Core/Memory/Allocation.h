@@ -39,20 +39,20 @@ public:
             return (T*)_data;
         }
 
-        FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, int32 minCapacity) const
+        FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, const int32 minCapacity) const
         {
             ASSERT(minCapacity <= Capacity);
             return Capacity;
         }
 
-        FORCE_INLINE void Allocate(int32 capacity)
+        FORCE_INLINE void Allocate(const int32 capacity)
         {
 #if ENABLE_ASSERTION_LOW_LAYERS
             ASSERT(capacity <= Capacity);
 #endif
         }
 
-        FORCE_INLINE void Relocate(int32 capacity, int32 oldCount, int32 newCount)
+        FORCE_INLINE void Relocate(const int32 capacity, int32 oldCount, int32 newCount)
         {
 #if ENABLE_ASSERTION_LOW_LAYERS
             ASSERT(capacity <= Capacity);
@@ -104,7 +104,7 @@ public:
             return _data;
         }
 
-        FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, int32 minCapacity) const
+        FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, const int32 minCapacity) const
         {
             if (capacity < minCapacity)
                 capacity = minCapacity;
@@ -129,7 +129,7 @@ public:
             return capacity;
         }
 
-        FORCE_INLINE void Allocate(int32 capacity)
+        FORCE_INLINE void Allocate(const int32 capacity)
         {
 #if  ENABLE_ASSERTION_LOW_LAYERS
             ASSERT(!_data);
@@ -141,7 +141,7 @@ public:
 #endif
         }
 
-        FORCE_INLINE void Relocate(int32 capacity, int32 oldCount, int32 newCount)
+        FORCE_INLINE void Relocate(const int32 capacity, int32 oldCount, int32 newCount)
         {
             T* newData = capacity != 0 ? (T*)Allocator::Allocate(capacity * sizeof(T)) : nullptr;
 #if !BUILD_RELEASE

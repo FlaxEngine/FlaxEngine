@@ -75,13 +75,13 @@ public:
         return _allocation.Get()[_front];
     }
 
-    FORCE_INLINE T& operator[](int32 index)
+    FORCE_INLINE T& operator[](const int32 index)
     {
         ASSERT(index >= 0 && index < _count);
         return _allocation.Get()[(_front + index) % _capacity];
     }
 
-    FORCE_INLINE const T& operator[](int32 index) const
+    FORCE_INLINE const T& operator[](const int32 index) const
     {
         ASSERT(index >= 0 && index < _count);
         return _allocation.Get()[(_front + index) % _capacity];

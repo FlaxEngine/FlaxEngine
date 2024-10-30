@@ -242,7 +242,7 @@ public:
     /// </summary>
     /// <param name="capacity">The new capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void SetCapacity(const int32 capacity, bool preserveContents = true)
+    void SetCapacity(const int32 capacity, const bool preserveContents = true)
     {
         if (capacity == Capacity())
             return;
@@ -365,7 +365,7 @@ private:
         return (int32)Platform::InterlockedIncrement(&_count) - 1;
     }
 
-    FORCE_INLINE static int32 GetMinCapacity(int32 count)
+    FORCE_INLINE static int32 GetMinCapacity(const int32 count)
     {
         // Ensure there is a slack for others threads to reduce resize counts in highly multi-threaded environment
         constexpr int32 slack = PLATFORM_THREADS_LIMIT * 8;

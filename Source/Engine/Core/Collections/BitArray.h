@@ -22,12 +22,12 @@ private:
     int32 _capacity;
     AllocationData _allocation;
 
-    FORCE_INLINE static int32 ToItemCount(int32 size)
+    FORCE_INLINE static int32 ToItemCount(const int32 size)
     {
         return Math::DivideAndRoundUp<int32>(size, sizeof(ItemType));
     }
 
-    FORCE_INLINE static int32 ToItemCapacity(int32 size)
+    FORCE_INLINE static int32 ToItemCapacity(const int32 size)
     {
         return Math::Max<int32>(Math::DivideAndRoundUp<int32>(size, sizeof(ItemType)), 1);
     }
@@ -46,7 +46,7 @@ public:
     /// Initializes a new instance of the <see cref="BitArray"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    BitArray(int32 capacity)
+    BitArray(const int32 capacity)
         : _count(0)
         , _capacity(capacity)
     {
@@ -200,7 +200,7 @@ public:
     /// </summary>
     /// <param name="index">The index of the item.</param>
     /// <returns>The value of the item.</returns>
-    FORCE_INLINE bool operator[](int32 index) const
+    FORCE_INLINE bool operator[](const int32 index) const
     {
         return Get(index);
     }
@@ -210,7 +210,7 @@ public:
     /// </summary>
     /// <param name="index">The index of the item.</param>
     /// <returns>The value of the item.</returns>
-    bool Get(int32 index) const
+    bool Get(const int32 index) const
     {
         ASSERT(index >= 0 && index < _count);
         const ItemType offset = index / sizeof(ItemType);
@@ -224,7 +224,7 @@ public:
     /// </summary>
     /// <param name="index">The index of the item.</param>
     /// <param name="value">The value to set.</param>
-    void Set(int32 index, bool value)
+    void Set(const int32 index, const bool value)
     {
         ASSERT(index >= 0 && index < _count);
         const ItemType offset = index / sizeof(ItemType);
@@ -250,7 +250,7 @@ public:
     /// </summary>
     /// <param name="capacity">The new capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void SetCapacity(const int32 capacity, bool preserveContents = true)
+    void SetCapacity(const int32 capacity, const bool preserveContents = true)
     {
         if (capacity == _capacity)
             return;
@@ -266,7 +266,7 @@ public:
     /// </summary>
     /// <param name="size">The new collection size.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize might not contain the previous data.</param>
-    void Resize(int32 size, bool preserveContents = true)
+    void Resize(const int32 size, const bool preserveContents = true)
     {
         if (_count <= size)
             EnsureCapacity(size, preserveContents);
@@ -278,7 +278,7 @@ public:
     /// </summary>
     /// <param name="minCapacity">The minimum capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void EnsureCapacity(int32 minCapacity, bool preserveContents = true)
+    void EnsureCapacity(int32 minCapacity, const bool preserveContents = true)
     {
         if (_capacity < minCapacity)
         {
@@ -313,7 +313,7 @@ public:
     /// </summary>
     /// <param name="items">The items to add.</param>
     /// <param name="count">The items count.</param>
-    void Add(const bool* items, int32 count)
+    void Add(const bool* items, const int32 count)
     {
         EnsureCapacity(_count + count);
         for (int32 i = 0; i < count; i++)
