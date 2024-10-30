@@ -42,7 +42,7 @@ public:
     /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    explicit RenderListBuffer(int32 capacity)
+    explicit RenderListBuffer(const int32 capacity)
         : _count(0)
         , _capacity(capacity)
     {
@@ -55,7 +55,7 @@ public:
     /// </summary>
     /// <param name="data">The initial data.</param>
     /// <param name="length">The amount of items.</param>
-    RenderListBuffer(const T* data, int32 length)
+    RenderListBuffer(const T* data, const int32 length)
     {
         ASSERT(length >= 0);
         _count = _capacity = length;
@@ -188,7 +188,7 @@ public:
     /// Gets or sets the item at the given index.
     /// </summary>
     /// <returns>The reference to the item.</returns>
-    FORCE_INLINE T& operator[](int32 index)
+    FORCE_INLINE T& operator[](const int32 index)
     {
         ASSERT(index >= 0 && index < Count());
         return _allocation.Get()[index];
@@ -198,7 +198,7 @@ public:
     /// Gets the item at the given index.
     /// </summary>
     /// <returns>The reference to the item.</returns>
-    FORCE_INLINE const T& operator[](int32 index) const
+    FORCE_INLINE const T& operator[](const int32 index) const
     {
         ASSERT(index >= 0 && index < Count());
         return _allocation.Get()[index];
@@ -260,7 +260,7 @@ public:
     /// </summary>
     /// <param name="size">The new collection size.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize might not contain the previous data.</param>
-    void Resize(int32 size, bool preserveContents = true)
+    void Resize(const int32 size, const bool preserveContents = true)
     {
         _locker.Lock();
         if (_count > size)
@@ -280,7 +280,7 @@ public:
     /// Ensures the collection has given capacity (or more).
     /// </summary>
     /// <param name="minCapacity">The minimum capacity.</param>
-    void EnsureCapacity(int32 minCapacity)
+    void EnsureCapacity(const int32 minCapacity)
     {
         _locker.Lock();
         int32 capacity = static_cast<int32>(Platform::AtomicRead(&_capacity));

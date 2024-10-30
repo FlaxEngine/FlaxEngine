@@ -93,7 +93,7 @@ private:
     int32 _size = 0;
     AllocationData _allocation;
 
-    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, int32 fromSize)
+    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, const int32 fromSize)
     {
         if IF_CONSTEXPR (AllocationType::HasSwap)
             to.Swap(from);
@@ -252,7 +252,7 @@ public:
         {
         }
 
-        Iterator(HashSet const* collection, const int32 index)
+        Iterator(const HashSet* collection, const int32 index)
             : _collection(const_cast<HashSet*>(collection))
             , _index(index)
         {
@@ -307,7 +307,7 @@ public:
             return _index >= 0 && _index < _collection->_size;
         }
 
-        FORCE_INLINE bool operator !() const
+        FORCE_INLINE bool operator!() const
         {
             return !(bool)*this;
         }
@@ -474,7 +474,7 @@ public:
     /// </summary>
     /// <param name="minCapacity">The minimum required capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void EnsureCapacity(int32 minCapacity, const bool preserveContents = true)
+    void EnsureCapacity(const int32 minCapacity, const bool preserveContents = true)
     {
         if (_size >= minCapacity)
             return;

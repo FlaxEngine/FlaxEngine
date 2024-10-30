@@ -278,7 +278,7 @@ public:
     /// </summary>
     /// <param name="minCapacity">The minimum capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void EnsureCapacity(int32 minCapacity, const bool preserveContents = true)
+    void EnsureCapacity(const int32 minCapacity, const bool preserveContents = true)
     {
         if (_capacity < minCapacity)
         {

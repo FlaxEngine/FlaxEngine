@@ -110,7 +110,7 @@ private:
     int32 _size = 0;
     AllocationData _allocation;
 
-    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, int32 fromSize)
+    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, const int32 fromSize)
     {
         if IF_CONSTEXPR (AllocationType::HasSwap)
             to.Swap(from);
