@@ -304,7 +304,7 @@ public:
     void Add(const bool item)
     {
         EnsureCapacity(_count + 1);
-        _count++;
+        ++_count;
         Set(_count - 1, item);
     }
 
@@ -316,7 +316,7 @@ public:
     void Add(const bool* items, const int32 count)
     {
         EnsureCapacity(_count + count);
-        for (int32 i = 0; i < count; i++)
+        for (int32 i = 0; i < count; ++i)
             Add(items[i]);
     }
 
@@ -327,7 +327,7 @@ public:
     void Add(const BitArray& other)
     {
         EnsureCapacity(_count, other.Count());
-        for (int32 i = 0; i < other.Count(); i++)
+        for (int32 i = 0; i < other.Count(); ++i)
             Add(other[i]);
     }
 

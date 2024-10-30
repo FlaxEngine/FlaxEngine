@@ -482,7 +482,7 @@ public:
     {
         EnsureCapacity(_count + 1);
         Memory::ConstructItems(_allocation.Get() + _count, &item, 1);
-        _count++;
+        ++_count;
     }
 
     /// <summary>
@@ -493,7 +493,7 @@ public:
     {
         EnsureCapacity(_count + 1);
         Memory::MoveItems(_allocation.Get() + _count, &item, 1);
-        _count++;
+        ++_count;
     }
 
     /// <summary>
@@ -557,7 +557,7 @@ public:
     {
         EnsureCapacity(_count + 1);
         Memory::ConstructItems(_allocation.Get() + _count, 1);
-        _count++;
+        ++_count;
         return _allocation.Get()[_count - 1];
     }
 
@@ -605,7 +605,7 @@ public:
         Memory::ConstructItems(data + _count, 1);
         for (int32 i = _count - 1; i >= index; i--)
             data[i + 1] = MoveTemp(data[i]);
-        _count++;
+        ++_count;
         data[index] = MoveTemp(item);
     }
 
@@ -621,7 +621,7 @@ public:
         Memory::ConstructItems(data + _count, 1);
         for (int32 i = _count - 1; i >= index; i--)
             data[i + 1] = data[i];
-        _count++;
+        ++_count;
     }
 
     /// <summary>
@@ -661,7 +661,7 @@ public:
     /// <param name="item">The item to remove.</param>
     void RemoveAllKeepOrder(const T& item)
     {
-        for (int32 i = Count() - 1; i >= 0; i--)
+        for (int32 i = Count() - 1; i >= 0; --i)
         {
             if (_allocation.Get()[i] == item)
             {
@@ -679,14 +679,14 @@ public:
     void RemoveAtKeepOrder(const int32 index)
     {
         ASSERT(index < _count && index >= 0);
-        _count--;
+        --_count;
         T* data = _allocation.Get();
         if (index < _count)
         {
             T* dst = data + index;
             T* src = data + (index + 1);
             const int32 count = _count - index;
-            for (int32 i = 0; i < count; i++)
+            for (int32 i = 0; i < count; ++i)
                 dst[i] = MoveTemp(src[i]);
         }
         Memory::DestructItems(data + _count, 1);
@@ -712,7 +712,7 @@ public:
     /// <param name="item">The item to remove.</param>
     void RemoveAll(const T& item)
     {
-        for (int32 i = Count() - 1; i >= 0; i--)
+        for (int32 i = Count() - 1; i >= 0; --i)
         {
             if (_allocation.Get()[i] == item)
             {
@@ -730,7 +730,7 @@ public:
     void RemoveAt(const int32 index)
     {
         ASSERT(index < _count && index >= 0);
-        _count--;
+        --_count;
         T* data = _allocation.Get();
         if (_count)
             data[index] = data[_count];
@@ -743,7 +743,7 @@ public:
     void RemoveLast()
     {
         ASSERT(_count > 0);
-        _count--;
+        --_count;
         Memory::DestructItems(_allocation.Get() + _count, 1);
     }
 
@@ -772,7 +772,7 @@ public:
     {
         T* data = _allocation.Get();
         const int32 count = _count / 2;
-        for (int32 i = 0; i < count; i++)
+        for (int32 i = 0; i < count; ++i)
             ::Swap(data[i], data[_count - i - 1]);
     }
 
@@ -1052,7 +1052,7 @@ public:
         Iterator& operator--()
         {
             if (_index > 0)
-                _index--;
+                --_index;
             return *this;
         }
 
@@ -1060,7 +1060,7 @@ public:
         {
             Iterator temp = *this;
             if (_index > 0)
-                _index--;
+                --_index;
             return temp;
         }
     };

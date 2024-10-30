@@ -363,8 +363,9 @@ public:
                 const Bucket* data = _collection->_allocation.Get();
                 do
                 {
-                    _index++;
-                } while (_index != capacity && data[_index].IsNotOccupied());
+                    ++_index;
+                }
+                while (_index != capacity && data[_index].IsNotOccupied());
             }
             return *this;
         }
@@ -383,8 +384,9 @@ public:
                 const Bucket* data = _collection->_allocation.Get();
                 do
                 {
-                    _index--;
-                } while (_index > 0 && data[_index].IsNotOccupied());
+                    --_index;
+                }
+                while (_index > 0 && data[_index].IsNotOccupied());
             }
             return *this;
         }
@@ -423,7 +425,7 @@ public:
 
         // Insert
         ASSERT(pos.FreeSlotIndex != -1);
-        _elementsCount++;
+        ++_elementsCount;
         Bucket& bucket = _allocation.Get()[pos.FreeSlotIndex];
         bucket.Occupy(key);
         return bucket.Value;
@@ -582,7 +584,7 @@ public:
                     Memory::MoveItems(&bucket->Key, &oldBucket.Key, 1);
                     Memory::MoveItems(&bucket->Value, &oldBucket.Value, 1);
                     bucket->_state = Bucket::Occupied;
-                    _elementsCount++;
+                    ++_elementsCount;
                 }
             }
         }
@@ -682,8 +684,8 @@ public:
         if (pos.ObjectIndex != -1)
         {
             _allocation.Get()[pos.ObjectIndex].Delete();
-            _elementsCount--;
-            _deletedCount++;
+            --_elementsCount;
+            ++_deletedCount;
             return true;
         }
         return false;
@@ -701,8 +703,8 @@ public:
         {
             ASSERT(_allocation.Get()[i._index].IsOccupied());
             _allocation.Get()[i._index].Delete();
-            _elementsCount--;
-            _deletedCount++;
+            --_elementsCount;
+            ++_deletedCount;
             return true;
         }
         return false;
@@ -721,7 +723,7 @@ public:
             if (i->Value == value)
             {
                 Remove(i);
-                result++;
+                ++result;
             }
         }
         return result;
@@ -768,7 +770,7 @@ public:
         if (HasItems())
         {
             const Bucket* data = _allocation.Get();
-            for (int32 i = 0; i < _size; i++)
+            for (int32 i = 0; i < _size; ++i)
             {
                 if (data[i].IsOccupied() && data[i].Value == value)
                     return true;
@@ -788,7 +790,7 @@ public:
         if (HasItems())
         {
             const Bucket* data = _allocation.Get();
-            for (int32 i = 0; i < _size; i++)
+            for (int32 i = 0; i < _size; ++i)
             {
                 if (data[i].IsOccupied() && data[i].Value == value)
                 {
@@ -928,7 +930,7 @@ private:
                 result.ObjectIndex = bucketIndex;
                 return;
             }
-            checksCount++;
+            ++checksCount;
             bucketIndex = (bucketIndex + DICTIONARY_PROB_FUNC(_size, checksCount)) & tableSizeMinusOne;
         }
         result.ObjectIndex = -1;

@@ -102,7 +102,7 @@ private:
             to.Allocate(fromSize);
             Bucket* toData = to.Get();
             Bucket* fromData = from.Get();
-            for (int32 i = 0; i < fromSize; i++)
+            for (int32 i = 0; i < fromSize; ++i)
             {
                 Bucket& fromBucket = fromData[i];
                 if (fromBucket.IsOccupied())
@@ -344,8 +344,9 @@ public:
                 const Bucket* data = _collection->_allocation.Get();
                 do
                 {
-                    _index++;
-                } while (_index != capacity && data[_index].IsNotOccupied());
+                    ++_index;
+                }
+                while (_index != capacity && data[_index].IsNotOccupied());
             }
             return *this;
         }
@@ -364,8 +365,9 @@ public:
                 const Bucket* data = _collection->_allocation.Get();
                 do
                 {
-                    _index--;
-                } while (_index > 0 && data[_index].IsNotOccupied());
+                    --_index;
+                }
+                while (_index > 0 && data[_index].IsNotOccupied());
             }
             return *this;
         }
@@ -559,8 +561,8 @@ public:
         if (pos.ObjectIndex != -1)
         {
             _allocation.Get()[pos.ObjectIndex].Delete();
-            _elementsCount--;
-            _deletedCount++;
+            --_elementsCount;
+            ++_deletedCount;
             return true;
         }
         return false;
@@ -578,8 +580,8 @@ public:
         {
             ASSERT(_allocation.Get()[i._index].IsOccupied());
             _allocation.Get()[i._index].Delete();
-            _elementsCount--;
-            _deletedCount++;
+            --_elementsCount;
+            ++_deletedCount;
             return true;
         }
         return false;
@@ -750,7 +752,7 @@ private:
 
         // Insert
         ASSERT(pos.FreeSlotIndex != -1);
-        _elementsCount++;
+        ++_elementsCount;
         return &_allocation.Get()[pos.FreeSlotIndex];
     }
 
@@ -760,7 +762,7 @@ private:
         {
             // Fast path if it's empty
             Bucket* data = _allocation.Get();
-            for (int32 i = 0; i < _size; i++)
+            for (int32 i = 0; i < _size; ++i)
                 data[i]._state = Bucket::Empty;
         }
         else
@@ -770,11 +772,11 @@ private:
             MoveToEmpty(oldAllocation, _allocation, _size);
             _allocation.Allocate(_size);
             Bucket* data = _allocation.Get();
-            for (int32 i = 0; i < _size; i++)
+            for (int32 i = 0; i < _size; ++i)
                 data[i]._state = Bucket::Empty;
             Bucket* oldData = oldAllocation.Get();
             FindPositionResult pos;
-            for (int32 i = 0; i < _size; i++)
+            for (int32 i = 0; i < _size; ++i)
             {
                 Bucket& oldBucket = oldData[i];
                 if (oldBucket.IsOccupied())
@@ -786,7 +788,7 @@ private:
                     bucket->_state = Bucket::Occupied;
                 }
             }
-            for (int32 i = 0; i < _size; i++)
+            for (int32 i = 0; i < _size; ++i)
                 oldData[i].Free();
         }
         _deletedCount = 0;

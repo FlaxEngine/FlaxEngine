@@ -62,7 +62,7 @@ public:
         }
         Memory::ConstructItems(_allocation.Get() + _back, &data, 1);
         _back = (_back + 1) % _capacity;
-        _count++;
+        ++_count;
     }
 
     FORCE_INLINE T& PeekFront()
@@ -91,7 +91,7 @@ public:
     {
         Memory::DestructItems(_allocation.Get() + _front, 1);
         _front = (_front + 1) % _capacity;
-        _count--;
+        --_count;
     }
 
     void Clear()
