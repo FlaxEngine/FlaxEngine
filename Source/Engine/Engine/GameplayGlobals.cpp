@@ -87,9 +87,9 @@ void GameplayGlobals::SetValues(const Dictionary<String, Variant>& values)
         if (!e)
         {
             e = &Variables[i->Key()];
-            e->DefaultValue = i->Value;
+            e->DefaultValue = i->Value();
         }
-        e->Value = i->Value;
+        e->Value = i->Value();
     }
 }
 
@@ -118,9 +118,9 @@ void GameplayGlobals::SetDefaultValues(const Dictionary<String, Variant>& values
         if (!e)
         {
             e = &Variables[i->Key()];
-            e->Value = i->Value;
+            e->Value = i->Value();
         }
-        e->DefaultValue = i->Value;
+        e->DefaultValue = i->Value();
     }
 }
 
@@ -146,7 +146,7 @@ void GameplayGlobals::ResetValues()
     ScopeLock lock(Locker);
     for (auto& e : Variables)
     {
-        e.Value.Value = e.Value.DefaultValue;
+        e.Value().Value = e.Value().DefaultValue;
     }
 }
 
@@ -173,8 +173,8 @@ bool GameplayGlobals::Save(const StringView& path)
     stream.WriteInt32(Variables.Count());
     for (auto& e : Variables)
     {
-        stream.WriteString(e.Key, 71);
-        stream.WriteVariant(e.Value.DefaultValue);
+        stream.WriteString(e.Key(), 71);
+        stream.WriteVariant(e.Value().DefaultValue);
     }
 
     // Set chunk data

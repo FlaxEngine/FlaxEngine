@@ -737,7 +737,7 @@ public:
         int32 result = 0;
         for (Iterator i = Begin(); i.IsNotEnd(); ++i)
         {
-            if (i->Value == value)
+            if (i->Value() == value)
             {
                 Remove(i);
                 ++result;
@@ -789,7 +789,7 @@ public:
             const Bucket* data = _allocation.Get();
             for (int32 i = 0; i < _size; ++i)
             {
-                if (data[i].IsOccupied() && data[i].Value == value)
+                if (data[i].IsOccupied() && data[i].Value() == value)
                     return true;
             }
         }
@@ -842,7 +842,7 @@ public:
     void GetKeys(Array<KeyType, ArrayAllocation>& result) const
     {
         for (Iterator i = Begin(); i.IsNotEnd(); ++i)
-            result.Add(i->Key);
+            result.Add(i->Key());
     }
 
     /// <summary>

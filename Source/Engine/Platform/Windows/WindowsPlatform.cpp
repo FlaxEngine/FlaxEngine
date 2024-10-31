@@ -1071,7 +1071,7 @@ int32 WindowsPlatform::CreateProcess(CreateProcessSettings& settings)
 
             int32 totalLength = 1;
             for (auto& e : settings.Environment)
-                totalLength += e.Key().Length() + e.Value(0).Length() + 2;
+                totalLength += e.Key().Length() + e.Value().Length() + 2;
 
             environmentStr = (Char*)Allocator::Allocate(totalLength * sizeof(Char));
 

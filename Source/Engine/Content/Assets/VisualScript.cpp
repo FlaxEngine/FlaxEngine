@@ -1911,7 +1911,7 @@ bool VisualScriptingBinaryModule::GetFieldValue(void* field, const Variant& inst
         LOG(Error, "Missing parameters for the object instance.");
         return true;
     }
-    result = instanceParams->Value.Params[vsFiled->Index];
+    result = instanceParams->Value().Params[vsFiled->Index];
     return false;
 }
 
@@ -2115,7 +2115,7 @@ const Variant& VisualScript::GetScriptInstanceParameterValue(const StringView& n
         {
             const auto instanceParams = _instances.Find(instance->GetID());
             if (instanceParams)
-                return instanceParams->Value.Params[paramIndex];
+                return instanceParams->Value().Params[paramIndex];
             LOG(Error, "Failed to access Visual Script parameter {1} for {0}.", instance->ToString(), name);
             return Graph.Parameters[paramIndex].Value;
         }
@@ -2156,7 +2156,7 @@ void VisualScript::SetScriptInstanceParameterValue(const StringView& name, Scrip
             const auto instanceParams = _instances.Find(instance->GetID());
             if (instanceParams)
             {
-                instanceParams->Value.Params[paramIndex] = MoveTemp(value);
+                instanceParams->Value().Params[paramIndex] = MoveTemp(value);
                 return;
             }
         }

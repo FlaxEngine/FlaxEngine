@@ -520,7 +520,7 @@ bool Scripting::Load()
         {
             LOG(Error, "Failed to load corlib C# assembly.");
             for (const auto& e : corlibClasses)
-                LOG(Info, "Class: {0}", String(e.Value->GetFullName()));
+                LOG(Info, "Class: {0}", String(e.Value()->GetFullName()));
             return true;
         }
     }

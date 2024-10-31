@@ -1197,7 +1197,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     // Remove unused lights (before inserting any new ones to make space in the atlas)
     for (auto it = shadows.Lights.Begin(); it.IsNotEnd(); ++it)
     {
-        if (it->Value.LastFrameUsed != currentFrame)
+        if (it->Value().LastFrameUsed != currentFrame)
         {
             for (ShadowAtlasLightTile& tile : it->Value().Tiles)
                 tile.Free(&shadows);

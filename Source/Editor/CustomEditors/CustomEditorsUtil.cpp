@@ -179,17 +179,17 @@ void OnAssemblyUnloading(MAssembly* assembly)
     // Remove entries with user classes
     for (auto i = Cache.Begin(); i.IsNotEnd(); ++i)
     {
-        MClass* mClass = MCore::Type::GetClass(i->Key);
+        MClass* mClass = MCore::Type::GetClass(i->Key());
         if (mClass && mClass->GetAssembly() == assembly)
         {
             Cache.Remove(i);
         }
         else
         {
-            if (i->Value.DefaultEditor && i->Value.DefaultEditor->GetAssembly() == assembly)
-                i->Value.DefaultEditor = nullptr;
-            if (i->Value.CustomEditor && i->Value.CustomEditor->GetAssembly() == assembly)
-                i->Value.CustomEditor = nullptr;
+            if (i->Value().DefaultEditor && i->Value().DefaultEditor->GetAssembly() == assembly)
+                i->Value().DefaultEditor = nullptr;
+            if (i->Value().CustomEditor && i->Value().CustomEditor->GetAssembly() == assembly)
+                i->Value().CustomEditor = nullptr;
         }
     }
 }

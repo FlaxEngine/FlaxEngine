@@ -943,7 +943,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         newPrefabInstanceIdToDataIndexCounter = 0;
         for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
         {
-            const int32 dataIndex = i->Value;
+            const int32 dataIndex = i->Value();
             SceneObject* obj = sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++);
             if (!obj)
                 continue;

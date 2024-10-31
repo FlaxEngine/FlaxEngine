@@ -879,7 +879,7 @@ void SkinnedModel::ClearSkeletonMapping()
 #if USE_EDITOR
         e.Key()->OnReloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #endif
-        Allocator::Free(e.Value.NodesMapping.Get());
+        Allocator::Free(e.Value().NodesMapping.Get());
     }
     _skeletonMappingCache.Clear();
 }
@@ -897,7 +897,7 @@ void SkinnedModel::OnSkeletonMappingSourceAssetUnloaded(Asset* obj)
 #endif
 
     // Clear cache
-    Allocator::Free(i->Value.NodesMapping.Get());
+    Allocator::Free(i->Value().NodesMapping.Get());
     _skeletonMappingCache.Remove(i);
 }
 
@@ -909,7 +909,7 @@ uint64 SkinnedModel::GetMemoryUsage() const
     result += Skeleton.GetMemoryUsage();
     result += _skeletonMappingCache.Capacity() * sizeof(Dictionary<Asset*, Span<int32>>::Bucket);
     for (const auto& e : _skeletonMappingCache)
-        result += e.Value.NodesMapping.Length();
+        result += e.Value().NodesMapping.Length();
     Locker.Unlock();
     return result;
 }

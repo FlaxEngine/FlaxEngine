@@ -262,10 +262,10 @@ void NetworkReplicationGridNode::Update(NetworkReplicationHierarchyUpdateResult*
                 if (client.HasLocation)
                     distanceSq = Math::Min(distanceSq, Vector3::DistanceSquared(cellPosition, client.Location));
             }
-            const Real minCullDistanceSq = Math::Square(e.Value.MinCullDistance);
+            const Real minCullDistanceSq = Math::Square(e.Value().MinCullDistance);
             if (distanceSq < minCullDistanceSq + cellRadiusSq)
             {
-                e.Value.Node->Update(result);
+                e.Value().Node->Update(result);
             }
         }
     }
@@ -274,7 +274,7 @@ void NetworkReplicationGridNode::Update(NetworkReplicationHierarchyUpdateResult*
         // Brute-force over all cells
         for (const auto& e : _children)
         {
-            e.Value.Node->Update(result);
+            e.Value().Node->Update(result);
         }
     }
 }

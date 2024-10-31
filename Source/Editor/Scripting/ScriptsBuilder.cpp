@@ -315,7 +315,7 @@ MClass* ScriptsBuilder::FindScript(const StringView& scriptName)
         auto& classes = assembly->GetClasses();
         for (auto i = classes.Begin(); i.IsNotEnd(); ++i)
         {
-            MClass* mclass = i->Value;
+            MClass* mclass = i->Value();
 
             // Managed scripts
             if (mclass->IsSubClassOf(scriptClass) && !mclass->IsStatic() && !mclass->IsAbstract() && !mclass->IsInterface())

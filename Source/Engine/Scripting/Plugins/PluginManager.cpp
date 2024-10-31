@@ -207,7 +207,7 @@ void PluginManagerImpl::OnAssemblyLoaded(MAssembly* assembly)
     auto& classes = assembly->GetClasses();
     for (auto i = classes.Begin(); i.IsNotEnd(); ++i)
     {
-        auto mclass = i->Value;
+        auto mclass = i->Value();
 
         // Skip invalid classes
         if (mclass->IsGeneric() || mclass->IsStatic() || mclass->IsAbstract())

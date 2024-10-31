@@ -967,7 +967,7 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
         MClass* scriptingObjectType = this == flaxEngine ? classes["FlaxEngine.Object"] : ScriptingObject::GetStaticClass();
         for (auto i = classes.Begin(); i.IsNotEnd(); ++i)
         {
-            MClass* mclass = i->Value;
+            MClass* mclass = i->Value();
 
             // Check if C# class inherits from C++ object class it has no C++ representation
             if (mclass->IsStatic() ||
@@ -989,7 +989,7 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
         ASSERT_LOW_LAYER(attribute);
         for (auto i = classes.Begin(); i.IsNotEnd(); ++i)
         {
-            MClass* mclass = i->Value;
+            MClass* mclass = i->Value();
             if (mclass->IsStatic() && !mclass->IsInterface() && mclass->HasAttribute(attribute))
             {
                 const auto& methods = mclass->GetMethods();

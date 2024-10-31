@@ -143,7 +143,7 @@ void ObjectsRemoval::Dispose()
         PoolLocker.Lock();
         for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
         {
-            Object* obj = i->Key;
+            Object* obj = i->Key();
             Pool.Remove(i);
             obj->OnDeleteObject();
         }

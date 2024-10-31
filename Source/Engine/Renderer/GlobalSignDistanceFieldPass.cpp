@@ -484,7 +484,7 @@ void GlobalSignDistanceFieldCustomBuffer::UpdateCascadeChunks(CascadeData& casca
         else
         {
             // Add to static cache (render now but skip next frame)
-            cascade.StaticChunks.Add(e.Key);
+            cascade.StaticChunks.Add(e.Key());
         }
     }
 }

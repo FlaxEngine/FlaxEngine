@@ -189,7 +189,7 @@ void ContentService::Dispose()
 
         for (auto i = Assets.Begin(); i.IsNotEnd(); ++i)
         {
-            i->Value->DeleteObject();
+            i->Value()->DeleteObject();
         }
     }
 
@@ -392,11 +392,11 @@ ContentStats Content::GetStats()
     int32 loadFailedCount = 0;
     for (const auto& e : Assets)
     {
-        if (e.Value->IsLoaded())
+        if (e.Value()->IsLoaded())
             stats.LoadedAssetsCount++;
-        else if (e.Value->LastLoadFailed())
+        else if (e.Value()->LastLoadFailed())
             loadFailedCount++;
-        if (e.Value->IsVirtual())
+        if (e.Value()->IsVirtual())
             stats.VirtualAssetsCount++;
     }
     stats.LoadingAssetsCount = stats.AssetsCount - loadFailedCount - stats.LoadedAssetsCount;
@@ -514,7 +514,7 @@ Asset* Content::GetAsset(const StringView& outputPath)
     ScopeLock lock(AssetsLocker);
     for (auto i = Assets.Begin(); i.IsNotEnd(); ++i)
     {
-        if (i->Value->GetPath() == outputPath)
+        if (i->Value()->GetPath() == outputPath)
         {
             return i->Value();
         }
