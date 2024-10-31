@@ -100,13 +100,9 @@ namespace FlaxEditor.GUI.Dialogs
                     // y-coordinate is backwards. That is, A positive Y value 
                     // indicates a point BELOW the x-axis.
                     if (delta.Y > 0)
-                    {
                         degrees = 270;
-                    }
                     else
-                    {
                         degrees = 90;
-                    }
                 }
                 else
                 {
@@ -124,9 +120,7 @@ namespace FlaxEditor.GUI.Dialogs
                     // need to add 180 degrees to the angle. ArcTan only
                     // gives you a value on the right-hand side of the circle.
                     if (delta.X < 0)
-                    {
                         degrees += 180;
-                    }
 
                     // Ensure that the return value is between 0 and 360
                     while (degrees > 360)
@@ -196,7 +190,6 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.FillRectangle(selectionBoxFill, rawWheelColor);
             Render2D.DrawRectangle(selectionBoxFill, Color.Black);
             Render2D.DrawRectangle(selectionSecondOutline, Color.White, 0.5f);
-
         }
 
         /// <inheritdoc />
@@ -322,9 +315,7 @@ namespace FlaxEditor.GUI.Dialogs
                 Root.MousePosition = ClampFloat2WithOffset(Root.MousePosition, _alphaSliderRect.UpperLeft, _alphaSliderRect.BottomRight);
             }
             else
-            {
                 base.UpdateMouse(ref location);
-            }
         }
 
         private static Float2 ClampFloat2WithOffset(Float2 value, Float2 min, Float2 max)
