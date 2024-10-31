@@ -500,7 +500,7 @@ public:
         FindPosition(key, pos);
         if (pos.ObjectIndex == -1)
             return nullptr;
-        return static_cast<ValueType*>(&_allocation.Get()[pos.ObjectIndex].Value);
+        return const_cast<ValueType*>(&_allocation.Get()[pos.ObjectIndex].Value); //TODO This one is problematic. I think this entire method should be removed.
     }
 
 public:
