@@ -172,7 +172,7 @@ void NetworkReplicationNode::Update(NetworkReplicationHierarchyUpdateResult* res
 NetworkReplicationGridNode::~NetworkReplicationGridNode()
 {
     for (const auto& e : _children)
-        Delete(e.Value.Node);
+        Delete(e.Value().Node);
 }
 
 void NetworkReplicationGridNode::AddObject(NetworkReplicationHierarchyObject obj)
@@ -255,7 +255,7 @@ void NetworkReplicationGridNode::Update(NetworkReplicationHierarchyUpdateResult*
         const Real cellRadiusSq = Math::Square(CellSize * 1.414f);
         for (const auto& e : _children)
         {
-            const Vector3 cellPosition = (e.Key * CellSize) + (CellSize * 0.5f);
+            const Vector3 cellPosition = (e.Key() * CellSize) + (CellSize * 0.5f);
             Real distanceSq = MAX_Real;
             for (auto& client : result->_clients)
             {

@@ -114,7 +114,7 @@ void Font::Invalidate()
 
     for (auto i = _characters.Begin(); i.IsNotEnd(); ++i)
     {
-        FontManager::Invalidate(i->Value);
+        FontManager::Invalidate(i->Value());
     }
     _characters.Clear();
 }

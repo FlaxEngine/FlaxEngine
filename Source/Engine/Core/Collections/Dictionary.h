@@ -546,8 +546,8 @@ public:
     {
         for (Iterator i = Begin(); i.IsNotEnd(); ++i)
         {
-            if (i->Value)
-                ::Delete(i->Value);
+            if (i->_value)
+                ::Delete(i->_value);
         }
         Clear();
     }
@@ -809,10 +809,10 @@ public:
             const Bucket* data = _allocation.Get();
             for (int32 i = 0; i < _size; ++i)
             {
-                if (data[i].IsOccupied() && data[i].Value == value)
+                if (data[i].IsOccupied() && data[i].Value() == value)
                 {
                     if (key)
-                        *key = data[i].Key;
+                        *key = data[i].Key();
                     return true;
                 }
             }

@@ -465,7 +465,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
     // Submit draw calls with valid instances added
     for (auto& e : result)
     {
-        auto& batch = e.Value;
+        auto& batch = e.Value();
         if (batch.Instances.IsEmpty())
             continue;
         const auto& mesh = *e.Key().Geo;

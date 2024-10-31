@@ -245,7 +245,7 @@ SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source)
                 for (const auto& e : retarget->NodesMapping)
                 {
                     const int32 dstIndex = Skeleton.FindNode(e.Key());
-                    const int32 srcIndex = sourceModel->Skeleton.FindNode(e.Value);
+                    const int32 srcIndex = sourceModel->Skeleton.FindNode(e.Value());
                     if (dstIndex != -1 && srcIndex != -1)
                     {
                         mappingData.NodesMapping[dstIndex] = srcIndex;
@@ -875,9 +875,9 @@ void SkinnedModel::ClearSkeletonMapping()
 {
     for (auto& e : _skeletonMappingCache)
     {
-        e.Key->OnUnloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+        e.Key()->OnUnloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #if USE_EDITOR
-        e.Key->OnReloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+        e.Key()->OnReloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #endif
         Allocator::Free(e.Value.NodesMapping.Get());
     }

@@ -1233,7 +1233,7 @@ bool Variant::operator==(const Variant& other) const
                 return false;
             for (auto& i : *AsDictionary)
             {
-                if (!other.AsDictionary->ContainsKey(i.Key) || other.AsDictionary->At(i.Key) != i.Value)
+                if (!other.AsDictionary->ContainsKey(i.Key()) || other.AsDictionary->At(i.Key()) != i.Value())
                     return false;
             }
             return true;

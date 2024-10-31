@@ -834,9 +834,9 @@ void SceneObjectsFactory::SynchronizeNewPrefabInstance(Context& context, PrefabS
     for (auto q = prefab->ObjectsDataCache.Begin(); q.IsNotEnd(); ++q)
     {
         Guid qParentId;
-        if (JsonTools::GetGuidIfValid(qParentId, *q->Value, "ParentID") && qParentId == prefabObjectId)
+        if (JsonTools::GetGuidIfValid(qParentId, *q->Value(), "ParentID") && qParentId == prefabObjectId)
         {
-            const Guid qPrefabObjectId = JsonTools::GetGuid(*q->Value, "ID");
+            const Guid qPrefabObjectId = JsonTools::GetGuid(*q->Value(), "ID");
             SynchronizeNewPrefabInstance(context, data, prefab, actor, qPrefabObjectId);
         }
     }

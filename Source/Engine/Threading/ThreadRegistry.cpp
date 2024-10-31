@@ -37,7 +37,7 @@ void ThreadRegistry::KillEmAll()
     Locker.Lock();
     for (auto i = Registry.Begin(); i.IsNotEnd(); ++i)
     {
-        i->Value->Kill(false);
+        i->Value()->Kill(false);
     }
     Locker.Unlock();
 

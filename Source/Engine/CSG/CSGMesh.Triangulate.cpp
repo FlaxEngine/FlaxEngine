@@ -177,7 +177,7 @@ bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
     // Setup result mesh data
     for (auto iPerBrush = polygonsPerBrush.Begin(); iPerBrush != polygonsPerBrush.End(); ++iPerBrush)
     {
-        auto& brushMeta = _brushesMeta[iPerBrush->Key];
+        auto& brushMeta = _brushesMeta[iPerBrush->Key()];
 
         for (auto iPerSurface = iPerBrush->Value.Begin(); iPerSurface != iPerBrush->Value.End(); ++iPerSurface)
         {

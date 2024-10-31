@@ -132,16 +132,16 @@ void ProfilingToolsService::Update()
         int32 i = 0;
         for (const auto& e : NetworkInternal::ProfilerEvents)
         {
-            const auto& src = e.Value;
+            const auto& src = e.Value();
             auto& dst = networkEvents[i++];
             dst.Count = src.Count;
             dst.DataSize = src.DataSize;
             dst.MessageSize = src.MessageSize;
             dst.Receivers = src.Receivers;
-            const StringAnsiView& typeName = e.Key.First.GetType().Fullname;
+            const StringAnsiView& typeName = e.Key().First.GetType().Fullname;
             uint64 len = Math::Min<uint64>(typeName.Length(), ARRAY_COUNT(dst.Name) - 10);
             Platform::MemoryCopy(dst.Name, typeName.Get(), len);
-            const StringAnsiView& name = e.Key.Second;
+            const StringAnsiView& name = e.Key().Second;
             if (name.HasChars())
             {
                 uint64 pos = len;

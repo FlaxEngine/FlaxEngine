@@ -674,7 +674,7 @@ bool Prefab::ApplyAll(Actor* targetActor)
         const Dictionary<Guid, Asset*, HeapAllocation>& assetsRaw = Content::GetAssetsRaw();
         for (auto& e : assetsRaw)
         {
-            if (e.Value->GetTypeHandle() == Prefab::TypeInitializer)
+            if (e.Value()->GetTypeHandle() == Prefab::TypeInitializer)
                 nestedPrefabIds.AddUnique(e.Key());
         }
         for (int32 i = 0; i < nestedPrefabIds.Count(); i++)
@@ -891,7 +891,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         int32 newPrefabInstanceIdToDataIndexStart = ObjectsCount;
         for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
         {
-            const int32 dataIndex = i->Value;
+            const int32 dataIndex = i->Value();
             SceneObject* obj = SceneObjectsFactory::Spawn(context, diffDataDocument[dataIndex]);
             sceneObjects->At(newPrefabInstanceIdToDataIndexStart + newPrefabInstanceIdToDataIndexCounter++) = obj;
             if (!obj)

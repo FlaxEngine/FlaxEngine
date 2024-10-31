@@ -67,7 +67,7 @@ Dictionary<String, Variant> GameplayGlobals::GetValues() const
     ScopeLock lock(Locker);
     Dictionary<String, Variant> result;
     for (auto& e : Variables)
-        result.Add(e.Key, e.Value.Value);
+        result.Add(e.Key(), e.Value().Value);
     return result;
 }
 
@@ -76,17 +76,17 @@ void GameplayGlobals::SetValues(const Dictionary<String, Variant>& values)
     ScopeLock lock(Locker);
     for (auto it = Variables.Begin(); it.IsNotEnd(); ++it)
     {
-        if (!values.ContainsKey(it->Key))
+        if (!values.ContainsKey(it->Key()))
         {
             Variables.Remove(it);
         }
     }
     for (auto i = values.Begin(); i.IsNotEnd(); ++i)
     {
-        auto e = Variables.TryGet(i->Key);
+        auto e = Variables.TryGet(i->Key());
         if (!e)
         {
-            e = &Variables[i->Key];
+            e = &Variables[i->Key()];
             e->DefaultValue = i->Value;
         }
         e->Value = i->Value;
@@ -98,7 +98,7 @@ Dictionary<String, Variant> GameplayGlobals::GetDefaultValues() const
     ScopeLock lock(Locker);
     Dictionary<String, Variant> result;
     for (auto& e : Variables)
-        result.Add(e.Key, e.Value.DefaultValue);
+        result.Add(e.Key(), e.Value().DefaultValue);
     return result;
 }
 
@@ -107,17 +107,17 @@ void GameplayGlobals::SetDefaultValues(const Dictionary<String, Variant>& values
     ScopeLock lock(Locker);
     for (auto it = Variables.Begin(); it.IsNotEnd(); ++it)
     {
-        if (!values.ContainsKey(it->Key))
+        if (!values.ContainsKey(it->Key()))
         {
             Variables.Remove(it);
         }
     }
     for (auto i = values.Begin(); i.IsNotEnd(); ++i)
     {
-        auto e = Variables.TryGet(i->Key);
+        auto e = Variables.TryGet(i->Key());
         if (!e)
         {
-            e = &Variables[i->Key];
+            e = &Variables[i->Key()];
             e->Value = i->Value;
         }
         e->DefaultValue = i->Value;

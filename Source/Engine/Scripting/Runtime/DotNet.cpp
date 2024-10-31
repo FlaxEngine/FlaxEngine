@@ -342,12 +342,12 @@ void MCore::ReloadScriptingAssemblyLoadContext()
     }
     for (auto e : CachedAssemblyHandles)
     {
-        MAssembly* a = e.Value;
+        MAssembly* a = e.Value();
         if (!a->IsLoaded() || !a->_hasCachedClasses)
             continue;
         for (auto q : a->GetClasses())
         {
-            MClass* c = q.Value;
+            MClass* c = q.Value();
             c->_hasCachedAttributes = false;
             c->_attributes.Clear();
             if (c->_hasCachedMethods)

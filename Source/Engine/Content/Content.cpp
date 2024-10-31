@@ -131,7 +131,7 @@ void ContentService::LateUpdate()
     // Verify all assets
     for (auto i = Assets.Begin(); i.IsNotEnd(); ++i)
     {
-        Asset* asset = i->Value;
+        Asset* asset = i->Value();
 
         // Check if has no references and is not during unloading
         if (asset->GetReferencesCount() <= 0 && !UnloadQueue.ContainsKey(asset))
@@ -516,7 +516,7 @@ Asset* Content::GetAsset(const StringView& outputPath)
     {
         if (i->Value->GetPath() == outputPath)
         {
-            return i->Value;
+            return i->Value();
         }
     }
     return nullptr;

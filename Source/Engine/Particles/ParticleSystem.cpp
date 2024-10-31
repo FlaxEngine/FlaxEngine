@@ -102,7 +102,7 @@ BytesContainer ParticleSystem::LoadTimeline()
             {
                 stream.WriteInt32(i->Key().First);
                 stream.Write(i->Key().Second);
-                stream.WriteVariant(i->Value);
+                stream.WriteVariant(i->Value());
             }
         }
     }

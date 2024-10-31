@@ -227,7 +227,7 @@ void TerrainManagerService::BeforeExit()
     // Cleanup data
     for (auto i = Lookup.Begin(); i.IsNotEnd(); ++i)
     {
-        auto v = i->Value;
+        auto v = i->Value();
         v->VertexBuffer->ReleaseGPU();
         Delete(v->VertexBuffer);
         v->IndexBuffer->ReleaseGPU();

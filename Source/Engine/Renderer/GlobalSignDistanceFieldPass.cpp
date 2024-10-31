@@ -871,10 +871,10 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             // Rasterize non-empty chunks (first layer so can override existing chunk data)
             for (const auto& e : cascade.Chunks)
             {
-                if (e.Key.Layer != 0)
+                if (e.Key().Layer != 0)
                     continue;
-                auto& chunk = e.Value;
-                cascade.NonEmptyChunks.Add(e.Key);
+                auto& chunk = e.Value();
+                cascade.NonEmptyChunks.Add(e.Key());
 
                 for (int32 i = 0; i < chunk.ModelsCount; i++)
                 {
@@ -934,7 +934,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             {
                 if (e.Key().Layer == 0)
                     continue;
-                auto& chunk = e.Value;
+                auto& chunk = e.Value();
                 data.ChunkCoord = e.Key().Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
 
                 if (chunk.ModelsCount != 0)

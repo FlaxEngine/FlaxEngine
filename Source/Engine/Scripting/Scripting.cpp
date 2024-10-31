@@ -125,7 +125,7 @@ namespace
         _objectsLocker.Lock();
         for (auto i = _objectsDictionary.Begin(); i.IsNotEnd(); ++i)
         {
-            auto obj = i->Value;
+            auto obj = i->Value();
             if (gameOnly && obj->GetTypeHandle().Module == flaxModule)
                 continue;
 
@@ -955,7 +955,7 @@ ScriptingObject* Scripting::TryFindObject(const MClass* type)
     ScopeLock lock(_objectsLocker);
     for (auto i = _objectsDictionary.Begin(); i.IsNotEnd(); ++i)
     {
-        const auto obj = i->Value;
+        const auto obj = i->Value();
         if (obj->GetClass() == type)
             return obj;
     }
@@ -974,7 +974,7 @@ ScriptingObject* Scripting::FindObject(const MObject* managedInstance)
 
     for (auto i = _objectsDictionary.Begin(); i.IsNotEnd(); ++i)
     {
-        const auto obj = i->Value;
+        const auto obj = i->Value();
         if (obj->GetManagedInstance() == managedInstance)
             return obj;
     }

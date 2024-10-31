@@ -198,7 +198,7 @@ void LocalizationService::OnLocalizationChanged()
         String locale;
         for (auto& e : tables)
         {
-            if (&e.Value == table)
+            if (&e.Value() == table)
             {
                 locale = e.Key();
                 break;

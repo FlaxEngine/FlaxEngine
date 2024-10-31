@@ -1481,7 +1481,7 @@ Asset::LoadResult VisualScript::load()
             // Reset instances values to defaults
             for (auto& e : _instances)
             {
-                auto& instanceParams = e.Value.Params;
+                auto& instanceParams = e.Value().Params;
                 instanceParams.Resize(count);
                 for (int32 i = 0; i < count; i++)
                     instanceParams[i] = Graph.Parameters[i].Value;
@@ -2014,7 +2014,7 @@ void VisualScriptingBinaryModule::DeserializeObject(ISerializable::DeserializeSt
         if (instanceParams)
         {
             // Deserialize all parameters
-            auto& params = instanceParams->Value.Params;
+            auto& params = instanceParams->Value().Params;
             for (auto i = stream.MemberBegin(); i != stream.MemberEnd(); ++i)
             {
                 StringAnsiView idNameAnsi(i->name.GetStringAnsiView());

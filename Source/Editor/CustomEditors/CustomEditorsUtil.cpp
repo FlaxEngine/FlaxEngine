@@ -116,7 +116,7 @@ void OnAssemblyLoaded(MAssembly* assembly)
     auto& classes = assembly->GetClasses();
     for (auto i = classes.Begin(); i.IsNotEnd(); ++i)
     {
-        const auto mclass = i->Value;
+        const auto mclass = i->Value();
 
         // Skip generic classes
         if (mclass->IsGeneric())

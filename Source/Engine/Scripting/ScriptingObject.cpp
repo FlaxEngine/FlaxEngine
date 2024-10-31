@@ -207,8 +207,8 @@ ScriptingObject* ScriptingObject::FromInterface(void* interfaceObj, const Script
     // Special case for interface wrapper object
     for (const auto& e : ScriptingObjectsInterfaceWrappers)
     {
-        if (e.Value == interfaceObj)
-            return e.Key.First;
+        if (e.Value() == interfaceObj)
+            return e.Key().First;
     }
 
     return nullptr;

@@ -132,7 +132,7 @@ void GPUPipelineStateDX12::OnReleaseGPU()
 {
     for (auto i = _states.Begin(); i.IsNotEnd(); ++i)
     {
-        _device->AddResourceToLateRelease(i->Value);
+        _device->AddResourceToLateRelease(i->Value());
     }
     _states.Clear();
 }

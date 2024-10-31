@@ -193,7 +193,7 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
     int32 index = 0;
     for (auto i = entries.Begin(); i.IsNotEnd(); ++i)
     {
-        auto& e = i->Value;
+        auto& e = i->Value();
         stream->Write(e.Info.ID);
         stream->WriteString(e.Info.TypeName, index - 13);
         stream->WriteString(e.Info.Path, index);
@@ -267,7 +267,7 @@ bool AssetsCache::FindAsset(const StringView& path, AssetInfo& info)
     // Find asset in registry
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
-        auto& e = i->Value;
+        auto& e = i->Value();
         if (e.Info.Path == path)
         {
             if (!IsEntryValid(e))
@@ -326,7 +326,7 @@ void AssetsCache::GetAllByTypeName(const StringView& typeName, Array<Guid>& resu
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
         if (i->Value.Info.TypeName == typeName)
-            result.Add(i->Key);
+            result.Add(i->Key());
     }
 }
 

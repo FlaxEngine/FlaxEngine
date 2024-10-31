@@ -409,7 +409,7 @@ bool EditorUtilities::ReplaceInFile(const StringView& file, const Dictionary<Str
     if (File::ReadAllText(file, text))
         return true;
     for (const auto& e : replaceMap)
-        text.Replace(e.Key().Get(), e.Key().Length(), e.Value().Get(), e.Value.Length());
+        text.Replace(e.Key().Get(), e.Key().Length(), e.Value().Get(), e.Value().Length());
     return File::WriteAllText(file, text, Encoding::ANSI);
 }
 

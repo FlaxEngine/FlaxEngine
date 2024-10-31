@@ -370,7 +370,7 @@ public:
         // TODO: build list of modified bounds and dirty them in batch on next frame start (ideally in async within shadows setup job)
         for (auto& e : Lights)
         {
-            auto& atlasLight = e.Value;
+            auto& atlasLight = e.Value();
             if ((atlasLight.StaticState == ShadowAtlasLight::CopyStaticShadow || atlasLight.StaticState == ShadowAtlasLight::NoStaticGeometry) 
                 && atlasLight.Bounds.Intersects(bounds))
             {
@@ -1147,7 +1147,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
         bool anyStaticFailed = false;
         for (auto& e : shadows.Lights)
         {
-            if (e.Value.StaticState == ShadowAtlasLight::FailedToInsertTiles)
+            if (e.Value().StaticState == ShadowAtlasLight::FailedToInsertTiles)
             {
                 anyStaticFailed = true;
                 break;
@@ -1209,7 +1209,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     int32 atlasPixelsNeeded = 0;
     for (auto it = shadows.Lights.Begin(); it.IsNotEnd(); ++it)
     {
-        const auto& atlasLight = it->Value;
+        const auto& atlasLight = it->Value();
         atlasPixelsNeeded += atlasLight.Resolution * atlasLight.Resolution * atlasLight.TilesNeeded;
     }
     const int32 atlasPixelsAllowed = atlasResolution * atlasResolution;
@@ -1391,7 +1391,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
         bool renderedAny = false;
         for (auto& e : shadows.Lights)
         {
-            ShadowAtlasLight& atlasLight = e.Value;
+            ShadowAtlasLight& atlasLight = e.Value();
             if (!atlasLight.HasStaticShadowContext || atlasLight.ContextCount == 0)
                 continue;
             int32 contextIndex = 0;
@@ -1470,7 +1470,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
     context->SetRenderTarget(shadows.ShadowMapAtlas->View(), (GPUTextureView*)nullptr);
     for (auto& e : shadows.Lights)
     {
-        ShadowAtlasLight& atlasLight = e.Value;
+        ShadowAtlasLight& atlasLight = e.Value();
         if (atlasLight.ContextCount == 0)
             continue;
         int32 contextIndex = 0;
