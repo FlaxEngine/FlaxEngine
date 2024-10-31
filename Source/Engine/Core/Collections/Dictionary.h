@@ -26,20 +26,43 @@ public:
     {
         friend Dictionary;
 
-        /// <summary>The key.</summary>
-        KeyType Key;
-        /// <summary>The value.</summary>
-        ValueType Value;
-
     private:
+        // This layout assumes that the key is smaller than the value.
+        ValueType _value;
+        KeyType _key;
         BucketState _state;
 
+    public:
+        /// <summary> Returns mutable reference to the value occupying the bucket. </summary>
+        FORCE_INLINE ValueType& Value()
+        {
+            ASSERT(_state == BucketState::Occupied);
+            return _value;
+        }
+
+        /// <summary> Returns const reference to the value occupying the bucket. </summary>
+        FORCE_INLINE const ValueType& Value() const
+        {
+            ASSERT(_state == BucketState::Occupied);
+            return _value;
+        }
+
+        /// <summary> Returns const reference to the key occupying the bucket. </summary>
+        /// <remarks> Mutable reference to the key is not provided to prevent changing the key in the dictionary. </remarks>
+        FORCE_INLINE const KeyType& Key() const
+        {
+            ASSERT(_state == BucketState::Occupied);
+            return _key;
+        }
+
+
+    private:
         FORCE_INLINE void Free()
         {
             if (_state == BucketState::Occupied)
             {
-                Memory::DestructItem(&Key);
-                Memory::DestructItem(&Value);
+                Memory::DestructItem(&_key);
+                Memory::DestructItem(&_value);
             }
             _state = BucketState::Empty;
         }
@@ -47,31 +70,31 @@ public:
         FORCE_INLINE void Delete()
         {
             _state = BucketState::Deleted;
-            Memory::DestructItem(&Key);
-            Memory::DestructItem(&Value);
+            Memory::DestructItem(&_key);
+            Memory::DestructItem(&_value);
         }
 
         template<typename KeyComparableType>
         FORCE_INLINE void Occupy(const KeyComparableType& key)
         {
-            Memory::ConstructItems(&Key, &key, 1);
-            Memory::ConstructItem(&Value);
+            Memory::ConstructItems(&_key, &key, 1);
+            Memory::ConstructItem(&_value);
             _state = BucketState::Occupied;
         }
 
         template<typename KeyComparableType>
         FORCE_INLINE void Occupy(const KeyComparableType& key, const ValueType& value)
         {
-            Memory::ConstructItems(&Key, &key, 1);
-            Memory::ConstructItems(&Value, &value, 1);
+            Memory::ConstructItems(&_key, &key, 1);
+            Memory::ConstructItems(&_value, &value, 1);
             _state = BucketState::Occupied;
         }
 
         template<typename KeyComparableType>
         FORCE_INLINE void Occupy(const KeyComparableType& key, ValueType&& value)
         {
-            Memory::ConstructItems(&Key, &key, 1);
-            Memory::MoveItems(&Value, &value, 1);
+            Memory::ConstructItems(&_key, &key, 1);
+            Memory::MoveItems(&_value, &value, 1);
             _state = BucketState::Occupied;
         }
 
