@@ -351,7 +351,8 @@ namespace FlaxEditor.GUI.Dialogs
             float valueKnobWidth = _isMouseDownValueSlider ? _valueSliderRect.Size.X + knobWidthDragExpansion : _valueSliderRect.Size.X + knobWidthNormalExpansion;
             float valueKnobHeight = _isMouseDownValueSlider ? 7 : 4;
             float valueKnobX = _isMouseDownValueSlider ? _valueSliderRect.X - knobWidthDragExpansion * 0.5f : _valueSliderRect.X - knobWidthNormalExpansion * 0.5f;
-            float valueKnobY = _valueSliderRect.Height * (1 - hsv.Z) - valueKnobHeight * 0.5f;
+            float valueKnobY = _valueSliderRect.Height * (1 - hsv.Z);
+            valueKnobY = Mathf.Clamp(valueKnobY, 0.0f, _valueSliderRect.Height) - valueKnobHeight * 0.5f;
 
             // TODO: Make this lerp the outline color to white instead of just abruptly showing it
             Color valueSliderTopOutlineColor = hsv.X > 205 && hsv.Y > 0.65f ? Color.White : Color.Black;
@@ -363,7 +364,8 @@ namespace FlaxEditor.GUI.Dialogs
             float alphaKnobWidth = _isMouseDownAlphaSlider ? _alphaSliderRect.Size.X + knobWidthDragExpansion : _alphaSliderRect.Size.X + knobWidthNormalExpansion;
             float alphaKnobHeight = _isMouseDownAlphaSlider ? 7 : 4;
             float alphaKnobX = _isMouseDownAlphaSlider ? _alphaSliderRect.X - knobWidthDragExpansion * 0.5f : _alphaSliderRect.X - knobWidthNormalExpansion * 0.5f;
-            float alphaKnobY = _alphaSliderRect.Height * (1 - _color.A) - alphaKnobHeight * 0.5f;
+            float alphaKnobY = _alphaSliderRect.Height * (1 - _color.A);
+            alphaKnobY = Mathf.Clamp(alphaKnobY, 0.0f, _alphaSliderRect.Height) - alphaKnobHeight * 0.5f;
 
             // Prevent alpha slider fill from being affected by alpha
             var opaqueColor = _color;
