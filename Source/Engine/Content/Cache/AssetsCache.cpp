@@ -231,8 +231,8 @@ const String& AssetsCache::GetEditorAssetPath(const Guid& id) const
 #else
     for (auto& e : _pathsMapping)
     {
-        if (e.Value == id)
-            return e.Key;
+        if (e.Value() == id)
+            return e.Key();
     }
     return String::Empty;
 #endif

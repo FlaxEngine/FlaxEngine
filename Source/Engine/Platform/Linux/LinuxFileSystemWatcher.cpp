@@ -151,9 +151,9 @@ namespace FileSystemWatchers
             auto fullPath = Watchers[parentWacherFileDesc].Second.Second->Directory / dirName;
             for (auto& watcher : Watchers)
             {
-                if (watcher.Value.Second.First.Compare(fullPath) == 0)
+                if (watcher.Value().Second.First.Compare(fullPath) == 0)
                 {
-                    Delete<LinuxFileSystemWatcher>(watcher.Value.Second.Second);
+                    Delete<LinuxFileSystemWatcher>(watcher.Value().Second.Second);
                 }
             }
         }
@@ -218,7 +218,7 @@ LinuxFileSystemWatcher::~LinuxFileSystemWatcher()
         close(FileSystemWatchers::WacherFileDescriptor);
         FileSystemWatchers::WacherFileDescriptor = 0;
         for (auto e : FileSystemWatchers::Watchers)
-            Delete(e.Value.Second.Second);
+            Delete(e.Value().Second.Second);
         FileSystemWatchers::Watchers.Clear();
     }
     FileSystemWatchers::Locker.Unlock();

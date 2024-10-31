@@ -349,7 +349,7 @@ DescriptorPoolVulkan* GPUContextVulkan::AllocateDescriptorSets(const VkDescripto
     }
     else
     {
-        typedDescriptorPools = &_descriptorPools.Add(hash, DescriptorPoolArray())->Value;
+        typedDescriptorPools = &_descriptorPools.Add(hash, DescriptorPoolArray())->Value();
     }
 
     if (result < VK_SUCCESS)
