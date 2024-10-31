@@ -1071,15 +1071,15 @@ int32 WindowsPlatform::CreateProcess(CreateProcessSettings& settings)
 
             int32 totalLength = 1;
             for (auto& e : settings.Environment)
-                totalLength += e.Key.Length() + e.Value.Length() + 2;
+                totalLength += e.Key().Length() + e.Value(0).Length() + 2;
 
             environmentStr = (Char*)Allocator::Allocate(totalLength * sizeof(Char));
 
             Char* env = environmentStr;
             for (auto& e : settings.Environment)
             {
-                auto& key = e.Key;
-                auto& value = e.Value;
+                auto& key = e.Key();
+                auto& value = e.Value();
                 Platform::MemoryCopy(env, key.Get(), key.Length() * sizeof(Char));
                 env += key.Length();
                 *env++ = '=';

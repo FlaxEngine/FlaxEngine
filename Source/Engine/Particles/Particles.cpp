@@ -1220,7 +1220,7 @@ void ParticleManagerService::Dispose()
     PoolLocker.Lock();
     for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
     {
-        auto& entries = i->Value;
+        auto& entries = i->Value();
         for (int32 j = 0; j < entries.Count(); j++)
         {
             Delete(entries[j].Buffer);
@@ -1435,7 +1435,7 @@ void ParticlesSystem::PostExecute(TaskGraph* graph)
     PoolLocker.Lock();
     for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
     {
-        auto& entries = i->Value;
+        auto& entries = i->Value();
         for (int32 j = 0; j < entries.Count(); j++)
         {
             auto& e = entries[j];

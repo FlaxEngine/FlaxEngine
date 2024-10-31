@@ -244,7 +244,7 @@ SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source)
                 // Use nodes retargeting
                 for (const auto& e : retarget->NodesMapping)
                 {
-                    const int32 dstIndex = Skeleton.FindNode(e.Key);
+                    const int32 dstIndex = Skeleton.FindNode(e.Key());
                     const int32 srcIndex = sourceModel->Skeleton.FindNode(e.Value);
                     if (dstIndex != -1 && srcIndex != -1)
                     {

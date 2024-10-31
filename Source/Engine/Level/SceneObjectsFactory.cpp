@@ -106,7 +106,7 @@ void SceneObjectsFactory::Context::SetupIdsMapping(const SceneObject* obj, ISeri
         modifier->CurrentInstance = instanceIndex;
         const auto& instance = Instances[instanceIndex];
         for (const auto& e : instance.IdsMapping)
-            modifier->IdsMapping[e.Key] = e.Value;
+            modifier->IdsMapping[e.Key()] = e.Value();
     }
 }
 

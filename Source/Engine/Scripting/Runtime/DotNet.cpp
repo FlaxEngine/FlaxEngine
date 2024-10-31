@@ -337,8 +337,8 @@ void MCore::ReloadScriptingAssemblyLoadContext()
     // Clear any cached class attributes (see https://github.com/FlaxEngine/FlaxEngine/issues/1108)
     for (auto e : CachedClassHandles)
     {
-        e.Value->_hasCachedAttributes = false;
-        e.Value->_attributes.Clear();
+        e.Value()->_hasCachedAttributes = false;
+        e.Value()->_attributes.Clear();
     }
     for (auto e : CachedAssemblyHandles)
     {

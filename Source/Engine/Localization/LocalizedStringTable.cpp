@@ -119,15 +119,15 @@ void LocalizedStringTable::OnGetData(rapidjson_flax::StringBuffer& buffer) const
         writer.StartObject();
         for (auto& e : Entries)
         {
-            writer.Key(e.Key);
+            writer.Key(e.Key());
             if (e.Value.Count() == 1)
             {
-                writer.String(e.Value[0]);
+                writer.String(e.Value()[0]);
             }
             else
             {
                 writer.StartArray();
-                for (auto& q : e.Value)
+                for (auto& q : e.Value())
                     writer.String(q);
                 writer.EndArray();
             }

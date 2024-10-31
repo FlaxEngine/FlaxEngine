@@ -621,7 +621,7 @@ namespace Serialization
             return true;
         for (auto& i : v)
         {
-            if (!other->ContainsKey(i.Key) || ShouldSerialize(i.Value, (const void*)&other->At(i.Key)))
+            if (!other->ContainsKey(i.Key()) || ShouldSerialize(i.Value(), (const void*)&other->At(i.Key())))
                 return true;
         }
         return false;
@@ -634,9 +634,9 @@ namespace Serialization
         {
             stream.StartObject();
             stream.JKEY("Key");
-            Serialize(stream, i.Key, nullptr);
+            Serialize(stream, i.Key(), nullptr);
             stream.JKEY("Value");
-            Serialize(stream, i.Value, nullptr);
+            Serialize(stream, i.Value(), nullptr);
             stream.EndObject();
         }
         stream.EndArray();

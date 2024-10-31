@@ -675,7 +675,7 @@ bool Prefab::ApplyAll(Actor* targetActor)
         for (auto& e : assetsRaw)
         {
             if (e.Value->GetTypeHandle() == Prefab::TypeInitializer)
-                nestedPrefabIds.AddUnique(e.Key);
+                nestedPrefabIds.AddUnique(e.Key());
         }
         for (int32 i = 0; i < nestedPrefabIds.Count(); i++)
         {
@@ -847,8 +847,8 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
         {
             const auto prefabObjectId = Guid::New();
-            newPrefabInstanceIdToPrefabObjectId[i->Key] = prefabObjectId;
-            modifier->IdsMapping[i->Key] = prefabObjectId;
+            newPrefabInstanceIdToPrefabObjectId[i->Key()] = prefabObjectId;
+            modifier->IdsMapping[i->Key()] = prefabObjectId;
         }
 
         // Add inverse IDs mapping to link added objects and references inside them to the prefab objects

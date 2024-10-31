@@ -3974,9 +3974,9 @@ void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
     {
         for (auto& e : Fabrics)
         {
-            if (e.Value.MatchesDesc(desc))
+            if (e.Value().MatchesDesc(desc))
             {
-                fabric = e.Key;
+                fabric = e.Key();
                 break;
             }
         }

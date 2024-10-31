@@ -146,9 +146,9 @@ void ContentService::LateUpdate()
     for (auto i = UnloadQueue.Begin(); i != UnloadQueue.End(); ++i)
     {
         // Check if asset gain any new reference or if need to unload it
-        if (i->Key->GetReferencesCount() > 0 || timeNow - i->Value >= Content::AssetsUnloadInterval)
+        if (i->Key()->GetReferencesCount() > 0 || timeNow - i->Value() >= Content::AssetsUnloadInterval)
         {
-            ToUnload.Add(i->Key);
+            ToUnload.Add(i->Key());
         }
     }
 

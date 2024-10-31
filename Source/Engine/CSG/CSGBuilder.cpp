@@ -402,9 +402,9 @@ bool CSGBuilderImpl::generateRawDataAsset(Scene* scene, RawData& meshData, Guid&
         int32 surfacesDataOffset = sizeof(int32) * 2 + (sizeof(Guid) + sizeof(int32)) * brushesCount;
         for (auto brush = meshData.Brushes.Begin(); brush.IsNotEnd(); ++brush)
         {
-            auto& surfaces = brush->Value.Surfaces;
+            auto& surfaces = brush->Value().Surfaces;
 
-            stream.Write(brush->Key);
+            stream.Write(brush->Key());
             stream.WriteInt32(surfacesDataOffset);
 
             // Calculate offset in data storage to the next brush data
@@ -419,7 +419,7 @@ bool CSGBuilderImpl::generateRawDataAsset(Scene* scene, RawData& meshData, Guid&
         // Surfaces data
         for (auto brush = meshData.Brushes.Begin(); brush.IsNotEnd(); ++brush)
         {
-            auto& surfaces = brush->Value.Surfaces;
+            auto& surfaces = brush->Value().Surfaces;
 
             for (int32 i = 0; i < surfaces.Count(); i++)
             {

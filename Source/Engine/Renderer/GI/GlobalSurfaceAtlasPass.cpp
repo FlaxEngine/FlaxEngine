@@ -279,7 +279,7 @@ public:
                 LastFrameAtlasDefragmentation = Engine::FrameCount;
                 for (auto& e : Objects)
                 {
-                    auto& object = e.Value;
+                    auto& object = e.Value();
                     Platform::MemoryClear(object.Tiles, sizeof(object.Tiles));
                 }
                 Atlas.Clear();
@@ -388,9 +388,9 @@ public:
         PROFILE_CPU_NAMED("Compact Objects");
         for (auto it = Objects.Begin(); it.IsNotEnd(); ++it)
         {
-            if (it->Value.LastFrameUsed != CurrentFrame)
+            if (it->Value().LastFrameUsed != CurrentFrame)
             {
-                for (auto& tile : it->Value.Tiles)
+                for (auto& tile : it->Value().Tiles)
                 {
                     if (tile)
                         Atlas.Free(tile, this);
@@ -409,13 +409,13 @@ public:
         ObjectsListBuffer.Data.EnsureCapacity(Objects.Count() * sizeof(uint32));
         for (auto& e : Objects)
         {
-            auto& object = e.Value;
+            auto& object = e.Value();
             if (object.Dirty)
             {
                 // Collect dirty objects
                 object.LastFrameUpdated = CurrentFrame;
                 object.LightingUpdateFrame = CurrentFrame;
-                DirtyObjectsBuffer.Add(e.Key);
+                DirtyObjectsBuffer.Add(e.Key());
             }
 
             Matrix3x3 worldToLocalRotation;
@@ -1161,7 +1161,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 // Mark objects to shade
                 for (auto& e : surfaceAtlasData.Objects)
                 {
-                    auto& object = e.Value;
+                    auto& object = e.Value();
                     Float3 lightToObject = object.Bounds.GetCenter() - light.Position;
                     if (lightToObject.LengthSquared() >= Math::Square(object.Radius + light.Radius))
                         continue;
@@ -1183,7 +1183,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                 // Mark objects to shade
                 for (auto& e : surfaceAtlasData.Objects)
                 {
-                    auto& object = e.Value;
+                    auto& object = e.Value();
                     Float3 lightToObject = object.Bounds.GetCenter() - light.Position;
                     if (lightToObject.LengthSquared() >= Math::Square(object.Radius + light.Radius))
                         continue;
@@ -1198,7 +1198,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             _vertexBuffer->Clear();
             for (const auto& e : surfaceAtlasData.Objects)
             {
-                const auto& object = e.Value;
+                const auto& object = e.Value();
                 if (!allLightingDirty && object.LightingUpdateFrame != currentFrame)
                     continue;
                 for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
@@ -1224,7 +1224,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             _vertexBuffer->Clear();
             for (const auto& e : surfaceAtlasData.Objects)
             {
-                const auto& object = e.Value;
+                const auto& object = e.Value();
                 if (!allLightingDirty && object.LightingUpdateFrame != currentFrame)
                     continue;
                 for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)
@@ -1255,7 +1255,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             _vertexBuffer->Clear();
             for (const auto& e : surfaceAtlasData.Objects)
             {
-                const auto& object = e.Value;
+                const auto& object = e.Value();
                 if (!allLightingDirty && object.LightingUpdateFrame != currentFrame)
                     continue;
                 Float3 lightToObject = object.Bounds.GetCenter() - light.Position;
@@ -1289,7 +1289,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
             _vertexBuffer->Clear();
             for (const auto& e : surfaceAtlasData.Objects)
             {
-                const auto& object = e.Value;
+                const auto& object = e.Value();
                 if (!allLightingDirty && object.LightingUpdateFrame != currentFrame)
                     continue;
                 Float3 lightToObject = object.Bounds.GetCenter() - light.Position;
@@ -1321,7 +1321,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
         // Remove unused lights
         for (auto it = surfaceAtlasData.Lights.Begin(); it.IsNotEnd(); ++it)
         {
-            if (it->Value.LastFrameUsed != currentFrame)
+            if (it->Value().LastFrameUsed != currentFrame)
                 surfaceAtlasData.Lights.Remove(it);
         }
 
@@ -1339,7 +1339,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
                     _vertexBuffer->Clear();
                     for (const auto& e : surfaceAtlasData.Objects)
                     {
-                        const auto& object = e.Value;
+                        const auto& object = e.Value();
                         if (!allLightingDirty && object.LightingUpdateFrame != currentFrame)
                             continue;
                         for (int32 tileIndex = 0; tileIndex < 6; tileIndex++)

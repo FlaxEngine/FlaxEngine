@@ -315,7 +315,7 @@ public:
         ClearShadowMapAtlas = true;
         for (auto it = Lights.Begin(); it.IsNotEnd(); ++it)
         {
-            auto& atlasLight = it->Value;
+            auto& atlasLight = it->Value();
             atlasLight.Cache.DynamicValid = false;
             for (int32 i = 0; i < atlasLight.TilesCount; i++)
                 atlasLight.Tiles[i].ClearDynamic();
@@ -329,7 +329,7 @@ public:
         ClearStaticShadowMapAtlas = true;
         for (auto it = Lights.Begin(); it.IsNotEnd(); ++it)
         {
-            auto& atlasLight = it->Value;
+            auto& atlasLight = it->Value();
             atlasLight.StaticState = ShadowAtlasLight::Unused;
             atlasLight.Cache.StaticValid = false;
             for (int32 i = 0; i < atlasLight.TilesCount; i++)
@@ -1199,7 +1199,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     {
         if (it->Value.LastFrameUsed != currentFrame)
         {
-            for (ShadowAtlasLightTile& tile : it->Value.Tiles)
+            for (ShadowAtlasLightTile& tile : it->Value().Tiles)
                 tile.Free(&shadows);
             shadows.Lights.Remove(it);
         }

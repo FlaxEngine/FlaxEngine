@@ -468,7 +468,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
         auto& batch = e.Value;
         if (batch.Instances.IsEmpty())
             continue;
-        const auto& mesh = *e.Key.Geo;
+        const auto& mesh = *e.Key().Geo;
         const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
         const MaterialSlot& slot = type.Model->MaterialSlots[mesh.GetMaterialSlotIndex()];
         const auto shadowsMode = entry.ShadowsMode & slot.ShadowsMode;

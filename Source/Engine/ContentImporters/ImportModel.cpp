@@ -772,9 +772,9 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelDa
             {
                 for (const auto& i : prefab->ObjectsCache)
                 {
-                    if (i.Value->GetTypeHandle() != a->GetTypeHandle()) // Type match
+                    if (i.Value()->GetTypeHandle() != a->GetTypeHandle()) // Type match
                         continue;
-                    auto* o = (Actor*)i.Value;
+                    auto* o = (Actor*)i.Value();
                     if (o->GetName() != a->GetName()) // Name match
                         continue;
 
@@ -824,9 +824,9 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, ModelDa
         {
             for (const auto& i : prefab->ObjectsCache)
             {
-                if (i.Value->GetTypeHandle() == modelPrefabScript->GetTypeHandle())
+                if (i.Value()->GetTypeHandle() == modelPrefabScript->GetTypeHandle())
                 {
-                    modelPrefabScript->LinkPrefab(i.Value->GetPrefabID(), i.Value->GetPrefabObjectID());
+                    modelPrefabScript->LinkPrefab(i.Value()->GetPrefabID(), i.Value()->GetPrefabObjectID());
                     break;
                 }
             }

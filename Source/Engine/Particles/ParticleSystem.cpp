@@ -100,8 +100,8 @@ BytesContainer ParticleSystem::LoadTimeline()
             stream.WriteInt32(EmittersParametersOverrides.Count());
             for (auto i = EmittersParametersOverrides.Begin(); i.IsNotEnd(); ++i)
             {
-                stream.WriteInt32(i->Key.First);
-                stream.Write(i->Key.Second);
+                stream.WriteInt32(i->Key().First);
+                stream.Write(i->Key().Second);
                 stream.WriteVariant(i->Value);
             }
         }
@@ -191,7 +191,7 @@ void ParticleSystem::GetReferences(Array<Guid>& assets, Array<String>& files) co
 
     for (auto i = EmittersParametersOverrides.Begin(); i.IsNotEnd(); ++i)
     {
-        const auto id = (Guid)i->Value;
+        const auto id = (Guid)i->Value();
         if (id.IsValid())
             assets.Add(id);
     }

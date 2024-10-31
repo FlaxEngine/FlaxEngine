@@ -323,7 +323,7 @@ void ParticleEmitterGPUGenerator::clearCache()
     }
     for (const auto& e : _functions)
     {
-        auto& nodes = ((ParticleEmitterGraphGPU*)e.Value)->Nodes;
+        auto& nodes = ((ParticleEmitterGraphGPU*)e.Value())->Nodes;
         for (int32 i = 0; i < nodes.Count(); i++)
         {
             ParticleEmitterGraphGPUNode& node = nodes.Get()[i];
