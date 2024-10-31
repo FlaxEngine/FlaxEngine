@@ -142,11 +142,11 @@ private:
                 if (fromBucket.IsOccupied())
                 {
                     Bucket& toBucket = toData[i];
-                    Memory::MoveItems(&toBucket.Key, &fromBucket.Key, 1);
-                    Memory::MoveItems(&toBucket.Value, &fromBucket.Value, 1);
+                    Memory::MoveItems(&toBucket._key, &fromBucket._key, 1);
+                    Memory::MoveItems(&toBucket._value, &fromBucket._value, 1);
                     toBucket._state = BucketState::Occupied;
-                    Memory::DestructItem(&fromBucket.Key);
-                    Memory::DestructItem(&fromBucket.Value);
+                    Memory::DestructItem(&fromBucket._key);
+                    Memory::DestructItem(&fromBucket._value);
                     fromBucket._state = BucketState::Empty;
                 }
             }
@@ -438,14 +438,14 @@ public:
 
         // Check if that key has been already added
         if (pos.ObjectIndex != -1)
-            return _allocation.Get()[pos.ObjectIndex].Value;
+            return _allocation.Get()[pos.ObjectIndex]._value;
 
         // Insert
         ASSERT(pos.FreeSlotIndex != -1);
         ++_elementsCount;
         Bucket& bucket = _allocation.Get()[pos.FreeSlotIndex];
         bucket.Occupy(key);
-        return bucket.Value;
+        return bucket._value;
     }
 
     /// <summary>
@@ -459,7 +459,7 @@ public:
         FindPositionResult pos;
         FindPosition(key, pos);
         ASSERT(pos.ObjectIndex != -1);
-        return _allocation.Get()[pos.ObjectIndex].Value;
+        return _allocation.Get()[pos.ObjectIndex]._value;
     }
 
     /// <summary>
@@ -499,7 +499,7 @@ public:
         FindPosition(key, pos);
         if (pos.ObjectIndex == -1)
             return false;
-        result = _allocation.Get()[pos.ObjectIndex].Value;
+        result = _allocation.Get()[pos.ObjectIndex].Value(); //TODO This method makes a copy of the result with each call!
         return true;
     }
 
@@ -517,7 +517,7 @@ public:
         FindPosition(key, pos);
         if (pos.ObjectIndex == -1)
             return nullptr;
-        return const_cast<ValueType*>(&_allocation.Get()[pos.ObjectIndex].Value); //TODO This one is problematic. I think this entire method should be removed.
+        return const_cast<ValueType*>(&_allocation.Get()[pos.ObjectIndex]._value); //TODO This one is problematic. I think this entire method should be removed.
     }
 
 public:
@@ -595,11 +595,11 @@ public:
                 Bucket& oldBucket = oldData[i];
                 if (oldBucket.IsOccupied())
                 {
-                    FindPosition(oldBucket.Key, pos);
+                    FindPosition(oldBucket._key, pos);
                     ASSERT(pos.FreeSlotIndex != -1);
                     Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
-                    Memory::MoveItems(&bucket->Key, &oldBucket.Key, 1);
-                    Memory::MoveItems(&bucket->Value, &oldBucket.Value, 1);
+                    Memory::MoveItems(&bucket->_key, &oldBucket._key, 1);
+                    Memory::MoveItems(&bucket->_value, &oldBucket._value, 1);
                     bucket->_state = BucketState::Occupied;
                     ++_elementsCount;
                 }
@@ -683,7 +683,7 @@ public:
     {
         ASSERT(i._collection != this && i);
         const Bucket& bucket = *i;
-        Add(bucket.Key, bucket.Value);
+        Add(bucket.Key(), bucket.Value());
     }
 
     /// <summary>
@@ -853,7 +853,7 @@ public:
     void GetValues(Array<ValueType, ArrayAllocation>& result) const
     {
         for (Iterator i = Begin(); i.IsNotEnd(); ++i)
-            result.Add(i->Value);
+            result.Add(i->Value());
     }
 
 public:
@@ -941,7 +941,7 @@ private:
                     insertPos = bucketIndex;
             }
             // Occupied bucket by target key
-            else if (bucket.Key == key)
+            else if (bucket._key == key)
             {
                 // Found key
                 result.ObjectIndex = bucketIndex;
@@ -1002,11 +1002,11 @@ private:
                 Bucket& oldBucket = oldData[i];
                 if (oldBucket.IsOccupied())
                 {
-                    FindPosition(oldBucket.Key, pos);
+                    FindPosition(oldBucket._key, pos);
                     ASSERT(pos.FreeSlotIndex != -1);
                     Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
-                    Memory::MoveItems(&bucket->Key, &oldBucket.Key, 1);
-                    Memory::MoveItems(&bucket->Value, &oldBucket.Value, 1);
+                    Memory::MoveItems(&bucket->_key, &oldBucket._key, 1);
+                    Memory::MoveItems(&bucket->_value, &oldBucket._value, 1);
                     bucket->_state = BucketState::Occupied;
                 }
             }
