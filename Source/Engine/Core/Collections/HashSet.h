@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Collections/BucketState.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Config.h"
 
@@ -24,29 +25,22 @@ public:
     {
         friend HashSet;
 
-        enum State : byte
-        {
-            Empty,
-            Deleted,
-            Occupied,
-        };
-
         /// <summary>The item.</summary>
         T Item;
 
     private:
-        State _state;
+        BucketState _state;
 
         FORCE_INLINE void Free()
         {
-            if (_state == Occupied)
+            if (_state == BucketState::Occupied)
                 Memory::DestructItem(&Item);
-            _state = Empty;
+            _state = BucketState::Empty;
         }
 
         FORCE_INLINE void Delete()
         {
-            _state = Deleted;
+            _state = BucketState::Deleted;
             Memory::DestructItem(&Item);
         }
 
@@ -54,34 +48,34 @@ public:
         FORCE_INLINE void Occupy(const ItemType& item)
         {
             Memory::ConstructItems(&Item, &item, 1);
-            _state = Occupied;
+            _state = BucketState::Occupied;
         }
 
         template<typename ItemType>
         FORCE_INLINE void Occupy(ItemType&& item)
         {
             Memory::MoveItems(&Item, &item, 1);
-            _state = Occupied;
+            _state = BucketState::Occupied;
         }
 
         FORCE_INLINE bool IsEmpty() const
         {
-            return _state == Empty;
+            return _state == BucketState::Empty;
         }
 
         FORCE_INLINE bool IsDeleted() const
         {
-            return _state == Deleted;
+            return _state == BucketState::Deleted;
         }
 
         FORCE_INLINE bool IsOccupied() const
         {
-            return _state == Occupied;
+            return _state == BucketState::Occupied;
         }
 
         FORCE_INLINE bool IsNotOccupied() const
         {
-            return _state != Occupied;
+            return _state != BucketState::Occupied;
         }
     };
 
@@ -109,9 +103,9 @@ private:
                 {
                     Bucket& toBucket = toData[i];
                     Memory::MoveItems(&toBucket.Item, &fromBucket.Item, 1);
-                    toBucket._state = Bucket::Occupied;
+                    toBucket._state = BucketState::Occupied;
                     Memory::DestructItem(&fromBucket.Item);
-                    fromBucket._state = Bucket::Empty;
+                    fromBucket._state = BucketState::Empty;
                 }
             }
             from.Free();
@@ -443,7 +437,7 @@ public:
             _allocation.Allocate(capacity);
             Bucket* data = _allocation.Get();
             for (int32 i = 0; i < capacity; i++)
-                data[i]._state = Bucket::Empty;
+                data[i]._state = BucketState::Empty;
         }
         _size = capacity;
         Bucket* oldData = oldAllocation.Get();
@@ -459,7 +453,7 @@ public:
                     ASSERT(pos.FreeSlotIndex != -1);
                     Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
                     Memory::MoveItems(&bucket->Item, &oldBucket.Item, 1);
-                    bucket->_state = Bucket::Occupied;
+                    bucket->_state = BucketState::Occupied;
                     _elementsCount++;
                 }
             }
@@ -763,7 +757,7 @@ private:
             // Fast path if it's empty
             Bucket* data = _allocation.Get();
             for (int32 i = 0; i < _size; ++i)
-                data[i]._state = Bucket::Empty;
+                data[i]._state = BucketState::Empty;
         }
         else
         {
@@ -773,7 +767,7 @@ private:
             _allocation.Allocate(_size);
             Bucket* data = _allocation.Get();
             for (int32 i = 0; i < _size; ++i)
-                data[i]._state = Bucket::Empty;
+                data[i]._state = BucketState::Empty;
             Bucket* oldData = oldAllocation.Get();
             FindPositionResult pos;
             for (int32 i = 0; i < _size; ++i)
@@ -785,7 +779,7 @@ private:
                     ASSERT(pos.FreeSlotIndex != -1);
                     Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
                     Memory::MoveItems(&bucket->Item, &oldBucket.Item, 1);
-                    bucket->_state = Bucket::Occupied;
+                    bucket->_state = BucketState::Occupied;
                 }
             }
             for (int32 i = 0; i < _size; ++i)
