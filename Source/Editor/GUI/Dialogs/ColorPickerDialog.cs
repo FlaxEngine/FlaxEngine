@@ -427,10 +427,29 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.FillRectangle(oldColorRect, _initialValue);
             Render2D.FillRectangle(newColorRect, _value);
 
+            // Draw outlines around the Old and New color box
+            //Color oldOutlineColor = Color.Blue;
+            var oldhsv = _initialValue.ToHSV();
+            var newhsv = _value.ToHSV();
+
+            Color oldOutlineColor = oldhsv.X > 205 && oldhsv.Y > 0.65f ? Color.White : Color.Black;
+            Color newOutlineColor = newhsv.X > 205 && newhsv.Y > 0.65f ? Color.White : Color.Black;
+
+            // Draw them all as separate lines to prevent bleeding issues with separator lines
+            // Old outlines
+            Render2D.DrawLine(oldColorRect.UpperLeft, oldColorRect.UpperRight, oldOutlineColor, 0.5f);
+            Render2D.DrawLine(oldColorRect.UpperLeft, oldColorRect.BottomLeft, oldOutlineColor, 0.5f);
+            Render2D.DrawLine(oldColorRect.BottomLeft, oldColorRect.BottomRight, oldOutlineColor, 0.5f);
+            // New outlines
+            Render2D.DrawLine(newColorRect.UpperLeft, newColorRect.UpperRight, newOutlineColor, 0.5f);
+            Render2D.DrawLine(newColorRect.UpperRight, newColorRect.BottomRight, newOutlineColor, 0.5f);
+            Render2D.DrawLine(newColorRect.BottomLeft, newColorRect.BottomRight, newOutlineColor, 0.5f);
+
             // Small separators between Old and New
             Float2 separatorOffset = new Vector2(0, smallRectSize);
-            Render2D.DrawLine(oldColorRect.UpperRight, oldColorRect.UpperRight + separatorOffset / 2, Style.Current.Background, 2);
-            Render2D.DrawLine(oldColorRect.BottomRight, oldColorRect.BottomRight - separatorOffset / 2, Style.Current.Background, 2);
+
+            Render2D.DrawLine(oldColorRect.UpperRight, oldColorRect.UpperRight + separatorOffset / 2, newOutlineColor, 0.5f);
+            Render2D.DrawLine(oldColorRect.BottomRight, oldColorRect.BottomRight - separatorOffset / 2, newOutlineColor, 0.5f);
         }
 
         /// <inheritdoc />
