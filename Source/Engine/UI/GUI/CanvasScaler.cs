@@ -99,8 +99,8 @@ namespace FlaxEngine.GUI
         private float _scale = 1.0f;
         private float _scaleFactor = 1.0f;
         private float _physicalUnitSize = 1.0f;
-        private Float2 _resolutionMin = new Float2(1, 1);
-        private Float2 _resolutionMax = new Float2(7680, 4320);
+        private Float2 _resolutionMin = new Float2(1f, 1f);
+        private Float2 _resolutionMax = new Float2(7680f, 4320f);
 
         /// <summary>
         /// Gets the current UI scale. Computed based on the setup when performing layout.
@@ -336,7 +336,7 @@ namespace FlaxEngine.GUI
                             scale = min / value;
                         else if (value > max)
                             scale = max / value;
-                        if (ResolutionCurve != null && ResolutionCurve.Keyframes?.Length != 0)
+                        if (ResolutionCurve != null && ResolutionCurve.Keyframes?.Length != 0f)
                         {
                             ResolutionCurve.Evaluate(out var curveScale, value, false);
                             scale *= curveScale;
@@ -365,13 +365,13 @@ namespace FlaxEngine.GUI
                 dpi = 25.4f;
                 break;
             case PhysicalUnitMode.Inches:
-                dpi = 1;
+                dpi = 1f;
                 break;
             case PhysicalUnitMode.Points:
-                dpi = 72;
+                dpi = 72f;
                 break;
             case PhysicalUnitMode.Picas:
-                dpi = 6;
+                dpi = 6f;
                 break;
             }
             return dpi;
