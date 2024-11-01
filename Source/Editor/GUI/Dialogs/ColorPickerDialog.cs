@@ -48,6 +48,7 @@ namespace FlaxEditor.GUI.Dialogs
         private Margin _textBoxBlockMargin = new Margin(LargeMargin + 1.5f, SmallMargin + 1.5f, SmallMargin + 1.5f, SmallMargin + 1.5f);
         private Margin _colorPreviewMargin = new Margin(0, LargeMargin, 0, 0);
 
+        private Color _eyedropperStartColor;
         private Color _initialValue;
         private Color _value;
         private bool _disableEvents;
@@ -286,6 +287,7 @@ namespace FlaxEditor.GUI.Dialogs
         private void OnEyedropStart()
         {
             _isEyedropperActive = true;
+            _eyedropperStartColor = _value;
 
             // Provide some visual feedback that the eyedropper is active by changing button colors
             _cEyedropper.BackgroundColor = _cEyedropper.BackgroundColorSelected;
@@ -466,14 +468,24 @@ namespace FlaxEditor.GUI.Dialogs
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
-            if (_isEyedropperActive && key == KeyboardKeys.Escape)
+            if (key == KeyboardKeys.Escape)
             {
-                // Cancel eye dropping
-                _isEyedropperActive = false;
-                _cEyedropper.BackgroundColor = Style.Current.Foreground;
-                _cEyedropper.BorderColor = Color.Transparent;
-                ScreenUtilities.PickColorDone -= OnColorPicked;
-                return true;
+                if (_isEyedropperActive)
+                {
+                    // Cancel eye dropping
+                    _isEyedropperActive = false;
+                    _cEyedropper.BackgroundColor = Style.Current.Foreground;
+                    _cEyedropper.BorderColor = Color.Transparent;
+                    ScreenUtilities.PickColorDone -= OnColorPicked;
+
+                    _onChanged?.Invoke(_eyedropperStartColor, false);
+
+                    return true;
+                }
+
+                // Restore color if modified
+                if (_useDynamicEditing && _initialValue != _value)
+                    _onChanged?.Invoke(_initialValue, false);
             }
 
             return base.OnKeyDown(key);
@@ -615,7 +627,7 @@ namespace FlaxEditor.GUI.Dialogs
             if (_disableEvents)
                 return;
 
-            OnSubmit();
+            _value = _initialValue;
 
             base.OnCancel();
         }
