@@ -12,8 +12,6 @@ template<int Capacity>
 class FixedAllocation
 {
 public:
-    enum { HasSwap = false };
-
     template<typename T>
     class alignas(sizeof(void*)) Data
     {
@@ -21,13 +19,25 @@ public:
         byte _data[Capacity * sizeof(T)];
 
     public:
-        FORCE_INLINE Data()
-        {
-        }
+        FORCE_INLINE Data() = default;
 
-        FORCE_INLINE ~Data()
-        {
-        }
+        FORCE_INLINE ~Data() = default;
+
+
+        /// <summary> No allocation can be copied. </summary>
+        Data(const Data&) = delete;
+
+        /// <summary> Fixed allocation must not be moved. *It's fixed, after all.* </summary>
+        Data(Data&&) = delete;
+
+
+        /// <summary> No allocation can be copied. </summary>
+        auto operator=(const Data&)->Data & = delete;
+
+        /// <summary> Fixed allocation must not be moved. *It's fixed, after all.* </summary>
+        auto operator=(Data&&)->Data & = delete;
+
+
 
         FORCE_INLINE T* Get()
         {
@@ -62,11 +72,6 @@ public:
         FORCE_INLINE void Free()
         {
         }
-
-        void Swap(Data& other)
-        {
-            // Not supported
-        }
     };
 };
 
@@ -76,8 +81,6 @@ public:
 class HeapAllocation
 {
 public:
-    enum { HasSwap = true };
-
     template<typename T>
     class Data
     {
@@ -85,13 +88,36 @@ public:
         T* _data = nullptr;
 
     public:
-        FORCE_INLINE Data()
-        {
-        }
+        FORCE_INLINE Data() = default;
 
         FORCE_INLINE ~Data()
         {
-            Allocator::Free(_data);
+            if (_data)
+              Allocator::Free(_data);
+        }
+
+        /// <summary> No allocation can be copied. </summary>
+        Data(const Data&) = delete;
+
+        /// <summary> Initializes allocation by moving data from another allocation. </summary>
+        FORCE_INLINE Data(Data&& other) noexcept
+        {
+            ::Swap(this->_data, other._data);
+            // Other allocation is now empty.
+        }
+
+        /// <summary> No allocation can be copied. </summary>
+        auto operator=(const Data&)->Data & = delete;
+
+        /// <summary> Reassigns allocation by moving data from another allocation. </summary>
+        FORCE_INLINE auto operator=(Data&& other) noexcept -> Data&
+        {
+            if (this != &other)
+            {
+                ::Swap(this->_data, other._data);
+                // Other allocation now has the pointer (or nullptr) to be freed in the destructor.
+            }
+            return *this;
         }
 
         FORCE_INLINE T* Get()
@@ -165,11 +191,6 @@ public:
             Allocator::Free(_data);
             _data = nullptr;
         }
-
-        FORCE_INLINE void Swap(Data& other)
-        {
-            ::Swap(_data, other._data);
-        }
     };
 };
 
@@ -180,8 +201,6 @@ template<int Capacity, typename OtherAllocator = HeapAllocation>
 class InlinedAllocation
 {
 public:
-    enum { HasSwap = false };
-
     template<typename T>
     class alignas(sizeof(void*)) Data
     {
@@ -193,13 +212,23 @@ public:
         OtherData _other;
 
     public:
-        FORCE_INLINE Data()
-        {
-        }
+        FORCE_INLINE Data() = default;
 
-        FORCE_INLINE ~Data()
-        {
-        }
+        FORCE_INLINE ~Data() = default;
+
+
+        /// <summary> No allocation can be copied. </summary>
+        Data(const Data&) = delete;
+
+        /// <summary> Inlined allocation must not be moved. It uses *fixed* allocation. </summary>
+        Data(Data&&) = delete;
+
+        /// <summary> No allocation can be copied. </summary>
+        auto operator=(const Data&)->Data & = delete;
+
+        /// <summary> Inlined allocation must not be moved. It uses *fixed* allocation. </summary>
+        auto operator=(Data&&)->Data & = delete;
+
 
         FORCE_INLINE T* Get()
         {
@@ -270,11 +299,6 @@ public:
                 _useOther = false;
                 _other.Free();
             }
-        }
-
-        void Swap(Data& other)
-        {
-            // Not supported
         }
     };
 };
