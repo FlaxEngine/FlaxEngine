@@ -303,4 +303,56 @@ public:
     };
 };
 
+template<typename T>
+class AllocationOperations
+{
+public:
+    /// <summary>
+    /// This function transfers the data from the source allocation to the destination allocation.
+    /// If possible, it will use allocation move constructor to avoid moving the individual elements.
+    /// </summary>
+    /// <param name="source"> The source allocation. </param>
+    /// <param name="destination"> The destination allocation. It must be empty. </param>
+    /// <param name="count"> The number of elements to move. Algorithm assumes that elements from 0 to count-1 are valid, meaning that they are constructed and can be moved. </param>
+    /// <param name="capacity"> The capacity of the destination allocation. If a new allocation is not required, this parameter will be ignored. </param>
+    template<
+        typename Allocation,
+        typename TEnableIf<TIsMoveConstructible<typename Allocation::Data>::Value, int>::Type = 0
+    >
+    FORCE_INLINE static void MoveAllocated(
+        typename Allocation::template Data<T>& source,
+        typename Allocation::template Data<T>& destination,
+        const int32 count,
+        const int32 capacity
+    )
+    {
+        ::Swap(source, destination);
+    }
+
+    /// <summary>
+    /// This function transfers the data from the source allocation to the destination allocation.
+    /// If possible, it will use allocation move constructor to avoid moving the individual elements.
+    /// </summary>
+    /// <param name="source"> The source allocation. </param>
+    /// <param name="destination"> The destination allocation. It must be empty. </param>
+    /// <param name="count"> The number of elements to move. Algorithm assumes that elements from 0 to count-1 are valid, meaning that they are constructed and can be moved. </param>
+    /// <param name="capacity"> The capacity of the destination allocation. If a new allocation is not required, this parameter will be ignored. </param>
+    template<
+        typename Allocation,
+        typename TEnableIf<!TIsMoveConstructible<typename Allocation::Data>::Value, int>::Type = 0
+    >
+    FORCE_INLINE static void MoveAllocated(
+        typename Allocation::template Data<T>& source,
+        typename Allocation::template Data<T>& destination,
+        const int32 count,
+        const int32 capacity
+    )
+    {
+        destination.Allocate(capacity);
+        Memory::MoveItems(destination.Get(), source.Get(), count);
+        Memory::DestructItems(source.Get(), count);
+        source.Free();
+    }
+};
+
 using DefaultAllocation = HeapAllocation;
