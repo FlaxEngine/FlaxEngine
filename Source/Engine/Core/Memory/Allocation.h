@@ -57,16 +57,12 @@ public:
 
         FORCE_INLINE void Allocate(const int32 capacity)
         {
-#if ENABLE_ASSERTION_LOW_LAYERS
-            ASSERT(capacity <= Capacity);
-#endif
+            ASSERT_LOW_LAYER(capacity <= Capacity;
         }
 
         FORCE_INLINE void Relocate(const int32 capacity, int32 oldCount, int32 newCount)
         {
-#if ENABLE_ASSERTION_LOW_LAYERS
-            ASSERT(capacity <= Capacity);
-#endif
+            ASSERT_LOW_LAYER(capacity <= Capacity;
         }
 
         FORCE_INLINE void Free()
@@ -157,10 +153,9 @@ public:
 
         FORCE_INLINE void Allocate(const int32 capacity)
         {
-#if  ENABLE_ASSERTION_LOW_LAYERS
-            ASSERT(!_data);
-#endif
+            ASSERT_LOW_LAYER(!_data);
             _data = static_cast<T*>(Allocator::Allocate(capacity * sizeof(T)));
+
 #if !BUILD_RELEASE
             if (!_data)
                 OUT_OF_MEMORY;
@@ -170,6 +165,7 @@ public:
         FORCE_INLINE void Relocate(const int32 capacity, int32 oldCount, int32 newCount)
         {
             T* newData = capacity != 0 ? static_cast<T*>(Allocator::Allocate(capacity * sizeof(T))) : nullptr;
+
 #if !BUILD_RELEASE
             if (!newData && capacity != 0)
                 OUT_OF_MEMORY;
