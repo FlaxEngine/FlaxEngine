@@ -6,6 +6,17 @@
 #include "Engine/Core/Core.h"
 #include "Engine/Core/Math/Math.h"
 
+
+// --- Memory Allocation Policy Usage ---
+// 1. Allocation policy uses subclass of Data to store a handle to one (or zero) memory allocations.
+// 2. Tracking the capacity is the responsibility of the collection, not the allocation policy.
+// 3. Resultant capacity of the allocation can exceed the requested. Allocation shares information about the actual capacity.
+// 3. Allocation policy is not responsible for tracking valid elements in the allocation.
+// 4. Accessing the data can be only between Allocate and Free calls.
+// 5. Requesting to allocate numbers exceeding the limits of the policy is undefined behavior.
+// 5. Data can be move-able or not, determining it swap-ability.
+
+
 /// <summary>
 /// The memory allocation policy that uses inlined memory of the fixed size (no resize support, does not use heap allocations at all).
 /// </summary>
@@ -82,7 +93,7 @@ public:
         T* _data = nullptr;
 
     public:
-        constexpr static int32 MinCapacity = 0, MaxCapacity = INT32_MAX;
+        constexpr static int32 MinCapacity = 1, MaxCapacity = INT32_MAX;
 
         FORCE_INLINE Data() = default;
 
@@ -162,7 +173,7 @@ public:
 /// <summary>
 /// The memory allocation policy that uses inlined memory of the fixed size and supports using additional allocation to increase its capacity (eg. via heap allocation).
 /// </summary>
-template<int Capacity, typename FallbackAllocator = HeapAllocation>
+template<int Capacity, typename FallbackAllocation = HeapAllocation>
 class InlinedAllocation
 {
 public:
@@ -170,7 +181,7 @@ public:
     class alignas(sizeof(void*)) Data
     {
     private:
-        using FallbackData = typename FallbackAllocator::template Data<T>;
+        using FallbackData = typename FallbackAllocation::template Data<T>;
         
         byte _inlinedData[Capacity * sizeof(T)];
         FallbackData _fallbackData;
@@ -265,118 +276,6 @@ public:
             }
         }
     };
-};
-
-/// <summary>
-/// Utility class used to manage memory allocations, with objects occupying the memory one by one.
-/// </summary>
-/// <param name="T"> The type of the elements stored in the allocation. </param>
-template<typename T>
-class AllocationOperations
-{
-public:
-    template<typename Allocation>
-    constexpr static bool IsMoveConstructible = TIsMoveConstructible<typename Allocation::Data>::Value;
-
-    /// <summary>
-    /// This function transfers the data from the source allocation to the destination allocation.
-    /// If possible, it will use allocation move constructor to avoid moving the individual elements.
-    /// </summary>
-    /// <param name="source"> The source allocation. </param>
-    /// <param name="destination"> The destination allocation. It must be empty. </param>
-    /// <param name="count"> The number of elements to move. Algorithm assumes that elements from 0 to count-1 are valid, meaning that they are constructed and can be moved. </param>
-    /// <param name="capacity"> The capacity of the destination allocation. If a new allocation is not required, this parameter will be ignored. </param>
-    template<
-        typename Allocation,
-        typename TEnableIf<IsMoveConstructible<Allocation>, int>::Type = 0 // Move constructible
-    >
-    FORCE_INLINE static void MoveAllocated(
-        typename Allocation::template Data<T>& source,
-        typename Allocation::template Data<T>& destination,
-        const int32 count,
-        const int32 capacity
-    )
-    {
-        ::Swap(source, destination);
-    }
-
-    /// <summary>
-    /// This function transfers the data from the source allocation to the destination allocation.
-    /// If possible, it will use allocation move constructor to avoid moving the individual elements.
-    /// </summary>
-    /// <param name="source"> The source allocation. </param>
-    /// <param name="destination"> The destination allocation. It must be empty. </param>
-    /// <param name="count"> The number of elements to move. Algorithm assumes that elements [0, count) are valid, meaning that they are constructed and can be moved. </param>
-    /// <param name="capacity"> The capacity of the destination allocation. If a new allocation is not required, this parameter will be ignored. </param>
-    template<
-        typename Allocation,
-        typename TEnableIf<!IsMoveConstructible<Allocation>, int>::Type = 0 // NOT move constructible
-    >
-    FORCE_INLINE static void MoveAllocated(
-        typename Allocation::template Data<T>& source,
-        typename Allocation::template Data<T>& destination,
-        const int32 count,
-        const int32 capacity
-    )
-    {
-        destination.Allocate(capacity);
-        Memory::MoveItems(destination.Get(), source.Get(), count);
-        Memory::DestructItems(source.Get(), count);
-        source.Free();
-    }
-
-
-    template<
-        typename Allocation,
-        typename TEnableIf<IsMoveConstructible<Allocation>, int>::Type = 0 // Move constructible
-    >
-    FORCE_INLINE static int32 Relocate(
-        typename Allocation::template Data<T>& allocation,
-        const int32 desiredCapacity,
-        const int32 currentCount
-    )
-    {
-        ASSERT(Math::IsInRange(desiredCapacity, Allocation::MinCapacity, Allocation::MaxCapacity)); // Ensure that the desired capacity is within the bounds of the allocation policy.
-
-        // Invoking this method means that an allocation must happen!
-        // Collection should take responsibility of determining that a relocation is actually required.
-        // It must also ensure that the new capacity obeys the rules of the allocation policy.
-
-        typename Allocation::template Data<T> newAllocation;
-
-        const int32 newCapacity = newAllocation.Allocate(desiredCapacity); // Allocate new memory.
-        const int32 newCount = Math::Min(currentCount, newCapacity); // Determine how many elements can be moved, how many fit in the new allocation.
-
-        Memory::MoveItems(newAllocation.Get(), allocation.Get(), newCount); // Move fitting elements.
-        Memory::DestructItems(allocation.Get(), currentCount); // Destruct all elements in the old allocation. (Both moved and not fitting)
-
-        allocation.Free(); // Free the old allocation...
-        allocation = ::MoveTemp(newAllocation); // ...and replace it with the new one.
-
-        return newCapacity; // Return the new capacity, so the collection can update its internal state.
-    }
-
-    template<
-        typename Allocation,
-        typename TEnableIf<!IsMoveConstructible<Allocation>, int>::Type = 0 // NOT move constructible
-    >
-    FORCE_INLINE static int32 Relocate(
-        typename Allocation::template Data<T>& allocation,
-        const int32 desiredCapacity,
-        const int32 currentCount
-    )
-    {
-        ASSERT(Math::IsInRange(desiredCapacity, Allocation::MinCapacity, Allocation::MaxCapacity)); // Ensure that the desired capacity is within the bounds of the allocation policy.
-
-        // Relocating elements is not possible for non-move constructible types.
-        // Thus the only way to change the capacity is to destroy not fitting elements and cap the capacity.
-
-        const int32 newCount = Math::Min(currentCount, desiredCapacity); // Determine how many elements can stay, how many fit in the hypothetical allocation.
-
-        Memory::DestructItems(allocation.Get() + newCount, currentCount - newCount); // Destruct all elements that do not fit in the new allocation.
-
-        return desiredCapacity; // Return the new capacity, so the collection can update its internal state.
-    }
 };
 
 using DefaultAllocation = HeapAllocation;
