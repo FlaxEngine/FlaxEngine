@@ -6,20 +6,46 @@
 #include "Engine/Core/Core.h"
 #include "Engine/Core/Math/Math.h"
 
+//TODO One-by-one could have bitwise-constructible version, which would be faster for trivially constructible types.
 
 /// <summary>
 /// Utility class used to manage memory allocations, with objects occupying the memory one by one.
 /// </summary>
 /// <param name="T"> The type of the elements stored in the allocation. </param>
-template<typename T>
 class AllocationOperation
 {
 public:
     template<typename Allocation>
     constexpr static bool IsMoveConstructible = TIsMoveConstructible<typename Allocation::Data>::Value;
 
+    template<typename T>
+    constexpr static bool IsBitwiseConstructible = TIsBitwiseConstructible<T>::Value;
+
 private:
-    template<typename Allocation>
+    template<
+        typename T,
+        typename Allocation,
+        typename TEnableIf<IsBitwiseConstructible<T>, int>::Type = 0 // Bitwise constructible
+    >
+    FORCE_INLINE static int32 MoveAllocatedOneByOne(
+        typename Allocation::template Data<T>& source,
+        typename Allocation::template Data<T>& destination,
+        const int32 count,
+        const int32 capacity
+    )
+    {
+        const int32 newCapacity = destination.Allocate(capacity);
+        Platform::MemoryCopy(destination.Get(), source.Get(), count * sizeof(T));
+        source.Free();
+
+        return newCapacity;
+    }
+
+    template<
+        typename T,
+        typename Allocation,
+        typename TEnableIf<!IsBitwiseConstructible<T>, int>::Type = 0 // NOT bitwise constructible
+    >
     FORCE_INLINE static int32 MoveAllocatedOneByOne(
         typename Allocation::template Data<T>& source,
         typename Allocation::template Data<T>& destination,
@@ -49,6 +75,7 @@ public:
     /// <returns> The new capacity of the destination allocation. </returns>
     /// <remarks> Empty allocation means it has 0 capacity (outside of Allocation and Free). </remarks>
     template<
+        typename T,
         typename Allocation,
         typename TEnableIf<IsMoveConstructible<Allocation>, int>::Type = 0 // Move constructible
     >
@@ -79,6 +106,7 @@ public:
     /// <returns> The new capacity of the destination allocation. </returns>
     /// <remarks> Empty allocation means it has 0 capacity (outside of Allocation and Free). </remarks>
     template<
+        typename T,
         typename Allocation,
         typename TEnableIf<!IsMoveConstructible<Allocation>, int>::Type = 0 // NOT move constructible
     >
@@ -99,6 +127,7 @@ public:
     /// <param name="count"> The number of elements to move. Algorithm assumes that elements [0, count) are valid, meaning that they are constructed and can be moved. </param>
     /// <returns> The new capacity of the allocation. </returns>
     template<
+        typename T,
         typename Allocation,
         typename TEnableIf<IsMoveConstructible<Allocation>, int>::Type = 0 // Move constructible
     >
@@ -134,6 +163,7 @@ public:
     /// <param name="count"> The number of elements to move. Algorithm assumes that elements [0, count) are valid, meaning that they are constructed and can be moved. </param>
     /// <returns> The new capacity of the allocation. </returns>
     template<
+        typename T,
         typename Allocation,
         typename TEnableIf<!IsMoveConstructible<Allocation>, int>::Type = 0 // NOT move constructible
     >
