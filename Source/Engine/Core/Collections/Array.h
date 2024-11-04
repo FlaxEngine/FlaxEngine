@@ -6,6 +6,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Memory/AllocationOperation.h"
 
 /// <summary>
 /// Template for dynamic array with variable capacity.
@@ -25,18 +26,7 @@ private:
     int32 _capacity;
     AllocationData _allocation;
 
-    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, const int32 fromCount, const int32 fromCapacity)
-    {
-        if IF_CONSTEXPR (AllocationType::HasSwap)
-            to.Swap(from);
-        else
-        {
-            to.Allocate(fromCapacity);
-            Memory::MoveItems(to.Get(), from.Get(), fromCount);
-            Memory::DestructItems(from.Get(), fromCount);
-            from.Free();
-        }
-    }
+    // Note: Capacity 0 is an indicator, that allocation was freed.
 
 public:
     /// <summary>
@@ -144,10 +134,15 @@ public:
     Array(Array&& other) noexcept
     {
         _count = other._count;
-        _capacity = other._capacity;
+        _capacity = AllocationOperation::MoveAllocated<T, AllocationType>(
+            other._allocation, 
+            this->_allocation, 
+            this->_count,
+            other._capacity
+        );
+
         other._count = 0;
         other._capacity = 0;
-        MoveToEmpty(_allocation, other._allocation, _count, _capacity);
     }
 
     /// <summary>
@@ -200,11 +195,17 @@ public:
         {
             Memory::DestructItems(_allocation.Get(), _count);
             _allocation.Free();
+
             _count = other._count;
-            _capacity = other._capacity;
+            _capacity = AllocationOperation::MoveAllocated<T, AllocationType>(
+                other._allocation,
+                this->_allocation,
+                this->_count,
+                other._capacity
+            );
+
             other._count = 0;
             other._capacity = 0;
-            MoveToEmpty(_allocation, other._allocation, _count, _capacity);
         }
         return *this;
     }
@@ -384,6 +385,36 @@ public:
     }
 
     /// <summary>
+    /// Clears the collection and minimizes its capacity.
+    /// </summary>
+    FORCE_INLINE void ClearToFree()
+    {
+        Clear();
+
+        _allocation.Free();
+        _capacity = 0; // Capacity is zero after free.
+    }
+
+    /// <summary>
+    /// Tries to reduce the capacity of the collection to fit its current size.
+    /// </summary>
+    /// <remarks>
+    /// Equivalent of <c>std::vector::shrink_to_fit</c>.
+    /// </remarks>
+    FORCE_INLINE void Compact()
+    {
+        if (_count == 0)
+        {
+            _allocation.Free();
+            _capacity = 0;
+        }
+        else if (_count < _capacity)
+        {
+            _capacity = AllocationOperation::Relocate<T, AllocationType>(_allocation, _count, _count);
+        }
+    }
+
+    /// <summary>
     /// Clears the collection without changing its capacity. Deletes all not null items.
     /// Note: collection must contain pointers to the objects that have public destructor and be allocated using New method.
     /// </summary>
@@ -399,22 +430,6 @@ public:
                 Delete(data[i]);
         }
         Clear();
-    }
-
-    /// <summary>
-    /// Changes the capacity of the collection.
-    /// </summary>
-    /// <param name="capacity">The new capacity.</param>
-    /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void SetCapacity(const int32 capacity, const bool preserveContents = true)
-    {
-        if (capacity == _capacity)
-            return;
-        ASSERT(capacity >= 0);
-        const int32 count = preserveContents ? (_count < capacity ? _count : capacity) : 0;
-        _allocation.Relocate(capacity, _count, count);
-        _capacity = capacity;
-        _count = count;
     }
 
     /// <summary>
@@ -443,10 +458,21 @@ public:
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
     void EnsureCapacity(const int32 minCapacity, const bool preserveContents = true)
     {
-        if (_capacity < minCapacity)
+        ASSERT(minCapacity <= AllocationType::MaxCapacity); // Collection capacity is limited by the allocator.
+
+        if (minCapacity <= _capacity)
+            return;
+
+        if (!preserveContents) 
         {
-            const int32 capacity = _allocation.CalculateCapacityGrow(_capacity, minCapacity);
-            SetCapacity(capacity, preserveContents);
+            Clear();
+
+            _allocation.Free();
+            _capacity = _allocation.Allocate(minCapacity);
+        }
+        else
+        {
+            _capacity = AllocationOperation::Relocate<T, AllocationType>(_allocation, minCapacity, _count);
         }
     }
 
