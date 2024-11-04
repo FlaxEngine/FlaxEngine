@@ -84,7 +84,7 @@ public:
 private:
     int32 _elementsCount = 0;
     int32 _deletedCount = 0;
-    int32 _size = 0;
+    int32 _size = 0; //TODO Rename to _capacity?
     AllocationData _allocation;
 
     FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, const int32 fromSize)
