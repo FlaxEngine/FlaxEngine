@@ -188,12 +188,9 @@ void Prefab::unload(bool isReloading)
     ObjectsCount = 0;
     ObjectsIds.Resize(0);
     NestedPrefabs.Resize(0);
-    ObjectsDataCache.Clear();
-    ObjectsDataCache.SetCapacity(0);
-    ObjectsHierarchyCache.Clear();
-    ObjectsHierarchyCache.SetCapacity(0);
-    ObjectsCache.Clear();
-    ObjectsCache.SetCapacity(0);
+    ObjectsDataCache.ClearToFree();
+    ObjectsHierarchyCache.ClearToFree();
+    ObjectsCache.ClearToFree();
     if (_defaultInstance)
     {
         _defaultInstance->DeleteObject();

@@ -9,12 +9,13 @@
 
 // --- Memory Allocation Policy Usage ---
 // 1. Allocation policy uses subclass of Data to store a handle to one (or zero) memory allocations.
-// 2. Tracking the capacity is the responsibility of the collection, not the allocation policy.
-// 3. Resultant capacity of the allocation can exceed the requested. Allocation shares information about the actual capacity.
-// 3. Allocation policy is not responsible for tracking valid elements in the allocation.
-// 4. Accessing the data can be only between Allocate and Free calls.
-// 5. Requesting to allocate numbers exceeding the limits of the policy is undefined behavior.
-// 5. Data can be move-able or not, determining it swap-ability.
+// 2. Allocation itself must never be zero-sized.
+// 3. Tracking the capacity is the responsibility of the collection, not the allocation policy.
+// 4. Resultant capacity of the allocation can exceed the requested. Allocation shares information about the actual capacity.
+// 5. Allocation policy is not responsible for tracking valid elements in the allocation.
+// 6. Accessing the data can be only between Allocate and Free calls.
+// 7. Requesting to allocate numbers exceeding the limits of the policy is undefined behavior.
+// 8. Data can be move-able or not, determining it swap-ability.
 
 
 /// <summary>

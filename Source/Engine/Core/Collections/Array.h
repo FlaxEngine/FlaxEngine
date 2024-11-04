@@ -398,10 +398,7 @@ public:
     /// <summary>
     /// Tries to reduce the capacity of the collection to fit its current size.
     /// </summary>
-    /// <remarks>
-    /// Equivalent of <c>std::vector::shrink_to_fit</c>.
-    /// </remarks>
-    FORCE_INLINE void Compact()
+    FORCE_INLINE void ShrinkToFit()
     {
         if (_count == 0)
         {
@@ -465,7 +462,7 @@ public:
 
         if (!preserveContents) 
         {
-            Clear();
+            Clear(); // Count is set to zero.
 
             _allocation.Free();
             _capacity = _allocation.Allocate(minCapacity);
@@ -473,6 +470,7 @@ public:
         else
         {
             _capacity = AllocationOperation::Relocate<T, AllocationType>(_allocation, minCapacity, _count);
+            ASSERT(_capacity >= minCapacity); // Count stays the same.
         }
     }
 
@@ -779,16 +777,7 @@ public:
     /// <param name="other">The other collection.</param>
     void Swap(Array& other)
     {
-        if IF_CONSTEXPR (AllocationType::HasSwap)
-        {
-            _allocation.Swap(other._allocation);
-            ::Swap(_count, other._count);
-            ::Swap(_capacity, other._capacity);
-        }
-        else
-        {
-            ::Swap(other, *this);
-        }
+        ::Swap(*this, other); //TODO Optimize this.
     }
 
     /// <summary>
