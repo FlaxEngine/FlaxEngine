@@ -17,15 +17,15 @@ API_CLASS(InBuild) class Array
 {
     friend Array;
 public:
-    typedef T ItemType;
-    typedef typename AllocationType::template Data<T> AllocationData;
+    using ItemType = T;
+    using AllocationData = typename AllocationType::template Data<T>;
 
 private:
     int32 _count;
     int32 _capacity;
     AllocationData _allocation;
 
-    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, int32 fromCount, int32 fromCapacity)
+    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, const int32 fromCount, const int32 fromCapacity)
     {
         if IF_CONSTEXPR (AllocationType::HasSwap)
             to.Swap(from);
@@ -52,7 +52,7 @@ public:
     /// Initializes a new instance of the <see cref="Array"/> class.
     /// </summary>
     /// <param name="capacity">The initial capacity.</param>
-    Array(int32 capacity)
+    explicit Array(const int32 capacity)
         : _count(0)
         , _capacity(capacity)
     {
@@ -66,7 +66,7 @@ public:
     /// <param name="initList">The initial values defined in the array.</param>
     Array(std::initializer_list<T> initList)
     {
-        _count = _capacity = (int32)initList.size();
+        _count = _capacity = static_cast<int32>(initList.size());
         if (_count > 0)
         {
             _allocation.Allocate(_count);
@@ -79,7 +79,7 @@ public:
     /// </summary>
     /// <param name="data">The initial data.</param>
     /// <param name="length">The amount of items.</param>
-    Array(const T* data, int32 length)
+    Array(const T* data, const int32 length)
     {
         ASSERT(length >= 0);
         _count = _capacity = length;
@@ -160,8 +160,8 @@ public:
         Clear();
         if (initList.size() > 0)
         {
-            EnsureCapacity((int32)initList.size());
-            _count = (int32)initList.size();
+            EnsureCapacity(static_cast<int32>(initList.size()));
+            _count = static_cast<int32>(initList.size());
             Memory::ConstructItems(_allocation.Get(), initList.begin(), _count);
         }
         return *this;
@@ -255,7 +255,7 @@ public:
     /// </summary>
     /// <param name="index">The index.</param>
     /// <returns><c>true</c> if is valid a index; otherwise, <c>false</c>.</returns>
-    bool IsValidIndex(int32 index) const
+    bool IsValidIndex(const int32 index) const
     {
         return index < _count && index >= 0;
     }
@@ -280,7 +280,7 @@ public:
     /// Gets item at the given index.
     /// </summary>
     /// <returns>The reference to the item.</returns>
-    FORCE_INLINE T& At(int32 index)
+    FORCE_INLINE T& At(const int32 index)
     {
         ASSERT(index >= 0 && index < _count);
         return _allocation.Get()[index];
@@ -290,7 +290,7 @@ public:
     /// Gets item at the given index.
     /// </summary>
     /// <returns>The reference to the item.</returns>
-    FORCE_INLINE const T& At(int32 index) const
+    FORCE_INLINE const T& At(const int32 index) const
     {
         ASSERT(index >= 0 && index < _count);
         return _allocation.Get()[index];
@@ -300,7 +300,7 @@ public:
     /// Gets or sets the item at the given index.
     /// </summary>
     /// <returns>The reference to the item.</returns>
-    FORCE_INLINE T& operator[](int32 index)
+    FORCE_INLINE T& operator[](const int32 index)
     {
         ASSERT(index >= 0 && index < _count);
         return _allocation.Get()[index];
@@ -310,7 +310,7 @@ public:
     /// Gets the item at the given index.
     /// </summary>
     /// <returns>The reference to the item.</returns>
-    FORCE_INLINE const T& operator[](int32 index) const
+    FORCE_INLINE const T& operator[](const int32 index) const
     {
         ASSERT(index >= 0 && index < _count);
         return _allocation.Get()[index];
@@ -406,7 +406,7 @@ public:
     /// </summary>
     /// <param name="capacity">The new capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void SetCapacity(const int32 capacity, bool preserveContents = true)
+    void SetCapacity(const int32 capacity, const bool preserveContents = true)
     {
         if (capacity == _capacity)
             return;
@@ -422,7 +422,7 @@ public:
     /// </summary>
     /// <param name="size">The new collection size.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize might not contain the previous data.</param>
-    void Resize(int32 size, bool preserveContents = true)
+    void Resize(const int32 size, const bool preserveContents = true)
     {
         if (_count > size)
         {
@@ -441,7 +441,7 @@ public:
     /// </summary>
     /// <param name="minCapacity">The minimum capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void EnsureCapacity(int32 minCapacity, bool preserveContents = true)
+    void EnsureCapacity(const int32 minCapacity, const bool preserveContents = true)
     {
         if (_capacity < minCapacity)
         {
@@ -466,7 +466,7 @@ public:
     /// </summary>
     /// <param name="data">The data.</param>
     /// <param name="count">The amount of items.</param>
-    void Set(const T* data, int32 count)
+    void Set(const T* data, const int32 count)
     {
         EnsureCapacity(count, false);
         Memory::DestructItems(_allocation.Get(), _count);
@@ -482,7 +482,7 @@ public:
     {
         EnsureCapacity(_count + 1);
         Memory::ConstructItems(_allocation.Get() + _count, &item, 1);
-        _count++;
+        ++_count;
     }
 
     /// <summary>
@@ -493,7 +493,7 @@ public:
     {
         EnsureCapacity(_count + 1);
         Memory::MoveItems(_allocation.Get() + _count, &item, 1);
-        _count++;
+        ++_count;
     }
 
     /// <summary>
@@ -501,7 +501,7 @@ public:
     /// </summary>
     /// <param name="items">The items to add.</param>
     /// <param name="count">The items count.</param>
-    void Add(const T* items, int32 count)
+    void Add(const T* items, const int32 count)
     {
         EnsureCapacity(_count + count);
         Memory::ConstructItems(_allocation.Get() + _count, items, count);
@@ -532,7 +532,7 @@ public:
     /// Adds the given amount of items to the collection.
     /// </summary>
     /// <param name="count">The items count.</param>
-    FORCE_INLINE void AddDefault(int32 count = 1)
+    FORCE_INLINE void AddDefault(const int32 count = 1)
     {
         EnsureCapacity(_count + count);
         Memory::ConstructItems(_allocation.Get() + _count, count);
@@ -543,7 +543,7 @@ public:
     /// Adds the given amount of uninitialized items to the collection without calling the constructor.
     /// </summary>
     /// <param name="count">The items count.</param>
-    FORCE_INLINE void AddUninitialized(int32 count = 1)
+    FORCE_INLINE void AddUninitialized(const int32 count = 1)
     {
         EnsureCapacity(_count + count);
         _count += count;
@@ -557,7 +557,7 @@ public:
     {
         EnsureCapacity(_count + 1);
         Memory::ConstructItems(_allocation.Get() + _count, 1);
-        _count++;
+        ++_count;
         return _allocation.Get()[_count - 1];
     }
 
@@ -568,7 +568,7 @@ public:
     /// Warning! AddZeroed() will create items without calling the constructor and this is not appropriate for item types that require a constructor to function properly.
     /// </remarks>
     /// <param name="count">The number of new items to add.</param>
-    void AddZeroed(int32 count = 1)
+    void AddZeroed(const int32 count = 1)
     {
         EnsureCapacity(_count + count);
         Platform::MemoryClear(_allocation.Get() + _count, count * sizeof(T));
@@ -580,7 +580,7 @@ public:
     /// </summary>
     /// <param name="index">The zero-based index at which item should be inserted.</param>
     /// <param name="item">The item to be inserted by copying.</param>
-    void Insert(int32 index, const T& item)
+    void Insert(const int32 index, const T& item)
     {
         ASSERT(index >= 0 && index <= _count);
         EnsureCapacity(_count + 1);
@@ -597,7 +597,7 @@ public:
     /// </summary>
     /// <param name="index">The zero-based index at which item should be inserted.</param>
     /// <param name="item">The item to inserted by moving.</param>
-    void Insert(int32 index, T&& item)
+    void Insert(const int32 index, T&& item)
     {
         ASSERT(index >= 0 && index <= _count);
         EnsureCapacity(_count + 1);
@@ -605,7 +605,7 @@ public:
         Memory::ConstructItems(data + _count, 1);
         for (int32 i = _count - 1; i >= index; i--)
             data[i + 1] = MoveTemp(data[i]);
-        _count++;
+        ++_count;
         data[index] = MoveTemp(item);
     }
 
@@ -613,7 +613,7 @@ public:
     /// Insert the given item at specified index with keeping items order.
     /// </summary>
     /// <param name="index">The zero-based index at which item should be inserted.</param>
-    void Insert(int32 index)
+    void Insert(const int32 index)
     {
         ASSERT(index >= 0 && index <= _count);
         EnsureCapacity(_count + 1);
@@ -621,7 +621,7 @@ public:
         Memory::ConstructItems(data + _count, 1);
         for (int32 i = _count - 1; i >= index; i--)
             data[i + 1] = data[i];
-        _count++;
+        ++_count;
     }
 
     /// <summary>
@@ -661,7 +661,7 @@ public:
     /// <param name="item">The item to remove.</param>
     void RemoveAllKeepOrder(const T& item)
     {
-        for (int32 i = Count() - 1; i >= 0; i--)
+        for (int32 i = Count() - 1; i >= 0; --i)
         {
             if (_allocation.Get()[i] == item)
             {
@@ -679,14 +679,14 @@ public:
     void RemoveAtKeepOrder(const int32 index)
     {
         ASSERT(index < _count && index >= 0);
-        _count--;
+        --_count;
         T* data = _allocation.Get();
         if (index < _count)
         {
             T* dst = data + index;
             T* src = data + (index + 1);
             const int32 count = _count - index;
-            for (int32 i = 0; i < count; i++)
+            for (int32 i = 0; i < count; ++i)
                 dst[i] = MoveTemp(src[i]);
         }
         Memory::DestructItems(data + _count, 1);
@@ -712,7 +712,7 @@ public:
     /// <param name="item">The item to remove.</param>
     void RemoveAll(const T& item)
     {
-        for (int32 i = Count() - 1; i >= 0; i--)
+        for (int32 i = Count() - 1; i >= 0; --i)
         {
             if (_allocation.Get()[i] == item)
             {
@@ -730,7 +730,7 @@ public:
     void RemoveAt(const int32 index)
     {
         ASSERT(index < _count && index >= 0);
-        _count--;
+        --_count;
         T* data = _allocation.Get();
         if (_count)
             data[index] = data[_count];
@@ -743,7 +743,7 @@ public:
     void RemoveLast()
     {
         ASSERT(_count > 0);
-        _count--;
+        --_count;
         Memory::DestructItems(_allocation.Get() + _count, 1);
     }
 
@@ -772,7 +772,7 @@ public:
     {
         T* data = _allocation.Get();
         const int32 count = _count / 2;
-        for (int32 i = 0; i < count; i++)
+        for (int32 i = 0; i < count; ++i)
             ::Swap(data[i], data[_count - i - 1]);
     }
 
@@ -954,7 +954,7 @@ public:
         {
         }
 
-        Iterator(Array const* array, const int32 index)
+        Iterator(const Array* array, const int32 index)
             : _array(const_cast<Array*>(array))
             , _index(index)
         {
@@ -1052,7 +1052,7 @@ public:
         Iterator& operator--()
         {
             if (_index > 0)
-                _index--;
+                --_index;
             return *this;
         }
 
@@ -1060,7 +1060,7 @@ public:
         {
             Iterator temp = *this;
             if (_index > 0)
-                _index--;
+                --_index;
             return temp;
         }
     };
@@ -1084,7 +1084,7 @@ public:
 };
 
 template<typename T, typename AllocationType>
-void* operator new(size_t size, Array<T, AllocationType>& array)
+void* operator new(const size_t size, Array<T, AllocationType>& array)
 {
     ASSERT(size == sizeof(T));
     const int32 index = array.Count();
@@ -1093,7 +1093,7 @@ void* operator new(size_t size, Array<T, AllocationType>& array)
 }
 
 template<typename T, typename AllocationType>
-void* operator new(size_t size, Array<T, AllocationType>& array, int32 index)
+void* operator new(const size_t size, Array<T, AllocationType>& array, const int32 index)
 {
     ASSERT(size == sizeof(T));
     array.Insert(index);
