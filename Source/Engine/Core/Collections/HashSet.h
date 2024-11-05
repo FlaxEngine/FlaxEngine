@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Memory/AllocationOperation.h"
 #include "Engine/Core/Collections/BucketState.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Config.h"
@@ -31,6 +32,44 @@ public:
     private:
         BucketState _state;
 
+
+    public:
+        Bucket()
+            : _state(BucketState::Empty)
+            // Do not initialize the item
+        {
+        }
+
+        Bucket(Bucket&& other) noexcept
+            : Item(::MoveTemp(other.Item))
+            , _state(other._state)
+        {
+            // Do not mark other state as empty to prevent suppressing destructor call
+        }
+
+        auto operator=(Bucket&& other) noexcept -> Bucket&
+        {
+            if (this != &other)
+            {
+                Item = ::MoveTemp(other.Item);
+                _state = other._state;
+                // Do not mark other state as empty to prevent suppressing destructor call
+            }
+            return *this;
+        }
+
+        Bucket(const Bucket& other) = delete;
+
+        auto operator=(const Bucket& other) -> Bucket& = delete;
+
+        ~Bucket()
+        {
+            if (_state == BucketState::Occupied)
+                Memory::DestructItem(&Item);
+        }
+
+
+    private:
         FORCE_INLINE void Free()
         {
             if (_state == BucketState::Occupied)
@@ -87,30 +126,6 @@ private:
     int32 _size = 0; //TODO Rename to _capacity?
     AllocationData _allocation;
 
-    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, const int32 fromSize)
-    {
-        if IF_CONSTEXPR (AllocationType::HasSwap)
-            to.Swap(from);
-        else
-        {
-            to.Allocate(fromSize);
-            Bucket* toData = to.Get();
-            Bucket* fromData = from.Get();
-            for (int32 i = 0; i < fromSize; ++i)
-            {
-                Bucket& fromBucket = fromData[i];
-                if (fromBucket.IsOccupied())
-                {
-                    Bucket& toBucket = toData[i];
-                    Memory::MoveItems(&toBucket.Item, &fromBucket.Item, 1);
-                    toBucket._state = BucketState::Occupied;
-                    Memory::DestructItem(&fromBucket.Item);
-                    fromBucket._state = BucketState::Empty;
-                }
-            }
-            from.Free();
-        }
-    }
 
 public:
     /// <summary>
@@ -126,7 +141,7 @@ public:
     /// <param name="capacity">The initial capacity.</param>
     explicit HashSet(const int32 capacity)
     {
-        SetCapacity(capacity);
+        EnsureCapacity(capacity);
     }
 
     /// <summary>
@@ -407,77 +422,30 @@ public:
     }
 
     /// <summary>
-    /// Changes capacity of the collection
-    /// </summary>
-    /// <param name="capacity">New capacity</param>
-    /// <param name="preserveContents">Enable/disable preserving collection contents during resizing</param>
-    void SetCapacity(int32 capacity, const bool preserveContents = true)
-    {
-        if (capacity == Capacity())
-            return;
-        ASSERT(capacity >= 0);
-        AllocationData oldAllocation;
-        MoveToEmpty(oldAllocation, _allocation, _size);
-        const int32 oldSize = _size;
-        const int32 oldElementsCount = _elementsCount;
-        _deletedCount = _elementsCount = 0;
-        if (capacity != 0 && (capacity & (capacity - 1)) != 0)
-        {
-            // Align capacity value to the next power of two (http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
-            capacity--;
-            capacity |= capacity >> 1;
-            capacity |= capacity >> 2;
-            capacity |= capacity >> 4;
-            capacity |= capacity >> 8;
-            capacity |= capacity >> 16;
-            capacity++;
-        }
-        if (capacity)
-        {
-            _allocation.Allocate(capacity);
-            Bucket* data = _allocation.Get();
-            for (int32 i = 0; i < capacity; i++)
-                data[i]._state = BucketState::Empty;
-        }
-        _size = capacity;
-        Bucket* oldData = oldAllocation.Get();
-        if (oldElementsCount != 0 && capacity != 0 && preserveContents)
-        {
-            FindPositionResult pos;
-            for (int32 i = 0; i < oldSize; i++)
-            {
-                Bucket& oldBucket = oldData[i];
-                if (oldBucket.IsOccupied())
-                {
-                    FindPosition(oldBucket.Item, pos);
-                    ASSERT(pos.FreeSlotIndex != -1);
-                    Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
-                    Memory::MoveItems(&bucket->Item, &oldBucket.Item, 1);
-                    bucket->_state = BucketState::Occupied;
-                    _elementsCount++;
-                }
-            }
-        }
-        if (oldElementsCount != 0)
-        {
-            for (int32 i = 0; i < oldSize; i++)
-                oldData[i].Free();
-        }
-    }
-
-    /// <summary>
     /// Ensures that collection has given capacity.
     /// </summary>
     /// <param name="minCapacity">The minimum required capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
     void EnsureCapacity(const int32 minCapacity, const bool preserveContents = true)
     {
+        ASSERT(minCapacity < AllocationType::MaxCapacity);
+
         if (_size >= minCapacity)
             return;
-        int32 capacity = _allocation.CalculateCapacityGrow(_size, minCapacity);
-        if (capacity < DICTIONARY_DEFAULT_CAPACITY)
-            capacity = DICTIONARY_DEFAULT_CAPACITY;
-        SetCapacity(capacity, preserveContents);
+
+        // The collection must be bigger.
+        if (!preserveContents)
+        {
+            Clear(); // Counts are set to zero.
+
+            _allocation.Free();
+            _size = _allocation.Allocate(minCapacity);
+        }
+        else
+        {
+            _size = AllocationOperation::Relocate<Bucket, AllocationType>(_allocation, minCapacity, _size);
+            ASSERT(_size >= minCapacity); // Counts stay the same.
+        }
     }
 
     /// <summary>

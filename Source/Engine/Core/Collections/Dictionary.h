@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Memory/AllocationOperation.h"
 #include "Engine/Core/Collections/BucketState.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Config.h"
@@ -33,7 +34,61 @@ public:
 
     private:
         BucketState _state;
+        
+    public:
+        Bucket()
+            : _state(BucketState::Empty)
+            // Key and Value are not initialized
+        {
+        }
 
+        Bucket(Bucket&& other) noexcept
+        {
+            _state = other._state;
+            if (other.IsOccupied())
+            {
+                Memory::MoveItems(&Key, &other.Key, 1);
+                Memory::MoveItems(&Value, &other.Value, 1);
+                other._state = BucketState::Empty;
+            }
+        }
+
+        auto operator=(Bucket&& other) noexcept -> Bucket&
+        {
+            if (this != &other)
+            {
+                if (IsOccupied())
+                {
+                    Memory::DestructItem(&Key);
+                    Memory::DestructItem(&Value);
+                }
+                _state = other._state;
+                if (other.IsOccupied())
+                {
+                    Memory::MoveItems(&Key, &other.Key, 1);
+                    Memory::MoveItems(&Value, &other.Value, 1);
+                    other._state = BucketState::Empty;
+                }
+            }
+            return *this;
+        }
+
+        /// <summary> Copying a bucket is useless, because a key must be unique in the dictionary. </summary>
+        Bucket(const Bucket&) = delete;
+
+        /// <summary> Copying a bucket is useless, because a key must be unique in the dictionary. </summary>
+        auto operator=(const Bucket&) -> Bucket& = delete;
+
+        ~Bucket()
+        {
+            if (IsOccupied())
+            {
+                Memory::DestructItem(&Key);
+                Memory::DestructItem(&Value);
+            }
+        }
+
+    private:
         FORCE_INLINE void Free()
         {
             if (_state == BucketState::Occupied)
@@ -101,35 +156,9 @@ public:
 private:
     int32 _elementsCount = 0;
     int32 _deletedCount = 0;
-    int32 _size = 0; //TODO Rename to _capacity?
+    int32 _size = 0;
     AllocationData _allocation;
 
-    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, const int32 fromSize)
-    {
-        if IF_CONSTEXPR (AllocationType::HasSwap)
-            to.Swap(from);
-        else
-        {
-            to.Allocate(fromSize);
-            Bucket* toData = to.Get();
-            Bucket* fromData = from.Get();
-            for (int32 i = 0; i < fromSize; i++)
-            {
-                Bucket& fromBucket = fromData[i];
-                if (fromBucket.IsOccupied())
-                {
-                    Bucket& toBucket = toData[i];
-                    Memory::MoveItems(&toBucket.Key, &fromBucket.Key, 1);
-                    Memory::MoveItems(&toBucket.Value, &fromBucket.Value, 1);
-                    toBucket._state = BucketState::Occupied;
-                    Memory::DestructItem(&fromBucket.Key);
-                    Memory::DestructItem(&fromBucket.Value);
-                    fromBucket._state = BucketState::Empty;
-                }
-            }
-            from.Free();
-        }
-    }
 
 public:
     /// <summary>
@@ -145,7 +174,7 @@ public:
     /// <param name="capacity">The initial capacity.</param>
     explicit Dictionary(const int32 capacity)
     {
-        SetCapacity(capacity);
+        EnsureCapacity(capacity);
     }
 
     /// <summary>
@@ -156,11 +185,16 @@ public:
     {
         _elementsCount = other._elementsCount;
         _deletedCount = other._deletedCount;
-        _size = other._size;
+        _size = AllocationOperation::MoveAllocated<Bucket, AllocationType>(
+            other._allocation, 
+            _allocation,
+            _size,
+            _size
+        );
+
         other._elementsCount = 0;
         other._deletedCount = 0;
         other._size = 0;
-        MoveToEmpty(_allocation, other._allocation, _size);
     }
 
     /// <summary>
@@ -195,13 +229,19 @@ public:
         {
             Clear();
             _allocation.Free();
+
             _elementsCount = other._elementsCount;
             _deletedCount = other._deletedCount;
-            _size = other._size;
+            _size = AllocationOperation::MoveAllocated<Bucket, AllocationType>(
+                other._allocation,
+                _allocation,
+                _size,
+                _size
+            );
+
             other._elementsCount = 0;
             other._deletedCount = 0;
             other._size = 0;
-            MoveToEmpty(_allocation, other._allocation, _size);
         }
         return *this;
     }
@@ -508,7 +548,9 @@ public:
             Bucket* data = _allocation.Get();
             for (int32 i = 0; i < _size; i++)
                 data[i].Free();
-            _elementsCount = _deletedCount = 0;
+
+            _elementsCount = 0;
+            _deletedCount = 0;
         }
     }
 
@@ -530,78 +572,30 @@ public:
     }
 
     /// <summary>
-    /// Changes the capacity of the collection.
-    /// </summary>
-    /// <param name="capacity">The new capacity.</param>
-    /// <param name="preserveContents">Enables preserving collection contents during resizing.</param>
-    void SetCapacity(int32 capacity, const bool preserveContents = true)
-    {
-        if (capacity == Capacity())
-            return;
-        ASSERT(capacity >= 0);
-        AllocationData oldAllocation;
-        MoveToEmpty(oldAllocation, _allocation, _size);
-        const int32 oldSize = _size;
-        const int32 oldElementsCount = _elementsCount;
-        _deletedCount = _elementsCount = 0;
-        if (capacity != 0 && (capacity & (capacity - 1)) != 0)
-        {
-            // Align capacity value to the next power of two (http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
-            capacity--;
-            capacity |= capacity >> 1;
-            capacity |= capacity >> 2;
-            capacity |= capacity >> 4;
-            capacity |= capacity >> 8;
-            capacity |= capacity >> 16;
-            capacity++;
-        }
-        if (capacity)
-        {
-            _allocation.Allocate(capacity);
-            Bucket* data = _allocation.Get();
-            for (int32 i = 0; i < capacity; i++)
-                data[i]._state = BucketState::Empty;
-        }
-        _size = capacity;
-        Bucket* oldData = oldAllocation.Get();
-        if (oldElementsCount != 0 && capacity != 0 && preserveContents)
-        {
-            FindPositionResult pos;
-            for (int32 i = 0; i < oldSize; i++)
-            {
-                Bucket& oldBucket = oldData[i];
-                if (oldBucket.IsOccupied())
-                {
-                    FindPosition(oldBucket.Key, pos);
-                    ASSERT(pos.FreeSlotIndex != -1);
-                    Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
-                    Memory::MoveItems(&bucket->Key, &oldBucket.Key, 1);
-                    Memory::MoveItems(&bucket->Value, &oldBucket.Value, 1);
-                    bucket->_state = BucketState::Occupied;
-                    ++_elementsCount;
-                }
-            }
-        }
-        if (oldElementsCount != 0)
-        {
-            for (int32 i = 0; i < oldSize; i++)
-                oldData[i].Free();
-        }
-    }
-
-    /// <summary>
     /// Ensures that collection has given capacity.
     /// </summary>
     /// <param name="minCapacity">The minimum required capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
     void EnsureCapacity(int32 minCapacity, const bool preserveContents = true)
     {
+        ASSERT(minCapacity < AllocationType::MaxCapacity);
+
         if (_size >= minCapacity)
             return;
-        int32 capacity = _allocation.CalculateCapacityGrow(_size, minCapacity);
-        if (capacity < DICTIONARY_DEFAULT_CAPACITY)
-            capacity = DICTIONARY_DEFAULT_CAPACITY;
-        SetCapacity(capacity, preserveContents);
+
+        // The collection must be bigger.
+        if (!preserveContents) 
+        {
+            Clear(); // Counts are set to zero.
+
+            _allocation.Free();
+            _size = _allocation.Allocate(minCapacity);
+        }
+        else 
+        {
+            _size = AllocationOperation::Relocate<Bucket, AllocationType>(_allocation, minCapacity, _size);
+            ASSERT(_size >= minCapacity); // Counts stay the same.
+        }
     }
 
     /// <summary>
@@ -610,17 +604,7 @@ public:
     /// <param name="other">The other collection.</param>
     void Swap(Dictionary& other)
     {
-        if IF_CONSTEXPR (AllocationType::HasSwap)
-        {
-            ::Swap(_elementsCount, other._elementsCount);
-            ::Swap(_deletedCount, other._deletedCount);
-            ::Swap(_size, other._size);
-            _allocation.Swap(other._allocation);
-        }
-        else
-        {
-            ::Swap(other, *this);
-        }
+        ::Swap(*this, other); //TODO Optimize this.
     }
 
 public:
