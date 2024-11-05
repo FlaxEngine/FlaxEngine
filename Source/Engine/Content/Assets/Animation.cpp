@@ -504,7 +504,7 @@ void Animation::GetReferences(Array<Guid>& assets, Array<String>& files) const
                 writer.StartObject();
                 k.Value.Instance->Serialize(writer, nullptr);
                 writer.EndObject();
-                JsonAssetBase::GetReferences(StringAnsiView((char*)buffer.GetString(), buffer.GetSize()), assets);
+                JsonAssetBase::GetReferences(StringAnsiView((const char*)buffer.GetString(), (int32)buffer.GetSize()), assets);
             }
         }
     }

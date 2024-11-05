@@ -57,7 +57,7 @@ void LogContext::Print(LogType verbosity)
         LogContextData& context = stack.Ptr[index];
 
         // Skip duplicates
-        if (index < stack.Count - 1 && stack.Ptr[stack.Count - 1] == context)
+        if (index < (int32)stack.Count - 1 && stack.Ptr[stack.Count - 1] == context)
             continue;
 
         // Build call hierarchy via indentation
