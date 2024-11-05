@@ -44,10 +44,11 @@ public:
     /// <param name="capacity">The initial capacity.</param>
     explicit Array(const int32 capacity)
         : _count(0)
-        , _capacity(capacity)
     {
-        if (capacity > 0)
-            _allocation.Allocate(capacity);
+        if (capacity > 0) 
+        {
+            _capacity = _allocation.Allocate(capacity);
+        }
     }
 
     /// <summary>
@@ -56,10 +57,10 @@ public:
     /// <param name="initList">The initial values defined in the array.</param>
     Array(std::initializer_list<T> initList)
     {
-        _count = _capacity = static_cast<int32>(initList.size());
+        _count = static_cast<int32>(initList.size());
         if (_count > 0)
         {
-            _allocation.Allocate(_count);
+            _capacity = _allocation.Allocate(_count);
             Memory::ConstructItems(_allocation.Get(), initList.begin(), _count);
         }
     }
@@ -72,10 +73,10 @@ public:
     Array(const T* data, const int32 length)
     {
         ASSERT(length >= 0);
-        _count = _capacity = length;
+        _count = length;
         if (length > 0)
         {
-            _allocation.Allocate(length);
+            _capacity = _allocation.Allocate(length);
             Memory::ConstructItems(_allocation.Get(), data, length);
         }
     }
@@ -102,10 +103,10 @@ public:
     Array(const Array& other, int32 extraSize)
     {
         ASSERT(extraSize >= 0);
-        _count = _capacity = other._count + extraSize;
-        if (_capacity > 0)
+        _count = other._count + extraSize;
+        if (_count > 0)
         {
-            _allocation.Allocate(_capacity);
+            _capacity = _allocation.Allocate(_count);
             Memory::ConstructItems(_allocation.Get(), other.Get(), other._count);
             Memory::ConstructItems(_allocation.Get() + other._count, extraSize);
         }
@@ -137,7 +138,7 @@ public:
         _capacity = AllocationOperation::MoveAllocated<T, AllocationType>(
             other._allocation, 
             this->_allocation, 
-            this->_count,
+            other._count,
             other._capacity
         );
 
@@ -193,6 +194,7 @@ public:
     {
         if (this != &other)
         {
+            // ClearToFree without changing capacity
             Memory::DestructItems(_allocation.Get(), _count);
             _allocation.Free();
 
@@ -200,7 +202,7 @@ public:
             _capacity = AllocationOperation::MoveAllocated<T, AllocationType>(
                 other._allocation,
                 this->_allocation,
-                this->_count,
+                other._count,
                 other._capacity
             );
 
@@ -380,6 +382,9 @@ public:
     /// </summary>
     FORCE_INLINE void Clear()
     {
+        if (_count == 0)
+            return;
+
         Memory::DestructItems(_allocation.Get(), _count);
         _count = 0;
     }
@@ -391,8 +396,12 @@ public:
     {
         Clear();
 
-        _allocation.Free();
-        _capacity = 0; // Capacity is zero after free.
+        // Ensure allocation is freed.
+        if (_capacity > 0)
+        {
+            _allocation.Free();
+            _capacity = 0;
+        }
     }
 
     /// <summary>
@@ -402,8 +411,12 @@ public:
     {
         if (_count == 0)
         {
-            _allocation.Free();
-            _capacity = 0;
+            // Ensure allocation is freed.
+            if (_capacity > 0)
+            {
+                _allocation.Free();
+                _capacity = 0;
+            }
         }
         else if (_count < _capacity)
         {

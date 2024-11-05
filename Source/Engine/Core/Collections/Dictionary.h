@@ -187,9 +187,9 @@ public:
         _deletedCount = other._deletedCount;
         _size = AllocationOperation::MoveAllocated<Bucket, AllocationType>(
             other._allocation, 
-            _allocation,
-            _size,
-            _size
+            this->_allocation,
+            other._size,
+            other._size
         );
 
         other._elementsCount = 0;
@@ -227,6 +227,7 @@ public:
     {
         if (this != &other)
         {
+            // ClearToFree without changing capacity
             Clear();
             _allocation.Free();
 
@@ -234,9 +235,9 @@ public:
             _deletedCount = other._deletedCount;
             _size = AllocationOperation::MoveAllocated<Bucket, AllocationType>(
                 other._allocation,
-                _allocation,
-                _size,
-                _size
+                this->_allocation,
+                other._size,
+                other._size
             );
 
             other._elementsCount = 0;

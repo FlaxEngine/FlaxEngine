@@ -189,15 +189,22 @@ public:
     {
         if (this != &other)
         {
+            // ClearToFree without changing capacity
             Clear();
             _allocation.Free();
+
             _elementsCount = other._elementsCount;
             _deletedCount = other._deletedCount;
-            _size = other._size;
+            _size = AllocationOperation::MoveAllocated<Bucket, AllocationType>(
+                other._allocation, 
+                this->_allocation, 
+                other._size, 
+                other._size
+            );
+
             other._elementsCount = 0;
             other._deletedCount = 0;
             other._size = 0;
-            MoveToEmpty(_allocation, other._allocation, _size);
         }
         return *this;
     }
