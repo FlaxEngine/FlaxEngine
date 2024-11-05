@@ -109,29 +109,42 @@ namespace FlaxEditor.States
 
         private void TryEnter()
         {
-            // Remove redundant scene changes
-            for (int i = 0; i < _scenesToUnload.Count; i++)
+            // Reload existing scene if only 1 scene exists
+            bool reloadExistingScene = false;
+            if (Level.Scenes.Length == 1 && _scenesToLoad.Count == 1)
             {
-                var id = _scenesToUnload[i].ID;
-                for (int j = 0; j < _scenesToLoad.Count; j++)
+                if (Level.FindScene(_scenesToLoad[0]))
                 {
-                    if (_scenesToLoad[j] == id)
-                    {
-                        _scenesToLoad.RemoveAt(j--);
-                        _scenesToUnload.RemoveAt(i);
-                        break;
-                    }
+                    reloadExistingScene = true;
                 }
             }
 
-            // Skip already loaded scenes
-            for (int j = 0; j < _scenesToLoad.Count; j++)
+            if (!reloadExistingScene)
             {
-                if (Level.FindScene(_scenesToLoad[j]))
+                // Remove redundant scene changes
+                for (int i = 0; i < _scenesToUnload.Count; i++)
                 {
-                    _scenesToLoad.RemoveAt(j--);
-                    if (_scenesToLoad.Count == 0)
-                        break;
+                    var id = _scenesToUnload[i].ID;
+                    for (int j = 0; j < _scenesToLoad.Count; j++)
+                    {
+                        if (_scenesToLoad[j] == id)
+                        {
+                            _scenesToLoad.RemoveAt(j--);
+                            _scenesToUnload.RemoveAt(i);
+                            break;
+                        }
+                    }
+                }
+
+                // Skip already loaded scenes
+                for (int j = 0; j < _scenesToLoad.Count; j++)
+                {
+                    if (Level.FindScene(_scenesToLoad[j]))
+                    {
+                        _scenesToLoad.RemoveAt(j--);
+                        if (_scenesToLoad.Count == 0)
+                            break;
+                    }
                 }
             }
 
