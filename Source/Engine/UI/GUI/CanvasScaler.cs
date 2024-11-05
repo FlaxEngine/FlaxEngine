@@ -99,8 +99,8 @@ namespace FlaxEngine.GUI
         private float _scale = 1.0f;
         private float _scaleFactor = 1.0f;
         private float _physicalUnitSize = 1.0f;
-        private Float2 _resolutionMin = new Float2(640, 480);
-        private Float2 _resolutionMax = new Float2(7680, 4320);
+        private Float2 _resolutionMin = new Float2(1f, 1f);
+        private Float2 _resolutionMax = new Float2(7680f, 4320f);
 
         /// <summary>
         /// Gets the current UI scale. Computed based on the setup when performing layout.
@@ -246,10 +246,11 @@ namespace FlaxEngine.GUI
 #endif
         public LinearCurve<float> ResolutionCurve = new LinearCurve<float>(new[]
         {
-            new LinearCurve<float>.Keyframe(480, 0.444f), // 480p
-            new LinearCurve<float>.Keyframe(720, 0.666f), // 720p
-            new LinearCurve<float>.Keyframe(1080, 1.0f), // 1080p
-            new LinearCurve<float>.Keyframe(8640, 8.0f), // 8640p
+            new LinearCurve<float>.Keyframe(0f, 0f), // 0p
+            new LinearCurve<float>.Keyframe(480f, 0.444f), // 480p
+            new LinearCurve<float>.Keyframe(720f, 0.666f), // 720p
+            new LinearCurve<float>.Keyframe(1080f, 1.0f), // 1080p
+            new LinearCurve<float>.Keyframe(8640f, 8.0f), // 8640p
         });
 
         /// <summary>
@@ -335,7 +336,7 @@ namespace FlaxEngine.GUI
                             scale = min / value;
                         else if (value > max)
                             scale = max / value;
-                        if (ResolutionCurve != null && ResolutionCurve.Keyframes?.Length != 0)
+                        if (ResolutionCurve != null && ResolutionCurve.Keyframes?.Length != 0f)
                         {
                             ResolutionCurve.Evaluate(out var curveScale, value, false);
                             scale *= curveScale;
@@ -364,13 +365,13 @@ namespace FlaxEngine.GUI
                 dpi = 25.4f;
                 break;
             case PhysicalUnitMode.Inches:
-                dpi = 1;
+                dpi = 1f;
                 break;
             case PhysicalUnitMode.Points:
-                dpi = 72;
+                dpi = 72f;
                 break;
             case PhysicalUnitMode.Picas:
-                dpi = 6;
+                dpi = 6f;
                 break;
             }
             return dpi;
