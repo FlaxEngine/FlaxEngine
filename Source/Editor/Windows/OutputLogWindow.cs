@@ -600,8 +600,10 @@ namespace FlaxEditor.Windows
                 // Update the output
                 var cachedScrollValue = _vScroll.Value;
                 var cachedSelection = _output.SelectionRange;
-                var isBottomScroll = _vScroll.Value >= _vScroll.Maximum - 20.0f || wasEmpty;
+                var cachedOutputTargetViewOffset = _output.TargetViewOffset;
+                var isBottomScroll = _vScroll.Value >= _vScroll.Maximum - (_scrollSize*2) || wasEmpty;
                 _output.Text = _textBuffer.ToString();
+                _output.TargetViewOffset = cachedOutputTargetViewOffset;
                 _textBufferCount = _entries.Count;
                 if (!_vScroll.IsThumbClicked)
                     _vScroll.TargetValue = isBottomScroll ? _vScroll.Maximum : cachedScrollValue;
