@@ -387,7 +387,7 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.DrawRectangle(_alphaSliderRect, alphaSliderTopOutlineColor, alphaSliderTopOutlineColor, Color.Transparent, Color.Transparent);
             Render2D.DrawRectangle(alphaKnob, alphaKnobColor, _isMouseDownValueSlider ? 3 : 2);
 
-            // Hitbox debug
+            // Sliders hitbox debug
             //Render2D.DrawRectangle(_valueSliderHitbox, Color.Green);
             //Render2D.DrawRectangle(_alphaSliderHitbox, Color.Red);
         }
