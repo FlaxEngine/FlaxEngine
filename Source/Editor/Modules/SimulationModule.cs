@@ -2,6 +2,7 @@
 
 using System;
 using System.Threading;
+using FlaxEditor.GUI.Docking;
 using FlaxEditor.States;
 using FlaxEditor.Windows;
 using FlaxEngine;
@@ -20,6 +21,7 @@ namespace FlaxEditor.Modules
         private bool _updateOrFixedUpdateWasCalled;
         private long _breakpointHangFlag;
         private EditorWindow _enterPlayFocusedWindow;
+        private DockWindow _previousWindow;
         private Guid[] _scenesToReload;
 
         internal SimulationModule(Editor editor)
@@ -272,11 +274,22 @@ namespace FlaxEditor.Modules
             // Show Game widow if hidden
             if (gameWin != null)
             {
-                if (gameWin.FocusOnPlay)
+                switch (gameWin.FocusOnPlayOption)
+                {
+                case Options.InterfaceOptions.PlayModeFocus.None: break;
+
+                case Options.InterfaceOptions.PlayModeFocus.GameWindow:
                     gameWin.FocusGameViewport();
+                    break;
+
+                case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestore:
+                    _previousWindow = gameWin.ParentDockPanel.SelectedTab;
+                    gameWin.FocusGameViewport();
+                    break;
+                }
+
                 gameWin.SetWindowMode(Editor.Options.Options.Interface.DefaultGameWindowMode);
             }
-
 
             Editor.Log("[PlayMode] Enter");
         }
@@ -284,11 +297,20 @@ namespace FlaxEditor.Modules
         /// <inheritdoc />
         public override void OnPlayEnd()
         {
-            // Restore focused window before play mode
-            if (_enterPlayFocusedWindow != null)
+            var gameWin = Editor.Windows.GameWin;
+
+            switch (gameWin.FocusOnPlayOption)
             {
-                _enterPlayFocusedWindow.FocusOrShow();
-                _enterPlayFocusedWindow = null;
+            case Options.InterfaceOptions.PlayModeFocus.None: break;
+            case Options.InterfaceOptions.PlayModeFocus.GameWindow: break;
+            case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestore:
+                if (_previousWindow != null && !_previousWindow.IsDisposing)
+                {
+                    if (!Editor.Windows.GameWin.ParentDockPanel.ContainsTab(_previousWindow))
+                        break;
+                    _previousWindow.Focus();
+                }
+                break;
             }
 
             Editor.UI.UncheckPauseButton();
