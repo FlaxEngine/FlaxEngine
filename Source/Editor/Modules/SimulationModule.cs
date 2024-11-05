@@ -276,17 +276,16 @@ namespace FlaxEditor.Modules
             {
                 switch (gameWin.FocusOnPlayOption)
                 {
-                    case Options.InterfaceOptions.PlayModeFocus.None:
-                        break;
+                case Options.InterfaceOptions.PlayModeFocus.None: break;
 
-                    case Options.InterfaceOptions.PlayModeFocus.GameWindow:
-                        gameWin.FocusGameViewport();
-                        break;
+                case Options.InterfaceOptions.PlayModeFocus.GameWindow:
+                    gameWin.FocusGameViewport();
+                    break;
 
-                    case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestore:
-                        _previousWindow = gameWin.ParentDockPanel.SelectedTab;
-                        gameWin.FocusGameViewport();
-                        break;
+                case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestore:
+                    _previousWindow = gameWin.ParentDockPanel.SelectedTab;
+                    gameWin.FocusGameViewport();
+                    break;
                 }
 
                 gameWin.SetWindowMode(Editor.Options.Options.Interface.DefaultGameWindowMode);
@@ -302,18 +301,16 @@ namespace FlaxEditor.Modules
 
             switch (gameWin.FocusOnPlayOption)
             {
-                case Options.InterfaceOptions.PlayModeFocus.None:
-                    break;
-
-                case Options.InterfaceOptions.PlayModeFocus.GameWindow:
-                    break;
-
-                case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestore:
+            case Options.InterfaceOptions.PlayModeFocus.None: break;
+            case Options.InterfaceOptions.PlayModeFocus.GameWindow: break;
+            case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestore:
+                if (_previousWindow != null && !_previousWindow.IsDisposing)
+                {
                     if (!Editor.Windows.GameWin.ParentDockPanel.ContainsTab(_previousWindow))
                         break;
-
                     _previousWindow.Focus();
-                    break;
+                }
+                break;
             }
 
             Editor.UI.UncheckPauseButton();
