@@ -1060,8 +1060,13 @@ namespace FlaxEditor.Windows.Assets
                     // Draw selected skeleton nodes
                     foreach (var node in proxy.NodesTree.Selection)
                     {
-                        proxy.Window._preview.PreviewActor.GetNodeTransformation(node.Text, out var nodeTransformation, true);
-                        DebugDraw.DrawWireSphere(new BoundingSphere(nodeTransformation.TranslationVector, 4.0f), Color.Red, 0.0f, false);
+                        proxy.Window._preview.PreviewActor.GetNodeTransformation(node.Text, out var t, true);
+                        DebugDraw.DrawWireSphere(new BoundingSphere(t.TranslationVector, 4.0f), Color.Red, 0.0f, false);
+                        float tangentFrameSize = 0.05f * Utilities.Units.Meters2Units;
+                        Vector3 arrowsOrigin = t.TranslationVector + 0.001f * Utilities.Units.Meters2Units;
+                        DebugDraw.DrawLine(arrowsOrigin, arrowsOrigin + t.Forward * tangentFrameSize, CustomEditors.Editors.ActorTransformEditor.AxisColorX, 0.0f, false);
+                        DebugDraw.DrawLine(arrowsOrigin, arrowsOrigin + t.Up * tangentFrameSize, CustomEditors.Editors.ActorTransformEditor.AxisColorY, 0.0f, false);
+                        DebugDraw.DrawLine(arrowsOrigin, arrowsOrigin + t.Right * tangentFrameSize, CustomEditors.Editors.ActorTransformEditor.AxisColorZ, 0.0f, false);
                     }
                 }
             }
