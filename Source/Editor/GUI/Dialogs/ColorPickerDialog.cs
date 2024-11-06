@@ -363,6 +363,12 @@ namespace FlaxEditor.GUI.Dialogs
             if (_disableEvents)
                 return;
 
+            // Loop the hue float value box
+            if (_cHue.Value < 0)
+                _cHue.Value = 360.0f - Mathf.Abs(_cHue.Value);
+            else if (_cHue.Value > 360)
+                _cHue.Value = _cHue.Value - 360.0f;
+
             SelectedColor = Color.FromHSV(_cHue.Value, _cSaturation.Value / 100.0f, _cValue.Value / 100.0f, _cAlpha.Value);
         }
 
