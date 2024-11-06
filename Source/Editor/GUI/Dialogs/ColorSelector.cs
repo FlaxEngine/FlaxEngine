@@ -376,16 +376,16 @@ namespace FlaxEditor.GUI.Dialogs
 
             Rectangle alphaKnob = new Rectangle(alphaKnobX, alphaKnobY, alphaKnobWidth, alphaKnobHeight);
 
-            // Render value slider and knob
+            // Draw value slider and knob
             Render2D.FillRectangle(_valueSliderRect, hsC, hsC, Color.Black, Color.Black);
             Render2D.DrawRectangle(_valueSliderRect, valueSliderTopOutlineColor, valueSliderTopOutlineColor, Color.White, Color.White);
             Render2D.DrawRectangle(valueKnob, valueKnobColor, _isMouseDownValueSlider ? 3 : 2);
 
-            // Render alpha slider, grid and knob
+            // Draw alpha slider, grid and knob
             DrawAlphaGrid(_alphaSliderRect.Width / 2, ref _alphaSliderRect.Location, _alphaSliderRect.Width, _alphaSliderRect.Height);
             Render2D.FillRectangle(_alphaSliderRect, opaqueColor, opaqueColor, Color.Transparent, Color.Transparent);
             Render2D.DrawRectangle(_alphaSliderRect, alphaSliderTopOutlineColor, alphaSliderTopOutlineColor, Color.Transparent, Color.Transparent);
-            Render2D.DrawRectangle(alphaKnob, alphaKnobColor, _isMouseDownValueSlider ? 3 : 2);
+            Render2D.DrawRectangle(alphaKnob, alphaKnobColor, _isMouseDownAlphaSlider ? 3 : 2);
 
             // Sliders hitbox debug
             //Render2D.DrawRectangle(_valueSliderHitbox, Color.Green);
