@@ -624,6 +624,8 @@ void NetworkManager::Stop()
 
     State = NetworkConnectionState::Disconnected;
     Mode = NetworkManagerMode::Offline;
+    LastUpdateTime = 0;
+
     StateChanged();
 }
 

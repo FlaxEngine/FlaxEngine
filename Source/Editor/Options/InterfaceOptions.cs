@@ -1,8 +1,8 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using System;
 using System.ComponentModel;
 using FlaxEditor.GUI.Docking;
-using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -137,6 +137,27 @@ namespace FlaxEditor.Options
             /// Format using a unit that matches the value best.
             /// </summary>
             AutoUnit,
+        }
+
+        /// <summary>
+        /// Options focus Game Window behaviour when play mode is entered.
+        /// </summary>
+        public enum PlayModeFocus
+        {
+            /// <summary>
+            /// Don't change focus.
+            /// </summary>
+            None,
+
+            /// <summary>
+            /// Focus the Game Window.
+            /// </summary>
+            GameWindow,
+
+            /// <summary>
+            /// Focus the Game Window. On play mode end restore focus to the previous window.
+            /// </summary>
+            GameWindowThenRestore,  
         }
 
         /// <summary>
@@ -339,6 +360,18 @@ namespace FlaxEditor.Options
         [EditorDisplay("Output Log", "Text Shadow Offset"), EditorOrder(445), Tooltip("The output log text shadow offset. Set to 0 to disable this feature.")]
         public Float2 OutputLogTextShadowOffset { get; set; } = new Float2(1);
 
+        // [Deprecated in v1.10]
+        [Serialize, Obsolete, NoUndo]
+        private bool FocusGameWinOnPlay
+        {
+            get => throw new Exception();
+            set
+            {
+                // Upgrade value
+                FocusOnPlayMode = value ? PlayModeFocus.GameWindow : PlayModeFocus.None;
+            }
+        }
+
         /// <summary>
         /// Gets or sets a value indicating whether auto-focus output log window on code compilation error.
         /// </summary>
@@ -361,11 +394,11 @@ namespace FlaxEditor.Options
         public bool OutputLogScrollToBottom { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating whether auto-focus game window on play mode start.
+        /// Gets or sets a value indicating what panel should be focused when play mode start.
         /// </summary>
-        [DefaultValue(true)]
-        [EditorDisplay("Play In-Editor", "Focus Game Window On Play"), EditorOrder(500), Tooltip("Determines whether auto-focus game window on play mode start.")]
-        public bool FocusGameWinOnPlay { get; set; } = true;
+        [DefaultValue(PlayModeFocus.GameWindow)]
+        [EditorDisplay("Play In-Editor", "Focus On Play"), EditorOrder(500), Tooltip("Set what panel to focus on play mode start.")]
+        public PlayModeFocus FocusOnPlayMode { get; set; } = PlayModeFocus.GameWindow;
 
         /// <summary>
         /// Gets or sets a value indicating what action should be taken upon pressing the play button.

@@ -335,6 +335,12 @@ namespace Flax.Build
                                     var referenceTargets = GetProjectTargets(reference.Project);
                                     foreach (var referenceTarget in referenceTargets)
                                     {
+                                        // Skip referenced targets that don't meet this configuration specs (eg. Editor target should skip Android platform)
+                                        if (!referenceTarget.Platforms.Contains(configurationData.Platform))
+                                            continue;
+                                        if (!referenceTarget.Architectures.Contains(configurationData.Architecture))
+                                            continue;
+
                                         try
                                         {
                                             var referenceBuildOptions = GetBuildOptions(referenceTarget, configurationData.TargetBuildOptions.Platform, configurationData.TargetBuildOptions.Toolchain, configurationData.Architecture, configurationData.Configuration, reference.Project.ProjectFolderPath);

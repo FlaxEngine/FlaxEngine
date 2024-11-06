@@ -172,6 +172,15 @@ public:
         return str.Length();
     }
 
+    // Test trailing return type
+    API_FUNCTION() auto TestTrailingReturn(int32 number) -> float
+    {
+        return static_cast<float>(number);
+    }
+
+    // Test nameless arguments
+    API_FUNCTION() void TestNamelessArguments(int32, float, bool){}
+
     int32 TestInterfaceMethod(const String& str) override
     {
         return str.Length();

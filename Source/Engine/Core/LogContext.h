@@ -20,6 +20,11 @@ API_STRUCT(NoDefault) struct FLAXENGINE_API LogContextData
     /// A GUID for an object which this context applies to.
     /// </summary>
     API_FIELD() Guid ObjectID;
+
+    friend bool operator==(const LogContextData& lhs, const LogContextData& rhs)
+    {
+        return lhs.ObjectID == rhs.ObjectID;
+    }
 };
 
 template<>

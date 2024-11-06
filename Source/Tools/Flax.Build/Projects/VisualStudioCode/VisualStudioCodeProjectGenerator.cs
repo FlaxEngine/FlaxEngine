@@ -143,6 +143,7 @@ namespace Flax.Build.Projects.VisualStudioCode
             var buildToolWorkspace = Environment.CurrentDirectory;
             var buildToolPath = Path.ChangeExtension(Utilities.MakePathRelativeTo(typeof(Builder).Assembly.Location, solution.WorkspaceRootPath), null);
             var rules = Builder.GenerateRulesAssembly();
+            var mainProject = solution.MainProject ?? solution.Projects.FirstOrDefault(x => x.Name == Globals.Project.Name);
 
             // Create tasks file
             using (var json = new JsonWriter())
@@ -159,10 +160,10 @@ namespace Flax.Build.Projects.VisualStudioCode
                                 continue;
 
                             // Skip duplicate build tasks
-                            if (project.Name == "FlaxEngine" || (solution.MainProject.Name != "Flax" && solution.MainProject != project))
+                            if (project.Name == "FlaxEngine" || (mainProject != null && mainProject.Name != "Flax" && mainProject != project))
                                 continue;
 
-                            bool defaultTask = project == solution.MainProject;
+                            bool defaultTask = project == mainProject;
                             foreach (var configuration in project.Configurations)
                             {
                                 var target = configuration.Target;
@@ -301,7 +302,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                     json.BeginArray("configurations");
                     {
                         var cppProject = solution.Projects.FirstOrDefault(x => x.BaseName == solution.Name || x.Name == solution.Name);
-                        var mainProjectModule = solution.MainProject?.Targets.Length != 0 ? solution.MainProject.Targets[0].Modules[0] : null;
+                        var mainProjectModule = mainProject != null && mainProject.Targets?.Length != 0 ? mainProject.Targets[0]?.Modules[0] : null;
                         var csharpProject = mainProjectModule != null ? solution.Projects.FirstOrDefault(x => x.BaseName == mainProjectModule || x.Name == mainProjectModule) : null;
 
                         if (cppProject != null)
@@ -533,10 +534,9 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.BeginRootObject();
                 json.BeginArray("configurations");
                 json.BeginObject();
-                var project = solution.MainProject ?? solution.Projects.FirstOrDefault(x => x.Name == Globals.Project.Name);
-                if (project != null)
+                if (mainProject != null)
                 {
-                    json.AddField("name", project.Name);
+                    json.AddField("name", mainProject.Name);
 
                     var targetPlatform = Platform.BuildPlatform.Target;
                     var configuration = TargetConfiguration.Development;
@@ -544,10 +544,10 @@ namespace Flax.Build.Projects.VisualStudioCode
 
                     var includePaths = new HashSet<string>();
                     var preprocessorDefinitions = new HashSet<string>();
-                    foreach (var e in project.Defines)
+                    foreach (var e in mainProject.Defines)
                         preprocessorDefinitions.Add(e);
 
-                    foreach (var target in project.Targets)
+                    foreach (var target in mainProject.Targets)
                     {
                         var platform = Platform.GetPlatform(targetPlatform);
                         if (platform.HasRequiredSDKsInstalled && target.Platforms.Contains(targetPlatform))

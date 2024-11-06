@@ -54,12 +54,17 @@ void LogContext::Print(LogType verbosity)
     StringBuilder msg;
     for (int32 index = (int32)stack.Count - 1; index >= 0; index--)
     {
+        LogContextData& context = stack.Ptr[index];
+
+        // Skip duplicates
+        if (index < (int32)stack.Count - 1 && stack.Ptr[stack.Count - 1] == context)
+            continue;
+
         // Build call hierarchy via indentation
         msg.Clear();
         for (uint32 i = index; i < stack.Count; i++)
             msg.Append(indentation);
 
-        LogContextData& context = stack.Ptr[index];
         if (context.ObjectID != Guid::Empty)
         {
             // Object reference context
