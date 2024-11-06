@@ -1314,6 +1314,7 @@ void NetworkReplicator::MapObjectId(Guid& objectId)
 void NetworkReplicator::AddObjectIdMapping(const ScriptingObject* obj, const Guid& objectId)
 {
     CHECK(obj);
+    CHECK(objectId.IsValid());
     const Guid id = obj->GetID();
     NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Remap object ID={} into object {}:{}", objectId, id.ToString(), obj->GetType().ToString());
     IdsRemappingTable[objectId] = id;
