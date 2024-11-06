@@ -150,13 +150,21 @@ public:
     /// <param name="other">The other collection to move.</param>
     HashSet(HashSet&& other) noexcept
     {
+        if (other._size == 0) // Empty collection
+            return *this;
+
         _elementsCount = other._elementsCount;
         _deletedCount = other._deletedCount;
-        _size = other._size;
+        _size = AllocationOperation::MoveAllocated<Bucket, AllocationType>(
+            other._allocation, 
+            this->_allocation, 
+            other._size, 
+            other._size
+        );
+
         other._elementsCount = 0;
         other._deletedCount = 0;
         other._size = 0;
-        MoveToEmpty(_allocation, other._allocation, _size);
     }
 
     /// <summary>
@@ -192,6 +200,9 @@ public:
             // ClearToFree without changing capacity
             Clear();
             _allocation.Free();
+
+            if (other._size == 0) // Empty collection
+                return *this;
 
             _elementsCount = other._elementsCount;
             _deletedCount = other._deletedCount;
@@ -595,11 +606,12 @@ public:
     void Clone(const HashSet& other)
     {
         Clear();
-        SetCapacity(other.Capacity(), false);
+        EnsureCapacity(other.Capacity(), false);
+
         for (Iterator i = other.Begin(); i != other.End(); ++i)
             Add(i);
+
         ASSERT(Count() == other.Count());
-        ASSERT(Capacity() == other.Capacity());
     }
 
 public:

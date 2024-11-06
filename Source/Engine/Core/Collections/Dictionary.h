@@ -183,6 +183,9 @@ public:
     /// <param name="other">The other collection to move.</param>
     Dictionary(Dictionary&& other) noexcept
     {
+        if (other._size == 0) // Empty collection
+            return;
+
         _elementsCount = other._elementsCount;
         _deletedCount = other._deletedCount;
         _size = AllocationOperation::MoveAllocated<Bucket, AllocationType>(
@@ -227,6 +230,9 @@ public:
     {
         if (this != &other)
         {
+            if (other._size == 0) // Empty collection
+                return *this;
+
             // ClearToFree without changing capacity
             Clear();
             _allocation.Free();
@@ -789,11 +795,13 @@ public:
     /// <param name="other">The other collection to clone.</param>
     void Clone(const Dictionary& other)
     {
-        // TODO: if both key and value are POD types then use raw memory copy for buckets
         Clear();
         EnsureCapacity(other.Capacity(), false);
+
         for (Iterator i = other.Begin(); i != other.End(); ++i)
             Add(i);
+
+        ASSERT(Count() == other.Count());
     }
 
     /// <summary>
