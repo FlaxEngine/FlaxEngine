@@ -157,7 +157,6 @@ namespace FlaxEditor.GUI.Dialogs
                 Parent = this,
             };
             _chsvRGBTabs.TabsSize = new Float2(_chsvRGBTabs.Width * 0.5f, TabsSizeY);
-            _chsvRGBTabs.SelectedTabChanged += SelectedTabChanged;
 
             // RGB Tab
             _cRGBTab = _chsvRGBTabs.AddTab(new Tab("RGB"));
@@ -176,6 +175,8 @@ namespace FlaxEditor.GUI.Dialogs
                 Offsets = Margin.Zero,
                 Parent = _cHSVTab
             };
+
+            _chsvRGBTabs.SelectedTabChanged += SelectedTabChanged;
 
             // Red
             _cRed = new FloatValueBox(0, _hsvRgbFloatBoxBlockMargin.Left, _hsvRgbFloatBoxBlockMargin.Top, HSVRGBFloatBoxesWidht, 0, float.MaxValue, 0.001f)
@@ -261,9 +262,6 @@ namespace FlaxEditor.GUI.Dialogs
 
         private void SelectedTabChanged(Tabs.Tabs tabs)
         {
-            if (rgbPanel == null || hsvPanel == null)
-                return;
-
             switch (tabs.SelectedTabIndex)
             {
                 // RGB
@@ -451,6 +449,8 @@ namespace FlaxEditor.GUI.Dialogs
             oldColorRect = new Rectangle(_cSelector.Right + 15 + LargeMargin, oldNewColorPreviewYPosition, ColorPreviewWidth * OldNewColorPreviewDisplayRatio, oldColoPreviewHeight);
 
             var newColorRect = new Rectangle(oldColorRect.Right, oldNewColorPreviewYPosition, ColorPreviewWidth * (1 - OldNewColorPreviewDisplayRatio), oldColorRect.Height);
+
+            // TODO: Replace this with a rectangle for bounds checks. Maybe even use the OldColorRect rect as that rectangle?
 
             // Generate the button for right click detection here because we don't know position of oldColorRect before
             _cOldPreviewButton = new Button(oldColorRect.Location, oldColorRect.Size)
