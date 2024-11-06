@@ -14,6 +14,7 @@ namespace FlaxEditor.Windows.Profiler
     /// <seealso cref="FlaxEditor.Windows.EditorWindow" />
     public sealed class ProfilerWindow : EditorWindow
     {
+#if USE_PROFILER
         private readonly ToolStripButton _liveRecordingButton;
         private readonly ToolStripButton _clearButton;
         private readonly ToolStripButton _prevFrameButton;
@@ -77,6 +78,7 @@ namespace FlaxEditor.Windows.Profiler
                 }
             }
         }
+#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProfilerWindow"/> class.
@@ -87,6 +89,7 @@ namespace FlaxEditor.Windows.Profiler
         {
             Title = "Profiler";
 
+#if USE_PROFILER
             var toolstrip = new ToolStrip
             {
                 Parent = this,
@@ -121,8 +124,10 @@ namespace FlaxEditor.Windows.Profiler
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
             InputActions.Bindings.RemoveAll(x => x.Callback == this.FocusOrShow);
             InputActions.Add(options => options.ProfilerWindow, Hide);
+#endif
         }
 
+#if USE_PROFILER
         private void OnLiveRecordingChanged()
         {
             _liveRecordingButton.Icon = LiveRecording ? Editor.Icons.Stop64 : Editor.Icons.Play64;
@@ -298,5 +303,6 @@ namespace FlaxEditor.Windows.Profiler
 
             return false;
         }
+#endif
     }
 }

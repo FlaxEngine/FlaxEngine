@@ -1452,6 +1452,7 @@ namespace FlaxEditor.Utilities
             inputActions.Add(options => options.BuildSDF, Editor.Instance.BuildAllMeshesSDF);
             inputActions.Add(options => options.TakeScreenshot, Editor.Instance.Windows.TakeScreenshot);
             inputActions.Add(options => options.ProfilerWindow, () => Editor.Instance.Windows.ProfilerWin.FocusOrShow());
+#if USE_PROFILER
             inputActions.Add(options => options.ProfilerStartStop, () =>
             {
                 bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
@@ -1461,8 +1462,9 @@ namespace FlaxEditor.Utilities
             inputActions.Add(options => options.ProfilerClear, () =>
             {
                 Editor.Instance.Windows.ProfilerWin.Clear();
-                Editor.Instance.UI.AddStatusMessage($"Profiling results cleared.");
+                Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
             });
+#endif
             inputActions.Add(options => options.SaveScenes, () => Editor.Instance.Scene.SaveScenes());
             inputActions.Add(options => options.CloseScenes, () => Editor.Instance.Scene.CloseAllScenes());
             inputActions.Add(options => options.OpenScriptsProject, () => Editor.Instance.CodeEditing.OpenSolution());

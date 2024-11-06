@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+#if USE_PROFILER
 using System;
 using System.Collections.Generic;
 using FlaxEditor.GUI;
@@ -169,3 +170,4 @@ namespace FlaxEditor.Windows.Profiler
         }
     }
 }
+#endif

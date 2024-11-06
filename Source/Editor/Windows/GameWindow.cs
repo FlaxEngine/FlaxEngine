@@ -249,6 +249,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor);
             InputActions.Add(options => options.Pause, Editor.Instance.Simulation.RequestResumeOrPause);
             InputActions.Add(options => options.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame);
+#if USE_PROFILER
             InputActions.Add(options => options.ProfilerStartStop, () =>
             {
                 bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
@@ -258,8 +259,9 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.ProfilerClear, () =>
             {
                 Editor.Instance.Windows.ProfilerWin.Clear();
-                Editor.Instance.UI.AddStatusMessage($"Profiling results cleared.");
+                Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
             });
+#endif
             InputActions.Add(options => options.Save, () =>
             {
                 if (Editor.IsPlayMode)
