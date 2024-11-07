@@ -483,7 +483,6 @@ void SetupObjectSpawnMessageItem(SpawnItem* e, NetworkMessage& msg)
     NetworkMessageObjectSpawnItem msgDataItem;
     msgDataItem.ObjectId = item.ObjectId;
     msgDataItem.ParentId = item.ParentId;
-    if (NetworkManager::IsClient())
     {
         // Remap local client object ids into server ids
         IdsRemappingTable.KeyOf(msgDataItem.ObjectId, &msgDataItem.ObjectId);
@@ -1677,7 +1676,6 @@ void NetworkInternal::NetworkReplicatorUpdate()
             NETWORK_REPLICATOR_LOG(Info, "[NetworkReplicator] Despawn object ID={}", e.Id.ToString());
             NetworkMessageObjectDespawn msgData;
             msgData.ObjectId = e.Id;
-            if (isClient)
             {
                 // Remap local client object ids into server ids
                 IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
@@ -1888,7 +1886,6 @@ void NetworkInternal::NetworkReplicatorUpdate()
             msgData.OwnerFrame = NetworkManager::Frame;
             msgData.ObjectId = item.ObjectId;
             msgData.ParentId = item.ParentId;
-            if (isClient)
             {
                 // Remap local client object ids into server ids
                 IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
@@ -1985,7 +1982,6 @@ void NetworkInternal::NetworkReplicatorUpdate()
             NetworkMessageObjectRpc msgData;
             msgData.ObjectId = item.ObjectId;
             msgData.ParentId = item.ParentId;
-            if (isClient)
             {
                 // Remap local client object ids into server ids
                 IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
