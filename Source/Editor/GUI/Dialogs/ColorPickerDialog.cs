@@ -33,6 +33,7 @@ namespace FlaxEditor.GUI.Dialogs
         private const float SavedColorButtonHeight = 20.0f;
         private const float ColorPreviewWidth = 118.0f;
         private const float OldNewColorPreviewDisplayRatio = 0.35f;
+        private const float RevertOldColorSpriteSize = 18.0f;
         private const float ColorWheelSize = 180.0f;
         private const float SaturationAlphaSlidersThickness = 20.0f;
         private const float HSVRGBFloatBoxesWidht = 100;
@@ -59,7 +60,8 @@ namespace FlaxEditor.GUI.Dialogs
         private ColorValueBox.ColorPickerClosedEvent _onClosed;
 
         private ColorSelectorWithSliders _cSelector;
-        private Rectangle oldColorRect; // Needs to be defined here so that it can be accesed in OnMouseUp
+        private Rectangle oldColorRect;
+        private Rectangle newColorRect;
         private Tabs.Tabs _chsvRGBTabs;
         private Tab _cRGBTab;
         private Panel rgbPanel;
@@ -74,7 +76,6 @@ namespace FlaxEditor.GUI.Dialogs
         private FloatValueBox _cAlpha;
         private TextBox _cHex;
         private Button _cEyedropper;
-        private Button _cOldPreviewButton;
 
         private List<Color> _savedColors = new List<Color>();
         private List<Button> _savedColorButtons = new List<Button>();
@@ -241,6 +242,13 @@ namespace FlaxEditor.GUI.Dialogs
             _dialogSize = Size = new Float2(_chsvRGBTabs.Right + _pickerMargin.Left + _pickerMargin.Left, _cSelector.Bottom + SmallMargin + SavedColorButtonHeight * 3 + _pickerMargin.Top * 3);
 
             CreateSavedSaveColorButtons();
+
+            // Old and new color preview rectangles
+            float previewYPosition = _cSelector.Bottom + LargeMargin;
+
+            float oldPreviewHeight = SavedColorButtonHeight * 2 + SmallMargin; // Make the rect the same height as saved colors (when there are two rows)
+            oldColorRect = new Rectangle(_cSelector.Right + 15 + LargeMargin, previewYPosition, ColorPreviewWidth * OldNewColorPreviewDisplayRatio, oldPreviewHeight);
+            newColorRect = new Rectangle(oldColorRect.Right, previewYPosition, ColorPreviewWidth * (1 - OldNewColorPreviewDisplayRatio), oldColorRect.Height);
 
             // Eyedropper button
             var style = Style.Current;
@@ -452,37 +460,12 @@ namespace FlaxEditor.GUI.Dialogs
             var hex = new Rectangle(_cHex.Left - 26, _cHex.Y, 25, _cHex.Height);
             Render2D.DrawText(style.FontMedium, "Hex", hex, textColor, TextAlignment.Near, TextAlignment.Center);
 
-            // Old and New color preview
-            float oldNewColorPreviewYPosition = _cSelector.Bottom + LargeMargin;
-
-            // Make the rect the same height as saved colors (when there are two rows)
-            float oldColoPreviewHeight = SavedColorButtonHeight * 2 + SmallMargin;
-            oldColorRect = new Rectangle(_cSelector.Right + 15 + LargeMargin, oldNewColorPreviewYPosition, ColorPreviewWidth * OldNewColorPreviewDisplayRatio, oldColoPreviewHeight);
-
-            var newColorRect = new Rectangle(oldColorRect.Right, oldNewColorPreviewYPosition, ColorPreviewWidth * (1 - OldNewColorPreviewDisplayRatio), oldColorRect.Height);
-
-            // TODO: Replace this with a rectangle for bounds checks. Maybe even use the OldColorRect rect as that rectangle?
-
-            // Generate the button for right click detection here because we don't know position of oldColorRect before
-            _cOldPreviewButton = new Button(oldColorRect.Location, oldColorRect.Size)
-            {
-                TooltipText = "Right click to use this color.",
-                Tag = "OldColorPreview",
-                BackgroundColor = Color.Transparent,
-                BackgroundColorHighlighted = Color.Transparent,
-                BackgroundColorSelected = Color.Transparent,
-                BorderColor = Color.Transparent,
-                BorderColorHighlighted = Color.Transparent,
-                BorderColorSelected = Color.Transparent,
-                Parent = this
-            };
-
             const int smallRectSize = 9;
 
             if (_initialValue.A < 1 || _value.A < 1)
             {
                 // Checkerboard background
-                var alphaBackground = new Rectangle(oldColorRect.Left, oldNewColorPreviewYPosition, ColorPreviewWidth, oldColorRect.Height);
+                var alphaBackground = new Rectangle(oldColorRect.Left, newColorRect.Y, ColorPreviewWidth, oldColorRect.Height);
 
                 // Draw checkerboard for background of color preview to help with transparency
                 Render2D.FillRectangle(alphaBackground, Color.White);
@@ -502,6 +485,7 @@ namespace FlaxEditor.GUI.Dialogs
                 }
             }
             
+            // Old and new color preview
             Vector2 textOffset = new Vector2(0, -15);
             Render2D.DrawText(style.FontMedium, "Old", Color.White, oldColorRect.UpperLeft + textOffset);
             Render2D.DrawText(style.FontMedium, "New", Color.White, newColorRect.UpperLeft + textOffset);
@@ -509,18 +493,25 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.FillRectangle(oldColorRect, _initialValue);
             Render2D.FillRectangle(newColorRect, _value);
 
-            // Draw outlines around the Old and New color box
-            //Color oldOutlineColor = Color.Blue;
             var oldhsv = _initialValue.ToHSV();
             var newhsv = _value.ToHSV();
-        
-            // Draw them all as separate lines to prevent bleeding issues with separator lines
-            // Old outlines
+
+            // Revert icon if color has changed
+            if (_value != _initialValue)
+            {
+                Rectangle resetRect = new Rectangle(oldColorRect.Center - RevertOldColorSpriteSize * 0.5f, new Float2(RevertOldColorSpriteSize));
+                Color resetColor = oldhsv.Z > 0.5f ? Color.Black : Color.White;
+                Render2D.DrawSprite(Editor.Instance.Icons.Rotate32, resetRect, resetColor);
+            }
+      
+            // Draw all outlines all as separate lines to prevent bleeding issues with separator lines
+            
+            // Draw Old outlines
             Color oldOutlineColor = oldhsv.X > 205 && oldhsv.Y > 0.65f ? Color.White : Color.Black;
             Render2D.DrawLine(oldColorRect.UpperLeft, oldColorRect.UpperRight, oldOutlineColor, 0.5f);
             Render2D.DrawLine(oldColorRect.UpperLeft, oldColorRect.BottomLeft, oldOutlineColor, 0.5f);
             Render2D.DrawLine(oldColorRect.BottomLeft, oldColorRect.BottomRight, oldOutlineColor, 0.5f);
-            // New outlines
+            // Draw New outlines
             Color newOutlineColor = newhsv.X > 205 && newhsv.Y > 0.65f ? Color.White : Color.Black;
             Render2D.DrawLine(newColorRect.UpperLeft, newColorRect.UpperRight, newOutlineColor, 0.5f);
             Render2D.DrawLine(newColorRect.UpperRight, newColorRect.BottomRight, newOutlineColor, 0.5f);
@@ -599,23 +590,13 @@ namespace FlaxEditor.GUI.Dialogs
                 return true;
             }
 
-            if (button == MouseButton.Right && oldColorRect.Contains(location))
+            if (button == MouseButton.Left && oldColorRect.Contains(location))
             {
-                var menu = new ContextMenu.ContextMenu();
-                var useButton = menu.AddButton("Revert");
-                useButton.Clicked += () => OnResetToOldPreviewPressed(useButton);
-                _disableEvents = true;
-                menu.Show(this, location);
-                menu.VisibleChanged += (c) => _disableEvents = false;
+                _cSelector.Color = _initialValue;
                 return true;
             }
 
             return false;
-        }
-
-        private void OnResetToOldPreviewPressed(ContextMenuButton button)
-        {
-            _cSelector.Color = _initialValue;
         }
 
         private void OnSavedColorReplace(Button button)
