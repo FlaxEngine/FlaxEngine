@@ -36,6 +36,8 @@ namespace FlaxEditor.GUI.Dialogs
         private const float ColorWheelSize = 180.0f;
         private const float SaturationAlphaSlidersThickness = 20.0f;
         private const float HSVRGBFloatBoxesWidht = 100;
+        private const string AddSavedColorButtonTooltip = "Save current color.";
+        private const string SavedColorButtonTooltip = "Saved color";
 
         private const int maxSavedColorsAmount = 20; // Will begin new row when half of this value is reached.
 
@@ -238,7 +240,7 @@ namespace FlaxEditor.GUI.Dialogs
             // Set valid dialog size based on UI contents
             _dialogSize = Size = new Float2(_chsvRGBTabs.Right + _pickerMargin.Left + _pickerMargin.Left, _cSelector.Bottom + SmallMargin + SavedColorButtonHeight * 3 + _pickerMargin.Top * 3);
 
-            CreateSavedColorButtons();
+            CreateSavedSaveColorButtons();
 
             // Eyedropper button
             var style = Style.Current;
@@ -279,6 +281,7 @@ namespace FlaxEditor.GUI.Dialogs
 
         private void OnSavedColorButtonClicked(Button button)
         {
+            // "+" button clicked
             if (button.Tag == null)
             {
                 // Prevent setting same color 2 times... cause why...
@@ -290,6 +293,7 @@ namespace FlaxEditor.GUI.Dialogs
                 button.BackgroundColorHighlighted = _value;
                 button.BackgroundColorSelected = _value.RGBMultiplied(0.8f);
                 button.Text = "";
+                button.TooltipText = $"{SavedColorButtonTooltip} {_savedColors.Count + 1}.";
                 button.Tag = _value;
 
                 // Save new colors
@@ -311,13 +315,14 @@ namespace FlaxEditor.GUI.Dialogs
                     {
                         Text = "+",
                         Parent = this,
-                        TooltipText = "Save the currently selected color.",
+                        TooltipText = AddSavedColorButtonTooltip,
                         Tag = null,
                     };
                     savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
                     _savedColorButtons.Add(savedColorButton);
                 }
             }
+            // Button with saved color clicked
             else
                 SelectedColor = (Color)button.Tag;
         }
@@ -615,12 +620,9 @@ namespace FlaxEditor.GUI.Dialogs
 
         private void OnSavedColorReplace(Button button)
         {
-            // Prevent setting same color 2 times... because why...
-            foreach (var color in _savedColors)
-            {
-                if (color == _value)
-                    return;
-            }
+            // Prevent setting same color 2 times... cause why...
+            if (_savedColors.Any(c => c == _value))
+                return;
 
             // Set new Color in spot
             for (int i = 0; i < _savedColors.Count; i++)
@@ -651,14 +653,14 @@ namespace FlaxEditor.GUI.Dialogs
             }
             _savedColorButtons.Clear();
 
-            CreateSavedColorButtons();
+            CreateSavedSaveColorButtons();
 
             // Save new colors
             var savedColors = JsonSerializer.Serialize(_savedColors, typeof(List<Color>));
             Editor.Instance.ProjectCache.SetCustomData("ColorPickerSavedColors", savedColors);
         }
 
-        private void CreateSavedColorButtons()
+        private void CreateSavedSaveColorButtons()
         {
             float savedColorsYPosition = _cSelector.Bottom + LargeMargin;
 
@@ -677,7 +679,7 @@ namespace FlaxEditor.GUI.Dialogs
                     Tag = savedColor,
                     BackgroundColor = savedColor,
                     BackgroundColorHighlighted = savedColor,
-                    TooltipText = $"Saved color {i + 1}.",
+                    TooltipText = $"{SavedColorButtonTooltip} {i + 1}.",
                     BackgroundColorSelected = savedColor.RGBMultiplied(0.8f),
                 };
                 savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
@@ -696,7 +698,7 @@ namespace FlaxEditor.GUI.Dialogs
                 {
                     Text = "+",
                     Parent = this,
-                    TooltipText = $"Saved color {_savedColors.Count}.",
+                    TooltipText = AddSavedColorButtonTooltip,
                     Tag = null,
                 };
                 savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
