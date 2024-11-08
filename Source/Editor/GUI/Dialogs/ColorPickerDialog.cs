@@ -118,6 +118,8 @@ namespace FlaxEditor.GUI.Dialogs
                     _onChanged?.Invoke(_value, true);
 
                 _disableEvents = false;
+
+                SetAddSavedColorsButtonStatus();
             }
         }
 
@@ -242,6 +244,7 @@ namespace FlaxEditor.GUI.Dialogs
             _dialogSize = Size = new Float2(_chsvRGBTabs.Right + _pickerMargin.Left + _pickerMargin.Left, _cSelector.Bottom + SmallMargin + SavedColorButtonHeight * 3 + _pickerMargin.Top * 3);
 
             CreateSavedSaveColorButtons();
+            SetAddSavedColorsButtonStatus();
 
             // Old and new color preview rectangles
             float previewYPosition = _cSelector.Bottom + LargeMargin;
@@ -291,11 +294,7 @@ namespace FlaxEditor.GUI.Dialogs
         {
             // "+" button clicked
             if (button.Tag == null)
-            {
-                // Prevent setting same color 2 times... cause why...
-                if (_savedColors.Any(c => c == _value))
-                    return;
-                
+            {             
                 // Set color of button to current value;
                 button.BackgroundColor = _value;
                 button.BackgroundColorHighlighted = _value;
@@ -313,26 +312,13 @@ namespace FlaxEditor.GUI.Dialogs
 
                 // Create new + button
                 if (_savedColorButtons.Count < maxSavedColorsAmount)
-                {
-                    bool savedGreaterThanHalfMax = _savedColors.Count + 1 > maxSavedColorsAmount / 2;
-
-                    float buttonYPosition = savedGreaterThanHalfMax ? savedColorsYPosition + SavedColorButtonHeight + SmallMargin : savedColorsYPosition;
-                    float buttonXPositionOffset = savedGreaterThanHalfMax ? (SavedColorButtonWidth + SmallMargin) * Mathf.Abs(maxSavedColorsAmount / 2 - _savedColors.Count) : (SavedColorButtonWidth + SmallMargin) * _savedColors.Count;
-
-                    var savedColorButton = new Button(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
-                    {
-                        Text = "+",
-                        Parent = this,
-                        TooltipText = AddSavedColorButtonTooltip,
-                        Tag = null,
-                    };
-                    savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
-                    _savedColorButtons.Add(savedColorButton);
-                }
+                    CreateSaveNewColorButton(savedColorsYPosition);
             }
             // Button with saved color clicked
             else
                 SelectedColor = (Color)button.Tag;
+
+            SetAddSavedColorsButtonStatus();
         }
 
         private void OnColorPicked(Color32 colorPicked)
@@ -645,7 +631,7 @@ namespace FlaxEditor.GUI.Dialogs
         {
             float savedColorsYPosition = _cSelector.Bottom + LargeMargin;
 
-            // Generated buttons saved colors
+            // Create buttons for saved colors
             for (int i = 0; i < _savedColors.Count; i++)
             {
                 bool savedGreaterThanHalfMax = i + 1 > maxSavedColorsAmount / 2;
@@ -669,22 +655,39 @@ namespace FlaxEditor.GUI.Dialogs
 
             // Create "+" button to save color
             if (_savedColors.Count < maxSavedColorsAmount)
+                CreateSaveNewColorButton(savedColorsYPosition);
+        }
+
+        private void CreateSaveNewColorButton(float savedColorsYPosition)
+        {
+            bool savedGreaterThanHalfMax = _savedColors.Count + 1 > maxSavedColorsAmount / 2;
+
+            float buttonYPosition = savedGreaterThanHalfMax ? savedColorsYPosition + SavedColorButtonHeight + SmallMargin : savedColorsYPosition;
+            float buttonXPositionOffset = savedGreaterThanHalfMax ? (SavedColorButtonWidth + SmallMargin) * Mathf.Abs(maxSavedColorsAmount / 2 - _savedColors.Count) : (SavedColorButtonWidth + SmallMargin) * _savedColors.Count;
+
+            var savedColorButton = new Button(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
             {
-                bool savedGreaterThanHalfMax = _savedColors.Count + 1 > maxSavedColorsAmount / 2;
+                Text = "+",
+                Parent = this,
+                TooltipText = AddSavedColorButtonTooltip,
+                Tag = null,
+            };
+            savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
+            _savedColorButtons.Add(savedColorButton);
+        }
 
-                float buttonYPosition = savedGreaterThanHalfMax ? savedColorsYPosition + SavedColorButtonHeight + SmallMargin : savedColorsYPosition;
-                float buttonXPositionOffset = savedGreaterThanHalfMax ? (SavedColorButtonWidth + SmallMargin) * Mathf.Abs(maxSavedColorsAmount / 2 - _savedColors.Count) : (SavedColorButtonWidth + SmallMargin) * _savedColors.Count;
-
-                var savedColorButton = new Button(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
-                {
-                    Text = "+",
-                    Parent = this,
-                    TooltipText = AddSavedColorButtonTooltip,
-                    Tag = null,
-                };
-                savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
-                _savedColorButtons.Add(savedColorButton);
+        private void SetAddSavedColorsButtonStatus()
+        {
+            // Make not being able to save the same color twice a bit more intuitive by disabeling the button when the color is already saved
+            if (_savedColors.Contains(_value))
+            {
+                if (_savedColorButtons.Last().Tag == null)
+                    _savedColorButtons.Last().Enabled = false;
+                else
+                    _savedColorButtons.Last().Enabled = true;
             }
+            else
+                _savedColorButtons.Last().Enabled = true;
         }
 
         /// <inheritdoc />
