@@ -288,7 +288,11 @@ namespace FlaxEditor.Windows.Assets
             // Use blackboard from the root node
             var rootNode = _surface.FindNode(19, 2) as Surface.Archetypes.BehaviorTree.Node;
             if (rootNode != null)
+            {
+                rootNode.ValuesChanged -= UpdateKnowledge;
                 rootNode.ValuesChanged += UpdateKnowledge;
+            }
+            
             var rootInstance = rootNode?.Instance as BehaviorTreeRootNode;
             var blackboardType = TypeUtils.GetType(rootInstance?.BlackboardType);
             if (blackboardType)
