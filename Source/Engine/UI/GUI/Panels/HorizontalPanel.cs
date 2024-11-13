@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using FlaxEngine.Utilities;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -9,11 +11,19 @@ namespace FlaxEngine.GUI
     [ActorToolbox("GUI")]
     public class HorizontalPanel : PanelWithMargins
     {
+
+        
+        
+        private int direction;
+        private float prevWidthss;
+        private bool minSizeInitialized = false;
         /// <summary>
         /// Initializes a new instance of the <see cref="HorizontalPanel"/> class.
         /// </summary>
         public HorizontalPanel()
         {
+
+            
         }
 
         /// <inheritdoc />
@@ -49,6 +59,7 @@ namespace FlaxEngine.GUI
                 Control c = _children[i];
                 if (c.Visible)
                 {
+
                     var w = c.Width;
                     var ch = ControlChildSize ? h : c.Height;
                     if (Mathf.IsZero(c.AnchorMin.X) && Mathf.IsZero(c.AnchorMax.X))
@@ -56,12 +67,14 @@ namespace FlaxEngine.GUI
                         c.Bounds = new Rectangle(left + _offset.X, _margin.Top + _offset.Y, w, ch);
                         left = c.Right + _spacing;
                         hasAnyLeft = true;
+
                     }
                     else if (Mathf.IsOne(c.AnchorMin.X) && Mathf.IsOne(c.AnchorMax.X))
                     {
                         right += w + _spacing;
                         c.Bounds = new Rectangle(Width - right + _offset.X, _margin.Top + _offset.Y, w, ch);
-                        hasAnyRight = true;
+
+
                     }
                     maxHeight = Mathf.Max(maxHeight, ch);
                 }
@@ -84,6 +97,7 @@ namespace FlaxEngine.GUI
             {
                 // Apply layout alignment
                 var offset = Width - left - _margin.Right;
+
                 if (_alignment == TextAlignment.Center)
                     offset *= 0.5f;
                 for (int i = 0; i < _children.Count; i++)
@@ -98,6 +112,54 @@ namespace FlaxEngine.GUI
                     }
                 }
             }
+
+           
+            PerformExpansion();
+
         }
+
+        /// <inheritdoc />
+        protected override void OnSizeChanged()
+        {
+            var prevBounds = Bounds.Width ;
+            base.OnSizeChanged();
+            direction = prevWidthss < Bounds.Width ? 1 : -1;
+            prevWidthss = prevBounds;
+            
+
+
+        }
+
+        private void PerformExpansion()
+        {
+
+            if (ChildForceExpandWidth && _children.Count > 0)
+            {
+                // Calculate the available width for children (taking margins into account)
+                float availableWidth = Width - _margin.Left - _margin.Right;
+                // Calculate the width each child should take up
+                float childWidth = availableWidth / _children.Count;
+
+                // Loop through each visible child and set their width
+                foreach (var child in _children)
+                {
+                    if (child.Visible)
+                    {
+                        // Set each child's width to be equal (no shrinking or growing logic needed)
+                        child.Width = childWidth;
+
+                        //// Ensure no child becomes smaller than its MinSize.X if set
+                        //if (child.MinSize.X > 0 && child.Width < child.MinSize.X)
+                        //{
+                        //    child.Width = child.MinSize.X;
+                        //}
+                    }
+                }
+
+            }
+
+        }
+
+      
     }
 }

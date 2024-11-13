@@ -160,6 +160,11 @@ namespace FlaxEngine.GUI
         [EditorOrder(35), DefaultValue(true), Tooltip("If checked, the panel can resize children controls (eg. auto-fit width/height).")]
         public bool ControlChildSize { get; set; } = true;
 
+        [EditorOrder(36), DefaultValue(false), Tooltip("If checked, the panel will force expand children width.")]
+        public bool ChildForceShrinkWidth { get; set; } = false;
+        [EditorOrder(37), DefaultValue(false), Tooltip("If checked, the panel will force expand children height.")]
+        public bool ChildForceExpandWidth { get; set; } = false;
+
         /// <summary>
         /// Gets or sets the panel area margin.
         /// </summary>
