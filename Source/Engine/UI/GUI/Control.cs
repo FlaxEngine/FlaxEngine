@@ -345,9 +345,6 @@ namespace FlaxEngine.GUI
             }
         }
 
-        
-        public Float2 MinSize;
-
         /// <summary>
         /// The custom tag object value linked to the control.
         /// </summary>

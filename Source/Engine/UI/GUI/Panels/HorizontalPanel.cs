@@ -1,7 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-using FlaxEngine.Utilities;
-
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -11,19 +9,11 @@ namespace FlaxEngine.GUI
     [ActorToolbox("GUI")]
     public class HorizontalPanel : PanelWithMargins
     {
-
-        
-        
-        private int direction;
-        private float prevWidthss;
-        private bool minSizeInitialized = false;
         /// <summary>
         /// Initializes a new instance of the <see cref="HorizontalPanel"/> class.
         /// </summary>
         public HorizontalPanel()
         {
-
-            
         }
 
         /// <inheritdoc />
@@ -44,6 +34,7 @@ namespace FlaxEngine.GUI
                 }
             }
         }
+
 
         /// <inheritdoc />
         protected override void PerformLayoutAfterChildren()
@@ -111,55 +102,65 @@ namespace FlaxEngine.GUI
                         }
                     }
                 }
+          
             }
 
-           
-            PerformExpansion();
+            if(!_autoSize)
+                PerformExpansion();
 
         }
 
         /// <inheritdoc />
-        protected override void OnSizeChanged()
-        {
-            var prevBounds = Bounds.Width ;
-            base.OnSizeChanged();
-            direction = prevWidthss < Bounds.Width ? 1 : -1;
-            prevWidthss = prevBounds;
-            
-
-
-        }
-
-        private void PerformExpansion()
+        protected override void PerformExpansion()
         {
 
-            if (ChildForceExpandWidth && _children.Count > 0)
+            if (ForceChildExpand && _children.Count > 0)
             {
                 // Calculate the available width for children (taking margins into account)
-                float availableWidth = Width - _margin.Left - _margin.Right;
+                float availableWidth = Width - _margin.Left - _margin.Right - (_children.Count - 1) * _spacing;
+
                 // Calculate the width each child should take up
                 float childWidth = availableWidth / _children.Count;
 
-                // Loop through each visible child and set their width
-                foreach (var child in _children)
+                // Adjust for the first and last child to prevent being cut off
+                float firstChildX = _margin.Left;
+                float lastChildX = Width - _margin.Right - childWidth;
+
+                // Loop through each child and set their width and position
+                float left = _margin.Left;
+                for (int i = 0; i < _children.Count; i++)
                 {
+                    Control child = _children[i];
                     if (child.Visible)
                     {
-                        // Set each child's width to be equal (no shrinking or growing logic needed)
-                        child.Width = childWidth;
+                        // Adjust the width and position of the first and last children
+                        if (i == 0)
+                        {
+                            // First child, position it at the start and set its width                           
+                            child.Width = childWidth;
+                            child.X = firstChildX;
+                        }
+                        else if (i == _children.Count - 1)
+                        {
+                            // Last child, position it near the right edge and set its width                           
+                            child.Width = childWidth;
+                            child.X = lastChildX;
+                        }
+                        else
+                        {
+                            // For all other children, distribute the width evenly                       
+                            child.Width = childWidth;
+                            child.X = left;
+                        }
 
-                        //// Ensure no child becomes smaller than its MinSize.X if set
-                        //if (child.MinSize.X > 0 && child.Width < child.MinSize.X)
-                        //{
-                        //    child.Width = child.MinSize.X;
-                        //}
+                        // Move the `left` pointer to the right for the next child
+                        left = child.Right + _spacing;
                     }
+                    child.PerformLayout(true);
                 }
-
             }
 
         }
 
-      
     }
 }
