@@ -42,6 +42,9 @@ namespace FlaxEditor.Content.Settings
         /// <returns>The layer names.</returns>
         public static string[] GetCurrentTerrainLayers()
         {
+    #if FLAX_TESTS
+            return Array.Empty<string>();
+    #else
             string[] layerNames = GameSettings.Load<LayersAndTagsSettings>().TerrainLayers;
 
             for (int i = 0; i < layerNames.Length; i++)
@@ -51,6 +54,7 @@ namespace FlaxEditor.Content.Settings
             }
 
             return layerNames;
+    #endif
         }
 
         [LibraryImport("FlaxEngine", EntryPoint = "LayersAndTagsSettingsInternal_GetCurrentLayers", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.Interop.StringMarshaller))]
