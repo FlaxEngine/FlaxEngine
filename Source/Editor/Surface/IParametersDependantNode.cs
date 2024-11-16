@@ -38,8 +38,7 @@ namespace FlaxEditor.Surface
         /// Get if the parameter is referenced in a graph. Referenced in this case means in a graph and at least one node in-/output connected to another node.
         /// </summary>
         /// <param name="param">The parameter.</param>
-        /// <param name="surface">The visject surface.</param>
         /// <returns>If the parameter is referenced.</returns>
-        bool IsParamreferenced(SurfaceParameter param, VisjectSurface surface);
+        bool IsParamreferenced(SurfaceParameter param);
     }
 }

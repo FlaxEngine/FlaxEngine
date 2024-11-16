@@ -788,7 +788,7 @@ namespace FlaxEditor.Surface
             {
                 if (nodes[i] is IParametersDependantNode node)
                 {
-                    if (displayWarning && node.IsParamreferenced(param, window.VisjectSurface))
+                    if (displayWarning && node.IsParamreferenced(param))
                         connectedParameterNodeCount++;
                 }
             }

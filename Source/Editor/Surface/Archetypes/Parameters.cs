@@ -427,13 +427,13 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public bool IsParamreferenced(SurfaceParameter param, VisjectSurface surface)
+            public bool IsParamreferenced(SurfaceParameter param)
             {
-                for (int i = 0; i < surface.Nodes.Count; i++)
+                for (int i = 0; i < Surface.Nodes.Count; i++)
                 {
-                    if (surface.Nodes[i] is IParametersDependantNode node)
+                    if (Surface.Nodes[i] is IParametersDependantNode node)
                     {
-                        return (Guid)surface.Nodes[i].Values[0] == param.ID && surface.Nodes[i].GetBoxes().Any(b => b.Connections.Count > 0);
+                        return (Guid)Values[0] == param.ID;
                     }
                 }
 
@@ -958,13 +958,13 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public bool IsParamreferenced(SurfaceParameter param, VisjectSurface surface)
+            public bool IsParamreferenced(SurfaceParameter param)
             {
-                for (int i = 0; i < surface.Nodes.Count; i++)
+                for (int i = 0; i < Surface.Nodes.Count; i++)
                 {
-                    if (surface.Nodes[i] is IParametersDependantNode node)
+                    if (Surface.Nodes[i] is IParametersDependantNode node)
                     {
-                        return (Guid)surface.Nodes[i].Values[0] == param.ID && surface.Nodes[i].GetBoxes().Any(b => b.Connections.Count > 0);
+                        return (Guid)Values[0] == param.ID;
                     }
                 }
 
