@@ -1,7 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using FlaxEngine;
@@ -35,7 +34,7 @@ namespace FlaxEditor.Content.Settings
         /// The layers names.
         /// </summary>
         [EditorOrder(10), EditorDisplay("Terrain Layers", EditorDisplayAttribute.InlineStyle), Collection(CanResize = false, Display = CollectionAttribute.DisplayType.Inline)]
-        public string[] TerrainLayers = Enumerable.Repeat(string.Empty, 8).ToArray();
+        public string[] TerrainLayers = new string[8];
 
         /// <summary>
         /// Gets the current terrain layer names. Returns "Layer" + index for layers without a name.
@@ -43,7 +42,7 @@ namespace FlaxEditor.Content.Settings
         /// <returns>The layer names.</returns>
         public static string[] GetCurrentTerrainLayers()
         {
-            string[] layerNames = GameSettings.Load<LayersAndTagsSettings>().TerrainLayers.ToArray();
+            string[] layerNames = GameSettings.Load<LayersAndTagsSettings>().TerrainLayers;
 
             for (int i = 0; i < layerNames.Length; i++)
             {
