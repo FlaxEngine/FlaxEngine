@@ -24,6 +24,18 @@ namespace FlaxEngine.GUI
             get => _watermarkText;
             set => _watermarkText = value;
         }
+
+        /// <summary>
+        /// Whether to Obfuscate the text with a different character.
+        /// </summary>
+        [EditorOrder(21), Tooltip("Whether to Obfuscate the text with a different character.")]
+        public bool ObfuscateText = false;
+
+        /// <summary>
+        /// The character to Obfuscate the text.
+        /// </summary>
+        [EditorOrder(22), VisibleIf(nameof(ObfuscateText)), Tooltip("The character to Obfuscate the text.")]
+        public char ObfuscateCharacter = '\u25cf';
         
         /// <summary>
         /// The text case.
@@ -159,6 +171,9 @@ namespace FlaxEngine.GUI
 
         private string ConvertedText()
         {
+            if (ObfuscateText)
+                return new string(ObfuscateCharacter, _text.Length);
+
             string text = _text;
             switch (CaseOption)
             {
