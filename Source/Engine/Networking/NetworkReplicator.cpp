@@ -570,6 +570,7 @@ void SendObjectRoleMessage(const NetworkReplicatedObject& item, const NetworkCli
 {
     NetworkMessageObjectRole msgData;
     msgData.ObjectId = item.ObjectId;
+    IdsRemappingTable.KeyOf(msgData.ObjectId, &msgData.ObjectId);
     msgData.OwnerClientId = item.OwnerClientId;
     auto peer = NetworkManager::Peer;
     NetworkMessage msg = peer->BeginSendMessage();
