@@ -538,6 +538,7 @@ namespace FlaxEditor.Modules
             cm.AddSeparator();
             cm.AddButton("Open project...", OpenProject);
             cm.AddButton("Reload project", ReloadProject);
+            cm.AddButton("Open project folder", () => FileSystem.ShowFileExplorer(Editor.Instance.GameProject.ProjectFolderPath));
             cm.AddSeparator();
             cm.AddButton("Exit", "Alt+F4", () => Editor.Windows.MainWindow.Close(ClosingReason.User));
 
