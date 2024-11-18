@@ -1264,6 +1264,7 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
 
     // Marshal parameters
     void** params = (void**)alloca(parametersCount * sizeof(void*));
+    void** outParams = nullptr;
     bool failed = false;
     bool hasOutParams = false;
     for (int32 paramIdx = 0; paramIdx < parametersCount; paramIdx++)
@@ -1279,6 +1280,14 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
         {
             LOG(Error, "Failed to marshal parameter {5}:{4} of method '{0}.{1}' (args count: {2}), value type: {6}, value: {3}", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount, paramValue, MCore::Type::ToString(paramType), paramIdx, paramValue.Type);
             return true;
+        }
+        if (isOut && MCore::Type::IsReference(paramType) && MCore::Type::GetType(paramType) == MTypes::Object)
+        {
+            // Object passed as out param so pass pointer to the value storage for proper marshalling
+            if (!outParams)
+                outParams = (void**)alloca(parametersCount * sizeof(void*));
+            outParams[paramIdx] = params[paramIdx];
+            params[paramIdx] = &outParams[paramIdx];
         }
     }
 
@@ -1342,6 +1351,13 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
                         MObject* boxed = MCore::Object::Box(param, valueType.ManagedClass);
                         valueType.Struct.Unbox(paramValue.AsBlob.Data, boxed);
                     }
+                    break;
+                }
+                default:
+                {
+                    MType* paramType = mMethod->GetParameterType(paramIdx);
+                    if (MCore::Type::IsReference(paramType) && MCore::Type::GetType(paramType) == MTypes::Object)
+                        paramValue = MUtils::UnboxVariant((MObject*)outParams[paramIdx]);
                     break;
                 }
                 }
