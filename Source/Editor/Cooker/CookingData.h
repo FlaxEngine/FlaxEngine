@@ -19,6 +19,8 @@ class PlatformTools;
 #define GAME_BUILD_DOTNET_VER TEXT("")
 #endif
 
+#define COOKER_MIN_DOTNET_RUNTIME_VERSION 8
+
 /// <summary>
 /// Game building options. Used as flags.
 /// </summary>
