@@ -878,7 +878,7 @@ MClass* MUtils::GetClass(const VariantType& value)
     case VariantType::Blob:
         return MCore::Array::GetClass(MCore::TypeCache::Byte);
     case VariantType::Float2:
-        return Double2::TypeInitializer.GetClass();
+        return Float2::TypeInitializer.GetClass();
     case VariantType::Float3:
         return Float3::TypeInitializer.GetClass();
     case VariantType::Float4:

@@ -846,12 +846,12 @@ namespace
 
 MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMethodSignature& signature)
 {
+#if USE_CSHARP
     if (!mclass)
         return nullptr;
     const auto& methods = mclass->GetMethods();
     for (MMethod* method : methods)
     {
-#if USE_CSHARP
         if (method->IsStatic() != signature.IsStatic)
             continue;
         if (method->GetName() != signature.Name)
@@ -872,8 +872,8 @@ MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMeth
         }
         if (isValid && VariantTypeEquals(signature.ReturnType, method->GetReturnType()))
             return method;
-#endif
     }
+#endif
     return nullptr;
 }
 
