@@ -78,8 +78,8 @@ void ObjectsRemovalService::Flush(float dt, float gameDelta)
     for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
     {
         auto& bucket = *i;
-        Object* obj = bucket.Key;
-        const float ttl = bucket.Value - ((obj->Flags & ObjectFlags::UseGameTimeForDelete) != ObjectFlags::None ? gameDelta : dt);
+        Object* obj = bucket.Key();
+        const float ttl = bucket.Value() - ((obj->Flags & ObjectFlags::UseGameTimeForDelete) != ObjectFlags::None ? gameDelta : dt);
         if (ttl <= 0.0f)
         {
             Pool.Remove(i);
@@ -87,7 +87,7 @@ void ObjectsRemovalService::Flush(float dt, float gameDelta)
         }
         else
         {
-            bucket.Value = ttl;
+            bucket.Value() = ttl;
         }
     }
 
@@ -98,9 +98,9 @@ void ObjectsRemovalService::Flush(float dt, float gameDelta)
         PoolCounter = 0;
         for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
         {
-            if (i->Value <= 0.0f)
+            if (i->Value() <= 0.0f)
             {
-                Object* obj = i->Key;
+                Object* obj = i->Key();
                 Pool.Remove(i);
                 obj->OnDeleteObject();
             }
@@ -143,7 +143,7 @@ void ObjectsRemoval::Dispose()
         PoolLocker.Lock();
         for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)
         {
-            Object* obj = i->Key;
+            Object* obj = i->Key();
             Pool.Remove(i);
             obj->OnDeleteObject();
         }

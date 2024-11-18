@@ -220,7 +220,7 @@ void GPUPipelineStateVulkan::OnReleaseGPU()
     DynamicOffsets.Resize(0);
     for (auto i = _pipelines.Begin(); i.IsNotEnd(); ++i)
     {
-        _device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::Pipeline, i->Value);
+        _device->DeferredDeletionQueue.EnqueueResource(DeferredDeletionQueueVulkan::Type::Pipeline, i->Value());
     }
     _layout = nullptr;
     _pipelines.Clear();

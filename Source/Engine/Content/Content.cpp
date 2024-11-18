@@ -131,7 +131,7 @@ void ContentService::LateUpdate()
     // Verify all assets
     for (auto i = Assets.Begin(); i.IsNotEnd(); ++i)
     {
-        Asset* asset = i->Value;
+        Asset* asset = i->Value();
 
         // Check if has no references and is not during unloading
         if (asset->GetReferencesCount() <= 0 && !UnloadQueue.ContainsKey(asset))
@@ -146,9 +146,9 @@ void ContentService::LateUpdate()
     for (auto i = UnloadQueue.Begin(); i != UnloadQueue.End(); ++i)
     {
         // Check if asset gain any new reference or if need to unload it
-        if (i->Key->GetReferencesCount() > 0 || timeNow - i->Value >= Content::AssetsUnloadInterval)
+        if (i->Key()->GetReferencesCount() > 0 || timeNow - i->Value() >= Content::AssetsUnloadInterval)
         {
-            ToUnload.Add(i->Key);
+            ToUnload.Add(i->Key());
         }
     }
 
@@ -189,7 +189,7 @@ void ContentService::Dispose()
 
         for (auto i = Assets.Begin(); i.IsNotEnd(); ++i)
         {
-            i->Value->DeleteObject();
+            i->Value()->DeleteObject();
         }
     }
 
@@ -392,11 +392,11 @@ ContentStats Content::GetStats()
     int32 loadFailedCount = 0;
     for (const auto& e : Assets)
     {
-        if (e.Value->IsLoaded())
+        if (e.Value()->IsLoaded())
             stats.LoadedAssetsCount++;
-        else if (e.Value->LastLoadFailed())
+        else if (e.Value()->LastLoadFailed())
             loadFailedCount++;
-        if (e.Value->IsVirtual())
+        if (e.Value()->IsVirtual())
             stats.VirtualAssetsCount++;
     }
     stats.LoadingAssetsCount = stats.AssetsCount - loadFailedCount - stats.LoadedAssetsCount;
@@ -514,9 +514,9 @@ Asset* Content::GetAsset(const StringView& outputPath)
     ScopeLock lock(AssetsLocker);
     for (auto i = Assets.Begin(); i.IsNotEnd(); ++i)
     {
-        if (i->Value->GetPath() == outputPath)
+        if (i->Value()->GetPath() == outputPath)
         {
-            return i->Value;
+            return i->Value();
         }
     }
     return nullptr;

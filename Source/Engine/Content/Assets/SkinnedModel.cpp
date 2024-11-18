@@ -244,8 +244,8 @@ SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source)
                 // Use nodes retargeting
                 for (const auto& e : retarget->NodesMapping)
                 {
-                    const int32 dstIndex = Skeleton.FindNode(e.Key);
-                    const int32 srcIndex = sourceModel->Skeleton.FindNode(e.Value);
+                    const int32 dstIndex = Skeleton.FindNode(e.Key());
+                    const int32 srcIndex = sourceModel->Skeleton.FindNode(e.Value());
                     if (dstIndex != -1 && srcIndex != -1)
                     {
                         mappingData.NodesMapping[dstIndex] = srcIndex;
@@ -875,11 +875,11 @@ void SkinnedModel::ClearSkeletonMapping()
 {
     for (auto& e : _skeletonMappingCache)
     {
-        e.Key->OnUnloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+        e.Key()->OnUnloaded.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #if USE_EDITOR
-        e.Key->OnReloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
+        e.Key()->OnReloading.Unbind<SkinnedModel, &SkinnedModel::OnSkeletonMappingSourceAssetUnloaded>(this);
 #endif
-        Allocator::Free(e.Value.NodesMapping.Get());
+        Allocator::Free(e.Value().NodesMapping.Get());
     }
     _skeletonMappingCache.Clear();
 }
@@ -897,7 +897,7 @@ void SkinnedModel::OnSkeletonMappingSourceAssetUnloaded(Asset* obj)
 #endif
 
     // Clear cache
-    Allocator::Free(i->Value.NodesMapping.Get());
+    Allocator::Free(i->Value().NodesMapping.Get());
     _skeletonMappingCache.Remove(i);
 }
 
@@ -909,7 +909,7 @@ uint64 SkinnedModel::GetMemoryUsage() const
     result += Skeleton.GetMemoryUsage();
     result += _skeletonMappingCache.Capacity() * sizeof(Dictionary<Asset*, Span<int32>>::Bucket);
     for (const auto& e : _skeletonMappingCache)
-        result += e.Value.NodesMapping.Length();
+        result += e.Value().NodesMapping.Length();
     Locker.Unlock();
     return result;
 }

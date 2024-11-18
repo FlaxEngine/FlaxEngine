@@ -221,8 +221,8 @@ public:
         WriteInt32(count);
         for (const auto& e : data)
         {
-            Write(e.Key);
-            Write(e.Value);
+            Write(e.Key());
+            Write(e.Value());
         }
     }
 

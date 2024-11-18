@@ -627,7 +627,7 @@ void GPUDeviceDX11::Dispose()
     //
     for (auto i = BlendStates.Begin(); i.IsNotEnd(); ++i)
     {
-        i->Value->Release();
+        i->Value()->Release();
     }
     BlendStates.Clear();
     for (uint32 i = 0; i < ARRAY_COUNT(RasterizerStates); i++)

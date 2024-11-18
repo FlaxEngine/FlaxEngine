@@ -255,12 +255,12 @@ namespace
         BinaryModule* flaxModule = GetBinaryModuleFlaxEngine();
         for (auto i = SerializersTable.Begin(); i.IsNotEnd(); ++i)
         {
-            if (i->Key.Module != flaxModule)
+            if (i->Key().Module != flaxModule)
                 SerializersTable.Remove(i);
         }
         for (auto i = NetworkRpcInfo::RPCsTable.Begin(); i.IsNotEnd(); ++i)
         {
-            if (i->Key.First.Module != flaxModule)
+            if (i->Key().First.Module != flaxModule)
                 NetworkRpcInfo::RPCsTable.Remove(i);
         }
     }

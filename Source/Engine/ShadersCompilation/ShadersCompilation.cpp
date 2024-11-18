@@ -318,7 +318,7 @@ namespace
             auto file = ShaderIncludesMap.Find(path);
             if (file == ShaderIncludesMap.End())
                 return;
-            toReload = file->Value;
+            toReload = file->Value();
         }
 
         // Add any shaders that failed to load (eg. due to error in included header)
@@ -374,7 +374,7 @@ void ShadersCompilation::UnregisterForShaderReloads(Asset* asset)
     // Remove asset reference
     for (auto& file : ShaderIncludesMap)
     {
-        file.Value.Remove(asset);
+        file.Value().Remove(asset);
     }
 }
 

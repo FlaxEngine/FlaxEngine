@@ -172,7 +172,7 @@ void NetworkReplicationNode::Update(NetworkReplicationHierarchyUpdateResult* res
 NetworkReplicationGridNode::~NetworkReplicationGridNode()
 {
     for (const auto& e : _children)
-        Delete(e.Value.Node);
+        Delete(e.Value().Node);
 }
 
 void NetworkReplicationGridNode::AddObject(NetworkReplicationHierarchyObject obj)
@@ -255,17 +255,17 @@ void NetworkReplicationGridNode::Update(NetworkReplicationHierarchyUpdateResult*
         const Real cellRadiusSq = Math::Square(CellSize * 1.414f);
         for (const auto& e : _children)
         {
-            const Vector3 cellPosition = (e.Key * CellSize) + (CellSize * 0.5f);
+            const Vector3 cellPosition = (e.Key() * CellSize) + (CellSize * 0.5f);
             Real distanceSq = MAX_Real;
             for (auto& client : result->_clients)
             {
                 if (client.HasLocation)
                     distanceSq = Math::Min(distanceSq, Vector3::DistanceSquared(cellPosition, client.Location));
             }
-            const Real minCullDistanceSq = Math::Square(e.Value.MinCullDistance);
+            const Real minCullDistanceSq = Math::Square(e.Value().MinCullDistance);
             if (distanceSq < minCullDistanceSq + cellRadiusSq)
             {
-                e.Value.Node->Update(result);
+                e.Value().Node->Update(result);
             }
         }
     }
@@ -274,7 +274,7 @@ void NetworkReplicationGridNode::Update(NetworkReplicationHierarchyUpdateResult*
         // Brute-force over all cells
         for (const auto& e : _children)
         {
-            e.Value.Node->Update(result);
+            e.Value().Node->Update(result);
         }
     }
 }

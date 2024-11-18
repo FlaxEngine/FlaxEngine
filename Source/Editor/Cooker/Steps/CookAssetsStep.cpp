@@ -120,7 +120,7 @@ void CookAssetsStep::CacheData::InvalidateCachePerType(const StringView& typeNam
     LOG(Info, "Invalidating cooker cache for {0} assets.", typeName);
     for (auto e = Entries.Begin(); e.IsNotEnd(); ++e)
     {
-        if (e->Value.TypeName == typeName)
+        if (e->Value().TypeName == typeName)
         {
             Entries.Remove(e);
         }
@@ -309,7 +309,7 @@ void CookAssetsStep::CacheData::Save(CookingData& data)
     file->WriteBytes(&Settings, sizeof(Settings));
     for (auto i = Entries.Begin(); i.IsNotEnd(); ++i)
     {
-        auto& e = i->Value;
+        auto& e = i->Value();
         file->Write(e.ID);
         file->WriteString(e.TypeName);
         file->Write(e.FileModified);
@@ -1263,7 +1263,7 @@ bool CookAssetsStep::Perform(CookingData& data)
         {
             BUILD_STEP_CANCEL_CHECK;
             data.StepProgress(Step3Info, Math::Lerp(Step3ProgressStart, Step3ProgressEnd, (float)subStepIndex++ / AssetsRegistry.Count()));
-            const auto assetId = i->Key;
+            const auto assetId = i->Key();
 
             String cookedFilePath;
             cache.GetFilePath(assetId, cookedFilePath);
@@ -1273,17 +1273,17 @@ bool CookAssetsStep::Perform(CookingData& data)
                 continue;
             }
 
-            auto& assetStats = data.Stats.AssetStats[i->Value.Info.TypeName];
+            auto& assetStats = data.Stats.AssetStats[i->Value().Info.TypeName];
             assetStats.Count++;
             assetStats.ContentSize += FileSystem::GetFileSize(cookedFilePath);
 
-            if (packageBuilder.Add(data, i->Value, cookedFilePath))
+            if (packageBuilder.Add(data, i->Value(), cookedFilePath))
                 return true;
         }
         if (packageBuilder.Package(data))
             return true;
         for (auto& e : data.Stats.AssetStats)
-            e.Value.TypeName = e.Key;
+            e.Value().TypeName = e.Key();
         data.Stats.ContentSize += packageBuilder.GetPackagesSizeTotal();
     }
 

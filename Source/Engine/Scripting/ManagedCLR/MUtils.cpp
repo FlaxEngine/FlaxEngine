@@ -775,7 +775,7 @@ MObject* MUtils::BoxVariant(const Variant& value)
         const auto& dictionary = *value.AsDictionary;
         for (const auto& e : dictionary)
         {
-            managed.Add(BoxVariant(e.Key), BoxVariant(e.Value));
+            managed.Add(BoxVariant(e.Key()), BoxVariant(e.Value()));
         }
 
         return managed.Instance;

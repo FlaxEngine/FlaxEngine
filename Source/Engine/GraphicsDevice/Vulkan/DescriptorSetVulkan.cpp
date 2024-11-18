@@ -272,7 +272,7 @@ void DescriptorPoolSetContainerVulkan::Reset()
 {
     for (auto i = _typedDescriptorPools.Begin(); i.IsNotEnd(); ++i)
     {
-        TypedDescriptorPoolSetVulkan* typedPool = i->Value;
+        TypedDescriptorPoolSetVulkan* typedPool = i->Value();
         typedPool->Reset();
     }
 }

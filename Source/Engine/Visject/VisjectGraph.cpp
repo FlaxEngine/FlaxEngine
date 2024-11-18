@@ -951,7 +951,7 @@ void VisjectExecutor::ProcessGroupTools(Box* box, Node* node, Value& value)
         {
             const StringView& name = (StringView)node->Values[1];
             const auto e = asset->Variables.Find(name);
-            value = e != asset->Variables.End() ? e->Value.Value : Value::Zero;
+            value = e != asset->Variables.End() ? e->Value().Value : Value::Zero;
         }
         else
         {

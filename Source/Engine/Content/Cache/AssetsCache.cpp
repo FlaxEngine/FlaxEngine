@@ -193,7 +193,7 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
     int32 index = 0;
     for (auto i = entries.Begin(); i.IsNotEnd(); ++i)
     {
-        auto& e = i->Value;
+        auto& e = i->Value();
         stream->Write(e.Info.ID);
         stream->WriteString(e.Info.TypeName, index - 13);
         stream->WriteString(e.Info.Path, index);
@@ -210,8 +210,8 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
     stream->WriteInt32(pathsMapping.Count());
     for (auto i = pathsMapping.Begin(); i.IsNotEnd(); ++i)
     {
-        stream->Write(i->Value);
-        stream->WriteString(i->Key, index + 73);
+        stream->Write(i->Value());
+        stream->WriteString(i->Key(), index + 73);
         index++;
     }
 
@@ -231,8 +231,8 @@ const String& AssetsCache::GetEditorAssetPath(const Guid& id) const
 #else
     for (auto& e : _pathsMapping)
     {
-        if (e.Value == id)
-            return e.Key;
+        if (e.Value() == id)
+            return e.Key();
     }
     return String::Empty;
 #endif
@@ -267,7 +267,7 @@ bool AssetsCache::FindAsset(const StringView& path, AssetInfo& info)
     // Find asset in registry
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
-        auto& e = i->Value;
+        auto& e = i->Value();
         if (e.Info.Path == path)
         {
             if (!IsEntryValid(e))
@@ -325,8 +325,8 @@ void AssetsCache::GetAllByTypeName(const StringView& typeName, Array<Guid>& resu
     ScopeLock lock(_locker);
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
-        if (i->Value.Info.TypeName == typeName)
-            result.Add(i->Key);
+        if (i->Value().Info.TypeName == typeName)
+            result.Add(i->Key());
     }
 }
 
@@ -347,7 +347,7 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
     // Remove all old entries from that location
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
-        if (i->Value.Info.Path == storagePath)
+        if (i->Value().Info.Path == storagePath)
             _registry.Remove(i);
     }
 
@@ -374,7 +374,7 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
                 // Remove from registry so we can add it again later with the original ID, so we don't loose relations
                 for (auto j = _registry.Begin(); j.IsNotEnd(); ++j)
                 {
-                    if (StringUtils::CompareIgnoreCase(j->Value.Info.Path.GetText(), storagePath.GetText()) == 0)
+                    if (StringUtils::CompareIgnoreCase(j->Value().Info.Path.GetText(), storagePath.GetText()) == 0)
                         _registry.Remove(j);
                 }
             }
@@ -445,7 +445,7 @@ void AssetsCache::RegisterAsset(const Guid& id, const String& typeName, const St
     bool isMissing = true;
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
-        auto& e = i->Value;
+        auto& e = i->Value();
 
         if (e.Info.ID == id)
         {
@@ -495,10 +495,10 @@ bool AssetsCache::DeleteAsset(const StringView& path, AssetInfo* info)
 
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
-        if (i->Value.Info.Path == path)
+        if (i->Value().Info.Path == path)
         {
             if (info)
-                *info = i->Value.Info;
+                *info = i->Value().Info;
             _registry.Remove(i);
             _isDirty = true;
             result = true;
@@ -536,9 +536,9 @@ bool AssetsCache::RenameAsset(const StringView& oldPath, const StringView& newPa
 
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
-        if (i->Value.Info.Path == oldPath)
+        if (i->Value().Info.Path == oldPath)
         {
-            i->Value.Info.Path = newPath;
+            i->Value().Info.Path = newPath;
             _isDirty = true;
             result = true;
             break;

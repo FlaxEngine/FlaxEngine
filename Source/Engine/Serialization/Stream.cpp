@@ -893,8 +893,8 @@ void WriteStream::Write(const Variant& data)
         WriteInt32(data.AsDictionary->Count());
         for (auto i = data.AsDictionary->Begin(); i.IsNotEnd(); ++i)
         {
-            WriteVariant(i->Key);
-            WriteVariant(i->Value);
+            WriteVariant(i->Key());
+            WriteVariant(i->Value());
         }
         break;
     case VariantType::Typename:

@@ -467,24 +467,24 @@ void GlobalSignDistanceFieldCustomBuffer::UpdateCascadeChunks(CascadeData& casca
     for (auto it = cascade.Chunks.Begin(); it.IsNotEnd(); ++it)
     {
         auto& e = *it;
-        if (e.Key.Layer != 0)
+        if (e.Key().Layer != 0)
             continue;
-        if (e.Value.Dynamic)
+        if (e.Value().Dynamic)
         {
             // Remove static chunk if it contains any dynamic object
-            cascade.StaticChunks.Remove(e.Key);
+            cascade.StaticChunks.Remove(e.Key());
         }
-        else if (cascade.StaticChunks.Contains(e.Key))
+        else if (cascade.StaticChunks.Contains(e.Key()))
         {
             // Remove chunk from update since it's static
-            auto key = e.Key;
+            auto key = e.Key();
             while (cascade.Chunks.Remove(key))
                 key.NextLayer();
         }
         else
         {
             // Add to static cache (render now but skip next frame)
-            cascade.StaticChunks.Add(e.Key);
+            cascade.StaticChunks.Add(e.Key());
         }
     }
 }
@@ -500,7 +500,7 @@ void GlobalSignDistanceFieldCustomBuffer::WriteCascadeObjects(CascadeData& casca
     cascade.ObjectIndexToDataIndex.Clear();
     for (const auto& e : cascade.Chunks)
     {
-        auto& chunk = e.Value;
+        auto& chunk = e.Value();
         for (int32 i = 0; i < chunk.ModelsCount; i++)
         {
             auto objectIndex = chunk.Models[i];
@@ -871,10 +871,10 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             // Rasterize non-empty chunks (first layer so can override existing chunk data)
             for (const auto& e : cascade.Chunks)
             {
-                if (e.Key.Layer != 0)
+                if (e.Key().Layer != 0)
                     continue;
-                auto& chunk = e.Value;
-                cascade.NonEmptyChunks.Add(e.Key);
+                auto& chunk = e.Value();
+                cascade.NonEmptyChunks.Add(e.Key());
 
                 for (int32 i = 0; i < chunk.ModelsCount; i++)
                 {
@@ -884,7 +884,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 }
                 for (int32 i = chunk.ModelsCount; i < GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT; i++)
                     context->UnBindSR(i + 1);
-                data.ChunkCoord = e.Key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+                data.ChunkCoord = e.Key().Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
                 data.ObjectsCount = chunk.ModelsCount;
                 context->UpdateCB(_cb1, &data);
                 auto cs = data.ObjectsCount != 0 ? _csRasterizeModel0 : _csClearChunk; // Terrain-only chunk can be quickly cleared
@@ -932,10 +932,10 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             // Rasterize non-empty chunks (additive layers so need combine with existing chunk data)
             for (const auto& e : cascade.Chunks)
             {
-                if (e.Key.Layer == 0)
+                if (e.Key().Layer == 0)
                     continue;
-                auto& chunk = e.Value;
-                data.ChunkCoord = e.Key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+                auto& chunk = e.Value();
+                data.ChunkCoord = e.Key().Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
 
                 if (chunk.ModelsCount != 0)
                 {

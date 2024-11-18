@@ -136,7 +136,7 @@ uint32 ContentStorageManager::GetMemoryUsage()
     uint32 result = 0;
     for (auto i = StorageMap.Begin(); i.IsNotEnd(); ++i)
     {
-        result += i->Value->GetMemoryUsage();
+        result += i->Value()->GetMemoryUsage();
     }
     return result;
 }
@@ -146,7 +146,7 @@ bool ContentStorageManager::HasAsset(const Guid& id)
     ScopeLock lock(Locker);
     for (auto i = StorageMap.Begin(); i.IsNotEnd(); ++i)
     {
-        if (i->Value->HasAsset(id))
+        if (i->Value()->HasAsset(id))
             return true;
     }
     return false;
@@ -177,7 +177,7 @@ void ContentStorageManager::OnRenamed(const StringView& oldPath, const StringVie
     if (i != StorageMap.End())
     {
         ASSERT(!StorageMap.ContainsKey(newPath));
-        const auto value = i->Value;
+        const auto value = i->Value();
         StorageMap.Remove(i);
         StorageMap.Add(newPath, value);
     }
@@ -240,7 +240,7 @@ void ContentStorageService::Dispose()
 {
     ScopeLock lock(Locker);
     for (auto i = StorageMap.Begin(); i.IsNotEnd(); ++i)
-        i->Value->Dispose();
+        i->Value()->Dispose();
     Files.ClearDelete();
     Packages.ClearDelete();
     StorageMap.Clear();
@@ -256,7 +256,7 @@ void ContentStorageSystem::Job(int32 index)
     ScopeLock lock(Locker);
     for (auto i = StorageMap.Begin(); i.IsNotEnd(); ++i)
     {
-        auto storage = i->Value;
+        auto storage = i->Value();
         if (storage->ShouldDispose())
         {
             // Remove from collections

@@ -2947,7 +2947,7 @@ int32 LinuxPlatform::CreateProcess(CreateProcessSettings& settings)
 		// and quote the values there is hardly any benefit over using setenv() calls
         for (auto& e : settings.Environment)
         {
-            setenv(StringAnsi(e.Key).GetText(), StringAnsi(e.Value).GetText(), 1);
+            setenv(StringAnsi(e.Key()).GetText(), StringAnsi(e.Value()).GetText(), 1);
         }
 
         if (settings.WorkingDirectory.HasChars() && chdir(StringAnsi(settings.WorkingDirectory).GetText()) != 0)

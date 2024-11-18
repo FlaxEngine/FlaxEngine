@@ -629,7 +629,7 @@ void MaterialGenerator::clearCache()
         _layers[i]->ClearCache();
     for (auto& e : _functions)
     {
-        for (auto& node : e.Value->Nodes)
+        for (auto& node : e.Value()->Nodes)
         {
             for (int32 j = 0; j < node.Boxes.Count(); j++)
                 node.Boxes[j].Cache.Clear();

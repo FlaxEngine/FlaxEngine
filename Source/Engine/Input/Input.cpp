@@ -987,14 +987,14 @@ void InputService::Update()
     // Remove not used entries
     for (auto i = Actions.Begin(); i.IsNotEnd(); ++i)
     {
-        if (i->Value.FrameIndex != frame)
+        if (i->Value().FrameIndex != frame)
         {
             Actions.Remove(i);
         }
     }
     for (auto i = Axes.Begin(); i.IsNotEnd(); ++i)
     {
-        if (i->Value.FrameIndex != frame)
+        if (i->Value().FrameIndex != frame)
         {
             Axes.Remove(i);
         }
@@ -1012,17 +1012,17 @@ void InputService::Update()
     {
         for (auto i = Axes.Begin(); i.IsNotEnd(); ++i)
         {
-            if (Math::NotNearEqual(i->Value.Value, i->Value.PrevValue))
+            if (Math::NotNearEqual(i->Value().Value, i->Value().PrevValue))
             {
-                Input::AxisValueChanged(i->Key);
+                Input::AxisValueChanged(i->Key());
             }
         }
         
         for (auto i = Actions.Begin(); i.IsNotEnd(); ++i)
         {
-            if (i->Value.State != InputActionState::Waiting)
+            if (i->Value().State != InputActionState::Waiting)
             {
-                Input::ActionTriggered(i->Key, i->Value.State);
+                Input::ActionTriggered(i->Key(), i->Value().State);
             }
         }
     }

@@ -191,7 +191,7 @@ void VisualScriptExecutor::ProcessGroupParameters(Box* box, Node* node, Value& v
         const auto instanceParams = stack.Stack->Script->_instances.Find(stack.Stack->Instance->GetID());
         if (param && instanceParams)
         {
-            value = instanceParams->Value.Params[paramIndex];
+            value = instanceParams->Value().Params[paramIndex];
         }
         else
         {
@@ -216,7 +216,7 @@ void VisualScriptExecutor::ProcessGroupParameters(Box* box, Node* node, Value& v
         const auto instanceParams = stack.Stack->Script->_instances.Find(stack.Stack->Instance->GetID());
         if (param && instanceParams)
         {
-            instanceParams->Value.Params[paramIndex] = tryGetValue(node->GetBox(1), 1, Value::Zero);
+            instanceParams->Value().Params[paramIndex] = tryGetValue(node->GetBox(1), 1, Value::Zero);
         }
         else
         {
@@ -1277,12 +1277,12 @@ void VisualScriptExecutor::ProcessGroupFlow(Box* boxBase, Node* node, Value& val
         // Key
         case 1:
             if (iteratorIndex != scope->ReturnedValues.Count() && dictionaryIndex != scope->ReturnedValues.Count())
-                value = Dictionary<Variant, Variant>::Iterator(scope->ReturnedValues[dictionaryIndex].Value.AsDictionary, scope->ReturnedValues[iteratorIndex].Value.AsInt)->Key;
+                value = Dictionary<Variant, Variant>::Iterator(scope->ReturnedValues[dictionaryIndex].Value.AsDictionary, scope->ReturnedValues[iteratorIndex].Value.AsInt)->Key();
             break;
         // Value
         case 2:
             if (iteratorIndex != scope->ReturnedValues.Count() && dictionaryIndex != scope->ReturnedValues.Count())
-                value = Dictionary<Variant, Variant>::Iterator(scope->ReturnedValues[dictionaryIndex].Value.AsDictionary, scope->ReturnedValues[iteratorIndex].Value.AsInt)->Value;
+                value = Dictionary<Variant, Variant>::Iterator(scope->ReturnedValues[dictionaryIndex].Value.AsDictionary, scope->ReturnedValues[iteratorIndex].Value.AsInt)->Value();
             break;
         // Break
         case 5:
@@ -1446,7 +1446,7 @@ Asset::LoadResult VisualScript::load()
         // Reinitialize existing Visual Script instances in the Editor
         for (auto& e : _instances)
         {
-            ScriptingObject* object = Scripting::TryFindObject<ScriptingObject>(e.Key);
+            ScriptingObject* object = Scripting::TryFindObject<ScriptingObject>(e.Key());
             if (!object)
                 continue;
 
@@ -1465,7 +1465,7 @@ Asset::LoadResult VisualScript::load()
             // Update instanced data from previous format to the current graph parameters scheme
             for (auto& e : _instances)
             {
-                auto& instanceParams = e.Value.Params;
+                auto& instanceParams = e.Value().Params;
                 Array<Variant> valuesCache(MoveTemp(instanceParams));
                 instanceParams.Resize(count);
                 for (int32 i = 0; i < count; i++)
@@ -1481,7 +1481,7 @@ Asset::LoadResult VisualScript::load()
             // Reset instances values to defaults
             for (auto& e : _instances)
             {
-                auto& instanceParams = e.Value.Params;
+                auto& instanceParams = e.Value().Params;
                 instanceParams.Resize(count);
                 for (int32 i = 0; i < count; i++)
                     instanceParams[i] = Graph.Parameters[i].Value;
@@ -1789,12 +1789,12 @@ void VisualScriptingBinaryModule::OnEvent(ScriptingObject* object, Span<Variant>
         bool called = false;
         for (auto& asset : Content::GetAssetsRaw())
         {
-            if (const auto visualScript = ScriptingObject::Cast<VisualScript>(asset.Value))
+            if (const auto visualScript = ScriptingObject::Cast<VisualScript>(asset.Value()))
             {
                 visualScript->Locker.Lock();
                 for (auto& e : visualScript->_instances)
                 {
-                    auto instance = &e.Value;
+                    auto instance = &e.Value();
                     for (auto& b : instance->EventBindings)
                     {
                         if (b.Type != eventType || b.Name != eventName)
@@ -1911,7 +1911,7 @@ bool VisualScriptingBinaryModule::GetFieldValue(void* field, const Variant& inst
         LOG(Error, "Missing parameters for the object instance.");
         return true;
     }
-    result = instanceParams->Value.Params[vsFiled->Index];
+    result = instanceParams->Value().Params[vsFiled->Index];
     return false;
 }
 
@@ -1931,7 +1931,7 @@ bool VisualScriptingBinaryModule::SetFieldValue(void* field, const Variant& inst
         LOG(Error, "Missing parameters for the object instance.");
         return true;
     }
-    instanceParams->Value.Params[vsFiled->Index] = value;
+    instanceParams->Value().Params[vsFiled->Index] = value;
     return false;
 }
 
@@ -1948,7 +1948,7 @@ void VisualScriptingBinaryModule::SerializeObject(JsonWriter& stream, ScriptingO
         const auto instanceParams = asset->_instances.Find(object->GetID());
         if (instanceParams)
         {
-            auto& params = instanceParams->Value.Params;
+            auto& params = instanceParams->Value().Params;
             if (otherObj)
             {
                 // Serialize parameters diff
@@ -1959,7 +1959,7 @@ void VisualScriptingBinaryModule::SerializeObject(JsonWriter& stream, ScriptingO
                     {
                         auto& param = asset->Graph.Parameters[paramIndex];
                         auto& value = params[paramIndex];
-                        auto& otherValue = otherParams->Value.Params[paramIndex];
+                        auto& otherValue = otherParams->Value().Params[paramIndex];
                         if (value != otherValue)
                         {
                             param.Identifier.ToString(idName, Guid::FormatType::N);
@@ -2014,7 +2014,7 @@ void VisualScriptingBinaryModule::DeserializeObject(ISerializable::DeserializeSt
         if (instanceParams)
         {
             // Deserialize all parameters
-            auto& params = instanceParams->Value.Params;
+            auto& params = instanceParams->Value().Params;
             for (auto i = stream.MemberBegin(); i != stream.MemberEnd(); ++i)
             {
                 StringAnsiView idNameAnsi(i->name.GetStringAnsiView());
@@ -2044,7 +2044,7 @@ void VisualScriptingBinaryModule::OnObjectIdChanged(ScriptingObject* object, con
         auto oldParams = asset->_instances.Find(oldId);
         if (oldParams)
         {
-            instanceParams = MoveTemp(oldParams->Value);
+            instanceParams = MoveTemp(oldParams->Value());
             asset->_instances.Remove(oldParams);
         }
     }
@@ -2115,7 +2115,7 @@ const Variant& VisualScript::GetScriptInstanceParameterValue(const StringView& n
         {
             const auto instanceParams = _instances.Find(instance->GetID());
             if (instanceParams)
-                return instanceParams->Value.Params[paramIndex];
+                return instanceParams->Value().Params[paramIndex];
             LOG(Error, "Failed to access Visual Script parameter {1} for {0}.", instance->ToString(), name);
             return Graph.Parameters[paramIndex].Value;
         }
@@ -2135,7 +2135,7 @@ void VisualScript::SetScriptInstanceParameterValue(const StringView& name, Scrip
             const auto instanceParams = _instances.Find(instance->GetID());
             if (instanceParams)
             {
-                instanceParams->Value.Params[paramIndex] = value;
+                instanceParams->Value().Params[paramIndex] = value;
                 return;
             }
             LOG(Error, "Failed to access Visual Script parameter {1} for {0}.", instance->ToString(), name);
@@ -2156,7 +2156,7 @@ void VisualScript::SetScriptInstanceParameterValue(const StringView& name, Scrip
             const auto instanceParams = _instances.Find(instance->GetID());
             if (instanceParams)
             {
-                instanceParams->Value.Params[paramIndex] = MoveTemp(value);
+                instanceParams->Value().Params[paramIndex] = MoveTemp(value);
                 return;
             }
         }

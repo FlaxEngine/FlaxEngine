@@ -177,13 +177,13 @@ bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
     // Setup result mesh data
     for (auto iPerBrush = polygonsPerBrush.Begin(); iPerBrush != polygonsPerBrush.End(); ++iPerBrush)
     {
-        auto& brushMeta = _brushesMeta[iPerBrush->Key];
+        auto& brushMeta = _brushesMeta[iPerBrush->Key()];
 
-        for (auto iPerSurface = iPerBrush->Value.Begin(); iPerSurface != iPerBrush->Value.End(); ++iPerSurface)
+        for (auto iPerSurface = iPerBrush->Value().Begin(); iPerSurface != iPerBrush->Value().End(); ++iPerSurface)
         {
-            int32 surfaceIndex = iPerSurface->Key;
+            int32 surfaceIndex = iPerSurface->Key();
             int32 brushSurfaceIndex = surfaceIndex - brushMeta.StartSurfaceIndex;
-            int32 triangleCount = iPerSurface->Value.Count();
+            int32 triangleCount = iPerSurface->Value().Count();
             int32 vertexCount = triangleCount * 3;
             Float2 lightmapUVsMin = Float2::Maximum;
             Float2 lightmapUVsMax = Float2::Minimum;
@@ -210,7 +210,7 @@ bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
                 Array<Vector2> pointsCache(vertexCount);
                 for (int32 triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++)
                 {
-                    int32 triangleStartVertex = iPerSurface->Value[triangleIndex];
+                    int32 triangleStartVertex = iPerSurface->Value()[triangleIndex];
                     for (int32 k = 0; k < 3; k++)
                     {
                         auto& vertex = cacheVB[triangleStartVertex + k];
@@ -229,7 +229,7 @@ bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
                 Real projectedSize = (max - min).MaxValue();
                 for (int32 triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++)
                 {
-                    int32 triangleStartVertex = iPerSurface->Value[triangleIndex];
+                    int32 triangleStartVertex = iPerSurface->Value()[triangleIndex];
                     for (int32 k = 0; k < 3; k++)
                     {
                         auto& vertex = cacheVB[triangleStartVertex + k];
@@ -246,7 +246,7 @@ bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
             surfaceCacheVB.Clear();
             for (int32 triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++)
             {
-                int32 triangleStartVertex = iPerSurface->Value[triangleIndex];
+                int32 triangleStartVertex = iPerSurface->Value()[triangleIndex];
                 surfaceCacheVB.Add(cacheVB[triangleStartVertex + 0]);
                 surfaceCacheVB.Add(cacheVB[triangleStartVertex + 1]);
                 surfaceCacheVB.Add(cacheVB[triangleStartVertex + 2]);

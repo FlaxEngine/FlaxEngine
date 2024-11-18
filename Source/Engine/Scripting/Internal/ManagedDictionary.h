@@ -114,8 +114,8 @@ public:
         MClass* valueClass = MCore::Type::GetClass(valueType);
         for (auto i = data.Begin(); i.IsNotEnd(); ++i)
         {
-            MObject* keyManaged = keysConverter.Box(i->Key, keyClass);
-            MObject* valueManaged = valueConverter.Box(i->Value, valueClass);
+            MObject* keyManaged = keysConverter.Box(i->Key(), keyClass);
+            MObject* valueManaged = valueConverter.Box(i->Value(), valueClass);
             result.Add(keyManaged, valueManaged);
         }
         return result.Instance;

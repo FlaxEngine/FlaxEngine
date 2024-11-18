@@ -1299,9 +1299,9 @@ void GPUDeviceVulkan::OnImageViewDestroy(VkImageView imageView)
 {
     for (auto i = _framebuffers.Begin(); i.IsNotEnd(); ++i)
     {
-        if (i->Value->HasReference(imageView))
+        if (i->Value()->HasReference(imageView))
         {
-            Delete(i->Value);
+            Delete(i->Value());
             _framebuffers.Remove(i);
             --i;
         }

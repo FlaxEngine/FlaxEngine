@@ -1551,7 +1551,7 @@ void FlaxPackage::GetEntry(int32 index, Entry& output) const
     {
         if (index-- <= 0)
         {
-            output = i->Value;
+            output = i->Value();
             return;
         }
     }
