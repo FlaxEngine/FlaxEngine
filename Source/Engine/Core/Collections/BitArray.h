@@ -90,12 +90,10 @@ public:
     /// </summary>
     /// <param name="other">The other collection to move.</param>
     FORCE_INLINE BitArray(BitArray&& other) noexcept
+        : _count(0)
+        , _capacity(0)
     {
-        _count = other._count;
-        _capacity = other._capacity;
-        other._count = 0;
-        other._capacity = 0;
-        _allocation.Swap(other._allocation);
+        Swap(other);
     }
 
     /// <summary>
@@ -130,11 +128,9 @@ public:
         if (this != &other)
         {
             _allocation.Free();
-            _count = other._count;
-            _capacity = other._capacity;
-            other._count = 0;
-            other._capacity = 0;
-            _allocation.Swap(other._allocation);
+            _count = 0;
+            _capacity = 0;
+            Swap(other);
         }
         return *this;
     }
@@ -337,9 +333,38 @@ public:
     /// <param name="other">The other collection.</param>
     void Swap(BitArray& other)
     {
+        if IF_CONSTEXPR (AllocationType::HasSwap)
+            _allocation.Swap(other._allocation);
+        else
+        {
+            // Move to temp
+            const int32 oldItemsCapacity = ToItemCount(_capacity);
+            const int32 otherItemsCapacity = ToItemCount(other._capacity);
+            AllocationData oldAllocation;
+            if (oldItemsCapacity)
+            {
+                oldAllocation.Allocate(oldItemsCapacity);
+                Memory::MoveItems(oldAllocation.Get(), _allocation.Get(), oldItemsCapacity);
+                _allocation.Free();
+            }
+
+            // Move other to source
+            if (otherItemsCapacity)
+            {
+                _allocation.Allocate(otherItemsCapacity);
+                Memory::MoveItems(_allocation.Get(), other._allocation.Get(), otherItemsCapacity);
+                other._allocation.Free();
+            }
+
+            // Move temp to other
+            if (oldItemsCapacity)
+            {
+                other._allocation.Allocate(oldItemsCapacity);
+                Memory::MoveItems(other._allocation.Get(), oldAllocation.Get(), oldItemsCapacity);
+            }
+        }
         ::Swap(_count, other._count);
         ::Swap(_capacity, other._capacity);
-        _allocation.Swap(other._allocation);
     }
 
 public:

@@ -7,6 +7,24 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include <ThirdParty/catch2/catch.hpp>
 
+const bool TestBits[] = { true, false, true, false };
+
+template<typename AllocationType = HeapAllocation>
+void InitBitArray(BitArray<AllocationType>& array)
+{
+    array.Add(TestBits, ARRAY_COUNT(TestBits));
+}
+
+template<typename AllocationType = HeapAllocation>
+void CheckBitArray(const BitArray<AllocationType>& array)
+{
+    CHECK(array.Count() == ARRAY_COUNT(TestBits));
+    for (int32 i = 0; i < ARRAY_COUNT(TestBits); i++)
+    {
+        CHECK(array[i] == TestBits[i]);
+    }
+}
+
 TEST_CASE("Array")
 {
     SECTION("Test Allocators")
@@ -82,6 +100,44 @@ TEST_CASE("BitArray")
             CHECK(a2.Get(i) == v);
             CHECK(a3.Get(i) == v);
         }
+    }
+
+    SECTION("Test Move/Copy")
+    {
+        BitArray<> array1;
+        BitArray<FixedAllocation<4>> array2;
+        BitArray<InlinedAllocation<4>> array3;
+        BitArray<InlinedAllocation<2>> array4;
+        
+        InitBitArray(array1);
+        InitBitArray(array2);
+        InitBitArray(array3);
+        InitBitArray(array4);
+
+        CheckBitArray(array1);
+        CheckBitArray(array2);
+        CheckBitArray(array3);
+        CheckBitArray(array4);
+
+        BitArray<> arrayClone1 = array1;
+        BitArray<FixedAllocation<4>> arrayClone2(array1);
+        BitArray<FixedAllocation<4>> arrayClone3(MoveTemp(array1));
+        BitArray<> arrayClone4(MoveTemp(array1));
+        BitArray<FixedAllocation<4>> arrayClone5 = MoveTemp(array2);
+        BitArray<InlinedAllocation<4>> arrayClone6 = MoveTemp(array3);
+        BitArray<InlinedAllocation<2>> arrayClone7 = MoveTemp(array4);
+
+        CheckBitArray(arrayClone1);
+        CheckBitArray(arrayClone2);
+        CheckBitArray(arrayClone4);
+        CheckBitArray(arrayClone5);
+        CheckBitArray(arrayClone6);
+        CheckBitArray(arrayClone7);
+
+        CHECK(array1.Count() == 0);
+        CHECK(array2.Count() == 0);
+        CHECK(array3.Count() == 0);
+        CHECK(array4.Count() == 0);
     }
 
     // Generate some random data for testing
