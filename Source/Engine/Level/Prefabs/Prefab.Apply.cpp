@@ -1146,10 +1146,8 @@ bool Prefab::UpdateInternal(const Array<SceneObject*>& defaultInstanceObjects, r
         ObjectsCount = 0;
         ObjectsIds.Resize(0);
         NestedPrefabs.Resize(0);
-        ObjectsDataCache.Clear();
-        ObjectsDataCache.SetCapacity(0);
-        ObjectsCache.Clear();
-        ObjectsCache.SetCapacity(0);
+        ObjectsDataCache.ClearToFree();
+        ObjectsCache.ClearToFree();
         if (_defaultInstance)
         {
             _defaultInstance->DeleteObject();

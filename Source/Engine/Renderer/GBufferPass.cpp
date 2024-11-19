@@ -97,7 +97,7 @@ void GBufferPass::Dispose()
     SAFE_DELETE(_vertexColors);
     SAFE_DELETE(_lodPreview);
     SAFE_DELETE(_materialComplexity);
-    IndexBufferToModelLOD.SetCapacity(0);
+    IndexBufferToModelLOD.ClearToFree();
 #endif
 }
 

@@ -164,7 +164,7 @@ void JobSystemService::Dispose()
         }
     }
 
-    JobContexts.SetCapacity(0);
+    JobContexts.ClearToFree();
     Jobs.Release();
     for (auto& e : MemPool)
         Platform::Free(e.First);

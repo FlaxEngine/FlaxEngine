@@ -263,7 +263,7 @@ namespace Memory
     /// <param name="src">The address of the first memory location to pass to the move constructor.</param>
     /// <param name="count">The number of element to move. Can be equal 0.</param>
     template<typename T, typename U>
-    FORCE_INLINE typename TEnableIf<!TIsBitwiseConstructible<T, U>::Value>::Type MoveItems(T* dst, const U* src, int32 count)
+    FORCE_INLINE typename TEnableIf<!TIsBitwiseConstructible<T, U>::Value>::Type MoveItems(T* dst, const /* <- WTF */ U* src, int32 count)
     {
         while (count--)
         {

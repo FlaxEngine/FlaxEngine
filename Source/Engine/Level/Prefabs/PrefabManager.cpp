@@ -119,7 +119,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Ac
     if (objectsCache)
     {
         objectsCache->Clear();
-        objectsCache->SetCapacity(prefab->ObjectsDataCache.Capacity());
+        objectsCache->EnsureCapacity(prefab->ObjectsDataCache.Capacity());
     }
     auto& data = *prefab->Data;
     SceneObjectsFactory::Context context(modifier.Value);

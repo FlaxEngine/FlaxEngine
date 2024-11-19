@@ -128,8 +128,7 @@ bool AssetsExportingManagerService::Init()
 void AssetsExportingManagerService::Dispose()
 {
     // Cleanup
-    AssetsExportingManager::Exporters.Clear();
-    AssetsExportingManager::Exporters.SetCapacity(0);
+    AssetsExportingManager::Exporters.ClearToFree();
 }
 
 #endif

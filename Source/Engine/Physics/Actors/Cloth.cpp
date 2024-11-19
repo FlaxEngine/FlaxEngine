@@ -188,7 +188,7 @@ void Cloth::SetPaint(Span<const float> value)
     if (value.IsInvalid())
     {
         // Remove paint when set to empty
-        _paint.SetCapacity(0);
+        _paint.ClearToFree();
 #if WITH_CLOTH
         if (_cloth)
         {

@@ -6,6 +6,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Memory/AllocationOperation.h"
 
 /// <summary>
 /// Template for dynamic array with variable capacity.
@@ -25,22 +26,11 @@ private:
     int32 _capacity;
     AllocationData _allocation;
 
-    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, const int32 fromCount, const int32 fromCapacity)
-    {
-        if IF_CONSTEXPR (AllocationType::HasSwap)
-            to.Swap(from);
-        else
-        {
-            to.Allocate(fromCapacity);
-            Memory::MoveItems(to.Get(), from.Get(), fromCount);
-            Memory::DestructItems(from.Get(), fromCount);
-            from.Free();
-        }
-    }
+    // Note: Capacity 0 is an indicator, that allocation was freed.
 
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> without reserving any space.
     /// </summary>
     FORCE_INLINE Array()
         : _count(0)
@@ -49,113 +39,121 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> by reserving space.
     /// </summary>
-    /// <param name="capacity">The initial capacity.</param>
-    explicit Array(const int32 capacity)
+    /// <param name="capacity">The number of elements that can be added without a need to allocate more memory.</param>
+    FORCE_INLINE explicit Array(const int32 capacity)
         : _count(0)
-        , _capacity(capacity)
     {
-        if (capacity > 0)
-            _allocation.Allocate(capacity);
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
-    /// </summary>
-    /// <param name="initList">The initial values defined in the array.</param>
-    Array(std::initializer_list<T> initList)
-    {
-        _count = _capacity = static_cast<int32>(initList.size());
-        if (_count > 0)
+        if (capacity > 0) 
         {
-            _allocation.Allocate(_count);
-            Memory::ConstructItems(_allocation.Get(), initList.begin(), _count);
+            _capacity = _allocation.Allocate(capacity);
+            ASSERT(_capacity >= capacity); // Allocation must be successful.
         }
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> by copying elements.
     /// </summary>
-    /// <param name="data">The initial data.</param>
-    /// <param name="length">The amount of items.</param>
-    Array(const T* data, const int32 length)
+    /// <param name="data">The raw pointer to the first element to be copied.</param>
+    /// <param name="length">The count of items.</param>
+    FORCE_INLINE Array(const T* data, const int32 length)
     {
         ASSERT(length >= 0);
-        _count = _capacity = length;
+        _count = length;
         if (length > 0)
         {
-            _allocation.Allocate(length);
+            _capacity = _allocation.Allocate(length);
+            ASSERT(_capacity >= _count); // Allocation must be successful.
             Memory::ConstructItems(_allocation.Get(), data, length);
         }
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> by copying listed elements.
     /// </summary>
-    /// <param name="other">The other collection to copy.</param>
-    Array(const Array& other)
+    /// <param name="initList">The initial values defined in the array.</param>
+    FORCE_INLINE Array(std::initializer_list<T> initList) //TODO Assumption that T is copy-constructible.
+        : Array(initList.begin(), static_cast<int32>(initList.size()))
     {
-        _count = _capacity = other._count;
-        if (_capacity > 0)
-        {
-            _allocation.Allocate(_capacity);
-            Memory::ConstructItems(_allocation.Get(), other.Get(), other._count);
-        }
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> by copying the elements from the other collection.
     /// </summary>
-    /// <param name="other">The other collection to copy.</param>
-    /// <param name="extraSize">The additionally amount of items to add to the add.</param>
-    Array(const Array& other, int32 extraSize)
+    /// <param name="other">The collection to copy.</param>
+    /// <remarks>
+    /// During copying, the smallest required capacity is allocated. Not the same capacity as the other collection.
+    /// </remarks>
+    FORCE_INLINE Array(const Array& other) //TODO Assumption that T is copy-constructible.
+        : Array(other.Get(), other.Count())
     {
-        ASSERT(extraSize >= 0);
-        _count = _capacity = other._count + extraSize;
-        if (_capacity > 0)
+    }
+
+    /// <summary>
+    /// Initializes <see cref="Array"/> by copying the elements from the other collection and default-constructing extra items.
+    /// </summary>
+    /// <param name="other">The collection to copy.</param>
+    /// <param name="extraSize">The additional number of items to add.</param>
+    DEPRECATED("This constructor assumes that all stored types have default constructor.")
+    Array(const Array& other, int32 extraSize) //TODO Assumption that T is copy-constructible and default-constructible.
+    {
+        ASSERT(extraSize >= 0); // Allocation must be successful.
+        _count = other._count + extraSize;
+        if (_count > 0)
         {
-            _allocation.Allocate(_capacity);
+            _capacity = _allocation.Allocate(_count);
+            ASSERT(_capacity >= _count); // Allocation must be successful.
             Memory::ConstructItems(_allocation.Get(), other.Get(), other._count);
             Memory::ConstructItems(_allocation.Get() + other._count, extraSize);
         }
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> by copying the elements from the other collection, of different type.
     /// </summary>
-    /// <param name="other">The other collection to copy.</param>
+    /// <param name="other">The collection to copy.</param>
+    /// <typeparam name="OtherT">The type of elements in the other collection to be converted.</typeparam>
+    /// <typeparam name="OtherAllocationType">The type of memory allocator in the other collection.</typeparam>
     template<typename OtherT = T, typename OtherAllocationType = AllocationType>
     explicit Array(const Array<OtherT, OtherAllocationType>& other) noexcept
     {
-        _capacity = other.Capacity();
         _count = other.Count();
-        if (_capacity > 0)
+        if (_count > 0)
         {
-            _allocation.Allocate(_capacity);
+            _capacity = _allocation.Allocate(_capacity);
+            ASSERT(_capacity >= _count); // Allocation must be successful.
             Memory::ConstructItems(_allocation.Get(), other.Get(), _count);
         }
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> by moving the content of the other collection.
     /// </summary>
     /// <param name="other">The other collection to move.</param>
     Array(Array&& other) noexcept
     {
+        if (other._capacity == 0) // Empty collection
+            return *this;
+
         _count = other._count;
-        _capacity = other._capacity;
+        _capacity = AllocationOperation::MoveAllocated<T, AllocationType>(
+            other._allocation, 
+            this->_allocation, 
+            other._count,
+            other._capacity
+        );
+
         other._count = 0;
         other._capacity = 0;
-        MoveToEmpty(_allocation, other._allocation, _count, _capacity);
     }
 
     /// <summary>
-    /// The assignment operator that deletes the current collection of items and the copies items from the initializer list.
+    /// Assigns <see cref="Array"/> by clearing stored elements and copying new ones from the initializer list.
     /// </summary>
     /// <param name="initList">The other collection to copy.</param>
     /// <returns>The reference to this.</returns>
-    Array& operator=(std::initializer_list<T> initList) noexcept
+    Array& operator=(std::initializer_list<T> initList) noexcept //TODO Assumption that T is copy-constructible.
     {
         Clear();
         if (initList.size() > 0)
@@ -172,17 +170,16 @@ public:
     /// </summary>
     /// <param name="other">The other collection to copy.</param>
     /// <returns>The reference to this.</returns>
+    /// <remarks>
+    /// This call may require reserving more memory for the new collection, but it does not shrink allocation to reduce the capacity.
+    /// Even if the other collection is empty, the capacity is not reduced.
+    /// </remarks>
     Array& operator=(const Array& other) noexcept
     {
         if (this != &other)
         {
-            Memory::DestructItems(_allocation.Get(), _count);
-            if (_capacity < other.Count())
-            {
-                _allocation.Free();
-                _capacity = other.Count();
-                _allocation.Allocate(_capacity);
-            }
+            Clear();
+            EnsureCapacity(other.Count());
             _count = other.Count();
             Memory::ConstructItems(_allocation.Get(), other.Get(), _count);
         }
@@ -194,17 +191,41 @@ public:
     /// </summary>
     /// <param name="other">The other collection to move.</param>
     /// <returns>The reference to this.</returns>
+    /// <remarks>
+    /// This call may require reserving more memory for the new collection, but it does not shrink allocation to reduce the capacity.
+    /// Even if the other collection is empty, the capacity is not reduced.
+    /// </remarks>
     Array& operator=(Array&& other) noexcept
     {
         if (this != &other)
         {
-            Memory::DestructItems(_allocation.Get(), _count);
-            _allocation.Free();
-            _count = other._count;
-            _capacity = other._capacity;
+            const bool enoughSpace = _capacity >= other._count;
+
+            if (enoughSpace)
+            {
+                Clear();
+
+                Memory::MoveItems(_allocation.Get(), other._allocation.Get(), other._count);
+                Memory::DestructItems(other._allocation.Get(), other._count);
+                other._count = 0;
+
+                // Capacity stays the same. Let the destructor handle the rest.
+            }
+            else
+            {
+                ClearToFree();
+
+                _count = other._count;
+                _capacity = AllocationOperation::MoveAllocated<T, AllocationType>(
+                    other._allocation,
+                    this->_allocation,
+                    other._count,
+                    other._capacity
+                );
+            }
+
             other._count = 0;
             other._capacity = 0;
-            MoveToEmpty(_allocation, other._allocation, _count, _capacity);
         }
         return *this;
     }
@@ -215,6 +236,9 @@ public:
     ~Array()
     {
         Memory::DestructItems(_allocation.Get(), _count);
+
+        if (_capacity > 0)
+            _allocation.Free();
     }
 
 public:
@@ -379,8 +403,46 @@ public:
     /// </summary>
     FORCE_INLINE void Clear()
     {
+        if (_count == 0)
+            return;
+
         Memory::DestructItems(_allocation.Get(), _count);
         _count = 0;
+    }
+
+    /// <summary>
+    /// Clears the collection and minimizes its capacity.
+    /// </summary>
+    FORCE_INLINE void ClearToFree()
+    {
+        Clear();
+
+        // Ensure allocation is freed.
+        if (_capacity > 0)
+        {
+            _allocation.Free();
+            _capacity = 0;
+        }
+    }
+
+    /// <summary>
+    /// Tries to reduce the capacity of the collection to fit its current size.
+    /// </summary>
+    FORCE_INLINE void ShrinkToFit()
+    {
+        if (_count == 0)
+        {
+            // Ensure allocation is freed.
+            if (_capacity > 0)
+            {
+                _allocation.Free();
+                _capacity = 0;
+            }
+        }
+        else if (_count < _capacity)
+        {
+            _capacity = AllocationOperation::Relocate<T, AllocationType>(_allocation, _count, _count);
+        }
     }
 
     /// <summary>
@@ -402,27 +464,11 @@ public:
     }
 
     /// <summary>
-    /// Changes the capacity of the collection.
-    /// </summary>
-    /// <param name="capacity">The new capacity.</param>
-    /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void SetCapacity(const int32 capacity, const bool preserveContents = true)
-    {
-        if (capacity == _capacity)
-            return;
-        ASSERT(capacity >= 0);
-        const int32 count = preserveContents ? (_count < capacity ? _count : capacity) : 0;
-        _allocation.Relocate(capacity, _count, count);
-        _capacity = capacity;
-        _count = count;
-    }
-
-    /// <summary>
     /// Resizes the collection to the specified size. If the size is equal or less to the current capacity no additional memory reallocation in performed.
     /// </summary>
     /// <param name="size">The new collection size.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize might not contain the previous data.</param>
-    void Resize(const int32 size, const bool preserveContents = true)
+    void Resize(const int32 size, const bool preserveContents = true) //TODO Assumption that T is default-constructible.
     {
         if (_count > size)
         {
@@ -443,10 +489,22 @@ public:
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
     void EnsureCapacity(const int32 minCapacity, const bool preserveContents = true)
     {
-        if (_capacity < minCapacity)
+        ASSERT(minCapacity <= AllocationType::MaxCapacity); // Collection capacity is limited by the allocator.
+
+        if (minCapacity <= _capacity)
+            return;
+
+        if (!preserveContents) 
         {
-            const int32 capacity = _allocation.CalculateCapacityGrow(_capacity, minCapacity);
-            SetCapacity(capacity, preserveContents);
+            Clear(); // Count is set to zero.
+
+            _allocation.Free();
+            _capacity = _allocation.Allocate(minCapacity);
+        }
+        else
+        {
+            _capacity = AllocationOperation::Relocate<T, AllocationType>(_allocation, minCapacity, _count);
+            ASSERT(_capacity >= minCapacity); // Count stays the same.
         }
     }
 
@@ -454,7 +512,7 @@ public:
     /// Sets all items to the given value
     /// </summary>
     /// <param name="value">The value to assign to all the collection items.</param>
-    void SetAll(const T& value)
+    void SetAll(const T& value) //TODO Assumption that T is copy-constructible.
     {
         T* data = _allocation.Get();
         for (int32 i = 0; i < _count; i++)
@@ -466,7 +524,7 @@ public:
     /// </summary>
     /// <param name="data">The data.</param>
     /// <param name="count">The amount of items.</param>
-    void Set(const T* data, const int32 count)
+    void Set(const T* data, const int32 count) //TODO Assumption that T is copy-constructible.
     {
         EnsureCapacity(count, false);
         Memory::DestructItems(_allocation.Get(), _count);
@@ -478,7 +536,7 @@ public:
     /// Adds the specified item to the collection.
     /// </summary>
     /// <param name="item">The item to add.</param>
-    void Add(const T& item)
+    void Add(const T& item) //TODO Assumption that T is copy-constructible.
     {
         EnsureCapacity(_count + 1);
         Memory::ConstructItems(_allocation.Get() + _count, &item, 1);
@@ -501,7 +559,7 @@ public:
     /// </summary>
     /// <param name="items">The items to add.</param>
     /// <param name="count">The items count.</param>
-    void Add(const T* items, const int32 count)
+    void Add(const T* items, const int32 count) //TODO Assumption that T is copy-constructible.
     {
         EnsureCapacity(_count + count);
         Memory::ConstructItems(_allocation.Get() + _count, items, count);
@@ -532,7 +590,7 @@ public:
     /// Adds the given amount of items to the collection.
     /// </summary>
     /// <param name="count">The items count.</param>
-    FORCE_INLINE void AddDefault(const int32 count = 1)
+    FORCE_INLINE void AddDefault(const int32 count = 1) //TODO Assumption that T is default-constructible.
     {
         EnsureCapacity(_count + count);
         Memory::ConstructItems(_allocation.Get() + _count, count);
@@ -553,7 +611,7 @@ public:
     /// Adds the one item to the collection and returns the reference to it.
     /// </summary>
     /// <returns>The reference to the added item.</returns>
-    FORCE_INLINE T& AddOne()
+    FORCE_INLINE T& AddOne() //TODO Assumption that T is default-constructible.
     {
         EnsureCapacity(_count + 1);
         Memory::ConstructItems(_allocation.Get() + _count, 1);
@@ -753,16 +811,7 @@ public:
     /// <param name="other">The other collection.</param>
     void Swap(Array& other)
     {
-        if IF_CONSTEXPR (AllocationType::HasSwap)
-        {
-            _allocation.Swap(other._allocation);
-            ::Swap(_count, other._count);
-            ::Swap(_capacity, other._capacity);
-        }
-        else
-        {
-            ::Swap(other, *this);
-        }
+        ::Swap(*this, other); //TODO Optimize this.
     }
 
     /// <summary>

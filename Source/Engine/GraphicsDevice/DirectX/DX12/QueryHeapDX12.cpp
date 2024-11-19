@@ -79,7 +79,7 @@ void QueryHeapDX12::Destroy()
     SAFE_RELEASE(_resultBuffer);
     SAFE_RELEASE(_queryHeap);
     _currentBatch.Clear();
-    _resultData.SetCapacity(0);
+    _resultData.ClearToFree();
 }
 
 void QueryHeapDX12::EndQueryBatchAndResolveQueryData(GPUContextDX12* context)

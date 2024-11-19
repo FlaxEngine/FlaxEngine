@@ -92,10 +92,15 @@ public:
     FORCE_INLINE BitArray(BitArray&& other) noexcept
     {
         _count = other._count;
-        _capacity = other._capacity;
+        _capacity = AllocationOperation::MoveAllocated<ItemType, AllocationType>(
+            other._allocation, 
+            _allocation, 
+            other._count, 
+            other._capacity
+        );
+
         other._count = 0;
         other._capacity = 0;
-        _allocation.Swap(other._allocation);
     }
 
     /// <summary>
