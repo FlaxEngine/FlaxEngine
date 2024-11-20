@@ -77,7 +77,7 @@ GPUDevice* GPUDeviceDX12::Create()
 #endif
 #ifdef __ID3D12DeviceRemovedExtendedDataSettings_FWD_DEFINED__
     ComPtr<ID3D12DeviceRemovedExtendedDataSettings> dredSettings;
-    VALIDATE_DIRECTX_CALL(D3D12GetDebugInterface(IID_PPV_ARGS(&dredSettings)));
+    D3D12GetDebugInterface(IID_PPV_ARGS(&dredSettings));
     if (dredSettings)
     {
         // Turn on AutoBreadcrumbs and Page Fault reporting
