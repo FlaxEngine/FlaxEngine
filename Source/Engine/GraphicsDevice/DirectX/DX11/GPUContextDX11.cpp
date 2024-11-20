@@ -559,15 +559,12 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #endif
         GPUShaderProgramPSDX11* ps = nullptr;
         D3D11_PRIMITIVE_TOPOLOGY primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
-
         if (state)
         {
             ASSERT(_currentState->IsValid());
-
             blendState = _currentState->BlendState;
             rasterizerState = _device->RasterizerStates[_currentState->RasterizerStateIndex];
-            depthStencilState = _device->DepthStencilStates[_currentState->DepthStencilStateIndex];
-
+            depthStencilState = _currentState->DepthStencilState;
             ASSERT(_currentState->VS != nullptr);
             vs = _currentState->VS;
 #if GPU_ALLOW_TESSELLATION_SHADERS
@@ -578,7 +575,6 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
             gs = _currentState->GS;
 #endif
             ps = _currentState->PS;
-
             primitiveTopology = _currentState->PrimitiveTopology;
         }
 

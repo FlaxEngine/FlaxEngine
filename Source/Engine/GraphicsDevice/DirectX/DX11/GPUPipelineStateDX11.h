@@ -15,8 +15,8 @@ class GPUPipelineStateDX11 : public GPUResourceDX11<GPUPipelineState>
 {
 public:
 
-    int32 DepthStencilStateIndex;
     int32 RasterizerStateIndex;
+    ID3D11DepthStencilState* DepthStencilState = nullptr;
     ID3D11BlendState* BlendState = nullptr;
     GPUShaderProgramVSDX11* VS = nullptr;
 #if GPU_ALLOW_TESSELLATION_SHADERS
