@@ -332,9 +332,9 @@ ID3D11DepthStencilState* GPUDeviceDX11::GetDepthStencilState(const void* descrip
 
     // Prepare description
     D3D11_DEPTH_STENCIL_DESC desc;
-	desc.DepthEnable = !!description.DepthEnable;
-	desc.DepthWriteMask = description.DepthWriteEnable ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
-	desc.DepthFunc = ToDX11(description.DepthFunc);
+    desc.DepthEnable = !!description.DepthEnable;
+    desc.DepthWriteMask = description.DepthWriteEnable ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+    desc.DepthFunc = ToDX11(description.DepthFunc);
     desc.StencilEnable = !!description.StencilEnable;
     desc.StencilReadMask = description.StencilReadMask;
     desc.StencilWriteMask = description.StencilWriteMask;
@@ -417,9 +417,9 @@ bool GPUDeviceDX11::Init()
 #if PLATFORM_WINDOWS
     // Detect RenderDoc usage (UUID {A7AA6116-9C8D-4BBA-9083-B4D816B71B78})
     IUnknown* unknown = nullptr;
-    const GUID uuidRenderDoc = { 0xa7aa6116, 0x9c8d, 0x4bba, {0x90, 0x83, 0xb4, 0xd8, 0x16, 0xb7, 0x1b, 0x78}};
+    const GUID uuidRenderDoc = { 0xa7aa6116, 0x9c8d, 0x4bba, { 0x90, 0x83, 0xb4, 0xd8, 0x16, 0xb7, 0x1b, 0x78 } };
     HRESULT hr = _device->QueryInterface(uuidRenderDoc, (void**)&unknown);
-    if(SUCCEEDED(hr) && unknown)
+    if (SUCCEEDED(hr) && unknown)
     {
         IsDebugToolAttached = true;
         unknown->Release();

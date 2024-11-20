@@ -40,7 +40,7 @@ private:
 
         bool operator==(const DepthStencilMode& other) const
         {
-            return Platform::MemoryCompare(this, &other, sizeof(DepthStencilMode));
+            return Platform::MemoryCompare(this, &other, sizeof(DepthStencilMode)) == 0;
         }
 
         friend uint32 GetHash(const DepthStencilMode& key)
