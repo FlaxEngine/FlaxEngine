@@ -13,6 +13,7 @@ class ContrastAdaptiveSharpeningPass : public RendererPass<ContrastAdaptiveSharp
 private:
     AssetReference<Shader> _shader;
     GPUPipelineState* _psCAS = nullptr;
+    bool _lazyInit = true;
 
 public:
     bool CanRender(const RenderContext& renderContext);
