@@ -121,7 +121,7 @@ bool DeployDataStep::Perform(CookingData& data)
                     int majorVersion = 0;
                     if (dot != -1)
                         StringUtils::Parse(version.Substring(0, dot).Get(), &majorVersion);
-                    if (majorVersion >= COOKER_MIN_DOTNET_RUNTIME_VERSION) // Check for major part of 8.0
+                    if (majorVersion < GAME_BUILD_DOTNET_RUNTIME_MIN_VER || majorVersion > GAME_BUILD_DOTNET_RUNTIME_MAX_VER) // Check for major part
                         version.Clear();
                 }
                 Sorting::QuickSort(versions);

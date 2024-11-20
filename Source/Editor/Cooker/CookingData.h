@@ -19,7 +19,9 @@ class PlatformTools;
 #define GAME_BUILD_DOTNET_VER TEXT("")
 #endif
 
-#define COOKER_MIN_DOTNET_RUNTIME_VERSION 8
+// Range of dotnet runtime versions
+#define GAME_BUILD_DOTNET_RUNTIME_MIN_VER 8
+#define GAME_BUILD_DOTNET_RUNTIME_MAX_VER 9
 
 /// <summary>
 /// Game building options. Used as flags.
