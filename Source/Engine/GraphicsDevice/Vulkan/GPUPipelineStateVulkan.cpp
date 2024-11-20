@@ -337,7 +337,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _descDepthStencil.front.failOp = ToVulkanStencilOp(desc.StencilFailOp);
     _descDepthStencil.front.depthFailOp = ToVulkanStencilOp(desc.StencilDepthFailOp);
     _descDepthStencil.front.passOp = ToVulkanStencilOp(desc.StencilPassOp);
-    _descDepthStencil.front = _descDepthStencil.back;
+    _descDepthStencil.back = _descDepthStencil.front;
     _desc.pDepthStencilState = &_descDepthStencil;
     DepthReadEnable = desc.DepthEnable && desc.DepthFunc != ComparisonFunc::Always;
     DepthWriteEnable = _descDepthStencil.depthWriteEnable;

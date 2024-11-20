@@ -723,11 +723,14 @@ void GPUContextVulkan::FrameBegin()
     Platform::MemoryCopy(_samplerHandles, _device->HelperResources.GetStaticSamplers(), sizeof(VkSampler) * GPU_STATIC_SAMPLERS_COUNT);
     Platform::MemoryClear(_samplerHandles + GPU_STATIC_SAMPLERS_COUNT, sizeof(_samplerHandles) - sizeof(VkSampler) * GPU_STATIC_SAMPLERS_COUNT);
 
+    // Init command buffer
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+    vkCmdSetStencilReference(cmdBuffer->GetHandle(), VK_STENCIL_FRONT_AND_BACK, _stencilRef);
+
 #if VULKAN_RESET_QUERY_POOLS
     // Reset pending queries
     if (_device->QueriesToReset.HasItems())
     {
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
         for (auto query : _device->QueriesToReset)
             query->Reset(cmdBuffer);
         _device->QueriesToReset.Clear();
