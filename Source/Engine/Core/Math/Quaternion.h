@@ -393,8 +393,8 @@ public:
     /// <returns>The inverse of the specified quaternion.</returns>
     static Quaternion Invert(const Quaternion& value)
     {
-        Quaternion result;
-        Invert(value, result);
+        Quaternion result = value;
+        result.Invert();
         return result;
     }
 

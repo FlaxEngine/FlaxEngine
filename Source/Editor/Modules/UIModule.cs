@@ -447,6 +447,8 @@ namespace FlaxEditor.Modules
 
         private void StateMachineOnStateChanged()
         {
+            if (Editor.StateMachine.CurrentState is States.ClosingState)
+                return;
             UpdateToolstrip();
             UpdateStatusBar();
         }

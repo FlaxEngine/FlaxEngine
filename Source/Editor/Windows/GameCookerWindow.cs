@@ -648,7 +648,7 @@ namespace FlaxEditor.Windows
         /// <returns>True if can build, otherwise false.</returns>
         public bool CanBuild(PlatformType platformType)
         {
-            if (_buildTabProxy.PerPlatformOptions.TryGetValue(platformType, out var platform))
+            if (_buildTabProxy != null && _buildTabProxy.PerPlatformOptions.TryGetValue(platformType, out var platform))
                 return platform.IsAvailable && platform.IsSupported;
             return false;
         }
