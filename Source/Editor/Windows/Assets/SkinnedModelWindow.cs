@@ -832,6 +832,8 @@ namespace FlaxEditor.Windows.Assets
                     // New setup
                     {
                         var setupGroup = layout.Group("New setup");
+                        setupGroup.Panel.Tag = null;
+                        setupGroup.Panel.MouseButtonRightClicked += OnPanelHeaderRightClicked;
                         infoLabel = setupGroup.Label("Select model or animation asset to add new retarget source", TextAlignment.Center).Label;
                         infoLabel.Wrapping = TextWrapping.WrapWords;
                         infoLabel.AutoHeight = true;
@@ -853,6 +855,8 @@ namespace FlaxEditor.Windows.Assets
                         if (sourceAsset == null)
                             continue;
                         var setupGroup = layout.Group(Path.GetFileNameWithoutExtension(sourceAsset.Path));
+                        setupGroup.Panel.Tag = sourceAsset;
+                        setupGroup.Panel.MouseButtonRightClicked += OnPanelHeaderRightClicked;
                         var settingsButton = setupGroup.AddSettingsButton();
                         settingsButton.Tag = sourceAsset;
                         settingsButton.Clicked += OnShowSetupSettings;
@@ -931,6 +935,11 @@ namespace FlaxEditor.Windows.Assets
                     }
                 }
 
+                private void OnPanelHeaderRightClicked(DropPanel panel, Float2 location)
+                {
+                    OnShowSetupSettings((Asset)panel.Tag, panel, location);
+                }
+
                 private void OnSelectedNodeChanged(ComboBox comboBox)
                 {
                     var proxy = (RetargetPropertiesProxy)Values[0];
@@ -946,12 +955,21 @@ namespace FlaxEditor.Windows.Assets
                 {
                     if (button == MouseButton.Left)
                     {
-                        var sourceAsset = (Asset)settingsButton.Tag;
-                        var menu = new ContextMenu { Tag = sourceAsset };
+                        OnShowSetupSettings((Asset)settingsButton.Tag, settingsButton, new Float2(0, settingsButton.Height));
+                    }
+                }
+
+                private void OnShowSetupSettings(Asset sourceAsset, Control targetControl, Float2 targetLocation)
+                {
+                    var menu = new ContextMenu { Tag = sourceAsset };
+                    if (sourceAsset != null)
+                    {
                         menu.AddButton("Clear", OnClearSetup);
                         menu.AddButton("Remove", OnRemoveSetup).Icon = Editor.Instance.Icons.Cross12;
-                        menu.Show(settingsButton, new Float2(0, settingsButton.Height));
+                        menu.AddButton("Copy", OnCopySetup);
                     }
+                    menu.AddButton("Paste", OnPasteSetup);
+                    menu.Show(targetControl, targetLocation);
                 }
 
                 private void OnClearSetup(ContextMenuButton button)
@@ -971,6 +989,53 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (RetargetPropertiesProxy)Values[0];
                     var sourceAsset = (Asset)button.ParentContextMenu.Tag;
                     proxy.Setups.Remove(sourceAsset);
+                    proxy.Window.MarkAsEdited();
+                    RebuildLayout();
+                }
+
+                private struct RetargetSetupData
+                {
+                    public Asset SourceAsset;
+                    public SetupProxy Proxy;
+                }
+
+                private void OnCopySetup(ContextMenuButton button)
+                {
+                    var proxy = (RetargetPropertiesProxy)Values[0];
+                    var sourceAsset = (Asset)button.ParentContextMenu.Tag;
+                    var setup = proxy.Setups[sourceAsset];
+                    var str = FlaxEngine.Json.JsonSerializer.Serialize(new RetargetSetupData
+                    {
+                        SourceAsset = sourceAsset,
+                        Proxy = setup,
+                    });
+                    Clipboard.Text = str;
+                }
+
+                private void OnPasteSetup(ContextMenuButton button)
+                {
+                    var proxy = (RetargetPropertiesProxy)Values[0];
+                    var sourceAsset = (Asset)button.ParentContextMenu.Tag;
+                    var str = Clipboard.Text;
+                    var data = FlaxEngine.Json.JsonSerializer.Deserialize<RetargetSetupData>(str);
+                    if (sourceAsset == null)
+                        sourceAsset = data.SourceAsset;
+                    if (proxy.Setups.TryGetValue(sourceAsset, out var setup))
+                    {
+                        // Copy mappings for existing nodes in that mapping
+                        foreach (var e in setup.NodesMapping.Keys.ToArray())
+                        {
+                            data.Proxy.NodesMapping.TryGetValue(e, out string name);
+                            setup.NodesMapping[e] = name;
+                        }
+                    }
+                    else
+                    {
+                        // Add a new mapping
+                        proxy.Setups.Add(sourceAsset, setup = new SetupProxy());
+                        setup.Skeleton = data.Proxy.Skeleton;
+                        setup.NodesMapping = data.Proxy.NodesMapping;
+                    }
                     proxy.Window.MarkAsEdited();
                     RebuildLayout();
                 }
