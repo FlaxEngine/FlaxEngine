@@ -429,15 +429,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public bool IsParamreferenced(SurfaceParameter param)
             {
-                for (int i = 0; i < Surface.Nodes.Count; i++)
-                {
-                    if (Surface.Nodes[i] is IParametersDependantNode node)
-                    {
-                        return (Guid)Values[0] == param.ID;
-                    }
-                }
-
-                return false;
+                return (Guid)Values[0] == param.ID;
             }
 
             /// <inheritdoc />
@@ -960,15 +952,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public bool IsParamreferenced(SurfaceParameter param)
             {
-                for (int i = 0; i < Surface.Nodes.Count; i++)
-                {
-                    if (Surface.Nodes[i] is IParametersDependantNode node)
-                    {
-                        return (Guid)Values[0] == param.ID;
-                    }
-                }
-
-                return false;
+                return (Guid)Values[0] == param.ID;
             }
 
             /// <inheritdoc />
