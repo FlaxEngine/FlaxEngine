@@ -166,6 +166,17 @@ namespace FlaxEditor.Windows
                             return true;
                         }
                         break;
+                    case KeyboardKeys.ArrowLeft:
+                        if (Owner != null && (!Owner._searchPopup?.Visible ?? true))
+                        {
+                            // Focus back the input field as user want to modify command from history
+                            Owner._searchPopup?.Hide();
+                            Owner.RootWindow.Focus();
+                            Owner.Focus();
+                            Owner.OnKeyDown(key);
+                            return true;
+                        }
+                        break;
                     }
                     return base.OnKeyDown(key);
                 }
