@@ -35,16 +35,17 @@ void ContrastAdaptiveSharpeningPass::Dispose()
 bool ContrastAdaptiveSharpeningPass::setupResources()
 {
     // Lazy-load shader
-    if (!_shader)
+    if (_lazyInit && !_shader)
     {
+        _lazyInit = false;
         _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/CAS"));
         if (!_shader)
-            return false;
+            return true;
 #if COMPILE_WITH_DEV_ENV
         _shader.Get()->OnReloading.Bind<ContrastAdaptiveSharpeningPass, &ContrastAdaptiveSharpeningPass::OnShaderReloading>(this);
 #endif
     }
-    if (!_shader->IsLoaded())
+    if (!_shader || !_shader->IsLoaded())
         return true;
     const auto shader = _shader->GetShader();
 

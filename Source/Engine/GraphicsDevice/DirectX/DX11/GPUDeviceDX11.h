@@ -11,6 +11,7 @@
 #if GRAPHICS_API_DIRECTX11
 
 class Engine;
+enum class StencilOperation : byte;
 class GPUContextDX11;
 class GPUSwapChainDX11;
 
@@ -22,6 +23,34 @@ class GPUDeviceDX11 : public GPUDeviceDX
     friend GPUContextDX11;
     friend GPUSwapChainDX11;
 private:
+
+    struct DepthStencilMode
+    {
+        int8 DepthEnable : 1;
+        int8 DepthWriteEnable : 1;
+        int8 DepthClipEnable : 1;
+        int8 StencilEnable : 1;
+        uint8 StencilReadMask;
+        uint8 StencilWriteMask;
+        ComparisonFunc DepthFunc;
+        ComparisonFunc StencilFunc;
+        StencilOperation StencilFailOp;
+        StencilOperation StencilDepthFailOp;
+        StencilOperation StencilPassOp;
+
+        bool operator==(const DepthStencilMode& other) const
+        {
+            return Platform::MemoryCompare(this, &other, sizeof(DepthStencilMode)) == 0;
+        }
+
+        friend uint32 GetHash(const DepthStencilMode& key)
+        {
+            uint32 hash = 0;
+            for (int32 i = 0; i < sizeof(DepthStencilMode) / 4; i++)
+                CombineHash(hash, ((uint32*)&key)[i]);
+            return hash;
+        }
+    };
 
     // Private Stuff
     ID3D11Device* _device = nullptr;
@@ -40,10 +69,10 @@ private:
     ID3D11SamplerState* _samplerShadowLinear = nullptr;
 
     // Shared data for pipeline states
-    CriticalSection BlendStatesWriteLocker;
+    CriticalSection StatesWriteLocker;
     Dictionary<BlendingMode, ID3D11BlendState*> BlendStates;
+    Dictionary<DepthStencilMode, ID3D11DepthStencilState*> DepthStencilStates;
     ID3D11RasterizerState* RasterizerStates[3 * 2 * 2]; // Index =  CullMode[0-2] + Wireframe[0?3] + DepthClipEnable[0?6]
-    ID3D11DepthStencilState* DepthStencilStates[9 * 2 * 2]; // Index = ComparisonFunc[0-8] + DepthTestEnable[0?9] + DepthWriteEnable[0?18]
 
 public:
     static GPUDevice* Create();
@@ -75,6 +104,7 @@ public:
         return _mainContext;
     }
 
+    ID3D11DepthStencilState* GetDepthStencilState(const void* descriptionPtr);
     ID3D11BlendState* GetBlendState(const BlendingMode& blending);
 
 public:

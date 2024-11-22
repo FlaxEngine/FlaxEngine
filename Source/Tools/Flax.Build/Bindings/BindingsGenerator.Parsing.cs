@@ -1526,16 +1526,54 @@ namespace Flax.Build.Bindings
             return desc;
         }
 
+        private static string ParseString(ref ParsingContext context)
+        {
+            // Read string (support multi-line string literals)
+            string str = string.Empty;
+            int startLine = -1;
+            while (true)
+            {
+                var token = context.Tokenizer.NextToken();
+                if (token.Type == TokenType.String)
+                {
+                    if (startLine == -1)
+                        startLine = context.Tokenizer.CurrentLine;
+                    else if (startLine != context.Tokenizer.CurrentLine)
+                        str += "\n";
+                    var tokenStr = token.Value;
+                    if (tokenStr.Length >= 2 && tokenStr[0] == '\"' && tokenStr[^1] == '\"')
+                        tokenStr = tokenStr.Substring(1, tokenStr.Length - 2);
+                    str += tokenStr;
+                }
+                else if (token.Type == TokenType.EndOfFile)
+                {
+                    break;
+                }
+                else
+                {
+                    if (str == string.Empty)
+                        throw new Exception($"Expected {TokenType.String}, but got {token} at line {context.Tokenizer.CurrentLine}.");
+                    context.Tokenizer.PreviousToken();
+                    break;
+                }
+            }
+
+            // Apply automatic formatting for special characters
+            str = str.Replace("\\\"", "\"");
+            str = str.Replace("\\n", "\n");
+            str = str.Replace("\\\n", "\n");
+            str = str.Replace("\\\r\n", "\n");
+            str = str.Replace("\t", "    ");
+            str = str.Replace("\\t", "    ");
+            return str;
+        }
+
         private static InjectCodeInfo ParseInjectCode(ref ParsingContext context)
         {
             context.Tokenizer.ExpectToken(TokenType.LeftParent);
             var desc = new InjectCodeInfo();
             context.Tokenizer.SkipUntil(TokenType.Comma, out desc.Lang);
-            desc.Code = context.Tokenizer.ExpectToken(TokenType.String).Value.Replace("\\\"", "\"");
-            desc.Code = desc.Code.Substring(1, desc.Code.Length - 2);
-            desc.Code = desc.Code.Replace("\\\n", "\n");
-            desc.Code = desc.Code.Replace("\\\r\n", "\n");
-            desc.Code = desc.Code.Replace("\t", "    ");
+            desc.Code = ParseString(ref context);
             context.Tokenizer.ExpectToken(TokenType.RightParent);
             return desc;
         }

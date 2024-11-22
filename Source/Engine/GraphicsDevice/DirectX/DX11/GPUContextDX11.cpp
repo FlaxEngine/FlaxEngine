@@ -23,18 +23,18 @@ ID3D11ShaderResourceView* EmptySRHandles[GPU_MAX_SR_BINDED] = {};
 // Ensure to match the indirect commands arguments layout
 static_assert(sizeof(GPUDispatchIndirectArgs) == sizeof(uint32) * 3, "Wrong size of GPUDrawIndirectArgs.");
 static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountX) == sizeof(uint32) * 0, "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountX");
-static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountY) == sizeof(uint32) * 1,"Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountY");
+static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountY) == sizeof(uint32) * 1, "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountY");
 static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountZ) == sizeof(uint32) * 2, "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountZ");
 //
 static_assert(sizeof(GPUDrawIndirectArgs) == sizeof(D3D11_DRAW_INSTANCED_INDIRECT_ARGS), "Wrong size of GPUDrawIndirectArgs.");
 static_assert(OFFSET_OF(GPUDrawIndirectArgs, VerticesCount) == OFFSET_OF(D3D11_DRAW_INSTANCED_INDIRECT_ARGS, VertexCountPerInstance), "Wrong offset for GPUDrawIndirectArgs::VerticesCount");
-static_assert(OFFSET_OF(GPUDrawIndirectArgs, InstanceCount) == OFFSET_OF(D3D11_DRAW_INSTANCED_INDIRECT_ARGS, InstanceCount),"Wrong offset for GPUDrawIndirectArgs::InstanceCount");
+static_assert(OFFSET_OF(GPUDrawIndirectArgs, InstanceCount) == OFFSET_OF(D3D11_DRAW_INSTANCED_INDIRECT_ARGS, InstanceCount), "Wrong offset for GPUDrawIndirectArgs::InstanceCount");
 static_assert(OFFSET_OF(GPUDrawIndirectArgs, StartVertex) == OFFSET_OF(D3D11_DRAW_INSTANCED_INDIRECT_ARGS, StartVertexLocation), "Wrong offset for GPUDrawIndirectArgs::StartVertex");
 static_assert(OFFSET_OF(GPUDrawIndirectArgs, StartInstance) == OFFSET_OF(D3D11_DRAW_INSTANCED_INDIRECT_ARGS, StartInstanceLocation), "Wrong offset for GPUDrawIndirectArgs::StartInstance");
 //
 static_assert(sizeof(GPUDrawIndexedIndirectArgs) == sizeof(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS), "Wrong size of GPUDrawIndexedIndirectArgs.");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, IndicesCount) == OFFSET_OF(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS, IndexCountPerInstance), "Wrong offset for GPUDrawIndexedIndirectArgs::IndicesCount");
-static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, InstanceCount) == OFFSET_OF(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS, InstanceCount),"Wrong offset for GPUDrawIndexedIndirectArgs::InstanceCount");
+static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, InstanceCount) == OFFSET_OF(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS, InstanceCount), "Wrong offset for GPUDrawIndexedIndirectArgs::InstanceCount");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, StartIndex) == OFFSET_OF(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS, StartIndexLocation), "Wrong offset for GPUDrawIndexedIndirectArgs::StartIndex");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, StartVertex) == OFFSET_OF(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS, BaseVertexLocation), "Wrong offset for GPUDrawIndexedIndirectArgs::StartVertex");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, StartInstance) == OFFSET_OF(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS, StartInstanceLocation), "Wrong offset for GPUDrawIndexedIndirectArgs::StartInstance");
@@ -559,15 +559,13 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #endif
         GPUShaderProgramPSDX11* ps = nullptr;
         D3D11_PRIMITIVE_TOPOLOGY primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
-
         if (state)
         {
             ASSERT(_currentState->IsValid());
-
             blendState = _currentState->BlendState;
             rasterizerState = _device->RasterizerStates[_currentState->RasterizerStateIndex];
-            depthStencilState = _device->DepthStencilStates[_currentState->DepthStencilStateIndex];
-
+            //depthStencilState = _device->DepthStencilStates2[_currentState->DepthStencilStateIndex];
+            depthStencilState = _currentState->DepthStencilState;
             ASSERT(_currentState->VS != nullptr);
             vs = _currentState->VS;
 #if GPU_ALLOW_TESSELLATION_SHADERS
@@ -578,7 +576,6 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
             gs = _currentState->GS;
 #endif
             ps = _currentState->PS;
-
             primitiveTopology = _currentState->PrimitiveTopology;
         }
 
@@ -858,13 +855,13 @@ void GPUContextDX11::flushSRVs()
         {
             _srMaskDirtyGraphics = 0;
             FLUSH_STAGE(VS);
-    #if GPU_ALLOW_TESSELLATION_SHADERS
+#if GPU_ALLOW_TESSELLATION_SHADERS
             FLUSH_STAGE(HS);
             FLUSH_STAGE(DS);
-    #endif
-    #if GPU_ALLOW_GEOMETRY_SHADERS
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
             FLUSH_STAGE(GS);
-    #endif
+#endif
             FLUSH_STAGE(PS);
         }
     }

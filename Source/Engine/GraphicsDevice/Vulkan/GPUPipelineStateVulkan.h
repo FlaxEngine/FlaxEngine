@@ -98,7 +98,7 @@ private:
 #endif
     VkPipelineViewportStateCreateInfo _descViewport;
     VkPipelineDynamicStateCreateInfo _descDynamic;
-    VkDynamicState _dynamicStates[3];
+    VkDynamicState _dynamicStates[4];
     VkPipelineMultisampleStateCreateInfo _descMultisample;
     VkPipelineDepthStencilStateCreateInfo _descDepthStencil;
     VkPipelineRasterizationStateCreateInfo _descRasterization;

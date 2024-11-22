@@ -29,6 +29,33 @@ namespace FlaxEngine.GUI
             return ((CanvasRootControl)a).Canvas.Order - ((CanvasRootControl)b).Canvas.Order;
         }
 
+        private bool RayCast3D(ref Float2 location, out Control hit, out Float2 hitLocation)
+        {
+            hit = null;
+            hitLocation = Float2.Zero;
+
+            // Calculate 3D mouse ray
+            UICanvas.CalculateRay(ref location, out Ray ray);
+
+            // Test 3D canvases
+            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
+            for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
+            {
+                var child = (CanvasRootControl)_children[i];
+                if (child.Visible && child.Enabled && child.Is3D && layerMask.HasLayer(child.Canvas.Layer))
+                {
+                    if (child.Intersects3D(ref ray, out var childLocation))
+                    {
+                        hit = child;
+                        hitLocation = childLocation;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         /// <inheritdoc />
         public override void OnChildrenChanged()
         {
@@ -63,8 +90,20 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override bool RayCast(ref Float2 location, out Control hit)
         {
-            // Ignore self
-            return RayCastChildren(ref location, out hit);
+            // Ignore self and only test children
+            if (RayCastChildren(ref location, out hit))
+                return true;
+
+            // Test 3D
+            if (RayCast3D(ref location, out hit, out var hitLocation))
+            {
+                // Test deeper to hit actual control not the root
+                hit.RayCast(ref hitLocation, out hit);
+                if (hit != null)
+                    return true;
+            }
+
+            return false;
         }
 
         /// <inheritdoc />
@@ -81,22 +120,10 @@ namespace FlaxEngine.GUI
             // 2D GUI first
             base.OnMouseEnter(location);
 
-            // Calculate 3D mouse ray
-            UICanvas.CalculateRay(ref location, out Ray ray);
-
             // Test 3D
-            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
-            for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
+            if (RayCast3D(ref location, out var hit, out var hitLocation))
             {
-                var child = (CanvasRootControl)_children[i];
-                if (child.Visible && child.Enabled && child.Is3D && layerMask.HasLayer(child.Canvas.Layer))
-                {
-                    if (child.Intersects3D(ref ray, out var childLocation))
-                    {
-                        child.OnMouseEnter(childLocation);
-                        return;
-                    }
-                }
+                hit.OnMouseEnter(hitLocation);
             }
         }
 
@@ -170,22 +197,11 @@ namespace FlaxEngine.GUI
             if (base.OnMouseWheel(location, delta))
                 return true;
 
-            // Calculate 3D mouse ray
-            UICanvas.CalculateRay(ref location, out Ray ray);
-
             // Test 3D
-            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
-            for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
+            if (RayCast3D(ref location, out var hit, out var hitLocation))
             {
-                var child = (CanvasRootControl)_children[i];
-                if (child.Visible && child.Enabled && child.Is3D && layerMask.HasLayer(child.Canvas.Layer))
-                {
-                    if (child.Intersects3D(ref ray, out var childLocation))
-                    {
-                        child.OnMouseWheel(childLocation, delta);
-                        return true;
-                    }
-                }
+                hit.OnMouseWheel(hitLocation, delta);
+                return true;
             }
 
             return false;
@@ -198,22 +214,11 @@ namespace FlaxEngine.GUI
             if (base.OnMouseDown(location, button))
                 return true;
 
-            // Calculate 3D mouse ray
-            UICanvas.CalculateRay(ref location, out Ray ray);
-
             // Test 3D
-            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
-            for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
+            if (RayCast3D(ref location, out var hit, out var hitLocation))
             {
-                var child = (CanvasRootControl)_children[i];
-                if (child.Visible && child.Enabled && child.Is3D && layerMask.HasLayer(child.Canvas.Layer))
-                {
-                    if (child.Intersects3D(ref ray, out var childLocation))
-                    {
-                        child.OnMouseDown(childLocation, button);
-                        return true;
-                    }
-                }
+                hit.OnMouseDown(hitLocation, button);
+                return true;
             }
 
             return false;
@@ -226,22 +231,11 @@ namespace FlaxEngine.GUI
             if (base.OnMouseUp(location, button))
                 return true;
 
-            // Calculate 3D mouse ray
-            UICanvas.CalculateRay(ref location, out Ray ray);
-
             // Test 3D
-            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
-            for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
+            if (RayCast3D(ref location, out var hit, out var hitLocation))
             {
-                var child = (CanvasRootControl)_children[i];
-                if (child.Visible && child.Enabled && child.Is3D && layerMask.HasLayer(child.Canvas.Layer))
-                {
-                    if (child.Intersects3D(ref ray, out var childLocation))
-                    {
-                        child.OnMouseUp(childLocation, button);
-                        return true;
-                    }
-                }
+                hit.OnMouseUp(hitLocation, button);
+                return true;
             }
 
             return false;
@@ -254,22 +248,11 @@ namespace FlaxEngine.GUI
             if (base.OnMouseDoubleClick(location, button))
                 return true;
 
-            // Calculate 3D mouse ray
-            UICanvas.CalculateRay(ref location, out Ray ray);
-
             // Test 3D
-            var layerMask = MainRenderTask.Instance?.ViewLayersMask ?? LayersMask.Default;
-            for (int i = _children.Count - 1; i >= 0 && _children.Count > 0; i--)
+            if (RayCast3D(ref location, out var hit, out var hitLocation))
             {
-                var child = (CanvasRootControl)_children[i];
-                if (child.Visible && child.Enabled && child.Is3D && layerMask.HasLayer(child.Canvas.Layer))
-                {
-                    if (child.Intersects3D(ref ray, out var childLocation))
-                    {
-                        child.OnMouseDoubleClick(childLocation, button);
-                        return true;
-                    }
-                }
+                hit.OnMouseDoubleClick(hitLocation, button);
+                return true;
             }
 
             return false;

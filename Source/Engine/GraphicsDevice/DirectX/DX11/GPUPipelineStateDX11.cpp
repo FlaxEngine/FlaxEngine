@@ -6,6 +6,7 @@
 
 void GPUPipelineStateDX11::OnReleaseGPU()
 {
+    DepthStencilState = nullptr;
     BlendState = nullptr;
     VS = nullptr;
 #if GPU_ALLOW_TESSELLATION_SHADERS
@@ -58,8 +59,8 @@ bool GPUPipelineStateDX11::Init(const Description& desc)
 #endif
 
     // States
-    DepthStencilStateIndex = static_cast<int32>(desc.DepthFunc) + (desc.DepthEnable ? 0 : 9) + (desc.DepthWriteEnable ? 0 : 18);
     RasterizerStateIndex = static_cast<int32>(desc.CullMode) + (desc.Wireframe ? 0 : 3) + (desc.DepthClipEnable ? 0 : 6);
+    DepthStencilState = _device->GetDepthStencilState(&desc);
     BlendState = _device->GetBlendState(desc.BlendMode);
 
     // Calculate approx. memory usage (just to set sth)

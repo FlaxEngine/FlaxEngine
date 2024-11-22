@@ -122,28 +122,6 @@ VkFormat RenderToolsVulkan::PixelFormatToVkFormat[110] =
     VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, // NV12
 };
 
-VkBlendFactor RenderToolsVulkan::BlendToVkBlendFactor[20] =
-{
-    VK_BLEND_FACTOR_MAX_ENUM,
-    VK_BLEND_FACTOR_ZERO, // Zero
-    VK_BLEND_FACTOR_ONE, // One
-    VK_BLEND_FACTOR_SRC_COLOR, // SrcColor
-    VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR, // InvSrcColor
-    VK_BLEND_FACTOR_SRC_ALPHA, // SrcAlpha
-    VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // InvSrcAlpha
-    VK_BLEND_FACTOR_DST_ALPHA, // DestAlpha
-    VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA, // InvDestAlpha
-    VK_BLEND_FACTOR_DST_COLOR, // DestColor,
-    VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, // InvDestColor
-    VK_BLEND_FACTOR_SRC_ALPHA_SATURATE, // SrcAlphaSat
-    VK_BLEND_FACTOR_CONSTANT_ALPHA, // BlendFactor
-    VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA, // BlendInvFactor
-    VK_BLEND_FACTOR_SRC1_COLOR, // Src1Color
-    VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR, // InvSrc1Color
-    VK_BLEND_FACTOR_SRC1_ALPHA, // Src1Alpha
-    VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA, // InvSrc1Alpha
-};
-
 VkBlendOp RenderToolsVulkan::OperationToVkBlendOp[6] =
 {
     VK_BLEND_OP_MAX_ENUM,

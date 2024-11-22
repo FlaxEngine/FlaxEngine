@@ -293,7 +293,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                 var assemblyPath = Utils.GetAssemblyLocation(assembly);
                 var assemblyName = assembly.GetName().Name;
                 var xmlFilePath = Path.ChangeExtension(assemblyPath, ".xml");
-                if (!File.Exists(assemblyPath))
+                if (!File.Exists(assemblyPath) && !string.IsNullOrEmpty(assemblyPath))
                 {
                     var uri = new UriBuilder(assemblyPath);
                     var path = Uri.UnescapeDataString(uri.Path);

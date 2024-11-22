@@ -35,6 +35,16 @@ API_STRUCT(NoDefault) struct TestDefaultValues
     API_FIELD() float TestFloat10 = 1.f;
     // Default value case 11
     API_FIELD() float TestFloat11 = 1;
+
+    // Test code injection parsing
+    API_INJECT_CODE(csharp, ""
+"namespace Test"
+"{"
+"\t/// <summary>\n\t/// Test code injection parsing\n\t/// </summary>"
+"    public static class TestClass"
+"    {"
+"    }"
+"}")
 };
 
 // Test interface (name conflict with namespace)

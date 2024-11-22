@@ -1758,7 +1758,7 @@ bool InitHostfxr()
 
         // Warn user about missing .Net
 #if PLATFORM_DESKTOP
-        Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet/8.0"));
+        Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet"));
 #endif
 #if USE_EDITOR
         LOG(Fatal, "Missing .NET 8 or later SDK installation required to run Flax Editor.");

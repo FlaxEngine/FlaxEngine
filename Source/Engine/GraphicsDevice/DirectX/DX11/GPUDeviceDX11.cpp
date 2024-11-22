@@ -24,6 +24,56 @@
 #define DX11_FORCE_USE_DX10 0
 #define DX11_FORCE_USE_DX10_1 0
 
+static D3D11_COMPARISON_FUNC ToDX11(ComparisonFunc value)
+{
+    switch (value)
+    {
+    case ComparisonFunc::Never:
+        return D3D11_COMPARISON_NEVER;
+    case ComparisonFunc::Less:
+        return D3D11_COMPARISON_LESS;
+    case ComparisonFunc::Equal:
+        return D3D11_COMPARISON_EQUAL;
+    case ComparisonFunc::LessEqual:
+        return D3D11_COMPARISON_LESS_EQUAL;
+    case ComparisonFunc::Greater:
+        return D3D11_COMPARISON_GREATER;
+    case ComparisonFunc::NotEqual:
+        return D3D11_COMPARISON_NOT_EQUAL;
+    case ComparisonFunc::GreaterEqual:
+        return D3D11_COMPARISON_GREATER_EQUAL;
+    case ComparisonFunc::Always:
+        return D3D11_COMPARISON_ALWAYS;
+    default:
+        return (D3D11_COMPARISON_FUNC)-1;
+    }
+}
+
+static D3D11_STENCIL_OP ToDX11(StencilOperation value)
+{
+    switch (value)
+    {
+    case StencilOperation::Keep:
+        return D3D11_STENCIL_OP_KEEP;
+    case StencilOperation::Zero:
+        return D3D11_STENCIL_OP_ZERO;
+    case StencilOperation::Replace:
+        return D3D11_STENCIL_OP_REPLACE;
+    case StencilOperation::IncrementSaturated:
+        return D3D11_STENCIL_OP_INCR_SAT;
+    case StencilOperation::DecrementSaturated:
+        return D3D11_STENCIL_OP_DECR_SAT;
+    case StencilOperation::Invert:
+        return D3D11_STENCIL_OP_INVERT;
+    case StencilOperation::Increment:
+        return D3D11_STENCIL_OP_INCR;
+    case StencilOperation::Decrement:
+        return D3D11_STENCIL_OP_DECR;
+    default:
+        return (D3D11_STENCIL_OP)-1;
+    }
+}
+
 static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureLevel, D3D_FEATURE_LEVEL* featureLevel)
 {
     ID3D11Device* device = nullptr;
@@ -251,22 +301,66 @@ GPUDeviceDX11::GPUDeviceDX11(IDXGIFactory* dxgiFactory, GPUAdapterDX* adapter)
     , _factoryDXGI(dxgiFactory)
 {
     Platform::MemoryClear(RasterizerStates, sizeof(RasterizerStates));
-    Platform::MemoryClear(DepthStencilStates, sizeof(DepthStencilStates));
+}
+
+ID3D11DepthStencilState* GPUDeviceDX11::GetDepthStencilState(const void* descriptionPtr)
+{
+    const GPUPipelineState::Description& description = *(const GPUPipelineState::Description*)descriptionPtr;
+    DepthStencilMode key;
+    Platform::MemoryClear(&key, sizeof(key)); // Ensure to clear any padding bytes for raw memory compare/hashing
+    key.DepthEnable = description.DepthEnable ? 1 : 0;
+    key.DepthWriteEnable = description.DepthWriteEnable ? 1 : 0;
+    key.DepthClipEnable = description.DepthClipEnable ? 1 : 0;
+    key.StencilEnable = description.StencilEnable ? 1 : 0;
+    key.StencilReadMask = description.StencilReadMask;
+    key.StencilWriteMask = description.StencilWriteMask;
+    key.DepthFunc = description.DepthFunc;
+    key.StencilFunc = description.StencilFunc;
+    key.StencilFailOp = description.StencilFailOp;
+    key.StencilDepthFailOp = description.StencilDepthFailOp;
+    key.StencilPassOp = description.StencilPassOp;
+
+    // Use lookup
+    ID3D11DepthStencilState* state = nullptr;
+    if (DepthStencilStates.TryGet(key, state))
+        return state;
+    
+    // Try again but with lock to prevent race condition with double-adding the same thing
+    ScopeLock lock(StatesWriteLocker);
+    if (DepthStencilStates.TryGet(key, state))
+        return state;
+
+    // Prepare description
+    D3D11_DEPTH_STENCIL_DESC desc;
+    desc.DepthEnable = !!description.DepthEnable;
+    desc.DepthWriteMask = description.DepthWriteEnable ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+    desc.DepthFunc = ToDX11(description.DepthFunc);
+    desc.StencilEnable = !!description.StencilEnable;
+    desc.StencilReadMask = description.StencilReadMask;
+    desc.StencilWriteMask = description.StencilWriteMask;
+    desc.FrontFace.StencilFailOp = ToDX11(description.StencilFailOp);
+    desc.FrontFace.StencilDepthFailOp = ToDX11(description.StencilDepthFailOp);
+    desc.FrontFace.StencilPassOp = ToDX11(description.StencilPassOp);
+    desc.FrontFace.StencilFunc = ToDX11(description.StencilFunc);
+    desc.BackFace = desc.FrontFace;
+
+    // Create object and cache it
+    VALIDATE_DIRECTX_CALL(_device->CreateDepthStencilState(&desc, &state));
+    DepthStencilStates.Add(key, state);
+    return state;
 }
 
 ID3D11BlendState* GPUDeviceDX11::GetBlendState(const BlendingMode& blending)
 {
     // Use lookup
-    ID3D11BlendState* blendState = nullptr;
-    if (BlendStates.TryGet(blending, blendState))
-        return blendState;
-
-    // Make it safe
-    ScopeLock lock(BlendStatesWriteLocker);
-
-    // Try again to prevent race condition with double-adding the same thing
-    if (BlendStates.TryGet(blending, blendState))
-        return blendState;
+    ID3D11BlendState* state = nullptr;
+    if (BlendStates.TryGet(blending, state))
+        return state;
+    
+    // Try again but with lock to prevent race condition with double-adding the same thing
+    ScopeLock lock(StatesWriteLocker);
+    if (BlendStates.TryGet(blending, state))
+        return state;
 
     // Prepare description
     D3D11_BLEND_DESC desc;
@@ -285,13 +379,10 @@ ID3D11BlendState* GPUDeviceDX11::GetBlendState(const BlendingMode& blending)
         desc.RenderTarget[i] = desc.RenderTarget[0];
 #endif
 
-    // Create object
-    VALIDATE_DIRECTX_CALL(_device->CreateBlendState(&desc, &blendState));
-
-    // Cache blend state
-    BlendStates.Add(blending, blendState);
-
-    return blendState;
+    // Create object and cache it
+    VALIDATE_DIRECTX_CALL(_device->CreateBlendState(&desc, &state));
+    BlendStates.Add(blending, state);
+    return state;
 }
 
 bool GPUDeviceDX11::Init()
@@ -326,9 +417,9 @@ bool GPUDeviceDX11::Init()
 #if PLATFORM_WINDOWS
     // Detect RenderDoc usage (UUID {A7AA6116-9C8D-4BBA-9083-B4D816B71B78})
     IUnknown* unknown = nullptr;
-    const GUID uuidRenderDoc = { 0xa7aa6116, 0x9c8d, 0x4bba, {0x90, 0x83, 0xb4, 0xd8, 0x16, 0xb7, 0x1b, 0x78}};
+    const GUID uuidRenderDoc = { 0xa7aa6116, 0x9c8d, 0x4bba, { 0x90, 0x83, 0xb4, 0xd8, 0x16, 0xb7, 0x1b, 0x78 } };
     HRESULT hr = _device->QueryInterface(uuidRenderDoc, (void**)&unknown);
-    if(SUCCEEDED(hr) && unknown)
+    if (SUCCEEDED(hr) && unknown)
     {
         IsDebugToolAttached = true;
         unknown->Release();
@@ -560,31 +651,6 @@ bool GPUDeviceDX11::Init()
 #undef CREATE_RASTERIZER_STATE
     }
 
-    // Depth Stencil States
-    {
-        D3D11_DEPTH_STENCIL_DESC dsDesc;
-        dsDesc.StencilEnable = FALSE;
-        dsDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
-        dsDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
-        const D3D11_DEPTH_STENCILOP_DESC defaultStencilOp = { D3D11_STENCIL_OP_KEEP, D3D11_STENCIL_OP_KEEP, D3D11_STENCIL_OP_KEEP, D3D11_COMPARISON_ALWAYS };
-        dsDesc.FrontFace = defaultStencilOp;
-        dsDesc.BackFace = defaultStencilOp;
-        int32 index;
-#define CREATE_DEPTH_STENCIL_STATE(depthEnable, depthWrite) \
-			dsDesc.DepthEnable = depthEnable; \
-			dsDesc.DepthWriteMask = depthWrite ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO; \
-			for(int32 depthFunc = 1; depthFunc <= 8; depthFunc++) { \
-			dsDesc.DepthFunc = (D3D11_COMPARISON_FUNC)depthFunc; \
-			index = (int32)depthFunc + (depthEnable ? 0 : 9) + (depthWrite ? 0 : 18); \
-			HRESULT result = _device->CreateDepthStencilState(&dsDesc, &DepthStencilStates[index]); \
-			LOG_DIRECTX_RESULT_WITH_RETURN(result, true); }
-        CREATE_DEPTH_STENCIL_STATE(false, false);
-        CREATE_DEPTH_STENCIL_STATE(false, true);
-        CREATE_DEPTH_STENCIL_STATE(true, true);
-        CREATE_DEPTH_STENCIL_STATE(true, false);
-#undef CREATE_DEPTH_STENCIL_STATE
-    }
-
     _state = DeviceState::Ready;
     return GPUDeviceDX::Init();
 }
@@ -624,19 +690,14 @@ void GPUDeviceDX11::Dispose()
     SAFE_RELEASE(_samplerPointWrap);
     SAFE_RELEASE(_samplerShadow);
     SAFE_RELEASE(_samplerShadowLinear);
-    //
     for (auto i = BlendStates.Begin(); i.IsNotEnd(); ++i)
-    {
         i->Value->Release();
-    }
+    for (auto i = DepthStencilStates.Begin(); i.IsNotEnd(); ++i)
+        i->Value->Release();
     BlendStates.Clear();
     for (uint32 i = 0; i < ARRAY_COUNT(RasterizerStates); i++)
     {
         SAFE_RELEASE(RasterizerStates[i]);
-    }
-    for (uint32 i = 0; i < ARRAY_COUNT(DepthStencilStates); i++)
-    {
-        SAFE_RELEASE(DepthStencilStates[i]);
     }
 
     // Clear DirectX stuff

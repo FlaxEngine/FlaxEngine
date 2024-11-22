@@ -34,6 +34,49 @@ static VkStencilOp ToVulkanStencilOp(const StencilOperation value)
     }
 }
 
+static VkBlendFactor ToVulkanBlendFactor(const BlendingMode::Blend value)
+{
+    switch (value)
+    {
+    case BlendingMode::Blend::Zero:
+        return VK_BLEND_FACTOR_ZERO;
+    case BlendingMode::Blend::One:
+        return VK_BLEND_FACTOR_ONE;
+    case BlendingMode::Blend::SrcColor:
+        return VK_BLEND_FACTOR_SRC_COLOR;
+    case BlendingMode::Blend::InvSrcColor:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+    case BlendingMode::Blend::SrcAlpha:
+        return VK_BLEND_FACTOR_SRC_ALPHA;
+    case BlendingMode::Blend::InvSrcAlpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    case BlendingMode::Blend::DestAlpha:
+        return VK_BLEND_FACTOR_DST_ALPHA;
+    case BlendingMode::Blend::InvDestAlpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+    case BlendingMode::Blend::DestColor:
+        return VK_BLEND_FACTOR_DST_COLOR;
+    case BlendingMode::Blend::InvDestColor:
+        return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+    case BlendingMode::Blend::SrcAlphaSat:
+        return VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+    case BlendingMode::Blend::BlendFactor:
+        return VK_BLEND_FACTOR_CONSTANT_COLOR;
+    case BlendingMode::Blend::BlendInvFactor:
+        return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+    case BlendingMode::Blend::Src1Color:
+        return VK_BLEND_FACTOR_SRC1_COLOR;
+    case BlendingMode::Blend::InvSrc1Color:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
+    case BlendingMode::Blend::Src1Alpha:
+        return VK_BLEND_FACTOR_SRC1_ALPHA;
+    case BlendingMode::Blend::InvSrc1Alpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
+    default:
+        return VK_BLEND_FACTOR_ZERO;
+    }
+}
+
 GPUShaderProgramCSVulkan::~GPUShaderProgramCSVulkan()
 {
     if (_pipelineState)
@@ -316,7 +359,13 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_VIEWPORT;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_SCISSOR;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
-    static_assert(ARRAY_COUNT(_dynamicStates) <= 3, "Invalid dynamic states array.");
+#define IsBlendUsingBlendFactor(blend) blend == BlendingMode::Blend::BlendFactor || blend == BlendingMode::Blend::BlendInvFactor
+    if (desc.BlendMode.BlendEnable && (
+        IsBlendUsingBlendFactor(desc.BlendMode.SrcBlend) || IsBlendUsingBlendFactor(desc.BlendMode.SrcBlendAlpha) ||
+        IsBlendUsingBlendFactor(desc.BlendMode.DestBlend) || IsBlendUsingBlendFactor(desc.BlendMode.DestBlendAlpha)))
+        _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_BLEND_CONSTANTS;
+#undef IsBlendUsingBlendFactor
+    static_assert(ARRAY_COUNT(_dynamicStates) <= 4, "Invalid dynamic states array.");
     _desc.pDynamicState = &_descDynamic;
 
     // Multisample
@@ -337,7 +386,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _descDepthStencil.front.failOp = ToVulkanStencilOp(desc.StencilFailOp);
     _descDepthStencil.front.depthFailOp = ToVulkanStencilOp(desc.StencilDepthFailOp);
     _descDepthStencil.front.passOp = ToVulkanStencilOp(desc.StencilPassOp);
-    _descDepthStencil.front = _descDepthStencil.back;
+    _descDepthStencil.back = _descDepthStencil.front;
     _desc.pDepthStencilState = &_descDepthStencil;
     DepthReadEnable = desc.DepthEnable && desc.DepthFunc != ComparisonFunc::Always;
     DepthWriteEnable = _descDepthStencil.depthWriteEnable;
@@ -370,21 +419,21 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     {
         auto& blend = _descColorBlendAttachments[0];
         blend.blendEnable = desc.BlendMode.BlendEnable;
-        blend.srcColorBlendFactor = RenderToolsVulkan::ToVulkanBlendFactor(desc.BlendMode.SrcBlend);
-        blend.dstColorBlendFactor = RenderToolsVulkan::ToVulkanBlendFactor(desc.BlendMode.DestBlend);
+        blend.srcColorBlendFactor = ToVulkanBlendFactor(desc.BlendMode.SrcBlend);
+        blend.dstColorBlendFactor = ToVulkanBlendFactor(desc.BlendMode.DestBlend);
         blend.colorBlendOp = RenderToolsVulkan::ToVulkanBlendOp(desc.BlendMode.BlendOp);
-        blend.srcAlphaBlendFactor = RenderToolsVulkan::ToVulkanBlendFactor(desc.BlendMode.SrcBlendAlpha);
-        blend.dstAlphaBlendFactor = RenderToolsVulkan::ToVulkanBlendFactor(desc.BlendMode.DestBlendAlpha);
+        blend.srcAlphaBlendFactor = ToVulkanBlendFactor(desc.BlendMode.SrcBlendAlpha);
+        blend.dstAlphaBlendFactor = ToVulkanBlendFactor(desc.BlendMode.DestBlendAlpha);
         blend.alphaBlendOp = RenderToolsVulkan::ToVulkanBlendOp(desc.BlendMode.BlendOpAlpha);
         blend.colorWriteMask = (VkColorComponentFlags)desc.BlendMode.RenderTargetWriteMask;
     }
     for (int32 i = 1; i < GPU_MAX_RT_BINDED; i++)
         _descColorBlendAttachments[i] = _descColorBlendAttachments[i - 1];
     _descColorBlend.pAttachments = _descColorBlendAttachments;
-    _descColorBlend.blendConstants[0] = 0.0f;
-    _descColorBlend.blendConstants[1] = 0.0f;
-    _descColorBlend.blendConstants[2] = 0.0f;
-    _descColorBlend.blendConstants[3] = 0.0f;
+    _descColorBlend.blendConstants[0] = 1.0f;
+    _descColorBlend.blendConstants[1] = 1.0f;
+    _descColorBlend.blendConstants[2] = 1.0f;
+    _descColorBlend.blendConstants[3] = 1.0f;
     _desc.pColorBlendState = &_descColorBlend;
 
     ASSERT(DSWriteContainer.DescriptorWrites.IsEmpty());
