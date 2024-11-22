@@ -73,10 +73,10 @@ namespace FlaxEditor.Content
     }
     
     /// <summary>
-    /// Context proxy object for C# script files.
+    /// Context proxy object for C# Script files.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
-    [ContentContextMenu("New/C#/C# Script")]
+    [ContentContextMenu("New/C#/Scripting/C# Script")]
     public class CSharpScriptProxy : CSharpProxy
     {
         /// <inheritdoc />
@@ -90,10 +90,27 @@ namespace FlaxEditor.Content
     }
     
     /// <summary>
+    /// Context proxy object for C# Actor files.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
+    [ContentContextMenu("New/C#/Scripting/C# Actor")]
+    public class CSharpActorProxy : CSharpProxy
+    {
+        /// <inheritdoc />
+        public override string Name => "C# Actor";
+
+        /// <inheritdoc />
+        protected override void GetTemplatePath(out string path)
+        {
+            path = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/ActorTemplate.cs");
+        }
+    }
+    
+    /// <summary>
     /// Context proxy object for empty C# files.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
-    [ContentContextMenu("New/C#/C# Empty File")]
+    [ContentContextMenu("New/C#/Generic/C# Empty File")]
     public class CSharpEmptyProxy : CSharpProxy
     {
         /// <inheritdoc />
@@ -103,6 +120,57 @@ namespace FlaxEditor.Content
         protected override void GetTemplatePath(out string path)
         {
             path = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/CSharpEmptyTemplate.cs");
+        }
+    }
+    
+    /// <summary>
+    /// Context proxy object for empty C# class files.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
+    [ContentContextMenu("New/C#/Generic/C# Class")]
+    public class CSharpEmptyClassProxy : CSharpProxy
+    {
+        /// <inheritdoc />
+        public override string Name => "C# Class";
+
+        /// <inheritdoc />
+        protected override void GetTemplatePath(out string path)
+        {
+            path = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/EmptyClassTemplate.cs");
+        }
+    }
+    
+    /// <summary>
+    /// Context proxy object for empty C# struct files.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
+    [ContentContextMenu("New/C#/Generic/C# Struct")]
+    public class CSharpEmptyStructProxy : CSharpProxy
+    {
+        /// <inheritdoc />
+        public override string Name => "C# Struct";
+
+        /// <inheritdoc />
+        protected override void GetTemplatePath(out string path)
+        {
+            path = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/EmptyStructTemplate.cs");
+        }
+    }
+    
+    /// <summary>
+    /// Context proxy object for empty C# interface files.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
+    [ContentContextMenu("New/C#/Generic/C# Interface")]
+    public class CSharpEmptyInterfaceProxy : CSharpProxy
+    {
+        /// <inheritdoc />
+        public override string Name => "C# Interface";
+
+        /// <inheritdoc />
+        protected override void GetTemplatePath(out string path)
+        {
+            path = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/EmptyInterfaceTemplate.cs");
         }
     }
 }

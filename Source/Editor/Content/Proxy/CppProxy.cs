@@ -100,6 +100,24 @@ namespace FlaxEditor.Content
             sourceTemplate = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/ScriptTemplate.cpp");
         }
     }
+    
+    /// <summary>
+    /// Context proxy object for C++ Actor files.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.CppProxy" />
+    [ContentContextMenu("New/C++/C++ Actor")]
+    public class CppActorProxy : CppProxy
+    {
+        /// <inheritdoc />
+        public override string Name => "C++ Actor";
+
+        /// <inheritdoc />
+        protected override void GetTemplatePaths(out string headerTemplate, out string sourceTemplate)
+        {
+            headerTemplate = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/ActorTemplate.h");
+            sourceTemplate = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/ActorTemplate.cpp");
+        }
+    }
 
     /// <summary>
     /// Context proxy object for C++ Json Asset files.
