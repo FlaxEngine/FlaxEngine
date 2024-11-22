@@ -55,9 +55,9 @@ namespace FlaxEditor.Windows
 
             b = contextMenu.AddButton("Rename", inputOptions.Rename, Rename);
             b = contextMenu.AddButton("Duplicate", inputOptions.Duplicate, Editor.SceneEditing.Duplicate);
-            b.Enabled = hasSthSelected;
+            b.Enabled = hasSthSelected && ((ActorNode)Editor.SceneEditing.Selection[0]).CanDuplicate;
 
-            if (isSingleActorSelected)
+            if (isSingleActorSelected && ((ActorNode)Editor.SceneEditing.Selection[0]).Actor is not Scene)
             {
                 var convertMenu = contextMenu.AddChildMenu("Convert");
                 convertMenu.ContextMenu.AutoSort = true;
@@ -117,24 +117,24 @@ namespace FlaxEditor.Windows
                 }
             }
             b = contextMenu.AddButton("Delete", inputOptions.Delete, Editor.SceneEditing.Delete);
-            b.Enabled = hasSthSelected;
+            b.Enabled = hasSthSelected && ((ActorNode)Editor.SceneEditing.Selection[0]).CanDelete;
 
             contextMenu.AddSeparator();
 
             b = contextMenu.AddButton("Copy", inputOptions.Copy, Editor.SceneEditing.Copy);
+            b.Enabled = hasSthSelected && ((ActorNode)Editor.SceneEditing.Selection[0]).CanCopyPaste;
 
-            b.Enabled = hasSthSelected;
             contextMenu.AddButton("Paste", inputOptions.Paste, Editor.SceneEditing.Paste);
 
             b = contextMenu.AddButton("Cut", inputOptions.Cut, Editor.SceneEditing.Cut);
-            b.Enabled = canEditScene;
+            b.Enabled = canEditScene && ((ActorNode)Editor.SceneEditing.Selection[0]).CanCopyPaste;
 
             // Create option
 
             contextMenu.AddSeparator();
 
             b = contextMenu.AddButton("Parent to new Actor", inputOptions.GroupSelectedActors, Editor.SceneEditing.CreateParentForSelectedActors);
-            b.Enabled = canEditScene && hasSthSelected;
+            b.Enabled = canEditScene && hasSthSelected && ((ActorNode)Editor.SceneEditing.Selection[0]).Actor is not Scene;
 
             b = contextMenu.AddButton("Create Prefab", Editor.Prefabs.CreatePrefab);
             b.Enabled = isSingleActorSelected &&
