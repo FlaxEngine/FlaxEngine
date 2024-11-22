@@ -109,24 +109,86 @@ namespace
             nodes->RootMotion.Orientation.Normalize();
         }
     }
+
+    Matrix ComputeWorldMatrixRecursive(const SkeletonData& skeleton, int32 index, Matrix localMatrix)
+    {
+        const auto& node = skeleton.Nodes[index];
+        index = node.ParentIndex;
+        while (index != -1)
+        {
+            const auto& parent = skeleton.Nodes[index];
+            localMatrix *= parent.LocalTransform.GetWorld();
+            index = parent.ParentIndex;
+        }
+        return localMatrix;
+    }
+
+    Matrix ComputeInverseParentMatrixRecursive(const SkeletonData& skeleton, int32 index)
+    {
+        Matrix inverseParentMatrix = Matrix::Identity;
+        const auto& node = skeleton.Nodes[index];
+        if (node.ParentIndex != -1)
+        {
+            inverseParentMatrix = ComputeWorldMatrixRecursive(skeleton, index, inverseParentMatrix);
+            inverseParentMatrix = Matrix::Invert(inverseParentMatrix);
+        }
+        return inverseParentMatrix;
+    }
 }
 
-void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& mapping, Transform& node, int32 i)
+void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& sourceMapping, Transform& node, int32 targetIndex)
 {
-    const int32 nodeToNode = mapping.NodesMapping[i];
-    if (nodeToNode == -1)
+    // sourceSkeleton - skeleton of Anim Graph (Base Locomotion pack)
+    // targetSkeleton - visual mesh skeleton (City Characters pack)
+    // target - anim graph input/output transformation of that node
+    const auto& targetNode = targetSkeleton.Nodes[targetIndex];
+    const int32 sourceIndex = sourceMapping.NodesMapping[targetIndex];
+    if (sourceIndex == -1)
+    {
+        // Use T-pose
+        node = targetNode.LocalTransform;
         return;
+    }
+    const auto& sourceNode = sourceSkeleton.Nodes[sourceIndex];
 
-    // Map source skeleton node to the target skeleton (use ref pose difference)
-    const auto& sourceNode = sourceSkeleton.Nodes[nodeToNode];
-    const auto& targetNode = targetSkeleton.Nodes[i];
-    Transform value = node;
-    const Transform sourceToTarget = targetNode.LocalTransform - sourceNode.LocalTransform;
-    value.Translation += sourceToTarget.Translation;
-    value.Scale *= sourceToTarget.Scale;
-    value.Orientation = sourceToTarget.Orientation * value.Orientation; // TODO: find out why this doesn't match referenced animation when played on that skeleton originally
-    value.Orientation.Normalize();
-    node = value;
+    // [Reference: https://wickedengine.net/2022/09/animation-retargeting/comment-page-1/]
+
+    // Calculate T-Pose of source node, target node and target parent node
+    Matrix bindMatrix = ComputeWorldMatrixRecursive(sourceSkeleton, sourceIndex, sourceNode.LocalTransform.GetWorld());
+    Matrix inverseBindMatrix = Matrix::Invert(bindMatrix);
+    Matrix targetMatrix = ComputeWorldMatrixRecursive(targetSkeleton, targetIndex, targetNode.LocalTransform.GetWorld());
+    Matrix inverseParentMatrix = ComputeInverseParentMatrixRecursive(targetSkeleton, targetIndex);
+
+    // Target node animation is world-space difference of the animated source node inside the target's parent node world-space
+    Matrix localMatrix = inverseBindMatrix * ComputeWorldMatrixRecursive(sourceSkeleton, sourceIndex, node.GetWorld());
+    localMatrix = targetMatrix * localMatrix * inverseParentMatrix;
+
+    // Extract local node transformation
+    localMatrix.Decompose(node);
+}
+
+void RetargetSkeletonPose(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& mapping, const Transform* sourceNodes, Transform* targetNodes)
+{
+    // TODO: cache source and target skeletons world-space poses for faster retargeting (use some pooled memory)
+    ASSERT_LOW_LAYER(targetSkeleton.Nodes.Count() == mapping.NodesMapping.Length());
+    for (int32 targetIndex = 0; targetIndex < targetSkeleton.Nodes.Count(); targetIndex++)
+    {
+        auto& targetNode = targetSkeleton.Nodes.Get()[targetIndex];
+        const int32 sourceIndex = mapping.NodesMapping.Get()[targetIndex];
+        Transform node;
+        if (sourceIndex == -1)
+        {
+            // Use T-pose
+            node = targetNode.LocalTransform;
+        }
+        else
+        {
+            // Retarget
+            node = sourceNodes[sourceIndex];
+            RetargetSkeletonNode(sourceSkeleton, targetSkeleton, mapping, node, targetIndex);
+        }
+        targetNodes[targetIndex] = node;
+    }
 }
 
 AnimGraphTraceEvent& AnimGraphContext::AddTraceEvent(const AnimGraphNode* node)
@@ -1867,8 +1929,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             }
             // Check for transition interruption
             else if (EnumHasAnyFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::InterruptionRuleRechecking) &&
-                    EnumHasNoneFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::UseDefaultRule) &&
-                    bucket.ActiveTransition->RuleGraph)
+                EnumHasNoneFlags(bucket.ActiveTransition->Flags, AnimGraphStateTransition::FlagTypes::UseDefaultRule) &&
+                bucket.ActiveTransition->RuleGraph)
             {
                 // Execute transition rule
                 auto rootNode = bucket.ActiveTransition->RuleGraph->GetRootNode();

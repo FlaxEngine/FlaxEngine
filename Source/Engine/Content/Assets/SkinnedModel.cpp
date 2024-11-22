@@ -155,7 +155,7 @@ void SkinnedModel::GetLODData(int32 lodIndex, BytesContainer& data) const
     GetChunkData(chunkIndex, data);
 }
 
-SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source)
+SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source, bool autoRetarget)
 {
     SkeletonMapping mapping;
     mapping.TargetSkeleton = this;
@@ -168,10 +168,6 @@ SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source)
         PROFILE_CPU();
 
         // Initialize the mapping
-        const int32 nodesCount = Skeleton.Nodes.Count();
-        mappingData.NodesMapping = Span<int32>((int32*)Allocator::Allocate(nodesCount * sizeof(int32)), nodesCount);
-        for (int32 i = 0; i < nodesCount; i++)
-            mappingData.NodesMapping[i] = -1;
         SkeletonRetarget* retarget = nullptr;
         const Guid sourceId = source->GetID();
         for (auto& e : _skeletonRetargets)
@@ -182,6 +178,15 @@ SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source)
                 break;
             }
         }
+        if (!retarget && !autoRetarget)
+        {
+            // Skip automatic retarget
+            return mapping;
+        }
+        const int32 nodesCount = Skeleton.Nodes.Count();
+        mappingData.NodesMapping = Span<int32>((int32*)Allocator::Allocate(nodesCount * sizeof(int32)), nodesCount);
+        for (int32 i = 0; i < nodesCount; i++)
+            mappingData.NodesMapping[i] = -1;
         if (const auto* sourceAnim = Cast<Animation>(source))
         {
             const auto& channels = sourceAnim->Data.Channels;

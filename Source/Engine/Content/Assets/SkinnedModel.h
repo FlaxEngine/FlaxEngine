@@ -177,8 +177,9 @@ public:
     /// Gets the skeleton mapping for a given asset (animation or other skinned model). Uses identity mapping or manually created retargeting setup.
     /// </summary>
     /// <param name="source">The source asset (animation or other skinned model) to get mapping to its skeleton.</param>
+    /// <param name="autoRetarget">Enables automatic skeleton retargeting based on nodes names. Can be disabled to query existing skeleton mapping or return null if not defined.</param>
     /// <returns>The skeleton mapping for the source asset into this skeleton.</returns>
-    SkeletonMapping GetSkeletonMapping(Asset* source);
+    SkeletonMapping GetSkeletonMapping(Asset* source, bool autoRetarget = true);
 
     /// <summary>
     /// Determines if there is an intersection between the SkinnedModel and a Ray in given world using given instance.

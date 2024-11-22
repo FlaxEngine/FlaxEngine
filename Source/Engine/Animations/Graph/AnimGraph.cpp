@@ -7,7 +7,7 @@
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Scripting/Scripting.h"
 
-extern void RetargetSkeletonNode(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& sourceMapping, Transform& node, int32 i);
+extern void RetargetSkeletonPose(const SkeletonData& sourceSkeleton, const SkeletonData& targetSkeleton, const SkinnedModel::SkeletonMapping& mapping, const Transform* sourceNodes, Transform* targetNodes);
 
 ThreadLocal<AnimGraphContext*> AnimGraphExecutor::Context;
 
@@ -338,31 +338,25 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
     if (_graph.BaseModel != data.NodesSkeleton)
     {
         ANIM_GRAPH_PROFILE_EVENT("Retarget");
-
-        // Init nodes for the target skeleton
         auto& targetSkeleton = data.NodesSkeleton->Skeleton;
         retargetNodes = *animResult;
         retargetNodes.Nodes.Resize(targetSkeleton.Nodes.Count());
         Transform* targetNodes = retargetNodes.Nodes.Get();
-        for (int32 i = 0; i < retargetNodes.Nodes.Count(); i++)
-            targetNodes[i] = targetSkeleton.Nodes[i].LocalTransform;
 
-        // Use skeleton mapping
+        // Attempt to retarget output pose for the target skeleton
         const SkinnedModel::SkeletonMapping mapping = data.NodesSkeleton->GetSkeletonMapping(_graph.BaseModel);
         if (mapping.NodesMapping.IsValid())
         {
+            // Use skeleton mapping
             const auto& sourceSkeleton = _graph.BaseModel->Skeleton;
             Transform* sourceNodes = animResult->Nodes.Get();
+            RetargetSkeletonPose(sourceSkeleton, targetSkeleton, mapping, sourceNodes, targetNodes);
+        }
+        else
+        {
+            // Use T-pose as a fallback
             for (int32 i = 0; i < retargetNodes.Nodes.Count(); i++)
-            {
-                const int32 nodeToNode = mapping.NodesMapping[i];
-                if (nodeToNode != -1)
-                {
-                    Transform node = sourceNodes[nodeToNode];
-                    RetargetSkeletonNode(sourceSkeleton, targetSkeleton, mapping, node, i);
-                    targetNodes[i] = node;
-                }
-            }
+                targetNodes[i] = targetSkeleton.Nodes[i].LocalTransform;
         }
 
         animResult = &retargetNodes;
