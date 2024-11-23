@@ -457,7 +457,8 @@ namespace FlaxEditor.Surface
                 // Select those nodes
                 Select(nodes.Values);
 
-                MarkAsEdited();
+                if (nodes.Count > 0)
+                    MarkAsEdited();
             }
             catch (Exception ex)
             {
