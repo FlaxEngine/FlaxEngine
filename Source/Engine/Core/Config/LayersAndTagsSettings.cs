@@ -43,7 +43,7 @@ namespace FlaxEditor.Content.Settings
         public static string[] GetCurrentTerrainLayers()
         {
     #if FLAX_TESTS
-            return Array.Empty<string>();
+            return System.Array.Empty<string>();
     #else
             string[] layerNames = GameSettings.Load<LayersAndTagsSettings>().TerrainLayers;
 
