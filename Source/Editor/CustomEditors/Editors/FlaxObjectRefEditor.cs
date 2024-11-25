@@ -328,9 +328,9 @@ namespace FlaxEditor.CustomEditors.Editors
             {
                 // Select object
                 if (_value is Actor actor)
-                    Editor.Instance.SceneEditing.Select(actor);
+                    Select(actor);
                 else if (_value is Script script && script.Actor)
-                    Editor.Instance.SceneEditing.Select(script.Actor);
+                    Select(script.Actor);
                 else if (_value is Asset asset)
                     Editor.Instance.Windows.ContentWin.Select(asset);
             }
@@ -346,6 +346,28 @@ namespace FlaxEditor.CustomEditors.Editors
             // Picker dropdown menu
             if (_supportsPickDropDown)
                 ShowDropDownMenu();
+        }
+
+        private void Select(Actor actor)
+        {
+            var node = SceneGraphFactory.FindNode(actor.ID) as ActorNode;
+            if (node == null)
+                return;
+
+            var c = Parent;
+            while (c != null)
+            {
+                if (c is Windows.Assets.PrefabWindow prefabWindow)
+                {
+                    // Prefab editor
+                    prefabWindow.Select(node);
+                    return;
+                }
+                c = c.Parent;
+            }
+
+            // Global selection
+            Editor.Instance.SceneEditing.Select(actor);
         }
 
         private void DoDrag()
