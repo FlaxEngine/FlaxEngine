@@ -1799,6 +1799,12 @@ namespace Flax.Build.Bindings
         {
             if (memberType.IsBitField)
                 return "_BIT";
+            if (memberType.IsPtr)
+            {
+                var t = FindApiTypeInfo(buildData, memberType, caller);
+                if (t.IsScriptingObject)
+                    return "_OBJ";
+            }
             return string.Empty;
         }
 

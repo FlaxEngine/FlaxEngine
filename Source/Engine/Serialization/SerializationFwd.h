@@ -76,3 +76,18 @@ class ISerializeModifier;
         if (e != stream.MemberEnd() && e->value.IsBool()) \
             member = e->value.GetBool() ? 1 : 0; \
     }
+
+// Explicit auto-cast for object pointer
+
+#define SERIALIZE_OBJ(name) \
+    if (Serialization::ShouldSerialize((const ScriptingObject*&)name, other ? &other->name : nullptr)) \
+	{ \
+		stream.JKEY(#name); \
+		Serialization::Serialize(stream, (const ScriptingObject*&)name, other ? &other->name : nullptr); \
+	}
+#define DESERIALIZE_OBJ(name)  \
+    { \
+        const auto e = SERIALIZE_FIND_MEMBER(stream, #name); \
+        if (e != stream.MemberEnd()) \
+            Serialization::Deserialize(e->value, (ScriptingObject*&)name, modifier); \
+    }
