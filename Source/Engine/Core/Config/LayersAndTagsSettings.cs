@@ -30,6 +30,33 @@ namespace FlaxEditor.Content.Settings
             return GetCurrentLayers(out int _);
         }
 
+        /// <summary>
+        /// The layers names.
+        /// </summary>
+        [EditorOrder(10), EditorDisplay("Terrain Layers", EditorDisplayAttribute.InlineStyle), Collection(CanResize = false, Display = CollectionAttribute.DisplayType.Inline)]
+        public string[] TerrainLayers = new string[8];
+
+        /// <summary>
+        /// Gets the current terrain layer names. Returns "Layer" + index for layers without a name.
+        /// </summary>
+        /// <returns>The layer names.</returns>
+        public static string[] GetCurrentTerrainLayers()
+        {
+    #if FLAX_TESTS
+            return System.Array.Empty<string>();
+    #else
+            string[] layerNames = GameSettings.Load<LayersAndTagsSettings>().TerrainLayers;
+
+            for (int i = 0; i < layerNames.Length; i++)
+            {
+                if (string.IsNullOrEmpty(layerNames[i]))
+                    layerNames[i] = $"Layer {i}";
+            }
+
+            return layerNames;
+    #endif
+        }
+
         [LibraryImport("FlaxEngine", EntryPoint = "LayersAndTagsSettingsInternal_GetCurrentLayers", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.Interop.StringMarshaller))]
         [return: MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = "layerCount")]
         internal static partial string[] GetCurrentLayers(out int layerCount);

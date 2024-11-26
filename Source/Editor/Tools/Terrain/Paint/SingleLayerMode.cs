@@ -60,7 +60,7 @@ namespace FlaxEditor.Tools.Terrain.Paint
         /// <summary>
         /// The layer to paint with it.
         /// </summary>
-        [EditorOrder(10), Tooltip("The layer to paint with it. Terrain material can access per-layer blend weight to perform materials or textures blending.")]
+        [EditorOrder(10), Tooltip("The layer to paint on. Terrain material can access a per-layer blend weight to perform material or texture blending."), CustomEditorAlias("FlaxEditor.CustomEditors.Editors.TerrainLayerEditor")]
         public Layers Layer = Layers.Layer0;
 
         /// <inheritdoc />
