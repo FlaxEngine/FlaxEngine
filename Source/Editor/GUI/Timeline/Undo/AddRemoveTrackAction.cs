@@ -61,6 +61,9 @@ namespace FlaxEditor.GUI.Timeline.Undo
             _timeline.AddTrack(track, false);
             track.TrackIndex = _order;
             _timeline.OnTracksOrderChanged();
+            _timeline.Focus();
+            _timeline.Select(track);
+            track.Focus();
         }
 
         private void Remove()
@@ -68,10 +71,11 @@ namespace FlaxEditor.GUI.Timeline.Undo
             var track = _timeline.FindTrack(_name);
             if (track == null)
             {
-                Editor.LogWarning($"Cannot remove track {_name}. It doesn't already exists.");
+                Editor.LogWarning($"Cannot remove track {_name}. It doesn't exist.");
                 return;
             }
             _timeline.Delete(track, false);
+            _timeline.Focus();
         }
 
         public string ActionString => _isAdd ? "Add track" : "Remove track";
