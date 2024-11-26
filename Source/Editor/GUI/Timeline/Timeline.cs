@@ -1446,6 +1446,17 @@ namespace FlaxEditor.GUI.Timeline
             {
                 GetTracks(SelectedTracks[i], tracks);
             }
+            
+            // Find the lowest track position for selection
+            int lowestTrackLocation = Tracks.Count - 1;
+            for (int i = 0; i < tracks.Count; i++)
+            {
+                var trackToDelete = tracks[i];
+                if (trackToDelete.TrackIndex < lowestTrackLocation)
+                {
+                    lowestTrackLocation = trackToDelete.TrackIndex;
+                }
+            }
             SelectedTracks.Clear();
             if (withUndo && Undo != null && Undo.Enabled)
             {
@@ -1468,6 +1479,18 @@ namespace FlaxEditor.GUI.Timeline
             }
             OnTracksChanged();
             MarkAsEdited();
+
+            // Select track above deleted tracks unless track is first track
+            if (Tracks.Count > 0)
+            {
+                if (lowestTrackLocation - 1 >= 0)
+                    Select(Tracks[lowestTrackLocation - 1]);
+                else
+                    Select(Tracks[0]);
+                
+                SelectedTracks[0].Focus();
+            }
+
         }
 
         /// <summary>
@@ -1655,6 +1678,14 @@ namespace FlaxEditor.GUI.Timeline
             }
             OnTracksChanged();
             MarkAsEdited();
+            
+            // Deselect and select new clones.
+            Deselect();
+            foreach (var clone in clones)
+            {
+                Select(clone, true);
+            }
+
             SelectedTracks[0].Focus();
         }
 
