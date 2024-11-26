@@ -13,7 +13,6 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 using FlaxEngine.Utilities;
-using System.Linq;
 
 namespace FlaxEditor.Surface.Archetypes
 {
@@ -427,7 +426,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public bool IsParamreferenced(SurfaceParameter param)
+            public bool IsParamUsed(SurfaceParameter param)
             {
                 return (Guid)Values[0] == param.ID;
             }
@@ -950,7 +949,7 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public bool IsParamreferenced(SurfaceParameter param)
+            public bool IsParamUsed(SurfaceParameter param)
             {
                 return (Guid)Values[0] == param.ID;
             }

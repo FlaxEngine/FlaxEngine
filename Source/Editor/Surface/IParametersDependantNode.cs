@@ -39,6 +39,6 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="param">The parameter.</param>
         /// <returns>If the parameter is referenced.</returns>
-        bool IsParamreferenced(SurfaceParameter param);
+        bool IsParamUsed(SurfaceParameter param);
     }
 }

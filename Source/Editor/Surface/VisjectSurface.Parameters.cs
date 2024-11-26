@@ -84,5 +84,16 @@ namespace FlaxEditor.Surface
             }
             MarkAsEdited();
         }
+
+        /// <inheritdoc />
+        public bool IsParamUsed(SurfaceParameter param)
+        {
+            for (int i = 0; i < Nodes.Count; i++)
+            {
+                if (Nodes[i] is IParametersDependantNode node && node.IsParamUsed(param))
+                    return true;
+            }
+            return false;
+        }
     }
 }
