@@ -16,7 +16,7 @@ namespace FlaxEditor.Content.Settings
         public List<string> Tags = new List<string>();
 
         /// <summary>
-        /// The layers names.
+        /// The layer names.
         /// </summary>
         [EditorOrder(10), EditorDisplay("Layers", EditorDisplayAttribute.InlineStyle), Collection(CanResize = false, Display = CollectionAttribute.DisplayType.Inline)]
         public string[] Layers = new string[32];
@@ -31,7 +31,7 @@ namespace FlaxEditor.Content.Settings
         }
 
         /// <summary>
-        /// The layers names.
+        /// The layer names.
         /// </summary>
         [EditorOrder(10), EditorDisplay("Terrain Layers", EditorDisplayAttribute.InlineStyle), Collection(CanResize = false, Display = CollectionAttribute.DisplayType.Inline)]
         public string[] TerrainLayers = new string[8];
@@ -42,19 +42,17 @@ namespace FlaxEditor.Content.Settings
         /// <returns>The layer names.</returns>
         public static string[] GetCurrentTerrainLayers()
         {
-    #if FLAX_TESTS
+#if FLAX_TESTS
             return System.Array.Empty<string>();
-    #else
+#else
             string[] layerNames = GameSettings.Load<LayersAndTagsSettings>().TerrainLayers;
-
             for (int i = 0; i < layerNames.Length; i++)
             {
                 if (string.IsNullOrEmpty(layerNames[i]))
                     layerNames[i] = $"Layer {i}";
             }
-
             return layerNames;
-    #endif
+#endif
         }
 
         [LibraryImport("FlaxEngine", EntryPoint = "LayersAndTagsSettingsInternal_GetCurrentLayers", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(FlaxEngine.Interop.StringMarshaller))]
