@@ -449,6 +449,13 @@ namespace FlaxEditor.Options
         [EditorDisplay("Visject", "Grid Snapping Size"), EditorOrder(551), Tooltip("Defines the size of the grid for nodes snapping."), VisibleIf(nameof(SurfaceGridSnapping))]
         public float SurfaceGridSnappingSize { get; set; } = 20.0f;
 
+        /// <summary>
+        /// Gets or sets a value that indicates if a warning should be displayed when deleting a Visject parameter that is used in a graph.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Visject", "Warn when deleting used parameter"), EditorOrder(552)]
+        public bool WarnOnDeletingUsedVisjectParameter { get; set; } = true;
+
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
         private static FontAsset ConsoleFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont);
 

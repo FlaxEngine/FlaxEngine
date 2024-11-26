@@ -775,7 +775,34 @@ namespace FlaxEditor.Surface
 
         private void DeleteParameter(int index)
         {
+            bool displayWarning = Editor.Instance.Options.Options.Interface.WarnOnDeletingUsedVisjectParameter;
+
             var window = (IVisjectSurfaceWindow)Values[0];
+            SurfaceParameter param = window.VisjectSurface.Parameters[index];
+
+            int connectedParameterNodeCount = 0;
+
+            List<SurfaceNode> nodes = window.VisjectSurface.Nodes;
+
+            for (int i = 0; i < window.VisjectSurface.Nodes.Count; i++)
+            {
+                if (nodes[i] is IParametersDependantNode node)
+                {
+                    if (displayWarning && node.IsParamreferenced(param))
+                        connectedParameterNodeCount++;
+                }
+            }
+
+            if (displayWarning)
+            {
+                string singularPlural = connectedParameterNodeCount > 1 ? "s" : "";
+                string msg = $"Delete parameter {param.Name}?\nParameter is being used in a graph {connectedParameterNodeCount} time{singularPlural}.\n\nYou can disable this warning in the editor settings.";
+
+                if (connectedParameterNodeCount > 0)
+                    if (MessageBox.Show(msg, "Delete parameter", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
+                        return;
+            }
+
             var action = new AddRemoveParamAction
             {
                 Window = window,
