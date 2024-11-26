@@ -52,12 +52,13 @@ namespace FlaxEditor.Windows
             contextMenu.AddSeparator();
 
             // Basic editing options
-
+            var firstSelection = hasSthSelected ? Editor.SceneEditing.Selection[0] as ActorNode : null;
             b = contextMenu.AddButton("Rename", inputOptions.Rename, Rename);
-            b = contextMenu.AddButton("Duplicate", inputOptions.Duplicate, Editor.SceneEditing.Duplicate);
             b.Enabled = hasSthSelected;
+            b = contextMenu.AddButton("Duplicate", inputOptions.Duplicate, Editor.SceneEditing.Duplicate);
+            b.Enabled = hasSthSelected && (firstSelection != null ? firstSelection.CanDuplicate : true);
 
-            if (isSingleActorSelected)
+            if (isSingleActorSelected && firstSelection?.Actor is not Scene)
             {
                 var convertMenu = contextMenu.AddChildMenu("Convert");
                 convertMenu.ContextMenu.AutoSort = true;
@@ -117,31 +118,31 @@ namespace FlaxEditor.Windows
                 }
             }
             b = contextMenu.AddButton("Delete", inputOptions.Delete, Editor.SceneEditing.Delete);
-            b.Enabled = hasSthSelected;
+            b.Enabled = hasSthSelected && (firstSelection != null ? firstSelection.CanDelete : true);
 
             contextMenu.AddSeparator();
 
             b = contextMenu.AddButton("Copy", inputOptions.Copy, Editor.SceneEditing.Copy);
+            b.Enabled = hasSthSelected && (firstSelection != null ? firstSelection.CanCopyPaste : true);
 
-            b.Enabled = hasSthSelected;
             contextMenu.AddButton("Paste", inputOptions.Paste, Editor.SceneEditing.Paste);
 
             b = contextMenu.AddButton("Cut", inputOptions.Cut, Editor.SceneEditing.Cut);
-            b.Enabled = canEditScene;
+            b.Enabled = canEditScene && hasSthSelected && (firstSelection != null ? firstSelection.CanCopyPaste : true);
 
             // Create option
 
             contextMenu.AddSeparator();
 
             b = contextMenu.AddButton("Parent to new Actor", inputOptions.GroupSelectedActors, Editor.SceneEditing.CreateParentForSelectedActors);
-            b.Enabled = canEditScene && hasSthSelected;
+            b.Enabled = canEditScene && hasSthSelected && firstSelection?.Actor is not Scene;
 
             b = contextMenu.AddButton("Create Prefab", Editor.Prefabs.CreatePrefab);
             b.Enabled = isSingleActorSelected &&
-                        ((ActorNode)Editor.SceneEditing.Selection[0]).CanCreatePrefab &&
+                        (firstSelection != null ? firstSelection.CanCreatePrefab : false) &&
                         Editor.Windows.ContentWin.CurrentViewFolder.CanHaveAssets;
 
-            bool hasPrefabLink = canEditScene && isSingleActorSelected && (Editor.SceneEditing.Selection[0] as ActorNode).HasPrefabLink;
+            bool hasPrefabLink = canEditScene && isSingleActorSelected && (firstSelection != null ? firstSelection.HasPrefabLink : false);
             if (hasPrefabLink)
             {
                 contextMenu.AddButton("Select Prefab", Editor.Prefabs.SelectPrefab);
