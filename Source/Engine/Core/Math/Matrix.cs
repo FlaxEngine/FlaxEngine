@@ -215,23 +215,9 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets or sets the forward <see cref="Float3" /> of the matrix; that is -M31, -M32, and -M33.
+        /// Gets or sets the forward <see cref="Float3" /> of the matrix; that is M31, M32, and M33.
         /// </summary>
         public Float3 Forward
-        {
-            get => new Float3(-M31, -M32, -M33);
-            set
-            {
-                M31 = -value.X;
-                M32 = -value.Y;
-                M33 = -value.Z;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the backward <see cref="Float3" /> of the matrix; that is M31, M32, and M33.
-        /// </summary>
-        public Float3 Backward
         {
             get => new Float3(M31, M32, M33);
             set
@@ -239,6 +225,20 @@ namespace FlaxEngine
                 M31 = value.X;
                 M32 = value.Y;
                 M33 = value.Z;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the backward <see cref="Float3" /> of the matrix; that is -M31, -M32, and -M33.
+        /// </summary>
+        public Float3 Backward
+        {
+            get => new Float3(-M31, -M32, -M33);
+            set
+            {
+                M31 = -value.X;
+                M32 = -value.Y;
+                M33 = -value.Z;
             }
         }
 
