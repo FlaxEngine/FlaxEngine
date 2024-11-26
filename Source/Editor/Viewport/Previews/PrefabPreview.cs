@@ -79,6 +79,13 @@ namespace FlaxEditor.Viewport.Previews
                             _uiControlLinked.Control.Parent = null;
                         _uiControlLinked = null;
                     }
+                    foreach (var child in _uiParentLink.Children.ToArray())
+                    {
+                        if (child is CanvasRootControl canvasRoot)
+                        {
+                            canvasRoot.Canvas.EditorOverride(null, null);
+                        }
+                    }
 
                     // Remove for the preview
                     Task.RemoveCustomActor(_instance);
