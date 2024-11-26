@@ -13,6 +13,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 using FlaxEngine.Utilities;
+using System.Linq;
 
 namespace FlaxEditor.Surface.Archetypes
 {
@@ -423,6 +424,12 @@ namespace FlaxEditor.Surface.Archetypes
                     _combobox.SelectedIndex = -1;
 
                 UpdateCombo();
+            }
+
+            /// <inheritdoc />
+            public bool IsParamreferenced(SurfaceParameter param)
+            {
+                return (Guid)Values[0] == param.ID;
             }
 
             /// <inheritdoc />
@@ -937,11 +944,15 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 // Deselect if that parameter is selected
                 if ((Guid)Values[0] == param.ID)
-                {
                     _combobox.SelectedIndex = -1;
-                }
 
                 UpdateCombo();
+            }
+
+            /// <inheritdoc />
+            public bool IsParamreferenced(SurfaceParameter param)
+            {
+                return (Guid)Values[0] == param.ID;
             }
 
             /// <inheritdoc />
