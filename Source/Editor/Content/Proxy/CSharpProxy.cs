@@ -76,7 +76,7 @@ namespace FlaxEditor.Content
     /// Context proxy object for C# Script files.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
-    [ContentContextMenu("New/C#/Scripting/C# Script")]
+    [ContentContextMenu("New/C#/C# Script")]
     public class CSharpScriptProxy : CSharpProxy
     {
         /// <inheritdoc />
@@ -93,7 +93,7 @@ namespace FlaxEditor.Content
     /// Context proxy object for C# Actor files.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
-    [ContentContextMenu("New/C#/Scripting/C# Actor")]
+    [ContentContextMenu("New/C#/C# Actor")]
     public class CSharpActorProxy : CSharpProxy
     {
         /// <inheritdoc />
@@ -110,7 +110,7 @@ namespace FlaxEditor.Content
     /// Context proxy object for empty C# files.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
-    [ContentContextMenu("New/C#/Generic/C# Empty File")]
+    [ContentContextMenu("New/C#/C# Empty File")]
     public class CSharpEmptyProxy : CSharpProxy
     {
         /// <inheritdoc />
@@ -127,7 +127,7 @@ namespace FlaxEditor.Content
     /// Context proxy object for empty C# class files.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
-    [ContentContextMenu("New/C#/Generic/C# Class")]
+    [ContentContextMenu("New/C#/C# Class")]
     public class CSharpEmptyClassProxy : CSharpProxy
     {
         /// <inheritdoc />
@@ -144,7 +144,7 @@ namespace FlaxEditor.Content
     /// Context proxy object for empty C# struct files.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
-    [ContentContextMenu("New/C#/Generic/C# Struct")]
+    [ContentContextMenu("New/C#/C# Struct")]
     public class CSharpEmptyStructProxy : CSharpProxy
     {
         /// <inheritdoc />
@@ -161,7 +161,7 @@ namespace FlaxEditor.Content
     /// Context proxy object for empty C# interface files.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
-    [ContentContextMenu("New/C#/Generic/C# Interface")]
+    [ContentContextMenu("New/C#/C# Interface")]
     public class CSharpEmptyInterfaceProxy : CSharpProxy
     {
         /// <inheritdoc />
