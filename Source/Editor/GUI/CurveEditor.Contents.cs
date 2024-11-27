@@ -519,10 +519,15 @@ namespace FlaxEditor.GUI
                     return true;
 
                 // Zoom in/out
-                if (_editor.EnableZoom != UseMode.Off && IsMouseOver && !_leftMouseDown && RootWindow.GetKey(KeyboardKeys.Control))
+                var zoom = RootWindow.GetKey(KeyboardKeys.Control);
+                var zoomAlt = RootWindow.GetKey(KeyboardKeys.Shift);
+                if (_editor.EnableZoom != UseMode.Off && IsMouseOver && !_leftMouseDown && (zoom || zoomAlt))
                 {
                     // TODO: preserve the view center point for easier zooming
-                    _editor.ViewScale += GetUseModeMask(_editor.EnableZoom) * (delta * 0.1f);
+                    var scale = new Float2(delta * 0.1f);
+                    if (zoomAlt)
+                        scale.X = 0;
+                    _editor.ViewScale += GetUseModeMask(_editor.EnableZoom) * scale;
                     return true;
                 }
 
