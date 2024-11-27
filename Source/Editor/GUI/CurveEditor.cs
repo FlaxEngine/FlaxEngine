@@ -1384,9 +1384,7 @@ namespace FlaxEditor.GUI
             // Calculate bounds
             var bounds = _points[0].Bounds;
             for (var i = 1; i < _points.Count; i++)
-            {
                 bounds = Rectangle.Union(bounds, _points[i].Bounds);
-            }
 
             // Adjust contents bounds to fill the curve area
             if (EnablePanning != UseMode.Off || !ShowCollapsed)
@@ -2116,9 +2114,7 @@ namespace FlaxEditor.GUI
             // Calculate bounds
             var bounds = _points[0].Bounds;
             for (int i = 1; i < _points.Count; i++)
-            {
                 bounds = Rectangle.Union(bounds, _points[i].Bounds);
-            }
 
             // Adjust contents bounds to fill the curve area
             if (EnablePanning != UseMode.Off || !ShowCollapsed)
