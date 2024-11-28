@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
-using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
@@ -206,15 +205,9 @@ namespace FlaxEditor.GUI
                         {
                             switch (_editor.EnablePanning)
                             {
-                            case UseMode.Vertical:
-                                Cursor = CursorType.SizeNS;
-                                break;
-                            case UseMode.Horizontal:
-                                Cursor = CursorType.SizeWE;
-                                break;
-                            case UseMode.On:
-                                Cursor = CursorType.SizeAll;
-                                break;
+                            case UseMode.Vertical: Cursor = CursorType.SizeNS; break;
+                            case UseMode.Horizontal: Cursor = CursorType.SizeWE; break;
+                            case UseMode.On: Cursor = CursorType.SizeAll; break;
                             }
                         }
                     }
@@ -525,8 +518,14 @@ namespace FlaxEditor.GUI
                 {
                     // TODO: preserve the view center point for easier zooming
                     var scale = new Float2(delta * 0.1f);
+
+                    // Scale relative to the curve size
+                    _editor._mainPanel.GetDesireClientArea(out var mainPanelArea);
+                    var curveScale = mainPanelArea.Size / _editor._contents.Size;
+                    scale *= curveScale;
+
                     if (zoomAlt)
-                        scale.X = 0;
+                        scale.X = 0; // Scale Y axis only
                     _editor.ViewScale += GetUseModeMask(_editor.EnableZoom) * scale;
                     return true;
                 }
