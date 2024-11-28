@@ -11,6 +11,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     class BezierCurveObjectEditor<T> : CustomEditor where T : struct
     {
         private bool _isSetting;
+        private int _firstTimeShow;
         private BezierCurveEditor<T> _curve;
 
         /// <inheritdoc />
@@ -20,6 +21,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _curve = item.CustomControl;
             _curve.Height = 120.0f;
             _curve.Edited += OnCurveEdited;
+            _firstTimeShow = 4; // For some weird reason it needs several frames of warmup (probably due to sliders smoothing)
         }
 
         private void OnCurveEdited()
@@ -44,6 +46,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 _curve.SetKeyframes(value.Keyframes);
                 _isSetting = false;
             }
+            if (_firstTimeShow-- > 0)
+                _curve.ShowWholeCurve();
         }
 
         /// <inheritdoc />
@@ -111,6 +115,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     class LinearCurveObjectEditor<T> : CustomEditor where T : struct
     {
         private bool _isSetting;
+        private int _firstTimeShow;
         private LinearCurveEditor<T> _curve;
 
         /// <inheritdoc />
@@ -120,6 +125,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _curve = item.CustomControl;
             _curve.Height = 120.0f;
             _curve.Edited += OnCurveEdited;
+            _firstTimeShow = 4; // For some weird reason it needs several frames of warmup (probably due to sliders smoothing)
         }
 
         private void OnCurveEdited()
@@ -144,6 +150,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 _curve.SetKeyframes(value.Keyframes);
                 _isSetting = false;
             }
+            if (_firstTimeShow-- > 0)
+                _curve.ShowWholeCurve();
         }
 
         /// <inheritdoc />
