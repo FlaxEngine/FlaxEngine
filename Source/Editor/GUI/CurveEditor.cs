@@ -671,8 +671,20 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override void ShowWholeCurve()
         {
-            ViewScale = ApplyUseModeMask(EnableZoom, _mainPanel.Size / _contents.Size, ViewScale);
-            ViewOffset = ApplyUseModeMask(EnablePanning, -_mainPanel.ControlsBounds.Location, ViewOffset);
+            _mainPanel.GetDesireClientArea(out var mainPanelArea);
+            ViewScale = ApplyUseModeMask(EnableZoom, mainPanelArea.Size / _contents.Size, ViewScale);
+            Float2 minPos = Float2.Maximum;
+            foreach (var point in _points)
+            {
+                var pos = point.PointToParent(point.Location);
+                Float2.Min(ref minPos, ref pos, out minPos);
+            }
+            var minPosPoint = _contents.PointToParent(ref minPos);
+            var scroll = new Float2(_mainPanel.HScrollBar.TargetValue, _mainPanel.VScrollBar.TargetValue);
+            scroll = ApplyUseModeMask(EnablePanning, minPosPoint, scroll);
+            _mainPanel.HScrollBar.TargetValue = scroll.X;
+            _mainPanel.VScrollBar.TargetValue = scroll.Y;
+
             UpdateKeyframes();
         }
 

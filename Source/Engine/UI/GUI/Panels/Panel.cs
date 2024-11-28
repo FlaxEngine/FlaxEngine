@@ -265,13 +265,12 @@ namespace FlaxEngine.GUI
         {
             bool wasLocked = _isLayoutLocked;
             _isLayoutLocked = true;
-
             if (HScrollBar != null)
                 HScrollBar.Value = -value.X;
             if (VScrollBar != null)
                 VScrollBar.Value = -value.Y;
-
             _isLayoutLocked = wasLocked;
+
             base.SetViewOffset(ref value);
         }
 

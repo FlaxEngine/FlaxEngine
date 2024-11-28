@@ -330,7 +330,7 @@ namespace FlaxEngine.GUI
             bool needUpdate = Mathf.Abs(_thumbOpacity - targetOpacity) > 0.001f;
 
             // Ensure scroll bar is visible and smoothing is required
-            if (Visible && Mathf.Abs(_targetValue - _value) > 0.01f)
+            if (Visible && (Mathf.Abs(_targetValue - _value) > 0.0001f || _scrollAnimationProgress < 1.0f))
             {
                 // Interpolate or not if running slow
                 float value;
@@ -348,6 +348,8 @@ namespace FlaxEngine.GUI
                             
                     // https://easings.net/#easeOutSine
                     var easedProgress = Mathf.Sin((progress * Mathf.Pi) / 2);
+                    if (progress >= 1.0f)
+                        easedProgress = 1.0f;
                     value = Mathf.Lerp(_startValue, _targetValue, easedProgress);
 
                     _scrollAnimationProgress = progress;
@@ -356,7 +358,7 @@ namespace FlaxEngine.GUI
                 {
                     value = _targetValue;
                     _startValue = _targetValue;
-                    _scrollAnimationProgress = 0f;
+                    _scrollAnimationProgress = 1f;
                 }
                 
                 _value = value;
