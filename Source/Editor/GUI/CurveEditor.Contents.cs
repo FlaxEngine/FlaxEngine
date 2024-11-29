@@ -516,17 +516,25 @@ namespace FlaxEditor.GUI
                 var zoomAlt = RootWindow.GetKey(KeyboardKeys.Shift);
                 if (_editor.EnableZoom != UseMode.Off && IsMouseOver && !_leftMouseDown && (zoom || zoomAlt))
                 {
-                    // TODO: preserve the view center point for easier zooming
-                    var scale = new Float2(delta * 0.1f);
-
+                    // Cache mouse location in curve-space
+                    var viewRect = _editor._mainPanel.GetClientArea();
+                    var locationInKeyframes = PointToKeyframes(location, ref viewRect);
+                    var locationInEditorBefore = _editor.PointFromKeyframes(locationInKeyframes, ref viewRect);
+                    
                     // Scale relative to the curve size
+                    var scale = new Float2(delta * 0.1f);
                     _editor._mainPanel.GetDesireClientArea(out var mainPanelArea);
                     var curveScale = mainPanelArea.Size / _editor._contents.Size;
                     scale *= curveScale;
-
                     if (zoomAlt)
                         scale.X = 0; // Scale Y axis only
-                    _editor.ViewScale += GetUseModeMask(_editor.EnableZoom) * scale;
+                    scale *= GetUseModeMask(_editor.EnableZoom); // Mask scale depending on allowed usage
+                    _editor.ViewScale += scale;
+
+                    // Zoom towards the mouse position
+                    var locationInEditorAfter = _editor.PointFromKeyframes(locationInKeyframes, ref viewRect);
+                    var locationInEditorDelta = locationInEditorAfter - locationInEditorBefore;
+                    _editor.ViewOffset -= locationInEditorDelta;
                     return true;
                 }
 
