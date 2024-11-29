@@ -11,7 +11,7 @@
 
 // Vulkan API version to target
 #ifndef VULKAN_API_VERSION
-#define VULKAN_API_VERSION VK_API_VERSION_1_0
+#define VULKAN_API_VERSION VK_API_VERSION_1_3
 #endif
 
 // Amount of back buffers to use
