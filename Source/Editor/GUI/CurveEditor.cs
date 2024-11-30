@@ -935,6 +935,11 @@ namespace FlaxEditor.GUI
                 KeyframesEditorUtils.Paste(this);
                 return true;
             }
+            else if (options.FocusSelection.Process(this))
+            {
+                ShowWholeCurve();
+                return true;
+            }
 
             return false;
         }
