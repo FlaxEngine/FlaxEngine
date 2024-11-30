@@ -511,6 +511,27 @@ namespace FlaxEditor.GUI
             }
 
             /// <inheritdoc />
+            public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+            {
+                if (base.OnMouseDoubleClick(location, button))
+                    return true;
+                
+                // Add keyframe on double click
+                var child = GetChildAt(location);
+                if (child is not KeyframePoint && 
+                    child is not TangentPoint && 
+                    _editor.KeyframesCount < _editor.MaxKeyframes)
+                {
+                    var viewRect = _editor._mainPanel.GetClientArea();
+                    var pos = PointToKeyframes(location, ref viewRect);
+                    _editor.AddKeyframe(pos);
+                    return true;
+                }
+
+                return false;
+            }
+
+            /// <inheritdoc />
             public override bool OnMouseWheel(Float2 location, float delta)
             {
                 if (base.OnMouseWheel(location, delta))
