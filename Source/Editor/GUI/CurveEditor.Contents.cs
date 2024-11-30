@@ -28,6 +28,7 @@ namespace FlaxEditor.GUI
             internal Float2 _mousePos = Float2.Minimum;
             internal bool _isMovingSelection;
             internal bool _isMovingTangent;
+            internal bool _movedView;
             internal bool _movedKeyframes;
             private TangentPoint _movingTangent;
             private Float2 _movingSelectionStart;
@@ -189,17 +190,20 @@ namespace FlaxEditor.GUI
                 // Moving view
                 if (_rightMouseDown)
                 {
-                    var delta = location - _movingViewLastPos;
+                    var movingViewPos = Parent.PointToParent(PointToParent(location));
+                    var delta = movingViewPos - _movingViewLastPos;
                     if (_editor.CustomViewPanning != null)
                         delta = _editor.CustomViewPanning(delta);
-                    delta *= GetUseModeMask(_editor.EnablePanning) * _editor.ViewScale;
+                    delta *= GetUseModeMask(_editor.EnablePanning);
                     if (delta.LengthSquared > 0.01f)
                     {
                         _editor._mainPanel.ViewOffset += delta;
-                        _movingViewLastPos = location;
+                        _movingViewLastPos = movingViewPos;
+                        _movedView = true;
                         if (_editor.CustomViewPanning != null)
                         {
-                            Cursor = CursorType.SizeAll;
+                            if (Cursor == CursorType.Default)
+                                Cursor = CursorType.SizeAll;
                         }
                         else
                         {
@@ -292,7 +296,8 @@ namespace FlaxEditor.GUI
                 {
                     _rightMouseDown = true;
                     _rightMouseDownPos = location;
-                    _movingViewLastPos = location;
+                    _movedView = false;
+                    _movingViewLastPos = Parent.PointToParent(PointToParent(location));
                 }
 
                 // Check if any node is under the mouse
@@ -437,7 +442,7 @@ namespace FlaxEditor.GUI
                     Cursor = CursorType.Default;
 
                     // Check if no move has been made at all
-                    if (Float2.Distance(ref location, ref _rightMouseDownPos) < 2.0f)
+                    if (!_movedView)
                     {
                         var selectionCount = _editor.SelectionCount;
                         var point = GetChildAt(location) as KeyframePoint;

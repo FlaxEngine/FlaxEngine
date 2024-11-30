@@ -263,15 +263,21 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         protected override void SetViewOffset(ref Float2 value)
         {
+            // Update scroll bars but with locked layout
             bool wasLocked = _isLayoutLocked;
+            int layoutUpdateLock = _layoutUpdateLock;
             _isLayoutLocked = true;
+            _layoutUpdateLock = 999;
             if (HScrollBar != null)
                 HScrollBar.TargetValue = -value.X;
             if (VScrollBar != null)
                 VScrollBar.TargetValue = -value.Y;
+            _layoutUpdateLock = layoutUpdateLock;
             _isLayoutLocked = wasLocked;
 
             base.SetViewOffset(ref value);
+
+            PerformLayout();
         }
 
         /// <summary>
