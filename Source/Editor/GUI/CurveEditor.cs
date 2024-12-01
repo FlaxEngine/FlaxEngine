@@ -680,10 +680,12 @@ namespace FlaxEditor.GUI
                 Float2.Min(ref minPos, ref pos, out minPos);
             }
             var minPosPoint = _contents.PointToParent(ref minPos);
-            var scroll = new Float2(_mainPanel.HScrollBar.TargetValue, _mainPanel.VScrollBar.TargetValue);
+            var scroll = new Float2(_mainPanel.HScrollBar?.TargetValue ?? 0, _mainPanel.VScrollBar?.TargetValue ?? 0);
             scroll = ApplyUseModeMask(EnablePanning, minPosPoint, scroll);
-            _mainPanel.HScrollBar.TargetValue = scroll.X;
-            _mainPanel.VScrollBar.TargetValue = scroll.Y;
+            if (_mainPanel.HScrollBar != null && _mainPanel.HScrollBar.Enabled)
+                _mainPanel.HScrollBar.TargetValue = scroll.X;
+            if (_mainPanel.VScrollBar != null && _mainPanel.VScrollBar.Enabled)
+                _mainPanel.VScrollBar.TargetValue = scroll.Y;
 
             UpdateKeyframes();
         }
