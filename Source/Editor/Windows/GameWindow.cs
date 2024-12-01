@@ -1150,8 +1150,11 @@ namespace FlaxEditor.Windows
 
             if (Editor.StateMachine.IsPlayMode && !Editor.StateMachine.PlayingState.IsPaused)
             {
+                // Make sure the cursor is always in the viewport when cursor is locked
+                bool forceCenter = _cursorLockMode != CursorLockMode.None && !IsMouseOver;
+
                 // Center mouse in play mode
-                if (CenterMouseOnFocus)
+                if (CenterMouseOnFocus || forceCenter)
                 {
                     var center = PointToWindow(Size * 0.5f);
                     Root.MousePosition = center;
