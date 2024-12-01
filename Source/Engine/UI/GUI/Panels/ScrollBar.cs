@@ -330,7 +330,7 @@ namespace FlaxEngine.GUI
             bool needUpdate = Mathf.Abs(_thumbOpacity - targetOpacity) > 0.001f;
 
             // Ensure scroll bar is visible and smoothing is required
-            if (Visible && (Mathf.Abs(_targetValue - _value) > 0.0001f || _scrollAnimationProgress < 1.0f))
+            if (Visible && Mathf.Abs(_targetValue - _value) > 0.01f)
             {
                 // Interpolate or not if running slow
                 float value;
@@ -358,7 +358,7 @@ namespace FlaxEngine.GUI
                 {
                     value = _targetValue;
                     _startValue = _targetValue;
-                    _scrollAnimationProgress = 1f;
+                    _scrollAnimationProgress = 0f;
                 }
                 
                 _value = value;
