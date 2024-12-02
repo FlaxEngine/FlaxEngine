@@ -273,7 +273,6 @@ namespace Flax.Build.Bindings
                         type.GenericArgs.Add(argType);
                     token = context.Tokenizer.NextToken();
                 } while (token.Type != TokenType.RightAngleBracket);
-
                 token = context.Tokenizer.NextToken();
             }
 
@@ -405,7 +404,7 @@ namespace Flax.Build.Bindings
                         currentParam.Attributes += ", Optional";
                     currentParam.Name = $"namelessArg{parameters.Count}";
                 }
-                
+
                 if (currentParam.IsOut && (currentParam.Type.IsPtr || currentParam.Type.IsRef) && currentParam.Type.Type.EndsWith("*"))
                 {
                     // Pointer to value passed as output pointer
@@ -1590,16 +1589,30 @@ namespace Flax.Build.Bindings
             // Read parameters from the tag
             var tagParams = ParseTagParameters(ref context);
 
-            // Read 'typedef' keyword
+            // Read 'typedef' or 'using' keyword
             var token = context.Tokenizer.NextToken();
-            if (token.Value != "typedef")
-                throw new ParseException(ref context, $"Invalid {ApiTokens.Typedef} usage (expected 'typedef' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+            var isUsing = token.Value == "using";
+            if (token.Value != "typedef" && !isUsing)
+                throw new ParseException(ref context, $"Invalid {ApiTokens.Typedef} usage (expected 'typedef' or 'using' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
-            // Read type definition
-            desc.Type = ParseType(ref context);
+            if (isUsing)
+            {
+                // Read name
+                desc.Name = ParseName(ref context);
 
-            // Read name
-            desc.Name = ParseName(ref context);
+                context.Tokenizer.ExpectToken(TokenType.Equal);
+
+                // Read type definition
+                desc.Type = ParseType(ref context);
+            }
+            else
+            {
+                // Read type definition
+                desc.Type = ParseType(ref context);
+
+                // Read name
+                desc.Name = ParseName(ref context);
+            }
 
             // Read ';'
             context.Tokenizer.ExpectToken(TokenType.SemiColon);
