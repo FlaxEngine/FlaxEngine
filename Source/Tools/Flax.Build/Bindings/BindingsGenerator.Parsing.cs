@@ -544,15 +544,19 @@ namespace Flax.Build.Bindings
                     }
                     if (token.Type == TokenType.LeftAngleBracket)
                     {
-                        var genericType = context.Tokenizer.ExpectToken(TokenType.Identifier);
-                        token = context.Tokenizer.ExpectToken(TokenType.RightAngleBracket);
-                        inheritType.GenericArgs = new List<TypeInfo>
+                        inheritType.GenericArgs = new List<TypeInfo>();
+                        while (true)
                         {
-                            new TypeInfo
-                            {
-                                Type = genericType.Value,
-                            }
-                        };
+                            token = context.Tokenizer.NextToken();
+                            if (token.Type == TokenType.RightAngleBracket)
+                                break;
+                            if (token.Type == TokenType.Comma)
+                                continue;
+                            if (token.Type == TokenType.Identifier)
+                                inheritType.GenericArgs.Add(new TypeInfo { Type = token.Value });
+                            else
+                                throw new ParseException(ref context, "Incorrect inheritance");
+                        }
 
                         // TODO: find better way to resolve this (custom base type attribute?)
                         if (inheritType.Type == "ShaderAssetTypeBase")
