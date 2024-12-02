@@ -247,16 +247,18 @@ public:
     static void Interpolate(const BezierCurveKeyframe& a, const BezierCurveKeyframe& b, float alpha, float length, T& result)
     {
         T leftTangent, rightTangent;
-        AnimationUtils::GetTangent(a.Value, a.TangentOut, length, leftTangent);
-        AnimationUtils::GetTangent(b.Value, b.TangentIn, length, rightTangent);
+        const float tangentScale = length / 3.0f;
+        AnimationUtils::GetTangent(a.Value, a.TangentOut, tangentScale, leftTangent);
+        AnimationUtils::GetTangent(b.Value, b.TangentIn, tangentScale, rightTangent);
         AnimationUtils::Bezier(a.Value, leftTangent, rightTangent, b.Value, alpha, result);
     }
 
     static void InterpolateFirstDerivative(const BezierCurveKeyframe& a, const BezierCurveKeyframe& b, float alpha, float length, T& result)
     {
         T leftTangent, rightTangent;
-        AnimationUtils::GetTangent(a.Value, a.TangentOut, length, leftTangent);
-        AnimationUtils::GetTangent(b.Value, b.TangentIn, length, rightTangent);
+        const float tangentScale = length / 3.0f;
+        AnimationUtils::GetTangent(a.Value, a.TangentOut, tangentScale, leftTangent);
+        AnimationUtils::GetTangent(b.Value, b.TangentIn, tangentScale, rightTangent);
         AnimationUtils::BezierFirstDerivative(a.Value, leftTangent, rightTangent, b.Value, alpha, result);
     }
 
@@ -264,8 +266,9 @@ public:
     {
         result.Time = a.Time + length * alpha;
         T leftTangent, rightTangent;
-        AnimationUtils::GetTangent(a.Value, a.TangentOut, length, leftTangent);
-        AnimationUtils::GetTangent(b.Value, b.TangentIn, length, rightTangent);
+        const float tangentScale = length / 3.0f;
+        AnimationUtils::GetTangent(a.Value, a.TangentOut, tangentScale, leftTangent);
+        AnimationUtils::GetTangent(b.Value, b.TangentIn, tangentScale, rightTangent);
         AnimationUtils::Bezier(a.Value, leftTangent, rightTangent, b.Value, alpha, result.Value);
         result.TangentIn = a.TangentOut;
         result.TangentOut = b.TangentIn;

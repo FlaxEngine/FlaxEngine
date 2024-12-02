@@ -214,9 +214,9 @@ void SplineCollider::GetGeometry(CollisionShape& collision)
         auto offsetIndices = segment * collisionIndices.Count();
         const auto& start = keyframes[segment];
         const auto& end = keyframes[segment + 1];
-        const float length = end.Time - start.Time;
-        AnimationUtils::GetTangent(start.Value, start.TangentOut, length, leftTangent);
-        AnimationUtils::GetTangent(end.Value, end.TangentIn, length, rightTangent);
+        const float tangentScale = (end.Time - start.Time) / 3.0f;
+        AnimationUtils::GetTangent(start.Value, start.TangentOut, tangentScale, leftTangent);
+        AnimationUtils::GetTangent(end.Value, end.TangentIn, tangentScale, rightTangent);
 
         // Vertex buffer is deformed along the spline
         auto srcVertices = collisionVertices.Get();

@@ -230,7 +230,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
                     continue;
 
                 // Draw all ticks
-                int l = Mathf.Clamp(smallestTick + level, 0, _tickSteps.Length - 1);
+                int l = Mathf.Clamp(smallestTick + level, 0, _tickSteps.Length - 2);
                 var lStep = _tickSteps[l];
                 var lNextStep = _tickSteps[l + 1];
                 int startTick = Mathf.FloorToInt(min / lStep);

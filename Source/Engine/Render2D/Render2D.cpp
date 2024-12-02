@@ -1882,19 +1882,46 @@ void Render2D::DrawBezier(const Float2& p1, const Float2& p2, const Float2& p3, 
     const Float2 d3 = p4 - p3;
     const float len = d1.Length() + d2.Length() + d3.Length();
     const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
-    const float segmentCountInv = 1.0f / segmentCount;
+    const float segmentCountInv = 1.0f / (float)segmentCount;
 
     // Draw segmented curve
-    Float2 p;
-    AnimationUtils::Bezier(p1, p2, p3, p4, 0, p);
     Lines2.Clear();
-    Lines2.Add(p);
-    for (int32 i = 1; i <= segmentCount; i++)
+    Lines2.Add(p1);
+    for (int32 i = 1; i < segmentCount; i++)
     {
-        const float t = i * segmentCountInv;
+        const float t = (float)i * segmentCountInv;
+        Float2 p;
         AnimationUtils::Bezier(p1, p2, p3, p4, t, p);
         Lines2.Add(p);
     }
+    Lines2.Add(p4);
+    DrawLines(Lines2.Get(), Lines2.Count(), color, color, thickness);
+}
+
+void Render2D::DrawSpline(const Float2& p1, const Float2& p2, const Float2& p3, const Float2& p4, const Color& color, float thickness)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    // Find amount of segments to use
+    const Float2 d1 = p2 - p1;
+    const Float2 d2 = p3 - p2;
+    const Float2 d3 = p4 - p3;
+    const float len = d1.Length() + d2.Length() + d3.Length();
+    const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
+    const float segmentCountInv = 1.0f / (float)segmentCount;
+
+    // Draw segmented curve
+    Lines2.Clear();
+    Lines2.Add(p1);
+    for (int32 i = 1; i < segmentCount; i++)
+    {
+        const float t = (float)i * segmentCountInv;
+        Float2 p;
+        p.X = Math::Lerp(p1.X, p4.X, t);
+        AnimationUtils::Bezier(p1.Y, p2.Y, p3.Y, p4.Y, t, p.Y);
+        Lines2.Add(p);
+    }
+    Lines2.Add(p4);
     DrawLines(Lines2.Get(), Lines2.Count(), color, color, thickness);
 }
 

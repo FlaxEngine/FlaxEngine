@@ -682,9 +682,9 @@ namespace FlaxEditor.GUI
             var minPosPoint = _contents.PointToParent(ref minPos);
             var scroll = new Float2(_mainPanel.HScrollBar?.TargetValue ?? 0, _mainPanel.VScrollBar?.TargetValue ?? 0);
             scroll = ApplyUseModeMask(EnablePanning, minPosPoint, scroll);
-            if (_mainPanel.HScrollBar != null && _mainPanel.HScrollBar.Enabled)
+            if (_mainPanel.HScrollBar != null)
                 _mainPanel.HScrollBar.TargetValue = scroll.X;
-            if (_mainPanel.VScrollBar != null && _mainPanel.VScrollBar.Enabled)
+            if (_mainPanel.VScrollBar != null)
                 _mainPanel.VScrollBar.TargetValue = scroll.Y;
 
             UpdateKeyframes();
@@ -1649,6 +1649,7 @@ namespace FlaxEditor.GUI
                     var o = _keyframes[p.Index - 1];
                     var oValue = Accessor.GetCurveValue(ref o.Value, p.Component);
                     var slope = (value - oValue) / (k.Time - o.Time);
+                    slope = -slope;
                     Accessor.SetCurveValue(slope, ref k.TangentIn, p.Component);
                 }
 
@@ -2199,12 +2200,12 @@ namespace FlaxEditor.GUI
 
                     var tangent = t.TangentValue;
                     var direction = t.IsIn ? -1.0f : 1.0f;
-                    var offset = 30.0f * direction;
+                    var offset = 30.0f;
                     var location = GetKeyframePoint(ref k, selectedComponent);
                     t.Size = KeyframesSize / ViewScale;
                     t.Location = new Float2
                     (
-                     location.X * UnitsPerSecond - t.Width * 0.5f + offset,
+                     location.X * UnitsPerSecond - t.Width * 0.5f + offset * direction,
                      location.Y * -UnitsPerSecond - t.Height * 0.5f + curveContentAreaBounds.Height - offset * tangent
                     );
 
@@ -2280,14 +2281,13 @@ namespace FlaxEditor.GUI
                     var startTangent = Accessor.GetCurveValue(ref startK.TangentOut, component);
                     var endTangent = Accessor.GetCurveValue(ref endK.TangentIn, component);
 
-                    var offset = (end.X - start.X) * 0.5f;
-
+                    var tangentScale = (endK.Time - startK.Time) / 3.0f;
                     var p1 = PointFromKeyframes(start, ref viewRect);
-                    var p2 = PointFromKeyframes(start + new Float2(offset, startTangent * offset), ref viewRect);
-                    var p3 = PointFromKeyframes(end - new Float2(offset, endTangent * offset), ref viewRect);
+                    var p2 = PointFromKeyframes(start + new Float2(0, startTangent * tangentScale), ref viewRect);
+                    var p3 = PointFromKeyframes(end + new Float2(0, endTangent * tangentScale), ref viewRect);
                     var p4 = PointFromKeyframes(end, ref viewRect);
 
-                    Render2D.DrawBezier(p1, p2, p3, p4, color);
+                    Render2D.DrawSpline(p1, p2, p3, p4, color);
                 }
             }
         }

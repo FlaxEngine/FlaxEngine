@@ -184,9 +184,9 @@ void SplineModel::OnSplineUpdated()
         auto& instance = _instances[segment];
         const auto& start = keyframes[segment];
         const auto& end = keyframes[segment + 1];
-        const float length = end.Time - start.Time;
-        AnimationUtils::GetTangent(start.Value, start.TangentOut, length, leftTangent);
-        AnimationUtils::GetTangent(end.Value, end.TangentIn, length, rightTangent);
+        const float tangentScale = (end.Time - start.Time) / 3.0f;
+        AnimationUtils::GetTangent(start.Value, start.TangentOut, tangentScale, leftTangent);
+        AnimationUtils::GetTangent(end.Value, end.TangentIn, tangentScale, rightTangent);
 
         // Find maximum scale over the segment spline and collect the segment positions for bounds
         segmentPoints.Clear();
@@ -256,9 +256,9 @@ void SplineModel::UpdateDeformationBuffer()
         auto& instance = _instances[segment];
         const auto& start = keyframes[segment];
         const auto& end = keyframes[segment + 1];
-        const float length = end.Time - start.Time;
-        AnimationUtils::GetTangent(start.Value, start.TangentOut, length, leftTangent);
-        AnimationUtils::GetTangent(end.Value, end.TangentIn, length, rightTangent);
+        const float tangentScale = (end.Time - start.Time) / 3.0f;
+        AnimationUtils::GetTangent(start.Value, start.TangentOut, tangentScale, leftTangent);
+        AnimationUtils::GetTangent(end.Value, end.TangentIn, tangentScale, rightTangent);
         for (int32 chunk = 0; chunk < chunksPerSegment; chunk++)
         {
             const float alpha = (chunk == chunksPerSegment - 1) ? 1.0f : ((float)chunk * chunksPerSegmentInv);
@@ -291,10 +291,10 @@ void SplineModel::UpdateDeformationBuffer()
     {
         const auto& start = keyframes[segments - 1];
         const auto& end = keyframes[segments];
-        const float length = end.Time - start.Time;
+        const float tangentScale = (end.Time - start.Time) / 3.0f;
         const float alpha = 1.0f - ZeroTolerance; // Offset to prevent zero derivative at the end of the curve
-        AnimationUtils::GetTangent(start.Value, start.TangentOut, length, leftTangent);
-        AnimationUtils::GetTangent(end.Value, end.TangentIn, length, rightTangent);
+        AnimationUtils::GetTangent(start.Value, start.TangentOut, tangentScale, leftTangent);
+        AnimationUtils::GetTangent(end.Value, end.TangentIn, tangentScale, rightTangent);
         AnimationUtils::Bezier(start.Value, leftTangent, rightTangent, end.Value, alpha, transform);
         Vector3 direction;
         AnimationUtils::BezierFirstDerivative(start.Value.Translation, leftTangent.Translation, rightTangent.Translation, end.Value.Translation, alpha, direction);

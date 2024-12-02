@@ -390,6 +390,17 @@ public:
     API_FUNCTION() static void DrawBezier(const Float2& p1, const Float2& p2, const Float2& p3, const Float2& p4, const Color& color, float thickness = 1.0f);
 
     /// <summary>
+    /// Draws a spline curve (Bezier but X axis represents uniform time).
+    /// </summary>
+    /// <param name="p1">The start point.</param>
+    /// <param name="p2">The first control point.</param>
+    /// <param name="p3">The second control point.</param>
+    /// <param name="p4">The end point.</param>
+    /// <param name="color">The line color</param>
+    /// <param name="thickness">The line thickness.</param>
+    API_FUNCTION() static void DrawSpline(const Float2& p1, const Float2& p2, const Float2& p3, const Float2& p4, const Color& color, float thickness = 1.0f);
+
+    /// <summary>
     /// Draws the GUI material.
     /// </summary>
     /// <param name="material">The material to render. Must be a GUI material type.</param>

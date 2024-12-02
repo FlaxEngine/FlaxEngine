@@ -24,9 +24,9 @@ namespace FlaxEngine
             /// </summary>
             /// <param name="value">The value.</param>
             /// <param name="tangent">The tangent.</param>
-            /// <param name="lengthThird">The length divided by 3.</param>
+            /// <param name="tangentScale">The tangent scale factor.</param>
             /// <param name="result">The result.</param>
-            void GetTangent(ref U value, ref U tangent, float lengthThird, out U result);
+            void GetTangent(ref U value, ref U tangent, float tangentScale, out U result);
 
             /// <summary>
             /// Calculates the linear interpolation at the specified alpha.
@@ -67,7 +67,7 @@ namespace FlaxEngine
         IKeyframeAccess<Color32>,
         IKeyframeAccess<Color>
         {
-            public void GetTangent(ref bool value, ref bool tangent, float lengthThird, out bool result)
+            public void GetTangent(ref bool value, ref bool tangent, float tangentScale, out bool result)
             {
                 result = value;
             }
@@ -82,9 +82,9 @@ namespace FlaxEngine
                 result = p0;
             }
 
-            public void GetTangent(ref int value, ref int tangent, float lengthThird, out int result)
+            public void GetTangent(ref int value, ref int tangent, float tangentScale, out int result)
             {
-                result = value + (int)(tangent * lengthThird);
+                result = value + (int)(tangent * tangentScale);
             }
 
             public void Linear(ref int a, ref int b, float alpha, out int result)
@@ -102,9 +102,9 @@ namespace FlaxEngine
                 result = Mathf.Lerp(p012, p123, alpha);
             }
 
-            public void GetTangent(ref double value, ref double tangent, float lengthThird, out double result)
+            public void GetTangent(ref double value, ref double tangent, float tangentScale, out double result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref double a, ref double b, float alpha, out double result)
@@ -122,9 +122,9 @@ namespace FlaxEngine
                 result = Mathf.Lerp(p012, p123, alpha);
             }
 
-            public void GetTangent(ref float value, ref float tangent, float lengthThird, out float result)
+            public void GetTangent(ref float value, ref float tangent, float tangentScale, out float result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref float a, ref float b, float alpha, out float result)
@@ -142,9 +142,9 @@ namespace FlaxEngine
                 result = Mathf.Lerp(p012, p123, alpha);
             }
 
-            public void GetTangent(ref Vector2 value, ref Vector2 tangent, float lengthThird, out Vector2 result)
+            public void GetTangent(ref Vector2 value, ref Vector2 tangent, float tangentScale, out Vector2 result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref Vector2 a, ref Vector2 b, float alpha, out Vector2 result)
@@ -162,9 +162,9 @@ namespace FlaxEngine
                 Vector2.Lerp(ref p012, ref p123, alpha, out result);
             }
 
-            public void GetTangent(ref Vector3 value, ref Vector3 tangent, float lengthThird, out Vector3 result)
+            public void GetTangent(ref Vector3 value, ref Vector3 tangent, float tangentScale, out Vector3 result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref Vector3 a, ref Vector3 b, float alpha, out Vector3 result)
@@ -182,9 +182,9 @@ namespace FlaxEngine
                 Vector3.Lerp(ref p012, ref p123, alpha, out result);
             }
 
-            public void GetTangent(ref Vector4 value, ref Vector4 tangent, float lengthThird, out Vector4 result)
+            public void GetTangent(ref Vector4 value, ref Vector4 tangent, float tangentScale, out Vector4 result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref Vector4 a, ref Vector4 b, float alpha, out Vector4 result)
@@ -202,9 +202,9 @@ namespace FlaxEngine
                 Vector4.Lerp(ref p012, ref p123, alpha, out result);
             }
 
-            public void GetTangent(ref Float2 value, ref Float2 tangent, float lengthThird, out Float2 result)
+            public void GetTangent(ref Float2 value, ref Float2 tangent, float tangentScale, out Float2 result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref Float2 a, ref Float2 b, float alpha, out Float2 result)
@@ -222,9 +222,9 @@ namespace FlaxEngine
                 Float2.Lerp(ref p012, ref p123, alpha, out result);
             }
 
-            public void GetTangent(ref Float3 value, ref Float3 tangent, float lengthThird, out Float3 result)
+            public void GetTangent(ref Float3 value, ref Float3 tangent, float tangentScale, out Float3 result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref Float3 a, ref Float3 b, float alpha, out Float3 result)
@@ -242,9 +242,9 @@ namespace FlaxEngine
                 Float3.Lerp(ref p012, ref p123, alpha, out result);
             }
 
-            public void GetTangent(ref Float4 value, ref Float4 tangent, float lengthThird, out Float4 result)
+            public void GetTangent(ref Float4 value, ref Float4 tangent, float tangentScale, out Float4 result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref Float4 a, ref Float4 b, float alpha, out Float4 result)
@@ -262,9 +262,9 @@ namespace FlaxEngine
                 Float4.Lerp(ref p012, ref p123, alpha, out result);
             }
 
-            public void GetTangent(ref Double2 value, ref Double2 tangent, float lengthThird, out Double2 result)
+            public void GetTangent(ref Double2 value, ref Double2 tangent, float tangentScale, out Double2 result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref Double2 a, ref Double2 b, float alpha, out Double2 result)
@@ -282,9 +282,9 @@ namespace FlaxEngine
                 Double2.Lerp(ref p012, ref p123, alpha, out result);
             }
 
-            public void GetTangent(ref Double3 value, ref Double3 tangent, float lengthThird, out Double3 result)
+            public void GetTangent(ref Double3 value, ref Double3 tangent, float tangentScale, out Double3 result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref Double3 a, ref Double3 b, float alpha, out Double3 result)
@@ -302,9 +302,9 @@ namespace FlaxEngine
                 Double3.Lerp(ref p012, ref p123, alpha, out result);
             }
 
-            public void GetTangent(ref Double4 value, ref Double4 tangent, float lengthThird, out Double4 result)
+            public void GetTangent(ref Double4 value, ref Double4 tangent, float tangentScale, out Double4 result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref Double4 a, ref Double4 b, float alpha, out Double4 result)
@@ -322,7 +322,7 @@ namespace FlaxEngine
                 Double4.Lerp(ref p012, ref p123, alpha, out result);
             }
 
-            public void GetTangent(ref Quaternion value, ref Quaternion tangent, float lengthThird, out Quaternion result)
+            public void GetTangent(ref Quaternion value, ref Quaternion tangent, float tangentScale, out Quaternion result)
             {
                 Quaternion.Slerp(ref value, ref tangent, 1.0f / 3.0f, out result);
             }
@@ -342,9 +342,9 @@ namespace FlaxEngine
                 Quaternion.Slerp(ref p012, ref p123, alpha, out result);
             }
 
-            public void GetTangent(ref Color32 value, ref Color32 tangent, float lengthThird, out Color32 result)
+            public void GetTangent(ref Color32 value, ref Color32 tangent, float tangentScale, out Color32 result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref Color32 a, ref Color32 b, float alpha, out Color32 result)
@@ -362,9 +362,9 @@ namespace FlaxEngine
                 Color32.Lerp(ref p012, ref p123, alpha, out result);
             }
 
-            public void GetTangent(ref Color value, ref Color tangent, float lengthThird, out Color result)
+            public void GetTangent(ref Color value, ref Color tangent, float tangentScale, out Color result)
             {
-                result = value + tangent * lengthThird;
+                result = value + tangent * tangentScale;
             }
 
             public void Linear(ref Color a, ref Color b, float alpha, out Color result)
@@ -860,9 +860,9 @@ namespace FlaxEngine
 
             // Evaluate the key at the curve
             result.Time = leftKey.Time + length * t;
-            float lengthThird = length / 3.0f;
-            _accessor.GetTangent(ref leftKey.Value, ref leftKey.TangentOut, lengthThird, out var leftTangent);
-            _accessor.GetTangent(ref rightKey.Value, ref rightKey.TangentIn, lengthThird, out var rightTangent);
+            float tangentScale = length / 3.0f;
+            _accessor.GetTangent(ref leftKey.Value, ref leftKey.TangentOut, tangentScale, out var leftTangent);
+            _accessor.GetTangent(ref rightKey.Value, ref rightKey.TangentIn, tangentScale, out var rightTangent);
             _accessor.Bezier(ref leftKey.Value, ref leftTangent, ref rightTangent, ref rightKey.Value, t, out result.Value);
             result.TangentIn = leftKey.TangentOut;
             result.TangentOut = rightKey.TangentIn;
@@ -895,9 +895,9 @@ namespace FlaxEngine
             float t = Mathf.NearEqual(length, 0.0f) ? 0.0f : (time - leftKey.Time) / length;
 
             // Evaluate the value at the curve
-            float lengthThird = length / 3.0f;
-            _accessor.GetTangent(ref leftKey.Value, ref leftKey.TangentOut, lengthThird, out var leftTangent);
-            _accessor.GetTangent(ref rightKey.Value, ref rightKey.TangentIn, lengthThird, out var rightTangent);
+            float tangentScale = length / 3.0f;
+            _accessor.GetTangent(ref leftKey.Value, ref leftKey.TangentOut, tangentScale, out var leftTangent);
+            _accessor.GetTangent(ref rightKey.Value, ref rightKey.TangentIn, tangentScale, out var rightTangent);
             _accessor.Bezier(ref leftKey.Value, ref leftTangent, ref rightTangent, ref rightKey.Value, t, out result);
         }
 
