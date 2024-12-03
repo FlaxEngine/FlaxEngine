@@ -188,6 +188,13 @@ namespace Flax.Build.Bindings
                         token = context.Tokenizer.NextToken();
                         if (token.Type == TokenType.Multiply)
                             tag.Value += token.Value;
+                        else if (token.Type == TokenType.LeftAngleBracket)
+                        {
+                            context.Tokenizer.SkipUntil(TokenType.RightAngleBracket, out var s);
+                            tag.Value += '<';
+                            tag.Value += s;
+                            tag.Value += '>';
+                        }
                         else
                             context.Tokenizer.PreviousToken();
                         parameters.Add(tag);

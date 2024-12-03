@@ -182,11 +182,40 @@ namespace Flax.Build.Bindings
 
         public static TypeInfo FromString(string text)
         {
-            var result = new TypeInfo(text);
+            var result = new TypeInfo(text.Trim());
+            if (result.Type.StartsWith("const"))
+            {
+                // Const
+                result.IsConst = true;
+                result.Type = result.Type.Substring(5).Trim();
+            }
             if (result.Type.EndsWith('*'))
             {
+                // Pointer
                 result.IsPtr = true;
-                result.Type = result.Type.Substring(0, result.Type.Length - 1);
+                result.Type = result.Type.Substring(0, result.Type.Length - 1).Trim();
+            }
+            if (result.Type.EndsWith('&'))
+            {
+                // Reference
+                result.IsRef = true;
+                result.Type = result.Type.Substring(0, result.Type.Length - 1).Trim();
+                if (result.Type.EndsWith('&'))
+                {
+                    // Move reference
+                    result.IsMoveRef = true;
+                    result.Type = result.Type.Substring(0, result.Type.Length - 1).Trim();
+                }
+            }
+            var idx = result.Type.IndexOf('<');
+            if (idx != -1)
+            {
+                // Generic
+                result.GenericArgs = new List<TypeInfo>();
+                var generics = result.Type.Substring(idx + 1, result.Type.Length - idx - 2);
+                foreach (var generic in generics.Split(','))
+                    result.GenericArgs.Add(FromString(generic));
+                result.Type = result.Type.Substring(0, idx);
             }
             return result;
         }
