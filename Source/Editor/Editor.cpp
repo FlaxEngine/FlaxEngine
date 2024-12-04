@@ -673,6 +673,7 @@ bool Editor::Init()
     Managed = New<ManagedEditor>();
 
     // Show splash screen
+    if (!CommandLine::Options.Headless.IsTrue())
     {
         PROFILE_CPU_NAMED("Splash");
         if (EditorImpl::Splash == nullptr)
