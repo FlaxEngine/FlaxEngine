@@ -5,6 +5,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Engine/Globals.h"
 
 #define GPU_TASKS_USE_DEDICATED_CONTEXT 0
 
@@ -36,7 +37,8 @@ GPUTasksContext::~GPUTasksContext()
         auto task = tasks[i];
         if (task->GetSyncPoint() <= _currentSyncPoint && task->GetState() != TaskState::Finished)
         {
-            LOG(Warning, "{0} has been canceled before a sync", task->ToString());
+            if (!Globals::IsRequestingExit)
+                LOG(Warning, "{0} has been canceled before a sync", task->ToString());
             task->CancelSync();
         }
     }
@@ -60,7 +62,8 @@ void GPUTasksContext::OnCancelSync(GPUTask* task)
 
     _tasksDone.Remove(task);
 
-    LOG(Warning, "{0} has been canceled before a sync", task->ToString());
+    if (!Globals::IsRequestingExit)
+        LOG(Warning, "{0} has been canceled before a sync", task->ToString());
 }
 
 void GPUTasksContext::OnFrameBegin()
