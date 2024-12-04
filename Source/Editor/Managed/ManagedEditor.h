@@ -22,6 +22,15 @@ API_CLASS(Namespace="FlaxEditor", Name="Editor", NoSpawn, NoConstructor) class M
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(ManagedEditor);
     static Guid ObjectID;
 
+    API_ENUM(Attributes="Flags", Internal) enum class StartupFlags
+    {
+        None = 0,
+        Headless = 1,
+        SkipCompile = 2,
+        NewProject = 4,
+        Exit = 8,
+    };
+
     struct InternalOptions
     {
         byte AutoReloadScriptsOnMainWindowFocus = 1;
@@ -258,3 +267,5 @@ public:
     // [ScriptingObject]
     void DestroyManaged() override;
 };
+
+DECLARE_ENUM_OPERATORS(ManagedEditor::StartupFlags);
