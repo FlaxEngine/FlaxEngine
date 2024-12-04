@@ -10,7 +10,7 @@ jobs:
   # Game
   game-windows:
     name: Game (iOS, Release ARM64)
-    runs-on: "macos-latest"
+    runs-on: "macos-14"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3

@@ -140,7 +140,7 @@ jobs:
   # Mac
   package-mac-editor:
     name: Editor (Mac)
-    runs-on: "macos-latest"
+    runs-on: "macos-14"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
@@ -168,7 +168,7 @@ jobs:
         path: Output/FlaxEditorMac.zip
   package-mac-game:
     name: Game (Mac)
-    runs-on: "macos-latest"
+    runs-on: "macos-14"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
