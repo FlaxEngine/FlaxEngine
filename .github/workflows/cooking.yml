@@ -1,4 +1,4 @@
-name: Cooking
+name: Cook
 on: [push, pull_request]
 
 env:
@@ -7,9 +7,9 @@ env:
 
 jobs:
 
-  # Cooking on Windows
+  # Cook on Windows
   tests-windows:
-    name: Cooking (Windows)
+    name: Cook (Windows)
     runs-on: "windows-2022"
     steps:
     - name: Checkout repo
@@ -31,14 +31,14 @@ jobs:
       with:
         fetch-depth: 1
         repository: FlaxEngine/FlaxSamples
-        path: FlaxSamples
+        path: ..\FlaxSamples
     - name: Build Editor
       run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
     - name: Cook Game
       run: |
-        cp -f -v .github\data\ExitOnEsc.cs FlaxSamples\MaterialsFeaturesTour\Source\Game
-        .\Binaries\Editor\Win64\Development\FlaxEditor.exe -std -headless -mute -null -project "${GITHUB_WORKSPACE}\FlaxSamples\MaterialsFeaturesTour" -build "Development.Windows"
+        cp .github\data\ExitOnEsc.cs ..\FlaxSamples\MaterialsFeaturesTour\Source\Game
+        .\Binaries\Editor\Win64\Development\FlaxEditor.exe -std -headless -mute -null -project "${GITHUB_WORKSPACE}\..\FlaxSamples\MaterialsFeaturesTour" -build "Development.Windows"
     - name: Test Game
       run: |
-        .\FlaxSamples\MaterialsFeaturesTour\Output\Windows\MaterialsFeaturesTour.exe" -std -headless -mute -null
+        ..\FlaxSamples\MaterialsFeaturesTour\Output\Windows\MaterialsFeaturesTour.exe -std -headless -mute -null
