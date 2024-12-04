@@ -1,8 +1,10 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using FlaxEngine.Interop;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace FlaxEngine
@@ -454,6 +456,40 @@ namespace FlaxEngine
                     time = end;
             }
         }
+
+        /// <summary>
+        /// Raw memory copy (used by scripting bindings - see MarshalAs tag).
+        /// </summary>
+        /// <param name="keyframes">The keyframes array.</param>
+        /// <returns>The raw keyframes data.</returns>
+        protected static unsafe byte[] MarshalKeyframes<Keyframe>(Keyframe[] keyframes)
+        {
+            if (keyframes == null || keyframes.Length == 0)
+                return null;
+            var keyframeSize = Unsafe.SizeOf<Keyframe>();
+            var result = new byte[keyframes.Length * keyframeSize];
+            fixed (byte* resultPtr = result)
+            {
+                var keyframesHandle = ManagedHandle.Alloc(keyframes, GCHandleType.Pinned);
+                var keyframesPtr = Marshal.UnsafeAddrOfPinnedArrayElement(keyframes, 0);
+                Buffer.MemoryCopy((void*)keyframesPtr, resultPtr, (uint)result.Length, (uint)result.Length);
+                keyframesHandle.Free();
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Raw memory copy (used by scripting bindings - see MarshalAs tag).
+        /// </summary>
+        /// <param name="raw">The raw keyframes data.</param>
+        /// <returns>The keyframes array.</returns>
+        protected static unsafe Keyframe[] MarshalKeyframes<Keyframe>(byte[] raw) where Keyframe : struct
+        {
+            if (raw == null || raw.Length == 0)
+                return null;
+            fixed (byte* rawPtr = raw)
+                return MemoryMarshal.Cast<byte, Keyframe>(new Span<byte>(rawPtr, raw.Length)).ToArray();
+        }
     }
 
     /// <summary>
@@ -708,6 +744,30 @@ namespace FlaxEngine
 
             leftKey = Mathf.Max(0, start - 1);
             rightKey = Mathf.Min(start, Keyframes.Length - 1);
+        }
+
+        /// <summary>
+        /// Raw memory copy (used by scripting bindings - see MarshalAs tag).
+        /// </summary>
+        /// <param name="curve">The curve to copy.</param>
+        /// <returns>The raw keyframes data.</returns>
+        public static unsafe implicit operator byte[](LinearCurve<T> curve)
+        {
+            if (curve == null)
+                return null;
+            return MarshalKeyframes<Keyframe>(curve.Keyframes);
+        }
+
+        /// <summary>
+        /// Raw memory copy (used by scripting bindings - see MarshalAs tag).
+        /// </summary>
+        /// <param name="raw">The raw keyframes data.</param>
+        /// <returns>The curve.</returns>
+        public static unsafe implicit operator LinearCurve<T>(byte[] raw)
+        {
+            if (raw == null || raw.Length == 0)
+                return null;
+            return new LinearCurve<T>(MarshalKeyframes<Keyframe>(raw));
         }
     }
 
@@ -999,6 +1059,30 @@ namespace FlaxEngine
 
             leftKey = Mathf.Max(0, start - 1);
             rightKey = Mathf.Min(start, Keyframes.Length - 1);
+        }
+
+        /// <summary>
+        /// Raw memory copy (used by scripting bindings - see MarshalAs tag).
+        /// </summary>
+        /// <param name="curve">The curve to copy.</param>
+        /// <returns>The raw keyframes data.</returns>
+        public static unsafe implicit operator byte[](BezierCurve<T> curve)
+        {
+            if (curve == null)
+                return null;
+            return MarshalKeyframes<Keyframe>(curve.Keyframes);
+        }
+
+        /// <summary>
+        /// Raw memory copy (used by scripting bindings - see MarshalAs tag).
+        /// </summary>
+        /// <param name="raw">The raw keyframes data.</param>
+        /// <returns>The curve.</returns>
+        public static unsafe implicit operator BezierCurve<T>(byte[] raw)
+        {
+            if (raw == null || raw.Length == 0)
+                return null;
+            return new BezierCurve<T>(MarshalKeyframes<Keyframe>(raw));
         }
     }
 }

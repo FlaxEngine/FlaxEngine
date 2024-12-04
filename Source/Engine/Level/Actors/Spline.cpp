@@ -478,9 +478,7 @@ void Spline::GetKeyframes(MArray* data)
 
 void Spline::SetKeyframes(MArray* data)
 {
-    const int32 count = MCore::Array::GetLength(data);
-    Curve.GetKeyframes().Resize(count, false);
-    Platform::MemoryCopy(Curve.GetKeyframes().Get(), MCore::Array::GetAddress(data), sizeof(Keyframe) * count);
+    Curve = Span<byte>((const byte*)MCore::Array::GetAddress(data), MCore::Array::GetLength(data));
     UpdateSpline();
 }
 
