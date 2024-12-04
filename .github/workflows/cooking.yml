@@ -1,0 +1,44 @@
+name: Cooking
+on: [push, pull_request]
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: false
+
+jobs:
+
+  # Cooking on Windows
+  tests-windows:
+    name: Cooking (Windows)
+    runs-on: "windows-2022"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0.x
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Get Flax Samples
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
+        repository: FlaxEngine/FlaxSamples
+        path: FlaxSamples
+    - name: Build Editor
+      run: |
+        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
+    - name: Cook Game
+      run: |
+        cp -f -v .github\data\ExitOnEsc.cs FlaxSamples\MaterialsFeaturesTour\Source\Game
+        .\Binaries\Editor\Win64\Development\FlaxEditor.exe -std -headless -mute -null -project "${GITHUB_WORKSPACE}\FlaxSamples\MaterialsFeaturesTour" -build "Development.Windows"
+    - name: Test Game
+      run: |
+        .\FlaxSamples\MaterialsFeaturesTour\Output\Windows\MaterialsFeaturesTour.exe" -std -headless -mute -null
