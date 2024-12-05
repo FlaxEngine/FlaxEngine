@@ -42,11 +42,11 @@ jobs:
     - name: Cook Game (Windows)
       shell: pwsh
       run: |
-        & "./Binaries/Editor/Win64/Development/FlaxEditor.exe" -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.Windows"
+        ./Binaries/Editor/Win64/Development/FlaxEditor.exe -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.Windows"
     - name: Test Game (Windows)
       shell: pwsh
       run: |
-        & "./FlaxSamples/MaterialsFeaturesTour/Output/Windows/MaterialsFeaturesTour.exe" -std -headless -mute -null
+        ./FlaxSamples/MaterialsFeaturesTour/Output/Windows/MaterialsFeaturesTour.exe -std -headless -mute -null
 
   # Cook on Mac
   cook-mac:
