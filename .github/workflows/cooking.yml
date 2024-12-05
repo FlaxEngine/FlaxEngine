@@ -34,14 +34,16 @@ jobs:
         path: FlaxSamples
     - name: Build Editor
       run: |
+        cp .github\data\ExitOnEsc.cs FlaxSamples\MaterialsFeaturesTour\Source\Game
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
     - name: Cook Game (Windows)
+      shell: cmd
       run: |
-        cp .github\data\ExitOnEsc.cs FlaxSamples\MaterialsFeaturesTour\Source\Game
-        .\Binaries\Editor\Win64\Development\FlaxEditor.exe -std -headless -mute -null -project "FlaxSamples\MaterialsFeaturesTour" -build "Development.Windows"
+        start /w Binaries\Editor\Win64\Development\FlaxEditor.exe -std -headless -mute -null -project "FlaxSamples\MaterialsFeaturesTour" -build "Development.Windows"
     - name: Test Game (Windows)
+      shell: cmd
       run: |
-        .\FlaxSamples\MaterialsFeaturesTour\Output\Windows\MaterialsFeaturesTour.exe -std -headless -mute -null
+        start /w FlaxSamples\MaterialsFeaturesTour\Output\Windows\MaterialsFeaturesTour.exe -std -headless -mute -null
 
   # Cook on Mac
   cook-mac:
@@ -50,10 +52,15 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 8.0.x
+    - name: Setup .NET Workload
+      run: |
+        dotnet workload install ios
     - name: Print .NET info
       run: |
         dotnet --info
