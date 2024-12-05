@@ -54,6 +54,20 @@ namespace FlaxEditor.Options
         public Color HighlightColor { get; set; } = new Color(0.0f, 0.533f, 1.0f, 1.0f);
 
         /// <summary>
+        /// Gets or set a value indicating how bright the transform gizmo is. Value over 1 will result in the gizmo emitting light.
+        /// </summary>
+        [DefaultValue(1f), Range(0f, 5f)]
+        [EditorDisplay("Transform Gizmo", "Gizmo Brightness"), EditorOrder(210)]
+        public float transformGizmoBrightness { get; set; } = 1f;
+
+        /// <summary>
+        /// Gets or set a value indicating the opactiy of the transform gizmo.
+        /// </summary>
+        [DefaultValue(1f), Range(0f, 1f)]
+        [EditorDisplay("Transform Gizmo", "Gizmo Opacity"), EditorOrder(211)]
+        public float transformGizmoOpacity { get; set; } = 1f;
+
+        /// <summary>
         /// Gets or sets a value indicating whether enable MSAA for DebugDraw primitives rendering. Helps with pixel aliasing but reduces performance.
         /// </summary>
         [DefaultValue(true)]
