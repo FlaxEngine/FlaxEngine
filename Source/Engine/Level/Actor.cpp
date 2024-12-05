@@ -82,6 +82,7 @@ Actor::Actor(const SpawnParams& params)
     , _physicsScene(nullptr)
     , HideFlags(HideFlags::None)
 {
+    _name = TEXT("Actor");
     _drawNoCulling = 0;
     _drawCategory = 0;
 }

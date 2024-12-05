@@ -20,6 +20,7 @@ SpotLight::SpotLight(const SpawnParams& params)
     ShadowsFadeDistance = 100.0f;
     ShadowsDepthBias = 0.5f;
 
+    _name = TEXT("Spot Light");
     _direction = Vector3::Forward;
     _cosOuterCone = Math::Cos(_outerConeAngle * DegreesToRadians);
     _cosInnerCone = Math::Cos(_innerConeAngle * DegreesToRadians);

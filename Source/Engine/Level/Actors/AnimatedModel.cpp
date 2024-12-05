@@ -26,6 +26,7 @@ AnimatedModel::AnimatedModel(const SpawnParams& params)
     , _lastMinDstSqr(MAX_Real)
     , _lastUpdateFrame(0)
 {
+    _name = TEXT("Animated Model");
     _drawCategory = SceneRendering::SceneDrawAsync;
     GraphInstance.Object = this;
     _box = BoundingBox(Vector3::Zero);

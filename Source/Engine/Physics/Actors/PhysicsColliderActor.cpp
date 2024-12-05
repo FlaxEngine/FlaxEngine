@@ -6,6 +6,7 @@
 PhysicsColliderActor::PhysicsColliderActor(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Physics Collider Actor");
 }
 
 void PhysicsColliderActor::OnCollisionEnter(const Collision& c)

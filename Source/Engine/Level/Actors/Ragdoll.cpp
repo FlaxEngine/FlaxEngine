@@ -12,6 +12,7 @@
 Ragdoll::Ragdoll(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Ragdoll");
 }
 
 float Ragdoll::GetTotalMass() const
