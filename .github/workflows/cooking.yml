@@ -32,18 +32,21 @@ jobs:
         fetch-depth: 1
         repository: FlaxEngine/FlaxSamples
         path: FlaxSamples
-    - name: Build Editor
+    - name: Path Files
       run: |
         cp .github\data\ExitOnEsc.cs FlaxSamples\MaterialsFeaturesTour\Source\Game
+        cp ".github\data\Build Settings.json" "FlaxSamples\MaterialsFeaturesTour\Content\Settings"
+    - name: Build Editor
+      run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
     - name: Cook Game (Windows)
-      shell: cmd
+      shell: bash
       run: |
-        Binaries\Editor\Win64\Development\FlaxEditor.exe -std -headless -mute -null -project "FlaxSamples\MaterialsFeaturesTour" -build "Development.Windows"
+        ./Binaries/Editor/Win64/Development/FlaxEditor.exe -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.Windows"
     - name: Test Game (Windows)
-      shell: cmd
+      shell: bash
       run: |
-        FlaxSamples\MaterialsFeaturesTour\Output\Windows\MaterialsFeaturesTour.exe -std -headless -mute -null
+        ./FlaxSamples/MaterialsFeaturesTour/Output/Windows/MaterialsFeaturesTour.exe -std -headless -mute -null
 
   # Cook on Mac
   cook-mac:
@@ -75,10 +78,13 @@ jobs:
         fetch-depth: 1
         repository: FlaxEngine/FlaxSamples
         path: FlaxSamples
+    - name: Path Files
+      run: |
+        cp .github/data/ExitOnEsc.cs FlaxSamples/MaterialsFeaturesTour/Source/Game
+        cp ".github/data/Build Settings.json" "FlaxSamples/MaterialsFeaturesTour/Content/Settings"
     - name: Build Editor
       run: |
         ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -dotnet=8 -arch=ARM64 -platform=Mac -configuration=Development -buildtargets=FlaxEditor
     - name: Cook Game (iOS)
       run: |
-        cp .github/data/ExitOnEsc.cs FlaxSamples/MaterialsFeaturesTour/Source/Game
         ./Binaries/Editor/Mac/Development/FlaxEditor -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.iOS"
