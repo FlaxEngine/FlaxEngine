@@ -473,6 +473,7 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
         {
             NSPipe *stdoutPipe = [NSPipe pipe];
             [task setStandardOutput:stdoutPipe];
+            [task setStandardError:stdoutPipe];
             
             outputObserver = [[NSNotificationCenter defaultCenter]
                                           addObserverForName: NSFileHandleDataAvailableNotification
