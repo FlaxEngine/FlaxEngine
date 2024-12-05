@@ -8,7 +8,7 @@ env:
 jobs:
 
   # Cook on Windows
-  tests-windows:
+  cook-windows:
     name: Cook (Windows)
     runs-on: "windows-2022"
     steps:
@@ -35,10 +35,43 @@ jobs:
     - name: Build Editor
       run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
-    - name: Cook Game
+    - name: Cook Game (Windows)
       run: |
         cp .github\data\ExitOnEsc.cs FlaxSamples\MaterialsFeaturesTour\Source\Game
         .\Binaries\Editor\Win64\Development\FlaxEditor.exe -std -headless -mute -null -project "FlaxSamples\MaterialsFeaturesTour" -build "Development.Windows"
-    - name: Test Game
+    - name: Test Game (Windows)
       run: |
         .\FlaxSamples\MaterialsFeaturesTour\Output\Windows\MaterialsFeaturesTour.exe -std -headless -mute -null
+
+  # Cook on Mac
+  cook-mac:
+    name: Cook (Mac)
+    runs-on: "macos-14"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0.x
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Get Flax Samples
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
+        repository: FlaxEngine/FlaxSamples
+        path: FlaxSamples
+    - name: Build Editor
+      run: |
+        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -dotnet=8 -arch=ARM64 -platform=Mac -configuration=Development -buildtargets=FlaxEditor
+    - name: Cook Game (iOS)
+      run: |
+        cp .github/data/ExitOnEsc.cs FlaxSamples/MaterialsFeaturesTour/Source/Game
+        ./Binaries/Editor/Mac/Development/FlaxEditor -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.iOS"
