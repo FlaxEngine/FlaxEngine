@@ -39,14 +39,10 @@ jobs:
     - name: Build Editor
       run: |
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
-    - name: Cook Game (Windows)
+    - name: Cook and Test Game (Windows)
       shell: pwsh
       run: |
-        ./Binaries/Editor/Win64/Development/FlaxEditor.exe -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.Windows"
-    - name: Test Game (Windows)
-      shell: pwsh
-      run: |
-        ./FlaxSamples/MaterialsFeaturesTour/Output/Windows/MaterialsFeaturesTour.exe -std -headless -mute -null
+        .\.github\data\Cook.ps1
 
   # Cook on Mac
   cook-mac:
