@@ -87,7 +87,7 @@ jobs:
         ./Binaries/Editor/Mac/Development/FlaxEditor -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.Mac"
     - name: Test Game (Mac)
       run: |
-        ./FlaxSamples/MaterialsFeaturesTour/Output/Mac/MaterialsFeaturesTour.app/Contents/MacOS/FlaxGame -std -headless -mute -null
+        open -n ./FlaxSamples/MaterialsFeaturesTour/Output/Mac/MaterialsFeaturesTour.app -W --args -std -headless -mute -null
     - name: Cook Game (iOS)
       run: |
         ./Binaries/Editor/Mac/Development/FlaxEditor -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.iOS"
