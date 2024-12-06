@@ -32,8 +32,17 @@
 				},
 				{
 					"Name": "Linux",
-					"Output": "Output\\LInux",
+					"Output": "Output\\Linux",
 					"Platform": 6,
+					"Mode": 1,
+					"CustomDefines": null,
+					"PreBuildAction": null,
+					"PostBuildAction": null
+				},
+				{
+					"Name": "Mac",
+					"Output": "Output\\Mac",
+					"Platform": 13,
 					"Mode": 1,
 					"CustomDefines": null,
 					"PreBuildAction": null,
