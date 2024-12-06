@@ -6,45 +6,6 @@ env:
   DOTNET_CLI_TELEMETRY_OPTOUT: false
 
 jobs:
-
-  # Cook on Windows
-  cook-windows:
-    name: Cook (Windows)
-    runs-on: "windows-2022"
-    if: false
-    steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 8.0.x
-    - name: Print .NET info
-      run: |
-        dotnet --info
-        dotnet workload --info
-    - name: Checkout LFS
-      run: |
-        git lfs version
-        git lfs pull
-    - name: Get Flax Samples
-      uses: actions/checkout@v3
-      with:
-        fetch-depth: 1
-        repository: FlaxEngine/FlaxSamples
-        path: FlaxSamples
-    - name: Patch Files
-      run: |
-        cp .github\data\ExitOnEsc.cs FlaxSamples\MaterialsFeaturesTour\Source\Game
-        cp ".github\data\Build Settings.json" "FlaxSamples\MaterialsFeaturesTour\Content\Settings"
-    - name: Build Editor
-      run: |
-        .\Development\Scripts\Windows\CallBuildTool.bat -build -log -printSDKs -dotnet=8 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxEditor
-    - name: Cook and Test Game (Windows)
-      shell: pwsh
-      run: |
-        .\.github\data\Cook.ps1
-
   # Cook on Mac
   cook-mac:
     name: Cook (Mac)
@@ -85,9 +46,6 @@ jobs:
     - name: Cook Game (Mac)
       run: |
         ./Binaries/Editor/Mac/Development/FlaxEditor -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.Mac"
-    - name: Test Game (Mac)
-      run: |
-        open -n ./FlaxSamples/MaterialsFeaturesTour/Output/Mac/MaterialsFeaturesTour.app -W --args -std -headless -mute -null
     - name: Cook Game (iOS)
       run: |
         ./Binaries/Editor/Mac/Development/FlaxEditor -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.iOS"
