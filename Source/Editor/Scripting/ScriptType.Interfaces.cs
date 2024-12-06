@@ -293,6 +293,14 @@ namespace FlaxEditor.Scripting
         /// <param name="obj">The object whose member value will be modified.</param>
         /// <param name="value">The new member value.</param>
         void SetValue(object obj, object value);
+
+        /// <summary>
+        /// Invokes the method on a specific object (null if static) using the provided parameters.
+        /// </summary>
+        /// <param name="obj">The instance of the object to invoke its method. Use null for static methods.</param>
+        /// <param name="parameters">List of parameters to provide.</param>
+        /// <returns>The value returned by the method.</returns>
+        object Invoke(object obj, object[] parameters);
     }
 
     /// <summary>

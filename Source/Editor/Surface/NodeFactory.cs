@@ -39,6 +39,7 @@ namespace FlaxEditor.Surface
             typeof(TooltipAttribute),
             typeof(HideInEditorAttribute),
             typeof(NoAnimateAttribute),
+            typeof(ButtonAttribute),
         };
 
         /// <summary>

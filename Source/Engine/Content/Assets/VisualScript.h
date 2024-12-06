@@ -267,6 +267,9 @@ public:
     // Gets the signature data of the method.
     API_FUNCTION() void GetMethodSignature(int32 index, API_PARAM(Out) String& name, API_PARAM(Out) byte& flags, API_PARAM(Out) String& returnTypeName, API_PARAM(Out) Array<String>& paramNames, API_PARAM(Out) Array<String>& paramTypeNames, API_PARAM(Out) Array<bool>& paramOuts);
 
+    // Invokes the method.
+    API_FUNCTION() Variant InvokeMethod(int32 index, const Variant& instance, Span<Variant> parameters) const;
+
     // Gets the metadata of the script surface.
     API_FUNCTION() Span<byte> GetMetaData(int32 typeID);
 

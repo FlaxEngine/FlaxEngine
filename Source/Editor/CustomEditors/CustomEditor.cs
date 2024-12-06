@@ -127,10 +127,39 @@ namespace FlaxEditor.CustomEditors
 
             _isSetBlocked = true;
             Initialize(layout);
+            ShowButtons();
             Refresh();
             _isSetBlocked = false;
 
             CurrentCustomEditor = prev;
+        }
+
+        private void ShowButtons()
+        {
+            var values = Values;
+            if (values == null || values.HasDifferentTypes)
+                return;
+            var type = TypeUtils.GetObjectType(values[0]);
+            var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            foreach (var method in methods)
+            {
+                if (!method.HasAttribute(typeof(ButtonAttribute)) ||
+                    method.ParametersCount != 0)
+                    continue;
+                var attribute = method.GetAttribute<ButtonAttribute>();
+                var text = string.IsNullOrEmpty(attribute.Text) ? Utilities.Utils.GetPropertyNameUI(method.Name) : attribute.Text;
+                var tooltip = string.IsNullOrEmpty(attribute.Tooltip) ? Editor.Instance.CodeDocs.GetTooltip(method) : attribute.Tooltip;
+                var button = _layout.Button(text, tooltip);
+                button.Button.Tag = method;
+                button.Button.ButtonClicked += OnButtonClicked;
+            }
+        }
+
+        private void OnButtonClicked(Button button)
+        {
+            var method = (ScriptMemberInfo)button.Tag;
+            var obj = method.IsStatic ? null : Values[0];
+            method.Invoke(obj);
         }
 
         internal static CustomEditor CurrentCustomEditor;
