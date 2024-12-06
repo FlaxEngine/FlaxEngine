@@ -596,11 +596,17 @@ namespace FlaxEditor.SceneGraph.GUI
             {
                 bool worldPositionsStays = Root.GetKey(KeyboardKeys.Control) == false;
                 var objects = new SceneObject[_dragActors.Objects.Count];
+                var treeNodes = new TreeNode[_dragActors.Objects.Count];
                 for (int i = 0; i < objects.Length; i++)
+                {
                     objects[i] = _dragActors.Objects[i].Actor;
+                    treeNodes[i] = _dragActors.Objects[i].TreeNode;
+                }
                 var action = new ParentActorsAction(objects, newParent, newOrder, worldPositionsStays);
                 ActorNode.Root.Undo?.AddAction(action);
                 action.Do();
+                ParentTree.Focus();
+                ParentTree.Select(treeNodes.ToList());
                 result = DragDropEffect.Move;
             }
             // Drag scripts
