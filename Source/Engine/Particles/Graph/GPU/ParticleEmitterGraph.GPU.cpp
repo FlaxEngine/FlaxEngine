@@ -456,6 +456,7 @@ void ParticleEmitterGPUGenerator::PrepareGraph(ParticleEmitterGraphGPU* graph)
             mp.AsFloat3 = param->Value.AsFloat3();
             break;
         case VariantType::Float4:
+        case VariantType::Quaternion:
             mp.Type = MaterialParameterType::Vector4;
             *(Float4*)&mp.AsData = param->Value.AsFloat4();
             break;

@@ -460,6 +460,7 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
     case VariantType::Types::Float4:
     case VariantType::Types::Double4:
     case VariantType::Types::Color:
+    case VariantType::Types::Quaternion:
         switch (v.Type)
         {
         case VariantType::Types::Bool:
@@ -481,16 +482,6 @@ ShaderGraphValue ShaderGraphValue::Cast(const ShaderGraphValue& v, VariantType::
         case VariantType::Types::Float4:
         case VariantType::Types::Double4:
         case VariantType::Types::Quaternion:
-            format = TEXT("{}");
-            break;
-        }
-        break;
-    case VariantType::Types::Quaternion:
-        switch (v.Type)
-        {
-        case VariantType::Types::Color:
-        case VariantType::Types::Float4:
-        case VariantType::Types::Double4:
             format = TEXT("{}");
             break;
         }

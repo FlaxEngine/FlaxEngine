@@ -92,9 +92,13 @@ void ShaderGenerator::ProcessGroupConstants(Box* box, Node* node, Value& value)
             value = Value(cv.W);
         break;
     }
+    // Rotation
     case 8:
     {
-        value = Value::Zero;
+        const float pitch = (float)node->Values[0];
+        const float yaw = (float)node->Values[1];
+        const float roll = (float)node->Values[2];
+        value = Value(Quaternion::Euler(pitch, yaw, roll));
         break;
     }
     // PI

@@ -1824,6 +1824,7 @@ Variant::operator Float4() const
         return Float4(*(Float3*)AsData, 0.0f);
     case VariantType::Float4:
     case VariantType::Color:
+    case VariantType::Quaternion:
         return *(Float4*)AsData;
     case VariantType::Double2:
         return Float4(AsDouble2(), 0.0f, 0.0f);
