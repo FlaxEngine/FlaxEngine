@@ -158,18 +158,22 @@ namespace FlaxEditor.Viewport
         private float _movementSpeed;
         private float _minMovementSpeed;
         private float _maxMovementSpeed;
+#if !PLATFORM_SDL
         private float _mouseAccelerationScale;
         private bool _useMouseFiltering;
         private bool _useMouseAcceleration;
+#endif
 
         // Input
 
         internal bool _disableInputUpdate;
         private bool _isControllingMouse, _isViewportControllingMouse, _wasVirtualMouseRightDown, _isVirtualMouseRightDown;
-        private int _deltaFilteringStep;
         private Float2 _startPos;
+#if !PLATFORM_SDL
         private Float2 _mouseDeltaLast;
+        private int _deltaFilteringStep;
         private Float2[] _deltaFilteringBuffer = new Float2[FpsCameraFilteringFrames];
+#endif
 
         /// <summary>
         /// The previous input (from the previous update).
@@ -525,10 +529,11 @@ namespace FlaxEditor.Viewport
         : base(task)
         {
             _editor = Editor.Instance;
-
+#if !PLATFORM_SDL
             _mouseAccelerationScale = 0.1f;
             _useMouseFiltering = false;
             _useMouseAcceleration = false;
+#endif
             _camera = camera;
             if (_camera != null)
                 _camera.Viewport = this;
@@ -1456,7 +1461,9 @@ namespace FlaxEditor.Viewport
             // Hide cursor and start tracking mouse movement
             win.StartTrackingMouse(false);
             win.Cursor = CursorType.Hidden;
+            win.MouseMoveRelative += OnMouseMoveRelative;
 
+#if !PLATFORM_SDL
             // Center mouse position if it's too close to the edge
             var size = Size;
             var center = Float2.Round(size * 0.5f);
@@ -1465,6 +1472,7 @@ namespace FlaxEditor.Viewport
                 _viewMousePos = center;
                 win.MousePosition = PointToWindow(_viewMousePos);
             }
+#endif
         }
 
         /// <summary>
@@ -1476,6 +1484,7 @@ namespace FlaxEditor.Viewport
             // Restore cursor and stop tracking mouse movement
             win.Cursor = CursorType.Default;
             win.EndTrackingMouse();
+            win.MouseMoveRelative -= OnMouseMoveRelative;
         }
 
         /// <summary>
@@ -1580,6 +1589,14 @@ namespace FlaxEditor.Viewport
                     else
                         EndMouseCapture();
                 }
+#if PLATFORM_SDL
+                bool useMouse = IsControllingMouse || true;
+                _prevInput = _input;
+                if (canUseInput && ContainsFocus)
+                    _input.Gather(win.Window, useMouse, ref _prevInput);
+                else
+                    _input.Clear();
+#else
                 bool useMouse = IsControllingMouse || (Mathf.IsInRange(_viewMousePos.X, 0, Width) && Mathf.IsInRange(_viewMousePos.Y, 0, Height));
                 _prevInput = _input;
                 var hit = GetChildAt(_viewMousePos, c => c.Visible && !(c is CanvasRootControl) && !(c is UIEditorRoot));
@@ -1587,6 +1604,7 @@ namespace FlaxEditor.Viewport
                     _input.Gather(win.Window, useMouse, ref _prevInput);
                 else
                     _input.Clear();
+#endif
 
                 // Track controlling mouse state change
                 bool wasControllingMouse = _prevInput.IsControllingMouse;
@@ -1695,6 +1713,10 @@ namespace FlaxEditor.Viewport
                 if (_input.IsControlDown)
                     moveDelta *= 0.3f;
 
+#if PLATFORM_SDL
+                var mouseDelta = _mouseDelta;
+                _mouseDelta = Float2.Zero;
+#else
                 // Calculate smooth mouse delta not dependant on viewport size
                 var offset = _viewMousePos - _startPos;
                 if (_input.IsZooming && !_input.IsMouseRightDown && !_input.IsMouseLeftDown && !_input.IsMouseMiddleDown && !_isOrtho && !rmbWheel && !_isVirtualMouseRightDown)
@@ -1736,6 +1758,7 @@ namespace FlaxEditor.Viewport
                     mouseDelta += _mouseDeltaLast * _mouseAccelerationScale;
                     _mouseDeltaLast = currentDelta;
                 }
+#endif
 
                 // Update
                 moveDelta *= dt * (60.0f * 4.0f);
@@ -1744,12 +1767,14 @@ namespace FlaxEditor.Viewport
                     mouseDelta *= new Float2(1, -1);
                 UpdateView(dt, ref moveDelta, ref mouseDelta, out var centerMouse);
 
+#if !PLATFORM_SDL
                 // Move mouse back to the root position
                 if (centerMouse && (_input.IsMouseRightDown || _input.IsMouseLeftDown || _input.IsMouseMiddleDown || _isVirtualMouseRightDown))
                 {
                     var center = PointToWindow(_startPos);
                     win.MousePosition = center;
                 }
+#endif
 
                 // Change Ortho size on mouse scroll
                 if (_isOrtho && !rmbWheel)
@@ -1761,6 +1786,8 @@ namespace FlaxEditor.Viewport
             }
             else
             {
+#if PLATFORM_SDL
+#else
                 if (_input.IsMouseLeftDown || _input.IsMouseRightDown || _isVirtualMouseRightDown)
                 {
                     // Calculate smooth mouse delta not dependant on viewport size
@@ -1775,6 +1802,7 @@ namespace FlaxEditor.Viewport
                     _mouseDelta = Float2.Zero;
                 }
                 _mouseDeltaLast = Float2.Zero;
+#endif
 
                 if (ContainsFocus)
                 {
@@ -1822,6 +1850,12 @@ namespace FlaxEditor.Viewport
             }
 
             _input.MouseWheelDelta = 0;
+        }
+
+        /// <inheritdoc />
+        public void OnMouseMoveRelative(ref Float2 mouseMotion)
+        {
+            _mouseDelta += mouseMotion;
         }
 
         /// <inheritdoc />
