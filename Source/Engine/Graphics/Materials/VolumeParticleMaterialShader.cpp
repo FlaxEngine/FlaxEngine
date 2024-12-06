@@ -68,7 +68,7 @@ void VolumeParticleMaterialShader::Bind(BindParameters& params)
             {
                 const StringView name(param.GetName().Get() + 9, param.GetName().Length() - 9);
                 const int32 offset = drawCall.Particle.Particles->Layout->FindAttributeOffset(name);
-                ASSERT_LOW_LAYER(bindMeta.Constants.Get() && bindMeta.Constants.Length() >= (int32)param.GetBindOffset() + sizeof(int32));
+                ASSERT_LOW_LAYER(bindMeta.Constants.Get() && bindMeta.Constants.Length() >= (int32)(param.GetBindOffset() + sizeof(int32)));
                 *((int32*)(bindMeta.Constants.Get() + param.GetBindOffset())) = offset;
             }
         }
