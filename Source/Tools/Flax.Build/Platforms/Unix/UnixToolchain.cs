@@ -268,6 +268,9 @@ namespace Flax.Build.Platforms
         public override TargetCompiler Compiler => TargetCompiler.Clang;
 
         /// <inheritdoc />
+        public override string NativeCompilerPath => ClangPath;
+
+        /// <inheritdoc />
         public override void LogInfo()
         {
             if (!string.IsNullOrEmpty(ToolsetRoot))

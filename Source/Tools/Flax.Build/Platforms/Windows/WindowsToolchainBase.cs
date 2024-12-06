@@ -359,6 +359,9 @@ namespace Flax.Build.Platforms
         public override TargetCompiler Compiler => TargetCompiler.MSVC;
 
         /// <inheritdoc />
+        public override string NativeCompilerPath => _compilerPath;
+
+        /// <inheritdoc />
         public override void LogInfo()
         {
             var sdkPath = WindowsPlatformBase.GetSDKs()[SDK];
