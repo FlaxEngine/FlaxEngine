@@ -93,6 +93,22 @@ namespace Flax.Deploy
                             BuildPlatform(platform, architectures);
                         }
                     }
+
+                    if (Platform.BuildTargetPlatform == TargetPlatform.Windows)
+                    {
+                        Log.Info("Compressing game debug symbols files...");
+                        var gamePackageZipPath = Path.Combine(Deployer.PackageOutputPath, "GameDebugSymbols.zip");
+                        Utilities.FileDelete(gamePackageZipPath);
+                        using (var zip = new Ionic.Zip.ZipFile())
+                        {
+                            zip.AddDirectory(Path.Combine(Deployer.PackageOutputPath, "GameDebugSymbols"));
+                            zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestCompression;
+                            zip.Comment = string.Format("Flax Game {0}.{1}.{2}\nDate: {3}", Deployer.VersionMajor, Deployer.VersionMinor, Deployer.VersionBuild, DateTime.UtcNow);
+                            zip.Save(gamePackageZipPath);
+                        }
+                        Log.Info("Compressed game debug symbols package size: " + Utilities.GetFileSize(gamePackageZipPath));
+                    }
+                    Utilities.DirectoryDelete(Path.Combine(Deployer.PackageOutputPath, "GameDebugSymbols"));
                 }
 
                 if (Configuration.DeployEditor)
