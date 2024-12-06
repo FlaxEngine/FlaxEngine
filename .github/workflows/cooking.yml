@@ -43,9 +43,6 @@ jobs:
     - name: Build Editor
       run: |
         ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -dotnet=8 -arch=ARM64 -platform=Mac -configuration=Development -buildtargets=FlaxEditor
-    - name: Cook Game (Mac)
-      run: |
-        ./Binaries/Editor/Mac/Development/FlaxEditor -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.Mac"
     - name: Cook Game (iOS)
       run: |
         ./Binaries/Editor/Mac/Development/FlaxEditor -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.iOS"
