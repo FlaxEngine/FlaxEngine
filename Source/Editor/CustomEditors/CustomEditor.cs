@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using FlaxEditor.CustomEditors.GUI;
@@ -300,8 +301,16 @@ namespace FlaxEditor.CustomEditors
                     _valueToSet = null;
 
                     // Assign value
-                    for (int i = 0; i < _values.Count; i++)
-                        _values[i] = val;
+                    if (val is IList l && l.Count == _values.Count)
+                    {
+                        for (int i = 0; i < _values.Count; i++)
+                            _values[i] = l[i];
+                    }
+                    else
+                    {
+                        for (int i = 0; i < _values.Count; i++)
+                            _values[i] = val;
+                    }
                 }
                 finally
                 {
