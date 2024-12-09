@@ -424,7 +424,7 @@ namespace FlaxEditor.Surface.Archetypes
                     }
 
                     // Update blend point
-                    _blendPoints[i].Location = BlendSpacePosToBlendPointPos(location);
+                    _blendPoints[i].Location = BlendSpacePosToBlendPointPos(location) - BlendPoint.DefaultSize * 0.5f;
                     var asset = Editor.Instance.ContentDatabase.FindAsset(animId);
                     var tooltip = asset?.ShortName ?? string.Empty;
                     tooltip += "\nX: " + location.X;
@@ -598,7 +598,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     float alpha = (float)i / splits;
                     float y = blendArea.Top + blendArea.Height * alpha;
-                    float value = Mathf.Lerp(rangeY.X, rangeY.Y, alpha);
+                    float value = Mathf.Lerp(rangeY.X, rangeY.Y, 1.0f - alpha);
                     DrawAxis(true, new Float2(1, y), new Float2(rect.Width - 2, y), ref gridColor, ref labelColor, labelFont, value, i == splits);
                 }
             }
