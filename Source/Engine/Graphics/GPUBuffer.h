@@ -74,8 +74,7 @@ public:
     /// </summary>
     API_PROPERTY() FORCE_INLINE uint32 GetElementsCount() const
     {
-        ASSERT(_desc.Stride > 0);
-        return _desc.Size / _desc.Stride;
+        return _desc.Stride > 0 ? _desc.Size / _desc.Stride : 0;
     }
 
     /// <summary>

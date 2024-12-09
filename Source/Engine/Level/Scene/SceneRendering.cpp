@@ -90,6 +90,7 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
         // Draw physics shapes
         if (EnumHasAnyFlags(view.Flags, ViewFlags::PhysicsDebug) || view.Mode == ViewMode::PhysicsColliders)
         {
+            PROFILE_CPU_NAMED("PhysicsDebug");
             const PhysicsDebugCallback* physicsDebugData = PhysicsDebug.Get();
             for (int32 i = 0; i < PhysicsDebug.Count(); i++)
             {
@@ -100,6 +101,7 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
         // Draw light shapes
         if (EnumHasAnyFlags(view.Flags, ViewFlags::LightsDebug))
         {
+            PROFILE_CPU_NAMED("LightsDebug");
             const LightsDebugCallback* lightsDebugData = LightsDebug.Get();
             for (int32 i = 0; i < LightsDebug.Count(); i++)
             {
