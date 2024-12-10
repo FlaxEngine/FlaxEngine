@@ -178,6 +178,22 @@ API_ENUM() enum class ReflectionsTraceMode : int32
 };
 
 /// <summary>
+/// The screen space reflections modes.
+/// </summary>
+API_ENUM() enum class SSAOMethod : int32
+{
+    /// <summary>
+    /// Adaptive Screen Space Ambient Occlusion algorithm, gives fairly good results with a low computational cost
+    /// </summary>
+    ASSAO = 0,
+
+    /// <summary>
+    /// Ground Truth Ambient Occlusion algorithm, gives better results than ASSAO but slightly more costly
+    /// </summary>
+    GTAO = 1,
+};
+
+/// <summary>
 /// The <see cref="AmbientOcclusionSettings"/> structure members override flags.
 /// </summary>
 API_ENUM(Attributes="Flags") enum class AmbientOcclusionSettingsOverride : int32
@@ -218,9 +234,24 @@ API_ENUM(Attributes="Flags") enum class AmbientOcclusionSettingsOverride : int32
     FadeDistance = 1 << 5,
 
     /// <summary>
+    /// Overrides <see cref="AmbientOcclusionSettings.Method"/> property.
+    /// </summary>
+    Method = 1 << 6,
+
+    /// <summary>
+    /// Overrides <see cref="AmbientOcclusionSettings.GTAORadius"/> property.
+    /// </summary>
+    GTAORadius = 1 << 7,
+
+    /// <summary>
+    /// Overrides <see cref="AmbientOcclusionSettings.GTAOThickness"/> property.
+    /// </summary>
+    GTAOThickness = 1 << 8,
+
+    /// <summary>
     /// All properties.
     /// </summary>
-    All = Enabled | Intensity | Power | Radius | FadeOutDistance | FadeDistance,
+    All = Enabled | Intensity | Power | Radius | FadeOutDistance | FadeDistance | Method | GTAORadius | GTAOThickness,
 };
 
 /// <summary>
@@ -244,35 +275,50 @@ API_STRUCT() struct FLAXENGINE_API AmbientOcclusionSettings : ISerializable
     API_FIELD(Attributes="EditorOrder(0), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Enabled)")
     bool Enabled = true;
 
+    API_FIELD(Attributes = "EditorOrder(1), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Method)")
+    SSAOMethod Method = SSAOMethod::ASSAO;
+
     /// <summary>
     /// Ambient occlusion intensity.
     /// </summary>
-    API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(1), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Intensity)")
+    API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Intensity)")
     float Intensity = 0.8f;
 
     /// <summary>
     /// Ambient occlusion power.
     /// </summary>
-    API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Power)")
+    API_FIELD(Attributes="Limit(0, 10.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Power)")
     float Power = 0.75f;
 
     /// <summary>
-    /// Ambient occlusion check range radius.
+    /// Ambient occlusion check range radius, proportional to world units.
     /// </summary>
-    API_FIELD(Attributes="Limit(0, 100.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Radius)")
+    API_FIELD(Attributes="Limit(0, 100.0f, 0.01f), EditorOrder(4), PostProcessSetting((int)AmbientOcclusionSettingsOverride.Radius)")
     float Radius = 0.7f;
 
     /// <summary>
     /// Ambient occlusion fade out end distance from camera (in world units).
     /// </summary>
-    API_FIELD(Attributes="Limit(0.0f), EditorOrder(4), PostProcessSetting((int)AmbientOcclusionSettingsOverride.FadeOutDistance)")
+    API_FIELD(Attributes="Limit(0.0f), EditorOrder(5), PostProcessSetting((int)AmbientOcclusionSettingsOverride.FadeOutDistance)")
     float FadeOutDistance = 5000.0f;
 
     /// <summary>
     /// Ambient occlusion fade distance (in world units). Defines the size of the effect fade from fully visible to fully invisible at FadeOutDistance.
     /// </summary>
-    API_FIELD(Attributes="Limit(0.0f), EditorOrder(5), PostProcessSetting((int)AmbientOcclusionSettingsOverride.FadeDistance)")
+    API_FIELD(Attributes="Limit(0.0f), EditorOrder(6), PostProcessSetting((int)AmbientOcclusionSettingsOverride.FadeDistance)")
     float FadeDistance = 500.0f;
+
+    /// <summary>
+    /// The sample radius of GTAO, in world units, takes no effect in ASSAO. 
+    /// </summary>
+    API_FIELD(Attributes = "Limit(0.0f, 256.0f, 0.1f), EditorOrder(7), PostProcessSetting((int)AmbientOcclusionSettingsOverride.GTAORadius)")
+    float GTAORadius = 100.0f;
+
+    /// <summary>
+    /// Thickness of the GTAO effect, takes no effect in ASSAO. 
+    /// </summary>
+    API_FIELD(Attributes = "Limit(0.0f, 1.0f, 0.01f), EditorOrder(8), PostProcessSetting((int)AmbientOcclusionSettingsOverride.GTAOThickness)")
+    float GTAOThickness = 0.5f;
 
 public:
     /// <summary>
