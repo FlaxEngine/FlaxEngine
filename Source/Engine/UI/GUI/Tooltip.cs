@@ -77,8 +77,11 @@ namespace FlaxEngine.GUI
             var dpiSize = Size * dpiScale;
             var locationWS = target.PointToWindow(location);
             var locationSS = parentWin.PointToScreen(locationWS);
+            var mousePos = Input.MouseScreenPosition;
             _showTarget = target;
-            WrapPosition(ref locationSS);
+            //WrapPosition(ref locationSS);
+            WrapPosition(ref mousePos, 10);
+            locationSS = mousePos + new Float2(15, 10);
 
             // Create window
             var desc = CreateWindowSettings.Default;
@@ -95,7 +98,7 @@ namespace FlaxEngine.GUI
             desc.AllowMaximize = false;
             desc.AllowDragAndDrop = false;
             desc.IsTopmost = true;
-            desc.IsRegularWindow = false;
+            desc.Type = WindowType.Tooltip;
             desc.HasSizingFrame = false;
             desc.ShowAfterFirstPaint = true;
             _window = Platform.CreateWindow(ref desc);
