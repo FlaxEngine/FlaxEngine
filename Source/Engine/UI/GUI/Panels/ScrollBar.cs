@@ -348,6 +348,8 @@ namespace FlaxEngine.GUI
                             
                     // https://easings.net/#easeOutSine
                     var easedProgress = Mathf.Sin((progress * Mathf.Pi) / 2);
+                    if (progress >= 1.0f)
+                        easedProgress = 1.0f;
                     value = Mathf.Lerp(_startValue, _targetValue, easedProgress);
 
                     _scrollAnimationProgress = progress;

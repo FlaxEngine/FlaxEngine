@@ -79,6 +79,7 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
             value = cv.W;
         break;
     }
+    // Rotation
     case 8:
     {
         const float pitch = (float)node->Values[0];

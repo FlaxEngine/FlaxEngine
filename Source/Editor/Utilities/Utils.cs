@@ -250,6 +250,8 @@ namespace FlaxEditor.Utilities
 
         internal static Int2 DrawCurveTicks(DrawCurveTick drawTick, float[] tickSteps, ref float[] tickStrengths, float min, float max, float pixelRange, float minDistanceBetweenTicks = 20, float maxDistanceBetweenTicks = 60)
         {
+            if (pixelRange <= Mathf.Epsilon || maxDistanceBetweenTicks <= minDistanceBetweenTicks)
+                return Int2.Zero;
             if (tickStrengths == null || tickStrengths.Length != tickSteps.Length)
                 tickStrengths = new float[tickSteps.Length];
 
@@ -286,7 +288,7 @@ namespace FlaxEditor.Utilities
                     continue;
 
                 // Draw all ticks
-                int l = Mathf.Clamp(smallestTick + level, 0, tickSteps.Length - 1);
+                int l = Mathf.Clamp(smallestTick + level, 0, tickSteps.Length - 2);
                 var lStep = tickSteps[l];
                 var lNextStep = tickSteps[l + 1];
                 int startTick = Mathf.FloorToInt(min / lStep);

@@ -112,6 +112,12 @@ namespace FlaxEditor.Content
                 throw new TargetException("Missing Visual Script asset.");
             _type.Asset.SetScriptInstanceParameterValue(_parameter.Name, (Object)obj, value);
         }
+
+        /// <inheritdoc />
+        public object Invoke(object obj, object[] parameters)
+        {
+            throw new NotSupportedException();
+        }
     }
 
     sealed class VisualScriptMethodInfo : IScriptMemberInfo
@@ -239,6 +245,14 @@ namespace FlaxEditor.Content
         public void SetValue(object obj, object value)
         {
             throw new NotSupportedException();
+        }
+
+        /// <inheritdoc />
+        public object Invoke(object obj, object[] parameters)
+        {
+            if (!_type.Asset)
+                throw new TargetException("Missing Visual Script asset.");
+            return _type.Asset.InvokeMethod(_index, obj, parameters);
         }
     }
 

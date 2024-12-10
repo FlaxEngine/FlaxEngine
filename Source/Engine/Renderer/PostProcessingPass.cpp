@@ -271,7 +271,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
 
         // Calculate star texture rotation matrix
         Float3 camX = renderContext.View.View.GetRight();
-        Float3 camZ = renderContext.View.View.GetForward();
+        Float3 camZ = renderContext.View.View.GetBackward();
         float camRot = Float3::Dot(camX, Float3::Forward) + Float3::Dot(camZ, Float3::Up);
         float camRotCos = Math::Cos(camRot) * 0.8f;
         float camRotSin = Math::Sin(camRot) * 0.8f;

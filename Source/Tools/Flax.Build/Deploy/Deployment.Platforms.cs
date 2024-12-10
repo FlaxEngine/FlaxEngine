@@ -28,6 +28,18 @@ namespace Flax.Deploy
                 string dst = Path.Combine(Deployer.PackageOutputPath, platformName);
                 Utilities.DirectoryDelete(dst);
 
+                // Deploy debug files for crashes debugging
+                foreach (var configuration in new[] { TargetConfiguration.Debug, TargetConfiguration.Development, TargetConfiguration.Release  })
+                {
+                    if (platform == TargetPlatform.Windows)
+                    {
+                        var dstDebug = Path.Combine(Deployer.PackageOutputPath, $"GameDebugSymbols/{platform}/{configuration}");
+                        Directory.CreateDirectory(dstDebug);
+                        var binaries = Path.Combine(src, "Binaries", "Game", "x64", configuration.ToString());
+                        DeployFiles(binaries, dstDebug, "*.pdb");
+                    }
+                }
+
                 // Deploy files
                 {
                     DeployFolder(platformsRoot, Deployer.PackageOutputPath, platformName);

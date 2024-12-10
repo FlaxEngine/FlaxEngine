@@ -980,6 +980,10 @@ namespace Flax.Build.Bindings
                 UseReferenceForResult = UsePassByReference(buildData, functionInfo.ReturnType, caller),
                 CustomParameters = new List<FunctionInfo.ParameterInfo>(),
             };
+            var returnType = functionInfo.ReturnType;
+            var returnApiType = FindApiTypeInfo(buildData, returnType, caller);
+            if (returnApiType != null && returnApiType.MarshalAs != null)
+                returnType = returnApiType.MarshalAs;
 
             bool returnTypeIsContainer = false;
             var returnValueConvert = GenerateCppWrapperNativeToManaged(buildData, functionInfo.ReturnType, caller, out var returnValueType, functionInfo);
@@ -999,7 +1003,7 @@ namespace Flax.Build.Bindings
                 });
             }
 #if USE_NETCORE
-            else if (functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer" || functionInfo.ReturnType.Type == "BitArray" || functionInfo.ReturnType.Type == "BytesContainer")
+            else if (returnType.Type == "Array" || returnType.Type == "Span" || returnType.Type == "DataContainer" || returnType.Type == "BitArray" || returnType.Type == "BytesContainer")
             {
                 returnTypeIsContainer = true;
                 functionInfo.Glue.CustomParameters.Add(new FunctionInfo.ParameterInfo
@@ -1173,7 +1177,7 @@ namespace Flax.Build.Bindings
             {
                 callBegin += "*__resultAsRef = ";
             }
-            else if (!functionInfo.ReturnType.IsVoid)
+            else if (!returnType.IsVoid)
             {
                 if (useInlinedReturn)
                     callBegin += "return ";
@@ -1186,7 +1190,7 @@ namespace Flax.Build.Bindings
             if (returnTypeIsContainer)
             {
                 callReturnCount = indent;
-                if (functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "BytesContainer")
+                if (returnType.Type == "Span" || returnType.Type == "BytesContainer")
                     callReturnCount += "*__returnCount = {0}.Length();";
                 else
                     callReturnCount += "*__returnCount = {0}.Count();";
@@ -1278,7 +1282,8 @@ namespace Flax.Build.Bindings
 #if USE_NETCORE
             if (!string.IsNullOrEmpty(callReturnCount))
             {
-                contents.Append(indent).Append("const auto& __callTemp = ").Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
+                var tempVar = returnTypeIsContainer && returnType != functionInfo.ReturnType ? $"{returnType} __callTemp = " : "const auto& __callTemp = ";
+                contents.Append(indent).Append(tempVar).Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
                 call = "__callTemp";
                 contents.Append(string.Format(callReturnCount, call));
                 contents.AppendLine();
@@ -1357,7 +1362,7 @@ namespace Flax.Build.Bindings
                 }
             }
 
-            if (!useInlinedReturn && !functionInfo.Glue.UseReferenceForResult && !functionInfo.ReturnType.IsVoid)
+            if (!useInlinedReturn && !functionInfo.Glue.UseReferenceForResult && !returnType.IsVoid)
             {
                 contents.Append(indent).Append("return __result;").AppendLine();
             }
@@ -1822,6 +1827,10 @@ namespace Flax.Build.Bindings
 
             // Add includes to properly compile bindings (eg. SoftObjectReference<class Texture>)
             GenerateCppAddFileReference(buildData, caller, typeInfo, apiTypeInfo);
+
+            // TODO: find a better way to reference other include files for types that have separate serialization header
+            if (typeInfo.Type.EndsWith("Curve") && typeInfo.GenericArgs != null)
+                CppIncludeFilesList.Add("Engine/Animations/CurveSerialization.h");
 
             return false;
         }
@@ -3132,13 +3141,12 @@ namespace Flax.Build.Bindings
                 // Includes
                 header.Clear();
                 CppReferencesFiles.Remove(null);
-                CppIncludeFilesList.Clear();
                 foreach (var fileInfo in CppReferencesFiles)
                     CppIncludeFilesList.Add(fileInfo.Name);
                 CppIncludeFilesList.AddRange(CppIncludeFiles);
                 CppIncludeFilesList.Sort();
                 if (CppIncludeFilesList.Remove("Engine/Serialization/Serialization.h"))
-                    CppIncludeFilesList.Add("Engine/Serialization/Serialization.h");
+                    CppIncludeFilesList.Add("Engine/Serialization/Serialization.h"); // Include serialization header as the last one to properly handle specialization of custom types serialization
                 foreach (var path in CppIncludeFilesList)
                     header.AppendFormat("#include \"{0}\"", path).AppendLine();
                 contents.Insert(headerPos, header.ToString());

@@ -407,20 +407,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
     /// <seealso cref="FlaxEditor.CustomEditors.Editors.GenericEditor" />
     public class UIControlControlEditor : GenericEditor
     {
-        private Type _cachedType;
+        private ScriptType[] _valueTypes;
         private bool _anchorDropDownClosed = true;
         private Button _pivotRelativeButton;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            _cachedType = null;
-            if (HasDifferentTypes)
-            {
-                // TODO: support stable editing multiple different control types (via generic way or for transform-only)
-                return;
-            }
-
             // Set control type button
             var space = layout.Space(20);
             var buttonText = "Set Type";
@@ -445,12 +438,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             // Add control type helper label
+            if (!Values.HasDifferentTypes)
             {
-                var type = Values[0].GetType();
-                _cachedType = type;
                 var label = layout.AddPropertyItem("Type", "The type of the created control.");
-                label.Label(type.FullName);
+                label.Label(Values[0].GetType().FullName);
             }
+            _valueTypes = Values.ValuesTypes;
 
             // Show control properties
             base.Initialize(layout);
@@ -720,22 +713,20 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <inheritdoc />
         public override void Refresh()
         {
-            if (_cachedType != null)
+            // Automatic layout rebuild if control type gets changed
+            if (_valueTypes != null && 
+                !Values.HasNull && 
+                !Utils.ArraysEqual(_valueTypes, Values.ValuesTypes))
             {
-                // Automatic layout rebuild if control type gets changed
-                var type = Values.HasNull ? null : Values[0].GetType();
-                if (type != _cachedType)
-                {
-                    RebuildLayout();
-                    return;
-                }
+                RebuildLayout();
+                return;
+            }
 
-                // Refresh anchors
-                GetAnchorEquality(out bool xEq, out bool yEq, ValuesTypes);
-                if (xEq != _cachedXEq || yEq != _cachedYEq)
-                {
-                    RebuildLayout();
-                }
+            // Refresh anchors
+            GetAnchorEquality(out bool xEq, out bool yEq, ValuesTypes);
+            if (xEq != _cachedXEq || yEq != _cachedYEq)
+            {
+                RebuildLayout();
             }
 
             base.Refresh();

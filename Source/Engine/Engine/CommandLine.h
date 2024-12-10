@@ -169,6 +169,11 @@ public:
         Nullable<bool> ShaderDebug;
 
         /// <summary>
+        /// -exit (exits the editor after startup and performing all queued actions). Usefull when invoking editor from CL/CD.
+        /// </summary>
+        Nullable<bool> Exit;
+
+        /// <summary>
         /// -play !guid! ( Scene to play, can be empty to use default )
         /// </summary>
         Nullable<String> Play;

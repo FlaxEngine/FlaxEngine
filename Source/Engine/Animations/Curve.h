@@ -247,16 +247,18 @@ public:
     static void Interpolate(const BezierCurveKeyframe& a, const BezierCurveKeyframe& b, float alpha, float length, T& result)
     {
         T leftTangent, rightTangent;
-        AnimationUtils::GetTangent(a.Value, a.TangentOut, length, leftTangent);
-        AnimationUtils::GetTangent(b.Value, b.TangentIn, length, rightTangent);
+        const float tangentScale = length / 3.0f;
+        AnimationUtils::GetTangent(a.Value, a.TangentOut, tangentScale, leftTangent);
+        AnimationUtils::GetTangent(b.Value, b.TangentIn, tangentScale, rightTangent);
         AnimationUtils::Bezier(a.Value, leftTangent, rightTangent, b.Value, alpha, result);
     }
 
     static void InterpolateFirstDerivative(const BezierCurveKeyframe& a, const BezierCurveKeyframe& b, float alpha, float length, T& result)
     {
         T leftTangent, rightTangent;
-        AnimationUtils::GetTangent(a.Value, a.TangentOut, length, leftTangent);
-        AnimationUtils::GetTangent(b.Value, b.TangentIn, length, rightTangent);
+        const float tangentScale = length / 3.0f;
+        AnimationUtils::GetTangent(a.Value, a.TangentOut, tangentScale, leftTangent);
+        AnimationUtils::GetTangent(b.Value, b.TangentIn, tangentScale, rightTangent);
         AnimationUtils::BezierFirstDerivative(a.Value, leftTangent, rightTangent, b.Value, alpha, result);
     }
 
@@ -264,8 +266,9 @@ public:
     {
         result.Time = a.Time + length * alpha;
         T leftTangent, rightTangent;
-        AnimationUtils::GetTangent(a.Value, a.TangentOut, length, leftTangent);
-        AnimationUtils::GetTangent(b.Value, b.TangentIn, length, rightTangent);
+        const float tangentScale = length / 3.0f;
+        AnimationUtils::GetTangent(a.Value, a.TangentOut, tangentScale, leftTangent);
+        AnimationUtils::GetTangent(b.Value, b.TangentIn, tangentScale, rightTangent);
         AnimationUtils::Bezier(a.Value, leftTangent, rightTangent, b.Value, alpha, result.Value);
         result.TangentIn = a.TangentOut;
         result.TangentOut = b.TangentIn;
@@ -498,7 +501,7 @@ protected:
 /// An animation spline represented by a set of keyframes, each representing an endpoint of a curve.
 /// </summary>
 template<class T, typename KeyFrame = LinearCurveKeyframe<T>>
-class Curve : public CurveBase<T, KeyFrame>
+API_CLASS(InBuild, Template, MarshalAs=Span<byte>) class Curve : public CurveBase<T, KeyFrame>
 {
 public:
     typedef CurveBase<T, KeyFrame> Base;
@@ -760,28 +763,42 @@ public:
         }
         return true;
     }
+
+    // Raw memory copy (used by scripting bindings - see MarshalAs tag).
+    Curve& operator=(const Span<byte>& raw)
+    {
+        ASSERT((raw.Length() % sizeof(KeyFrame)) == 0);
+        const int32 count = raw.Length() / sizeof(KeyFrame);
+        _keyframes.Resize(count, false);
+        Platform::MemoryCopy(_keyframes.Get(), raw.Get(), sizeof(KeyFrame) * count);
+        return *this;
+    }
+    operator Span<byte>()
+    {
+        return Span<byte>((const byte*)_keyframes.Get(), _keyframes.Count() * sizeof(KeyFrame));
+    }
 };
 
 /// <summary>
 /// An animation spline represented by a set of keyframes, each representing a value point. 
 /// </summary>
 template<typename T>
-using StepCurve = Curve<T, StepCurveKeyframe<T>>;
+API_TYPEDEF() using StepCurve = Curve<T, StepCurveKeyframe<T>>;
 
 /// <summary>
 /// An animation spline represented by a set of keyframes, each representing an endpoint of a linear curve. 
 /// </summary>
 template<typename T>
-using LinearCurve = Curve<T, LinearCurveKeyframe<T>>;
+API_TYPEDEF() using LinearCurve = Curve<T, LinearCurveKeyframe<T>>;
 
 /// <summary>
 /// An animation spline represented by a set of keyframes, each representing an endpoint of a cubic hermite curve.
 /// </summary>
 template<typename T>
-using HermiteCurve = Curve<T, HermiteCurveKeyframe<T>>;
+API_TYPEDEF() using HermiteCurve = Curve<T, HermiteCurveKeyframe<T>>;
 
 /// <summary>
 /// An animation spline represented by a set of keyframes, each representing an endpoint of Bezier curve.
 /// </summary>
 template<typename T>
-using BezierCurve = Curve<T, BezierCurveKeyframe<T>>;
+API_TYPEDEF() using BezierCurve = Curve<T, BezierCurveKeyframe<T>>;

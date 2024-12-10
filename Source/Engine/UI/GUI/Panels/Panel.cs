@@ -263,16 +263,21 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         protected override void SetViewOffset(ref Float2 value)
         {
+            // Update scroll bars but with locked layout
             bool wasLocked = _isLayoutLocked;
+            int layoutUpdateLock = _layoutUpdateLock;
             _isLayoutLocked = true;
-
+            _layoutUpdateLock = 999;
             if (HScrollBar != null)
-                HScrollBar.Value = -value.X;
+                HScrollBar.TargetValue = -value.X;
             if (VScrollBar != null)
-                VScrollBar.Value = -value.Y;
-
+                VScrollBar.TargetValue = -value.Y;
+            _layoutUpdateLock = layoutUpdateLock;
             _isLayoutLocked = wasLocked;
+
             base.SetViewOffset(ref value);
+
+            PerformLayout();
         }
 
         /// <summary>
@@ -553,7 +558,12 @@ namespace FlaxEngine.GUI
 
                 if (vScrollEnabled)
                 {
-                    VScrollBar.SetScrollRange(scrollBounds.Top, Mathf.Max(Mathf.Max(0, scrollBounds.Top), scrollBounds.Height - height));
+                    float max;
+                    if (scrollBounds.Top < 0)
+                        max = Mathf.Max(scrollBounds.Bottom, scrollBounds.Top + scrollBounds.Height - height);
+                    else
+                        max = Mathf.Max(scrollBounds.Top, scrollBounds.Height - height);
+                    VScrollBar.SetScrollRange(scrollBounds.Top, max);
                 }
                 VScrollBar.Bounds = new Rectangle(Width - _scrollBarsSize, 0, _scrollBarsSize, Height);
             }
@@ -580,7 +590,12 @@ namespace FlaxEngine.GUI
 
                 if (hScrollEnabled)
                 {
-                    HScrollBar.SetScrollRange(scrollBounds.Left, Mathf.Max(Mathf.Max(0, scrollBounds.Left), scrollBounds.Width - width));
+                    float max;
+                    if (scrollBounds.Left < 0)
+                        max = Mathf.Max(scrollBounds.Right, scrollBounds.Left + scrollBounds.Width - width);
+                    else
+                        max = Mathf.Max(scrollBounds.Left, scrollBounds.Width - width);
+                    HScrollBar.SetScrollRange(scrollBounds.Left, max);
                 }
                 HScrollBar.Bounds = new Rectangle(0, Height - _scrollBarsSize, Width - (VScrollBar != null && VScrollBar.Visible ? VScrollBar.Width : 0), _scrollBarsSize);
             }
@@ -596,17 +611,29 @@ namespace FlaxEngine.GUI
             // Calculate scroll area bounds
             var totalMin = Float2.Zero;
             var totalMax = Float2.Zero;
+            var hasTotal = false;
             for (int i = 0; i < _children.Count; i++)
             {
                 var c = _children[i];
                 if (c.Visible && c.IsScrollable)
                 {
-                    var min = Float2.Zero;
-                    var max = c.Size;
-                    Matrix3x3.Transform2D(ref min, ref c._cachedTransform, out min);
-                    Matrix3x3.Transform2D(ref max, ref c._cachedTransform, out max);
-                    Float2.Min(ref min, ref totalMin, out totalMin);
-                    Float2.Max(ref max, ref totalMax, out totalMax);
+                    var upperLeft = Float2.Zero;
+                    var bottomRight = c.Size;
+                    Matrix3x3.Transform2D(ref upperLeft, ref c._cachedTransform, out upperLeft);
+                    Matrix3x3.Transform2D(ref bottomRight, ref c._cachedTransform, out bottomRight);
+                    Float2.Min(ref upperLeft, ref bottomRight, out var min);
+                    Float2.Max(ref upperLeft, ref bottomRight, out var max);
+                    if (hasTotal)
+                    {
+                        Float2.Min(ref min, ref totalMin, out totalMin);
+                        Float2.Max(ref max, ref totalMax, out totalMax);
+                    }
+                    else
+                    {
+                        totalMin = min;
+                        totalMax = max;
+                        hasTotal = true;
+                    }
                 }
             }
 

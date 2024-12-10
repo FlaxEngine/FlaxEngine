@@ -74,6 +74,11 @@ namespace Flax.Build
         public abstract TargetCompiler Compiler { get; }
 
         /// <summary>
+        /// Gets the main native files compiler path.
+        /// </summary>
+        public virtual string NativeCompilerPath { get; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="Toolchain"/> class.
         /// </summary>
         /// <param name="platform">The platform.</param>

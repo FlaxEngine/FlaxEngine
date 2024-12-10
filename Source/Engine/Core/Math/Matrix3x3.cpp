@@ -225,7 +225,7 @@ void Matrix3x3::Decompose(Float3& scale, Matrix3x3& rotation) const
     const auto right = Float3::Cross(up, at);
     rotation.SetRight(right);
     rotation.SetUp(up);
-    rotation.SetBackward(at);
+    rotation.SetForward(at);
 
     // In case of reflexions
     scale.X = Float3::Dot(right, GetRight()) > 0.0f ? scale.X : -scale.X;

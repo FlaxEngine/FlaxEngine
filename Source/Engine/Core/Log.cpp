@@ -16,10 +16,14 @@
 #include <iostream>
 
 #define LOG_ENABLE_FILE (!PLATFORM_SWITCH)
+#define LOG_ENABLE_WINDOWS_SINGLE_NEW_LINE_CHAR (PLATFORM_WINDOWS && PLATFORM_DESKTOP && (USE_EDITOR || !BUILD_RELEASE))
 
 namespace
 {
     bool LogAfterInit = false, IsDuringLog = false;
+#if LOG_ENABLE_WINDOWS_SINGLE_NEW_LINE_CHAR
+    bool IsWindowsSingleNewLineChar = false;
+#endif
     int LogTotalErrorsCnt = 0;
     FileWriteStream* LogFile = nullptr;
     CriticalSection LogLocker;
@@ -86,6 +90,11 @@ bool Log::Logger::Init()
     }
     LogTotalErrorsCnt = 0;
     LogAfterInit = true;
+#if LOG_ENABLE_WINDOWS_SINGLE_NEW_LINE_CHAR
+    String envVar;
+    Platform::GetEnvironmentVariable(TEXT("GITHUB_ACTION"), envVar);
+    IsWindowsSingleNewLineChar = envVar.HasChars();
+#endif
 
     // Write BOM (UTF-16 (LE); BOM: FF FE)
     byte bom[] = { 0xFF, 0xFE };
@@ -127,6 +136,11 @@ void Log::Logger::Write(const StringView& msg)
         printf("%s", ansi.Get());
 #else
         std::wcout.write(ptr, length);
+#if LOG_ENABLE_WINDOWS_SINGLE_NEW_LINE_CHAR
+        if (IsWindowsSingleNewLineChar)
+            std::wcout.write(TEXT("\n"), 1); // Github Actions show logs with duplicated new-line characters so skip \r
+        else
+#endif
         std::wcout.write(TEXT(PLATFORM_LINE_TERMINATOR), ARRAY_COUNT(PLATFORM_LINE_TERMINATOR) - 1);
 #endif
     }

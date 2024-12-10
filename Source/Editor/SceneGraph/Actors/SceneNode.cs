@@ -81,6 +81,7 @@ namespace FlaxEditor.SceneGraph.Actors
             if (Level.ScenesCount > 1)
                 contextMenu.AddButton("Unload all but this scene", OnUnloadAllButSelectedScene).LinkTooltip("Unloads all of the active scenes except for the selected scene.").Enabled = Editor.Instance.StateMachine.CurrentState.CanChangeScene;
 
+            contextMenu.MaximumItemsInViewCount += 3;
             base.OnContextMenu(contextMenu, window);
         }
 

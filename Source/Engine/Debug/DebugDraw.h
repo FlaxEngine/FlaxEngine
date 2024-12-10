@@ -6,6 +6,8 @@
 
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Core/Math/Color.h"
+#include "Engine/Core/Math/Color32.h"
+#include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Types/Span.h"
 
 struct RenderView;
@@ -14,6 +16,7 @@ class Light;
 struct RenderContext;
 class GPUTextureView;
 class GPUContext;
+class GPUBuffer;
 class RenderTask;
 class SceneRenderTask;
 class Actor;
@@ -25,6 +28,14 @@ struct Transform;
 API_CLASS(Static) class FLAXENGINE_API DebugDraw
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
+
+    /// <summary>
+    /// Vertex data for debug shapes.
+    /// </summary>
+    PACK_STRUCT(struct Vertex {
+        Float3 Position;
+        Color32 Color;
+        });
 
 #if USE_EDITOR
     /// <summary>
@@ -174,6 +185,15 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
     API_FUNCTION() static void DrawLines(const Span<Float3>& lines, const Matrix& transform, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the lines using the provided vertex buffer that contains pairs of Vertex elements. Line positions are located one after another (e.g. l0.start, l0.end, l1.start, l1.end,...).
+    /// </summary>
+    /// <param name="lines">The GPU buffer with vertices for lines (must have multiple of 2 elements).</param>
+    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawLines(GPUBuffer* lines, const Matrix& transform, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the lines. Line positions are located one after another (e.g. l0.start, l0.end, l1.start, l1.end,...).
@@ -691,9 +711,9 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     API_FUNCTION() static void DrawText(const StringView& text, const Transform& transform, const Color& color = Color::White, int32 size = 32, float duration = 0.0f);
 
     /// <summary>
-    /// Clear all debug draw displayed on sceen.
+    /// Clears all debug shapes displayed on screen.
     /// </summary>
-    /// <returns></returns>
+    /// <param name="context">The context.</param>
     API_FUNCTION() static void Clear(void* context = nullptr);
 };
 

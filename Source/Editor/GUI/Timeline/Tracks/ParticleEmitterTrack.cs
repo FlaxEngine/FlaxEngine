@@ -110,6 +110,19 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         }
 
         /// <inheritdoc />
+        public override void OnDuplicated(Track clone)
+        {
+            base.OnDuplicated(clone);
+
+            // Clone overriden parameters
+            if (clone is ParticleEmitterTrack cloneTrack)
+            {
+                foreach (var e in ParametersOverrides)
+                    cloneTrack.ParametersOverrides.Add(e.Key, e.Value);
+            }
+        }
+
+        /// <inheritdoc />
         public override void OnDestroy()
         {
             ParametersOverrides.Clear();

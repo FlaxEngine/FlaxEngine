@@ -54,24 +54,24 @@ namespace FlaxEditor.Windows.Assets
             [EditorOrder(10), EditorDisplay("General"), Tooltip("Material domain type.")]
             public MaterialDomain Domain;
 
-            [EditorOrder(20), EditorDisplay("General"), Tooltip("Defines how material inputs and properties are combined to result the final surface color.")]
+            [EditorOrder(20), VisibleIf(nameof(IsStandard)), EditorDisplay("General"), Tooltip("Defines how material inputs and properties are combined to result the final surface color.")]
             public MaterialShadingModel ShadingModel;
 
-            [EditorOrder(30), EditorDisplay("General"), Tooltip("Determinates how materials' color should be blended with the background colors.")]
+            [EditorOrder(30), VisibleIf(nameof(IsStandard)), EditorDisplay("General"), Tooltip("Determinates how materials' color should be blended with the background colors.")]
             public MaterialBlendMode BlendMode;
 
             // Rendering
 
-            [EditorOrder(100), DefaultValue(CullMode.Normal), EditorDisplay("Rendering"), Tooltip("Defines the primitives culling mode used during geometry rendering.")]
+            [EditorOrder(100), DefaultValue(CullMode.Normal), VisibleIf(nameof(IsStandard)), EditorDisplay("Rendering"), Tooltip("Defines the primitives culling mode used during geometry rendering.")]
             public CullMode CullMode;
 
-            [EditorOrder(110), DefaultValue(false), EditorDisplay("Rendering"), Tooltip("If checked, geometry will be rendered in wireframe mode without solid triangles fill.")]
+            [EditorOrder(110), DefaultValue(false), VisibleIf(nameof(IsStandardOrGUI)), EditorDisplay("Rendering"), Tooltip("If checked, geometry will be rendered in wireframe mode without solid triangles fill.")]
             public bool Wireframe;
 
-            [EditorOrder(120), DefaultValue(true), EditorDisplay("Rendering"), Tooltip("Enables performing depth test during material rendering.")]
+            [EditorOrder(120), DefaultValue(true), VisibleIf(nameof(IsStandard)), EditorDisplay("Rendering"), Tooltip("Enables performing depth test during material rendering.")]
             public bool DepthTest;
 
-            [EditorOrder(130), DefaultValue(true), EditorDisplay("Rendering"), Tooltip("Enable writing to the depth buffer during material rendering.")]
+            [EditorOrder(130), DefaultValue(true), VisibleIf(nameof(IsStandard)), EditorDisplay("Rendering"), Tooltip("Enable writing to the depth buffer during material rendering.")]
             public bool DepthWrite;
 
             // Transparency
@@ -111,13 +111,13 @@ namespace FlaxEditor.Windows.Assets
 
             // Misc
 
-            [EditorOrder(400), DefaultValue(false), EditorDisplay("Misc"), Tooltip("If checked, material input normal will be assumed as world-space rather than tangent-space.")]
+            [EditorOrder(400), DefaultValue(false), VisibleIf(nameof(IsStandard)), EditorDisplay("Misc"), Tooltip("If checked, material input normal will be assumed as world-space rather than tangent-space.")]
             public bool InputWorldSpaceNormal;
 
-            [EditorOrder(410), DefaultValue(false), EditorDisplay("Misc", "Dithered LOD Transition"), Tooltip("If checked, material uses dithered model LOD transition for smoother LODs switching.")]
+            [EditorOrder(410), DefaultValue(false), VisibleIf(nameof(IsStandard)), EditorDisplay("Misc", "Dithered LOD Transition"), Tooltip("If checked, material uses dithered model LOD transition for smoother LODs switching.")]
             public bool DitheredLODTransition;
 
-            [EditorOrder(420), DefaultValue(0.3f), EditorDisplay("Misc"), Tooltip("Controls mask values clipping point."), Limit(0.0f, 1.0f, 0.01f)]
+            [EditorOrder(420), DefaultValue(0.3f), VisibleIf(nameof(IsStandard)), EditorDisplay("Misc"), Tooltip("Controls mask values clipping point."), Limit(0.0f, 1.0f, 0.01f)]
             public float MaskThreshold;
 
             [EditorOrder(430), DefaultValue(MaterialDecalBlendingMode.Translucent), VisibleIf(nameof(IsDecal)), EditorDisplay("Misc"), Tooltip("The decal material blending mode.")]
@@ -144,7 +144,9 @@ namespace FlaxEditor.Windows.Assets
 
             private bool IsPostProcess => Domain == MaterialDomain.PostProcess;
             private bool IsDecal => Domain == MaterialDomain.Decal;
+            private bool IsGUI => Domain == MaterialDomain.GUI;
             private bool IsStandard => Domain == MaterialDomain.Surface || Domain == MaterialDomain.Terrain || Domain == MaterialDomain.Particle || Domain == MaterialDomain.Deformable;
+            private bool IsStandardOrGUI => IsStandard || IsGUI;
 
             /// <summary>
             /// Gathers parameters from the specified material.

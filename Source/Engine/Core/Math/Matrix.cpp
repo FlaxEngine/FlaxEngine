@@ -136,12 +136,12 @@ void Matrix::Decompose(Float3& scale, Matrix3x3& rotation, Float3& translation) 
     const auto right = Float3::Cross(up, at);
     rotation.SetRight(right);
     rotation.SetUp(up);
-    rotation.SetBackward(at);
+    rotation.SetForward(at);
 
     // In case of reflexions
     scale.X = Float3::Dot(right, GetRight()) > 0.0f ? scale.X : -scale.X;
     scale.Y = Float3::Dot(up, GetUp()) > 0.0f ? scale.Y : -scale.Y;
-    scale.Z = Float3::Dot(at, GetBackward()) > 0.0f ? scale.Z : -scale.Z;
+    scale.Z = Float3::Dot(at, GetForward()) > 0.0f ? scale.Z : -scale.Z;
 }
 
 void Matrix::Decompose(Float3& scale, Matrix& rotation, Float3& translation) const

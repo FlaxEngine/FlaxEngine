@@ -2263,6 +2263,14 @@ void VisualScript::GetMethodSignature(int32 index, String& name, byte& flags, St
     }
 }
 
+Variant VisualScript::InvokeMethod(int32 index, const Variant& instance, Span<Variant> parameters) const
+{
+    auto& method = _methods[index];
+    Variant result;
+    VisualScriptingModule.InvokeMethod((void*)&method, instance, parameters, result);
+    return result;
+}
+
 Span<byte> VisualScript::GetMetaData(int32 typeID)
 {
     auto meta = Graph.Meta.GetEntry(typeID);

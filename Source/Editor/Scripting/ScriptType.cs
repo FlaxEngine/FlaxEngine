@@ -691,6 +691,23 @@ namespace FlaxEditor.Scripting
             else
                 _custom.SetValue(obj, value);
         }
+
+        /// <summary>
+        /// Invokes the method on a specific object (null if static) using the provided parameters.
+        /// </summary>
+        /// <param name="obj">The instance of the object to invoke its method. Use null for static methods.</param>
+        /// <param name="parameters">List of parameters to provide.</param>
+        /// <returns>The value returned by the method.</returns>
+        public object Invoke(object obj = null, object[] parameters = null)
+        {
+            if (parameters == null)
+                parameters = Array.Empty<object>();
+            if (_managed is MethodInfo methodInfo)
+                return methodInfo.Invoke(obj, parameters);
+            if (_managed != null)
+                throw new NotSupportedException();
+            return _custom.Invoke(obj, parameters);
+        }
     }
 
     /// <summary>

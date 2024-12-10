@@ -33,5 +33,12 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="param">The parameter.</param>
         void OnParamDeleted(SurfaceParameter param);
+
+        /// <summary>
+        /// Get if the parameter is referenced in a graph. Referenced in this case means in a graph and at least one node in-/output connected to another node.
+        /// </summary>
+        /// <param name="param">The parameter.</param>
+        /// <returns>If the parameter is referenced.</returns>
+        bool IsParamUsed(SurfaceParameter param);
     }
 }

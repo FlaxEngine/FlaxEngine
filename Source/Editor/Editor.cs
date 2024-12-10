@@ -49,9 +49,9 @@ namespace FlaxEditor
         }
 
         private readonly List<EditorModule> _modules = new List<EditorModule>(16);
-        private bool _isAfterInit, _areModulesInited, _areModulesAfterInitEnd, _isHeadlessMode;
+        private bool _isAfterInit, _areModulesInited, _areModulesAfterInitEnd, _isHeadlessMode, _autoExit;
         private string _projectToOpen;
-        private float _lastAutoSaveTimer;
+        private float _lastAutoSaveTimer, _autoExitTimeout = 0.1f;
         private Button _saveNowButton;
         private Button _cancelSaveButton;
         private bool _autoSaveNow;
@@ -258,10 +258,11 @@ namespace FlaxEditor
             Instance = this;
         }
 
-        internal void Init(bool isHeadless, bool skipCompile, bool newProject, Guid startupScene)
+        internal void Init(StartupFlags flags, Guid startupScene)
         {
             Log("Setting up C# Editor...");
-            _isHeadlessMode = isHeadless;
+            _isHeadlessMode = flags.HasFlag(StartupFlags.Headless);
+            _autoExit = flags.HasFlag(StartupFlags.Exit);
             _startupSceneCmdLine = startupScene;
 
             Profiler.BeginEvent("Projects");
@@ -297,11 +298,11 @@ namespace FlaxEditor
             StateMachine = new EditorStateMachine(this);
             Undo = new EditorUndo(this);
 
-            if (newProject)
+            if (flags.HasFlag(StartupFlags.NewProject))
                 InitProject();
             EnsureState<LoadingState>();
             Log("Editor init");
-            if (isHeadless)
+            if (_isHeadlessMode)
                 Log("Running in headless mode");
 
             // Note: we don't sort modules before Init (optimized)
@@ -357,7 +358,7 @@ namespace FlaxEditor
             InitializationStart?.Invoke();
 
             // Start Editor initialization ending phrase (will wait for scripts compilation result)
-            StateMachine.LoadingState.StartInitEnding(skipCompile);
+            StateMachine.LoadingState.StartInitEnding(flags.HasFlag(StartupFlags.SkipCompile));
         }
 
         internal void RegisterModule(EditorModule module)
@@ -486,6 +487,15 @@ namespace FlaxEditor
             {
                 StateMachine.Update();
                 UpdateAutoSave();
+                if (_autoExit && StateMachine.CurrentState == StateMachine.EditingSceneState)
+                {
+                    _autoExitTimeout -= Time.UnscaledGameTime;
+                    if (_autoExitTimeout < 0.0f)
+                    {
+                        Log("Auto exit");
+                        Engine.RequestExit(0);
+                    }
+                }
 
                 if (!StateMachine.IsPlayMode)
                 {

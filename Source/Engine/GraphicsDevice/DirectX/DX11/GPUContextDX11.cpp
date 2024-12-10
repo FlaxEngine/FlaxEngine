@@ -285,7 +285,10 @@ void GPUContextDX11::SetBlendFactor(const Float4& value)
 void GPUContextDX11::SetStencilRef(uint32 value)
 {
     if (CurrentStencilRef != value)
+    {
+        CurrentStencilRef = value;
         _context->OMSetDepthStencilState(CurrentDepthStencilState, CurrentStencilRef);
+    }
 }
 
 void GPUContextDX11::ResetSR()

@@ -40,11 +40,12 @@ private:
     Array<Color32> _cachedSplatMap[TERRAIN_MAX_SPLATMAPS_COUNT];
     bool _wasHeightModified;
     bool _wasSplatmapModified[TERRAIN_MAX_SPLATMAPS_COUNT];
+#if TERRAIN_USE_PHYSICS_DEBUG
+    bool _debugLinesDirty = true;
+    class GPUBuffer* _debugLines = nullptr;
+#endif
     TextureBase::InitData* _dataHeightmap = nullptr;
     TextureBase::InitData* _dataSplatmap[TERRAIN_MAX_SPLATMAPS_COUNT] = {};
-#endif
-#if TERRAIN_USE_PHYSICS_DEBUG
-    Array<Vector3> _debugLines; // TODO: large-worlds
 #endif
 #if USE_EDITOR
     Array<Vector3> _collisionTriangles; // TODO: large-worlds

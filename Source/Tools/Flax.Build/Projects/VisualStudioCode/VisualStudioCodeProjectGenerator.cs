@@ -542,6 +542,8 @@ namespace Flax.Build.Projects.VisualStudioCode
                     var configuration = TargetConfiguration.Development;
                     var architecture = TargetArchitecture.x64;
 
+                    var compilerPath = string.Empty;
+                    var cppVersion = NativeCpp.CppVersion.Cpp14;
                     var includePaths = new HashSet<string>();
                     var preprocessorDefinitions = new HashSet<string>();
                     foreach (var e in mainProject.Defines)
@@ -563,11 +565,35 @@ namespace Flax.Build.Projects.VisualStudioCode
                                 module.Key.SetupEnvironment(targetBuildOptions);
                             }
 
+                            cppVersion = targetBuildOptions.CompileEnv.CppVersion;
+                            compilerPath = toolchain.NativeCompilerPath;
                             foreach (var e in targetBuildOptions.CompileEnv.PreprocessorDefinitions)
                                 preprocessorDefinitions.Add(e);
                             foreach (var e in targetBuildOptions.CompileEnv.IncludePaths)
                                 includePaths.Add(e);
                         }
+                    }
+
+                    if (compilerPath.Length != 0)
+                        json.AddField("compilerPath", compilerPath);
+
+                    switch (cppVersion)
+                    {
+                    case NativeCpp.CppVersion.Cpp14:
+                        json.AddField("cStandard", "c11");
+                        json.AddField("cppStandard", "c++14");
+                        break;
+                    case NativeCpp.CppVersion.Cpp17:
+                    case NativeCpp.CppVersion.Latest:
+                        json.AddField("cStandard", "c17");
+                        json.AddField("cppStandard", "c++17");
+                        break;
+                    case NativeCpp.CppVersion.Cpp20:
+                        json.AddField("cStandard", "c17");
+                        json.AddField("cppStandard", "c++20");
+                        break;
+                    default:
+                        throw new Exception($"Visual Code project generator does not support C++ standard {cppVersion}.");
                     }
 
                     json.BeginArray("includePath");

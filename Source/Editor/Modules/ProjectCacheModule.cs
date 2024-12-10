@@ -274,11 +274,7 @@ namespace FlaxEditor.Modules
         private void Load()
         {
             if (!File.Exists(_cachePath))
-            {
-                Editor.LogWarning("Missing editor cache file.");
                 return;
-            }
-
             _lastSaveTime = DateTime.UtcNow;
 
             try
