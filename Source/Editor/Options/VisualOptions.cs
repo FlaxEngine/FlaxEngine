@@ -22,36 +22,50 @@ namespace FlaxEditor.Options
         /// Gets or sets the first outline color.
         /// </summary>
         [DefaultValue(typeof(Color), "0.039,0.827,0.156")]
-        [EditorDisplay("Gizmo"), EditorOrder(100), Tooltip("The first color of the selection outline gradient.")]
+        [EditorDisplay("Transform Gizmo"), EditorOrder(100), Tooltip("The first color of the selection outline gradient.")]
         public Color SelectionOutlineColor0 { get; set; } = new Color(0.039f, 0.827f, 0.156f);
 
         /// <summary>
         /// Gets or sets the second outline color.
         /// </summary>
         [DefaultValue(typeof(Color), "0.019,0.615,0.101")]
-        [EditorDisplay("Gizmo"), EditorOrder(101), Tooltip("The second color of the selection outline gradient.")]
+        [EditorDisplay("Transform Gizmo"), EditorOrder(101), Tooltip("The second color of the selection outline gradient.")]
         public Color SelectionOutlineColor1 { get; set; } = new Color(0.019f, 0.615f, 0.101f);
 
         /// <summary>
         /// Gets or sets the selection outline size for UI controls.
         /// </summary>
         [DefaultValue(2.0f)]
-        [EditorDisplay("Gizmo", "UI Control Outline Size"), EditorOrder(100), Tooltip("The size of the selection outline for UI controls.")]
+        [EditorDisplay("UI Gizmo", "UI Control Outline Size"), EditorOrder(103), Tooltip("The size of the selection outline for UI controls.")]
         public float UISelectionOutlineSize { get; set; } = 2.0f;
 
         /// <summary>
         /// Gets or sets the transform gizmo size.
         /// </summary>
         [DefaultValue(1.0f), Limit(0.01f, 100.0f, 0.01f)]
-        [EditorDisplay("Gizmo"), EditorOrder(110), Tooltip("The transform gizmo size.")]
+        [EditorDisplay("Transform Gizmo"), EditorOrder(110), Tooltip("The transform gizmo size.")]
         public float GizmoSize { get; set; } = 1.0f;
 
         /// <summary>
         /// Gets or sets the color used to highlight selected meshes and CSG surfaces.
         /// </summary>
         [DefaultValue(typeof(Color), "0.0,0.533,1.0,1.0")]
-        [EditorDisplay("Gizmo"), EditorOrder(200), Tooltip("The color used to highlight selected meshes and CSG surfaces.")]
+        [EditorDisplay("Transform Gizmo"), EditorOrder(200), Tooltip("The color used to highlight selected meshes and CSG surfaces.")]
         public Color HighlightColor { get; set; } = new Color(0.0f, 0.533f, 1.0f, 1.0f);
+
+        /// <summary>
+        /// Gets or set a value indicating how bright the transform gizmo is. Value over 1 will result in the gizmo emitting light.
+        /// </summary>
+        [DefaultValue(1f), Range(0f, 5f)]
+        [EditorDisplay("Transform Gizmo", "Gizmo Brightness"), EditorOrder(210)]
+        public float transformGizmoBrightness { get; set; } = 1f;
+
+        /// <summary>
+        /// Gets or set a value indicating the opactiy of the transform gizmo.
+        /// </summary>
+        [DefaultValue(1f), Range(0f, 1f)]
+        [EditorDisplay("Transform Gizmo", "Gizmo Opacity"), EditorOrder(211)]
+        public float transformGizmoOpacity { get; set; } = 1f;
 
         /// <summary>
         /// Gets or sets a value indicating whether enable MSAA for DebugDraw primitives rendering. Helps with pixel aliasing but reduces performance.
