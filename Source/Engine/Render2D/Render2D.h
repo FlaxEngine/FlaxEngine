@@ -418,6 +418,22 @@ public:
     /// <summary>
     /// Draws vertices array.
     /// </summary>
+    /// <param name="vertices">The vertices array.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="thickness">The line thickness.</param>
+    API_FUNCTION() static void DrawTriangles(const Span<Float2>& vertices, const Color& color, float thickness = 1.0f);
+
+    /// <summary>
+    /// Draws vertices array.
+    /// </summary>
+    /// <param name="vertices">The vertices array.</param>
+    /// <param name="colors">The colors array.</param>
+    /// <param name="thickness">The line thickness.</param>
+    API_FUNCTION() static void DrawTriangles(const Span<Float2>& vertices, const Span<Color>& colors, float thickness = 1.0f);
+
+    /// <summary>
+    /// Draws vertices array.
+    /// </summary>
     /// <param name="t">The texture.</param>
     /// <param name="vertices">The vertices array.</param>
     /// <param name="uvs">The uvs array.</param>
@@ -455,9 +471,16 @@ public:
     /// Draws vertices array.
     /// </summary>
     /// <param name="vertices">The vertices array.</param>
+    /// <param name="color">The color.</param>
+    API_FUNCTION() static void FillTriangles(const Span<Float2>& vertices, const Color& color);
+
+    /// <summary>
+    /// Draws vertices array.
+    /// </summary>
+    /// <param name="vertices">The vertices array.</param>
     /// <param name="colors">The colors array.</param>
     /// <param name="useAlpha">If true alpha blending will be enabled.</param>
-    API_FUNCTION() static void FillTriangles(const Span<Float2>& vertices, const Span<Color>& colors, bool useAlpha);
+    API_FUNCTION() static void FillTriangles(const Span<Float2>& vertices, const Span<Color>& colors, bool useAlpha = true);
 
     /// <summary>
     /// Fills a triangular area.
