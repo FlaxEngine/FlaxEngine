@@ -898,9 +898,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 base.Draw();
             }
 
+            /// <inheritdoc />
             public override void OnDestroy()
             {
                 _pickerValidator.OnDestroy();
+                _pickerValidator = null;
+
+                base.OnDestroy();
             }
 
             private bool ValidateActors(ActorNode node)

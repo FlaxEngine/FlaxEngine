@@ -59,7 +59,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Initializes a new instance of the <see cref="AssetPicker"/> class.
         /// </summary>
-        /// <param name="assetType">The assets types that this picker accepts.</param>
+        /// <param name="assetType">The asset types that this picker accepts.</param>
         /// <param name="location">The control location.</param>
         public AssetPicker(ScriptType assetType, Float2 location)
         : base(location, new Float2(DefaultIconSize + ButtonsOffset + ButtonsSize, DefaultIconSize))
