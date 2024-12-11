@@ -1189,7 +1189,7 @@ private:
                 d = NAN;
             }
             else if (RAPIDJSON_LIKELY(Consume(s, 'I') && Consume(s, 'n') && Consume(s, 'f'))) {
-                d = (double)(minus ? -INFINITY : INFINITY);
+                d = (minus ? -INFINITY : INFINITY);
                 if (RAPIDJSON_UNLIKELY(s.Peek() == 'i' && !(Consume(s, 'i') && Consume(s, 'n')
                                                             && Consume(s, 'i') && Consume(s, 't') && Consume(s, 'y'))))
                     RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, s.Tell());
