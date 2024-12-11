@@ -7,6 +7,7 @@ using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.SceneGraph.GUI;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -300,7 +301,30 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Picker dropdown menu
             if (_supportsPickDropDown && (isSelected ? button2Rect : button1Rect).Contains(ref location))
+            {
                 ShowDropDownMenu();
+                return true;
+            }
+
+            if (button == MouseButton.Left)
+            {
+
+                _isMouseDown = false;
+
+                if (Value is Actor a && !_hasValidDragOver)
+                {
+                    ActorTreeNode treeNode = Editor.Instance.Scene.GetActorNode(a).TreeNode;
+                    treeNode.ExpandAllParents();
+                    Editor.Instance.Windows.SceneWin.SceneTreePanel.ScrollViewTo(treeNode, true);
+                    treeNode.StartHighlight();
+                    return true;
+                }
+
+                if (Value is Script s && !IsDragOver && !_hasValidDragOver)
+                {
+                    // TODO: Highlight scripts when Value is a script
+                }
+            }
 
             return base.OnMouseUp(location, button);
         }
