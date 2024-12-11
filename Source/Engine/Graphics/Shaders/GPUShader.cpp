@@ -7,53 +7,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 
-GPUShaderProgramsContainer::GPUShaderProgramsContainer()
-    : _shaders(64)
-{
-    // TODO: test different values for _shaders capacity, test performance impact (less hash collisions but more memory?)
-}
-
-GPUShaderProgramsContainer::~GPUShaderProgramsContainer()
-{
-    // Remember to delete all programs
-    _shaders.ClearDelete();
-}
-
-void GPUShaderProgramsContainer::Add(GPUShaderProgram* shader, int32 permutationIndex)
-{
-    // Validate input
-    ASSERT(shader && Math::IsInRange(permutationIndex, 0, SHADER_PERMUTATIONS_MAX_COUNT - 1));
-#if ENABLE_ASSERTION
-    if ((Get(shader->GetName(), permutationIndex) != nullptr))
-    {
-        CRASH;
-    }
-#endif
-
-    // Store shader
-    const int32 hash = CalculateHash(shader->GetName(), permutationIndex);
-    _shaders.Add(hash, shader);
-}
-
-GPUShaderProgram* GPUShaderProgramsContainer::Get(const StringAnsiView& name, int32 permutationIndex) const
-{
-    // Validate input
-    ASSERT(name.Length() > 0 && Math::IsInRange(permutationIndex, 0, SHADER_PERMUTATIONS_MAX_COUNT - 1));
-
-    // Find shader
-    GPUShaderProgram* result = nullptr;
-    const int32 hash = CalculateHash(name, permutationIndex);
-    _shaders.TryGet(hash, result);
-
-    return result;
-}
-
-void GPUShaderProgramsContainer::Clear()
-{
-    _shaders.ClearDelete();
-}
-
-uint32 GPUShaderProgramsContainer::CalculateHash(const StringAnsiView& name, int32 permutationIndex)
+static FORCE_INLINE uint32 HashPermutation(const StringAnsiView& name, int32 permutationIndex)
 {
     return GetHash(name) * 37 + permutationIndex;
 }
@@ -73,7 +27,7 @@ bool GPUShader::Create(MemoryReadStream& stream)
     stream.ReadInt32(&version);
     if (version != GPU_SHADER_CACHE_VERSION)
     {
-        LOG(Warning, "Unsupported shader version {0}. The supported version is {1}.", version, GPU_SHADER_CACHE_VERSION);
+        LOG(Warning, "Unsupported shader version {0}. The current version is {1}.", version, GPU_SHADER_CACHE_VERSION);
         return true;
     }
 
@@ -130,19 +84,21 @@ bool GPUShader::Create(MemoryReadStream& stream)
             if (shader == nullptr)
             {
 #if !GPU_ALLOW_TESSELLATION_SHADERS
-            if (type == ShaderStage::Hull || type == ShaderStage::Domain)
-                continue;
+                if (type == ShaderStage::Hull || type == ShaderStage::Domain)
+                    continue;
 #endif
 #if !GPU_ALLOW_GEOMETRY_SHADERS
-            if (type == ShaderStage::Geometry)
-                continue;
+                if (type == ShaderStage::Geometry)
+                    continue;
 #endif
                 LOG(Error, "Failed to create {} Shader program '{}' ({}).", ::ToString(type), String(initializer.Name), name);
                 return true;
             }
 
-            // Add to collection
-            _shaders.Add(shader, permutationIndex);
+            // Add to the collection
+            const uint32 hash = HashPermutation(shader->GetName(), permutationIndex);
+            ASSERT_LOW_LAYER(!_shaders.ContainsKey(hash));
+            _shaders.Add(hash, shader);
         }
     }
 
@@ -183,17 +139,21 @@ bool GPUShader::Create(MemoryReadStream& stream)
     return false;
 }
 
+bool GPUShader::HasShader(const StringAnsiView& name, int32 permutationIndex) const
+{
+    const uint32 hash = HashPermutation(name, permutationIndex);
+    return _shaders.ContainsKey(hash);
+}
+
 GPUShaderProgram* GPUShader::GetShader(ShaderStage stage, const StringAnsiView& name, int32 permutationIndex) const
 {
-    const auto shader = _shaders.Get(name, permutationIndex);
-
+    GPUShaderProgram* shader = nullptr;
+    const uint32 hash = HashPermutation(name, permutationIndex);
+    _shaders.TryGet(hash, shader);
 #if BUILD_RELEASE
-
 	// Release build is more critical on that
 	ASSERT(shader != nullptr && shader->GetStage() == stage);
-
 #else
-
     if (shader == nullptr)
     {
         LOG(Error, "Missing {0} shader \'{1}\'[{2}]. Object: {3}.", ::ToString(stage), String(name), permutationIndex, ToString());
@@ -202,9 +162,7 @@ GPUShaderProgram* GPUShader::GetShader(ShaderStage stage, const StringAnsiView& 
     {
         LOG(Error, "Invalid shader stage \'{1}\'[{2}]. Expected: {0}. Actual: {4}. Object: {3}.", ::ToString(stage), String(name), permutationIndex, ToString(), ::ToString(shader->GetStage()));
     }
-
 #endif
-
     return shader;
 }
 
@@ -224,5 +182,5 @@ void GPUShader::OnReleaseGPU()
         }
     }
     _memoryUsage = 0;
-    _shaders.Clear();
+    _shaders.ClearDelete();
 }
