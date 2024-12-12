@@ -106,7 +106,7 @@ WindowBase::WindowBase(const CreateWindowSettings& settings)
     if (settings.StartPosition == WindowStartPosition::CenterParent
         || settings.StartPosition == WindowStartPosition::CenterScreen)
     {
-        Rectangle parentBounds = Rectangle(Float2::Zero, Platform::GetDesktopSize());
+        Rectangle parentBounds = Platform::GetMonitorBounds(Float2::Minimum);
         if (settings.Parent != nullptr && settings.StartPosition == WindowStartPosition::CenterParent)
             parentBounds = settings.Parent->GetClientBounds();
 
@@ -255,6 +255,13 @@ void WindowBase::OnMouseMove(const Float2& mousePosition)
     PROFILE_CPU_NAMED("GUI.OnMouseMove");
     MouseMove(mousePosition);
     INVOKE_EVENT_PARAMS_1(OnMouseMove, (void*)&mousePosition);
+}
+
+void WindowBase::OnMouseMoveRelative(const Float2& mousePositionRelative)
+{
+    PROFILE_CPU_NAMED("GUI.OnMouseMoveRelative");
+    MouseMoveRelative(mousePositionRelative);
+    INVOKE_EVENT_PARAMS_1(OnMouseMoveRelative, (void*)&mousePositionRelative);
 }
 
 void WindowBase::OnMouseLeave()
