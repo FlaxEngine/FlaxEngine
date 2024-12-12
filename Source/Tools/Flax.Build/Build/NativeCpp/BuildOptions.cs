@@ -236,7 +236,7 @@ namespace Flax.Build.NativeCpp
             public HashSet<string> Analyzers;
 
             /// <summary>
-            /// The specific .NET warning to ignore.
+            /// The specific warnings to ignore.
             /// </summary>
             public HashSet<string> IgnoreSpecificWarnings;
 
