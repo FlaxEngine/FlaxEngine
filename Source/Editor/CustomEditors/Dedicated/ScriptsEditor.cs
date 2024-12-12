@@ -424,6 +424,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 presenter.Undo.AddAction(multiAction);
                 presenter.Control.Focus();
+                
+                // Scroll to bottom of script control where a new script is added. 
+                if (presenter.Panel.Parent is Panel p && Editor.Instance.Options.Options.Interface.ScrollToScriptOnAdd)
+                {
+                    var loc = ScriptsEditor.Layout.Control.BottomLeft;
+                    p.ScrollViewTo(loc);
+                }
             }
         }
     }
