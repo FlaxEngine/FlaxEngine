@@ -794,7 +794,6 @@ bool BufferedQueryPoolVulkan::HasRoom() const
 
 HelperResourcesVulkan::HelperResourcesVulkan(GPUDeviceVulkan* device)
     : _device(device)
-    , _dummyBuffer(nullptr)
     , _dummyVB(nullptr)
 {
     Platform::MemoryClear(_dummyTextures, sizeof(_dummyTextures));
@@ -921,15 +920,20 @@ GPUTextureVulkan* HelperResourcesVulkan::GetDummyTexture(SpirvShaderResourceType
     return texture;
 }
 
-GPUBufferVulkan* HelperResourcesVulkan::GetDummyBuffer()
+GPUBufferVulkan* HelperResourcesVulkan::GetDummyBuffer(PixelFormat format)
 {
-    if (!_dummyBuffer)
+    if (_dummyBuffers.IsEmpty())
     {
-        _dummyBuffer = (GPUBufferVulkan*)_device->CreateBuffer(TEXT("DummyBuffer"));
-        _dummyBuffer->Init(GPUBufferDescription::Buffer(sizeof(int32) * 256, GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_SInt));
+        _dummyBuffers.Resize((int32)PixelFormat::MAX);
+        Platform::MemoryClear((void*)_dummyBuffers.Get(), (int32)PixelFormat::MAX * sizeof(void*));
     }
-
-    return _dummyBuffer;
+    auto& dummyBuffer = _dummyBuffers[(int32)format];
+    if (!dummyBuffer)
+    {
+        dummyBuffer = (GPUBufferVulkan*)_device->CreateBuffer(TEXT("DummyBuffer"));
+        dummyBuffer->Init(GPUBufferDescription::Buffer(PixelFormatExtensions::SizeInBytes(format) * 256, GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, format));
+    }
+    return dummyBuffer;
 }
 
 GPUBufferVulkan* HelperResourcesVulkan::GetDummyVertexBuffer()
@@ -939,15 +943,16 @@ GPUBufferVulkan* HelperResourcesVulkan::GetDummyVertexBuffer()
         _dummyVB = (GPUBufferVulkan*)_device->CreateBuffer(TEXT("DummyVertexBuffer"));
         _dummyVB->Init(GPUBufferDescription::Vertex(sizeof(Color32), 1, &Color32::Transparent));
     }
-
     return _dummyVB;
 }
 
 void HelperResourcesVulkan::Dispose()
 {
     SAFE_DELETE_GPU_RESOURCES(_dummyTextures);
-    SAFE_DELETE_GPU_RESOURCE(_dummyBuffer);
     SAFE_DELETE_GPU_RESOURCE(_dummyVB);
+    for (GPUBuffer* buffer : _dummyBuffers)
+        Delete(buffer);
+    _dummyBuffers.Clear();
 
     for (int32 i = 0; i < ARRAY_COUNT(_staticSamplers); i++)
     {

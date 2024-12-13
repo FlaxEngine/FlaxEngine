@@ -116,9 +116,9 @@ const TBuiltInResource DefaultTBuiltInResource =
     /* .MinProgramTexelOffset = */ -8,
     /* .MaxProgramTexelOffset = */ 7,
     /* .MaxClipDistances = */ 8,
-    /* .MaxComputeWorkGroupCountX = */ 65535,
-    /* .MaxComputeWorkGroupCountY = */ 65535,
-    /* .MaxComputeWorkGroupCountZ = */ 65535,
+    /* .MaxComputeWorkGroupCountX = */ GPU_MAX_CS_DISPATCH_THREAD_GROUPS,
+    /* .MaxComputeWorkGroupCountY = */ GPU_MAX_CS_DISPATCH_THREAD_GROUPS,
+    /* .MaxComputeWorkGroupCountZ = */ GPU_MAX_CS_DISPATCH_THREAD_GROUPS,
     /* .MaxComputeWorkGroupSizeX = */ 1024,
     /* .MaxComputeWorkGroupSizeY = */ 1024,
     /* .MaxComputeWorkGroupSizeZ = */ 64,
@@ -212,6 +212,7 @@ struct Descriptor
     SpirvShaderResourceBindingType BindingType;
     VkDescriptorType DescriptorType;
     SpirvShaderResourceType ResourceType;
+    PixelFormat ResourceFormat;
     std::string Name;
 };
 
@@ -231,6 +232,112 @@ SpirvShaderResourceType GetTextureType(const glslang::TSampler& sampler)
         CRASH;
         return SpirvShaderResourceType::Unknown;
     }
+}
+
+PixelFormat GetResourceFormat(const glslang::TSampler& sampler)
+{
+    switch (sampler.type)
+    {
+    case glslang::EbtVoid:
+        return PixelFormat::Unknown;
+    case glslang::EbtFloat:
+        switch (sampler.vectorSize)
+        {
+        case 1:
+            return PixelFormat::R32_Float;
+        case 2:
+            return PixelFormat::R32G32_Float;
+        case 3:
+            return PixelFormat::R32G32B32_Float;
+        case 4:
+            return PixelFormat::R32G32B32A32_Float;
+        }
+        break;
+    case glslang::EbtFloat16:
+        switch (sampler.vectorSize)
+        {
+        case 1:
+            return PixelFormat::R16_Float;
+        case 2:
+            return PixelFormat::R16G16_Float;
+        case 4:
+            return PixelFormat::R16G16B16A16_Float;
+        }
+        break;
+    case glslang::EbtUint:
+        switch (sampler.vectorSize)
+        {
+        case 1:
+            return PixelFormat::R32_UInt;
+        case 2:
+            return PixelFormat::R32G32_UInt;
+        case 3:
+            return PixelFormat::R32G32B32_UInt;
+        case 4:
+            return PixelFormat::R32G32B32A32_UInt;
+        }
+        break;
+    case glslang::EbtInt:
+        switch (sampler.vectorSize)
+        {
+        case 1:
+            return PixelFormat::R32_SInt;
+        case 2:
+            return PixelFormat::R32G32_SInt;
+        case 3:
+            return PixelFormat::R32G32B32_SInt;
+        case 4:
+            return PixelFormat::R32G32B32A32_SInt;
+        }
+        break;
+    case glslang::EbtUint8:
+        switch (sampler.vectorSize)
+        {
+        case 1:
+            return PixelFormat::R8_UInt;
+        case 2:
+            return PixelFormat::R8G8_UInt;
+        case 4:
+            return PixelFormat::R8G8B8A8_UInt;
+        }
+        break;
+    case glslang::EbtInt8:
+        switch (sampler.vectorSize)
+        {
+        case 1:
+            return PixelFormat::R8_SInt;
+        case 2:
+            return PixelFormat::R8G8_SInt;
+        case 4:
+            return PixelFormat::R8G8B8A8_SInt;
+        }
+        break;
+    case glslang::EbtUint16:
+        switch (sampler.vectorSize)
+        {
+        case 1:
+            return PixelFormat::R16_UInt;
+        case 2:
+            return PixelFormat::R16G16_UInt;
+        case 4:
+            return PixelFormat::R16G16B16A16_UInt;
+        }
+        break;
+    case glslang::EbtInt16:
+        switch (sampler.vectorSize)
+        {
+        case 1:
+            return PixelFormat::R16_SInt;
+        case 2:
+            return PixelFormat::R16G16_SInt;
+        case 4:
+            return PixelFormat::R16G16B16A16_SInt;
+        }
+        break;
+    default:
+        break;
+    }
+    return PixelFormat::Unknown;
 }
 
 bool IsUavType(const glslang::TType& type)
@@ -371,6 +478,7 @@ public:
         descriptor.BindingType = resourceBindingType;
         descriptor.DescriptorType = descriptorType;
         descriptor.ResourceType = resourceType;
+        descriptor.ResourceFormat = GetResourceFormat(type.getSampler());
         descriptor.Name = name;
         descriptor.Count = type.isSizedArray() ? type.getCumulativeArraySize() : 1;
 
@@ -694,6 +802,7 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
                 d.BindingType = descriptor.BindingType;
                 d.DescriptorType = descriptor.DescriptorType;
                 d.ResourceType = descriptor.ResourceType;
+                d.ResourceFormat = descriptor.ResourceFormat;
                 d.Count = descriptor.Count;
 
                 switch (descriptor.BindingType)

@@ -504,7 +504,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                 auto handle = handles[slot];
                 if (!handle)
                 {
-                    const auto dummy = _device->HelperResources.GetDummyBuffer();
+                    const auto dummy = _device->HelperResources.GetDummyBuffer(descriptor.ResourceFormat);
                     handle = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
                 }
                 VkBufferView bufferView;
@@ -528,7 +528,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                 auto handle = handles[slot];
                 if (!handle)
                 {
-                    const auto dummy = _device->HelperResources.GetDummyBuffer();
+                    const auto dummy = _device->HelperResources.GetDummyBuffer(descriptor.ResourceFormat);
                     handle = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
                 }
                 VkBuffer buffer;
@@ -542,7 +542,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                 auto handle = handles[slot];
                 if (!handle)
                 {
-                    const auto dummy = _device->HelperResources.GetDummyBuffer();
+                    const auto dummy = _device->HelperResources.GetDummyBuffer(descriptor.ResourceFormat);
                     handle = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
                 }
                 VkBufferView bufferView;
@@ -561,7 +561,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                     handle->DescriptorAsDynamicUniformBuffer(this, buffer, offset, range, dynamicOffset);
                 else
                 {
-                    const auto dummy = _device->HelperResources.GetDummyBuffer();
+                    const auto dummy = _device->HelperResources.GetDummyBuffer(PixelFormat::R32_SInt);
                     buffer = dummy->GetHandle();
                     range = dummy->GetSize();
                 }
