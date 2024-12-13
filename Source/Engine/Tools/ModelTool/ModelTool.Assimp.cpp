@@ -765,6 +765,10 @@ bool ModelTool::ImportDataAssimp(const String& path, ModelData& data, Options& o
             flags |= aiProcess_FixInfacingNormals | aiProcess_GenSmoothNormals;
         if (options.CalculateTangents)
             flags |= aiProcess_CalcTangentSpace;
+        if (options.ReverseWindingOrder)
+            // actually we need to remove this flag
+            // flags |= aiProcess_FlipWindingOrder;
+            flags &= ~aiProcess_FlipWindingOrder;
         if (options.OptimizeMeshes)
             flags |= aiProcess_OptimizeMeshes | aiProcess_SplitLargeMeshes | aiProcess_ImproveCacheLocality;
         if (options.MergeMeshes)
