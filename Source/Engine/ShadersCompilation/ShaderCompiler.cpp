@@ -6,7 +6,6 @@
 #include "ShadersCompilation.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Dictionary.h"
-#include "Engine/Engine/Globals.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -14,7 +13,6 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
-#include "Engine/Utilities/StringConverter.h"
 
 namespace IncludedFiles
 {
@@ -68,24 +66,12 @@ bool ShaderCompiler::Compile(ShaderCompilationContext* context)
 
     // [Output] Constant Buffers
     {
-        const int32 cbsCount = _constantBuffers.Count();
-        ASSERT(cbsCount == meta->CB.Count());
-
-        // Find maximum used slot index
-        byte maxCbSlot = 0;
-        for (int32 i = 0; i < cbsCount; i++)
+        ASSERT(_constantBuffers.Count() == meta->CB.Count());
+        output->WriteByte((byte)_constantBuffers.Count());
+        for (const ShaderResourceBuffer& cb : _constantBuffers)
         {
-            maxCbSlot = Math::Max(maxCbSlot, _constantBuffers[i].Slot);
-        }
-
-        output->WriteByte(static_cast<byte>(cbsCount));
-        output->WriteByte(maxCbSlot);
-        // TODO: do we still need to serialize max cb slot?
-
-        for (int32 i = 0; i < cbsCount; i++)
-        {
-            output->WriteByte(_constantBuffers[i].Slot);
-            output->WriteUint32(_constantBuffers[i].Size);
+            output->WriteByte(cb.Slot);
+            output->WriteUint32(cb.Size);
         }
     }
 

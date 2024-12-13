@@ -5,11 +5,27 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 
 static FORCE_INLINE uint32 HashPermutation(const StringAnsiView& name, int32 permutationIndex)
 {
     return GetHash(name) * 37 + permutationIndex;
+}
+
+void GPUShaderProgram::Init(const GPUShaderProgramInitializer& initializer)
+{
+    _name = initializer.Name;
+    _bindings = initializer.Bindings;
+    _flags = initializer.Flags;
+#if !BUILD_RELEASE
+    _owner = initializer.Owner;
+#endif
+}
+
+GPUShaderProgramVS::~GPUShaderProgramVS()
+{
+    SAFE_DELETE(Layout);
 }
 
 GPUShader::GPUShader()
@@ -104,33 +120,32 @@ bool GPUShader::Create(MemoryReadStream& stream)
 
     // Constant Buffers
     const byte constantBuffersCount = stream.ReadByte();
-    const byte maximumConstantBufferSlot = stream.ReadByte();
-    if (constantBuffersCount > 0)
+    for (int32 i = 0; i < constantBuffersCount; i++)
     {
-        ASSERT(maximumConstantBufferSlot < MAX_CONSTANT_BUFFER_SLOTS);
-
-        for (int32 i = 0; i < constantBuffersCount; i++)
+        // Load info
+        const byte slotIndex = stream.ReadByte();
+        if (slotIndex >= GPU_MAX_CB_BINDED)
         {
-            // Load info
-            const byte slotIndex = stream.ReadByte();
-            uint32 size;
-            stream.ReadUint32(&size);
-
-            // Create CB
-#if GPU_ENABLE_RESOURCE_NAMING
-            String name = String::Format(TEXT("{}.CB{}"), ToString(), i);
-#else
-			String name;
-#endif
-            ASSERT(_constantBuffers[slotIndex] == nullptr);
-            const auto cb = GPUDevice::Instance->CreateConstantBuffer(size, name);
-            if (cb == nullptr)
-            {
-                LOG(Warning, "Failed to create shader constant buffer.");
-                return true;
-            }
-            _constantBuffers[slotIndex] = cb;
+            LOG(Warning, "Failed to create shader constant buffer.");
+            return true;
         }
+        uint32 size;
+        stream.ReadUint32(&size);
+
+        // Create CB
+#if GPU_ENABLE_RESOURCE_NAMING
+        String cbName = String::Format(TEXT("{}.CB{}"), ToString(), i);
+#else
+		String cbName;
+#endif
+        ASSERT(_constantBuffers[slotIndex] == nullptr);
+        const auto cb = GPUDevice::Instance->CreateConstantBuffer(size, cbName);
+        if (cb == nullptr)
+        {
+            LOG(Warning, "Failed to create shader constant buffer.");
+            return true;
+        }
+        _constantBuffers[slotIndex] = cb;
     }
 
     // Don't read additional data

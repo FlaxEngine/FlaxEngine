@@ -10,10 +10,12 @@
 #include "GPUTimerQueryDX12.h"
 #include "GPUBufferDX12.h"
 #include "GPUSamplerDX12.h"
+#include "GPUVertexLayoutDX12.h"
 #include "GPUSwapChainDX12.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Core/Log.h"
@@ -32,6 +34,29 @@ static bool CheckDX12Support(IDXGIAdapter* adapter)
         return true;
     }
     return false;
+}
+
+GPUVertexLayoutDX12::GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements)
+    : GPUResourceDX12<GPUVertexLayout>(device, StringView::Empty)
+    , InputElementsCount(elements.Count())
+{
+    _elements = elements;
+    uint32 offsets[GPU_MAX_VB_BINDED] = {};
+    for (int32 i = 0; i < _elements.Count(); i++)
+    {
+        const VertexElement& src = _elements.Get()[i];
+        D3D12_INPUT_ELEMENT_DESC& dst = InputElements[i];
+        uint32& offset = offsets[src.Slot];
+        if (src.Offset != 0)
+            offset = src.Offset;
+        dst.SemanticName = RenderToolsDX::GetVertexInputSemantic(src.Type, dst.SemanticIndex);
+        dst.Format = RenderToolsDX::ToDxgiFormat(src.Format);
+        dst.InputSlot = src.Slot;
+        dst.AlignedByteOffset = offset;
+        dst.InputSlotClass = src.PerInstance ? D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA : D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        dst.InstanceDataStepRate = src.PerInstance ? 1 : 0;
+        offset += PixelFormatExtensions::SizeInBytes(src.Format);
+    }
 }
 
 GPUDevice* GPUDeviceDX12::Create()
@@ -841,6 +866,11 @@ GPUBuffer* GPUDeviceDX12::CreateBuffer(const StringView& name)
 GPUSampler* GPUDeviceDX12::CreateSampler()
 {
     return New<GPUSamplerDX12>(this);
+}
+
+GPUVertexLayout* GPUDeviceDX12::CreateVertexLayout(const VertexElements& elements)
+{
+    return New<GPUVertexLayoutDX12>(this, elements);
 }
 
 GPUSwapChain* GPUDeviceDX12::CreateSwapChain(Window* window)

@@ -273,4 +273,62 @@ String RenderToolsDX::GetD3DErrorString(HRESULT errorCode)
     return sb.ToString();
 }
 
+LPCSTR RenderToolsDX::GetVertexInputSemantic(VertexElement::Types type, UINT& semanticIndex)
+{
+    static_assert((int32)VertexElement::Types::MAX == 16, "Update code below.");
+    semanticIndex = 0;
+    switch (type)
+    {
+    case VertexElement::Types::Position:
+        return "POSITION";
+    case VertexElement::Types::Color:
+        return "COLOR";
+    case VertexElement::Types::Normal:
+        return "NORMAL";
+    case VertexElement::Types::Tangent:
+        return "TANGENT";
+    case VertexElement::Types::BlendIndices:
+        return "BLENDINDICES";
+    case VertexElement::Types::BlendWeight:
+        return "BLENDWEIGHT";
+    case VertexElement::Types::TexCoord0:
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord1:
+        semanticIndex = 1;
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord2:
+        semanticIndex = 2;
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord3:
+        semanticIndex = 3;
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord4:
+        semanticIndex = 4;
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord5:
+        semanticIndex = 5;
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord6:
+        semanticIndex = 6;
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord7:
+        semanticIndex = 7;
+        return "TEXCOORD";
+    case VertexElement::Types::Attribute0:
+        return "ATTRIBUTE";
+    case VertexElement::Types::Attribute1:
+        semanticIndex = 1;
+        return "ATTRIBUTE";
+    case VertexElement::Types::Attribute2:
+        semanticIndex = 2;
+        return "ATTRIBUTE";
+    case VertexElement::Types::Attribute3:
+        semanticIndex = 3;
+        return "ATTRIBUTE";
+    default:
+        LOG(Fatal, "Invalid vertex shader element semantic type");
+        return "";
+    }
+}
+
 #endif

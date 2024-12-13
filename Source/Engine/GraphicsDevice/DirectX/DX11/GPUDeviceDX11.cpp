@@ -10,11 +10,13 @@
 #include "GPUTimerQueryDX11.h"
 #include "GPUBufferDX11.h"
 #include "GPUSamplerDX11.h"
+#include "GPUVertexLayoutDX11.h"
 #include "GPUSwapChainDX11.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Engine/CommandLine.h"
 
 #if !USE_EDITOR && PLATFORM_WINDOWS
@@ -144,6 +146,29 @@ static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureL
 #endif
 
     return false;
+}
+
+GPUVertexLayoutDX11::GPUVertexLayoutDX11(GPUDeviceDX11* device, const Elements& elements)
+    : GPUResourceBase<GPUDeviceDX11, GPUVertexLayout>(device, StringView::Empty)
+    , InputElementsCount(elements.Count())
+{
+    _elements = elements;
+    uint32 offsets[GPU_MAX_VB_BINDED] = {};
+    for (int32 i = 0; i < _elements.Count(); i++)
+    {
+        const VertexElement& src = _elements.Get()[i];
+        D3D11_INPUT_ELEMENT_DESC& dst = InputElements[i];
+        uint32& offset = offsets[src.Slot];
+        if (src.Offset != 0)
+            offset = src.Offset;
+        dst.SemanticName = RenderToolsDX::GetVertexInputSemantic(src.Type, dst.SemanticIndex);
+        dst.Format = RenderToolsDX::ToDxgiFormat(src.Format);
+        dst.InputSlot = src.Slot;
+        dst.AlignedByteOffset = offset;
+        dst.InputSlotClass = src.PerInstance ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
+        dst.InstanceDataStepRate = src.PerInstance ? 1 : 0;
+        offset += PixelFormatExtensions::SizeInBytes(src.Format);
+    }
 }
 
 GPUDevice* GPUDeviceDX11::Create()
@@ -805,6 +830,11 @@ GPUBuffer* GPUDeviceDX11::CreateBuffer(const StringView& name)
 GPUSampler* GPUDeviceDX11::CreateSampler()
 {
     return New<GPUSamplerDX11>(this);
+}
+
+GPUVertexLayout* GPUDeviceDX11::CreateVertexLayout(const VertexElements& elements)
+{
+    return New<GPUVertexLayoutDX11>(this, elements);
 }
 
 GPUSwapChain* GPUDeviceDX11::CreateSwapChain(Window* window)

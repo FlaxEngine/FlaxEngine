@@ -30,14 +30,12 @@ struct ShaderPermutation
 class ShaderFunctionMeta
 {
 public:
-
     /// <summary>
     /// Virtual destructor
     /// </summary>
     virtual ~ShaderFunctionMeta() = default;
 
 public:
-
     /// <summary>
     /// Function name
     /// </summary>
@@ -59,7 +57,6 @@ public:
     Array<ShaderPermutation> Permutations;
 
 public:
-
     /// <summary>
     /// Checks if definition name has been added to the given permutation
     /// </summary>
@@ -117,7 +114,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Gets shader function meta stage type.
     /// </summary>
@@ -130,9 +126,9 @@ public:
 class VertexShaderMeta : public ShaderFunctionMeta
 {
 public:
-
     /// <summary>
     /// Input element type
+    /// [Deprecated in v1.10]
     /// </summary>
     enum class InputType : byte
     {
@@ -150,6 +146,7 @@ public:
 
     /// <summary>
     /// Input element
+    /// [Deprecated in v1.10]
     /// </summary>
     struct InputElement
     {
@@ -195,14 +192,13 @@ public:
     };
 
 public:
-
     /// <summary>
     /// Input layout description
+    /// [Deprecated in v1.10]
     /// </summary>
     Array<InputElement> InputLayout;
 
 public:
-
     // [ShaderFunctionMeta]
     ShaderStage GetStage() const override
     {
@@ -216,14 +212,12 @@ public:
 class HullShaderMeta : public ShaderFunctionMeta
 {
 public:
-
     /// <summary>
     /// The input control points count (valid range: 1-32).
     /// </summary>
     int32 ControlPointsCount;
 
 public:
-
     // [ShaderFunctionMeta]
     ShaderStage GetStage() const override
     {
@@ -237,7 +231,6 @@ public:
 class DomainShaderMeta : public ShaderFunctionMeta
 {
 public:
-
     // [ShaderFunctionMeta]
     ShaderStage GetStage() const override
     {
@@ -251,7 +244,6 @@ public:
 class GeometryShaderMeta : public ShaderFunctionMeta
 {
 public:
-
     // [ShaderFunctionMeta]
     ShaderStage GetStage() const override
     {
@@ -265,7 +257,6 @@ public:
 class PixelShaderMeta : public ShaderFunctionMeta
 {
 public:
-
     // [ShaderFunctionMeta]
     ShaderStage GetStage() const override
     {
@@ -279,7 +270,6 @@ public:
 class ComputeShaderMeta : public ShaderFunctionMeta
 {
 public:
-
     // [ShaderFunctionMeta]
     ShaderStage GetStage() const override
     {
@@ -309,7 +299,6 @@ struct ConstantBufferMeta
 class ShaderMeta
 {
 public:
-
     /// <summary>
     /// Vertex Shaders
     /// </summary>
@@ -346,18 +335,16 @@ public:
     Array<ConstantBufferMeta> CB;
 
 public:
-
     /// <summary>
-    /// Gets amount of shaders attached (not counting permutations)
+    /// Gets amount of shaders attached (not counting permutations).
     /// </summary>
-    /// <returns>Amount of all shader programs</returns>
-    uint32 GetShadersCount() const
+    int32 GetShadersCount() const
     {
         return VS.Count() + HS.Count() + DS.Count() + GS.Count() + PS.Count() + CS.Count();
     }
 
     /// <summary>
-    /// Gets all shader functions (all types)
+    /// Gets all shader functions (all types).
     /// </summary>
     /// <param name="functions">Output collections of functions</param>
     void GetShaders(Array<const ShaderFunctionMeta*>& functions) const

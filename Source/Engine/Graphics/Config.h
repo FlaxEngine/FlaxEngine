@@ -25,6 +25,9 @@
 // Maximum amount of binded vertex buffers at the same time
 #define GPU_MAX_VB_BINDED 4
 
+// Maximum amount of vertex shader input elements in a layout
+#define GPU_MAX_VS_ELEMENTS 16
+
 // Maximum amount of thread groups per dimension for compute dispatch
 #define GPU_MAX_CS_DISPATCH_THREAD_GROUPS 65535
 
@@ -33,6 +36,7 @@
 
 // Enable/disable assertion for graphics layers
 #define GPU_ENABLE_ASSERTION 1
+#define GPU_ENABLE_ASSERTION_LOW_LAYERS (!BUILD_RELEASE)
 
 // Enable/disable dynamic textures quality streaming
 #define GPU_ENABLE_TEXTURES_STREAMING 1

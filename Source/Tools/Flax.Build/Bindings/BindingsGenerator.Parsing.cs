@@ -1254,6 +1254,11 @@ namespace Flax.Build.Bindings
 
             // Read 'struct' keyword
             var token = context.Tokenizer.NextToken();
+            if (token.Value == "PACK_BEGIN")
+            {
+                context.Tokenizer.SkipUntil(TokenType.RightParent);
+                token = context.Tokenizer.NextToken();
+            }
             if (token.Value != "struct")
                 throw new ParseException(ref context, $"Invalid {ApiTokens.Struct} usage (expected 'struct' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 

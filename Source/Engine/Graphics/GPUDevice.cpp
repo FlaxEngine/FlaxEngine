@@ -479,6 +479,8 @@ void GPUDevice::DumpResourcesToLog() const
     LOG_STR(Info, output.ToStringView());
 }
 
+extern void ClearVertexLayoutCache();
+
 void GPUDevice::preDispose()
 {
     Locker.Lock();
@@ -494,6 +496,7 @@ void GPUDevice::preDispose()
     SAFE_DELETE_GPU_RESOURCE(_res->PS_Clear);
     SAFE_DELETE_GPU_RESOURCE(_res->PS_DecodeYUY2);
     SAFE_DELETE_GPU_RESOURCE(_res->FullscreenTriangleVB);
+    ClearVertexLayoutCache();
 
     Locker.Unlock();
 

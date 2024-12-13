@@ -12,7 +12,7 @@ class GPUShaderProgram;
 /// <summary>
 /// The runtime version of the shaders cache supported by the all graphics back-ends. The same for all the shader cache formats (easier to sync and validate).
 /// </summary>
-#define GPU_SHADER_CACHE_VERSION 9
+#define GPU_SHADER_CACHE_VERSION 10
 
 /// <summary>
 /// The GPU resource with shader programs that can run on the GPU and are able to perform rendering calculation using textures, vertices and other resources.
@@ -23,7 +23,7 @@ API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUShader : public GPUResource
 
 protected:
     Dictionary<uint32, GPUShaderProgram*> _shaders;
-    GPUConstantBuffer* _constantBuffers[MAX_CONSTANT_BUFFER_SLOTS];
+    GPUConstantBuffer* _constantBuffers[GPU_MAX_CB_BINDED];
 
     GPUShader();
 

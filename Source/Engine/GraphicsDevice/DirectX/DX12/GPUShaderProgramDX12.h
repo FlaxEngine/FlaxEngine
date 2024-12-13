@@ -35,6 +35,7 @@ public:
     {
         return (void*)_data.Get();
     }
+
     uint32 GetBufferSize() const override
     {
         return _data.Count();
@@ -65,6 +66,7 @@ public:
     {
         return (void*)_inputLayout;
     }
+
     byte GetInputLayoutSize() const override
     {
         return _inputLayoutSize;

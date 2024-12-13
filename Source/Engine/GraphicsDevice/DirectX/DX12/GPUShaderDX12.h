@@ -22,7 +22,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Last uploaded data address.
     /// </summary>
@@ -35,7 +34,6 @@ public:
 class GPUShaderDX12 : public GPUResourceDX12<GPUShader>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderDX12"/> class.
     /// </summary>
@@ -47,7 +45,6 @@ public:
     }
 
 protected:
-
     // [GPUShader]
     GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream) override;
 };

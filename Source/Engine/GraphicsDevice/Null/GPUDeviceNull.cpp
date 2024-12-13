@@ -11,6 +11,7 @@
 #include "GPUTimerQueryNull.h"
 #include "GPUBufferNull.h"
 #include "GPUSamplerNull.h"
+#include "GPUVertexLayoutNull.h"
 #include "GPUSwapChainNull.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/Async/GPUTasksManager.h"
@@ -170,6 +171,11 @@ GPUBuffer* GPUDeviceNull::CreateBuffer(const StringView& name)
 GPUSampler* GPUDeviceNull::CreateSampler()
 {
     return New<GPUSamplerNull>();
+}
+
+GPUVertexLayout* GPUDeviceNull::CreateVertexLayout(const VertexElements& elements)
+{
+    return New<GPUVertexLayoutNull>(elements);
 }
 
 GPUSwapChain* GPUDeviceNull::CreateSwapChain(Window* window)

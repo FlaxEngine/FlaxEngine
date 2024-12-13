@@ -23,6 +23,7 @@ class GPUBuffer;
 class GPUSampler;
 class GPUPipelineState;
 class GPUConstantBuffer;
+class GPUVertexLayout;
 class GPUTasksContext;
 class GPUTasksExecutor;
 class GPUSwapChain;
@@ -395,6 +396,13 @@ public:
     /// </summary>
     /// <returns>The sampler.</returns>
     API_FUNCTION() virtual GPUSampler* CreateSampler() = 0;
+
+    /// <summary>
+    /// Creates the vertex buffer layout.
+    /// </summary>
+    /// <returns>The vertex buffer layout.</returns>
+    API_FUNCTION() virtual GPUVertexLayout* CreateVertexLayout(const Array<struct VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>>& elements) = 0;
+    typedef Array<VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>> VertexElements;
 
     /// <summary>
     /// Creates the native window swap chain.

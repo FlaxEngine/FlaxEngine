@@ -7,6 +7,7 @@
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Graphics//RenderTools.h"
 #include "Engine/Graphics/Enums.h"
+#include "Engine/Graphics/Shaders/VertexElement.h"
 #include "IncludeDirectXHeaders.h"
 #include "Engine/Core/Log.h"
 
@@ -112,6 +113,8 @@ namespace RenderToolsDX
         const String& errorString = GetD3DErrorString(result);
         LOG(Error, "DirectX error: {0} at {1}:{2}", errorString, String(file), line);
     }
+
+    LPCSTR GetVertexInputSemantic(VertexElement::Types type, UINT& semanticIndex);
 };
 
 #if GPU_ENABLE_ASSERTION
