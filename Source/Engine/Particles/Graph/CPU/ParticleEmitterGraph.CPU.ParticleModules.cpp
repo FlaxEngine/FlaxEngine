@@ -1150,6 +1150,43 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         // Not supported
         break;
     }
+    // Rotate Position Shape
+    case 216:
+    {
+        PARTICLE_EMITTER_MODULE("Rotate Position Shape");
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
+
+        byte* positionPtr = start + positionAttr.Offset;
+
+        auto quatBox = node->GetBox(0);
+
+#define INPUTS_FETCH() \
+const Quaternion quat = (Quaternion)GetValue(quatBox, 2);
+#define LOGIC() \
+*(Float3*)positionPtr = quat * *((Float3*)positionPtr); \
+positionPtr += stride;
+
+        if (node->UsePerParticleDataResolve())
+        {
+            for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
+            {
+                context.ParticleIndex = particleIndex;
+                INPUTS_FETCH();
+                LOGIC();
+            }
+        }
+        else
+        {
+            INPUTS_FETCH();
+            for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
+            {
+                LOGIC();
+            }
+        }
+#undef INPUTS_FETCH
+#undef LOGIC
+        break;
+    }
 
     // Helper macros for collision modules to share the code
 #define COLLISION_BEGIN() \
