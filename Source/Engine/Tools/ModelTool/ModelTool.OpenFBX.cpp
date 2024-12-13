@@ -69,6 +69,7 @@ struct FbxNode
     Transform LocalTransform;
     String Name;
     int32 LodIndex;
+    bool IsMesh;
     const ofbx::Object* FbxObj;
 };
 
@@ -381,6 +382,10 @@ void ProcessNodes(OpenFbxImporterData& data, const ofbx::Object* aNode, int32 pa
     node.ParentIndex = parentIndex;
     node.Name = aNode->name;
     node.FbxObj = aNode;
+    if (aNode->getType() == ofbx::Object::Type::MESH)
+        node.IsMesh = true;
+    else
+        node.IsMesh = false;
 
     // Pick node LOD index
     if (parentIndex == -1 || !data.Options.ImportLODs)
@@ -1420,15 +1425,19 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
     // Import skeleton
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
-        data.Skeleton.Nodes.Resize(context.Nodes.Count(), false);
+        data.Skeleton.Nodes.Clear();
         for (int32 i = 0; i < context.Nodes.Count(); i++)
         {
-            auto& node = data.Skeleton.Nodes[i];
+            // Remove mesh nodes from skeleton nodes
             auto& aNode = context.Nodes[i];
-
+            if (aNode.IsMesh)
+                continue;
+            
+            SkeletonNode node;
             node.Name = aNode.Name;
             node.ParentIndex = aNode.ParentIndex;
             node.LocalTransform = aNode.LocalTransform;
+            data.Skeleton.Nodes.Add(node);
         }
 
         data.Skeleton.Bones.Resize(context.Bones.Count(), false);
