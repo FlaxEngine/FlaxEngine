@@ -301,7 +301,7 @@ namespace FlaxEditor.CustomEditors
                     _valueToSet = null;
 
                     // Assign value
-                    if (val is IList l && l.Count == _values.Count)
+                    if (val is IList l && l.Count == _values.Count && _values.Count > 1)
                     {
                         for (int i = 0; i < _values.Count; i++)
                             _values[i] = l[i];
