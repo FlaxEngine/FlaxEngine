@@ -14,6 +14,7 @@ class CmdBufferManagerVulkan;
 class ResourceOwnerVulkan;
 class GPUTextureViewVulkan;
 class GPUBufferVulkan;
+class GPUVertexLayoutVulkan;
 class GPUPipelineStateVulkan;
 class ComputePipelineStateVulkan;
 class GPUConstantBufferVulkan;
@@ -82,6 +83,7 @@ private:
 
     RenderPassVulkan* _renderPass;
     GPUPipelineStateVulkan* _currentState;
+    GPUVertexLayoutVulkan* _vertexLayout;
     GPUTextureViewVulkan* _rtDepth;
     GPUTextureViewVulkan* _rtHandles[GPU_MAX_RT_BINDED];
     DescriptorOwnerResourceVulkan* _cbHandles[GPU_MAX_CB_BINDED];
@@ -168,7 +170,7 @@ public:
     void BindCB(int32 slot, GPUConstantBuffer* cb) override;
     void BindSR(int32 slot, GPUResourceView* view) override;
     void BindUA(int32 slot, GPUResourceView* view) override;
-    void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr) override;
+    void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr, GPUVertexLayout* vertexLayout = nullptr) override;
     void BindIB(GPUBuffer* indexBuffer) override;
     void BindSampler(int32 slot, GPUSampler* sampler) override;
     void UpdateCB(GPUConstantBuffer* cb, const void* data) override;

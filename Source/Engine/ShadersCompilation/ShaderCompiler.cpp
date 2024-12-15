@@ -10,9 +10,11 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
+#include "Engine/Graphics/Shaders/VertexElement.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "FlaxEngine.Gen.h"
 
 namespace IncludedFiles
 {
@@ -65,14 +67,11 @@ bool ShaderCompiler::Compile(ShaderCompilationContext* context)
         return true;
 
     // [Output] Constant Buffers
+    output->WriteByte((byte)_constantBuffers.Count());
+    for (const ShaderResourceBuffer& cb : _constantBuffers)
     {
-        ASSERT(_constantBuffers.Count() == meta->CB.Count());
-        output->WriteByte((byte)_constantBuffers.Count());
-        for (const ShaderResourceBuffer& cb : _constantBuffers)
-        {
-            output->WriteByte(cb.Slot);
-            output->WriteUint32(cb.Size);
-        }
+        output->WriteByte(cb.Slot);
+        output->WriteUint32(cb.Size);
     }
 
     // Additional Data Start
@@ -314,13 +313,21 @@ bool ShaderCompiler::WriteShaderFunctionEnd(ShaderCompilationContext* context, S
 
 bool ShaderCompiler::WriteCustomDataVS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros)
 {
+    // [Deprecated in v1.10]
     auto output = context->Output;
     auto& metaVS = *(VertexShaderMeta*)&meta;
     auto& layout = metaVS.InputLayout;
+#if FLAXENGINE_VERSION_MAJOR > 2 || (FLAXENGINE_VERSION_MAJOR == 2 && FLAXENGINE_VERSION_MINOR >= 1)
+    if (layout.HasItems())
+        LOG(Warning, "Vertex Shader '{}' (asset '{}') uses explicit vertex layout via 'META_VS_IN_ELEMENT' macros which has been deprecated. Remove this code and migrate to GPUVertexLayout with VertexElement array in code (assigned to vertex buffer).", String(meta.Name), context->Options->TargetName);
+#elif FLAXENGINE_VERSION_MAJOR == 1 && FLAXENGINE_VERSION_MINOR >= 11
+    if (layout.HasItems())
+        LOG(Warning, "Vertex Shader '{}' (asset '{}') uses explicit vertex layout via 'META_VS_IN_ELEMENT' macros which has been deprecated. Remove this code and migrate to GPUVertexLayout with VertexElement array in code (assigned to vertex buffer).", String(meta.Name), context->Options->TargetName);
+#endif
 
     // Get visible entries (based on `visible` flag switch)
     int32 layoutSize = 0;
-    bool layoutVisible[VERTEX_SHADER_MAX_INPUT_ELEMENTS];
+    bool layoutVisible[GPU_MAX_VS_ELEMENTS];
     for (int32 i = 0; i < layout.Count(); i++)
     {
         auto& element = layout[i];
@@ -361,14 +368,93 @@ bool ShaderCompiler::WriteCustomDataVS(ShaderCompilationContext* context, Shader
         auto& element = layout[a];
         if (!layoutVisible[a])
             continue;
-        GPUShaderProgramVS::InputElement data;
-        data.Type = static_cast<byte>(element.Type);
-        data.Index = element.Index;
-        data.Format = static_cast<byte>(element.Format);
-        data.InputSlot = element.InputSlot;
-        data.AlignedByteOffset = element.AlignedByteOffset;
-        data.InputSlotClass = element.InputSlotClass;
-        data.InstanceDataStepRate = element.InstanceDataStepRate;
+        VertexElement data;
+        switch (element.Type)
+        {
+        case VertexShaderMeta::InputType::POSITION:
+            data.Type = VertexElement::Types::Position;
+            break;
+        case VertexShaderMeta::InputType::COLOR:
+            data.Type = VertexElement::Types::Color;
+            break;
+        case VertexShaderMeta::InputType::TEXCOORD:
+            switch (element.Index)
+            {
+            case 0:
+                data.Type = VertexElement::Types::TexCoord0;
+                break;
+            case 1:
+                data.Type = VertexElement::Types::TexCoord1;
+                break;
+            case 2:
+                data.Type = VertexElement::Types::TexCoord2;
+                break;
+            case 3:
+                data.Type = VertexElement::Types::TexCoord3;
+                break;
+            case 4:
+                data.Type = VertexElement::Types::TexCoord4;
+                break;
+            case 5:
+                data.Type = VertexElement::Types::TexCoord5;
+                break;
+            case 6:
+                data.Type = VertexElement::Types::TexCoord6;
+                break;
+            case 7:
+                data.Type = VertexElement::Types::TexCoord7;
+                break;
+            default:
+                LOG(Error, "Vertex Shader '{}' (asset '{}') uses deprecated texcoord attribute index. Valid range is 0-7.", String(meta.Name), context->Options->TargetName);
+                data.Type = VertexElement::Types::TexCoord;
+                break;
+            }
+            break;
+        case VertexShaderMeta::InputType::NORMAL:
+            data.Type = VertexElement::Types::Normal;
+            break;
+        case VertexShaderMeta::InputType::TANGENT:
+            data.Type = VertexElement::Types::Tangent;
+            break;
+        case VertexShaderMeta::InputType::BITANGENT:
+            LOG(Error, "Vertex Shader '{}' (asset '{}') uses deprecated attribute 'BITANGENT'. Remapping it to `ATTRIBUTE`.", String(meta.Name), context->Options->TargetName);
+            data.Type = VertexElement::Types::Attribute;
+            break;
+        case VertexShaderMeta::InputType::ATTRIBUTE:
+            switch (element.Index)
+            {
+            case 0:
+                data.Type = VertexElement::Types::Attribute0;
+                break;
+            case 1:
+                data.Type = VertexElement::Types::Attribute1;
+                break;
+            case 2:
+                data.Type = VertexElement::Types::Attribute2;
+                break;
+            case 3:
+                data.Type = VertexElement::Types::Attribute3;
+                break;
+            default:
+                LOG(Error, "Vertex Shader '{}' (asset '{}') uses deprecated attribute index. Valid range is 0-3.", String(meta.Name), context->Options->TargetName);
+                data.Type = VertexElement::Types::Attribute;
+                break;
+            }
+            break;
+        case VertexShaderMeta::InputType::BLENDINDICES:
+            data.Type = VertexElement::Types::BlendIndices;
+            break;
+        case VertexShaderMeta::InputType::BLENDWEIGHT:
+            data.Type = VertexElement::Types::BlendWeight;
+            break;
+        default:
+            data.Type = VertexElement::Types::Unknown;
+            break;
+        }
+        data.Slot = element.InputSlot;
+        data.Offset = element.AlignedByteOffset != INPUT_LAYOUT_ELEMENT_ALIGN && element.AlignedByteOffset <= MAX_uint8 ? element.AlignedByteOffset : 0;
+        data.PerInstance = element.InputSlotClass == INPUT_LAYOUT_ELEMENT_PER_INSTANCE_DATA;
+        data.Format = element.Format;
         output->Write(data);
     }
 

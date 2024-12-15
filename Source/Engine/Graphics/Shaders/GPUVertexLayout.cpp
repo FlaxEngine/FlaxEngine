@@ -5,7 +5,9 @@
 #include "Engine/Core/Log.h"
 #endif
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Types/Span.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUBuffer.h"
 #if GPU_ENABLE_RESOURCE_NAMING
 #include "Engine/Scripting/Enums.h"
 #endif
@@ -18,10 +20,29 @@ struct VertexElementRaw
 
 static_assert(sizeof(VertexElement) == sizeof(VertexElementRaw), "Incorrect size of the VertexElement!");
 
+struct VertexBufferLayouts
+{
+    GPUVertexLayout* Layouts[GPU_MAX_VB_BINDED];
+
+    bool operator==(const VertexBufferLayouts& other) const
+    {
+        return Platform::MemoryCompare(&Layouts, &other.Layouts, sizeof(Layouts)) == 0;
+    }
+};
+
+uint32 GetHash(const VertexBufferLayouts& key)
+{
+    uint32 hash = GetHash(key.Layouts[0]);
+    for (int32 i = 1; i < GPU_MAX_VB_BINDED; i++)
+        CombineHash(hash, GetHash(key.Layouts[i]));
+    return hash;
+}
+
 namespace
 {
     CriticalSection CacheLocker;
     Dictionary<uint32, GPUVertexLayout*> LayoutCache;
+    Dictionary<VertexBufferLayouts, GPUVertexLayout*> VertexBufferCache;
 }
 
 String VertexElement::ToString() const
@@ -95,9 +116,50 @@ GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements)
     return result;
 }
 
+GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUBuffer*>& vertexBuffers)
+{
+    if (vertexBuffers.Length() == 0)
+        return nullptr;
+    if (vertexBuffers.Length() == 1)
+        return vertexBuffers.Get()[0] ? vertexBuffers.Get()[0]->GetVertexLayout() : nullptr;
+
+    // Build hash key for set of buffers (in case there is layout sharing by different sets of buffers)
+    VertexBufferLayouts layouts;
+    for (int32 i = 0; i < vertexBuffers.Length(); i++)
+        layouts.Layouts[i] = vertexBuffers.Get()[i] ? vertexBuffers.Get()[i]->GetVertexLayout() : nullptr;
+    for (int32 i = vertexBuffers.Length(); i < GPU_MAX_VB_BINDED; i++)
+        layouts.Layouts[i] = nullptr;
+
+    // Lookup existing cache
+    CacheLocker.Lock();
+    GPUVertexLayout* result;
+    if (!VertexBufferCache.TryGet(layouts, result))
+    {
+        Elements elements;
+        bool anyValid = false;
+        for (int32 slot = 0; slot < vertexBuffers.Length(); slot++)
+        {
+            if (layouts.Layouts[slot])
+            {
+                anyValid = true;
+                int32 start = elements.Count();
+                elements.Add(layouts.Layouts[slot]->GetElements());
+                for (int32 j = start; j < elements.Count() ;j++)
+                    elements.Get()[j].Slot = (byte)slot;
+            }
+        }
+        result = anyValid ? Get(elements) : nullptr;
+        VertexBufferCache.Add(layouts, result);
+    }
+    CacheLocker.Unlock();
+
+    return result;
+}
+
 void ClearVertexLayoutCache()
 {
     for (const auto& e : LayoutCache)
         Delete(e.Value);
     LayoutCache.Clear();
+    VertexBufferCache.Clear();
 }

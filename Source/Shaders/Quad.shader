@@ -16,30 +16,22 @@ META_CB_END
 
 // Vertex Shader for screen space quad rendering
 META_VS(true, FEATURE_LEVEL_ES2)
-META_VS_IN_ELEMENT(POSITION, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 Quad_VS2PS VS(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0)
 {
 	Quad_VS2PS output;
-
 	output.Position = float4(Position, 0, 1);
 	output.TexCoord = TexCoord;
-
 	return output;
 }
 
 // Vertex Shader function for postFx materials rendering
 META_VS(true, FEATURE_LEVEL_ES2)
-META_VS_IN_ELEMENT(POSITION, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 MaterialVertexOutput VS_PostFx(float2 Position : POSITION0, float2 TexCoord : TEXCOORD0)
 {
 	MaterialVertexOutput output;
-
 	output.Position = float4(Position, 0, 1);
 	output.WorldPosition = output.Position.xyz;
 	output.TexCoord = TexCoord;
-
 	return output;
 }
 

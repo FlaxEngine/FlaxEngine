@@ -15,6 +15,7 @@
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
 
@@ -444,7 +445,7 @@ RenderList::RenderList(const SpawnParams& params)
     , Blendable(32)
     , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Bufffer"))
     , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Bufffer"))
-    , _instanceBuffer(0, sizeof(ShaderObjectDrawInstanceData), TEXT("Instance Buffer"))
+    , _instanceBuffer(0, sizeof(ShaderObjectDrawInstanceData), TEXT("Instance Buffer"), GPUVertexLayout::Get({ { VertexElement::Types::Attribute0, 3, 0, 1, PixelFormat::R32_UInt } }))
 {
 }
 

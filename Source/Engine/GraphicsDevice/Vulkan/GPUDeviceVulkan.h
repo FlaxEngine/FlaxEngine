@@ -308,7 +308,7 @@ class HelperResourcesVulkan
 private:
     GPUDeviceVulkan* _device;
     GPUTextureVulkan* _dummyTextures[6];
-    Array<GPUBufferVulkan*> _dummyBuffers;
+    GPUBufferVulkan** _dummyBuffers = nullptr;
     GPUBufferVulkan* _dummyVB;
     VkSampler _staticSamplers[GPU_STATIC_SAMPLERS_COUNT];
 

@@ -42,7 +42,6 @@ struct PixelInput
 // Vertex shader function for grid rendering
 META_VS(true, FEATURE_LEVEL_ES2)
 META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R16G16_FLOAT, 1, ALIGN, PER_VERTEX, 0, true)
 VertexOutput VS_Grid(ModelInput input)
 {
     VertexOutput output;

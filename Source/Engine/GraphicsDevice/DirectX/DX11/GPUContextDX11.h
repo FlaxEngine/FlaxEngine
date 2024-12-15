@@ -10,6 +10,7 @@
 #if GRAPHICS_API_DIRECTX11
 
 class GPUBufferDX11;
+class GPUVertexLayoutDX11;
 
 /// <summary>
 /// GPU Context for DirectX 11 backend.
@@ -49,6 +50,8 @@ private:
     ID3D11Buffer* _vbHandles[GPU_MAX_VB_BINDED];
     UINT _vbStrides[GPU_MAX_VB_BINDED];
     UINT _vbOffsets[GPU_MAX_VB_BINDED];
+    GPUVertexLayoutDX11* _vertexLayout;
+    bool _iaInputLayoutDirtyFlag;
 
     // Pipeline State
     GPUPipelineStateDX11* _currentState;
@@ -100,6 +103,7 @@ private:
     void flushUAVs();
     void flushCBs();
     void flushOM();
+    void flushIA();
     void onDrawCall();
 
 public:
@@ -130,7 +134,7 @@ public:
     void BindCB(int32 slot, GPUConstantBuffer* cb) override;
     void BindSR(int32 slot, GPUResourceView* view) override;
     void BindUA(int32 slot, GPUResourceView* view) override;
-    void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr) override;
+    void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr, GPUVertexLayout* vertexLayout = nullptr) override;
     void BindIB(GPUBuffer* indexBuffer) override;
     void BindSampler(int32 slot, GPUSampler* sampler) override;
     void UpdateCB(GPUConstantBuffer* cb, const void* data) override;

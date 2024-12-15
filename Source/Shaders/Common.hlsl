@@ -33,7 +33,7 @@
 
 // Meta macros used by shaders parser
 #define META_VS(isVisible, minFeatureLevel)
-#define META_VS_IN_ELEMENT(type, index, format, slot, offset, slotClass, stepRate, isVisible)
+#define META_VS_IN_ELEMENT(type, index, format, slot, offset, slotClass, stepRate, isVisible) // [Deprecated in v1.10]
 #define META_HS(isVisible, minFeatureLevel)
 #define META_HS_PATCH(inControlPoints)
 #define META_DS(isVisible, minFeatureLevel)

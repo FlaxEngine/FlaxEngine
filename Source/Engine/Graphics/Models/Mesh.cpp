@@ -11,6 +11,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
@@ -20,6 +21,30 @@
 #if USE_EDITOR
 #include "Engine/Renderer/GBufferPass.h"
 #endif
+
+GPUVertexLayout* VB0ElementType18::GetLayout()
+{
+    return GPUVertexLayout::Get({
+        { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32B32_Float },
+    });
+}
+
+GPUVertexLayout* VB1ElementType18::GetLayout()
+{
+    return GPUVertexLayout::Get({
+        { VertexElement::Types::TexCoord, 1, 0, 0, PixelFormat::R16G16_Float },
+        { VertexElement::Types::Normal, 1, 0, 0, PixelFormat::R10G10B10A2_UNorm },
+        { VertexElement::Types::Tangent, 1, 0, 0, PixelFormat::R10G10B10A2_UNorm },
+        { VertexElement::Types::TexCoord1, 1, 0, 0, PixelFormat::R16G16_Float },
+    });
+}
+
+GPUVertexLayout* VB2ElementType18::GetLayout()
+{
+    return GPUVertexLayout::Get({
+        { VertexElement::Types::Color, 2, 0, 0, PixelFormat::R8G8B8A8_UNorm },
+    });
+}
 
 namespace
 {
@@ -233,15 +258,15 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* 
 #define MESH_BUFFER_NAME(postfix) String::Empty
 #endif
     vertexBuffer0 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB0"));
-    if (vertexBuffer0->Init(GPUBufferDescription::Vertex(sizeof(VB0ElementType), vertices, vb0)))
+    if (vertexBuffer0->Init(GPUBufferDescription::Vertex(VB0ElementType::GetLayout(), sizeof(VB0ElementType), vertices, vb0)))
         goto ERROR_LOAD_END;
     vertexBuffer1 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB1"));
-    if (vertexBuffer1->Init(GPUBufferDescription::Vertex(sizeof(VB1ElementType), vertices, vb1)))
+    if (vertexBuffer1->Init(GPUBufferDescription::Vertex(VB1ElementType::GetLayout(), sizeof(VB1ElementType), vertices, vb1)))
         goto ERROR_LOAD_END;
     if (vb2)
     {
         vertexBuffer2 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB2"));
-        if (vertexBuffer2->Init(GPUBufferDescription::Vertex(sizeof(VB2ElementType), vertices, vb2)))
+        if (vertexBuffer2->Init(GPUBufferDescription::Vertex(VB2ElementType::GetLayout(), sizeof(VB2ElementType), vertices, vb2)))
             goto ERROR_LOAD_END;
     }
     indexBuffer = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".IB"));

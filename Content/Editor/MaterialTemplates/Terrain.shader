@@ -319,8 +319,6 @@ struct TerrainVertexInput
 
 // Vertex Shader function for terrain rendering
 META_VS(true, FEATURE_LEVEL_ES2)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT,   0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 1, R8G8B8A8_UNORM, 0, ALIGN, PER_VERTEX, 0, true)
 VertexOutput VS(TerrainVertexInput input)
 {
 	VertexOutput output;

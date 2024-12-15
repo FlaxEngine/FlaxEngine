@@ -4,10 +4,33 @@
 
 #include "GPUShaderDX11.h"
 #include "GPUShaderProgramDX11.h"
+#include "GPUVertexLayoutDX11.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "../RenderToolsDX.h"
 
-GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream)
+GPUShaderProgramVSDX11::~GPUShaderProgramVSDX11()
+{
+    for (const auto& e : _cache)
+        e.Value->Release();
+}
+
+ID3D11InputLayout* GPUShaderProgramVSDX11::GetInputLayout(GPUVertexLayoutDX11* vertexLayout)
+{
+    if (!vertexLayout)
+        vertexLayout = (GPUVertexLayoutDX11*)Layout;
+    ID3D11InputLayout* inputLayout = nullptr;
+    if (!_cache.TryGet(vertexLayout, inputLayout))
+    {
+        if (vertexLayout && vertexLayout->InputElementsCount)
+        {
+            VALIDATE_DIRECTX_CALL(vertexLayout->GetDevice()->GetDevice()->CreateInputLayout(vertexLayout->InputElements, vertexLayout->InputElementsCount, Bytecode.Get(), Bytecode.Length(), &inputLayout));
+        }
+        _cache.Add(vertexLayout, inputLayout);
+    }
+    return inputLayout;
+}
+
+GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, Span<byte> bytecode, MemoryReadStream& stream)
 {
     GPUShaderProgram* shader = nullptr;
     HRESULT result;
@@ -16,80 +39,15 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
     case ShaderStage::Vertex:
     {
         // Load Input Layout
-        byte inputLayoutSize;
-        stream.ReadByte(&inputLayoutSize);
-        ASSERT(inputLayoutSize <= VERTEX_SHADER_MAX_INPUT_ELEMENTS);
-        D3D11_INPUT_ELEMENT_DESC inputLayoutDesc[VERTEX_SHADER_MAX_INPUT_ELEMENTS];
-        for (int32 a = 0; a < inputLayoutSize; a++)
-        {
-            // Read description
-            GPUShaderProgramVS::InputElement inputElement;
-            stream.Read(inputElement);
-
-            // Get semantic name
-            const char* semanticName = nullptr;
-            // TODO: maybe use enum+mapping ?
-            switch (inputElement.Type)
-            {
-            case 1:
-                semanticName = "POSITION";
-                break;
-            case 2:
-                semanticName = "COLOR";
-                break;
-            case 3:
-                semanticName = "TEXCOORD";
-                break;
-            case 4:
-                semanticName = "NORMAL";
-                break;
-            case 5:
-                semanticName = "TANGENT";
-                break;
-            case 6:
-                semanticName = "BITANGENT";
-                break;
-            case 7:
-                semanticName = "ATTRIBUTE";
-                break;
-            case 8:
-                semanticName = "BLENDINDICES";
-                break;
-            case 9:
-                semanticName = "BLENDWEIGHT";
-                break;
-            default:
-                LOG(Fatal, "Invalid vertex shader element semantic type: {0}", inputElement.Type);
-                break;
-            }
-
-            // Set data
-            inputLayoutDesc[a] =
-            {
-                semanticName,
-                static_cast<UINT>(inputElement.Index),
-                static_cast<DXGI_FORMAT>(inputElement.Format),
-                static_cast<UINT>(inputElement.InputSlot),
-                static_cast<UINT>(inputElement.AlignedByteOffset),
-                static_cast<D3D11_INPUT_CLASSIFICATION>(inputElement.InputSlotClass),
-                static_cast<UINT>(inputElement.InstanceDataStepRate)
-            };
-        }
-
-        ID3D11InputLayout* inputLayout = nullptr;
-        if (inputLayoutSize > 0)
-        {
-            // Create input layout
-            VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateInputLayout(inputLayoutDesc, inputLayoutSize, cacheBytes, cacheSize, &inputLayout));
-        }
+        GPUVertexLayout* vertexLayout = ReadVertexLayout(stream);
 
         // Create shader
         ID3D11VertexShader* buffer = nullptr;
-        result = _device->GetDevice()->CreateVertexShader(cacheBytes, cacheSize, nullptr, &buffer);
+        result = _device->GetDevice()->CreateVertexShader(bytecode.Get(), bytecode.Length(), nullptr, &buffer);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object
-        shader = New<GPUShaderProgramVSDX11>(initializer, buffer, inputLayout, inputLayoutSize);
+        shader = New<GPUShaderProgramVSDX11>(initializer, buffer, vertexLayout, bytecode);
         break;
     }
 #if GPU_ALLOW_TESSELLATION_SHADERS
@@ -101,7 +59,7 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
 
         // Create shader
         ID3D11HullShader* buffer = nullptr;
-        result = _device->GetDevice()->CreateHullShader(cacheBytes, cacheSize, nullptr, &buffer);
+        result = _device->GetDevice()->CreateHullShader(bytecode.Get(), bytecode.Length(), nullptr, &buffer);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object
@@ -112,7 +70,7 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
     {
         // Create shader
         ID3D11DomainShader* buffer = nullptr;
-        result = _device->GetDevice()->CreateDomainShader(cacheBytes, cacheSize, nullptr, &buffer);
+        result = _device->GetDevice()->CreateDomainShader(bytecode.Get(), bytecode.Length(), nullptr, &buffer);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object
@@ -132,7 +90,7 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
     {
         // Create shader
         ID3D11GeometryShader* buffer = nullptr;
-        result = _device->GetDevice()->CreateGeometryShader(cacheBytes, cacheSize, nullptr, &buffer);
+        result = _device->GetDevice()->CreateGeometryShader(bytecode.Get(), bytecode.Length(), nullptr, &buffer);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object
@@ -144,7 +102,7 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
     {
         // Create shader
         ID3D11PixelShader* buffer = nullptr;
-        result = _device->GetDevice()->CreatePixelShader(cacheBytes, cacheSize, nullptr, &buffer);
+        result = _device->GetDevice()->CreatePixelShader(bytecode.Get(), bytecode.Length(), nullptr, &buffer);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object
@@ -155,7 +113,7 @@ GPUShaderProgram* GPUShaderDX11::CreateGPUShaderProgram(ShaderStage type, const 
     {
         // Create shader
         ID3D11ComputeShader* buffer = nullptr;
-        result = _device->GetDevice()->CreateComputeShader(cacheBytes, cacheSize, nullptr, &buffer);
+        result = _device->GetDevice()->CreateComputeShader(bytecode.Get(), bytecode.Length(), nullptr, &buffer);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, nullptr);
 
         // Create object

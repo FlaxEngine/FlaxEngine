@@ -67,9 +67,15 @@ void DynamicBuffer::Dispose()
     Data.Resize(0);
 }
 
+void DynamicVertexBuffer::SetLayout(GPUVertexLayout* layout)
+{
+    _layout = layout;
+    SAFE_DELETE_GPU_RESOURCE(_buffer);
+}
+
 void DynamicVertexBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
 {
-    desc = GPUBufferDescription::Vertex(_stride, numElements, GPUResourceUsage::Dynamic);
+    desc = GPUBufferDescription::Vertex(_layout, _stride, numElements, GPUResourceUsage::Dynamic);
 }
 
 void DynamicIndexBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)

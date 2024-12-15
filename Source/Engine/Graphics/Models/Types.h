@@ -21,6 +21,7 @@ class Model;
 class SkinnedModel;
 class MeshDeformation;
 class GPUContext;
+class GPUVertexLayout;
 struct RenderView;
 
 /// <summary>
@@ -69,6 +70,7 @@ enum class MeshBufferType
 };
 
 // Vertex structure for all models (versioned)
+// [Deprecated on 28.04.2023, expires on 01.01.2024]
 PACK_STRUCT(struct ModelVertex15
     {
     Float3 Position;
@@ -77,6 +79,7 @@ PACK_STRUCT(struct ModelVertex15
     Float1010102 Tangent;
     });
 
+// [Deprecated on 28.04.2023, expires on 01.01.2024]
 PACK_STRUCT(struct ModelVertex18
     {
     Float3 Position;
@@ -86,6 +89,7 @@ PACK_STRUCT(struct ModelVertex18
     Half2 LightmapUVs;
     });
 
+// [Deprecated in v1.10]
 PACK_STRUCT(struct ModelVertex19
     {
     Float3 Position;
@@ -96,9 +100,10 @@ PACK_STRUCT(struct ModelVertex19
     Color32 Color;
     });
 
+// [Deprecated in v1.10]
 typedef ModelVertex19 ModelVertex;
 
-//
+// [Deprecated in v1.10]
 struct RawModelVertex
 {
     Float3 Position;
@@ -111,11 +116,12 @@ struct RawModelVertex
 };
 
 // For vertex data we use three buffers: one with positions, one with other attributes, and one with colors
+// [Deprecated on 28.04.2023, expires on 01.01.2024]
 PACK_STRUCT(struct VB0ElementType15
     {
     Float3 Position;
     });
-
+// [Deprecated on 28.04.2023, expires on 01.01.2024]
 PACK_STRUCT(struct VB1ElementType15
     {
     Half2 TexCoord;
@@ -123,30 +129,42 @@ PACK_STRUCT(struct VB1ElementType15
     Float1010102 Tangent;
     });
 
+// [Deprecated in v1.10]
 PACK_STRUCT(struct VB0ElementType18
     {
     Float3 Position;
+
+    static GPUVertexLayout* GetLayout();
     });
 
+// [Deprecated in v1.10]
 PACK_STRUCT(struct VB1ElementType18
     {
     Half2 TexCoord;
     Float1010102 Normal;
     Float1010102 Tangent;
     Half2 LightmapUVs;
+
+    static GPUVertexLayout* GetLayout();
     });
 
+// [Deprecated in v1.10]
 PACK_STRUCT(struct VB2ElementType18
     {
     Color32 Color;
+
+    static GPUVertexLayout* GetLayout();
     });
 
+// [Deprecated in v1.10]
 typedef VB0ElementType18 VB0ElementType;
+// [Deprecated in v1.10]
 typedef VB1ElementType18 VB1ElementType;
+// [Deprecated in v1.10]
 typedef VB2ElementType18 VB2ElementType;
-//
 
 // Vertex structure for all skinned models (versioned)
+// [Deprecated in v1.10]
 PACK_STRUCT(struct SkinnedModelVertex1
     {
     Float3 Position;
@@ -157,9 +175,10 @@ PACK_STRUCT(struct SkinnedModelVertex1
     Color32 BlendWeights;
     });
 
+// [Deprecated in v1.10]
 typedef SkinnedModelVertex1 SkinnedModelVertex;
 
-//
+// [Deprecated in v1.10]
 struct RawSkinnedModelVertex
 {
     Float3 Position;
@@ -171,6 +190,7 @@ struct RawSkinnedModelVertex
     Float4 BlendWeights;
 };
 
+// [Deprecated on 28.04.2023, expires on 01.01.2024]
 PACK_STRUCT(struct VB0SkinnedElementType1
     {
     Float3 Position;
@@ -181,6 +201,7 @@ PACK_STRUCT(struct VB0SkinnedElementType1
     Color32 BlendWeights;
     });
 
+// [Deprecated in v1.10]
 PACK_STRUCT(struct VB0SkinnedElementType2
     {
     Float3 Position;
@@ -189,7 +210,9 @@ PACK_STRUCT(struct VB0SkinnedElementType2
     Float1010102 Tangent;
     Color32 BlendIndices;
     Half4 BlendWeights;
+
+    static GPUVertexLayout* GetLayout();
     });
 
+// [Deprecated in v1.10]
 typedef VB0SkinnedElementType2 VB0SkinnedElementType;
-//

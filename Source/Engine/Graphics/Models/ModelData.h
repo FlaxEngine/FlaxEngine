@@ -151,6 +151,7 @@ public:
 
     /// <summary>
     /// Init from model vertices array
+    /// [Deprecated on 28.04.2023, expires on 01.01.2024]
     /// </summary>
     /// <param name="vertices">Array of vertices</param>
     /// <param name="verticesCount">Amount of vertices</param>
@@ -158,6 +159,7 @@ public:
 
     /// <summary>
     /// Init from model vertices array
+    /// [Deprecated on 28.04.2023, expires on 01.01.2024]
     /// </summary>
     /// <param name="vertices">Array of vertices</param>
     /// <param name="verticesCount">Amount of vertices</param>
@@ -182,6 +184,7 @@ public:
 
     /// <summary>
     /// Init from model vertices array
+    /// [Deprecated on 28.04.2023, expires on 01.01.2024]
     /// </summary>
     /// <param name="vb0">Array of data for vertex buffer 0</param>
     /// <param name="vb1">Array of data for vertex buffer 1</param>

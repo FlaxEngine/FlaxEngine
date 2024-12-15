@@ -300,7 +300,7 @@ void StaticModel::FlushVertexColors()
                 vertexColorsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("VertexColors"));
             if (vertexColorsBuffer->GetSize() != size)
             {
-                if (vertexColorsBuffer->Init(GPUBufferDescription::Vertex(sizeof(Color32), vertexColorsData.Count())))
+                if (vertexColorsBuffer->Init(GPUBufferDescription::Vertex(VB2ElementType::GetLayout(), sizeof(Color32), vertexColorsData.Count(), nullptr)))
                     break;
             }
             GPUDevice::Instance->GetMainContext()->UpdateBuffer(vertexColorsBuffer, vertexColorsData.Get(), size);

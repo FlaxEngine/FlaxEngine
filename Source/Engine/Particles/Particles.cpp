@@ -14,6 +14,7 @@
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
@@ -49,17 +50,22 @@ public:
     {
         if (VB)
             return false;
-        VB = GPUDevice::Instance->CreateBuffer(TEXT("SpriteParticleRenderer,VB"));
+        VB = GPUDevice::Instance->CreateBuffer(TEXT("SpriteParticleRenderer.VB"));
         IB = GPUDevice::Instance->CreateBuffer(TEXT("SpriteParticleRenderer.IB"));
-        static SpriteParticleVertex vertexBuffer[] =
+        SpriteParticleVertex vertexBuffer[] =
         {
             { -0.5f, -0.5f, 0.0f, 0.0f },
             { +0.5f, -0.5f, 1.0f, 0.0f },
             { +0.5f, +0.5f, 1.0f, 1.0f },
             { -0.5f, +0.5f, 0.0f, 1.0f },
         };
-        static uint16 indexBuffer[] = { 0, 1, 2, 0, 2, 3, };
-        return VB->Init(GPUBufferDescription::Vertex(sizeof(SpriteParticleVertex), VertexCount, vertexBuffer)) || IB->Init(GPUBufferDescription::Index(sizeof(uint16), IndexCount, indexBuffer));
+        uint16 indexBuffer[] = { 0, 1, 2, 0, 2, 3, };
+        auto layout = GPUVertexLayout::Get({
+            { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
+            { VertexElement::Types::TexCoord, 0, 0, 0, PixelFormat::R32G32_Float },
+        });
+        return VB->Init(GPUBufferDescription::Vertex(layout, sizeof(SpriteParticleVertex), VertexCount, vertexBuffer)) ||
+               IB->Init(GPUBufferDescription::Index(sizeof(uint16), IndexCount, indexBuffer));
     }
 
     void Dispose()

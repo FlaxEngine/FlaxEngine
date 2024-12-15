@@ -10,6 +10,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -17,6 +18,18 @@
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Threading/Task.h"
 #include "Engine/Threading/Threading.h"
+
+GPUVertexLayout* VB0SkinnedElementType2::GetLayout()
+{
+    return GPUVertexLayout::Get({
+        { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32B32_Float },
+        { VertexElement::Types::TexCoord, 0, 0, 0, PixelFormat::R16G16_Float },
+        { VertexElement::Types::Normal, 0, 0, 0, PixelFormat::R10G10B10A2_UNorm },
+        { VertexElement::Types::Tangent, 0, 0, 0, PixelFormat::R10G10B10A2_UNorm },
+        { VertexElement::Types::BlendIndices, 0, 0, 0, PixelFormat::R8G8B8A8_UInt },
+        { VertexElement::Types::BlendWeight, 0, 0, 0, PixelFormat::R16G16B16A16_Float },
+    });
+}
 
 void SkeletonData::Swap(SkeletonData& other)
 {
@@ -120,7 +133,7 @@ bool SkinnedMesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const
 #else
 	vertexBuffer = GPUDevice::Instance->CreateBuffer(String::Empty);
 #endif
-    if (vertexBuffer->Init(GPUBufferDescription::Vertex(sizeof(VB0SkinnedElementType), vertices, vb0)))
+    if (vertexBuffer->Init(GPUBufferDescription::Vertex(VB0SkinnedElementType::GetLayout(), sizeof(VB0SkinnedElementType), vertices, vb0)))
         goto ERROR_LOAD_END;
 
     // Create index buffer

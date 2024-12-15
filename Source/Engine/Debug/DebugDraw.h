@@ -17,6 +17,7 @@ struct RenderContext;
 class GPUTextureView;
 class GPUContext;
 class GPUBuffer;
+class GPUVertexLayout;
 class RenderTask;
 class SceneRenderTask;
 class Actor;
@@ -35,6 +36,8 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     PACK_STRUCT(struct Vertex {
         Float3 Position;
         Color32 Color;
+
+        static GPUVertexLayout* GetLayout();
         });
 
 #if USE_EDITOR

@@ -19,6 +19,7 @@
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Animations/AnimationUtils.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Half.h"
@@ -603,6 +604,14 @@ bool Render2DService::Init()
 #if COMPILE_WITH_DEV_ENV
     GUIShader.Get()->OnReloading.Bind<OnGUIShaderReloading>();
 #endif
+
+    VB.SetLayout(GPUVertexLayout::Get({
+        { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
+        { VertexElement::Types::TexCoord, 0, 0, 0, PixelFormat::R16G16_Float },
+        { VertexElement::Types::Color, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
+        { VertexElement::Types::TexCoord1, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
+        { VertexElement::Types::TexCoord2, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
+    }));
 
     DrawCalls.EnsureCapacity(RENDER2D_INITIAL_DRAW_CALL_CAPACITY);
 

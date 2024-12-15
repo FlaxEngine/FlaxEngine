@@ -922,10 +922,10 @@ GPUTextureVulkan* HelperResourcesVulkan::GetDummyTexture(SpirvShaderResourceType
 
 GPUBufferVulkan* HelperResourcesVulkan::GetDummyBuffer(PixelFormat format)
 {
-    if (_dummyBuffers.IsEmpty())
+    if (!_dummyBuffers)
     {
-        _dummyBuffers.Resize((int32)PixelFormat::MAX);
-        Platform::MemoryClear((void*)_dummyBuffers.Get(), (int32)PixelFormat::MAX * sizeof(void*));
+        _dummyBuffers = (GPUBufferVulkan**)Allocator::Allocate((int32)PixelFormat::MAX * sizeof(void*));
+        Platform::MemoryClear(_dummyBuffers, (int32)PixelFormat::MAX * sizeof(void*));
     }
     auto& dummyBuffer = _dummyBuffers[(int32)format];
     if (!dummyBuffer)
@@ -941,7 +941,7 @@ GPUBufferVulkan* HelperResourcesVulkan::GetDummyVertexBuffer()
     if (!_dummyVB)
     {
         _dummyVB = (GPUBufferVulkan*)_device->CreateBuffer(TEXT("DummyVertexBuffer"));
-        _dummyVB->Init(GPUBufferDescription::Vertex(sizeof(Color32), 1, &Color32::Transparent));
+        _dummyVB->Init(GPUBufferDescription::Vertex(nullptr, sizeof(Color32), 1, &Color32::Transparent));
     }
     return _dummyVB;
 }
@@ -950,9 +950,16 @@ void HelperResourcesVulkan::Dispose()
 {
     SAFE_DELETE_GPU_RESOURCES(_dummyTextures);
     SAFE_DELETE_GPU_RESOURCE(_dummyVB);
-    for (GPUBuffer* buffer : _dummyBuffers)
-        Delete(buffer);
-    _dummyBuffers.Clear();
+    if (_dummyBuffers)
+    {
+        for (int32 i = 0; i < (int32)PixelFormat::MAX; i++)
+        {
+            if (GPUBufferVulkan* buffer = _dummyBuffers[i])
+                Delete(buffer);
+        }
+        Allocator::Free(_dummyBuffers);
+        _dummyBuffers = nullptr;
+    }
 
     for (int32 i = 0; i < ARRAY_COUNT(_staticSamplers); i++)
     {

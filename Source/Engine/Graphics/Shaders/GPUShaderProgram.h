@@ -116,19 +116,10 @@ public:
 class GPUShaderProgramVS : public GPUShaderProgram
 {
 public:
-    ~GPUShaderProgramVS();
-
-    // Vertex elements input layout defined explicitly in the shader.
-    // It's optional as it's been deprecated in favor or layouts defined by vertex buffers to allow data customizations.
-    // Can be overriden by the vertex buffers provided upon draw call.
-    // [Deprecated in v1.10]
-    GPUVertexLayout* Layout = nullptr;
-
-public:
     // Input element run-time data (see VertexShaderMeta::InputElement for compile-time data)
-    // [Deprecated in v1.10]
+    // [Deprecated in v1.10] Use VertexElement instead.
     PACK_STRUCT(struct InputElement
-    {
+        {
         byte Type; // VertexShaderMeta::InputType
         byte Index;
         byte Format; // PixelFormat
@@ -136,19 +127,14 @@ public:
         uint32 AlignedByteOffset; // Fixed value or INPUT_LAYOUT_ELEMENT_ALIGN if auto
         byte InputSlotClass; // INPUT_LAYOUT_ELEMENT_PER_VERTEX_DATA or INPUT_LAYOUT_ELEMENT_PER_INSTANCE_DATA
         uint32 InstanceDataStepRate; // 0 if per-vertex
-    });
+        });
 
-    /// <summary>
-    /// Gets input layout description handle (platform dependent).
-    /// [Deprecated in v1.10]
-    /// </summary>
-    virtual void* GetInputLayout() const = 0;
-
-    /// <summary>
-    /// Gets input layout description size (in bytes).
-    /// [Deprecated in v1.10]
-    /// </summary>
-    virtual byte GetInputLayoutSize() const = 0;
+    // Vertex elements input layout defined explicitly in the shader.
+    // It's optional as it's been deprecated in favor or layouts defined by vertex buffers to allow data customizations.
+    // Can be overriden by the vertex buffers provided upon draw call.
+    // (don't release it as it's managed by GPUVertexLayout::Get)
+    // [Deprecated in v1.10]
+    GPUVertexLayout* Layout = nullptr;
 
 public:
     // [GPUShaderProgram]

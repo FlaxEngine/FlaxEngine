@@ -27,9 +27,9 @@ TextRender::TextRender(const SpawnParams& params)
     : Actor(params)
     , _size(32)
     , _ib(0, sizeof(uint16))
-    , _vb0(0, sizeof(VB0ElementType))
-    , _vb1(0, sizeof(VB1ElementType))
-    , _vb2(0, sizeof(VB2ElementType))
+    , _vb0(0, sizeof(VB0ElementType), String::Empty, VB0ElementType::GetLayout())
+    , _vb1(0, sizeof(VB1ElementType), String::Empty, VB1ElementType::GetLayout())
+    , _vb2(0, sizeof(VB2ElementType), String::Empty, VB2ElementType::GetLayout())
 {
     _color = Color::White;
     _localBox = BoundingBox(Vector3::Zero);

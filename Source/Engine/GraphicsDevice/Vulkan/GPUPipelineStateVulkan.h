@@ -9,6 +9,7 @@
 
 #if GRAPHICS_API_VULKAN
 
+class GPUVertexLayoutVulkan;
 class PipelineLayoutVulkan;
 
 class ComputePipelineStateVulkan
@@ -89,7 +90,7 @@ public:
 class GPUPipelineStateVulkan : public GPUResourceVulkan<GPUPipelineState>
 {
 private:
-    Dictionary<RenderPassVulkan*, VkPipeline> _pipelines;
+    Dictionary<Pair<RenderPassVulkan*, GPUVertexLayoutVulkan*>, VkPipeline> _pipelines;
     VkGraphicsPipelineCreateInfo _desc;
     VkPipelineShaderStageCreateInfo _shaderStages[ShaderStage_Count - 1];
     VkPipelineInputAssemblyStateCreateInfo _descInputAssembly;
@@ -140,18 +141,13 @@ public:
     /// </summary>
     const SpirvShaderDescriptorInfo* DescriptorInfoPerStage[DescriptorSet::GraphicsStagesCount];
 
-    const VkPipelineVertexInputStateCreateInfo* GetVertexInputState() const
-    {
-        return _desc.pVertexInputState;
-    }
-
     DescriptorSetWriteContainerVulkan DSWriteContainer;
     DescriptorSetWriterVulkan DSWriter[DescriptorSet::GraphicsStagesCount];
 
     const DescriptorSetLayoutVulkan* DescriptorSetsLayout = nullptr;
     TypedDescriptorPoolSetVulkan* CurrentTypedDescriptorPoolSet = nullptr;
+    GPUVertexLayoutVulkan* VertexShaderLayout = nullptr;
     Array<VkDescriptorSet> DescriptorSetHandles;
-
     Array<uint32> DynamicOffsets;
 
 public:
@@ -184,8 +180,9 @@ public:
     /// Gets the Vulkan graphics pipeline object for the given rendering state. Uses depth buffer and render targets formats and multi-sample levels to setup a proper PSO. Uses caching.
     /// </summary>
     /// <param name="renderPass">The render pass.</param>
+    /// <param name="vertexLayout">The vertex layout.</param>
     /// <returns>Vulkan graphics pipeline object.</returns>
-    VkPipeline GetState(RenderPassVulkan* renderPass);
+    VkPipeline GetState(RenderPassVulkan* renderPass, GPUVertexLayoutVulkan* vertexLayout);
 
 public:
     // [GPUPipelineState]

@@ -3,10 +3,12 @@
 #if GRAPHICS_API_VULKAN
 
 #include "GPUPipelineStateVulkan.h"
+#include "GPUVertexLayoutVulkan.h"
 #include "RenderToolsVulkan.h"
 #include "DescriptorSetVulkan.h"
 #include "GPUShaderProgramVulkan.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/Pair.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
 static VkStencilOp ToVulkanStencilOp(const StencilOperation value)
@@ -169,7 +171,6 @@ ComputePipelineStateVulkan::~ComputePipelineStateVulkan()
 
 GPUPipelineStateVulkan::GPUPipelineStateVulkan(GPUDeviceVulkan* device)
     : GPUResourceVulkan<GPUPipelineState>(device, StringView::Empty)
-    , _pipelines(16)
     , _layout(nullptr)
 {
 }
@@ -201,24 +202,29 @@ PipelineLayoutVulkan* GPUPipelineStateVulkan::GetLayout()
     return _layout;
 }
 
-VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass)
+VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVertexLayoutVulkan* vertexLayout)
 {
     ASSERT(renderPass);
+    if (!vertexLayout)
+        vertexLayout = VertexShaderLayout;
 
     // Try reuse cached version
     VkPipeline pipeline = VK_NULL_HANDLE;
-    if (_pipelines.TryGet(renderPass, pipeline))
+    const Pair<RenderPassVulkan*, GPUVertexLayoutVulkan*> key(renderPass, vertexLayout);
+    if (_pipelines.TryGet(key, pipeline))
     {
 #if BUILD_DEBUG
         // Verify
-        RenderPassVulkan* refKey = nullptr;
+        Pair<RenderPassVulkan*, GPUVertexLayoutVulkan*> refKey(nullptr, nullptr);
         _pipelines.KeyOf(pipeline, &refKey);
-        ASSERT(refKey == renderPass);
+        ASSERT(refKey == key);
 #endif
         return pipeline;
     }
-
     PROFILE_CPU_NAMED("Create Pipeline");
+
+    // Bind vertex input
+    _desc.pVertexInputState = vertexLayout ? &vertexLayout->CreateInfo : nullptr;
 
     // Update description to match the pipeline
     _descColorBlend.attachmentCount = renderPass->Layout.RTsCount;
@@ -245,7 +251,7 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass)
     }
 
     // Cache it
-    _pipelines.Add(renderPass, pipeline);
+    _pipelines.Add(key, pipeline);
 
     return pipeline;
 }
@@ -278,11 +284,8 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
 {
     ASSERT(!IsValid());
 
-    // Create description
+    // Reset description
     RenderToolsVulkan::ZeroStruct(_desc, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
-
-    // Vertex Input
-    _desc.pVertexInputState = (VkPipelineVertexInputStateCreateInfo*)desc.VS->GetInputLayout();
 
     // Stages
     UsedStagesMask = 0;
@@ -318,6 +321,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _desc.pStages = _shaderStages;
 
     // Input Assembly
+    VertexShaderLayout = desc.VS ? (GPUVertexLayoutVulkan*)desc.VS->Layout : nullptr;
     RenderToolsVulkan::ZeroStruct(_descInputAssembly, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);;
     switch (desc.PrimitiveTopology)
     {

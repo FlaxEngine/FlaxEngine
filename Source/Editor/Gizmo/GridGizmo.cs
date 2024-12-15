@@ -69,7 +69,8 @@ namespace FlaxEditor.Gizmo
                 if (_vertexBuffer == null)
                 {
                     _vertexBuffer = new GPUBuffer();
-                    var desc = GPUBufferDescription.Vertex(sizeof(Float3), 4);
+                    var layout = GPUVertexLayout.Get([new VertexElement(VertexElement.Types.Position, 0, 0, false, PixelFormat.R32G32B32_Float)]);
+                    var desc = GPUBufferDescription.Vertex(layout, sizeof(Float3), 4);
                     _vertexBuffer.Init(ref desc);
                 }
                 if (_indexBuffer == null)

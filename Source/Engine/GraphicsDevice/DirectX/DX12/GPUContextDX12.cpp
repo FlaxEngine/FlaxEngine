@@ -26,6 +26,7 @@
 #include "GPUTextureDX12.h"
 #include "GPUBufferDX12.h"
 #include "GPUSamplerDX12.h"
+#include "GPUVertexLayoutDX12.h"
 #include "CommandQueueDX12.h"
 #include "DescriptorHeapDX12.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -244,6 +245,7 @@ void GPUContextDX12::Reset()
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));
     Platform::MemoryClear(_uaHandles, sizeof(_uaHandles));
     Platform::MemoryClear(_vbHandles, sizeof(_vbHandles));
+    _vertexLayout = nullptr;
     _ibHandle = nullptr;
     Platform::MemoryClear(&_cbHandles, sizeof(_cbHandles));
     Platform::MemoryClear(&_samplers, sizeof(_samplers));
@@ -560,7 +562,13 @@ void GPUContextDX12::flushPS()
 
         // Change state
         ASSERT(_currentState->IsValid());
-        _commandList->SetPipelineState(_currentState->GetState(_rtDepth, _rtCount, _rtHandles));
+#if GPU_ENABLE_ASSERTION_LOW_LAYERS
+        if (!_vertexLayout && _vbHandles[0] && !_currentState->VertexLayout)
+        {
+            LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
+        }
+#endif
+        _commandList->SetPipelineState(_currentState->GetState(_rtDepth, _rtCount, _rtHandles, _vertexLayout));
         if (_primitiveTopology != _currentState->PrimitiveTopology)
         {
             _primitiveTopology = _currentState->PrimitiveTopology;
@@ -946,7 +954,7 @@ void GPUContextDX12::BindUA(int32 slot, GPUResourceView* view)
         *view->LastRenderTime = _lastRenderTime;
 }
 
-void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)
+void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets, GPUVertexLayout* vertexLayout)
 {
     ASSERT(vertexBuffers.Length() >= 0 && vertexBuffers.Length() <= GPU_MAX_VB_BINDED);
 
@@ -982,6 +990,7 @@ void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
 #endif
         _commandList->IASetVertexBuffers(0, vertexBuffers.Length(), views);
     }
+    _vertexLayout = (GPUVertexLayoutDX12*)(vertexLayout ? vertexLayout : GPUVertexLayout::Get(vertexBuffers));
 }
 
 void GPUContextDX12::BindIB(GPUBuffer* indexBuffer)

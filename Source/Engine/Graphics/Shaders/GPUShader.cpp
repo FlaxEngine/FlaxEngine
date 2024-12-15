@@ -4,6 +4,7 @@
 #include "GPUConstantBuffer.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Types/Span.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -21,11 +22,6 @@ void GPUShaderProgram::Init(const GPUShaderProgramInitializer& initializer)
 #if !BUILD_RELEASE
     _owner = initializer.Owner;
 #endif
-}
-
-GPUShaderProgramVS::~GPUShaderProgramVS()
-{
-    SAFE_DELETE(Layout);
 }
 
 GPUShader::GPUShader()
@@ -77,15 +73,15 @@ bool GPUShader::Create(MemoryReadStream& stream)
 
         for (int32 permutationIndex = 0; permutationIndex < permutationsCount; permutationIndex++)
         {
-            // Load cache
-            uint32 cacheSize;
-            stream.ReadUint32(&cacheSize);
-            if (cacheSize > stream.GetLength() - stream.GetPosition())
+            // Load bytecode
+            uint32 bytecodeSize;
+            stream.ReadUint32(&bytecodeSize);
+            if (bytecodeSize > stream.GetLength() - stream.GetPosition())
             {
-                LOG(Warning, "Invalid shader cache size.");
+                LOG(Warning, "Invalid shader bytecode size.");
                 return true;
             }
-            byte* cache = stream.Move<byte>(cacheSize);
+            byte* bytecode = stream.Move<byte>(bytecodeSize);
 
             // Read bindings
             stream.ReadBytes(&initializer.Bindings, sizeof(ShaderBindings));
@@ -96,7 +92,7 @@ bool GPUShader::Create(MemoryReadStream& stream)
                 LOG(Warning, "Failed to create {} Shader program '{}' ({}).", ::ToString(type), String(initializer.Name), name);
                 continue;
             }
-            GPUShaderProgram* shader = CreateGPUShaderProgram(type, initializer, cache, cacheSize, stream);
+            GPUShaderProgram* shader = CreateGPUShaderProgram(type, initializer, Span<byte>(bytecode, bytecodeSize), stream);
             if (shader == nullptr)
             {
 #if !GPU_ALLOW_TESSELLATION_SHADERS
@@ -179,6 +175,24 @@ GPUShaderProgram* GPUShader::GetShader(ShaderStage stage, const StringAnsiView& 
     }
 #endif
     return shader;
+}
+
+GPUVertexLayout* GPUShader::ReadVertexLayout(MemoryReadStream& stream)
+{
+    // [Deprecated in v1.10]
+    byte inputLayoutSize;
+    stream.ReadByte(&inputLayoutSize);
+    if (inputLayoutSize == 0)
+        return nullptr;
+    void* elementsData = stream.Move(sizeof(VertexElement) * inputLayoutSize);
+    if (inputLayoutSize > GPU_MAX_VS_ELEMENTS)
+    {
+        LOG(Error, "Incorrect input layout size.");
+        return nullptr;
+    }
+    GPUVertexLayout::Elements elements;
+    elements.Set((VertexElement*)elementsData, inputLayoutSize);
+    return GPUVertexLayout::Get(elements);
 }
 
 GPUResourceType GPUShader::GetResourceType() const

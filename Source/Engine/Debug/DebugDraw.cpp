@@ -19,6 +19,7 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Animations/AnimationUtils.h"
 #include "Engine/Profiler/Profiler.h"
@@ -689,7 +690,7 @@ void DebugDrawService::Update()
 
     // Vertex buffer
     if (DebugDrawVB == nullptr)
-        DebugDrawVB = New<DynamicVertexBuffer>((uint32)(DEBUG_DRAW_INITIAL_VB_CAPACITY * sizeof(Vertex)), (uint32)sizeof(Vertex), TEXT("DebugDraw.VB"));
+        DebugDrawVB = New<DynamicVertexBuffer>((uint32)(DEBUG_DRAW_INITIAL_VB_CAPACITY * sizeof(Vertex)), (uint32)sizeof(Vertex), TEXT("DebugDraw.VB"), Vertex::GetLayout());
 }
 
 void DebugDrawService::Dispose()
@@ -708,6 +709,14 @@ void DebugDrawService::Dispose()
     DebugDrawPsTrianglesDepthTest.Release();
     SAFE_DELETE(DebugDrawVB);
     DebugDrawShader = nullptr;
+}
+
+GPUVertexLayout* DebugDraw::Vertex::GetLayout()
+{
+    return GPUVertexLayout::Get({
+        { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32B32_Float },
+        { VertexElement::Types::Color, 0, 12, 0, PixelFormat::R8G8B8A8_UNorm },
+    });
 }
 
 #if USE_EDITOR

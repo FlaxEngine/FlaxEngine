@@ -10,6 +10,7 @@
 #include "GPUBufferVulkan.h"
 #include "GPUShaderVulkan.h"
 #include "GPUSamplerVulkan.h"
+#include "GPUVertexLayoutVulkan.h"
 #include "GPUPipelineStateVulkan.h"
 #include "Engine/Profiler/RenderStats.h"
 #include "GPUShaderProgramVulkan.h"
@@ -650,8 +651,14 @@ void GPUContextVulkan::OnDrawCall()
     }
 
     // Bind any missing vertex buffers to null if required by the current state
-    const auto vertexInputState = pipelineState->GetVertexInputState();
-    const int32 missingVBs = vertexInputState->vertexBindingDescriptionCount - _vbCount;
+    GPUVertexLayoutVulkan* vertexLayout = _vertexLayout ? _vertexLayout : pipelineState->VertexShaderLayout;
+#if GPU_ENABLE_ASSERTION_LOW_LAYERS
+    if (!vertexLayout && pipelineState && !pipelineState->VertexShaderLayout && (pipelineState->UsedStagesMask & (1 << (int32)DescriptorSet::Vertex)) != 0 && !_vertexLayout && _vbCount)
+    {
+        LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
+    }
+#endif
+    const int32 missingVBs = vertexLayout ? (int32)vertexLayout->CreateInfo.vertexBindingDescriptionCount - _vbCount : 0;
     if (missingVBs > 0)
     {
         VkBuffer buffers[GPU_MAX_VB_BINDED];
@@ -676,7 +683,7 @@ void GPUContextVulkan::OnDrawCall()
     {
         _psDirtyFlag = false;
         const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-        const auto pipeline = pipelineState->GetState(_renderPass);
+        const auto pipeline = pipelineState->GetState(_renderPass, _vertexLayout);
         vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         RENDER_STAT_PS_STATE_CHANGE();
     }
@@ -715,6 +722,7 @@ void GPUContextVulkan::FrameBegin()
     _stencilRef = 0;
     _renderPass = nullptr;
     _currentState = nullptr;
+    _vertexLayout = nullptr;
     _rtDepth = nullptr;
     Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
     Platform::MemoryClear(_cbHandles, sizeof(_cbHandles));
@@ -1023,9 +1031,10 @@ void GPUContextVulkan::BindUA(int32 slot, GPUResourceView* view)
     }
 }
 
-void GPUContextVulkan::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)
+void GPUContextVulkan::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets, GPUVertexLayout* vertexLayout)
 {
     _vbCount = vertexBuffers.Length();
+    _vertexLayout = (GPUVertexLayoutVulkan*)(vertexLayout ? vertexLayout : GPUVertexLayout::Get(vertexBuffers));
     if (vertexBuffers.Length() == 0)
         return;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();

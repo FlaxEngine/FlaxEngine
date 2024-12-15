@@ -20,6 +20,7 @@ class GPUResource;
 class GPUResourceView;
 class GPUTextureView;
 class GPUBufferView;
+class GPUVertexLayout;
 
 // Gets the GPU texture view. Checks if pointer is not null and texture has one or more mip levels loaded.
 #define GET_TEXTURE_VIEW_SAFE(t) (t && t->ResidentMipLevels() > 0 ? t->View() : nullptr)
@@ -404,7 +405,8 @@ public:
     /// </summary>
     /// <param name="vertexBuffers">The array of vertex buffers to use.</param>
     /// <param name="vertexBuffersOffsets">The optional array of byte offsets from the vertex buffers begins. Can be used to offset the vertex data when reusing the same buffer allocation for multiple geometry objects.</param>
-    API_FUNCTION() virtual void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr) = 0;
+    /// <param name="vertexLayout">The optional vertex layout to use when passing data from vertex buffers to the vertex shader. If null, layout will be automatically extracted from vertex buffers combined.</param>
+    API_FUNCTION() virtual void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr, GPUVertexLayout* vertexLayout = nullptr) = 0;
 
     /// <summary>
     /// Binds the index buffer to the pipeline.

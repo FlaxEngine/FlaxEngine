@@ -315,8 +315,6 @@ float3 GetParticlePosition(uint ParticleIndex)
 
 // Vertex Shader function for Sprite Rendering
 META_VS(true, FEATURE_LEVEL_ES2)
-META_VS_IN_ELEMENT(POSITION, 0, R32G32_FLOAT, 0, 0,     PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 VertexOutput VS_Sprite(SpriteInput input, uint particleIndex : SV_InstanceID)
 {
 	VertexOutput output;

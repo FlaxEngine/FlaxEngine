@@ -12,7 +12,7 @@ class GPUShaderProgram;
 /// <summary>
 /// The runtime version of the shaders cache supported by the all graphics back-ends. The same for all the shader cache formats (easier to sync and validate).
 /// </summary>
-#define GPU_SHADER_CACHE_VERSION 10
+#define GPU_SHADER_CACHE_VERSION 11
 
 /// <summary>
 /// The GPU resource with shader programs that can run on the GPU and are able to perform rendering calculation using textures, vertices and other resources.
@@ -134,7 +134,8 @@ public:
 
 protected:
     GPUShaderProgram* GetShader(ShaderStage stage, const StringAnsiView& name, int32 permutationIndex) const;
-    virtual GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream) = 0;
+    virtual GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, Span<byte> bytecode, MemoryReadStream& stream) = 0;
+    static GPUVertexLayout* ReadVertexLayout(MemoryReadStream& stream);
 
 public:
     // [GPUResource]

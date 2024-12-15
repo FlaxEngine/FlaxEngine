@@ -6,6 +6,8 @@
 #include "Engine/Graphics/GPUResource.h"
 #include "Engine/Core/Collections/Array.h"
 
+class GPUBuffer;
+
 /// <summary>
 /// Defines input layout of vertex buffer data passed to the Vertex Shader.
 /// </summary>
@@ -34,6 +36,13 @@ public:
     /// <param name="elements">The list of elements for the layout.</param>
     /// <returns>Vertex layout object. Doesn't need to be cleared as it's cached for an application lifetime.</returns>
     API_FUNCTION() static GPUVertexLayout* Get(const Array<VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>>& elements);
+
+    /// <summary>
+    /// Gets the vertex layout for a given list of vertex buffers (sequence of binding slots based on layouts set on those buffers). Uses internal cache to skip creating layout if it's already exists for a given list.
+    /// </summary>
+    /// <param name="vertexBuffers">The list of vertex buffers for the layout.</param>
+    /// <returns>Vertex layout object. Doesn't need to be cleared as it's cached for an application lifetime.</returns>
+    API_FUNCTION() static GPUVertexLayout* Get(const Span<GPUBuffer*>& vertexBuffers);
 
 public:
     // [GPUResource]

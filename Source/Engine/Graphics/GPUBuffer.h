@@ -85,6 +85,14 @@ public:
         return _desc.Flags;
     }
 
+    /// <summary>	
+    /// Gets vertex elements layout used by vertex buffers only.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE GPUVertexLayout* GetVertexLayout() const
+    {
+        return _desc.VertexLayout;
+    }
+
     /// <summary>
     /// Checks if buffer is a staging buffer (supports CPU readback).
     /// </summary>

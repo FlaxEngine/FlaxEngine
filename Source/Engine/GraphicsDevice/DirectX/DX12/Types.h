@@ -17,8 +17,6 @@ struct DxShaderHeader
 	/// The UAV dimensions per-slot.
 	/// </summary>
 	byte UaDimensions[4];
-
-	// .. rest is just a actual data array
 };
 
 #endif

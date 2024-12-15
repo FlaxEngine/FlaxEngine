@@ -26,6 +26,8 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/Enums.h"
 
+#include "Shaders/GPUVertexLayout.h"
+
 GPUResourcePropertyBase::~GPUResourcePropertyBase()
 {
     const auto e = _resource;
@@ -386,7 +388,11 @@ bool GPUDevice::LoadContent()
         };
         // @formatter:on
         _res->FullscreenTriangleVB = CreateBuffer(TEXT("QuadVB"));
-        if (_res->FullscreenTriangleVB->Init(GPUBufferDescription::Vertex(sizeof(float) * 4, 3, vb)))
+        auto layout = GPUVertexLayout::Get({
+            { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
+            { VertexElement::Types::TexCoord, 0, 8, 0, PixelFormat::R32G32_Float },
+        });
+        if (_res->FullscreenTriangleVB->Init(GPUBufferDescription::Vertex(layout, 16, 3, vb)))
             return true;
     }
 

@@ -2242,7 +2242,7 @@ void TerrainPatch::CacheDebugLines()
     typedef DebugDraw::Vertex Vertex;
     if (_debugLines->GetElementsCount() != count)
     {
-        if (_debugLines->Init(GPUBufferDescription::Vertex(sizeof(Vertex), count)))
+        if (_debugLines->Init(GPUBufferDescription::Vertex(Vertex::GetLayout(), sizeof(Vertex), count)))
             return;
     }
     Array<Vertex> debugLines;
