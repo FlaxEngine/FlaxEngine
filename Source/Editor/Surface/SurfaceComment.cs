@@ -183,8 +183,9 @@ namespace FlaxEditor.Surface
             }
             else
             {
-                if (IsSelected && Input.GetKeyDown(KeyboardKeys.F2))
-                { 
+                // Rename on F2
+                if (IsSelected && Editor.Instance.Options.Options.Input.Rename.Process(this))
+                {
                     StartRenaming();
                 }
             }
@@ -428,12 +429,7 @@ namespace FlaxEditor.Surface
             base.OnShowSecondaryContextMenu(menu, location);
 
             menu.AddSeparator();
-            menu.AddButton("Rename", () =>
-            {
-                if(!_isRenaming)
-                    StartRenaming();
-            });
-
+            menu.AddButton("Rename", StartRenaming);
             ContextMenuChildMenu cmOrder = menu.AddChildMenu("Order");
             {
                 cmOrder.ContextMenu.AddButton("Bring Forward", () =>
