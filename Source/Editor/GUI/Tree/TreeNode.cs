@@ -23,10 +23,19 @@ namespace FlaxEditor.GUI.Tree
         /// </summary>
         public const float DefaultNodeOffsetY = 0;
 
+        private const float _targetHighlightScale = 1.25f;
+        private const float _highlightScaleAnimDuration = 0.85f;
+
         private Tree _tree;
 
         private bool _opened, _canChangeOrder;
         private float _animationProgress, _cachedHeight;
+        private bool _isHightlighted;
+        private float _targetHighlightTimeSec;
+        private float _currentHighlightTimeSec;
+        // Used to prevent showing highlight on double mouse click
+        private float _debounceHighlightTime;
+        private float _highlightScale;
         private bool _mouseOverArrow, _mouseOverHeader;
         private float _xOffset, _textWidth;
         private float _headerHeight = 16.0f;
@@ -605,9 +614,47 @@ namespace FlaxEditor.GUI.Tree
             }
         }
 
+        /// <summary>
+        /// Adds a box around the text to highlight the node.
+        /// </summary>
+        /// <param name="durationSec">The duration of the highlight in seconds.</param>
+        public void StartHighlight(float durationSec = 3)
+        {
+            _isHightlighted = true;
+            _targetHighlightTimeSec = durationSec;
+            _currentHighlightTimeSec = 0;
+            _debounceHighlightTime = 0;
+            _highlightScale = 2f;
+        }
+
+        /// <summary>
+        /// Stops any current highlight.
+        /// </summary>
+        public void StopHighlight()
+        {
+            _isHightlighted = false;
+            _targetHighlightTimeSec = 0;
+            _currentHighlightTimeSec = 0;
+            _debounceHighlightTime = 0;
+        }
+
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
+            // Highlight animations
+            if (_isHightlighted)
+            {
+                _debounceHighlightTime += deltaTime;
+                _currentHighlightTimeSec += deltaTime;
+
+                // In the first second, animate the highlight to shrink into it's resting position
+                if (_currentHighlightTimeSec < _highlightScaleAnimDuration)
+                    _highlightScale = Mathf.Lerp(_highlightScale, _targetHighlightScale, _currentHighlightTimeSec);
+
+                if (_currentHighlightTimeSec >= _targetHighlightTimeSec)
+                    _isHightlighted = false;
+            }
+
             // Drop/down animation
             if (_animationProgress < 1.0f)
             {
@@ -676,6 +723,18 @@ namespace FlaxEditor.GUI.Tree
                 textRect.Width -= 18.0f;
             }
 
+            float textWidth = TextFont.GetFont().MeasureText(_text).X;
+            Rectangle trueTextRect = textRect;
+            trueTextRect.Width = textWidth;
+            trueTextRect.Scale(_highlightScale);
+
+            if (_isHightlighted && _debounceHighlightTime > 0.1f)
+            {
+                Color highlightBackgroundColor = Editor.Instance.Options.Options.Visual.HighlightColor;
+                highlightBackgroundColor = highlightBackgroundColor.AlphaMultiplied(0.3f);
+                Render2D.FillRectangle(trueTextRect, highlightBackgroundColor);
+            }
+
             // Draw text
             Color textColor = CacheTextColor();
             Render2D.DrawText(TextFont.GetFont(), _text, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
@@ -728,6 +787,12 @@ namespace FlaxEditor.GUI.Tree
                     Render2D.FillRectangle(lineRect1, isSelected ? style.ForegroundGrey : style.LightBackground);
                     parentNode = parentNode.Parent as TreeNode;
                 }
+            }
+
+            if (_isHightlighted && _debounceHighlightTime > 0.1f)
+            {
+                // Draw highlights
+                Render2D.DrawRectangle(trueTextRect, Editor.Instance.Options.Options.Visual.HighlightColor, 3);
             }
 
             // Base
