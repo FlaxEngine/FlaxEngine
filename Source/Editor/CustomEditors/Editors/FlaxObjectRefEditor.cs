@@ -310,38 +310,23 @@ namespace FlaxEditor.CustomEditors.Editors
             if (button == MouseButton.Left)
             {
                 _isMouseDown = false;
-                // Highlight actor reference.
-                if (Value is Actor a && !_hasValidDragOver)
-                {
-                    if (_linkedTreeNode != null && _linkedTreeNode.Actor == a)
-                    {
-                        _linkedTreeNode.ExpandAllParents();
-                        _linkedTreeNode.StartHighlight();
-                    }
-                    else
-                    {
-                        _linkedTreeNode = Editor.Instance.Scene.GetActorNode(a).TreeNode;
-                        _linkedTreeNode.ExpandAllParents();
-                        Editor.Instance.Windows.SceneWin.SceneTreePanel.ScrollViewTo(_linkedTreeNode, true);
-                        _linkedTreeNode.StartHighlight();
-                    }
-                    return true;
-                }
 
-                // Highlight actor with script reference.
-                if (Value is Script s && !IsDragOver && !_hasValidDragOver)
+                // Highlight actor or script reference
+                if (!_hasValidDragOver && !IsDragOver)
                 {
-                    var scriptActor = s.Actor;
-                    if (scriptActor != null)
+                    Actor actor = _value as Actor;
+                    if (actor == null && _value is Script script)
+                        actor = script.Actor;
+                    if (actor != null)
                     {
-                        if (_linkedTreeNode != null && _linkedTreeNode.Actor == scriptActor)
+                        if (_linkedTreeNode != null && _linkedTreeNode.Actor == actor)
                         {
                             _linkedTreeNode.ExpandAllParents();
                             _linkedTreeNode.StartHighlight();
                         }
                         else
                         {
-                            _linkedTreeNode = Editor.Instance.Scene.GetActorNode(scriptActor).TreeNode;
+                            _linkedTreeNode = Editor.Instance.Scene.GetActorNode(actor).TreeNode;
                             _linkedTreeNode.ExpandAllParents();
                             Editor.Instance.Windows.SceneWin.SceneTreePanel.ScrollViewTo(_linkedTreeNode, true);
                             _linkedTreeNode.StartHighlight();
@@ -350,7 +335,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     }
                 }
 
-                // Reset valid drag over if still true at this point.
+                // Reset valid drag over if still true at this point
                 if (_hasValidDragOver)
                     _hasValidDragOver = false;
             }
@@ -380,7 +365,11 @@ namespace FlaxEditor.CustomEditors.Editors
             if (_value != null)
             {
                 if (_linkedTreeNode != null)
+                {
                     _linkedTreeNode.StopHighlight();
+                    _linkedTreeNode = null;
+                }
+
                 // Select object
                 if (_value is Actor actor)
                     Editor.Instance.SceneEditing.Select(actor);
