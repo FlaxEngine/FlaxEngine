@@ -89,16 +89,6 @@ namespace FlaxEngine
         public SkinnedModel ParentSkinnedModel => (SkinnedModel)Internal_GetParentModel(__unmanagedPtr);
 
         /// <summary>
-        /// Gets the material slot used by this mesh during rendering.
-        /// </summary>
-        public MaterialSlot MaterialSlot => ParentSkinnedModel.MaterialSlots[MaterialSlotIndex];
-
-        /// <summary>
-        /// Gets a format of the mesh index buffer.
-        /// </summary>
-        public PixelFormat IndexBufferFormat => Use16BitIndexBuffer ? PixelFormat.R16_UInt : PixelFormat.R32_UInt;
-
-        /// <summary>
         /// Updates the skinned model mesh vertex and index buffer data.
         /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
         /// Mesh data will be cached and uploaded to the GPU with a delay.
@@ -313,7 +303,7 @@ namespace FlaxEngine
         /// <summary>
         /// Downloads the index buffer that contains mesh triangles data. To download data from GPU set <paramref name="forceGpu"/> to true and call this method from the thread other than main thread (see <see cref="Platform.IsInMainThread"/>).
         /// </summary>
-        /// <remarks>If mesh index buffer format (see <see cref="IndexBufferFormat"/>) is <see cref="PixelFormat.R16_UInt"/> then it's faster to call .</remarks>
+        /// <remarks>If mesh index buffer format (see <see cref="MeshBase.IndexBufferFormat"/>) is <see cref="PixelFormat.R16_UInt"/> then it's faster to call .</remarks>
         /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
         /// <returns>The gathered data.</returns>
         public uint[] DownloadIndexBuffer(bool forceGpu = false)
@@ -327,7 +317,7 @@ namespace FlaxEngine
         /// <summary>
         /// Downloads the index buffer that contains mesh triangles data. To download data from GPU set <paramref name="forceGpu"/> to true and call this method from the thread other than main thread (see <see cref="Platform.IsInMainThread"/>).
         /// </summary>
-        /// <remarks>If mesh index buffer format (see <see cref="IndexBufferFormat"/>) is <see cref="PixelFormat.R32_UInt"/> then data won't be downloaded.</remarks>
+        /// <remarks>If mesh index buffer format (see <see cref="MeshBase.IndexBufferFormat"/>) is <see cref="PixelFormat.R32_UInt"/> then data won't be downloaded.</remarks>
         /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
         /// <returns>The gathered data.</returns>
         public ushort[] DownloadIndexBufferUShort(bool forceGpu = false)

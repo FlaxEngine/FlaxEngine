@@ -102,16 +102,6 @@ namespace FlaxEngine
         public Model ParentModel => (Model)Internal_GetParentModel(__unmanagedPtr);
 
         /// <summary>
-        /// Gets the material slot used by this mesh during rendering.
-        /// </summary>
-        public MaterialSlot MaterialSlot => ParentModel.MaterialSlots[MaterialSlotIndex];
-
-        /// <summary>
-        /// Gets a format of the mesh index buffer.
-        /// </summary>
-        public PixelFormat IndexBufferFormat => Use16BitIndexBuffer ? PixelFormat.R16_UInt : PixelFormat.R32_UInt;
-
-        /// <summary>
         /// Updates the model mesh vertex and index buffer data.
         /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
         /// Mesh data will be cached and uploaded to the GPU with a delay.
@@ -435,82 +425,6 @@ namespace FlaxEngine
             UpdateMesh(Utils.ConvertCollection(vertices), triangles, Utils.ConvertCollection(normals), Utils.ConvertCollection(tangents), Utils.ConvertCollection(uv), colors);
         }
 
-        /// <summary>
-        /// Updates the model mesh index buffer data.
-        /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
-        /// Mesh data will be cached and uploaded to the GPU with a delay.
-        /// </summary>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 32-bit stride buffer. Cannot be null.</param>
-        public void UpdateTriangles(int[] triangles)
-        {
-            if (!ParentModel.IsVirtual)
-                throw new InvalidOperationException("Only virtual models can be updated at runtime.");
-            if (triangles == null)
-                throw new ArgumentNullException(nameof(triangles));
-            if (triangles.Length == 0 || triangles.Length % 3 != 0)
-                throw new ArgumentOutOfRangeException(nameof(triangles));
-
-            if (Internal_UpdateTrianglesUInt(__unmanagedPtr, triangles.Length / 3, triangles))
-                throw new Exception("Failed to update mesh data.");
-        }
-
-        /// <summary>
-        /// Updates the model mesh index buffer data.
-        /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
-        /// Mesh data will be cached and uploaded to the GPU with a delay.
-        /// </summary>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 32-bit stride buffer. Cannot be null.</param>
-        public void UpdateTriangles(List<int> triangles)
-        {
-            if (!ParentModel.IsVirtual)
-                throw new InvalidOperationException("Only virtual models can be updated at runtime.");
-            if (triangles == null)
-                throw new ArgumentNullException(nameof(triangles));
-            if (triangles.Count == 0 || triangles.Count % 3 != 0)
-                throw new ArgumentOutOfRangeException(nameof(triangles));
-
-            if (Internal_UpdateTrianglesUInt(__unmanagedPtr, triangles.Count / 3, Utils.ExtractArrayFromList(triangles)))
-                throw new Exception("Failed to update mesh data.");
-        }
-
-        /// <summary>
-        /// Updates the model mesh index buffer data.
-        /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
-        /// Mesh data will be cached and uploaded to the GPU with a delay.
-        /// </summary>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 16-bit stride buffer. Cannot be null.</param>
-        public void UpdateTriangles(ushort[] triangles)
-        {
-            if (!ParentModel.IsVirtual)
-                throw new InvalidOperationException("Only virtual models can be updated at runtime.");
-            if (triangles == null)
-                throw new ArgumentNullException(nameof(triangles));
-            if (triangles.Length == 0 || triangles.Length % 3 != 0)
-                throw new ArgumentOutOfRangeException(nameof(triangles));
-
-            if (Internal_UpdateTrianglesUShort(__unmanagedPtr, triangles.Length / 3, triangles))
-                throw new Exception("Failed to update mesh data.");
-        }
-
-        /// <summary>
-        /// Updates the model mesh index buffer data.
-        /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
-        /// Mesh data will be cached and uploaded to the GPU with a delay.
-        /// </summary>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 16-bit stride buffer. Cannot be null.</param>
-        public void UpdateTriangles(List<ushort> triangles)
-        {
-            if (!ParentModel.IsVirtual)
-                throw new InvalidOperationException("Only virtual models can be updated at runtime.");
-            if (triangles == null)
-                throw new ArgumentNullException(nameof(triangles));
-            if (triangles.Count == 0 || triangles.Count % 3 != 0)
-                throw new ArgumentOutOfRangeException(nameof(triangles));
-
-            if (Internal_UpdateTrianglesUShort(__unmanagedPtr, triangles.Count / 3, Utils.ExtractArrayFromList(triangles)))
-                throw new Exception("Failed to update mesh data.");
-        }
-
         internal enum InternalBufferType
         {
             VB0 = 0,
@@ -609,7 +523,7 @@ namespace FlaxEngine
         /// <summary>
         /// Downloads the index buffer that contains mesh triangles data. To download data from GPU set <paramref name="forceGpu"/> to true and call this method from the thread other than main thread (see <see cref="Platform.IsInMainThread"/>).
         /// </summary>
-        /// <remarks>If mesh index buffer format (see <see cref="IndexBufferFormat"/>) is <see cref="PixelFormat.R16_UInt"/> then it's faster to call .</remarks>
+        /// <remarks>If mesh index buffer format (see <see cref="MeshBase.IndexBufferFormat"/>) is <see cref="PixelFormat.R16_UInt"/> then it's faster to call .</remarks>
         /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
         /// <returns>The gathered data.</returns>
         public uint[] DownloadIndexBuffer(bool forceGpu = false)
@@ -623,7 +537,7 @@ namespace FlaxEngine
         /// <summary>
         /// Downloads the index buffer that contains mesh triangles data. To download data from GPU set <paramref name="forceGpu"/> to true and call this method from the thread other than main thread (see <see cref="Platform.IsInMainThread"/>).
         /// </summary>
-        /// <remarks>If mesh index buffer format (see <see cref="IndexBufferFormat"/>) is <see cref="PixelFormat.R32_UInt"/> then data won't be downloaded.</remarks>
+        /// <remarks>If mesh index buffer format (see <see cref="MeshBase.IndexBufferFormat"/>) is <see cref="PixelFormat.R32_UInt"/> then data won't be downloaded.</remarks>
         /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
         /// <returns>The gathered data.</returns>
         public ushort[] DownloadIndexBufferUShort(bool forceGpu = false)

@@ -105,17 +105,11 @@ void SkinnedMesh::Init(SkinnedModel* model, int32 lodIndex, int32 index, int32 m
     _sphere = sphere;
     _vertices = 0;
     _triangles = 0;
-    _vertexBuffer = nullptr;
+    _vertexBuffers[0] = nullptr;
     _indexBuffer = nullptr;
     _cachedIndexBuffer.Clear();
-    _cachedVertexBuffer.Clear();
+    _cachedVertexBuffers[0].Clear();
     BlendShapes.Clear();
-}
-
-SkinnedMesh::~SkinnedMesh()
-{
-    SAFE_DELETE_GPU_RESOURCE(_vertexBuffer);
-    SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
 }
 
 bool SkinnedMesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* ib, bool use16BitIndexBuffer)
@@ -146,7 +140,7 @@ bool SkinnedMesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const
         goto ERROR_LOAD_END;
 
     // Initialize
-    _vertexBuffer = vertexBuffer;
+    _vertexBuffers[0] = vertexBuffer;
     _indexBuffer = indexBuffer;
     _triangles = triangles;
     _vertices = vertices;
@@ -159,17 +153,6 @@ ERROR_LOAD_END:
     SAFE_DELETE_GPU_RESOURCE(vertexBuffer);
     SAFE_DELETE_GPU_RESOURCE(indexBuffer);
     return true;
-}
-
-void SkinnedMesh::Unload()
-{
-    SAFE_DELETE_GPU_RESOURCE(_vertexBuffer);
-    SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
-    _cachedIndexBuffer.Clear();
-    _cachedVertexBuffer.Clear();
-    _triangles = 0;
-    _vertices = 0;
-    _use16BitIndexBuffer = false;
 }
 
 bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const void* ib, bool use16BitIndices)
@@ -190,37 +173,6 @@ bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0
     }
 
     return failed;
-}
-
-bool SkinnedMesh::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal) const
-{
-    // Transform points
-    BoundingBox transformedBox;
-    Vector3::Transform(_box.Minimum, world, transformedBox.Minimum);
-    Vector3::Transform(_box.Maximum, world, transformedBox.Maximum);
-
-    // Test ray on a transformed box
-    return transformedBox.Intersects(ray, distance, normal);
-}
-
-bool SkinnedMesh::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const
-{
-    // Transform points
-    BoundingBox transformedBox;
-    transform.LocalToWorld(_box.Minimum, transformedBox.Minimum);
-    transform.LocalToWorld(_box.Maximum, transformedBox.Maximum);
-
-    // Test ray on a transformed box
-    return transformedBox.Intersects(ray, distance, normal);
-}
-
-void SkinnedMesh::Render(GPUContext* context) const
-{
-    ASSERT(IsInitialized());
-
-    context->BindVB(ToSpan(&_vertexBuffer, 1));
-    context->BindIB(_indexBuffer);
-    context->DrawIndexed(_triangles * 3);
 }
 
 void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float lodDitherFactor) const
@@ -250,7 +202,7 @@ void SkinnedMesh::Draw(const RenderContext& renderContext, const DrawInfo& info,
     // Setup draw call
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
-    drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
+    drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
     if (info.Deformation)
         info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
     drawCall.Draw.StartIndex = 0;
@@ -292,7 +244,7 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     // Setup draw call
     DrawCall drawCall;
     drawCall.Geometry.IndexBuffer = _indexBuffer;
-    drawCall.Geometry.VertexBuffers[0] = _vertexBuffer;
+    drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
     if (info.Deformation)
         info.Deformation->RunDeformers(this, MeshBufferType::Vertex0, drawCall.Geometry.VertexBuffers[0]);
     drawCall.Draw.IndicesCount = _triangles * 3;
@@ -315,39 +267,9 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
         renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, StaticFlags::None, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals, info.SortOrder);
 }
 
-bool SkinnedMesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const
-{
-    GPUBuffer* buffer = nullptr;
-    switch (type)
-    {
-    case MeshBufferType::Index:
-        buffer = _indexBuffer;
-        break;
-    case MeshBufferType::Vertex0:
-        buffer = _vertexBuffer;
-        break;
-    }
-    return buffer && buffer->DownloadData(result);
-}
-
-Task* SkinnedMesh::DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const
-{
-    GPUBuffer* buffer = nullptr;
-    switch (type)
-    {
-    case MeshBufferType::Index:
-        buffer = _indexBuffer;
-        break;
-    case MeshBufferType::Vertex0:
-        buffer = _vertexBuffer;
-        break;
-    }
-    return buffer ? buffer->DownloadDataAsync(result) : nullptr;
-}
-
 bool SkinnedMesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const
 {
-    if (_cachedVertexBuffer.IsEmpty())
+    if (_cachedVertexBuffers[0].IsEmpty())
     {
         PROFILE_CPU();
         auto model = GetSkinnedModel();
@@ -409,7 +331,7 @@ bool SkinnedMesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, i
             // Cache mesh data
             _cachedIndexBufferCount = indicesCount;
             _cachedIndexBuffer.Set(ib, indicesCount * ibStride);
-            _cachedVertexBuffer.Set((const byte*)vb0, vertices * sizeof(VB0SkinnedElementType));
+            _cachedVertexBuffers[0].Set((const byte*)vb0, vertices * sizeof(VB0SkinnedElementType));
             break;
         }
     }
@@ -421,18 +343,13 @@ bool SkinnedMesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, i
         count = _cachedIndexBufferCount;
         break;
     case MeshBufferType::Vertex0:
-        result.Link(_cachedVertexBuffer);
-        count = _cachedVertexBuffer.Count() / sizeof(VB0SkinnedElementType);
+        result.Link(_cachedVertexBuffers[0]);
+        count = _cachedVertexBuffers[0].Count() / sizeof(VB0SkinnedElementType);
         break;
     default:
         return true;
     }
     return false;
-}
-
-ScriptingObject* SkinnedMesh::GetParentModel()
-{
-    return _model;
 }
 
 #if !COMPILE_WITHOUT_CSHARP

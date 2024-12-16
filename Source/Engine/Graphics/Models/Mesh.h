@@ -6,9 +6,6 @@
 #include "ModelInstanceEntry.h"
 #include "Config.h"
 #include "Types.h"
-#if USE_PRECISE_MESH_INTERSECTS
-#include "CollisionProxy.h"
-#endif
 
 class Lightmap;
 
@@ -18,16 +15,9 @@ class Lightmap;
 API_CLASS(NoSpawn) class FLAXENGINE_API Mesh : public MeshBase
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase);
+
 protected:
     bool _hasLightmapUVs;
-    GPUBuffer* _vertexBuffers[3] = {};
-    GPUBuffer* _indexBuffer = nullptr;
-#if USE_PRECISE_MESH_INTERSECTS
-    CollisionProxy _collisionProxy;
-#endif
-    mutable Array<byte> _cachedVertexBuffer[3];
-    mutable Array<byte> _cachedIndexBuffer;
-    mutable int32 _cachedIndexBufferCount;
 
 public:
     Mesh(const Mesh& other)
@@ -37,11 +27,6 @@ public:
         CRASH; // Not used
 #endif
     }
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="Mesh"/> class.
-    /// </summary>
-    ~Mesh();
 
 public:
     /// <summary>
@@ -53,53 +38,12 @@ public:
     }
 
     /// <summary>
-    /// Gets the index buffer.
-    /// </summary>
-    FORCE_INLINE GPUBuffer* GetIndexBuffer() const
-    {
-        return _indexBuffer;
-    }
-
-    /// <summary>
-    /// Gets the vertex buffer.
-    /// </summary>
-    /// <param name="index">The index.</param>
-    /// <returns>The buffer.</returns>
-    FORCE_INLINE GPUBuffer* GetVertexBuffer(int32 index) const
-    {
-        return _vertexBuffers[index];
-    }
-
-    /// <summary>
-    /// Determines whether this mesh is initialized (has vertex and index buffers initialized).
-    /// </summary>
-    FORCE_INLINE bool IsInitialized() const
-    {
-        return _vertexBuffers[0] != nullptr;
-    }
-
-    /// <summary>
-    /// Determines whether this mesh has a vertex colors buffer.
-    /// </summary>
-    API_PROPERTY() bool HasVertexColors() const;
-
-    /// <summary>
     /// Determines whether this mesh contains valid lightmap texture coordinates data.
     /// </summary>
     API_PROPERTY() FORCE_INLINE bool HasLightmapUVs() const
     {
         return _hasLightmapUVs;
     }
-
-#if USE_PRECISE_MESH_INTERSECTS
-    /// <summary>
-    /// Gets the collision proxy used by the mesh.
-    /// </summary>
-    FORCE_INLINE const CollisionProxy& GetCollisionProxy() const
-    {
-        return _collisionProxy;
-    }
-#endif
 
 public:
     /// <summary>
@@ -181,38 +125,6 @@ public:
 
 public:
     /// <summary>
-    /// Updates the model mesh index buffer (used by the virtual models created with Init rather than Load).
-    /// </summary>
-    /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
-    /// <param name="ib">The index buffer.</param>
-    /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateTriangles(uint32 triangleCount, const uint32* ib)
-    {
-        return UpdateTriangles(triangleCount, ib, false);
-    }
-
-    /// <summary>
-    /// Updates the model mesh index buffer (used by the virtual models created with Init rather than Load).
-    /// </summary>
-    /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
-    /// <param name="ib">The index buffer.</param>
-    /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateTriangles(uint32 triangleCount, const uint16* ib)
-    {
-        return UpdateTriangles(triangleCount, ib, true);
-    }
-
-    /// <summary>
-    /// Updates the model mesh index buffer (used by the virtual models created with Init rather than Load).
-    /// </summary>
-    /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
-    /// <param name="ib">The index buffer.</param>
-    /// <param name="use16BitIndices">True if index buffer uses 16-bit index buffer, otherwise 32-bit.</param>
-    /// <returns>True if failed, otherwise false.</returns>
-    bool UpdateTriangles(uint32 triangleCount, const void* ib, bool use16BitIndices);
-
-public:
-    /// <summary>
     /// Initializes instance of the <see cref="Mesh"/> class.
     /// </summary>
     /// <param name="model">The model.</param>
@@ -237,45 +149,7 @@ public:
     /// <returns>True if cannot load data, otherwise false.</returns>
     bool Load(uint32 vertices, uint32 triangles, const void* vb0, const void* vb1, const void* vb2, const void* ib, bool use16BitIndexBuffer);
 
-    /// <summary>
-    /// Unloads the mesh data (vertex buffers and cache). The opposite to Load.
-    /// </summary>
-    void Unload();
-
 public:
-    /// <summary>
-    /// Determines if there is an intersection between the mesh and a ray in given world
-    /// </summary>
-    /// <param name="ray">The ray to test</param>
-    /// <param name="world">World to transform box</param>
-    /// <param name="distance">When the method completes and returns true, contains the distance of the intersection (if any valid).</param>
-    /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
-    /// <returns>True whether the two objects intersected</returns>
-    bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal) const;
-
-    /// <summary>
-    /// Determines if there is an intersection between the mesh and a ray in given world
-    /// </summary>
-    /// <param name="ray">The ray to test</param>
-    /// <param name="transform">The instance transformation.</param>
-    /// <param name="distance">When the method completes and returns true, contains the distance of the intersection (if any valid).</param>
-    /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
-    /// <returns>True whether the two objects intersected</returns>
-    bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const;
-
-public:
-    /// <summary>
-    /// Gets the draw call geometry for this mesh. Sets the index and vertex buffers.
-    /// </summary>
-    /// <param name="drawCall">The draw call.</param>
-    void GetDrawCallGeometry(DrawCall& drawCall) const;
-
-    /// <summary>
-    /// Draws the mesh. Binds vertex and index buffers and invokes the draw call.
-    /// </summary>
-    /// <param name="context">The GPU context.</param>
-    void Render(GPUContext* context) const;
-
     /// <summary>
     /// Draws the mesh.
     /// </summary>
@@ -307,18 +181,13 @@ public:
 
 public:
     // [MeshBase]
-    bool DownloadDataGPU(MeshBufferType type, BytesContainer& result) const override;
-    Task* DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const override;
     bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const override;
 
 private:
     // Internal bindings
-    API_FUNCTION(NoProxy) ScriptingObject* GetParentModel();
 #if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) bool UpdateMeshUInt(int32 vertexCount, int32 triangleCount, const MArray* verticesObj, const MArray* trianglesObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj, const MArray* colorsObj);
     API_FUNCTION(NoProxy) bool UpdateMeshUShort(int32 vertexCount, int32 triangleCount, const MArray* verticesObj, const MArray* trianglesObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj, const MArray* colorsObj);
-    API_FUNCTION(NoProxy) bool UpdateTrianglesUInt(int32 triangleCount, const MArray* trianglesObj);
-    API_FUNCTION(NoProxy) bool UpdateTrianglesUShort(int32 triangleCount, const MArray* trianglesObj);
     API_FUNCTION(NoProxy) MArray* DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI);
 #endif
 };

@@ -6,7 +6,6 @@
 #include "Engine/Content/Assets/Material.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Core/Math/Transform.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -132,25 +131,7 @@ namespace
         const auto colors = colorsObj ? MCore::Array::GetAddress<Color32>(colorsObj) : nullptr;
         return UpdateMesh<IndexType>(mesh, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
     }
-
-    template<typename IndexType>
-    bool UpdateTriangles(Mesh* mesh, int32 triangleCount, const MArray* trianglesObj)
-    {
-        const auto model = mesh->GetModel();
-        ASSERT(model && model->IsVirtual() && trianglesObj);
-
-        // Get buffer data
-        ASSERT(MCore::Array::GetLength(trianglesObj) / 3 >= triangleCount);
-        auto ib = MCore::Array::GetAddress<IndexType>(trianglesObj);
-
-        return mesh->UpdateTriangles(triangleCount, ib);
-    }
 #endif
-}
-
-bool Mesh::HasVertexColors() const
-{
-    return _vertexBuffers[2] != nullptr && _vertexBuffers[2]->IsAllocated();
 }
 
 bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const void* ib, bool use16BitIndices)
@@ -188,31 +169,6 @@ bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* ve
     return ::UpdateMesh<uint32>(this, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
 }
 
-bool Mesh::UpdateTriangles(uint32 triangleCount, const void* ib, bool use16BitIndices)
-{
-    // Cache data
-    uint32 indicesCount = triangleCount * 3;
-    uint32 ibStride = use16BitIndices ? sizeof(uint16) : sizeof(uint32);
-
-    // Create index buffer
-    GPUBuffer* indexBuffer = GPUDevice::Instance->CreateBuffer(String::Empty);
-    if (indexBuffer->Init(GPUBufferDescription::Index(ibStride, indicesCount, ib)))
-    {
-        Delete(indexBuffer);
-        return true;
-    }
-
-    // TODO: update collision proxy
-
-    // Initialize
-    SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
-    _indexBuffer = indexBuffer;
-    _triangles = triangleCount;
-    _use16BitIndexBuffer = use16BitIndices;
-
-    return false;
-}
-
 void Mesh::Init(Model* model, int32 lodIndex, int32 index, int32 materialSlotIndex, const BoundingBox& box, const BoundingSphere& sphere, bool hasLightmapUVs)
 {
     _model = model;
@@ -229,15 +185,6 @@ void Mesh::Init(Model* model, int32 lodIndex, int32 index, int32 materialSlotInd
     _vertexBuffers[1] = nullptr;
     _vertexBuffers[2] = nullptr;
     _indexBuffer = nullptr;
-}
-
-Mesh::~Mesh()
-{
-    // Release buffers
-    SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[0]);
-    SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[1]);
-    SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[2]);
-    SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
 }
 
 bool Mesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* vb1, const void* vb2, const void* ib, bool use16BitIndexBuffer)
@@ -292,9 +239,9 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* 
     _triangles = triangles;
     _vertices = vertices;
     _use16BitIndexBuffer = use16BitIndexBuffer;
-    _cachedVertexBuffer[0].Clear();
-    _cachedVertexBuffer[1].Clear();
-    _cachedVertexBuffer[2].Clear();
+    _cachedVertexBuffers[0].Clear();
+    _cachedVertexBuffers[1].Clear();
+    _cachedVertexBuffers[2].Clear();
 
     return false;
 
@@ -306,108 +253,6 @@ ERROR_LOAD_END:
     SAFE_DELETE_GPU_RESOURCE(vertexBuffer2);
     SAFE_DELETE_GPU_RESOURCE(indexBuffer);
     return true;
-}
-
-void Mesh::Unload()
-{
-    SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[0]);
-    SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[1]);
-    SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[2]);
-    SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
-    _triangles = 0;
-    _vertices = 0;
-    _use16BitIndexBuffer = false;
-    _cachedIndexBuffer.Resize(0);
-    _cachedVertexBuffer[0].Clear();
-    _cachedVertexBuffer[1].Clear();
-    _cachedVertexBuffer[2].Clear();
-}
-
-bool Mesh::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal) const
-{
-    // Get bounding box of the mesh bounds transformed by the instance world matrix
-    Vector3 corners[8];
-    _box.GetCorners(corners);
-    Vector3 tmp;
-    Vector3::Transform(corners[0], world, tmp);
-    Vector3 min = tmp;
-    Vector3 max = tmp;
-    for (int32 i = 1; i < 8; i++)
-    {
-        Vector3::Transform(corners[i], world, tmp);
-        min = Vector3::Min(min, tmp);
-        max = Vector3::Max(max, tmp);
-    }
-    const BoundingBox transformedBox(min, max);
-
-    // Test ray on box
-#if USE_PRECISE_MESH_INTERSECTS
-    if (transformedBox.Intersects(ray, distance))
-    {
-        // Use exact test on raw geometry
-        return _collisionProxy.Intersects(ray, world, distance, normal);
-    }
-    distance = 0;
-    normal = Vector3::Up;
-    return false;
-#else
-	return transformedBox.Intersects(ray, distance, normal);
-#endif
-}
-
-bool Mesh::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal) const
-{
-    // Get bounding box of the mesh bounds transformed by the instance world matrix
-    Vector3 corners[8];
-    _box.GetCorners(corners);
-    Vector3 tmp;
-    transform.LocalToWorld(corners[0], tmp);
-    Vector3 min = tmp;
-    Vector3 max = tmp;
-    for (int32 i = 1; i < 8; i++)
-    {
-        transform.LocalToWorld(corners[i], tmp);
-        min = Vector3::Min(min, tmp);
-        max = Vector3::Max(max, tmp);
-    }
-    const BoundingBox transformedBox(min, max);
-
-    // Test ray on box
-#if USE_PRECISE_MESH_INTERSECTS
-    if (transformedBox.Intersects(ray, distance))
-    {
-        // Use exact test on raw geometry
-        return _collisionProxy.Intersects(ray, transform, distance, normal);
-    }
-    distance = 0;
-    normal = Vector3::Up;
-    return false;
-#else
-	return transformedBox.Intersects(ray, distance, normal);
-#endif
-}
-
-void Mesh::GetDrawCallGeometry(DrawCall& drawCall) const
-{
-    drawCall.Geometry.IndexBuffer = _indexBuffer;
-    drawCall.Geometry.VertexBuffers[0] = _vertexBuffers[0];
-    drawCall.Geometry.VertexBuffers[1] = _vertexBuffers[1];
-    drawCall.Geometry.VertexBuffers[2] = _vertexBuffers[2];
-    drawCall.Geometry.VertexBuffersOffsets[0] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[1] = 0;
-    drawCall.Geometry.VertexBuffersOffsets[2] = 0;
-    drawCall.Draw.StartIndex = 0;
-    drawCall.Draw.IndicesCount = _triangles * 3;
-}
-
-void Mesh::Render(GPUContext* context) const
-{
-    if (!IsInitialized())
-        return;
-
-    context->BindVB(ToSpan((GPUBuffer**)_vertexBuffers, 3));
-    context->BindIB(_indexBuffer);
-    context->DrawIndexed(_triangles * 3);
 }
 
 void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int8 sortOrder) const
@@ -579,51 +424,9 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
         renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, info.Flags, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals, info.SortOrder);
 }
 
-bool Mesh::DownloadDataGPU(MeshBufferType type, BytesContainer& result) const
-{
-    GPUBuffer* buffer = nullptr;
-    switch (type)
-    {
-    case MeshBufferType::Index:
-        buffer = _indexBuffer;
-        break;
-    case MeshBufferType::Vertex0:
-        buffer = _vertexBuffers[0];
-        break;
-    case MeshBufferType::Vertex1:
-        buffer = _vertexBuffers[1];
-        break;
-    case MeshBufferType::Vertex2:
-        buffer = _vertexBuffers[2];
-        break;
-    }
-    return buffer && buffer->DownloadData(result);
-}
-
-Task* Mesh::DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const
-{
-    GPUBuffer* buffer = nullptr;
-    switch (type)
-    {
-    case MeshBufferType::Index:
-        buffer = _indexBuffer;
-        break;
-    case MeshBufferType::Vertex0:
-        buffer = _vertexBuffers[0];
-        break;
-    case MeshBufferType::Vertex1:
-        buffer = _vertexBuffers[1];
-        break;
-    case MeshBufferType::Vertex2:
-        buffer = _vertexBuffers[2];
-        break;
-    }
-    return buffer ? buffer->DownloadDataAsync(result) : nullptr;
-}
-
 bool Mesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const
 {
-    if (_cachedVertexBuffer[0].IsEmpty())
+    if (_cachedVertexBuffers[0].IsEmpty())
     {
         PROFILE_CPU();
         auto model = GetModel();
@@ -679,10 +482,10 @@ bool Mesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& c
             // Cache mesh data
             _cachedIndexBufferCount = indicesCount;
             _cachedIndexBuffer.Set(ib, indicesCount * ibStride);
-            _cachedVertexBuffer[0].Set((const byte*)vb0, vertices * sizeof(VB0ElementType));
-            _cachedVertexBuffer[1].Set((const byte*)vb1, vertices * sizeof(VB1ElementType));
+            _cachedVertexBuffers[0].Set((const byte*)vb0, vertices * sizeof(VB0ElementType));
+            _cachedVertexBuffers[1].Set((const byte*)vb1, vertices * sizeof(VB1ElementType));
             if (hasColors)
-                _cachedVertexBuffer[2].Set((const byte*)vb2, vertices * sizeof(VB2ElementType));
+                _cachedVertexBuffers[2].Set((const byte*)vb2, vertices * sizeof(VB2ElementType));
             break;
         }
     }
@@ -694,26 +497,21 @@ bool Mesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& c
         count = _cachedIndexBufferCount;
         break;
     case MeshBufferType::Vertex0:
-        result.Link(_cachedVertexBuffer[0]);
-        count = _cachedVertexBuffer[0].Count() / sizeof(VB0ElementType);
+        result.Link(_cachedVertexBuffers[0]);
+        count = _cachedVertexBuffers[0].Count() / sizeof(VB0ElementType);
         break;
     case MeshBufferType::Vertex1:
-        result.Link(_cachedVertexBuffer[1]);
-        count = _cachedVertexBuffer[1].Count() / sizeof(VB1ElementType);
+        result.Link(_cachedVertexBuffers[1]);
+        count = _cachedVertexBuffers[1].Count() / sizeof(VB1ElementType);
         break;
     case MeshBufferType::Vertex2:
-        result.Link(_cachedVertexBuffer[2]);
-        count = _cachedVertexBuffer[2].Count() / sizeof(VB2ElementType);
+        result.Link(_cachedVertexBuffers[2]);
+        count = _cachedVertexBuffers[2].Count() / sizeof(VB2ElementType);
         break;
     default:
         return true;
     }
     return false;
-}
-
-ScriptingObject* Mesh::GetParentModel()
-{
-    return _model;
 }
 
 #if !COMPILE_WITHOUT_CSHARP
@@ -726,16 +524,6 @@ bool Mesh::UpdateMeshUInt(int32 vertexCount, int32 triangleCount, const MArray* 
 bool Mesh::UpdateMeshUShort(int32 vertexCount, int32 triangleCount, const MArray* verticesObj, const MArray* trianglesObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj, const MArray* colorsObj)
 {
     return ::UpdateMesh<uint16>(this, (uint32)vertexCount, (uint32)triangleCount, verticesObj, trianglesObj, normalsObj, tangentsObj, uvObj, colorsObj);
-}
-
-bool Mesh::UpdateTrianglesUInt(int32 triangleCount, const MArray* trianglesObj)
-{
-    return ::UpdateTriangles<uint32>(this, triangleCount, trianglesObj);
-}
-
-bool Mesh::UpdateTrianglesUShort(int32 triangleCount, const MArray* trianglesObj)
-{
-    return ::UpdateTriangles<uint16>(this, triangleCount, trianglesObj);
 }
 
 enum class InternalBufferType
