@@ -284,6 +284,13 @@ namespace Flax.Build.Projects.VisualStudio
             csProjectFileContent.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
             if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                 csProjectFileContent.AppendLine("    <NoWarn>1591</NoWarn>");
+            if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreSpecificWarnings.Any())
+            {
+                foreach (var warningString in configuration.TargetBuildOptions.ScriptingAPI.IgnoreSpecificWarnings)
+                {
+                    csProjectFileContent.AppendLine($"    <NoWarn>{warningString}</NoWarn>");
+                }
+            }
             csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.BaseName));
             csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
 
