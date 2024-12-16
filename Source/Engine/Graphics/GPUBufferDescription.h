@@ -281,7 +281,6 @@ public:
         auto bufferFlags = GPUBufferFlags::Structured | GPUBufferFlags::ShaderResource;
         if (isUnorderedAccess)
             bufferFlags |= GPUBufferFlags::UnorderedAccess;
-
         return Buffer(elementCount * elementSize, bufferFlags, PixelFormat::Unknown, nullptr, elementSize);
     }
 

@@ -125,8 +125,8 @@ public:
     /// Initializes a new instance of the <see cref="Array"/> class.
     /// </summary>
     /// <param name="other">The other collection to copy.</param>
-    template<typename OtherT = T, typename OtherAllocationType = AllocationType>
-    explicit Array(const Array<OtherT, OtherAllocationType>& other) noexcept
+    template<typename Other = T, typename OtherAllocationType = AllocationType>
+    explicit Array(const Array<Other, OtherAllocationType>& other) noexcept
     {
         _capacity = other.Capacity();
         _count = other.Count();
@@ -512,8 +512,8 @@ public:
     /// Adds the other collection to the collection.
     /// </summary>
     /// <param name="other">The other collection to add.</param>
-    template<typename OtherT, typename OtherAllocationType = AllocationType>
-    FORCE_INLINE void Add(const Array<OtherT, OtherAllocationType>& other)
+    template<typename Other, typename OtherAllocationType = AllocationType>
+    FORCE_INLINE void Add(const Array<Other, OtherAllocationType>& other)
     {
         Add(other.Get(), other.Count());
     }
@@ -629,8 +629,8 @@ public:
     /// </summary>
     /// <param name="item">The item to check.</param>
     /// <returns>True if item has been found in the collection, otherwise false.</returns>
-    template<typename TComparableType>
-    bool Contains(const TComparableType& item) const
+    template<typename Other>
+    bool Contains(const Other& item) const
     {
         const T* data = _allocation.Get();
         for (int32 i = 0; i < _count; i++)
@@ -914,8 +914,8 @@ public:
     }
 
 public:
-    template<typename OtherT = T, typename OtherAllocationType = AllocationType>
-    bool operator==(const Array<OtherT, OtherAllocationType>& other) const
+    template<typename Other = T, typename OtherAllocationType = AllocationType>
+    bool operator==(const Array<Other, OtherAllocationType>& other) const
     {
         if (_count == other.Count())
         {
@@ -931,8 +931,8 @@ public:
         return false;
     }
 
-    template<typename OtherT = T, typename OtherAllocationType = AllocationType>
-    bool operator!=(const Array<OtherT, OtherAllocationType>& other) const
+    template<typename Other = T, typename OtherAllocationType = AllocationType>
+    bool operator!=(const Array<Other, OtherAllocationType>& other) const
     {
         return !operator==(other);
     }

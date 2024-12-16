@@ -127,7 +127,7 @@ void MeshDeformation::RunDeformers(const MeshBase* mesh, MeshBufferType type, GP
         }
         if (!deformation)
         {
-            deformation = New<MeshDeformationData>(key, type, vertexStride);
+            deformation = New<MeshDeformationData>(key, type, vertexStride, vertexBuffer->GetVertexLayout());
             deformation->VertexBuffer.Data.Resize(vertexBuffer->GetSize());
             deformation->Bounds = mesh->GetBox();
             _deformations.Add(deformation);

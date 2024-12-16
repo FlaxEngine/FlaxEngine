@@ -20,10 +20,10 @@ struct MeshDeformationData
     BoundingBox Bounds;
     DynamicVertexBuffer VertexBuffer;
 
-    MeshDeformationData(uint64 key, MeshBufferType type, uint32 stride)
+    MeshDeformationData(uint64 key, MeshBufferType type, uint32 stride, GPUVertexLayout* layout)
         : Key(key)
         , Type(type)
-        , VertexBuffer(0, stride, TEXT("MeshDeformation"))
+        , VertexBuffer(0, stride, TEXT("MeshDeformation"), layout)
     {
     }
 
