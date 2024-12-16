@@ -385,6 +385,19 @@ bool ProcessMesh(ImporterData& data, FbxMesh* fbxMesh, MeshData& mesh, String& e
         mesh.Indices[i] = fbxIndices[i];
     }
 
+    if (data.Options.ReverseWindingOrder)
+    {
+        for (int32 i = 0; i < vertexCount; i += 3)
+        {
+            Swap(meshIndices[i + 1], meshIndices[i + 2]);
+            Swap(meshPositions[i + 1], meshPositions[i + 2]);
+            if (meshNormals)
+                Swap(meshNormals[i + 1], meshNormals[i + 2]);
+            if (meshTangents)
+                Swap(meshTangents[i + 1], meshTangents[i + 2]);
+        }
+    }
+
     // Texture coordinates
     FbxGeometryElementUV* texcoords = fbxMesh->GetElementUV(0);
     if (texcoords)
