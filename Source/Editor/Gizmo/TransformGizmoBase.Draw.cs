@@ -60,22 +60,24 @@ namespace FlaxEditor.Gizmo
                 Platform.Fatal("Failed to load transform gizmo resources.");
             }
 
-            ApplyGizmoOptionsToMaterials(Editor.Instance.Options.Options);
-
-            Editor.Instance.Options.OptionsChanged += ApplyGizmoOptionsToMaterials;
+            // Setup editor options
+            OnEditorOptionsChanged(Editor.Instance.Options.Options);
+            Editor.Instance.Options.OptionsChanged += OnEditorOptionsChanged;
         }
 
-        private void ApplyGizmoOptionsToMaterials(EditorOptions o)
+        private void OnEditorOptionsChanged(EditorOptions options)
         {
-            _materialAxisX.SetParameterValue(_brightnessParamName, o.Visual.transformGizmoBrightness);
-            _materialAxisY.SetParameterValue(_brightnessParamName, o.Visual.transformGizmoBrightness);
-            _materialAxisZ.SetParameterValue(_brightnessParamName, o.Visual.transformGizmoBrightness);
-            _materialAxisLocked.SetParameterValue(_brightnessParamName, o.Visual.transformGizmoBrightness);
-
-            _materialAxisX.SetParameterValue(_opacityParamName, o.Visual.transformGizmoOpacity);
-            _materialAxisY.SetParameterValue(_opacityParamName, o.Visual.transformGizmoOpacity);
-            _materialAxisZ.SetParameterValue(_opacityParamName, o.Visual.transformGizmoOpacity);
-            _materialAxisLocked.SetParameterValue(_opacityParamName, o.Visual.transformGizmoOpacity);
+            float brightness = options.Visual.TransformGizmoBrightness;
+            _materialAxisX.SetParameterValue(_brightnessParamName, brightness);
+            _materialAxisY.SetParameterValue(_brightnessParamName, brightness);
+            _materialAxisZ.SetParameterValue(_brightnessParamName, brightness);
+            _materialAxisLocked.SetParameterValue(_brightnessParamName, brightness);
+            
+            float opacity = options.Visual.TransformGizmoOpacity;
+            _materialAxisX.SetParameterValue(_opacityParamName, opacity);
+            _materialAxisY.SetParameterValue(_opacityParamName, opacity);
+            _materialAxisZ.SetParameterValue(_opacityParamName, opacity);
+            _materialAxisLocked.SetParameterValue(_opacityParamName, opacity);
         }
 
         /// <inheritdoc />
@@ -86,13 +88,13 @@ namespace FlaxEditor.Gizmo
             if (!_modelCube || !_modelCube.IsLoaded)
                 return;
 
+            // Find out if any of the selected objects can not be moved
             bool gizmoLocked = false;
-
-            // Find out if any of the selected objects can not be moved.
             if (Editor.Instance.StateMachine.IsPlayMode)
             {
-                foreach (SceneGraphNode obj in Editor.Instance.SceneEditing.Selection)
+                for (int i = 0; i < SelectionCount; i++)
                 {
+                    var obj = GetSelectedObject(i);
                     if (obj.CanTransform == false)
                     {
                         gizmoLocked = true;
