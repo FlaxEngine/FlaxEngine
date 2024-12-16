@@ -99,6 +99,10 @@ namespace FlaxEditor.Modules
         {
             if (Editor.StateMachine.IsEditMode)
             {
+                // Show Game window if hidden
+                if (Editor.Windows.GameWin.IsHidden)
+                    Editor.Windows.GameWin.Show();
+
                 Editor.Log("[PlayMode] Start");
 
                 if (Editor.Options.Options.General.AutoReloadScriptsOnMainWindowFocus)
@@ -130,6 +134,10 @@ namespace FlaxEditor.Modules
         {
             if (!Editor.StateMachine.IsEditMode)
                 return;
+
+            // Show Game window if hidden
+            if (Editor.Windows.GameWin.IsHidden)
+                Editor.Windows.GameWin.Show();
 
             var firstScene = Content.Settings.GameSettings.Load().FirstScene;
             if (firstScene == Guid.Empty)
