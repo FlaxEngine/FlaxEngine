@@ -723,10 +723,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             // Refresh anchors
-            GetAnchorEquality(out bool xEq, out bool yEq, ValuesTypes);
-            if (xEq != _cachedXEq || yEq != _cachedYEq)
+            if (Values != null && Values[0] != null)
             {
-                RebuildLayout();
+                GetAnchorEquality(out bool xEq, out bool yEq, ValuesTypes);
+                if (xEq != _cachedXEq || yEq != _cachedYEq)
+                {
+                    RebuildLayout();
+                }
             }
 
             base.Refresh();
