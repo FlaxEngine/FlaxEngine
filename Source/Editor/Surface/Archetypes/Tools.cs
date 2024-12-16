@@ -1502,9 +1502,10 @@ namespace FlaxEditor.Surface.Archetypes
                     {
                         data = new object[]
                         {
-                            filterText.Substring(2),
-                            new Color(1.0f, 1.0f, 1.0f, 0.2f),
-                            new Float2(400.0f, 400.0f),
+                            filterText.Substring(2), // Title
+                            new Color(1.0f, 1.0f, 1.0f, 0.2f), // Color
+                            new Float2(400.0f, 400.0f), // Size
+                            -1, // Order
                         };
                         return true;
                     }
