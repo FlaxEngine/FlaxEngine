@@ -204,6 +204,24 @@ public:
 
     /// <summary>
     /// Creates vertex buffer description.
+    /// </summary>
+    /// <param name="layout">The vertex buffer layout.</param>
+    /// <param name="elementsCount">The elements count.</param>
+    /// <param name="data">The data.</param>
+    /// <returns>The buffer description.</returns>
+    static GPUBufferDescription Vertex(GPUVertexLayout* layout, uint32 elementsCount, const void* data);
+
+    /// <summary>
+    /// Creates vertex buffer description.
+    /// </summary>
+    /// <param name="layout">The vertex buffer layout.</param>
+    /// <param name="elementsCount">The elements count.</param>
+    /// <param name="usage">The usage mode.</param>
+    /// <returns>The buffer description.</returns>
+    static GPUBufferDescription Vertex(GPUVertexLayout* layout, uint32 elementsCount, GPUResourceUsage usage = GPUResourceUsage::Default);
+
+    /// <summary>
+    /// Creates vertex buffer description.
     /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="elementStride">The element stride.</param>

@@ -5,9 +5,11 @@
 #include "Engine/Core/Log.h"
 #endif
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Types/Span.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUBuffer.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #if GPU_ENABLE_RESOURCE_NAMING
 #include "Engine/Scripting/Enums.h"
 #endif
@@ -72,6 +74,20 @@ uint32 GetHash(const VertexElement& key)
 GPUVertexLayout::GPUVertexLayout()
     : GPUResource(SpawnParams(Guid::New(), TypeInitializer))
 {
+}
+
+void GPUVertexLayout::SetElements(const Elements& elements, uint32 offsets[GPU_MAX_VS_ELEMENTS])
+{
+    _elements = elements;
+    uint32 strides[GPU_MAX_VB_BINDED] = {};
+    for (int32 i = 0; i < elements.Count(); i++)
+    {
+        const VertexElement& e = elements[i];
+        strides[e.Slot] = Math::Max(strides[e.Slot], offsets[i]);
+    }
+    _stride = 0;
+    for (int32 i = 0; i < GPU_MAX_VB_BINDED; i++)
+        _stride += strides[i];
 }
 
 GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements)
@@ -144,7 +160,7 @@ GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUBuffer*>& vertexBuffers)
                 anyValid = true;
                 int32 start = elements.Count();
                 elements.Add(layouts.Layouts[slot]->GetElements());
-                for (int32 j = start; j < elements.Count() ;j++)
+                for (int32 j = start; j < elements.Count(); j++)
                     elements.Get()[j].Slot = (byte)slot;
             }
         }

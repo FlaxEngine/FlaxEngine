@@ -452,7 +452,6 @@ uint32 GetHash(const FramebufferVulkan::Key& key)
 GPUVertexLayoutVulkan::GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elements& elements)
     : GPUResourceVulkan<GPUVertexLayout>(device, StringView::Empty)
 {
-    _elements = elements;
     uint32 offsets[GPU_MAX_VB_BINDED] = {};
     for (int32 i = 0; i < GPU_MAX_VB_BINDED; i++)
     {
@@ -462,9 +461,9 @@ GPUVertexLayoutVulkan::GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elem
         binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     }
     uint32 bindingsCount = 0;
-    for (int32 i = 0; i < _elements.Count(); i++)
+    for (int32 i = 0; i < elements.Count(); i++)
     {
-        const VertexElement& src = _elements.Get()[i];
+        const VertexElement& src = elements.Get()[i];
         uint32& offset = offsets[src.Slot];
         if (src.Offset != 0)
             offset = src.Offset;
@@ -485,11 +484,12 @@ GPUVertexLayoutVulkan::GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elem
         bindingsCount = Math::Max(bindingsCount, (uint32)src.Slot + 1);
         offset += size;
     }
+    SetElements(elements, offsets);
 
     RenderToolsVulkan::ZeroStruct(CreateInfo, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
     CreateInfo.vertexBindingDescriptionCount = bindingsCount;
     CreateInfo.pVertexBindingDescriptions = Bindings;
-    CreateInfo.vertexAttributeDescriptionCount = _elements.Count();
+    CreateInfo.vertexAttributeDescriptionCount = elements.Count();
     CreateInfo.pVertexAttributeDescriptions = Attributes;
 }
 

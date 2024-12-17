@@ -40,11 +40,10 @@ GPUVertexLayoutDX12::GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& 
     : GPUResourceDX12<GPUVertexLayout>(device, StringView::Empty)
     , InputElementsCount(elements.Count())
 {
-    _elements = elements;
     uint32 offsets[GPU_MAX_VB_BINDED] = {};
-    for (int32 i = 0; i < _elements.Count(); i++)
+    for (int32 i = 0; i < elements.Count(); i++)
     {
-        const VertexElement& src = _elements.Get()[i];
+        const VertexElement& src = elements.Get()[i];
         D3D12_INPUT_ELEMENT_DESC& dst = InputElements[i];
         uint32& offset = offsets[src.Slot];
         if (src.Offset != 0)
@@ -57,6 +56,7 @@ GPUVertexLayoutDX12::GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& 
         dst.InstanceDataStepRate = src.PerInstance ? 1 : 0;
         offset += PixelFormatExtensions::SizeInBytes(src.Format);
     }
+    SetElements(elements, offsets);
 }
 
 GPUDevice* GPUDeviceDX12::Create()

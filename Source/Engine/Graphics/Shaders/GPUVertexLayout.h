@@ -16,10 +16,14 @@ API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUVertexLayout : public GPUReso
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUVertexLayout);
     typedef Array<VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>> Elements;
 
-protected:
+private:
     Elements _elements;
+    uint32 _stride;
 
+protected:
     GPUVertexLayout();
+
+    void SetElements(const Elements& elements, uint32 offsets[GPU_MAX_VS_ELEMENTS]);
 
 public:
     /// <summary>
@@ -28,6 +32,14 @@ public:
     API_PROPERTY() FORCE_INLINE const Array<VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>>& GetElements() const
     {
         return _elements;
+    }
+
+    /// <summary>
+    /// Gets the size in bytes of all elements in the layout structure (including their offsets).
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE uint32 GetStride() const
+    {
+        return _stride;
     }
 
     /// <summary>

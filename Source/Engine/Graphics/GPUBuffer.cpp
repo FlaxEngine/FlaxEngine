@@ -6,6 +6,7 @@
 #include "GPUBufferDescription.h"
 #include "PixelFormatExtensions.h"
 #include "RenderTask.h"
+#include "Shaders/GPUVertexLayout.h"
 #include "Async/Tasks/GPUCopyResourceTask.h"
 #include "Engine/Core/Utilities.h"
 #include "Engine/Core/Types/String.h"
@@ -73,6 +74,20 @@ GPUBufferDescription GPUBufferDescription::Vertex(GPUVertexLayout* layout, uint3
     desc.Usage = GPUResourceUsage::Default;
     desc.VertexLayout = layout;
     return desc;
+}
+
+GPUBufferDescription GPUBufferDescription::Vertex(GPUVertexLayout* layout, uint32 elementsCount, const void* data)
+{
+    const uint32 stride = layout ? layout->GetStride() : 0;
+    CHECK_RETURN_DEBUG(stride, GPUBufferDescription());
+    return Vertex(layout, stride, elementsCount, data);
+}
+
+GPUBufferDescription GPUBufferDescription::Vertex(GPUVertexLayout* layout, uint32 elementsCount, GPUResourceUsage usage)
+{
+    const uint32 stride = layout ? layout->GetStride() : 0;
+    CHECK_RETURN_DEBUG(stride, GPUBufferDescription());
+    return Vertex(layout, stride, elementsCount, usage);
 }
 
 void GPUBufferDescription::Clear()

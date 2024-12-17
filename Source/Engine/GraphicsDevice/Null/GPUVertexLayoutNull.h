@@ -15,7 +15,7 @@ public:
 	GPUVertexLayoutNull(const Elements& elements)
 		: GPUVertexLayout()
 	{
-        _elements = elements;
+        SetElements(elements, {});
 	}
 };
 
