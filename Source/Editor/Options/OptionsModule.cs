@@ -284,6 +284,7 @@ namespace FlaxEditor.Options
             var style = new Style
             {
                 Background = Color.FromBgra(0xFF1C1C1C),
+                BackgroundSeparator = Color.FromHex("#121212FF"),
                 LightBackground = Color.FromBgra(0xFF2D2D30),
                 Foreground = Color.FromBgra(0xFFFFFFFF),
                 ForegroundGrey = Color.FromBgra(0xFFA9A9B3),
@@ -346,6 +347,7 @@ namespace FlaxEditor.Options
             var style = new Style
             {
                 Background = new Color(0.92f, 0.92f, 0.92f, 1f),
+                BackgroundSeparator = Color.FromHex("#121212FF"),
                 LightBackground = new Color(0.84f, 0.84f, 0.88f, 1f),
                 DragWindow = new Color(0.0f, 0.26f, 0.43f, 0.70f),
                 Foreground = new Color(0.0f, 0.0f, 0.0f, 1f),
