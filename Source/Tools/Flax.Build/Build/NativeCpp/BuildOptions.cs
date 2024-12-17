@@ -236,6 +236,11 @@ namespace Flax.Build.NativeCpp
             public HashSet<string> Analyzers;
 
             /// <summary>
+            /// The specific warnings to ignore.
+            /// </summary>
+            public HashSet<string> IgnoreSpecificWarnings;
+
+            /// <summary>
             /// True if ignore compilation warnings due to missing code documentation comments.
             /// </summary>
             public bool IgnoreMissingDocumentationWarnings;
@@ -265,6 +270,7 @@ namespace Flax.Build.NativeCpp
                 FileReferences.AddRange(other.FileReferences);
                 Analyzers.AddRange(other.Analyzers);
                 IgnoreMissingDocumentationWarnings |= other.IgnoreMissingDocumentationWarnings;
+                IgnoreSpecificWarnings.AddRange(other.IgnoreSpecificWarnings);
             }
         }
 
@@ -338,6 +344,7 @@ namespace Flax.Build.NativeCpp
             },
             FileReferences = new HashSet<string>(),
             Analyzers = new HashSet<string>(),
+            IgnoreSpecificWarnings = new HashSet<string>(),
         };
 
         /// <summary>

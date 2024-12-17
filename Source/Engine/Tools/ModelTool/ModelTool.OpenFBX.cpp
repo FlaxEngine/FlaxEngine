@@ -780,6 +780,24 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         }
     }
 
+    // Reverse winding order
+    if (data.Options.ReverseWindingOrder)
+    {
+        uint32* meshIndices = mesh.Indices.Get();
+        Float3* meshPositions = mesh.Positions.Get();
+        Float3* meshNormals = mesh.Normals.HasItems() ? mesh.Normals.Get() : nullptr;
+        Float3* meshTangents = mesh.Tangents.HasItems() ? mesh.Tangents.Get() : nullptr;
+
+        for (int i = 0; i < vertexCount; i += 3) {
+            Swap(meshIndices[i + 1], meshIndices[i + 2]);
+            Swap(meshPositions[i + 1], meshPositions[i + 2]);
+            if (meshNormals)
+                Swap(meshNormals[i + 1], meshNormals[i + 2]);
+            if (meshTangents)
+                Swap(meshTangents[i + 1], meshTangents[i + 2]);
+        }
+    }
+
     // Lightmap UVs
     if (data.Options.LightmapUVsSource == ModelLightmapUVsSource::Disable)
     {

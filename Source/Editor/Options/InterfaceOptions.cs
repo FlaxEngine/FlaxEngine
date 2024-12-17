@@ -259,6 +259,13 @@ namespace FlaxEditor.Options
         private TextAlignment _tooltipTextAlignment = TextAlignment.Center;
 
         /// <summary>
+        /// Whether to scroll to the script when a script is added to an actor.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Interface"), EditorOrder(322)]
+        public bool ScrollToScriptOnAdd { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
         /// </summary>
         [DefaultValue(TimestampsFormats.None)]
