@@ -10,6 +10,7 @@
 Light::Light(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Light");
     _drawCategory = SceneRendering::PreRender;
 }
 
@@ -82,6 +83,7 @@ void Light::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 LightWithShadow::LightWithShadow(const SpawnParams& params)
     : Light(params)
 {
+    _name = TEXT("Light With Shadow");
 }
 
 void LightWithShadow::InvalidateShadow()

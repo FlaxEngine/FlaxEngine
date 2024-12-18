@@ -32,6 +32,7 @@ BoxBrush::BoxBrush(const SpawnParams& params)
     , _size(100.0f)
     , _mode(CSG::Mode::Additive)
 {
+    _name = TEXT("Box Brush");
     for (uint32 i = 0; i < ARRAY_COUNT(Surfaces); i++)
     {
         auto& surface = Surfaces[i];

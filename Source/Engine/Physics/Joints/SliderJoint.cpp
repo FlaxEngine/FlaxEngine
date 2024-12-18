@@ -8,6 +8,7 @@ SliderJoint::SliderJoint(const SpawnParams& params)
     : Joint(params)
     , _flags(SliderJointFlag::Limit)
 {
+    _name = TEXT("Slider Joint");
     _limit.Lower = -50.0f;
     _limit.Upper = 50.0f;
 }
