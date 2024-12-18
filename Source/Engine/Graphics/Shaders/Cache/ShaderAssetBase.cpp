@@ -78,14 +78,12 @@ int32 ShaderAssetBase::GetCacheChunkIndex(ShaderProfile profile)
 
 bool ShaderAssetBase::initBase(AssetInitData& initData)
 {
-    // Validate version
+    // Validate
     if (initData.SerializedVersion != ShaderStorage::Header::Version)
     {
         LOG(Warning, "Invalid shader serialized version.");
         return true;
     }
-
-    // Validate data
     if (initData.CustomData.Length() != sizeof(_shaderHeader))
     {
         LOG(Warning, "Invalid shader header.");

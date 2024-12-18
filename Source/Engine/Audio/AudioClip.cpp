@@ -302,11 +302,6 @@ void AudioClip::CancelStreamingTasks()
 bool AudioClip::init(AssetInitData& initData)
 {
     // Validate
-    if (initData.SerializedVersion != SerializedVersion)
-    {
-        LOG(Warning, "Invalid audio clip serialized version.");
-        return true;
-    }
     if (initData.CustomData.Length() != sizeof(AudioHeader))
     {
         LOG(Warning, "Missing audio data.");

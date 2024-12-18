@@ -228,13 +228,6 @@ bool FontAsset::init(AssetInitData& initData)
 {
     if (IsVirtual())
         return false;
-
-    // Validate
-    if (initData.SerializedVersion != SerializedVersion)
-    {
-        LOG(Error, "Invalid serialized font asset version.");
-        return true;
-    }
     if (initData.CustomData.Length() != sizeof(_options))
     {
         LOG(Error, "Missing font asset header.");

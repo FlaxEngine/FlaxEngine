@@ -777,11 +777,6 @@ bool TextureBase::init(AssetInitData& initData)
 {
     if (IsVirtual())
         return false;
-    if (initData.SerializedVersion != TexturesSerializedVersion)
-    {
-        LOG(Error, "Invalid serialized texture version.");
-        return true;
-    }
 
     // Get texture header for asset custom data (fast access)
     TextureHeader textureHeader;
