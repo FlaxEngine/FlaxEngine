@@ -136,26 +136,17 @@ namespace
 
 bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const void* ib, bool use16BitIndices)
 {
-    auto model = (Model*)_model;
-
-    Unload();
+    Release();
 
     // Setup GPU resources
-    model->LODs[_lodIndex]._verticesCount -= _vertices;
     const bool failed = Load(vertexCount, triangleCount, vb0, vb1, vb2, ib, use16BitIndices);
     if (!failed)
     {
-        model->LODs[_lodIndex]._verticesCount += _vertices;
-
         // Calculate mesh bounds
         BoundingBox bounds;
         BoundingBox::FromPoints((const Float3*)vb0, vertexCount, bounds);
         SetBounds(bounds);
-
-        // Send event (actors using this model can update bounds, etc.)
-        model->onLoaded();
     }
-
     return failed;
 }
 
@@ -169,90 +160,19 @@ bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* ve
     return ::UpdateMesh<uint32>(this, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
 }
 
-void Mesh::Init(Model* model, int32 lodIndex, int32 index, int32 materialSlotIndex, const BoundingBox& box, const BoundingSphere& sphere, bool hasLightmapUVs)
-{
-    _model = model;
-    _lodIndex = lodIndex;
-    _index = index;
-    _materialSlotIndex = materialSlotIndex;
-    _use16BitIndexBuffer = false;
-    _hasLightmapUVs = hasLightmapUVs;
-    _box = box;
-    _sphere = sphere;
-    _vertices = 0;
-    _triangles = 0;
-    _vertexBuffers[0] = nullptr;
-    _vertexBuffers[1] = nullptr;
-    _vertexBuffers[2] = nullptr;
-    _indexBuffer = nullptr;
-}
-
 bool Mesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* vb1, const void* vb2, const void* ib, bool use16BitIndexBuffer)
 {
-    // Cache data
-    uint32 indicesCount = triangles * 3;
-    uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-
-    GPUBuffer* vertexBuffer0 = nullptr;
-    GPUBuffer* vertexBuffer1 = nullptr;
-    GPUBuffer* vertexBuffer2 = nullptr;
-    GPUBuffer* indexBuffer = nullptr;
-
-    // Create GPU buffers
-#if GPU_ENABLE_RESOURCE_NAMING
-#define MESH_BUFFER_NAME(postfix) GetModel()->GetPath() + TEXT(postfix)
-#else
-#define MESH_BUFFER_NAME(postfix) String::Empty
-#endif
-    vertexBuffer0 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB0"));
-    if (vertexBuffer0->Init(GPUBufferDescription::Vertex(VB0ElementType::GetLayout(), sizeof(VB0ElementType), vertices, vb0)))
-        goto ERROR_LOAD_END;
-    vertexBuffer1 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB1"));
-    if (vertexBuffer1->Init(GPUBufferDescription::Vertex(VB1ElementType::GetLayout(), sizeof(VB1ElementType), vertices, vb1)))
-        goto ERROR_LOAD_END;
+    Array<const void*, FixedAllocation<3>> vbData;
+    vbData.Add(vb0);
+    if (vb1)
+        vbData.Add(vb1);
     if (vb2)
-    {
-        vertexBuffer2 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB2"));
-        if (vertexBuffer2->Init(GPUBufferDescription::Vertex(VB2ElementType::GetLayout(), sizeof(VB2ElementType), vertices, vb2)))
-            goto ERROR_LOAD_END;
-    }
-    indexBuffer = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".IB"));
-    if (indexBuffer->Init(GPUBufferDescription::Index(ibStride, indicesCount, ib)))
-        goto ERROR_LOAD_END;
-
-    // Init collision proxy
-#if USE_PRECISE_MESH_INTERSECTS
-    if (!_collisionProxy.HasData())
-    {
-        if (use16BitIndexBuffer)
-            _collisionProxy.Init<uint16>(vertices, triangles, (Float3*)vb0, (uint16*)ib);
-        else
-            _collisionProxy.Init<uint32>(vertices, triangles, (Float3*)vb0, (uint32*)ib);
-    }
-#endif
-
-    // Initialize
-    _vertexBuffers[0] = vertexBuffer0;
-    _vertexBuffers[1] = vertexBuffer1;
-    _vertexBuffers[2] = vertexBuffer2;
-    _indexBuffer = indexBuffer;
-    _triangles = triangles;
-    _vertices = vertices;
-    _use16BitIndexBuffer = use16BitIndexBuffer;
-    _cachedVertexBuffers[0].Clear();
-    _cachedVertexBuffers[1].Clear();
-    _cachedVertexBuffers[2].Clear();
-
-    return false;
-
-#undef MESH_BUFFER_NAME
-ERROR_LOAD_END:
-
-    SAFE_DELETE_GPU_RESOURCE(vertexBuffer0);
-    SAFE_DELETE_GPU_RESOURCE(vertexBuffer1);
-    SAFE_DELETE_GPU_RESOURCE(vertexBuffer2);
-    SAFE_DELETE_GPU_RESOURCE(indexBuffer);
-    return true;
+        vbData.Add(vb2);
+    Array<GPUVertexLayout*, FixedAllocation<3>> vbLayout;
+    vbLayout.Add(VB0ElementType::GetLayout());
+    vbLayout.Add(VB1ElementType::GetLayout());
+    vbLayout.Add(VB2ElementType::GetLayout());
+    return Init(vertices, triangles, vbData, ib, use16BitIndexBuffer, vbLayout);
 }
 
 void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int8 sortOrder) const
@@ -422,6 +342,26 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     const auto drawModes = info.DrawModes & material->GetDrawModes();
     if (drawModes != DrawPass::None)
         renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, info.Flags, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals, info.SortOrder);
+}
+
+bool Mesh::Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<3>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<3>>& vbLayout)
+{
+    if (MeshBase::Init(vertices, triangles, vbData, ibData, use16BitIndexBuffer, vbLayout))
+        return true;
+
+    auto model = (Model*)_model;
+    if (model)
+        model->LODs[_lodIndex]._verticesCount += _vertices;
+    return false;
+}
+
+void Mesh::Release()
+{
+    auto model = (Model*)_model;
+    if (model)
+        model->LODs[_lodIndex]._verticesCount -= _vertices;
+
+    MeshBase::Release();
 }
 
 bool Mesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const

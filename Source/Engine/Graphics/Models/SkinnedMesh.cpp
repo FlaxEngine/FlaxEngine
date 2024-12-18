@@ -94,71 +94,17 @@ void SkeletonData::Dispose()
     Bones.Resize(0);
 }
 
-void SkinnedMesh::Init(SkinnedModel* model, int32 lodIndex, int32 index, int32 materialSlotIndex, const BoundingBox& box, const BoundingSphere& sphere)
-{
-    _model = model;
-    _index = index;
-    _lodIndex = lodIndex;
-    _materialSlotIndex = materialSlotIndex;
-    _use16BitIndexBuffer = false;
-    _box = box;
-    _sphere = sphere;
-    _vertices = 0;
-    _triangles = 0;
-    _vertexBuffers[0] = nullptr;
-    _indexBuffer = nullptr;
-    _cachedIndexBuffer.Clear();
-    _cachedVertexBuffers[0].Clear();
-    BlendShapes.Clear();
-}
-
 bool SkinnedMesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* ib, bool use16BitIndexBuffer)
 {
-    // Cache data
-    uint32 indicesCount = triangles * 3;
-    uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-
-    GPUBuffer* vertexBuffer = nullptr;
-    GPUBuffer* indexBuffer = nullptr;
-
-    // Create vertex buffer
-#if GPU_ENABLE_RESOURCE_NAMING
-    vertexBuffer = GPUDevice::Instance->CreateBuffer(GetSkinnedModel()->GetPath() + TEXT(".VB"));
-#else
-	vertexBuffer = GPUDevice::Instance->CreateBuffer(String::Empty);
-#endif
-    if (vertexBuffer->Init(GPUBufferDescription::Vertex(VB0SkinnedElementType::GetLayout(), sizeof(VB0SkinnedElementType), vertices, vb0)))
-        goto ERROR_LOAD_END;
-
-    // Create index buffer
-#if GPU_ENABLE_RESOURCE_NAMING
-    indexBuffer = GPUDevice::Instance->CreateBuffer(GetSkinnedModel()->GetPath() + TEXT(".IB"));
-#else
-	indexBuffer = GPUDevice::Instance->CreateBuffer(String::Empty);
-#endif
-    if (indexBuffer->Init(GPUBufferDescription::Index(ibStride, indicesCount, ib)))
-        goto ERROR_LOAD_END;
-
-    // Initialize
-    _vertexBuffers[0] = vertexBuffer;
-    _indexBuffer = indexBuffer;
-    _triangles = triangles;
-    _vertices = vertices;
-    _use16BitIndexBuffer = use16BitIndexBuffer;
-
-    return false;
-
-ERROR_LOAD_END:
-
-    SAFE_DELETE_GPU_RESOURCE(vertexBuffer);
-    SAFE_DELETE_GPU_RESOURCE(indexBuffer);
-    return true;
+    Array<const void*, FixedAllocation<3>> vbData;
+    vbData.Add(vb0);
+    Array<GPUVertexLayout*, FixedAllocation<3>> vbLayout;
+    vbLayout.Add(VB0SkinnedElementType::GetLayout());
+    return Init(vertices, triangles, vbData, ib, use16BitIndexBuffer, vbLayout);
 }
 
 bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const void* ib, bool use16BitIndices)
 {
-    auto model = (SkinnedModel*)_model;
-
     // Setup GPU resources
     const bool failed = Load(vertexCount, triangleCount, vb, ib, use16BitIndices);
     if (!failed)
@@ -167,11 +113,7 @@ bool SkinnedMesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0
         BoundingBox bounds;
         BoundingBox::FromPoints((const Float3*)vb, vertexCount, bounds);
         SetBounds(bounds);
-
-        // Send event (actors using this model can update bounds, etc.)
-        model->onLoaded();
     }
-
     return failed;
 }
 
@@ -265,6 +207,13 @@ void SkinnedMesh::Draw(const RenderContextBatch& renderContextBatch, const DrawI
     const auto drawModes = info.DrawModes & material->GetDrawModes();
     if (drawModes != DrawPass::None)
         renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, StaticFlags::None, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals, info.SortOrder);
+}
+
+void SkinnedMesh::Release()
+{
+    MeshBase::Release();
+    
+    BlendShapes.Clear();
 }
 
 bool SkinnedMesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const

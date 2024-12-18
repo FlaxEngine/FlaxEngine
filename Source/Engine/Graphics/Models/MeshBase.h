@@ -31,29 +31,39 @@ class BlendShapesInstance;
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API MeshBase : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(MeshBase);
+    friend class Model;
+    friend class SkinnedModel;
 
 protected:
-    ModelBase* _model;
-    BoundingBox _box;
-    BoundingSphere _sphere;
+    ModelBase* _model = nullptr;
+    BoundingBox _box = BoundingBox::Zero;
+    BoundingSphere _sphere = BoundingSphere::Empty;
 
-    int32 _index;
-    int32 _lodIndex;
-    uint32 _vertices;
-    uint32 _triangles;
-    int32 _materialSlotIndex;
-    bool _use16BitIndexBuffer;
+    int32 _index = 0;
+    int32 _lodIndex = 0;
+    uint32 _vertices = 0;
+    uint32 _triangles = 0;
+    int32 _materialSlotIndex = 0;
+    bool _use16BitIndexBuffer = false;
+    bool _hasBounds = false;
 
     GPUBuffer* _vertexBuffers[3] = {};
     GPUBuffer* _indexBuffer = nullptr;
 
     mutable Array<byte> _cachedVertexBuffers[3];
     mutable Array<byte> _cachedIndexBuffer;
-    mutable int32 _cachedIndexBufferCount;
+    mutable int32 _cachedIndexBufferCount = 0;
 
 #if USE_PRECISE_MESH_INTERSECTS
     CollisionProxy _collisionProxy;
 #endif
+
+    void Link(ModelBase* model, int32 lodIndex, int32 index)
+    {
+        _model = model;
+        _lodIndex = lodIndex;
+        _index = index;
+    }
 
     explicit MeshBase(const SpawnParams& params)
         : ScriptingObject(params)
@@ -170,6 +180,13 @@ public:
     void SetBounds(const BoundingBox& box);
 
     /// <summary>
+    /// Sets the mesh bounds.
+    /// </summary>
+    /// <param name="box">The bounding box.</param>
+    /// <param name="sphere">The bounding sphere.</param>
+    void SetBounds(const BoundingBox& box, const BoundingSphere& sphere);
+
+    /// <summary>
     /// Gets the index buffer.
     /// </summary>
     FORCE_INLINE GPUBuffer* GetIndexBuffer() const
@@ -189,9 +206,30 @@ public:
 
 public:
     /// <summary>
-    /// Unloads the mesh data (vertex buffers and cache). The opposite to Load.
+    /// Initializes the mesh buffers.
     /// </summary>
-    void Unload();
+    /// <param name="vertices">Amount of vertices in the vertex buffer.</param>
+    /// <param name="triangles">Amount of triangles in the index buffer.</param>
+    /// <param name="vbData">Array with pointers to vertex buffers initial data (layout defined by <paramref name="vertexLayout"/>).</param>
+    /// <param name="ibData">Pointer to index buffer data. Data is uint16 or uint32 depending on <paramref name="use16BitIndexBuffer"/> value.</param>
+    /// <param name="use16BitIndexBuffer">True to use 16-bit indices for the index buffer (true: uint16, false: uint32).</param>
+    /// <param name="vbLayout">Layout descriptors for the vertex buffers attributes (one for each vertex buffer).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    virtual bool Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<3>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<3>>& vbLayout);
+
+    /// <summary>
+    /// Releases the mesh data (GPU buffers and local cache).
+    /// </summary>
+    virtual void Release();
+
+    /// <summary>
+    /// Unloads the mesh data (vertex buffers and cache). The opposite to Load.
+    /// [Deprecated in v1.10]
+    /// </summary>
+    DEPRECATED("Use Release instead.") void Unload()
+    {
+        Release();
+    }
 
 public:
     /// <summary>

@@ -48,7 +48,6 @@ void MeshBase::SetMaterialSlotIndex(int32 value)
         LOG(Warning, "Cannot set mesh material slot to {0} while model has {1} slots.", value, _model->MaterialSlots.Count());
         return;
     }
-
     _materialSlotIndex = value;
 }
 
@@ -56,9 +55,94 @@ void MeshBase::SetBounds(const BoundingBox& box)
 {
     _box = box;
     BoundingSphere::FromBox(box, _sphere);
+    _hasBounds = true;
 }
 
-void MeshBase::Unload()
+void MeshBase::SetBounds(const BoundingBox& box, const BoundingSphere& sphere)
+{
+    _box = box;
+    _sphere = sphere;
+    _hasBounds = true;
+    if (_model && _model->IsLoaded())
+    {
+        // Send event (actors using this model can update bounds, etc.)
+        _model->onLoaded();
+    }
+}
+
+bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<3>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<3>>& vbLayout)
+{
+    CHECK_RETURN(vbData.HasItems() && vertices, true);
+    CHECK_RETURN(ibData, true);
+    CHECK_RETURN(vbLayout.Count() >= vbData.Count(), true);
+    ASSERT(_model);
+    GPUBuffer* vertexBuffer0 = nullptr;
+    GPUBuffer* vertexBuffer1 = nullptr;
+    GPUBuffer* vertexBuffer2 = nullptr;
+    GPUBuffer* indexBuffer = nullptr;
+
+    // Create GPU buffers
+#if GPU_ENABLE_RESOURCE_NAMING
+    const String& modelPath = _model->GetPath();
+#define MESH_BUFFER_NAME(postfix) modelPath + TEXT(postfix)
+#else
+#define MESH_BUFFER_NAME(postfix) String::Empty
+#endif
+    vertexBuffer0 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB0"));
+    if (vertexBuffer0->Init(GPUBufferDescription::Vertex(vbLayout[0], vertices, vbData[0])))
+        goto ERROR_LOAD_END;
+    if (vbData.Count() >= 2 && vbData[1])
+    {
+        vertexBuffer1 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB1"));
+        if (vertexBuffer1->Init(GPUBufferDescription::Vertex(vbLayout[1], vertices, vbData[1])))
+            goto ERROR_LOAD_END;
+    }
+    if (vbData.Count() >= 3 && vbData[2])
+    {
+        vertexBuffer2 = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".VB2"));
+        if (vertexBuffer2->Init(GPUBufferDescription::Vertex(vbLayout[2], vertices, vbData[2])))
+            goto ERROR_LOAD_END;
+    }
+    indexBuffer = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".IB"));
+    if (indexBuffer->Init(GPUBufferDescription::Index(use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32), triangles * 3, ibData)))
+        goto ERROR_LOAD_END;
+
+    // Init collision proxy
+#if USE_PRECISE_MESH_INTERSECTS
+    if (!_collisionProxy.HasData())
+    {
+        if (use16BitIndexBuffer)
+            _collisionProxy.Init<uint16>(vertices, triangles, (const Float3*)vbData[0], (const uint16*)ibData);
+        else
+            _collisionProxy.Init<uint32>(vertices, triangles, (const Float3*)vbData[0], (const uint32*)ibData);
+    }
+#endif
+
+    // Initialize
+    _vertexBuffers[0] = vertexBuffer0;
+    _vertexBuffers[1] = vertexBuffer1;
+    _vertexBuffers[2] = vertexBuffer2;
+    _indexBuffer = indexBuffer;
+    _triangles = triangles;
+    _vertices = vertices;
+    _use16BitIndexBuffer = use16BitIndexBuffer;
+    _cachedVertexBuffers[0].Clear();
+    _cachedVertexBuffers[1].Clear();
+    _cachedVertexBuffers[2].Clear();
+
+    return false;
+
+#undef MESH_BUFFER_NAME
+ERROR_LOAD_END:
+
+    SAFE_DELETE_GPU_RESOURCE(vertexBuffer0);
+    SAFE_DELETE_GPU_RESOURCE(vertexBuffer1);
+    SAFE_DELETE_GPU_RESOURCE(vertexBuffer2);
+    SAFE_DELETE_GPU_RESOURCE(indexBuffer);
+    return true;
+}
+
+void MeshBase::Release()
 {
     SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[0]);
     SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[1]);

@@ -16,9 +16,6 @@ API_CLASS(NoSpawn) class FLAXENGINE_API Mesh : public MeshBase
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase);
 
-protected:
-    bool _hasLightmapUVs;
-
 public:
     Mesh(const Mesh& other)
         : Mesh()
@@ -40,10 +37,15 @@ public:
     /// <summary>
     /// Determines whether this mesh contains valid lightmap texture coordinates data.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool HasLightmapUVs() const
+    API_PROPERTY() bool HasLightmapUVs() const
     {
-        return _hasLightmapUVs;
+        return LightmapUVsIndex != -1;
     }
+
+    /// <summary>
+    /// Lightmap texture coordinates channel index.
+    /// </summary>
+    API_FIELD() int32 LightmapUVsIndex = -1;
 
 public:
     /// <summary>
@@ -125,19 +127,8 @@ public:
 
 public:
     /// <summary>
-    /// Initializes instance of the <see cref="Mesh"/> class.
-    /// </summary>
-    /// <param name="model">The model.</param>
-    /// <param name="lodIndex">The LOD index.</param>
-    /// <param name="index">The mesh index.</param>
-    /// <param name="materialSlotIndex">The material slot index to use.</param>
-    /// <param name="box">The bounding box.</param>
-    /// <param name="sphere">The bounding sphere.</param>
-    /// <param name="hasLightmapUVs">The lightmap UVs flag.</param>
-    void Init(Model* model, int32 lodIndex, int32 index, int32 materialSlotIndex, const BoundingBox& box, const BoundingSphere& sphere, bool hasLightmapUVs);
-
-    /// <summary>
     /// Load mesh data and Initialize GPU buffers
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="vertices">Amount of vertices in the vertex buffer</param>
     /// <param name="triangles">Amount of triangles in the index buffer</param>
@@ -147,7 +138,7 @@ public:
     /// <param name="ib">Index buffer data</param>
     /// <param name="use16BitIndexBuffer">True if use 16 bit indices for the index buffer (true: uint16, false: uint32).</param>
     /// <returns>True if cannot load data, otherwise false.</returns>
-    bool Load(uint32 vertices, uint32 triangles, const void* vb0, const void* vb1, const void* vb2, const void* ib, bool use16BitIndexBuffer);
+    DEPRECATED("Use Init intead.") bool Load(uint32 vertices, uint32 triangles, const void* vb0, const void* vb1, const void* vb2, const void* ib, bool use16BitIndexBuffer);
 
 public:
     /// <summary>
@@ -181,6 +172,8 @@ public:
 
 public:
     // [MeshBase]
+    bool Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<3>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<3>>& vbLayout) override;
+    void Release() override;
     bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const override;
 
 private:

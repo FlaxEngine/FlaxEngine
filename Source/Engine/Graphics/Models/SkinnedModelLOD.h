@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Collections/Array.h"
 #include "SkinnedMesh.h"
 
 class MemoryReadStream;
@@ -46,23 +45,6 @@ public:
         return Meshes.HasItems() && Meshes.Last().IsInitialized();
     }
 
-public:
-    /// <summary>
-    /// Initializes the LOD from the data stream.
-    /// </summary>
-    /// <param name="stream">The stream.</param>
-    /// <returns>True if fails, otherwise false.</returns>
-    bool Load(MemoryReadStream& stream);
-
-    /// <summary>
-    /// Unloads the LOD meshes data (vertex buffers and cache). It won't dispose the meshes collection. The opposite to Load.
-    /// </summary>
-    void Unload();
-
-    /// <summary>
-    /// Cleanups the data.
-    /// </summary>
-    void Dispose();
 
 public:
     /// <summary>

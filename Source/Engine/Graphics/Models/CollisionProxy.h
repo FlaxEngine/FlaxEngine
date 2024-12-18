@@ -31,12 +31,12 @@ public:
     }
 
     template<typename IndexType>
-    void Init(uint32 vertices, uint32 triangles, Float3* positions, IndexType* indices)
+    void Init(uint32 vertices, uint32 triangles, const Float3* positions, const IndexType* indices)
     {
         Triangles.Clear();
         Triangles.EnsureCapacity(triangles, false);
 
-        IndexType* it = indices;
+        const IndexType* it = indices;
         for (uint32 i = 0; i < triangles; i++)
         {
             auto i0 = *(it++);

@@ -87,8 +87,8 @@ void GPUVertexLayout::SetElements(const Elements& elements, uint32 offsets[GPU_M
         strides[e.Slot] = Math::Max(strides[e.Slot], offsets[e.Slot]);
     }
     _stride = 0;
-    for (int32 i = 0; i < GPU_MAX_VB_BINDED; i++)
-        _stride += strides[i];
+    for (uint32 stride : strides)
+        _stride += stride;
 }
 
 GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements)

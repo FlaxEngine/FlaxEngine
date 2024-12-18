@@ -8,8 +8,6 @@
 #include "Engine/Graphics/Models/SkeletonData.h"
 #include "Engine/Graphics/Models/SkinnedModelLOD.h"
 
-class StreamSkinnedModelLODTask;
-
 /// <summary>
 /// Skinned model asset that contains model object made of meshes that can be rendered on the GPU using skeleton bones skinning.
 /// </summary>
@@ -17,7 +15,6 @@ API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModel : public ModelBase
 {
     DECLARE_BINARY_ASSET_HEADER(SkinnedModel, 5);
     friend SkinnedMesh;
-    friend StreamSkinnedModelLODTask;
 public:
     // Skeleton mapping descriptor.
     struct FLAXENGINE_API SkeletonMapping
@@ -37,9 +34,6 @@ private:
         Span<int32> NodesMapping;
     };
 
-    bool _initialized = false;
-    int32 _loadedLODs = 0;
-    StreamSkinnedModelLODTask* _streamingTask = nullptr;
     Dictionary<Asset*, SkeletonMappingData> _skeletonMappingCache;
 
 public:
@@ -61,51 +55,9 @@ public:
 
 public:
     /// <summary>
-    /// Gets a value indicating whether this instance is initialized. 
-    /// </summary>
-    FORCE_INLINE bool IsInitialized() const
-    {
-        return _initialized;
-    }
-
-    /// <summary>
-    /// Gets the amount of loaded model LODs.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE int32 GetLoadedLODs() const
-    {
-        return _loadedLODs;
-    }
-
-    /// <summary>
-    /// Clamps the index of the LOD to be valid for rendering (only loaded LODs).
-    /// </summary>
-    /// <param name="index">The index.</param>
-    /// <returns>The resident LOD index.</returns>
-    FORCE_INLINE int32 ClampLODIndex(int32 index) const
-    {
-        return Math::Clamp(index, HighestResidentLODIndex(), LODs.Count() - 1);
-    }
-
-    /// <summary>
-    /// Gets index of the highest resident LOD (may be equal to LODs.Count if no LOD has been uploaded). Note: LOD=0 is the highest (top quality)
-    /// </summary>
-    FORCE_INLINE int32 HighestResidentLODIndex() const
-    {
-        return LODs.Count() - _loadedLODs;
-    }
-
-    /// <summary>
     /// Determines whether any LOD has been initialized.
     /// </summary>
     bool HasAnyLODInitialized() const;
-
-    /// <summary>
-    /// Determines whether this model can be rendered.
-    /// </summary>
-    FORCE_INLINE bool CanBeRendered() const
-    {
-        return _loadedLODs > 0;
-    }
 
     /// <summary>
     /// Gets the skeleton nodes hierarchy.
@@ -159,20 +111,6 @@ public:
     API_PROPERTY() Array<String> GetBlendShapes();
 
 public:
-    /// <summary>
-    /// Requests the LOD data asynchronously (creates task that will gather chunk data or null if already here).
-    /// </summary>
-    /// <param name="lodIndex">Index of the LOD.</param>
-    /// <returns>Task that will gather chunk data or null if already here.</returns>
-    ContentLoadTask* RequestLODDataAsync(int32 lodIndex);
-
-    /// <summary>
-    /// Gets the model LOD data (links bytes).
-    /// </summary>
-    /// <param name="lodIndex">Index of the LOD.</param>
-    /// <param name="data">The data (may be missing if failed to get it).</param>
-    void GetLODData(int32 lodIndex, BytesContainer& data) const;
-
     /// <summary>
     /// Gets the skeleton mapping for a given asset (animation or other skinned model). Uses identity mapping or manually created retargeting setup.
     /// </summary>
@@ -322,24 +260,14 @@ public:
     int32 GetLODsCount() const override;
     void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) override;
     void InitAsVirtual() override;
-    void CancelStreaming() override;
-#if USE_EDITOR
-    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
-#endif
 
     // [StreamableResource]
     int32 GetMaxResidency() const override;
-    int32 GetCurrentResidency() const override;
     int32 GetAllocatedResidency() const override;
-    bool CanBeUpdated() const override;
-    Task* UpdateAllocation(int32 residency) override;
-    Task* CreateStreamingTask(int32 residency) override;
-    void CancelStreamingTasks() override;
 
 protected:
     // [ModelBase]
     LoadResult load() override;
     void unload(bool isReloading) override;
-    bool init(AssetInitData& initData) override;
     AssetChunksFlag getChunksToPreload() const override;
 };

@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include "Engine/Core/Collections/Array.h"
 #include "Mesh.h"
 
 class MemoryReadStream;
@@ -18,7 +17,14 @@ API_CLASS(NoSpawn) class FLAXENGINE_API ModelLOD : public ScriptingObject
 private:
     Model* _model = nullptr;
     int32 _lodIndex = 0;
-    uint32 _verticesCount;
+    uint32 _verticesCount = 0;
+    
+    void Link(Model* model, int32 lodIndex)
+    {
+        _model = model;
+        _lodIndex = lodIndex;
+        _verticesCount = 0;
+    }
 
 public:
     /// <summary>
@@ -56,24 +62,6 @@ public:
     {
         return _verticesCount;
     }
-
-public:
-    /// <summary>
-    /// Initializes the LOD from the data stream.
-    /// </summary>
-    /// <param name="stream">The stream.</param>
-    /// <returns>True if fails, otherwise false.</returns>
-    bool Load(MemoryReadStream& stream);
-
-    /// <summary>
-    /// Unloads the LOD meshes data (vertex buffers and cache). It won't dispose the meshes collection. The opposite to Load.
-    /// </summary>
-    void Unload();
-
-    /// <summary>
-    /// Cleanups the data.
-    /// </summary>
-    void Dispose();
 
 public:
     /// <summary>

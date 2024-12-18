@@ -13,100 +13,12 @@
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
 #include "Engine/Graphics/Models/Config.h"
 #include "Engine/Content/Content.h"
-#include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Upgraders/SkinnedModelAssetUpgrader.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
+#include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/DrawCall.h"
-
-#define CHECK_INVALID_BUFFER(model, buffer) \
-    if (buffer->IsValidFor(model) == false) \
-	{ \
-		buffer->Setup(model); \
-	}
-
-/// <summary>
-/// Skinned model data streaming task
-/// </summary>
-class StreamSkinnedModelLODTask : public ThreadPoolTask
-{
-private:
-    WeakAssetReference<SkinnedModel> _asset;
-    int32 _lodIndex;
-    FlaxStorage::LockData _dataLock;
-
-public:
-    /// <summary>
-    /// Init
-    /// </summary>
-    /// <param name="model">Parent model</param>
-    /// <param name="lodIndex">LOD to stream index</param>
-    StreamSkinnedModelLODTask(SkinnedModel* model, int32 lodIndex)
-        : _asset(model)
-        , _lodIndex(lodIndex)
-        , _dataLock(model->Storage->Lock())
-    {
-    }
-
-public:
-    // [ThreadPoolTask]
-    bool HasReference(Object* resource) const override
-    {
-        return _asset == resource;
-    }
-
-protected:
-    // [ThreadPoolTask]
-    bool Run() override
-    {
-        AssetReference<SkinnedModel> model = _asset.Get();
-        if (model == nullptr)
-        {
-            return true;
-        }
-
-        // Get data
-        BytesContainer data;
-        model->GetLODData(_lodIndex, data);
-        if (data.IsInvalid())
-        {
-            LOG(Warning, "Missing data chunk");
-            return true;
-        }
-        MemoryReadStream stream(data.Get(), data.Length());
-
-        // Note: this is running on thread pool task so we must be sure that updated LOD is not used at all (for rendering)
-
-        // Load model LOD (initialize vertex and index buffers)
-        if (model->LODs[_lodIndex].Load(stream))
-        {
-            LOG(Warning, "Cannot load LOD{1} for model \'{0}\'", model->ToString(), _lodIndex);
-            return true;
-        }
-
-        // Update residency level
-        model->_loadedLODs++;
-        model->ResidencyChanged();
-
-        return false;
-    }
-
-    void OnEnd() override
-    {
-        // Unlink
-        if (_asset)
-        {
-            ASSERT(_asset->_streamingTask == this);
-            _asset->_streamingTask = nullptr;
-            _asset = nullptr;
-        }
-        _dataLock.Release();
-
-        // Base
-        ThreadPoolTask::OnEnd();
-    }
-};
 
 REGISTER_BINARY_ASSET_WITH_UPGRADER(SkinnedModel, "FlaxEngine.SkinnedModel", SkinnedModelAssetUpgrader, true);
 
@@ -141,18 +53,6 @@ Array<String> SkinnedModel::GetBlendShapes()
         }
     }
     return result;
-}
-
-ContentLoadTask* SkinnedModel::RequestLODDataAsync(int32 lodIndex)
-{
-    const int32 chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
-    return RequestChunkDataAsync(chunkIndex);
-}
-
-void SkinnedModel::GetLODData(int32 lodIndex, BytesContainer& data) const
-{
-    const int32 chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
-    GetChunkData(chunkIndex, data);
 }
 
 SkinnedModel::SkeletonMapping SkinnedModel::GetSkeletonMapping(Asset* source, bool autoRetarget)
@@ -328,9 +228,10 @@ FORCE_INLINE void SkinnedModelDraw(SkinnedModel* model, const RenderContext& ren
     ASSERT(info.Buffer);
     if (!model->CanBeRendered())
         return;
+    if (!info.Buffer->IsValidFor(model))
+		info.Buffer->Setup(model);
     const auto frame = Engine::FrameCount;
     const auto modelFrame = info.DrawState->PrevFrame + 1;
-    CHECK_INVALID_BUFFER(model, info.Buffer);
 
     // Select a proper LOD index (model may be culled)
     int32 lodIndex;
@@ -846,8 +747,6 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
     // Setup
     MaterialSlots.Resize(1);
     MinScreenSize = 0.0f;
-    for (int32 lodIndex = 0; lodIndex < LODs.Count(); lodIndex++)
-        LODs[lodIndex].Dispose();
     LODs.Resize(meshesCountPerLod.Length());
     _initialized = true;
 
@@ -865,7 +764,7 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
         lod.Meshes.Resize(meshesCount);
         for (int32 meshIndex = 0; meshIndex < meshesCount; meshIndex++)
         {
-            lod.Meshes[meshIndex].Init(this, lodIndex, meshIndex, 0, BoundingBox::Zero, BoundingSphere::Empty);
+            lod.Meshes[meshIndex].Link(this, lodIndex, meshIndex);
         }
     }
 
@@ -971,97 +870,14 @@ void SkinnedModel::InitAsVirtual()
     BinaryAsset::InitAsVirtual();
 }
 
-void SkinnedModel::CancelStreaming()
-{
-    Asset::CancelStreaming();
-    CancelStreamingTasks();
-}
-
-#if USE_EDITOR
-
-void SkinnedModel::GetReferences(Array<Guid>& assets, Array<String>& files) const
-{
-    // Base
-    BinaryAsset::GetReferences(assets, files);
-
-    for (int32 i = 0; i < MaterialSlots.Count(); i++)
-        assets.Add(MaterialSlots[i].Material.GetID());
-}
-
-#endif
-
 int32 SkinnedModel::GetMaxResidency() const
 {
     return LODs.Count();
 }
 
-int32 SkinnedModel::GetCurrentResidency() const
-{
-    return _loadedLODs;
-}
-
 int32 SkinnedModel::GetAllocatedResidency() const
 {
     return LODs.Count();
-}
-
-bool SkinnedModel::CanBeUpdated() const
-{
-    // Check if is ready and has no streaming tasks running
-    return IsInitialized() && _streamingTask == nullptr;
-}
-
-Task* SkinnedModel::UpdateAllocation(int32 residency)
-{
-    // SkinnedModels are not using dynamic allocation feature
-    return nullptr;
-}
-
-Task* SkinnedModel::CreateStreamingTask(int32 residency)
-{
-    ScopeLock lock(Locker);
-
-    ASSERT(IsInitialized() && Math::IsInRange(residency, 0, LODs.Count()) && _streamingTask == nullptr);
-    Task* result = nullptr;
-    const int32 lodCount = residency - GetCurrentResidency();
-
-    // Switch if go up or down with residency
-    if (lodCount > 0)
-    {
-        // Allow only to change LODs count by 1
-        ASSERT(Math::Abs(lodCount) == 1);
-
-        int32 lodIndex = HighestResidentLODIndex() - 1;
-
-        // Request LOD data
-        result = (Task*)RequestLODDataAsync(lodIndex);
-
-        // Add upload data task
-        _streamingTask = New<StreamSkinnedModelLODTask>(this, lodIndex);
-        if (result)
-            result->ContinueWith(_streamingTask);
-        else
-            result = _streamingTask;
-    }
-    else
-    {
-        // Do the quick data release
-        for (int32 i = HighestResidentLODIndex(); i < LODs.Count() - residency; i++)
-            LODs[i].Unload();
-        _loadedLODs = residency;
-        ResidencyChanged();
-    }
-
-    return result;
-}
-
-void SkinnedModel::CancelStreamingTasks()
-{
-    if (_streamingTask)
-    {
-        _streamingTask->Cancel();
-        ASSERT_LOW_LAYER(_streamingTask == nullptr);
-    }
 }
 
 Asset::LoadResult SkinnedModel::load()
@@ -1134,7 +950,8 @@ Asset::LoadResult SkinnedModel::load()
         // For each mesh
         for (uint16 meshIndex = 0; meshIndex < meshesCount; meshIndex++)
         {
-            auto& mesh = lod.Meshes[meshIndex];
+            SkinnedMesh& mesh = lod.Meshes[meshIndex];
+            mesh.Link(this, lodIndex, meshIndex);
 
             // Material Slot index
             int32 materialSlotIndex;
@@ -1144,17 +961,14 @@ Asset::LoadResult SkinnedModel::load()
                 LOG(Warning, "Invalid material slot index {0} for mesh {1}. Slots count: {2}.", materialSlotIndex, meshIndex, materialSlotsCount);
                 return LoadResult::InvalidData;
             }
+            mesh.SetMaterialSlotIndex(materialSlotIndex);
 
-            // Box
+            // Bounds
             BoundingBox box;
             stream->ReadBoundingBox(&box);
-
-            // Sphere
             BoundingSphere sphere;
             stream->ReadBoundingSphere(&sphere);
-
-            // Create mesh object
-            mesh.Init(this, lodIndex, meshIndex, materialSlotIndex, box, sphere);
+            mesh.SetBounds(box, sphere);
 
             // Blend Shapes
             uint16 blendShapes;
@@ -1221,40 +1035,143 @@ Asset::LoadResult SkinnedModel::load()
 
 void SkinnedModel::unload(bool isReloading)
 {
-    // End streaming (if still active)
-    if (_streamingTask != nullptr)
-    {
-        // Cancel streaming task
-        _streamingTask->Cancel();
-        _streamingTask = nullptr;
-    }
+    ModelBase::unload(isReloading);
 
     // Cleanup
-    MaterialSlots.Resize(0);
-    for (int32 i = 0; i < LODs.Count(); i++)
-        LODs[i].Dispose();
     LODs.Clear();
     Skeleton.Dispose();
-    _initialized = false;
-    _loadedLODs = 0;
     _skeletonRetargets.Clear();
     ClearSkeletonMapping();
-}
-
-bool SkinnedModel::init(AssetInitData& initData)
-{
-    // Validate
-    if (initData.SerializedVersion != SerializedVersion)
-    {
-        LOG(Error, "Invalid serialized model version.");
-        return true;
-    }
-
-    return false;
 }
 
 AssetChunksFlag SkinnedModel::getChunksToPreload() const
 {
     // Note: we don't preload any meshes here because it's done by the Streaming Manager
     return GET_CHUNK_FLAG(0);
+}
+
+bool SkinnedModelLOD::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh)
+{
+    // Check all meshes
+    bool result = false;
+    Real closest = MAX_float;
+    Vector3 closestNormal = Vector3::Up;
+    for (int32 i = 0; i < Meshes.Count(); i++)
+    {
+        // Test intersection with mesh and check if is closer than previous
+        Real dst;
+        Vector3 nrm;
+        if (Meshes[i].Intersects(ray, world, dst, nrm) && dst < closest)
+        {
+            result = true;
+            *mesh = &Meshes[i];
+            closest = dst;
+            closestNormal = nrm;
+        }
+    }
+
+    distance = closest;
+    normal = closestNormal;
+    return result;
+}
+
+bool SkinnedModelLOD::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh)
+{
+    // Check all meshes
+    bool result = false;
+    Real closest = MAX_float;
+    Vector3 closestNormal = Vector3::Up;
+    for (int32 i = 0; i < Meshes.Count(); i++)
+    {
+        // Test intersection with mesh and check if is closer than previous
+        Real dst;
+        Vector3 nrm;
+        if (Meshes[i].Intersects(ray, transform, dst, nrm) && dst < closest)
+        {
+            result = true;
+            *mesh = &Meshes[i];
+            closest = dst;
+            closestNormal = nrm;
+        }
+    }
+
+    distance = closest;
+    normal = closestNormal;
+    return result;
+}
+
+BoundingBox SkinnedModelLOD::GetBox(const Matrix& world) const
+{
+    // Find minimum and maximum points of all the meshes
+    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
+    Vector3 corners[8];
+    for (int32 j = 0; j < Meshes.Count(); j++)
+    {
+        const auto& mesh = Meshes[j];
+        mesh.GetBox().GetCorners(corners);
+        for (int32 i = 0; i < 8; i++)
+        {
+            Vector3::Transform(corners[i], world, tmp);
+            min = Vector3::Min(min, tmp);
+            max = Vector3::Max(max, tmp);
+        }
+    }
+
+    return BoundingBox(min, max);
+}
+
+BoundingBox SkinnedModelLOD::GetBox(const Transform& transform, const MeshDeformation* deformation) const
+{
+    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
+    Vector3 corners[8];
+    for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
+    {
+        const auto& mesh = Meshes[meshIndex];
+        BoundingBox box = mesh.GetBox();
+        if (deformation)
+            deformation->GetBounds(_lodIndex, meshIndex, box);
+        box.GetCorners(corners);
+        for (int32 i = 0; i < 8; i++)
+        {
+            transform.LocalToWorld(corners[i], tmp);
+            min = Vector3::Min(min, tmp);
+            max = Vector3::Max(max, tmp);
+        }
+    }
+    return BoundingBox(min, max);
+}
+
+BoundingBox SkinnedModelLOD::GetBox(const Matrix& world, int32 meshIndex) const
+{
+    // Find minimum and maximum points of the mesh
+    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
+    Vector3 corners[8];
+    const auto& mesh = Meshes[meshIndex];
+    mesh.GetBox().GetCorners(corners);
+    for (int32 i = 0; i < 8; i++)
+    {
+        Vector3::Transform(corners[i], world, tmp);
+        min = Vector3::Min(min, tmp);
+        max = Vector3::Max(max, tmp);
+    }
+
+    return BoundingBox(min, max);
+}
+
+BoundingBox SkinnedModelLOD::GetBox() const
+{
+    // Find minimum and maximum points of the mesh in given world
+    Vector3 min = Vector3::Maximum, max = Vector3::Minimum;
+    Vector3 corners[8];
+    for (int32 j = 0; j < Meshes.Count(); j++)
+    {
+        Meshes[j].GetBox().GetCorners(corners);
+        for (int32 i = 0; i < 8; i++)
+        {
+            min = Vector3::Min(min, corners[i]);
+            max = Vector3::Max(max, corners[i]);
+        }
+    }
+
+    return BoundingBox(min, max);
 }

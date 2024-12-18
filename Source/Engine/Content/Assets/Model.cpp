@@ -16,100 +16,15 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Async/GPUTask.h"
 #include "Engine/Graphics/Async/Tasks/GPUUploadTextureMipTask.h"
+#include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Tools/ModelTool/ModelTool.h"
-#include "Engine/Tools/ModelTool/MeshAccelerationStructure.h"
-#if GPU_ENABLE_ASYNC_RESOURCES_CREATION
-#include "Engine/Threading/ThreadPoolTask.h"
-#define STREAM_TASK_BASE ThreadPoolTask
-#else
-#include "Engine/Threading/MainThreadTask.h"
-#define STREAM_TASK_BASE MainThreadTask
-#endif
-
-#define CHECK_INVALID_BUFFER(model, buffer) \
-    if (buffer->IsValidFor(model) == false) \
-	{ \
-		buffer->Setup(model); \
-	}
 
 REGISTER_BINARY_ASSET_ABSTRACT(ModelBase, "FlaxEngine.ModelBase");
-
-/// <summary>
-/// Model LOD streaming task.
-/// </summary>
-class StreamModelLODTask : public STREAM_TASK_BASE
-{
-private:
-    WeakAssetReference<Model> _asset;
-    int32 _lodIndex;
-    FlaxStorage::LockData _dataLock;
-
-public:
-    StreamModelLODTask(Model* model, int32 lodIndex)
-        : _asset(model)
-        , _lodIndex(lodIndex)
-        , _dataLock(model->Storage->Lock())
-    {
-    }
-
-public:
-    bool HasReference(Object* resource) const override
-    {
-        return _asset == resource;
-    }
-
-    bool Run() override
-    {
-        AssetReference<Model> model = _asset.Get();
-        if (model == nullptr)
-            return true;
-
-        // Get data
-        BytesContainer data;
-        model->GetLODData(_lodIndex, data);
-        if (data.IsInvalid())
-        {
-            LOG(Warning, "Missing data chunk");
-            return true;
-        }
-        MemoryReadStream stream(data.Get(), data.Length());
-
-        // Note: this is running on thread pool task so we must be sure that updated LOD is not used at all (for rendering)
-
-        // Load model LOD (initialize vertex and index buffers)
-        if (model->LODs[_lodIndex].Load(stream))
-        {
-            LOG(Warning, "Cannot load LOD{1} for model \'{0}\'", model->ToString(), _lodIndex);
-            return true;
-        }
-
-        // Update residency level
-        model->_loadedLODs++;
-        model->ResidencyChanged();
-
-        return false;
-    }
-
-    void OnEnd() override
-    {
-        // Unlink
-        if (_asset)
-        {
-            ASSERT(_asset->_streamingTask == this);
-            _asset->_streamingTask = nullptr;
-            _asset = nullptr;
-        }
-        _dataLock.Release();
-
-        // Base
-        STREAM_TASK_BASE::OnEnd();
-    }
-};
 
 class StreamModelSDFTask : public GPUUploadTextureMipTask
 {
@@ -211,9 +126,10 @@ FORCE_INLINE void ModelDraw(Model* model, const RenderContext& renderContext, co
     ASSERT(info.Buffer);
     if (!model->CanBeRendered())
         return;
+    if (!info.Buffer->IsValidFor(model))
+		info.Buffer->Setup(model);
     const auto frame = Engine::FrameCount;
     const auto modelFrame = info.DrawState->PrevFrame + 1;
-    CHECK_INVALID_BUFFER(model, info.Buffer);
 
     // Select a proper LOD index (model may be culled)
     int32 lodIndex;
@@ -719,16 +635,14 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
     SAFE_DELETE_GPU_RESOURCE(SDF.Texture);
 
     // Setup LODs
-    for (int32 lodIndex = 0; lodIndex < LODs.Count(); lodIndex++)
-        LODs[lodIndex].Dispose();
     LODs.Resize(meshesCountPerLod.Length());
+    _initialized = true;
 
     // Setup meshes
     for (int32 lodIndex = 0; lodIndex < meshesCountPerLod.Length(); lodIndex++)
     {
         auto& lod = LODs[lodIndex];
-        lod._model = this;
-        lod._lodIndex = lodIndex;
+        lod.Link(this, lodIndex);
         lod.ScreenSize = 1.0f;
         const int32 meshesCount = meshesCountPerLod[lodIndex];
         if (meshesCount <= 0 || meshesCount > MODEL_MAX_MESHES)
@@ -737,7 +651,7 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
         lod.Meshes.Resize(meshesCount);
         for (int32 meshIndex = 0; meshIndex < meshesCount; meshIndex++)
         {
-            lod.Meshes[meshIndex].Init(this, lodIndex, meshIndex, 0, BoundingBox::Zero, BoundingSphere::Empty, true);
+            lod.Meshes[meshIndex].Link(this, lodIndex, meshIndex);
         }
     }
 
@@ -787,97 +701,14 @@ void Model::InitAsVirtual()
     BinaryAsset::InitAsVirtual();
 }
 
-void Model::CancelStreaming()
-{
-    Asset::CancelStreaming();
-    CancelStreamingTasks();
-}
-
-#if USE_EDITOR
-
-void Model::GetReferences(Array<Guid>& assets, Array<String>& files) const
-{
-    // Base
-    BinaryAsset::GetReferences(assets, files);
-
-    for (int32 i = 0; i < MaterialSlots.Count(); i++)
-        assets.Add(MaterialSlots[i].Material.GetID());
-}
-
-#endif
-
 int32 Model::GetMaxResidency() const
 {
     return LODs.Count();
 }
 
-int32 Model::GetCurrentResidency() const
-{
-    return _loadedLODs;
-}
-
 int32 Model::GetAllocatedResidency() const
 {
     return LODs.Count();
-}
-
-bool Model::CanBeUpdated() const
-{
-    // Check if is ready and has no streaming tasks running
-    return IsInitialized() && _streamingTask == nullptr;
-}
-
-Task* Model::UpdateAllocation(int32 residency)
-{
-    // Models are not using dynamic allocation feature
-    return nullptr;
-}
-
-Task* Model::CreateStreamingTask(int32 residency)
-{
-    ScopeLock lock(Locker);
-
-    ASSERT(IsInitialized() && Math::IsInRange(residency, 0, LODs.Count()) && _streamingTask == nullptr);
-    Task* result = nullptr;
-    const int32 lodCount = residency - GetCurrentResidency();
-
-    // Switch if go up or down with residency
-    if (lodCount > 0)
-    {
-        // Allow only to change LODs count by 1
-        ASSERT(Math::Abs(lodCount) == 1);
-
-        int32 lodIndex = HighestResidentLODIndex() - 1;
-
-        // Request LOD data
-        result = (Task*)RequestLODDataAsync(lodIndex);
-
-        // Add upload data task
-        _streamingTask = New<StreamModelLODTask>(this, lodIndex);
-        if (result)
-            result->ContinueWith(_streamingTask);
-        else
-            result = _streamingTask;
-    }
-    else
-    {
-        // Do the quick data release
-        for (int32 i = HighestResidentLODIndex(); i < LODs.Count() - residency; i++)
-            LODs[i].Unload();
-        _loadedLODs = residency;
-        ResidencyChanged();
-    }
-
-    return result;
-}
-
-void Model::CancelStreamingTasks()
-{
-    if (_streamingTask)
-    {
-        _streamingTask->Cancel();
-        ASSERT_LOW_LAYER(_streamingTask == nullptr);
-    }
 }
 
 Asset::LoadResult Model::load()
@@ -922,6 +753,7 @@ Asset::LoadResult Model::load()
     if (lods == 0 || lods > MODEL_MAX_LODS)
         return LoadResult::InvalidData;
     LODs.Resize(lods);
+    _initialized = true;
 
     // For each LOD
     for (int32 lodIndex = 0; lodIndex < lods; lodIndex++)
@@ -946,6 +778,9 @@ Asset::LoadResult Model::load()
         // For each mesh
         for (uint16 meshIndex = 0; meshIndex < meshesCount; meshIndex++)
         {
+            Mesh& mesh = lod.Meshes[meshIndex];
+            mesh.Link(this, lodIndex, meshIndex);
+
             // Material Slot index
             int32 materialSlotIndex;
             stream->ReadInt32(&materialSlotIndex);
@@ -954,19 +789,18 @@ Asset::LoadResult Model::load()
                 LOG(Warning, "Invalid material slot index {0} for mesh {1}. Slots count: {2}.", materialSlotIndex, meshIndex, materialSlotsCount);
                 return LoadResult::InvalidData;
             }
+            mesh.SetMaterialSlotIndex(materialSlotIndex);
 
-            // Box
+            // Bounds
             BoundingBox box;
             stream->ReadBoundingBox(&box);
-
-            // Sphere
             BoundingSphere sphere;
             stream->ReadBoundingSphere(&sphere);
+            mesh.SetBounds(box, sphere);
 
             // Has Lightmap UVs
             bool hasLightmapUVs = stream->ReadBool();
-
-            lod.Meshes[meshIndex].Init(this, lodIndex, meshIndex, materialSlotIndex, box, sphere, hasLightmapUVs);
+            mesh.LightmapUVsIndex = hasLightmapUVs ? 1 : -1;
         }
     }
 
@@ -1039,33 +873,11 @@ Asset::LoadResult Model::load()
 
 void Model::unload(bool isReloading)
 {
-    // End streaming (if still active)
-    if (_streamingTask != nullptr)
-    {
-        // Cancel streaming task
-        _streamingTask->Cancel();
-        _streamingTask = nullptr;
-    }
+    ModelBase::unload(isReloading);
 
     // Cleanup
     SAFE_DELETE_GPU_RESOURCE(SDF.Texture);
-    MaterialSlots.Resize(0);
-    for (int32 i = 0; i < LODs.Count(); i++)
-        LODs[i].Dispose();
     LODs.Clear();
-    _loadedLODs = 0;
-}
-
-bool Model::init(AssetInitData& initData)
-{
-    // Validate
-    if (initData.SerializedVersion != SerializedVersion)
-    {
-        LOG(Error, "Invalid serialized model version.");
-        return true;
-    }
-
-    return false;
 }
 
 AssetChunksFlag Model::getChunksToPreload() const
@@ -1074,32 +886,101 @@ AssetChunksFlag Model::getChunksToPreload() const
     return GET_CHUNK_FLAG(0) | GET_CHUNK_FLAG(15);
 }
 
-void ModelBase::SetupMaterialSlots(int32 slotsCount)
+bool ModelLOD::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh)
 {
-    CHECK(slotsCount >= 0 && slotsCount < 4096);
-    if (!IsVirtual() && WaitForLoaded())
-        return;
-
-    ScopeLock lock(Locker);
-
-    const int32 prevCount = MaterialSlots.Count();
-    MaterialSlots.Resize(slotsCount, false);
-
-    // Initialize slot names
-    for (int32 i = prevCount; i < slotsCount; i++)
-        MaterialSlots[i].Name = String::Format(TEXT("Material {0}"), i + 1);
-}
-
-MaterialSlot* ModelBase::GetSlot(const StringView& name)
-{
-    MaterialSlot* result = nullptr;
-    for (auto& slot : MaterialSlots)
+    bool result = false;
+    Real closest = MAX_Real;
+    Vector3 closestNormal = Vector3::Up;
+    for (int32 i = 0; i < Meshes.Count(); i++)
     {
-        if (slot.Name == name)
+        Real dst;
+        Vector3 nrm;
+        if (Meshes[i].Intersects(ray, world, dst, nrm) && dst < closest)
         {
-            result = &slot;
-            break;
+            result = true;
+            *mesh = &Meshes[i];
+            closest = dst;
+            closestNormal = nrm;
         }
     }
+    distance = closest;
+    normal = closestNormal;
     return result;
+}
+
+bool ModelLOD::Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, Mesh** mesh)
+{
+    bool result = false;
+    Real closest = MAX_Real;
+    Vector3 closestNormal = Vector3::Up;
+    for (int32 i = 0; i < Meshes.Count(); i++)
+    {
+        Real dst;
+        Vector3 nrm;
+        if (Meshes[i].Intersects(ray, transform, dst, nrm) && dst < closest)
+        {
+            result = true;
+            *mesh = &Meshes[i];
+            closest = dst;
+            closestNormal = nrm;
+        }
+    }
+    distance = closest;
+    normal = closestNormal;
+    return result;
+}
+
+BoundingBox ModelLOD::GetBox(const Matrix& world) const
+{
+    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
+    Vector3 corners[8];
+    for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
+    {
+        const auto& mesh = Meshes[meshIndex];
+        mesh.GetBox().GetCorners(corners);
+        for (int32 i = 0; i < 8; i++)
+        {
+            Vector3::Transform(corners[i], world, tmp);
+            min = Vector3::Min(min, tmp);
+            max = Vector3::Max(max, tmp);
+        }
+    }
+    return BoundingBox(min, max);
+}
+
+BoundingBox ModelLOD::GetBox(const Transform& transform, const MeshDeformation* deformation) const
+{
+    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
+    Vector3 corners[8];
+    for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
+    {
+        const auto& mesh = Meshes[meshIndex];
+        BoundingBox box = mesh.GetBox();
+        if (deformation)
+            deformation->GetBounds(_lodIndex, meshIndex, box);
+        box.GetCorners(corners);
+        for (int32 i = 0; i < 8; i++)
+        {
+            transform.LocalToWorld(corners[i], tmp);
+            min = Vector3::Min(min, tmp);
+            max = Vector3::Max(max, tmp);
+        }
+    }
+    return BoundingBox(min, max);
+}
+
+BoundingBox ModelLOD::GetBox() const
+{
+    Vector3 min = Vector3::Maximum, max = Vector3::Minimum;
+    Vector3 corners[8];
+    for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
+    {
+        Meshes[meshIndex].GetBox().GetCorners(corners);
+        for (int32 i = 0; i < 8; i++)
+        {
+            min = Vector3::Min(min, corners[i]);
+            max = Vector3::Max(max, corners[i]);
+        }
+    }
+    return BoundingBox(min, max);
 }

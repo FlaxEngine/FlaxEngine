@@ -37,18 +37,8 @@ public:
 
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="SkinnedMesh"/> class.
-    /// </summary>
-    /// <param name="model">The model.</param>
-    /// <param name="lodIndex">The model LOD index.</param>
-    /// <param name="index">The mesh index.</param>
-    /// <param name="materialSlotIndex">The material slot index to use.</param>
-    /// <param name="box">The bounding box.</param>
-    /// <param name="sphere">The bounding sphere.</param>
-    void Init(SkinnedModel* model, int32 lodIndex, int32 index, int32 materialSlotIndex, const BoundingBox& box, const BoundingSphere& sphere);
-
-    /// <summary>
     /// Load mesh data and Initialize GPU buffers
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="vertices">Amount of vertices in the vertex buffer</param>
     /// <param name="triangles">Amount of triangles in the index buffer</param>
@@ -56,7 +46,7 @@ public:
     /// <param name="ib">Index buffer data</param>
     /// <param name="use16BitIndexBuffer">True if use 16 bit indices for the index buffer (true: uint16, false: uint32).</param>
     /// <returns>True if cannot load data, otherwise false.</returns>
-    bool Load(uint32 vertices, uint32 triangles, const void* vb0, const void* ib, bool use16BitIndexBuffer);
+    DEPRECATED("Use Init intead.") bool Load(uint32 vertices, uint32 triangles, const void* vb0, const void* ib, bool use16BitIndexBuffer);
 
 public:
     /// <summary>
@@ -128,6 +118,7 @@ public:
 
 public:
     // [MeshBase]
+    void Release() override;
     bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const override;
 
 private:

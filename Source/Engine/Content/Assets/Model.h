@@ -6,7 +6,6 @@
 #include "Engine/Graphics/Models/ModelLOD.h"
 
 class Mesh;
-class StreamModelLODTask;
 
 /// <summary>
 /// Model asset that contains model object made of meshes which can rendered on the GPU.
@@ -15,10 +14,6 @@ API_CLASS(NoSpawn) class FLAXENGINE_API Model : public ModelBase
 {
     DECLARE_BINARY_ASSET_HEADER(Model, 25);
     friend Mesh;
-    friend StreamModelLODTask;
-private:
-    int32 _loadedLODs = 0;
-    StreamModelLODTask* _streamingTask = nullptr;
 
 public:
     /// <summary>
@@ -39,76 +34,11 @@ public:
 
 public:
     /// <summary>
-    /// Gets a value indicating whether this instance is initialized. 
-    /// </summary>
-    FORCE_INLINE bool IsInitialized() const
-    {
-        return LODs.HasItems();
-    }
-
-    /// <summary>
-    /// Gets the amount of loaded model LODs.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE int32 GetLoadedLODs() const
-    {
-        return _loadedLODs;
-    }
-
-    /// <summary>
-    /// Clamps the index of the LOD to be valid for rendering (only loaded LODs).
-    /// </summary>
-    /// <param name="index">The index.</param>
-    /// <returns>The resident LOD index.</returns>
-    FORCE_INLINE int32 ClampLODIndex(int32 index) const
-    {
-        return Math::Clamp(index, HighestResidentLODIndex(), LODs.Count() - 1);
-    }
-
-    /// <summary>
-    /// Gets index of the highest resident LOD (may be equal to LODs.Count if no LOD has been uploaded). Note: LOD=0 is the highest (top quality)
-    /// </summary>
-    FORCE_INLINE int32 HighestResidentLODIndex() const
-    {
-        return LODs.Count() - _loadedLODs;
-    }
-
-    /// <summary>
     /// Determines whether any LOD has been initialized.
     /// </summary>
     FORCE_INLINE bool HasAnyLODInitialized() const
     {
         return LODs.HasItems() && LODs.Last().HasAnyMeshInitialized();
-    }
-
-    /// <summary>
-    /// Determines whether this model can be rendered.
-    /// </summary>
-    FORCE_INLINE bool CanBeRendered() const
-    {
-        return _loadedLODs > 0;
-    }
-
-public:
-    /// <summary>
-    /// Requests the LOD data asynchronously (creates task that will gather chunk data or null if already here).
-    /// </summary>
-    /// <param name="lodIndex">Index of the LOD.</param>
-    /// <returns>Task that will gather chunk data or null if already here.</returns>
-    ContentLoadTask* RequestLODDataAsync(int32 lodIndex)
-    {
-        const int32 chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
-        return RequestChunkDataAsync(chunkIndex);
-    }
-
-    /// <summary>
-    /// Gets the model LOD data (links bytes).
-    /// </summary>
-    /// <param name="lodIndex">Index of the LOD.</param>
-    /// <param name="data">The data (may be missing if failed to get it).</param>
-    void GetLODData(int32 lodIndex, BytesContainer& data) const
-    {
-        const int32 chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
-        GetChunkData(chunkIndex, data);
     }
 
 public:
@@ -250,24 +180,14 @@ public:
     int32 GetLODsCount() const override;
     void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) override;
     void InitAsVirtual() override;
-    void CancelStreaming() override;
-#if USE_EDITOR
-    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
-#endif
 
     // [StreamableResource]
     int32 GetMaxResidency() const override;
-    int32 GetCurrentResidency() const override;
     int32 GetAllocatedResidency() const override;
-    bool CanBeUpdated() const override;
-    Task* UpdateAllocation(int32 residency) override;
-    Task* CreateStreamingTask(int32 residency) override;
-    void CancelStreamingTasks() override;
 
 protected:
     // [ModelBase]
     LoadResult load() override;
     void unload(bool isReloading) override;
-    bool init(AssetInitData& initData) override;
     AssetChunksFlag getChunksToPreload() const override;
 };
