@@ -203,7 +203,7 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
             {
                 for (int32 x = 0; x < heightmapSize; x++)
                 {
-                    const Vector2 uv = uvStart + Vector2(x * heightmapSizeInv, z * heightmapSizeInv) * uvPerPatch;
+                    const Vector2 uv = uvStart + Vector2(x * heightmapSizeInv, ((float)heightmapSize - 1.0f - z) * heightmapSizeInv) * uvPerPatch;
                     const Color color = TextureTool::SampleLinear(sampler, uv, dataHeightmap.Mip0DataPtr->Get(), dataHeightmap.Mip0Size, dataHeightmap.RowPitch);
                     heightmapData[z * heightmapSize + x] = color.R * heightmapScale;
                 }
