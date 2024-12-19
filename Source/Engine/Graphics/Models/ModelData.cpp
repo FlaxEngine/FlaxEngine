@@ -97,55 +97,6 @@ void MeshData::InitFromModelVertices(ModelVertex19* vertices, uint32 verticesCou
     }
 }
 
-void MeshData::InitFromModelVertices(ModelVertex18* vertices, uint32 verticesCount)
-{
-    Positions.Resize(verticesCount, false);
-    UVs.Resize(verticesCount, false);
-    Normals.Resize(verticesCount, false);
-    Tangents.Resize(verticesCount, false);
-    BitangentSigns.Resize(0);
-    LightmapUVs.Resize(verticesCount, false);
-    Colors.Resize(0);
-    BlendIndices.Resize(0);
-    BlendWeights.Resize(0);
-    BlendShapes.Resize(0);
-
-    for (uint32 i = 0; i < verticesCount; i++)
-    {
-        Positions[i] = vertices->Position;
-        UVs[i] = vertices->TexCoord.ToFloat2();
-        Normals[i] = vertices->Normal.ToFloat3() * 2.0f - 1.0f;
-        Tangents[i] = vertices->Tangent.ToFloat3() * 2.0f - 1.0f;
-        LightmapUVs[i] = vertices->LightmapUVs.ToFloat2();
-
-        vertices++;
-    }
-}
-
-void MeshData::InitFromModelVertices(ModelVertex15* vertices, uint32 verticesCount)
-{
-    Positions.Resize(verticesCount, false);
-    UVs.Resize(verticesCount, false);
-    Normals.Resize(verticesCount, false);
-    Tangents.Resize(verticesCount, false);
-    BitangentSigns.Resize(0);
-    LightmapUVs.Resize(0);
-    Colors.Resize(0);
-    BlendIndices.Resize(0);
-    BlendWeights.Resize(0);
-    BlendShapes.Resize(0);
-
-    for (uint32 i = 0; i < verticesCount; i++)
-    {
-        Positions[i] = vertices->Position;
-        UVs[i] = vertices->TexCoord.ToFloat2();
-        Normals[i] = vertices->Normal.ToFloat3() * 2.0f - 1.0f;
-        Tangents[i] = vertices->Tangent.ToFloat3() * 2.0f - 1.0f;
-
-        vertices++;
-    }
-}
-
 void MeshData::InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb1, uint32 verticesCount)
 {
     Positions.Resize(verticesCount, false);
@@ -204,31 +155,6 @@ void MeshData::InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb
             Colors[i] = Color(vb2->Color);
             vb2++;
         }
-
-        vb0++;
-        vb1++;
-    }
-}
-
-void MeshData::InitFromModelVertices(VB0ElementType15* vb0, VB1ElementType15* vb1, uint32 verticesCount)
-{
-    Positions.Resize(verticesCount, false);
-    UVs.Resize(verticesCount, false);
-    Normals.Resize(verticesCount, false);
-    Tangents.Resize(verticesCount, false);
-    BitangentSigns.Resize(0);
-    LightmapUVs.Resize(0, false);
-    Colors.Resize(0);
-    BlendIndices.Resize(0);
-    BlendWeights.Resize(0);
-    BlendShapes.Resize(0);
-
-    for (uint32 i = 0; i < verticesCount; i++)
-    {
-        Positions[i] = vb0->Position;
-        UVs[i] = vb1->TexCoord.ToFloat2();
-        Normals[i] = vb1->Normal.ToFloat3() * 2.0f - 1.0f;
-        Tangents[i] = vb1->Tangent.ToFloat3() * 2.0f - 1.0f;
 
         vb0++;
         vb1++;
@@ -339,19 +265,6 @@ bool MeshData::Pack2Model(WriteStream* stream) const
         vb1.Tangent = Float1010102(tangent * 0.5f + 0.5f, static_cast<byte>(bitangentSign < 0 ? 1 : 0));
         vb1.LightmapUVs = Half2(lightmapUV);
         stream->WriteBytes(&vb1, sizeof(vb1));
-
-        // Pack TBN matrix into a quaternion
-        /*Quaternion quaternionTBN;
-        bool invertedHandednessTBN;
-        CalculateQuaternionFromTBN(tangent, bitangent, normal, &quaternionTBN, &invertedHandednessTBN);
-        quaternionTBN.Normalize();
-        uint32 packedQuaternionTBN = QuantizeNormalizedQuaternionWithHandedness(quaternionTBN, invertedHandednessTBN);
-
-        Float4 unpackedQuaternionTBN = Float4(quaternionTBN.X, quaternionTBN.Y, quaternionTBN.Z, ((invertedHandednessTBN ? 0.0f : 128.0f) + (127.0f * (quaternionTBN.W * 0.5f + 0.5f))) / 255.0f);
-        
-        //lods.WriteUint32(packedQuaternionTBN);
-        //lods.WriteFloat4(unpackedQuaternionTBN);
-        */
     }
 
     // Vertex Buffer 2

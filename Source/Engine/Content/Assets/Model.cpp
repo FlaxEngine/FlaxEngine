@@ -23,6 +23,9 @@
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Tools/ModelTool/ModelTool.h"
+#if USE_EDITOR
+#include "Engine/Serialization/MemoryWriteStream.h"
+#endif
 
 REGISTER_BINARY_ASSET_ABSTRACT(ModelBase, "FlaxEngine.ModelBase");
 
@@ -456,6 +459,7 @@ bool Model::Save(bool withMeshDataFromGpu, const StringView& path)
                         return true;
                     }
 
+                    // #MODEL_DATA_FORMAT_USAGE
                     meshesStream.WriteUint32(vertices);
                     meshesStream.WriteUint32(triangles);
 

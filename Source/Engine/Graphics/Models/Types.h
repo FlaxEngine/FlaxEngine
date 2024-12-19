@@ -70,25 +70,6 @@ enum class MeshBufferType
 };
 
 // Vertex structure for all models (versioned)
-// [Deprecated on 28.04.2023, expires on 01.01.2024]
-PACK_STRUCT(struct ModelVertex15
-    {
-    Float3 Position;
-    Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
-    });
-
-// [Deprecated on 28.04.2023, expires on 01.01.2024]
-PACK_STRUCT(struct ModelVertex18
-    {
-    Float3 Position;
-    Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
-    Half2 LightmapUVs;
-    });
-
 // [Deprecated in v1.10]
 PACK_STRUCT(struct ModelVertex19
     {
@@ -116,19 +97,6 @@ struct RawModelVertex
 };
 
 // For vertex data we use three buffers: one with positions, one with other attributes, and one with colors
-// [Deprecated on 28.04.2023, expires on 01.01.2024]
-PACK_STRUCT(struct VB0ElementType15
-    {
-    Float3 Position;
-    });
-// [Deprecated on 28.04.2023, expires on 01.01.2024]
-PACK_STRUCT(struct VB1ElementType15
-    {
-    Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
-    });
-
 // [Deprecated in v1.10]
 PACK_STRUCT(struct VB0ElementType18
     {

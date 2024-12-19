@@ -151,22 +151,6 @@ public:
 
     /// <summary>
     /// Init from model vertices array
-    /// [Deprecated on 28.04.2023, expires on 01.01.2024]
-    /// </summary>
-    /// <param name="vertices">Array of vertices</param>
-    /// <param name="verticesCount">Amount of vertices</param>
-    void InitFromModelVertices(ModelVertex18* vertices, uint32 verticesCount);
-
-    /// <summary>
-    /// Init from model vertices array
-    /// [Deprecated on 28.04.2023, expires on 01.01.2024]
-    /// </summary>
-    /// <param name="vertices">Array of vertices</param>
-    /// <param name="verticesCount">Amount of vertices</param>
-    void InitFromModelVertices(ModelVertex15* vertices, uint32 verticesCount);
-
-    /// <summary>
-    /// Init from model vertices array
     /// </summary>
     /// <param name="vb0">Array of data for vertex buffer 0</param>
     /// <param name="vb1">Array of data for vertex buffer 1</param>
@@ -181,15 +165,6 @@ public:
     /// <param name="vb2">Array of data for vertex buffer 2</param>
     /// <param name="verticesCount">Amount of vertices</param>
     void InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb1, VB2ElementType18* vb2, uint32 verticesCount);
-
-    /// <summary>
-    /// Init from model vertices array
-    /// [Deprecated on 28.04.2023, expires on 01.01.2024]
-    /// </summary>
-    /// <param name="vb0">Array of data for vertex buffer 0</param>
-    /// <param name="vb1">Array of data for vertex buffer 1</param>
-    /// <param name="verticesCount">Amount of vertices</param>
-    void InitFromModelVertices(VB0ElementType15* vb0, VB1ElementType15* vb1, uint32 verticesCount);
 
     /// <summary>
     /// Sets the index buffer data.

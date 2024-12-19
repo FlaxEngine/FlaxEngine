@@ -19,6 +19,9 @@
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/DrawCall.h"
+#if USE_EDITOR
+#include "Engine/Serialization/MemoryWriteStream.h"
+#endif
 
 REGISTER_BINARY_ASSET_WITH_UPGRADER(SkinnedModel, "FlaxEngine.SkinnedModel", SkinnedModelAssetUpgrader, true);
 
