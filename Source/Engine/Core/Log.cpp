@@ -150,7 +150,7 @@ void Log::Logger::Write(const StringView& msg)
     Platform::Log(msg);
 
     // Write message to log file
-    constexpr uint LogMaxWriteSize = 1 * 1024 * 1024; // 1GB
+    constexpr int32 LogMaxWriteSize = 1 * 1024 * 1024; // 1GB
     if (LogAfterInit && LogTotalWriteSize < LogMaxWriteSize)
     {
         LogTotalWriteSize += length;
