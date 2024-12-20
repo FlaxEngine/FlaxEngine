@@ -112,6 +112,11 @@ struct AssimpNode
     String Name;
 
     /// <summary>
+    /// Whether this node contains a mesh.
+    /// </summary>
+    bool IsMesh;
+
+    /// <summary>
     /// The LOD index of the data in this node (used to separate meshes across different level of details).
     /// </summary>
     int32 LodIndex;
@@ -163,12 +168,15 @@ struct AssimpImporterData
     {
     }
 
-    int32 FindNode(const String& name, StringSearchCase caseSensitivity = StringSearchCase::CaseSensitive)
+    int32 FindNode(const String& name, const bool excludeMeshes, StringSearchCase caseSensitivity = StringSearchCase::CaseSensitive)
     {
+        int32 numMeshes = 0;
         for (int32 i = 0; i < Nodes.Count(); i++)
         {
+            if (excludeMeshes && Nodes.At(i).IsMesh)
+                numMeshes += 1;
             if (Nodes[i].Name.Compare(name, caseSensitivity) == 0)
-                return i;
+                return i - numMeshes;
         }
         return -1;
     }
@@ -209,6 +217,7 @@ void ProcessNodes(AssimpImporterData& data, aiNode* aNode, int32 parentIndex)
     AssimpNode node;
     node.ParentIndex = parentIndex;
     node.Name = aNode->mName.C_Str();
+    node.IsMesh = aNode->mNumMeshes > 0;
 
     // Pick node LOD index
     if (parentIndex == -1 || !data.Options.ImportLODs)
@@ -376,7 +385,7 @@ bool ProcessMesh(ModelData& result, AssimpImporterData& data, const aiMesh* aMes
 
             // Find the node where the bone is mapped - based on the name
             const String boneName(aBone->mName.C_Str());
-            const int32 nodeIndex = data.FindNode(boneName);
+            const int32 nodeIndex = data.FindNode(boneName, true);
             if (nodeIndex == -1)
             {
                 LOG(Warning, "Invalid mesh bone linkage. Mesh: {0}, bone: {1}. Skipping...", mesh.Name, boneName);
@@ -829,6 +838,7 @@ bool ModelTool::ImportDataAssimp(const String& path, ModelData& data, Options& o
     // Import skeleton
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
+        /*
         data.Skeleton.Nodes.Resize(context.Nodes.Count(), false);
         for (int32 i = 0; i < context.Nodes.Count(); i++)
         {
@@ -838,6 +848,33 @@ bool ModelTool::ImportDataAssimp(const String& path, ModelData& data, Options& o
             node.Name = aNode.Name;
             node.ParentIndex = aNode.ParentIndex;
             node.LocalTransform = aNode.LocalTransform;
+        }
+        */
+
+        data.Skeleton.Nodes.Clear();
+        int32 numMeshes = 0;
+        for (int32 i = 0; i < context.Nodes.Count(); i++)
+        {
+            // Remove mesh nodes from skeleton nodes
+            auto& aNode = context.Nodes[i];
+            if (aNode.IsMesh)
+            {
+                numMeshes += 1;
+                continue;
+            }
+            SkeletonNode node;
+            node.Name = aNode.Name;
+            if (aNode.ParentIndex == -1 || aNode.ParentIndex - numMeshes == -1)
+                node.ParentIndex = aNode.ParentIndex;
+            else
+                node.ParentIndex = aNode.ParentIndex - numMeshes;
+            node.LocalTransform = aNode.LocalTransform;
+            data.Skeleton.Nodes.Add(node);
+        }
+        
+        for (int i = 0; i <  data.Skeleton.Nodes.Count(); ++i)
+        {
+            LOG(Warning, "{}, {}", data.Skeleton.Nodes[i].Name, data.Skeleton.Nodes[i].ParentIndex);
         }
 
         data.Skeleton.Bones.Resize(context.Bones.Count(), false);
