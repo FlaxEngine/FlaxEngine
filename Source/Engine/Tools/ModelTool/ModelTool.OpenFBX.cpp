@@ -342,12 +342,15 @@ struct OpenFbxImporterData
         return -1;
     }
 
-    int32 FindNode(const String& name, StringSearchCase caseSensitivity = StringSearchCase::CaseSensitive)
+    int32 FindNode(const String& name, const bool excludeMeshes, StringSearchCase caseSensitivity = StringSearchCase::CaseSensitive)
     {
+        int32 numMeshes = 0;
         for (int32 i = 0; i < Nodes.Count(); i++)
         {
+            if (excludeMeshes && Nodes.At(i).IsMesh)
+                numMeshes += 1;
             if (Nodes[i].Name.Compare(name, caseSensitivity) == 0)
-                return i;
+                return i - numMeshes;
         }
         return -1;
     }
@@ -493,7 +496,7 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
                 int32 nodeIndex = data.FindNode(link);
                 if (nodeIndex == -1)
                 {
-                    nodeIndex = data.FindNode(String(link->name), StringSearchCase::IgnoreCase);
+                    nodeIndex = data.FindNode(String(link->name), true, StringSearchCase::IgnoreCase);
                     if (nodeIndex == -1)
                     {
                         LOG(Warning, "Invalid mesh bone linkage. Mesh: {0}, bone: {1}. Skipping...", String(aMesh->name), String(link->name));
@@ -1444,16 +1447,22 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
         data.Skeleton.Nodes.Clear();
+        int32 numMeshes = 0;
         for (int32 i = 0; i < context.Nodes.Count(); i++)
         {
             // Remove mesh nodes from skeleton nodes
             auto& aNode = context.Nodes[i];
             if (aNode.IsMesh)
+            {
+                numMeshes += 1;
                 continue;
-            
+            }
             SkeletonNode node;
             node.Name = aNode.Name;
-            node.ParentIndex = aNode.ParentIndex;
+            if (aNode.ParentIndex == -1 || aNode.ParentIndex - numMeshes == -1)
+                node.ParentIndex = aNode.ParentIndex;
+            else
+                node.ParentIndex = aNode.ParentIndex - numMeshes;
             node.LocalTransform = aNode.LocalTransform;
             data.Skeleton.Nodes.Add(node);
         }
