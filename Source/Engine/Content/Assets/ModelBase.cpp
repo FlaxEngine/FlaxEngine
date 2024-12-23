@@ -163,12 +163,16 @@ public:
     }
 };
 
+ModelBase::~ModelBase()
+{
+    ASSERT(_streamingTask == nullptr);
+}
+
 void ModelBase::SetupMaterialSlots(int32 slotsCount)
 {
     CHECK(slotsCount >= 0 && slotsCount < 4096);
     if (!IsVirtual() && WaitForLoaded())
         return;
-
     ScopeLock lock(Locker);
 
     const int32 prevCount = MaterialSlots.Count();

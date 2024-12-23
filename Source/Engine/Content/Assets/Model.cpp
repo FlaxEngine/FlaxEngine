@@ -79,9 +79,9 @@ Model::Model(const SpawnParams& params, const AssetInfo* info)
     }
 }
 
-Model::~Model()
+bool Model::HasAnyLODInitialized() const
 {
-    ASSERT(_streamingTask == nullptr);
+    return LODs.HasItems() && LODs.Last().HasAnyMeshInitialized();
 }
 
 bool Model::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh, int32 lodIndex)
@@ -888,6 +888,12 @@ AssetChunksFlag Model::getChunksToPreload() const
 {
     // Note: we don't preload any LODs here because it's done by the Streaming Manager
     return GET_CHUNK_FLAG(0) | GET_CHUNK_FLAG(15);
+}
+
+bool ModelLOD::HasAnyMeshInitialized() const
+{
+    // Note: we initialize all meshes at once so the last one can be used to check it.
+    return Meshes.HasItems() && Meshes.Last().IsInitialized();
 }
 
 bool ModelLOD::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh)

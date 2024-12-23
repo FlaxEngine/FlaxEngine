@@ -97,6 +97,8 @@ protected:
     }
 
 public:
+    ~ModelBase();
+
     /// <summary>
     /// The minimum screen size to draw this model (the bottom limit). Used to cull small models. Set to 0 to disable this feature.
     /// </summary>

@@ -32,7 +32,6 @@ SkinnedModel::SkinnedModel(const SpawnParams& params, const AssetInfo* info)
 
 SkinnedModel::~SkinnedModel()
 {
-    ASSERT(_streamingTask == nullptr);
     ASSERT(_skeletonMappingCache.Count() == 0);
 }
 
@@ -1051,6 +1050,12 @@ AssetChunksFlag SkinnedModel::getChunksToPreload() const
 {
     // Note: we don't preload any meshes here because it's done by the Streaming Manager
     return GET_CHUNK_FLAG(0);
+}
+
+bool SkinnedModelLOD::HasAnyMeshInitialized() const
+{
+    // Note: we initialize all meshes at once so the last one can be used to check it.
+    return Meshes.HasItems() && Meshes.Last().IsInitialized();
 }
 
 bool SkinnedModelLOD::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh)
