@@ -272,7 +272,7 @@ void SplashScreen::OnDraw()
     {
         if (_splashTexture->IsLoaded())
         {
-            lightBarHeight = height - lightBarHeight;
+            lightBarHeight = height - lightBarHeight + 20 * s;
             Render2D::DrawTexture(_splashTexture, Rectangle(0, 0, width, height));
         }
     }
@@ -310,7 +310,7 @@ void SplashScreen::OnDraw()
     }
     if (_splashTexture != nullptr)
     {
-        layout.Bounds = Rectangle(width - 224 * s, lightBarHeight + 2 * s, 220 * s, 35 * s);
+        layout.Bounds = Rectangle(width - 224 * s, lightBarHeight + 4 * s, 220 * s, 35 * s);
         layout.VerticalAlignment = TextAlignment::Near;
     }
     else
@@ -324,7 +324,11 @@ void SplashScreen::OnDraw()
 
     // Additional info
     const float infoMargin = 6 * s;
-    layout.Bounds = Rectangle(infoMargin, lightBarHeight + infoMargin, width - (2 * infoMargin), height - lightBarHeight - (2 * infoMargin));
+    if (_splashTexture != nullptr)
+        layout.Bounds = Rectangle(infoMargin + 4 * s, lightBarHeight + infoMargin, width - (2 * infoMargin), height - lightBarHeight - (2 * infoMargin));
+    else
+        layout.Bounds = Rectangle(infoMargin, lightBarHeight + infoMargin, width - (2 * infoMargin), height - lightBarHeight - (2 * infoMargin));
+    
     layout.HorizontalAlignment = TextAlignment::Near;
     layout.VerticalAlignment = TextAlignment::Center;
     Render2D::DrawText(_subtitleFont, _infoText, Color::FromRGB(0xFFFFFF) * 0.9f, layout);
