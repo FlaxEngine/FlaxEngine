@@ -1,7 +1,7 @@
 namespace FlaxEngine
 {
     /// <summary>
-    /// 
+    /// Describes transformation in a 3D space.
     /// </summary>
     public partial struct PhysicsTransform
     {
@@ -43,11 +43,11 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Worlds to local.
+        /// World PhysicsTransform to local PhysicsTransform.
         /// </summary>
         /// <param name="InWorld">The in world.</param>
         /// <param name="InOtherWorld">The in other world.</param>
-        /// <returns></returns>
+        /// <returns>The local PhysicsTransform</returns>
         public static PhysicsTransform WorldToLocal(PhysicsTransform InWorld, PhysicsTransform InOtherWorld)
         {
             var inv = InWorld.Orientation.Conjugated();
@@ -57,11 +57,11 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Locals to world.
+        /// Local PhysicsTransform to world PhysicsTransform.
         /// </summary>
         /// <param name="InWorld">The in world.</param>
         /// <param name="InLocal">The in local.</param>
-        /// <returns></returns>
+        /// <returns>The world PhysicsTransform</returns>
         public static PhysicsTransform LocalToWorld(PhysicsTransform InWorld, PhysicsTransform InLocal)
         {
             var T = (InLocal.Translation * InWorld.Orientation) + InWorld.Translation;
@@ -73,7 +73,7 @@ namespace FlaxEngine
         /// Converts to transform.
         /// </summary>
         /// <param name="InScale">The in scale.</param>
-        /// <returns></returns>
+        /// <returns>The transform with the new scale.</returns>
         public readonly Transform ToTransform(Float3 InScale)
         {
             return new Transform(Translation, Orientation, InScale);

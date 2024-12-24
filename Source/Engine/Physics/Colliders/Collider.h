@@ -14,7 +14,7 @@ class RigidBody;
 /*note: DON'T REORDER ColliderAxis the CylinderCollider is casting enum to int*/
 
 /// <summary>
-/// Describes the orientaccion of collider
+/// Describes the orientation of collider
 /// </summary>
 API_ENUM() enum ColliderAxis
 {
@@ -22,10 +22,12 @@ API_ENUM() enum ColliderAxis
     /// The x
     /// </summary>
     X = 0,
+
     /// <summary>
     /// The y
     /// </summary>
     Y = 1,
+
     /// <summary>
     /// The z
     /// </summary>
@@ -53,10 +55,10 @@ protected:
     Quaternion _cachedLocalPoseRot;
 
     /// <summary>
-    /// To what rigidbody is this collider attached to
+    /// The RigidBody this collider it attached to.
     /// </summary>
-    API_FIELD(public,Attributes = "EditorOrder(0), EditorDisplay(\"Collider\"),ReadOnly,NoSerialize")
-        ScriptingObjectReference<RigidBody> AttachedTo;
+    API_FIELD(public,Attributes = "EditorOrder(0), EditorDisplay(\"Collider\"), ReadOnly, NoSerialize")
+    ScriptingObjectReference<RigidBody> AttachedTo;
 
 public:
 
@@ -187,6 +189,18 @@ protected:
     /// Removes the static actor.
     /// </summary>
     void RemoveStaticActor();
+
+#if USE_EDITOR
+public:
+    virtual void DrawPhysicsDebug(RenderView& view);
+
+    /// <summary>
+    /// [Editor only] shows collider when it is deselected
+    /// </summary>
+    API_FIELD(public,Attributes = "EditorOrder(200), EditorDisplay(\"Collider\")")
+    bool DisplayCollider = false;
+#endif
+
 private:
     void OnMaterialChanged();
     RigidBody* GetAttachmentRigidBody();
@@ -194,7 +208,7 @@ private:
     /// <summary>
     /// Calculates _cachedLocalPosePos and _cachedLocalPoseRot
     /// </summary>
-    /// <returns>true if shape transfrom needs to change, false if is not attahed to RigidBody or there was no cange</returns>
+    /// <returns>true if shape transform needs to change, false if is not attached to RigidBody or there was no change</returns>
     bool CalculateShapeTransform();
 public:
     // [PhysicsColliderActor]

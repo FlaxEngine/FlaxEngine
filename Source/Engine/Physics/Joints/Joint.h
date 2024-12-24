@@ -44,7 +44,7 @@ public:
     /// This is the relative pose which locates the joint frame relative to the actor.
     /// </summary>
     /// <param name="LocalPose">localPose the local pose for the actor this joint.</param>
-    API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\"),VisibleIf(nameof(EnableAutoAnchor), false)")
+    API_PROPERTY(Attributes = "EditorOrder(1), EditorDisplay(\"Joint\"), VisibleIf(nameof(EnableAutoAnchor), false)")
     void SetLocalPoseActor0(const PhysicsTransform& LocalPose);
 
     /// <summary>
@@ -108,7 +108,7 @@ public:
     /// This is the relative pose which locates the joint frame relative to the actor.
     /// </summary>
     /// <param name="LocalPose">localPose the local pose for the actor this joint.</param>
-    API_PROPERTY(Attributes = "EditorOrder(3), EditorDisplay(\"Joint\"),VisibleIf(nameof(EnableAutoAnchor), true)")
+    API_PROPERTY(Attributes = "EditorOrder(3), EditorDisplay(\"Joint\"), VisibleIf(nameof(EnableAutoAnchor), true)")
     void SetLocalPoseActor1(const PhysicsTransform& LocalPose);
 
     /// <summary>
@@ -198,13 +198,13 @@ public:
     API_PROPERTY() void SetEnableCollision(bool value);
 
     /// <summary>
-    /// Determines whether use automatic target anchor position and rotation based on the joint world-space frame (computed when creating joint).
+    /// Determines whether the use automatic target anchor position and rotation based on the joint world-space frame (computed when creating joint).
     /// </summary>
     API_PROPERTY(Attributes = "EditorOrder(39), DefaultValue(false), EditorDisplay(\"Joint\")")
     bool GetEnableAutoAnchor() const;
 
     /// <summary>
-    /// Determines whether use automatic target anchor position and rotation based on the joint world-space frame (computed when creating joint).
+    /// Determines whether to use automatic target anchor position and rotation based on the joint world-space frame (computed when creating joint).
     /// </summary>
     API_PROPERTY() void SetEnableAutoAnchor(bool value);
 
@@ -315,12 +315,11 @@ protected:
     void OnTransformChanged() override;
 
 public:
-#if (FLAXENGINE_VERSION_MAJOR != 2 && FLAXENGINE_VERSION_MINOR >= 0)
 
     /// <summary>
     /// [Deprecated in v1.9, removed in v2.0]
     /// </summary>
-    API_PROPERTY() DEPRECATED Vector3 GetTargetAnchor() const
+    API_PROPERTY() DEPRECATED() Vector3 GetTargetAnchor() const
     {
         return LocalPoseActor1.Translation;
     }
@@ -328,40 +327,33 @@ public:
     /// <summary>
     /// [Deprecated in v1.9, removed in v2.0]
     /// </summary>
-    API_PROPERTY() DEPRECATED void SetTargetAnchor(const Vector3& value);
+    API_PROPERTY() DEPRECATED() void SetTargetAnchor(const Vector3& value);
 
     /// <summary>
-    /// [Deprecated in v1.9, removed in v2.0]
+    /// [Deprecated to be removed in v2.0]
     /// </summary>
-    API_PROPERTY() DEPRECATED Quaternion GetTargetAnchorRotation() const
+    API_PROPERTY() DEPRECATED() Quaternion GetTargetAnchorRotation() const
     {
         return LocalPoseActor1.Orientation;
     }
 
     /// <summary>
-    /// [Deprecated in v1.9, removed in v2.0]
+    /// [Deprecated, to be removed in v2.0]
     /// </summary>
-    API_PROPERTY() DEPRECATED void SetTargetAnchorRotation(const Quaternion& value);
+    API_PROPERTY() DEPRECATED("Deprecated, to be removed in v2.0") void SetTargetAnchorRotation(const Quaternion& value);
 
     /// <summary>
-    /// [Deprecated in v1.9, removed in v2.0]
+    /// [Deprecated, to be removed in v2.0]
     /// </summary>
-    API_FIELD() DEPRECATED ScriptingObjectReference<Actor> Target;
+    API_FIELD() DEPRECATED("Deprecated, to be removed in v2.0") ScriptingObjectReference<Actor> Target;
 
     /// <summary>
-    /// [Deprecated in v1.9, removed in v2.0]
+    /// [Deprecated, to be removed in v2.0]
     /// </summary>
-    API_FUNCTION() DEPRECATED void SetJointLocation(const Vector3& location);
+    API_FUNCTION() DEPRECATED("Deprecated, to be removed in v2.0") void SetJointLocation(const Vector3& location);
 
     /// <summary>
-    /// [Deprecated in v1.9, removed in v2.0]
+    /// [Deprecated, to be removed in v2.0]
     /// </summary>
-    API_FUNCTION() DEPRECATED void SetJointOrientation(const Quaternion& orientation);
-#else
-#ifndef STRING2
-#define STRING2(x) #x
-#define STRING(x) STRING2(x)
-#endif
-#pragma message ( __FILE__ "(" STRING(__LINE__) "):" "[Code Mantening] Remove Deprecated code")
-#endif
+    API_FUNCTION() DEPRECATED("Deprecated, to be removed in v2.0") void SetJointOrientation(const Quaternion& orientation);
 };
