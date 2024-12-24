@@ -214,6 +214,27 @@ void SplashScreen::Show()
             font->OnLoaded.Bind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
     }
 
+    // Load Splash image
+    String splashImagePath = String::Format(TEXT("{0}/{1}"), Globals::ProjectContentFolder, TEXT("SplashImage/SplashImage.flax"));
+#if PLATFORM_WIN32
+    splashImagePath.Replace('/', '\\');
+#else
+    splashImagePath.Replace('\\', '/');
+#endif
+
+    auto texture = Content::LoadAsync<Texture>(*splashImagePath);
+    if (texture == nullptr)
+    {
+        LOG(Info, "Cannot load splash Texture at {0}", splashImagePath);
+    }
+    else
+    {
+        if (texture->IsLoaded())
+            OnTextureLoaded(texture);
+        else
+            texture->OnLoaded.Bind<SplashScreen, &SplashScreen::OnTextureLoaded>(this);
+    }
+    
     _window->Show();
 }
 
@@ -246,8 +267,19 @@ void SplashScreen::OnDraw()
     const float time = static_cast<float>((DateTime::NowUTC() - _startTime).GetTotalSeconds());
 
     // Background
-    const float lightBarHeight = 112 * s;
-    Render2D::FillRectangle(Rectangle(0, 0, width, 150 * s), Color::FromRGB(0x1C1C1C));
+    float lightBarHeight = 112 * s;
+    if (_splashTexture != nullptr)
+    {
+        if (_splashTexture->IsLoaded())
+        {
+            lightBarHeight = height - lightBarHeight;
+            Render2D::DrawTexture(_splashTexture, Rectangle(0, 0, width, height));
+        }
+    }
+    else
+    {
+        Render2D::FillRectangle(Rectangle(0, 0, width, 150 * s), Color::FromRGB(0x1C1C1C));
+    }
     Render2D::FillRectangle(Rectangle(0, lightBarHeight, width, height), Color::FromRGB(0x0C0C0C));
 
     // Animated border
@@ -276,10 +308,18 @@ void SplashScreen::OnDraw()
         for (int32 i = 0; i < 4 - static_cast<int32>(time * 2.0f) % 4; i++)
             subtitle += TEXT(' ');
     }
-    layout.Bounds = Rectangle(width - 224 * s, lightBarHeight - 39 * s, 220 * s, 35 * s);
+    if (_splashTexture != nullptr)
+    {
+        layout.Bounds = Rectangle(width - 224 * s, lightBarHeight + 2 * s, 220 * s, 35 * s);
+        layout.VerticalAlignment = TextAlignment::Near;
+    }
+    else
+    {
+        layout.Bounds = Rectangle(width - 224 * s, lightBarHeight - 39 * s, 220 * s, 35 * s);
+        layout.VerticalAlignment = TextAlignment::Far;
+    }
     layout.Scale = 1.0f;
     layout.HorizontalAlignment = TextAlignment::Far;
-    layout.VerticalAlignment = TextAlignment::Far;
     Render2D::DrawText(_subtitleFont, subtitle, Color::FromRGB(0x8C8C8C), layout);
 
     // Additional info
@@ -306,4 +346,23 @@ void SplashScreen::OnFontLoaded(Asset* asset)
     const float s = _dpiScale;
     _titleFont = font->CreateFont(35 * s);
     _subtitleFont = font->CreateFont(9 * s);
+}
+
+void SplashScreen::OnTextureLoaded(Asset* asset)
+{
+    ASSERT(asset && asset->IsLoaded());
+    auto texture = (Texture*)asset;
+
+    texture->OnLoaded.Unbind<SplashScreen, &SplashScreen::OnTextureLoaded>(this);
+    _splashTexture = texture;
+
+    // Resize window to be larger if texture is being used.
+    auto desktopSize = Platform::GetDesktopSize();
+    auto xSize = (desktopSize.X / (600.0f * 3.0f)) * 600.0f;
+    auto ySize = (desktopSize.Y / (200.0f * 3.0f)) * 200.0f;
+    
+    _window->SetClientSize(Float2(xSize, ySize));
+    _width = _window->GetSize().X;
+    _height = _window->GetSize().Y;
+    _window->SetPosition((Platform::GetDesktopSize() - _window->GetSize()) / 2.0f);
 }
