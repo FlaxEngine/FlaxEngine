@@ -918,11 +918,6 @@ bool SDLPlatform::UsesWayland()
     return UseWayland;
 }
 
-bool SDLPlatform::UsesXWayland()
-{
-    return false;
-}
-
 bool SDLPlatform::UsesX11()
 {
     return !UseWayland;
