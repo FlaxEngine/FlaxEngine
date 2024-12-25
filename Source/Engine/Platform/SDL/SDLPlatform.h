@@ -58,7 +58,6 @@ public:
     static void* GetXDisplay();
 #endif
     static bool UsesWayland();
-    static bool UsesXWayland();
     static bool UsesX11();
 
 public:

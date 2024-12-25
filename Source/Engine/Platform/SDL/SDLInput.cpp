@@ -364,7 +364,10 @@ public:
 
 public:
 
-    Float2 GetMousePosition() const
+    /// <summary>
+    /// Returns the previous known position of the mouse before entering relative mode.
+    /// </summary>
+    Float2 GetOldMousePosition() const
     {
         return oldPosition;
     }
@@ -509,7 +512,7 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
         {
             // Use the previous visible mouse position here, the event or global
             // mouse position would cause input to trigger in other editor windows.
-            mousePos = SDLInputImpl::Mouse->GetMousePosition();
+            mousePos = SDLInputImpl::Mouse->GetOldMousePosition();
         }
 
         if (!event.button.down)
@@ -531,7 +534,7 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
         {
             // Use the previous visible mouse position here, the event or global
             // mouse position would cause input to trigger in other editor windows.
-            mousePos = SDLInputImpl::Mouse->GetMousePosition();
+            mousePos = SDLInputImpl::Mouse->GetOldMousePosition();
         }
 
         Input::Mouse->OnMouseWheel(mousePos, delta, window);
