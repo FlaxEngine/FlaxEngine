@@ -26,6 +26,8 @@
 
 #if PLATFORM_WINDOWS
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
+#define STYLE_RESIZABLE (WS_THICKFRAME | WS_MAXIMIZEBOX)
+#define BORDERLESS_MAXIMIZE_WORKAROUND 2
 #if USE_EDITOR
 #include <oleidl.h>
 #endif
@@ -39,10 +41,16 @@ namespace
 {
     SDLWindow* LastEventWindow = nullptr;
     static SDL_Cursor* Cursors[SDL_SYSTEM_CURSOR_COUNT] = { nullptr };
+#if BORDERLESS_MAXIMIZE_WORKAROUND == 2
+    int SkipMaximizeEventsCount = 0;
+#endif
 }
 
 void* GetNativeWindowPointer(SDL_Window* window);
 SDL_HitTestResult OnWindowHitTest(SDL_Window* win, const SDL_Point* area, void* data);
+void GetRelativeWindowOffset(WindowType type, SDLWindow* parentWindow, Int2& positionOffset);
+Int2 GetSDLWindowScreenPosition(const SDLWindow* window);
+void SetSDLWindowScreenPosition(const SDLWindow* window, const int x, const int y);
 
 class SDLDropFilesData : public IGuiData
 {
@@ -86,17 +94,11 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     , _handle(nullptr)
     , _cachedClientRectangle(Rectangle())
 #if PLATFORM_LINUX
-    , _forcedFocus(false)
     , _dragOver(false)
 #endif
 {
-    int32 x = Math::TruncToInt(settings.Position.X);
-    int32 y = Math::TruncToInt(settings.Position.Y);
-    int32 clientWidth = Math::TruncToInt(settings.Size.X);
-    int32 clientHeight = Math::TruncToInt(settings.Size.Y);
-    int32 windowWidth = clientWidth;
-    int32 windowHeight = clientHeight;
-    _clientSize = Float2((float)clientWidth, (float)clientHeight);
+    Int2 clientSize(Math::TruncToInt(settings.Size.X), Math::TruncToInt(settings.Size.Y));
+    _clientSize = Float2(clientSize);
 
     if (SDLPlatform::UsesWayland())
     {
@@ -124,56 +126,22 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
         flags |= SDL_WINDOW_ALWAYS_ON_TOP;
     if (_settings.SupportsTransparency)
         flags |= SDL_WINDOW_TRANSPARENT;
-    //flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
-    if (_settings.Parent == nullptr && (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup))
-    {
-        // Creating a popup window on some platforms brings the parent window on top.
-        // Use the currently focused window as the parent instead to avoid losing focus of it
-        WindowsManager::WindowsLocker.Lock();
-        for (auto win : WindowsManager::Windows)
-        {
-            if (win->IsForegroundWindow())
-            {
-                if (win->_settings.Type == WindowType::Tooltip || win->_settings.Type == WindowType::Popup)
-                {
-                    auto focusedParent = win->_settings.Parent;
-                    while (focusedParent != nullptr)
-                    {
-                        if (focusedParent->_settings.Parent == nullptr)
-                        {
-                            _settings.Parent = focusedParent;
-                            break;
-                        }
-                        focusedParent = focusedParent->_settings.Parent;
-                    }
-                }
-                else
-                    _settings.Parent = win;
-                break;
-            }
-        }
-        WindowsManager::WindowsLocker.Unlock();
+    // Disable parenting of child windows as those are always on top of the parent window and never show up in taskbar
+    //if (_settings.Parent != nullptr && (_settings.Type != WindowType::Tooltip && _settings.Type != WindowType::Popup))
+    //    _settings.Parent = nullptr;
 
-        if (_settings.Parent == nullptr)
-            _settings.Parent = Engine::MainWindow;
-    }
-
-    // The SDL window position is always relative to the parent window
-    if (_settings.Parent != nullptr)
-    {
-        auto parentPosition = _settings.Parent->ClientToScreen(Float2::Zero);
-        x -= Math::TruncToInt(parentPosition.X);
-        y -= Math::TruncToInt(parentPosition.Y);
-    }
+    // The window position needs to be relative to the parent window
+    Int2 relativePosition(Math::TruncToInt(settings.Position.X), Math::TruncToInt(settings.Position.Y));
+    GetRelativeWindowOffset(_settings.Type, _settings.Parent, relativePosition);
 
     SDL_PropertiesID props = SDL_CreateProperties();
     SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, flags);
     SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, settings.Title.ToStringAnsi().Get());
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, x);
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, y);
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, windowWidth);
-    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, windowHeight);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, relativePosition.X);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, relativePosition.Y);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, clientSize.X);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, clientSize.Y);
     SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_EXTERNAL_GRAPHICS_CONTEXT_BOOLEAN, true);
     if ((flags & SDL_WINDOW_TOOLTIP) != 0)
         SDL_SetBooleanProperty(props, SDL_PROP_WINDOW_CREATE_TOOLTIP_BOOLEAN, true);
@@ -183,6 +151,7 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
         SDL_SetPointerProperty(props, SDL_PROP_WINDOW_CREATE_PARENT_POINTER, _settings.Parent->_window);
 
     _window = SDL_CreateWindowWithProperties(props);
+    SDL_DestroyProperties(props);
     if (_window == nullptr)
         Platform::Fatal(String::Format(TEXT("Cannot create SDL window: {0}"), String(SDL_GetError())));
 
@@ -190,27 +159,13 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     _handle = GetNativeWindowPointer(_window);
     ASSERT(_handle != nullptr);
 
-#if PLATFORM_LINUX
-    if (SDLPlatform::UsesWayland())
-    {
-        // Input focus is not set initially for Wayland windows, assume the window is focused until a focus event is received
-        if (_settings.AllowInput && (SDL_GetWindowFlags(_window) & SDL_WINDOW_INPUT_FOCUS) != 0)
-            _forcedFocus = (flags & SDL_WINDOW_INPUT_FOCUS) != 0;
-    }
-#endif
-
     SDL_DisplayID display = SDL_GetDisplayForWindow(_window);
-    _dpiScale = SDL_GetDisplayContentScale(display);
-    _dpi = (int)(_dpiScale * DefaultDPI);
+    _dpiScale = SDL_GetWindowDisplayScale(_window);
+    _dpi = Math::TruncToInt(_dpiScale * DefaultDPI);
 
-    SDL_SetWindowMinimumSize(_window, (int)_settings.MinimumSize.X, (int)_settings.MinimumSize.Y);
-    SDL_SetWindowMaximumSize(_window, (int)_settings.MaximumSize.X, (int)_settings.MaximumSize.Y);
-
-    SDL_Rect rect;
-    SDL_GetWindowPosition(_window, &rect.x, &rect.y);
-    SDL_GetWindowSizeInPixels(_window, &rect.w, &rect.h);
-    _cachedClientRectangle = Rectangle((float)rect.x, (float)rect.y, (float)rect.w, (float)rect.h);
-
+    SDL_SetWindowMinimumSize(_window, Math::TruncToInt(_settings.MinimumSize.X), Math::TruncToInt(_settings.MinimumSize.Y));
+    SDL_SetWindowMaximumSize(_window, Math::TruncToInt(_settings.MaximumSize.X), Math::TruncToInt(_settings.MaximumSize.Y));
+    
     SDL_SetWindowHitTest(_window, &OnWindowHitTest, this);
     InitSwapChain();
 
@@ -270,6 +225,11 @@ void* GetNativeWindowPointer(SDL_Window* window)
     static_assert(false, "unsupported platform");
 #endif
     return windowPtr;
+}
+
+SDL_Window* SDLWindow::GetSDLWindow() const
+{
+    return _window;
 }
 
 #if PLATFORM_LINUX
@@ -474,7 +434,7 @@ void SDLWindow::HandleEvent(SDL_Event& event)
             // X11 doesn't report any mouse events when mouse is over the caption area, send a simulated event instead...
             Float2 mousePosition;
             auto buttons = SDL_GetGlobalMouseState(&mousePosition.X, &mousePosition.Y);
-            if ((buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0)
+            if ((buttons & SDL_BUTTON_MASK(SDL_BUTTON_LEFT)) != 0)
                 SDLPlatform::CheckWindowDragging(this, WindowHitCodes::Caption);
         }
 #endif
@@ -495,34 +455,31 @@ void SDLWindow::HandleEvent(SDL_Event& event)
         _minimized = false;
         _maximized = true;
         
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS && BORDERLESS_MAXIMIZE_WORKAROUND == 2
+        if (SkipMaximizeEventsCount > 0)
+        {
+            SkipMaximizeEventsCount--;
+            return;
+        }
+
         if (!_settings.HasBorder && _settings.HasSizingFrame)
         {
-            // Borderless window doesn't maximize properly, manually force the window into correct location and size
-            SDL_Rect rect;
-            SDL_DisplayID display = SDL_GetDisplayForWindow(_window);
-            SDL_GetDisplayUsableBounds(display, &rect); // Excludes taskbar etc.
+            // Restore the window back to previous state
+            SDL_RestoreWindow(_window);
 
-            // Check if the window actually clips past the display work region
-            auto pos = GetPosition();
-            auto size = GetClientSize();
-            if (pos.X < rect.x || pos.Y < rect.y || size.X > rect.w || size.Y > rect.h)
-            {
-                // Disable resizable flag so SDL updates the client rectangle to expected values during WM_NCCALCSIZE
-                SDL_SetWindowResizable(_window, false);
-                SDL_MaximizeWindow(_window);
+            // Remove the resizable flags from borderless windows and maximize the window again
+            auto style = ::GetWindowLong((HWND)_handle, GWL_STYLE);
+            style &= ~STYLE_RESIZABLE;
+            ::SetWindowLong((HWND)_handle, GWL_STYLE, style);
 
-                // Set the internal floating window rectangle to expected position
-                SetClientBounds(Rectangle((float)rect.x, (float)rect.y, (float)rect.w, (float)rect.h));
+            SDL_MaximizeWindow(_window);
 
-                // Flush and handle the events again
-                ::SetWindowPos((HWND)_handle, HWND_TOP, rect.x, rect.y, rect.w, rect.h, SWP_NOZORDER | SWP_NOACTIVATE | SWP_NOOWNERZORDER);
-                SDL_PumpEvents();
+            // Re-enable the resizable borderless flags
+            style = ::GetWindowLong((HWND)_handle, GWL_STYLE) | STYLE_RESIZABLE;
+            ::SetWindowLong((HWND)_handle, GWL_STYLE, style);
 
-                // Restore previous values
-                SDL_SetWindowResizable(_window, true);
-                SetClientBounds(_cachedClientRectangle);
-            }
+            // The next SDL_EVENT_WINDOW_RESTORED and SDL_EVENT_WINDOW_MAXIMIZED events should be ignored
+            SkipMaximizeEventsCount = 2;
         }
 #endif 
         CheckForWindowResize();
@@ -530,6 +487,14 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     }
     case SDL_EVENT_WINDOW_RESTORED:
     {
+#if BORDERLESS_MAXIMIZE_WORKAROUND == 2
+        if (SkipMaximizeEventsCount > 0)
+        {
+            SkipMaximizeEventsCount--;
+            return;
+        }
+#endif
+
         if (_maximized)
         {
             _maximized = false;
@@ -558,9 +523,6 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     }
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
     {
-#if PLATFORM_LINUX
-        _forcedFocus = false;
-#endif
         OnGotFocus();
         SDL_StartTextInput(_window);
         const SDL_Rect* currentClippingRect = SDL_GetWindowMouseRect(_window);
@@ -573,9 +535,6 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     }
     case SDL_EVENT_WINDOW_FOCUS_LOST:
     {
-#if PLATFORM_LINUX
-        _forcedFocus = false;
-#endif
         SDL_StopTextInput(_window);
         const SDL_Rect* currentClippingRect = SDL_GetWindowMouseRect(_window);
         if (currentClippingRect != nullptr)
@@ -585,16 +544,15 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     }
     case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
     {
-        SDL_DisplayID display = SDL_GetDisplayForWindow(_window);
-        float scale = SDL_GetDisplayContentScale(display);
-        if (scale > 0.0f)
+        float scale = SDL_GetWindowDisplayScale(_window);
+        if (scale > 0.0f && _dpiScale != scale)
         {
             float oldScale = _dpiScale;
             _dpiScale = scale;
-            _dpi = (int)(_dpiScale * DefaultDPI);
-
-            int w = (int)(_cachedClientRectangle.GetWidth() * (scale / oldScale));
-            int h = (int)(_cachedClientRectangle.GetHeight() * (scale / oldScale));
+            _dpi = static_cast<int>(_dpiScale * DefaultDPI);
+            int w = static_cast<int>(_cachedClientRectangle.GetWidth() * (scale / oldScale));
+            int h = static_cast<int>(_cachedClientRectangle.GetHeight() * (scale / oldScale));
+            _cachedClientRectangle.Size = Float2(static_cast<float>(w), static_cast<float>(h));
             SDL_SetWindowSize(_window, w, h);
             // TODO: Recalculate fonts
         }
@@ -671,12 +629,6 @@ void SDLWindow::HandleEvent(SDL_Event& event)
         if (SDLInput::HandleEvent(this, event))
             return;
     }
-
-    // ignored
-    if (event.type == SDL_EVENT_WINDOW_ICCPROF_CHANGED)
-        return;
-
-    //LOG(Info, "Unhandled SDL event: {0}", event.type);
 }
 
 void* SDLWindow::GetNativePtr() const
@@ -741,7 +693,19 @@ void SDLWindow::Maximize()
     if (!_settings.AllowMaximize)
         return;
 
+#if PLATFORM_WINDOWS && BORDERLESS_MAXIMIZE_WORKAROUND == 1
+    // Workaround for "SDL_BORDERLESS_RESIZABLE_STYLE" hint not working as expected when maximizing windows
+    auto style = ::GetWindowLong((HWND)_handle, GWL_STYLE);
+    style &= ~STYLE_RESIZABLE;
+    ::SetWindowLong((HWND)_handle, GWL_STYLE, style);
+
     SDL_MaximizeWindow(_window);
+
+    style = ::GetWindowLong((HWND)_handle, GWL_STYLE) | STYLE_RESIZABLE;
+    ::SetWindowLong((HWND)_handle, GWL_STYLE, style);
+#else
+    SDL_MaximizeWindow(_window);
+#endif
 }
 
 void SDLWindow::SetBorderless(bool isBorderless, bool maximized)
@@ -761,7 +725,9 @@ void SDLWindow::SetBorderless(bool isBorderless, bool maximized)
     {
         SDL_SetWindowBordered(_window, !isBorderless ? true : false);
         if (maximized)
-            SDL_MaximizeWindow(_window);
+        {
+            Maximize();
+        }
         else
             Focus();
     }
@@ -769,7 +735,9 @@ void SDLWindow::SetBorderless(bool isBorderless, bool maximized)
     {
         SDL_SetWindowBordered(_window, !isBorderless ? true : false);
         if (maximized)
-            SDL_MaximizeWindow(_window);
+        {
+            Maximize();
+        }
         else
             Focus();
     }
@@ -779,7 +747,19 @@ void SDLWindow::SetBorderless(bool isBorderless, bool maximized)
 
 void SDLWindow::Restore()
 {
+#if PLATFORM_WINDOWS && BORDERLESS_MAXIMIZE_WORKAROUND == 1
+    // Workaround for "SDL_BORDERLESS_RESIZABLE_STYLE" hint not working as expected when maximizing windows
+    auto style = ::GetWindowLong((HWND)_handle, GWL_STYLE);
+    style &= ~STYLE_RESIZABLE;
+    ::SetWindowLong((HWND)_handle, GWL_STYLE, style);
+
     SDL_RestoreWindow(_window);
+
+    style = ::GetWindowLong((HWND)_handle, GWL_STYLE) | STYLE_RESIZABLE;
+    ::SetWindowLong((HWND)_handle, GWL_STYLE, style);
+#else
+    SDL_RestoreWindow(_window);
+#endif
 }
 
 bool SDLWindow::IsClosed() const
@@ -789,10 +769,6 @@ bool SDLWindow::IsClosed() const
 
 bool SDLWindow::IsForegroundWindow() const
 {
-#if PLATFORM_LINUX
-    if (_forcedFocus)
-        return true;
-#endif
     SDL_WindowFlags flags = SDL_GetWindowFlags(_window);
     return (flags & SDL_WINDOW_INPUT_FOCUS) != 0;
 }
@@ -807,8 +783,55 @@ void SDLWindow::BringToFront(bool force)
 
 void SDLWindow::SetClientBounds(const Rectangle& clientArea)
 {
-    SDL_SetWindowPosition(_window, (int)clientArea.GetLeft(), (int)clientArea.GetTop());
-    SDL_SetWindowSize(_window, (int)clientArea.GetWidth(), (int)clientArea.GetHeight());
+    int newX = static_cast<int>(clientArea.GetLeft());
+    int newY = static_cast<int>(clientArea.GetTop());
+    int newW = static_cast<int>(clientArea.GetWidth());
+    int newH = static_cast<int>(clientArea.GetHeight());
+
+    SetSDLWindowScreenPosition(this, newX, newY);
+    SDL_SetWindowSize(_window, newW, newH);
+}
+
+bool IsPopupWindow(WindowType type)
+{
+    return type == WindowType::Popup || type == WindowType::Tooltip;
+}
+
+void GetRelativeWindowOffset(WindowType type, SDLWindow* parentWindow, Int2& positionOffset)
+{
+    if (!IsPopupWindow(type))
+        return;
+
+    SDLWindow* window = parentWindow;
+    while (window != nullptr)
+    {
+        Int2 parentPosition;
+        SDL_GetWindowPosition(window->GetSDLWindow(), &parentPosition.X, &parentPosition.Y);
+        positionOffset -= parentPosition;
+
+        if (!IsPopupWindow(window->GetSettings().Type))
+            break;
+
+        window = window->GetSettings().Parent;
+    }
+}
+
+Int2 GetSDLWindowScreenPosition(const SDLWindow* window)
+{
+    Int2 relativeOffset(0, 0);
+    GetRelativeWindowOffset(window->GetSettings().Type, window->GetSettings().Parent, relativeOffset);
+    
+    Int2 position;
+    SDL_GetWindowPosition(window->GetSDLWindow(), &position.X, &position.Y);
+
+    return position - relativeOffset;
+}
+
+void SetSDLWindowScreenPosition(const SDLWindow* window, const int x, const int y)
+{
+    Int2 relativePosition(x, y);
+    GetRelativeWindowOffset(window->GetSettings().Type, window->GetSettings().Parent, relativePosition);
+    SDL_SetWindowPosition(window->GetSDLWindow(), relativePosition.X, relativePosition.Y);
 }
 
 void SDLWindow::SetPosition(const Float2& position)
@@ -816,25 +839,22 @@ void SDLWindow::SetPosition(const Float2& position)
     Int2 topLeftBorder;
     SDL_GetWindowBordersSize(_window, &topLeftBorder.Y, &topLeftBorder.X, nullptr, nullptr);
 
-    // The position is relative to the parent window
-    Int2 relativePosition(static_cast<int>(position.X), static_cast<int>(position.Y));
-    relativePosition += topLeftBorder;
+    Int2 screenPosition(static_cast<int>(position.X), static_cast<int>(position.Y));
+    screenPosition += topLeftBorder;
 
-    SDLWindow* parent = (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup) ? _settings.Parent : nullptr;
-    while (parent != nullptr)
+    if (false && SDLPlatform::UsesX11())
     {
-        Int2 parentPosition;
-        SDL_GetWindowPosition(parent->_window, &parentPosition.X, &parentPosition.Y);
-        relativePosition -= parentPosition;
-        parent = parent->_settings.Parent;
+        // TODO: is this needed?
+        auto monitorBounds = Platform::GetMonitorBounds(Float2::Minimum);
+        screenPosition += Int2(monitorBounds.GetTopLeft());
     }
-
-    SDL_SetWindowPosition(_window, relativePosition.X, relativePosition.Y);
+    
+    SetSDLWindowScreenPosition(this, screenPosition.X, screenPosition.Y);
 }
 
 void SDLWindow::SetClientPosition(const Float2& position)
 {
-    SDL_SetWindowPosition(_window, static_cast<int>(position.X), static_cast<int>(position.Y));
+    SetSDLWindowScreenPosition(this, static_cast<int>(position.X), static_cast<int>(position.Y));
 }
 
 void SDLWindow::SetIsFullscreen(bool isFullscreen)
@@ -867,19 +887,9 @@ Float2 SDLWindow::GetPosition() const
     Int2 topLeftBorder;
     SDL_GetWindowBordersSize(_window, &topLeftBorder.Y, &topLeftBorder.X, nullptr, nullptr);
 
-    // The position is relative to the parent window
-    Int2 position;
-    SDL_GetWindowPosition(_window, &position.X, &position.Y);
+    Int2 position = GetSDLWindowScreenPosition(this);
     position -= topLeftBorder;
-
-    SDLWindow* parent = (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup) ? _settings.Parent : nullptr;
-    while (parent != nullptr)
-    {
-        Int2 parentPosition;
-        SDL_GetWindowPosition(parent->_window, &parentPosition.X, &parentPosition.Y);
-        position += parentPosition;
-        parent = parent->_settings.Parent;
-    }
+    
     return Float2(static_cast<float>(position.X), static_cast<float>(position.Y));
 }
 
@@ -903,37 +913,13 @@ Float2 SDLWindow::GetClientSize() const
 
 Float2 SDLWindow::ScreenToClient(const Float2& screenPos) const
 {
-    // The position is relative to the parent window
-    Int2 position;
-    SDL_GetWindowPosition(_window, &position.X, &position.Y);
-
-    SDLWindow* parent = (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup) ? _settings.Parent : nullptr;
-    while (parent != nullptr)
-    {
-        Int2 parentPosition;
-        SDL_GetWindowPosition(parent->_window, &parentPosition.X, &parentPosition.Y);
-        position += parentPosition;
-        parent = parent->_settings.Parent;
-    }
-    
+    Int2 position = GetSDLWindowScreenPosition(this);
     return screenPos - Float2(static_cast<float>(position.X), static_cast<float>(position.Y));
 }
 
 Float2 SDLWindow::ClientToScreen(const Float2& clientPos) const
 {
-    // The position is relative to the parent window
-    Int2 position;
-    SDL_GetWindowPosition(_window, &position.X, &position.Y);
-
-    SDLWindow* parent = (_settings.Type == WindowType::Tooltip || _settings.Type == WindowType::Popup) ? _settings.Parent : nullptr;
-    while (parent != nullptr)
-    {
-        Int2 parentPosition;
-        SDL_GetWindowPosition(parent->_window, &parentPosition.X, &parentPosition.Y);
-        position += parentPosition;
-        parent = parent->_settings.Parent;
-    }
-
+    Int2 position = GetSDLWindowScreenPosition(this);
     return clientPos + Float2(static_cast<float>(position.X), static_cast<float>(position.Y));
 }
 
@@ -955,11 +941,13 @@ float SDLWindow::GetOpacity() const
 
 void SDLWindow::SetOpacity(const float opacity)
 {
-    SDL_SetWindowOpacity(_window, opacity);
+    if (!SDL_SetWindowOpacity(_window, opacity))
+        LOG(Warning, "SDL_SetWindowOpacity failed: {0}", String(SDL_GetError()));
 }
 
 void SDLWindow::Focus()
 {
+#if PLATFORM_WINDOWS
     auto activateWhenRaised = SDL_GetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_RAISED);
     SDL_SetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_RAISED, "1");
 
@@ -971,6 +959,9 @@ void SDLWindow::Focus()
 
     SDL_SetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_RAISED, activateWhenRaised);
     //SDL_SetHint(SDL_HINT_FORCE_RAISEWINDOW, forceRaiseWindow);
+#else
+    SDL_RaiseWindow(_window);
+#endif
 }
 
 String SDLWindow::GetTitle() const

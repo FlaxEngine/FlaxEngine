@@ -34,7 +34,6 @@ private:
 #endif
 #if PLATFORM_LINUX
     bool _dragOver;
-    bool _forcedFocus;
 #endif
     SDL_Window* _window;
     uint32 _windowId;
@@ -68,6 +67,7 @@ private:
 
 public:
 
+    SDL_Window* GetSDLWindow() const;
 #if PLATFORM_LINUX
     void* GetWaylandSurfacePtr() const;
     void* GetWaylandDisplay() const;

@@ -64,12 +64,16 @@ bool SDLPlatform::Init()
     SDL_SetHint(SDL_HINT_WINDOWS_ERASE_BACKGROUND_MODE, "0");
     SDL_SetHint(SDL_HINT_TIMER_RESOLUTION, "0"); // Already handled during platform initialization
     SDL_SetHint("SDL_BORDERLESS_RESIZABLE_STYLE", "1"); // Allow borderless windows to be resizable on Windows
+    //SDL_SetHint("SDL_BORDERLESS_WINDOWED_STYLE", "1"); 
+    
     SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_WARP_MOTION, "0");
     SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_CURSOR_VISIBLE, "1"); // Needed for tracking mode
-    SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "1");
+    SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "1"); // Is this needed?
 
     //SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "1"); // Disables raw mouse input
     SDL_SetHint(SDL_HINT_WINDOWS_RAW_KEYBOARD, "1");
+
+    SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_SCALE_TO_DISPLAY, "1");
 
     // Disable SDL clipboard support
     SDL_SetEventEnabled(SDL_EVENT_CLIPBOARD_UPDATE, false);
@@ -312,11 +316,6 @@ Window* SDLPlatform::CreateWindow(const CreateWindowSettings& settings)
 #if !PLATFORM_LINUX
 
 bool SDLPlatform::UsesWayland()
-{
-    return false;
-}
-
-bool SDLPlatform::UsesXWayland()
 {
     return false;
 }

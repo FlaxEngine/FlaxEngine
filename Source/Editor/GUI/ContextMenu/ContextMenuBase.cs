@@ -261,6 +261,7 @@ namespace FlaxEditor.GUI.ContextMenu
                 desc.IsTopmost = true;
                 desc.Type = WindowType.Popup;
                 desc.Parent = parentWin.Window;
+                desc.Title = "ContextMenu";
                 desc.HasSizingFrame = false;
                 OnWindowCreating(ref desc);
                 _window = Platform.CreateWindow(ref desc);
