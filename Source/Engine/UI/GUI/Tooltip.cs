@@ -18,6 +18,11 @@ namespace FlaxEngine.GUI
         private Window _window;
 
         /// <summary>
+        /// The mouse offset from top-left corner of tooltip.
+        /// </summary>
+        private static readonly Float2 TooltipOffset = new Float2(15, 10);
+
+        /// <summary>
         /// The horizontal alignment of the text.
         /// </summary>
         public TextAlignment HorizontalTextAlignment = TextAlignment.Center;
@@ -81,7 +86,7 @@ namespace FlaxEngine.GUI
             _showTarget = target;
             //WrapPosition(ref locationSS);
             WrapPosition(ref mousePos, 10);
-            locationSS = mousePos + new Float2(15, 10);
+            locationSS = mousePos + TooltipOffset;
 
             // Create window
             var desc = CreateWindowSettings.Default;
@@ -99,8 +104,10 @@ namespace FlaxEngine.GUI
             desc.AllowDragAndDrop = false;
             desc.IsTopmost = true;
             desc.Type = WindowType.Tooltip;
+            desc.Title = "Tooltip";
             desc.HasSizingFrame = false;
             desc.ShowAfterFirstPaint = true;
+            desc.Parent = parentWin.RootWindow.Window;
             _window = Platform.CreateWindow(ref desc);
             if (_window == null)
                 throw new InvalidOperationException("Failed to create tooltip window.");
@@ -228,7 +235,7 @@ namespace FlaxEngine.GUI
                 // Position tooltip when mouse moves
                 WrapPosition(ref mousePos, 10);
                 if (_window)
-                    _window.Position = mousePos + new Float2(15, 10);
+                    _window.Position = mousePos + TooltipOffset;
             }
 
             base.Update(deltaTime);
