@@ -110,8 +110,9 @@ namespace Flax.Deps.Dependencies
                         
                         var solutionPath = Path.Combine(buildDir, "SDL3.sln");
 
-                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DSDL_SHARED={(!buildStatic ? "ON" : "OFF")} -DSDL_STATIC={(buildStatic ? "ON" : "OFF")} -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL " + string.Join(" ", configs));
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DCMAKE_INSTALL_PREFIX=\"{buildDir}\" -DSDL_SHARED={(!buildStatic ? "ON" : "OFF")} -DSDL_STATIC={(buildStatic ? "ON" : "OFF")} -DCMAKE_POLICY_DEFAULT_CMP0091=NEW -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL " + string.Join(" ", configs));
                         Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
+                        Utilities.Run("cmake", $"--build .  --target install --config {configuration}", null, buildDir, Utilities.RunOptions.DefaultTool);
 
                         // Copy binaries
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
@@ -136,6 +137,7 @@ namespace Flax.Deps.Dependencies
                         int concurrency = Math.Min(Math.Max(1, (int)(Environment.ProcessorCount * Configuration.ConcurrencyProcessorScale)), Configuration.MaxConcurrency);
                         RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DCMAKE_BUILD_TYPE={configuration} -DCMAKE_INSTALL_PREFIX=\"{buildDir}\" -DSDL_SHARED={(!buildStatic ? "ON" : "OFF")} -DSDL_STATIC={(buildStatic ? "ON" : "OFF")} -DCMAKE_POSITION_INDEPENDENT_CODE=ON " + string.Join(" ", configs));
                         BuildCmake(buildDir, configuration, new Dictionary<string, string>() { {"CMAKE_BUILD_PARALLEL_LEVEL", concurrency.ToString()} });
+                        Utilities.Run("cmake", $"--build .  --target install --config {configuration}", null, buildDir, Utilities.RunOptions.DefaultTool);
 
                         // Copy binaries
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
