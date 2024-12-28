@@ -70,6 +70,7 @@ public:
     static void SetHighDpiAwarenessEnabled(bool enable);
     static BatteryInfo GetBatteryInfo();
     static int32 GetDpi();
+    static String GetUserLocaleName();
     static void OpenUrl(const StringView& url);
     static Float2 GetMousePosition();
     static void SetMousePosition(const Float2& pos);
