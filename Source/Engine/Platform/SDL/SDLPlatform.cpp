@@ -18,6 +18,7 @@
 #include <SDL3/SDL_revision.h>
 #include <SDL3/SDL_system.h>
 #include <SDL3/SDL_version.h>
+#include <SDL3/SDL_locale.h>
 
 #if PLATFORM_LINUX
 #include "Engine/Engine/CommandLine.h"
@@ -32,6 +33,7 @@ uint32 SDLPlatform::DraggedWindowId = 0;
 namespace
 {
     int32 SystemDpi = 96;
+    String UserLocale("en");
 }
 
 bool SDLPlatform::Init()
@@ -82,6 +84,23 @@ bool SDLPlatform::Init()
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         Platform::Fatal(String::Format(TEXT("Failed to initialize SDL: {0}."), String(SDL_GetError())));
 
+    int localesCount = 0;
+    auto locales = SDL_GetPreferredLocales(&localesCount);
+    for (int i = 0; i < localesCount; i++)
+    {
+        auto language = StringAnsiView(locales[i]->language);
+        auto country = StringAnsiView(locales[i]->country);
+        if (language.StartsWith("en"))
+        {
+            if (country != nullptr)
+                UserLocale = String::Format(TEXT("{0}-{1}"), String(language), String(locales[i]->country));
+            else
+                UserLocale = String(language);
+            break;
+        }
+    }
+    SDL_free(locales);
+    
     if (InitPlatform())
         return true;
 
@@ -225,6 +244,11 @@ BatteryInfo SDLPlatform::GetBatteryInfo()
 int32 SDLPlatform::GetDpi()
 {
     return SystemDpi;
+}
+
+String SDLPlatform::GetUserLocaleName()
+{
+    return UserLocale;
 }
 
 void SDLPlatform::OpenUrl(const StringView& url)

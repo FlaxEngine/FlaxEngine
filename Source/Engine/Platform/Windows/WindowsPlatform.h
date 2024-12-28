@@ -65,8 +65,10 @@ public:
     static String GetSystemName();
     static Version GetSystemVersion();
     static BatteryInfo GetBatteryInfo();
+#if !PLATFORM_SDL
     static int32 GetDpi();
     static String GetUserLocaleName();
+#endif
     static String GetComputerName();
     static bool GetHasFocus();
     static bool CanOpenUrl(const StringView& url);
@@ -80,7 +82,9 @@ public:
     static bool GetEnvironmentVariable(const String& name, String& value);
     static bool SetEnvironmentVariable(const String& name, const String& value);
     static int32 CreateProcess(CreateProcessSettings& settings);
+#if !PLATFORM_SDL
     static Window* CreateWindow(const CreateWindowSettings& settings);
+#endif
     static void* LoadLibrary(const Char* filename);
 #if CRASH_LOG_ENABLE
     static Array<StackFrame, HeapAllocation> GetStackFrames(int32 skipCount = 0, int32 maxDepth = 60, void* context = nullptr);

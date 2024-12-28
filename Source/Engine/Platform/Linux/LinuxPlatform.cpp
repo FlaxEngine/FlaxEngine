@@ -2112,6 +2112,7 @@ bool LinuxPlatform::Init()
 
     UnixGetMacAddress(MacAddress);
 
+#if !PLATFORM_SDL
     // Get user locale string
     setlocale(LC_ALL, "");
     const char* locale = setlocale(LC_CTYPE, NULL);
@@ -2121,6 +2122,7 @@ bool LinuxPlatform::Init()
     UserLocale.Replace('_', '-');
     if (UserLocale == TEXT("C"))
         UserLocale = TEXT("en");
+#endif
 
     // Get computer name string
     gethostname(buffer, UNIX_APP_BUFF_SIZE);
@@ -2706,6 +2708,7 @@ void LinuxPlatform::Exit()
 #endif
 }
 
+#if !PLATFORM_SDL
 String LinuxPlatform::GetSystemName()
 {
     Dictionary<String, String> configs = Impl::LoadConfigFile(TEXT("/etc/os-release"));
@@ -2734,6 +2737,7 @@ String LinuxPlatform::GetUserLocaleName()
 {
     return UserLocale;
 }
+#endif
 
 String LinuxPlatform::GetComputerName()
 {
@@ -2941,14 +2945,12 @@ bool LinuxPlatform::SetWorkingDirectory(const String& path)
     return chdir(StringAsANSI<>(*path).Get()) != 0;
 }
 
+#if !PLATFORM_SDL
 Window* LinuxPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
-#if PLATFORM_SDL
-    return New<SDLWindow>(settings);
-#else
     return New<LinuxWindow>(settings);
-#endif
 }
+#endif
 
 extern char **environ;
 

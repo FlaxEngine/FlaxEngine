@@ -123,8 +123,10 @@ public:
     static void Tick();
     static void BeforeExit();
     static void Exit();
+#if !PLATFORM_SDL
     static int32 GetDpi();
     static String GetUserLocaleName();
+#endif
     static String GetComputerName();
     static bool GetHasFocus();
     static bool CanOpenUrl(const StringView& url);
@@ -139,7 +141,9 @@ public:
     static Guid GetUniqueDeviceId();
     static String GetWorkingDirectory();
     static bool SetWorkingDirectory(const String& path);
+#if !PLATFORM_SDL
     static Window* CreateWindow(const CreateWindowSettings& settings);
+#endif
     static void GetEnvironmentVariables(Dictionary<String, String, HeapAllocation>& result);
     static bool GetEnvironmentVariable(const String& name, String& value);
     static bool SetEnvironmentVariable(const String& name, const String& value);
