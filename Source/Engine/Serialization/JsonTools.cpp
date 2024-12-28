@@ -286,6 +286,7 @@ DateTime JsonTools::GetDateTime(const Value& value)
 
 CommonValue JsonTools::GetCommonValue(const Value& value)
 {
+    // [Deprecated on 31.07.2020, expires on 31.07.2022]
     CommonValue result;
     const auto typeMember = value.FindMember("Type");
     const auto valueMember = value.FindMember("Value");

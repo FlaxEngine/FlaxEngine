@@ -13,12 +13,9 @@
 class AudioClipUpgrader : public BinaryAssetUpgrader
 {
 public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="AudioClipUpgrader"/> class.
-    /// </summary>
     AudioClipUpgrader()
     {
-        static const Upgrader upgraders[] =
+        const Upgrader upgraders[] =
         {
             {},
         };

@@ -6,53 +6,63 @@
 #include "Engine/Platform/Platform.h"
 
 /// <summary>
-/// Super fast advanced data reading from raw bytes without any overhead at all
+/// Direct memory reading stream  that uses a single allocation buffer.
 /// </summary>
 class FLAXENGINE_API MemoryReadStream : public ReadStream
 {
 private:
-
     const byte* _buffer;
     const byte* _position;
     uint32 _length;
 
 public:
-
     /// <summary>
     /// Init (empty, cannot access before Init())
     /// </summary>
-    MemoryReadStream();
-
     /// <summary>
-    /// Init
+    /// Initializes a new instance of the <see cref="MemoryReadStream"/> class.
     /// </summary>
-    /// <param name="bytes">Bytes with data to read from it (no memory cloned, using input buffer)</param>
+    MemoryReadStream();
+    
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MemoryReadStream"/> class.
+    /// </summary>
+    /// <param name="bytes">Bytes with data to read from it (no memory cloned, using input buffer).</param>
     /// <param name="length">Amount of bytes</param>
     MemoryReadStream(const byte* bytes, uint32 length);
-
+    
     /// <summary>
-    /// Init
+    /// Initializes a new instance of the <see cref="MemoryReadStream"/> class.
     /// </summary>
-    /// <param name="data">Array with data to read from</param>
+    /// <param name="data">Array with data to read from.</param>
     template<typename T, typename AllocationType = HeapAllocation>
     MemoryReadStream(const Array<T, AllocationType>& data)
         : MemoryReadStream(data.Get(), data.Count() * sizeof(T))
     {
     }
+    
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MemoryReadStream"/> class.
+    /// </summary>
+    /// <param name="data">Span with data to read from.</param>
+    template<typename T>
+    MemoryReadStream(const Span<T>& data)
+        : MemoryReadStream(data.Get(), data.Count() * sizeof(T))
+    {
+    }
 
 public:
-
     /// <summary>
-    /// Init stream to the custom buffer location
+    /// Init stream to the custom buffer location.
     /// </summary>
-    /// <param name="bytes">Bytes with data to read from it (no memory cloned, using input buffer)</param>
-    /// <param name="length">Amount of bytes</param>
+    /// <param name="bytes">Bytes with data to read from it (no memory cloned, using input buffer).</param>
+    /// <param name="length">Amount of bytes.</param>
     void Init(const byte* bytes, uint32 length);
 
     /// <summary>
-    /// Init stream to the custom buffer location
+    /// Init stream to the custom buffer location.
     /// </summary>
-    /// <param name="data">Array with data to read from</param>
+    /// <param name="data">Array with data to read from.</param>
     template<typename T, typename AllocationType = HeapAllocation>
     FORCE_INLINE void Init(const Array<T, AllocationType>& data)
     {
@@ -62,7 +72,6 @@ public:
     /// <summary>
     /// Gets the current handle to position in buffer.
     /// </summary>
-    /// <returns>The position of the buffer in memory.</returns>
     const byte* GetPositionHandle() const
     {
         return _position;
@@ -104,7 +113,6 @@ public:
     }
 
 public:
-
     // [ReadStream]
     void Flush() override;
     void Close() override;

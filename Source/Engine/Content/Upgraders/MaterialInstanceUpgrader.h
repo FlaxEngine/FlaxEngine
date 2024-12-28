@@ -13,12 +13,9 @@
 class MaterialInstanceUpgrader : public BinaryAssetUpgrader
 {
 public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MaterialInstanceUpgrader"/> class.
-    /// </summary>
     MaterialInstanceUpgrader()
     {
-        static const Upgrader upgraders[] =
+        const Upgrader upgraders[] =
         {
             {},
         };

@@ -13,12 +13,9 @@
 class ShaderAssetUpgrader : public BinaryAssetUpgrader
 {
 public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ShaderAssetUpgrader"/> class.
-    /// </summary>
     ShaderAssetUpgrader()
     {
-        static const Upgrader upgraders[] =
+        const Upgrader upgraders[] =
         {
             {},
         };

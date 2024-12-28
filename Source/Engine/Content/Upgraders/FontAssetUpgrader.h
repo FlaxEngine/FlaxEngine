@@ -13,12 +13,9 @@
 class FontAssetUpgrader : public BinaryAssetUpgrader
 {
 public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="FontAssetUpgrader"/> class.
-    /// </summary>
     FontAssetUpgrader()
     {
-        static const Upgrader upgraders[] =
+        const Upgrader upgraders[] =
         {
             {},
         };

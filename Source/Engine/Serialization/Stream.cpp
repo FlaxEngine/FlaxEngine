@@ -107,6 +107,7 @@ void ReadStream::Read(String& data, int16 lock)
 
 void ReadStream::Read(CommonValue& data)
 {
+    // [Deprecated on 31.07.2020, expires on 31.07.2022]
     byte type;
     ReadByte(&type);
     switch (static_cast<CommonType>(type))
@@ -716,6 +717,7 @@ void WriteStream::Write(const StringAnsiView& data, int8 lock)
 
 void WriteStream::Write(const CommonValue& data)
 {
+    // [Deprecated on 31.07.2020, expires on 31.07.2022]
     WriteByte(static_cast<byte>(data.Type));
     switch (data.Type)
     {

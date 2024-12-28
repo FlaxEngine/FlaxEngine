@@ -12,129 +12,111 @@ class FLAXENGINE_API WriteStream : public Stream
 {
 public:
     /// <summary>
-    /// Writes bytes to the stream
+    /// Writes bytes to the stream.
     /// </summary>
-    /// <param name="data">Data to write</param>
-    /// <param name="bytes">Amount of bytes to write</param>
+    /// <param name="data">Pointer to data to write.</param>
+    /// <param name="bytes">Amount of bytes to write.</param>
     virtual void WriteBytes(const void* data, uint32 bytes) = 0;
 
 public:
-    // Writes byte to the stream
-    // @param data Data to write
+    // Writes byte to the stream.
     FORCE_INLINE void WriteByte(byte data)
     {
         WriteBytes(&data, sizeof(byte));
     }
 
-    // Writes bool to the stream
-    // @param data Data to write
+    // Writes bool to the stream.
     FORCE_INLINE void WriteBool(bool data)
     {
         WriteBytes(&data, sizeof(bool));
     }
 
-    // Writes char to the stream
-    // @param data Data to write
+    // Writes char to the stream.
     FORCE_INLINE void WriteChar(char data)
     {
         WriteBytes(&data, sizeof(char));
     }
 
-    // Writes Char to the stream
-    // @param data Data to write
+    // Writes Char to the stream.
     FORCE_INLINE void WriteChar(Char data)
     {
         WriteBytes(&data, sizeof(Char));
     }
 
-    // Writes uint8 to the stream
-    // @param data Data to write
+    // Writes uint8 to the stream.
     FORCE_INLINE void WriteUint8(uint8 data)
     {
         WriteBytes(&data, sizeof(uint8));
     }
 
-    // Writes int8 to the stream
-    // @param data Data to write
+    // Writes int8 to the stream.
     FORCE_INLINE void WriteInt8(int8 data)
     {
         WriteBytes(&data, sizeof(int8));
     }
 
-    // Writes uint16 to the stream
-    // @param data Data to write
+    // Writes uint16 to the stream.
     FORCE_INLINE void WriteUint16(uint16 data)
     {
         WriteBytes(&data, sizeof(uint16));
     }
 
-    // Writes int16 to the stream
-    // @param data Data to write
+    // Writes int16 to the stream.
     FORCE_INLINE void WriteInt16(int16 data)
     {
         WriteBytes(&data, sizeof(int16));
     }
 
-    // Writes uint32 to the stream
-    // @param data Data to write
+    // Writes uint32 to the stream.
     FORCE_INLINE void WriteUint32(uint32 data)
     {
         WriteBytes(&data, sizeof(uint32));
     }
 
-    // Writes int32 to the stream
-    // @param data Data to write
+    // Writes int32 to the stream.
     FORCE_INLINE void WriteInt32(int32 data)
     {
         WriteBytes(&data, sizeof(int32));
     }
 
-    // Writes int64 to the stream
-    // @param data Data to write
+    // Writes int64 to the stream.
     FORCE_INLINE void WriteInt64(int64 data)
     {
         WriteBytes(&data, sizeof(int64));
     }
 
-    // Writes uint64 to the stream
-    // @param data Data to write
+    // Writes uint64 to the stream.
     FORCE_INLINE void WriteUint64(uint64 data)
     {
         WriteBytes(&data, sizeof(uint64));
     }
 
-    // Writes float to the stream
-    // @param data Data to write
+    // Writes float to the stream.
     FORCE_INLINE void WriteFloat(float data)
     {
         WriteBytes(&data, sizeof(float));
     }
 
-    // Writes double to the stream
-    // @param data Data to write
+    // Writes double to the stream.
     FORCE_INLINE void WriteDouble(double data)
     {
         WriteBytes(&data, sizeof(double));
     }
 
 public:
-    // Writes text to the stream
-    // @param data Text to write
-    // @param length Text length
+    // Writes text to the stream.
     void WriteText(const char* text, int32 length)
     {
         WriteBytes((const void*)text, sizeof(char) * length);
     }
 
-    // Writes text to the stream
-    // @param data Text to write
-    // @param length Text length
+    // Writes text to the stream.
     void WriteText(const Char* text, int32 length)
     {
         WriteBytes((const void*)text, sizeof(Char) * length);
     }
 
-    // Write UTF BOM character sequence
+    // Write UTF BOM character sequence.
     void WriteBOM()
     {
         WriteByte(0xEF);
@@ -142,8 +124,7 @@ public:
         WriteByte(0xBF);
     }
 
-    // Writes text to the stream
-    // @param data Text to write
+    // Writes text to the stream.
     void WriteText(const StringView& text);
     void WriteText(const StringAnsiView& text);
 
@@ -249,7 +230,6 @@ public:
 
     // Writes Ansi String to the stream
     /// [Deprecated on 11.10.2022, expires on 11.10.2024]
-    // @param data Data to write
     void WriteStringAnsi(const StringAnsiView& data);
 
     // Writes Ansi String to the stream

@@ -13,12 +13,9 @@
 class TextureAssetUpgrader : public BinaryAssetUpgrader
 {
 public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="TextureAssetUpgrader"/> class.
-    /// </summary>
     TextureAssetUpgrader()
     {
-        static const Upgrader upgraders[] =
+        const Upgrader upgraders[] =
         {
             {},
         };

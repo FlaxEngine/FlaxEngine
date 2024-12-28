@@ -13,12 +13,9 @@
 class SkeletonMaskUpgrader : public BinaryAssetUpgrader
 {
 public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="SkeletonMaskUpgrader"/> class.
-    /// </summary>
     SkeletonMaskUpgrader()
     {
-        static const Upgrader upgraders[] =
+        const Upgrader upgraders[] =
         {
             {},
         };

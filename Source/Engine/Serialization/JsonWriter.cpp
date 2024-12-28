@@ -246,6 +246,7 @@ void JsonWriter::Matrix(const ::Matrix& value)
 
 void JsonWriter::CommonValue(const ::CommonValue& value)
 {
+    // [Deprecated on 31.07.2020, expires on 31.07.2022]
     StartObject();
 
     JKEY("Type");

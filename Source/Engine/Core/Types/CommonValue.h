@@ -16,6 +16,7 @@
 
 /// <summary>
 /// Common values types.
+/// [Deprecated on 31.07.2020, expires on 31.07.2022]
 /// </summary>
 enum class CommonType
 {
