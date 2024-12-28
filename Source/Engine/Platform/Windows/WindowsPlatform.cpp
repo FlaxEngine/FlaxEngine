@@ -669,11 +669,13 @@ bool WindowsPlatform::Init()
     DWORD tmp;
     Char buffer[256];
 
+#if !PLATFORM_SDL
     // Get user locale string
     if (GetUserDefaultLocaleName(buffer, LOCALE_NAME_MAX_LENGTH))
     {
         UserLocale = String(buffer);
     }
+#endif
 
     // Get computer name string
     if (GetComputerNameW(buffer, &tmp))
@@ -822,6 +824,7 @@ BatteryInfo WindowsPlatform::GetBatteryInfo()
     return info;
 }
 
+#if !PLATFORM_SDL
 int32 WindowsPlatform::GetDpi()
 {
     return SystemDpi;
@@ -831,6 +834,7 @@ String WindowsPlatform::GetUserLocaleName()
 {
     return UserLocale;
 }
+#endif
 
 String WindowsPlatform::GetComputerName()
 {
@@ -1201,12 +1205,10 @@ int32 WindowsPlatform::CreateProcess(CreateProcessSettings& settings)
 }
 
 #if !PLATFORM_SDL
-
 Window* WindowsPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
     return New<WindowsWindow>(settings);
 }
-
 #endif
 
 void* WindowsPlatform::LoadLibrary(const Char* filename)
