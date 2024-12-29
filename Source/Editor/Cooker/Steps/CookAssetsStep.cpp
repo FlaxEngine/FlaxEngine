@@ -166,7 +166,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
         Guid id;
         file->Read(id);
         String typeName;
-        file->ReadString(&typeName);
+        file->Read(typeName);
         DateTime fileModified;
         file->Read(fileModified);
         int32 fileDependenciesCount;
@@ -176,7 +176,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
         for (int32 j = 0; j < fileDependenciesCount; j++)
         {
             Pair<String, DateTime>& f = fileDependencies[j];
-            file->ReadString(&f.First, 10);
+            file->Read(f.First, 10);
             file->Read(f.Second);
         }
 
@@ -311,9 +311,9 @@ void CookAssetsStep::CacheData::Save(CookingData& data)
     {
         auto& e = i->Value;
         file->Write(e.ID);
-        file->WriteString(e.TypeName);
+        file->Write(e.TypeName);
         file->Write(e.FileModified);
-        file->WriteInt32(e.FileDependencies.Count());
+        file->Write(e.FileDependencies.Count());
         for (auto& f : e.FileDependencies)
         {
             file->Write(f.First, 10);
@@ -1249,7 +1249,7 @@ bool CookAssetsStep::Perform(CookingData& data)
         *(int32*)(bytes.Get() + 804) = contentKey;
         *(Guid*)(bytes.Get() + 808) = gameSettings->SplashScreen;
         Encryption::EncryptBytes(bytes.Get(), bytes.Count());
-        stream->WriteArray(bytes);
+        stream->Write(bytes);
 
         Delete(stream);
     }

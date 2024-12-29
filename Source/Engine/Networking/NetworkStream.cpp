@@ -152,7 +152,7 @@ void NetworkStream::Read(Quaternion& data)
     NetworkQuaternion::Read(this, data);
 }
 
-void NetworkStream::Read(Transform& data)
+void NetworkStream::Read(Transform& data, bool useDouble)
 {
     struct NonQuantized
     {
@@ -181,7 +181,7 @@ void NetworkStream::Write(const Quaternion& data)
     NetworkQuaternion::Write(this, data);
 }
 
-void NetworkStream::Write(const Transform& data)
+void NetworkStream::Write(const Transform& data, bool useDouble)
 {
     struct NonQuantized
     {

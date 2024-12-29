@@ -29,7 +29,7 @@ Asset::LoadResult SkeletonMask::load()
     _maskedNodes.Resize(maskedNodesCount);
     for (auto& e : _maskedNodes)
     {
-        stream.ReadString(&e, -13);
+        stream.Read(e, -13);
     }
     Skeleton = skeletonId;
 
@@ -87,7 +87,7 @@ bool SkeletonMask::Save(const StringView& path)
     stream.WriteInt32(_maskedNodes.Count());
     for (auto& e : _maskedNodes)
     {
-        stream.WriteString(e, -13);
+        stream.Write(e, -13);
     }
 
     // Save

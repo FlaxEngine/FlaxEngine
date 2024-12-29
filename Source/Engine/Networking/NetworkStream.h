@@ -73,13 +73,13 @@ public:
     void Read(INetworkSerializable& obj);
     void Read(INetworkSerializable* obj);
     void Read(Quaternion& data);
-    void Read(Transform& data);
+    void Read(Transform& data, bool useDouble = false);
 
     using WriteStream::Write;
     void Write(INetworkSerializable& obj);
     void Write(INetworkSerializable* obj);
     void Write(const Quaternion& data);
-    void Write(const Transform& data);
+    void Write(const Transform& data, bool useDouble = false);
 
 public:
     // [Stream]

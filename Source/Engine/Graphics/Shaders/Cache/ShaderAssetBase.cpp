@@ -136,7 +136,7 @@ bool IsValidShaderCache(DataContainer<byte>& shaderCache, Array<String>& include
     for (int32 i = 0; i < includesCount; i++)
     {
         String& include = includes.AddOne();
-        stream.ReadString(&include, 11);
+        stream.Read(include, 11);
         include  = ShadersCompilation::ResolveShaderPath(include);
         DateTime lastEditTime;
         stream.Read(lastEditTime);

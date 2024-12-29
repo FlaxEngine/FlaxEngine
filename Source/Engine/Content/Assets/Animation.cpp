@@ -86,15 +86,17 @@ void Animation::LoadTimeline(BytesContainer& result) const
     // Meta
     float fps = (float)Data.FramesPerSecond;
     const float fpsInv = 1.0f / fps;
-    stream.WriteFloat(fps);
-    stream.WriteInt32((int32)Data.Duration);
+    stream.Write(fps);
+    stream.Write((int32)Data.Duration);
     int32 tracksCount = Data.Channels.Count() + NestedAnims.Count() + Events.Count();
     for (auto& channel : Data.Channels)
+    {
         tracksCount +=
                 (channel.Position.GetKeyframes().HasItems() ? 1 : 0) +
                 (channel.Rotation.GetKeyframes().HasItems() ? 1 : 0) +
                 (channel.Scale.GetKeyframes().HasItems() ? 1 : 0);
-    stream.WriteInt32(tracksCount);
+    }
+    stream.Write(tracksCount);
 
     // Tracks
     int32 trackIndex = 0;
@@ -107,11 +109,11 @@ void Animation::LoadTimeline(BytesContainer& result) const
                 (channel.Scale.GetKeyframes().HasItems() ? 1 : 0);
 
         // Animation Channel track
-        stream.WriteByte(17); // Track Type
-        stream.WriteByte(0); // Track Flags
-        stream.WriteInt32(-1); // Parent Index
-        stream.WriteInt32(childrenCount); // Children Count
-        stream.WriteString(channel.NodeName, -13); // Name
+        stream.Write((byte)17); // Track Type
+        stream.Write((byte)0); // Track Flags
+        stream.Write(-1); // Parent Index
+        stream.Write(childrenCount); // Children Count
+        stream.Write(channel.NodeName, -13); // Name
         stream.Write(Color32::White); // Color
         const int32 parentIndex = trackIndex++;
 
@@ -119,17 +121,17 @@ void Animation::LoadTimeline(BytesContainer& result) const
         if (position.HasItems())
         {
             // Animation Channel Data track (position)
-            stream.WriteByte(18); // Track Type
-            stream.WriteByte(0); // Track Flags
-            stream.WriteInt32(parentIndex); // Parent Index
-            stream.WriteInt32(0); // Children Count
-            stream.WriteString(String::Format(TEXT("Track_{0}_Position"), i), -13); // Name
+            stream.Write((byte)18); // Track Type
+            stream.Write((byte)0); // Track Flags
+            stream.Write(parentIndex); // Parent Index
+            stream.Write(0); // Children Count
+            stream.Write(String::Format(TEXT("Track_{0}_Position"), i), -13); // Name
             stream.Write(Color32::White); // Color
-            stream.WriteByte(0); // Type
-            stream.WriteInt32(position.Count()); // Keyframes Count
+            stream.Write((byte)0); // Type
+            stream.Write(position.Count()); // Keyframes Count
             for (auto& k : position)
             {
-                stream.WriteFloat(k.Time * fpsInv);
+                stream.Write(k.Time * fpsInv);
                 stream.Write(k.Value);
             }
             trackIndex++;
@@ -139,17 +141,17 @@ void Animation::LoadTimeline(BytesContainer& result) const
         if (rotation.HasItems())
         {
             // Animation Channel Data track (rotation)
-            stream.WriteByte(18); // Track Type
-            stream.WriteByte(0); // Track Flags
-            stream.WriteInt32(parentIndex); // Parent Index
-            stream.WriteInt32(0); // Children Count
-            stream.WriteString(String::Format(TEXT("Track_{0}_Rotation"), i), -13); // Name
+            stream.Write((byte)18); // Track Type
+            stream.Write((byte)0); // Track Flags
+            stream.Write(parentIndex); // Parent Index
+            stream.Write(0); // Children Count
+            stream.Write(String::Format(TEXT("Track_{0}_Rotation"), i), -13); // Name
             stream.Write(Color32::White); // Color
-            stream.WriteByte(1); // Type
-            stream.WriteInt32(rotation.Count()); // Keyframes Count
+            stream.Write((byte)1); // Type
+            stream.Write(rotation.Count()); // Keyframes Count
             for (auto& k : rotation)
             {
-                stream.WriteFloat(k.Time * fpsInv);
+                stream.Write(k.Time * fpsInv);
                 stream.Write(k.Value);
             }
             trackIndex++;
@@ -159,17 +161,17 @@ void Animation::LoadTimeline(BytesContainer& result) const
         if (scale.HasItems())
         {
             // Animation Channel Data track (scale)
-            stream.WriteByte(18); // Track Type
-            stream.WriteByte(0); // Track Flags
-            stream.WriteInt32(parentIndex); // Parent Index
-            stream.WriteInt32(0); // Children Count
-            stream.WriteString(String::Format(TEXT("Track_{0}_Scale"), i), -13); // Name
+            stream.Write((byte)18); // Track Type
+            stream.Write((byte)0); // Track Flags
+            stream.Write(parentIndex); // Parent Index
+            stream.Write(0); // Children Count
+            stream.Write(String::Format(TEXT("Track_{0}_Scale"), i), -13); // Name
             stream.Write(Color32::White); // Color
-            stream.WriteByte(2); // Type
-            stream.WriteInt32(scale.Count()); // Keyframes Count
+            stream.Write((byte)2); // Type
+            stream.Write(scale.Count()); // Keyframes Count
             for (auto& k : scale)
             {
-                stream.WriteFloat(k.Time * fpsInv);
+                stream.Write(k.Time * fpsInv);
                 stream.Write(k.Value);
             }
             trackIndex++;
@@ -186,33 +188,33 @@ void Animation::LoadTimeline(BytesContainer& result) const
         Guid id = nestedAnim.Anim.GetID();
 
         // Nested Animation track
-        stream.WriteByte(20); // Track Type
-        stream.WriteByte(flags); // Track Flags
-        stream.WriteInt32(-1); // Parent Index
-        stream.WriteInt32(0); // Children Count
-        stream.WriteString(e.First, -13); // Name
+        stream.Write((byte)20); // Track Type
+        stream.Write(flags); // Track Flags
+        stream.Write(-1); // Parent Index
+        stream.Write(0); // Children Count
+        stream.Write(e.First, -13); // Name
         stream.Write(Color32::White); // Color
         stream.Write(id);
-        stream.WriteFloat(nestedAnim.Time);
-        stream.WriteFloat(nestedAnim.Duration);
-        stream.WriteFloat(nestedAnim.Speed);
-        stream.WriteFloat(nestedAnim.StartTime);
+        stream.Write(nestedAnim.Time);
+        stream.Write(nestedAnim.Duration);
+        stream.Write(nestedAnim.Speed);
+        stream.Write(nestedAnim.StartTime);
     }
     for (auto& e : Events)
     {
         // Animation Event track
-        stream.WriteByte(19); // Track Type
-        stream.WriteByte(0); // Track Flags
-        stream.WriteInt32(-1); // Parent Index
-        stream.WriteInt32(0); // Children Count
-        stream.WriteString(e.First, -13); // Name
+        stream.Write((byte)19); // Track Type
+        stream.Write((byte)0); // Track Flags
+        stream.Write(-1); // Parent Index
+        stream.Write(0); // Children Count
+        stream.Write(e.First, -13); // Name
         stream.Write(Color32::White); // Color
-        stream.WriteInt32(e.Second.GetKeyframes().Count()); // Events Count
+        stream.Write(e.Second.GetKeyframes().Count()); // Events Count
         for (const auto& k : e.Second.GetKeyframes())
         {
-            stream.WriteFloat(k.Time);
-            stream.WriteFloat(k.Value.Duration);
-            stream.WriteStringAnsi(k.Value.TypeName, 13);
+            stream.Write(k.Time);
+            stream.Write(k.Value.Duration);
+            stream.Write(k.Value.TypeName, 13);
             stream.WriteJson(k.Value.Instance);
         }
     }
@@ -237,7 +239,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
 
     // Version
     int32 version;
-    stream.ReadInt32(&version);
+    stream.Read(version);
     switch (version)
     {
     case 3: // [Deprecated on 03.09.2021 expires on 03.09.2023]
@@ -245,13 +247,13 @@ bool Animation::SaveTimeline(BytesContainer& data)
     {
         // Meta
         float fps;
-        stream.ReadFloat(&fps);
+        stream.Read(fps);
         Data.FramesPerSecond = static_cast<double>(fps);
         int32 duration;
-        stream.ReadInt32(&duration);
+        stream.Read(duration);
         Data.Duration = static_cast<double>(duration);
         int32 tracksCount;
-        stream.ReadInt32(&tracksCount);
+        stream.Read(tracksCount);
 
         // Tracks
         Data.Channels.Clear();
@@ -264,10 +266,10 @@ bool Animation::SaveTimeline(BytesContainer& data)
             const byte trackType = stream.ReadByte();
             const byte trackFlags = stream.ReadByte();
             int32 parentIndex, childrenCount;
-            stream.ReadInt32(&parentIndex);
-            stream.ReadInt32(&childrenCount);
+            stream.Read(parentIndex);
+            stream.Read(childrenCount);
             String name;
-            stream.ReadString(&name, -13);
+            stream.Read(name, -13);
             Color32 color;
             stream.Read(color);
             switch (trackType)
@@ -286,7 +288,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
                 // Animation Channel Data track
                 const byte type = stream.ReadByte();
                 int32 keyframesCount;
-                stream.ReadInt32(&keyframesCount);
+                stream.Read(keyframesCount);
                 int32 channelIndex;
                 if (!animationChannelTrackIndexToChannelIndex.TryGet(parentIndex, channelIndex))
                 {
@@ -301,7 +303,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
                     for (int32 i = 0; i < keyframesCount; i++)
                     {
                         LinearCurveKeyframe<Float3>& k = channel.Position.GetKeyframes()[i];
-                        stream.ReadFloat(&k.Time);
+                        stream.Read(k.Time);
                         k.Time *= fps;
                         stream.Read(k.Value);
                     }
@@ -311,7 +313,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
                     for (int32 i = 0; i < keyframesCount; i++)
                     {
                         LinearCurveKeyframe<Quaternion>& k = channel.Rotation.GetKeyframes()[i];
-                        stream.ReadFloat(&k.Time);
+                        stream.Read(k.Time);
                         k.Time *= fps;
                         stream.Read(k.Value);
                     }
@@ -321,7 +323,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
                     for (int32 i = 0; i < keyframesCount; i++)
                     {
                         LinearCurveKeyframe<Float3>& k = channel.Scale.GetKeyframes()[i];
-                        stream.ReadFloat(&k.Time);
+                        stream.Read(k.Time);
                         k.Time *= fps;
                         stream.Read(k.Value);
                     }
@@ -340,9 +342,9 @@ bool Animation::SaveTimeline(BytesContainer& data)
                 for (int32 i = 0; i < count; i++)
                 {
                     auto& k = eventTrack.Second.GetKeyframes()[i];
-                    stream.ReadFloat(&k.Time);
-                    stream.ReadFloat(&k.Value.Duration);
-                    stream.ReadStringAnsi(&k.Value.TypeName, 13);
+                    stream.Read(k.Time);
+                    stream.Read(k.Value.Duration);
+                    stream.Read(k.Value.TypeName, 13);
                     const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(k.Value.TypeName);
                     k.Value.Instance = NewObject<AnimEvent>(typeHandle);
                     stream.ReadJson(k.Value.Instance);
@@ -367,10 +369,10 @@ bool Animation::SaveTimeline(BytesContainer& data)
                 auto& nestedAnim = nestedTrack.Second;
                 Guid id;
                 stream.Read(id);
-                stream.ReadFloat(&nestedAnim.Time);
-                stream.ReadFloat(&nestedAnim.Duration);
-                stream.ReadFloat(&nestedAnim.Speed);
-                stream.ReadFloat(&nestedAnim.StartTime);
+                stream.Read(nestedAnim.Time);
+                stream.Read(nestedAnim.Duration);
+                stream.Read(nestedAnim.Speed);
+                stream.Read(nestedAnim.StartTime);
                 nestedAnim.Anim = id;
                 nestedAnim.Enabled = (trackFlags & (byte)SceneAnimation::Track::Flags::Mute) == 0;
                 nestedAnim.Loop = (trackFlags & (byte)SceneAnimation::Track::Flags::Loop) != 0;
@@ -415,18 +417,18 @@ bool Animation::Save(const StringView& path)
         MemoryWriteStream stream(4096);
 
         // Info
-        stream.WriteInt32(103);
-        stream.WriteDouble(Data.Duration);
-        stream.WriteDouble(Data.FramesPerSecond);
-        stream.WriteByte((byte)Data.RootMotionFlags);
-        stream.WriteString(Data.RootNodeName, 13);
+        stream.Write(103);
+        stream.Write(Data.Duration);
+        stream.Write(Data.FramesPerSecond);
+        stream.Write((byte)Data.RootMotionFlags);
+        stream.Write(Data.RootNodeName, 13);
 
         // Animation channels
         stream.WriteInt32(Data.Channels.Count());
         for (int32 i = 0; i < Data.Channels.Count(); i++)
         {
             auto& anim = Data.Channels[i];
-            stream.WriteString(anim.NodeName, 172);
+            stream.Write(anim.NodeName, 172);
             Serialization::Serialize(stream, anim.Position);
             Serialization::Serialize(stream, anim.Rotation);
             Serialization::Serialize(stream, anim.Scale);
@@ -437,13 +439,13 @@ bool Animation::Save(const StringView& path)
         for (int32 i = 0; i < Events.Count(); i++)
         {
             auto& e = Events[i];
-            stream.WriteString(e.First, 172);
-            stream.WriteInt32(e.Second.GetKeyframes().Count());
+            stream.Write(e.First, 172);
+            stream.Write(e.Second.GetKeyframes().Count());
             for (const auto& k : e.Second.GetKeyframes())
             {
-                stream.WriteFloat(k.Time);
-                stream.WriteFloat(k.Value.Duration);
-                stream.WriteStringAnsi(k.Value.TypeName, 17);
+                stream.Write(k.Time);
+                stream.Write(k.Value.Duration);
+                stream.Write(k.Value.TypeName, 17);
                 stream.WriteJson(k.Value.Instance);
             }
         }
@@ -453,7 +455,7 @@ bool Animation::Save(const StringView& path)
         for (int32 i = 0; i < NestedAnims.Count(); i++)
         {
             auto& e = NestedAnims[i];
-            stream.WriteString(e.First, 172);
+            stream.Write(e.First, 172);
             auto& nestedAnim = e.Second;
             Guid id = nestedAnim.Anim.GetID();
             byte flags = 0;
@@ -461,12 +463,12 @@ bool Animation::Save(const StringView& path)
                 flags |= 1;
             if (nestedAnim.Loop)
                 flags |= 2;
-            stream.WriteByte(flags);
+            stream.Write(flags);
             stream.Write(id);
-            stream.WriteFloat(nestedAnim.Time);
-            stream.WriteFloat(nestedAnim.Duration);
-            stream.WriteFloat(nestedAnim.Speed);
-            stream.WriteFloat(nestedAnim.StartTime);
+            stream.Write(nestedAnim.Time);
+            stream.Write(nestedAnim.Duration);
+            stream.Write(nestedAnim.Speed);
+            stream.Write(nestedAnim.StartTime);
         }
 
         // Set data to the chunk asset
@@ -563,24 +565,24 @@ Asset::LoadResult Animation::load()
     switch (headerVersion)
     {
     case 103:
-        stream.ReadInt32(&headerVersion);
-        stream.ReadDouble(&Data.Duration);
-        stream.ReadDouble(&Data.FramesPerSecond);
-        stream.ReadByte((byte*)&Data.RootMotionFlags);
-        stream.ReadString(&Data.RootNodeName, 13);
+        stream.Read(headerVersion);
+        stream.Read(Data.Duration);
+        stream.Read(Data.FramesPerSecond);
+        stream.Read((byte&)Data.RootMotionFlags);
+        stream.Read(Data.RootNodeName, 13);
         break;
     case 100:
     case 101:
     case 102:
-        stream.ReadInt32(&headerVersion);
-        stream.ReadDouble(&Data.Duration);
-        stream.ReadDouble(&Data.FramesPerSecond);
+        stream.Read(headerVersion);
+        stream.Read(Data.Duration);
+        stream.Read(Data.FramesPerSecond);
         Data.RootMotionFlags = stream.ReadBool() ? AnimationRootMotionFlags::RootPositionXZ : AnimationRootMotionFlags::None;
-        stream.ReadString(&Data.RootNodeName, 13);
+        stream.Read(Data.RootNodeName, 13);
         break;
     default:
-        stream.ReadDouble(&Data.Duration);
-        stream.ReadDouble(&Data.FramesPerSecond);
+        stream.Read(Data.Duration);
+        stream.Read(Data.FramesPerSecond);
         break;
     }
     if (Data.Duration < ZeroTolerance || Data.FramesPerSecond < ZeroTolerance)
@@ -597,7 +599,7 @@ Asset::LoadResult Animation::load()
     {
         auto& anim = Data.Channels[i];
 
-        stream.ReadString(&anim.NodeName, 172);
+        stream.Read(anim.NodeName, 172);
         bool failed = Serialization::Deserialize(stream, anim.Position);
         failed |= Serialization::Deserialize(stream, anim.Rotation);
         failed |= Serialization::Deserialize(stream, anim.Scale);
@@ -613,7 +615,7 @@ Asset::LoadResult Animation::load()
     if (headerVersion >= 101)
     {
         int32 eventTracksCount;
-        stream.ReadInt32(&eventTracksCount);
+        stream.Read(eventTracksCount);
         Events.Resize(eventTracksCount, false);
 #if !USE_EDITOR
         StringAnsi typeName;
@@ -621,18 +623,18 @@ Asset::LoadResult Animation::load()
         for (int32 i = 0; i < eventTracksCount; i++)
         {
             auto& e = Events[i];
-            stream.ReadString(&e.First, 172);
+            stream.Read(e.First, 172);
             int32 eventsCount;
-            stream.ReadInt32(&eventsCount);
+            stream.Read(eventsCount);
             e.Second.GetKeyframes().Resize(eventsCount);
             for (auto& k : e.Second.GetKeyframes())
             {
-                stream.ReadFloat(&k.Time);
-                stream.ReadFloat(&k.Value.Duration);
+                stream.Read(k.Time);
+                stream.Read(k.Value.Duration);
 #if USE_EDITOR
                 StringAnsi& typeName = k.Value.TypeName;
 #endif
-                stream.ReadStringAnsi(&typeName, 17);
+                stream.Read(typeName, 17);
                 const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
                 k.Value.Instance = NewObject<AnimEvent>(typeHandle);
                 stream.ReadJson(k.Value.Instance);
@@ -656,24 +658,24 @@ Asset::LoadResult Animation::load()
     if (headerVersion >= 102)
     {
         int32 nestedAnimationsCount;
-        stream.ReadInt32(&nestedAnimationsCount);
+        stream.Read(nestedAnimationsCount);
         NestedAnims.Resize(nestedAnimationsCount, false);
         for (int32 i = 0; i < nestedAnimationsCount; i++)
         {
             auto& e = NestedAnims[i];
-            stream.ReadString(&e.First, 172);
+            stream.Read(e.First, 172);
             auto& nestedAnim = e.Second;
             byte flags;
-            stream.ReadByte(&flags);
+            stream.Read(flags);
             nestedAnim.Enabled = flags & 1;
             nestedAnim.Loop = flags & 2;
             Guid id;
             stream.Read(id);
             nestedAnim.Anim = id;
-            stream.ReadFloat(&nestedAnim.Time);
-            stream.ReadFloat(&nestedAnim.Duration);
-            stream.ReadFloat(&nestedAnim.Speed);
-            stream.ReadFloat(&nestedAnim.StartTime);
+            stream.Read(nestedAnim.Time);
+            stream.Read(nestedAnim.Duration);
+            stream.Read(nestedAnim.Speed);
+            stream.Read(nestedAnim.StartTime);
         }
     }
 

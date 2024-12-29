@@ -544,8 +544,8 @@ bool FlaxStorage::Load()
             DateTime tmpDate;
             String strTmp;
             stream->Read(tmpDate);
-            stream->ReadString(&strTmp, -76);
-            stream->ReadString(&strTmp, 1301);
+            stream->Read(strTmp, -76);
+            stream->Read(strTmp, 1301);
         }
 
         // Check char
@@ -974,9 +974,9 @@ bool FlaxStorage::Create(WriteStream* stream, const AssetInitData* data, int32 d
         stream->WriteUint32(header.SerializedVersion);
 
         // Chunks mapping
-        for (int32 chunkIndex = 0; chunkIndex < ARRAY_COUNT(header.Header.Chunks); chunkIndex++)
+        for (FlaxChunk* chunk : header.Header.Chunks)
         {
-            const int32 index = chunks.Find(header.Header.Chunks[chunkIndex]);
+            const int32 index = chunks.Find(chunk);
             stream->WriteInt32(index);
         }
 
@@ -1250,8 +1250,8 @@ bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
             DateTime importDate;
             String importPath, importUsername;
             stream->Read(importDate);
-            stream->ReadString(&importPath, -76);
-            stream->ReadString(&importUsername, 1301);
+            stream->Read(importPath, -76);
+            stream->Read(importUsername, 1301);
 
 #if USE_EDITOR
             // Convert old metadata into the new format

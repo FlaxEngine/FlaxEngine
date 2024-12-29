@@ -67,11 +67,11 @@ bool ShaderCompiler::Compile(ShaderCompilationContext* context)
         return true;
 
     // [Output] Constant Buffers
-    output->WriteByte((byte)_constantBuffers.Count());
+    output->Write((byte)_constantBuffers.Count());
     for (const ShaderResourceBuffer& cb : _constantBuffers)
     {
-        output->WriteByte(cb.Slot);
-        output->WriteUint32(cb.Size);
+        output->Write((byte)cb.Slot);
+        output->Write((uint32)cb.Size);
     }
 
     // Additional Data Start
@@ -82,7 +82,7 @@ bool ShaderCompiler::Compile(ShaderCompilationContext* context)
     for (auto& include : context->Includes)
     {
         String compactPath = ShadersCompilation::CompactShaderPath(include.Item);
-        output->WriteString(compactPath, 11);
+        output->Write(compactPath, 11);
         const auto date = FileSystem::GetFileLastEditTime(include.Item);
         output->Write(date);
     }
@@ -261,19 +261,10 @@ bool ShaderCompiler::OnCompileEnd()
 bool ShaderCompiler::WriteShaderFunctionBegin(ShaderCompilationContext* context, ShaderFunctionMeta& meta)
 {
     auto output = context->Output;
-
-    // [Output] Type
-    output->WriteByte(static_cast<byte>(meta.GetStage()));
-
-    // [Output] Permutations count
-    output->WriteByte(meta.Permutations.Count());
-
-    // [Output] Shader function name
-    output->WriteStringAnsi(meta.Name, 11);
-
-    // [Output] Shader flags
-    output->WriteUint32((uint32)meta.Flags);
-
+    output->Write((byte)meta.GetStage());
+    output->Write((byte)meta.Permutations.Count());
+    output->Write(meta.Name, 11);
+    output->Write((uint32)meta.Flags);
     return false;
 }
 
@@ -281,28 +272,19 @@ bool ShaderCompiler::WriteShaderFunctionPermutation(ShaderCompilationContext* co
 {
     auto output = context->Output;
 
-    // [Output] Write compiled shader cache
-    output->WriteUint32(cacheSize + headerSize);
+    output->Write((uint32)(cacheSize + headerSize));
     output->WriteBytes(header, headerSize);
     output->WriteBytes(cache, cacheSize);
-
-    // [Output] Shader bindings meta
     output->Write(bindings);
-
     return false;
 }
 
 bool ShaderCompiler::WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* cache, int32 cacheSize)
 {
     auto output = context->Output;
-
-    // [Output] Write compiled shader cache
-    output->WriteUint32(cacheSize);
+    output->Write((uint32)cacheSize);
     output->WriteBytes(cache, cacheSize);
-
-    // [Output] Shader bindings meta
     output->Write(bindings);
-
     return false;
 }
 

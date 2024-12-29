@@ -41,9 +41,9 @@ public:
             return CreateAssetResult::CannotAllocateChunk;
         {
             MemoryWriteStream stream(256);
-            stream.WriteInt32(1);
-            stream.WriteString(*baseTypename, 31);
-            stream.WriteInt32((int32)VisualScript::Flags::None);
+            stream.Write(1);
+            stream.Write(*baseTypename, 31);
+            stream.Write((int32)VisualScript::Flags::None);
             context.Data.Header.Chunks[1]->Data.Copy(stream.GetHandle(), stream.GetPosition());
         }
 

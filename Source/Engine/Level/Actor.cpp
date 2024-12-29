@@ -1639,7 +1639,7 @@ bool Actor::ToBytes(const Array<Actor*>& actors, MemoryWriteStream& output)
     output.WriteInt32(FLAXENGINE_VERSION_BUILD);
 
     // Serialized objects ids (for references mapping)
-    output.WriteArray(ids);
+    output.Write(ids);
 
     // Objects data
     rapidjson_flax::StringBuffer buffer;
@@ -1694,7 +1694,7 @@ bool Actor::FromBytes(const Span<byte>& data, Array<Actor*>& output, ISerializeM
 
     // Serialized objects ids (for references mapping)
     Array<Guid> ids;
-    stream.ReadArray(&ids);
+    stream.Read(ids);
     int32 objectsCount = ids.Count();
     if (objectsCount < 0)
         return true;
@@ -1866,7 +1866,7 @@ Array<Guid> Actor::TryGetSerializedObjectsIds(const Span<byte>& data)
         if (engineBuild <= FLAXENGINE_VERSION_BUILD && engineBuild >= 6165)
         {
             // Serialized objects ids (for references mapping)
-            stream.ReadArray(&result);
+            stream.Read(result);
         }
     }
 

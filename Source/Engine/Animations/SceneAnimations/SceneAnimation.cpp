@@ -112,19 +112,19 @@ Asset::LoadResult SceneAnimation::load()
 
     // Load properties
     int32 version;
-    stream.ReadInt32(&version);
+    stream.Read(version);
     switch (version)
     {
     case 2: // [Deprecated in 2020 expires on 03.09.2023]
     case 3: // [Deprecated on 03.09.2021 expires on 03.09.2023]
     case 4:
     {
-        stream.ReadFloat(&FramesPerSecond);
-        stream.ReadInt32(&DurationFrames);
+        stream.Read(FramesPerSecond);
+        stream.Read(DurationFrames);
 
         // Load tracks
         int32 tracksCount;
-        stream.ReadInt32(&tracksCount);
+        stream.Read(tracksCount);
         Tracks.Resize(tracksCount, false);
         for (int32 i = 0; i < tracksCount; i++)
         {
@@ -134,7 +134,7 @@ Asset::LoadResult SceneAnimation::load()
             track.Flag = (Track::Flags)stream.ReadByte();
             stream.ReadInt32(&track.ParentIndex);
             stream.ReadInt32(&track.ChildrenCount);
-            stream.ReadString(&track.Name, -13);
+            stream.Read(track.Name, -13);
             stream.Read(track.Color);
             track.Disabled = (int32)track.Flag & (int32)Track::Flags::Mute || (track.ParentIndex != -1 && Tracks[track.ParentIndex].Disabled);
             track.TrackStateIndex = -1;

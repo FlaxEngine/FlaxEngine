@@ -43,7 +43,7 @@ void AssetsCache::Init()
 
     // Load version
     int32 version;
-    stream->ReadInt32(&version);
+    stream->Read(version);
     if (version != FLAXENGINE_VERSION_BUILD)
     {
         LOG(Warning, "Corrupted or not supported Asset Cache file. Version: {0}", version);
@@ -52,12 +52,12 @@ void AssetsCache::Init()
 
     // Load paths
     String enginePath, projectPath;
-    stream->ReadString(&enginePath, -410);
-    stream->ReadString(&projectPath, -410);
+    stream->Read(enginePath, -410);
+    stream->Read(projectPath, -410);
 
     // Flags
     AssetsCacheFlags flags;
-    stream->ReadInt32((int32*)&flags);
+    stream->Read((int32&)flags);
 
     // Check if other workspace instance used this cache
     if (EnumHasNoneFlags(flags, AssetsCacheFlags::RelativePaths) && enginePath != Globals::StartupFolder)
@@ -75,7 +75,7 @@ void AssetsCache::Init()
     _isDirty = false;
 
     // Load elements count
-    stream->ReadInt32(&count);
+    stream->Read(count);
     _registry.Clear();
     _registry.EnsureCapacity(count);
 
@@ -84,8 +84,8 @@ void AssetsCache::Init()
     for (int32 i = 0; i < count; i++)
     {
         stream->Read(e.Info.ID);
-        stream->ReadString(&e.Info.TypeName, i - 13);
-        stream->ReadString(&e.Info.Path, i);
+        stream->Read(e.Info.TypeName, i - 13);
+        stream->Read(e.Info.Path, i);
 #if ENABLE_ASSETS_DISCOVERY
         stream->Read(e.FileModified);
 #else
@@ -115,7 +115,7 @@ void AssetsCache::Init()
         Guid id;
         stream->Read(id);
         String mappedPath;
-        stream->ReadString(&mappedPath, i + 73);
+        stream->Read(mappedPath, i + 73);
 
         if (EnumHasAnyFlags(flags, AssetsCacheFlags::RelativePaths) && mappedPath.HasChars())
         {
@@ -177,17 +177,17 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
         return true;
 
     // Version
-    stream->WriteInt32(FLAXENGINE_VERSION_BUILD);
+    stream->Write((int32)FLAXENGINE_VERSION_BUILD);
 
     // Paths
-    stream->WriteString(Globals::StartupFolder, -410);
-    stream->WriteString(Globals::ProjectFolder, -410);
+    stream->Write(Globals::StartupFolder, -410);
+    stream->Write(Globals::ProjectFolder, -410);
 
     // Flags
-    stream->WriteInt32((int32)flags);
+    stream->Write((int32)flags);
 
     // Items count
-    stream->WriteInt32(entries.Count());
+    stream->Write(entries.Count());
 
     // Data
     int32 index = 0;
@@ -195,12 +195,12 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
     {
         auto& e = i->Value;
         stream->Write(e.Info.ID);
-        stream->WriteString(e.Info.TypeName, index - 13);
-        stream->WriteString(e.Info.Path, index);
+        stream->Write(e.Info.TypeName, index - 13);
+        stream->Write(e.Info.Path, index);
 #if ENABLE_ASSETS_DISCOVERY
         stream->Write(e.FileModified);
 #else
-        stream->WriteInt64(0);
+        stream->Write((int64)0);
 #endif
         index++;
     }
@@ -211,7 +211,7 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
     for (auto i = pathsMapping.Begin(); i.IsNotEnd(); ++i)
     {
         stream->Write(i->Value);
-        stream->WriteString(i->Key, index + 73);
+        stream->Write(i->Key, index + 73);
         index++;
     }
 

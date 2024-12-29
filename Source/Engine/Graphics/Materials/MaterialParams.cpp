@@ -812,7 +812,7 @@ bool MaterialParams::Load(ReadStream* stream)
                 stream->Read(param->_paramId);
                 param->_isPublic = stream->ReadBool();
                 param->_override = stream->ReadBool();
-                stream->ReadString(&param->_name, 10421);
+                stream->Read(param->_name, 10421);
                 param->_registerIndex = stream->ReadByte();
                 stream->ReadUint16(&param->_offset);
 
@@ -826,7 +826,7 @@ bool MaterialParams::Load(ReadStream* stream)
                 case MaterialParameterType::SceneTexture:
                 case MaterialParameterType::ChannelMask:
                 case MaterialParameterType::TextureGroupSampler:
-                    stream->ReadInt32(&param->_asInteger);
+                    stream->Read(param->_asInteger);
                     break;
                 case MaterialParameterType::Float:
                     stream->ReadFloat(&param->_asFloat);
@@ -904,7 +904,7 @@ void MaterialParams::Save(WriteStream* stream)
         stream->Write(param->_paramId);
         stream->WriteBool(param->_isPublic);
         stream->WriteBool(param->_override);
-        stream->WriteString(param->_name, 10421);
+        stream->Write(param->_name, 10421);
         stream->WriteByte(param->_registerIndex);
         stream->WriteUint16(param->_offset);
 
@@ -980,7 +980,7 @@ void MaterialParams::Save(WriteStream* stream, const Array<SerializedMaterialPar
             stream->Write(param.ID);
             stream->WriteBool(param.IsPublic);
             stream->WriteBool(param.Override);
-            stream->WriteString(param.Name, 10421);
+            stream->Write(param.Name, 10421);
             stream->WriteByte(param.RegisterIndex);
             stream->WriteUint16(param.Offset);
 

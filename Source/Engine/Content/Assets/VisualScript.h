@@ -65,7 +65,7 @@ public:
     /// <summary>
     /// Visual Script flag types.
     /// </summary>
-    API_ENUM(Attributes="Flags") enum class Flags
+    API_ENUM(Attributes="Flags") enum class Flags : int32
     {
         /// <summary>
         /// No flags.

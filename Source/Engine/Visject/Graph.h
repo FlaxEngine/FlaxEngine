@@ -101,11 +101,11 @@ public:
         for (int32 i = 0; i < Parameters.Count(); i++)
         {
             const Parameter* param = &Parameters[i];
-            stream->WriteVariantType(param->Type);
+            stream->Write(param->Type);
             stream->Write(param->Identifier);
-            stream->WriteString(param->Name, 97);
+            stream->Write(param->Name, 97);
             stream->WriteBool(param->IsPublic);
-            stream->WriteVariant(param->Value);
+            stream->Write(param->Value);
             if (param->Meta.Save(stream, saveMeta))
                 return true;
         }
@@ -119,7 +119,7 @@ public:
             // Values
             stream->WriteInt32(node->Values.Count());
             for (int32 j = 0; j < node->Values.Count(); j++)
-                stream->WriteVariant(node->Values[j]);
+                stream->Write(node->Values[j]);
 
             // Boxes
             node->GetBoxes(boxes);
@@ -128,7 +128,7 @@ public:
             {
                 const Box* box = boxes[j];
                 stream->WriteByte(box->ID);
-                stream->WriteVariantType(box->Type);
+                stream->Write(box->Type);
                 stream->WriteUint16(box->Connections.Count());
                 for (int32 k = 0; k < box->Connections.Count(); k++)
                 {
@@ -222,7 +222,7 @@ public:
                 // Properties
                 auto type = stream->ReadByte();
                 stream->Read(param->Identifier);
-                stream->ReadString(&param->Name, 97);
+                stream->Read(param->Name, 97);
                 param->IsPublic = stream->ReadBool();
                 bool isStatic = stream->ReadBool();
                 bool isUIVisible = stream->ReadBool();
@@ -358,11 +358,11 @@ public:
             for (int32 i = 0; i < parametersCount; i++)
             {
                 auto param = &Parameters[i];
-                stream->ReadVariantType(&param->Type);
+                stream->Read(param->Type);
                 stream->Read(param->Identifier);
-                stream->ReadString(&param->Name, 97);
+                stream->Read(param->Name, 97);
                 param->IsPublic = stream->ReadBool();
-                stream->ReadVariant(&param->Value);
+                stream->Read(param->Value);
                 if (param->Meta.Load(stream, loadMeta))
                     return true;
                 if (onParamCreated(param))
@@ -379,7 +379,7 @@ public:
                 stream->ReadInt32(&valuesCnt);
                 node->Values.Resize(valuesCnt);
                 for (int32 j = 0; j < valuesCnt; j++)
-                    stream->ReadVariant(&node->Values[j]);
+                    stream->Read(node->Values[j]);
 
                 // Boxes
                 uint16 boxesCount;
@@ -392,7 +392,7 @@ public:
                     Box* box = &node->Boxes[boxID];
                     box->Parent = node;
                     box->ID = boxID;
-                    stream->ReadVariantType(&box->Type);
+                    stream->Read(box->Type);
                     uint16 connectionsCount;
                     stream->ReadUint16(&connectionsCount);
                     box->Connections.Resize(connectionsCount);

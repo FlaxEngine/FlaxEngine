@@ -65,7 +65,7 @@ bool GPUShader::Create(MemoryReadStream& stream)
         ASSERT(Math::IsInRange(permutationsCount, 1, SHADER_PERMUTATIONS_MAX_COUNT));
 
         // Load shader name
-        stream.ReadStringAnsi(&initializer.Name, 11);
+        stream.Read(initializer.Name, 11);
         ASSERT(initializer.Name.HasChars());
 
         // Load shader flags

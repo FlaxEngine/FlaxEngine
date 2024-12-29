@@ -74,7 +74,7 @@ BytesContainer ParticleSystem::LoadTimeline()
             stream.WriteByte((byte)track.Flag);
             stream.WriteInt32(track.ParentIndex);
             stream.WriteInt32(track.ChildrenCount);
-            stream.WriteString(track.Name, -13);
+            stream.Write(track.Name, -13);
             stream.Write(track.Color);
 
             Guid id;
@@ -102,7 +102,7 @@ BytesContainer ParticleSystem::LoadTimeline()
             {
                 stream.WriteInt32(i->Key.First);
                 stream.Write(i->Key.Second);
-                stream.WriteVariant(i->Value);
+                stream.Write(i->Value);
             }
         }
     }
@@ -212,7 +212,7 @@ Asset::LoadResult ParticleSystem::load()
     MemoryReadStream stream(chunk0->Data.Get(), chunk0->Data.Length());
 
     int32 version;
-    stream.ReadInt32(&version);
+    stream.Read(version);
 #if USE_EDITOR
     // Skip unused parameters
 #define SKIP_UNUSED_PARAM_OVERRIDE() if (key.First < 0 || key.First >= Emitters.Count() || Emitters[key.First] == nullptr || Emitters[key.First]->Graph.GetParameter(key.Second) == nullptr) continue
@@ -394,7 +394,7 @@ Asset::LoadResult ParticleSystem::load()
             track.Flag = (Track::Flags)stream.ReadByte();
             stream.ReadInt32(&track.ParentIndex);
             stream.ReadInt32(&track.ChildrenCount);
-            stream.ReadString(&track.Name, -13);
+            stream.Read(track.Name, -13);
             track.Disabled = (int32)track.Flag & (int32)Track::Flags::Mute || (track.ParentIndex != -1 && Tracks[track.ParentIndex].Disabled);
             stream.Read(track.Color);
 
@@ -422,19 +422,22 @@ Asset::LoadResult ParticleSystem::load()
                 Emitters[i]->WaitForLoaded();
         }
 
-        // Load parameters overrides
-        int32 overridesCount = 0;
-        if (stream.CanRead())
-            stream.ReadInt32(&overridesCount);
-        if (overridesCount != 0)
+        if (version <= 3)
         {
+            // [Deprecated on 03.09.2021 expires on 03.09.2023]
+        }
+        else
+        {
+            // Load parameters overrides
+            int32 overridesCount = 0;
+            stream.ReadInt32(&overridesCount);
             EmitterParameterOverrideKey key;
             Variant value;
             for (int32 i = 0; i < overridesCount; i++)
             {
                 stream.ReadInt32(&key.First);
                 stream.Read(key.Second);
-                stream.ReadVariant(&value);
+                stream.Read(value);
                 SKIP_UNUSED_PARAM_OVERRIDE();
                 EmittersParametersOverrides[key] = value;
             }

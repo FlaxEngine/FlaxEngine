@@ -62,6 +62,7 @@ enum class GraphConnectionType_Deprecated : uint32
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Level/Actor.h"
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 FLAXENGINE_API void ReadOldGraphParamValue_Deprecated(byte graphParamType, ReadStream* stream, GraphParameter* param)
 {
     // [Deprecated on 31.07.2020, expires on 31.07.2022]
@@ -290,6 +291,7 @@ FLAXENGINE_API StringView GetGraphFunctionTypeName_Deprecated(const Variant& v)
     }
     return StringView::Empty;
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, MathOp1 op)
 {
