@@ -218,7 +218,11 @@ Asset::LoadResult MaterialInstance::load()
     auto baseMaterial = Content::LoadAsync<MaterialBase>(baseMaterialId);
 
     // Load parameters
-    Params.Load(&headerStream);
+    if (Params.Load(&headerStream))
+    {
+        LOG(Warning, "Cannot load material parameters.");
+        return LoadResult::CannotLoadData;
+    }
 
     if (baseMaterial && !baseMaterial->WaitForLoaded())
     {
