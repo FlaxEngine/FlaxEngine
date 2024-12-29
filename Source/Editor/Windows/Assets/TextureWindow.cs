@@ -57,11 +57,8 @@ namespace FlaxEditor.Windows.Assets
                 {
                     var window = ((TexturePropertiesProxy)Values[0])._window;
                     var texture = window?.Asset;
-                    if (texture == null || !texture.IsLoaded)
-                    {
-                        layout.Label("Loading...", TextAlignment.Center);
+                    if (Utilities.Utils.OnAssetProperties(layout, texture))
                         return;
-                    }
 
                     // Texture info
                     var general = layout.Group("General");

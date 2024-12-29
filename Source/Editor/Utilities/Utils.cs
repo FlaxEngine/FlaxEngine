@@ -1496,5 +1496,15 @@ namespace FlaxEditor.Utilities
             }
             return path;
         }
+
+        internal static bool OnAssetProperties(CustomEditors.LayoutElementsContainer layout, Asset asset)
+        {
+            if (asset == null || !asset.IsLoaded)
+            {
+                layout.Label(asset != null && asset.LastLoadFailed ? "Failed to load" : "Loading...", TextAlignment.Center);
+                return true;
+            }
+            return false;
+        }
     }
 }

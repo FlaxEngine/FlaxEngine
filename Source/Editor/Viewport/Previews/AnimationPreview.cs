@@ -100,7 +100,7 @@ namespace FlaxEditor.Viewport.Previews
             }
             else if (!skinnedModel.IsLoaded)
             {
-                Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                Render2D.DrawText(style.FontLarge, skinnedModel.LastLoadFailed ? "Failed to load" : "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
             }
         }
 

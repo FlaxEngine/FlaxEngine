@@ -51,7 +51,7 @@ namespace FlaxEditor.Windows.Assets
                 var asset = _window.Asset;
                 if (asset == null || !asset.IsLoaded)
                 {
-                    Render2D.DrawText(style.FontLarge, "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
+                    Render2D.DrawText(style.FontLarge, asset != null && asset.LastLoadFailed ? "Failed to load" : "Loading...", new Rectangle(Float2.Zero, Size), style.ForegroundDisabled, TextAlignment.Center, TextAlignment.Center);
                 }
             }
         }
@@ -159,11 +159,8 @@ namespace FlaxEditor.Windows.Assets
                 public override void Initialize(LayoutElementsContainer layout)
                 {
                     var proxy = (MeshesPropertiesProxy)Values[0];
-                    if (proxy.Asset == null || !proxy.Asset.IsLoaded)
-                    {
-                        layout.Label("Loading...", TextAlignment.Center);
+                    if (Utilities.Utils.OnAssetProperties(layout, proxy.Asset))
                         return;
-                    }
                     proxy._materialSlotComboBoxes.Clear();
                     proxy._isolateCheckBoxes.Clear();
                     proxy._highlightCheckBoxes.Clear();
@@ -433,11 +430,8 @@ namespace FlaxEditor.Windows.Assets
                 public override void Initialize(LayoutElementsContainer layout)
                 {
                     var proxy = (MaterialsPropertiesProxy)Values[0];
-                    if (proxy.Asset == null || !proxy.Asset.IsLoaded)
-                    {
-                        layout.Label("Loading...", TextAlignment.Center);
+                    if (Utilities.Utils.OnAssetProperties(layout, proxy.Asset))
                         return;
-                    }
 
                     base.Initialize(layout);
                 }
@@ -495,11 +489,8 @@ namespace FlaxEditor.Windows.Assets
                 public override void Initialize(LayoutElementsContainer layout)
                 {
                     var proxy = (UVsPropertiesProxy)Values[0];
-                    if (proxy.Asset == null || !proxy.Asset.IsLoaded)
-                    {
-                        layout.Label("Loading...", TextAlignment.Center);
+                    if (Utilities.Utils.OnAssetProperties(layout, proxy.Asset))
                         return;
-                    }
 
                     base.Initialize(layout);
 
@@ -744,11 +735,8 @@ namespace FlaxEditor.Windows.Assets
                 public override void Initialize(LayoutElementsContainer layout)
                 {
                     var proxy = (ImportPropertiesProxy)Values[0];
-                    if (proxy.Asset == null || !proxy.Asset.IsLoaded)
-                    {
-                        layout.Label("Loading...", TextAlignment.Center);
+                    if (Utilities.Utils.OnAssetProperties(layout, proxy.Asset))
                         return;
-                    }
 
                     // Import Settings
                     {

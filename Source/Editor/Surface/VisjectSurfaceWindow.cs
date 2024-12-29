@@ -586,16 +586,8 @@ namespace FlaxEditor.Surface
                 layout.Label("No parameters");
                 return;
             }
-            if (asset.LastLoadFailed)
-            {
-                layout.Label("Failed to load asset");
+            if (Utilities.Utils.OnAssetProperties(layout, asset))
                 return;
-            }
-            if (!asset.IsLoaded)
-            {
-                layout.Label("Loading...", TextAlignment.Center);
-                return;
-            }
             var parameters = window.VisjectSurface.Parameters;
             CustomEditors.Editors.GenericEditor.OnGroupsBegin();
             for (int i = 0; i < parameters.Count; i++)
