@@ -11,7 +11,7 @@
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/Models/Config.h"
 #include "Engine/Localization/LocalizedString.h"
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
 #include "Engine/Graphics/Models/CollisionProxy.h"
 #endif
 
@@ -47,7 +47,7 @@ private:
     DynamicVertexBuffer _vb0;
     DynamicVertexBuffer _vb1;
     DynamicVertexBuffer _vb2;
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     CollisionProxy _collisionProxy;
 #endif
     Array<DrawChunk, InlinedAllocation<8>> _drawChunks;
@@ -143,7 +143,7 @@ public:
     /// </summary>
     API_FUNCTION() void UpdateLayout();
 
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     /// <summary>
     /// Gets the collision proxy used by the text geometry.
     /// </summary>

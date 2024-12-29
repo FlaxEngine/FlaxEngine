@@ -108,7 +108,7 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
         goto ERROR_LOAD_END;
 
     // Init collision proxy
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     if (!_collisionProxy.HasData())
     {
         if (use16BitIndexBuffer)
@@ -148,6 +148,9 @@ void MeshBase::Release()
     SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[1]);
     SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[2]);
     SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
+    _collisionProxy.Clear();
+#endif
     _triangles = 0;
     _vertices = 0;
     _use16BitIndexBuffer = false;
@@ -194,7 +197,7 @@ bool MeshBase::Intersects(const Ray& ray, const Matrix& world, Real& distance, V
     const BoundingBox transformedBox(min, max);
 
     // Test ray on box
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     if (transformedBox.Intersects(ray, distance))
     {
         // Use exact test on raw geometry
@@ -226,7 +229,7 @@ bool MeshBase::Intersects(const Ray& ray, const Transform& transform, Real& dist
     const BoundingBox transformedBox(min, max);
 
     // Test ray on box
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     if (transformedBox.Intersects(ray, distance))
     {
         // Use exact test on raw geometry

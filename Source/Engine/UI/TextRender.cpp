@@ -108,7 +108,7 @@ void TextRender::UpdateLayout()
     _localBox = BoundingBox(Vector3::Zero);
     BoundingBox::Transform(_localBox, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     _collisionProxy.Clear();
 #endif
 
@@ -314,7 +314,7 @@ void TextRender::UpdateLayout()
         _drawChunks.Add(drawChunk);
     }
 
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     // Setup collision proxy for detailed collision detection for triangles
     const int32 totalIndicesCount = _ib.Data.Count() / sizeof(uint16);
     _collisionProxy.Init(_vb0.Data.Count() / sizeof(Float3), totalIndicesCount / 3, (Float3*)_vb0.Data.Get(), (uint16*)_ib.Data.Get());
@@ -420,7 +420,7 @@ void TextRender::OnLayerChanged()
 
 bool TextRender::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     if (_box.Intersects(ray))
     {
         return _collisionProxy.Intersects(ray, _transform, distance, normal);

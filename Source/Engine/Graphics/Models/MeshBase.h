@@ -11,7 +11,7 @@
 #include "Engine/Level/Types.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Config.h"
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
 #include "CollisionProxy.h"
 #endif
 
@@ -54,7 +54,7 @@ protected:
     mutable Array<byte> _cachedIndexBuffer;
     mutable int32 _cachedIndexBufferCount = 0;
 
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     CollisionProxy _collisionProxy;
 #endif
 
@@ -137,7 +137,7 @@ public:
         return _use16BitIndexBuffer;
     }
 
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     /// <summary>
     /// Gets the collision proxy used by the mesh.
     /// </summary>

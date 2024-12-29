@@ -214,7 +214,7 @@ void Cloth::SetPaint(Span<const float> value)
 
 bool Cloth::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)
 {
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     if (!Actor::IntersectsItself(ray, distance, normal))
         return false;
 #if WITH_CLOTH

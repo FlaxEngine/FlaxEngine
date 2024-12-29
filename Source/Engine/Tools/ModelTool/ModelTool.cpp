@@ -1184,7 +1184,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
 
         // Special case if imported model has no bones but has valid skeleton and meshes.
         // We assume that every mesh uses a single bone. Copy nodes to bones.
-        if (data.Skeleton.Bones.IsEmpty() && Math::IsInRange(data.Skeleton.Nodes.Count(), 1, MAX_BONES_PER_MODEL))
+        if (data.Skeleton.Bones.IsEmpty() && Math::IsInRange(data.Skeleton.Nodes.Count(), 1, MODEL_MAX_BONES_PER_MODEL))
         {
             data.Skeleton.Bones.Resize(data.Skeleton.Nodes.Count());
             for (int32 i = 0; i < data.Skeleton.Nodes.Count(); i++)
@@ -1209,9 +1209,9 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         }
 
         // Check bones limit currently supported by the engine
-        if (data.Skeleton.Bones.Count() > MAX_BONES_PER_MODEL)
+        if (data.Skeleton.Bones.Count() > MODEL_MAX_BONES_PER_MODEL)
         {
-            errorMsg = String::Format(TEXT("Imported model skeleton has too many bones. Imported: {0}, maximum supported: {1}. Please optimize your asset."), data.Skeleton.Bones.Count(), MAX_BONES_PER_MODEL);
+            errorMsg = String::Format(TEXT("Imported model skeleton has too many bones. Imported: {0}, maximum supported: {1}. Please optimize your asset."), data.Skeleton.Bones.Count(), MODEL_MAX_BONES_PER_MODEL);
             return true;
         }
 
@@ -1317,7 +1317,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 // Check if use a single bone for skinning
                 auto nodeIndex = data.Skeleton.FindNode(mesh->Name);
                 auto boneIndex = data.Skeleton.FindBone(nodeIndex);
-                if (boneIndex == -1 && nodeIndex != -1 && data.Skeleton.Bones.Count() < MAX_BONES_PER_MODEL)
+                if (boneIndex == -1 && nodeIndex != -1 && data.Skeleton.Bones.Count() < MODEL_MAX_BONES_PER_MODEL)
                 {
                     // Add missing bone to be used by skinned model from animated nodes pose
                     boneIndex = data.Skeleton.Bones.Count();
