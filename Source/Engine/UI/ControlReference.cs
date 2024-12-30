@@ -24,7 +24,7 @@ public interface IControlReference
     /// <summary>
     /// A safe set of the UI Control. Will warn if Control is of the wrong type.
     /// </summary>
-    /// <param name="uiControl"></param>
+    /// <param name="uiControl">The UIControl to set.</param>
     public void Set(UIControl uiControl);
 }
 
