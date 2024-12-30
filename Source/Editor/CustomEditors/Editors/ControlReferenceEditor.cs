@@ -15,7 +15,7 @@ namespace FlaxEditor.CustomEditors.Editors;
 /// <summary>
 /// The reference picker control used for UIControls using ControlReference.
 /// </summary>
-public class UIControlObjectRefPickerControl : Control
+public class UIControlRefPickerControl : Control
 {
     private Type _controlType;
     public UIControl _value;
@@ -94,9 +94,9 @@ public class UIControlObjectRefPickerControl : Control
     }
     
     /// <summary>
-    /// Initializes a new instance of the <see cref="UIControlObjectRefPickerControl"/> class.
+    /// Initializes a new instance of the <see cref="UIControlRefPickerControl"/> class.
     /// </summary>
-    public UIControlObjectRefPickerControl()
+    public UIControlRefPickerControl()
         : base(0, 0, 50, 16)
     {
         
@@ -420,7 +420,7 @@ public class UIControlObjectRefPickerControl : Control
 [CustomEditor(typeof(ControlReference<>)), DefaultEditor]
 public class ControlReferenceEditor : CustomEditor
 {
-    private CustomElement<UIControlObjectRefPickerControl> _element;
+    private CustomElement<UIControlRefPickerControl> _element;
     
     /// <inheritdoc />
     public override DisplayStyle Style => DisplayStyle.Inline;
@@ -430,7 +430,7 @@ public class ControlReferenceEditor : CustomEditor
     {
         if (!HasDifferentTypes)
         {
-            _element = layout.Custom<UIControlObjectRefPickerControl>();
+            _element = layout.Custom<UIControlRefPickerControl>();
             if (ValuesTypes == null || ValuesTypes[0] == null)
             {
                 Editor.LogWarning("ControlReference needs to be assigned in code.");
