@@ -1026,7 +1026,8 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     }*/
 
     // Get local transform for origin shifting translation
-    auto translation = ToMatrix(aMesh->getGlobalTransform()).GetTranslation();
+    
+    auto translation = Float3((float)aMesh->getLocalTranslation().x, (float)aMesh->getLocalTranslation().y, (float)aMesh->getLocalTranslation().z);
     auto scale = data.GlobalSettings.UnitScaleFactor;
     if (data.GlobalSettings.CoordAxis == ofbx::CoordSystem_RightHanded)
         mesh.OriginTranslation = scale * Vector3(translation.X, translation.Y, -translation.Z);

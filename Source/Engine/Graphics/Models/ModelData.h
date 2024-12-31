@@ -91,7 +91,7 @@ public:
     Array<BlendShape> BlendShapes;
 
     /// <summary>
-    /// Global translation for this mesh to be at it's local origin.
+    /// Local translation for this mesh to be at it's local origin.
     /// </summary>
     Vector3 OriginTranslation = Vector3::Zero;
 
