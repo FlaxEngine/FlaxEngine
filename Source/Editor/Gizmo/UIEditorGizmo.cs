@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Gizmo;
@@ -647,7 +648,34 @@ namespace FlaxEditor
         private void DrawControlWidget(UIControl uiControl, ref Float2 pos, ref Float2 mousePos, ref Float2 size, float scale, Float2 resizeAxis, CursorType cursor)
         {
             var style = Style.Current;
-            var rect = new Rectangle((pos + resizeAxis * 10 * scale) - size * 0.5f, size);
+            var control = uiControl.Control;
+            var rect = new Rectangle(
+                                     (pos + 
+                                      new Float2(resizeAxis.X * Mathf.Cos(Mathf.DegreesToRadians * control.Rotation) - resizeAxis.Y * Mathf.Sin(Mathf.DegreesToRadians * control.Rotation), 
+                                                 resizeAxis.Y * Mathf.Cos(Mathf.DegreesToRadians * control.Rotation) + resizeAxis.X * Mathf.Sin(Mathf.DegreesToRadians * control.Rotation)) * 10 * scale) - size * 0.5f,
+                                     size);
+            
+            // Find more correct cursor at different angles
+            var unwindRotation = Mathf.UnwindDegrees(control.Rotation);
+            if (unwindRotation is (>= 45 and < 135) or (> -135 and <= -45) )
+            {
+                switch (cursor)
+                {
+                case CursorType.SizeNESW:
+                    cursor = CursorType.SizeNWSE;
+                    break;
+                case CursorType.SizeNS:
+                    cursor = CursorType.SizeWE;
+                    break;
+                case CursorType.SizeNWSE:
+                    cursor = CursorType.SizeNESW;
+                    break;
+                case CursorType.SizeWE:
+                    cursor = CursorType.SizeNS;
+                    break;
+                default: break;
+                }
+            }
             if (rect.Contains(ref mousePos))
             {
                 Render2D.FillRectangle(rect, style.Foreground);
