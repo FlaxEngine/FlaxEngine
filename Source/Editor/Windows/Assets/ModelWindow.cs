@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -758,8 +759,21 @@ namespace FlaxEditor.Windows.Assets
                         var importSettingsValues = new ValueContainer(new ScriptMemberInfo(importSettingsField)) { proxy.ImportSettings };
                         group.Object(importSettingsValues);
 
+                        (proxy.Window.Item as BinaryAssetItem).GetImportPath(out var path);
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            layout.Space(5);
+                            layout.Label("Import Path:");
+                            var textBox = layout.TextBox().TextBox;
+                            textBox.IsReadOnly = true;
+                            textBox.Text = path;
+                            layout.Space(2);
+                            var button = layout.Button("Open Import Path in Explorer").Button;
+                            button.Clicked += () => FileSystem.ShowFileExplorer(Path.GetDirectoryName(path));
+                        }
+
                         layout.Space(5);
-                        var reimportButton = group.Button("Reimport");
+                        var reimportButton = layout.Button("Reimport");
                         reimportButton.Button.Clicked += () => ((ImportPropertiesProxy)Values[0]).Reimport();
                     }
                 }

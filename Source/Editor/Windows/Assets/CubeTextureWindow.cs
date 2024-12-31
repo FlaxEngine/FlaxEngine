@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using System.IO;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
@@ -52,6 +53,19 @@ namespace FlaxEditor.Windows.Assets
                     }
 
                     base.Initialize(layout);
+                    
+                    (window.Item as BinaryAssetItem).GetImportPath(out var path);
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        layout.Space(5);
+                        layout.Label("Import Path:");
+                        var textBox = layout.TextBox().TextBox;
+                        textBox.IsReadOnly = true;
+                        textBox.Text = path;
+                        layout.Space(2);
+                        var button = layout.Button("Open Import Path in Explorer").Button;
+                        button.Clicked += () => FileSystem.ShowFileExplorer(Path.GetDirectoryName(path));
+                    }
 
                     layout.Space(10);
                     var reimportButton = layout.Button("Reimport");
