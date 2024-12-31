@@ -86,6 +86,17 @@ public struct ControlReference<T> : IControlReference where T : Control
         _uiControl = null;
     }
     
+    /// <summary>
+    /// The implicit operator for the Control.
+    /// </summary>
+    /// <param name="reference">The ControlReference</param>
+    /// <returns>The Control.</returns>
     public static implicit operator T(ControlReference<T> reference) => reference.Control;
+    
+    /// <summary>
+    /// The implicit operator for the UIControl
+    /// </summary>
+    /// <param name="reference">The ControlReference</param>
+    /// <returns>The UIControl.</returns>
     public static implicit operator UIControl(ControlReference<T> reference) => reference.UIControl;
 }

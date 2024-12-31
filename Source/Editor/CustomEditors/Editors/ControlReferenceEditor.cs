@@ -18,7 +18,7 @@ namespace FlaxEditor.CustomEditors.Editors;
 public class UIControlRefPickerControl : Control
 {
     private Type _controlType;
-    public UIControl _value;
+    private UIControl _value;
     private ActorTreeNode _linkedTreeNode;
     private string _valueName;
     private bool _supportsPickDropDown;
