@@ -27,7 +27,7 @@ namespace
 
 String TextureTool::Options::ToString() const
 {
-    return String::Format(TEXT("Type: {}, IsAtlas: {}, NeverStream: {}, IndependentChannels: {}, sRGB: {}, GenerateMipMaps: {}, FlipY: {}, InvertGreen: {} Scale: {}, MaxSize: {}, Resize: {}, PreserveAlphaCoverage: {}, PreserveAlphaCoverageReference: {}, SizeX: {}, SizeY: {}"),
+    return String::Format(TEXT("Type: {}, IsAtlas: {}, NeverStream: {}, IndependentChannels: {}, sRGB: {}, GenerateMipMaps: {}, FlipY: {}, InvertRed: {}, InvertGreen: {}, InvertBlue {}, Invert Alpha {}, Scale: {}, MaxSize: {}, Resize: {}, PreserveAlphaCoverage: {}, PreserveAlphaCoverageReference: {}, SizeX: {}, SizeY: {}"),
                           ScriptingEnum::ToString(Type),
                           IsAtlas,
                           NeverStream,
@@ -35,7 +35,10 @@ String TextureTool::Options::ToString() const
                           sRGB,
                           GenerateMipMaps,
                           FlipY,
+                          InvertRedChannel,
                           InvertGreenChannel,
+                          InvertBlueChannel,
+                          InvertAlphaChannel,
                           Scale,
                           MaxSize,
                           MaxSize,
@@ -76,8 +79,17 @@ void TextureTool::Options::Serialize(SerializeStream& stream, const void* otherO
     stream.JKEY("FlipX");
     stream.Bool(FlipX);
 
+    stream.JKEY("InvertRedChannel");
+    stream.Bool(InvertRedChannel);
+
     stream.JKEY("InvertGreenChannel");
     stream.Bool(InvertGreenChannel);
+
+    stream.JKEY("InvertBlueChannel");
+    stream.Bool(InvertBlueChannel);
+
+    stream.JKEY("InvertAlphaChannel");
+    stream.Bool(InvertAlphaChannel);
 
     stream.JKEY("ReconstructZChannel");
     stream.Bool(ReconstructZChannel);
@@ -143,7 +155,10 @@ void TextureTool::Options::Deserialize(DeserializeStream& stream, ISerializeModi
     GenerateMipMaps = JsonTools::GetBool(stream, "GenerateMipMaps", GenerateMipMaps);
     FlipY = JsonTools::GetBool(stream, "FlipY", FlipY);
     FlipX = JsonTools::GetBool(stream, "FlipX", FlipX);
+    InvertRedChannel = JsonTools::GetBool(stream, "InvertRedChannel", InvertRedChannel);
     InvertGreenChannel = JsonTools::GetBool(stream, "InvertGreenChannel", InvertGreenChannel);
+    InvertBlueChannel = JsonTools::GetBool(stream, "InvertBlueChannel", InvertBlueChannel);
+    InvertAlphaChannel = JsonTools::GetBool(stream, "InvertAlphaChannel", InvertAlphaChannel);
     ReconstructZChannel = JsonTools::GetBool(stream, "ReconstructZChannel", ReconstructZChannel);
     Resize = JsonTools::GetBool(stream, "Resize", Resize);
     KeepAspectRatio = JsonTools::GetBool(stream, "KeepAspectRatio", KeepAspectRatio);
