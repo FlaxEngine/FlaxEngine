@@ -872,7 +872,7 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         SET_CURRENT_IMG(timage);
     }
 
-    // Check if invert red channel
+    // Check if invert blue channel
     if (!keepAsIs && options.InvertBlueChannel)
     {
         auto& timage = GET_TMP_IMG();
