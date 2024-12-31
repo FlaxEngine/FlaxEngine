@@ -107,6 +107,7 @@ namespace FlaxEditor.Windows.Assets
                         layout.Space(5);
                         layout.Label("Import Path:");
                         var textBox = layout.TextBox().TextBox;
+                        textBox.TooltipText = "Path is not editable here.";
                         textBox.IsReadOnly = true;
                         textBox.Text = path;
                         layout.Space(2);
