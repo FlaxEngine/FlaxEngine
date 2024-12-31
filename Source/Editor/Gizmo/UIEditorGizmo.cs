@@ -649,14 +649,16 @@ namespace FlaxEditor
         {
             var style = Style.Current;
             var control = uiControl.Control;
+            var rotation = control.Rotation;
+            var rotationInRadians = rotation * Mathf.DegreesToRadians;
             var rect = new Rectangle(
                                      (pos + 
-                                      new Float2(resizeAxis.X * Mathf.Cos(Mathf.DegreesToRadians * control.Rotation) - resizeAxis.Y * Mathf.Sin(Mathf.DegreesToRadians * control.Rotation), 
-                                                 resizeAxis.Y * Mathf.Cos(Mathf.DegreesToRadians * control.Rotation) + resizeAxis.X * Mathf.Sin(Mathf.DegreesToRadians * control.Rotation)) * 10 * scale) - size * 0.5f,
+                                      new Float2(resizeAxis.X * Mathf.Cos(rotationInRadians) - resizeAxis.Y * Mathf.Sin(rotationInRadians), 
+                                                 resizeAxis.Y * Mathf.Cos(rotationInRadians) + resizeAxis.X * Mathf.Sin(rotationInRadians)) * 10 * scale) - size * 0.5f,
                                      size);
             
             // Find more correct cursor at different angles
-            var unwindRotation = Mathf.UnwindDegrees(control.Rotation);
+            var unwindRotation = Mathf.UnwindDegrees(rotation);
             if (unwindRotation is (>= 45 and < 135) or (> -135 and <= -45) )
             {
                 switch (cursor)
