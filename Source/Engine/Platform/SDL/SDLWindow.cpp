@@ -109,6 +109,8 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     uint32 flags = SDL_WINDOW_HIDDEN;
     if (_settings.Type == WindowType::Utility)
         flags |= SDL_WINDOW_UTILITY;
+    else if (_settings.Type == WindowType::Regular && !_settings.ShowInTaskbar)
+        flags |= SDL_WINDOW_UTILITY;
     else if (_settings.Type == WindowType::Tooltip)
         flags |= SDL_WINDOW_TOOLTIP;
     else if (_settings.Type == WindowType::Popup)
