@@ -101,6 +101,8 @@ public class Platform : EngineModule
                 options.SourcePaths.Add(Path.Combine(FolderPath, "SDL"));
                 break;
             }
+            if (options.Platform.Target == TargetPlatform.Linux)
+                options.PublicDependencies.Add("Wayland");
         }
         if (options.Target.IsEditor)
         {
