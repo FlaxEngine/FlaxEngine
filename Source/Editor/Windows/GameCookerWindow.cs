@@ -8,10 +8,12 @@ using FlaxEditor.Content.Settings;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Tabs;
+using FlaxEditor.GUI.Tree;
 using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
+using PlatformType = FlaxEngine.PlatformType;
 
 // ReSharper disable InconsistentNaming
 // ReSharper disable MemberCanBePrivate.Local
@@ -343,6 +345,227 @@ namespace FlaxEditor.Windows
 
                         _buildButton = layout.Button("Build").Button;
                         _buildButton.Clicked += OnBuildClicked;
+                        
+                        // Add emulation options to android tab.
+                        if (_platform == PlatformType.Android)
+                        {
+                            layout.Space(2);
+                            var emulatorGroup = layout.Group("Emulator");
+                            var sdkPath = Environment.GetEnvironmentVariable("ANDROID_HOME");
+                            if (string.IsNullOrEmpty(sdkPath))
+                                sdkPath = Environment.GetEnvironmentVariable("ANDROID_SDK");
+                            emulatorGroup.Label($"SDK path: {sdkPath}");
+                            
+                            // AVD and starting emulator
+                            var avdGroup = emulatorGroup.Group("AVD");
+                            avdGroup.Label("Note: Create AVDs using Android Studio.");
+                            avdGroup.Panel.IsClosed = false;
+                            var refreshAVDListButton = avdGroup.Button("Refresh AVD list").Button;
+                            var avdListGroup = avdGroup.Group("AVD List");
+                            var avdListTree = new Tree(false)
+                            {
+                                Parent = avdListGroup.Panel,
+                            };
+                            refreshAVDListButton.Clicked += () =>
+                            {
+                                if (avdListTree.Children.Count > 0)
+                                    avdListTree.DisposeChildren();
+                                
+                                var processStartInfo = new System.Diagnostics.ProcessStartInfo
+                                {
+                                    FileName = Path.Combine(sdkPath, "emulator", "emulator.exe"),
+                                    Arguments = "-list-avds",
+                                    RedirectStandardOutput = true,
+                                };
+
+                                var process = new System.Diagnostics.Process
+                                {
+                                    StartInfo = processStartInfo
+                                };
+                                process.Start();
+                                var output = new string(process.StandardOutput.ReadToEnd());
+                                /*
+                                CreateProcessSettings processSettings = new CreateProcessSettings
+                                {
+                                    FileName = Path.Combine(sdkPath, "emulator", "emulator.exe"),
+                                    Arguments = "-list-avds",
+                                    HiddenWindow = false,
+                                    SaveOutput = true,
+                                    WaitForEnd = true,
+                                };
+                                //processSettings.ShellExecute = true;
+                                FlaxEngine.Platform.CreateProcess(ref processSettings);
+                                
+                                var output = new string(processSettings.Output);*/
+                                if (output.Length == 0)
+                                {
+                                    Debug.LogWarning("No AVDs detected.");
+                                    return;
+                                }
+                                var splitOutput = output.Split('\n');
+                                foreach (var line in splitOutput)
+                                {
+                                    if (string.IsNullOrEmpty(line.Trim()))
+                                        continue;
+                                    var item = new TreeNode
+                                    {
+                                        Text = line.Trim(),
+                                        Parent = avdListTree,
+                                    };
+                                }
+                                avdListGroup.Panel.IsClosed = false;
+                            };
+
+                            avdGroup.Label("Emulator AVD Commands:");
+                            var commandsTextBox = avdGroup.TextBox().TextBox;
+                            commandsTextBox.IsMultiline = false;
+                            commandsTextBox.Text = "-no-snapshot-load -no-boot-anim"; // TODO: save user changes
+
+                            var startEmulatorButton = avdGroup.Button("Start AVD Emulator").Button;
+                            startEmulatorButton.TooltipText = "Starts selected AVD from list.";
+                            startEmulatorButton.Clicked += () =>
+                            {
+                                if (avdListTree.Selection.Count == 0)
+                                    return;
+
+                                CreateProcessSettings processSettings = new CreateProcessSettings
+                                {
+                                    FileName = Path.Combine(sdkPath, "emulator", "emulator.exe"),
+                                    Arguments = $"-avd {avdListTree.Selection[0].Text} {commandsTextBox.Text}",
+                                    HiddenWindow = true,
+                                    SaveOutput = false,
+                                    WaitForEnd = false,
+                                };
+                                processSettings.ShellExecute = true;
+                                FlaxEngine.Platform.CreateProcess(ref processSettings);
+                            };
+                            
+                            emulatorGroup.Space(2);
+                            
+                            // Device
+                            var installGroup = emulatorGroup.Group("Install");
+                            installGroup.Panel.IsClosed = false;
+                            installGroup.Label("Note: used to install to AVD or physical devices.");
+                            var refreshDeviceListButton = installGroup.Button("Refresh device list").Button;
+                            var deviceListGroup = installGroup.Group("List of devices");
+                            var deviceListTree = new Tree(false)
+                            {
+                                Parent = deviceListGroup.Panel,
+                            };
+                            refreshDeviceListButton.Clicked += () =>
+                            {
+                                if (deviceListTree.Children.Count > 0)
+                                    deviceListTree.DisposeChildren();
+
+                                var processStartInfo = new System.Diagnostics.ProcessStartInfo
+                                {
+                                    FileName = Path.Combine(sdkPath, "platform-tools", "adb.exe"),
+                                    Arguments = "devices -l",
+                                    RedirectStandardOutput = true,
+                                };
+
+                                var process = new System.Diagnostics.Process
+                                {
+                                    StartInfo = processStartInfo
+                                };
+                                process.Start();
+                                var output = new string(process.StandardOutput.ReadToEnd());
+                                /*
+                                CreateProcessSettings processSettings = new CreateProcessSettings
+                                {
+                                    FileName = Path.Combine(sdkPath, "platform-tools", "adb.exe"),
+                                    Arguments = "devices -l",
+                                    HiddenWindow = false,
+                                    //SaveOutput = true,
+                                    WaitForEnd = true,
+                                };
+                                processSettings.SaveOutput = true;
+                                processSettings.ShellExecute = false;
+                                FlaxEngine.Platform.CreateProcess(ref processSettings);
+                                
+                                var output = new string(processSettings.Output);
+                                */
+                                if (output.Length > 0 && !output.Equals("List of devices attached", StringComparison.Ordinal))
+                                {
+                                    var splitLines = output.Split('\n');
+                                    foreach (var line in splitLines)
+                                    {
+                                        if (line.Trim().Equals("List of devices attached", StringComparison.Ordinal) || string.IsNullOrEmpty(line.Trim()))
+                                            continue;
+                                        
+                                        var tab = line.Split("device ");
+                                        if (tab.Length < 2)
+                                            continue;
+                                        var item = new TreeNode
+                                        {
+                                            Text = $"{tab[0].Trim()} - {tab[1].Trim()}",
+                                            Tag = tab[0].Trim(),
+                                            Parent = deviceListTree,
+                                        };
+                                    }
+                                }
+
+                                deviceListGroup.Panel.IsClosed = false;
+                            };
+
+                            var autoStart = installGroup.Checkbox("Try to auto start activity on device.");
+                            var installButton = installGroup.Button("Install APK to Device").Button;
+                            installButton.TooltipText = "Installs APK from the output folder to the selected device.";
+                            installButton.Clicked += () =>
+                            {
+                                if (deviceListTree.Selection.Count == 0)
+                                    return;
+                                
+                                // Get built APK at output path
+                                string output = StringUtils.ConvertRelativePathToAbsolute(Globals.ProjectFolder, StringUtils.NormalizePath(proxy.PerPlatformOptions[_platform].Output));
+                                if (!Directory.Exists(output))
+                                {
+                                    FlaxEditor.Editor.LogWarning("Can not copy APK because output folder does not exist.");
+                                    return;
+                                }
+                                
+                                var apkFiles = Directory.GetFiles(output, "*.apk");
+                                if (apkFiles.Length == 0)
+                                {
+                                    FlaxEditor.Editor.LogWarning("Can not copy APK because no .apk files were found in output folder.");
+                                    return;
+                                }
+
+                                string apkFilesString = string.Empty;
+                                for (int i = 0; i < apkFiles.Length; i++)
+                                {
+                                    var file = apkFiles[i];
+                                    if (i == 0)
+                                    {
+                                        apkFilesString = $"\"{file}\"";
+                                        continue;
+                                    }
+                                    apkFilesString += $" \"{file}\"";
+                                }
+                                
+                                CreateProcessSettings processSettings = new CreateProcessSettings
+                                {
+                                    FileName = Path.Combine(sdkPath, "platform-tools", "adb.exe"),
+                                    Arguments = $"-s {deviceListTree.Selection[0].Tag} {(apkFiles.Length > 1 ? "install-multiple" : "install")} {apkFilesString}",
+                                    LogOutput = true,
+                                };
+                                FlaxEngine.Platform.CreateProcess(ref processSettings);
+
+                                if (autoStart.CheckBox.Checked)
+                                {
+                                    var gameSettings = GameSettings.Load();
+                                    var productName = gameSettings.ProductName.Replace(" ", "").ToLower();
+                                    var companyName = gameSettings.CompanyName.Replace(" ", "").ToLower();
+                                    CreateProcessSettings processSettings1 = new CreateProcessSettings
+                                    {
+                                        FileName = Path.Combine(sdkPath, "platform-tools", "adb.exe"),
+                                        Arguments = $"shell am start -n com.{companyName}.{productName}/com.flaxengine.GameActivity",
+                                        LogOutput = true,
+                                    };
+                                    FlaxEngine.Platform.CreateProcess(ref processSettings1);
+                                }
+                            };
+                        }
                     }
                     else
                     {
