@@ -17,8 +17,12 @@
 #include <SDL3/SDL_video.h>
 #include <SDL3/SDL_system.h>
 #include <SDL3/SDL_hints.h>
-#include <SDL3/SDL_timer.h>
 
+
+// Wayland
+wl_display* WaylandDisplay = nullptr;
+
+// X11
 Delegate<void*> LinuxPlatform::xEventReceived;
 
 // Missing Wayland features:
@@ -29,7 +33,6 @@ Delegate<void*> LinuxPlatform::xEventReceived;
 
 namespace
 {
-    bool UseWayland = false;
     X11::Display* xDisplay = nullptr;
     X11::XIM IM = nullptr;
     X11::XIC IC = nullptr;
@@ -245,7 +248,7 @@ DragDropEffect Window::DoDragDrop(const StringView& data)
     if (CommandLine::Options.Headless)
         return DragDropEffect::None;
 
-    if (UseWayland)
+    if (SDLPlatform::UsesWayland())
         return DoDragDropWayland(data);
     else
         return DoDragDropX11(data);
@@ -846,15 +849,12 @@ bool SDLPlatform::InitPlatform()
     if (LinuxPlatform::Init())
         return true;
 
-    if (!CommandLine::Options.Headless)
-        UseWayland = strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0;
-
     return false;
 }
 
 bool SDLPlatform::InitPlatformX11(void* display)
 {
-    if (xDisplay || UseWayland)
+    if (xDisplay || WaylandDisplay)
         return false;
 
     // The Display instance must be the same one SDL uses internally
@@ -915,12 +915,12 @@ void SDLPlatform::SetHighDpiAwarenessEnabled(bool enable)
 
 bool SDLPlatform::UsesWayland()
 {
-    return UseWayland;
+    return WaylandDisplay != nullptr;
 }
 
 bool SDLPlatform::UsesX11()
 {
-    return !UseWayland;
+    return xDisplay != nullptr;
 }
 
 #endif
