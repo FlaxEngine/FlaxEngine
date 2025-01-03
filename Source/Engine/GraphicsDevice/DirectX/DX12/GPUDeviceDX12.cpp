@@ -36,27 +36,22 @@ static bool CheckDX12Support(IDXGIAdapter* adapter)
     return false;
 }
 
-GPUVertexLayoutDX12::GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements)
+GPUVertexLayoutDX12::GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements, bool explicitOffsets)
     : GPUResourceDX12<GPUVertexLayout>(device, StringView::Empty)
     , InputElementsCount(elements.Count())
 {
-    uint32 offsets[GPU_MAX_VB_BINDED] = {};
+    SetElements(elements, explicitOffsets);
     for (int32 i = 0; i < elements.Count(); i++)
     {
-        const VertexElement& src = elements.Get()[i];
+        const VertexElement& src = GetElements().Get()[i];
         D3D12_INPUT_ELEMENT_DESC& dst = InputElements[i];
-        uint32& offset = offsets[src.Slot];
-        if (src.Offset != 0)
-            offset = src.Offset;
         dst.SemanticName = RenderToolsDX::GetVertexInputSemantic(src.Type, dst.SemanticIndex);
         dst.Format = RenderToolsDX::ToDxgiFormat(src.Format);
         dst.InputSlot = src.Slot;
-        dst.AlignedByteOffset = offset;
+        dst.AlignedByteOffset = src.Offset;
         dst.InputSlotClass = src.PerInstance ? D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA : D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
         dst.InstanceDataStepRate = src.PerInstance ? 1 : 0;
-        offset += PixelFormatExtensions::SizeInBytes(src.Format);
     }
-    SetElements(elements, offsets);
 }
 
 GPUDevice* GPUDeviceDX12::Create()
@@ -868,9 +863,9 @@ GPUSampler* GPUDeviceDX12::CreateSampler()
     return New<GPUSamplerDX12>(this);
 }
 
-GPUVertexLayout* GPUDeviceDX12::CreateVertexLayout(const VertexElements& elements)
+GPUVertexLayout* GPUDeviceDX12::CreateVertexLayout(const VertexElements& elements, bool explicitOffsets)
 {
-    return New<GPUVertexLayoutDX12>(this, elements);
+    return New<GPUVertexLayoutDX12>(this, elements, explicitOffsets);
 }
 
 GPUSwapChain* GPUDeviceDX12::CreateSwapChain(Window* window)

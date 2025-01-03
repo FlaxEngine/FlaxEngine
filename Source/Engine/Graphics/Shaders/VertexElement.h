@@ -66,7 +66,7 @@ PACK_BEGIN() struct FLAXENGINE_API VertexElement
     API_FIELD() Types Type;
     // Index of the input vertex buffer slot (as provided in GPUContext::BindVB).
     API_FIELD() byte Slot;
-    // Byte offset of this element relative to the start of a vertex buffer. Use value 0 to use auto-calculated offset based on previous elements in the layout (or for the first one).
+    // Byte offset of this element relative to the start of a vertex buffer. Use value 0 to use auto-calculated offset based on previous elements in the layout (except when explicitOffsets is false).
     API_FIELD() byte Offset;
     // Flag used to mark data using hardware-instancing (element will be repeated for every instance). Empty to step data per-vertex when reading input buffer stream (rather than per-instance step).
     API_FIELD() byte PerInstance;

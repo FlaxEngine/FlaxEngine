@@ -173,7 +173,7 @@ GPUSampler* GPUDeviceNull::CreateSampler()
     return New<GPUSamplerNull>();
 }
 
-GPUVertexLayout* GPUDeviceNull::CreateVertexLayout(const VertexElements& elements)
+GPUVertexLayout* GPUDeviceNull::CreateVertexLayout(const VertexElements& elements, bool explicitOffsets)
 {
     return New<GPUVertexLayoutNull>(elements);
 }

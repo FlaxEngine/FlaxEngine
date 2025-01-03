@@ -401,7 +401,7 @@ public:
     /// Creates the vertex buffer layout.
     /// </summary>
     /// <returns>The vertex buffer layout.</returns>
-    API_FUNCTION() virtual GPUVertexLayout* CreateVertexLayout(const Array<struct VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>>& elements) = 0;
+    API_FUNCTION() virtual GPUVertexLayout* CreateVertexLayout(const Array<struct VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>>& elements, bool explicitOffsets = false) = 0;
     typedef Array<VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>> VertexElements;
 
     /// <summary>

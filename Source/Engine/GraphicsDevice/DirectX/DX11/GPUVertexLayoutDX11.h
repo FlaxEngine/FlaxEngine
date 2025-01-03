@@ -13,7 +13,7 @@
 class GPUVertexLayoutDX11 : public GPUResourceBase<GPUDeviceDX11, GPUVertexLayout>
 {
 public:
-	GPUVertexLayoutDX11(GPUDeviceDX11* device, const Elements& elements);
+	GPUVertexLayoutDX11(GPUDeviceDX11* device, const Elements& elements, bool explicitOffsets);
 
 	uint32 InputElementsCount;
 	D3D11_INPUT_ELEMENT_DESC InputElements[GPU_MAX_VS_ELEMENTS];

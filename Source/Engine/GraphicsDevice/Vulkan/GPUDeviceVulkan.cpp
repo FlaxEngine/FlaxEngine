@@ -449,10 +449,10 @@ uint32 GetHash(const FramebufferVulkan::Key& key)
     return hash;
 }
 
-GPUVertexLayoutVulkan::GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elements& elements)
+GPUVertexLayoutVulkan::GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elements& elements, bool explicitOffsets)
     : GPUResourceVulkan<GPUVertexLayout>(device, StringView::Empty)
 {
-    uint32 offsets[GPU_MAX_VB_BINDED] = {};
+    SetElements(elements, explicitOffsets);
     for (int32 i = 0; i < GPU_MAX_VB_BINDED; i++)
     {
         VkVertexInputBindingDescription& binding = Bindings[i];
@@ -463,28 +463,23 @@ GPUVertexLayoutVulkan::GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elem
     uint32 bindingsCount = 0;
     for (int32 i = 0; i < elements.Count(); i++)
     {
-        const VertexElement& src = elements.Get()[i];
-        uint32& offset = offsets[src.Slot];
-        if (src.Offset != 0)
-            offset = src.Offset;
+        const VertexElement& src = GetElements().Get()[i];
         const int32 size = PixelFormatExtensions::SizeInBytes(src.Format);
 
         ASSERT_LOW_LAYER(src.Slot < GPU_MAX_VB_BINDED);
         VkVertexInputBindingDescription& binding = Bindings[src.Slot];
         binding.binding = src.Slot;
-        binding.stride = Math::Max(binding.stride, (uint32_t)(offset + size));
+        binding.stride = Math::Max(binding.stride, (uint32_t)(src.Offset + size));
         binding.inputRate = src.PerInstance ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
 
         VkVertexInputAttributeDescription& attribute = Attributes[i];
         attribute.location = i;
         attribute.binding = src.Slot;
         attribute.format = RenderToolsVulkan::ToVulkanFormat(src.Format);
-        attribute.offset = offset;
+        attribute.offset = src.Offset;
 
         bindingsCount = Math::Max(bindingsCount, (uint32)src.Slot + 1);
-        offset += size;
     }
-    SetElements(elements, offsets);
 
     RenderToolsVulkan::ZeroStruct(CreateInfo, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
     CreateInfo.vertexBindingDescriptionCount = bindingsCount;
@@ -2129,9 +2124,9 @@ GPUSampler* GPUDeviceVulkan::CreateSampler()
     return New<GPUSamplerVulkan>(this);
 }
 
-GPUVertexLayout* GPUDeviceVulkan::CreateVertexLayout(const VertexElements& elements)
+GPUVertexLayout* GPUDeviceVulkan::CreateVertexLayout(const VertexElements& elements, bool explicitOffsets)
 {
-    return New<GPUVertexLayoutVulkan>(this, elements);
+    return New<GPUVertexLayoutVulkan>(this, elements, explicitOffsets);
 }
 
 GPUSwapChain* GPUDeviceVulkan::CreateSwapChain(Window* window)

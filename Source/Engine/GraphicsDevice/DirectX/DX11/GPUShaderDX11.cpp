@@ -11,19 +11,23 @@
 GPUShaderProgramVSDX11::~GPUShaderProgramVSDX11()
 {
     for (const auto& e : _cache)
-        e.Value->Release();
+    {
+        if (e.Value)
+            e.Value->Release();
+    }
 }
 
 ID3D11InputLayout* GPUShaderProgramVSDX11::GetInputLayout(GPUVertexLayoutDX11* vertexLayout)
 {
-    if (!vertexLayout)
-        vertexLayout = (GPUVertexLayoutDX11*)Layout;
     ID3D11InputLayout* inputLayout = nullptr;
     if (!_cache.TryGet(vertexLayout, inputLayout))
     {
+        if (!vertexLayout)
+            vertexLayout = (GPUVertexLayoutDX11*)Layout;
         if (vertexLayout && vertexLayout->InputElementsCount)
         {
-            VALIDATE_DIRECTX_CALL(vertexLayout->GetDevice()->GetDevice()->CreateInputLayout(vertexLayout->InputElements, vertexLayout->InputElementsCount, Bytecode.Get(), Bytecode.Length(), &inputLayout));
+            auto actualLayout = (GPUVertexLayoutDX11*)GPUVertexLayout::Merge(vertexLayout, Layout);
+            LOG_DIRECTX_RESULT(vertexLayout->GetDevice()->GetDevice()->CreateInputLayout(actualLayout->InputElements, actualLayout->InputElementsCount, Bytecode.Get(), Bytecode.Length(), &inputLayout));
         }
         _cache.Add(vertexLayout, inputLayout);
     }

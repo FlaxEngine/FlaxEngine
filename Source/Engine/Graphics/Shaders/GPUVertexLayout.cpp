@@ -45,6 +45,26 @@ namespace
     CriticalSection CacheLocker;
     Dictionary<uint32, GPUVertexLayout*> LayoutCache;
     Dictionary<VertexBufferLayouts, GPUVertexLayout*> VertexBufferCache;
+
+    GPUVertexLayout* AddCache(const VertexBufferLayouts& key, int32 count)
+    {
+        GPUVertexLayout::Elements elements;
+        bool anyValid = false;
+        for (int32 slot = 0; slot < count; slot++)
+        {
+            if (key.Layouts[slot])
+            {
+                anyValid = true;
+                int32 start = elements.Count();
+                elements.Add(key.Layouts[slot]->GetElements());
+                for (int32 j = start; j < elements.Count(); j++)
+                    elements.Get()[j].Slot = (byte)slot;
+            }
+        }
+        GPUVertexLayout* result = anyValid ? GPUVertexLayout::Get(elements) : nullptr;
+        VertexBufferCache.Add(key, result);
+        return result;
+    }
 }
 
 String VertexElement::ToString() const
@@ -76,22 +96,27 @@ GPUVertexLayout::GPUVertexLayout()
 {
 }
 
-void GPUVertexLayout::SetElements(const Elements& elements, uint32 offsets[GPU_MAX_VS_ELEMENTS])
+void GPUVertexLayout::SetElements(const Elements& elements, bool explicitOffsets)
 {
+    uint32 offsets[GPU_MAX_VB_BINDED] = {};
     _elements = elements;
-    uint32 strides[GPU_MAX_VB_BINDED] = {};
-    for (int32 i = 0; i < elements.Count(); i++)
+    for (int32 i = 0; i < _elements.Count(); i++)
     {
-        const VertexElement& e = elements[i];
+        VertexElement& e = _elements[i];
         ASSERT(e.Slot < GPU_MAX_VB_BINDED);
-        strides[e.Slot] = Math::Max(strides[e.Slot], offsets[e.Slot]);
+        uint32& offset = offsets[e.Slot];
+        if (e.Offset != 0 || explicitOffsets)
+            offset = e.Offset;
+        else
+            e.Offset = (byte)offset;
+        offset += PixelFormatExtensions::SizeInBytes(e.Format);
     }
     _stride = 0;
-    for (uint32 stride : strides)
-        _stride += stride;
+    for (uint32 offset : offsets)
+        _stride += offset;
 }
 
-GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements)
+GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements, bool explicitOffsets)
 {
     // Hash input layout
     uint32 hash = 0;
@@ -105,7 +130,7 @@ GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements)
     GPUVertexLayout* result;
     if (!LayoutCache.TryGet(hash, result))
     {
-        result = GPUDevice::Instance->CreateVertexLayout(elements);
+        result = GPUDevice::Instance->CreateVertexLayout(elements, explicitOffsets);
         if (!result)
         {
 #if GPU_ENABLE_ASSERTION_LOW_LAYERS
@@ -118,16 +143,6 @@ GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements)
         }
         LayoutCache.Add(hash, result);
     }
-#if GPU_ENABLE_ASSERTION_LOW_LAYERS
-    else if (result->GetElements() != elements)
-    {
-        for (auto& e : result->GetElements())
-            LOG(Error, " (a) {}", e.ToString());
-        for (auto& e : elements)
-            LOG(Error, " (b) {}", e.ToString());
-        LOG(Fatal, "Vertex layout cache collision for hash {}", hash);
-    }
-#endif
     CacheLocker.Unlock();
 
     return result;
@@ -141,35 +156,91 @@ GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUBuffer*>& vertexBuffers)
         return vertexBuffers.Get()[0] ? vertexBuffers.Get()[0]->GetVertexLayout() : nullptr;
 
     // Build hash key for set of buffers (in case there is layout sharing by different sets of buffers)
-    VertexBufferLayouts layouts;
-    for (int32 i = 0; i < vertexBuffers.Length(); i++)
-        layouts.Layouts[i] = vertexBuffers.Get()[i] ? vertexBuffers.Get()[i]->GetVertexLayout() : nullptr;
+    VertexBufferLayouts key;
+    for (int32 i = 0; i < vertexBuffers.Length() && i < GPU_MAX_VB_BINDED; i++)
+        key.Layouts[i] = vertexBuffers.Get()[i] ? vertexBuffers.Get()[i]->GetVertexLayout() : nullptr;
     for (int32 i = vertexBuffers.Length(); i < GPU_MAX_VB_BINDED; i++)
-        layouts.Layouts[i] = nullptr;
+        key.Layouts[i] = nullptr;
 
     // Lookup existing cache
     CacheLocker.Lock();
     GPUVertexLayout* result;
-    if (!VertexBufferCache.TryGet(layouts, result))
-    {
-        Elements elements;
-        bool anyValid = false;
-        for (int32 slot = 0; slot < vertexBuffers.Length(); slot++)
-        {
-            if (layouts.Layouts[slot])
-            {
-                anyValid = true;
-                int32 start = elements.Count();
-                elements.Add(layouts.Layouts[slot]->GetElements());
-                for (int32 j = start; j < elements.Count(); j++)
-                    elements.Get()[j].Slot = (byte)slot;
-            }
-        }
-        result = anyValid ? Get(elements) : nullptr;
-        VertexBufferCache.Add(layouts, result);
-    }
+    if (!VertexBufferCache.TryGet(key, result))
+        result = AddCache(key, vertexBuffers.Length());
     CacheLocker.Unlock();
 
+    return result;
+}
+
+GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUVertexLayout*>& layouts)
+{
+    if (layouts.Length() == 0)
+        return nullptr;
+    if (layouts.Length() == 1)
+        return layouts.Get()[0] ? layouts.Get()[0] : nullptr;
+
+    // Build hash key for set of buffers (in case there is layout sharing by different sets of buffers)
+    VertexBufferLayouts key;
+    for (int32 i = 0; i < layouts.Length() && i < GPU_MAX_VB_BINDED; i++)
+        key.Layouts[i] = layouts.Get()[i];
+    for (int32 i = layouts.Length(); i < GPU_MAX_VB_BINDED; i++)
+        key.Layouts[i] = nullptr;
+
+    // Lookup existing cache
+    CacheLocker.Lock();
+    GPUVertexLayout* result;
+    if (!VertexBufferCache.TryGet(key, result))
+        result = AddCache(key, layouts.Length());
+    CacheLocker.Unlock();
+
+    return result;
+}
+
+GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, const GPUVertexLayout* reference)
+{
+    if (!reference || !base || base == reference)
+        return base;
+    GPUVertexLayout* result = base;
+    if (base && reference)
+    {
+        bool anyMissing = false;
+        const Elements& baseElements = base->GetElements();
+        Elements newElements = baseElements;
+        for (const VertexElement& e : reference->GetElements())
+        {
+            bool missing = true;
+            for (const VertexElement& ee : baseElements)
+            {
+                if (ee.Type == e.Type)
+                {
+                    missing = false;
+                    break;
+                }
+            }
+            if (missing)
+            {
+                // Insert any missing elements
+                VertexElement ne = { e.Type, e.Slot, 0, e.PerInstance, e.Format };
+                if (e.Type == VertexElement::Types::TexCoord1 || e.Type == VertexElement::Types::TexCoord2 || e.Type == VertexElement::Types::TexCoord3)
+                {
+                    // Alias missing texcoords with existing texcoords
+                    for (const VertexElement& ee : newElements)
+                    {
+                        if (ee.Type == VertexElement::Types::TexCoord0)
+                        {
+                            ne = ee;
+                            ne.Type = e.Type;
+                            break;
+                        }
+                    }
+                }
+                newElements.Add(ne);
+                anyMissing = true;
+            }
+        }
+        if (anyMissing)
+            result = Get(newElements, true);
+    }
     return result;
 }
 

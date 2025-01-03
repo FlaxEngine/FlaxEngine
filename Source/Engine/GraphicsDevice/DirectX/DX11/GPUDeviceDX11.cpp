@@ -148,27 +148,22 @@ static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureL
     return false;
 }
 
-GPUVertexLayoutDX11::GPUVertexLayoutDX11(GPUDeviceDX11* device, const Elements& elements)
+GPUVertexLayoutDX11::GPUVertexLayoutDX11(GPUDeviceDX11* device, const Elements& elements, bool explicitOffsets)
     : GPUResourceBase<GPUDeviceDX11, GPUVertexLayout>(device, StringView::Empty)
     , InputElementsCount(elements.Count())
 {
-    uint32 offsets[GPU_MAX_VB_BINDED] = {};
+    SetElements(elements, explicitOffsets);
     for (int32 i = 0; i < elements.Count(); i++)
     {
-        const VertexElement& src = elements.Get()[i];
+        const VertexElement& src = GetElements().Get()[i];
         D3D11_INPUT_ELEMENT_DESC& dst = InputElements[i];
-        uint32& offset = offsets[src.Slot];
-        if (src.Offset != 0)
-            offset = src.Offset;
         dst.SemanticName = RenderToolsDX::GetVertexInputSemantic(src.Type, dst.SemanticIndex);
         dst.Format = RenderToolsDX::ToDxgiFormat(src.Format);
         dst.InputSlot = src.Slot;
-        dst.AlignedByteOffset = offset;
+        dst.AlignedByteOffset = src.Offset;
         dst.InputSlotClass = src.PerInstance ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
         dst.InstanceDataStepRate = src.PerInstance ? 1 : 0;
-        offset += PixelFormatExtensions::SizeInBytes(src.Format);
     }
-    SetElements(elements, offsets);
 }
 
 GPUDevice* GPUDeviceDX11::Create()
@@ -832,9 +827,9 @@ GPUSampler* GPUDeviceDX11::CreateSampler()
     return New<GPUSamplerDX11>(this);
 }
 
-GPUVertexLayout* GPUDeviceDX11::CreateVertexLayout(const VertexElements& elements)
+GPUVertexLayout* GPUDeviceDX11::CreateVertexLayout(const VertexElements& elements, bool explicitOffsets)
 {
-    return New<GPUVertexLayoutDX11>(this, elements);
+    return New<GPUVertexLayoutDX11>(this, elements, explicitOffsets);
 }
 
 GPUSwapChain* GPUDeviceDX11::CreateSwapChain(Window* window)

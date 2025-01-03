@@ -13,7 +13,7 @@
 class GPUVertexLayoutVulkan : public GPUResourceVulkan<GPUVertexLayout>
 {
 public:
-	GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elements& elements);
+	GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elements& elements, bool explicitOffsets);
 
 	VkPipelineVertexInputStateCreateInfo CreateInfo;
 	VkVertexInputBindingDescription Bindings[GPU_MAX_VB_BINDED];

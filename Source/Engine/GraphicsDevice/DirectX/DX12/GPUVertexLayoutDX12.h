@@ -13,7 +13,7 @@
 class GPUVertexLayoutDX12 : public GPUResourceDX12<GPUVertexLayout>
 {
 public:
-	GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements);
+	GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements, bool explicitOffsets);
 
 	uint32 InputElementsCount;
 	D3D12_INPUT_ELEMENT_DESC InputElements[GPU_MAX_VS_ELEMENTS];

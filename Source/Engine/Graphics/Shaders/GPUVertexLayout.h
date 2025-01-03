@@ -23,7 +23,7 @@ private:
 protected:
     GPUVertexLayout();
 
-    void SetElements(const Elements& elements, uint32 offsets[GPU_MAX_VS_ELEMENTS]);
+    void SetElements(const Elements& elements, bool explicitOffsets);
 
 public:
     /// <summary>
@@ -46,8 +46,9 @@ public:
     /// Gets the vertex layout for a given list of elements. Uses internal cache to skip creating layout if it's already exists for a given list.
     /// </summary>
     /// <param name="elements">The list of elements for the layout.</param>
+    /// <param name="explicitOffsets">If set to true, input elements offsets will be used without automatic calculations (offsets with value 0).</param>
     /// <returns>Vertex layout object. Doesn't need to be cleared as it's cached for an application lifetime.</returns>
-    API_FUNCTION() static GPUVertexLayout* Get(const Array<VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>>& elements);
+    API_FUNCTION() static GPUVertexLayout* Get(const Array<VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>>& elements, bool explicitOffsets = false);
 
     /// <summary>
     /// Gets the vertex layout for a given list of vertex buffers (sequence of binding slots based on layouts set on those buffers). Uses internal cache to skip creating layout if it's already exists for a given list.
@@ -55,6 +56,21 @@ public:
     /// <param name="vertexBuffers">The list of vertex buffers for the layout.</param>
     /// <returns>Vertex layout object. Doesn't need to be cleared as it's cached for an application lifetime.</returns>
     API_FUNCTION() static GPUVertexLayout* Get(const Span<GPUBuffer*>& vertexBuffers);
+
+    /// <summary>
+    /// Merges list of layouts in a single one. Uses internal cache to skip creating layout if it's already exists for a given list.
+    /// </summary>
+    /// <param name="layouts">The list of layouts to merge.</param>
+    /// <returns>Vertex layout object. Doesn't need to be cleared as it's cached for an application lifetime.</returns>
+    API_FUNCTION() static GPUVertexLayout* Get(const Span<GPUVertexLayout*>& layouts);
+
+    /// <summary>
+    /// Merges reference vertex elements into the given set of elements to ensure the reference list is satisfied (vertex shader input requirement). Returns base layout if it's valid.
+    /// </summary>
+    /// <param name="base">The list of vertex buffers for the layout.</param>
+    /// <param name="reference">The list of reference inputs.</param>
+    /// <returns>Vertex layout object. Doesn't need to be cleared as it's cached for an application lifetime.</returns>
+    static GPUVertexLayout* Merge(GPUVertexLayout* base, const GPUVertexLayout* reference);
 
 public:
     // [GPUResource]
