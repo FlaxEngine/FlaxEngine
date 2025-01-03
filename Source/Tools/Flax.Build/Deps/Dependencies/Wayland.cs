@@ -49,7 +49,7 @@ namespace Flax.Deps.Dependencies
                     foreach (var protocolPath in protocolFiles)
                     {
                         var headerFile = Path.ChangeExtension(Path.GetFileName(protocolPath), "h");
-                        var glueFile = Path.ChangeExtension(Path.GetFileName(protocolPath), "cpp");
+                        var glueFile = Path.ChangeExtension(Path.GetFileName(protocolPath), "c");
                         Utilities.Run("wayland-scanner", $"client-header {protocolPath} include/wayland/{headerFile}", null, dstPath, Utilities.RunOptions.DefaultTool);
                         Utilities.Run("wayland-scanner", $"private-code {protocolPath} {glueFile}", null, dstPath, Utilities.RunOptions.DefaultTool);
                     }
