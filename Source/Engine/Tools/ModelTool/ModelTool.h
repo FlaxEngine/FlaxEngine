@@ -98,7 +98,7 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API ModelTool
 
     // Optional: inputModel or modelData
     // Optional: outputSDF or null, outputStream or null
-    static bool GenerateModelSDF(class Model* inputModel, class ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, class MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold = 0.6f, bool useGPU = true);
+    static bool GenerateModelSDF(class Model* inputModel, const class ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, class MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold = 0.6f, bool useGPU = true);
 
 #if USE_EDITOR
 

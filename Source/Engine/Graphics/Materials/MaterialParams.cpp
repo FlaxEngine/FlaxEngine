@@ -663,7 +663,7 @@ bool MaterialParams::Load(ReadStream* stream)
                 param->_type = static_cast<MaterialParameterType>(stream->ReadByte());
                 param->_isPublic = stream->ReadBool();
                 param->_override = param->_isPublic;
-                stream->ReadString(&param->_name, 10421);
+                stream->Read(param->_name, 10421);
                 param->_registerIndex = stream->ReadByte();
                 stream->ReadUint16(&param->_offset);
 
@@ -738,7 +738,7 @@ bool MaterialParams::Load(ReadStream* stream)
                 stream->Read(param->_paramId);
                 param->_isPublic = stream->ReadBool();
                 param->_override = param->_isPublic;
-                stream->ReadString(&param->_name, 10421);
+                stream->Read(param->_name, 10421);
                 param->_registerIndex = stream->ReadByte();
                 stream->ReadUint16(&param->_offset);
 

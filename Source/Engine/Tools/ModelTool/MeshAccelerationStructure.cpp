@@ -331,11 +331,11 @@ void MeshAccelerationStructure::Add(Model* model, int32 lodIndex)
     }
 }
 
-void MeshAccelerationStructure::Add(ModelData* modelData, int32 lodIndex, bool copy)
+void MeshAccelerationStructure::Add(const ModelData* modelData, int32 lodIndex, bool copy)
 {
     PROFILE_CPU();
     lodIndex = Math::Clamp(lodIndex, 0, modelData->LODs.Count() - 1);
-    ModelLodData& lod = modelData->LODs[lodIndex];
+    const ModelLodData& lod = modelData->LODs[lodIndex];
     _meshes.EnsureCapacity(_meshes.Count() + lod.Meshes.Count());
     for (int32 i = 0; i < lod.Meshes.Count(); i++)
     {

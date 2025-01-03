@@ -191,6 +191,8 @@ bool BinaryAsset::HasDependenciesModified() const
 
 FlaxChunk* BinaryAsset::GetOrCreateChunk(int32 index)
 {
+    if (IsVirtual()) // Virtual assets don't own storage container
+        return nullptr;
     ASSERT(Math::IsInRange(index, 0, ASSET_FILE_DATA_CHUNKS - 1));
 
     // Try get

@@ -67,6 +67,8 @@ enum class MeshBufferType
     /// The vertex buffer (third).
     /// </summary>
     Vertex2 = 3,
+
+    MAX,
 };
 
 // Vertex structure for all models (versioned)

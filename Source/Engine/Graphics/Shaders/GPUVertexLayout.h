@@ -35,6 +35,11 @@ public:
     }
 
     /// <summary>
+    /// Gets the list of elements used by this layout as a text (each element in a new line).
+    /// </summary>
+    API_PROPERTY() String GetElementsString() const;
+
+    /// <summary>
     /// Gets the size in bytes of all elements in the layout structure (including their offsets).
     /// </summary>
     API_PROPERTY() FORCE_INLINE uint32 GetStride() const

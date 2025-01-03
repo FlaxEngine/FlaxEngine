@@ -81,7 +81,7 @@ class GPUModelSDFTask : public GPUTask
     ConditionVariable* _signal;
     AssetReference<Shader> _shader;
     Model* _inputModel;
-    ModelData* _modelData;
+    const ModelData* _modelData;
     int32 _lodIndex;
     Int3 _resolution;
     ModelBase::SDFData* _sdf;
@@ -104,7 +104,7 @@ class GPUModelSDFTask : public GPUTask
         });
 
 public:
-    GPUModelSDFTask(ConditionVariable& signal, Model* inputModel, ModelData* modelData, int32 lodIndex, const Int3& resolution, ModelBase::SDFData* sdf, GPUTexture* sdfResult, const Float3& xyzToLocalMul, const Float3& xyzToLocalAdd)
+    GPUModelSDFTask(ConditionVariable& signal, Model* inputModel, const ModelData* modelData, int32 lodIndex, const Int3& resolution, ModelBase::SDFData* sdf, GPUTexture* sdfResult, const Float3& xyzToLocalMul, const Float3& xyzToLocalAdd)
         : GPUTask(Type::Custom)
         , _signal(&signal)
         , _shader(Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SDF")))
@@ -350,7 +350,7 @@ public:
     }
 };
 
-bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold, bool useGPU)
+bool ModelTool::GenerateModelSDF(Model* inputModel, const ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold, bool useGPU)
 {
     PROFILE_CPU();
     auto startTime = Platform::GetTimeSeconds();

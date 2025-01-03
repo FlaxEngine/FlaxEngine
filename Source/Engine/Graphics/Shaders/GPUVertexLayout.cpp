@@ -70,7 +70,7 @@ namespace
 String VertexElement::ToString() const
 {
 #if GPU_ENABLE_RESOURCE_NAMING
-    return String::Format(TEXT("{}, format {}, offset {}, per-instance {}, slot {}"), ScriptingEnum::ToString(Type), ScriptingEnum::ToString(Format), Offset, PerInstance, Slot);
+    return String::Format(TEXT("{}, {}, offset {}, {}, slot {}"), ScriptingEnum::ToString(Type), ScriptingEnum::ToString(Format), Offset, PerInstance ? TEXT("per-instance") : TEXT("per-vertex"), Slot);
 #else
     return TEXT("VertexElement");
 #endif
@@ -114,6 +114,18 @@ void GPUVertexLayout::SetElements(const Elements& elements, bool explicitOffsets
     _stride = 0;
     for (uint32 offset : offsets)
         _stride += offset;
+}
+
+String GPUVertexLayout::GetElementsString() const
+{
+    String result;
+    for (int32 i = 0; i < _elements.Count(); i++)
+    {
+        if (i != 0)
+            result += '\n';
+        result += _elements[i].ToString();
+    }
+    return result;
 }
 
 GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements, bool explicitOffsets)

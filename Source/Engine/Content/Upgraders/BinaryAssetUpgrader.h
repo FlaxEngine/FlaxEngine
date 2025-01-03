@@ -75,8 +75,7 @@ public:
     };
 
 private:
-    Upgrader const* _upgraders;
-    int32 _upgradersCount;
+    Array<Upgrader, InlinedAllocation<8>> _upgraders;
 
 public:
     /// <summary>
@@ -87,10 +86,8 @@ public:
     /// <returns>True if cannot upgrade or upgrade failed, otherwise false</returns>
     bool Upgrade(uint32 serializedVersion, AssetMigrationContext& context) const
     {
-        // Find upgrader
-        for (int32 i = 0; i < _upgradersCount; i++)
+        for (auto& upgrader : _upgraders)
         {
-            auto& upgrader = _upgraders[i];
             if (upgrader.CurrentVersion == serializedVersion)
             {
                 // Set target version and preserve metadata
@@ -105,7 +102,6 @@ public:
                 return upgrader.Handler(context);
             }
         }
-
         return true;
     }
 
@@ -127,7 +123,6 @@ public:
                 context.Output.Header.Chunks[chunkIndex]->Data.Copy(srcChunk->Data);
             }
         }
-
         return false;
     }
 
@@ -176,27 +171,22 @@ public:
 protected:
     BinaryAssetUpgrader()
     {
-        _upgraders = nullptr;
-        _upgradersCount = 0;
     }
 
     void setup(Upgrader const* upgraders, int32 upgradersCount)
     {
-        _upgraders = upgraders;
-        _upgradersCount = upgradersCount;
+        _upgraders.Add(upgraders, upgradersCount);
     }
 
 public:
     // [IAssetUpgrader]
     bool ShouldUpgrade(uint32 serializedVersion) const override
     {
-        // Find upgrader
-        for (int32 i = 0; i < _upgradersCount; i++)
+        for (auto& upgrader : _upgraders)
         {
-            if (_upgraders[i].CurrentVersion == serializedVersion)
+            if (upgrader.CurrentVersion == serializedVersion)
                 return true;
         }
-
         return false;
     }
 };
