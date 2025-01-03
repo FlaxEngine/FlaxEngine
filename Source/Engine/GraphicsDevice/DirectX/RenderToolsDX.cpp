@@ -289,7 +289,7 @@ LPCSTR RenderToolsDX::GetVertexInputSemantic(VertexElement::Types type, UINT& se
         return "TANGENT";
     case VertexElement::Types::BlendIndices:
         return "BLENDINDICES";
-    case VertexElement::Types::BlendWeight:
+    case VertexElement::Types::BlendWeights:
         return "BLENDWEIGHT";
     case VertexElement::Types::TexCoord0:
         return "TEXCOORD";

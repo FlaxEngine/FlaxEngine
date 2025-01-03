@@ -27,7 +27,7 @@ GPUVertexLayout* VB0SkinnedElementType2::GetLayout()
         { VertexElement::Types::Normal, 0, 0, 0, PixelFormat::R10G10B10A2_UNorm },
         { VertexElement::Types::Tangent, 0, 0, 0, PixelFormat::R10G10B10A2_UNorm },
         { VertexElement::Types::BlendIndices, 0, 0, 0, PixelFormat::R8G8B8A8_UInt },
-        { VertexElement::Types::BlendWeight, 0, 0, 0, PixelFormat::R16G16B16A16_Float },
+        { VertexElement::Types::BlendWeights, 0, 0, 0, PixelFormat::R16G16B16A16_Float },
     });
 }
 

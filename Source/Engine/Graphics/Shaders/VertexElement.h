@@ -30,7 +30,7 @@ PACK_BEGIN() struct FLAXENGINE_API VertexElement
         // Skinned bone blend indices.
         BlendIndices = 5,
         // Skinned bone blend weights.
-        BlendWeight = 6,
+        BlendWeights = 6,
         // Primary texture coordinate (UV).
         TexCoord0 = 7,
         // Additional texture coordinate (UV1).

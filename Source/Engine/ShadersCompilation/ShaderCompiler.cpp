@@ -427,7 +427,7 @@ bool ShaderCompiler::WriteCustomDataVS(ShaderCompilationContext* context, Shader
             data.Type = VertexElement::Types::BlendIndices;
             break;
         case VertexShaderMeta::InputType::BLENDWEIGHT:
-            data.Type = VertexElement::Types::BlendWeight;
+            data.Type = VertexElement::Types::BlendWeights;
             break;
         default:
             data.Type = VertexElement::Types::Unknown;
