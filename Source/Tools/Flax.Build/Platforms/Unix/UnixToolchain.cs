@@ -333,23 +333,6 @@ namespace Flax.Build.Platforms
             {
                 commonArgs.Add("-c");
                 commonArgs.Add("-pipe");
-                commonArgs.Add("-x");
-                commonArgs.Add("c++");
-
-                // C++ version
-                switch (compileEnvironment.CppVersion)
-                {
-                case CppVersion.Cpp14:
-                    commonArgs.Add("-std=c++14");
-                    break;
-                case CppVersion.Cpp17:
-                case CppVersion.Latest:
-                    commonArgs.Add("-std=c++17");
-                    break;
-                case CppVersion.Cpp20:
-                    commonArgs.Add("-std=c++20");
-                    break;
-                }
 
                 commonArgs.Add("-Wdelete-non-virtual-dtor");
                 commonArgs.Add("-fno-math-errno");
@@ -407,7 +390,7 @@ namespace Flax.Build.Platforms
                 commonArgs.Add(string.Format("-I\"{0}\"", includePath.Replace('\\', '/')));
             }
 
-            // Compile all C++ files
+            // Compile all C/C++ files
             var args = new List<string>();
             foreach (var sourceFile in sourceFiles)
             {
@@ -417,6 +400,30 @@ namespace Flax.Build.Platforms
                 // Use shared arguments
                 args.Clear();
                 args.AddRange(commonArgs);
+                
+                // Language for the file
+                args.Add("-x");
+                if (Path.GetExtension(sourceFile).Equals(".c", StringComparison.OrdinalIgnoreCase))
+                    args.Add("c");
+                else
+                {
+                    args.Add("c++");
+                    
+                    // C++ version
+                    switch (compileEnvironment.CppVersion)
+                    {
+                    case CppVersion.Cpp14:
+                        args.Add("-std=c++14");
+                        break;
+                    case CppVersion.Cpp17:
+                    case CppVersion.Latest:
+                        args.Add("-std=c++17");
+                        break;
+                    case CppVersion.Cpp20:
+                        args.Add("-std=c++20");
+                        break;
+                    }
+                }
 
                 // Object File Name
                 var objFile = Path.Combine(outputPath, sourceFilename + ".o");
