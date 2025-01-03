@@ -7,6 +7,7 @@
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Types/Span.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
 void Task::Start()
@@ -70,6 +71,17 @@ bool Task::Wait(double timeoutMilliseconds) const
     // Timeout reached!
     LOG(Warning, "\'{0}\' has timed out. Wait time: {1} ms", ToString(), timeoutMilliseconds);
     return true;
+}
+
+bool Task::WaitAll(const Span<Task*>& tasks, double timeoutMilliseconds)
+{
+    PROFILE_CPU();
+    for (int32 i = 0; i < tasks.Length(); i++)
+    {
+        if (tasks[i]->Wait())
+            return true;
+    }
+    return false;
 }
 
 Task* Task::ContinueWith(Task* task)
