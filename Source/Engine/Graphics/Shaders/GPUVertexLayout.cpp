@@ -208,12 +208,10 @@ GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUVertexLayout*>& layouts)
     return result;
 }
 
-GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, const GPUVertexLayout* reference)
+GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, GPUVertexLayout* reference)
 {
-    if (!reference || !base || base == reference)
-        return base;
-    GPUVertexLayout* result = base;
-    if (base && reference)
+    GPUVertexLayout* result = base ? base : reference;
+    if (base && reference && base != reference)
     {
         bool anyMissing = false;
         const Elements& baseElements = base->GetElements();

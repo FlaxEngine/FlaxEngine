@@ -144,6 +144,8 @@ public:
     {
     }
 
+    // Gets the vertex buffer layout.
+    GPUVertexLayout* GetLayout() const;
     // Sets the vertex buffer layout.
     void SetLayout(GPUVertexLayout* layout);
 

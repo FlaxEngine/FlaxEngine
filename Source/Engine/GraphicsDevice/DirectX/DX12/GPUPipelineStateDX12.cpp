@@ -49,8 +49,6 @@ bool GPUPipelineStateDX12::IsValid() const
 ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, int32 rtCount, GPUTextureViewDX12** rtHandles, GPUVertexLayoutDX12* vertexLayout)
 {
     ASSERT(depth || rtCount);
-    if (!vertexLayout)
-        vertexLayout = VertexLayout;
 
     // Prepare key
     GPUPipelineStateKeyDX12 key;
@@ -85,6 +83,7 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     _desc.SampleDesc.Quality = key.MSAA == MSAALevel::None ? 0 : GPUDeviceDX12::GetMaxMSAAQuality((int32)key.MSAA);
     _desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
     _desc.DSVFormat = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindDepthStencilFormat(key.DepthFormat));
+    vertexLayout = (GPUVertexLayoutDX12*)GPUVertexLayout::Merge(vertexLayout, VertexLayout);
     _desc.InputLayout.pInputElementDescs = vertexLayout ? vertexLayout->InputElements : nullptr;
     _desc.InputLayout.NumElements = vertexLayout ? vertexLayout->InputElementsCount : 0;
 

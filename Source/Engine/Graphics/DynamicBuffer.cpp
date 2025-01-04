@@ -67,6 +67,11 @@ void DynamicBuffer::Dispose()
     Data.Resize(0);
 }
 
+GPUVertexLayout* DynamicVertexBuffer::GetLayout() const
+{
+    return _layout ? _layout : (GetBuffer() ? GetBuffer()->GetVertexLayout() : nullptr);
+}
+
 void DynamicVertexBuffer::SetLayout(GPUVertexLayout* layout)
 {
     _layout = layout;

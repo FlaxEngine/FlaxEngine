@@ -26,8 +26,8 @@ ID3D11InputLayout* GPUShaderProgramVSDX11::GetInputLayout(GPUVertexLayoutDX11* v
             vertexLayout = (GPUVertexLayoutDX11*)Layout;
         if (vertexLayout && vertexLayout->InputElementsCount)
         {
-            auto actualLayout = (GPUVertexLayoutDX11*)GPUVertexLayout::Merge(vertexLayout, Layout);
-            LOG_DIRECTX_RESULT(vertexLayout->GetDevice()->GetDevice()->CreateInputLayout(actualLayout->InputElements, actualLayout->InputElementsCount, Bytecode.Get(), Bytecode.Length(), &inputLayout));
+            auto mergedVertexLayout = (GPUVertexLayoutDX11*)GPUVertexLayout::Merge(vertexLayout, Layout);
+            LOG_DIRECTX_RESULT(vertexLayout->GetDevice()->GetDevice()->CreateInputLayout(mergedVertexLayout->InputElements, mergedVertexLayout->InputElementsCount, Bytecode.Get(), Bytecode.Length(), &inputLayout));
         }
         _cache.Add(vertexLayout, inputLayout);
     }

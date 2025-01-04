@@ -205,8 +205,6 @@ PipelineLayoutVulkan* GPUPipelineStateVulkan::GetLayout()
 VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVertexLayoutVulkan* vertexLayout)
 {
     ASSERT(renderPass);
-    if (!vertexLayout)
-        vertexLayout = VertexShaderLayout;
 
     // Try reuse cached version
     VkPipeline pipeline = VK_NULL_HANDLE;
@@ -224,6 +222,7 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
     PROFILE_CPU_NAMED("Create Pipeline");
 
     // Bind vertex input
+    vertexLayout = (GPUVertexLayoutVulkan*)GPUVertexLayout::Merge(vertexLayout, VertexShaderLayout);
     _desc.pVertexInputState = vertexLayout ? &vertexLayout->CreateInfo : nullptr;
 
     // Update description to match the pipeline

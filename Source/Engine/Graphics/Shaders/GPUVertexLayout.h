@@ -75,7 +75,7 @@ public:
     /// <param name="base">The list of vertex buffers for the layout.</param>
     /// <param name="reference">The list of reference inputs.</param>
     /// <returns>Vertex layout object. Doesn't need to be cleared as it's cached for an application lifetime.</returns>
-    static GPUVertexLayout* Merge(GPUVertexLayout* base, const GPUVertexLayout* reference);
+    static GPUVertexLayout* Merge(GPUVertexLayout* base, GPUVertexLayout* reference);
 
 public:
     // [GPUResource]
