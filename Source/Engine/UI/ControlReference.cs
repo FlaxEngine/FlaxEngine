@@ -36,25 +36,34 @@ public struct ControlReference<T> : IControlReference where T : Control
 {
     [Serialize, ShowInEditor]
     private UIControl _uiControl;
-    
+
+    /// <summary>
+    /// Default constructor for ControlReference;
+    /// </summary>
+    public ControlReference()
+    {
+        _uiControl = null;
+    }
+
     /// <inheritdoc />
     public Type GetControlType()
     {
         return typeof(T);
     }
-    
+
     /// <summary>
     /// The Control attached to the UI Control.
     /// </summary>
+    [HideInEditor]
     public T Control
     {
         get
         {
-            if (_uiControl.Control is T t)
+            if (_uiControl != null && _uiControl.Control is T t)
                 return t;
             else
             {
-                Debug.LogWarning("Trying to get Control from ControlReference but UIControl.Control is null or UIControl.Control is not the correct type.");
+                Debug.LogWarning("Trying to get Control from ControlReference but UIControl is null, or UIControl.Control is null, or UIControl.Control is not the correct type.");
                 return null;
             }
         }
@@ -85,14 +94,14 @@ public struct ControlReference<T> : IControlReference where T : Control
     {
         _uiControl = null;
     }
-    
+
     /// <summary>
     /// The implicit operator for the Control.
     /// </summary>
     /// <param name="reference">The ControlReference</param>
     /// <returns>The Control.</returns>
     public static implicit operator T(ControlReference<T> reference) => reference.Control;
-    
+
     /// <summary>
     /// The implicit operator for the UIControl
     /// </summary>

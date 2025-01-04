@@ -85,12 +85,21 @@ public class UIControlRefPickerControl : Control
 
             // Update tooltip
             if (_value is SceneObject sceneObject)
-                TooltipText = FlaxEditor.Utilities.Utils.GetTooltip(sceneObject);
+                TooltipText = Utilities.Utils.GetTooltip(sceneObject);
             else
                 TooltipText = string.Empty;
 
             OnValueChanged();
         }
+    }
+    
+    /// <summary>
+    /// Gets or sets the selected object value by identifier.
+    /// </summary>
+    public Guid ValueID
+    {
+        get => _value ? _value.ID : Guid.Empty;
+        set => Value = Object.Find<UIControl>(ref value);
     }
     
     /// <summary>
@@ -123,7 +132,7 @@ public class UIControlRefPickerControl : Control
 
     private bool IsValid(Actor actor)
     {
-        return actor is UIControl a && a.Control.GetType() == _controlType;
+        return actor == null || actor is UIControl a && a.Control.GetType() == _controlType;
     }
 
     /// <inheritdoc />
@@ -263,7 +272,7 @@ public class UIControlRefPickerControl : Control
             _isMouseDown = false;
 
             // Highlight actor or script reference
-            if (!_hasValidDragOver && !IsDragOver)
+            if (!_hasValidDragOver && !IsDragOver && nameRect.Contains(location))
             {
                 Actor actor = _value;
                 if (actor != null)
@@ -275,7 +284,7 @@ public class UIControlRefPickerControl : Control
                     }
                     else
                     {
-                        _linkedTreeNode = FlaxEditor.Editor.Instance.Scene.GetActorNode(actor).TreeNode;
+                        _linkedTreeNode = Editor.Instance.Scene.GetActorNode(actor).TreeNode;
                         _linkedTreeNode.ExpandAllParents();
                         Editor.Instance.Windows.SceneWin.SceneTreePanel.ScrollViewTo(_linkedTreeNode, true);
                         _linkedTreeNode.StartHighlight();
@@ -455,7 +464,7 @@ public class ControlReferenceEditor : CustomEditor
             };
         }
     }
-    
+
     /// <inheritdoc />
     public override void Refresh()
     {
@@ -464,9 +473,7 @@ public class ControlReferenceEditor : CustomEditor
         if (!HasDifferentValues)
         {
             if (Values[0] is IControlReference cr)
-            {
                 _element.CustomControl.Value = cr.UIControl;
-            }
         }
     }
 }
