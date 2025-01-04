@@ -26,7 +26,8 @@ VertexShaderMeta::InputType ShaderProcessing::ParseInputType(const Token& token)
         _PARSE_ENTRY(BITANGENT),
         _PARSE_ENTRY(ATTRIBUTE),
         _PARSE_ENTRY(BLENDINDICES),
-        _PARSE_ENTRY(BLENDWEIGHT),
+        _PARSE_ENTRY(BLENDWEIGHTS),
+        _PARSE_ENTRY(BLENDWEIGHT), // [Deprecated in v1.10]
     };
 #undef _PARSE_ENTRY
 

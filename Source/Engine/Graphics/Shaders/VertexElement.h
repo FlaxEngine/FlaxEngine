@@ -19,45 +19,45 @@ PACK_BEGIN() struct FLAXENGINE_API VertexElement
     {
         // Undefined.
         Unknown = 0,
-        // Vertex position.
+        // Vertex position. Maps to 'POSITION' semantic in the shader.
         Position = 1,
-        // Vertex color.
+        // Vertex color. Maps to 'COLOR' semantic in the shader.
         Color = 2,
-        // Vertex normal vector.
+        // Vertex normal vector. Maps to 'NORMAL' semantic in the shader.
         Normal = 3,
-        // Vertex tangent vector.
+        // Vertex tangent vector. Maps to 'TANGENT' semantic in the shader.
         Tangent = 4,
-        // Skinned bone blend indices.
+        // Skinned bone blend indices. Maps to 'BLENDINDICES' semantic in the shader.
         BlendIndices = 5,
-        // Skinned bone blend weights.
+        // Skinned bone blend weights. Maps to 'BLENDWEIGHTS' semantic in the shader.
         BlendWeights = 6,
-        // Primary texture coordinate (UV).
+        // Primary texture coordinate (UV). Maps to 'TEXCOORD0' semantic in the shader.
         TexCoord0 = 7,
-        // Additional texture coordinate (UV1).
+        // Additional texture coordinate (UV1). Maps to 'TEXCOORD1' semantic in the shader.
         TexCoord1 = 8,
-        // Additional texture coordinate (UV2).
+        // Additional texture coordinate (UV2). Maps to 'TEXCOORD2' semantic in the shader.
         TexCoord2 = 9,
-        // Additional texture coordinate (UV3).
+        // Additional texture coordinate (UV3). Maps to 'TEXCOORD3' semantic in the shader.
         TexCoord3 = 10,
-        // Additional texture coordinate (UV4).
+        // Additional texture coordinate (UV4). Maps to 'TEXCOORD4' semantic in the shader.
         TexCoord4 = 11,
-        // Additional texture coordinate (UV5).
+        // Additional texture coordinate (UV5). Maps to 'TEXCOORD5' semantic in the shader.
         TexCoord5 = 12,
-        // Additional texture coordinate (UV6).
+        // Additional texture coordinate (UV6). Maps to 'TEXCOORD6' semantic in the shader.
         TexCoord6 = 13,
-        // Additional texture coordinate (UV7).
+        // Additional texture coordinate (UV7). Maps to 'TEXCOORD7' semantic in the shader.
         TexCoord7 = 14,
-        // General purpose attribute (at index 0).
+        // General purpose attribute (at index 0). Maps to 'ATTRIBUTE0' semantic in the shader.
         Attribute0 = 15,
-        // General purpose attribute (at index 1).
+        // General purpose attribute (at index 1). Maps to 'ATTRIBUTE1' semantic in the shader.
         Attribute1 = 16,
-        // General purpose attribute (at index 2).
+        // General purpose attribute (at index 2). Maps to 'ATTRIBUTE2' semantic in the shader.
         Attribute2 = 17,
-        // General purpose attribute (at index 3).
+        // General purpose attribute (at index 3). Maps to 'ATTRIBUTE3' semantic in the shader.
         Attribute3 = 18,
-        // Texture coordinate.
+        // Texture coordinate. Maps to 'TEXCOORD' semantic in the shader.
         TexCoord = TexCoord0,
-        // General purpose attribute.
+        // General purpose attribute. Maps to 'ATTRIBUTE0' semantic in the shader.
         Attribute = Attribute0,
         MAX
     };

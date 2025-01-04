@@ -141,7 +141,9 @@ public:
         BITANGENT = 6,
         ATTRIBUTE = 7,
         BLENDINDICES = 8,
-        BLENDWEIGHT = 9,
+        BLENDWEIGHTS = 9,
+        // [Deprecated in v1.10]
+        BLENDWEIGHT = BLENDWEIGHTS,
     };
 
     /// <summary>
