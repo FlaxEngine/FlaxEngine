@@ -213,7 +213,7 @@ struct ModelInput_Skinned
     float4 Normal : NORMAL;
     float4 Tangent : TANGENT;
     uint4 BlendIndices : BLENDINDICES;
-    float4 BlendWeights : BLENDWEIGHT;
+    float4 BlendWeights : BLENDWEIGHTS;
 };
 
 struct Model_VS2PS
