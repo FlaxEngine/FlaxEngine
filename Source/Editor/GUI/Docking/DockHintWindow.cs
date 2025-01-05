@@ -149,13 +149,16 @@ namespace FlaxEditor.GUI.Docking
                     var selectedTab = _toMove.SelectedTab;
 
                     // Dock the first tab into the target location
-                    var firstTab = _toMove.GetTab(0);
-                    firstTab.Show(_toSet, _toDock);
-
-                    // Dock rest of the tabs
-                    while (_toMove.TabsCount > 0)
+                    if (_toMove.TabsCount > 0)
                     {
-                        _toMove.GetTab(0).Show(DockState.DockFill, firstTab);
+                        var firstTab = _toMove.GetTab(0);
+                        firstTab.Show(_toSet, _toDock);
+
+                        // Dock rest of the tabs
+                        while (_toMove.TabsCount > 0)
+                        {
+                            _toMove.GetTab(0).Show(DockState.DockFill, firstTab);
+                        }
                     }
 
                     // Keep selected tab being selected
