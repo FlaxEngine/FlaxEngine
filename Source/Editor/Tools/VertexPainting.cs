@@ -2,18 +2,16 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.Modules;
 using FlaxEditor.SceneGraph;
-using FlaxEditor.Viewport;
 using FlaxEditor.Viewport.Modes;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Tools
@@ -335,11 +333,6 @@ namespace FlaxEditor.Tools
 
     sealed class VertexPaintingGizmo : GizmoBase
     {
-        private struct MeshData
-        {
-            public Mesh.Vertex[] VertexBuffer;
-        }
-
         private MaterialInstance _vertexColorsPreviewMaterial;
         private Model _brushModel;
         private MaterialInstance _brushMaterial;
@@ -351,9 +344,7 @@ namespace FlaxEditor.Tools
         private Vector3 _hitLocation;
         private Vector3 _hitNormal;
         private StaticModel _selectedModel;
-        private MeshData[][] _meshDatas;
-        private bool _meshDatasInProgress;
-        private bool _meshDatasCancel;
+        private MeshDataCache _meshDatas;
         private EditModelVertexColorsAction _undoAction;
 
         public bool IsPainting => _isPainting;
@@ -369,74 +360,18 @@ namespace FlaxEditor.Tools
             if (_selectedModel == model)
                 return;
             PaintEnd();
-            WaitForMeshDataRequestEnd();
             _selectedModel = model;
-            _meshDatas = null;
-            _meshDatasInProgress = false;
-            _meshDatasCancel = false;
+            if (model && model.Model)
+            {
+                if (_meshDatas == null)
+                    _meshDatas = new MeshDataCache();
+                _meshDatas.RequestMeshData(_selectedModel.Model);
+            }
+            else
+            {
+                _meshDatas?.Dispose();
+            }
             _hasHit = false;
-            RequestMeshData();
-        }
-
-        private void RequestMeshData()
-        {
-            if (_meshDatasInProgress)
-                return;
-            if (_meshDatas != null)
-                return;
-            _meshDatasInProgress = true;
-            _meshDatasCancel = false;
-            Task.Run(DownloadMeshData);
-        }
-
-        private void WaitForMeshDataRequestEnd()
-        {
-            if (_meshDatasInProgress)
-            {
-                _meshDatasCancel = true;
-                for (int i = 0; i < 500 && _meshDatasInProgress; i++)
-                    Thread.Sleep(10);
-            }
-        }
-
-        private void DownloadMeshData()
-        {
-            try
-            {
-                if (!_selectedModel)
-                {
-                    _meshDatasInProgress = false;
-                    return;
-                }
-                var model = _selectedModel.Model;
-                var lods = model.LODs;
-                _meshDatas = new MeshData[lods.Length][];
-
-                for (int lodIndex = 0; lodIndex < lods.Length && !_meshDatasCancel; lodIndex++)
-                {
-                    var lod = lods[lodIndex];
-                    var meshes = lod.Meshes;
-                    _meshDatas[lodIndex] = new MeshData[meshes.Length];
-
-                    for (int meshIndex = 0; meshIndex < meshes.Length && !_meshDatasCancel; meshIndex++)
-                    {
-                        var mesh = meshes[meshIndex];
-                        _meshDatas[lodIndex][meshIndex] = new MeshData
-                        {
-                            VertexBuffer = mesh.DownloadVertexBuffer()
-                        };
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Editor.LogWarning("Failed to get mesh data. " + ex.Message);
-                Editor.LogWarning(ex);
-            }
-            finally
-            {
-                _meshDatasInProgress = false;
-            }
         }
 
         private void PaintStart()
@@ -460,10 +395,10 @@ namespace FlaxEditor.Tools
             Profiler.BeginEvent("Vertex Paint");
 
             // Ensure to have vertex data ready
-            WaitForMeshDataRequestEnd();
+            _meshDatas.WaitForMeshDataRequestEnd();
 
             // Edit the model vertex colors
-            var meshDatas = _meshDatas;
+            var meshDatas = _meshDatas.MeshDatas;
             if (meshDatas == null)
                 throw new Exception("Missing mesh data of the model to paint.");
             var instanceTransform = _selectedModel.Transform;
@@ -637,7 +572,7 @@ namespace FlaxEditor.Tools
                 }
 
                 // Draw intersecting vertices
-                var meshDatas = _meshDatas;
+                var meshDatas = _meshDatas?.MeshDatas;
                 if (meshDatas != null && _gizmoMode.PreviewVertexSize > Mathf.Epsilon)
                 {
                     if (!_verticesPreviewMaterial)

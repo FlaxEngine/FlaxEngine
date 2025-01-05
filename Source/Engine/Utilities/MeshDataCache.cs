@@ -30,13 +30,13 @@ namespace FlaxEngine.Utilities
 
         private Model _model;
         private MeshData[][] _meshDatas;
-        private bool _meshDatasInProgress;
-        private bool _meshDatasCancel;
+        private bool _inProgress;
+        private bool _cancel;
 
         /// <summary>
         /// Gets the mesh datas (null if during downloading).
         /// </summary>
-        public MeshData[][] MeshDatas => _meshDatasInProgress ? null : _meshDatas;
+        public MeshData[][] MeshDatas => _inProgress ? null : _meshDatas;
 
         /// <summary>
         /// Occurs when mesh data gets downloaded (called on async thread).
@@ -57,7 +57,7 @@ namespace FlaxEngine.Utilities
                 // Mode changes so release previous cache
                 Dispose();
             }
-            if (_meshDatasInProgress)
+            if (_inProgress)
             {
                 // Still downloading
                 return false;
@@ -70,8 +70,8 @@ namespace FlaxEngine.Utilities
 
             // Start downloading
             _model = model;
-            _meshDatasInProgress = true;
-            _meshDatasCancel = false;
+            _inProgress = true;
+            _cancel = false;
             Task.Run(new Action(DownloadMeshData));
             return false;
         }
@@ -83,7 +83,7 @@ namespace FlaxEngine.Utilities
         {
             WaitForMeshDataRequestEnd();
             _meshDatas = null;
-            _meshDatasInProgress = false;
+            _inProgress = false;
         }
 
         /// <summary>
@@ -91,10 +91,10 @@ namespace FlaxEngine.Utilities
         /// </summary>
         public void WaitForMeshDataRequestEnd()
         {
-            if (_meshDatasInProgress)
+            if (_inProgress)
             {
-                _meshDatasCancel = true;
-                for (int i = 0; i < 500 && _meshDatasInProgress; i++)
+                _cancel = true;
+                for (int i = 0; i < 500 && _inProgress; i++)
                     Thread.Sleep(10);
             }
         }
@@ -113,13 +113,13 @@ namespace FlaxEngine.Utilities
                 var lods = _model.LODs;
                 _meshDatas = new MeshData[lods.Length][];
 
-                for (int lodIndex = 0; lodIndex < lods.Length && !_meshDatasCancel; lodIndex++)
+                for (int lodIndex = 0; lodIndex < lods.Length && !_cancel; lodIndex++)
                 {
                     var lod = lods[lodIndex];
                     var meshes = lod.Meshes;
                     _meshDatas[lodIndex] = new MeshData[meshes.Length];
 
-                    for (int meshIndex = 0; meshIndex < meshes.Length && !_meshDatasCancel; meshIndex++)
+                    for (int meshIndex = 0; meshIndex < meshes.Length && !_cancel; meshIndex++)
                     {
                         var mesh = meshes[meshIndex];
                         _meshDatas[lodIndex][meshIndex] = new MeshData
@@ -139,7 +139,7 @@ namespace FlaxEngine.Utilities
             }
             finally
             {
-                _meshDatasInProgress = false;
+                _inProgress = false;
 
                 if (success)
                 {
