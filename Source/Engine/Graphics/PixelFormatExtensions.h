@@ -205,4 +205,10 @@ public:
     static PixelFormat FindUnorderedAccessFormat(PixelFormat format);
     static PixelFormat FindDepthStencilFormat(PixelFormat format);
     static PixelFormat FindUncompressedFormat(PixelFormat format);
+
+private:
+    // Internal bindings
+#if !COMPILE_WITHOUT_CSHARP
+    API_FUNCTION(NoProxy) static void GetSamplerInternal(PixelFormat format, API_PARAM(Out) int32& pixelSize, API_PARAM(Out) void** read, API_PARAM(Out) void** write);
+#endif
 };
