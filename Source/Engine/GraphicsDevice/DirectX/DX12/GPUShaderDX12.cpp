@@ -12,7 +12,7 @@ GPUShaderProgram* GPUShaderDX12::CreateGPUShaderProgram(ShaderStage type, const 
 {
     // Extract the DX shader header from the cache
     DxShaderHeader* header = (DxShaderHeader*)bytecode.Get();
-    bytecode = Span<byte>(bytecode.Get() + sizeof(DxShaderHeader), bytecode.Length() - sizeof(DxShaderHeader));
+    bytecode = bytecode.Slice(sizeof(DxShaderHeader));
 
     GPUShaderProgram* shader = nullptr;
     switch (type)

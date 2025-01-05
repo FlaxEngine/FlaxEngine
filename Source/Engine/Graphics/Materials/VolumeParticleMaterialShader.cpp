@@ -41,7 +41,7 @@ void VolumeParticleMaterialShader::Bind(BindParameters& params)
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(VolumeParticleMaterialShaderData));
     auto materialData = reinterpret_cast<VolumeParticleMaterialShaderData*>(cb.Get());
-    cb = Span<byte>(cb.Get() + sizeof(VolumeParticleMaterialShaderData), cb.Length() - sizeof(VolumeParticleMaterialShaderData));
+    cb = cb.Slice(sizeof(VolumeParticleMaterialShaderData));
     int32 srv = 1;
     auto customData = (VolumetricFogPass::CustomData*)params.CustomData;
 

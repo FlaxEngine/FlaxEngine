@@ -53,7 +53,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(ParticleMaterialShaderData));
     auto materialData = reinterpret_cast<ParticleMaterialShaderData*>(cb.Get());
-    cb = Span<byte>(cb.Get() + sizeof(ParticleMaterialShaderData), cb.Length() - sizeof(ParticleMaterialShaderData));
+    cb = cb.Slice(sizeof(ParticleMaterialShaderData));
     int32 srv = 2;
 
     // Setup features

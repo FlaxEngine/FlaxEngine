@@ -102,7 +102,7 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
 {
     // Extract the SPIR-V shader header from the cache
     SpirvShaderHeader* header = (SpirvShaderHeader*)bytecode.Get();
-    bytecode = Span<byte>(bytecode.Get() + sizeof(SpirvShaderHeader), bytecode.Length() - sizeof(SpirvShaderHeader));
+    bytecode = bytecode.Slice(sizeof(SpirvShaderHeader));
 
     // Extract the SPIR-V bytecode
     BytesContainer spirv;

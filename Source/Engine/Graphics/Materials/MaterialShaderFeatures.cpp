@@ -113,7 +113,7 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
         }
     }
 
-    cb = Span<byte>(cb.Get() + sizeof(Data), cb.Length() - sizeof(Data));
+    cb = cb.Slice(sizeof(Data));
     srv += SRVs;
 }
 
@@ -184,7 +184,7 @@ bool GlobalIlluminationFeature::Bind(MaterialShader::BindParameters& params, Spa
         params.GPUContext->UnBindSR(srv + 2);
     }
 
-    cb = Span<byte>(cb.Get() + sizeof(Data), cb.Length() - sizeof(Data));
+    cb = cb.Slice(sizeof(Data));
     srv += SRVs;
     return useGI;
 }
@@ -236,7 +236,7 @@ bool SDFReflectionsFeature::Bind(MaterialShader::BindParameters& params, Span<by
         params.GPUContext->UnBindSR(srv + 6);
     }
 
-    cb = Span<byte>(cb.Get() + sizeof(Data), cb.Length() - sizeof(Data));
+    cb = cb.Slice(sizeof(Data));
     srv += SRVs;
     return useSDFReflections;
 }

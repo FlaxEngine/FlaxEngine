@@ -31,7 +31,7 @@ void PostFxMaterialShader::Bind(BindParameters& params)
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(PostFxMaterialShaderData));
     auto materialData = reinterpret_cast<PostFxMaterialShaderData*>(cb.Get());
-    cb = Span<byte>(cb.Get() + sizeof(PostFxMaterialShaderData), cb.Length() - sizeof(PostFxMaterialShaderData));
+    cb = cb.Slice(sizeof(PostFxMaterialShaderData));
     int32 srv = 0;
 
     // Setup parameters

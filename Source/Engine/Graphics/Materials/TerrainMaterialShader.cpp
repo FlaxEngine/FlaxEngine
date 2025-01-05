@@ -50,7 +50,7 @@ void TerrainMaterialShader::Bind(BindParameters& params)
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(TerrainMaterialShaderData));
     auto materialData = reinterpret_cast<TerrainMaterialShaderData*>(cb.Get());
-    cb = Span<byte>(cb.Get() + sizeof(TerrainMaterialShaderData), cb.Length() - sizeof(TerrainMaterialShaderData));
+    cb = cb.Slice(sizeof(TerrainMaterialShaderData));
     int32 srv = 3;
 
     // Setup features

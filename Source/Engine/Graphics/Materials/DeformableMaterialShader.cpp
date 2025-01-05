@@ -41,7 +41,7 @@ void DeformableMaterialShader::Bind(BindParameters& params)
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(DeformableMaterialShaderData));
     auto materialData = reinterpret_cast<DeformableMaterialShaderData*>(cb.Get());
-    cb = Span<byte>(cb.Get() + sizeof(DeformableMaterialShaderData), cb.Length() - sizeof(DeformableMaterialShaderData));
+    cb = cb.Slice(sizeof(DeformableMaterialShaderData));
     int32 srv = 1;
 
     // Setup features

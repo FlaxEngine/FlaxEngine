@@ -32,7 +32,7 @@ void GUIMaterialShader::Bind(BindParameters& params)
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(GUIMaterialShaderData));
     auto materialData = reinterpret_cast<GUIMaterialShaderData*>(cb.Get());
-    cb = Span<byte>(cb.Get() + sizeof(GUIMaterialShaderData), cb.Length() - sizeof(GUIMaterialShaderData));
+    cb = cb.Slice(sizeof(GUIMaterialShaderData));
     int32 srv = 0;
     const auto ps = context->IsDepthBufferBinded() ? _cache.Depth : _cache.NoDepth;
     auto customData = (Render2D::CustomData*)params.CustomData;
