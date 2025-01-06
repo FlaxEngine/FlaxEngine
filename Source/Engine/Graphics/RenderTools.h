@@ -130,8 +130,14 @@ public:
     // Returns 0-1 value based on unscaled draw time for temporal effects to reduce artifacts from screen-space dithering when using Temporal Anti-Aliasing.
     static float ComputeTemporalTime();
 
-    static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal);
-    static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent);
+    // [Deprecated in v1.10]
+    DEPRECATED("Use CalculateTangentFrame with unpacked Float3/Float4.") static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal);
+    // [Deprecated in v1.10]
+    DEPRECATED("Use CalculateTangentFrame with unpacked Float3/Float4.") static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent);
+
+    // Result normal/tangent are already packed into [0;1] range.
+    static void CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal);
+    static void CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal, const Float3& tangent);
 
     static void ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside);
 };

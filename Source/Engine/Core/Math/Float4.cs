@@ -1344,6 +1344,16 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Performs an explicit conversion from <see cref="Float4" /> to <see cref="Int4" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static implicit operator Int4(Float4 value)
+        {
+            return new Int4((int)value.X, (int)value.Y, (int)value.Z, (int)value.W);
+        }
+
+        /// <summary>
         /// Returns a <see cref="System.String" /> that represents this instance.
         /// </summary>
         /// <returns>A <see cref="System.String" /> that represents this instance.</returns>

@@ -44,9 +44,7 @@ private:
     BoundingBox _localBox;
     GeometryDrawStateData _drawState;
     DynamicIndexBuffer _ib;
-    DynamicVertexBuffer _vb0;
-    DynamicVertexBuffer _vb1;
-    DynamicVertexBuffer _vb2;
+    DynamicVertexBuffer _vb;
 #if MODEL_USE_PRECISE_MESH_INTERSECTS
     CollisionProxy _collisionProxy;
 #endif

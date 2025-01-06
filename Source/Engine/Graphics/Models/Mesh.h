@@ -43,13 +43,14 @@ public:
     }
 
     /// <summary>
-    /// Lightmap texture coordinates channel index.
+    /// Lightmap texture coordinates channel index. Value -1 indicates that channel is not available.
     /// </summary>
     API_FIELD() int32 LightmapUVsIndex = -1;
 
 public:
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
@@ -58,13 +59,12 @@ public:
     /// <param name="vb2">The third vertex buffer data.</param>
     /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const uint32* ib)
-    {
-        return UpdateMesh(vertexCount, triangleCount, vb0, vb1, vb2, ib, false);
-    }
+    DEPRECATED("Use MeshAccessor or UpdateMesh with separate vertex attribute arrays instead.")
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const uint32* ib);
 
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
@@ -73,15 +73,14 @@ public:
     /// <param name="vb2">The third vertex buffer data.</param>
     /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const uint16* ib)
-    {
-        return UpdateMesh(vertexCount, triangleCount, vb0, vb1, vb2, ib, true);
-    }
+    DEPRECATED("Use MeshAccessor or UpdateMesh with separate vertex attribute arrays instead.")
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const uint16* ib);
 
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
     /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
     /// Mesh data will be cached and uploaded to the GPU with a delay.
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
@@ -91,6 +90,7 @@ public:
     /// <param name="ib">The index buffer in clockwise order.</param>
     /// <param name="use16BitIndices">True if index buffer uses 16-bit index buffer, otherwise 32-bit.</param>
     /// <returns>True if failed, otherwise false.</returns>
+    DEPRECATED("Use MeshAccessor or UpdateMesh with separate vertex attribute arrays instead.")
     bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const void* ib, bool use16BitIndices);
 
     /// <summary>
@@ -174,7 +174,6 @@ public:
     // [MeshBase]
     bool Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<3>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<3>>& vbLayout) override;
     void Release() override;
-    bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const override;
 
 private:
     // Internal bindings

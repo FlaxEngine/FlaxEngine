@@ -171,7 +171,7 @@ public:
     MaterialBase* GetMaterial(int32 entryIndex) override;
     bool IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal) override;
     bool IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex) override;
-    bool GetMeshData(const MeshReference& mesh, MeshBufferType type, BytesContainer& result, int32& count) const override;
+    bool GetMeshData(const MeshReference& ref, MeshBufferType type, BytesContainer& result, int32& count, GPUVertexLayout** layout) const override;
     MeshDeformation* GetMeshDeformation() const override;
     void UpdateBounds() override;
 

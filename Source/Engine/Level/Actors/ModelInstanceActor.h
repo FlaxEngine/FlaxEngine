@@ -112,12 +112,13 @@ public:
     /// <summary>
     /// Extracts mesh buffer data from CPU. Might be cached internally (eg. by Model/SkinnedModel).
     /// </summary>
-    /// <param name="mesh">Mesh reference.</param>
+    /// <param name="ref">Mesh reference.</param>
     /// <param name="type">Buffer type</param>
     /// <param name="result">The result data</param>
     /// <param name="count">The amount of items inside the result buffer.</param>
+    /// <param name="layout">The result layout of the result buffer (for vertex buffers). Optional, pass null to ignore it.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    virtual bool GetMeshData(const MeshReference& mesh, MeshBufferType type, BytesContainer& result, int32& count) const
+    virtual bool GetMeshData(const MeshReference& ref, MeshBufferType type, BytesContainer& result, int32& count, GPUVertexLayout** layout = nullptr) const
     {
         return true;
     }

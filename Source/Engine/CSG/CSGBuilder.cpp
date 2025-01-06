@@ -273,7 +273,7 @@ bool CSGBuilderImpl::buildInner(Scene* scene, BuildData& data)
 
         // Convert CSG meshes into raw triangles data
         RawData meshData;
-        Array<RawModelVertex> vertexBuffer;
+        Array<MeshVertex> vertexBuffer;
         combinedMesh->Triangulate(meshData, vertexBuffer);
         meshData.RemoveEmptySlots();
         if (meshData.Slots.HasItems())

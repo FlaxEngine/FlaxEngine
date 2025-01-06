@@ -159,7 +159,7 @@ public:
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API Model : public ModelBase
 {
-    DECLARE_BINARY_ASSET_HEADER(Model, 25);
+    DECLARE_BINARY_ASSET_HEADER(Model, 30);
     friend Mesh;
 
 public:
@@ -274,19 +274,6 @@ public:
     /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() bool SetupLODs(const Span<int32>& meshesCountPerLod);
 
-#if USE_EDITOR
-
-    /// <summary>
-    /// Saves this asset to the file. Supported only in Editor.
-    /// </summary>
-    /// <remarks>If you use saving with the GPU mesh data then the call has to be provided from the thread other than the main game thread.</remarks>
-    /// <param name="withMeshDataFromGpu">True if save also GPU mesh buffers, otherwise will keep data in storage unmodified. Valid only if saving the same asset to the same location and it's loaded.</param>
-    /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
-    /// <returns>True if cannot save data, otherwise false.</returns>
-    API_FUNCTION() bool Save(bool withMeshDataFromGpu = false, const StringView& path = StringView::Empty);
-
-#endif
-
     /// <summary>
     /// Generates the Sign Distant Field for this model.
     /// </summary>
@@ -312,10 +299,22 @@ private:
     /// <returns>True if failed, otherwise false.</returns>
     bool Init(const Span<int32>& meshesCountPerLod);
 
+    // [ModelBase]
+    bool LoadHeader(ReadStream& stream, byte& headerVersion);
+#if USE_EDITOR
+    friend class ImportModel;
+    bool SaveHeader(WriteStream& stream) override;
+    static bool SaveHeader(WriteStream& stream, const ModelData& modelData);
+    bool Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk) override;
+#endif
+
 public:
     // [ModelBase]
     void SetupMaterialSlots(int32 slotsCount) override;
     int32 GetLODsCount() const override;
+    const MeshBase* GetMesh(int32 meshIndex, int32 lodIndex = 0) const override;
+    MeshBase* GetMesh(int32 meshIndex, int32 lodIndex = 0) override;
+    void GetMeshes(Array<const MeshBase*>& meshes, int32 lodIndex = 0) const override;
     void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) override;
     void InitAsVirtual() override;
 

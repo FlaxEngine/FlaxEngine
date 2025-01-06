@@ -1496,8 +1496,8 @@ void PixelFormatExtensions::GetSamplerInternal(PixelFormat format, int32& pixelS
     if (const PixelFormatSampler* sampler = PixelFormatSampler::Get(format))
     {
         pixelSize = sampler->PixelSize;
-        *read = sampler->Read;
-        *write = sampler->Write;
+        *read = (void*)sampler->Read;
+        *write = (void*)sampler->Write;
     }
 }
 

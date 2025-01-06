@@ -19,6 +19,7 @@
 #define MODEL_LOD_TO_CHUNK_INDEX(lod) (lod + 1)
 
 class MeshBase;
+class StreamModelLODTask;
 struct RenderContextBatch;
 
 /// <summary>
@@ -28,9 +29,12 @@ API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API ModelBase : public BinaryAsset
 {
     DECLARE_ASSET_HEADER(ModelBase);
     friend MeshBase;
-    friend class StreamModelLODTask;
+    friend StreamModelLODTask;
 
 protected:
+    static constexpr byte HeaderVersion = 2;
+    static constexpr byte MeshVersion = 2;
+
     bool _initialized = false;
     int32 _loadedLODs = 0;
     StreamModelLODTask* _streamingTask = nullptr;
@@ -174,12 +178,27 @@ public:
     /// <summary>
     /// Gets amount of the level of details in the model.
     /// </summary>
-    virtual int32 GetLODsCount() const = 0;
+    API_PROPERTY(Sealed) virtual int32 GetLODsCount() const = 0;
+
+    /// <summary>
+    /// Gets the mesh for a particular LOD index.
+    /// </summary>
+    virtual const MeshBase* GetMesh(int32 meshIndex, int32 lodIndex = 0) const = 0;
+
+    /// <summary>
+    /// Gets the mesh for a particular LOD index.
+    /// </summary>
+    API_FUNCTION(Sealed) virtual MeshBase* GetMesh(int32 meshIndex, int32 lodIndex = 0) = 0;
 
     /// <summary>
     /// Gets the meshes for a particular LOD index.
     /// </summary>
-    virtual void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) = 0;
+    virtual void GetMeshes(Array<const MeshBase*>& meshes, int32 lodIndex = 0) const = 0;
+
+    /// <summary>
+    /// Gets the meshes for a particular LOD index.
+    /// </summary>
+    API_FUNCTION(Sealed) virtual void GetMeshes(API_PARAM(Out) Array<MeshBase*>& meshes, int32 lodIndex = 0) = 0;
 
 public:
     /// <summary>
@@ -195,6 +214,38 @@ public:
     /// <param name="lodIndex">Index of the LOD.</param>
     /// <param name="data">The data (it may be missing if failed to get it).</param>
     void GetLODData(int32 lodIndex, BytesContainer& data) const;
+
+#if USE_EDITOR
+    /// <summary>
+    /// Saves this asset to the file. Supported only in Editor.
+    /// </summary>
+    /// <remarks>If you use saving with the GPU mesh data then the call has to be provided from the thread other than the main game thread.</remarks>
+    /// <param name="withMeshDataFromGpu">True if save also GPU mesh buffers, otherwise will keep data in storage unmodified. Valid only if saving the same asset to the same location, and it's loaded.</param>
+    /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
+    /// <returns>True when cannot save data, otherwise false.</returns>
+    API_FUNCTION() bool Save(bool withMeshDataFromGpu = false, const StringView& path = StringView::Empty);
+#endif
+
+protected:
+    friend class AssetExporters;
+    friend class MeshAccessor;
+    struct MeshData
+    {
+        uint32 Triangles, Vertices, IBStride;
+        Array<const void*, FixedAllocation<MODEL_MAX_VB>> VBData;
+        Array<class GPUVertexLayout*, FixedAllocation<MODEL_MAX_VB>> VBLayout;
+        const void* IBData;
+    };
+    virtual bool LoadMesh(class MemoryReadStream& stream, byte meshVersion, MeshBase* mesh, MeshData* dataIfReadOnly = nullptr);
+    bool LoadHeader(ReadStream& stream, byte& headerVersion);
+#if USE_EDITOR
+    virtual bool SaveHeader(WriteStream& stream);
+    static bool SaveHeader(WriteStream& stream, const class ModelData& modelData);
+    bool SaveLOD(WriteStream& stream, int32 lodIndex) const;
+    static bool SaveLOD(WriteStream& stream, const ModelData& modelData, int32 lodIndex, bool(saveMesh)(WriteStream& stream, const ModelData& modelData, int32 lodIndex, int32 meshIndex) = nullptr);
+    virtual bool SaveMesh(WriteStream& stream, const MeshBase* mesh) const;
+    virtual bool Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk);
+#endif
 
 public:
     // [BinaryAsset]

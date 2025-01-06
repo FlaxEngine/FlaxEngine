@@ -5,7 +5,6 @@
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Types/DataContainer.h"
-#include "Engine/Core/Collections/Array.h"
 #include "Engine/Graphics/Enums.h"
 #include "Engine/Graphics/Models/Types.h"
 #include "Engine/Level/Types.h"
@@ -47,12 +46,13 @@ protected:
     bool _use16BitIndexBuffer = false;
     bool _hasBounds = false;
 
-    GPUBuffer* _vertexBuffers[3] = {};
+    GPUBuffer* _vertexBuffers[MODEL_MAX_VB] = {};
     GPUBuffer* _indexBuffer = nullptr;
 
-    mutable Array<byte> _cachedVertexBuffers[3];
-    mutable Array<byte> _cachedIndexBuffer;
-    mutable int32 _cachedIndexBufferCount = 0;
+    mutable BytesContainer _cachedVertexBuffers[MODEL_MAX_VB];
+    mutable GPUVertexLayout* _cachedVertexLayouts[MODEL_MAX_VB] = {};
+    mutable BytesContainer _cachedIndexBuffer;
+    mutable int32 _cachedIndexBufferCount = 0, _cachedVertexBufferCount = 0;
 
 #if MODEL_USE_PRECISE_MESH_INTERSECTS
     CollisionProxy _collisionProxy;
@@ -177,19 +177,19 @@ public:
     /// Sets the mesh bounds.
     /// </summary>
     /// <param name="box">The bounding box.</param>
-    void SetBounds(const BoundingBox& box);
+    API_FUNCTION() void SetBounds(API_PARAM(ref) const BoundingBox& box);
 
     /// <summary>
     /// Sets the mesh bounds.
     /// </summary>
     /// <param name="box">The bounding box.</param>
     /// <param name="sphere">The bounding sphere.</param>
-    void SetBounds(const BoundingBox& box, const BoundingSphere& sphere);
+    API_FUNCTION() void SetBounds(API_PARAM(ref) const BoundingBox& box, API_PARAM(ref) const BoundingSphere& sphere);
 
     /// <summary>
     /// Gets the index buffer.
     /// </summary>
-    FORCE_INLINE GPUBuffer* GetIndexBuffer() const
+    API_FUNCTION() FORCE_INLINE GPUBuffer* GetIndexBuffer() const
     {
         return _indexBuffer;
     }
@@ -199,10 +199,16 @@ public:
     /// </summary>
     /// <param name="index">The bind slot index.</param>
     /// <returns>The buffer or null if not used.</returns>
-    FORCE_INLINE GPUBuffer* GetVertexBuffer(int32 index) const
+    API_FUNCTION() FORCE_INLINE GPUBuffer* GetVertexBuffer(int32 index) const
     {
         return _vertexBuffers[index];
     }
+
+    /// <summary>
+    /// Gets the vertex buffers layout. Made out of all buffers used by this mesh.
+    /// </summary>
+    /// <returns>The vertex layout.</returns>
+    API_PROPERTY() GPUVertexLayout* GetVertexLayout() const;
 
 public:
     /// <summary>
@@ -210,12 +216,12 @@ public:
     /// </summary>
     /// <param name="vertices">Amount of vertices in the vertex buffer.</param>
     /// <param name="triangles">Amount of triangles in the index buffer.</param>
-    /// <param name="vbData">Array with pointers to vertex buffers initial data (layout defined by <paramref name="vertexLayout"/>).</param>
+    /// <param name="vbData">Array with pointers to vertex buffers initial data (layout defined by <paramref name="vbLayout"/>).</param>
     /// <param name="ibData">Pointer to index buffer data. Data is uint16 or uint32 depending on <paramref name="use16BitIndexBuffer"/> value.</param>
     /// <param name="use16BitIndexBuffer">True to use 16-bit indices for the index buffer (true: uint16, false: uint32).</param>
     /// <param name="vbLayout">Layout descriptors for the vertex buffers attributes (one for each vertex buffer).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    virtual bool Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<3>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<3>>& vbLayout);
+    API_FUNCTION(Sealed) virtual bool Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<MODEL_MAX_VB>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<MODEL_MAX_VB>>& vbLayout);
 
     /// <summary>
     /// Releases the mesh data (GPU buffers and local cache).
@@ -290,16 +296,18 @@ public:
     /// </summary>
     /// <param name="type">Buffer type</param>
     /// <param name="result">The result data</param>
+    /// <param name="layout">The result layout of the vertex buffer (optional).</param>
     /// <returns>True if failed, otherwise false</returns>
-    bool DownloadDataGPU(MeshBufferType type, BytesContainer& result) const;
+    bool DownloadDataGPU(MeshBufferType type, BytesContainer& result, GPUVertexLayout** layout = nullptr) const;
 
     /// <summary>
     /// Extracts mesh buffer data from GPU in the async task.
     /// </summary>
     /// <param name="type">Buffer type</param>
     /// <param name="result">The result data</param>
+    /// <param name="layout">The result layout of the vertex buffer (optional).</param>
     /// <returns>Created async task used to gather the buffer data.</returns>
-    Task* DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result) const;
+    Task* DownloadDataGPUAsync(MeshBufferType type, BytesContainer& result, GPUVertexLayout** layout = nullptr) const;
 
     /// <summary>
     /// Extract mesh buffer data from CPU. Cached internally.
@@ -307,8 +315,19 @@ public:
     /// <param name="type">Buffer type</param>
     /// <param name="result">The result data</param>
     /// <param name="count">The amount of items inside the result buffer.</param>
+    /// <param name="layout">The result layout of the vertex buffer (optional).</param>
     /// <returns>True if failed, otherwise false</returns>
-    virtual bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const = 0;
+    bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count, GPUVertexLayout** layout = nullptr) const;
+
+    /// <summary>
+    /// Extracts mesh buffers data.
+    /// </summary>
+    /// <param name="types">List of buffers to load.</param>
+    /// <param name="buffers">The result mesh buffers.</param>
+    /// <param name="layouts">The result layouts of the vertex buffers.</param>
+    /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
+    /// <returns>True if failed, otherwise false</returns>
+    bool DownloadData(Span<MeshBufferType> types, Array<BytesContainer, FixedAllocation<4>>& buffers, Array<GPUVertexLayout*, FixedAllocation<4>>& layouts, bool forceGpu = false) const;
 
 public:
     /// <summary>
@@ -423,5 +442,7 @@ private:
 #if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) bool UpdateTrianglesUInt(int32 triangleCount, const MArray* trianglesObj);
     API_FUNCTION(NoProxy) bool UpdateTrianglesUShort(int32 triangleCount, const MArray* trianglesObj);
+    API_FUNCTION(NoProxy) MArray* DownloadIndexBuffer(bool forceGpu, MTypeObject* resultType, bool use16Bit);
+    API_FUNCTION(NoProxy) bool DownloadData(int32 count, MeshBufferType* types, API_PARAM(Out) BytesContainer& buffer0, API_PARAM(Out) BytesContainer& buffer1, API_PARAM(Out) BytesContainer& buffer2, API_PARAM(Out) BytesContainer& buffer3, API_PARAM(Out) GPUVertexLayout*& layout0, API_PARAM(Out) GPUVertexLayout*& layout1, API_PARAM(Out) GPUVertexLayout*& layout2, API_PARAM(Out) GPUVertexLayout*& layout3, bool forceGpu) const;
 #endif
 };

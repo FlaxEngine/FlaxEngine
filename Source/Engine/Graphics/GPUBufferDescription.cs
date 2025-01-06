@@ -401,6 +401,12 @@ namespace FlaxEngine
         }
 
         /// <inheritdoc />
+        public override string ToString()
+        {
+            return string.Format("{0}, {1}, offset {2}, {3}, slot {3}", Type, Format, Offset, PerInstance != 0 ? "per-instance" : "per-vertex", Slot);
+        }
+
+        /// <inheritdoc />
         public bool Equals(VertexElement other)
         {
             return Type == other.Type &&

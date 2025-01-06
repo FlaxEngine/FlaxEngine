@@ -8,6 +8,7 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.Tabs;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Utilities;
 
 #pragma warning disable 1591
 
@@ -92,6 +93,170 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
+        protected sealed class UVsLayoutPreviewControl : RenderToTextureControl
+        {
+            private int _channel = -1;
+            private int _lod, _mesh = -1;
+            private int _highlightIndex = -1;
+            private int _isolateIndex = -1;
+            public ModelBaseWindow<TAsset, TWindow> Window;
+
+            public UVsLayoutPreviewControl()
+            {
+                Offsets = new Margin(4);
+                AutomaticInvalidate = false;
+            }
+
+            public int Channel
+            {
+                set
+                {
+                    if (_channel == value)
+                        return;
+                    _channel = value;
+                    Visible = _channel != -1;
+                    if (Visible)
+                        Invalidate();
+                }
+            }
+
+            public int LOD
+            {
+                set
+                {
+                    if (_lod != value)
+                    {
+                        _lod = value;
+                        Invalidate();
+                    }
+                }
+            }
+
+            public int Mesh
+            {
+                set
+                {
+                    if (_mesh != value)
+                    {
+                        _mesh = value;
+                        Invalidate();
+                    }
+                }
+            }
+
+            public int HighlightIndex
+            {
+                set
+                {
+                    if (_highlightIndex != value)
+                    {
+                        _highlightIndex = value;
+                        Invalidate();
+                    }
+                }
+            }
+
+            public int IsolateIndex
+            {
+                set
+                {
+                    if (_isolateIndex != value)
+                    {
+                        _isolateIndex = value;
+                        Invalidate();
+                    }
+                }
+            }
+
+            private void DrawMeshUVs(int meshIndex, ref MeshDataCache.MeshData meshData)
+            {
+                var uvScale = Size;
+                if (meshData.IndexBuffer == null || meshData.VertexAccessor == null)
+                    return;
+                var linesColor = _highlightIndex != -1 && _highlightIndex == meshIndex ? Style.Current.BackgroundSelected : Color.White;
+                var texCoordStream = meshData.VertexAccessor.TexCoord(_channel);
+                if (!texCoordStream.IsValid)
+                    return;
+                for (int i = 0; i < meshData.IndexBuffer.Length; i += 3)
+                {
+                    // Cache triangle indices
+                    uint i0 = meshData.IndexBuffer[i + 0];
+                    uint i1 = meshData.IndexBuffer[i + 1];
+                    uint i2 = meshData.IndexBuffer[i + 2];
+
+                    // Cache triangle uvs positions and transform positions to output target
+                    Float2 uv0 = texCoordStream.GetFloat2((int)i0) * uvScale;
+                    Float2 uv1 = texCoordStream.GetFloat2((int)i1) * uvScale;
+                    Float2 uv2 = texCoordStream.GetFloat2((int)i2) * uvScale;
+
+                    // Don't draw too small triangles
+                    float area = Float2.TriangleArea(ref uv0, ref uv1, ref uv2);
+                    if (area > 10.0f)
+                    {
+                        // Draw triangle
+                        Render2D.DrawLine(uv0, uv1, linesColor);
+                        Render2D.DrawLine(uv1, uv2, linesColor);
+                        Render2D.DrawLine(uv2, uv0, linesColor);
+                    }
+                }
+            }
+
+            /// <inheritdoc />
+            public override void DrawSelf()
+            {
+                base.DrawSelf();
+
+                var size = Size;
+                if (_channel < 0 || size.MaxValue < 5.0f)
+                    return;
+                if (Window._meshData == null)
+                    Window._meshData = new MeshDataCache();
+                if (!Window._meshData.RequestMeshData(Window._asset))
+                {
+                    Invalidate();
+                    Render2D.DrawText(Style.Current.FontMedium, "Loading...", new Rectangle(Float2.Zero, size), Color.White, TextAlignment.Center, TextAlignment.Center);
+                    return;
+                }
+
+                Render2D.PushClip(new Rectangle(Float2.Zero, size));
+
+                var meshDatas = Window._meshData.MeshDatas;
+                var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);
+                var lod = meshDatas[lodIndex];
+                var mesh = Mathf.Clamp(_mesh, -1, lod.Length - 1);
+                if (mesh == -1)
+                {
+                    for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
+                    {
+                        if (_isolateIndex != -1 && _isolateIndex != meshIndex)
+                            continue;
+                        DrawMeshUVs(meshIndex, ref lod[meshIndex]);
+                    }
+                }
+                else
+                {
+                    DrawMeshUVs(mesh, ref lod[mesh]);
+                }
+
+                Render2D.PopClip();
+            }
+
+            protected override void OnSizeChanged()
+            {
+                Height = Width;
+
+                base.OnSizeChanged();
+            }
+
+            protected override void OnVisibleChanged()
+            {
+                base.OnVisibleChanged();
+
+                Parent.PerformLayout();
+                Height = Width;
+            }
+        }
+
         protected readonly SplitPanel _split;
         protected readonly Tabs _tabs;
         protected readonly ToolStripButton _saveButton;
@@ -100,6 +265,8 @@ namespace FlaxEditor.Windows.Assets
         protected bool _skipEffectsGuiEvents;
         protected int _isolateIndex = -1;
         protected int _highlightIndex = -1;
+
+        protected MeshDataCache _meshData;
 
         /// <inheritdoc />
         protected ModelBaseWindow(Editor editor, AssetItem item)
@@ -142,6 +309,7 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void UnlinkItem()
         {
+            _meshData?.WaitForMeshDataRequestEnd();
             foreach (var child in _tabs.Children)
             {
                 if (child is Tab tab && tab.Proxy.Window != null)
@@ -170,6 +338,9 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnItemReimported(ContentItem item)
         {
+            // Discard any old mesh data cache
+            _meshData?.Dispose();
+
             // Refresh the properties (will get new data in OnAssetLoaded)
             foreach (var child in _tabs.Children)
             {
@@ -183,6 +354,16 @@ namespace FlaxEditor.Windows.Assets
             _refreshOnLODsLoaded = true;
 
             base.OnItemReimported(item);
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            // Free mesh memory
+            _meshData?.Dispose();
+            _meshData = null;
+
+            base.OnDestroy();
         }
 
         /// <inheritdoc />

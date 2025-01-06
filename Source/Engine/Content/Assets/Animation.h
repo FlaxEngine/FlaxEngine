@@ -151,6 +151,12 @@ public:
     bool Save(const StringView& path = StringView::Empty);
 #endif
 
+private:
+#if USE_EDITOR
+    friend class ImportModel;
+    static bool SaveHeader(const class ModelData& modelData, WriteStream& stream, int32 animIndex);
+#endif
+
 public:
     // [BinaryAsset]
 #if USE_EDITOR

@@ -51,45 +51,43 @@ public:
 public:
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
     /// <param name="vb">The vertex buffer data.</param>
     /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const int32* ib)
-    {
-        return UpdateMesh(vertexCount, triangleCount, vb, ib, false);
-    }
+    DEPRECATED("Use MeshAccessor or UpdateMesh with separate vertex attribute arrays instead.")
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const int32* ib);
 
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
     /// <param name="vb">The vertex buffer data.</param>
     /// <param name="ib">The index buffer in clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const uint32* ib)
-    {
-        return UpdateMesh(vertexCount, triangleCount, vb, ib, false);
-    }
+    DEPRECATED("Use MeshAccessor or UpdateMesh with separate vertex attribute arrays instead.")
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const uint32* ib);
 
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
     /// <param name="vb">The vertex buffer data.</param>
     /// <param name="ib">The index buffer, clockwise order.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    FORCE_INLINE bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const uint16* ib)
-    {
-        return UpdateMesh(vertexCount, triangleCount, vb, ib, true);
-    }
+    DEPRECATED("Use MeshAccessor or UpdateMesh with separate vertex attribute arrays instead.")
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const uint16* ib);
 
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
     /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
@@ -97,7 +95,44 @@ public:
     /// <param name="ib">The index buffer in clockwise order.</param>
     /// <param name="use16BitIndices">True if index buffer uses 16-bit index buffer, otherwise 32-bit.</param>
     /// <returns>True if failed, otherwise false.</returns>
+    DEPRECATED("Use MeshAccessor or Load with separate vertex attribute arrays instead.")
     bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0SkinnedElementType* vb, const void* ib, bool use16BitIndices);
+
+    /// <summary>
+    /// Updates the model mesh (used by the virtual models created with Init rather than Load).
+    /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
+    /// Mesh data will be cached and uploaded to the GPU with a delay.
+    /// </summary>
+    /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
+    /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
+    /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
+    /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
+    /// <param name="blendIndices">The skeletal bones indices to use for skinning.</param>
+    /// <param name="blendWeights">The skeletal bones weights to use for skinning (matches blendIndices).</param>
+    /// <param name="normals">The normal vectors (per vertex).</param>
+    /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+    /// <param name="uvs">The texture coordinates (per vertex).</param>
+    /// <param name="colors">The vertex colors (per vertex).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* vertices, const uint16* triangles, const Int4* blendIndices, const Float4* blendWeights, const Float3* normals = nullptr, const Float3* tangents = nullptr, const Float2* uvs = nullptr, const Color32* colors = nullptr);
+
+    /// <summary>
+    /// Updates the model mesh (used by the virtual models created with Init rather than Load).
+    /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
+    /// Mesh data will be cached and uploaded to the GPU with a delay.
+    /// </summary>
+    /// <param name="vertexCount">The amount of vertices in the vertex buffer.</param>
+    /// <param name="triangleCount">The amount of triangles in the index buffer.</param>
+    /// <param name="vertices">The mesh vertices positions. Cannot be null.</param>
+    /// <param name="triangles">The mesh index buffer (clockwise triangles). Uses 32-bit stride buffer. Cannot be null.</param>
+    /// <param name="blendIndices">The skeletal bones indices to use for skinning.</param>
+    /// <param name="blendWeights">The skeletal bones weights to use for skinning (matches blendIndices).</param>
+    /// <param name="normals">The normal vectors (per vertex).</param>
+    /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
+    /// <param name="uvs">The texture coordinates (per vertex).</param>
+    /// <param name="colors">The vertex colors (per vertex).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    bool UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* vertices, const uint32* triangles, const Int4* blendIndices, const Float4* blendWeights, const Float3* normals = nullptr, const Float3* tangents = nullptr, const Float2* uvs = nullptr, const Color32* colors = nullptr);
 
 public:
     /// <summary>
@@ -119,13 +154,12 @@ public:
 public:
     // [MeshBase]
     void Release() override;
-    bool DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const override;
 
 private:
     // Internal bindings
 #if !COMPILE_WITHOUT_CSHARP
-    API_FUNCTION(NoProxy) bool UpdateMeshUInt(const MArray* verticesObj, const MArray* trianglesObj, const MArray* blendIndicesObj, const MArray* blendWeightsObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj);
-    API_FUNCTION(NoProxy) bool UpdateMeshUShort(const MArray* verticesObj, const MArray* trianglesObj, const MArray* blendIndicesObj, const MArray* blendWeightsObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj);
+    API_FUNCTION(NoProxy) bool UpdateMeshUInt(int32 vertexCount, int32 triangleCount, const MArray* verticesObj, const MArray* trianglesObj, const MArray* blendIndicesObj, const MArray* blendWeightsObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj, const MArray* colorsObj);
+    API_FUNCTION(NoProxy) bool UpdateMeshUShort(int32 vertexCount, int32 triangleCount, const MArray* verticesObj, const MArray* trianglesObj, const MArray* blendIndicesObj, const MArray* blendWeightsObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj, const MArray* colorsObj);
     API_FUNCTION(NoProxy) MArray* DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI);
 #endif
 };

@@ -558,6 +558,26 @@ float RenderTools::ComputeTemporalTime()
 
 void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal)
 {
+    // [Deprecated in v1.10]
+    Float3 n;
+    Float4 t;
+    CalculateTangentFrame(n, t, normal);
+    resultNormal = Float1010102(n, 0);
+    resultTangent = Float1010102(t);
+}
+
+void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent)
+{
+    // [Deprecated in v1.10]
+    Float3 n;
+    Float4 t;
+    CalculateTangentFrame(n, t, normal, tangent);
+    resultNormal = Float1010102(n, 0);
+    resultTangent = Float1010102(t);
+}
+
+void RenderTools::CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal)
+{
     // Calculate tangent
     const Float3 c1 = Float3::Cross(normal, Float3::UnitZ);
     const Float3 c2 = Float3::Cross(normal, Float3::UnitY);
@@ -568,19 +588,19 @@ void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10
     const byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
 
     // Set tangent frame
-    resultNormal = Float1010102(normal * 0.5f + 0.5f, 0);
-    resultTangent = Float1010102(tangent * 0.5f + 0.5f, sign);
+    resultNormal = normal * 0.5f + 0.5f;
+    resultTangent = Float4(tangent * 0.5f + 0.5f, sign);
 }
 
-void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent)
+void RenderTools::CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal, const Float3& tangent)
 {
     // Calculate bitangent sign
     const Float3 bitangent = Float3::Normalize(Float3::Cross(normal, tangent));
     const byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
 
     // Set tangent frame
-    resultNormal = Float1010102(normal * 0.5f + 0.5f, 0);
-    resultTangent = Float1010102(tangent * 0.5f + 0.5f, sign);
+    resultNormal = normal * 0.5f + 0.5f;
+    resultTangent = Float4(tangent * 0.5f + 0.5f, sign);
 }
 
 void RenderTools::ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside)

@@ -31,21 +31,21 @@ public:
     }
 
     template<typename IndexType>
-    void Init(uint32 vertices, uint32 triangles, const Float3* positions, const IndexType* indices)
+    void Init(uint32 vertices, uint32 triangles, const Float3* positions, const IndexType* indices, uint32 positionsStride = sizeof(Float3))
     {
         Triangles.Clear();
         Triangles.EnsureCapacity(triangles, false);
-
         const IndexType* it = indices;
         for (uint32 i = 0; i < triangles; i++)
         {
-            auto i0 = *(it++);
-            auto i1 = *(it++);
-            auto i2 = *(it++);
-
+            const IndexType i0 = *(it++);
+            const IndexType i1 = *(it++);
+            const IndexType i2 = *(it++);
             if (i0 < vertices && i1 < vertices && i2 < vertices)
             {
-                Triangles.Add({ positions[i0], positions[i1], positions[i2] });
+#define GET_POS(idx) *(const Float3*)((const byte*)positions + positionsStride * idx)
+                Triangles.Add({ GET_POS(i0), GET_POS(i1), GET_POS(i2) });
+#undef GET_POS
             }
         }
     }

@@ -1,9 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "GPUVertexLayout.h"
-#if GPU_ENABLE_ASSERTION_LOW_LAYERS
 #include "Engine/Core/Log.h"
-#endif
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Types/Span.h"

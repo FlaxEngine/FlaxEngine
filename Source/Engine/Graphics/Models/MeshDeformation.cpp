@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "MeshDeformation.h"
+#include "MeshAccessor.h"
 #include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
@@ -27,6 +28,11 @@ FORCE_INLINE static uint32 GetKey(int32 lodIndex, int32 meshIndex, MeshBufferTyp
     key.BufferType = (uint8)type;
     key.MeshIndex = (uint16)meshIndex;
     return key.Value;
+}
+
+bool MeshDeformationData::LoadMeshAccessor(MeshAccessor& accessor) const
+{
+    return accessor.LoadBuffer(Type, ToSpan(VertexBuffer.Data), VertexBuffer.GetLayout());
 }
 
 void MeshDeformation::GetBounds(int32 lodIndex, int32 meshIndex, BoundingBox& bounds) const

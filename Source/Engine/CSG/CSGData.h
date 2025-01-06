@@ -28,7 +28,7 @@ namespace CSG
             Rectangle LightmapUVsBox;
             Float2 Size;
             Rectangle UVsArea;
-            Array<RawModelVertex> Vertices;
+            Array<MeshVertex> Vertices;
         };
 
         struct SurfaceTriangle
@@ -68,7 +68,7 @@ namespace CSG
                 return Surfaces.IsEmpty();
             }
 
-            void AddSurface(float scaleInLightmap, const Rectangle& lightmapUVsBox, const RawModelVertex* firstVertex, int32 vertexCount);
+            void AddSurface(float scaleInLightmap, const Rectangle& lightmapUVsBox, const MeshVertex* firstVertex, int32 vertexCount);
         };
 
     public:
@@ -118,7 +118,7 @@ namespace CSG
         }
 
     public:
-        void AddSurface(Brush* brush, int32 brushSurfaceIndex, const Guid& surfaceMaterial, float scaleInLightmap, const Rectangle& lightmapUVsBox, const RawModelVertex* firstVertex, int32 vertexCount);
+        void AddSurface(Brush* brush, int32 brushSurfaceIndex, const Guid& surfaceMaterial, float scaleInLightmap, const Rectangle& lightmapUVsBox, const MeshVertex* firstVertex, int32 vertexCount);
 
         /// <summary>
         /// Removes the empty slots.

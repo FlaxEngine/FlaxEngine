@@ -14,6 +14,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Models/MeshAccessor.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
@@ -628,30 +629,34 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
 
     // Blend all blend shapes
     auto vertexCount = (uint32)mesh->GetVertexCount();
-    auto data = (VB0SkinnedElementType*)deformation.VertexBuffer.Data.Get();
+    MeshAccessor accessor;
+    if (deformation.LoadMeshAccessor(accessor))
+        return;
+    auto positionStream = accessor.Position();
+    auto normalStream = accessor.Normal();
+    CHECK(positionStream.IsValid());
+    useNormals &= normalStream.IsValid();
     for (const auto& q : blendShapes)
     {
-        // TODO: use SIMD
+        for (int32 i = 0; i < q.First.Vertices.Count(); i++)
+        {
+            const BlendShapeVertex& blendShapeVertex = q.First.Vertices[i];
+            ASSERT_LOW_LAYER(blendShapeVertex.VertexIndex < vertexCount);
+
+            Float3 position = positionStream.GetFloat3(blendShapeVertex.VertexIndex);
+            position = position + blendShapeVertex.PositionDelta * q.Second;
+            positionStream.SetFloat3(blendShapeVertex.VertexIndex, position);
+        }
         if (useNormals)
         {
             for (int32 i = 0; i < q.First.Vertices.Count(); i++)
             {
                 const BlendShapeVertex& blendShapeVertex = q.First.Vertices[i];
-                ASSERT_LOW_LAYER(blendShapeVertex.VertexIndex < vertexCount);
-                VB0SkinnedElementType& vertex = *(data + blendShapeVertex.VertexIndex);
-                vertex.Position = vertex.Position + blendShapeVertex.PositionDelta * q.Second;
-                Float3 normal = (vertex.Normal.ToFloat3() * 2.0f - 1.0f) + blendShapeVertex.NormalDelta * q.Second;
-                vertex.Normal = normal * 0.5f + 0.5f;
-            }
-        }
-        else
-        {
-            for (int32 i = 0; i < q.First.Vertices.Count(); i++)
-            {
-                const BlendShapeVertex& blendShapeVertex = q.First.Vertices[i];
-                ASSERT_LOW_LAYER(blendShapeVertex.VertexIndex < vertexCount);
-                VB0SkinnedElementType& vertex = *(data + blendShapeVertex.VertexIndex);
-                vertex.Position = vertex.Position + blendShapeVertex.PositionDelta * q.Second;
+
+                Float3 normal = normalStream.GetFloat3(blendShapeVertex.VertexIndex) * 2.0f - 1.0f;
+                normal = normal + blendShapeVertex.NormalDelta * q.Second;
+                normal = normal * 0.5f + 0.5f; // TODO: optimize unpacking and packing to just apply it to the normal delta
+                normalStream.SetFloat3(blendShapeVertex.VertexIndex, normal);
             }
         }
     }
@@ -659,21 +664,23 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
     if (useNormals)
     {
         // Normalize normal vectors and rebuild tangent frames (tangent frame is in range [-1;1] but packed to [0;1] range)
-        // TODO: use SIMD
+        auto tangentStream = accessor.Tangent();
         for (uint32 vertexIndex = minVertexIndex; vertexIndex <= maxVertexIndex; vertexIndex++)
         {
-            VB0SkinnedElementType& vertex = *(data + vertexIndex);
-
-            Float3 normal = vertex.Normal.ToFloat3() * 2.0f - 1.0f;
+            Float3 normal = normalStream.GetFloat3(vertexIndex) * 2.0f - 1.0f;
             normal.Normalize();
-            vertex.Normal = normal * 0.5f + 0.5f;
+            normal = normal * 0.5f + 0.5f;
+            normalStream.SetFloat3(vertexIndex, normal);
 
-            Float3 tangent = vertex.Tangent.ToFloat3() * 2.0f - 1.0f;
-            tangent = tangent - ((tangent | normal) * normal);
-            tangent.Normalize();
-            const auto tangentSign = vertex.Tangent.W;
-            vertex.Tangent = tangent * 0.5f + 0.5f;
-            vertex.Tangent.W = tangentSign;
+            if (tangentStream.IsValid())
+            {
+                Float4 tangentRaw = normalStream.GetFloat4(vertexIndex);
+                Float3 tangent = Float3(tangentRaw) * 2.0f - 1.0f;
+                tangent = tangent - ((tangent | normal) * normal);
+                tangent.Normalize();
+                tangentRaw = Float4(tangent * 0.5f + 0.5f, tangentRaw.W);
+                tangentStream.SetFloat4(vertexIndex, tangentRaw);
+            }
         }
     }
 
@@ -1221,16 +1228,17 @@ bool AnimatedModel::IntersectsEntry(const Ray& ray, Real& distance, Vector3& nor
     return result;
 }
 
-bool AnimatedModel::GetMeshData(const MeshReference& mesh, MeshBufferType type, BytesContainer& result, int32& count) const
+bool AnimatedModel::GetMeshData(const MeshReference& ref, MeshBufferType type, BytesContainer& result, int32& count, GPUVertexLayout** layout) const
 {
     count = 0;
-    if (mesh.LODIndex < 0 || mesh.MeshIndex < 0)
+    if (ref.LODIndex < 0 || ref.MeshIndex < 0)
         return true;
     const auto model = SkinnedModel.Get();
     if (!model || model->WaitForLoaded())
         return true;
-    auto& lod = model->LODs[Math::Min(mesh.LODIndex, model->LODs.Count() - 1)];
-    return lod.Meshes[Math::Min(mesh.MeshIndex, lod.Meshes.Count() - 1)].DownloadDataCPU(type, result, count);
+    auto& lod = model->LODs[Math::Min(ref.LODIndex, model->LODs.Count() - 1)];
+    auto& mesh = lod.Meshes[Math::Min(ref.MeshIndex, lod.Meshes.Count() - 1)];
+    return mesh.DownloadDataCPU(type, result, count, layout);
 }
 
 MeshDeformation* AnimatedModel::GetMeshDeformation() const

@@ -32,6 +32,8 @@ struct MeshDeformationData
     ~MeshDeformationData()
     {
     }
+
+    bool LoadMeshAccessor(class MeshAccessor& accessor) const;
 };
 
 /// <summary>

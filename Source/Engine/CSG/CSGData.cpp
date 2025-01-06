@@ -55,7 +55,7 @@ namespace CSG
     };
 }
 
-void RawData::Slot::AddSurface(float scaleInLightmap, const Rectangle& lightmapUVsBox, const RawModelVertex* firstVertex, int32 vertexCount)
+void RawData::Slot::AddSurface(float scaleInLightmap, const Rectangle& lightmapUVsBox, const MeshVertex* firstVertex, int32 vertexCount)
 {
     auto& surface = Surfaces.AddOne();
     surface.ScaleInLightmap = scaleInLightmap;
@@ -65,7 +65,7 @@ void RawData::Slot::AddSurface(float scaleInLightmap, const Rectangle& lightmapU
     surface.Vertices.Add(firstVertex, vertexCount);
 }
 
-void RawData::AddSurface(Brush* brush, int32 brushSurfaceIndex, const Guid& surfaceMaterial, float scaleInLightmap, const Rectangle& lightmapUVsBox, const RawModelVertex* firstVertex, int32 vertexCount)
+void RawData::AddSurface(Brush* brush, int32 brushSurfaceIndex, const Guid& surfaceMaterial, float scaleInLightmap, const Rectangle& lightmapUVsBox, const MeshVertex* firstVertex, int32 vertexCount)
 {
     // Add surface to slot
     auto slot = GetOrAddSlot(surfaceMaterial);

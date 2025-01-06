@@ -221,6 +221,7 @@ Asset::LoadResult ParticleSystem::load()
 #endif
     switch (version)
     {
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
     case 1:
     {
         // [Deprecated on 23.07.2019, expires on 27.04.2021]
@@ -369,6 +370,7 @@ Asset::LoadResult ParticleSystem::load()
 
         break;
     }
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
     case 3: // [Deprecated on 03.09.2021 expires on 03.09.2023]
     case 4:
     {

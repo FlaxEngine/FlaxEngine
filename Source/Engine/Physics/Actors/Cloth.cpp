@@ -5,6 +5,7 @@
 #include "Engine/Core/Math/Ray.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Models/MeshAccessor.h"
 #include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Physics/PhysicsBackend.h"
@@ -50,6 +51,7 @@ void Cloth::SetMesh(const ModelInstanceActor::MeshReference& value)
         Function<void(const MeshBase*, MeshDeformationData&)> deformer;
         deformer.Bind<Cloth, &Cloth::RunClothDeformer>(this);
         _meshDeformation->RemoveDeformer(_mesh.LODIndex, _mesh.MeshIndex, MeshBufferType::Vertex0, deformer);
+        _meshDeformation->RemoveDeformer(_mesh.LODIndex, _mesh.MeshIndex, MeshBufferType::Vertex1, deformer);
         _meshDeformation = nullptr;
     }
 
@@ -556,6 +558,7 @@ bool Cloth::CreateCloth()
     int32 count;
     if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Vertex0, data, count))
         return true;
+    // TODO: use MeshAccessor vertex data layout descriptor instead hardcoded position data at the beginning of VB0
     desc.VerticesData = data.Get();
     desc.VerticesCount = count;
     desc.VerticesStride = data.Length() / count;
@@ -656,6 +659,7 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
             const int32 i0 = indicesData.Get<uint16>()[index];
             const int32 i1 = indicesData.Get<uint16>()[index + 1];
             const int32 i2 = indicesData.Get<uint16>()[index + 2];
+            // TODO: use MeshAccessor vertex data layout descriptor instead hardcoded position data at the beginning of VB0
 #define GET_POS(i) *(Float3*)((byte*)verticesData.Get() + i * verticesStride)
             const Float3 v0(GET_POS(i0));
             const Float3 v1(GET_POS(i1));
@@ -675,6 +679,7 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
             const int32 i0 = indicesData.Get<uint32>()[index];
             const int32 i1 = indicesData.Get<uint32>()[index + 1];
             const int32 i2 = indicesData.Get<uint32>()[index + 2];
+            // TODO: use MeshAccessor vertex data layout descriptor instead hardcoded position data at the beginning of VB0
 #define GET_POS(i) *(Float3*)((byte*)verticesData.Get() + i * verticesStride)
             const Float3 v0(GET_POS(i0));
             const Float3 v1(GET_POS(i1));
@@ -770,11 +775,18 @@ bool Cloth::OnPreUpdate()
             return false;
         BytesContainer verticesData;
         int32 verticesCount;
-        if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Vertex0, verticesData, verticesCount))
+        GPUVertexLayout* layout;
+        if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Vertex0, verticesData, verticesCount, &layout))
+            return false;
+        MeshAccessor accessor;
+        if (accessor.LoadBuffer(MeshBufferType::Vertex0, verticesData, layout))
+            return false;
+        auto positionStream = accessor.Position();
+        auto blendIndicesStream = accessor.BlendIndices();
+        auto blendWeightsStream = accessor.BlendWeights();
+        if (!positionStream.IsValid() || !blendIndicesStream.IsValid() || !blendWeightsStream.IsValid())
             return false;
         PROFILE_CPU_NAMED("Skinned Pose");
-        auto vbStride = (uint32)verticesData.Length() / verticesCount;
-        ASSERT(vbStride == sizeof(VB0SkinnedElementType));
         PhysicsBackend::LockClothParticles(_cloth);
         const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
         // TODO: optimize memory allocs (eg. write directly to nvCloth mapped range or use shared allocator)
@@ -794,43 +806,46 @@ bool Cloth::OnPreUpdate()
         {
             if (paint[i] > ZeroTolerance)
                 continue;
-            VB0SkinnedElementType& vb0 = verticesData.Get<VB0SkinnedElementType>()[i];
+
+            // Load vertex
+            Float3 position = positionStream.GetFloat3(i);
+            const Int4 blendIndices = blendIndicesStream.GetFloat4(i);
+            const Float4 blendWeights = blendWeightsStream.GetFloat4(i);
 
             // Calculate skinned vertex matrix from bones blending
-            const Float4 blendWeights = vb0.BlendWeights.ToFloat4();
             // TODO: optimize this or use _skinningData from AnimatedModel to access current mesh bones data directly
             Matrix matrix;
-            const SkeletonBone& bone0 = bones[vb0.BlendIndices.R];
+            const SkeletonBone& bone0 = bones[blendIndices.X];
             Matrix::Multiply(bone0.OffsetMatrix, pose[bone0.NodeIndex], matrix);
             Matrix boneMatrix = matrix * blendWeights.X;
             if (blendWeights.Y > 0.0f)
             {
-                const SkeletonBone& bone1 = bones[vb0.BlendIndices.G];
+                const SkeletonBone& bone1 = bones[blendIndices.Y];
                 Matrix::Multiply(bone1.OffsetMatrix, pose[bone1.NodeIndex], matrix);
                 boneMatrix += matrix * blendWeights.Y;
             }
             if (blendWeights.Z > 0.0f)
             {
-                const SkeletonBone& bone2 = bones[vb0.BlendIndices.B];
+                const SkeletonBone& bone2 = bones[blendIndices.Z];
                 Matrix::Multiply(bone2.OffsetMatrix, pose[bone2.NodeIndex], matrix);
                 boneMatrix += matrix * blendWeights.Z;
             }
             if (blendWeights.W > 0.0f)
             {
-                const SkeletonBone& bone3 = bones[vb0.BlendIndices.A];
+                const SkeletonBone& bone3 = bones[blendIndices.W];
                 Matrix::Multiply(bone3.OffsetMatrix, pose[bone3.NodeIndex], matrix);
                 boneMatrix += matrix * blendWeights.W;
             }
 
             // Skin vertex position (similar to GPU vertex shader)
-            Float3 pos = Float3::Transform(vb0.Position, boneMatrix);
+            position = Float3::Transform(position, boneMatrix);
 
             // Transform back to the cloth space
             // TODO: skip when using identity?
-            pos = _localTransform.WorldToLocal(pos);
+            position = _localTransform.WorldToLocal(position);
 
             // Override fixed particle position
-            particlesSkinned[i] = Float4(pos, 0.0f);
+            particlesSkinned[i] = Float4(position, 0.0f);
             anyFixed = true;
         }
 
@@ -891,11 +906,7 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
     PROFILE_CPU_NAMED("Cloth");
     PhysicsBackend::LockClothParticles(_cloth);
     const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
-
-    auto vbData = deformation.VertexBuffer.Data.Get();
     auto vbCount = (uint32)mesh->GetVertexCount();
-    auto vbStride = (uint32)deformation.VertexBuffer.Data.Count() / vbCount;
-    // TODO: add support for mesh vertex data layout descriptor instead hardcoded position data at the beginning of VB0
     ASSERT((uint32)particles.Length() >= vbCount);
 
     // Calculate normals
@@ -949,6 +960,12 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
     }
 
     // Update mesh vertices based on the cloth particles positions
+    MeshAccessor accessor;
+    if (deformation.LoadMeshAccessor(accessor))
+    {
+        PhysicsBackend::UnlockClothParticles(_cloth);
+        return;
+    }
     if (auto* animatedModel = Cast<AnimatedModel>(GetParent()))
     {
         if (animatedModel->GraphInstance.NodesPose.IsEmpty())
@@ -965,39 +982,44 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
         const SkeletonData& skeleton = animatedModel->SkinnedModel->Skeleton;
 
         // Animated model uses skinning thus requires to set vertex position inverse to skeleton bones
-        ASSERT(vbStride == sizeof(VB0SkinnedElementType));
+        auto positionStream = accessor.Position();
+        auto blendIndicesStream = accessor.BlendIndices();
+        auto blendWeightsStream = accessor.BlendWeights();
+        if (!positionStream.IsValid() || !blendIndicesStream.IsValid() || !blendWeightsStream.IsValid())
+        {
+            PhysicsBackend::UnlockClothParticles(_cloth);
+            return;
+        }
         const float* paint = _paint.Count() >= particles.Length() ? _paint.Get() : nullptr;
         for (uint32 i = 0; i < vbCount; i++)
         {
-            VB0SkinnedElementType& vb = *(VB0SkinnedElementType*)vbData;
-            vbData += vbStride;
-
             // Skip fixed vertices
             if (paint && paint[i] < ZeroTolerance)
                 continue;
 
             // Calculate skinned vertex matrix from bones blending
-            const Float4 blendWeights = vb.BlendWeights.ToFloat4();
+            const Int4 blendIndices = blendIndicesStream.GetFloat4(i);
+            const Float4 blendWeights = blendWeightsStream.GetFloat4(i);
             // TODO: optimize this or use _skinningData from AnimatedModel to access current mesh bones data directly
             Matrix matrix;
-            const SkeletonBone& bone0 = skeleton.Bones[vb.BlendIndices.R];
+            const SkeletonBone& bone0 = skeleton.Bones[blendIndices.X];
             Matrix::Multiply(bone0.OffsetMatrix, pose[bone0.NodeIndex], matrix);
             Matrix boneMatrix = matrix * blendWeights.X;
             if (blendWeights.Y > 0.0f)
             {
-                const SkeletonBone& bone1 = skeleton.Bones[vb.BlendIndices.G];
+                const SkeletonBone& bone1 = skeleton.Bones[blendIndices.Y];
                 Matrix::Multiply(bone1.OffsetMatrix, pose[bone1.NodeIndex], matrix);
                 boneMatrix += matrix * blendWeights.Y;
             }
             if (blendWeights.Z > 0.0f)
             {
-                const SkeletonBone& bone2 = skeleton.Bones[vb.BlendIndices.B];
+                const SkeletonBone& bone2 = skeleton.Bones[blendIndices.Z];
                 Matrix::Multiply(bone2.OffsetMatrix, pose[bone2.NodeIndex], matrix);
                 boneMatrix += matrix * blendWeights.Z;
             }
             if (blendWeights.W > 0.0f)
             {
-                const SkeletonBone& bone3 = skeleton.Bones[vb.BlendIndices.A];
+                const SkeletonBone& bone3 = skeleton.Bones[blendIndices.W];
                 Matrix::Multiply(bone3.OffsetMatrix, pose[bone3.NodeIndex], matrix);
                 boneMatrix += matrix * blendWeights.W;
             }
@@ -1006,43 +1028,59 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
             Matrix boneMatrixInv;
             Matrix::Invert(boneMatrix, boneMatrixInv);
             Float3 pos = *(Float3*)&particles.Get()[i];
-            vb.Position = Float3::Transform(pos, boneMatrixInv);
+            pos = Float3::Transform(pos, boneMatrixInv);
+            positionStream.SetFloat3(i, pos);
         }
 
         if (_simulationSettings.ComputeNormals)
         {
             // Write normals
-            for (uint32 i = 0; i < vbCount; i++)
+            auto normalStream = accessor.Normal();
+            auto tangentStream = accessor.Tangent();
+            if (normalStream.IsValid() && tangentStream.IsValid())
             {
-                Float3 normal = normals.Get()[i];
-                normal.Normalize();
-                VB0SkinnedElementType& vb = *(VB0SkinnedElementType*)vbData;
-                vbData += vbStride;
-                RenderTools::CalculateTangentFrame(vb.Normal, vb.Tangent, normal);
+                for (uint32 i = 0; i < vbCount; i++)
+                {
+                    Float3 normal = normals.Get()[i];
+                    normal.Normalize();
+                    Float3 n;
+                    Float4 t;
+                    RenderTools::CalculateTangentFrame(n, t, normal);
+                    normalStream.SetFloat3(i, n);
+                    tangentStream.SetFloat4(i, t);
+                }
             }
         }
     }
     else if (deformation.Type == MeshBufferType::Vertex0)
     {
         // Copy particle positions to the mesh data
-        ASSERT(vbStride == sizeof(VB0ElementType));
-        for (uint32 i = 0; i < vbCount; i++)
+        auto positionStream = accessor.Position();
+        if (positionStream.IsValid())
         {
-            *(Float3*)vbData = *(Float3*)&particles.Get()[i];
-            vbData += vbStride;
+            for (uint32 i = 0; i < vbCount; i++)
+            {
+                positionStream.SetFloat3(i, *(const Float3*)&particles.Get()[i]);
+            }
         }
     }
     else
     {
         // Write normals for the modified vertices by the cloth
-        ASSERT(vbStride == sizeof(VB1ElementType));
-        for (uint32 i = 0; i < vbCount; i++)
+        auto normalStream = accessor.Normal();
+        auto tangentStream = accessor.Tangent();
+        if (normalStream.IsValid() && tangentStream.IsValid())
         {
-            Float3 normal = normals.Get()[i];
-            normal.Normalize();
-            VB1ElementType& vb = *(VB1ElementType*)vbData;
-            vbData += vbStride;
-            RenderTools::CalculateTangentFrame(vb.Normal, vb.Tangent, normal);
+            for (uint32 i = 0; i < vbCount; i++)
+            {
+                Float3 normal = normals.Get()[i];
+                normal.Normalize();
+                Float3 n;
+                Float4 t;
+                RenderTools::CalculateTangentFrame(n, t, normal);
+                normalStream.SetFloat3(i, n);
+                tangentStream.SetFloat4(i, t);
+            }
         }
     }
 

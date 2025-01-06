@@ -13,8 +13,10 @@
 #if USE_EDITOR
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Serialization/JsonWriters.h"
+#include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Level/Level.h"
+#include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
 #endif
 
 REGISTER_BINARY_ASSET(Animation, "FlaxEngine.Animation", false);
@@ -486,6 +488,64 @@ bool Animation::Save(const StringView& path)
         LOG(Error, "Cannot save \'{0}\'", ToString());
         return true;
     }
+
+    return false;
+}
+
+bool Animation::SaveHeader(const ModelData& modelData, WriteStream& stream, int32 animIndex)
+{
+    // Validate input
+    if (animIndex < 0 || animIndex >= modelData.Animations.Count())
+    {
+        Log::ArgumentOutOfRangeException(TEXT("animIndex"));
+        return true;
+    }
+    auto& anim = modelData.Animations.Get()[animIndex];
+    if (anim.Duration <= ZeroTolerance || anim.FramesPerSecond <= ZeroTolerance)
+    {
+        Log::ArgumentOutOfRangeException(TEXT("Invalid animation duration."));
+        return true;
+    }
+    if (anim.Channels.IsEmpty())
+    {
+        Log::ArgumentOutOfRangeException(TEXT("Channels"), TEXT("Animation channels collection cannot be empty."));
+        return true;
+    }
+
+    // Info
+    stream.Write(103); // Header version (for fast version upgrades without serialization format change)
+    stream.Write(anim.Duration);
+    stream.Write(anim.FramesPerSecond);
+    stream.Write((byte)anim.RootMotionFlags);
+    stream.Write(anim.RootNodeName, 13);
+
+    // Animation channels
+    stream.WriteInt32(anim.Channels.Count());
+    for (const auto& channel : anim.Channels)
+    {
+        stream.Write(channel.NodeName, 172);
+        Serialization::Serialize(stream, channel.Position);
+        Serialization::Serialize(stream, channel.Rotation);
+        Serialization::Serialize(stream, channel.Scale);
+    }
+
+    // Animation events
+    stream.WriteInt32(anim.Events.Count());
+    for (auto& e : anim.Events)
+    {
+        stream.Write(e.First, 172);
+        stream.Write(e.Second.GetKeyframes().Count());
+        for (const auto& k : e.Second.GetKeyframes())
+        {
+            stream.Write(k.Time);
+            stream.Write(k.Value.Duration);
+            stream.Write(k.Value.TypeName, 17);
+            stream.WriteJson(k.Value.JsonData);
+        }
+    }
+
+    // Nested animations
+    stream.WriteInt32(0); // Empty list
 
     return false;
 }

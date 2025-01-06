@@ -16,7 +16,10 @@
 #define MODEL_MAX_MESHES 4096
 
 // Maximum amount of texture channels (UVs) per vertex
-#define MODEL_MAX_UVS 4
+#define MODEL_MAX_UV 4
+
+// Maximum amount of vertex buffers (VBs) per mesh
+#define MODEL_MAX_VB 3
 
 // Enable/disable precise mesh collision testing (with in-build vertex buffer caching, this will increase memory usage)
 #define MODEL_USE_PRECISE_MESH_INTERSECTS (USE_EDITOR)

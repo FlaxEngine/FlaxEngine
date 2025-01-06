@@ -15,7 +15,6 @@ using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
 using FlaxEngine.Tools;
-using FlaxEngine.Utilities;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Windows.Assets
@@ -495,7 +494,7 @@ namespace FlaxEditor.Windows.Assets
                     base.Initialize(layout);
 
                     _uvsPreview = layout.Custom<UVsLayoutPreviewControl>().CustomControl;
-                    _uvsPreview.Proxy = proxy;
+                    _uvsPreview.Window = proxy.Window;
                 }
 
                 /// <inheritdoc />
@@ -505,11 +504,17 @@ namespace FlaxEditor.Windows.Assets
 
                     if (_uvsPreview != null)
                     {
-                        _uvsPreview.Channel = _uvsPreview.Proxy._uvChannel;
-                        _uvsPreview.LOD = _uvsPreview.Proxy.LOD;
-                        _uvsPreview.Mesh = _uvsPreview.Proxy.Mesh;
-                        _uvsPreview.HighlightIndex = _uvsPreview.Proxy.Window._highlightIndex;
-                        _uvsPreview.IsolateIndex = _uvsPreview.Proxy.Window._isolateIndex;
+                        var proxy = (UVsPropertiesProxy)Values[0];
+                        switch (proxy._uvChannel)
+                        {
+                        case UVChannel.TexCoord: _uvsPreview.Channel = 0; break;
+                        case UVChannel.LightmapUVs: _uvsPreview.Channel = 1; break;
+                        default: _uvsPreview.Channel = -1; break;
+                        }
+                        _uvsPreview.LOD = proxy.LOD;
+                        _uvsPreview.Mesh = proxy.Mesh;
+                        _uvsPreview.HighlightIndex = proxy.Window._highlightIndex;
+                        _uvsPreview.IsolateIndex = proxy.Window._isolateIndex;
                     }
                 }
 
@@ -518,196 +523,6 @@ namespace FlaxEditor.Windows.Assets
                     _uvsPreview = null;
 
                     base.Deinitialize();
-                }
-            }
-
-            private sealed class UVsLayoutPreviewControl : RenderToTextureControl
-            {
-                private UVChannel _channel;
-                private int _lod, _mesh = -1;
-                private int _highlightIndex = -1;
-                private int _isolateIndex = -1;
-                public UVsPropertiesProxy Proxy;
-
-                public UVsLayoutPreviewControl()
-                {
-                    Offsets = new Margin(4);
-                    AutomaticInvalidate = false;
-                }
-
-                public UVChannel Channel
-                {
-                    set
-                    {
-                        if (_channel == value)
-                            return;
-                        _channel = value;
-                        Visible = _channel != UVChannel.None;
-                        if (Visible)
-                            Invalidate();
-                    }
-                }
-
-                public int LOD
-                {
-                    set
-                    {
-                        if (_lod != value)
-                        {
-                            _lod = value;
-                            Invalidate();
-                        }
-                    }
-                }
-
-                public int Mesh
-                {
-                    set
-                    {
-                        if (_mesh != value)
-                        {
-                            _mesh = value;
-                            Invalidate();
-                        }
-                    }
-                }
-
-                public int HighlightIndex
-                {
-                    set
-                    {
-                        if (_highlightIndex != value)
-                        {
-                            _highlightIndex = value;
-                            Invalidate();
-                        }
-                    }
-                }
-
-                public int IsolateIndex
-                {
-                    set
-                    {
-                        if (_isolateIndex != value)
-                        {
-                            _isolateIndex = value;
-                            Invalidate();
-                        }
-                    }
-                }
-
-                private void DrawMeshUVs(int meshIndex, MeshDataCache.MeshData meshData)
-                {
-                    var uvScale = Size;
-                    if (meshData.IndexBuffer == null || meshData.VertexBuffer == null)
-                        return;
-                    var linesColor = _highlightIndex != -1 && _highlightIndex == meshIndex ? Style.Current.BackgroundSelected : Color.White;
-                    switch (_channel)
-                    {
-                    case UVChannel.TexCoord:
-                        for (int i = 0; i < meshData.IndexBuffer.Length; i += 3)
-                        {
-                            // Cache triangle indices
-                            uint i0 = meshData.IndexBuffer[i + 0];
-                            uint i1 = meshData.IndexBuffer[i + 1];
-                            uint i2 = meshData.IndexBuffer[i + 2];
-
-                            // Cache triangle uvs positions and transform positions to output target
-                            Float2 uv0 = meshData.VertexBuffer[i0].TexCoord * uvScale;
-                            Float2 uv1 = meshData.VertexBuffer[i1].TexCoord * uvScale;
-                            Float2 uv2 = meshData.VertexBuffer[i2].TexCoord * uvScale;
-
-                            // Don't draw too small triangles
-                            float area = Float2.TriangleArea(ref uv0, ref uv1, ref uv2);
-                            if (area > 10.0f)
-                            {
-                                // Draw triangle
-                                Render2D.DrawLine(uv0, uv1, linesColor);
-                                Render2D.DrawLine(uv1, uv2, linesColor);
-                                Render2D.DrawLine(uv2, uv0, linesColor);
-                            }
-                        }
-                        break;
-                    case UVChannel.LightmapUVs:
-                        for (int i = 0; i < meshData.IndexBuffer.Length; i += 3)
-                        {
-                            // Cache triangle indices
-                            uint i0 = meshData.IndexBuffer[i + 0];
-                            uint i1 = meshData.IndexBuffer[i + 1];
-                            uint i2 = meshData.IndexBuffer[i + 2];
-
-                            // Cache triangle uvs positions and transform positions to output target
-                            Float2 uv0 = meshData.VertexBuffer[i0].LightmapUVs * uvScale;
-                            Float2 uv1 = meshData.VertexBuffer[i1].LightmapUVs * uvScale;
-                            Float2 uv2 = meshData.VertexBuffer[i2].LightmapUVs * uvScale;
-
-                            // Don't draw too small triangles
-                            float area = Float2.TriangleArea(ref uv0, ref uv1, ref uv2);
-                            if (area > 3.0f)
-                            {
-                                // Draw triangle
-                                Render2D.DrawLine(uv0, uv1, linesColor);
-                                Render2D.DrawLine(uv1, uv2, linesColor);
-                                Render2D.DrawLine(uv2, uv0, linesColor);
-                            }
-                        }
-                        break;
-                    }
-                }
-
-                /// <inheritdoc />
-                public override void DrawSelf()
-                {
-                    base.DrawSelf();
-
-                    var size = Size;
-                    if (_channel == UVChannel.None || size.MaxValue < 5.0f)
-                        return;
-                    if (Proxy.Window._meshData == null)
-                        Proxy.Window._meshData = new MeshDataCache();
-                    if (!Proxy.Window._meshData.RequestMeshData(Proxy.Window._asset))
-                    {
-                        Invalidate();
-                        Render2D.DrawText(Style.Current.FontMedium, "Loading...", new Rectangle(Float2.Zero, size), Color.White, TextAlignment.Center, TextAlignment.Center);
-                        return;
-                    }
-
-                    Render2D.PushClip(new Rectangle(Float2.Zero, size));
-
-                    var meshDatas = Proxy.Window._meshData.MeshDatas;
-                    var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);
-                    var lod = meshDatas[lodIndex];
-                    var mesh = Mathf.Clamp(_mesh, -1, lod.Length - 1);
-                    if (mesh == -1)
-                    {
-                        for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
-                        {
-                            if (_isolateIndex != -1 && _isolateIndex != meshIndex)
-                                continue;
-                            DrawMeshUVs(meshIndex, lod[meshIndex]);
-                        }
-                    }
-                    else
-                    {
-                        DrawMeshUVs(mesh, lod[mesh]);
-                    }
-
-                    Render2D.PopClip();
-                }
-
-                protected override void OnSizeChanged()
-                {
-                    Height = Width;
-
-                    base.OnSizeChanged();
-                }
-
-                protected override void OnVisibleChanged()
-                {
-                    base.OnVisibleChanged();
-
-                    Parent.PerformLayout();
-                    Height = Width;
                 }
             }
         }
@@ -802,7 +617,6 @@ namespace FlaxEditor.Windows.Assets
 
         private readonly ModelPreview _preview;
         private StaticModel _highlightActor;
-        private MeshDataCache _meshData;
         private ModelImportSettings _importSettings = new ModelImportSettings();
         private ModelSdfOptions _sdfOptions;
         private ToolStripButton _showCurrentLODButton;
@@ -941,7 +755,6 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void UnlinkItem()
         {
-            _meshData?.WaitForMeshDataRequestEnd();
             _preview.Model = null;
             _highlightActor.Model = null;
 
@@ -971,20 +784,8 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
-        public override void OnItemReimported(ContentItem item)
-        {
-            // Discard any old mesh data cache
-            _meshData?.Dispose();
-
-            base.OnItemReimported(item);
-        }
-
-        /// <inheritdoc />
         public override void OnDestroy()
         {
-            _meshData?.Dispose();
-            _meshData = null;
-
             base.OnDestroy();
 
             Object.Destroy(ref _highlightActor);

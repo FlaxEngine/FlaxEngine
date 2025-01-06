@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Mesh.h"
+#include "MeshAccessor.h"
 #include "MeshDeformation.h"
 #include "ModelInstanceEntry.h"
 #include "Engine/Content/Assets/Material.h"
@@ -11,16 +12,14 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
-#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
-#include "Engine/Serialization/MemoryReadStream.h"
-#include "Engine/Threading/Task.h"
 #include "Engine/Threading/Threading.h"
 #if USE_EDITOR
 #include "Engine/Renderer/GBufferPass.h"
 #endif
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 GPUVertexLayout* VB0ElementType18::GetLayout()
 {
     return GPUVertexLayout::Get({
@@ -44,77 +43,100 @@ GPUVertexLayout* VB2ElementType18::GetLayout()
         { VertexElement::Types::Color, 2, 0, 0, PixelFormat::R8G8B8A8_UNorm },
     });
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 namespace
 {
-    template<typename IndexType>
-    bool UpdateMesh(Mesh* mesh, uint32 vertexCount, uint32 triangleCount, const Float3* vertices, const IndexType* triangles, const Float3* normals, const Float3* tangents, const Float2* uvs, const Color32* colors)
+    bool UpdateMesh(MeshBase* mesh, uint32 vertexCount, uint32 triangleCount, PixelFormat indexFormat, const Float3* vertices, const void* triangles, const Float3* normals, const Float3* tangents, const Float2* uvs, const Color32* colors)
     {
-        auto model = mesh->GetModel();
+        auto model = mesh->GetModelBase();
         CHECK_RETURN(model && model->IsVirtual(), true);
         CHECK_RETURN(triangles && vertices, true);
+        MeshAccessor accessor;
+        
+        // Index Buffer
+        {
+            if (accessor.AllocateBuffer(MeshBufferType::Index, triangleCount, indexFormat))
+                return true;
+            auto indexStream = accessor.Index();
+            ASSERT(indexStream.IsLinear(indexFormat));
+            indexStream.SetLinear(triangles);
+        }
 
-        // Pack mesh data into vertex buffers
-        Array<VB1ElementType> vb1;
-        Array<VB2ElementType> vb2;
-        vb1.Resize(vertexCount);
+        // Vertex Buffer 0 (position-only)
+        {
+            GPUVertexLayout* vb0layout = GPUVertexLayout::Get({ { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32B32_Float } });
+            if (accessor.AllocateBuffer(MeshBufferType::Vertex0, vertexCount, vb0layout))
+                return true;
+            auto positionStream = accessor.Position();
+            ASSERT(positionStream.IsLinear(PixelFormat::R32G32B32_Float));
+            positionStream.SetLinear(vertices);
+        }
+
+        // Vertex Buffer 1 (general purpose components)
+        GPUVertexLayout::Elements vb1elements;
         if (normals)
         {
+            vb1elements.Add({ VertexElement::Types::Normal, 1, 0, 0, PixelFormat::R10G10B10A2_UNorm });
             if (tangents)
-            {
-                for (uint32 i = 0; i < vertexCount; i++)
-                {
-                    const Float3 normal = normals[i];
-                    const Float3 tangent = tangents[i];
-                    auto& v = vb1.Get()[i];
-                    RenderTools::CalculateTangentFrame(v.Normal, v.Tangent, normal, tangent);
-                }
-            }
-            else
-            {
-                for (uint32 i = 0; i < vertexCount; i++)
-                {
-                    const Float3 normal = normals[i];
-                    auto& v = vb1.Get()[i];
-                    RenderTools::CalculateTangentFrame(v.Normal, v.Tangent, normal);
-                }
-            }
-        }
-        else
-        {
-            // Set default tangent frame
-            const auto n = Float1010102(Float3::UnitZ);
-            const auto t = Float1010102(Float3::UnitX);
-            for (uint32 i = 0; i < vertexCount; i++)
-            {
-                vb1.Get()[i].Normal = n;
-                vb1.Get()[i].Tangent = t;
-            }
+                vb1elements.Add({ VertexElement::Types::Tangent, 1, 0, 0, PixelFormat::R10G10B10A2_UNorm });
         }
         if (uvs)
+            vb1elements.Add({ VertexElement::Types::TexCoord, 1, 0, 0, PixelFormat::R16G16_Float });
+        if (vb1elements.HasItems())
         {
-            for (uint32 i = 0; i < vertexCount; i++)
-                vb1.Get()[i].TexCoord = Half2(uvs[i]);
-        }
-        else
-        {
-            auto v = Half2::Zero;
-            for (uint32 i = 0; i < vertexCount; i++)
-                vb1.Get()[i].TexCoord = v;
-        }
-        {
-            auto v = Half2::Zero;
-            for (uint32 i = 0; i < vertexCount; i++)
-                vb1.Get()[i].LightmapUVs = v;
-        }
-        if (colors)
-        {
-            vb2.Resize(vertexCount);
-            for (uint32 i = 0; i < vertexCount; i++)
-                vb2.Get()[i].Color = colors[i];
+            GPUVertexLayout* vb1layout = GPUVertexLayout::Get(vb1elements);
+            if (accessor.AllocateBuffer(MeshBufferType::Vertex1, vertexCount, vb1layout))
+                return true;
+            if (normals)
+            {
+                auto normalStream = accessor.Normal();
+                if (tangents)
+                {
+                    auto tangentStream = accessor.Tangent();
+                    for (uint32 i = 0; i < vertexCount; i++)
+                    {
+                        const Float3 normal = normals[i];
+                        const Float3 tangent = tangents[i];
+                        Float3 n;
+                        Float4 t;
+                        RenderTools::CalculateTangentFrame(n, t, normal, tangent);
+                        normalStream.SetFloat3(i, n);
+                        tangentStream.SetFloat4(i, t);
+                    }
+                }
+                else
+                {
+                    for (uint32 i = 0; i < vertexCount; i++)
+                    {
+                        const Float3 normal = normals[i];
+                        Float3 n;
+                        Float4 t;
+                        RenderTools::CalculateTangentFrame(n, t, normal);
+                        normalStream.SetFloat3(i, n);
+                    }
+                }
+            }
+            if (uvs)
+            {
+                auto uvsStream = accessor.TexCoord();
+                for (uint32 i = 0; i < vertexCount; i++)
+                    uvsStream.SetFloat2(i, uvs[i]);
+            }
         }
 
-        return mesh->UpdateMesh(vertexCount, triangleCount, (VB0ElementType*)vertices, vb1.Get(), vb2.HasItems() ? vb2.Get() : nullptr, triangles);
+        // Vertex Buffer 2 (color-only)
+        if (colors)
+        {
+            GPUVertexLayout* vb2layout = GPUVertexLayout::Get({{ VertexElement::Types::Color, 2, 0, 0, PixelFormat::R8G8B8A8_UNorm }});
+            if (accessor.AllocateBuffer(MeshBufferType::Vertex2, vertexCount, vb2layout))
+                return true;
+            auto colorStream = accessor.Color();
+            ASSERT(colorStream.IsLinear(PixelFormat::R8G8B8A8_UNorm));
+            colorStream.SetLinear(colors);
+        }
+
+        return accessor.UpdateMesh(mesh);
     }
 
 #if !COMPILE_WITHOUT_CSHARP
@@ -125,13 +147,28 @@ namespace
         ASSERT((uint32)MCore::Array::GetLength(trianglesObj) / 3 >= triangleCount);
         auto vertices = MCore::Array::GetAddress<Float3>(verticesObj);
         auto triangles = MCore::Array::GetAddress<IndexType>(trianglesObj);
+        const PixelFormat indexFormat = sizeof(IndexType) == 4 ? PixelFormat::R32_UInt : PixelFormat::R16_UInt;
         const auto normals = normalsObj ? MCore::Array::GetAddress<Float3>(normalsObj) : nullptr;
         const auto tangents = tangentsObj ? MCore::Array::GetAddress<Float3>(tangentsObj) : nullptr;
         const auto uvs = uvObj ? MCore::Array::GetAddress<Float2>(uvObj) : nullptr;
         const auto colors = colorsObj ? MCore::Array::GetAddress<Color32>(colorsObj) : nullptr;
-        return UpdateMesh<IndexType>(mesh, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
+        return UpdateMesh(mesh, vertexCount, triangleCount, indexFormat, vertices, triangles, normals, tangents, uvs, colors);
     }
 #endif
+}
+
+bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const uint32* ib)
+{
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    return UpdateMesh(vertexCount, triangleCount, vb0, vb1, vb2, ib, false);
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
+}
+
+bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const uint16* ib)
+{
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
+    return UpdateMesh(vertexCount, triangleCount, vb0, vb1, vb2, ib, true);
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 
 bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const void* ib, bool use16BitIndices)
@@ -139,7 +176,9 @@ bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0Element
     Release();
 
     // Setup GPU resources
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
     const bool failed = Load(vertexCount, triangleCount, vb0, vb1, vb2, ib, use16BitIndices);
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
     if (!failed)
     {
         // Calculate mesh bounds
@@ -152,12 +191,12 @@ bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0Element
 
 bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* vertices, const uint16* triangles, const Float3* normals, const Float3* tangents, const Float2* uvs, const Color32* colors)
 {
-    return ::UpdateMesh<uint16>(this, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
+    return ::UpdateMesh(this, vertexCount, triangleCount, PixelFormat::R16_UInt, vertices, triangles, normals, tangents, uvs, colors);
 }
 
 bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const Float3* vertices, const uint32* triangles, const Float3* normals, const Float3* tangents, const Float2* uvs, const Color32* colors)
 {
-    return ::UpdateMesh<uint32>(this, vertexCount, triangleCount, vertices, triangles, normals, tangents, uvs, colors);
+    return ::UpdateMesh(this, vertexCount, triangleCount, PixelFormat::R16_UInt, vertices, triangles, normals, tangents, uvs, colors);
 }
 
 bool Mesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* vb1, const void* vb2, const void* ib, bool use16BitIndexBuffer)
@@ -169,9 +208,11 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* 
     if (vb2)
         vbData.Add(vb2);
     Array<GPUVertexLayout*, FixedAllocation<3>> vbLayout;
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
     vbLayout.Add(VB0ElementType::GetLayout());
     vbLayout.Add(VB1ElementType::GetLayout());
     vbLayout.Add(VB2ElementType::GetLayout());
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
     return Init(vertices, triangles, vbData, ib, use16BitIndexBuffer, vbLayout);
 }
 
@@ -251,7 +292,7 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
         for (int32 meshIndex = 0; meshIndex < _index; meshIndex++)
             vertexOffset += ((Model*)_model)->LODs[_lodIndex].Meshes[meshIndex].GetVertexCount();
         drawCall.Geometry.VertexBuffers[2] = info.VertexColors[_lodIndex];
-        drawCall.Geometry.VertexBuffersOffsets[2] = vertexOffset * sizeof(VB2ElementType);
+        drawCall.Geometry.VertexBuffersOffsets[2] = vertexOffset * sizeof(Color32);
     }
     drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
@@ -314,7 +355,7 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
         for (int32 meshIndex = 0; meshIndex < _index; meshIndex++)
             vertexOffset += ((Model*)_model)->LODs[_lodIndex].Meshes[meshIndex].GetVertexCount();
         drawCall.Geometry.VertexBuffers[2] = info.VertexColors[_lodIndex];
-        drawCall.Geometry.VertexBuffersOffsets[2] = vertexOffset * sizeof(VB2ElementType);
+        drawCall.Geometry.VertexBuffersOffsets[2] = vertexOffset * sizeof(Color32);
     }
     drawCall.Draw.IndicesCount = _triangles * 3;
     drawCall.InstanceCount = 1;
@@ -364,96 +405,6 @@ void Mesh::Release()
     MeshBase::Release();
 }
 
-bool Mesh::DownloadDataCPU(MeshBufferType type, BytesContainer& result, int32& count) const
-{
-    if (_cachedVertexBuffers[0].IsEmpty())
-    {
-        PROFILE_CPU();
-        auto model = GetModel();
-        ScopeLock lock(model->Locker);
-        if (model->IsVirtual())
-        {
-            LOG(Error, "Cannot access CPU data of virtual models. Use GPU data download.");
-            return true;
-        }
-
-        // Fetch chunk with data from drive/memory
-        const auto chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(GetLODIndex());
-        if (model->LoadChunk(chunkIndex))
-            return true;
-        const auto chunk = model->GetChunk(chunkIndex);
-        if (!chunk)
-        {
-            LOG(Error, "Missing chunk.");
-            return true;
-        }
-
-        MemoryReadStream stream(chunk->Get(), chunk->Size());
-
-        // Seek to find mesh location
-        for (int32 i = 0; i <= _index; i++)
-        {
-            // #MODEL_DATA_FORMAT_USAGE
-            uint32 vertices;
-            stream.ReadUint32(&vertices);
-            uint32 triangles;
-            stream.ReadUint32(&triangles);
-            uint32 indicesCount = triangles * 3;
-            bool use16BitIndexBuffer = indicesCount <= MAX_uint16;
-            uint32 ibStride = use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32);
-            if (vertices == 0 || triangles == 0)
-            {
-                LOG(Error, "Invalid mesh data.");
-                return true;
-            }
-            auto vb0 = stream.Move<VB0ElementType>(vertices);
-            auto vb1 = stream.Move<VB1ElementType>(vertices);
-            bool hasColors = stream.ReadBool();
-            VB2ElementType18* vb2 = nullptr;
-            if (hasColors)
-            {
-                vb2 = stream.Move<VB2ElementType18>(vertices);
-            }
-            auto ib = stream.Move<byte>(indicesCount * ibStride);
-
-            if (i != _index)
-                continue;
-
-            // Cache mesh data
-            _cachedIndexBufferCount = indicesCount;
-            _cachedIndexBuffer.Set(ib, indicesCount * ibStride);
-            _cachedVertexBuffers[0].Set((const byte*)vb0, vertices * sizeof(VB0ElementType));
-            _cachedVertexBuffers[1].Set((const byte*)vb1, vertices * sizeof(VB1ElementType));
-            if (hasColors)
-                _cachedVertexBuffers[2].Set((const byte*)vb2, vertices * sizeof(VB2ElementType));
-            break;
-        }
-    }
-
-    switch (type)
-    {
-    case MeshBufferType::Index:
-        result.Link(_cachedIndexBuffer);
-        count = _cachedIndexBufferCount;
-        break;
-    case MeshBufferType::Vertex0:
-        result.Link(_cachedVertexBuffers[0]);
-        count = _cachedVertexBuffers[0].Count() / sizeof(VB0ElementType);
-        break;
-    case MeshBufferType::Vertex1:
-        result.Link(_cachedVertexBuffers[1]);
-        count = _cachedVertexBuffers[1].Count() / sizeof(VB1ElementType);
-        break;
-    case MeshBufferType::Vertex2:
-        result.Link(_cachedVertexBuffers[2]);
-        count = _cachedVertexBuffers[2].Count() / sizeof(VB2ElementType);
-        break;
-    default:
-        return true;
-    }
-    return false;
-}
-
 #if !COMPILE_WITHOUT_CSHARP
 
 bool Mesh::UpdateMeshUInt(int32 vertexCount, int32 triangleCount, const MArray* verticesObj, const MArray* trianglesObj, const MArray* normalsObj, const MArray* tangentsObj, const MArray* uvObj, const MArray* colorsObj)
@@ -466,135 +417,80 @@ bool Mesh::UpdateMeshUShort(int32 vertexCount, int32 triangleCount, const MArray
     return ::UpdateMesh<uint16>(this, (uint32)vertexCount, (uint32)triangleCount, verticesObj, trianglesObj, normalsObj, tangentsObj, uvObj, colorsObj);
 }
 
+// [Deprecated in v1.10]
 enum class InternalBufferType
 {
     VB0 = 0,
     VB1 = 1,
     VB2 = 2,
-    IB16 = 3,
-    IB32 = 4,
 };
 
 MArray* Mesh::DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI)
 {
-    auto mesh = this;
-    auto type = (InternalBufferType)typeI;
-    auto model = mesh->GetModel();
-    ScopeLock lock(model->Locker);
+    // [Deprecated in v1.10]
+    ScopeLock lock(GetModelBase()->Locker);
 
-    // Virtual assets always fetch from GPU memory
-    forceGpu |= model->IsVirtual();
-
-    if (!mesh->IsInitialized() && forceGpu)
+    // Get vertex buffers data from the mesh (CPU or GPU)
+    MeshAccessor accessor;
+    MeshBufferType bufferTypes[1] = { MeshBufferType::Vertex0 };
+    switch ((InternalBufferType)typeI)
     {
-        LOG(Error, "Cannot load mesh data from GPU if it's not loaded.");
-        return nullptr;
-    }
-
-    MeshBufferType bufferType;
-    switch (type)
-    {
-    case InternalBufferType::VB0:
-        bufferType = MeshBufferType::Vertex0;
-        break;
     case InternalBufferType::VB1:
-        bufferType = MeshBufferType::Vertex1;
+        bufferTypes[0] = MeshBufferType::Vertex1;
         break;
     case InternalBufferType::VB2:
-        bufferType = MeshBufferType::Vertex2;
+        bufferTypes[0] = MeshBufferType::Vertex2;
         break;
-    case InternalBufferType::IB16:
-    case InternalBufferType::IB32:
-        bufferType = MeshBufferType::Index;
-        break;
-    default:
+    }
+    if (accessor.LoadMesh(this, forceGpu, ToSpan(bufferTypes, 1)))
         return nullptr;
-    }
-    BytesContainer data;
-    int32 dataCount;
-    if (forceGpu)
-    {
-        // Get data from GPU
-        // TODO: support reusing the input memory buffer to perform a single copy from staging buffer to the input CPU buffer
-        auto task = mesh->DownloadDataGPUAsync(bufferType, data);
-        if (task == nullptr)
-            return nullptr;
-        task->Start();
-        model->Locker.Unlock();
-        if (task->Wait())
-        {
-            LOG(Error, "Task failed.");
-            return nullptr;
-        }
-        model->Locker.Lock();
-
-        // Extract elements count from result data
-        switch (bufferType)
-        {
-        case MeshBufferType::Index:
-            dataCount = data.Length() / (Use16BitIndexBuffer() ? sizeof(uint16) : sizeof(uint32));
-            break;
-        case MeshBufferType::Vertex0:
-            dataCount = data.Length() / sizeof(VB0ElementType);
-            break;
-        case MeshBufferType::Vertex1:
-            dataCount = data.Length() / sizeof(VB1ElementType);
-            break;
-        case MeshBufferType::Vertex2:
-            dataCount = data.Length() / sizeof(VB2ElementType);
-            break;
-        }
-    }
-    else
-    {
-        // Get data from CPU
-        if (DownloadDataCPU(bufferType, data, dataCount))
-            return nullptr;
-    }
+    auto positionStream = accessor.Position();
+    auto texCoordStream = accessor.TexCoord();
+    auto lightmapUVsStream = accessor.TexCoord(1);
+    auto normalStream = accessor.Normal();
+    auto tangentStream = accessor.Tangent();
+    auto colorStream = accessor.Color();
+    auto count = GetVertexCount();
 
     // Convert into managed array
-    MArray* result = MCore::Array::New(MCore::Type::GetClass(INTERNAL_TYPE_OBJECT_GET(resultType)), dataCount);
+    MArray* result = MCore::Array::New(MCore::Type::GetClass(INTERNAL_TYPE_OBJECT_GET(resultType)), count);
     void* managedArrayPtr = MCore::Array::GetAddress(result);
-    const int32 elementSize = data.Length() / dataCount;
-    switch (type)
+    switch ((InternalBufferType)typeI)
     {
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
     case InternalBufferType::VB0:
+        CHECK_RETURN(positionStream.IsValid(), nullptr);
+        for (int32 i = 0; i < count; i++)
+        {
+            auto& dst = ((VB0ElementType*)managedArrayPtr)[i];
+            dst.Position = positionStream.GetFloat3(i);
+        }
+        break;
     case InternalBufferType::VB1:
+        for (int32 i = 0; i < count; i++)
+        {
+            auto& dst = ((VB1ElementType*)managedArrayPtr)[i];
+            if (texCoordStream.IsValid())
+                dst.TexCoord = texCoordStream.GetFloat2(i);
+            if (normalStream.IsValid())
+                dst.Normal = normalStream.GetFloat3(i);
+            if (tangentStream.IsValid())
+                dst.Tangent = tangentStream.GetFloat4(i);
+            if (lightmapUVsStream.IsValid())
+                dst.LightmapUVs = lightmapUVsStream.GetFloat2(i);
+        }
+        break;
     case InternalBufferType::VB2:
-    {
-        Platform::MemoryCopy(managedArrayPtr, data.Get(), data.Length());
-        break;
-    }
-    case InternalBufferType::IB16:
-    {
-        if (elementSize == sizeof(uint16))
+        if (colorStream.IsValid())
         {
-            Platform::MemoryCopy(managedArrayPtr, data.Get(), data.Length());
-        }
-        else
-        {
-            auto dst = (uint16*)managedArrayPtr;
-            auto src = (uint32*)data.Get();
-            for (int32 i = 0; i < dataCount; i++)
-                dst[i] = src[i];
+            for (int32 i = 0; i < count; i++)
+            {
+                auto& dst = ((VB2ElementType*)managedArrayPtr)[i];
+                    dst.Color = Color32(colorStream.GetFloat4(i));
+            }
         }
         break;
-    }
-    case InternalBufferType::IB32:
-    {
-        if (elementSize == sizeof(uint16))
-        {
-            auto dst = (uint32*)managedArrayPtr;
-            auto src = (uint16*)data.Get();
-            for (int32 i = 0; i < dataCount; i++)
-                dst[i] = src[i];
-        }
-        else
-        {
-            Platform::MemoryCopy(managedArrayPtr, data.Get(), data.Length());
-        }
-        break;
-    }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
     }
 
     return result;

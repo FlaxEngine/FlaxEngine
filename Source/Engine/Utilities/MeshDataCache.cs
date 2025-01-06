@@ -24,11 +24,18 @@ namespace FlaxEngine.Utilities
 
             /// <summary>
             /// The vertex buffer.
+            /// [Deprecated in v1.10]
             /// </summary>
+            [Obsolete("Use new VertexAccessor.")]
             public Mesh.Vertex[] VertexBuffer;
+
+            /// <summary>
+            /// The vertex buffer accessor (with all available vertex buffers loaded in).
+            /// </summary>
+            public MeshAccessor VertexAccessor;
         }
 
-        private Model _model;
+        private ModelBase _model;
         private MeshData[][] _meshDatas;
         private bool _inProgress;
         private bool _cancel;
@@ -46,9 +53,9 @@ namespace FlaxEngine.Utilities
         /// <summary>
         /// Requests the mesh data.
         /// </summary>
-        /// <param name="model">The model to get it's data.</param>
+        /// <param name="model">The model to get its data.</param>
         /// <returns>True if has valid data to access, otherwise false if it's during downloading.</returns>
-        public bool RequestMeshData(Model model)
+        public bool RequestMeshData(ModelBase model)
         {
             if (model == null)
                 throw new ArgumentNullException();
@@ -110,23 +117,29 @@ namespace FlaxEngine.Utilities
                 if (_model.WaitForLoaded())
                     throw new Exception("WaitForLoaded failed");
 
-                var lods = _model.LODs;
-                _meshDatas = new MeshData[lods.Length][];
+                var lodsCount = _model.LODsCount;
+                _meshDatas = new MeshData[lodsCount][];
 
-                for (int lodIndex = 0; lodIndex < lods.Length && !_cancel; lodIndex++)
+                Span<MeshBufferType> vertexBufferTypes = stackalloc MeshBufferType[3] { MeshBufferType.Vertex0, MeshBufferType.Vertex1, MeshBufferType.Vertex2 };
+                for (int lodIndex = 0; lodIndex < lodsCount && !_cancel; lodIndex++)
                 {
-                    var lod = lods[lodIndex];
-                    var meshes = lod.Meshes;
+                    _model.GetMeshes(out var meshes, lodIndex);
                     _meshDatas[lodIndex] = new MeshData[meshes.Length];
 
                     for (int meshIndex = 0; meshIndex < meshes.Length && !_cancel; meshIndex++)
                     {
                         var mesh = meshes[meshIndex];
-                        _meshDatas[lodIndex][meshIndex] = new MeshData
+                        var meshData = new MeshData
                         {
                             IndexBuffer = mesh.DownloadIndexBuffer(),
-                            VertexBuffer = mesh.DownloadVertexBuffer()
+#pragma warning disable 0618
+                            VertexBuffer = mesh is Mesh m ? m.DownloadVertexBuffer() : null,
+#pragma warning restore 0618
+                            VertexAccessor = new MeshAccessor(),
                         };
+                        if (meshData.VertexAccessor.LoadMesh(mesh, false, vertexBufferTypes))
+                            throw new Exception("MeshAccessor.LoadMesh failed");
+                        _meshDatas[lodIndex][meshIndex] = meshData;
                     }
                 }
                 success = true;

@@ -5,8 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
@@ -182,8 +180,6 @@ namespace FlaxEditor.Windows.Assets
                     proxy._highlightCheckBoxes.Clear();
                     var lods = proxy.Asset.LODs;
                     var loadedLODs = proxy.Asset.LoadedLODs;
-                    var nodes = proxy.Asset.Nodes;
-                    var bones = proxy.Asset.Bones;
 
                     // General properties
                     {
@@ -286,8 +282,6 @@ namespace FlaxEditor.Windows.Assets
                     var proxy = (SkeletonPropertiesProxy)Values[0];
                     if (Utilities.Utils.OnAssetProperties(layout, proxy.Asset))
                         return;
-                    var lods = proxy.Asset.LODs;
-                    var loadedLODs = proxy.Asset.LoadedLODs;
                     var nodes = proxy.Asset.Nodes;
                     var bones = proxy.Asset.Bones;
 
@@ -523,7 +517,7 @@ namespace FlaxEditor.Windows.Assets
                     if (_uvChannel == value)
                         return;
                     _uvChannel = value;
-                    Window.RequestMeshData();
+                    Window._meshData?.RequestMeshData(Window._asset);
                 }
             }
 
@@ -558,7 +552,7 @@ namespace FlaxEditor.Windows.Assets
                     base.Initialize(layout);
 
                     _uvsPreview = layout.Custom<UVsLayoutPreviewControl>().CustomControl;
-                    _uvsPreview.Proxy = proxy;
+                    _uvsPreview.Window = proxy.Window;
                 }
 
                 /// <inheritdoc />
@@ -568,11 +562,12 @@ namespace FlaxEditor.Windows.Assets
 
                     if (_uvsPreview != null)
                     {
-                        _uvsPreview.Channel = _uvsPreview.Proxy._uvChannel;
-                        _uvsPreview.LOD = _uvsPreview.Proxy.LOD;
-                        _uvsPreview.Mesh = _uvsPreview.Proxy.Mesh;
-                        _uvsPreview.HighlightIndex = _uvsPreview.Proxy.Window._highlightIndex;
-                        _uvsPreview.IsolateIndex = _uvsPreview.Proxy.Window._isolateIndex;
+                        var proxy = (UVsPropertiesProxy)Values[0];
+                        _uvsPreview.Channel = proxy._uvChannel == UVChannel.TexCoord ? 0 : -1;
+                        _uvsPreview.LOD = proxy.LOD;
+                        _uvsPreview.Mesh = proxy.Mesh;
+                        _uvsPreview.HighlightIndex = proxy.Window._highlightIndex;
+                        _uvsPreview.IsolateIndex = proxy.Window._isolateIndex;
                     }
                 }
 
@@ -581,171 +576,6 @@ namespace FlaxEditor.Windows.Assets
                     _uvsPreview = null;
 
                     base.Deinitialize();
-                }
-            }
-
-            private sealed class UVsLayoutPreviewControl : RenderToTextureControl
-            {
-                private UVChannel _channel;
-                private int _lod, _mesh = -1;
-                private int _highlightIndex = -1;
-                private int _isolateIndex = -1;
-                public UVsPropertiesProxy Proxy;
-
-                public UVsLayoutPreviewControl()
-                {
-                    Offsets = new Margin(4);
-                    AutomaticInvalidate = false;
-                }
-
-                public UVChannel Channel
-                {
-                    set
-                    {
-                        if (_channel == value)
-                            return;
-                        _channel = value;
-                        Visible = _channel != UVChannel.None;
-                        if (Visible)
-                            Invalidate();
-                    }
-                }
-
-                public int LOD
-                {
-                    set
-                    {
-                        if (_lod != value)
-                        {
-                            _lod = value;
-                            Invalidate();
-                        }
-                    }
-                }
-
-                public int Mesh
-                {
-                    set
-                    {
-                        if (_mesh != value)
-                        {
-                            _mesh = value;
-                            Invalidate();
-                        }
-                    }
-                }
-
-                public int HighlightIndex
-                {
-                    set
-                    {
-                        if (_highlightIndex != value)
-                        {
-                            _highlightIndex = value;
-                            Invalidate();
-                        }
-                    }
-                }
-
-                public int IsolateIndex
-                {
-                    set
-                    {
-                        if (_isolateIndex != value)
-                        {
-                            _isolateIndex = value;
-                            Invalidate();
-                        }
-                    }
-                }
-
-                private void DrawMeshUVs(int meshIndex, MeshData meshData)
-                {
-                    var uvScale = Size;
-                    var linesColor = _highlightIndex != -1 && _highlightIndex == meshIndex ? Style.Current.BackgroundSelected : Color.White;
-                    switch (_channel)
-                    {
-                    case UVChannel.TexCoord:
-                        for (int i = 0; i < meshData.IndexBuffer.Length; i += 3)
-                        {
-                            // Cache triangle indices
-                            uint i0 = meshData.IndexBuffer[i + 0];
-                            uint i1 = meshData.IndexBuffer[i + 1];
-                            uint i2 = meshData.IndexBuffer[i + 2];
-
-                            // Cache triangle uvs positions and transform positions to output target
-                            Float2 uv0 = meshData.VertexBuffer[i0].TexCoord * uvScale;
-                            Float2 uv1 = meshData.VertexBuffer[i1].TexCoord * uvScale;
-                            Float2 uv2 = meshData.VertexBuffer[i2].TexCoord * uvScale;
-
-                            // Don't draw too small triangles
-                            float area = Float2.TriangleArea(ref uv0, ref uv1, ref uv2);
-                            if (area > 3.0f)
-                            {
-                                // Draw triangle
-                                Render2D.DrawLine(uv0, uv1, linesColor);
-                                Render2D.DrawLine(uv1, uv2, linesColor);
-                                Render2D.DrawLine(uv2, uv0, linesColor);
-                            }
-                        }
-                        break;
-                    }
-                }
-
-                /// <inheritdoc />
-                protected override void DrawChildren()
-                {
-                    base.DrawChildren();
-
-                    var size = Size;
-                    if (_channel == UVChannel.None || size.MaxValue < 5.0f)
-                        return;
-                    if (!Proxy.Window.RequestMeshData())
-                    {
-                        Invalidate();
-                        Render2D.DrawText(Style.Current.FontMedium, "Loading...", new Rectangle(Float2.Zero, size), Color.White, TextAlignment.Center, TextAlignment.Center);
-                        return;
-                    }
-
-                    Render2D.PushClip(new Rectangle(Float2.Zero, size));
-
-                    var meshDatas = Proxy.Window._meshDatas;
-                    if (meshDatas.Length != 0)
-                    {
-                        var lodIndex = Mathf.Clamp(_lod, 0, meshDatas.Length - 1);
-                        var lod = meshDatas[lodIndex];
-                        var mesh = Mathf.Clamp(_mesh, -1, lod.Length - 1);
-                        if (mesh == -1)
-                        {
-                            for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
-                            {
-                                if (_isolateIndex != -1 && _isolateIndex != meshIndex)
-                                    continue;
-                                DrawMeshUVs(meshIndex, lod[meshIndex]);
-                            }
-                        }
-                        else
-                        {
-                            DrawMeshUVs(mesh, lod[mesh]);
-                        }
-                    }
-
-                    Render2D.PopClip();
-                }
-
-                protected override void OnSizeChanged()
-                {
-                    Height = Width;
-
-                    base.OnSizeChanged();
-                }
-
-                protected override void OnVisibleChanged()
-                {
-                    base.OnVisibleChanged();
-
-                    Parent.PerformLayout();
-                    Height = Width;
                 }
             }
         }
@@ -1159,20 +989,10 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
-        private struct MeshData
-        {
-            public uint[] IndexBuffer;
-            public SkinnedMesh.Vertex[] VertexBuffer;
-        }
-
         private Preview _preview;
         private AnimatedModel _highlightActor;
         private ToolStripButton _showNodesButton;
         private ToolStripButton _showCurrentLODButton;
-
-        private MeshData[][] _meshDatas;
-        private bool _meshDatasInProgress;
-        private bool _meshDatasCancel;
 
         /// <inheritdoc />
         public SkinnedModelWindow(Editor editor, AssetItem item)
@@ -1256,67 +1076,6 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
-        private bool RequestMeshData()
-        {
-            if (_meshDatasInProgress)
-                return false;
-            if (_meshDatas != null)
-                return true;
-            _meshDatasInProgress = true;
-            _meshDatasCancel = false;
-            Task.Run(new Action(DownloadMeshData));
-            return false;
-        }
-
-        private void WaitForMeshDataRequestEnd()
-        {
-            if (_meshDatasInProgress)
-            {
-                _meshDatasCancel = true;
-                for (int i = 0; i < 500 && _meshDatasInProgress; i++)
-                    Thread.Sleep(10);
-            }
-        }
-
-        private void DownloadMeshData()
-        {
-            try
-            {
-                if (!_asset)
-                {
-                    _meshDatasInProgress = false;
-                    return;
-                }
-                var lods = _asset.LODs;
-                _meshDatas = new MeshData[lods.Length][];
-
-                for (int lodIndex = 0; lodIndex < lods.Length && !_meshDatasCancel; lodIndex++)
-                {
-                    var lod = lods[lodIndex];
-                    var meshes = lod.Meshes;
-                    _meshDatas[lodIndex] = new MeshData[meshes.Length];
-
-                    for (int meshIndex = 0; meshIndex < meshes.Length && !_meshDatasCancel; meshIndex++)
-                    {
-                        var mesh = meshes[meshIndex];
-                        _meshDatas[lodIndex][meshIndex] = new MeshData
-                        {
-                            IndexBuffer = mesh.DownloadIndexBuffer(),
-                            VertexBuffer = mesh.DownloadVertexBuffer()
-                        };
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Editor.LogWarning("Failed to get mesh data. " + ex.Message);
-                Editor.LogWarning(ex);
-            }
-            finally
-            {
-                _meshDatasInProgress = false;
-            }
-        }
 
         /// <inheritdoc />
         public override void Update(float deltaTime)
@@ -1373,7 +1132,6 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void UnlinkItem()
         {
-            WaitForMeshDataRequestEnd();
             _preview.SkinnedModel = null;
             _highlightActor.SkinnedModel = null;
 
@@ -1405,21 +1163,8 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
-        public override void OnItemReimported(ContentItem item)
-        {
-            // Discard any old mesh data cache
-            WaitForMeshDataRequestEnd();
-            _meshDatas = null;
-            _meshDatasInProgress = false;
-
-            base.OnItemReimported(item);
-        }
-
-        /// <inheritdoc />
         public override void OnDestroy()
         {
-            WaitForMeshDataRequestEnd();
-
             base.OnDestroy();
 
             Object.Destroy(ref _highlightActor);

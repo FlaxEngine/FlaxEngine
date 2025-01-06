@@ -20,10 +20,10 @@ GPUShaderProgramVSDX11::~GPUShaderProgramVSDX11()
 ID3D11InputLayout* GPUShaderProgramVSDX11::GetInputLayout(GPUVertexLayoutDX11* vertexLayout)
 {
     ID3D11InputLayout* inputLayout = nullptr;
+    if (!vertexLayout)
+        vertexLayout = (GPUVertexLayoutDX11*)Layout;
     if (!_cache.TryGet(vertexLayout, inputLayout))
     {
-        if (!vertexLayout)
-            vertexLayout = (GPUVertexLayoutDX11*)Layout;
         if (vertexLayout && vertexLayout->InputElementsCount)
         {
             auto mergedVertexLayout = (GPUVertexLayoutDX11*)GPUVertexLayout::Merge(vertexLayout, Layout);

@@ -8,6 +8,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Level/Scene/Scene.h"
@@ -300,7 +301,8 @@ void StaticModel::FlushVertexColors()
                 vertexColorsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("VertexColors"));
             if (vertexColorsBuffer->GetSize() != size)
             {
-                if (vertexColorsBuffer->Init(GPUBufferDescription::Vertex(VB2ElementType::GetLayout(), sizeof(Color32), vertexColorsData.Count(), nullptr)))
+                auto layout = GPUVertexLayout::Get({{ VertexElement::Types::Color, 2, 0, 0, PixelFormat::R8G8B8A8_UNorm }});
+                if (vertexColorsBuffer->Init(GPUBufferDescription::Vertex(layout, sizeof(Color32), vertexColorsData.Count(), nullptr)))
                     break;
             }
             GPUDevice::Instance->GetMainContext()->UpdateBuffer(vertexColorsBuffer, vertexColorsData.Get(), size);
@@ -627,16 +629,17 @@ bool StaticModel::IntersectsEntry(const Ray& ray, Real& distance, Vector3& norma
     return result;
 }
 
-bool StaticModel::GetMeshData(const MeshReference& mesh, MeshBufferType type, BytesContainer& result, int32& count) const
+bool StaticModel::GetMeshData(const MeshReference& ref, MeshBufferType type, BytesContainer& result, int32& count, GPUVertexLayout** layout) const
 {
     count = 0;
-    if (mesh.LODIndex < 0 || mesh.MeshIndex < 0)
+    if (ref.LODIndex < 0 || ref.MeshIndex < 0)
         return true;
     const auto model = Model.Get();
     if (!model || model->WaitForLoaded())
         return true;
-    auto& lod = model->LODs[Math::Min(mesh.LODIndex, model->LODs.Count() - 1)];
-    return lod.Meshes[Math::Min(mesh.MeshIndex, lod.Meshes.Count() - 1)].DownloadDataCPU(type, result, count);
+    auto& lod = model->LODs[Math::Min(ref.LODIndex, model->LODs.Count() - 1)];
+    auto& mesh = lod.Meshes[Math::Min(ref.MeshIndex, lod.Meshes.Count() - 1)];
+    return mesh.DownloadDataCPU(type, result, count, layout);
 }
 
 MeshDeformation* StaticModel::GetMeshDeformation() const

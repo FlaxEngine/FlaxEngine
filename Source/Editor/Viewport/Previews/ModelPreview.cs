@@ -296,10 +296,17 @@ namespace FlaxEditor.Viewport.Previews
                 for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
                 {
                     var meshData = lod[meshIndex];
-                    for (int i = 0; i < meshData.VertexBuffer.Length; i++)
+                    var positionStream = meshData.VertexAccessor.Position();
+                    var normalStream = meshData.VertexAccessor.Normal();
+                    if (positionStream.IsValid && normalStream.IsValid)
                     {
-                        ref var v = ref meshData.VertexBuffer[i];
-                        DebugDraw.DrawLine(v.Position, v.Position + v.Normal * 4.0f, Color.Blue);
+                        var count = positionStream.Count;
+                        for (int i = 0; i < count; i++)
+                        {
+                            var position = positionStream.GetFloat3(i);
+                            var normal = normalStream.GetFloat3(i) * 2.0f - 1.0f;
+                            DebugDraw.DrawLine(position, position + normal * 4.0f, Color.Blue);
+                        }
                     }
                 }
             }
@@ -313,10 +320,17 @@ namespace FlaxEditor.Viewport.Previews
                 for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
                 {
                     var meshData = lod[meshIndex];
-                    for (int i = 0; i < meshData.VertexBuffer.Length; i++)
+                    var positionStream = meshData.VertexAccessor.Position();
+                    var tangentStream = meshData.VertexAccessor.Tangent();
+                    if (positionStream.IsValid && tangentStream.IsValid)
                     {
-                        ref var v = ref meshData.VertexBuffer[i];
-                        DebugDraw.DrawLine(v.Position, v.Position + v.Tangent * 4.0f, Color.Red);
+                        var count = positionStream.Count;
+                        for (int i = 0; i < count; i++)
+                        {
+                            var position = positionStream.GetFloat3(i);
+                            var tangent = tangentStream.GetFloat3(i) * 2.0f - 1.0f;
+                            DebugDraw.DrawLine(position, position + tangent * 4.0f, Color.Red);
+                        }
                     }
                 }
             }
@@ -330,10 +344,21 @@ namespace FlaxEditor.Viewport.Previews
                 for (int meshIndex = 0; meshIndex < lod.Length; meshIndex++)
                 {
                     var meshData = lod[meshIndex];
-                    for (int i = 0; i < meshData.VertexBuffer.Length; i++)
+                    var positionStream = meshData.VertexAccessor.Position();
+                    var normalStream = meshData.VertexAccessor.Normal();
+                    var tangentStream = meshData.VertexAccessor.Tangent();
+                    if (positionStream.IsValid && normalStream.IsValid && tangentStream.IsValid)
                     {
-                        ref var v = ref meshData.VertexBuffer[i];
-                        DebugDraw.DrawLine(v.Position, v.Position + v.Bitangent * 4.0f, Color.Green);
+                        var count = positionStream.Count;
+                        for (int i = 0; i < count; i++)
+                        {
+                            var position = positionStream.GetFloat3(i);
+                            var normal = normalStream.GetFloat3(i) * 2.0f - 1.0f;
+                            var tangent = tangentStream.GetFloat4(i);
+                            var bitangentSign = tangent.W > Mathf.Epsilon ? -1.0f : +1.0f;
+                            var bitangent = Float3.Cross(normal, new Float3(tangent) * 2.0f - 1.0f) * bitangentSign;
+                            DebugDraw.DrawLine(position, position + bitangent * 4.0f, Color.Green);
+                        }
                     }
                 }
             }

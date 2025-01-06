@@ -73,7 +73,7 @@ int32 GameBase::LoadProduct()
             goto LOAD_GAME_HEAD_FAILED;
 
         // Load game primary data
-        stream->ReadArray(&data);
+        stream->Read(data);
         if (data.Count() != 808 + sizeof(Guid))
             goto LOAD_GAME_HEAD_FAILED;
         Encryption::DecryptBytes(data.Get(), data.Count());

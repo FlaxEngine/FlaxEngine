@@ -8,4 +8,14 @@
 namespace CSG
 {
     typedef ::BrushMode Mode;
+
+    struct MeshVertex
+    {
+        Float3 Position;
+        Float2 TexCoord;
+        Float3 Normal;
+        Float3 Tangent;
+        Float3 Bitangent;
+        Float2 LightmapUVs;
+    };
 };

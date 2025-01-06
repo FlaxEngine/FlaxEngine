@@ -414,10 +414,13 @@ namespace FlaxEditor.Tools
                     for (int meshIndex = 0; meshIndex < lodData.Length; meshIndex++)
                     {
                         var meshData = lodData[meshIndex];
-                        for (int vertexIndex = 0; vertexIndex < meshData.VertexBuffer.Length; vertexIndex++)
+                        var colors = meshData.VertexAccessor.Colors;
+                        if (colors == null)
+                            continue;
+                        var vertexCount = colors.Length;
+                        for (int vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
                         {
-                            ref var v = ref meshData.VertexBuffer[vertexIndex];
-                            _selectedModel.SetVertexColor(lodIndex, meshIndex, vertexIndex, v.Color);
+                            _selectedModel.SetVertexColor(lodIndex, meshIndex, vertexIndex, colors[vertexIndex]);
                         }
                     }
                 }
@@ -430,10 +433,13 @@ namespace FlaxEditor.Tools
                 for (int meshIndex = 0; meshIndex < lodData.Length; meshIndex++)
                 {
                     var meshData = lodData[meshIndex];
-                    for (int vertexIndex = 0; vertexIndex < meshData.VertexBuffer.Length; vertexIndex++)
+                    var positionStream = meshData.VertexAccessor.Position();
+                    if (!positionStream.IsValid)
+                        continue;
+                    var vertexCount = positionStream.Count;
+                    for (int vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
                     {
-                        ref var v = ref meshData.VertexBuffer[vertexIndex];
-                        var pos = instanceTransform.LocalToWorld(v.Position);
+                        var pos = instanceTransform.LocalToWorld(positionStream.GetFloat3(vertexIndex));
                         var dst = Vector3.Distance(ref pos, ref brushSphere.Center);
                         if (dst > brushSphere.Radius)
                             continue;
@@ -590,12 +596,13 @@ namespace FlaxEditor.Tools
                         for (int meshIndex = 0; meshIndex < lodData.Length; meshIndex++)
                         {
                             var meshData = lodData[meshIndex];
-                            if (meshData.VertexBuffer == null)
+                            var positionStream = meshData.VertexAccessor.Position();
+                            if (!positionStream.IsValid)
                                 continue;
-                            for (int vertexIndex = 0; vertexIndex < meshData.VertexBuffer.Length; vertexIndex++)
+                            var vertexCount = positionStream.Count;
+                            for (int vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
                             {
-                                ref var v = ref meshData.VertexBuffer[vertexIndex];
-                                var pos = instanceTransform.LocalToWorld(v.Position);
+                                var pos = instanceTransform.LocalToWorld(positionStream.GetFloat3(vertexIndex));
                                 if (brushSphere.Contains(ref pos) == ContainmentType.Disjoint)
                                     continue;
                                 Matrix transform = modelScaleMatrix * Matrix.Translation(pos - viewOrigin);
