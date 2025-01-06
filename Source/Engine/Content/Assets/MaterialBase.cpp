@@ -30,7 +30,7 @@ void MaterialBase::SetParameterValue(const StringView& name, const Variant& valu
     const auto param = Params.Get(name);
     if (param)
     {
-        if (param->GetValue().Type == value.Type)
+        if (Variant::CanCast(value, param->GetValue().Type))
         {
             param->SetValue(value);
             param->SetIsOverride(true);
