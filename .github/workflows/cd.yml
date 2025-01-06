@@ -35,12 +35,12 @@ jobs:
       run: |
         .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Windows-Editor
         path: Output/Editor.zip
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Windows-EditorDebugSymbols
         path: Output/EditorDebugSymbols.zip
@@ -68,7 +68,7 @@ jobs:
       run: |
         .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Windows-Game
         path: Output/Windows.zip
@@ -101,7 +101,7 @@ jobs:
       run: |
         ./PackageEditor.sh -arch=x64 -platform=Linux -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Linux-Editor
         path: Output/FlaxEditorLinux.zip
@@ -132,7 +132,7 @@ jobs:
       run: |
         ./PackagePlatforms.sh -arch=x64 -platform=Linux -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Linux-Game
         path: Output/Linux.zip
@@ -162,7 +162,7 @@ jobs:
       run: |
         ./PackageEditor.command -arch=ARM64 -platform=Mac -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Mac-Editor
         path: Output/FlaxEditorMac.zip
@@ -190,7 +190,7 @@ jobs:
       run: |
         ./PackagePlatforms.command -arch=ARM64 -platform=Mac -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Mac-Game
         path: Output/Mac.zip
