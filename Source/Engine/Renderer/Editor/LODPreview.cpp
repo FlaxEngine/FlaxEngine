@@ -34,7 +34,7 @@ bool LODPreviewMaterialShader::IsReady() const
 
 bool LODPreviewMaterialShader::CanUseInstancing(InstancingHandler& handler) const
 {
-    return _material->CanUseInstancing(handler);
+    return false;
 }
 
 DrawPass LODPreviewMaterialShader::GetDrawModes() const
