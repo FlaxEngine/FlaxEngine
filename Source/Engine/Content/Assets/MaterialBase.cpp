@@ -25,13 +25,20 @@ Variant MaterialBase::GetParameterValue(const StringView& name)
     return Variant::Null;
 }
 
-void MaterialBase::SetParameterValue(const StringView& name, const Variant& value, bool warnIfMissing)
+void MaterialBase::SetParameterValue(const StringView& name, const Variant& value, bool warnIfMissing, bool warnIfWrongType)
 {
     const auto param = Params.Get(name);
     if (param)
     {
-        param->SetValue(value);
-        param->SetIsOverride(true);
+        if (Variant::CanCast(value, param->GetValue().Type))
+        {
+            param->SetValue(value);
+            param->SetIsOverride(true);
+        }
+        else if (warnIfWrongType)
+        {
+            LOG(Warning, "Material parameter '{0}' in material {1} is type '{2}' and not type '{3}'.", String(name), ToString(), param->GetValue().Type, value.Type);
+        }
     }
     else if (warnIfMissing)
     {
