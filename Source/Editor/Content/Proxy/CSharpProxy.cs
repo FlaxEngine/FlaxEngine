@@ -107,6 +107,23 @@ namespace FlaxEditor.Content
     }
     
     /// <summary>
+    /// Context proxy object for C# GamePlugin files.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
+    [ContentContextMenu("New/C#/C# GamePlugin")]
+    public class CSharpGamePluginProxy : CSharpProxy
+    {
+        /// <inheritdoc />
+        public override string Name => "C# GamePlugin";
+
+        /// <inheritdoc />
+        protected override void GetTemplatePath(out string path)
+        {
+            path = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor/Scripting/GamePluginTemplate.cs");
+        }
+    }
+    
+    /// <summary>
     /// Context proxy object for empty C# files.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.CSharpProxy" />
