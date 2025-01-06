@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -758,8 +759,11 @@ namespace FlaxEditor.Windows.Assets
                         var importSettingsValues = new ValueContainer(new ScriptMemberInfo(importSettingsField)) { proxy.ImportSettings };
                         group.Object(importSettingsValues);
 
+                        // Creates the import path UI
+                        Utilities.Utils.CreateImportPathUI(layout, proxy.Window.Item as BinaryAssetItem);
+
                         layout.Space(5);
-                        var reimportButton = group.Button("Reimport");
+                        var reimportButton = layout.Button("Reimport");
                         reimportButton.Button.Clicked += () => ((ImportPropertiesProxy)Values[0]).Reimport();
                     }
                 }
