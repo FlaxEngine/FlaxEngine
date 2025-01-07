@@ -177,22 +177,28 @@ GPUShaderProgram* GPUShader::GetShader(ShaderStage stage, const StringAnsiView& 
     return shader;
 }
 
-GPUVertexLayout* GPUShader::ReadVertexLayout(MemoryReadStream& stream)
+void GPUShader::ReadVertexLayout(MemoryReadStream& stream, GPUVertexLayout*& inputLayout, GPUVertexLayout*& vertexLayout)
 {
+    inputLayout = vertexLayout = nullptr;
+
+    // Read input layout (based on shader reflection)
+    GPUVertexLayout::Elements elements;
+    stream.Read(elements);
+    inputLayout = GPUVertexLayout::Get(elements);
+
     // [Deprecated in v1.10]
     byte inputLayoutSize;
     stream.ReadByte(&inputLayoutSize);
     if (inputLayoutSize == 0)
-        return nullptr;
+        return;
     void* elementsData = stream.Move(sizeof(VertexElement) * inputLayoutSize);
     if (inputLayoutSize > GPU_MAX_VS_ELEMENTS)
     {
         LOG(Error, "Incorrect input layout size.");
-        return nullptr;
+        return;
     }
-    GPUVertexLayout::Elements elements;
     elements.Set((VertexElement*)elementsData, inputLayoutSize);
-    return GPUVertexLayout::Get(elements);
+    vertexLayout = GPUVertexLayout::Get(elements);
 }
 
 GPUResourceType GPUShader::GetResourceType() const

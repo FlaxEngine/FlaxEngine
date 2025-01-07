@@ -46,9 +46,10 @@ public:
 class GPUShaderProgramVSDX12 : public GPUShaderProgramDX12<GPUShaderProgramVS>
 {
 public:
-    GPUShaderProgramVSDX12(const GPUShaderProgramInitializer& initializer, const DxShaderHeader* header, Span<byte> bytecode, GPUVertexLayout* vertexLayout)
+    GPUShaderProgramVSDX12(const GPUShaderProgramInitializer& initializer, const DxShaderHeader* header, Span<byte> bytecode, GPUVertexLayout* inputLayout, GPUVertexLayout* vertexLayout)
         : GPUShaderProgramDX12(initializer, header, bytecode)
     {
+        InputLayout = inputLayout;
         Layout = vertexLayout;
     }
 };

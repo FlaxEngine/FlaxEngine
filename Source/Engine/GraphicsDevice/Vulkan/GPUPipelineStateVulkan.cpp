@@ -320,7 +320,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _desc.pStages = _shaderStages;
 
     // Input Assembly
-    VertexShaderLayout = desc.VS ? (GPUVertexLayoutVulkan*)desc.VS->Layout : nullptr;
+    VertexShaderLayout = desc.VS ? (GPUVertexLayoutVulkan*)(desc.VS->Layout ? desc.VS->Layout : desc.VS->InputLayout) : nullptr;
     RenderToolsVulkan::ZeroStruct(_descInputAssembly, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);;
     switch (desc.PrimitiveTopology)
     {

@@ -19,8 +19,9 @@ GPUShaderProgram* GPUShaderDX12::CreateGPUShaderProgram(ShaderStage type, const 
     {
     case ShaderStage::Vertex:
     {
-        GPUVertexLayout* vertexLayout = ReadVertexLayout(stream);
-        shader = New<GPUShaderProgramVSDX12>(initializer, header, bytecode, vertexLayout);
+        GPUVertexLayout* inputLayout, *vertexLayout;
+        ReadVertexLayout(stream, inputLayout, vertexLayout);
+        shader = New<GPUShaderProgramVSDX12>(initializer, header, bytecode, inputLayout, vertexLayout);
         break;
     }
 #if GPU_ALLOW_TESSELLATION_SHADERS

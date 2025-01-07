@@ -271,7 +271,6 @@ bool ShaderCompiler::WriteShaderFunctionBegin(ShaderCompilationContext* context,
 bool ShaderCompiler::WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* header, int32 headerSize, const void* cache, int32 cacheSize)
 {
     auto output = context->Output;
-
     output->Write((uint32)(cacheSize + headerSize));
     output->WriteBytes(header, headerSize);
     output->WriteBytes(cache, cacheSize);
@@ -293,16 +292,20 @@ bool ShaderCompiler::WriteShaderFunctionEnd(ShaderCompilationContext* context, S
     return false;
 }
 
-bool ShaderCompiler::WriteCustomDataVS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros)
+bool ShaderCompiler::WriteCustomDataVS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros, void* additionalData)
 {
-    // [Deprecated in v1.10]
     auto output = context->Output;
+
+    // Write vertex shader inputs (based on compiled shader reflection) to bind any missing vertex buffer streaming at runtime (during drawing - see usage of GPUVertexLayout::Merge)
+    if (auto* additionalDataVS = (AdditionalDataVS*)additionalData)
+        output->Write(additionalDataVS->Inputs);
+    else
+        output->WriteInt32(0);
+
+    // [Deprecated in v1.10]
     auto& metaVS = *(VertexShaderMeta*)&meta;
     auto& layout = metaVS.InputLayout;
 #if FLAXENGINE_VERSION_MAJOR > 2 || (FLAXENGINE_VERSION_MAJOR == 2 && FLAXENGINE_VERSION_MINOR >= 1)
-    if (layout.HasItems())
-        LOG(Warning, "Vertex Shader '{}' (asset '{}') uses explicit vertex layout via 'META_VS_IN_ELEMENT' macros which has been deprecated. Remove this code and migrate to GPUVertexLayout with VertexElement array in code (assigned to vertex buffer).", String(meta.Name), context->Options->TargetName);
-#elif FLAXENGINE_VERSION_MAJOR == 1 && FLAXENGINE_VERSION_MINOR >= 11
     if (layout.HasItems())
         LOG(Warning, "Vertex Shader '{}' (asset '{}') uses explicit vertex layout via 'META_VS_IN_ELEMENT' macros which has been deprecated. Remove this code and migrate to GPUVertexLayout with VertexElement array in code (assigned to vertex buffer).", String(meta.Name), context->Options->TargetName);
 #endif
@@ -443,7 +446,7 @@ bool ShaderCompiler::WriteCustomDataVS(ShaderCompilationContext* context, Shader
     return false;
 }
 
-bool ShaderCompiler::WriteCustomDataHS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros)
+bool ShaderCompiler::WriteCustomDataHS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros, void* additionalData)
 {
     auto output = context->Output;
     auto& metaHS = *(HullShaderMeta*)&meta;
@@ -457,13 +460,44 @@ bool ShaderCompiler::WriteCustomDataHS(ShaderCompilationContext* context, Shader
 void ShaderCompiler::GetDefineForFunction(ShaderFunctionMeta& meta, Array<ShaderMacro>& macros)
 {
     auto& functionName = meta.Name;
-    const int32 functionNameLength = static_cast<int32>(functionName.Length());
+    const int32 functionNameLength = functionName.Length();
     _funcNameDefineBuffer.Clear();
     _funcNameDefineBuffer.EnsureCapacity(functionNameLength + 2);
     _funcNameDefineBuffer.Add('_');
     _funcNameDefineBuffer.Add(functionName.Get(), functionNameLength);
     _funcNameDefineBuffer.Add('\0');
     macros.Add({ _funcNameDefineBuffer.Get(), "1" });
+}
+
+VertexElement::Types ShaderCompiler::ParseVertexElementType(StringAnsiView semantic, uint32 index)
+{
+    if (semantic.HasChars() && StringUtils::IsDigit(semantic[semantic.Length() - 1]))
+    {
+        // Get index from end of the name
+        index = semantic[semantic.Length() - 1] - '0';
+        semantic = StringAnsiView(semantic.Get(), semantic.Length() - 1);
+    }
+
+    if (semantic == "POSITION")
+        return VertexElement::Types::Position;
+    if (semantic == "COLOR")
+        return VertexElement::Types::Color;
+    if (semantic == "NORMAL")
+        return VertexElement::Types::Normal;
+    if (semantic == "TANGENT")
+        return VertexElement::Types::Tangent;
+    if (semantic == "BLENDINDICES")
+        return VertexElement::Types::BlendIndices;
+    if (semantic == "BLENDWEIGHTS" ||
+        semantic == "BLENDWEIGHT") // [Deprecated in v1.10]
+        return VertexElement::Types::BlendWeights;
+    if (semantic == "TEXCOORD" && index < 8)
+        return (VertexElement::Types)((int32)VertexElement::Types::TexCoord0 + index);
+    if (semantic == "ATTRIBUTE" && index < 4)
+        return (VertexElement::Types)((int32)VertexElement::Types::Attribute0 + index);
+
+    LOG(Warning, "Unsupported vertex shader input element semantic {}{}", semantic.ToString(), index);
+    return VertexElement::Types::Unknown;;
 }
 
 #endif

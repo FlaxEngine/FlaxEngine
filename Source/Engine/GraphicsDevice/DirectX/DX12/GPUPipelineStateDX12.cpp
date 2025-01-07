@@ -180,7 +180,7 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
     INIT_SHADER_STAGE(PS, GPUShaderProgramPSDX12);
 
     // Input Assembly
-    VertexLayout = desc.VS ? (GPUVertexLayoutDX12*)desc.VS->Layout : nullptr;
+    VertexLayout = desc.VS ? (GPUVertexLayoutDX12*)(desc.VS->Layout ? desc.VS->Layout : desc.VS->InputLayout) : nullptr;
     const D3D12_PRIMITIVE_TOPOLOGY_TYPE primTypes1[] =
     {
         D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED,

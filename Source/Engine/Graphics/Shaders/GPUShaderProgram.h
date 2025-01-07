@@ -136,6 +136,9 @@ public:
     // [Deprecated in v1.10]
     GPUVertexLayout* Layout = nullptr;
 
+    // Vertex shader inputs layout. Used to ensure that binded vertex buffers provide all required elements.
+    GPUVertexLayout* InputLayout = nullptr;
+
 public:
     // [GPUShaderProgram]
     ShaderStage GetStage() const override

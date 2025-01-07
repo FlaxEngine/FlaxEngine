@@ -66,9 +66,10 @@ public:
 class GPUShaderProgramVSVulkan : public GPUShaderProgramVulkan<GPUShaderProgramVS>
 {
 public:
-    GPUShaderProgramVSVulkan(GPUDeviceVulkan* device, const GPUShaderProgramInitializer& initializer, const SpirvShaderDescriptorInfo& descriptorInfo, VkShaderModule shaderModule, GPUVertexLayout* vertexLayout)
+    GPUShaderProgramVSVulkan(GPUDeviceVulkan* device, const GPUShaderProgramInitializer& initializer, const SpirvShaderDescriptorInfo& descriptorInfo, VkShaderModule shaderModule, GPUVertexLayout* inputLayout, GPUVertexLayout* vertexLayout)
         : GPUShaderProgramVulkan(device, initializer, descriptorInfo, shaderModule)
     {
+        InputLayout = inputLayout;
         Layout = vertexLayout;
     }
 };

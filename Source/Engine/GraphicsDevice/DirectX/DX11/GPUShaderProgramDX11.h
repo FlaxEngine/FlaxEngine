@@ -58,9 +58,10 @@ private:
     Dictionary<class GPUVertexLayoutDX11*, ID3D11InputLayout*> _cache;
 
 public:
-    GPUShaderProgramVSDX11(const GPUShaderProgramInitializer& initializer, ID3D11VertexShader* buffer, GPUVertexLayout* vertexLayout, Span<byte> bytecode)
+    GPUShaderProgramVSDX11(const GPUShaderProgramInitializer& initializer, ID3D11VertexShader* buffer, GPUVertexLayout* inputLayout, GPUVertexLayout* vertexLayout, Span<byte> bytecode)
         : GPUShaderProgramDX11(initializer, buffer)
     {
+        InputLayout = inputLayout;
         Layout = vertexLayout;
         Bytecode.Copy(bytecode);
     }

@@ -12,14 +12,12 @@
 class ShaderCompilerDX : public ShaderCompiler
 {
 private:
-
     Array<char> _funcNameDefineBuffer;
     void* _compiler;
     void* _library;
     void* _containerReflection;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ShaderCompilerDX"/> class.
     /// </summary>
@@ -32,7 +30,6 @@ public:
     ~ShaderCompilerDX();
 
 protected:
-
     // [ShaderCompiler]
     bool CompileShader(ShaderFunctionMeta& meta, WritePermutationData customDataWrite = nullptr) override;
     bool OnCompileBegin() override;

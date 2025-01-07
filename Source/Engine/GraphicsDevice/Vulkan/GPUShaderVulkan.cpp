@@ -138,8 +138,9 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
     {
     case ShaderStage::Vertex:
     {
-        GPUVertexLayout* vertexLayout = ReadVertexLayout(stream);
-        shader = New<GPUShaderProgramVSVulkan>(_device, initializer, header->DescriptorInfo, shaderModule, vertexLayout);
+        GPUVertexLayout* inputLayout, *vertexLayout;
+        ReadVertexLayout(stream, inputLayout, vertexLayout);
+        shader = New<GPUShaderProgramVSVulkan>(_device, initializer, header->DescriptorInfo, shaderModule, inputLayout, vertexLayout);
         break;
     }
 #if GPU_ALLOW_TESSELLATION_SHADERS
