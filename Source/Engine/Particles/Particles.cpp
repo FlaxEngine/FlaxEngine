@@ -94,6 +94,16 @@ PACK_STRUCT(struct RibbonParticleVertex {
     uint32 PrevParticleIndex;
     float Distance;
     // TODO: pack into half/uint16 data
+
+    static GPUVertexLayout* GetLayout()
+    {
+        return GPUVertexLayout::Get({
+            { VertexElement::Types::TexCoord0, 0, 0, 0, PixelFormat::R32_UInt },
+            { VertexElement::Types::TexCoord1, 0, 0, 0, PixelFormat::R32_UInt },
+            { VertexElement::Types::TexCoord2, 0, 0, 0, PixelFormat::R32_UInt },
+            { VertexElement::Types::TexCoord3, 0, 0, 0, PixelFormat::R32_Float },
+        });
+    }
     });
 
 struct EmitterCache
@@ -306,7 +316,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         else
             buffer->GPU.RibbonIndexBufferDynamic->Clear();
         if (!buffer->GPU.RibbonVertexBufferDynamic)
-            buffer->GPU.RibbonVertexBufferDynamic = New<DynamicVertexBuffer>(0, (uint32)sizeof(RibbonParticleVertex), TEXT("RibbonVertexBufferDynamic"));
+            buffer->GPU.RibbonVertexBufferDynamic = New<DynamicVertexBuffer>(0, (uint32)sizeof(RibbonParticleVertex), TEXT("RibbonVertexBufferDynamic"), RibbonParticleVertex::GetLayout());
         else
             buffer->GPU.RibbonVertexBufferDynamic->Clear();
         auto& indexBuffer = buffer->GPU.RibbonIndexBufferDynamic->Data;
