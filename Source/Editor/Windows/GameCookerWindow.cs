@@ -364,6 +364,8 @@ namespace FlaxEditor.Windows
                             avdGroup.Panel.IsClosed = false;
                             var refreshAVDListButton = avdGroup.Button("Refresh AVD list").Button;
                             var avdListGroup = avdGroup.Group("AVD List");
+                            avdListGroup.Panel.IsClosed = false;
+                            var noAvdLabel = avdListGroup.Label("No AVDs detected. Click Refresh.", TextAlignment.Center).Label;
                             var avdListTree = new Tree(false)
                             {
                                 Parent = avdListGroup.Panel,
@@ -402,9 +404,11 @@ namespace FlaxEditor.Windows
                                 var output = new string(processSettings.Output);*/
                                 if (output.Length == 0)
                                 {
-                                    Debug.LogWarning("No AVDs detected.");
+                                    noAvdLabel.Visible = true;
+                                    FlaxEditor.Editor.LogWarning("No AVDs detected.");
                                     return;
                                 }
+                                noAvdLabel.Visible = false;
                                 var splitOutput = output.Split('\n');
                                 foreach (var line in splitOutput)
                                 {
@@ -451,6 +455,8 @@ namespace FlaxEditor.Windows
                             installGroup.Label("Note: Used to install to AVD or physical devices.");
                             var refreshDeviceListButton = installGroup.Button("Refresh device list").Button;
                             var deviceListGroup = installGroup.Group("List of devices");
+                            deviceListGroup.Panel.IsClosed = false;
+                            var noDevicesLabel = deviceListGroup.Label("No devices found. Click Refresh.", TextAlignment.Center).Label;
                             var deviceListTree = new Tree(false)
                             {
                                 Parent = deviceListGroup.Panel,
@@ -489,8 +495,10 @@ namespace FlaxEditor.Windows
                                 
                                 var output = new string(processSettings.Output);
                                 */
+                                
                                 if (output.Length > 0 && !output.Equals("List of devices attached", StringComparison.Ordinal))
                                 {
+                                    noDevicesLabel.Visible = false;
                                     var splitLines = output.Split('\n');
                                     foreach (var line in splitLines)
                                     {
@@ -507,6 +515,10 @@ namespace FlaxEditor.Windows
                                             Parent = deviceListTree,
                                         };
                                     }
+                                }
+                                else
+                                {
+                                    noDevicesLabel.Visible = true;
                                 }
 
                                 deviceListGroup.Panel.IsClosed = false;
