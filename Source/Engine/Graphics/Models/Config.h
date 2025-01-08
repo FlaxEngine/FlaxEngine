@@ -32,6 +32,6 @@
 #define MAX_BONES_PER_VERTEX MODEL_MAX_BONES_PER_VERTEX
 
 // Defines the maximum allowed amount of skeleton bones to be used with skinned model
-#define MODEL_MAX_BONES_PER_MODEL 256
+#define MODEL_MAX_BONES_PER_MODEL 0xffff
 // [Deprecated in v1.10] Use MODEL_MAX_BONES_PER_MODEL
 #define MAX_BONES_PER_MODEL MODEL_MAX_BONES_PER_MODEL

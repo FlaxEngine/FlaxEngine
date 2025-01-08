@@ -396,8 +396,27 @@ bool SkinnedModel::SetupSkeleton(const Array<SkeletonNode>& nodes, const Array<S
     // Validate input
     if (nodes.Count() <= 0 || nodes.Count() > MAX_uint16)
         return true;
-    if (bones.Count() <= 0 || bones.Count() > MODEL_MAX_BONES_PER_MODEL)
-        return true;
+    if (bones.Count() <= 0)
+    {
+        if (bones.Count() > 255)
+        {
+            for (auto& lod : LODs)
+            {
+                for (auto& mesh : lod.Meshes)
+                {
+                    auto* vertexLayout = mesh.GetVertexLayout();
+                    VertexElement element = vertexLayout ? vertexLayout->FindElement(VertexElement::Types::BlendIndices) : VertexElement();
+                    if (element.Format == PixelFormat::R8G8B8A8_UInt)
+                    {
+                        LOG(Warning, "Cannot use more than 255 bones if skinned model uses 8-bit storage for blend indices in vertices.");
+                        return true;
+                    }
+                }
+            }
+        }
+        if (bones.Count() > MODEL_MAX_BONES_PER_MODEL)
+            return true;
+    }
     auto model = this;
     if (!model->IsVirtual())
         return true;
@@ -557,7 +576,7 @@ bool SkinnedModel::LoadHeader(ReadStream& stream, byte& headerVersion)
         lod._model = this;
         lod._lodIndex = lodIndex;
         stream.Read(lod.ScreenSize);
-        
+
         // Meshes
         uint16 meshesCount;
         stream.Read(meshesCount);
@@ -579,7 +598,7 @@ bool SkinnedModel::LoadHeader(ReadStream& stream, byte& headerVersion)
                 return true;
             }
             mesh.SetMaterialSlotIndex(materialSlotIndex);
-            
+
             // Bounds
             BoundingBox box;
             stream.Read(box);

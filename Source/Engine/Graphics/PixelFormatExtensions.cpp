@@ -1436,6 +1436,66 @@ static PixelFormatSampler PixelFormatSamplers[] =
             Platform::MemoryCopy(ptr, data, sizeof(data));
         },
     },
+    {
+        PixelFormat::R16G16B16A16_UInt,
+        sizeof(uint16) * 4,
+        [](const void* ptr)
+        {
+            uint16 data[4];
+            Platform::MemoryCopy(data, ptr, sizeof(data));
+            return Float4(data[0], data[1], data[2], data[3]);
+        },
+        [](void* ptr, const Float4& value)
+        {
+            uint16 data[4] = { (uint16)value.X, (uint16)value.Y, (uint16)value.Z, (uint16)value.W};
+            Platform::MemoryCopy(ptr, data, sizeof(data));
+        },
+    },
+    {
+        PixelFormat::R16G16B16A16_SInt,
+        sizeof(int16) * 4,
+        [](const void* ptr)
+        {
+            int16 data[4];
+            Platform::MemoryCopy(data, ptr, sizeof(data));
+            return Float4(data[0], data[1], data[2], data[3]);
+        },
+        [](void* ptr, const Float4& value)
+        {
+            int16 data[4] = { (int16)value.X, (int16)value.Y, (int16)value.Z, (int16)value.W};
+            Platform::MemoryCopy(ptr, data, sizeof(data));
+        },
+    },
+    {
+        PixelFormat::R32G32B32A32_UInt,
+        sizeof(uint32) * 4,
+        [](const void* ptr)
+        {
+            uint32 data[4];
+            Platform::MemoryCopy(data, ptr, sizeof(data));
+            return Float4(data[0], data[1], data[2], data[3]);
+        },
+        [](void* ptr, const Float4& value)
+        {
+            uint32 data[4] = { (uint32)value.X, (uint32)value.Y, (uint32)value.Z, (uint32)value.W};
+            Platform::MemoryCopy(ptr, data, sizeof(data));
+        },
+    },
+    {
+        PixelFormat::R32G32B32A32_SInt,
+        sizeof(int32) * 4,
+        [](const void* ptr)
+        {
+            int32 data[4];
+            Platform::MemoryCopy(data, ptr, sizeof(data));
+            return Float4(data[0], data[1], data[2], data[3]);
+        },
+        [](void* ptr, const Float4& value)
+        {
+            int32 data[4] = { (int32)value.X, (int32)value.Y, (int32)value.Z, (int32)value.W};
+            Platform::MemoryCopy(ptr, data, sizeof(data));
+        },
+    },
 };
 
 void PixelFormatSampler::Store(void* data, int32 x, int32 y, int32 rowPitch, const Color& color) const

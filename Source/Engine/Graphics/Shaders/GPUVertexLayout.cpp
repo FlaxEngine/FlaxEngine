@@ -126,6 +126,16 @@ String GPUVertexLayout::GetElementsString() const
     return result;
 }
 
+VertexElement GPUVertexLayout::FindElement(VertexElement::Types type) const
+{
+    for (const VertexElement& e : _elements)
+    {
+        if (e.Type == type)
+            return e;
+    }
+    return VertexElement();
+}
+
 GPUVertexLayout* GPUVertexLayout::Get(const Elements& elements, bool explicitOffsets)
 {
     // Hash input layout

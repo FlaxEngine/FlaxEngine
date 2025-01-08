@@ -613,6 +613,15 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
         Array<GPUVertexLayout::Elements, FixedAllocation<MODEL_MAX_VB>> vbElements;
         const bool useSeparatePositions = !isSkinned;
         const bool useSeparateColors = !isSkinned;
+        PixelFormat blendIndicesFormat = PixelFormat::R8G8B8A8_UInt;
+        for (const Int4& indices : mesh.BlendIndices)
+        {
+            if (indices.MaxValue() > MAX_uint8)
+            {
+                blendIndicesFormat = PixelFormat::R16G16B16A16_UInt;
+                break;
+            }
+        }
         {
             byte vbIndex = 0;
             // TODO: add option to quantize vertex positions (eg. 16-bit)
@@ -640,7 +649,7 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                 vb.Add({ VertexElement::Types::Tangent, vbIndex, 0, 0, PixelFormat::R10G10B10A2_UNorm });
                 if (isSkinned)
                 {
-                    vb.Add({ VertexElement::Types::BlendIndices, vbIndex, 0, 0, PixelFormat::R8G8B8A8_UInt });
+                    vb.Add({ VertexElement::Types::BlendIndices, vbIndex, 0, 0, blendIndicesFormat });
                     vb.Add({ VertexElement::Types::BlendWeights, vbIndex, 0, 0, PixelFormat::R16G16B16A16_Float });
                 }
                 if (!useSeparateColors && hasColors)
@@ -714,8 +723,18 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                     case VertexElement::Types::BlendIndices:
                     {
                         const Int4 blendIndices = mesh.BlendIndices.Get()[vertex];
-                        const Color32 blendIndicesEnc(blendIndices.X, blendIndices.Y, blendIndices.Z, blendIndices.W);
-                        stream.Write(blendIndicesEnc);
+                        if (blendIndicesFormat == PixelFormat::R8G8B8A8_UInt)
+                        {
+                            // 8-bit indices
+                            const Color32 blendIndicesEnc(blendIndices.X, blendIndices.Y, blendIndices.Z, blendIndices.W);
+                            stream.Write(blendIndicesEnc);
+                        }
+                        else
+                        {
+                            // 16-bit indices
+                            const uint16 blendIndicesEnc[4] = { (uint16)blendIndices.X, (uint16)blendIndices.Y, (uint16)blendIndices.Z, (uint16)blendIndices.W };
+                            stream.Write(blendIndicesEnc);
+                        }
                         break;
                     }
                     case VertexElement::Types::BlendWeights:

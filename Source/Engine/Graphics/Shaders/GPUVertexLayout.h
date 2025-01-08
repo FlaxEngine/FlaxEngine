@@ -48,6 +48,13 @@ public:
     }
 
     /// <summary>
+    /// Searches for a given element type in a layout.
+    /// </summary>
+    /// <param name="type">The type of element to find.</param>
+    /// <returns>Found element with properties or empty if missing.</returns>
+    API_FUNCTION() VertexElement FindElement(VertexElement::Types type) const;
+
+    /// <summary>
     /// Gets the vertex layout for a given list of elements. Uses internal cache to skip creating layout if it's already exists for a given list.
     /// </summary>
     /// <param name="elements">The list of elements for the layout.</param>
