@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using FlaxEditor.Content.Settings;
@@ -13,6 +14,7 @@ using FlaxEditor.Utilities;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
+using Debug = FlaxEngine.Debug;
 using PlatformType = FlaxEngine.PlatformType;
 
 // ReSharper disable InconsistentNaming
@@ -376,6 +378,7 @@ namespace FlaxEditor.Windows
                                     FileName = Path.Combine(sdkPath, "emulator", "emulator.exe"),
                                     Arguments = "-list-avds",
                                     RedirectStandardOutput = true,
+                                    CreateNoWindow = true,
                                 };
 
                                 var process = new System.Diagnostics.Process
@@ -462,6 +465,7 @@ namespace FlaxEditor.Windows
                                     FileName = Path.Combine(sdkPath, "platform-tools", "adb.exe"),
                                     Arguments = "devices -l",
                                     RedirectStandardOutput = true,
+                                    CreateNoWindow = true,
                                 };
 
                                 var process = new System.Diagnostics.Process
@@ -564,6 +568,35 @@ namespace FlaxEditor.Windows
                                     };
                                     FlaxEngine.Platform.CreateProcess(ref processSettings1);
                                 }
+                            };
+
+                            var adbLogButton = emulatorGroup.Button("Start adb log collecting").Button;
+                            adbLogButton.TooltipText = "In debug and development builds the engine and game logs can be output directly to the adb.";
+                            adbLogButton.Clicked += () =>
+                            {
+                                
+                                var processStartInfo = new System.Diagnostics.ProcessStartInfo
+                                {
+                                    FileName = Path.Combine(sdkPath, "platform-tools", "adb.exe"),
+                                    Arguments = "logcat Flax:I *:S",
+                                };
+                                processStartInfo.CreateNoWindow = false;
+                                processStartInfo.WindowStyle = ProcessWindowStyle.Normal;
+
+                                var process = new System.Diagnostics.Process
+                                {
+                                    StartInfo = processStartInfo
+                                };
+                                process.Start();
+                                /*
+                                CreateProcessSettings processSettings = new CreateProcessSettings
+                                {
+                                    FileName = Path.Combine(sdkPath, "platform-tools", "adb.exe"),
+                                    Arguments = $"logcat Flax:I *:S",
+                                    //LogOutput = true,
+                                };
+                                FlaxEngine.Platform.CreateProcess(ref processSettings);
+                                */
                             };
                         }
                     }
