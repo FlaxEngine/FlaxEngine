@@ -94,7 +94,7 @@ public:
         switch (layout)
         {
         case VK_IMAGE_LAYOUT_UNDEFINED:
-            accessFlags = 0;
+            accessFlags = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
             stageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             break;
         case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
@@ -102,7 +102,7 @@ public:
             stageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
             break;
         case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-            accessFlags = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            accessFlags = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
             stageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
             break;
         case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
@@ -116,12 +116,12 @@ public:
             stageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
             break;
         case VK_IMAGE_LAYOUT_PRESENT_SRC_KHR:
-            accessFlags = 0;
+            accessFlags = VK_ACCESS_NONE;
             stageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
             break;
         case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
             accessFlags = VK_ACCESS_SHADER_READ_BIT;
-            stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
             break;
         case VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL:
         case VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL:
