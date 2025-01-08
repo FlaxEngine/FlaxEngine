@@ -453,39 +453,12 @@ GPUVertexLayoutVulkan::GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elem
     : GPUResourceVulkan<GPUVertexLayout>(device, StringView::Empty)
 {
     SetElements(elements, explicitOffsets);
-    for (int32 i = 0; i < GPU_MAX_VB_BINDED; i++)
-    {
-        VkVertexInputBindingDescription& binding = Bindings[i];
-        binding.binding = i;
-        binding.stride = 0;
-        binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    }
-    uint32 bindingsCount = 0;
+    MaxSlot = 0;
     for (int32 i = 0; i < elements.Count(); i++)
     {
         const VertexElement& src = GetElements().Get()[i];
-        const int32 size = PixelFormatExtensions::SizeInBytes(src.Format);
-
-        ASSERT_LOW_LAYER(src.Slot < GPU_MAX_VB_BINDED);
-        VkVertexInputBindingDescription& binding = Bindings[src.Slot];
-        binding.binding = src.Slot;
-        binding.stride = Math::Max(binding.stride, (uint32_t)(src.Offset + size));
-        binding.inputRate = src.PerInstance ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
-
-        VkVertexInputAttributeDescription& attribute = Attributes[i];
-        attribute.location = i;
-        attribute.binding = src.Slot;
-        attribute.format = RenderToolsVulkan::ToVulkanFormat(src.Format);
-        attribute.offset = src.Offset;
-
-        bindingsCount = Math::Max(bindingsCount, (uint32)src.Slot + 1);
+        MaxSlot = Math::Max(MaxSlot, (int32)src.Slot);
     }
-
-    RenderToolsVulkan::ZeroStruct(CreateInfo, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
-    CreateInfo.vertexBindingDescriptionCount = bindingsCount;
-    CreateInfo.pVertexBindingDescriptions = Bindings;
-    CreateInfo.vertexAttributeDescriptionCount = elements.Count();
-    CreateInfo.pVertexAttributeDescriptions = Attributes;
 }
 
 FramebufferVulkan::FramebufferVulkan(GPUDeviceVulkan* device, const Key& key, const VkExtent2D& extent, uint32 layers)
@@ -936,7 +909,8 @@ GPUBufferVulkan* HelperResourcesVulkan::GetDummyVertexBuffer()
     if (!_dummyVB)
     {
         _dummyVB = (GPUBufferVulkan*)_device->CreateBuffer(TEXT("DummyVertexBuffer"));
-        _dummyVB->Init(GPUBufferDescription::Vertex(nullptr, sizeof(Color32), 1, &Color32::Transparent));
+        auto* layout = GPUVertexLayout::Get({{ VertexElement::Types::Attribute3, 0, 0, 0, PixelFormat::R8G8B8A8_UNorm }});
+        _dummyVB->Init(GPUBufferDescription::Vertex(layout, sizeof(Color32), 1, &Color32::Transparent));
     }
     return _dummyVB;
 }

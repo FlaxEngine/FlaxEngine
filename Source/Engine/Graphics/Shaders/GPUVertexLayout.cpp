@@ -206,47 +206,71 @@ GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUVertexLayout*>& layouts)
     return result;
 }
 
-GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, GPUVertexLayout* reference)
+GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, GPUVertexLayout* reference, bool removeUnused, bool addMissing)
 {
     GPUVertexLayout* result = base ? base : reference;
     if (base && reference && base != reference)
     {
-        bool anyMissing = false;
-        const Elements& baseElements = base->GetElements();
-        Elements newElements = baseElements;
-        for (const VertexElement& e : reference->GetElements())
+        bool elementsModified = false;
+        Elements newElements = base->GetElements();
+        if (removeUnused)
         {
-            bool missing = true;
-            for (const VertexElement& ee : baseElements)
+            for (int32 i = newElements.Count() - 1; i >= 0; i--)
             {
-                if (ee.Type == e.Type)
+                bool missing = true;
+                const VertexElement& e = newElements.Get()[i];
+                for (const VertexElement& ee : reference->GetElements())
                 {
-                    missing = false;
-                    break;
-                }
-            }
-            if (missing)
-            {
-                // Insert any missing elements
-                VertexElement ne = { e.Type, e.Slot, 0, e.PerInstance, e.Format };
-                if (e.Type == VertexElement::Types::TexCoord1 || e.Type == VertexElement::Types::TexCoord2 || e.Type == VertexElement::Types::TexCoord3)
-                {
-                    // Alias missing texcoords with existing texcoords
-                    for (const VertexElement& ee : newElements)
+                    if (ee.Type == e.Type)
                     {
-                        if (ee.Type == VertexElement::Types::TexCoord0)
-                        {
-                            ne = ee;
-                            ne.Type = e.Type;
-                            break;
-                        }
+                        missing = false;
+                        break;
                     }
                 }
-                newElements.Add(ne);
-                anyMissing = true;
+                if (missing)
+                {
+                    // Remove unused element
+                    newElements.RemoveAtKeepOrder(i);
+                    elementsModified = true;
+                }
             }
         }
-        if (anyMissing)
+        if (addMissing)
+        {
+            for (const VertexElement& e : reference->GetElements())
+            {
+                bool missing = true;
+                for (const VertexElement& ee : base->GetElements())
+                {
+                    if (ee.Type == e.Type)
+                    {
+                        missing = false;
+                        break;
+                    }
+                }
+                if (missing)
+                {
+                    // Insert any missing elements
+                    VertexElement ne = { e.Type, e.Slot, 0, e.PerInstance, e.Format };
+                    if (e.Type == VertexElement::Types::TexCoord1 || e.Type == VertexElement::Types::TexCoord2 || e.Type == VertexElement::Types::TexCoord3)
+                    {
+                        // Alias missing texcoords with existing texcoords
+                        for (const VertexElement& ee : newElements)
+                        {
+                            if (ee.Type == VertexElement::Types::TexCoord0)
+                            {
+                                ne = ee;
+                                ne.Type = e.Type;
+                                break;
+                            }
+                        }
+                    }
+                    newElements.Add(ne);
+                    elementsModified = true;
+                }
+            }
+        }
+        if (elementsModified)
             result = Get(newElements, true);
     }
     return result;

@@ -146,7 +146,8 @@ public:
 
     const DescriptorSetLayoutVulkan* DescriptorSetsLayout = nullptr;
     TypedDescriptorPoolSetVulkan* CurrentTypedDescriptorPoolSet = nullptr;
-    GPUVertexLayoutVulkan* VertexShaderLayout = nullptr;
+    GPUVertexLayoutVulkan* VertexInputLayout = nullptr;
+    GPUVertexLayoutVulkan* VertexBufferLayout = nullptr;
     Array<VkDescriptorSet> DescriptorSetHandles;
     Array<uint32> DynamicOffsets;
 

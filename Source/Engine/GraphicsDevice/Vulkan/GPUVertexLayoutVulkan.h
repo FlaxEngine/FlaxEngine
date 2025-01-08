@@ -15,9 +15,7 @@ class GPUVertexLayoutVulkan : public GPUResourceVulkan<GPUVertexLayout>
 public:
 	GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elements& elements, bool explicitOffsets);
 
-	VkPipelineVertexInputStateCreateInfo CreateInfo;
-	VkVertexInputBindingDescription Bindings[GPU_MAX_VB_BINDED];
-	VkVertexInputAttributeDescription Attributes[GPU_MAX_VS_ELEMENTS];
+	int32 MaxSlot;
 };
 
 #endif

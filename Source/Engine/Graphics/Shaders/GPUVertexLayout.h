@@ -74,8 +74,10 @@ public:
     /// </summary>
     /// <param name="base">The list of vertex buffers for the layout.</param>
     /// <param name="reference">The list of reference inputs.</param>
+    /// <param name="removeUnused">True to remove elements from base layout that don't exist in a reference layout.</param>
+    /// <param name="addMissing">True to add missing elements to base layout that exist in a reference layout.</param>
     /// <returns>Vertex layout object. Doesn't need to be cleared as it's cached for an application lifetime.</returns>
-    static GPUVertexLayout* Merge(GPUVertexLayout* base, GPUVertexLayout* reference);
+    static GPUVertexLayout* Merge(GPUVertexLayout* base, GPUVertexLayout* reference, bool removeUnused = false, bool addMissing = true);
 
 public:
     // [GPUResource]

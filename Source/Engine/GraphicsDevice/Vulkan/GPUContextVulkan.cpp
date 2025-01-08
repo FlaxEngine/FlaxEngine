@@ -651,14 +651,14 @@ void GPUContextVulkan::OnDrawCall()
     }
 
     // Bind any missing vertex buffers to null if required by the current state
-    GPUVertexLayoutVulkan* vertexLayout = _vertexLayout ? _vertexLayout : pipelineState->VertexShaderLayout;
+    GPUVertexLayoutVulkan* vertexLayout = _vertexLayout ? _vertexLayout : pipelineState->VertexBufferLayout;
 #if GPU_ENABLE_ASSERTION_LOW_LAYERS
-    if (!vertexLayout && pipelineState && !pipelineState->VertexShaderLayout && (pipelineState->UsedStagesMask & (1 << (int32)DescriptorSet::Vertex)) != 0 && !_vertexLayout && _vbCount)
+    if (!vertexLayout && pipelineState && !pipelineState->VertexBufferLayout && (pipelineState->UsedStagesMask & (1 << (int32)DescriptorSet::Vertex)) != 0 && !_vertexLayout && _vbCount)
     {
         LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
     }
 #endif
-    const int32 missingVBs = vertexLayout ? (int32)vertexLayout->CreateInfo.vertexBindingDescriptionCount - _vbCount : 0;
+    const int32 missingVBs = vertexLayout ? vertexLayout->MaxSlot + 1 - _vbCount : 0;
     if (missingVBs > 0)
     {
         VkBuffer buffers[GPU_MAX_VB_BINDED];
@@ -1034,7 +1034,13 @@ void GPUContextVulkan::BindUA(int32 slot, GPUResourceView* view)
 void GPUContextVulkan::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets, GPUVertexLayout* vertexLayout)
 {
     _vbCount = vertexBuffers.Length();
-    _vertexLayout = (GPUVertexLayoutVulkan*)(vertexLayout ? vertexLayout : GPUVertexLayout::Get(vertexBuffers));
+    if (!vertexLayout)
+         vertexLayout = GPUVertexLayout::Get(vertexBuffers);
+    if (_vertexLayout != vertexLayout)
+    {
+        _vertexLayout = (GPUVertexLayoutVulkan*)vertexLayout;
+        _psDirtyFlag = true;
+    }
     if (vertexBuffers.Length() == 0)
         return;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();

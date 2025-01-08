@@ -10,6 +10,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Pair.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 
 static VkStencilOp ToVulkanStencilOp(const StencilOperation value)
 {
@@ -222,8 +223,54 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
     PROFILE_CPU_NAMED("Create Pipeline");
 
     // Bind vertex input
-    vertexLayout = (GPUVertexLayoutVulkan*)GPUVertexLayout::Merge(vertexLayout, VertexShaderLayout);
-    _desc.pVertexInputState = vertexLayout ? &vertexLayout->CreateInfo : nullptr;
+	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo;
+	VkVertexInputBindingDescription vertexInputBindings[GPU_MAX_VB_BINDED];
+	VkVertexInputAttributeDescription vertexInputAttributes[GPU_MAX_VS_ELEMENTS];
+    _desc.pVertexInputState = nullptr;
+    if (!vertexLayout)
+        vertexLayout = VertexBufferLayout; // Fallback to shader-specified layout (if using old APIs)
+    if (vertexLayout)
+    {
+        // Vertex bindings based on vertex buffers assigned
+        for (int32 i = 0; i < GPU_MAX_VB_BINDED; i++)
+        {
+            VkVertexInputBindingDescription& binding = vertexInputBindings[i];
+            binding.binding = i;
+            binding.stride = 0;
+            binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        }
+        uint32 bindingsCount = 0;
+        for (int32 i = 0; i < vertexLayout->GetElements().Count(); i++)
+        {
+            const VertexElement& src = vertexLayout->GetElements().Get()[i];
+            const int32 size = PixelFormatExtensions::SizeInBytes(src.Format);
+            ASSERT_LOW_LAYER(src.Slot < GPU_MAX_VB_BINDED);
+            VkVertexInputBindingDescription& binding = vertexInputBindings[src.Slot];
+            binding.binding = src.Slot;
+            binding.stride = Math::Max(binding.stride, (uint32_t)(src.Offset + size));
+            binding.inputRate = src.PerInstance ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
+            bindingsCount = Math::Max(bindingsCount, (uint32)src.Slot + 1);
+        }
+
+        // Vertex elements (including any merged elements from reference layout from shader reflection)
+        vertexLayout = (GPUVertexLayoutVulkan*)GPUVertexLayout::Merge(vertexLayout, VertexInputLayout, true, true);
+        for (int32 i = 0; i < vertexLayout->GetElements().Count(); i++)
+        {
+            const VertexElement& src = vertexLayout->GetElements().Get()[i];
+            VkVertexInputAttributeDescription& attribute = vertexInputAttributes[i];
+            attribute.location = i;
+            attribute.binding = src.Slot;
+            attribute.format = RenderToolsVulkan::ToVulkanFormat(src.Format);
+            attribute.offset = src.Offset;
+        }
+
+        RenderToolsVulkan::ZeroStruct(vertexInputCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
+        vertexInputCreateInfo.vertexBindingDescriptionCount = bindingsCount;
+        vertexInputCreateInfo.pVertexBindingDescriptions = vertexInputBindings;
+        vertexInputCreateInfo.vertexAttributeDescriptionCount = vertexLayout->GetElements().Count();
+        vertexInputCreateInfo.pVertexAttributeDescriptions = vertexInputAttributes;
+        _desc.pVertexInputState = &vertexInputCreateInfo;
+    }
 
     // Update description to match the pipeline
     _descColorBlend.attachmentCount = renderPass->Layout.RTsCount;
@@ -320,7 +367,11 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _desc.pStages = _shaderStages;
 
     // Input Assembly
-    VertexShaderLayout = desc.VS ? (GPUVertexLayoutVulkan*)(desc.VS->Layout ? desc.VS->Layout : desc.VS->InputLayout) : nullptr;
+    if (desc.VS)
+    {
+        VertexInputLayout = (GPUVertexLayoutVulkan*)desc.VS->InputLayout;
+        VertexBufferLayout = (GPUVertexLayoutVulkan*)desc.VS->Layout;
+    }
     RenderToolsVulkan::ZeroStruct(_descInputAssembly, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);;
     switch (desc.PrimitiveTopology)
     {
