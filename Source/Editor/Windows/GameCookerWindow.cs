@@ -351,15 +351,15 @@ namespace FlaxEditor.Windows
                         // Add emulation options to android tab.
                         if (_platform == PlatformType.Android)
                         {
-                            layout.Space(2);
-                            var emulatorGroup = layout.Group("Emulator");
+                            layout.Space(5);
+                            var emulatorGroup = layout.Group("Tools");
                             var sdkPath = Environment.GetEnvironmentVariable("ANDROID_HOME");
                             if (string.IsNullOrEmpty(sdkPath))
                                 sdkPath = Environment.GetEnvironmentVariable("ANDROID_SDK");
                             emulatorGroup.Label($"SDK path: {sdkPath}");
                             
                             // AVD and starting emulator
-                            var avdGroup = emulatorGroup.Group("AVD");
+                            var avdGroup = emulatorGroup.Group("AVD Emulator");
                             avdGroup.Label("Note: Create AVDs using Android Studio.");
                             avdGroup.Panel.IsClosed = false;
                             var refreshAVDListButton = avdGroup.Button("Refresh AVD list").Button;
@@ -448,7 +448,7 @@ namespace FlaxEditor.Windows
                             // Device
                             var installGroup = emulatorGroup.Group("Install");
                             installGroup.Panel.IsClosed = false;
-                            installGroup.Label("Note: used to install to AVD or physical devices.");
+                            installGroup.Label("Note: Used to install to AVD or physical devices.");
                             var refreshDeviceListButton = installGroup.Button("Refresh device list").Button;
                             var deviceListGroup = installGroup.Group("List of devices");
                             var deviceListTree = new Tree(false)
