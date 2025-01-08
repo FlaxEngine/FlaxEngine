@@ -180,7 +180,7 @@ public:
         API_FIELD(Attributes="EditorOrder(70), EditorDisplay(\"Geometry\", \"Import LODs\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportLODs = true;
         // Enable/disable importing vertex colors (channel 0 only).
-        API_FIELD(Attributes="EditorOrder(80), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowModel))")
+        API_FIELD(Attributes="EditorOrder(80), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportVertexColors = true;
         // Enable/disable importing blend shapes (morph targets).
         API_FIELD(Attributes="EditorOrder(85), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowSkinnedModel))")
