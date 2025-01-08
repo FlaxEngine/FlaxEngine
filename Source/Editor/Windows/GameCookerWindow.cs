@@ -574,14 +574,13 @@ namespace FlaxEditor.Windows
                             adbLogButton.TooltipText = "In debug and development builds the engine and game logs can be output directly to the adb.";
                             adbLogButton.Clicked += () =>
                             {
-                                
                                 var processStartInfo = new System.Diagnostics.ProcessStartInfo
                                 {
                                     FileName = Path.Combine(sdkPath, "platform-tools", "adb.exe"),
                                     Arguments = "logcat Flax:I *:S",
+                                    CreateNoWindow = false,
+                                    WindowStyle = ProcessWindowStyle.Normal,
                                 };
-                                processStartInfo.CreateNoWindow = false;
-                                processStartInfo.WindowStyle = ProcessWindowStyle.Normal;
 
                                 var process = new System.Diagnostics.Process
                                 {
@@ -593,7 +592,7 @@ namespace FlaxEditor.Windows
                                 {
                                     FileName = Path.Combine(sdkPath, "platform-tools", "adb.exe"),
                                     Arguments = $"logcat Flax:I *:S",
-                                    //LogOutput = true,
+                                    WaitForEnd = false,
                                 };
                                 FlaxEngine.Platform.CreateProcess(ref processSettings);
                                 */
