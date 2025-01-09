@@ -348,7 +348,7 @@ public:
 
     void InitStaticAtlas()
     {
-        const int32 atlasResolution = Resolution * 2;
+        const int32 atlasResolution = Math::Min(Resolution * 2, GPUDevice::Instance->Limits.MaximumTexture2DSize);
         if (StaticAtlas.Width == atlasResolution)
             return;
         StaticAtlas.Init(atlasResolution, atlasResolution);
@@ -1120,6 +1120,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     default:
         return;
     }
+    atlasResolution = Math::Min(atlasResolution, GPUDevice::Instance->Limits.MaximumTexture2DSize);
     if (shadows.Resolution != atlasResolution)
     {
         shadows.Reset();
