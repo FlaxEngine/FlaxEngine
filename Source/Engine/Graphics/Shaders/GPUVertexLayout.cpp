@@ -96,12 +96,12 @@ GPUVertexLayout::GPUVertexLayout()
 
 void GPUVertexLayout::SetElements(const Elements& elements, bool explicitOffsets)
 {
-    uint32 offsets[GPU_MAX_VB_BINDED] = {};
+    uint32 offsets[GPU_MAX_VB_BINDED + 1] = {};
     _elements = elements;
     for (int32 i = 0; i < _elements.Count(); i++)
     {
         VertexElement& e = _elements[i];
-        ASSERT(e.Slot < GPU_MAX_VB_BINDED);
+        ASSERT(e.Slot <= GPU_MAX_VB_BINDED); // One special slot after all VBs for any missing vertex elements binding (on Vulkan)
         uint32& offset = offsets[e.Slot];
         if (e.Offset != 0 || explicitOffsets)
             offset = e.Offset;
@@ -216,7 +216,7 @@ GPUVertexLayout* GPUVertexLayout::Get(const Span<GPUVertexLayout*>& layouts)
     return result;
 }
 
-GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, GPUVertexLayout* reference, bool removeUnused, bool addMissing)
+GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, GPUVertexLayout* reference, bool removeUnused, bool addMissing, int32 missingSlotOverride)
 {
     GPUVertexLayout* result = base ? base : reference;
     if (base && reference && base != reference)
@@ -261,7 +261,7 @@ GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, GPUVertexLayout* 
                 if (missing)
                 {
                     // Insert any missing elements
-                    VertexElement ne = { e.Type, e.Slot, 0, e.PerInstance, e.Format };
+                    VertexElement ne = { e.Type, missingSlotOverride != -1 ? (byte)missingSlotOverride : e.Slot, 0, e.PerInstance, e.Format };
                     if (e.Type == VertexElement::Types::TexCoord1 || e.Type == VertexElement::Types::TexCoord2 || e.Type == VertexElement::Types::TexCoord3)
                     {
                         // Alias missing texcoords with existing texcoords

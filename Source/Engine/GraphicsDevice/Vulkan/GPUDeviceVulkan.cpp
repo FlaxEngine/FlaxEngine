@@ -499,6 +499,7 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
     : Device(device)
     , Handle(VK_NULL_HANDLE)
     , Layout(layout)
+    , CanDepthWrite(true)
 {
     const int32 colorAttachmentsCount = layout.RTsCount;
     const bool hasDepthStencilAttachment = layout.DepthFormat != PixelFormat::Unknown;
@@ -585,6 +586,8 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
         depthStencilReference.attachment = colorAttachmentsCount;
         depthStencilReference.layout = depthStencilLayout;
         subpassDesc.pDepthStencilAttachment = &depthStencilReference;
+        if (!layout.WriteDepth && !layout.WriteStencil)
+            CanDepthWrite = false;
     }
 
     VkRenderPassCreateInfo createInfo;

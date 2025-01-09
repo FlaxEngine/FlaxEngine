@@ -529,6 +529,8 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                 auto handle = handles[slot];
                 if (!handle)
                 {
+                    if (descriptor.ResourceFormat == PixelFormat::Unknown)
+                        break;
                     const auto dummy = _device->HelperResources.GetDummyBuffer(descriptor.ResourceFormat);
                     handle = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
                 }
@@ -650,23 +652,14 @@ void GPUContextVulkan::OnDrawCall()
         }
     }
 
-    // Bind any missing vertex buffers to null if required by the current state
-    GPUVertexLayoutVulkan* vertexLayout = _vertexLayout ? _vertexLayout : pipelineState->VertexBufferLayout;
 #if GPU_ENABLE_ASSERTION_LOW_LAYERS
+    // Check for missing vertex buffers layout
+    GPUVertexLayoutVulkan* vertexLayout = _vertexLayout ? _vertexLayout : pipelineState->VertexBufferLayout;
     if (!vertexLayout && pipelineState && !pipelineState->VertexBufferLayout && (pipelineState->UsedStagesMask & (1 << (int32)DescriptorSet::Vertex)) != 0 && !_vertexLayout && _vbCount)
     {
         LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
     }
 #endif
-    const int32 missingVBs = vertexLayout ? vertexLayout->MaxSlot + 1 - _vbCount : 0;
-    if (missingVBs > 0)
-    {
-        VkBuffer buffers[GPU_MAX_VB_BINDED];
-        VkDeviceSize offsets[GPU_MAX_VB_BINDED] = {};
-        for (int32 i = 0; i < missingVBs; i++)
-            buffers[i] = _device->HelperResources.GetDummyVertexBuffer()->GetHandle();
-        vkCmdBindVertexBuffers(cmdBuffer->GetHandle(), _vbCount, missingVBs, buffers, offsets);
-    }
 
     // Start render pass if not during one
     if (cmdBuffer->IsOutsideRenderPass())
@@ -734,6 +727,9 @@ void GPUContextVulkan::FrameBegin()
     // Init command buffer
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     vkCmdSetStencilReference(cmdBuffer->GetHandle(), VK_STENCIL_FRONT_AND_BACK, _stencilRef);
+    VkBuffer buffers[1] = { _device->HelperResources.GetDummyVertexBuffer()->GetHandle() };
+    VkDeviceSize offsets[1] = {};
+    vkCmdBindVertexBuffers(cmdBuffer->GetHandle(), GPU_MAX_VB_BINDED, 1, buffers, offsets);
 
 #if VULKAN_RESET_QUERY_POOLS
     // Reset pending queries

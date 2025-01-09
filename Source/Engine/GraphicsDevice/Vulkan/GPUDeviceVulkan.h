@@ -239,6 +239,7 @@ public:
     GPUDeviceVulkan* Device;
     VkRenderPass Handle;
     RenderTargetLayoutVulkan Layout;
+    bool CanDepthWrite;
 #if VULKAN_USE_DEBUG_DATA
     VkRenderPassCreateInfo DebugCreateInfo;
 #endif

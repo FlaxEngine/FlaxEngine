@@ -224,7 +224,7 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
 
     // Bind vertex input
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo;
-	VkVertexInputBindingDescription vertexInputBindings[GPU_MAX_VB_BINDED];
+	VkVertexInputBindingDescription vertexInputBindings[GPU_MAX_VB_BINDED + 1];
 	VkVertexInputAttributeDescription vertexInputAttributes[GPU_MAX_VS_ELEMENTS];
     _desc.pVertexInputState = nullptr;
     if (!vertexLayout)
@@ -253,12 +253,33 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
         }
 
         // Vertex elements (including any merged elements from reference layout from shader reflection)
-        vertexLayout = (GPUVertexLayoutVulkan*)GPUVertexLayout::Merge(vertexLayout, VertexInputLayout, true, true);
+        uint32 missingSlotBinding = bindingsCount;
+        int32 missingSlotOverride = GPU_MAX_VB_BINDED; // Use additional slot with empty VB
+        vertexLayout = (GPUVertexLayoutVulkan*)GPUVertexLayout::Merge(vertexLayout, VertexInputLayout, true, true, missingSlotOverride);
         for (int32 i = 0; i < vertexLayout->GetElements().Count(); i++)
         {
             const VertexElement& src = vertexLayout->GetElements().Get()[i];
             VkVertexInputAttributeDescription& attribute = vertexInputAttributes[i];
             attribute.location = i;
+            if (VertexInputLayout)
+            {
+                // Sync locations with vertex shader inputs to ensure that shader will load correct attributes
+                const auto& vertexInputLayoutElements = VertexInputLayout->GetElements();
+                for (int32 j = 0; j < vertexInputLayoutElements.Count(); j++)
+                {
+                    if (vertexInputLayoutElements.Get()[j].Type == src.Type)
+                    {
+                        attribute.location = j;
+                        break;
+                    }
+                }
+            }
+            if (src.Slot == missingSlotOverride)
+            {
+                // Element is missing and uses special empty VB
+                vertexInputBindings[missingSlotBinding] = { GPU_MAX_VB_BINDED, sizeof(byte[4]), VK_VERTEX_INPUT_RATE_INSTANCE };
+                bindingsCount = missingSlotBinding + 1;
+            }
             attribute.binding = src.Slot;
             attribute.format = RenderToolsVulkan::ToVulkanFormat(src.Format);
             attribute.offset = src.Offset;
@@ -277,14 +298,15 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
     _descMultisample.rasterizationSamples = (VkSampleCountFlagBits)renderPass->Layout.MSAA;
     _desc.renderPass = renderPass->Handle;
 
-    // Check if has missing layout
+    // Ensure to have valid layout set
     if (_desc.layout == VK_NULL_HANDLE)
-    {
         _desc.layout = GetLayout()->Handle;
-    }
 
     // Create object
+    auto depthWrite = _descDepthStencil.depthWriteEnable;
+    _descDepthStencil.depthWriteEnable &= renderPass->CanDepthWrite;
     const VkResult result = vkCreateGraphicsPipelines(_device->Device, _device->PipelineCache, 1, &_desc, nullptr, &pipeline);
+    _descDepthStencil.depthWriteEnable = depthWrite;
     LOG_VULKAN_RESULT(result);
     if (result != VK_SUCCESS)
     {

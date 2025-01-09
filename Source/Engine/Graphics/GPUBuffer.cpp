@@ -169,15 +169,22 @@ GPUBuffer::GPUBuffer()
 
 bool GPUBuffer::Init(const GPUBufferDescription& desc)
 {
-    ASSERT(Math::IsInRange<uint32>(desc.Size, 1, MAX_int32)
-        && Math::IsInRange<uint32>(desc.Stride, 0, 1024));
-
     // Validate description
 #if !BUILD_RELEASE
 #define GET_NAME() GetName()
 #else
 #define GET_NAME() TEXT("")
 #endif
+    if (Math::IsNotInRange<uint32>(desc.Size, 1, MAX_int32))
+    {
+        LOG(Warning, "Cannot create buffer '{}'. Incorrect size {}.", GET_NAME(), desc.Size);
+        return true;
+    }
+    if (Math::IsNotInRange<uint32>(desc.Stride, 0, 1024))
+    {
+        LOG(Warning, "Cannot create buffer '{}'. Incorrect stride {}.", GET_NAME(), desc.Stride);
+        return true;
+    }
     if (EnumHasAnyFlags(desc.Flags, GPUBufferFlags::Structured))
     {
         if (desc.Stride <= 0)

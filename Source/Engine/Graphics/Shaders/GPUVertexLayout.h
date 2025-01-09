@@ -83,8 +83,9 @@ public:
     /// <param name="reference">The list of reference inputs.</param>
     /// <param name="removeUnused">True to remove elements from base layout that don't exist in a reference layout.</param>
     /// <param name="addMissing">True to add missing elements to base layout that exist in a reference layout.</param>
+    /// <param name="missingSlotOverride">Allows to override the input slot for missing elements. Use value -1 to inherit slot from the reference layout.</param>
     /// <returns>Vertex layout object. Doesn't need to be cleared as it's cached for an application lifetime.</returns>
-    static GPUVertexLayout* Merge(GPUVertexLayout* base, GPUVertexLayout* reference, bool removeUnused = false, bool addMissing = true);
+    static GPUVertexLayout* Merge(GPUVertexLayout* base, GPUVertexLayout* reference, bool removeUnused = false, bool addMissing = true, int32 missingSlotOverride = -1);
 
 public:
     // [GPUResource]
