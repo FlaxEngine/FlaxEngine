@@ -214,6 +214,30 @@ bool DeployDataStep::Perform(CookingData& data)
                 FileSystem::NormalizePath(srcDotnet);
                 LOG(Info, "Using .NET Runtime {} at {}", TEXT("Host"), srcDotnet);
 
+                // Get major Version
+                Array<String> pathParts;
+                srcDotnet.Split('/', pathParts);
+                String version;
+                for (int i = 0; i < pathParts.Count(); i++)
+                {
+                    if (pathParts[i] == TEXT("runtimes"))
+                    {
+                        Array<String> versionParts;
+                        pathParts[i - 1].Split('.', versionParts);
+                        const String majorVersion = versionParts[0].TrimTrailing();
+                        uint32 versionNum;
+                        StringUtils::Parse(*majorVersion, majorVersion.Length(), &versionNum);
+                        if (versionNum < GAME_BUILD_DOTNET_RUNTIME_MAX_VER || versionNum > GAME_BUILD_DOTNET_RUNTIME_MIN_VER) // Check for major part
+                            version = majorVersion;
+                    }
+                }
+
+                if (version.IsEmpty())
+                {
+                    data.Error(TEXT("Failed to find supported .NET version for the current host platform."));
+                    return true;
+                }
+
                 // Deploy runtime files
                 const Char* corlibPrivateName = TEXT("System.Private.CoreLib.dll");
                 const bool srcDotnetFromEngine = srcDotnet.Contains(TEXT("Source/Platforms"));
@@ -226,14 +250,14 @@ bool DeployDataStep::Perform(CookingData& data)
                     {
                         // AOT runtime files inside Engine Platform folder
                         packFolder /= TEXT("Dotnet");
-                        dstDotnetLibs /= TEXT("lib/net8.0");
-                        srcDotnetLibs = packFolder / TEXT("lib/net8.0");
+                        dstDotnetLibs /= String::Format(TEXT("lib/net{}.0"), version);
+                        srcDotnetLibs = packFolder / String::Format(TEXT("lib/net{}.0"), version);
                     }
                     else
                     {
                         // Runtime files inside Dotnet SDK folder but placed for AOT
-                        dstDotnetLibs /= TEXT("lib/net8.0");
-                        srcDotnetLibs /= TEXT("../lib/net8.0");
+                        dstDotnetLibs /= String::Format(TEXT("lib/net{}.0"), version);
+                        srcDotnetLibs /= String::Format(TEXT("../lib/net{}.0"), version);
                     }
                 }
                 else
@@ -241,14 +265,14 @@ bool DeployDataStep::Perform(CookingData& data)
                     if (srcDotnetFromEngine)
                     {
                         // Runtime files inside Engine Platform folder
-                        dstDotnetLibs /= TEXT("lib/net8.0");
-                        srcDotnetLibs /= TEXT("lib/net8.0");
+                        dstDotnetLibs /= String::Format(TEXT("lib/net{}.0"), version);
+                        srcDotnetLibs /= String::Format(TEXT("lib/net{}.0"), version);
                     }
                     else
                     {
                         // Runtime files inside Dotnet SDK folder
                         dstDotnetLibs /= TEXT("shared/Microsoft.NETCore.App");
-                        srcDotnetLibs /= TEXT("../lib/net8.0");
+                        srcDotnetLibs /= String::Format(TEXT("../lib/net{}.0"), version);
                     }
                 }
                 LOG(Info, "Copying .NET files from {} to {}", packFolder, dstDotnet);
@@ -273,6 +297,7 @@ bool DeployDataStep::Perform(CookingData& data)
                     DEPLOY_NATIVE_FILE("libmonosgen-2.0.so");
                     DEPLOY_NATIVE_FILE("libSystem.IO.Compression.Native.so");
                     DEPLOY_NATIVE_FILE("libSystem.Native.so");
+                    DEPLOY_NATIVE_FILE("libSystem.Globalization.Native.so");
                     DEPLOY_NATIVE_FILE("libSystem.Security.Cryptography.Native.Android.so");
                     break;
                 case BuildPlatform::iOSARM64:
