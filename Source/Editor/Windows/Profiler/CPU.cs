@@ -175,7 +175,7 @@ namespace FlaxEditor.Windows.Profiler
 
         private string FormatCellBytes(object x)
         {
-            return Utilities.Utils.FormatBytesCount((ulong)x);
+            return Utilities.Utils.FormatBytesCount(Convert.ToUInt64(x));
         }
 
         /// <inheritdoc />
