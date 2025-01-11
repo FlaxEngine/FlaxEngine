@@ -262,7 +262,9 @@ GPUVertexLayout* GPUVertexLayout::Merge(GPUVertexLayout* base, GPUVertexLayout* 
                 {
                     // Insert any missing elements
                     VertexElement ne = { e.Type, missingSlotOverride != -1 ? (byte)missingSlotOverride : e.Slot, 0, e.PerInstance, e.Format };
-                    if (e.Type == VertexElement::Types::TexCoord1 || e.Type == VertexElement::Types::TexCoord2 || e.Type == VertexElement::Types::TexCoord3)
+                    if (e.Type == VertexElement::Types::TexCoord1 || 
+                        e.Type == VertexElement::Types::TexCoord2 || 
+                        e.Type == VertexElement::Types::TexCoord3)
                     {
                         // Alias missing texcoords with existing texcoords
                         for (const VertexElement& ee : newElements)

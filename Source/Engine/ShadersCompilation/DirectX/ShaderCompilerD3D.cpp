@@ -277,7 +277,7 @@ bool ShaderCompilerD3D::CompileShader(ShaderFunctionMeta& meta, WritePermutation
             {
                 D3D11_SIGNATURE_PARAMETER_DESC inputDesc;
                 reflector->GetInputParameterDesc(inputIdx, &inputDesc);
-                if (inputDesc.ReadWriteMask == 0 || inputDesc.SystemValueType != D3D10_NAME_UNDEFINED)
+                if (inputDesc.SystemValueType != D3D10_NAME_UNDEFINED)
                     continue;
                 auto format = PixelFormat::Unknown;
                 switch (inputDesc.ComponentType)

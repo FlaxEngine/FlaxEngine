@@ -563,7 +563,7 @@ void GPUContextDX12::flushPS()
         // Change state
         ASSERT(_currentState->IsValid());
 #if GPU_ENABLE_ASSERTION_LOW_LAYERS
-        if (!_vertexLayout && _vbHandles[0] && !_currentState->VertexLayout)
+        if (!_vertexLayout && _vbHandles[0] && !_currentState->VertexBufferLayout)
         {
             LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
         }
@@ -957,7 +957,6 @@ void GPUContextDX12::BindUA(int32 slot, GPUResourceView* view)
 void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets, GPUVertexLayout* vertexLayout)
 {
     ASSERT(vertexBuffers.Length() >= 0 && vertexBuffers.Length() <= GPU_MAX_VB_BINDED);
-
     bool vbEdited = _vbCount != vertexBuffers.Length();
     D3D12_VERTEX_BUFFER_VIEW views[GPU_MAX_VB_BINDED];
     for (int32 i = 0; i < vertexBuffers.Length(); i++)
@@ -990,7 +989,13 @@ void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
 #endif
         _commandList->IASetVertexBuffers(0, vertexBuffers.Length(), views);
     }
-    _vertexLayout = (GPUVertexLayoutDX12*)(vertexLayout ? vertexLayout : GPUVertexLayout::Get(vertexBuffers));
+    if (!vertexLayout)
+         vertexLayout = GPUVertexLayout::Get(vertexBuffers);
+    if (_vertexLayout != vertexLayout)
+    {
+        _vertexLayout = (GPUVertexLayoutDX12*)vertexLayout;
+        _psDirtyFlag = true;
+    }
 }
 
 void GPUContextDX12::BindIB(GPUBuffer* indexBuffer)

@@ -327,7 +327,7 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
             {
                 D3D12_SIGNATURE_PARAMETER_DESC inputDesc;
                 shaderReflection->GetInputParameterDesc(inputIdx, &inputDesc);
-                if (inputDesc.ReadWriteMask == 0 || inputDesc.SystemValueType != D3D10_NAME_UNDEFINED)
+                if (inputDesc.SystemValueType != D3D10_NAME_UNDEFINED)
                     continue;
                 auto format = PixelFormat::Unknown;
                 switch (inputDesc.ComponentType)

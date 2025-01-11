@@ -26,7 +26,11 @@ ID3D11InputLayout* GPUShaderProgramVSDX11::GetInputLayout(GPUVertexLayoutDX11* v
     {
         if (vertexLayout && vertexLayout->InputElementsCount)
         {
-            auto mergedVertexLayout = (GPUVertexLayoutDX11*)GPUVertexLayout::Merge(vertexLayout, Layout ? Layout : InputLayout);
+            GPUVertexLayoutDX11* mergedVertexLayout = vertexLayout;
+            if (!mergedVertexLayout)
+                mergedVertexLayout = (GPUVertexLayoutDX11*)Layout; // Fallback to shader-specified layout (if using old APIs)
+            if (InputLayout)
+                mergedVertexLayout = (GPUVertexLayoutDX11*)GPUVertexLayout::Merge(mergedVertexLayout, InputLayout);
             LOG_DIRECTX_RESULT(vertexLayout->GetDevice()->GetDevice()->CreateInputLayout(mergedVertexLayout->InputElements, mergedVertexLayout->InputElementsCount, Bytecode.Get(), Bytecode.Length(), &inputLayout));
         }
         _cache.Add(vertexLayout, inputLayout);

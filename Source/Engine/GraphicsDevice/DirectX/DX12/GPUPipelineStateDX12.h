@@ -58,7 +58,8 @@ public:
 public:
     D3D_PRIMITIVE_TOPOLOGY PrimitiveTopology = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
     DxShaderHeader Header;
-    GPUVertexLayoutDX12* VertexLayout;
+    GPUVertexLayoutDX12* VertexBufferLayout = nullptr;
+    GPUVertexLayoutDX12* VertexInputLayout = nullptr;
 
     /// <summary>
     /// Gets DirectX 12 graphics pipeline state object for the given rendering state. Uses depth buffer and render targets formats and multi-sample levels to setup a proper PSO. Uses caching.

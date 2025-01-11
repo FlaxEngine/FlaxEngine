@@ -83,9 +83,20 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     _desc.SampleDesc.Quality = key.MSAA == MSAALevel::None ? 0 : GPUDeviceDX12::GetMaxMSAAQuality((int32)key.MSAA);
     _desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
     _desc.DSVFormat = RenderToolsDX::ToDxgiFormat(PixelFormatExtensions::FindDepthStencilFormat(key.DepthFormat));
-    vertexLayout = (GPUVertexLayoutDX12*)GPUVertexLayout::Merge(vertexLayout, VertexLayout);
-    _desc.InputLayout.pInputElementDescs = vertexLayout ? vertexLayout->InputElements : nullptr;
-    _desc.InputLayout.NumElements = vertexLayout ? vertexLayout->InputElementsCount : 0;
+    if (!vertexLayout)
+        vertexLayout = VertexBufferLayout; // Fallback to shader-specified layout (if using old APIs)
+    if (vertexLayout)
+    {
+        if (VertexInputLayout)
+            vertexLayout = (GPUVertexLayoutDX12*)GPUVertexLayout::Merge(vertexLayout, VertexInputLayout);
+        _desc.InputLayout.pInputElementDescs = vertexLayout->InputElements;
+        _desc.InputLayout.NumElements = vertexLayout->InputElementsCount;
+    }
+    else
+    {
+        _desc.InputLayout.pInputElementDescs = nullptr;
+        _desc.InputLayout.NumElements = 0;
+    }
 
     // Create object
     const HRESULT result = _device->GetDevice()->CreateGraphicsPipelineState(&_desc, IID_PPV_ARGS(&state));
@@ -180,7 +191,11 @@ bool GPUPipelineStateDX12::Init(const Description& desc)
     INIT_SHADER_STAGE(PS, GPUShaderProgramPSDX12);
 
     // Input Assembly
-    VertexLayout = desc.VS ? (GPUVertexLayoutDX12*)(desc.VS->Layout ? desc.VS->Layout : desc.VS->InputLayout) : nullptr;
+    if (desc.VS)
+    {
+        VertexBufferLayout = (GPUVertexLayoutDX12*)desc.VS->Layout;
+        VertexInputLayout = (GPUVertexLayoutDX12*)desc.VS->InputLayout;
+    }
     const D3D12_PRIMITIVE_TOPOLOGY_TYPE primTypes1[] =
     {
         D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED,
