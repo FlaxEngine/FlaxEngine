@@ -424,15 +424,12 @@ Asset::LoadResult ParticleSystem::load()
                 Emitters[i]->WaitForLoaded();
         }
 
-        if (version <= 3)
-        {
-            // [Deprecated on 03.09.2021 expires on 03.09.2023]
-        }
-        else
-        {
-            // Load parameters overrides
-            int32 overridesCount = 0;
+        // Load parameters overrides
+        int32 overridesCount = 0;
+        if (stream.CanRead())
             stream.ReadInt32(&overridesCount);
+        if (overridesCount != 0)
+        {
             EmitterParameterOverrideKey key;
             Variant value;
             for (int32 i = 0; i < overridesCount; i++)

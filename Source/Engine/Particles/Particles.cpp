@@ -620,7 +620,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
     auto emitter = buffer->Emitter;
 
     // Check if need to perform any particles sorting
-    if (emitter->Graph.SortModules.HasItems() && renderContext.View.Pass != DrawPass::Depth)
+    if (emitter->Graph.SortModules.HasItems() && renderContext.View.Pass != DrawPass::Depth && buffer->GPU.ParticlesCountMax != 0)
     {
         PROFILE_GPU_CPU_NAMED("Sort Particles");
 
