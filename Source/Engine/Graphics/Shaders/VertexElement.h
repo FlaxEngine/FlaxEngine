@@ -55,6 +55,8 @@ PACK_BEGIN() struct FLAXENGINE_API VertexElement
         Attribute2 = 17,
         // General purpose attribute (at index 3). Maps to 'ATTRIBUTE3' semantic in the shader.
         Attribute3 = 18,
+        // Lightmap UVs that usually map one of the texture coordinate channels. Maps to 'LIGHTMAP' semantic in the shader.
+        Lightmap = 30,
         // Texture coordinate. Maps to 'TEXCOORD' semantic in the shader.
         TexCoord = TexCoord0,
         // General purpose attribute. Maps to 'ATTRIBUTE0' semantic in the shader.

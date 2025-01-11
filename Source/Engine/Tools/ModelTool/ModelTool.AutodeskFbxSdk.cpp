@@ -386,10 +386,12 @@ bool ProcessMesh(ImporterData& data, FbxMesh* fbxMesh, MeshData& mesh, String& e
     }
 
     // Texture coordinates
-    FbxGeometryElementUV* texcoords = fbxMesh->GetElementUV(0);
-    if (texcoords)
+    for (int32 channelIndex = 0; channelIndex < MODEL_MAX_UV && fbxMesh->GetElementUV(channelIndex); channelIndex++)
     {
-        ReadLayerData(fbxMesh, *texcoords, mesh.UVs);
+        FbxGeometryElementUV* texcoords = fbxMesh->GetElementUV(0);
+        mesh.UVs.Resize(channelIndex + 1);
+        auto& channel = mesh.UVs[channelIndex];
+        ReadLayerData(fbxMesh, *texcoords, channel);
     }
 
     // Normals
@@ -405,53 +407,7 @@ bool ProcessMesh(ImporterData& data, FbxMesh* fbxMesh, MeshData& mesh, String& e
     }
 
     // Lightmap UVs
-    if (data.Options.LightmapUVsSource == ModelLightmapUVsSource::Disable)
-    {
-        // No lightmap UVs
-    }
-    else if (data.Options.LightmapUVsSource == ModelLightmapUVsSource::Generate)
-    {
-        // Generate lightmap UVs
-        if (mesh.GenerateLightmapUVs())
-        {
-            // TODO: we could propagate this message to Debug Console in editor? or create interface to gather some msgs from importing service
-            LOG(Warning, "Failed to generate lightmap uvs");
-        }
-    }
-    else
-    {
-        // Select input channel index
-        int32 inputChannelIndex;
-        switch (data.Options.LightmapUVsSource)
-        {
-        case ModelLightmapUVsSource::Channel0:
-            inputChannelIndex = 0;
-            break;
-        case ModelLightmapUVsSource::Channel1:
-            inputChannelIndex = 1;
-            break;
-        case ModelLightmapUVsSource::Channel2:
-            inputChannelIndex = 2;
-            break;
-        case ModelLightmapUVsSource::Channel3:
-            inputChannelIndex = 3;
-            break;
-        default:
-            inputChannelIndex = INVALID_INDEX;
-            break;
-        }
-
-        // Check if has that channel texcoords
-        if (inputChannelIndex >= 0 && inputChannelIndex < fbxMesh->GetElementUVCount() && fbxMesh->GetElementUV(inputChannelIndex))
-        {
-            ReadLayerData(fbxMesh, *fbxMesh->GetElementUV(inputChannelIndex), mesh.LightmapUVs);
-        }
-        else
-        {
-            // TODO: we could propagate this message to Debug Console in editor? or create interface to gather some msgs from importing service
-            LOG(Warning, "Cannot import model lightmap uvs. Missing texcoords channel {0}.", inputChannelIndex);
-        }
-    }
+    mesh.SetLightmapUVsSource(data.Options.LightmapUVsSource);
 
     // Vertex Colors
     if (data.Options.ImportVertexColors && fbxMesh->GetElementVertexColorCount() > 0)
@@ -609,10 +565,11 @@ bool ProcessMesh(ImporterData& data, FbxMesh* fbxMesh, MeshData& mesh, String& e
     }
 
     // Flip the Y in texcoords
-    for (int32 i = 0; i < mesh.UVs.Count(); i++)
-        mesh.UVs[i].Y = 1.0f - mesh.UVs[i].Y;
-    for (int32 i = 0; i < mesh.LightmapUVs.Count(); i++)
-        mesh.LightmapUVs[i].Y = 1.0f - mesh.LightmapUVs[i].Y;
+    for (auto& channel : mesh.UVs)
+    {
+        for (int32 i = 0; i < channel.Count(); i++)
+            channel[i].Y = 1.0f - channel[i].Y;
+    }
 
     // Handle missing material case (could never happen but it's better to be sure it will work)
     if (mesh.MaterialSlotIndex == -1)

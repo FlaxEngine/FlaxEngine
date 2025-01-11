@@ -246,13 +246,15 @@ bool ProcessMesh(ModelData& result, AssimpImporterData& data, const aiMesh* aMes
     mesh.Positions.Set((const Float3*)aMesh->mVertices, aMesh->mNumVertices);
 
     // Texture coordinates
-    if (aMesh->mTextureCoords[0])
+    for (int32 channelIndex = 0; channelIndex < MODEL_MAX_UV && aMesh->mTextureCoords[channelIndex]; channelIndex++)
     {
-        mesh.UVs.Resize(aMesh->mNumVertices, false);
-        aiVector3D* a = aMesh->mTextureCoords[0];
+        mesh.UVs.Resize(channelIndex + 1);
+        auto& channel = mesh.UVs[channelIndex];
+        channel.Resize(aMesh->mNumVertices, false);
+        aiVector3D* a = aMesh->mTextureCoords[channelIndex];
         for (uint32 v = 0; v < aMesh->mNumVertices; v++)
         {
-            mesh.UVs[v] = *(Float2*)a;
+            channel.Get()[v] = *(Float2*)a;
             a++;
         }
     }
@@ -265,7 +267,7 @@ bool ProcessMesh(ModelData& result, AssimpImporterData& data, const aiMesh* aMes
         const auto face = &aMesh->mFaces[faceIndex];
         if (face->mNumIndices != 3)
         {
-            errorMsg = TEXT("All faces in a mesh must be trangles!");
+            errorMsg = TEXT("All faces in a mesh must be triangles!");
             return true;
         }
 
@@ -296,57 +298,7 @@ bool ProcessMesh(ModelData& result, AssimpImporterData& data, const aiMesh* aMes
     }
 
     // Lightmap UVs
-    if (data.Options.LightmapUVsSource == ModelLightmapUVsSource::Disable)
-    {
-        // No lightmap UVs
-    }
-    else if (data.Options.LightmapUVsSource == ModelLightmapUVsSource::Generate)
-    {
-        // Generate lightmap UVs
-        if (mesh.GenerateLightmapUVs())
-        {
-            LOG(Error, "Failed to generate lightmap uvs");
-        }
-    }
-    else
-    {
-        // Select input channel index
-        int32 inputChannelIndex;
-        switch (data.Options.LightmapUVsSource)
-        {
-        case ModelLightmapUVsSource::Channel0:
-            inputChannelIndex = 0;
-            break;
-        case ModelLightmapUVsSource::Channel1:
-            inputChannelIndex = 1;
-            break;
-        case ModelLightmapUVsSource::Channel2:
-            inputChannelIndex = 2;
-            break;
-        case ModelLightmapUVsSource::Channel3:
-            inputChannelIndex = 3;
-            break;
-        default:
-            inputChannelIndex = INVALID_INDEX;
-            break;
-        }
-
-        // Check if has that channel texcoords
-        if (inputChannelIndex >= 0 && inputChannelIndex < AI_MAX_NUMBER_OF_TEXTURECOORDS && aMesh->mTextureCoords[inputChannelIndex])
-        {
-            mesh.LightmapUVs.Resize(aMesh->mNumVertices, false);
-            aiVector3D* a = aMesh->mTextureCoords[inputChannelIndex];
-            for (uint32 v = 0; v < aMesh->mNumVertices; v++)
-            {
-                mesh.LightmapUVs[v] = *(Float2*)a;
-                a++;
-            }
-        }
-        else
-        {
-            LOG(Warning, "Cannot import result lightmap uvs. Missing texcoords channel {0}.", inputChannelIndex);
-        }
-    }
+    mesh.SetLightmapUVsSource(data.Options.LightmapUVsSource);
 
     // Vertex Colors
     if (data.Options.ImportVertexColors && aMesh->mColors[0])

@@ -514,7 +514,7 @@ VertexOutput VS_Model(ModelInput input, uint particleIndex : SV_InstanceID)
 	output.Position = mul(float4(output.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
-	output.TexCoord = input.TexCoord;
+	output.TexCoord = input.TexCoord0;
 	output.ParticleIndex = particleIndex;
 #if USE_VERTEX_COLOR
 	output.VertexColor = input.Color;

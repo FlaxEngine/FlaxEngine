@@ -189,8 +189,20 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
     }
     // TexCoord
     case 2:
-        value = getUVs;
+    {
+        const auto layer = GetRootLayer();
+        if (layer && layer->Domain == MaterialDomain::Surface)
+        {
+            const uint32 channel = node->Values.HasItems() ? Math::Min((uint32)node->Values[0], 3u) : 0u;
+            value = Value(VariantType::Float2, String::Format(TEXT("input.TexCoords[{}]"), channel));
+        }
+        else
+        {
+            // TODO: migrate all material domain templates to TexCoords array (of size MATERIAL_TEXCOORDS=1)
+            value = getUVs;
+        }
         break;
+    }
     // Cube Texture
     case 3:
     {

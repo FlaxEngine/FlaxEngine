@@ -123,9 +123,15 @@ namespace FlaxEditor.Surface.Archetypes
                 AlternativeTitles = new string[] { "UV", "UVs" },
                 Description = "Texture coordinates",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(110, 30),
+                Size = new Float2(150, 30),
+                DefaultValues = new object[]
+                {
+                    0u
+                },
                 Elements = new[]
                 {
+                    NodeElementArchetype.Factory.Text(0, 1, "Channel:"),
+                    NodeElementArchetype.Factory.UnsignedInteger(50, 0, 0, -1, 0, 3),
                     NodeElementArchetype.Factory.Output(0, "UVs", typeof(Float2), 0)
                 }
             },

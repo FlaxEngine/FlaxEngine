@@ -172,7 +172,7 @@ public:
 
 public:
     // [MeshBase]
-    bool Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<3>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<3>>& vbLayout) override;
+    bool Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<3>>& vbData, const void* ibData, bool use16BitIndexBuffer, Array<GPUVertexLayout*, FixedAllocation<3>> vbLayout) override;
     void Release() override;
 
 private:

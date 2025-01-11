@@ -31,6 +31,9 @@
 #ifndef MATERIAL_SHADING_MODEL
 #define MATERIAL_SHADING_MODEL SHADING_MODEL_LIT
 #endif
+#ifndef MATERIAL_TEXCOORDS
+#define MATERIAL_TEXCOORDS 1
+#endif
 #ifndef USE_INSTANCING
 #define USE_INSTANCING 0
 #endif
@@ -186,10 +189,21 @@ cbuffer DrawData : register(b2)
 struct ModelInput
 {
     float3 Position : POSITION;
-    float2 TexCoord : TEXCOORD0;
+#if MATERIAL_TEXCOORDS > 0
+    float2 TexCoord0 : TEXCOORD0;
+#endif
+#if MATERIAL_TEXCOORDS > 1
+    float2 TexCoord1 : TEXCOORD1;
+#endif
+#if MATERIAL_TEXCOORDS > 2
+    float2 TexCoord2 : TEXCOORD2;
+#endif
+#if MATERIAL_TEXCOORDS > 3
+    float2 TexCoord3 : TEXCOORD3;
+#endif
+    float2 LightmapUV : LIGHTMAP;
     float4 Normal : NORMAL;
     float4 Tangent : TANGENT;
-    float2 LightmapUV : TEXCOORD1;
 #if USE_VERTEX_COLOR
 	half4 Color : COLOR;
 #endif
@@ -209,7 +223,18 @@ struct ModelInput_PosOnly
 struct ModelInput_Skinned
 {
     float3 Position : POSITION;
-    float2 TexCoord : TEXCOORD0;
+#if MATERIAL_TEXCOORDS > 0
+    float2 TexCoord0 : TEXCOORD0;
+#endif
+#if MATERIAL_TEXCOORDS > 1
+    float2 TexCoord1 : TEXCOORD1;
+#endif
+#if MATERIAL_TEXCOORDS > 2
+    float2 TexCoord2 : TEXCOORD2;
+#endif
+#if MATERIAL_TEXCOORDS > 3
+    float2 TexCoord3 : TEXCOORD3;
+#endif
     float4 Normal : NORMAL;
     float4 Tangent : TANGENT;
     uint4 BlendIndices : BLENDINDICES;

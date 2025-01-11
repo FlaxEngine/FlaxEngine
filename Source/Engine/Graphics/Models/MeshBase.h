@@ -221,7 +221,7 @@ public:
     /// <param name="use16BitIndexBuffer">True to use 16-bit indices for the index buffer (true: uint16, false: uint32).</param>
     /// <param name="vbLayout">Layout descriptors for the vertex buffers attributes (one for each vertex buffer).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION(Sealed) virtual bool Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<MODEL_MAX_VB>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<MODEL_MAX_VB>>& vbLayout);
+    API_FUNCTION(Sealed) virtual bool Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<MODEL_MAX_VB>>& vbData, const void* ibData, bool use16BitIndexBuffer, Array<GPUVertexLayout*, FixedAllocation<MODEL_MAX_VB>> vbLayout);
 
     /// <summary>
     /// Releases the mesh data (GPU buffers and local cache).

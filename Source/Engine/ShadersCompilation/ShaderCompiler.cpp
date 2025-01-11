@@ -488,6 +488,8 @@ VertexElement::Types ShaderCompiler::ParseVertexElementType(StringAnsiView seman
         return VertexElement::Types::Tangent;
     if (semantic == "BLENDINDICES")
         return VertexElement::Types::BlendIndices;
+    if (semantic == "LIGHTMAP")
+        return VertexElement::Types::Lightmap;
     if (semantic == "BLENDWEIGHTS" ||
         semantic == "BLENDWEIGHT") // [Deprecated in v1.10]
         return VertexElement::Types::BlendWeights;

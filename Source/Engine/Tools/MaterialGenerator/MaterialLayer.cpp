@@ -15,7 +15,6 @@ MaterialLayer::MaterialLayer(const Guid& id)
     , ShadingModel(MaterialShadingModel::Lit)
     , MaskThreshold(0.3f)
     , OpacityThreshold(0.12f)
-    , ParamIdsMappings(8)
 {
     ASSERT(ID.IsValid());
 }

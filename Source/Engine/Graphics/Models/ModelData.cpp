@@ -17,21 +17,21 @@ void MeshData::Clear()
     Normals.Clear();
     Tangents.Clear();
     BitangentSigns.Clear();
-    LightmapUVs.Clear();
     Colors.Clear();
     BlendIndices.Clear();
     BlendWeights.Clear();
     BlendShapes.Clear();
 }
 
-void MeshData::EnsureCapacity(int32 vertices, int32 indices, bool preserveContents, bool withColors, bool withSkin)
+void MeshData::EnsureCapacity(int32 vertices, int32 indices, bool preserveContents, bool withColors, bool withSkin, int32 texcoords)
 {
     Positions.EnsureCapacity(vertices, preserveContents);
     Indices.EnsureCapacity(indices, preserveContents);
-    UVs.EnsureCapacity(vertices, preserveContents);
+    UVs.Resize(texcoords);
+    for (auto& channel : UVs)
+        channel.EnsureCapacity(vertices, preserveContents);
     Normals.EnsureCapacity(vertices, preserveContents);
     Tangents.EnsureCapacity(vertices, preserveContents);
-    LightmapUVs.EnsureCapacity(vertices, preserveContents);
     Colors.EnsureCapacity(withColors ? vertices : 0, preserveContents);
     BlendIndices.EnsureCapacity(withSkin ? vertices : 0, preserveContents);
     BlendWeights.EnsureCapacity(withSkin ? vertices : 0, preserveContents);
@@ -45,7 +45,6 @@ void MeshData::SwapBuffers(MeshData& other)
     Normals.Swap(other.Normals);
     Tangents.Swap(other.Tangents);
     BitangentSigns.Swap(other.BitangentSigns);
-    LightmapUVs.Swap(other.LightmapUVs);
     Colors.Swap(other.Colors);
     BlendIndices.Swap(other.BlendIndices);
     BlendWeights.Swap(other.BlendWeights);
@@ -61,7 +60,6 @@ void MeshData::Release()
     Normals.Resize(0);
     Tangents.Resize(0);
     BitangentSigns.Resize(0);
-    LightmapUVs.Resize(0);
     Colors.Resize(0);
     BlendIndices.Resize(0);
     BlendWeights.Resize(0);
@@ -72,11 +70,12 @@ PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void MeshData::InitFromModelVertices(ModelVertex19* vertices, uint32 verticesCount)
 {
     Positions.Resize(verticesCount, false);
-    UVs.Resize(verticesCount, false);
+    UVs.Resize(2);
+    UVs[0].Resize(verticesCount, false);
+    UVs[1].Resize(verticesCount, false);
     Normals.Resize(verticesCount, false);
     Tangents.Resize(verticesCount, false);
     BitangentSigns.Resize(0);
-    LightmapUVs.Resize(verticesCount, false);
     Colors.Resize(0);
     BlendIndices.Resize(0);
     BlendWeights.Resize(0);
@@ -85,10 +84,10 @@ void MeshData::InitFromModelVertices(ModelVertex19* vertices, uint32 verticesCou
     for (uint32 i = 0; i < verticesCount; i++)
     {
         Positions[i] = vertices->Position;
-        UVs[i] = vertices->TexCoord.ToFloat2();
+        UVs[0][i] = vertices->TexCoord.ToFloat2();
+        UVs[1][i] = vertices->LightmapUVs.ToFloat2();
         Normals[i] = vertices->Normal.ToFloat3() * 2.0f - 1.0f;
         Tangents[i] = vertices->Tangent.ToFloat3() * 2.0f - 1.0f;
-        LightmapUVs[i] = vertices->LightmapUVs.ToFloat2();
         Colors[i] = Color(vertices->Color);
 
         vertices++;
@@ -98,11 +97,12 @@ void MeshData::InitFromModelVertices(ModelVertex19* vertices, uint32 verticesCou
 void MeshData::InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb1, uint32 verticesCount)
 {
     Positions.Resize(verticesCount, false);
-    UVs.Resize(verticesCount, false);
+    UVs.Resize(2);
+    UVs[0].Resize(verticesCount, false);
+    UVs[1].Resize(verticesCount, false);
     Normals.Resize(verticesCount, false);
     Tangents.Resize(verticesCount, false);
     BitangentSigns.Resize(0);
-    LightmapUVs.Resize(verticesCount, false);
     Colors.Resize(0);
     BlendIndices.Resize(0);
     BlendWeights.Resize(0);
@@ -111,10 +111,10 @@ void MeshData::InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb
     for (uint32 i = 0; i < verticesCount; i++)
     {
         Positions[i] = vb0->Position;
-        UVs[i] = vb1->TexCoord.ToFloat2();
+        UVs[0][i] = vb1->TexCoord.ToFloat2();
+        UVs[1][i] = vb1->LightmapUVs.ToFloat2();
         Normals[i] = vb1->Normal.ToFloat3() * 2.0f - 1.0f;
         Tangents[i] = vb1->Tangent.ToFloat3() * 2.0f - 1.0f;
-        LightmapUVs[i] = vb1->LightmapUVs.ToFloat2();
 
         vb0++;
         vb1++;
@@ -124,19 +124,16 @@ void MeshData::InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb
 void MeshData::InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb1, VB2ElementType18* vb2, uint32 verticesCount)
 {
     Positions.Resize(verticesCount, false);
-    UVs.Resize(verticesCount, false);
+    UVs.Resize(2);
+    UVs[0].Resize(verticesCount, false);
+    UVs[1].Resize(verticesCount, false);
     Normals.Resize(verticesCount, false);
     Tangents.Resize(verticesCount, false);
     BitangentSigns.Resize(0);
-    LightmapUVs.Resize(verticesCount, false);
     if (vb2)
-    {
         Colors.Resize(verticesCount, false);
-    }
     else
-    {
         Colors.Resize(0);
-    }
     BlendIndices.Resize(0);
     BlendWeights.Resize(0);
     BlendShapes.Resize(0);
@@ -144,10 +141,10 @@ void MeshData::InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb
     for (uint32 i = 0; i < verticesCount; i++)
     {
         Positions[i] = vb0->Position;
-        UVs[i] = vb1->TexCoord.ToFloat2();
+        UVs[0][i] = vb1->TexCoord.ToFloat2();
+        UVs[1][i] = vb1->LightmapUVs.ToFloat2();
         Normals[i] = vb1->Normal.ToFloat3() * 2.0f - 1.0f;
         Tangents[i] = vb1->Tangent.ToFloat3() * 2.0f - 1.0f;
-        LightmapUVs[i] = vb1->LightmapUVs.ToFloat2();
         if (vb2)
         {
             Colors[i] = Color(vb2->Color);
@@ -310,22 +307,32 @@ void MeshData::Merge(MeshData& other)
     }
 
     // Merge vertex buffer
-#define MERGE(item, defautValue) \
+#define MERGE(item, defaultValue) \
     if (item.HasItems() && other.item.HasItems()) \
 		item.Add(other.item); \
 	else if (item.HasItems() && !other.item.HasItems()) \
-		for (int32 i = 0; i < other.Positions.Count(); i++) item.Add(defautValue); \
+		for (int32 i = 0; i < other.Positions.Count(); i++) item.Add(defaultValue); \
 	else if (!item.HasItems() && other.item.HasItems()) \
-		for (int32 i = 0; i < Positions.Count(); i++) item.Add(defautValue)
+		for (int32 i = 0; i < Positions.Count(); i++) item.Add(defaultValue)
     MERGE(Positions, Float3::Zero);
-    MERGE(UVs, Float2::Zero);
     MERGE(Normals, Float3::Forward);
     MERGE(Tangents, Float3::Right);
     MERGE(BitangentSigns, 1.0f);
-    MERGE(LightmapUVs, Float2::Zero);
     MERGE(Colors, Color::Black);
     MERGE(BlendIndices, Int4::Zero);
     MERGE(BlendWeights, Float4::Zero);
+    if (other.UVs.Count() > UVs.Count())
+        UVs.Resize(other.UVs.Count());
+    for (int32 channelIdx = 0; channelIdx < UVs.Count(); channelIdx++)
+    {
+        if (other.UVs.Count() <= channelIdx)
+        {
+            for (int32 i = 0; i < other.Positions.Count(); i++)
+                UVs[channelIdx].Add(Float2::Zero);
+            continue;
+        }
+        MERGE(UVs[channelIdx], Float2::Zero);
+    }
 #undef MERGE
 
     // Merge blend shapes

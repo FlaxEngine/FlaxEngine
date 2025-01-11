@@ -2027,11 +2027,14 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         meshopt_remapVertexBuffer(dstMesh->name.Get(), srcMesh->name.Get(), srcMeshVertexCount, sizeof(type), remap.Get()); \
     }
                 REMAP_VERTEX_BUFFER(Positions, Float3);
-                REMAP_VERTEX_BUFFER(UVs, Float2);
+                dstMesh->UVs.Resize(srcMesh->UVs.Count());
+                for (int32 channelIdx = 0; channelIdx < srcMesh->UVs.Count(); channelIdx++)
+                {
+                    REMAP_VERTEX_BUFFER(UVs[channelIdx], Float2);
+                }
                 REMAP_VERTEX_BUFFER(Normals, Float3);
                 REMAP_VERTEX_BUFFER(Tangents, Float3);
                 REMAP_VERTEX_BUFFER(Tangents, Float3);
-                REMAP_VERTEX_BUFFER(LightmapUVs, Float2);
                 REMAP_VERTEX_BUFFER(Colors, Color);
                 REMAP_VERTEX_BUFFER(BlendIndices, Int4);
                 REMAP_VERTEX_BUFFER(BlendWeights, Float4);

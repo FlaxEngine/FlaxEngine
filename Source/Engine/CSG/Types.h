@@ -3,6 +3,8 @@
 #pragma once
 
 #include "Engine/Core/Config.h"
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Vector3.h"
 #include "Engine/Level/Actors/BrushMode.h"
 
 namespace CSG

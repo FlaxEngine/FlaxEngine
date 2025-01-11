@@ -325,6 +325,8 @@ LPCSTR RenderToolsDX::GetVertexInputSemantic(VertexElement::Types type, UINT& se
     case VertexElement::Types::Attribute3:
         semanticIndex = 3;
         return "ATTRIBUTE";
+    case VertexElement::Types::Lightmap:
+        return "LIGHTMAP";
     default:
         LOG(Fatal, "Invalid vertex shader element semantic type");
         return "";

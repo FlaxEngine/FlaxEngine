@@ -41,9 +41,7 @@ public:
     /// <summary>
     /// Texture coordinates (list of channels)
     /// </summary>
-    // TODO: multiple UVs
-    Array<Float2> UVs;
-    Array<Float2> LightmapUVs; // TODO: remove this and move to UVs
+    Array<Array<Float2>, FixedAllocation<MODEL_MAX_UV>> UVs;
 
     /// <summary>
     /// Normals vector
@@ -121,7 +119,8 @@ public:
     /// <param name="preserveContents">Failed if clear data otherwise will try to preserve the buffers contents.</param>
     /// <param name="withColors">True if use vertex colors buffer.</param>
     /// <param name="withSkin">True if use vertex blend indices and weights buffer.</param>
-    void EnsureCapacity(int32 vertices, int32 indices, bool preserveContents = false, bool withColors = true, bool withSkin = true);
+    /// <param name="texcoords">Amount of texture coordinate channels to use.</param>
+    void EnsureCapacity(int32 vertices, int32 indices, bool preserveContents = false, bool withColors = true, bool withSkin = true, int32 texcoords = 1);
 
     /// <summary>
     /// Swaps the vertex and index buffers contents (without a data copy) with the other mesh.
@@ -189,6 +188,11 @@ public:
     void CalculateBounds(BoundingBox& box, BoundingSphere& sphere) const;
 
 #if COMPILE_WITH_MODEL_TOOL
+    /// <summary>
+    /// Setups Lightmap UVs based on the option.
+    /// </summary>
+    void SetLightmapUVsSource(ModelLightmapUVsSource source);
+
     /// <summary>
     /// Generate lightmap uvs for the mesh entry
     /// </summary>

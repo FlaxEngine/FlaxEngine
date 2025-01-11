@@ -385,8 +385,33 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
         renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, drawModes, info.Flags, shadowsMode, info.Bounds, drawCall, entry.ReceiveDecals, info.SortOrder);
 }
 
-bool Mesh::Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<3>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<3>>& vbLayout)
+bool Mesh::Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<3>>& vbData, const void* ibData, bool use16BitIndexBuffer, Array<GPUVertexLayout*, FixedAllocation<3>> vbLayout)
 {
+    // Inject lightmap uv coordinate index into the vertex layout of one of the buffers
+    if (LightmapUVsIndex != -1)
+    {
+        const auto vertexElementType = (VertexElement::Types)((int32)VertexElement::Types::TexCoord0 + LightmapUVsIndex);
+        for (int32 vbIndex = 0; vbIndex < vbLayout.Count(); vbIndex++)
+        {
+            // Check if layout contains lightmap uvs texcoords channel
+            GPUVertexLayout* layout = vbLayout[vbIndex];
+            VertexElement element = layout->FindElement(vertexElementType);
+            if (element.Type == vertexElementType)
+            {
+                // Ensure element doesn't exist in this layout
+                if (layout->FindElement(VertexElement::Types::Lightmap).Format == PixelFormat::Unknown)
+                {
+                    GPUVertexLayout::Elements elements = layout->GetElements();
+                    element.Type = VertexElement::Types::Lightmap;
+                    elements.Add(element);
+                    layout = GPUVertexLayout::Get(elements, true);
+                    vbLayout[vbIndex] = layout;
+                }
+                break;
+            }
+        }
+    }
+
     if (MeshBase::Init(vertices, triangles, vbData, ibData, use16BitIndexBuffer, vbLayout))
         return true;
 

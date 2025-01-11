@@ -2,6 +2,7 @@
 // Version: @0
 
 #define MATERIAL 1
+#define MATERIAL_TEXCOORDS 4
 #define USE_PER_VIEW_CONSTANTS 1
 #define USE_PER_DRAW_CONSTANTS 1
 @3
@@ -24,17 +25,19 @@ Buffer<float4> BoneMatrices : register(t1);
 Buffer<float4> PrevBoneMatrices : register(t2);
 #endif
 #endif
+
 // Geometry data passed though the graphics rendering stages up to the pixel shader
 struct GeometryData
 {
 	float3 WorldPosition : TEXCOORD0;
-	float2 TexCoord : TEXCOORD1;
-	float2 LightmapUV : TEXCOORD2;
+	float4 TexCoords01 : TEXCOORD1;
+	float4 TexCoords23 : TEXCOORD2;
+	float2 LightmapUV : TEXCOORD3;
 #if USE_VERTEX_COLOR
 	half4 VertexColor : COLOR;
 #endif
-	float3 WorldNormal : TEXCOORD3;
-	float4 WorldTangent : TEXCOORD4;
+	float3 WorldNormal : TEXCOORD4;
+	float4 WorldTangent : TEXCOORD5;
 	float3 PrevWorldPosition : TEXCOORD7;
 	nointerpolation uint ObjectIndex : TEXCOORD8;
 };
@@ -68,7 +71,7 @@ struct MaterialInput
 {
 	float3 WorldPosition;
 	float TwoSidedSign;
-	float2 TexCoord;
+	float2 TexCoords[MATERIAL_TEXCOORDS];
 #if USE_LIGHTMAP
 	float2 LightmapUV;
 #endif
@@ -86,12 +89,18 @@ struct MaterialInput
 #endif
 };
 
+// Map access to the main texure coordinate channel as UV0
+#define TexCoord TexCoords[0]
+
 // Extracts geometry data to the material input
 MaterialInput GetGeometryMaterialInput(GeometryData geometry)
 {
 	MaterialInput output = (MaterialInput)0;
 	output.WorldPosition = geometry.WorldPosition;
-	output.TexCoord = geometry.TexCoord;
+	output.TexCoords[0] = geometry.TexCoords01.xy;
+	output.TexCoords[1] = geometry.TexCoords01.zw;
+	output.TexCoords[2] = geometry.TexCoords23.xy;
+	output.TexCoords[3] = geometry.TexCoords23.zw;
 #if USE_LIGHTMAP
 	output.LightmapUV = geometry.LightmapUV;
 #endif
@@ -126,8 +135,8 @@ MaterialInput GetGeometryMaterialInput(GeometryData geometry)
 GeometryData InterpolateGeometry(GeometryData p0, float w0, GeometryData p1, float w1, GeometryData p2, float w2)
 {
 	GeometryData output = (GeometryData)0;
-	output.TexCoord = p0.TexCoord * w0 + p1.TexCoord * w1 + p2.TexCoord * w2;
-	output.LightmapUV = p0.LightmapUV * w0 + p1.LightmapUV * w1 + p2.LightmapUV * w2;
+	output.TexCoords01 = p0.TexCoords01 * w0 + p1.TexCoords01 * w1 + p2.TexCoords01 * w2;
+	output.TexCoords23 = p0.TexCoords23 * w0 + p1.TexCoords23 * w1 + p2.TexCoords23 * w2;
 #if USE_VERTEX_COLOR
 	output.VertexColor = p0.VertexColor * w0 + p1.VertexColor * w1 + p2.VertexColor * w2;
 #endif
@@ -312,14 +321,15 @@ VertexOutput VS(ModelInput input)
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
-	output.Geometry.TexCoord = input.TexCoord;
+	output.Geometry.TexCoords01 = float4(input.TexCoord0, input.TexCoord1);
+	output.Geometry.TexCoords23 = float4(input.TexCoord2, input.TexCoord3);
 #if USE_VERTEX_COLOR
 	output.Geometry.VertexColor = input.Color;
 #endif
 #if CAN_USE_LIGHTMAP
 	output.Geometry.LightmapUV = input.LightmapUV * object.LightmapArea.zw + object.LightmapArea.xy;
 #else
-	output.Geometry.LightmapUV = input.LightmapUV;
+	output.Geometry.LightmapUV = float2(0, 0);
 #endif
 
 	// Calculate tanget space to world space transformation matrix for unit vectors
@@ -486,9 +496,10 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
-	output.Geometry.TexCoord = input.TexCoord;
+	output.Geometry.TexCoords01 = float4(input.TexCoord0, input.TexCoord1);
+	output.Geometry.TexCoords23 = float4(input.TexCoord2, input.TexCoord3);
 #if USE_VERTEX_COLOR
-	output.Geometry.VertexColor = float4(0, 0, 0, 1);
+	output.Geometry.VertexColor = input.Color;
 #endif
 	output.Geometry.LightmapUV = float2(0, 0);
 

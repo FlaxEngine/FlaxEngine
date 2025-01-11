@@ -167,23 +167,22 @@ void RawData::ToModelData(ModelData& modelData) const
             auto& surface = slot->Surfaces[i];
             vertexCount += surface.Vertices.Count();
         }
-        mesh->EnsureCapacity(vertexCount, vertexCount, false, false);
+        mesh->EnsureCapacity(vertexCount, vertexCount, false, false, false, 2);
 
         // Write surfaces into vertex and index buffers
         int32 index = 0;
         for (int32 i = 0; i < slot->Surfaces.Count(); i++)
         {
-            auto& surface = slot->Surfaces[i];
-
+            auto& surface = slot->Surfaces.Get()[i];
             for (int32 vIndex = 0; vIndex < surface.Vertices.Count(); vIndex++)
             {
-                auto& v = surface.Vertices[vIndex];
+                auto& v = surface.Vertices.Get()[vIndex];
 
                 mesh->Positions.Add(v.Position);
-                mesh->UVs.Add(v.TexCoord);
+                mesh->UVs.Get()[0].Add(v.TexCoord);
+                mesh->UVs.Get()[1].Add(v.LightmapUVs * surface.UVsArea.Size + surface.UVsArea.Location);
                 mesh->Normals.Add(v.Normal);
                 mesh->Tangents.Add(v.Tangent);
-                mesh->LightmapUVs.Add(v.LightmapUVs * surface.UVsArea.Size + surface.UVsArea.Location);
 
                 mesh->Indices.Add(index++);
             }

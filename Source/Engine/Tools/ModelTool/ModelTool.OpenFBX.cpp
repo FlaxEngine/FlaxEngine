@@ -690,7 +690,6 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     const ofbx::GeometryPartition& partition = geometryData.getPartition(partitionIndex);
     const int vertexCount = partition.triangles_count * 3;
     const ofbx::Vec3Attributes& positions = geometryData.getPositions();
-    const ofbx::Vec2Attributes& uvs = geometryData.getUVs();
     const ofbx::Vec3Attributes& normals = geometryData.getNormals();
     const ofbx::Vec3Attributes& tangents = geometryData.getTangents();
     const ofbx::Vec4Attributes& colors = geometryData.getColors();
@@ -723,15 +722,18 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         mesh.Indices.Get()[i] = i;
 
     // Texture coordinates
-    if (uvs.values)
+    for (int32 channelIndex = 0; channelIndex < MODEL_MAX_UV && geometryData.getUVs(channelIndex).values; channelIndex++)
     {
-        mesh.UVs.Resize(vertexCount, false);
+        const ofbx::Vec2Attributes& uvs = geometryData.getUVs(channelIndex);
+        mesh.UVs.Resize(channelIndex + 1);
+        auto& channel = mesh.UVs[channelIndex];
+        channel.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-            mesh.UVs.Get()[i] = ToFloat2(uvs.get(triangulatedIndices[i]));
+            channel.Get()[i] = ToFloat2(uvs.get(triangulatedIndices[i]));
         if (data.ConvertRH)
         {
-            for (int32 v = 0; v < vertexCount; v++)
-                mesh.UVs[v].Y = 1.0f - mesh.UVs[v].Y;
+            for (int v = 0; v < vertexCount; v++)
+                channel.Get()[v].Y = 1.0f - channel.Get()[v].Y;
         }
     }
 
@@ -776,59 +778,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     }
 
     // Lightmap UVs
-    if (data.Options.LightmapUVsSource == ModelLightmapUVsSource::Disable)
-    {
-        // No lightmap UVs
-    }
-    else if (data.Options.LightmapUVsSource == ModelLightmapUVsSource::Generate)
-    {
-        // Generate lightmap UVs
-        if (mesh.GenerateLightmapUVs())
-        {
-            LOG(Error, "Failed to generate lightmap uvs");
-        }
-    }
-    else
-    {
-        // Select input channel index
-        int32 inputChannelIndex;
-        switch (data.Options.LightmapUVsSource)
-        {
-        case ModelLightmapUVsSource::Channel0:
-            inputChannelIndex = 0;
-            break;
-        case ModelLightmapUVsSource::Channel1:
-            inputChannelIndex = 1;
-            break;
-        case ModelLightmapUVsSource::Channel2:
-            inputChannelIndex = 2;
-            break;
-        case ModelLightmapUVsSource::Channel3:
-            inputChannelIndex = 3;
-            break;
-        default:
-            inputChannelIndex = INVALID_INDEX;
-            break;
-        }
-
-        // Check if has that channel texcoords
-        const auto lightmapUVs = geometryData.getUVs(inputChannelIndex);
-        if (lightmapUVs.values)
-        {
-            mesh.LightmapUVs.Resize(vertexCount, false);
-            for (int i = 0; i < vertexCount; i++)
-                mesh.LightmapUVs.Get()[i] = ToFloat2(lightmapUVs.get(triangulatedIndices[i]));
-            if (data.ConvertRH)
-            {
-                for (int32 v = 0; v < vertexCount; v++)
-                    mesh.LightmapUVs[v].Y = 1.0f - mesh.LightmapUVs[v].Y;
-            }
-        }
-        else
-        {
-            LOG(Warning, "Cannot import model lightmap uvs. Missing texcoords channel {0}.", inputChannelIndex);
-        }
-    }
+    mesh.SetLightmapUVsSource(data.Options.LightmapUVsSource);
 
     // Vertex Colors
     if (data.Options.ImportVertexColors && colors.values)

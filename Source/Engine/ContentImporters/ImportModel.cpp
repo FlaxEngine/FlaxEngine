@@ -132,7 +132,10 @@ void RepackMeshLightmapUVs(ModelData& data)
                 {
                     Float2 uvOffset(entry.Slot->X * atlasSizeInv, entry.Slot->Y * atlasSizeInv);
                     Float2 uvScale(entry.Slot->Width * atlasSizeInv, entry.Slot->Height * atlasSizeInv);
-                    for (auto& uv : entry.Mesh->LightmapUVs)
+                    if (entry.Mesh->LightmapUVsIndex == -1)
+                        continue;
+                    auto& lightmapUVs = entry.Mesh->UVs[entry.Mesh->LightmapUVsIndex];
+                    for (auto& uv : lightmapUVs)
                     {
                         uv = uv * uvScale + uvOffset;
                     }

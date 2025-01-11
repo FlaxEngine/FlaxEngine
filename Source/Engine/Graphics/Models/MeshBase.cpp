@@ -330,7 +330,7 @@ GPUVertexLayout* MeshBase::GetVertexLayout() const
     return GPUVertexLayout::Get(Span<GPUBuffer*>(_vertexBuffers, MODEL_MAX_VB));
 }
 
-bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<MODEL_MAX_VB>>& vbData, const void* ibData, bool use16BitIndexBuffer, const Array<GPUVertexLayout*, FixedAllocation<MODEL_MAX_VB>>& vbLayout)
+bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, FixedAllocation<MODEL_MAX_VB>>& vbData, const void* ibData, bool use16BitIndexBuffer, Array<GPUVertexLayout*, FixedAllocation<MODEL_MAX_VB>> vbLayout)
 {
     CHECK_RETURN(vbData.HasItems() && vertices, true);
     CHECK_RETURN(ibData, true);

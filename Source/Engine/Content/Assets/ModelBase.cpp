@@ -562,11 +562,13 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
             LOG(Warning, "Cannot save model with empty meshes.");
             return true;
         }
-        bool hasUVs = mesh.UVs.HasItems();
-        if (hasUVs && (uint32)mesh.UVs.Count() != vertices)
+        for (auto& channel : mesh.UVs)
         {
-            LOG(Error, "Invalid size of {0} stream.", TEXT("UVs"));
-            return true;
+            if ((uint32)channel.Count() != vertices)
+            {
+                LOG(Error, "Invalid size of {0} stream.", TEXT("UVs"));
+                return true;
+            }
         }
         bool hasNormals = mesh.Normals.HasItems();
         if (hasNormals && (uint32)mesh.Normals.Count() != vertices)
@@ -584,12 +586,6 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
         if (hasBitangentSigns && (uint32)mesh.BitangentSigns.Count() != vertices)
         {
             LOG(Error, "Invalid size of {0} stream.", TEXT("BitangentSigns"));
-            return true;
-        }
-        bool hasLightmapUVs = mesh.LightmapUVs.HasItems();
-        if (hasLightmapUVs && (uint32)mesh.LightmapUVs.Count() != vertices)
-        {
-            LOG(Error, "Invalid size of {0} stream.", TEXT("LightmapUVs"));
             return true;
         }
         bool hasColors = mesh.Colors.HasItems();
@@ -626,7 +622,6 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
             byte vbIndex = 0;
             // TODO: add option to quantize vertex positions (eg. 16-bit)
             // TODO: add option to quantize vertex attributes (eg. 8-bit blend weights, 8-bit texcoords)
-            // TODO: add support for 16-bit blend indices (up to 65535 bones)
 
             // Position
             if (useSeparatePositions)
@@ -641,10 +636,14 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                 auto& vb = vbElements.AddOne();
                 if (!useSeparatePositions)
                     vb.Add({ VertexElement::Types::Position, vbIndex, 0, 0, PixelFormat::R32G32B32_Float });
-                if (hasUVs)
-                    vb.Add({ VertexElement::Types::TexCoord, vbIndex, 0, 0, PixelFormat::R16G16_Float });
-                if (hasLightmapUVs)
-                    vb.Add({ VertexElement::Types::TexCoord1, vbIndex, 0, 0, PixelFormat::R16G16_Float });
+                for (int32 channelIdx = 0; channelIdx < mesh.UVs.Count(); channelIdx++)
+                {
+                    auto& channel = mesh.UVs.Get()[channelIdx];
+                    if (channel.HasItems())
+                    {
+                        vb.Add({ (VertexElement::Types)((int32)VertexElement::Types::TexCoord0 + channelIdx), vbIndex, 0, 0, PixelFormat::R16G16_Float });
+                    }
+                }
                 vb.Add({ VertexElement::Types::Normal, vbIndex, 0, 0, PixelFormat::R10G10B10A2_UNorm });
                 vb.Add({ VertexElement::Types::Tangent, vbIndex, 0, 0, PixelFormat::R10G10B10A2_UNorm });
                 if (isSkinned)
@@ -745,18 +744,14 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                         break;
                     }
                     case VertexElement::Types::TexCoord0:
+                    case VertexElement::Types::TexCoord1:
+                    case VertexElement::Types::TexCoord2:
+                    case VertexElement::Types::TexCoord3:
                     {
-                        const Float2 uv = hasUVs ? mesh.UVs.Get()[vertex] : Float2::Zero;
+                        const int32 channelIdx = (int32)element.Type - (int32)VertexElement::Types::TexCoord0;
+                        const Float2 uv = mesh.UVs.Get()[channelIdx].Get()[vertex];
                         const Half2 uvEnc(uv);
                         stream.Write(uvEnc);
-                        break;
-                    }
-                    case VertexElement::Types::TexCoord1:
-                    {
-                        // TODO: refactor LightmapUVs into a generic TexCoord channel and support up to 4 UVs
-                        const Float2 lightmapUV = hasLightmapUVs ? mesh.LightmapUVs.Get()[vertex] : Float2::Zero;
-                        const Half2 lightmapUVEnc(lightmapUV);
-                        stream.Write(lightmapUVEnc);
                         break;
                     }
                     default:
