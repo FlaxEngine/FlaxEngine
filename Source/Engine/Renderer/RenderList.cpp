@@ -1027,7 +1027,7 @@ bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b, Draw
                 const MaterialInfo& bInfo = b.Material->GetInfo();
                 constexpr MaterialUsageFlags complexUsageFlags = MaterialUsageFlags::UseMask | MaterialUsageFlags::UsePositionOffset | MaterialUsageFlags::UseDisplacement;
                 const bool aIsSimple = EnumHasNoneFlags(aInfo.UsageFlags, complexUsageFlags) && aInfo.BlendMode == MaterialBlendMode::Opaque;
-                const bool bIsSimple = EnumHasNoneFlags(bInfo.UsageFlags, complexUsageFlags) && aInfo.BlendMode == MaterialBlendMode::Opaque;
+                const bool bIsSimple = EnumHasNoneFlags(bInfo.UsageFlags, complexUsageFlags) && bInfo.BlendMode == MaterialBlendMode::Opaque;
                 return aIsSimple && bIsSimple;
             }
             return false;
