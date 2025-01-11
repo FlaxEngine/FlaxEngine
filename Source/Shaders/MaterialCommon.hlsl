@@ -237,6 +237,9 @@ struct ModelInput_Skinned
 #endif
     float4 Normal : NORMAL;
     float4 Tangent : TANGENT;
+#if USE_VERTEX_COLOR
+	half4 Color : COLOR;
+#endif
     uint4 BlendIndices : BLENDINDICES;
     float4 BlendWeights : BLENDWEIGHTS;
 };
