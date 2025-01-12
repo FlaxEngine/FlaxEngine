@@ -304,7 +304,7 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
 
     // Create object
     auto depthWrite = _descDepthStencil.depthWriteEnable;
-    _descDepthStencil.depthWriteEnable &= renderPass->CanDepthWrite;
+    _descDepthStencil.depthWriteEnable &= renderPass->CanDepthWrite ? 1 : 0;
     const VkResult result = vkCreateGraphicsPipelines(_device->Device, _device->PipelineCache, 1, &_desc, nullptr, &pipeline);
     _descDepthStencil.depthWriteEnable = depthWrite;
     LOG_VULKAN_RESULT(result);

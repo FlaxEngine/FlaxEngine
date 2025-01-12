@@ -1473,7 +1473,7 @@ static PixelFormatSampler PixelFormatSamplers[] =
         {
             uint32 data[4];
             Platform::MemoryCopy(data, ptr, sizeof(data));
-            return Float4(data[0], data[1], data[2], data[3]);
+            return Float4((float)data[0], (float)data[1], (float)data[2], (float)data[3]);
         },
         [](void* ptr, const Float4& value)
         {
@@ -1488,7 +1488,7 @@ static PixelFormatSampler PixelFormatSamplers[] =
         {
             int32 data[4];
             Platform::MemoryCopy(data, ptr, sizeof(data));
-            return Float4(data[0], data[1], data[2], data[3]);
+            return Float4((float)data[0], (float)data[1], (float)data[2], (float)data[3]);
         },
         [](void* ptr, const Float4& value)
         {
