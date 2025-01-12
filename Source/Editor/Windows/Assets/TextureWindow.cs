@@ -149,7 +149,7 @@ namespace FlaxEditor.Windows.Assets
                     Utilities.Utils.CreateImportPathUI(layout, proxy._window.Item as BinaryAssetItem);
 
                     // Reimport
-                    layout.Space(10);
+                    layout.Space(5);
                     var reimportButton = layout.Button("Reimport");
                     reimportButton.Button.Clicked += () => ((ImportPropertiesProxy)Values[0]).Reimport();
                 }
