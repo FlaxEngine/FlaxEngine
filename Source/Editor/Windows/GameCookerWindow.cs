@@ -244,7 +244,8 @@ namespace FlaxEditor.Windows
                         _buildAAB = value;
                         if (value)
                         {
-                            
+                            if (CustomDefines != null && CustomDefines.Contains("BuildAAB"))
+                                return;
                             var newDefines = new List<string>();
                             if (CustomDefines != null)
                                 newDefines.AddRange(CustomDefines);
