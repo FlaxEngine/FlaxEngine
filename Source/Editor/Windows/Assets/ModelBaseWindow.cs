@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Xml;
 using FlaxEditor.Content;
@@ -242,6 +243,35 @@ namespace FlaxEditor.Windows.Assets
                             proxy.Window.MarkAsEdited();
                         };
                     }
+                    {
+                        var group = layout.Group("Vertex Layout");
+                        GPUVertexLayout vertexLayout = null;
+                        for (int lodIndex = 0; lodIndex < countLODs; lodIndex++)
+                        {
+                            var lod = proxy.Asset.GetLOD(lodIndex);
+                            if (lodIndex >= countLODs - loadedLODs)
+                            {
+                                var mesh = lod.GetMesh(0);
+                                vertexLayout = mesh.VertexLayout;
+                                if (vertexLayout != null && vertexLayout.Elements.Length != 0)
+                                    break;
+                                vertexLayout = null;
+                            }
+                        }
+                        if (vertexLayout != null)
+                        {
+                            var elements = vertexLayout.Elements;
+                            for (uint slot = 0; slot < 4u; slot++)
+                            {
+                                var slotElements = elements.Where(x => x.Slot == slot && x.PerInstance == 0).ToArray();
+                                if (slotElements.Length == 0)
+                                    continue;
+                                group.Label($"   Vertex Buffer {slot}:");
+                                foreach (var e in slotElements)
+                                    group.Label($"      {e.Type}, {e.Format} ({PixelFormatExtensions.SizeInBytes(e.Format)} bytes), offset {e.Offset}");
+                            }
+                        }
+                    }
                     proxy.OnGeneral(layout);
 
                     // Group per LOD
@@ -257,14 +287,30 @@ namespace FlaxEditor.Windows.Assets
                         proxy.Asset.GetMeshes(out var meshes, lodIndex);
 
                         int triangleCount = 0, vertexCount = 0;
+                        ulong[] meshMemory = new ulong[meshes.Length];
+                        ulong lodMemory = 0;
                         for (int meshIndex = 0; meshIndex < meshes.Length; meshIndex++)
                         {
                             var mesh = meshes[meshIndex];
                             triangleCount += mesh.TriangleCount;
                             vertexCount += mesh.VertexCount;
+                            ulong memory = 0;
+                            for (int vbIndex = 0; vbIndex < 4; vbIndex++)
+                            {
+                                var vb = mesh.GetVertexBuffer(vbIndex);
+                                if (vb != null)
+                                    memory += vb.Size;
+                            }
+                            {
+                                var ib = mesh.GetIndexBuffer();
+                                if (ib != null)
+                                    memory += ib.Size;
+                            }
+                            meshMemory[meshIndex] = memory;
+                            lodMemory += memory;
                         }
 
-                        group.Label(string.Format("Triangles: {0:N0}   Vertices: {1:N0}", triangleCount, vertexCount)).AddCopyContextMenu();
+                        group.Label(string.Format($"Triangles: {{0:N0}}   Vertices: {{1:N0}}   Memory: {Utilities.Utils.FormatBytesCount(lodMemory)}", triangleCount, vertexCount)).AddCopyContextMenu();
                         group.Label("Size: " + lod.Box.Size).AddCopyContextMenu();
                         var screenSize = group.FloatValue("Screen Size", "The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.");
                         screenSize.ValueBox.MinValue = 0.0f;
@@ -280,7 +326,7 @@ namespace FlaxEditor.Windows.Assets
                         for (int meshIndex = 0; meshIndex < meshes.Length; meshIndex++)
                         {
                             var mesh = meshes[meshIndex];
-                            group.Label($"Mesh {meshIndex} (tris: {mesh.TriangleCount:N0}, vert: {mesh.VertexCount:N0})").AddCopyContextMenu();
+                            group.Label($"Mesh {meshIndex} (tris: {mesh.TriangleCount:N0}, vert: {mesh.VertexCount:N0}, mem: {Utilities.Utils.FormatBytesCount(meshMemory[meshIndex])})").AddCopyContextMenu();
 
                             // Material Slot
                             var materialSlot = group.ComboBox("Material Slot", "Material slot used by this mesh during rendering");
