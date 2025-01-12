@@ -379,7 +379,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
             }
         }
         // Copy result package
-        const String aab = data.OriginalOutputPath / (distributionPackage ? TEXT("app/build/outputs/apk/release/app-release.aab") : TEXT("app/build/outputs/bundle/debug/app-debug.aab"));
+        const String aab = data.OriginalOutputPath / (distributionPackage ? TEXT("app/build/outputs/bundle/release/app-release.aab") : TEXT("app/build/outputs/bundle/debug/app-debug.aab"));
         const String outputAab = data.OriginalOutputPath / EditorUtilities::GetOutputName() + TEXT(".aab");
         if (FileSystem::CopyFile(outputAab, aab))
         {
