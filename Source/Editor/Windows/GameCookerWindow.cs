@@ -233,6 +233,44 @@ namespace FlaxEditor.Windows
             class Android : Platform
             {
                 protected override BuildPlatform BuildPlatform => BuildPlatform.AndroidARM64;
+                private bool _buildAAB = false;
+
+                [EditorOrder(21), Tooltip("Build an android app bundle instead of an APK"), EditorDisplay(null, "Build .aab")]
+                public bool BuildAAB 
+                {
+                    get => _buildAAB;
+                    set
+                    {
+                        _buildAAB = value;
+                        if (value)
+                        {
+                            
+                            var newDefines = new List<string>();
+                            if (CustomDefines != null)
+                                newDefines.AddRange(CustomDefines);
+                            newDefines.Add("BuildAAB");
+                            CustomDefines = newDefines.ToArray();
+                        }
+                        else
+                        {
+                            if (CustomDefines != null)
+                            {
+                                if (CustomDefines.Contains("BuildAAB"))
+                                {
+                                    var newDefines = new List<string>();
+                                    foreach (var define in CustomDefines)
+                                    {
+                                        if (!define.Equals("BuildAAB", StringComparison.Ordinal))
+                                        {
+                                            newDefines.Add(define);
+                                        }
+                                    }
+                                    CustomDefines = newDefines.ToArray();
+                                }
+                            }
+                        }
+                    } 
+                }
             }
 
             class Switch : Platform
