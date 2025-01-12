@@ -70,6 +70,17 @@ namespace FlaxEngine
             }
 
             /// <summary>
+            /// Reads an integer value from a given item.
+            /// </summary>
+            /// <param name="index">Zero-based index of the item.</param>
+            /// <returns>Loaded value.</returns>
+            public int GetInt(int index)
+            {
+                fixed (byte* data = _data)
+                    return (int)_sampler.Read(data + index * _stride).X;
+            }
+
+            /// <summary>
             /// Reads a float value from a given item.
             /// </summary>
             /// <param name="index">Zero-based index of the item.</param>
@@ -111,6 +122,18 @@ namespace FlaxEngine
             {
                 fixed (byte* data = _data)
                     return _sampler.Read(data + index * _stride);
+            }
+
+            /// <summary>
+            /// Writes an integer value to a given item.
+            /// </summary>
+            /// <param name="index">Zero-based index of the item.</param>
+            /// <param name="value">Value to assign.</param>
+            public void SetInt(int index, int value)
+            {
+                var v = new Float4(value);
+                fixed (byte* data = _data)
+                    _sampler.Write(data + index * _stride, ref v);
             }
 
             /// <summary>
@@ -713,13 +736,34 @@ namespace FlaxEngine
             }
         }
 
-        private static void UnpackNormal(ref Float3 value)
+        /// <summary>
+        /// Unpacks normal/tangent vector from normalized range to full range.
+        /// </summary>
+        /// <param name="value">In and out value.</param>
+        public static void UnpackNormal(ref Float3 value)
         {
             // [0; 1] -> [-1; 1]
             value = value * 2.0f - 1.0f;
         }
 
-        private static void PackNormal(ref Float3 value)
+        /// <summary>
+        /// Unpacks normal/tangent vector from normalized range to full range.
+        /// </summary>
+        /// <param name="value">In and out value.</param>
+        /// <param name="sign">Encoded sign in the alpha channel.</param>
+        public static void UnpackNormal(ref Float4 value, out float sign)
+        {
+            sign = value.W > Mathf.Epsilon ? -1.0f : +1.0f;
+
+            // [0; 1] -> [-1; 1]
+            value = value * 2.0f - 1.0f;
+        }
+
+        /// <summary>
+        /// Packs normal/tangent vector to normalized range from full range.
+        /// </summary>
+        /// <param name="value">In and out value.</param>
+        public static void PackNormal(ref Float3 value)
         {
             // [-1; 1] -> [0; 1]
             value = value * 0.5f + 0.5f;

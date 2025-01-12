@@ -653,9 +653,10 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
             {
                 const BlendShapeVertex& blendShapeVertex = q.First.Vertices[i];
 
-                Float3 normal = normalStream.GetFloat3(blendShapeVertex.VertexIndex) * 2.0f - 1.0f;
+                Float3 normal = normalStream.GetFloat3(blendShapeVertex.VertexIndex);
+                MeshAccessor::UnpackNormal(normal);
                 normal = normal + blendShapeVertex.NormalDelta * q.Second;
-                normal = normal * 0.5f + 0.5f; // TODO: optimize unpacking and packing to just apply it to the normal delta
+                MeshAccessor::PackNormal(normal); // TODO: optimize unpacking and packing to just apply it to the normal delta
                 normalStream.SetFloat3(blendShapeVertex.VertexIndex, normal);
             }
         }
@@ -667,18 +668,21 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
         auto tangentStream = accessor.Tangent();
         for (uint32 vertexIndex = minVertexIndex; vertexIndex <= maxVertexIndex; vertexIndex++)
         {
-            Float3 normal = normalStream.GetFloat3(vertexIndex) * 2.0f - 1.0f;
+            Float3 normal = normalStream.GetFloat3(vertexIndex);
+            MeshAccessor::UnpackNormal(normal);
             normal.Normalize();
-            normal = normal * 0.5f + 0.5f;
+            MeshAccessor::PackNormal(normal);
             normalStream.SetFloat3(vertexIndex, normal);
 
             if (tangentStream.IsValid())
             {
                 Float4 tangentRaw = normalStream.GetFloat4(vertexIndex);
-                Float3 tangent = Float3(tangentRaw) * 2.0f - 1.0f;
+                Float3 tangent = Float3(tangentRaw);
+                MeshAccessor::UnpackNormal(tangent);
                 tangent = tangent - ((tangent | normal) * normal);
                 tangent.Normalize();
-                tangentRaw = Float4(tangent * 0.5f + 0.5f, tangentRaw.W);
+                MeshAccessor::PackNormal(tangent);
+                tangentRaw = Float4(tangent, tangentRaw.W);
                 tangentStream.SetFloat4(vertexIndex, tangentRaw);
             }
         }

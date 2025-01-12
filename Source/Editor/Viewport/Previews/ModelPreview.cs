@@ -304,7 +304,8 @@ namespace FlaxEditor.Viewport.Previews
                         for (int i = 0; i < count; i++)
                         {
                             var position = positionStream.GetFloat3(i);
-                            var normal = normalStream.GetFloat3(i) * 2.0f - 1.0f;
+                            var normal = normalStream.GetFloat3(i);
+                            MeshAccessor.UnpackNormal(ref normal);
                             DebugDraw.DrawLine(position, position + normal * 4.0f, Color.Blue);
                         }
                     }
@@ -328,7 +329,8 @@ namespace FlaxEditor.Viewport.Previews
                         for (int i = 0; i < count; i++)
                         {
                             var position = positionStream.GetFloat3(i);
-                            var tangent = tangentStream.GetFloat3(i) * 2.0f - 1.0f;
+                            var tangent = tangentStream.GetFloat3(i);
+                            MeshAccessor.UnpackNormal(ref tangent);
                             DebugDraw.DrawLine(position, position + tangent * 4.0f, Color.Red);
                         }
                     }
@@ -353,10 +355,11 @@ namespace FlaxEditor.Viewport.Previews
                         for (int i = 0; i < count; i++)
                         {
                             var position = positionStream.GetFloat3(i);
-                            var normal = normalStream.GetFloat3(i) * 2.0f - 1.0f;
+                            var normal = normalStream.GetFloat3(i);
                             var tangent = tangentStream.GetFloat4(i);
-                            var bitangentSign = tangent.W > Mathf.Epsilon ? -1.0f : +1.0f;
-                            var bitangent = Float3.Cross(normal, new Float3(tangent) * 2.0f - 1.0f) * bitangentSign;
+                            MeshAccessor.UnpackNormal(ref normal);
+                            MeshAccessor.UnpackNormal(ref tangent, out var bitangentSign);
+                            var bitangent = Float3.Cross(normal, new Float3(tangent)) * bitangentSign;
                             DebugDraw.DrawLine(position, position + bitangent * 4.0f, Color.Green);
                         }
                     }

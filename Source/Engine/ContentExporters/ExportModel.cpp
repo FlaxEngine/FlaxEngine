@@ -81,7 +81,8 @@ ExportAssetResult AssetExporters::ExportModel(ExportAssetContext& context)
         {
             for (uint32 i = 0; i < meshData.Vertices; i++)
             {
-                auto v = normalStream.GetFloat3(i) * 2.0f - 1.0f;
+                auto v = normalStream.GetFloat3(i);
+                MeshAccessor::UnpackNormal(v);
                 output->WriteText(StringAnsi::Format("vn {0} {1} {2}\n", v.X, v.Y, v.Z));
             }
             output->WriteChar('\n');

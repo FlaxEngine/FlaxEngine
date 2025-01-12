@@ -37,6 +37,11 @@ public:
         bool IsValid() const;
         bool IsLinear(PixelFormat expectedFormat) const;
 
+        FORCE_INLINE int32 GetInt(int32 index) const
+        {
+            return (int32)_sampler.Read(_data.Get() + index * _stride).X;
+        }
+
         FORCE_INLINE float GetFloat(int32 index) const
         {
             return _sampler.Read(_data.Get() + index * _stride).X;
@@ -57,7 +62,12 @@ public:
             return _sampler.Read(_data.Get() + index * _stride);
         }
 
-        FORCE_INLINE void SetFloat(int32 index, const float& value)
+        FORCE_INLINE void SetInt(int32 index, const int32 value)
+        {
+            _sampler.Write(_data.Get() + index * _stride, Float4((float)value));
+        }
+
+        FORCE_INLINE void SetFloat(int32 index, const float value)
         {
             _sampler.Write(_data.Get() + index * _stride, Float4(value));
         }
@@ -181,5 +191,18 @@ public:
     FORCE_INLINE Stream TexCoord(int32 channel = 0)
     {
         return Attribute((VertexElement::Types)((byte)VertexElement::Types::TexCoord0 + channel));
+    }
+
+public:
+    // Unpacks normal/tangent vector from normalized range to full range.
+    FORCE_INLINE static void UnpackNormal(Float3& normal)
+    {
+        normal = normal * 2.0f - 1.0f;
+    }
+
+    // Packs normal/tangent vector to normalized range from full range.
+    FORCE_INLINE static void PackNormal(Float3& normal)
+    {
+        normal = normal * 0.5f + 0.5f;
     }
 };
