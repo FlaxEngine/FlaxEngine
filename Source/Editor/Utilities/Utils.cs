@@ -391,10 +391,22 @@ namespace FlaxEditor.Utilities
         public static void CreateImportPathUI(CustomEditors.LayoutElementsContainer parentLayout, Content.BinaryAssetItem assetItem)
         {
             assetItem.GetImportPath(out var path);
+            CreateImportPathUI(parentLayout, path);
+        }
+
+        /// <summary>
+        /// Creates an Import path ui that show the import path and adds a button to show the folder in the file system.
+        /// </summary>
+        /// <param name="parentLayout">The parent layout container.</param>
+        /// <param name="path">The import path.</param>
+        /// <param name="useInitialSpacing">Whether to use an initial layout space of 5 for separation.</param>
+        public static void CreateImportPathUI(CustomEditors.LayoutElementsContainer parentLayout, string path, bool useInitialSpacing = true)
+        {
             if (!string.IsNullOrEmpty(path))
             {
-                parentLayout.Space(5);
-                parentLayout.Label("Import Path:");
+                if (useInitialSpacing)
+                    parentLayout.Space(5);
+                parentLayout.Label("Import Path:").Label.TooltipText = "Source asset path (can be relative or absolute to the project)";
                 var textBox = parentLayout.TextBox().TextBox;
                 textBox.TooltipText = "Path is not editable here.";
                 textBox.IsReadOnly = true;
