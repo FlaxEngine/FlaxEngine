@@ -671,11 +671,14 @@ bool GameCookerImpl::Build()
     MCore::Thread::Attach();
 
     // Build Started
-    CallEvent(GameCooker::EventType::BuildStarted);
-    data.Tools->OnBuildStarted(data);
-    for (int32 stepIndex = 0; stepIndex < Steps.Count(); stepIndex++)
-        Steps[stepIndex]->OnBuildStarted(data);
-    data.InitProgress(Steps.Count());
+    if (!EnumHasAnyFlags(data.Options, BuildOptions::NoCook))
+    {
+        CallEvent(GameCooker::EventType::BuildStarted);
+        data.Tools->OnBuildStarted(data);
+        for (int32 stepIndex = 0; stepIndex < Steps.Count(); stepIndex++)
+            Steps[stepIndex]->OnBuildStarted(data);
+        data.InitProgress(Steps.Count());
+    }
 
     // Execute all steps in a sequence
     bool failed = false;
@@ -741,10 +744,13 @@ bool GameCookerImpl::Build()
     }
     IsRunning = false;
     CancelFlag = 0;
-    for (int32 stepIndex = 0; stepIndex < Steps.Count(); stepIndex++)
-        Steps[stepIndex]->OnBuildEnded(data, failed);
-    data.Tools->OnBuildEnded(data, failed);
-    CallEvent(failed ? GameCooker::EventType::BuildFailed : GameCooker::EventType::BuildDone);
+    if (!EnumHasAnyFlags(data.Options, BuildOptions::NoCook))
+    {
+        for (int32 stepIndex = 0; stepIndex < Steps.Count(); stepIndex++)
+            Steps[stepIndex]->OnBuildEnded(data, failed);
+        data.Tools->OnBuildEnded(data, failed);
+        CallEvent(failed ? GameCooker::EventType::BuildFailed : GameCooker::EventType::BuildDone);
+    }
     Delete(Data);
     Data = nullptr;
 
