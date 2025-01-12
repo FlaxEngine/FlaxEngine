@@ -228,7 +228,6 @@ namespace FlaxEditor.CustomEditors.Editors
                 // Handle Sliding
                 if (AllowSlidingForDifferentValues && (isSliding || _slidingEnded))
                 {
-                    // TODO: handle linked values
                     Float3 average = Float3.Zero;
                     for (int i = 0; i < Values.Count; i++)
                     {
@@ -251,12 +250,24 @@ namespace FlaxEditor.CustomEditors.Editors
                     for (int i = 0; i < Values.Count; i++)
                     {
                         var v = Values[i];
-                        if (v is Vector3 asVector3)
-                            v = asVector3 + new Vector3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
-                        else if (v is Float3 asFloat3)
-                            v = asFloat3 + new Float3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
-                        else if (v is Double3 asDouble3)
-                            v = asDouble3 + new Double3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+                        if (LinkValues)
+                        {
+                            if (v is Vector3 asVector3)
+                                v = asVector3 + new Vector3(newValue.X, newValue.Y, newValue.Z);
+                            else if (v is Float3 asFloat3)
+                                v = asFloat3 + new Float3(newValue.X, newValue.Y, newValue.Z);
+                            else if (v is Double3 asDouble3)
+                                v = asDouble3 + new Double3(newValue.X, newValue.Y, newValue.Z);
+                        }
+                        else
+                        {
+                            if (v is Vector3 asVector3)
+                                v = asVector3 + new Vector3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+                            else if (v is Float3 asFloat3)
+                                v = asFloat3 + new Float3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+                            else if (v is Double3 asDouble3)
+                                v = asDouble3 + new Double3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+                        }
 
                         newObjects[i] = v;
                     }
@@ -267,16 +278,27 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
                 else
                 {
-                    // TODO: handle linked values
                     for (int i = 0; i < Values.Count; i++)
                     {
                         object v = Values[i];
-                        if (v is Vector3 asVector3)
-                            v = new Vector3(_valueChanged == ValueChanged.X ? xValue : asVector3.X, _valueChanged == ValueChanged.Y ? yValue : asVector3.Y, _valueChanged == ValueChanged.Z ? zValue : asVector3.Z);
-                        else if (v is Float3 asFloat3)
-                            v = new Float3(_valueChanged == ValueChanged.X ? xValue : asFloat3.X, _valueChanged == ValueChanged.Y ? yValue : asFloat3.Y, _valueChanged == ValueChanged.Z ? zValue : asFloat3.Z);
-                        else if (v is Double3 asDouble3)
-                            v = new Double3(_valueChanged == ValueChanged.X ? xValue : asDouble3.X, _valueChanged == ValueChanged.Y ? yValue : asDouble3.Y, _valueChanged == ValueChanged.Z ? zValue : asDouble3.Z);
+                        if (LinkValues)
+                        {
+                            if (v is Vector3 asVector3)
+                                v = asVector3 + new Vector3(xValue, yValue, zValue);
+                            else if (v is Float3 asFloat3)
+                                v = asFloat3 + new Float3(xValue, yValue, zValue);
+                            else if (v is Double3 asDouble3)
+                                v = asDouble3 + new Double3(xValue, yValue, zValue);
+                        }
+                        else
+                        {
+                            if (v is Vector3 asVector3)
+                                v = new Vector3(_valueChanged == ValueChanged.X ? xValue : asVector3.X, _valueChanged == ValueChanged.Y ? yValue : asVector3.Y, _valueChanged == ValueChanged.Z ? zValue : asVector3.Z);
+                            else if (v is Float3 asFloat3)
+                                v = new Float3(_valueChanged == ValueChanged.X ? xValue : asFloat3.X, _valueChanged == ValueChanged.Y ? yValue : asFloat3.Y, _valueChanged == ValueChanged.Z ? zValue : asFloat3.Z);
+                            else if (v is Double3 asDouble3)
+                                v = new Double3(_valueChanged == ValueChanged.X ? xValue : asDouble3.X, _valueChanged == ValueChanged.Y ? yValue : asDouble3.Y, _valueChanged == ValueChanged.Z ? zValue : asDouble3.Z);
+                        }
 
                         newObjects[i] = v;
                     }
