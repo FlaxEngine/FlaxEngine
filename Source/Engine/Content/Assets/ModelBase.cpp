@@ -779,7 +779,7 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                         const Float3 normal = hasNormals ? mesh.Normals.Get()[vertex] : Float3::UnitZ;
                         const Float3 tangent = hasTangents ? mesh.Tangents.Get()[vertex] : Float3::UnitX;
                         const float bitangentSign = hasBitangentSigns ? mesh.BitangentSigns.Get()[vertex] : Float3::Dot(Float3::Cross(Float3::Normalize(Float3::Cross(normal, tangent)), normal), tangent);
-                        const Float1010102 tangentEnc(tangent * 0.5f + 0.5f, (byte)(bitangentSign < 0 ? 1 : 0));
+                        const FloatR10G10B10A2 tangentEnc(tangent * 0.5f + 0.5f, (byte)(bitangentSign < 0 ? 1 : 0));
                         stream.Write(tangentEnc.Value);
                         break;
                     }

@@ -28,8 +28,8 @@ PACK_STRUCT(struct TextRenderVertex
 {
     Float3 Position;
     Color32 Color;
-    Float1010102 Normal;
-    Float1010102 Tangent;
+    FloatR10G10B10A2 Normal;
+    FloatR10G10B10A2 Tangent;
     Half2 TexCoord;
 
     static GPUVertexLayout* GetLayout()
@@ -288,8 +288,8 @@ void TextRender::UpdateLayout()
 					v.Position = Float3(-pos, 0.0f); \
 					box.Merge(v.Position); \
 					v.TexCoord = Half2(uv); \
-					v.Normal = Float1010102(normal * 0.5f + 0.5f, 0); \
-					v.Tangent = Float1010102(tangent * 0.5f + 0.5f, sign); \
+					v.Normal = FloatR10G10B10A2(normal * 0.5f + 0.5f, 0); \
+					v.Tangent = FloatR10G10B10A2(tangent * 0.5f + 0.5f, sign); \
 					v.Color = color; \
 					_vb.Write(v)
                     //

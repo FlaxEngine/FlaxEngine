@@ -562,8 +562,8 @@ void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10
     Float3 n;
     Float4 t;
     CalculateTangentFrame(n, t, normal);
-    resultNormal = Float1010102(n, 0);
-    resultTangent = Float1010102(t);
+    resultNormal = FloatR10G10B10A2(n, 0);
+    resultTangent = FloatR10G10B10A2(t);
 }
 
 void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent)
@@ -572,8 +572,8 @@ void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10
     Float3 n;
     Float4 t;
     CalculateTangentFrame(n, t, normal, tangent);
-    resultNormal = Float1010102(n, 0);
-    resultTangent = Float1010102(t);
+    resultNormal = FloatR10G10B10A2(n, 0);
+    resultTangent = FloatR10G10B10A2(t);
 }
 
 void RenderTools::CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal)

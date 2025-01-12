@@ -1396,14 +1396,14 @@ static PixelFormatSampler PixelFormatSamplers[] =
     },
     {
         PixelFormat::R10G10B10A2_UNorm,
-        sizeof(Float1010102),
+        sizeof(FloatR10G10B10A2),
         [](const void* ptr)
         {
-            return ((Float1010102*)ptr)->ToFloat4();
+            return ((FloatR10G10B10A2*)ptr)->ToFloat4();
         },
         [](void* ptr, const Float4& value)
         {
-            *(Float1010102*)ptr = Float1010102(value.X, value.Y, value.Z, value.W);
+            *(FloatR10G10B10A2*)ptr = FloatR10G10B10A2(value.X, value.Y, value.Z, value.W);
         },
     },
     {

@@ -77,8 +77,8 @@ PACK_STRUCT(struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayou
     {
     Float3 Position;
     Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
+    FloatR10G10B10A2 Normal;
+    FloatR10G10B10A2 Tangent;
     Half2 LightmapUVs;
     Color32 Color;
     });
@@ -113,8 +113,8 @@ PACK_STRUCT(struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayou
 PACK_STRUCT(struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.")  VB1ElementType18
     {
     Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
+    FloatR10G10B10A2 Normal;
+    FloatR10G10B10A2 Tangent;
     Half2 LightmapUVs;
 
     static GPUVertexLayout* GetLayout();
@@ -143,8 +143,8 @@ PACK_STRUCT(struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayou
     {
     Float3 Position;
     Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
+    FloatR10G10B10A2 Normal;
+    FloatR10G10B10A2 Tangent;
     Color32 BlendIndices;
     Color32 BlendWeights;
     });
@@ -171,8 +171,8 @@ PACK_STRUCT(struct DEPRECATED("Use newer format.") VB0SkinnedElementType1
     {
     Float3 Position;
     Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
+    FloatR10G10B10A2 Normal;
+    FloatR10G10B10A2 Tangent;
     Color32 BlendIndices;
     Color32 BlendWeights;
     });
@@ -182,8 +182,8 @@ PACK_STRUCT(struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayou
     {
     Float3 Position;
     Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
+    FloatR10G10B10A2 Normal;
+    FloatR10G10B10A2 Tangent;
     Color32 BlendIndices;
     Half4 BlendWeights;
 
