@@ -266,9 +266,10 @@ namespace FlaxEditor.Windows.Assets
                                 var slotElements = elements.Where(x => x.Slot == slot && x.PerInstance == 0).ToArray();
                                 if (slotElements.Length == 0)
                                     continue;
-                                group.Label($"   Vertex Buffer {slot}:");
+                                var height = 14;
+                                group.Label($"   Vertex Buffer {slot}:").Label.Height = height;
                                 foreach (var e in slotElements)
-                                    group.Label($"      {e.Type}, {e.Format} ({PixelFormatExtensions.SizeInBytes(e.Format)} bytes), offset {e.Offset}");
+                                    group.Label($"      {e.Type}, {e.Format} ({PixelFormatExtensions.SizeInBytes(e.Format)} bytes), offset {e.Offset}").Label.Height = height;
                             }
                         }
                     }
