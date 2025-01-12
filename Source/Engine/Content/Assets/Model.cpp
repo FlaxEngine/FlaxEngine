@@ -7,7 +7,6 @@
 #include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Content/Upgraders/ModelAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
-#include "Engine/Core/Math/Transform.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Models/ModelInstanceEntry.h"
@@ -529,6 +528,18 @@ int32 Model::GetLODsCount() const
     return LODs.Count();
 }
 
+const ModelLODBase* Model::GetLOD(int32 lodIndex) const
+{
+    CHECK_RETURN(LODs.IsValidIndex(lodIndex), nullptr);
+    return &LODs.Get()[lodIndex];
+}
+
+ModelLODBase* Model::GetLOD(int32 lodIndex)
+{
+    CHECK_RETURN(LODs.IsValidIndex(lodIndex), nullptr);
+    return &LODs.Get()[lodIndex];
+}
+
 const MeshBase* Model::GetMesh(int32 meshIndex, int32 lodIndex) const
 {
     auto& lod = LODs[lodIndex];
@@ -543,18 +554,12 @@ MeshBase* Model::GetMesh(int32 meshIndex, int32 lodIndex)
 
 void Model::GetMeshes(Array<const MeshBase*>& meshes, int32 lodIndex) const
 {
-    auto& lod = LODs[lodIndex];
-    meshes.Resize(lod.Meshes.Count());
-    for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
-        meshes[meshIndex] = &lod.Meshes[meshIndex];
+    LODs[lodIndex].GetMeshes(meshes);
 }
 
 void Model::GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex)
 {
-    auto& lod = LODs[lodIndex];
-    meshes.Resize(lod.Meshes.Count());
-    for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
-        meshes[meshIndex] = &lod.Meshes[meshIndex];
+    LODs[lodIndex].GetMeshes(meshes);
 }
 
 void Model::InitAsVirtual()
@@ -672,12 +677,6 @@ AssetChunksFlag Model::getChunksToPreload() const
     return GET_CHUNK_FLAG(0) | GET_CHUNK_FLAG(15);
 }
 
-bool ModelLOD::HasAnyMeshInitialized() const
-{
-    // Note: we initialize all meshes at once so the last one can be used to check it.
-    return Meshes.HasItems() && Meshes.Last().IsInitialized();
-}
-
 bool ModelLOD::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh)
 {
     bool result = false;
@@ -722,57 +721,31 @@ bool ModelLOD::Intersects(const Ray& ray, const Transform& transform, Real& dist
     return result;
 }
 
-BoundingBox ModelLOD::GetBox(const Matrix& world) const
+int32 ModelLOD::GetMeshesCount() const
 {
-    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
-    Vector3 corners[8];
-    for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
-    {
-        const auto& mesh = Meshes[meshIndex];
-        mesh.GetBox().GetCorners(corners);
-        for (int32 i = 0; i < 8; i++)
-        {
-            Vector3::Transform(corners[i], world, tmp);
-            min = Vector3::Min(min, tmp);
-            max = Vector3::Max(max, tmp);
-        }
-    }
-    return BoundingBox(min, max);
+    return Meshes.Count();
 }
 
-BoundingBox ModelLOD::GetBox(const Transform& transform, const MeshDeformation* deformation) const
+const MeshBase* ModelLOD::GetMesh(int32 index) const
 {
-    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
-    Vector3 corners[8];
-    for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
-    {
-        const auto& mesh = Meshes[meshIndex];
-        BoundingBox box = mesh.GetBox();
-        if (deformation)
-            deformation->GetBounds(_lodIndex, meshIndex, box);
-        box.GetCorners(corners);
-        for (int32 i = 0; i < 8; i++)
-        {
-            transform.LocalToWorld(corners[i], tmp);
-            min = Vector3::Min(min, tmp);
-            max = Vector3::Max(max, tmp);
-        }
-    }
-    return BoundingBox(min, max);
+    return Meshes.Get() + index;
 }
 
-BoundingBox ModelLOD::GetBox() const
+MeshBase* ModelLOD::GetMesh(int32 index)
 {
-    Vector3 min = Vector3::Maximum, max = Vector3::Minimum;
-    Vector3 corners[8];
+    return Meshes.Get() + index;
+}
+
+void ModelLOD::GetMeshes(Array<MeshBase*>& meshes)
+{
+    meshes.Resize(Meshes.Count());
     for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
-    {
-        Meshes[meshIndex].GetBox().GetCorners(corners);
-        for (int32 i = 0; i < 8; i++)
-        {
-            min = Vector3::Min(min, corners[i]);
-            max = Vector3::Max(max, corners[i]);
-        }
-    }
-    return BoundingBox(min, max);
+        meshes[meshIndex] = &Meshes.Get()[meshIndex];
+}
+
+void ModelLOD::GetMeshes(Array<const MeshBase*>& meshes) const
+{
+    meshes.Resize(Meshes.Count());
+    for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
+        meshes[meshIndex] = &Meshes.Get()[meshIndex];
 }

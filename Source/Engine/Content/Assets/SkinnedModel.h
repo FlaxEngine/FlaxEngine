@@ -10,37 +10,18 @@
 /// <summary>
 /// Represents single Level Of Detail for the skinned model. Contains a collection of the meshes.
 /// </summary>
-API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModelLOD : public ScriptingObject
+API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModelLOD : public ModelLODBase
 {
-    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(SkinnedModelLOD, ScriptingObject);
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(SkinnedModelLOD, ModelLODBase);
     friend SkinnedModel;
 private:
     SkinnedModel* _model = nullptr;
-    int32 _lodIndex = 0;
 
 public:
-    /// <summary>
-    /// The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.
-    /// </summary>
-    API_FIELD() float ScreenSize = 1.0f;
-
     /// <summary>
     /// The meshes array.
     /// </summary>
     API_FIELD(ReadOnly) Array<SkinnedMesh> Meshes;
-
-    /// <summary>
-    /// Gets the model LOD index.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE int32 GetLODIndex() const
-    {
-        return _lodIndex;
-    }
-
-    /// <summary>
-    /// Determines whether any mesh has been initialized.
-    /// </summary>
-    bool HasAnyMeshInitialized() const;
 
 public:
     /// <summary>
@@ -66,43 +47,13 @@ public:
     bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh);
 
     /// <summary>
-    /// Get model bounding box in transformed world for given instance buffer
-    /// </summary>
-    /// <param name="world">World matrix</param>
-    /// <returns>Bounding box</returns>
-    BoundingBox GetBox(const Matrix& world) const;
-
-    /// <summary>
-    /// Get model bounding box in transformed world.
-    /// </summary>
-    /// <param name="transform">The instance transformation.</param>
-    /// <param name="deformation">The meshes deformation container (optional).</param>
-    /// <returns>Bounding box</returns>
-    BoundingBox GetBox(const Transform& transform, const MeshDeformation* deformation = nullptr) const;
-
-    /// <summary>
-    /// Get model bounding box in transformed world for given instance buffer for only one mesh
-    /// </summary>
-    /// <param name="world">World matrix</param>
-    /// <param name="meshIndex">esh index</param>
-    /// <returns>Bounding box</returns>
-    BoundingBox GetBox(const Matrix& world, int32 meshIndex) const;
-
-    /// <summary>
-    /// Gets the bounding box combined for all meshes in this model LOD.
-    /// </summary>
-    API_PROPERTY() BoundingBox GetBox() const;
-
-    /// <summary>
     /// Draws the meshes. Binds vertex and index buffers and invokes the draw calls.
     /// </summary>
     /// <param name="context">The GPU context to draw with.</param>
     FORCE_INLINE void Render(GPUContext* context)
     {
         for (int32 i = 0; i < Meshes.Count(); i++)
-        {
             Meshes.Get()[i].Render(context);
-        }
     }
 
     /// <summary>
@@ -114,9 +65,7 @@ public:
     FORCE_INLINE void Draw(const RenderContext& renderContext, const SkinnedMesh::DrawInfo& info, float lodDitherFactor) const
     {
         for (int32 i = 0; i < Meshes.Count(); i++)
-        {
             Meshes.Get()[i].Draw(renderContext, info, lodDitherFactor);
-        }
     }
 
     /// <summary>
@@ -128,10 +77,16 @@ public:
     FORCE_INLINE void Draw(const RenderContextBatch& renderContextBatch, const SkinnedMesh::DrawInfo& info, float lodDitherFactor) const
     {
         for (int32 i = 0; i < Meshes.Count(); i++)
-        {
             Meshes.Get()[i].Draw(renderContextBatch, info, lodDitherFactor);
-        }
     }
+
+public:
+    // [ModelLODBase]
+    int32 GetMeshesCount() const override;
+    const MeshBase* GetMesh(int32 index) const override;
+    MeshBase* GetMesh(int32 index) override;
+    void GetMeshes(Array<MeshBase*>& meshes) override;
+    void GetMeshes(Array<const MeshBase*>& meshes) const override;
 };
 
 /// <summary>
@@ -384,6 +339,8 @@ public:
     uint64 GetMemoryUsage() const override;
     void SetupMaterialSlots(int32 slotsCount) override;
     int32 GetLODsCount() const override;
+    const ModelLODBase* GetLOD(int32 lodIndex) const override;
+    ModelLODBase* GetLOD(int32 lodIndex) override;
     const MeshBase* GetMesh(int32 meshIndex, int32 lodIndex = 0) const override;
     MeshBase* GetMesh(int32 meshIndex, int32 lodIndex = 0) override;
     void GetMeshes(Array<const MeshBase*>& meshes, int32 lodIndex = 0) const override;

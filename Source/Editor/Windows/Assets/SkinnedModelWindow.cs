@@ -4,9 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using FlaxEditor.Content;
-using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.CustomEditors.GUI;
@@ -54,220 +52,8 @@ namespace FlaxEditor.Windows.Assets
         }
 
         [CustomEditor(typeof(ProxyEditor))]
-        private sealed class MeshesPropertiesProxy : PropertiesProxyBase
+        private sealed class MeshesPropertiesProxy : MeshesPropertiesProxyBase
         {
-            private readonly List<ComboBox> _materialSlotComboBoxes = new List<ComboBox>();
-            private readonly List<CheckBox> _isolateCheckBoxes = new List<CheckBox>();
-            private readonly List<CheckBox> _highlightCheckBoxes = new List<CheckBox>();
-
-            public override void OnLoad(SkinnedModelWindow window)
-            {
-                base.OnLoad(window);
-
-                Window._isolateIndex = -1;
-                Window._highlightIndex = -1;
-            }
-
-            public override void OnClean()
-            {
-                Window._isolateIndex = -1;
-                Window._highlightIndex = -1;
-
-                base.OnClean();
-            }
-
-            /// <summary>
-            /// Updates the highlight/isolate effects on UI.
-            /// </summary>
-            public void UpdateEffectsOnUI()
-            {
-                Window._skipEffectsGuiEvents = true;
-
-                for (int i = 0; i < _isolateCheckBoxes.Count; i++)
-                {
-                    var checkBox = _isolateCheckBoxes[i];
-                    checkBox.Checked = Window._isolateIndex == ((SkinnedMesh)checkBox.Tag).MaterialSlotIndex;
-                }
-
-                for (int i = 0; i < _highlightCheckBoxes.Count; i++)
-                {
-                    var checkBox = _highlightCheckBoxes[i];
-                    checkBox.Checked = Window._highlightIndex == ((SkinnedMesh)checkBox.Tag).MaterialSlotIndex;
-                }
-
-                Window._skipEffectsGuiEvents = false;
-            }
-
-            /// <summary>
-            /// Updates the material slots UI parts. Should be called after material slot rename.
-            /// </summary>
-            public void UpdateMaterialSlotsUI()
-            {
-                Window._skipEffectsGuiEvents = true;
-
-                // Generate material slots labels (with index prefix)
-                var slots = Asset.MaterialSlots;
-                var slotsLabels = new string[slots.Length];
-                for (int i = 0; i < slots.Length; i++)
-                {
-                    slotsLabels[i] = string.Format("[{0}] {1}", i, slots[i].Name);
-                }
-
-                // Update comboboxes
-                for (int i = 0; i < _materialSlotComboBoxes.Count; i++)
-                {
-                    var comboBox = _materialSlotComboBoxes[i];
-                    comboBox.SetItems(slotsLabels);
-                    comboBox.SelectedIndex = ((SkinnedMesh)comboBox.Tag).MaterialSlotIndex;
-                }
-
-                Window._skipEffectsGuiEvents = false;
-            }
-
-            /// <summary>
-            /// Sets the material slot index to the mesh.
-            /// </summary>
-            /// <param name="mesh">The mesh.</param>
-            /// <param name="newSlotIndex">New index of the material slot to use.</param>
-            public void SetMaterialSlot(SkinnedMesh mesh, int newSlotIndex)
-            {
-                if (Window._skipEffectsGuiEvents)
-                    return;
-
-                mesh.MaterialSlotIndex = newSlotIndex == -1 ? 0 : newSlotIndex;
-                Window.UpdateEffectsOnAsset();
-                UpdateEffectsOnUI();
-                Window.MarkAsEdited();
-            }
-
-            /// <summary>
-            /// Sets the material slot to isolate.
-            /// </summary>
-            /// <param name="mesh">The mesh.</param>
-            public void SetIsolate(SkinnedMesh mesh)
-            {
-                if (Window._skipEffectsGuiEvents)
-                    return;
-
-                Window._isolateIndex = mesh != null ? mesh.MaterialSlotIndex : -1;
-                Window.UpdateEffectsOnAsset();
-                UpdateEffectsOnUI();
-            }
-
-            /// <summary>
-            /// Sets the material slot index to highlight.
-            /// </summary>
-            /// <param name="mesh">The mesh.</param>
-            public void SetHighlight(SkinnedMesh mesh)
-            {
-                if (Window._skipEffectsGuiEvents)
-                    return;
-
-                Window._highlightIndex = mesh != null ? mesh.MaterialSlotIndex : -1;
-                Window.UpdateEffectsOnAsset();
-                UpdateEffectsOnUI();
-            }
-
-            private class ProxyEditor : ProxyEditorBase
-            {
-                public override void Initialize(LayoutElementsContainer layout)
-                {
-                    var proxy = (MeshesPropertiesProxy)Values[0];
-                    if (Utilities.Utils.OnAssetProperties(layout, proxy.Asset))
-                        return;
-                    proxy._materialSlotComboBoxes.Clear();
-                    proxy._isolateCheckBoxes.Clear();
-                    proxy._highlightCheckBoxes.Clear();
-                    var lods = proxy.Asset.LODs;
-                    var loadedLODs = proxy.Asset.LoadedLODs;
-
-                    // General properties
-                    {
-                        var group = layout.Group("General");
-
-                        var minScreenSize = group.FloatValue("Min Screen Size", "The minimum screen size to draw model (the bottom limit). Used to cull small models. Set to 0 to disable this feature.");
-                        minScreenSize.ValueBox.MinValue = 0.0f;
-                        minScreenSize.ValueBox.MaxValue = 1.0f;
-                        minScreenSize.ValueBox.Value = proxy.Asset.MinScreenSize;
-                        minScreenSize.ValueBox.ValueChanged += () =>
-                        {
-                            proxy.Asset.MinScreenSize = minScreenSize.ValueBox.Value;
-                            proxy.Window.MarkAsEdited();
-                        };
-                    }
-
-                    // Group per LOD
-                    for (int lodIndex = 0; lodIndex < lods.Length; lodIndex++)
-                    {
-                        var group = layout.Group("LOD " + lodIndex);
-                        if (lodIndex < lods.Length - loadedLODs)
-                        {
-                            group.Label("Loading LOD...");
-                            continue;
-                        }
-                        var lod = lods[lodIndex];
-                        var meshes = lod.Meshes;
-
-                        int triangleCount = 0, vertexCount = 0;
-                        for (int meshIndex = 0; meshIndex < meshes.Length; meshIndex++)
-                        {
-                            var mesh = meshes[meshIndex];
-                            triangleCount += mesh.TriangleCount;
-                            vertexCount += mesh.VertexCount;
-                        }
-
-                        group.Label(string.Format("Triangles: {0:N0}   Vertices: {1:N0}", triangleCount, vertexCount)).AddCopyContextMenu();
-                        group.Label("Size: " + lod.Box.Size);
-                        var screenSize = group.FloatValue("Screen Size", "The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.");
-                        screenSize.ValueBox.MinValue = 0.0f;
-                        screenSize.ValueBox.MaxValue = 10.0f;
-                        screenSize.ValueBox.Value = lod.ScreenSize;
-                        screenSize.ValueBox.ValueChanged += () =>
-                        {
-                            lod.ScreenSize = screenSize.ValueBox.Value;
-                            proxy.Window.MarkAsEdited();
-                        };
-
-                        // Every mesh properties
-                        for (int meshIndex = 0; meshIndex < meshes.Length; meshIndex++)
-                        {
-                            var mesh = meshes[meshIndex];
-                            group.Label($"Mesh {meshIndex} (tris: {mesh.TriangleCount:N0}, verts: {mesh.VertexCount:N0})").AddCopyContextMenu();
-
-                            // Material Slot
-                            var materialSlot = group.ComboBox("Material Slot", "Material slot used by this mesh during rendering");
-                            materialSlot.ComboBox.Tag = mesh;
-                            materialSlot.ComboBox.SelectedIndexChanged += comboBox => proxy.SetMaterialSlot((SkinnedMesh)comboBox.Tag, comboBox.SelectedIndex);
-                            proxy._materialSlotComboBoxes.Add(materialSlot.ComboBox);
-
-                            // Isolate
-                            var isolate = group.Checkbox("Isolate", "Shows only this mesh (and meshes using the same material slot)");
-                            isolate.CheckBox.Tag = mesh;
-                            isolate.CheckBox.StateChanged += (box) => proxy.SetIsolate(box.Checked ? (SkinnedMesh)box.Tag : null);
-                            proxy._isolateCheckBoxes.Add(isolate.CheckBox);
-
-                            // Highlight
-                            var highlight = group.Checkbox("Highlight", "Highlights this mesh with a tint color (and meshes using the same material slot)");
-                            highlight.CheckBox.Tag = mesh;
-                            highlight.CheckBox.StateChanged += (box) => proxy.SetHighlight(box.Checked ? (SkinnedMesh)box.Tag : null);
-                            proxy._highlightCheckBoxes.Add(highlight.CheckBox);
-                        }
-                    }
-
-                    // Refresh UI
-                    proxy.UpdateMaterialSlotsUI();
-                }
-
-                internal override void RefreshInternal()
-                {
-                    // Skip updates when model is not loaded
-                    var proxy = (MeshesPropertiesProxy)Values[0];
-                    if (proxy.Asset == null || !proxy.Asset.IsLoaded)
-                        return;
-
-                    base.RefreshInternal();
-                }
-            }
         }
 
         [CustomEditor(typeof(ProxyEditor))]
@@ -393,107 +179,12 @@ namespace FlaxEditor.Windows.Assets
                         }
                     }
                 }
-
-                internal override void RefreshInternal()
-                {
-                    // Skip updates when model is not loaded
-                    var proxy = (MeshesPropertiesProxy)Values[0];
-                    if (proxy.Asset == null || !proxy.Asset.IsLoaded)
-                        return;
-
-                    base.RefreshInternal();
-                }
             }
         }
 
         [CustomEditor(typeof(ProxyEditor))]
-        private sealed class MaterialsPropertiesProxy : PropertiesProxyBase
+        private sealed class MaterialsPropertiesProxy : MaterialsPropertiesProxyBase
         {
-            [Collection(CanReorderItems = true, NotNullItems = true, OverrideEditorTypeName = "FlaxEditor.CustomEditors.Editors.GenericEditor", Spacing = 10)]
-            [EditorOrder(10), EditorDisplay("Materials", EditorDisplayAttribute.InlineStyle)]
-            public MaterialSlot[] MaterialSlots
-            {
-                get => Asset != null ? Asset.MaterialSlots : null;
-                set
-                {
-                    if (Asset != null)
-                    {
-                        if (Asset.MaterialSlots.Length != value.Length)
-                        {
-                            MaterialBase[] materials = new MaterialBase[value.Length];
-                            string[] names = new string[value.Length];
-                            ShadowsCastingMode[] shadowsModes = new ShadowsCastingMode[value.Length];
-                            for (int i = 0; i < value.Length; i++)
-                            {
-                                if (value[i] != null)
-                                {
-                                    materials[i] = value[i].Material;
-                                    names[i] = value[i].Name;
-                                    shadowsModes[i] = value[i].ShadowsMode;
-                                }
-                                else
-                                {
-                                    materials[i] = null;
-                                    names[i] = "Material " + i;
-                                    shadowsModes[i] = ShadowsCastingMode.All;
-                                }
-                            }
-
-                            Asset.SetupMaterialSlots(value.Length);
-
-                            var slots = Asset.MaterialSlots;
-                            for (int i = 0; i < slots.Length; i++)
-                            {
-                                slots[i].Material = materials[i];
-                                slots[i].Name = names[i];
-                                slots[i].ShadowsMode = shadowsModes[i];
-                            }
-
-                            UpdateMaterialSlotsUI();
-                        }
-                    }
-                }
-            }
-
-            private readonly List<ComboBox> _materialSlotComboBoxes = new List<ComboBox>();
-
-            /// <summary>
-            /// Updates the material slots UI parts. Should be called after material slot rename.
-            /// </summary>
-            public void UpdateMaterialSlotsUI()
-            {
-                Window._skipEffectsGuiEvents = true;
-
-                // Generate material slots labels (with index prefix)
-                var slots = Asset.MaterialSlots;
-                var slotsLabels = new string[slots.Length];
-                for (int i = 0; i < slots.Length; i++)
-                {
-                    slotsLabels[i] = string.Format("[{0}] {1}", i, slots[i].Name);
-                }
-
-                // Update comboboxes
-                for (int i = 0; i < _materialSlotComboBoxes.Count; i++)
-                {
-                    var comboBox = _materialSlotComboBoxes[i];
-                    comboBox.SetItems(slotsLabels);
-                    comboBox.SelectedIndex = ((SkinnedMesh)comboBox.Tag).MaterialSlotIndex;
-                }
-
-                Window._skipEffectsGuiEvents = false;
-            }
-
-            private class ProxyEditor : ProxyEditorBase
-            {
-                public override void Initialize(LayoutElementsContainer layout)
-                {
-                    var proxy = (MaterialsPropertiesProxy)Values[0];
-                    if (Utilities.Utils.OnAssetProperties(layout, proxy.Asset))
-                        return;
-
-                    base.Initialize(layout);
-                }
-            }
         }
 
         [CustomEditor(typeof(ProxyEditor))]
@@ -788,45 +479,8 @@ namespace FlaxEditor.Windows.Assets
         }
 
         [CustomEditor(typeof(ProxyEditor))]
-        private sealed class ImportPropertiesProxy : PropertiesProxyBase
+        private sealed class ImportPropertiesProxy : ImportPropertiesProxyBase
         {
-            private ModelImportSettings ImportSettings = new ModelImportSettings();
-
-            /// <inheritdoc />
-            public override void OnLoad(SkinnedModelWindow window)
-            {
-                base.OnLoad(window);
-
-                Editor.TryRestoreImportOptions(ref ImportSettings.Settings, window.Item.Path);
-            }
-
-            public void Reimport()
-            {
-                Editor.Instance.ContentImporting.Reimport((BinaryAssetItem)Window.Item, ImportSettings, true);
-            }
-
-            private class ProxyEditor : ProxyEditorBase
-            {
-                public override void Initialize(LayoutElementsContainer layout)
-                {
-                    var proxy = (ImportPropertiesProxy)Values[0];
-                    if (Utilities.Utils.OnAssetProperties(layout, proxy.Asset))
-                        return;
-
-                    // Import Settings
-                    {
-                        var group = layout.Group("Import Settings");
-
-                        var importSettingsField = typeof(ImportPropertiesProxy).GetField("ImportSettings", BindingFlags.NonPublic | BindingFlags.Instance);
-                        var importSettingsValues = new ValueContainer(new ScriptMemberInfo(importSettingsField)) { proxy.ImportSettings };
-                        group.Object(importSettingsValues);
-
-                        layout.Space(5);
-                        var reimportButton = group.Button("Reimport");
-                        reimportButton.Button.Clicked += () => ((ImportPropertiesProxy)Values[0]).Reimport();
-                    }
-                }
-            }
         }
 
         private class MeshesTab : Tab
@@ -960,10 +614,8 @@ namespace FlaxEditor.Windows.Assets
             _preview.Task.AddCustomActor(_highlightActor);
         }
 
-        /// <summary>
-        /// Updates the highlight/isolate effects on a model asset.
-        /// </summary>
-        private void UpdateEffectsOnAsset()
+        /// <inheritdoc />
+        protected override void UpdateEffectsOnAsset()
         {
             var entries = _preview.PreviewActor.Entries;
             if (entries != null)
@@ -1071,11 +723,7 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void OnAssetLoaded()
         {
-            _refreshOnLODsLoaded = true;
             _preview.ViewportCamera.SetArcBallView(_preview.GetBounds());
-            UpdateEffectsOnAsset();
-
-            // TODO: disable streaming for this model
 
             // Reset any root motion
             _preview.PreviewActor.ResetLocalTransform();

@@ -23,6 +23,88 @@ class StreamModelLODTask;
 struct RenderContextBatch;
 
 /// <summary>
+/// Base class for mesh LOD objects. Contains a collection of the meshes.
+/// </summary>
+API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API ModelLODBase : public ScriptingObject
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(ModelLODBase);
+
+protected:
+    int32 _lodIndex = 0;
+
+    explicit ModelLODBase(const SpawnParams& params)
+        : ScriptingObject(params)
+    {
+    }
+
+public:
+    /// <summary>
+    /// The screen size to switch LODs. Bottom limit of the model screen size to render this LOD.
+    /// </summary>
+    API_FIELD() float ScreenSize = 1.0f;
+
+    /// <summary>
+    /// Gets the model LOD index.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE int32 GetLODIndex() const
+    {
+        return _lodIndex;
+    }
+
+    /// <summary>
+    /// Determines whether any mesh has been initialized.
+    /// </summary>
+    bool HasAnyMeshInitialized() const;
+
+public:
+    /// <summary>
+    /// Gets the bounding box combined for all meshes in this model LOD.
+    /// </summary>
+    API_PROPERTY() BoundingBox GetBox() const;
+
+    /// <summary>
+    /// Get model bounding box in transformed world matrix.
+    /// </summary>
+    /// <param name="world">World matrix</param>
+    /// <returns>Bounding box</returns>
+    BoundingBox GetBox(const Matrix& world) const;
+
+    /// <summary>
+    /// Get model bounding box in transformed world.
+    /// </summary>
+    /// <param name="transform">The instance transformation.</param>
+    /// <param name="deformation">The meshes deformation container (optional).</param>
+    /// <returns>Bounding box</returns>
+    BoundingBox GetBox(const Transform& transform, const class MeshDeformation* deformation = nullptr) const;
+
+public:
+    /// <summary>
+    /// Gets the amount of meshes in this LOD.
+    /// </summary>
+    virtual int32 GetMeshesCount() const = 0;
+
+    /// <summary>
+    /// Gets the specific mesh in this LOD.
+    /// </summary>
+    virtual const MeshBase* GetMesh(int32 index) const = 0;
+
+    /// <summary>
+    /// Gets the specific mesh in this LOD.
+    /// </summary>
+    API_FUNCTION(Sealed) virtual MeshBase* GetMesh(int32 index) = 0;
+
+    /// <summary>
+    /// Gets the meshes in this LOD.
+    /// </summary>
+    virtual void GetMeshes(Array<const MeshBase*>& meshes) const = 0;
+
+    /// <summary>
+    /// Gets the meshes in this LOD.
+    /// </summary>
+    API_FUNCTION(Sealed) virtual void GetMeshes(Array<MeshBase*>& meshes) = 0;
+};
+
+/// <summary>
 /// Base class for asset types that can contain a model resource.
 /// </summary>
 API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API ModelBase : public BinaryAsset, public StreamableResource
@@ -179,6 +261,16 @@ public:
     /// Gets amount of the level of details in the model.
     /// </summary>
     API_PROPERTY(Sealed) virtual int32 GetLODsCount() const = 0;
+
+    /// <summary>
+    /// Gets the mesh for a particular LOD index.
+    /// </summary>
+    virtual const ModelLODBase* GetLOD(int32 lodIndex) const = 0;
+
+    /// <summary>
+    /// Gets the mesh for a particular LOD index.
+    /// </summary>
+    API_FUNCTION(Sealed) virtual ModelLODBase* GetLOD(int32 lodIndex) = 0;
 
     /// <summary>
     /// Gets the mesh for a particular LOD index.

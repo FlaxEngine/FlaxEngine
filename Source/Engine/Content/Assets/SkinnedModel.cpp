@@ -880,6 +880,18 @@ int32 SkinnedModel::GetLODsCount() const
     return LODs.Count();
 }
 
+const ModelLODBase* SkinnedModel::GetLOD(int32 lodIndex) const
+{
+    CHECK_RETURN(LODs.IsValidIndex(lodIndex), nullptr);
+    return &LODs.Get()[lodIndex];
+}
+
+ModelLODBase* SkinnedModel::GetLOD(int32 lodIndex)
+{
+    CHECK_RETURN(LODs.IsValidIndex(lodIndex), nullptr);
+    return &LODs.Get()[lodIndex];
+}
+
 const MeshBase* SkinnedModel::GetMesh(int32 meshIndex, int32 lodIndex) const
 {
     auto& lod = LODs[lodIndex];
@@ -894,18 +906,12 @@ MeshBase* SkinnedModel::GetMesh(int32 meshIndex, int32 lodIndex)
 
 void SkinnedModel::GetMeshes(Array<const MeshBase*>& meshes, int32 lodIndex) const
 {
-    auto& lod = LODs[lodIndex];
-    meshes.Resize(lod.Meshes.Count());
-    for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
-        meshes[meshIndex] = &lod.Meshes[meshIndex];
+    LODs[lodIndex].GetMeshes(meshes);
 }
 
 void SkinnedModel::GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex)
 {
-    auto& lod = LODs[lodIndex];
-    meshes.Resize(lod.Meshes.Count());
-    for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
-        meshes[meshIndex] = &lod.Meshes[meshIndex];
+    LODs[lodIndex].GetMeshes(meshes);
 }
 
 void SkinnedModel::InitAsVirtual()
@@ -977,12 +983,6 @@ AssetChunksFlag SkinnedModel::getChunksToPreload() const
     return GET_CHUNK_FLAG(0);
 }
 
-bool SkinnedModelLOD::HasAnyMeshInitialized() const
-{
-    // Note: we initialize all meshes at once so the last one can be used to check it.
-    return Meshes.HasItems() && Meshes.Last().IsInitialized();
-}
-
 bool SkinnedModelLOD::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh)
 {
     // Check all meshes
@@ -1033,78 +1033,31 @@ bool SkinnedModelLOD::Intersects(const Ray& ray, const Transform& transform, Rea
     return result;
 }
 
-BoundingBox SkinnedModelLOD::GetBox(const Matrix& world) const
+int32 SkinnedModelLOD::GetMeshesCount() const
 {
-    // Find minimum and maximum points of all the meshes
-    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
-    Vector3 corners[8];
-    for (int32 j = 0; j < Meshes.Count(); j++)
-    {
-        const auto& mesh = Meshes[j];
-        mesh.GetBox().GetCorners(corners);
-        for (int32 i = 0; i < 8; i++)
-        {
-            Vector3::Transform(corners[i], world, tmp);
-            min = Vector3::Min(min, tmp);
-            max = Vector3::Max(max, tmp);
-        }
-    }
-
-    return BoundingBox(min, max);
+    return Meshes.Count();
 }
 
-BoundingBox SkinnedModelLOD::GetBox(const Transform& transform, const MeshDeformation* deformation) const
+const MeshBase* SkinnedModelLOD::GetMesh(int32 index) const
 {
-    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
-    Vector3 corners[8];
+    return Meshes.Get() + index;
+}
+
+MeshBase* SkinnedModelLOD::GetMesh(int32 index)
+{
+    return Meshes.Get() + index;
+}
+
+void SkinnedModelLOD::GetMeshes(Array<MeshBase*>& meshes)
+{
+    meshes.Resize(Meshes.Count());
     for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
-    {
-        const auto& mesh = Meshes[meshIndex];
-        BoundingBox box = mesh.GetBox();
-        if (deformation)
-            deformation->GetBounds(_lodIndex, meshIndex, box);
-        box.GetCorners(corners);
-        for (int32 i = 0; i < 8; i++)
-        {
-            transform.LocalToWorld(corners[i], tmp);
-            min = Vector3::Min(min, tmp);
-            max = Vector3::Max(max, tmp);
-        }
-    }
-    return BoundingBox(min, max);
+        meshes[meshIndex] = &Meshes.Get()[meshIndex];
 }
 
-BoundingBox SkinnedModelLOD::GetBox(const Matrix& world, int32 meshIndex) const
+void SkinnedModelLOD::GetMeshes(Array<const MeshBase*>& meshes) const
 {
-    // Find minimum and maximum points of the mesh
-    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
-    Vector3 corners[8];
-    const auto& mesh = Meshes[meshIndex];
-    mesh.GetBox().GetCorners(corners);
-    for (int32 i = 0; i < 8; i++)
-    {
-        Vector3::Transform(corners[i], world, tmp);
-        min = Vector3::Min(min, tmp);
-        max = Vector3::Max(max, tmp);
-    }
-
-    return BoundingBox(min, max);
-}
-
-BoundingBox SkinnedModelLOD::GetBox() const
-{
-    // Find minimum and maximum points of the mesh in given world
-    Vector3 min = Vector3::Maximum, max = Vector3::Minimum;
-    Vector3 corners[8];
-    for (int32 j = 0; j < Meshes.Count(); j++)
-    {
-        Meshes[j].GetBox().GetCorners(corners);
-        for (int32 i = 0; i < 8; i++)
-        {
-            min = Vector3::Min(min, corners[i]);
-            max = Vector3::Max(max, corners[i]);
-        }
-    }
-
-    return BoundingBox(min, max);
+    meshes.Resize(Meshes.Count());
+    for (int32 meshIndex = 0; meshIndex < Meshes.Count(); meshIndex++)
+        meshes[meshIndex] = &Meshes.Get()[meshIndex];
 }

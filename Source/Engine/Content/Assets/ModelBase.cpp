@@ -7,6 +7,7 @@
 #include "Engine/Graphics/Config.h"
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/Models/MeshBase.h"
+#include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #if GPU_ENABLE_ASYNC_RESOURCES_CREATION
 #include "Engine/Threading/ThreadPoolTask.h"
@@ -101,6 +102,69 @@ public:
         STREAM_TASK_BASE::OnEnd();
     }
 };
+
+bool ModelLODBase::HasAnyMeshInitialized() const
+{
+    // Note: we initialize all meshes at once so the last one can be used to check it.
+    const int32 meshCount = GetMeshesCount();
+    return meshCount != 0 && GetMesh(meshCount - 1)->IsInitialized();
+}
+
+BoundingBox ModelLODBase::GetBox() const
+{
+    Vector3 min = Vector3::Maximum, max = Vector3::Minimum;
+    Vector3 corners[8];
+    const int32 meshCount = GetMeshesCount();
+    for (int32 meshIndex = 0; meshIndex < meshCount; meshIndex++)
+    {
+        GetMesh(meshIndex)->GetBox().GetCorners(corners);
+        for (int32 i = 0; i < 8; i++)
+        {
+            min = Vector3::Min(min, corners[i]);
+            max = Vector3::Max(max, corners[i]);
+        }
+    }
+    return BoundingBox(min, max);
+}
+
+BoundingBox ModelLODBase::GetBox(const Matrix& world) const
+{
+    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
+    Vector3 corners[8];
+    const int32 meshCount = GetMeshesCount();
+    for (int32 meshIndex = 0; meshIndex < meshCount; meshIndex++)
+    {
+        GetMesh(meshIndex)->GetBox().GetCorners(corners);
+        for (int32 i = 0; i < 8; i++)
+        {
+            Vector3::Transform(corners[i], world, tmp);
+            min = Vector3::Min(min, tmp);
+            max = Vector3::Max(max, tmp);
+        }
+    }
+    return BoundingBox(min, max);
+}
+
+BoundingBox ModelLODBase::GetBox(const Transform& transform, const MeshDeformation* deformation) const
+{
+    Vector3 tmp, min = Vector3::Maximum, max = Vector3::Minimum;
+    Vector3 corners[8];
+    const int32 meshCount = GetMeshesCount();
+    for (int32 meshIndex = 0; meshIndex < meshCount; meshIndex++)
+    {
+        BoundingBox box = GetMesh(meshIndex)->GetBox();
+        if (deformation)
+            deformation->GetBounds(_lodIndex, meshIndex, box);
+        box.GetCorners(corners);
+        for (int32 i = 0; i < 8; i++)
+        {
+            transform.LocalToWorld(corners[i], tmp);
+            min = Vector3::Min(min, tmp);
+            max = Vector3::Max(max, tmp);
+        }
+    }
+    return BoundingBox(min, max);
+}
 
 ModelBase::~ModelBase()
 {
