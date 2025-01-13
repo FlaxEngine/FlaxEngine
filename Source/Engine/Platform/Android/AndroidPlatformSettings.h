@@ -109,6 +109,12 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     TextureQuality TexturesQuality = TextureQuality::ASTC_Medium;
 
     /// <summary>
+    /// Whether to build android app bundle (aab) side by side with apk.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(500), EditorDisplay(\"General\", \"Build .aab\")")
+    bool BuildAAB;
+
+    /// <summary>
     /// Custom icon texture to use for the application (overrides the default one).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1030), EditorDisplay(\"Other\")")
