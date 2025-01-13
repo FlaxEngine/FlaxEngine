@@ -5,7 +5,6 @@
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Content/Asset.h"
-#include "Engine/Content/AssetReference.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Mathd.h"
 #include "Engine/Core/Math/BoundingBox.h"
@@ -22,7 +21,6 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
-#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Utilities/Crc.h"
@@ -889,6 +887,7 @@ Variant::Variant(const Span<byte>& v)
     }
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 Variant::Variant(const CommonValue& value)
     : Variant()
 {
@@ -956,6 +955,7 @@ Variant::Variant(const CommonValue& value)
         CRASH;
     }
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 Variant::~Variant()
 {

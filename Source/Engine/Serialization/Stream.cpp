@@ -105,6 +105,7 @@ void ReadStream::Read(String& data, int16 lock)
     }
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void ReadStream::Read(CommonValue& data)
 {
     // [Deprecated on 31.07.2020, expires on 31.07.2022]
@@ -233,6 +234,7 @@ void ReadStream::Read(CommonValue& data)
     default: CRASH;
     }
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void ReadStream::Read(VariantType& data)
 {
@@ -547,10 +549,12 @@ void ReadStream::ReadString(String* data, int16 lock)
     Read(*data, lock);
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void ReadStream::ReadCommonValue(CommonValue* data)
 {
     Read(*data);
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void ReadStream::ReadVariantType(VariantType* data)
 {
@@ -735,6 +739,7 @@ void WriteStream::Write(const StringAnsiView& data, int8 lock)
         WriteUint8((uint8)((uint8)data[i] ^ lock));
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void WriteStream::Write(const CommonValue& data)
 {
     // [Deprecated on 31.07.2020, expires on 31.07.2022]
@@ -797,6 +802,7 @@ void WriteStream::Write(const CommonValue& data)
     default: CRASH;
     }
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void WriteStream::Write(const VariantType& data)
 {
@@ -997,10 +1003,12 @@ void WriteStream::WriteStringAnsi(const StringAnsiView& data, int8 lock)
     Write(data, lock);
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void WriteStream::WriteCommonValue(const CommonValue& data)
 {
     Write(data);
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void WriteStream::WriteVariantType(const VariantType& data)
 {

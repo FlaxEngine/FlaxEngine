@@ -244,6 +244,7 @@ void JsonWriter::Matrix(const ::Matrix& value)
     EndObject();
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void JsonWriter::CommonValue(const ::CommonValue& value)
 {
     // [Deprecated on 31.07.2020, expires on 31.07.2022]
@@ -319,6 +320,7 @@ void JsonWriter::CommonValue(const ::CommonValue& value)
 
     EndObject();
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void JsonWriter::Transform(const ::Transform& value)
 {

@@ -284,6 +284,7 @@ DateTime JsonTools::GetDateTime(const Value& value)
     return DateTime(value.GetInt64());
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 CommonValue JsonTools::GetCommonValue(const Value& value)
 {
     // [Deprecated on 31.07.2020, expires on 31.07.2022]
@@ -363,3 +364,4 @@ CommonValue JsonTools::GetCommonValue(const Value& value)
     }
     return result;
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

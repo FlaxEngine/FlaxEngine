@@ -3,6 +3,8 @@
 #include "CommonValue.h"
 #include "Engine/Scripting/ScriptingObject.h"
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+
 const CommonValue CommonValue::Zero(0.0f);
 const CommonValue CommonValue::One(1.0f);
 const CommonValue CommonValue::Null(static_cast<void*>(nullptr));
@@ -176,3 +178,5 @@ void CommonValue::UnlinkObject()
 {
     AsObject->Deleted.Unbind<CommonValue, &CommonValue::OnObjectDeleted>(this);
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

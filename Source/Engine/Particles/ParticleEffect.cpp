@@ -663,6 +663,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
         // [Deprecated on 25.11.2018, expires on 25.11.2022]
         if (modifier->EngineBuild < 6197)
         {
+            PRAGMA_DISABLE_DEPRECATION_WARNINGS
             const auto& overrides = overridesMember->value;
             ASSERT(overrides.IsArray());
             _parametersOverrides.EnsureCapacity(_parametersOverrides.Count() + overrides.Size());
@@ -700,6 +701,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
                         p.Value = Variant(JsonTools::GetCommonValue(mValue->value));
                 }
             }
+            PRAGMA_ENABLE_DEPRECATION_WARNINGS
         }
         else
         {
