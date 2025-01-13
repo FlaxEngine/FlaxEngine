@@ -35,7 +35,7 @@ void MaterialBase::SetParameterValue(const StringView& name, const Variant& valu
     }
     else if (warnIfMissing)
     {
-        LOG(Warning, "Missing material parameter '{0}' in material {1}", String(name), ToString());
+        LOG(Warning, "Missing material parameter '{0}' in material {1}", name, ToString());
     }
 }
 

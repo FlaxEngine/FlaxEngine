@@ -3453,6 +3453,16 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         default:
             return false;
         }
+    case VariantType::Null:
+        switch (to.Type)
+        {
+    case VariantType::Asset:
+    case VariantType::ManagedObject:
+    case VariantType::Object:
+            return true;
+        default:
+            return false;
+        }
     default:
         return false;
     }
@@ -3963,6 +3973,23 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
             return Variant((double)v.AsEnum);
         }
         break;
+    case VariantType::Null:
+        switch (to.Type)
+        {
+        case VariantType::Asset:
+            return Variant((Asset*)nullptr);
+        case VariantType::Object:
+            return Variant((ScriptingObject*)nullptr);
+        case VariantType::ManagedObject:
+        {
+            Variant result;
+            result.SetType(VariantType(VariantType::ManagedObject));
+            result.MANAGED_GC_HANDLE = 0;
+            return result;
+        }
+        default:
+            return false;
+        }
     default: ;
     }
     LOG(Error, "Cannot cast Variant from {0} to {1}", v.Type, to);

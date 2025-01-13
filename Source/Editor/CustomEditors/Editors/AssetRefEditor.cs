@@ -292,5 +292,17 @@ namespace FlaxEditor.CustomEditors.Editors
                 _isRefreshing = false;
             }
         }
+
+        /// <inheritdoc />
+        protected override void Deinitialize()
+        {
+            if (_validator != null)
+            {
+                _validator.OnDestroy();
+                _validator = null;
+            }
+
+            base.Deinitialize();
+        }
     }
 }

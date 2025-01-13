@@ -25,6 +25,7 @@ namespace
     bool IsWindowsSingleNewLineChar = false;
 #endif
     int LogTotalErrorsCnt = 0;
+    int32 LogTotalWriteSize = 0;
     FileWriteStream* LogFile = nullptr;
     CriticalSection LogLocker;
     DateTime LogStartTime;
@@ -149,10 +150,17 @@ void Log::Logger::Write(const StringView& msg)
     Platform::Log(msg);
 
     // Write message to log file
-    if (LogAfterInit)
+    constexpr int32 LogMaxWriteSize = 1 * 1024 * 1024; // 1GB
+    if (LogAfterInit && LogTotalWriteSize < LogMaxWriteSize)
     {
+        LogTotalWriteSize += length;
         LogFile->WriteBytes(ptr, length * sizeof(Char));
         LogFile->WriteBytes(TEXT(PLATFORM_LINE_TERMINATOR), (ARRAY_COUNT(PLATFORM_LINE_TERMINATOR) - 1) * sizeof(Char));
+        if (LogTotalWriteSize >= LogMaxWriteSize)
+        {
+            StringView endMessage(TEXT("Trimming log file.\n\n"));
+            LogFile->WriteBytes(endMessage.Get(), endMessage.Length() * sizeof(Char));
+        }
 #if LOG_ENABLE_AUTO_FLUSH
         LogFile->Flush();
 #endif

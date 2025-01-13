@@ -1216,13 +1216,16 @@ namespace FlaxEditor.Surface.Archetypes
                 // Highlight selected blend point
                 var style = Style.Current;
                 var selectedIndex = _selectedAnimation.SelectedIndex;
-                if (selectedIndex != -1 && (ContainsFocus || IsMouseOver))
+                if (selectedIndex != -1 && selectedIndex < _editor.BlendPoints.Count && (ContainsFocus || IsMouseOver))
                 {
                     var point = _editor.BlendPoints[selectedIndex];
-                    var highlightColor = point.IsMouseDown ? style.SelectionBorder : style.BackgroundSelected;
-                    Render2D.PushTint(ref highlightColor);
-                    Render2D.DrawTriangles(_selectedTriangles, _selectedColors);
-                    Render2D.PopTint();
+                    if (point != null)
+                    {
+                        var highlightColor = point.IsMouseDown ? style.SelectionBorder : style.BackgroundSelected;
+                        Render2D.PushTint(ref highlightColor);
+                        Render2D.DrawTriangles(_selectedTriangles, _selectedColors);
+                        Render2D.PopTint();
+                    }
                 }
             }
 

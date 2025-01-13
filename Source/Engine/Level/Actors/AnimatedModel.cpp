@@ -293,7 +293,12 @@ void AnimatedModel::SetParameterValue(const StringView& name, const Variant& val
     {
         if (param.Name == name)
         {
-            param.Value = value;
+            if (param.Value.Type == value.Type)
+                param.Value = value;
+            else if (Variant::CanCast(value, param.Value.Type))
+                param.Value = Variant::Cast(value, param.Value.Type);
+            else
+                LOG(Warning, "Animation Graph parameter '{0}' in AnimatedModel {1} is type '{2}' and not type '{3}'.", name, ToString(), param.Value.Type, value.Type);
             return;
         }
     }

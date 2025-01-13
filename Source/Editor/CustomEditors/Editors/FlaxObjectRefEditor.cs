@@ -7,6 +7,7 @@ using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.SceneGraph.GUI;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -23,6 +24,7 @@ namespace FlaxEditor.CustomEditors.Editors
     public class FlaxObjectRefPickerControl : Control
     {
         private ScriptType _type;
+        private ActorTreeNode _linkedTreeNode;
         private Object _value;
         private string _valueName;
         private bool _supportsPickDropDown;
@@ -300,7 +302,43 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Picker dropdown menu
             if (_supportsPickDropDown && (isSelected ? button2Rect : button1Rect).Contains(ref location))
+            {
                 ShowDropDownMenu();
+                return true;
+            }
+
+            if (button == MouseButton.Left)
+            {
+                _isMouseDown = false;
+
+                // Highlight actor or script reference
+                if (!_hasValidDragOver && !IsDragOver)
+                {
+                    Actor actor = _value as Actor;
+                    if (actor == null && _value is Script script)
+                        actor = script.Actor;
+                    if (actor != null)
+                    {
+                        if (_linkedTreeNode != null && _linkedTreeNode.Actor == actor)
+                        {
+                            _linkedTreeNode.ExpandAllParents();
+                            _linkedTreeNode.StartHighlight();
+                        }
+                        else
+                        {
+                            _linkedTreeNode = Editor.Instance.Scene.GetActorNode(actor).TreeNode;
+                            _linkedTreeNode.ExpandAllParents();
+                            Editor.Instance.Windows.SceneWin.SceneTreePanel.ScrollViewTo(_linkedTreeNode, true);
+                            _linkedTreeNode.StartHighlight();
+                        }
+                        return true;
+                    }
+                }
+
+                // Reset valid drag over if still true at this point
+                if (_hasValidDragOver)
+                    _hasValidDragOver = false;
+            }
 
             return base.OnMouseUp(location, button);
         }
@@ -326,6 +364,12 @@ namespace FlaxEditor.CustomEditors.Editors
             // Check if has object selected
             if (_value != null)
             {
+                if (_linkedTreeNode != null)
+                {
+                    _linkedTreeNode.StopHighlight();
+                    _linkedTreeNode = null;
+                }
+
                 // Select object
                 if (_value is Actor actor)
                     Select(actor);
@@ -491,6 +535,7 @@ namespace FlaxEditor.CustomEditors.Editors
             _value = null;
             _type = ScriptType.Null;
             _valueName = null;
+            _linkedTreeNode = null;
 
             base.OnDestroy();
         }

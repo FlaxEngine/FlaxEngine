@@ -172,10 +172,22 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            if (_isRenaming && (!_renameTextBox.IsFocused || !RootWindow.IsFocused))
+            if (_isRenaming)
             {
-                Rename(_renameTextBox.Text);
-                StopRenaming();
+                // Stop renaming when clicking anywhere else
+                if (!_renameTextBox.IsFocused || !RootWindow.IsFocused)
+                {
+                    Rename(_renameTextBox.Text);
+                    StopRenaming();
+                }
+            }
+            else
+            {
+                // Rename on F2
+                if (IsSelected && Editor.Instance.Options.Options.Input.Rename.Process(this))
+                {
+                    StartRenaming();
+                }
             }
 
             base.Update(deltaTime);
@@ -417,6 +429,7 @@ namespace FlaxEditor.Surface
             base.OnShowSecondaryContextMenu(menu, location);
 
             menu.AddSeparator();
+            menu.AddButton("Rename", StartRenaming);
             ContextMenuChildMenu cmOrder = menu.AddChildMenu("Order");
             {
                 cmOrder.ContextMenu.AddButton("Bring Forward", () =>

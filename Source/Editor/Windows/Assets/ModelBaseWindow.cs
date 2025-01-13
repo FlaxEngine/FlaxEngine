@@ -751,18 +751,18 @@ namespace FlaxEditor.Windows.Assets
                     if (Utilities.Utils.OnAssetProperties(layout, proxy.Asset))
                         return;
 
-                    // Import Settings
-                    {
-                        var group = layout.Group("Import Settings");
+                    var group = layout.Group("Import Settings");
 
-                        var importSettingsField = typeof(ImportPropertiesProxyBase).GetField(nameof(ImportSettings), BindingFlags.NonPublic | BindingFlags.Instance);
-                        var importSettingsValues = new ValueContainer(new ScriptMemberInfo(importSettingsField)) { proxy.ImportSettings };
-                        group.Object(importSettingsValues);
+                    var importSettingsField = typeof(ImportPropertiesProxyBase).GetField(nameof(ImportSettings), BindingFlags.NonPublic | BindingFlags.Instance);
+                    var importSettingsValues = new ValueContainer(new ScriptMemberInfo(importSettingsField)) { proxy.ImportSettings };
+                    group.Object(importSettingsValues);
 
-                        layout.Space(5);
-                        var reimportButton = group.Button("Reimport");
-                        reimportButton.Button.Clicked += () => ((ImportPropertiesProxyBase)Values[0]).Reimport();
-                    }
+                    // Creates the import path UI
+                    Utilities.Utils.CreateImportPathUI(layout, proxy.Window.Item as BinaryAssetItem);
+
+                    layout.Space(5);
+                    var reimportButton = group.Button("Reimport");
+                    reimportButton.Button.Clicked += () => ((ImportPropertiesProxyBase)Values[0]).Reimport();
                 }
             }
         }

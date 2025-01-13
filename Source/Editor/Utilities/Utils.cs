@@ -384,6 +384,40 @@ namespace FlaxEditor.Utilities
         }
 
         /// <summary>
+        /// Creates an Import path ui that show the asset import path and adds a button to show the folder in the file system.
+        /// </summary>
+        /// <param name="parentLayout">The parent layout container.</param>
+        /// <param name="assetItem">The asset item to get the import path of.</param>
+        public static void CreateImportPathUI(CustomEditors.LayoutElementsContainer parentLayout, Content.BinaryAssetItem assetItem)
+        {
+            assetItem.GetImportPath(out var path);
+            CreateImportPathUI(parentLayout, path);
+        }
+
+        /// <summary>
+        /// Creates an Import path ui that show the import path and adds a button to show the folder in the file system.
+        /// </summary>
+        /// <param name="parentLayout">The parent layout container.</param>
+        /// <param name="path">The import path.</param>
+        /// <param name="useInitialSpacing">Whether to use an initial layout space of 5 for separation.</param>
+        public static void CreateImportPathUI(CustomEditors.LayoutElementsContainer parentLayout, string path, bool useInitialSpacing = true)
+        {
+            if (!string.IsNullOrEmpty(path))
+            {
+                if (useInitialSpacing)
+                    parentLayout.Space(5);
+                parentLayout.Label("Import Path:").Label.TooltipText = "Source asset path (can be relative or absolute to the project)";
+                var textBox = parentLayout.TextBox().TextBox;
+                textBox.TooltipText = "Path is not editable here.";
+                textBox.IsReadOnly = true;
+                textBox.Text = path;
+                parentLayout.Space(2);
+                var button = parentLayout.Button(Constants.ShowInExplorer).Button;
+                button.Clicked += () => FileSystem.ShowFileExplorer(Path.GetDirectoryName(path));
+            }
+        }
+
+        /// <summary>
         /// Copies the directory. Supports subdirectories copy with files override option.
         /// </summary>
         /// <param name="srcDirectoryPath">The source directory path.</param>

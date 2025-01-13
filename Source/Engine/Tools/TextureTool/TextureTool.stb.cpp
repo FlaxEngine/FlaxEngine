@@ -542,10 +542,10 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         // TODO: impl this
         LOG(Warning, "Option 'Flip X' is not supported");
     }
-    if (options.InvertGreenChannel)
+    if (options.InvertRedChannel || options.InvertGreenChannel || options.InvertBlueChannel || options.InvertAlphaChannel)
     {
         // TODO: impl this
-        LOG(Warning, "Option 'Invert Green Channel' is not supported");
+        LOG(Warning, "Option to invert channels is not supported");
     }
     if (options.ReconstructZChannel)
     {

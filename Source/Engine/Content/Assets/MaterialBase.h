@@ -65,7 +65,7 @@ public:
     /// </summary>
     /// <param name="name">The parameter name.</param>
     /// <param name="value">The value to set.</param>
-    /// <param name="warnIfMissing">True if warn if parameter is missing, otherwise will do nothing.</param>
+    /// <param name="warnIfMissing">True to warn if parameter is missing, otherwise will do nothing.</param>
     API_FUNCTION() void SetParameterValue(const StringView& name, const Variant& value, bool warnIfMissing = true);
 
     /// <summary>

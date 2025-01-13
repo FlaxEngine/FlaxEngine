@@ -1386,22 +1386,26 @@ void Render2D::DrawText(Font* font, const StringView& text, const TextRange& tex
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color)
 {
-    return (color.A * TintLayersStack.Peek().A) < 1.0f;
+    const float tint = TintLayersStack.Peek().A;
+    return color.A * tint < 1.0f;
 }
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color1, const Color& color2)
 {
-    return (color1.A * TintLayersStack.Peek().A) < 1.0f || (color2.A * TintLayersStack.Peek().A) < 1.0f;
+    const float tint = TintLayersStack.Peek().A;
+    return color1.A * tint < 1.0f || color2.A * tint < 1.0f;
 }
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color1, const Color& color2, const Color& color3)
 {
-    return (color1.A * TintLayersStack.Peek().A) < 1.0f || (color2.A * TintLayersStack.Peek().A) < 1.0f || (color3.A * TintLayersStack.Peek().A) < 1.0f;
+    const float tint = TintLayersStack.Peek().A;
+    return color1.A * tint < 1.0f || color2.A * tint < 1.0f || color3.A * tint < 1.0f;
 }
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color1, const Color& color2, const Color& color3, const Color& color4)
 {
-    return (color1.A * TintLayersStack.Peek().A) < 1.0f || (color2.A * TintLayersStack.Peek().A) < 1.0f || (color3.A * TintLayersStack.Peek().A) < 1.0f || (color4.A * TintLayersStack.Peek().A) < 1.0f;
+    const float tint = TintLayersStack.Peek().A;
+    return color1.A * tint < 1.0f || color2.A * tint < 1.0f || color3.A * tint < 1.0f || color4.A * tint < 1.0f;
 }
 
 void Render2D::FillRectangle(const Rectangle& rect, const Color& color)

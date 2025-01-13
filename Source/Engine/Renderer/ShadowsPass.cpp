@@ -623,10 +623,6 @@ void ShadowsPass::SetupRenderContext(RenderContext& renderContext, RenderContext
 
 void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLightData& light, ShadowAtlasLight& atlasLight)
 {
-    // Initialize frame-data
-    atlasLight.ContextIndex = 0;
-    atlasLight.ContextCount = 0;
-
     // Copy light properties
     atlasLight.Sharpness = light.ShadowsSharpness;
     atlasLight.Fade = light.ShadowsStrength;
@@ -1299,6 +1295,11 @@ RETRY_ATLAS_SETUP:
     for (RenderLightData* light : shadowedLights)
     {
         auto& atlasLight = shadows.Lights[light->ID];
+
+        // Reset frame-data
+        atlasLight.ContextIndex = 0;
+        atlasLight.ContextCount = 0;
+
         if (atlasLight.Tiles[0].RectTile && atlasLight.Tiles[0].RectTile->Width == atlasLight.Resolution)
         {
             // Invalidate cache when whole atlas will be cleared

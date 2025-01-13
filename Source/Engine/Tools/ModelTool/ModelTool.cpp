@@ -667,6 +667,7 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(FlipNormals);
     SERIALIZE(CalculateTangents);
     SERIALIZE(SmoothingTangentsAngle);
+    SERIALIZE(ReverseWindingOrder);
     SERIALIZE(OptimizeMeshes);
     SERIALIZE(MergeMeshes);
     SERIALIZE(ImportLODs);
@@ -717,6 +718,7 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(FlipNormals);
     DESERIALIZE(CalculateTangents);
     DESERIALIZE(SmoothingTangentsAngle);
+    DESERIALIZE(ReverseWindingOrder);
     DESERIALIZE(OptimizeMeshes);
     DESERIALIZE(MergeMeshes);
     DESERIALIZE(ImportLODs);

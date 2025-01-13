@@ -20,7 +20,7 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Offset to move axis away from center
         /// </summary>
-        private const float AxisOffset = 0.8f;
+        private const float AxisOffset = 1.2f;
 
         /// <summary>
         /// How thick the axis should be

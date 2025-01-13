@@ -386,7 +386,7 @@ namespace FlaxEditor.CustomEditors
             if (instanceValues.Count != Count)
                 throw new ArgumentException();
 
-            if (value is IList l && l.Count == Count)
+            if (value is IList l && l.Count == Count && Count > 1)
             {
                 for (int i = 0; i < Count; i++)
                 {
