@@ -375,16 +375,19 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
             const int32 result = Platform::CreateProcess(procSettings);
             if (result != 0)
             {
-                data.Error(String::Format(TEXT("Failed to build Gradle project into package (result code: {0}). See log for more info."), result));
+                data.Error(String::Format(TEXT("Failed to build Gradle project into .aab package (result code: {0}). See log for more info."), result));
+                return true;
             }
         }
         // Copy result package
         const String aab = data.OriginalOutputPath / (distributionPackage ? TEXT("app/build/outputs/bundle/release/app-release.aab") : TEXT("app/build/outputs/bundle/debug/app-debug.aab"));
         const String outputAab = data.OriginalOutputPath / EditorUtilities::GetOutputName() + TEXT(".aab");
         if (FileSystem::CopyFile(outputAab, aab))
-            LOG(Error, "Failed to copy package from {0} to {1}", aab, outputAab);
-        else
-            LOG(Info, "Output AAB Android application package: {0} (size: {1} MB)", outputAab, FileSystem::GetFileSize(outputAab) / 1024 / 1024);
+        {
+            LOG(Error, "Failed to copy .aab package from {0} to {1}", aab, outputAab);
+            return true;
+        }
+        LOG(Info, "Output Android AAB application package: {0} (size: {1} MB)", outputAab, FileSystem::GetFileSize(outputAab) / 1024 / 1024);
     }
 
     // .apk
@@ -395,7 +398,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
         const int32 result = Platform::CreateProcess(procSettings);
         if (result != 0)
         {
-            data.Error(String::Format(TEXT("Failed to build Gradle project into package (result code: {0}). See log for more info."), result));
+            data.Error(String::Format(TEXT("Failed to build Gradle project into .apk package (result code: {0}). See log for more info."), result));
             return true;
         }
     }
@@ -404,7 +407,7 @@ bool AndroidPlatformTools::OnPostProcess(CookingData& data)
     const String outputApk = data.OriginalOutputPath / EditorUtilities::GetOutputName() + TEXT(".apk");
     if (FileSystem::CopyFile(outputApk, apk))
     {
-        LOG(Error, "Failed to copy package from {0} to {1}", apk, outputApk);
+        LOG(Error, "Failed to copy .apk package from {0} to {1}", apk, outputApk);
         return true;
     }
     LOG(Info, "Output Android APK application package: {0} (size: {1} MB)", outputApk, FileSystem::GetFileSize(outputApk) / 1024 / 1024);
