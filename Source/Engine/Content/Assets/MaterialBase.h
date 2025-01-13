@@ -66,8 +66,7 @@ public:
     /// <param name="name">The parameter name.</param>
     /// <param name="value">The value to set.</param>
     /// <param name="warnIfMissing">True to warn if parameter is missing, otherwise will do nothing.</param>
-    /// <param name="warnIfWrongType">True to warn if value is wrong type, otherwise will do nothing.</param>
-    API_FUNCTION() void SetParameterValue(const StringView& name, const Variant& value, bool warnIfMissing = true, bool warnIfWrongType = true);
+    API_FUNCTION() void SetParameterValue(const StringView& name, const Variant& value, bool warnIfMissing = true);
 
     /// <summary>
     /// Creates the virtual material instance of this material which allows to override any material parameters.

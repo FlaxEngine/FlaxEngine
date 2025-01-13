@@ -214,9 +214,11 @@ void MaterialParameter::SetValue(const Variant& value)
             break;
         case VariantType::Object:
             _asAsset = Cast<TextureBase>(value.AsObject);
+            invalidType = _asAsset == nullptr && value.AsObject != nullptr;
             break;
         case VariantType::Asset:
             _asAsset = Cast<TextureBase>(value.AsAsset);
+            invalidType = _asAsset == nullptr && value.AsAsset != nullptr;
             break;
         default:
             invalidType = true;
@@ -239,6 +241,7 @@ void MaterialParameter::SetValue(const Variant& value)
             break;
         case VariantType::Object:
             _asGPUTexture = Cast<GPUTexture>(value.AsObject);
+            invalidType = _asGPUTexture == nullptr && value.AsObject != nullptr;
             break;
         default:
             invalidType = true;
@@ -258,9 +261,11 @@ void MaterialParameter::SetValue(const Variant& value)
             break;
         case VariantType::Object:
             _asAsset = Cast<GameplayGlobals>(value.AsObject);
+            invalidType = _asAsset == nullptr && value.AsObject != nullptr;
             break;
         case VariantType::Asset:
             _asAsset = Cast<GameplayGlobals>(value.AsAsset);
+            invalidType = _asAsset == nullptr && value.AsAsset != nullptr;
             break;
         default:
             invalidType = true;
@@ -273,7 +278,7 @@ void MaterialParameter::SetValue(const Variant& value)
     }
     if (invalidType)
     {
-        LOG(Error, "Invalid material parameter value type {0} to set (param type: {1})", value.Type, ScriptingEnum::ToString(_type));
+        LOG(Error, "Invalid material parameter value '{}' of type '{}' to set (expected type: {})", value.ToString(), value.Type, ScriptingEnum::ToString(_type));
     }
 }
 
