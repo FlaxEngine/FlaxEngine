@@ -663,6 +663,14 @@ namespace FlaxEditor.Viewport
                     }
                     Select(newSelection);
                 }
+                else if (((WindowRootControl)Root).GetKey(KeyboardKeys.Shift))
+                {
+                    var newSelection = new List<SceneGraphNode>();
+                    var currentSelection = _editor.SceneEditing.Selection;
+                    newSelection.AddRange(hits);
+                    newSelection.AddRange(currentSelection);
+                    Select(newSelection);
+                }
                 else
                 {
                     Select(hits);
