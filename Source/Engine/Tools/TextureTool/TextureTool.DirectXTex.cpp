@@ -827,10 +827,8 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
             [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
             {
-                static const DirectX::XMVECTORU32 s_selecty = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0 } } };
-
+                const DirectX::XMVECTORU32 s_selecty = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0 } } };
                 UNREFERENCED_PARAMETER(y);
-
                 for (size_t j = 0; j < w; ++j)
                 {
                     const DirectX::XMVECTOR value = inPixels[j];
@@ -853,10 +851,8 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
             [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
             {
-                static const DirectX::XMVECTORU32 s_selectx = { { { DirectX::XM_SELECT_1, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0 } } };
-
+                const DirectX::XMVECTORU32 s_selectx = { { { DirectX::XM_SELECT_1, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0 } } };
                 UNREFERENCED_PARAMETER(y);
-
                 for (size_t j = 0; j < w; ++j)
                 {
                     const DirectX::XMVECTOR value = inPixels[j];
@@ -879,10 +875,8 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
             [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
             {
-                static const DirectX::XMVECTORU32 s_selectz = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0 } } };
-
+                const DirectX::XMVECTORU32 s_selectz = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0 } } };
                 UNREFERENCED_PARAMETER(y);
-
                 for (size_t j = 0; j < w; ++j)
                 {
                     const DirectX::XMVECTOR value = inPixels[j];
@@ -905,10 +899,8 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
             [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
             {
-                static const DirectX::XMVECTORU32 s_selectw = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_1 } } };
-
+                const DirectX::XMVECTORU32 s_selectw = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_1 } } };
                 UNREFERENCED_PARAMETER(y);
-
                 for (size_t j = 0; j < w; ++j)
                 {
                     const DirectX::XMVECTOR value = inPixels[j];
@@ -932,10 +924,8 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
             [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
             {
-                static const DirectX::XMVECTORU32 s_selectz = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0 } } };
-
+                const DirectX::XMVECTORU32 s_selectz = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0 } } };
                 UNREFERENCED_PARAMETER(y);
-
                 for (size_t j = 0; j < w; ++j)
                 {
                     const DirectX::XMVECTOR value = inPixels[j];
