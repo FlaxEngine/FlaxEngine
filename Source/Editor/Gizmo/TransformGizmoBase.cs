@@ -501,7 +501,7 @@ namespace FlaxEditor.Gizmo
                         _scaleDelta = Vector3.Zero;
 
                         if (ActiveAxis == Axis.Center)
-                            scaleDelta = new Vector3(scaleDelta.AvgValue);
+                            scaleDelta = new Vector3(scaleDelta.ValuesSum);
                     }
 
                     // Apply transformation (but to the parents, not whole selection pool)

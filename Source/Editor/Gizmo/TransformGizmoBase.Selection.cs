@@ -169,12 +169,12 @@ namespace FlaxEditor.Gizmo
                     closestIntersection = intersection;
                 }
 
-                /*// Center
-                if (CenterBoxRaw.Intersects(ref localRay, out intersection) && intersection < closestIntersection)
+                // Center
+                if (CenterBoxRaw.Intersects(ref localRay, out intersection) && intersection > closestIntersection)
                 {
                     _activeAxis = Axis.Center;
                     closestIntersection = intersection;
-                }*/
+                }
 
                 break;
             }
