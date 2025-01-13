@@ -534,7 +534,11 @@ bool ShadowsPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psShadowPoint.Create(psDesc, shader, "PS_PointLight"))
             return true;
+#if FLAX_REVERSE_Z
+        psDesc.DepthFunc = ComparisonFunc::Less;
+#else
         psDesc.DepthFunc = ComparisonFunc::Greater;
+#endif
         psDesc.CullMode = CullMode::Inverted;
         if (_psShadowPointInside.Create(psDesc, shader, "PS_PointLight"))
             return true;
@@ -548,7 +552,11 @@ bool ShadowsPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psShadowSpot.Create(psDesc, shader, "PS_SpotLight"))
             return true;
+#if FLAX_REVERSE_Z
+        psDesc.DepthFunc = ComparisonFunc::Less;
+#else
         psDesc.DepthFunc = ComparisonFunc::Greater;
+#endif
         psDesc.CullMode = CullMode::Inverted;
         if (_psShadowSpotInside.Create(psDesc, shader, "PS_SpotLight"))
             return true;
@@ -1434,7 +1442,11 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
                 if (!shadows.ClearStaticShadowMapAtlas)
                 {
                     // Color.r is used by PS_DepthClear in Quad shader to clear depth
+#if FLAX_REVERSE_Z
+                    quadShaderData.Color = Float4::Zero;
+#else
                     quadShaderData.Color = Float4::One;
+#endif
                     context->UpdateCB(quadShaderCB, &quadShaderData);
                     context->BindCB(0, quadShaderCB);
 
@@ -1501,7 +1513,11 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
             else if (!shadows.ClearShadowMapAtlas)
             {
                 // Color.r is used by PS_DepthClear in Quad shader to clear depth
+#if FLAX_REVERSE_Z
+                quadShaderData.Color = Float4::Zero;
+#else
                 quadShaderData.Color = Float4::One;
+#endif
                 context->UpdateCB(quadShaderCB, &quadShaderData);
                 context->BindCB(0, quadShaderCB);
 
