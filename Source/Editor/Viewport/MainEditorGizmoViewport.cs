@@ -7,10 +7,12 @@ using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
+using FlaxEditor.Tools;
 using FlaxEditor.Viewport.Modes;
 using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Tools;
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport
@@ -107,6 +109,10 @@ namespace FlaxEditor.Viewport
         private double _lockedFocusOffset;
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private EditorSpritesRenderer _editorSpritesRenderer;
+
+        private bool _isRubberBandSpanning;
+        private Float2 _cachedStartingMousePosition;
+        private Rectangle _rubberBandRect;
 
         /// <summary>
         /// Drag and drop handlers
@@ -287,6 +293,26 @@ namespace FlaxEditor.Viewport
                 var focusDistance = Mathf.Max(selectionBounds.Radius * 2d, 100d);
                 ViewPosition = selectionBounds.Center + (-ViewDirection * (focusDistance + _lockedFocusOffset));
             }
+
+            // Dont allow rubber band selection when gizmo is controlling mouse, vertex painting mode, or cloth painting is enabled
+            if (_isRubberBandSpanning && (Gizmos.Active.IsControllingMouse || Gizmos.Active is VertexPaintingGizmo || Gizmos.Active is ClothPaintingGizmo) || IsControllingMouse || IsRightMouseButtonDown)
+            {
+                _isRubberBandSpanning = false;
+            }
+
+            // Start rubber band selection
+            if (IsLeftMouseButtonDown && !MouseDelta.IsZero && !_isRubberBandSpanning && !Gizmos.Active.IsControllingMouse && !IsControllingMouse && !IsRightMouseButtonDown)
+            {
+                _isRubberBandSpanning = true;
+                _cachedStartingMousePosition = _viewMousePos;
+                _rubberBandRect = new Rectangle(_cachedStartingMousePosition, Float2.Zero);
+            }
+            else if (_isRubberBandSpanning)
+            {
+                var size = _viewMousePos - _cachedStartingMousePosition;
+                _rubberBandRect.Width = _viewMousePos.X - _cachedStartingMousePosition.X;
+                _rubberBandRect.Height = _viewMousePos.Y - _cachedStartingMousePosition.Y;
+            }
         }
 
         /// <summary>
@@ -367,7 +393,16 @@ namespace FlaxEditor.Viewport
             {
                 Gizmos[i].Draw(ref renderContext);
             }
-
+            
+            // Draw RubberBand for rect selection
+            if (_isRubberBandSpanning)
+            {
+                Render2D.Begin(context, target, targetDepth);
+                Render2D.FillRectangle(_rubberBandRect, Style.Current.Selection);
+                Render2D.DrawRectangle(_rubberBandRect, Style.Current.SelectionBorder);
+                Render2D.End();
+            }
+            
             // Draw selected objects debug shapes and visuals
             if (DrawDebugDraw && (renderContext.View.Flags & ViewFlags.DebugDraw) == ViewFlags.DebugDraw)
             {
@@ -582,9 +617,62 @@ namespace FlaxEditor.Viewport
             // Skip if was controlling mouse or mouse is not over the area
             if (_prevInput.IsControllingMouse || !Bounds.Contains(ref _viewMousePos))
                 return;
+            
+            // Select rubberbanded rect actor nodes
+            if (_isRubberBandSpanning)
+            {
+                _isRubberBandSpanning = false;
+                if (_rubberBandRect.Width < 0 || _rubberBandRect.Height < 0)
+                {
+                    // make sure we have a well-formed rectangle i.e. size is positive and X/Y is upper left corner
+                    var size = _rubberBandRect.Size;
+                    _rubberBandRect.X = Mathf.Min(_rubberBandRect.X, _rubberBandRect.X + _rubberBandRect.Width);
+                    _rubberBandRect.Y = Mathf.Min(_rubberBandRect.Y, _rubberBandRect.Y + _rubberBandRect.Height);
+                    size.X = Mathf.Abs(size.X);
+                    size.Y = Mathf.Abs(size.Y);
+                    _rubberBandRect.Size = size;
+                }
 
-            // Try to pick something with the current gizmo
-            Gizmos.Active?.Pick();
+                var view = new Ray(ViewPosition, ViewDirection);
+                List<SceneGraphNode> hits = new List<SceneGraphNode>();
+                // Todo: expose resolution to editor settings
+                var resolution = 100;
+                for (int i = 0; i < resolution; i++)
+                {
+                    for (int j = 0; j < resolution; j++)
+                    {
+                        var point = new Float2(_rubberBandRect.Left + ((_rubberBandRect.Right - _rubberBandRect.Left) / resolution) * i, _rubberBandRect.Top + ((_rubberBandRect.Bottom - _rubberBandRect.Top) / resolution) * j);
+                        var ray = ConvertMouseToRay(ref point);
+                        var hit = SceneGraphRoot.RayCast(ref ray, ref view, out _);
+                        if (hit != null && hit is ActorNode actorNode)
+                            hits.Add(hit);
+                    }
+                }
+
+                if (IsControlDown)
+                {
+                    var newSelection = new List<SceneGraphNode>();
+                    var currentSelection = _editor.SceneEditing.Selection;
+                    newSelection.AddRange(currentSelection);
+                    foreach (var hit in hits)
+                    {
+                        if (currentSelection.Contains(hit))
+                            newSelection.Remove(hit);
+                        else
+                            newSelection.Add(hit);
+                    }
+                    Select(newSelection);
+                }
+                else
+                {
+                    Select(hits);
+                }
+            }
+            else
+            {
+                // Try to pick something with the current gizmo
+                Gizmos.Active?.Pick();
+            }
 
             // Keep focus
             Focus();
