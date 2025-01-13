@@ -224,11 +224,14 @@ bool DeployDataStep::Perform(CookingData& data)
                     {
                         Array<String> versionParts;
                         pathParts[i - 1].Split('.', versionParts);
-                        const String majorVersion = versionParts[0].TrimTrailing();
-                        uint32 versionNum;
-                        StringUtils::Parse(*majorVersion, majorVersion.Length(), &versionNum);
-                        if (versionNum < GAME_BUILD_DOTNET_RUNTIME_MAX_VER || versionNum > GAME_BUILD_DOTNET_RUNTIME_MIN_VER) // Check for major part
-                            version = majorVersion;
+                        if (!versionParts.IsEmpty())
+                        {
+                            const String majorVersion = versionParts[0].TrimTrailing();
+                            int32 versionNum;
+                            StringUtils::Parse(*majorVersion, majorVersion.Length(), &versionNum);
+                            if (Math::IsInRange(versionNum, GAME_BUILD_DOTNET_RUNTIME_MIN_VER, GAME_BUILD_DOTNET_RUNTIME_MAX_VER)) // Check for major part
+                                version = majorVersion;
+                        }
                     }
                 }
 
