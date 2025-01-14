@@ -2,10 +2,10 @@
 
 #include "ModelBase.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Transform.h"
 #include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Graphics/Config.h"
-#include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
@@ -18,6 +18,7 @@
 #endif
 #if USE_EDITOR
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/Models/ModelData.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
 #endif

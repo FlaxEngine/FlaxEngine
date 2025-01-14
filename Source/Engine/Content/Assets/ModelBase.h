@@ -101,7 +101,7 @@ public:
     /// <summary>
     /// Gets the meshes in this LOD.
     /// </summary>
-    API_FUNCTION(Sealed) virtual void GetMeshes(Array<MeshBase*>& meshes) = 0;
+    API_FUNCTION(Sealed) virtual void GetMeshes(API_PARAM(Out) Array<MeshBase*>& meshes) = 0;
 };
 
 /// <summary>
