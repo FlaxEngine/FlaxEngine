@@ -17,9 +17,11 @@
 
 #include "../rapidjson.h"
 
-#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && defined(_M_AMD64)
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && (defined(_M_AMD64) || defined(_M_ARM64))
 #include <intrin.h> // for _umul128
-#if !defined(_ARM64EC_)
+#if defined(_M_ARM64)
+#pragma intrinsic(__umulh)
+#elif !defined(_ARM64EC_)
 #pragma intrinsic(_umul128)
 #else
 #pragma comment(lib,"softintrin")

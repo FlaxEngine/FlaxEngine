@@ -41,6 +41,18 @@ public:
     Stack(Allocator* allocator, size_t stackCapacity) : allocator_(allocator), ownAllocator_(0), stack_(0), stackTop_(0), stackEnd_(0), initialCapacity_(stackCapacity) {
     }
 
+#if false
+    Stack(const Stack& other)
+            : Stack(nullptr, other.initialCapacity_)
+    {
+        if (other.Empty())
+            return;
+        char* dst = Push<char>(other.GetSize());
+        const char* src = other.Bottom<char>();
+        memcpy(dst, src, other.GetSize());
+    }
+#endif
+
 #if RAPIDJSON_HAS_CXX11_RVALUE_REFS
     Stack(Stack&& rhs)
         : allocator_(rhs.allocator_),
@@ -211,7 +223,9 @@ private:
     }
 
     // Prohibit copy constructor & assignment operator.
+#if false
     Stack(const Stack&);
+#endif
     Stack& operator=(const Stack&);
 
     Allocator* allocator_;

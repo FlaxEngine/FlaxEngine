@@ -1852,6 +1852,32 @@ public:
 
     const Ch* GetString() const { RAPIDJSON_ASSERT(IsString()); return DataString(data_); }
 
+    ::StringAnsiView GetStringAnsiView() const { RAPIDJSON_ASSERT(IsString()); return data_.f.flags & kInlineStrFlag ? ::StringAnsiView(data_.ss.str, data_.ss.GetLength()) : ::StringAnsiView(GetStringPointer(), data_.s.length); }
+    ::String GetText() const
+    {
+        ::String result;
+        if (IsString())
+        {
+            if (data_.f.flags & kInlineStrFlag)
+                result.SetUTF8(data_.ss.str, data_.ss.GetLength());
+            else
+                result.SetUTF8(GetStringPointer(), data_.s.length);
+        }
+        return result;
+    }
+    StringAnsi GetTextAnsi() const
+    {
+        StringAnsi result;
+        if (IsString())
+        {
+            if (data_.f.flags & kInlineStrFlag)
+                result.Set(data_.ss.str, data_.ss.GetLength());
+            else
+                result.Set(GetStringPointer(), data_.s.length);
+        }
+        return result;
+    }
+
     //! Get the length of string.
     /*! Since rapidjson permits "\\u0000" in the json string, strlen(v.GetString()) may not equal to v.GetStringLength().
     */
@@ -2794,6 +2820,12 @@ public:
 
     //! Get the allocator of this document.
     Allocator& GetAllocator() {
+        RAPIDJSON_ASSERT(allocator_);
+        return *allocator_;
+    }
+
+    //! Get the allocator of this document.
+    Allocator& GetAllocator() const {
         RAPIDJSON_ASSERT(allocator_);
         return *allocator_;
     }

@@ -5,14 +5,23 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringView.h"
 
-// TODO: config RAPIDJSON_SSE2 for rapidjson
+// TODO: config RAPIDJSON_SSE42 for rapidjson
+#if defined(__x86_64) || defined(__x86_64__) || defined(__amd64__) || defined(_M_X64) || defined(_M_AMD64)
+//#define RAPIDJSON_SSE42
+#elif defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64)
+//#define RAPIDJSON_NEON
+#endif
+
 #define RAPIDJSON_ERROR_CHARTYPE Char
 #define RAPIDJSON_ERROR_STRING(x) TEXT(x)
 #define RAPIDJSON_ASSERT(x) ASSERT(x)
-#define RAPIDJSON_NEW(x) New<x>()
+#define RAPIDJSON_NEW(x) New<x>
 #define RAPIDJSON_DELETE(x) Delete(x)
 #define RAPIDJSON_NOMEMBERITERATORCLASS
-#include <ThirdParty/rapidjson/rapidjson.h>
+//#define RAPIDJSON_MALLOC(size) ::malloc(size)
+//#define RAPIDJSON_REALLOC(ptr, new_size) ::realloc(ptr, new_size)
+//#define RAPIDJSON_FREE(ptr) ::free(ptr)
+
 #include <ThirdParty/rapidjson/writer.h>
 #include <ThirdParty/rapidjson/prettywriter.h>
 #include <ThirdParty/rapidjson/document.h>

@@ -43,6 +43,9 @@ public:
     typedef typename Encoding::Ch Ch;
 
     GenericStringBuffer(Allocator* allocator = 0, size_t capacity = kDefaultCapacity) : stack_(allocator, capacity) {}
+#if false
+    GenericStringBuffer(const GenericStringBuffer& other) : stack_(other.stack_) {}
+#endif
 
 #if RAPIDJSON_HAS_CXX11_RVALUE_REFS
     GenericStringBuffer(GenericStringBuffer&& rhs) : stack_(std::move(rhs.stack_)) {}
@@ -57,6 +60,9 @@ public:
     void PutUnsafe(Ch c) { *stack_.template PushUnsafe<Ch>() = c; }
     void Flush() {}
 
+#if false
+    void Destroy() { stack_.Clear(); stack_.ShrinkToFit(); }
+#endif
     void Clear() { stack_.Clear(); }
     void ShrinkToFit() {
         // Push and pop a null terminator. This is safe.
@@ -89,7 +95,9 @@ public:
 
 private:
     // Prohibit copy constructor & assignment operator.
+#if false
     GenericStringBuffer(const GenericStringBuffer&);
+#endif
     GenericStringBuffer& operator=(const GenericStringBuffer&);
 };
 
