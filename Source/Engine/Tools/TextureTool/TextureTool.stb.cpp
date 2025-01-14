@@ -691,7 +691,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
                         {
                             for (int32 x = 0; x < 4; x++)
                             {
-                                Color color = TextureTool::SamplePoint(sampler, xBlock * 4 + x, yBlock * 4 + y, srcMip.Data.Get(), srcMip.RowPitch);
+                                Color color = sampler->SamplePoint(srcMip.Data.Get(), xBlock * 4 + x, yBlock * 4 + y, srcMip.RowPitch);
                                 if (isDstSRGB)
                                     color = Color::LinearToSrgb(color);
                                 srcBlock[y * 4 + x] = Color32(color);
@@ -786,7 +786,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
                         Color color = sampler->SamplePoint(srcMip.Data.Get(), x, y, srcMip.RowPitch);
 
                         // Store destination texture
-                        sampler->Store(dstMip.Data.Get(), x, y, dstMip.RowPitch, color);
+                        dstSampler->Store(dstMip.Data.Get(), x, y, dstMip.RowPitch, color);
                     }
                 }
             }
