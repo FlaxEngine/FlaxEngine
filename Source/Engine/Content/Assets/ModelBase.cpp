@@ -66,7 +66,7 @@ public:
         Array<MeshBase*> meshes;
         model->GetMeshes(meshes, _lodIndex);
         byte meshVersion = stream.ReadByte();
-        if (meshVersion < 2 || meshVersion > ModelBase::MeshVersion)
+        if (meshVersion < 2 || meshVersion > MODEL_MESH_VERSION)
         {
             LOG(Warning, "Unsupported mesh version {}", meshVersion);
             return true;
@@ -315,12 +315,12 @@ bool ModelBase::LoadHeader(ReadStream& stream, byte& headerVersion)
 {
     // Basic info
     stream.Read(headerVersion);
-    if (headerVersion < 2 || headerVersion > HeaderVersion)
+    if (headerVersion < 2 || headerVersion > MODEL_HEADER_VERSION)
     {
         LOG(Warning, "Unsupported model asset header version {}", headerVersion);
         return true;
     }
-    static_assert(HeaderVersion == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
     stream.Read(MinScreenSize);
 
     // Materials
@@ -344,7 +344,7 @@ bool ModelBase::LoadHeader(ReadStream& stream, byte& headerVersion)
 bool ModelBase::LoadMesh(MemoryReadStream& stream, byte meshVersion, MeshBase* mesh, MeshData* dataIfReadOnly)
 {
     // Load descriptor
-    static_assert(MeshVersion == 2, "Update code");
+    static_assert(MODEL_MESH_VERSION == 2, "Update code");
     uint32 vertices, triangles;
     stream.Read(vertices);
     stream.Read(triangles);
@@ -402,8 +402,8 @@ bool ModelBase::LoadMesh(MemoryReadStream& stream, byte meshVersion, MeshBase* m
 bool ModelBase::SaveHeader(WriteStream& stream)
 {
     // Basic info
-    static_assert(HeaderVersion == 2, "Update code");
-    stream.Write(HeaderVersion);
+    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    stream.Write(MODEL_HEADER_VERSION);
     stream.Write(MinScreenSize);
 
     // Materials
@@ -446,8 +446,8 @@ bool ModelBase::SaveHeader(WriteStream& stream, const ModelData& modelData)
     }
 
     // Basic info
-    static_assert(HeaderVersion == 2, "Update code");
-    stream.Write(HeaderVersion);
+    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
+    stream.Write(MODEL_HEADER_VERSION);
     stream.Write(modelData.MinScreenSize);
 
     // Materials
@@ -518,8 +518,8 @@ bool ModelBase::SaveLOD(WriteStream& stream, int32 lodIndex) const
         return true;
 
     // Create meshes data
-    static_assert(MeshVersion == 2, "Update code");
-    stream.Write(MeshVersion);
+    static_assert(MODEL_MESH_VERSION == 2, "Update code");
+    stream.Write(MODEL_MESH_VERSION);
     for (int32 meshIndex = 0; meshIndex < meshesCount; meshIndex++)
     {
         const auto& mesh = *meshes[meshIndex];
@@ -609,8 +609,8 @@ bool ModelBase::SaveLOD(WriteStream& stream, int32 lodIndex) const
 bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 lodIndex, bool saveMesh(WriteStream& stream, const ModelData& modelData, int32 lodIndex, int32 meshIndex))
 {
     // Create meshes data
-    static_assert(MeshVersion == 2, "Update code");
-    stream.Write(MeshVersion);
+    static_assert(MODEL_MESH_VERSION == 2, "Update code");
+    stream.Write(MODEL_MESH_VERSION);
     const auto& lod = modelData.LODs[lodIndex];
     for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
     {

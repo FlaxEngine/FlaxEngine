@@ -404,7 +404,7 @@ bool Model::SaveHeader(WriteStream& stream)
 {
     if (ModelBase::SaveHeader(stream))
         return true;
-    static_assert(HeaderVersion == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
     
     // LODs
     stream.Write((byte)LODs.Count());
@@ -431,7 +431,7 @@ bool Model::SaveHeader(WriteStream& stream, const ModelData& modelData)
 {
     if (ModelBase::SaveHeader(stream, modelData))
         return true;
-    static_assert(HeaderVersion == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
     
     // LODs
     stream.Write((byte)modelData.LODs.Count());

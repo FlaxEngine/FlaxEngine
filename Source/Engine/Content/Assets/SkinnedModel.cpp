@@ -533,7 +533,7 @@ bool SkinnedModel::LoadMesh(MemoryReadStream& stream, byte meshVersion, MeshBase
 {
     if (ModelBase::LoadMesh(stream, meshVersion, mesh, dataIfReadOnly))
         return true;
-    static_assert(MeshVersion == 2, "Update code");
+    static_assert(MODEL_MESH_VERSION == 2, "Update code");
     auto skinnedMesh = (SkinnedMesh*)mesh;
 
     // Blend Shapes
@@ -562,7 +562,7 @@ bool SkinnedModel::LoadHeader(ReadStream& stream, byte& headerVersion)
 {
     if (ModelBase::LoadHeader(stream, headerVersion))
         return true;
-    static_assert(HeaderVersion == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
 
     // LODs
     byte lods = stream.ReadByte();
@@ -665,7 +665,7 @@ bool SkinnedModel::SaveHeader(WriteStream& stream)
 {
     if (ModelBase::SaveHeader(stream))
         return true;
-    static_assert(HeaderVersion == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
 
     // LODs
     stream.Write((byte)LODs.Count());
@@ -727,7 +727,7 @@ bool SkinnedModel::SaveHeader(WriteStream& stream, const ModelData& modelData)
 {
     if (ModelBase::SaveHeader(stream, modelData))
         return true;
-    static_assert(HeaderVersion == 2, "Update code");
+    static_assert(MODEL_HEADER_VERSION == 2, "Update code");
 
     // LODs
     stream.Write((byte)modelData.LODs.Count());
@@ -788,7 +788,7 @@ bool SkinnedModel::SaveMesh(WriteStream& stream, const MeshBase* mesh) const
 {
     if (ModelBase::SaveMesh(stream, mesh))
         return true;
-    static_assert(MeshVersion == 2, "Update code");
+    static_assert(MODEL_MESH_VERSION == 2, "Update code");
     auto skinnedMesh = (const SkinnedMesh*)mesh;
 
     // Blend Shapes
@@ -802,7 +802,7 @@ bool SkinnedModel::SaveMesh(WriteStream& stream, const MeshBase* mesh) const
 
 bool SkinnedModel::SaveMesh(WriteStream& stream, const ModelData& modelData, int32 lodIndex, int32 meshIndex)
 {
-    static_assert(MeshVersion == 2, "Update code");
+    static_assert(MODEL_MESH_VERSION == 2, "Update code");
     auto& mesh = modelData.LODs[lodIndex].Meshes[meshIndex];
 
     // Blend Shapes

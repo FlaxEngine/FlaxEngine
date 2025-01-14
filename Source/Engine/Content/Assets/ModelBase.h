@@ -18,6 +18,9 @@
 // Chunk 15: SDF
 #define MODEL_LOD_TO_CHUNK_INDEX(lod) (lod + 1)
 
+#define MODEL_HEADER_VERSION (byte)2
+#define MODEL_MESH_VERSION (byte)2
+
 class MeshBase;
 class StreamModelLODTask;
 struct RenderContextBatch;
@@ -114,9 +117,6 @@ API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API ModelBase : public BinaryAsset
     friend StreamModelLODTask;
 
 protected:
-    static constexpr byte HeaderVersion = 2;
-    static constexpr byte MeshVersion = 2;
-
     bool _initialized = false;
     int32 _loadedLODs = 0;
     StreamModelLODTask* _streamingTask = nullptr;
