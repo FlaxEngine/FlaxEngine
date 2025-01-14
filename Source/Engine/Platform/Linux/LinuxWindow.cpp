@@ -886,7 +886,7 @@ void LinuxWindow::SetIcon(TextureData& icon)
 			const auto mipData = mip.Data.Get<Color32>();
 			const auto iconData = icon.GetData(0, 0);
 			const Int2 iconSize(icon.Width, icon.Height);
-			const auto sampler = PixelFormatSampler::GetSampler(icon.Format);
+			const auto sampler = PixelFormatSampler::Get(icon.Format);
 			for (int32 y = 0; y < icon.Height; y++)
 			{
 				for (int32 x = 0; x < icon.Width; x++)
@@ -930,7 +930,7 @@ void LinuxWindow::SetIcon(TextureData& icon)
 				const auto mipData = mip.Data.Get<Color32>();
 				const auto iconData = icon.GetData(0, 0);
 				const Int2 iconSize(icon.Width, icon.Height);
-				const auto sampler = PixelFormatSampler::GetSampler(img.Format);
+				const auto sampler = PixelFormatSampler::Get(img.Format);
 				for (int32 y = 0; y < newHeight; y++)
 				{
 					for (int32 x = 0; x < newWidth; x++)
