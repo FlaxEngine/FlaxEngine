@@ -8,6 +8,7 @@
 #include "Engine/Input/Keyboard.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Collections/Array.h"

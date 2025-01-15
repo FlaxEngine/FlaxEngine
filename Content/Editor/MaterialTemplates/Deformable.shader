@@ -297,7 +297,7 @@ VertexOutput VS_SplineModel(ModelInput input)
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
-	output.Geometry.TexCoord = input.TexCoord;
+	output.Geometry.TexCoord = input.TexCoord0;
 #if USE_VERTEX_COLOR
 	output.Geometry.VertexColor = input.Color;
 #endif
