@@ -368,23 +368,6 @@ void SDLWindow::HandleEvent(SDL_Event& event)
 
     switch (event.type)
     {
-    case SDL_EVENT_WINDOW_EXPOSED:
-    {
-        // Check if window is during resizing
-        if (_swapChain && !_isClosing)
-        {
-            // Redraw window backbuffer on DX11
-            switch (GPUDevice::Instance->GetRendererType())
-            {
-            case RendererType::DirectX10:
-            case RendererType::DirectX10_1:
-            case RendererType::DirectX11:
-                _swapChain->Present(false);
-                break;
-            }
-        }
-        return;
-    }
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
     {
         Close(ClosingReason::User);
