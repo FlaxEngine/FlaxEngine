@@ -334,7 +334,7 @@ bool MaterialInstance::Save(const StringView& path)
         // Save parameters
         Params.Save(&stream);
     }
-    SetChunk(0, ToSpan(stream.GetHandle(), stream.GetPosition()));
+    SetChunk(0, ToSpan(stream));
 
     // Setup asset data
     AssetInitData data;

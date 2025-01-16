@@ -1700,7 +1700,7 @@ ScriptingObject* VisualScriptingBinaryModule::VisualScriptObjectSpawn(const Scri
             // Special case for C# object property in Visual Script so duplicate the object instead of cloning the reference to it
             MemoryWriteStream writeStream;
             writeStream.Write(param);
-            MemoryReadStream readStream(writeStream.GetHandle(), writeStream.GetPosition());
+            MemoryReadStream readStream(ToSpan(writeStream));
             readStream.Read(param);
         }
     }
@@ -2231,7 +2231,7 @@ bool VisualScript::SaveSurface(const BytesContainer& data, const Metadata& meta)
         metaStream.Write(meta.BaseTypename, 31);
         metaStream.Write((int32)meta.Flags);
     }
-    GetOrCreateChunk(1)->Data.Copy(metaStream.GetHandle(), metaStream.GetPosition());
+    GetOrCreateChunk(1)->Data.Copy(ToSpan(metaStream));
 
     // Save
     AssetInitData assetData;

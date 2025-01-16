@@ -35,7 +35,7 @@ public:
             stream.WriteInt32(0); // Emitters Count
             stream.WriteInt32(0); // Tracks Count
         }
-        context.Data.Header.Chunks[0]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        context.Data.Header.Chunks[0]->Data.Copy(ToSpan(stream));
 
         return CreateAssetResult::Ok;
     }

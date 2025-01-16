@@ -187,7 +187,7 @@ bool GameplayGlobals::Save(const StringView& path)
     {
         chunk = GetOrCreateChunk(0);
     }
-    chunk->Data.Copy(stream.GetHandle(), stream.GetPosition());
+    chunk->Data.Copy(ToSpan(stream));
 
     // Save
     AssetInitData data;

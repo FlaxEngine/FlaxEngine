@@ -229,7 +229,7 @@ Asset::LoadResult Material::load()
             // Save layer to the chunk data
             MemoryWriteStream stream(512);
             layer->Graph.Save(&stream, false);
-            surfaceChunk->Data.Copy(stream.GetHandle(), stream.GetPosition());
+            surfaceChunk->Data.Copy(ToSpan(stream));
         }
         generator.AddLayer(layer);
 
@@ -542,7 +542,7 @@ BytesContainer Material::LoadSurface(bool createDefaultIfMissing)
         layer->Graph.Save(&stream, false);
 
         // Set output data
-        result.Copy(stream.GetHandle(), stream.GetPosition());
+        result.Copy(ToSpan(stream));
         return result;
     }
 

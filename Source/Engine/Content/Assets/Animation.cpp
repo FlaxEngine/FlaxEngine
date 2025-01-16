@@ -221,7 +221,7 @@ void Animation::LoadTimeline(BytesContainer& result) const
         }
     }
 
-    result.Copy(stream.GetHandle(), stream.GetPosition());
+    result.Copy(ToSpan(stream));
 }
 
 bool Animation::SaveTimeline(BytesContainer& data)
@@ -476,7 +476,7 @@ bool Animation::Save(const StringView& path)
         // Set data to the chunk asset
         auto chunk0 = GetOrCreateChunk(0);
         ASSERT(chunk0 != nullptr);
-        chunk0->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        chunk0->Data.Copy(ToSpan(stream));
     }
 
     // Save

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "ReadStream.h"
-#include "Engine/Platform/Platform.h"
 
 /// <summary>
 /// Direct memory reading stream  that uses a single allocation buffer.
@@ -47,7 +46,7 @@ public:
     /// <param name="data">Span with data to read from.</param>
     template<typename T>
     MemoryReadStream(const Span<T>& data)
-        : MemoryReadStream(data.Get(), data.Count() * sizeof(T))
+        : MemoryReadStream(data.Get(), data.Length() * sizeof(T))
     {
     }
 
@@ -83,13 +82,7 @@ public:
     /// </summary>
     /// <param name="bytes">The amount of bytes to read.</param>
     /// <returns>The pointer to the data in memory.</returns>
-    void* Move(uint32 bytes)
-    {
-        ASSERT(GetLength() - GetPosition() >= bytes);
-        const auto result = (void*)_position;
-        _position += bytes;
-        return result;
-    }
+    void* Move(uint32 bytes);
 
     /// <summary>
     /// Skips the data from the target buffer without reading from it. Moves the read pointer in the buffer forward.

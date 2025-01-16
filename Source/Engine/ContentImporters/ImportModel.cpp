@@ -554,7 +554,7 @@ CreateAssetResult ImportModel::CreateModel(CreateAssetContext& context, const Mo
         return CreateAssetResult::Error;
     if (context.AllocateChunk(0))
         return CreateAssetResult::CannotAllocateChunk;
-    context.Data.Header.Chunks[0]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+    context.Data.Header.Chunks[0]->Data.Copy(ToSpan(stream));
 
     // Pack model LODs data
     const auto lodCount = modelData.LODs.Count();
@@ -566,7 +566,7 @@ CreateAssetResult ImportModel::CreateModel(CreateAssetContext& context, const Mo
         const int32 chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
         if (context.AllocateChunk(chunkIndex))
             return CreateAssetResult::CannotAllocateChunk;
-        context.Data.Header.Chunks[chunkIndex]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        context.Data.Header.Chunks[chunkIndex]->Data.Copy(ToSpan(stream));
     }
 
     // Generate SDF
@@ -577,7 +577,7 @@ CreateAssetResult ImportModel::CreateModel(CreateAssetContext& context, const Mo
         {
             if (context.AllocateChunk(15))
                 return CreateAssetResult::CannotAllocateChunk;
-            context.Data.Header.Chunks[15]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+            context.Data.Header.Chunks[15]->Data.Copy(ToSpan(stream));
         }
     }
 
@@ -596,7 +596,7 @@ CreateAssetResult ImportModel::CreateSkinnedModel(CreateAssetContext& context, c
         return CreateAssetResult::Error;
     if (context.AllocateChunk(0))
         return CreateAssetResult::CannotAllocateChunk;
-    context.Data.Header.Chunks[0]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+    context.Data.Header.Chunks[0]->Data.Copy(ToSpan(stream));
 
     // Pack model LODs data
     const auto lodCount = modelData.LODs.Count();
@@ -608,7 +608,7 @@ CreateAssetResult ImportModel::CreateSkinnedModel(CreateAssetContext& context, c
         const int32 chunkIndex = MODEL_LOD_TO_CHUNK_INDEX(lodIndex);
         if (context.AllocateChunk(chunkIndex))
             return CreateAssetResult::CannotAllocateChunk;
-        context.Data.Header.Chunks[chunkIndex]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        context.Data.Header.Chunks[chunkIndex]->Data.Copy(ToSpan(stream));
     }
 
     return CreateAssetResult::Ok;
@@ -637,7 +637,7 @@ CreateAssetResult ImportModel::CreateAnimation(CreateAssetContext& context, cons
         return CreateAssetResult::Error;
     if (context.AllocateChunk(0))
         return CreateAssetResult::CannotAllocateChunk;
-    context.Data.Header.Chunks[0]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+    context.Data.Header.Chunks[0]->Data.Copy(ToSpan(stream));
 
     return CreateAssetResult::Ok;
 }

@@ -292,7 +292,7 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
             auto cacheChunk = parent->GetOrCreateChunk(cacheChunkIndex);
             if (cacheChunk == nullptr)
                 return true;
-            cacheChunk->Data.Copy(cacheStream.GetHandle(), cacheStream.GetPosition());
+            cacheChunk->Data.Copy(ToSpan(cacheStream));
 
 #if USE_EDITOR
             // Save chunks to the asset file
@@ -317,7 +317,7 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         else
         {
             // Use temporary generated data without caching (but read the includes from cache)
-            result.Data.Copy(cacheStream.GetHandle(), cacheStream.GetLength());
+            result.Data.Copy(ToSpan(cacheStream));
             IsValidShaderCache(result.Data, result.Includes);
             return false;
         }

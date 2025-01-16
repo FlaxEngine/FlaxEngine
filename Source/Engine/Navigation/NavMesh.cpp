@@ -56,7 +56,7 @@ void NavMesh::SaveNavMesh()
     MemoryWriteStream stream(streamInitialCapacity);
     Data.Save(stream);
     BytesContainer bytesContainer;
-    bytesContainer.Link(stream.GetHandle(), stream.GetPosition());
+    bytesContainer.Link(ToSpan(stream));
 
     // Save asset to file
     if (AssetsImportingManager::Create(AssetsImportingManager::CreateRawDataTag, assetPath, assetId, (void*)&bytesContainer))

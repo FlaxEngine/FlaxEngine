@@ -98,7 +98,7 @@ bool SkeletonMask::Save(const StringView& path)
         Platform::MemoryClear(tmpChunks, sizeof(tmpChunks));
         FlaxChunk chunk;
         tmpChunks[0] = &chunk;
-        tmpChunks[0]->Data.Link(stream.GetHandle(), stream.GetPosition());
+        tmpChunks[0]->Data.Link(ToSpan(stream));
 
         AssetInitData initData;
         initData.SerializedVersion = SerializedVersion;
@@ -109,7 +109,7 @@ bool SkeletonMask::Save(const StringView& path)
     else
     {
         auto chunk0 = GetChunk(0);
-        chunk0->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        chunk0->Data.Copy(ToSpan(stream));
 
         AssetInitData initData;
         initData.SerializedVersion = SerializedVersion;

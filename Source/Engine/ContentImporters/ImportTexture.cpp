@@ -178,7 +178,7 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
         }
         if (context.AllocateChunk(15))
             return CreateAssetResult::CannotAllocateChunk;
-        context.Data.Header.Chunks[15]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        context.Data.Header.Chunks[15]->Data.Copy(ToSpan(stream));
     }
 
     // Save mip maps
@@ -317,7 +317,7 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
         }
         if (context.AllocateChunk(15))
             return CreateAssetResult::CannotAllocateChunk;
-        context.Data.Header.Chunks[15]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        context.Data.Header.Chunks[15]->Data.Copy(ToSpan(stream));
     }
 
     // Save mip maps

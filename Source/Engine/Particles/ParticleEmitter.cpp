@@ -369,7 +369,7 @@ BytesContainer ParticleEmitter::LoadSurface(bool createDefaultIfMissing)
         graph.Save(&stream, false);
 
         // Set output data
-        result.Copy(stream.GetHandle(), stream.GetPosition());
+        result.Copy(ToSpan(stream));
     }
 
     return result;

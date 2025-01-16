@@ -279,7 +279,7 @@ bool Model::GenerateSDF(float resolutionScale, int32 lodIndex, bool cacheData, f
     if (cacheData)
     {
         auto chunk = GetOrCreateChunk(15);
-        chunk->Data.Copy(sdfStream.GetHandle(), sdfStream.GetPosition());
+        chunk->Data.Copy(ToSpan(sdfStream));
         chunk->Flags |= FlaxChunkFlags::KeepInMemory; // Prevent GC-ing chunk data so it will be properly saved
     }
 #endif
@@ -484,7 +484,7 @@ bool Model::Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk
                 sdfStream.WriteBytes(&mipData, sizeof(mipData));
                 sdfStream.WriteBytes(mip.Data.Get(), mip.Data.Length());
             }
-            sdfChunk->Data.Copy(sdfStream.GetHandle(), sdfStream.GetPosition());
+            sdfChunk->Data.Copy(ToSpan(sdfStream));
         }
     }
     else

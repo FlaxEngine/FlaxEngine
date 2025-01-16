@@ -3,6 +3,7 @@
 #pragma once
 
 #include "WriteStream.h"
+#include "Engine/Core/Types/Span.h"
 
 /// <summary>
 /// Direct memory writing stream  that uses a single allocation buffer.
@@ -115,3 +116,8 @@ public:
     void SetPosition(uint32 seek) override;
     void WriteBytes(const void* data, uint32 bytes) override;
 };
+
+inline Span<byte> ToSpan(MemoryWriteStream& stream)
+{
+    return Span<byte>(stream.GetHandle(), (int32)stream.GetPosition());
+}

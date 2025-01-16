@@ -43,7 +43,7 @@ public:
         // Copy to asset chunk
         if (context.AllocateChunk(0))
             return CreateAssetResult::CannotAllocateChunk;
-        context.Data.Header.Chunks[0]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        context.Data.Header.Chunks[0]->Data.Copy(ToSpan(stream));
 
         return CreateAssetResult::Ok;
     }

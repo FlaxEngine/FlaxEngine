@@ -26,7 +26,7 @@ public:
             const BehaviorTreeGraph graph;
             MemoryWriteStream stream(64);
             graph.Save(&stream, true);
-            context.Data.Header.Chunks[0]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+            context.Data.Header.Chunks[0]->Data.Copy(ToSpan(stream));
         }
 
         return CreateAssetResult::Ok;

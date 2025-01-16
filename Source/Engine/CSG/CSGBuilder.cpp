@@ -433,7 +433,7 @@ bool CSGBuilderImpl::generateRawDataAsset(Scene* scene, RawData& meshData, Guid&
 
     // Serialize
     BytesContainer bytesContainer;
-    bytesContainer.Link(stream.GetHandle(), stream.GetPosition());
+    bytesContainer.Link(ToSpan(stream));
     return AssetsImportingManager::Create(AssetsImportingManager::CreateRawDataTag, assetPath, assetId, (void*)&bytesContainer);
 }
 

@@ -123,7 +123,7 @@ bool AnimationGraph::InitAsAnimation(SkinnedModel* baseModel, Animation* anim, b
 
     // Load Graph data (with initialization)
     ScopeLock lock(Locker);
-    MemoryReadStream readStream(writeStream.GetHandle(), writeStream.GetPosition());
+    MemoryReadStream readStream(ToSpan(writeStream));
     return Graph.Load(&readStream, USE_EDITOR);
 }
 
@@ -140,7 +140,7 @@ BytesContainer AnimationGraph::LoadSurface()
         if (!Graph.Save(&stream, USE_EDITOR))
         {
             BytesContainer result;
-            result.Copy(stream.GetHandle(), stream.GetPosition());
+            result.Copy(ToSpan(stream));
             return result;
         }
     }

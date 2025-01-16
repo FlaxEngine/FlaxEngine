@@ -265,7 +265,7 @@ bool ModelBase::Save(bool withMeshDataFromGpu, const StringView& path)
             auto lodChunk = getChunk(MODEL_LOD_TO_CHUNK_INDEX(lodIndex));
             if (lodChunk == nullptr)
                 return true;
-            lodChunk->Data.Copy(meshesStream.GetHandle(), meshesStream.GetPosition());
+            lodChunk->Data.Copy(ToSpan(meshesStream));
         }
     }
     else if (!IsVirtual())
@@ -289,7 +289,7 @@ bool ModelBase::Save(bool withMeshDataFromGpu, const StringView& path)
             return true;
         auto headerChunk = getChunk(0);
         ASSERT(headerChunk != nullptr);
-        headerChunk->Data.Copy(headerStream.GetHandle(), headerStream.GetPosition());
+        headerChunk->Data.Copy(ToSpan(headerStream));
     }
 
     // Save file

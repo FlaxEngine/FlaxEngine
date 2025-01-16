@@ -37,7 +37,7 @@ public:
         graph.CreateDefault();
         MemoryWriteStream stream(512);
         graph.Save(&stream, false);
-        context.Data.Header.Chunks[SHADER_FILE_CHUNK_VISJECT_SURFACE]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        context.Data.Header.Chunks[SHADER_FILE_CHUNK_VISJECT_SURFACE]->Data.Copy(ToSpan(stream));
 
         return CreateAssetResult::Ok;
     }

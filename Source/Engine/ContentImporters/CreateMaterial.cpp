@@ -191,7 +191,7 @@ CreateAssetResult CreateMaterial::Create(CreateAssetContext& context)
 
         MemoryWriteStream stream(512);
         layer->Graph.Save(&stream, true);
-        context.Data.Header.Chunks[SHADER_FILE_CHUNK_VISJECT_SURFACE]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        context.Data.Header.Chunks[SHADER_FILE_CHUNK_VISJECT_SURFACE]->Data.Copy(ToSpan(stream));
         Delete(layer);
     }
     else
