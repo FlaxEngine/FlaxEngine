@@ -256,7 +256,7 @@ void PrefabInstanceData::SerializePrefabInstances(PrefabInstancesData& prefabIns
         }
 
         // Build acceleration table
-        instance.PrefabInstanceIdToDataIndex.EnsureCapacity(sceneObjects->Count() * 4);
+        instance.PrefabInstanceIdToDataIndex.EnsureCapacity(sceneObjects->Count());
         for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = sceneObjects.Value->At(i);
@@ -296,7 +296,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
         SceneQuery::GetAllSerializableSceneObjects(instance.TargetActor, *sceneObjects.Value);
 
         int32 existingObjectsCount = sceneObjects->Count();
-        modifier->IdsMapping.EnsureCapacity((existingObjectsCount + newPrefabObjectIds.Count()) * 4);
+        modifier->IdsMapping.EnsureCapacity((existingObjectsCount + newPrefabObjectIds.Count()));
 
         // Map prefab objects to the prefab instance objects
         for (int32 i = 0; i < existingObjectsCount; i++)
@@ -561,7 +561,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
 
     // Build cache data
     IdToDataLookupType prefabObjectIdToDiffData;
-    prefabObjectIdToDiffData.EnsureCapacity(defaultInstanceData.Size() * 3);
+    prefabObjectIdToDiffData.EnsureCapacity(defaultInstanceData.Size());
     for (int32 i = 0; i < sceneObjects->Count(); i++)
     {
         SceneObject* obj = sceneObjects.Value->At(i);
@@ -760,8 +760,8 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
     rapidjson_flax::Document diffDataDocument;
     Dictionary<Guid, int32> diffPrefabObjectIdToDataIndex; // Maps Prefab Object Id -> Actor Data index in diffDataDocument json array (for actors/scripts to modify prefab)
     Dictionary<Guid, int32> newPrefabInstanceIdToDataIndex; // Maps Prefab Instance Id -> Actor Data index in diffDataDocument json array (for new actors/scripts to add to prefab), maps to -1 for scripts
-    diffPrefabObjectIdToDataIndex.EnsureCapacity(ObjectsCount * 4);
-    newPrefabInstanceIdToDataIndex.EnsureCapacity(ObjectsCount * 4);
+    diffPrefabObjectIdToDataIndex.EnsureCapacity(ObjectsCount);
+    newPrefabInstanceIdToDataIndex.EnsureCapacity(ObjectsCount);
     {
         // Parse json to DOM document
         {
@@ -813,7 +813,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
 
         // Change object ids to match the prefab objects ids (helps with linking references in scripts)
         Dictionary<Guid, Guid> objectInstanceIdToPrefabObjectId;
-        objectInstanceIdToPrefabObjectId.EnsureCapacity(ObjectsCount * 3);
+        objectInstanceIdToPrefabObjectId.EnsureCapacity(ObjectsCount);
         i = 0;
         for (auto it = array.Begin(); it != array.End(); ++it, i++)
         {
@@ -843,7 +843,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
 
         // Generate new IDs for the added objects (objects in prefab has to have a unique Ids, other than the targetActor instance objects to prevent Id collisions)
-        newPrefabInstanceIdToPrefabObjectId.EnsureCapacity(newPrefabInstanceIdToDataIndex.Count() * 4);
+        newPrefabInstanceIdToPrefabObjectId.EnsureCapacity(newPrefabInstanceIdToDataIndex.Count());
         for (auto i = newPrefabInstanceIdToDataIndex.Begin(); i.IsNotEnd(); ++i)
         {
             const auto prefabObjectId = Guid::New();
@@ -1175,9 +1175,9 @@ bool Prefab::UpdateInternal(const Array<SceneObject*>& defaultInstanceObjects, r
         const int32 objectsCount = Data->GetArray().Size();
         if (objectsCount <= 0)
             return true;
-        ObjectsIds.EnsureCapacity(objectsCount * 2);
+        ObjectsIds.EnsureCapacity(objectsCount);
         NestedPrefabs.EnsureCapacity(objectsCount);
-        ObjectsDataCache.EnsureCapacity(objectsCount * 3);
+        ObjectsDataCache.EnsureCapacity(objectsCount);
         const auto& data = *Data;
         for (int32 objectIndex = 0; objectIndex < objectsCount; objectIndex++)
         {
@@ -1197,7 +1197,7 @@ bool Prefab::UpdateInternal(const Array<SceneObject*>& defaultInstanceObjects, r
             {
                 if (prefabId == _id)
                 {
-                    LOG(Error, "Circural reference in prefab.");
+                    LOG(Error, "Circular reference in prefab.");
                     continue;
                 }
 

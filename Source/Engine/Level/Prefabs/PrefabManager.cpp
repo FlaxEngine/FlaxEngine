@@ -111,8 +111,8 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Ac
     sceneObjects->Resize(dataCount);
     CollectionPoolCache<ISerializeModifier, Cache::ISerializeModifierClearCallback>::ScopeCache modifier = Cache::ISerializeModifier.Get();
     modifier->EngineBuild = prefab->DataEngineBuild;
-    modifier->IdsMapping.EnsureCapacity(prefab->ObjectsIds.Count() * 4);
     for (int32 i = 0; i < prefab->ObjectsIds.Count(); i++)
+    modifier->IdsMapping.EnsureCapacity(prefab->ObjectsIds.Count());
     {
         modifier->IdsMapping.Add(prefab->ObjectsIds[i], Guid::New());
     }
@@ -352,7 +352,7 @@ bool PrefabManager::CreatePrefab(Actor* targetActor, const StringView& outputPat
 
     // Randomize the objects ids (prevent overlapping of the prefab instance objects ids and the prefab objects ids)
     Dictionary<Guid, Guid> objectInstanceIdToPrefabObjectId;
-    objectInstanceIdToPrefabObjectId.EnsureCapacity(sceneObjects->Count() * 3);
+    objectInstanceIdToPrefabObjectId.EnsureCapacity(sceneObjects->Count());
     if (targetActor->HasParent())
     {
         // Unlink from parent actor

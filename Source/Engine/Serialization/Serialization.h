@@ -649,7 +649,7 @@ namespace Serialization
         {
             const auto& streamArray = stream.GetArray();
             const int32 size = streamArray.Size();
-            v.EnsureCapacity(size * 3);
+            v.EnsureCapacity(size);
             for (int32 i = 0; i < size; i++)
             {
                 auto& streamItem = streamArray[i];
@@ -666,7 +666,7 @@ namespace Serialization
         else if (stream.IsObject())
         {
             const int32 size = stream.MemberCount();
-            v.EnsureCapacity(size * 3);
+            v.EnsureCapacity(size);
             for (auto i = stream.MemberBegin(); i != stream.MemberEnd(); ++i)
             {
                 KeyType key;

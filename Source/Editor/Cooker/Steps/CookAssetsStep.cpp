@@ -158,7 +158,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
 
     LOG(Info, "Loading incremental build cooking cache (entries count: {0})", entriesCount);
     file->ReadBytes(&Settings, sizeof(Settings));
-    Entries.EnsureCapacity(Math::RoundUpToPowerOf2(static_cast<int32>(entriesCount * 3.0f)));
+    Entries.EnsureCapacity(entriesCount);
 
     Array<Pair<String, DateTime>> fileDependencies;
     for (int32 i = 0; i < entriesCount; i++)

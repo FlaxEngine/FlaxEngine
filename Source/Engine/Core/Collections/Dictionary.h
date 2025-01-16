@@ -407,7 +407,7 @@ public:
             Compact();
 
         // Ensure to have enough memory for the next item (in case of new element insertion)
-        EnsureCapacity((_elementsCount + 1) * DICTIONARY_DEFAULT_SLACK_SCALE + _deletedCount);
+        EnsureCapacity(_elementsCount + 1 + _deletedCount);
 
         // Find location of the item or place to insert it
         FindPositionResult pos;
@@ -592,10 +592,11 @@ public:
     /// <summary>
     /// Ensures that collection has given capacity.
     /// </summary>
-    /// <param name="minCapacity">The minimum required capacity.</param>
+    /// <param name="minCapacity">The minimum required items capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
     void EnsureCapacity(int32 minCapacity, const bool preserveContents = true)
     {
+        minCapacity *= DICTIONARY_DEFAULT_SLACK_SCALE;
         if (_size >= minCapacity)
             return;
         int32 capacity = _allocation.CalculateCapacityGrow(_size, minCapacity);
@@ -806,7 +807,7 @@ public:
     {
         // TODO: if both key and value are POD types then use raw memory copy for buckets
         Clear();
-        EnsureCapacity(other.Capacity(), false);
+        SetCapacity(other.Capacity(), false);
         for (Iterator i = other.Begin(); i != other.End(); ++i)
             Add(i);
     }
@@ -939,7 +940,7 @@ private:
             Compact();
 
         // Ensure to have enough memory for the next item (in case of new element insertion)
-        EnsureCapacity((_elementsCount + 1) * DICTIONARY_DEFAULT_SLACK_SCALE + _deletedCount);
+        EnsureCapacity(_elementsCount + 1 + _deletedCount);
 
         // Find location of the item or place to insert it
         FindPositionResult pos;

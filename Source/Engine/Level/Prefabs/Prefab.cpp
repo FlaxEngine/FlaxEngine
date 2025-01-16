@@ -128,8 +128,8 @@ Asset::LoadResult Prefab::loadAsset()
     }
 
     // Allocate memory for objects
-    ObjectsIds.EnsureCapacity(objectsCount * 2);
-    ObjectsDataCache.EnsureCapacity(objectsCount * 3);
+    ObjectsIds.EnsureCapacity(objectsCount);
+    ObjectsDataCache.EnsureCapacity(objectsCount);
 
     // Find serialized object ids (actors and scripts), they are used later for IDs mapping on prefab spawning via PrefabManager
     const auto& data = *Data;
@@ -157,7 +157,7 @@ Asset::LoadResult Prefab::loadAsset()
         {
             if (prefabId == _id)
             {
-                LOG(Error, "Circural reference in prefab.");
+                LOG(Error, "Circular reference in prefab.");
                 return LoadResult::InvalidData;
             }
 

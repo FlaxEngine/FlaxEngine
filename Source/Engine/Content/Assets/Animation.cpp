@@ -262,7 +262,7 @@ bool Animation::SaveTimeline(BytesContainer& data)
         Events.Clear();
         NestedAnims.Clear();
         Dictionary<int32, int32> animationChannelTrackIndexToChannelIndex;
-        animationChannelTrackIndexToChannelIndex.EnsureCapacity(tracksCount * 3);
+        animationChannelTrackIndexToChannelIndex.EnsureCapacity(tracksCount);
         for (int32 trackIndex = 0; trackIndex < tracksCount; trackIndex++)
         {
             const byte trackType = stream.ReadByte();

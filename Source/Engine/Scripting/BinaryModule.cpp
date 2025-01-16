@@ -931,7 +931,7 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
     const auto& classes = assembly->GetClasses();
 
     // Cache managed types information
-    ClassToTypeIndex.EnsureCapacity(Types.Count() * 4);
+    ClassToTypeIndex.EnsureCapacity(Types.Count());
     for (int32 typeIndex = 0; typeIndex < Types.Count(); typeIndex++)
     {
         ScriptingType& type = Types[typeIndex];
