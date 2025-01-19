@@ -328,8 +328,10 @@ namespace FlaxEditor.GUI.Input
         {
             if (button == MouseButton.Left && _isSliding)
             {
+#if !PLATFORM_SDL
                 // End sliding and return mouse to original location
                 RootWindow.MousePosition = _mouseClickedPosition;
+#endif
                 EndSliding();
                 return true;
             }
