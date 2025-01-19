@@ -68,7 +68,7 @@ bool SDLPlatform::Init()
     
     SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_WARP_MOTION, "0");
     SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_CURSOR_VISIBLE, "1"); // Needed for tracking mode
-    SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "1"); // Is this needed?
+    SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "0"); // 
 
     //SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "1"); // Disables raw mouse input
     SDL_SetHint(SDL_HINT_WINDOWS_RAW_KEYBOARD, "1");
