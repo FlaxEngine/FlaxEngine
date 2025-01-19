@@ -10,6 +10,12 @@
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
 #include "Engine/Input/Gamepad.h"
+#include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Screen.h"
+#if USE_EDITOR
+#include "Editor/Editor.h"
+#include "Editor/Managed/ManagedEditor.h"
+#endif
 
 #include <SDL3/SDL_events.h>
 
@@ -351,7 +357,9 @@ public:
 class SDLMouse : public Mouse
 {
 private:
-    Float2 oldPosition;
+    Float2 oldPosition = Float2::Zero;
+    Window* relativeModeWindow = nullptr;
+    const SDL_Rect* oldScreenRect = nullptr;
 public:
 
     /// <summary>
@@ -369,14 +377,24 @@ public:
     /// </summary>
     Float2 GetOldMousePosition() const
     {
-        return oldPosition;
+        ASSERT(relativeModeWindow != nullptr);
+        return relativeModeWindow->ClientToScreen(oldPosition);
     }
 
     // [Mouse]
-    void SetMousePosition(const Float2& newPosition) final override
+    void SetMousePosition(const Float2& screenPosition) final override
     {
-        SDL_WarpMouseGlobal(newPosition.X, newPosition.Y);
-        OnMouseMoved(newPosition);
+#if USE_EDITOR
+        auto window = Editor::Managed->GetGameWindow();
+        if (window == nullptr)
+            window = Engine::MainWindow;
+#else
+        auto window = Engine::MainWindow;
+#endif
+        Float2 position = window->ScreenToClient(screenPosition);
+        SDL_WarpMouseInWindow(static_cast<SDLWindow*>(window)->_window, position.X, position.Y);
+
+        OnMouseMoved(position);
     }
 
     void SetRelativeMode(bool relativeMode, Window* window) final override
@@ -384,19 +402,30 @@ public:
         if (relativeMode == _relativeMode)
             return;
 
-        auto sdlWindow = static_cast<SDLWindow*>(window)->GetSDLWindow();
+        auto windowHandle = static_cast<SDLWindow*>(window)->_window;
         if (relativeMode)
+        {
+            oldScreenRect = SDL_GetWindowMouseRect(windowHandle);
+            relativeModeWindow = window;
             SDL_GetMouseState(&oldPosition.X, &oldPosition.Y);
+            if (!SDL_CursorVisible())
+            {
+                // Trap the cursor in current location
+                SDL_Rect clipRect = { (int)oldPosition.X, (int)oldPosition.Y, 1, 1 };
+                SDL_SetWindowMouseRect(windowHandle, &clipRect);
+            }
+        }
+        else
+        {
+            SDL_SetWindowMouseRect(windowHandle, oldScreenRect);
+            SDL_WarpMouseInWindow(windowHandle, oldPosition.X, oldPosition.Y);
+            oldScreenRect = nullptr;
+            relativeModeWindow = nullptr;
+        }
 
         Mouse::SetRelativeMode(relativeMode, window);
-        if (!SDL_SetWindowRelativeMouseMode(sdlWindow, relativeMode))
+        if (!SDL_SetWindowRelativeMouseMode(windowHandle, relativeMode))
             LOG(Error, "Failed to set mouse relative mode: {0}", String(SDL_GetError()));
-
-        if (!relativeMode)
-        {
-            SDL_WarpMouseInWindow(sdlWindow, oldPosition.X, oldPosition.Y);
-            OnMouseMoved(oldPosition);
-        }
     }
 };
 
