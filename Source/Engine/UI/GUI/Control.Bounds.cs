@@ -50,7 +50,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the normalized position in the parent control that the upper left corner is anchored to (range 0-1).
         /// </summary>
-        [Serialize, HideInEditor]
+        [Serialize, HideInEditor, Limit(0, 1, 0.01f)]
         public Float2 AnchorMin
         {
             get => _anchorMin;
@@ -69,7 +69,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the normalized position in the parent control that the bottom right corner is anchored to (range 0-1).
         /// </summary>
-        [Serialize, HideInEditor]
+        [Serialize, HideInEditor, Limit(0, 1, 0.01f)]
         public Float2 AnchorMax
         {
             get => _anchorMax;
