@@ -40,7 +40,9 @@ PrefabManagerService PrefabManagerServiceInstance;
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab)
 {
     Actor* parent = Level::Scenes.Count() != 0 ? Level::Scenes.Get()[0] : nullptr;
-    return SpawnPrefab(prefab, Transform(Vector3::Minimum), parent, nullptr);
+    SpawnOptions options;
+    options.Parent = parent;
+    return SpawnPrefab(prefab, options);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Vector3& position)
@@ -69,20 +71,39 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform)
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, const Transform& transform)
 {
-    return SpawnPrefab(prefab, transform, parent, nullptr);
+    SpawnOptions options;
+    options.Transform = &transform;
+    options.Parent = parent;
+    return SpawnPrefab(prefab, options);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent)
 {
-    return SpawnPrefab(prefab, Transform(Vector3::Minimum), parent, nullptr);
+    SpawnOptions options;
+    options.Parent = parent;
+    return SpawnPrefab(prefab, options);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, Actor* parent, Dictionary<Guid, SceneObject*>* objectsCache, bool withSynchronization)
 {
-    return SpawnPrefab(prefab, Transform(Vector3::Minimum), parent, objectsCache, withSynchronization);
+    SpawnOptions options;
+    options.Parent = parent;
+    options.ObjectsCache = objectsCache;
+    options.WithSync = withSynchronization;
+    return SpawnPrefab(prefab, options);
 }
 
 Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Actor* parent, Dictionary<Guid, SceneObject*>* objectsCache, bool withSynchronization)
+{
+    SpawnOptions options;
+    options.Transform = &transform;
+    options.Parent = parent;
+    options.ObjectsCache = objectsCache;
+    options.WithSync = withSynchronization;
+    return SpawnPrefab(prefab, options);
+}
+
+Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const SpawnOptions& options)
 {
     PROFILE_CPU_NAMED("Prefab.Spawn");
     if (prefab == nullptr)
@@ -111,15 +132,27 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Ac
     sceneObjects->Resize(dataCount);
     CollectionPoolCache<ISerializeModifier, Cache::ISerializeModifierClearCallback>::ScopeCache modifier = Cache::ISerializeModifier.Get();
     modifier->EngineBuild = prefab->DataEngineBuild;
-    for (int32 i = 0; i < prefab->ObjectsIds.Count(); i++)
     modifier->IdsMapping.EnsureCapacity(prefab->ObjectsIds.Count());
+    if (options.IDs)
     {
-        modifier->IdsMapping.Add(prefab->ObjectsIds[i], Guid::New());
+        for (int32 i = 0; i < prefab->ObjectsIds.Count(); i++)
+        {
+            Guid prefabObjectId = prefab->ObjectsIds[i];
+            Guid id;
+            if (!options.IDs->TryGet(prefabObjectId, id))
+                id = Guid::New();
+            modifier->IdsMapping.Add(id, id);
+        }
     }
-    if (objectsCache)
+    else
     {
-        objectsCache->Clear();
-        objectsCache->SetCapacity(prefab->ObjectsDataCache.Capacity());
+        for (int32 i = 0; i < prefab->ObjectsIds.Count(); i++)
+            modifier->IdsMapping.Add(prefab->ObjectsIds[i], Guid::New());
+    }
+    if (options.ObjectsCache)
+    {
+        options.ObjectsCache->Clear();
+        options.ObjectsCache->SetCapacity(prefab->ObjectsDataCache.Count());
     }
     auto& data = *prefab->Data;
     SceneObjectsFactory::Context context(modifier.Value);
@@ -139,7 +172,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Ac
             SceneObjectsFactory::HandleObjectDeserializationError(stream);
     }
     SceneObjectsFactory::PrefabSyncData prefabSyncData(*sceneObjects.Value, data, modifier.Value);
-    if (withSynchronization)
+    if (options.WithSync)
     {
         // Synchronize new prefab instances (prefab may have new objects added so deserialized instances need to synchronize with it)
         // TODO: resave and force sync prefabs during game cooking so this step could be skipped in game
@@ -157,7 +190,7 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Ac
     Scripting::ObjectsLookupIdMapping.Set(prevIdMapping);
 
     // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
-    if (withSynchronization)
+    if (options.WithSync)
     {
         // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
         SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
@@ -190,13 +223,13 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Ac
     // Prepare parent linkage for prefab root actor
     if (root->_parent)
         root->_parent->Children.Remove(root);
-    root->_parent = parent;
-    if (parent)
-        parent->Children.Add(root);
+    root->_parent = options.Parent;
+    if (options.Parent)
+        options.Parent->Children.Add(root);
 
     // Move root to the right location
-    if (transform.Translation != Vector3::Minimum)
-        root->SetTransform(transform);
+    if (options.Transform)
+        root->SetTransform(*options.Transform);
 
     // Link actors hierarchy
     for (int32 i = 0; i < sceneObjects->Count(); i++)
@@ -268,24 +301,39 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const Transform& transform, Ac
     }
 
     // Link objects to prefab (only deserialized from prefab data)
-    for (int32 i = 0; i < dataCount; i++)
+    if (options.WithLink)
     {
-        auto& stream = data[i];
-        SceneObject* obj = sceneObjects->At(i);
-        if (!obj)
-            continue;
+        for (int32 i = 0; i < dataCount; i++)
+        {
+            auto& stream = data[i];
+            SceneObject* obj = sceneObjects->At(i);
+            if (!obj)
+                continue;
 
-        const Guid prefabObjectId = JsonTools::GetGuid(stream, "ID");
-        if (objectsCache)
-            objectsCache->Add(prefabObjectId, obj);
-        obj->LinkPrefab(prefabId, prefabObjectId);
+            const Guid prefabObjectId = JsonTools::GetGuid(stream, "ID");
+            if (options.ObjectsCache)
+                options.ObjectsCache->Add(prefabObjectId, obj);
+            obj->LinkPrefab(prefabId, prefabObjectId);
+        }
+    }
+    else if (options.ObjectsCache)
+    {
+        for (int32 i = 0; i < dataCount; i++)
+        {
+            auto& stream = data[i];
+            SceneObject* obj = sceneObjects->At(i);
+            if (!obj)
+                continue;
+            const Guid prefabObjectId = JsonTools::GetGuid(stream, "ID");
+            options.ObjectsCache->Add(prefabObjectId, obj);
+        }
     }
 
     // Update transformations
     root->OnTransformChanged();
 
     // Spawn if need to
-    if (parent && parent->IsDuringPlay())
+    if (options.Parent && options.Parent->IsDuringPlay())
     {
         // Begin play
         SceneBeginData beginData;

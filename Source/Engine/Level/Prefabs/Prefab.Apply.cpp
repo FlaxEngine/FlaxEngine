@@ -181,6 +181,18 @@ public:
         obj->SetParent(nullptr);
         obj->DeleteObject();
     }
+
+    static void SerializeObjects(const ActorsCache::SceneObjectsListType& sceneObjects, JsonWriter& writer)
+    {
+        PROFILE_CPU();
+        writer.StartArray();
+        for (int32 i = 0; i < sceneObjects.Count(); i++)
+        {
+            SceneObject* obj = sceneObjects[i];
+            writer.SceneObject(obj);
+        }
+        writer.EndArray();
+    }
 };
 
 void PrefabInstanceData::CollectPrefabInstances(PrefabInstancesData& prefabInstancesData, const Guid& prefabId, Actor* defaultInstance, Actor* targetActor)
@@ -235,14 +247,7 @@ void PrefabInstanceData::SerializePrefabInstances(PrefabInstancesData& prefabIns
         // Serialize
         tmpBuffer.Clear();
         CompactJsonWriter writerObj(tmpBuffer);
-        JsonWriter& writer = writerObj;
-        writer.StartArray();
-        for (int32 i = 0; i < sceneObjects->Count(); i++)
-        {
-            SceneObject* obj = sceneObjects.Value->At(i);
-            writer.SceneObject(obj);
-        }
-        writer.EndArray();
+        SerializeObjects(*sceneObjects.Value, writerObj);
 
         // Parse json to get DOM
         {
@@ -746,14 +751,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
     rapidjson_flax::StringBuffer dataBuffer;
     {
         CompactJsonWriter writerObj(dataBuffer);
-        JsonWriter& writer = writerObj;
-        writer.StartArray();
-        for (int32 i = 0; i < targetObjects->Count(); i++)
-        {
-            SceneObject* obj = targetObjects.Value->At(i);
-            writer.SceneObject(obj);
-        }
-        writer.EndArray();
+        PrefabInstanceData::SerializeObjects(*targetObjects.Value, writerObj);
     }
 
     // Parse json document and modify serialized data to extract only modified properties
@@ -1079,14 +1077,7 @@ bool Prefab::UpdateInternal(const Array<SceneObject*>& defaultInstanceObjects, r
     {
         tmpBuffer.Clear();
         PrettyJsonWriter writerObj(tmpBuffer);
-        JsonWriter& writer = writerObj;
-        writer.StartArray();
-        for (int32 i = 0; i < defaultInstanceObjects.Count(); i++)
-        {
-            auto obj = defaultInstanceObjects.At(i);
-            writer.SceneObject(obj);
-        }
-        writer.EndArray();
+        PrefabInstanceData::SerializeObjects(defaultInstanceObjects, writerObj);
     }
 
     LOG(Info, "Updating prefab data");
