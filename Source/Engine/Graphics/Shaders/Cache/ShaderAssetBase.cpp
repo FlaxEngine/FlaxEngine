@@ -8,6 +8,7 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #if COMPILE_WITH_SHADER_COMPILER
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #endif
 #include "Engine/ShadowsOfMordor/AtlasChartsPacker.h"
@@ -98,8 +99,11 @@ bool ShaderAssetBase::initBase(AssetInitData& initData)
 
 #if USE_EDITOR
 
-bool ShaderAssetBase::Save()
+bool ShaderAssetBase::SaveShaderAsset() const
 {
+    // Asset is being saved so no longer need to resave deprecated data in it
+    ContentDeprecated::Clear();
+
     auto parent = GetShaderAsset();
     AssetInitData data;
     data.SerializedVersion = ShaderStorage::Header::Version;
@@ -296,7 +300,7 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
 
 #if USE_EDITOR
             // Save chunks to the asset file
-            if (Save())
+            if (SaveShaderAsset())
             {
                 LOG(Warning, "Cannot save '{0}'.", parent->ToString());
                 return true;

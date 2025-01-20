@@ -33,18 +33,6 @@ public:
     /// </summary>
     API_FUNCTION() void ResetParameters();
 
-#if USE_EDITOR
-
-    /// <summary>
-    /// Saves this asset to the file. Supported only in Editor.
-    /// </summary>
-    /// <remarks>If you use saving with the GPU mesh data then the call has to be provided from the thread other than the main game thread.</remarks>
-    /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
-    /// <returns>True if cannot save data, otherwise false.</returns>
-    API_FUNCTION() bool Save(const StringView& path = StringView::Empty);
-
-#endif
-
 private:
     void OnBaseSet();
     void OnBaseUnset();
@@ -56,6 +44,7 @@ public:
     bool IsMaterialInstance() const override;
 #if USE_EDITOR
     void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
     // [IMaterial]

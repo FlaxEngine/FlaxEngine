@@ -285,9 +285,11 @@ DateTime JsonTools::GetDateTime(const Value& value)
 }
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
+#include "Engine/Content/Deprecated.h"
 CommonValue JsonTools::GetCommonValue(const Value& value)
 {
     // [Deprecated on 31.07.2020, expires on 31.07.2022]
+    MARK_CONTENT_DEPRECATED();
     CommonValue result;
     const auto typeMember = value.FindMember("Type");
     const auto valueMember = value.FindMember("Value");

@@ -888,10 +888,12 @@ Variant::Variant(const Span<byte>& v)
 }
 
 PRAGMA_DISABLE_DEPRECATION_WARNINGS
+#include "Engine/Content/Deprecated.h"
 Variant::Variant(const CommonValue& value)
     : Variant()
 {
     // [Deprecated on 31.07.2020, expires on 31.07.2022]
+    MARK_CONTENT_DEPRECATED();
     switch (value.Type)
     {
     case CommonType::Bool:

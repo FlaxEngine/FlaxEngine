@@ -2,6 +2,7 @@
 
 #include "VisualScript.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/Span.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
@@ -1303,6 +1304,23 @@ VisualScript::VisualScript(const SpawnParams& params, const AssetInfo* info)
 {
 }
 
+#if USE_EDITOR
+
+bool VisualScript::Save(const StringView& path)
+{
+    if (OnCheckSave(path))
+        return true;
+    ScopeLock lock(Locker);
+    MemoryWriteStream writeStream;
+    if (Graph.Save(&writeStream, true))
+        return true;
+    BytesContainer data;
+    data.Link(ToSpan(writeStream));
+    return SaveSurface(data, Meta);
+}
+
+#endif
+
 Asset::LoadResult VisualScript::load()
 {
     // Build Visual Script typename that is based on asset id
@@ -2184,7 +2202,7 @@ const VisualScript::Field* VisualScript::FindField(const StringAnsiView& name) c
     return nullptr;
 }
 
-BytesContainer VisualScript::LoadSurface()
+BytesContainer VisualScript::LoadSurface() const
 {
     if (WaitForLoaded())
         return BytesContainer();
@@ -2202,19 +2220,10 @@ BytesContainer VisualScript::LoadSurface()
 
 #if USE_EDITOR
 
-bool VisualScript::SaveSurface(const BytesContainer& data, const Metadata& meta)
+bool VisualScript::SaveSurface(const BytesContainer& data, const Metadata& meta) const
 {
-    // Wait for asset to be loaded or don't if last load failed
-    if (LastLoadFailed())
-    {
-        LOG(Warning, "Saving asset that failed to load.");
-    }
-    else if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave())
         return true;
-    }
-
     ScopeLock lock(Locker);
 
     // Release all chunks

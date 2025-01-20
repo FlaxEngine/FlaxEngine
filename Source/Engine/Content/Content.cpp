@@ -1156,19 +1156,14 @@ void Content::tryCallOnLoaded(Asset* asset)
 void Content::onAssetLoaded(Asset* asset)
 {
     // This is called by the asset on loading end
-    ASSERT(asset && asset->IsLoaded());
-
     ScopeLock locker(LoadedAssetsToInvokeLocker);
-
     LoadedAssetsToInvoke.Add(asset);
 }
 
 void Content::onAssetUnload(Asset* asset)
 {
     // This is called by the asset on unloading
-
     ScopeLock locker(AssetsLocker);
-
     Assets.Remove(asset->GetID());
     UnloadQueue.Remove(asset);
     LoadedAssetsToInvoke.Remove(asset);

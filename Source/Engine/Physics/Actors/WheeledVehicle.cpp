@@ -1,10 +1,11 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "WheeledVehicle.h"
-#include "Engine/Physics/Physics.h"
 #include "Engine/Level/Scene/Scene.h"
+#include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Physics/PhysicsScene.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/Serialization.h"
 #if USE_EDITOR
 #include "Engine/Level/Scene/SceneRendering.h"
@@ -476,7 +477,11 @@ void WheeledVehicle::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE_MEMBER(AntiRollBars, _antiRollBars);
 
     // [Deprecated on 13.06.2023, expires on 13.06.2025]
-    _fixInvalidForwardDir |= modifier->EngineBuild < 6341;
+    if (modifier->EngineBuild < 6341)
+    {
+        MARK_CONTENT_DEPRECATED();
+        _fixInvalidForwardDir = true;
+    }
 }
 
 void WheeledVehicle::OnColliderChanged(Collider* c)

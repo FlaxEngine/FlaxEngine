@@ -2,6 +2,7 @@
 
 #include "StaticModel.h"
 #include "Engine/Engine/Engine.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPUBufferDescription.h"
 #include "Engine/Graphics/GPUContext.h"
@@ -534,15 +535,22 @@ void StaticModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
         const auto member = stream.FindMember("HiddenShadow");
         if (member != stream.MemberEnd() && member->value.IsBool() && member->value.GetBool())
         {
+            MARK_CONTENT_DEPRECATED();
             DrawModes = DrawPass::Depth;
         }
     }
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)
+    {
+        MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSDF;
+    }
     // [Deprecated on 27.04.2022, expires on 27.04.2024]
     if (modifier->EngineBuild <= 6331)
+    {
+        MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
+    }
 
     {
         const auto member = stream.FindMember("RenderPasses");

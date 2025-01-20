@@ -18,18 +18,8 @@ RawDataAsset::RawDataAsset(const SpawnParams& params, const AssetInfo* info)
 
 bool RawDataAsset::Save(const StringView& path)
 {
-    // Validate state
-    if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave(path))
         return true;
-    }
-    if (IsVirtual() && path.IsEmpty())
-    {
-        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
-        return true;
-    }
-
     ScopeLock lock(Locker);
 
     bool result;

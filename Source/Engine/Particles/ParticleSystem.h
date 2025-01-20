@@ -156,17 +156,15 @@ public:
     /// Loads the serialized timeline data.
     /// </summary>
     /// <returns>The output surface data, or empty if failed to load.</returns>
-    API_FUNCTION() BytesContainer LoadTimeline();
+    API_FUNCTION() BytesContainer LoadTimeline() const;
 
 #if USE_EDITOR
-
     /// <summary>
     /// Saves the serialized timeline data to the asset.
     /// </summary>
     /// <param name="data">The timeline data container.</param>
     /// <returns><c>true</c> failed to save data; otherwise, <c>false</c>.</returns>
-    API_FUNCTION() bool SaveTimeline(BytesContainer& data);
-
+    API_FUNCTION() bool SaveTimeline(const BytesContainer& data) const;
 #endif
 
 public:
@@ -243,6 +241,7 @@ public:
     void InitAsVirtual() override;
 #if USE_EDITOR
     void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
 protected:

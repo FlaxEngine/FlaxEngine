@@ -51,17 +51,6 @@ public:
     /// <returns>The constant reference to the skeleton nodes mask.</returns>
     API_PROPERTY() const BitArray<>& GetNodesMask();
 
-#if USE_EDITOR
-
-    /// <summary>
-    /// Saves this asset to the file. Supported only in Editor.
-    /// </summary>
-    /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
-    /// <returns>True if cannot save data, otherwise false.</returns>
-    API_FUNCTION() bool Save(const StringView& path = StringView::Empty);
-
-#endif
-
 private:
     void OnSkeletonUnload();
 
@@ -73,6 +62,7 @@ public:
         BinaryAsset::GetReferences(assets, files);
         assets.Add(Skeleton.GetID());
     }
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
 protected:

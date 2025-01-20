@@ -226,16 +226,8 @@ void Animation::LoadTimeline(BytesContainer& result) const
 
 bool Animation::SaveTimeline(BytesContainer& data)
 {
-    // Wait for asset to be loaded or don't if last load failed (eg. by shader source compilation error)
-    if (LastLoadFailed())
-    {
-        LOG(Warning, "Saving asset that failed to load.");
-    }
-    else if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave())
         return true;
-    }
     ScopeLock lock(Locker);
     MemoryReadStream stream(data.Get(), data.Length());
 
@@ -401,17 +393,8 @@ bool Animation::SaveTimeline(BytesContainer& data)
 
 bool Animation::Save(const StringView& path)
 {
-    // Wait for asset to be loaded or don't if last load failed (eg. by shader source compilation error)
-    if (LastLoadFailed())
-    {
-        LOG(Warning, "Saving asset that failed to load.");
-    }
-    else if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave(path))
         return true;
-    }
-
     ScopeLock lock(Locker);
 
     // Serialize animation data to the stream

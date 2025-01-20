@@ -218,16 +218,8 @@ void ModelBase::GetLODData(int32 lodIndex, BytesContainer& data) const
 bool ModelBase::Save(bool withMeshDataFromGpu, const StringView& path)
 {
     // Validate state
-    if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave(path))
         return true;
-    }
-    if (IsVirtual() && path.IsEmpty())
-    {
-        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
-        return true;
-    }
     if (withMeshDataFromGpu && IsInMainThread())
     {
         LOG(Error, "To save model with GPU mesh buffers it needs to be called from the other thread (not the main thread).");
@@ -238,7 +230,6 @@ bool ModelBase::Save(bool withMeshDataFromGpu, const StringView& path)
         LOG(Error, "To save virtual model asset you need to specify 'withMeshDataFromGpu' (it has no other storage container to get data).");
         return true;
     }
-
     ScopeLock lock(Locker);
 
     // Use a temporary chunks for data storage for virtual assets
@@ -399,7 +390,7 @@ bool ModelBase::LoadMesh(MemoryReadStream& stream, byte meshVersion, MeshBase* m
 
 #if USE_EDITOR
 
-bool ModelBase::SaveHeader(WriteStream& stream)
+bool ModelBase::SaveHeader(WriteStream& stream) const
 {
     // Basic info
     static_assert(MODEL_HEADER_VERSION == 2, "Update code");
@@ -852,7 +843,7 @@ bool ModelBase::SaveMesh(WriteStream& stream, const MeshBase* mesh) const
     return false;
 }
 
-bool ModelBase::Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk)
+bool ModelBase::Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk) const
 {
     return false;
 }
@@ -874,6 +865,11 @@ void ModelBase::GetReferences(Array<Guid>& assets, Array<String>& files) const
 
     for (auto& slot : MaterialSlots)
         assets.Add(slot.Material.GetID());
+}
+
+bool ModelBase::Save(const StringView& path)
+{
+    return Save(false, path);
 }
 
 #endif

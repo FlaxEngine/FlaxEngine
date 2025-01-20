@@ -4,6 +4,9 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#if USE_EDITOR
+#include "Engine/Serialization/MemoryWriteStream.h"
+#endif
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Threading/Threading.h"
 
@@ -84,19 +87,10 @@ void AnimationGraphFunction::GetSignature(Array<StringView, FixedAllocation<32>>
     }
 }
 
-bool AnimationGraphFunction::SaveSurface(const BytesContainer& data)
+bool AnimationGraphFunction::SaveSurface(const BytesContainer& data) const
 {
-    // Wait for asset to be loaded or don't if last load failed
-    if (LastLoadFailed())
-    {
-        LOG(Warning, "Saving asset that failed to load.");
-    }
-    else if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave())
         return true;
-    }
-
     ScopeLock lock(Locker);
 
     // Set Visject Surface data
@@ -185,3 +179,24 @@ void AnimationGraphFunction::ProcessGraphForSignature(AnimGraphBase* graph, bool
         }
     }
 }
+
+#if USE_EDITOR
+
+bool AnimationGraphFunction::Save(const StringView& path)
+{
+    if (OnCheckSave(path))
+        return true;
+    ScopeLock lock(Locker);
+    AnimGraph graph(const_cast<AnimationGraphFunction*>(this), true);
+    MemoryReadStream readStream(GraphData.Get(), GraphData.Length());
+    if (graph.Load(&readStream, true))
+        return true;
+    MemoryWriteStream writeStream;
+    if (graph.Save(&writeStream, true))
+        return true;
+    BytesContainer data;
+    data.Link(ToSpan(writeStream));
+    return SaveSurface(data);
+}
+
+#endif

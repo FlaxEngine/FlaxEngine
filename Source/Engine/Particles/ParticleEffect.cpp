@@ -3,6 +3,7 @@
 #include "ParticleEffect.h"
 #include "Particles.h"
 #include "Engine/Core/Types/CommonValue.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
@@ -664,6 +665,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
         if (modifier->EngineBuild < 6197)
         {
             PRAGMA_DISABLE_DEPRECATION_WARNINGS
+            MARK_CONTENT_DEPRECATED();
             const auto& overrides = overridesMember->value;
             ASSERT(overrides.IsArray());
             _parametersOverrides.EnsureCapacity(_parametersOverrides.Count() + overrides.Size());

@@ -138,17 +138,10 @@ public:
     /// <summary>
     /// Saves the serialized timeline data to the asset as animation.
     /// </summary>
-    /// <remarks>The cannot be used by virtual assets.</remarks>
+    /// <remarks>This cannot be used by virtual assets.</remarks>
     /// <param name="data">The timeline data container.</param>
     /// <returns><c>true</c> failed to save data; otherwise, <c>false</c>.</returns>
     API_FUNCTION() bool SaveTimeline(BytesContainer& data);
-
-    /// <summary>
-    /// Saves the animation data to the asset. Supported only in Editor.
-    /// </summary>
-    /// <remarks>The cannot be used by virtual assets.</remarks>
-    /// <returns><c>true</c> failed to save data; otherwise, <c>false</c>.</returns>
-    bool Save(const StringView& path = StringView::Empty);
 #endif
 
 private:
@@ -161,6 +154,7 @@ public:
     // [BinaryAsset]
 #if USE_EDITOR
     void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
     uint64 GetMemoryUsage() const override;
     void OnScriptingDispose() override;

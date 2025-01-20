@@ -11,6 +11,7 @@
 #include "Engine/Core/Math/Matrix3x3.h"
 #include "Editor/Editor.h"
 #endif
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -1153,10 +1154,16 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
 
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)
+    {
+        MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSDF;
+    }
     // [Deprecated on 27.04.2022, expires on 27.04.2024]
     if (modifier->EngineBuild <= 6331)
+    {
+        MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
+    }
 }
 
 const Span<MaterialSlot> AnimatedModel::GetMaterialSlots() const

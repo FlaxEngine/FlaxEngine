@@ -400,7 +400,7 @@ bool Model::LoadHeader(ReadStream& stream, byte& headerVersion)
 
 #if USE_EDITOR
 
-bool Model::SaveHeader(WriteStream& stream)
+bool Model::SaveHeader(WriteStream& stream) const
 {
     if (ModelBase::SaveHeader(stream))
         return true;
@@ -457,7 +457,7 @@ bool Model::SaveHeader(WriteStream& stream, const ModelData& modelData)
     return false;
 }
 
-bool Model::Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk)
+bool Model::Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk) const
 {
     if (ModelBase::Save(withMeshDataFromGpu, getChunk))
         return true;

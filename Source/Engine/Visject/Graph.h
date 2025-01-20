@@ -7,6 +7,7 @@
 #include "VisjectMeta.h"
 #include "GraphNode.h"
 #include "GraphParameter.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/ReadStream.h"
 #include "Engine/Serialization/WriteStream.h"
 
@@ -183,6 +184,7 @@ public:
         if (version < 7000)
         {
             // [Deprecated on 31.07.2020, expires on 31.07.2022]
+            MARK_CONTENT_DEPRECATED();
 
             // Time saved
             int64 timeSaved;

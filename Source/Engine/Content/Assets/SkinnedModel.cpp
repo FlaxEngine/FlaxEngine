@@ -661,7 +661,7 @@ bool SkinnedModel::LoadHeader(ReadStream& stream, byte& headerVersion)
 
 #if USE_EDITOR
 
-bool SkinnedModel::SaveHeader(WriteStream& stream)
+bool SkinnedModel::SaveHeader(WriteStream& stream) const
 {
     if (ModelBase::SaveHeader(stream))
         return true;

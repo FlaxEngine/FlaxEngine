@@ -5,6 +5,7 @@
 #include "Engine/Core/Math/Vector4.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Engine/GameplayGlobals.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
@@ -652,6 +653,8 @@ bool MaterialParams::Load(ReadStream* stream)
         {
         case 1: // [Deprecated on 15.11.2019, expires on 15.11.2021]
         {
+            MARK_CONTENT_DEPRECATED();
+
             // Size of the collection
             uint16 paramsCount;
             stream->ReadUint16(&paramsCount);
@@ -727,6 +730,8 @@ bool MaterialParams::Load(ReadStream* stream)
         break;
         case 2: // [Deprecated on 15.11.2019, expires on 15.11.2021]
         {
+            MARK_CONTENT_DEPRECATED();
+
             // Size of the collection
             uint16 paramsCount;
             stream->ReadUint16(&paramsCount);

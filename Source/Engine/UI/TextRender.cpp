@@ -16,6 +16,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Core/Types/Variant.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
@@ -482,10 +483,16 @@ void TextRender::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
 
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)
+    {
+        MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSDF;
+    }
     // [Deprecated on 27.04.2022, expires on 27.04.2024]
     if (modifier->EngineBuild <= 6331)
+    {
+        MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
+    }
 
     _isDirty = true;
 }

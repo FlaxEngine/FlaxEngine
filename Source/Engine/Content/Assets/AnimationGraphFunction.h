@@ -53,12 +53,18 @@ public:
     /// </summary>
     /// <param name="data">The surface graph data.</param>
     /// <returns>True if cannot save it, otherwise false.</returns>
-    API_FUNCTION() bool SaveSurface(const BytesContainer& data);
+    API_FUNCTION() bool SaveSurface(const BytesContainer& data) const;
 
 #endif
 
 private:
     void ProcessGraphForSignature(AnimGraphBase* graph, bool canUseOutputs);
+
+public:
+    // [BinaryAsset]
+#if USE_EDITOR
+    bool Save(const StringView& path = StringView::Empty) override;
+#endif
 
 protected:
     // [BinaryAsset]

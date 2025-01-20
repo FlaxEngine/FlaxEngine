@@ -4,6 +4,7 @@
 #include "NavigationSettings.h"
 #include "NavMeshRuntime.h"
 #include "NavMeshBuilder.h"
+#include "NavMesh.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
@@ -14,8 +15,7 @@
 #include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/Scene.h"
 #endif
-#include "NavMesh.h"
-
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/Serialization.h"
@@ -255,6 +255,7 @@ void NavigationSettings::Deserialize(DeserializeStream& stream, ISerializeModifi
     else
     {
         // [Deprecated on 12.01.2021, expires on 12.01.2022]
+        MARK_CONTENT_DEPRECATED();
         float WalkableRadius = 34.0f;
         float WalkableHeight = 144.0f;
         float WalkableMaxClimb = 35.0f;

@@ -331,12 +331,12 @@ protected:
     virtual bool LoadMesh(class MemoryReadStream& stream, byte meshVersion, MeshBase* mesh, MeshData* dataIfReadOnly = nullptr);
     bool LoadHeader(ReadStream& stream, byte& headerVersion);
 #if USE_EDITOR
-    virtual bool SaveHeader(WriteStream& stream);
+    virtual bool SaveHeader(WriteStream& stream) const;
     static bool SaveHeader(WriteStream& stream, const class ModelData& modelData);
     bool SaveLOD(WriteStream& stream, int32 lodIndex) const;
     static bool SaveLOD(WriteStream& stream, const ModelData& modelData, int32 lodIndex, bool(saveMesh)(WriteStream& stream, const ModelData& modelData, int32 lodIndex, int32 meshIndex) = nullptr);
     virtual bool SaveMesh(WriteStream& stream, const MeshBase* mesh) const;
-    virtual bool Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk);
+    virtual bool Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk) const;
 #endif
 
 public:
@@ -344,6 +344,7 @@ public:
     void CancelStreaming() override;
 #if USE_EDITOR
     void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
     // [StreamableResource]

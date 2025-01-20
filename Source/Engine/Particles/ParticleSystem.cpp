@@ -4,6 +4,7 @@
 #include "ParticleEffect.h"
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Level/Level.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
@@ -46,7 +47,7 @@ void ParticleSystem::Init(ParticleEmitter* emitter, float duration, float fps)
     }
 }
 
-BytesContainer ParticleSystem::LoadTimeline()
+BytesContainer ParticleSystem::LoadTimeline() const
 {
     BytesContainer result;
     ScopeLock lock(Locker);
@@ -108,25 +109,16 @@ BytesContainer ParticleSystem::LoadTimeline()
     }
 
     // Set output data
-    result.Copy(stream.GetHandle(), stream.GetPosition());
+    result.Copy(ToSpan(stream));
     return result;
 }
 
 #if USE_EDITOR
 
-bool ParticleSystem::SaveTimeline(BytesContainer& data)
+bool ParticleSystem::SaveTimeline(const BytesContainer& data) const
 {
-    // Wait for asset to be loaded or don't if last load failed (eg. by shader source compilation error)
-    if (LastLoadFailed())
-    {
-        LOG(Warning, "Saving asset that failed to load.");
-    }
-    else if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave())
         return true;
-    }
-
     ScopeLock lock(Locker);
 
     // Release all chunks
@@ -197,6 +189,15 @@ void ParticleSystem::GetReferences(Array<Guid>& assets, Array<String>& files) co
     }
 }
 
+bool ParticleSystem::Save(const StringView& path)
+{
+    if (OnCheckSave(path))
+        return true;
+    ScopeLock lock(Locker);
+    BytesContainer data = LoadTimeline();
+    return SaveTimeline(data);
+}
+
 #endif
 
 Asset::LoadResult ParticleSystem::load()
@@ -225,6 +226,7 @@ Asset::LoadResult ParticleSystem::load()
     case 1:
     {
         // [Deprecated on 23.07.2019, expires on 27.04.2021]
+        MARK_CONTENT_DEPRECATED();
 
         // Load properties
         stream.ReadFloat(&FramesPerSecond);
@@ -299,6 +301,7 @@ Asset::LoadResult ParticleSystem::load()
     case 2:
     {
         // [Deprecated on 31.07.2020, expires on 31.07.2022]
+        MARK_CONTENT_DEPRECATED();
 
         // Load properties
         stream.ReadFloat(&FramesPerSecond);
@@ -372,6 +375,7 @@ Asset::LoadResult ParticleSystem::load()
     }
     PRAGMA_ENABLE_DEPRECATION_WARNINGS
     case 3: // [Deprecated on 03.09.2021 expires on 03.09.2023]
+        MARK_CONTENT_DEPRECATED();
     case 4:
     {
         // Load properties

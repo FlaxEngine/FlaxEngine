@@ -45,7 +45,7 @@ public:
     /// Tries to load surface graph from the asset.
     /// </summary>
     /// <returns>The surface data or empty if failed to load it.</returns>
-    API_FUNCTION() BytesContainer LoadSurface();
+    API_FUNCTION() BytesContainer LoadSurface() const;
 
 #if USE_EDITOR
 
@@ -54,7 +54,7 @@ public:
     /// </summary>
     /// <param name="data">Stream with graph data.</param>
     /// <returns>True if cannot save it, otherwise false.</returns>
-    API_FUNCTION() bool SaveSurface(BytesContainer& data);
+    API_FUNCTION() bool SaveSurface(const BytesContainer& data);
 
 private:
     void FindDependencies(AnimGraphBase* graph);
@@ -65,6 +65,7 @@ public:
     // [BinaryAsset]
 #if USE_EDITOR
     void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
 protected:

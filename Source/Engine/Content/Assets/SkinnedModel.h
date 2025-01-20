@@ -299,7 +299,7 @@ private:
     bool LoadHeader(ReadStream& stream, byte& headerVersion);
 #if USE_EDITOR
     friend class ImportModel;
-    bool SaveHeader(WriteStream& stream) override;
+    bool SaveHeader(WriteStream& stream) const override;
     static bool SaveHeader(WriteStream& stream, const ModelData& modelData);
     bool SaveMesh(WriteStream& stream, const MeshBase* mesh) const override;
     static bool SaveMesh(WriteStream& stream, const ModelData& modelData, int32 lodIndex, int32 meshIndex);

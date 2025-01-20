@@ -191,12 +191,13 @@ Asset::LoadResult Material::load()
         auto lock = Storage->Lock();
 
         // Prepare
+        const String name = ToString();
         MaterialGenerator generator;
         generator.Error.Bind(&OnGeneratorError);
         if (_shaderHeader.Material.GraphVersion != MATERIAL_GRAPH_VERSION)
-            LOG(Info, "Converting material \'{0}\', from version {1} to {2}...", ToString(), _shaderHeader.Material.GraphVersion, MATERIAL_GRAPH_VERSION);
+            LOG(Info, "Converting material \'{0}\', from version {1} to {2}...", name, _shaderHeader.Material.GraphVersion, MATERIAL_GRAPH_VERSION);
         else
-            LOG(Info, "Updating material \'{0}\'...", ToString());
+            LOG(Info, "Updating material \'{0}\'...", name);
 
         // Load or create material surface
         MaterialLayer* layer;
@@ -205,7 +206,7 @@ Asset::LoadResult Material::load()
             // Load graph
             if (LoadChunks(GET_CHUNK_FLAG(SHADER_FILE_CHUNK_VISJECT_SURFACE)))
             {
-                LOG(Warning, "Cannot load \'{0}\' data from chunk {1}.", ToString(), SHADER_FILE_CHUNK_VISJECT_SURFACE);
+                LOG(Warning, "Cannot load \'{0}\' data from chunk {1}.", name, SHADER_FILE_CHUNK_VISJECT_SURFACE);
                 return LoadResult::Failed;
             }
 
@@ -214,7 +215,19 @@ Asset::LoadResult Material::load()
             MemoryReadStream stream(surfaceChunk->Get(), surfaceChunk->Size());
 
             // Load layer
-            layer = MaterialLayer::Load(GetID(), &stream, _shaderHeader.Material.Info, ToString());
+            layer = MaterialLayer::Load(GetID(), &stream, _shaderHeader.Material.Info, name);
+            if (ContentDeprecated::Clear())
+            {
+                // If encountered any deprecated data when loading graph then serialize it
+                MaterialGraph graph;
+                MemoryWriteStream writeStream(1024);
+                stream.SetPosition(0);
+                if (!graph.Load(&stream, true) && !graph.Save(&writeStream, true))
+                {
+                    surfaceChunk->Data.Copy(ToSpan(writeStream));
+                    ContentDeprecated::Clear();
+                }
+            }
         }
         else
         {
@@ -245,7 +258,7 @@ Asset::LoadResult Material::load()
         MaterialInfo info = _shaderHeader.Material.Info;
         if (generator.Generate(source, info, materialParamsChunk->Data))
         {
-            LOG(Error, "Cannot generate material source code for \'{0}\'. Please see log for more info.", ToString());
+            LOG(Error, "Cannot generate material source code for \'{0}\'. Please see log for more info.", name);
             return LoadResult::Failed;
         }
 
@@ -282,9 +295,9 @@ Asset::LoadResult Material::load()
 
         // Save to file
 #if USE_EDITOR
-        if (Save())
+        if (SaveShaderAsset())
         {
-            LOG(Error, "Cannot save \'{0}\'", ToString());
+            LOG(Error, "Cannot save \'{0}\'", name);
             return LoadResult::Failed;
         }
 #endif
@@ -505,6 +518,25 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
 #endif
 }
 
+bool Material::Save(const StringView& path)
+{
+    if (OnCheckSave(path))
+        return true;
+    ScopeLock lock(Locker);
+    BytesContainer existingData = LoadSurface(true);
+    if (existingData.IsInvalid())
+        return true;
+    MaterialGraph graph;
+    MemoryWriteStream writeStream(existingData.Length());
+    MemoryReadStream readStream(existingData);
+    if (graph.Load(&readStream, true) || graph.Save(&writeStream, true))
+        return true;
+    BytesContainer data;
+    data.Link(ToSpan(writeStream));
+    auto materialInfo = _shaderHeader.Material.Info;
+    return SaveSurface(data, materialInfo);
+}
+
 #endif
 
 BytesContainer Material::LoadSurface(bool createDefaultIfMissing)
@@ -555,17 +587,8 @@ BytesContainer Material::LoadSurface(bool createDefaultIfMissing)
 
 bool Material::SaveSurface(const BytesContainer& data, const MaterialInfo& info)
 {
-    // Wait for asset to be loaded or don't if last load failed (eg. by shader source compilation error)
-    if (LastLoadFailed())
-    {
-        LOG(Warning, "Saving asset that failed to load.");
-    }
-    else if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave())
         return true;
-    }
-
     ScopeLock lock(Locker);
 
     // Release all chunks
@@ -582,7 +605,7 @@ bool Material::SaveSurface(const BytesContainer& data, const MaterialInfo& info)
     ASSERT(visjectSurfaceChunk != nullptr);
     visjectSurfaceChunk->Data.Copy(data);
 
-    if (Save())
+    if (SaveShaderAsset())
     {
         LOG(Error, "Cannot save \'{0}\'", ToString());
         return true;

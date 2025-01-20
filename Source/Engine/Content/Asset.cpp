@@ -2,6 +2,7 @@
 
 #include "Asset.h"
 #include "Content.h"
+#include "Deprecated.h"
 #include "SoftAssetReference.h"
 #include "Cache/AssetsCache.h"
 #include "Loading/Tasks/LoadAssetTask.h"
@@ -10,6 +11,26 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Threading/MainThreadTask.h"
+#include "Engine/Threading/ThreadLocal.h"
+
+#if USE_EDITOR
+
+ThreadLocal<bool> ContentDeprecatedFlags;
+
+void ContentDeprecated::Mark()
+{
+    ContentDeprecatedFlags.Set(true);
+}
+
+bool ContentDeprecated::Clear(bool newValue)
+{
+    auto& flag = ContentDeprecatedFlags.Get();
+    bool result = flag;
+    flag = newValue;
+    return result;
+}
+
+#endif
 
 AssetReferenceBase::~AssetReferenceBase()
 {
@@ -340,6 +361,7 @@ void Asset::Reload()
     // Virtual assets are memory-only so reloading them makes no sense
     if (IsVirtual())
         return;
+    PROFILE_CPU_NAMED("Asset.Reload");
 
     // It's better to call it from the main thread
     if (IsInMainThread())
@@ -476,6 +498,12 @@ Array<Guid> Asset::GetReferences() const
     return result;
 }
 
+bool Asset::Save(const StringView& path)
+{
+    LOG(Warning, "Asset type '{}' does not support saving.", GetTypeName());
+    return true;
+}
+
 #endif
 
 void Asset::DeleteManaged()
@@ -524,12 +552,21 @@ bool Asset::onLoad(LoadAssetTask* task)
 
     // Load asset
     LoadResult result;
+#if USE_EDITOR
+    auto& deprecatedFlag = ContentDeprecatedFlags.Get();
+    bool prevDeprecated = deprecatedFlag;
+    deprecatedFlag = false;
+#endif
     {
         PROFILE_CPU_ASSET(this);
         result = loadAsset();
     }
     const bool isLoaded = result == LoadResult::Ok;
     const bool failed = !isLoaded;
+#if USE_EDITOR
+    const bool isDeprecated = deprecatedFlag;
+    deprecatedFlag = prevDeprecated;
+#endif
     Platform::AtomicStore(&_loadState, (int64)(isLoaded ? LoadState::Loaded : LoadState::LoadFailed));
     if (failed)
     {
@@ -550,6 +587,19 @@ bool Asset::onLoad(LoadAssetTask* task)
         // This allows to reduce mutexes and locks (max one frame delay isn't hurting but provides more safety)
         Content::onAssetLoaded(this);
     }
+    
+#if USE_EDITOR
+    // Auto-save deprecated assets to get rid of data in an old format
+    if (isDeprecated && isLoaded)
+    {
+        PROFILE_CPU_NAMED("Asset.Save");
+        LOG(Info, "Resaving asset '{}' that uses deprecated data format", ToString());
+        if (Save())
+        {
+            LOG(Error, "Failed to resave asset '{}'", ToString());
+        }
+    }
+#endif
 
     return failed;
 }
@@ -595,3 +645,26 @@ void Asset::onUnload_MainThread()
         loadingTask->Cancel();
     }
 }
+
+#if USE_EDITOR
+
+bool Asset::OnCheckSave(const StringView& path) const
+{
+    if (LastLoadFailed())
+    {
+        LOG(Warning, "Saving asset that failed to load.");
+    }
+    if (WaitForLoaded())
+    {
+        LOG(Error, "Asset loading failed. Cannot save it.");
+        return true;
+    }
+    if (IsVirtual() && path.IsEmpty())
+    {
+        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
+        return true;
+    }
+    return false;
+}
+
+#endif

@@ -11,6 +11,7 @@
 #include "Engine/Renderer/ProbesRenderer.h"
 #include "Engine/Renderer/ReflectionsPass.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/ContentExporters/AssetExporters.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -255,6 +256,7 @@ void EnvironmentProbe::Deserialize(DeserializeStream& stream, ISerializeModifier
     // [Deprecated on 18.07.2022, expires on 18.07.2022]
     if (modifier->EngineBuild <= 6332)
     {
+        MARK_CONTENT_DEPRECATED();
         const auto member = stream.FindMember("AutoUpdate");
         if (member != stream.MemberEnd() && member->value.IsBool() && member->value.GetBool())
             UpdateMode = ProbeUpdateMode::WhenMoved;
