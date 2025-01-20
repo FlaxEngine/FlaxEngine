@@ -60,12 +60,12 @@ namespace FlaxEditor.Surface
                 if (toIsReference && !fromIsReference)
                 {
                     var toTypeName = to.TypeName;
-                    return from.TypeName == toTypeName.Substring(0, toTypeName.Length - 1);
+                    return !string.IsNullOrEmpty(toTypeName) && from.TypeName == toTypeName.Substring(0, toTypeName.Length - 1);
                 }
                 if (!toIsReference && fromIsReference)
                 {
                     var fromTypeName = from.TypeName;
-                    return to.TypeName == fromTypeName.Substring(0, fromTypeName.Length - 1);
+                    return !string.IsNullOrEmpty(fromTypeName) && to.TypeName == fromTypeName.Substring(0, fromTypeName.Length - 1);
                 }
 
                 // Implicit casting is supported for object reference to test whenever it is valid
