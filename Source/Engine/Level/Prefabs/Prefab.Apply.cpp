@@ -732,6 +732,50 @@ bool Prefab::ApplyAll(Actor* targetActor)
     return false;
 }
 
+bool Prefab::Resave()
+{
+    if (OnCheckSave())
+        return true;
+    PROFILE_CPU_NAMED("Prefab.Resave");
+    ScopeLock lock(Locker);
+
+    Dictionary<Guid, Guid> objectIds;
+    objectIds.EnsureCapacity(ObjectsIds.Count());
+    for (int32 i = 0; i < ObjectsIds.Count(); i++)
+    {
+        Guid id = ObjectsIds[i];
+        objectIds.Add(id, id);
+    }
+    PrefabManager::SpawnOptions options;
+    options.WithLink = false;
+    options.IDs = &objectIds;
+    auto instance = PrefabManager::SpawnPrefab(this, options);
+    if (instance == nullptr)
+        return true;
+
+    // Serialize to json data
+    CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
+    SceneQuery::GetAllSerializableSceneObjects(instance, *sceneObjects.Value);
+    rapidjson_flax::StringBuffer dataBuffer;
+    {
+        PrettyJsonWriter writerObj(dataBuffer);
+        PrefabInstanceData::SerializeObjects(*sceneObjects.Value, writerObj);
+    }
+
+    // Remove temporary objects
+    instance->DeleteObject();
+    instance = nullptr;
+
+    // Save to file
+    if (CreateJson::Create(GetPath(), dataBuffer, TypeName))
+    {
+        LOG(Warning, "Failed to serialize prefab data to the asset.");
+        return true;
+    }
+
+    return false;
+}
+
 bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPrefab, PrefabInstancesData& prefabInstancesData)
 {
     PROFILE_CPU_NAMED("Prefab.Apply");

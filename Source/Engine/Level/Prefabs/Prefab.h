@@ -10,7 +10,7 @@ class Actor;
 class SceneObject;
 
 /// <summary>
-/// Json asset that stores the collection of scene objects including actors and scripts. In general it can serve as any grouping of scene objects (for example a level) or be used as a form of a template instantiated and reused throughout the scene.
+/// Json asset that stores the collection of scene objects including actors and scripts. In general, it can serve as any grouping of scene objects (for example a level) or be used as a form of a template instantiated and reused throughout the scene.
 /// </summary>
 /// <seealso cref="JsonAssetBase" />
 API_CLASS(NoSpawn) class FLAXENGINE_API Prefab : public JsonAssetBase
@@ -74,11 +74,16 @@ public:
     /// <summary>
     /// Applies the difference from the prefab object instance, saves the changes and synchronizes them with the active instances of the prefab asset.
     /// </summary>
-    /// <remarks>
-    /// Applies all the changes from not only the given actor instance but all actors created within that prefab instance.
-    /// </remarks>
+    /// <remarks>Applies all the changes from not only the given actor instance but all actors created within that prefab instance.</remarks>
     /// <param name="targetActor">The root actor of spawned prefab instance to use as modified changes sources.</param>
+    /// <returns>True if failed, otherwise false.</returns>
     bool ApplyAll(Actor* targetActor);
+
+    /// <summary>
+    /// Resaves the prefab asset to the file by serializing default instance in the latest format and defaults.
+    /// </summary>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool Resave();
 #endif
 
 private:

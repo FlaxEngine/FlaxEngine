@@ -31,6 +31,9 @@ public:
         Dictionary<Guid, int32> ObjectToInstance;
         CriticalSection Locker;
         ThreadLocal<ISerializeModifier*> Modifiers;
+#if USE_EDITOR
+        HashSet<Prefab*> DeprecatedPrefabs;
+#endif
 
         Context(ISerializeModifier* modifier);
         ~Context();

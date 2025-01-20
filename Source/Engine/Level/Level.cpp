@@ -7,6 +7,7 @@
 #include "SceneObjectsFactory.h"
 #include "Scene/Scene.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/Core/Collections/CollectionPoolCache.h"
 #include "Engine/Core/ObjectsRemovalService.h"
@@ -827,7 +828,7 @@ bool Level::loadScene(JsonAsset* sceneAsset)
         return true;
     }
 
-    return loadScene(*sceneAsset->Data, sceneAsset->DataEngineBuild);
+    return loadScene(*sceneAsset->Data, sceneAsset->DataEngineBuild, nullptr, &sceneAsset->GetPath());
 }
 
 bool Level::loadScene(const BytesContainer& sceneData, Scene** outScene)
@@ -866,11 +867,14 @@ bool Level::loadScene(rapidjson_flax::Document& document, Scene** outScene)
     return loadScene(data->value, saveEngineBuild, outScene);
 }
 
-bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene)
+bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene, const String* assetPath)
 {
     PROFILE_CPU_NAMED("Level.LoadScene");
     if (outScene)
         *outScene = nullptr;
+#if USE_EDITOR
+    ContentDeprecated::Clear();
+#endif
     LOG(Info, "Loading scene...");
     Stopwatch stopwatch;
     _lastSceneLoadTime = DateTime::Now();
@@ -1002,6 +1006,9 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         if (context.Async)
         {
             ScenesLock.Unlock(); // Unlock scenes from Main Thread so Job Threads can use it to safely setup actors hierarchy (see Actor::Deserialize)
+#if USE_EDITOR
+            volatile int64 deprecated = 0;
+#endif
             JobSystem::Execute([&](int32 i)
             {
                 i++; // Start from 1. at index [0] was scene
@@ -1011,9 +1018,17 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
                     auto& idMapping = Scripting::ObjectsLookupIdMapping.Get();
                     idMapping = &context.GetModifier()->IdsMapping;
                     SceneObjectsFactory::Deserialize(context, obj, data[i]);
+#if USE_EDITOR
+                    if (ContentDeprecated::Clear())
+                        Platform::InterlockedIncrement(&deprecated);
+#endif
                     idMapping = nullptr;
                 }
             }, dataCount - 1);
+#if USE_EDITOR
+            if (deprecated != 0)
+                ContentDeprecated::Mark();
+#endif
             ScenesLock.Lock();
         }
         else
@@ -1103,6 +1118,28 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     LOG(Info, "Scene loaded in {0}ms", stopwatch.GetMilliseconds());
     if (outScene)
         *outScene = scene;
+
+#if USE_EDITOR
+    // Resave assets that use deprecated data format
+    for (auto& e : context.DeprecatedPrefabs)
+    {
+        AssetReference<Prefab> prefab = e.Item;
+        LOG(Info, "Resaving asset '{}' that uses deprecated data format", prefab->GetPath());
+        if (prefab->Resave())
+        {
+            LOG(Error, "Failed to resave asset '{}'", prefab->GetPath());
+        }
+    }
+    if (ContentDeprecated::Clear() && assetPath)
+    {
+        LOG(Info, "Resaving asset '{}' that uses deprecated data format", *assetPath);
+        if (saveScene(scene, *assetPath))
+        {
+            LOG(Error, "Failed to resave asset '{}'", *assetPath);
+        }
+    }
+#endif
+
     return false;
 }
 
@@ -1125,6 +1162,7 @@ bool LevelImpl::saveScene(Scene* scene)
 
 bool LevelImpl::saveScene(Scene* scene, const String& path)
 {
+    PROFILE_CPU_NAMED("Level.SaveScene");
     ASSERT(scene && EnumHasNoneFlags(scene->Flags, ObjectFlags::WasMarkedToDelete));
     auto sceneId = scene->GetID();
 
