@@ -145,15 +145,12 @@ private:
     /// Renamed UeeHDRProbes into UseHDRProbes
     /// [Deprecated on 12.10.2022, expires on 12.10.2024]
     /// </summary>
-    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") bool GetUeeHDRProbes() const
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") bool GetUeeHDRProbes() const
     {
         return UseHDRProbes;
     }
 
-    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") void SetUeeHDRProbes(bool value)
-    {
-        UseHDRProbes = value;
-    }
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") void SetUeeHDRProbes(bool value);
 
 public:
     /// <summary>

@@ -5,7 +5,6 @@
 #include "Keyboard.h"
 #include "Mouse.h"
 #include "Gamepad.h"
-#include "FlaxEngine.Gen.h"
 #include "Engine/Platform/Window.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"

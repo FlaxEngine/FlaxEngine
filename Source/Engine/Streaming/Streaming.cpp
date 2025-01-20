@@ -60,11 +60,6 @@ void StreamingSettings::Apply()
     TextureGroupSamplers.Resize(TextureGroups.Count(), false);
 }
 
-void StreamingSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    DESERIALIZE(TextureGroups);
-}
-
 StreamableResource::StreamableResource(StreamingGroup* group)
     : _group(group)
     , _isDynamic(true)

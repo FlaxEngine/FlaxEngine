@@ -80,6 +80,17 @@ void LocalizationSettings::Apply()
     Instance.OnLocalizationChanged();
 }
 
+#if USE_EDITOR
+
+void LocalizationSettings::Serialize(SerializeStream& stream, const void* otherObj)
+{
+    SERIALIZE_GET_OTHER_OBJ(LocalizationSettings);
+    SERIALIZE(LocalizedStringTables);
+    SERIALIZE(DefaultFallbackLanguage);
+}
+
+#endif
+
 void LocalizationSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     DESERIALIZE(LocalizedStringTables);

@@ -104,5 +104,8 @@ public:
 
     // [SettingsBase]
     void Apply() override;
+#if USE_EDITOR
+    void Serialize(SerializeStream& stream, const void* otherObj) override;
+#endif
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override;
 };

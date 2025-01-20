@@ -235,6 +235,28 @@ void NavigationSettings::Apply()
 #endif
 }
 
+#if USE_EDITOR
+
+void NavigationSettings::Serialize(SerializeStream& stream, const void* otherObj)
+{
+    SERIALIZE_GET_OTHER_OBJ(NavigationSettings);
+    SERIALIZE(AutoAddMissingNavMeshes);
+    SERIALIZE(AutoRemoveMissingNavMeshes);
+    SERIALIZE(CellHeight);
+    SERIALIZE(CellSize);
+    SERIALIZE(TileSize);
+    SERIALIZE(MinRegionArea);
+    SERIALIZE(MergeRegionArea);
+    SERIALIZE(MaxEdgeLen);
+    SERIALIZE(MaxEdgeError);
+    SERIALIZE(DetailSamplingDist);
+    SERIALIZE(MaxDetailSamplingError);
+    SERIALIZE(NavMeshes);
+    SERIALIZE(NavAreas);
+}
+
+#endif
+
 void NavigationSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     DESERIALIZE(AutoAddMissingNavMeshes);

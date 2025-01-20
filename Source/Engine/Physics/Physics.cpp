@@ -49,6 +49,36 @@ PhysicsSettings::PhysicsSettings()
         LayerMasks[i] = MAX_uint32;
 }
 
+#if USE_EDITOR
+
+void PhysicsSettings::Serialize(SerializeStream& stream, const void* otherObj)
+{
+    SERIALIZE_GET_OTHER_OBJ(PhysicsSettings);
+
+    SERIALIZE(DefaultGravity);
+    SERIALIZE(TriangleMeshTriangleMinAreaThreshold);
+    SERIALIZE(BounceThresholdVelocity);
+    SERIALIZE(FrictionCombineMode);
+    SERIALIZE(RestitutionCombineMode);
+    SERIALIZE(DisableCCD);
+    SERIALIZE(BroadPhaseType);
+    SERIALIZE(SolverType);
+    SERIALIZE(MaxDeltaTime);
+    SERIALIZE(EnableSubstepping);
+    SERIALIZE(SubstepDeltaTime);
+    SERIALIZE(MaxSubsteps);
+    SERIALIZE(QueriesHitTriggers);
+    SERIALIZE(SupportCookingAtRuntime);
+
+    stream.JKEY("LayerMasks");
+    stream.StartArray();
+    for (uint32 e : LayerMasks)
+        stream.Uint(e);
+    stream.EndArray();
+}
+
+#endif
+
 void PhysicsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     DESERIALIZE(DefaultGravity);
@@ -71,7 +101,7 @@ void PhysicsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier*
     {
         auto& layersArray = layers->value;
         ASSERT(layersArray.IsArray());
-        for (uint32 i = 0; i < layersArray.Size() && i < 32; i++)
+        for (uint32 i = 0; i < layersArray.Size() && i < ARRAY_COUNT(LayerMasks); i++)
         {
             LayerMasks[i] = layersArray[i].GetUint();
         }
