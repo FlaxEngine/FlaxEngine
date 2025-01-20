@@ -271,6 +271,7 @@ namespace FlaxEditor.Windows.Assets
                                 foreach (var e in slotElements)
                                     group.Label($"      {e.Type}, {e.Format} ({PixelFormatExtensions.SizeInBytes(e.Format)} bytes), offset {e.Offset}").Label.Height = height;
                             }
+                            group.Label($"{vertexLayout.Stride} bytes per-vertex");
                         }
                     }
                     proxy.OnGeneral(layout);
