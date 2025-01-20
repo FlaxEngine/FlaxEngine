@@ -311,6 +311,11 @@ void MeshBase::SetBounds(const BoundingBox& box)
     _box = box;
     BoundingSphere::FromBox(box, _sphere);
     _hasBounds = true;
+    if (_model && _model->IsLoaded())
+    {
+        // Send event (actors using this model can update bounds, etc.)
+        _model->onLoaded();
+    }
 }
 
 void MeshBase::SetBounds(const BoundingBox& box, const BoundingSphere& sphere)

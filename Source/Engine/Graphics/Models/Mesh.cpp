@@ -55,7 +55,7 @@ namespace
         
         // Index Buffer
         {
-            if (accessor.AllocateBuffer(MeshBufferType::Index, triangleCount, indexFormat))
+            if (accessor.AllocateBuffer(MeshBufferType::Index, triangleCount * 3, indexFormat))
                 return true;
             auto indexStream = accessor.Index();
             ASSERT(indexStream.IsLinear(indexFormat));
