@@ -376,7 +376,6 @@ public:
     void SetMousePosition(const Float2& newPosition) final override
     {
         SDL_WarpMouseGlobal(newPosition.X, newPosition.Y);
-        
         OnMouseMoved(newPosition);
     }
 
@@ -385,15 +384,19 @@ public:
         if (relativeMode == _relativeMode)
             return;
 
+        auto sdlWindow = static_cast<SDLWindow*>(window)->GetSDLWindow();
         if (relativeMode)
-            SDL_GetGlobalMouseState(&oldPosition.X, &oldPosition.Y);
+            SDL_GetMouseState(&oldPosition.X, &oldPosition.Y);
 
         Mouse::SetRelativeMode(relativeMode, window);
-        if (!SDL_SetWindowRelativeMouseMode(static_cast<SDLWindow*>(window)->_window, relativeMode))
+        if (!SDL_SetWindowRelativeMouseMode(sdlWindow, relativeMode))
             LOG(Error, "Failed to set mouse relative mode: {0}", String(SDL_GetError()));
 
         if (!relativeMode)
-            SetMousePosition(oldPosition);
+        {
+            SDL_WarpMouseInWindow(sdlWindow, oldPosition.X, oldPosition.Y);
+            OnMouseMoved(oldPosition);
+        }
     }
 };
 
@@ -487,6 +490,17 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
         }
         return true;
     }
+    /*case SDL_EVENT_DROP_POSITION:
+    {
+        // We are not receiving mouse motion events during drag-and-drop
+        auto dpiScale = window->GetDpiScale();
+        //const Float2 mousePos(event.drop.x * dpiScale, event.drop.y * dpiScale);// = window->ClientToScreen({ event.drop.x * dpiScale, event.drop.y * dpiScale});
+        Float2 mousePos = window->ClientToScreen({ event.drop.x * dpiScale, event.drop.y * dpiScale});
+        if (window != Engine::MainWindow)
+            mousePos = window->GetPosition() - mousePos;
+        Input::Mouse->OnMouseMove(mousePos, window);
+        return true;
+    }*/
     case SDL_EVENT_WINDOW_MOUSE_LEAVE:
     {
         Input::Mouse->OnMouseLeave(window);
