@@ -429,11 +429,23 @@ public:
 
 public:
     /// <summary>
-    /// Starts drag and drop operation
+    /// Starts a drag and drop operation.
     /// </summary>
     /// <param name="data">The data.</param>
     /// <returns>The result.</returns>
     API_FUNCTION() virtual DragDropEffect DoDragDrop(const StringView& data)
+    {
+        return DragDropEffect::None;
+    }
+
+    /// <summary>
+    /// Starts a window drag and drop operation.
+    /// </summary>
+    /// <param name="data">The data.</param>
+    /// <param name="offset">The offset for positioning the window from cursor.</param>
+    /// <param name="dragSourceWindow">The window where dragging started.</param>
+    /// <returns>The result.</returns>
+    API_FUNCTION() virtual DragDropEffect DoDragDrop(const StringView& data, const Float2& offset, Window* dragSourceWindow)
     {
         return DragDropEffect::None;
     }

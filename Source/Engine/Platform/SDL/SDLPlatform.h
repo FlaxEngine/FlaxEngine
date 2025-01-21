@@ -7,21 +7,18 @@
 #include "Engine/Platform/Base/Enums.h"
 #if PLATFORM_WINDOWS
 #include "Engine/Platform/Windows/WindowsPlatform.h"
+typedef struct tagMSG MSG;
 #elif PLATFORM_LINUX
 #include "Engine/Platform/Linux/LinuxPlatform.h"
+union _XEvent;
 #else
 #endif
 
 class SDLWindow;
 union SDL_Event;
-#if PLATFORM_WINDOWS
-typedef struct tagMSG MSG;
-#elif PLATFORM_LINUX
-union _XEvent;
-#endif
 
 /// <summary>
-/// The Windows platform implementation and application management utilities.
+/// The SDL platform implementation and application management utilities.
 /// </summary>
 class FLAXENGINE_API SDLPlatform
 #if PLATFORM_WINDOWS
@@ -38,25 +35,25 @@ class FLAXENGINE_API SDLPlatform
     friend SDLWindow;
 
 private:
-    static uint32 DraggedWindowId;
-
-private:
-    static bool InitPlatform();
+    static bool InitInternal();
 #if PLATFORM_LINUX
-    static bool InitPlatformX11(void* display);
+    static bool InitX11(void* display);
 #endif
     static bool HandleEvent(SDL_Event& event);
 #if PLATFORM_WINDOWS
-    static bool __cdecl EventMessageHook(void* userdata, MSG* msg);
+    static bool EventMessageHook(void* userdata, MSG* msg);
+    static bool SDLPlatform::EventFilterCallback(void* userdata, SDL_Event* event);
 #elif PLATFORM_LINUX
-    static bool __cdecl X11EventHook(void *userdata, _XEvent *xevent);
+    static bool X11EventHook(void* userdata, _XEvent* xevent);
 #endif
+    static void PreHandleEvents();
+    static void PostHandleEvents();
 
 public:
-    static bool CheckWindowDragging(Window* window, WindowHitCodes hit);
 #if PLATFORM_LINUX
     static void* GetXDisplay();
 #endif
+    static bool UsesWindows();
     static bool UsesWayland();
     static bool UsesX11();
 
