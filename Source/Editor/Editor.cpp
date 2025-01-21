@@ -79,10 +79,6 @@ bool Editor::CheckProjectUpgrade()
             Delete(file);
         }
     }
-    else
-    {
-        LOG(Warning, "Missing version cache file");
-    }
 
     // Check if project is in the old, deprecated layout
     if (EditorImpl::IsOldProjectXmlFormat)
