@@ -6,14 +6,16 @@
 
 #if USE_EDITOR
 
-// Utility for marking content as deprecated when loading it in Editor. Used to auto-upgrade (by resaving) data during development in editor or during game cooking.
-class FLAXENGINE_API ContentDeprecated
+// Editor-only utility for marking content as deprecated during load. Used to auto-upgrade (by resaving) data during development in editor or during game cooking.
+API_CLASS(Static) class FLAXENGINE_API ContentDeprecated
 {
+    DECLARE_SCRIPTING_TYPE_MINIMAL(ContentDeprecated);
+
 public:
     // Marks content as deprecated (for the current thread).
-    static void Mark();
+    API_FUNCTION() static void Mark();
     // Reads and clears deprecation flag (for the current thread).
-    static bool Clear(bool newValue = false);
+    API_FUNCTION() static bool Clear(bool newValue = false);
 };
 
 // Marks content as deprecated (for the current thread).
