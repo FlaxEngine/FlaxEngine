@@ -138,36 +138,6 @@ Asset::LoadResult Material::load()
     }
 #undef IS_GPU_NOT_READY
 
-    // Special case for Null renderer
-    if (IsNullRenderer())
-    {
-        // Hack loading
-        MemoryReadStream shaderCacheStream(nullptr, 0);
-        _materialShader = MaterialShader::CreateDummy(shaderCacheStream, _shaderHeader.Material.Info);
-        if (_materialShader == nullptr)
-        {
-            LOG(Warning, "Cannot load material.");
-            return LoadResult::Failed;
-        }
-        materialParamsChunk = GetChunk(SHADER_FILE_CHUNK_MATERIAL_PARAMS);
-        if (materialParamsChunk != nullptr && materialParamsChunk->IsLoaded())
-        {
-            MemoryReadStream materialParamsStream(materialParamsChunk->Get(), materialParamsChunk->Size());
-            if (Params.Load(&materialParamsStream))
-            {
-                LOG(Warning, "Cannot load material parameters.");
-                return LoadResult::Failed;
-            }
-        }
-        else
-        {
-            // Don't use parameters
-            Params.Dispose();
-        }
-        ParamsChanged();
-        return LoadResult::Ok;
-    }
-
     // If engine was compiled with shaders compiling service:
     // - Material should be changed in need to convert it to the newer version (via Visject Surface)
     //   Shader should be recompiled if shader source code has been modified
@@ -320,7 +290,12 @@ Asset::LoadResult Material::load()
 
     // Load shader cache (it may call compilation or gather cached data)
     ShaderCacheResult shaderCache;
-    if (LoadShaderCache(shaderCache))
+    if (IsNullRenderer())
+    {
+        MemoryReadStream shaderCacheStream(nullptr, 0);
+        _materialShader = MaterialShader::CreateDummy(shaderCacheStream, _shaderHeader.Material.Info);
+    }
+    else if (LoadShaderCache(shaderCache))
     {
         LOG(Error, "Cannot load \'{0}\' shader cache.", ToString());
 #if 1
