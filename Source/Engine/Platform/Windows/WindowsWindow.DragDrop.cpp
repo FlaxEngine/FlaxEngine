@@ -601,7 +601,8 @@ DragDropEffect Window::DoDragDrop(const StringView& data)
         ::POINT point;
         ::GetCursorPos(&point);
 #if PLATFORM_SDL
-        Input::Mouse->OnMouseUp(Float2((float)point.x, (float)point.y), MouseButton::Left, (Window*)this);
+        // Reset the internal button state in SDL
+        SendMessageA((HWND)_handle, WM_LBUTTONUP, 0, MAKELPARAM(point.x, point.y));
 #else
         Input::Mouse->OnMouseUp(Float2((float)point.x, (float)point.y), MouseButton::Left, this);
 #endif
