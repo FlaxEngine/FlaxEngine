@@ -137,10 +137,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
     if (!FileSystem::DirectoryExists(CacheFolder))
         FileSystem::CreateDirectory(CacheFolder);
     if (!FileSystem::FileExists(HeaderFilePath))
-    {
-        LOG(Warning, "Missing incremental build cooking assets cache.");
         return;
-    }
 
     auto file = FileReadStream::Open(HeaderFilePath);
     if (file == nullptr)
