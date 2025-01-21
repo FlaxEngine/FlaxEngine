@@ -405,19 +405,24 @@ public:
         auto windowHandle = static_cast<SDLWindow*>(window)->_window;
         if (relativeMode)
         {
-            oldScreenRect = SDL_GetWindowMouseRect(windowHandle);
             relativeModeWindow = window;
             SDL_GetMouseState(&oldPosition.X, &oldPosition.Y);
             if (!SDL_CursorVisible())
             {
                 // Trap the cursor in current location
                 SDL_Rect clipRect = { (int)oldPosition.X, (int)oldPosition.Y, 1, 1 };
+                oldScreenRect = SDL_GetWindowMouseRect(windowHandle);
                 SDL_SetWindowMouseRect(windowHandle, &clipRect);
             }
         }
         else
         {
-            SDL_SetWindowMouseRect(windowHandle, oldScreenRect);
+            if (relativeModeWindow != window)
+            {
+                // FIXME: When floating game window is focused and editor viewport activated, the relative mode gets stuck
+                return;
+            }
+            SDL_SetWindowMouseRect(windowHandle, nullptr);//oldScreenRect);
             SDL_WarpMouseInWindow(windowHandle, oldPosition.X, oldPosition.Y);
             oldScreenRect = nullptr;
             relativeModeWindow = nullptr;
@@ -519,17 +524,6 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
         }
         return true;
     }
-    /*case SDL_EVENT_DROP_POSITION:
-    {
-        // We are not receiving mouse motion events during drag-and-drop
-        auto dpiScale = window->GetDpiScale();
-        //const Float2 mousePos(event.drop.x * dpiScale, event.drop.y * dpiScale);// = window->ClientToScreen({ event.drop.x * dpiScale, event.drop.y * dpiScale});
-        Float2 mousePos = window->ClientToScreen({ event.drop.x * dpiScale, event.drop.y * dpiScale});
-        if (window != Engine::MainWindow)
-            mousePos = window->GetPosition() - mousePos;
-        Input::Mouse->OnMouseMove(mousePos, window);
-        return true;
-    }*/
     case SDL_EVENT_WINDOW_MOUSE_LEAVE:
     {
         Input::Mouse->OnMouseLeave(window);

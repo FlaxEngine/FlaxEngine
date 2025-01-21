@@ -170,7 +170,7 @@ namespace FlaxEditor.GUI.Docking
                 if (_panel.ChildPanelsCount == 0 && _panel.TabsCount == 1 && _panel.IsFloating)
                 {
                     // Create docking hint window but in an async manner
-                    DockHintWindow.Create(_panel as FloatWindowDockPanel);
+                    WindowDragHelper.StartDragging(_panel as FloatWindowDockPanel);
                 }
                 else
                 {
@@ -181,7 +181,7 @@ namespace FlaxEditor.GUI.Docking
                     _panel.SelectTab(index - 1);
 
                     // Create docking hint window
-                    DockHintWindow.Create(win);
+                    WindowDragHelper.StartDragging(win, _panel.RootWindow.Window);
                 }
             }
         }

@@ -52,7 +52,7 @@ namespace FlaxEditor.GUI.Docking
                 return;
 
             // Create docking hint window
-            DockHintWindow.Create(this);
+            WindowDragHelper.StartDragging(this);
         }
 
         /// <summary>

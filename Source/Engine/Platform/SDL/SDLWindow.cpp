@@ -14,7 +14,6 @@
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Keyboard.h"
 #include "Engine/Input/Mouse.h"
-#include "Engine/Platform/IGuiData.h"
 #include "Engine/Platform/WindowsManager.h"
 
 #define NOGDI
@@ -26,8 +25,6 @@
 
 #if PLATFORM_WINDOWS
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
-#define STYLE_RESIZABLE (WS_THICKFRAME | WS_MAXIMIZEBOX)
-#define BORDERLESS_MAXIMIZE_WORKAROUND 2
 #if USE_EDITOR
 #include <oleidl.h>
 #endif
@@ -37,57 +34,44 @@
 
 #define DefaultDPI 96
 
-namespace
+namespace WindowImpl
 {
     SDLWindow* LastEventWindow = nullptr;
     static SDL_Cursor* Cursors[SDL_SYSTEM_CURSOR_COUNT] = { nullptr };
-#if BORDERLESS_MAXIMIZE_WORKAROUND == 2
-    int SkipMaximizeEventsCount = 0;
-#endif
 }
+using namespace WindowImpl;
 
-void* GetNativeWindowPointer(SDL_Window* window);
 SDL_HitTestResult OnWindowHitTest(SDL_Window* win, const SDL_Point* area, void* data);
 void GetRelativeWindowOffset(WindowType type, SDLWindow* parentWindow, Int2& positionOffset);
 Int2 GetSDLWindowScreenPosition(const SDLWindow* window);
-void SetSDLWindowScreenPosition(const SDLWindow* window, const int x, const int y);
+void SetSDLWindowScreenPosition(const SDLWindow* window, const Int2 position);
 
-class SDLDropFilesData : public IGuiData
+bool IsPopupWindow(WindowType type)
 {
-public:
-    Array<String> Files;
+    return type == WindowType::Popup || type == WindowType::Tooltip;
+}
 
-    Type GetType() const override
-    {
-        return Type::Files;
-    }
-    String GetAsText() const override
-    {
-        return String::Empty;
-    }
-    void GetAsFiles(Array<String>* files) const override
-    {
-        files->Add(Files);
-    }
-};
-
-class SDLDropTextData : public IGuiData
+void* GetNativeWindowPointer(SDL_Window* window)
 {
-public:
-    StringView Text;
-
-    Type GetType() const override
-    {
-        return Type::Text;
-    }
-    String GetAsText() const override
-    {
-        return String(Text);
-    }
-    void GetAsFiles(Array<String>* files) const override
-    {
-    }
-};
+    void* windowPtr;
+    auto props = SDL_GetWindowProperties(window);
+#if PLATFORM_WINDOWS
+    windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
+#elif PLATFORM_LINUX
+    windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr);
+    if (windowPtr == nullptr)
+        windowPtr = (void*)SDL_GetNumberProperty(props, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
+#elif PLATFORM_MAC
+    windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
+#elif PLATFORM_ANDROID
+    windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, nullptr);
+#elif PLATFORM_IOS
+    windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, nullptr);
+#else
+    static_assert(false, "unsupported platform");
+#endif
+    return windowPtr;
+}
 
 SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
@@ -130,8 +114,8 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
         flags |= SDL_WINDOW_TRANSPARENT;
 
     // Disable parenting of child windows as those are always on top of the parent window and never show up in taskbar
-    //if (_settings.Parent != nullptr && (_settings.Type != WindowType::Tooltip && _settings.Type != WindowType::Popup))
-    //    _settings.Parent = nullptr;
+    if (_settings.Parent != nullptr && (_settings.Type != WindowType::Tooltip && _settings.Type != WindowType::Popup))
+        _settings.Parent = nullptr;
 
     // The window position needs to be relative to the parent window
     Int2 relativePosition(Math::TruncToInt(settings.Position.X), Math::TruncToInt(settings.Position.Y));
@@ -190,10 +174,6 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
             if (xdndAware != 0)
                 X11::XChangeProperty(xDisplay, (X11::Window)_handle, xdndAware, (X11::Atom)4, 32, PropModeReplace, (unsigned char*)&xdndVersion, 1);
         }
-        else
-        {
-            // TODO: Wayland
-        }
 #endif
     }
 #endif
@@ -203,30 +183,8 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
 #if PLATFORM_LINUX
     // Initialize using the shared Display instance from SDL
     if (SDLPlatform::UsesX11() && SDLPlatform::GetXDisplay() == nullptr)
-        SDLPlatform::InitPlatformX11(GetX11Display());
+        SDLPlatform::InitX11(GetX11Display());
 #endif
-}
-
-void* GetNativeWindowPointer(SDL_Window* window)
-{
-    void* windowPtr;
-    auto props = SDL_GetWindowProperties(window);
-#if PLATFORM_WINDOWS
-    windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
-#elif PLATFORM_LINUX
-    windowPtr = SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr);
-    if (windowPtr == nullptr)
-        windowPtr = (void*)SDL_GetNumberProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
-#elif PLATFORM_MAC
-    windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
-#elif PLATFORM_ANDROID
-    windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER, nullptr);
-#elif PLATFORM_IOS
-    windowPtr = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, nullptr);
-#else
-    static_assert(false, "unsupported platform");
-#endif
-    return windowPtr;
 }
 
 SDL_Window* SDLWindow::GetSDLWindow() const
@@ -265,7 +223,7 @@ SDLWindow::~SDLWindow()
 
     if (_window == nullptr)
         return;
-
+    
     SDL_StopTextInput(_window);
     SDL_DestroyWindow(_window);
 
@@ -366,6 +324,10 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     if (_isClosing)
         return;
 
+    // Platform specific event handling
+    if (HandleEventInternal(event))
+        return;
+
     switch (event.type)
     {
     case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
@@ -375,16 +337,6 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     }
     case SDL_EVENT_WINDOW_DESTROYED:
     {
-#if USE_EDITOR && PLATFORM_WINDOWS
-        // Disable file dropping
-        if (_settings.AllowDragAndDrop)
-        {
-            const auto result = RevokeDragDrop((HWND)_handle);
-            if (result != S_OK)
-                LOG(Warning, "Window drag and drop service error: 0x{0:x}:{1}", result, 2);
-        }
-#endif
-
         // Quit
 #if PLATFORM_WINDOWS
         PostQuitMessage(0);
@@ -413,16 +365,6 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     case SDL_EVENT_WINDOW_MOVED:
     {
         _cachedClientRectangle.Location = Float2(static_cast<float>(event.window.data1), static_cast<float>(event.window.data2));
-#if PLATFORM_LINUX
-        if (SDLPlatform::UsesX11())
-        {
-            // X11 doesn't report any mouse events when mouse is over the caption area, send a simulated event instead...
-            Float2 mousePosition;
-            auto buttons = SDL_GetGlobalMouseState(&mousePosition.X, &mousePosition.Y);
-            if ((buttons & SDL_BUTTON_MASK(SDL_BUTTON_LEFT)) != 0)
-                SDLPlatform::CheckWindowDragging(this, WindowHitCodes::Caption);
-        }
-#endif
         return;
     }
     case SDL_EVENT_WINDOW_HIT_TEST:
@@ -440,46 +382,11 @@ void SDLWindow::HandleEvent(SDL_Event& event)
         _minimized = false;
         _maximized = true;
         
-#if PLATFORM_WINDOWS && BORDERLESS_MAXIMIZE_WORKAROUND == 2
-        if (SkipMaximizeEventsCount > 0)
-        {
-            SkipMaximizeEventsCount--;
-            return;
-        }
-
-        if (!_settings.HasBorder && _settings.HasSizingFrame)
-        {
-            // Restore the window back to previous state
-            SDL_RestoreWindow(_window);
-
-            // Remove the resizable flags from borderless windows and maximize the window again
-            auto style = ::GetWindowLong((HWND)_handle, GWL_STYLE);
-            style &= ~STYLE_RESIZABLE;
-            ::SetWindowLong((HWND)_handle, GWL_STYLE, style);
-
-            SDL_MaximizeWindow(_window);
-
-            // Re-enable the resizable borderless flags
-            style = ::GetWindowLong((HWND)_handle, GWL_STYLE) | STYLE_RESIZABLE;
-            ::SetWindowLong((HWND)_handle, GWL_STYLE, style);
-
-            // The next SDL_EVENT_WINDOW_RESTORED and SDL_EVENT_WINDOW_MAXIMIZED events should be ignored
-            SkipMaximizeEventsCount = 2;
-        }
-#endif 
         CheckForWindowResize();
         return;
     }
     case SDL_EVENT_WINDOW_RESTORED:
     {
-#if BORDERLESS_MAXIMIZE_WORKAROUND == 2
-        if (SkipMaximizeEventsCount > 0)
-        {
-            SkipMaximizeEventsCount--;
-            return;
-        }
-#endif
-
         if (_maximized)
         {
             _maximized = false;
@@ -543,68 +450,6 @@ void SDLWindow::HandleEvent(SDL_Event& event)
         }
         return;
     }
-#if false
-    case SDL_EVENT_DROP_BEGIN:
-    {
-        Focus();
-        Float2 mousePosition;
-        SDL_GetGlobalMouseState(&mousePosition.X, &mousePosition.Y);
-        mousePosition = ScreenToClient(mousePosition);
-
-        DragDropEffect effect;
-        SDLDropTextData dropData;
-        OnDragEnter(&dropData, mousePosition, effect);
-        OnDragOver(&dropData, mousePosition, effect);
-        return;
-    }
-    case SDL_EVENT_DROP_POSITION:
-    {
-        DragDropEffect effect = DragDropEffect::None;
-
-        SDLDropTextData dropData;
-        OnDragOver(&dropData, Float2(static_cast<float>(event.drop.x), static_cast<float>(event.drop.y)), effect);
-        return;
-    }
-    case SDL_EVENT_DROP_FILE:
-    {
-        SDLDropFilesData dropData;
-        dropData.Files.Add(StringAnsi(event.drop.data).ToString()); // TODO: collect multiple files at once?
-
-        Focus();
-        
-        Float2 mousePosition;
-        SDL_GetGlobalMouseState(&mousePosition.X, &mousePosition.Y);
-        mousePosition = ScreenToClient(mousePosition);
-        DragDropEffect effect = DragDropEffect::None;
-        OnDragDrop(&dropData, mousePosition, effect);
-        return;
-    }
-    case SDL_EVENT_DROP_TEXT:
-    {
-        SDLDropTextData dropData;
-        String str = StringAnsi(event.drop.data).ToString();
-        dropData.Text = StringView(str);
-
-        Focus();
-        Float2 mousePosition;
-        SDL_GetGlobalMouseState(&mousePosition.X, &mousePosition.Y);
-        mousePosition = ScreenToClient(mousePosition);
-        DragDropEffect effect = DragDropEffect::None;
-        OnDragDrop(&dropData, mousePosition, effect);
-        return;
-    }
-    case SDL_EVENT_DROP_COMPLETE:
-    {
-        return;
-    }
-#endif
-    case SDL_EVENT_WINDOW_MOUSE_LEAVE:
-    {
-#if !PLATFORM_WINDOWS
-        OnDragLeave(); // Check for release of mouse button too?
-#endif
-        break;
-    }
     default:
         break;
     }
@@ -639,9 +484,9 @@ void SDLWindow::Show()
     else if (_settings.Parent == nullptr)
         BringToFront();
     
-    // Reused top-most windows (DockHintWindow) doesn't stay on top for some reason
-    if (_settings.IsTopmost && _settings.Type != WindowType::Tooltip)
-        SDL_SetWindowAlwaysOnTop(_window, true);
+    // Reused top-most windows doesn't stay on top for some reason
+    if (_settings.IsTopmost && !IsPopupWindow(_settings.Type))
+        SetIsAlwaysOnTop(true);
 
     if (_isTrackingMouse)
     {
@@ -678,19 +523,7 @@ void SDLWindow::Maximize()
     if (!_settings.AllowMaximize)
         return;
 
-#if PLATFORM_WINDOWS && BORDERLESS_MAXIMIZE_WORKAROUND == 1
-    // Workaround for "SDL_BORDERLESS_RESIZABLE_STYLE" hint not working as expected when maximizing windows
-    auto style = ::GetWindowLong((HWND)_handle, GWL_STYLE);
-    style &= ~STYLE_RESIZABLE;
-    ::SetWindowLong((HWND)_handle, GWL_STYLE, style);
-
     SDL_MaximizeWindow(_window);
-
-    style = ::GetWindowLong((HWND)_handle, GWL_STYLE) | STYLE_RESIZABLE;
-    ::SetWindowLong((HWND)_handle, GWL_STYLE, style);
-#else
-    SDL_MaximizeWindow(_window);
-#endif
 }
 
 void SDLWindow::SetBorderless(bool isBorderless, bool maximized)
@@ -706,45 +539,18 @@ void SDLWindow::SetBorderless(bool isBorderless, bool maximized)
 
     BringToFront();
 
-    if (isBorderless)
-    {
-        SDL_SetWindowBordered(_window, !isBorderless ? true : false);
-        if (maximized)
-        {
-            Maximize();
-        }
-        else
-            Focus();
-    }
+    SDL_SetWindowBordered(_window, !isBorderless ? true : false);
+    if (maximized)
+        Maximize();
     else
-    {
-        SDL_SetWindowBordered(_window, !isBorderless ? true : false);
-        if (maximized)
-        {
-            Maximize();
-        }
-        else
-            Focus();
-    }
-
+        Focus();
+    
     CheckForWindowResize();
 }
 
 void SDLWindow::Restore()
 {
-#if PLATFORM_WINDOWS && BORDERLESS_MAXIMIZE_WORKAROUND == 1
-    // Workaround for "SDL_BORDERLESS_RESIZABLE_STYLE" hint not working as expected when maximizing windows
-    auto style = ::GetWindowLong((HWND)_handle, GWL_STYLE);
-    style &= ~STYLE_RESIZABLE;
-    ::SetWindowLong((HWND)_handle, GWL_STYLE, style);
-
     SDL_RestoreWindow(_window);
-
-    style = ::GetWindowLong((HWND)_handle, GWL_STYLE) | STYLE_RESIZABLE;
-    ::SetWindowLong((HWND)_handle, GWL_STYLE, style);
-#else
-    SDL_RestoreWindow(_window);
-#endif
 }
 
 bool SDLWindow::IsClosed() const
@@ -760,26 +566,17 @@ bool SDLWindow::IsForegroundWindow() const
 
 void SDLWindow::BringToFront(bool force)
 {
-    auto activateWhenRaised = SDL_GetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_RAISED);
-    SDL_SetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_RAISED, "0");
     SDL_RaiseWindow(_window);
-    SDL_SetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_RAISED, activateWhenRaised);
 }
 
 void SDLWindow::SetClientBounds(const Rectangle& clientArea)
 {
-    int newX = static_cast<int>(clientArea.GetLeft());
-    int newY = static_cast<int>(clientArea.GetTop());
+    Int2 newPos = Int2(clientArea.GetTopLeft());
     int newW = static_cast<int>(clientArea.GetWidth());
     int newH = static_cast<int>(clientArea.GetHeight());
 
-    SetSDLWindowScreenPosition(this, newX, newY);
+    SetSDLWindowScreenPosition(this, newPos);
     SDL_SetWindowSize(_window, newW, newH);
-}
-
-bool IsPopupWindow(WindowType type)
-{
-    return type == WindowType::Popup || type == WindowType::Tooltip;
 }
 
 void GetRelativeWindowOffset(WindowType type, SDLWindow* parentWindow, Int2& positionOffset)
@@ -812,9 +609,9 @@ Int2 GetSDLWindowScreenPosition(const SDLWindow* window)
     return position - relativeOffset;
 }
 
-void SetSDLWindowScreenPosition(const SDLWindow* window, const int x, const int y)
+void SetSDLWindowScreenPosition(const SDLWindow* window, const Int2 position)
 {
-    Int2 relativePosition(x, y);
+    Int2 relativePosition = position;
     GetRelativeWindowOffset(window->GetSettings().Type, window->GetSettings().Parent, relativePosition);
     SDL_SetWindowPosition(window->GetSDLWindow(), relativePosition.X, relativePosition.Y);
 }
@@ -834,12 +631,12 @@ void SDLWindow::SetPosition(const Float2& position)
         screenPosition += Int2(monitorBounds.GetTopLeft());
     }
     
-    SetSDLWindowScreenPosition(this, screenPosition.X, screenPosition.Y);
+    SetSDLWindowScreenPosition(this, screenPosition);
 }
 
 void SDLWindow::SetClientPosition(const Float2& position)
 {
-    SetSDLWindowScreenPosition(this, static_cast<int>(position.X), static_cast<int>(position.Y));
+    SetSDLWindowScreenPosition(this, Int2(position));
 }
 
 void SDLWindow::SetIsFullscreen(bool isFullscreen)
@@ -848,7 +645,7 @@ void SDLWindow::SetIsFullscreen(bool isFullscreen)
     if (!isFullscreen)
     {
         // The window is set to always-on-top for some reason when leaving fullscreen
-        SDL_SetWindowAlwaysOnTop(_window, false);
+        SetIsAlwaysOnTop(false);
     }
 
     WindowBase::SetIsFullscreen(isFullscreen);
@@ -930,24 +727,14 @@ void SDLWindow::SetOpacity(const float opacity)
         LOG(Warning, "SDL_SetWindowOpacity failed: {0}", String(SDL_GetError()));
 }
 
+#if !PLATFORM_WINDOWS
+
 void SDLWindow::Focus()
 {
-#if PLATFORM_WINDOWS
-    auto activateWhenRaised = SDL_GetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_RAISED);
-    SDL_SetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_RAISED, "1");
-
-    // Forcing the window to focus causes issues with opening context menus while window is maximized
-    //auto forceRaiseWindow = SDL_GetHint(SDL_HINT_FORCE_RAISEWINDOW);
-    //SDL_SetHint(SDL_HINT_FORCE_RAISEWINDOW, "1");
-
     SDL_RaiseWindow(_window);
-
-    SDL_SetHint(SDL_HINT_WINDOW_ACTIVATE_WHEN_RAISED, activateWhenRaised);
-    //SDL_SetHint(SDL_HINT_FORCE_RAISEWINDOW, forceRaiseWindow);
-#else
-    SDL_RaiseWindow(_window);
-#endif
 }
+
+#endif
 
 String SDLWindow::GetTitle() const
 {

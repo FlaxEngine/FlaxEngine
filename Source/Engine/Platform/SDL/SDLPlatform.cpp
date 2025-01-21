@@ -10,6 +10,7 @@
 #include "Engine/Platform/BatteryInfo.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/SDL/SDLInput.h"
+#include "Engine/Engine/Engine.h"
 
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_init.h>
@@ -22,13 +23,9 @@
 
 #if PLATFORM_LINUX
 #include "Engine/Engine/CommandLine.h"
-#include "Engine/Platform/MessageBox.h"
-#include <SDL3/SDL_messagebox.h>
 #endif
 
 #define DefaultDPI 96
-
-uint32 SDLPlatform::DraggedWindowId = 0;
 
 namespace
 {
@@ -44,7 +41,12 @@ bool SDLPlatform::Init()
     else if (CommandLine::Options.Wayland)
         SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "wayland", SDL_HINT_OVERRIDE);
     else
-        SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "wayland", SDL_HINT_OVERRIDE);
+    {
+        // Override the X11 preference when running in Wayland session
+        String waylandDisplayEnv;
+        if (!GetEnvironmentVariable(String("WAYLAND_DISPLAY"), waylandDisplayEnv))
+            SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "wayland", SDL_HINT_OVERRIDE);
+    }
 #endif
 
 #if PLATFORM_LINUX
@@ -69,21 +71,15 @@ bool SDLPlatform::Init()
     SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_WARP_MOTION, "0");
     SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_CURSOR_VISIBLE, "1"); // Needed for tracking mode
     SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "0"); // 
+    SDL_SetHint(SDL_HINT_MOUSE_DOUBLE_CLICK_RADIUS, "8"); // Reduce the default mouse double-click radius
 
     //SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "1"); // Disables raw mouse input
     SDL_SetHint(SDL_HINT_WINDOWS_RAW_KEYBOARD, "1");
 
     SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_SCALE_TO_DISPLAY, "1");
 
-    // Disable SDL clipboard support
-    SDL_SetEventEnabled(SDL_EVENT_CLIPBOARD_UPDATE, false);
-
-    // Disable SDL drag and drop support
-    SDL_SetEventEnabled(SDL_EVENT_DROP_FILE, false);
-    SDL_SetEventEnabled(SDL_EVENT_DROP_TEXT, false);
-    SDL_SetEventEnabled(SDL_EVENT_DROP_BEGIN, false);
-    SDL_SetEventEnabled(SDL_EVENT_DROP_COMPLETE, false);
-    SDL_SetEventEnabled(SDL_EVENT_DROP_POSITION, false);
+    //if (InitInternal())
+    //    return true;
 
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMEPAD))
         Platform::Fatal(String::Format(TEXT("Failed to initialize SDL: {0}."), String(SDL_GetError())));
@@ -104,9 +100,22 @@ bool SDLPlatform::Init()
         }
     }
     SDL_free(locales);
-    
-    if (InitPlatform())
+
+    if (InitInternal())
         return true;
+
+    if (UsesWindows() || UsesX11())
+    {
+        // Disable SDL clipboard support
+        SDL_SetEventEnabled(SDL_EVENT_CLIPBOARD_UPDATE, false);
+
+        // Disable SDL drag and drop support
+        SDL_SetEventEnabled(SDL_EVENT_DROP_FILE, false);
+        SDL_SetEventEnabled(SDL_EVENT_DROP_TEXT, false);
+        SDL_SetEventEnabled(SDL_EVENT_DROP_BEGIN, false);
+        SDL_SetEventEnabled(SDL_EVENT_DROP_COMPLETE, false);
+        SDL_SetEventEnabled(SDL_EVENT_DROP_POSITION, false);
+    }
 
     SDLInput::Init();
 
@@ -129,74 +138,12 @@ void SDLPlatform::LogInfo()
     LOG(Info, "SDL video driver: {}", String(SDL_GetCurrentVideoDriver()));
 }
 
-bool SDLPlatform::CheckWindowDragging(Window* window, WindowHitCodes hit)
-{
-    bool handled = false;
-    window->OnLeftButtonHit(hit, handled);
-    if (handled)
-        DraggedWindowId = window->_windowId;
-    return handled;
-}
-
 void SDLPlatform::Tick()
 {
     SDLInput::Update();
 
-    if (DraggedWindowId != 0)
-    {
-        Float2 mousePos;
-        auto buttons = SDL_GetGlobalMouseState(&mousePos.X, &mousePos.Y);
-        if (!(buttons & SDL_BUTTON_MASK(SDL_BUTTON_LEFT)))
-        {
-            Window* window = nullptr;
-            WindowsManager::WindowsLocker.Lock();
-            for (int32 i = 0; i < WindowsManager::Windows.Count(); i++)
-            {
-                if (WindowsManager::Windows[i]->_windowId == DraggedWindowId)
-                {
-                    window = WindowsManager::Windows[i];
-                    break;
-                }
-            }
-            WindowsManager::WindowsLocker.Unlock();
-
-            if (window != nullptr)
-            {
-                int top, left, bottom, right;
-                SDL_GetWindowBordersSize(window->_window, &top, &left, &bottom, &right);
-                mousePos += Float2(static_cast<float>(left), static_cast<float>(-top));
-                Input::Mouse->OnMouseUp(mousePos, MouseButton::Left, window);
-            }
-            DraggedWindowId = 0;
-        }
-        else
-        {
-#if PLATFORM_LINUX
-            String dockHintWindow("DockHint.Window");
-            Window* window = nullptr;
-            WindowsManager::WindowsLocker.Lock();
-            for (int32 i = 0; i < WindowsManager::Windows.Count(); i++)
-            {
-                if (WindowsManager::Windows[i]->_title.Compare(dockHintWindow) == 0)
-                //if (WindowsManager::Windows[i]->_windowId == DraggedWindowId)
-                {
-                    window = WindowsManager::Windows[i];
-                    break;
-                }
-            }
-            WindowsManager::WindowsLocker.Unlock();
-
-            if (window != nullptr)
-            {
-                int top, left, bottom, right;
-                SDL_GetWindowBordersSize(window->_window, &top, &left, &bottom, &right);
-                mousePos += Float2(static_cast<float>(left), static_cast<float>(-top));
-                Input::Mouse->OnMouseMove(mousePos, window);
-            }
-#endif
-        }
-    }
-
+    PreHandleEvents();
+    
     SDL_PumpEvents();
     SDL_Event events[32];
     int count = SDL_PeepEvents(events, SDL_arraysize(events), SDL_GETEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST);
@@ -208,8 +155,10 @@ void SDLPlatform::Tick()
         else if (events[i].type >= SDL_EVENT_JOYSTICK_AXIS_MOTION && events[i].type <= SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED)
             SDLInput::HandleEvent(nullptr, events[i]);
         else
-            SDLPlatform::HandleEvent(events[i]);
+            HandleEvent(events[i]);
     }
+
+    PostHandleEvents();
 }
 
 bool SDLPlatform::HandleEvent(SDL_Event& event)
@@ -264,7 +213,18 @@ void SDLPlatform::OpenUrl(const StringView& url)
 Float2 SDLPlatform::GetMousePosition()
 {
     Float2 pos;
-    SDL_GetGlobalMouseState(&pos.X, &pos.Y);
+    if (UsesWayland())
+    {
+        // Wayland doesn't support reporting global mouse position,
+        // use the last known reported position we got from received window events.
+        pos = Input::GetMouseScreenPosition();
+        //if (!SDL_GetGlobalMouseState(&pos.X, &pos.Y))
+        //    LOG(Error, "SDL_GetGlobalMouseState() failed");
+    }
+    else if (UsesX11())
+        SDL_GetGlobalMouseState(&pos.X, &pos.Y);
+    else
+        pos = Input::GetMouseScreenPosition();
     return pos;
 }
 
@@ -312,177 +272,5 @@ Window* SDLPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
     return New<SDLWindow>(settings);
 }
-
-#if !PLATFORM_LINUX
-
-bool SDLPlatform::UsesWayland()
-{
-    return false;
-}
-
-bool SDLPlatform::UsesX11()
-{
-    return false;
-}
-
-#endif
-
-#if PLATFORM_LINUX
-DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
-{
-    StringAnsi textAnsi(text);
-    StringAnsi captionAnsi(caption);
-
-    SDL_MessageBoxData data;
-    SDL_MessageBoxButtonData dataButtons[3];
-    data.window = parent ? static_cast<SDLWindow*>(parent)->_window : nullptr;
-    data.title = captionAnsi.GetText();
-    data.message = textAnsi.GetText();
-    data.colorScheme = nullptr;
-
-    switch (icon)
-    {
-    case MessageBoxIcon::Error:
-    case MessageBoxIcon::Hand:
-    case MessageBoxIcon::Stop:
-        data.flags |= SDL_MESSAGEBOX_ERROR;
-        break;
-    case MessageBoxIcon::Asterisk:
-    case MessageBoxIcon::Information:
-    case MessageBoxIcon::Question:
-        data.flags |= SDL_MESSAGEBOX_INFORMATION;
-        break;
-    case MessageBoxIcon::Exclamation:
-    case MessageBoxIcon::Warning:
-        data.flags |= SDL_MESSAGEBOX_WARNING;
-        break;
-    default:
-        break;
-    }
-
-    switch (buttons)
-    {
-    case MessageBoxButtons::AbortRetryIgnore:
-        dataButtons[0] =
-        {
-            SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT,
-            (int)DialogResult::Abort,
-            "Abort"
-        };
-        dataButtons[1] =
-        {
-            SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT,
-            (int)DialogResult::Retry,
-            "Retry"
-        };
-        dataButtons[2] =
-        {
-            0,
-            (int)DialogResult::Ignore,
-            "Ignore"
-        };
-        data.numbuttons = 3;
-        break;
-    case MessageBoxButtons::OK:
-        dataButtons[0] =
-        {
-            SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT | SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT,
-            (int)DialogResult::OK,
-            "OK"
-        };
-        data.numbuttons = 1;
-        break;
-    case MessageBoxButtons::OKCancel:
-        dataButtons[0] =
-        {
-            SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT,
-            (int)DialogResult::OK,
-            "OK"
-        };
-        dataButtons[1] =
-        {
-            SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT,
-            (int)DialogResult::Cancel,
-            "Cancel"
-        };
-        data.numbuttons = 2;
-        break;
-    case MessageBoxButtons::RetryCancel:
-        dataButtons[0] =
-        {
-            SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT,
-            (int)DialogResult::Retry,
-            "Retry"
-        };
-        dataButtons[1] =
-        {
-            SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT,
-            (int)DialogResult::Cancel,
-            "Cancel"
-        };
-        data.numbuttons = 2;
-        break;
-    case MessageBoxButtons::YesNo:
-        dataButtons[0] =
-        {
-            SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT,
-            (int)DialogResult::Yes,
-            "Yes"
-        };
-        dataButtons[1] =
-        {
-            SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT,
-            (int)DialogResult::No,
-            "No"
-        };
-        data.numbuttons = 2;
-        break;
-    case MessageBoxButtons::YesNoCancel:
-    {
-        dataButtons[0] =
-        {
-            SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT,
-            (int)DialogResult::Yes,
-            "Yes"
-        };
-        dataButtons[1] =
-        {
-            0,
-            (int)DialogResult::No,
-            "No"
-        };
-        dataButtons[2] =
-        {
-            SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT,
-            (int)DialogResult::Cancel,
-            "Cancel"
-        };
-        data.numbuttons = 3;
-        break;
-    }
-    default:
-        break;
-    }
-    data.buttons = dataButtons;
-
-    int result = -1;
-    if (!SDL_ShowMessageBox(&data, &result))
-    {
-#if PLATFORM_LINUX
-        // Fallback to native messagebox implementation in case some system fonts are missing
-        if (SDLPlatform::UsesX11())
-        {
-            LOG(Warning, "Failed to show SDL message box: {0}", String(SDL_GetError()));
-            return ShowFallback(parent, text, caption, buttons, icon);
-        }
-#endif
-        LOG(Error, "Failed to show SDL message box: {0}", String(SDL_GetError()));
-        return DialogResult::Abort;
-    }
-    if (result < 0)
-        return DialogResult::None;
-    return (DialogResult)result;
-}
-#endif
 
 #endif
