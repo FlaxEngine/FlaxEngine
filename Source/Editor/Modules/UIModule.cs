@@ -16,7 +16,7 @@ using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
-using DockHintWindow = FlaxEditor.GUI.Docking.DockHintWindow;
+using WindowDragHelper = FlaxEditor.GUI.Docking.WindowDragHelper;
 using MasterDockPanel = FlaxEditor.GUI.Docking.MasterDockPanel;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Options;
@@ -456,13 +456,6 @@ namespace FlaxEditor.Modules
         private void OnGameCookerEvent(GameCooker.EventType type)
         {
             UpdateToolstrip();
-        }
-
-        /// <inheritdoc />
-        public override void OnExit()
-        {
-            // Cleanup dock panel hint proxy windows (Flax will destroy them by var but it's better to clear them earlier)
-            DockHintWindow.Proxy.Dispose();
         }
 
         private IColorPickerDialog ShowPickColorDialog(Control targetControl, Color initialValue, ColorValueBox.ColorPickerEvent colorChanged, ColorValueBox.ColorPickerClosedEvent pickerClosed, bool useDynamicEditing)
