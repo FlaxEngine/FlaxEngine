@@ -16,6 +16,7 @@ API_CLASS(Static) class FLAXENGINE_API Time
     friend class Engine;
     friend class TimeService;
     friend class PhysicsSettings;
+    friend Window;
 
 public:
     /// <summary>
