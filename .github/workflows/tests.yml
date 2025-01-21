@@ -75,10 +75,7 @@ jobs:
     - name: Test
       run: |
         .\Binaries\Editor\Win64\Development\FlaxTests.exe
-        IF NOT %ERRORLEVEL% == 0 (
-          echo FlaxTests.exe failed with exit code %ERRORLEVEL%
-          exit 1
-        )
+        if not %errorlevel% == 0 exit %errorlevel%
         dotnet test -f net8.0 Binaries\Tests\Flax.Build.Tests.dll
         xcopy /y Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll Binaries\Tests
         xcopy /y Binaries\Editor\Win64\Development\FlaxEngine.CSharp.runtimeconfig.json Binaries\Tests
