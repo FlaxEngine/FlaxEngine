@@ -57,6 +57,11 @@ namespace FlaxEditor.Modules
         public readonly GenerateScriptsProjectFilesProgress GenerateScriptsProjectFiles = new GenerateScriptsProjectFilesProgress();
 
         /// <summary>
+        /// The assets loading progress handler.
+        /// </summary>
+        public readonly LoadAssetsProgress LoadAssets = new LoadAssetsProgress();
+
+        /// <summary>
         /// Gets the first active handler.
         /// </summary>
         public ProgressHandler FirstActiveHandler => _handlers.FirstOrDefault(x => x.IsActive);
@@ -80,6 +85,7 @@ namespace FlaxEditor.Modules
             RegisterHandler(CodeEditorOpen);
             RegisterHandler(NavMeshBuilding);
             RegisterHandler(GenerateScriptsProjectFiles);
+            RegisterHandler(LoadAssets);
         }
 
         /// <summary>
