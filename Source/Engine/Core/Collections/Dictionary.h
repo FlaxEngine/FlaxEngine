@@ -407,7 +407,7 @@ public:
             Compact();
 
         // Ensure to have enough memory for the next item (in case of new element insertion)
-        EnsureCapacity(_elementsCount + 1 + _deletedCount);
+        EnsureCapacity(((_elementsCount + 1) * DICTIONARY_DEFAULT_SLACK_SCALE + _deletedCount) / DICTIONARY_DEFAULT_SLACK_SCALE);
 
         // Find location of the item or place to insert it
         FindPositionResult pos;
@@ -940,7 +940,7 @@ private:
             Compact();
 
         // Ensure to have enough memory for the next item (in case of new element insertion)
-        EnsureCapacity(_elementsCount + 1 + _deletedCount);
+        EnsureCapacity(((_elementsCount + 1) * DICTIONARY_DEFAULT_SLACK_SCALE + _deletedCount) / DICTIONARY_DEFAULT_SLACK_SCALE);
 
         // Find location of the item or place to insert it
         FindPositionResult pos;

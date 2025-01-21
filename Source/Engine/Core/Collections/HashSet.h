@@ -470,8 +470,9 @@ public:
     /// </summary>
     /// <param name="minCapacity">The minimum required capacity.</param>
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
-    void EnsureCapacity(const int32 minCapacity, const bool preserveContents = true)
+    void EnsureCapacity(int32 minCapacity, const bool preserveContents = true)
     {
+        minCapacity *= DICTIONARY_DEFAULT_SLACK_SCALE;
         if (_size >= minCapacity)
             return;
         int32 capacity = _allocation.CalculateCapacityGrow(_size, minCapacity);
@@ -734,7 +735,7 @@ private:
             Compact();
 
         // Ensure to have enough memory for the next item (in case of new element insertion)
-        EnsureCapacity((_elementsCount + 1) * DICTIONARY_DEFAULT_SLACK_SCALE + _deletedCount);
+        EnsureCapacity(((_elementsCount + 1) * DICTIONARY_DEFAULT_SLACK_SCALE + _deletedCount) / DICTIONARY_DEFAULT_SLACK_SCALE);
 
         // Find location of the item or place to insert it
         FindPositionResult pos;
