@@ -158,6 +158,17 @@ public:
     }
 
     /// <summary>
+    /// Gets a value that indicates whether a window is always on top of other windows.
+    /// </summary>
+    API_PROPERTY() virtual bool IsAlwaysOnTop() const;
+
+    /// <summary>
+    /// Sets a value that indicates whether a window is always on top of other windows.
+    /// </summary>
+    /// <param name="isAlwaysOnTop">True if always on top.</param>
+    API_PROPERTY() virtual void SetIsAlwaysOnTop(bool isAlwaysOnTop);
+
+    /// <summary>
     /// Gets the native window handle.
     /// </summary>
     /// <returns>The native window object handle.</returns>
