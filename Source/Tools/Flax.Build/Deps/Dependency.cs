@@ -132,6 +132,18 @@ namespace Flax.Deps
         }
 
         /// <summary>
+        /// Checks if git repository exists at given path.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        public static bool GitRepositoryExists(string path)
+        {
+            Console.WriteLine(path);
+            string dotGitPath = Path.Combine(path, ".git");
+            return Directory.Exists(dotGitPath) ||
+                File.Exists(dotGitPath); // Worktree repository
+        }
+
+        /// <summary>
         /// Clones the git repository from the remote url (full repository).
         /// </summary>
         /// <param name="path">The local path for close.</param>
@@ -141,7 +153,7 @@ namespace Flax.Deps
         /// <param name="submodules">True if initialize submodules of the repository (recursive).</param>
         public static void CloneGitRepo(string path, string url, string commit = null, string args = null, bool submodules = false)
         {
-            if (!Directory.Exists(Path.Combine(path, ".git")))
+            if (!GitRepositoryExists(path))
             {
                 string cmdLine = string.Format("clone \"{0}\" \"{1}\"", url, path);
                 if (args != null)
@@ -166,7 +178,7 @@ namespace Flax.Deps
         /// <param name="submodules">True if initialize submodules of the repository (recursive).</param>
         public static void CloneGitRepoFast(string path, string url, string args = null, bool submodules = false)
         {
-            if (!Directory.Exists(Path.Combine(path, ".git")))
+            if (!GitRepositoryExists(path))
             {
                 string cmdLine = string.Format("clone \"{0}\" \"{1}\" --depth 1", url, path);
                 if (args != null)
@@ -181,26 +193,15 @@ namespace Flax.Deps
         }
 
         /// <summary>
-        /// Clones the git repository from the remote url.
+        /// Fetches the git repository from remote url.
         /// </summary>
-        /// <param name="path">The local path for close.</param>
-        /// <param name="url">The remote url.</param>
-        /// <param name="time">The time after history is included in the local repository.</param>
-        /// <param name="args">The custom arguments to add to the clone command.</param>
-        /// <param name="submodules">True if initialize submodules of the repository (recursive).</param>
-        public static void CloneGitRepoFastSince(string path, string url, DateTime time, string args = null, bool submodules = false)
+        /// <param name="path">The git repository path</param>
+        /// <param name="url">The remote url</param>
+        public static void GitFetch(string path)
         {
-            if (!Directory.Exists(Path.Combine(path, ".git")))
+            if (GitRepositoryExists(path))
             {
-                string cmdLine = string.Format("clone \"{0}\" \"{1}\" --shallow-since={2}", url, path, time.ToString("s"));
-                if (args != null)
-                    cmdLine += " " + args;
-                if (submodules)
-                    cmdLine += " --recurse-submodules";
-
-                Utilities.Run("git", cmdLine, null, path, Utilities.RunOptions.DefaultTool);
-                if (submodules)
-                    Utilities.Run("git", "submodule update --init --recursive", null, path, Utilities.RunOptions.DefaultTool);
+                Utilities.Run("git", $"fetch \"{path}\"", null, path, Utilities.RunOptions.DefaultTool);
             }
         }
 
@@ -215,7 +216,7 @@ namespace Flax.Deps
         /// <param name="submodules">True if initialize submodules of the repository (recursive).</param>
         public static void CloneGitRepoSingleBranch(string path, string url, string branch, string commit = null, string args = null, bool submodules = false)
         {
-            if (!Directory.Exists(Path.Combine(path, ".git")))
+            if (!GitRepositoryExists(path))
             {
                 string cmdLine = string.Format("clone --single-branch --branch {2} \"{0}\" \"{1}\"", url, path, branch);
                 if (commit == null)
