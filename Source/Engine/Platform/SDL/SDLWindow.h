@@ -57,11 +57,12 @@ private:
     static SDLWindow* GetWindowFromEvent(const SDL_Event& event);
     static SDLWindow* GetWindowWithSDLWindow(SDL_Window* window);
     void HandleEvent(SDL_Event& event);
+    bool HandleEventInternal(SDL_Event& event);
     void CheckForWindowResize();
     void UpdateCursor();
 
 #if PLATFORM_LINUX
-    DragDropEffect DoDragDropWayland(const StringView& data);
+    DragDropEffect DoDragDropWayland(const StringView& data, Window* dragSourceWindow = nullptr, Float2 dragOffset = Float2::Zero);
     DragDropEffect DoDragDropX11(const StringView& data);
 #endif
 
@@ -104,6 +105,7 @@ public:
     String GetTitle() const override;
     void SetTitle(const StringView& title) override;
     DragDropEffect DoDragDrop(const StringView& data) override;
+    DragDropEffect DoDragDrop(const StringView& data, const Float2& offset, Window* dragSourceWindow) override;
     void StartTrackingMouse(bool useMouseScreenOffset) override;
     void EndTrackingMouse() override;
     void StartClippingCursor(const Rectangle& bounds) override;

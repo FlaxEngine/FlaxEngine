@@ -1396,11 +1396,7 @@ DragDropEffect Window::DoDragDrop(const StringView& data)
     StringAnsi dataAnsi(data);
     LinuxDropTextData dropData;
     dropData.Text = data;
-#if !PLATFORM_SDL
     unsigned long mainWindow = _window;
-#else
-    unsigned long mainWindow = (unsigned long)_handle;
-#endif
 
     // Begin dragging
 	auto screen = X11::XDefaultScreen(xDisplay);
