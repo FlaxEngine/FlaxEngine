@@ -32,6 +32,6 @@ public class Wayland : ThirdPartyModule
 
         // Include generated protocol files for dependency
         options.PublicIncludePaths.Add(Path.Combine(FolderPath, "include"));
-        options.SourceFiles.AddRange(Directory.GetFiles(FolderPath, "*.cpp", SearchOption.TopDirectoryOnly));
+        options.SourceFiles.AddRange(Directory.GetFiles(FolderPath, "*.c", SearchOption.TopDirectoryOnly));
     }
 }

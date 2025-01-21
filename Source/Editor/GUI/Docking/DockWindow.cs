@@ -183,6 +183,25 @@ namespace FlaxEditor.GUI.Docking
         /// <param name="position">Window location.</param>
         public void ShowFloating(Float2 location, Float2 size, WindowStartPosition position = WindowStartPosition.CenterParent)
         {
+            CreateFloating(location, size, position, true);
+        }
+
+        /// <summary>
+        /// Creates the window in a floating state.
+        /// </summary>
+        public void CreateFloating()
+        {
+            CreateFloating(Float2.Zero, Float2.Zero);
+        }
+        /// <summary>
+        /// Creates the window in a floating state.
+        /// </summary>
+        /// <param name="location">Window location.</param>
+        /// <param name="size">Window size, set <see cref="Float2.Zero"/> to use default.</param>
+        /// <param name="position">Window location.</param>
+        /// <param name="showWindow">Window visibility.</param>
+        public void CreateFloating(Float2 location, Float2 size, WindowStartPosition position = WindowStartPosition.CenterParent, bool showWindow = false)
+        {
             Undock();
 
             // Create window
@@ -199,14 +218,17 @@ namespace FlaxEditor.GUI.Docking
             windowGUI.UnlockChildrenRecursive();
             windowGUI.PerformLayout();
 
-            // Show
-            window.Show();
-            window.BringToFront();
-            window.Focus();
-            OnShow();
+            if (showWindow)
+            {
+                // Show
+                window.Show();
+                window.BringToFront();
+                window.Focus();
+                OnShow();
 
-            // Perform layout again
-            windowGUI.PerformLayout();
+                // Perform layout again
+                windowGUI.PerformLayout();
+            }
         }
 
         /// <summary>
