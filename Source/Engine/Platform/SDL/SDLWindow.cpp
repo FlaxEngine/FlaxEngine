@@ -849,6 +849,19 @@ void SDLWindow::SetIsFullscreen(bool isFullscreen)
     WindowBase::SetIsFullscreen(isFullscreen);
 }
 
+bool SDLWindow::IsAlwaysOnTop() const
+{
+    SDL_WindowFlags flags = SDL_GetWindowFlags(_window);
+    return (flags & SDL_WINDOW_ALWAYS_ON_TOP) != 0;
+}
+
+void SDLWindow::SetIsAlwaysOnTop(bool isAlwaysOnTop)
+{
+    if (!SDL_SetWindowAlwaysOnTop(_window, isAlwaysOnTop))
+        LOG(Warning, "SDL_SetWindowAlwaysOnTop failed: {0}", String(SDL_GetError()));
+    // Not sure if this should change _settings.IsTopmost to reflect the new value?
+}
+
 Float2 SDLWindow::GetPosition() const
 {
     Int2 topLeftBorder;

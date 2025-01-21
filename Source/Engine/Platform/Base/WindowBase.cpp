@@ -164,6 +164,15 @@ void WindowBase::SetIsVisible(bool isVisible)
     }
 }
 
+bool WindowBase::IsAlwaysOnTop() const
+{
+    return false;
+}
+
+void WindowBase::SetIsAlwaysOnTop(bool isAlwaysOnTop)
+{
+}
+
 String WindowBase::ToString() const
 {
     return GetTitle();

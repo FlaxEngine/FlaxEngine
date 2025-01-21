@@ -90,6 +90,8 @@ public:
     void SetPosition(const Float2& position) override;
     void SetClientPosition(const Float2& position) override;
     void SetIsFullscreen(bool isFullscreen) override;
+    bool IsAlwaysOnTop() const override;
+    void SetIsAlwaysOnTop(bool isAlwaysOnTop) override;
     Float2 GetPosition() const override;
     Float2 GetSize() const override;
     Float2 GetClientSize() const override;
