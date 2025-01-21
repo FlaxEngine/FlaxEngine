@@ -62,7 +62,7 @@ namespace
                     vb0elements.Add({ VertexElement::Types::Tangent, 0, 0, 0, PixelFormat::R10G10B10A2_UNorm });
             }
             vb0elements.Add({ VertexElement::Types::BlendIndices, 0, 0, 0, PixelFormat::R8G8B8A8_UInt });
-            vb0elements.Add({ VertexElement::Types::BlendWeights, 0, 0, 0, PixelFormat::R16G16B16A16_Float });
+            vb0elements.Add({ VertexElement::Types::BlendWeights, 0, 0, 0, PixelFormat::R8G8B8A8_UNorm });
             if (uvs)
                 vb0elements.Add({ VertexElement::Types::TexCoord, 0, 0, 0, PixelFormat::R16G16_Float });
             if (colors)

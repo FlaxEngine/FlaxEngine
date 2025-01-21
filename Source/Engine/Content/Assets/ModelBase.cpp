@@ -666,6 +666,7 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
         const bool useSeparatePositions = !isSkinned;
         const bool useSeparateColors = !isSkinned;
         PixelFormat blendIndicesFormat = PixelFormat::R8G8B8A8_UInt;
+        PixelFormat blendWeightsFormat = PixelFormat::R8G8B8A8_UNorm;
         for (const Int4& indices : mesh.BlendIndices)
         {
             if (indices.MaxValue() > MAX_uint8)
@@ -705,7 +706,7 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                 if (isSkinned)
                 {
                     vb.Add({ VertexElement::Types::BlendIndices, vbIndex, 0, 0, blendIndicesFormat });
-                    vb.Add({ VertexElement::Types::BlendWeights, vbIndex, 0, 0, PixelFormat::R16G16B16A16_Float });
+                    vb.Add({ VertexElement::Types::BlendWeights, vbIndex, 0, 0, blendWeightsFormat });
                 }
                 if (!useSeparateColors && hasColors)
                     vb.Add({ VertexElement::Types::Color, vbIndex, 0, 0, PixelFormat::R8G8B8A8_UNorm });
@@ -784,7 +785,7 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                             const Color32 blendIndicesEnc(blendIndices.X, blendIndices.Y, blendIndices.Z, blendIndices.W);
                             stream.Write(blendIndicesEnc);
                         }
-                        else
+                        else //if (blendWeightsFormat == PixelFormat::R16G16B16A16_UInt)
                         {
                             // 16-bit indices
                             const uint16 blendIndicesEnc[4] = { (uint16)blendIndices.X, (uint16)blendIndices.Y, (uint16)blendIndices.Z, (uint16)blendIndices.W };
@@ -795,8 +796,18 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                     case VertexElement::Types::BlendWeights:
                     {
                         const Float4 blendWeights = mesh.BlendWeights.Get()[vertex];
-                        const Half4 blendWeightsEnc(blendWeights);
-                        stream.Write(blendWeightsEnc);
+                        if (blendWeightsFormat == PixelFormat::R8G8B8A8_UNorm)
+                        {
+                            // 8-bit weights
+                            const Color32 blendWeightsEnc(blendWeights);
+                            stream.Write(blendWeightsEnc);
+                        }
+                        else //if (blendWeightsFormat == PixelFormat::R16G16B16A16_Float)
+                        {
+                            // 16-bit weights
+                            const Half4 blendWeightsEnc(blendWeights);
+                            stream.Write(blendWeightsEnc);
+                        }
                         break;
                     }
                     case VertexElement::Types::TexCoord0:
