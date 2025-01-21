@@ -340,6 +340,8 @@ namespace FlaxEngine.Interop
         {
             Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             var fields = type.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (type.IsValueType && !type.IsEnum && !type.IsPrimitive && type.GetCustomAttribute<System.Runtime.CompilerServices.IsByRefLikeAttribute>() != null)
+                fields = Array.Empty<FieldInfo>(); // ref struct are not supported
 
             NativeFieldDefinitions* arr = (NativeFieldDefinitions*)NativeAlloc(fields.Length, Unsafe.SizeOf<NativeFieldDefinitions>());
             for (int i = 0; i < fields.Length; i++)
