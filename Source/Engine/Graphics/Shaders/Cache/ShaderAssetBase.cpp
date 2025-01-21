@@ -11,6 +11,7 @@
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #endif
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/ShadowsOfMordor/AtlasChartsPacker.h"
 
 ShaderStorage::CachingMode ShaderStorage::CurrentCachingMode =
@@ -157,7 +158,7 @@ bool IsValidShaderCache(DataContainer<byte>& shaderCache, Array<String>& include
 
 bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
 {
-    // Prepare
+    PROFILE_CPU();
     auto parent = GetShaderAsset();
     const ShaderProfile shaderProfile = GPUDevice::Instance->GetShaderProfile();
     const int32 cacheChunkIndex = GetCacheChunkIndex(shaderProfile);

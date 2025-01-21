@@ -314,6 +314,8 @@ bool BinaryAsset::SaveAsset(const StringView& path, AssetInitData& data, bool si
 
 bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool silentMode)
 {
+    PROFILE_CPU();
+
     // Ensure path is in a valid format
     String pathNorm(path);
     ContentStorageManager::FormatPath(pathNorm);

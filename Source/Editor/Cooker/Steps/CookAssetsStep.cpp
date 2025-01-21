@@ -362,7 +362,7 @@ bool CookAssetsStep::ProcessDefaultAsset(AssetCookData& options)
 
 bool CookAssetsStep::Process(CookingData& data, CacheData& cache, Asset* asset)
 {
-    // Validate asset
+    PROFILE_CPU_ASSET(asset);
     if (asset->IsVirtual())
     {
         // Virtual assets are not included into the build
@@ -790,7 +790,10 @@ bool CookAssetsStep::Process(CookingData& data, CacheData& cache, BinaryAsset* a
     // Prepare asset data
     AssetInitData initData;
     if (asset->Storage->LoadAssetHeader(asset->GetID(), initData))
+    {
+        LOG(Warning, "Failed to load asset {} header from storage '{}'", asset->GetID(), asset->Storage->GetPath());
         return true;
+    }
     initData.Header.UnlinkChunks();
     initData.Metadata.Release();
     for (auto& e : initData.Dependencies)
@@ -1162,7 +1165,7 @@ bool CookAssetsStep::Perform(CookingData& data)
         assetRef = Content::LoadAsync<Asset>(assetId);
         if (assetRef == nullptr)
         {
-            data.Error(TEXT("Failed to load asset included in build."));
+            LOG(Error, "Failed to load asset {} included in build", assetId);
             return true;
         }
         e.Info.TypeName = assetRef->GetTypeName();
@@ -1170,6 +1173,7 @@ bool CookAssetsStep::Perform(CookingData& data)
         // Cook asset
         if (Process(data, cache, assetRef.Get()))
         {
+            LOG(Error, "Failed to process asset {}", assetRef->ToString());
             cache.Save(data);
             return true;
         }
@@ -1202,10 +1206,17 @@ bool CookAssetsStep::Perform(CookingData& data)
         // Copy file
         if (!FileSystem::FileExists(cookedPath) || FileSystem::GetFileLastEditTime(cookedPath) >= FileSystem::GetFileLastEditTime(filePath))
         {
-            if (FileSystem::CreateDirectory(StringUtils::GetDirectoryName(cookedPath)))
+            const String cookedFolder = StringUtils::GetDirectoryName(cookedPath);
+            if (FileSystem::CreateDirectory(cookedFolder))
+            {
+                LOG(Error, "Failed to create directory '{}'", cookedFolder);
                 return true;
+            }
             if (FileSystem::CopyFile(cookedPath, filePath))
+            {
+                LOG(Error, "Failed to copy file from '{}' to '{}'", filePath, cookedPath);
                 return true;
+            }
         }
 
         // Count stats of file extension
