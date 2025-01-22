@@ -368,11 +368,21 @@ bool CookAssetsStep::Process(CookingData& data, CacheData& cache, Asset* asset)
         // Virtual assets are not included into the build
         return false;
     }
+    const bool wasLoaded = asset->IsLoaded();
     if (asset->WaitForLoaded())
     {
         LOG(Error, "Failed to load asset \'{0}\'", asset->ToString());
         return true;
     }
+    if (!wasLoaded)
+    {
+        // HACK: give some time to resave any old assets in Asset::onLoad after it's loaded
+        // This assumes that if Load Thread enters Asset::Save then it will get asset lock and hold it until asset is saved
+        // So we can take the same lock to wait for save end but first we need to wait for it to get that lock
+        // (in future try to handle it in a better way)
+        Platform::Sleep(5);
+    }
+    ScopeLock lock(asset->Locker);
 
     // Switch based on an asset type
     const auto asBinaryAsset = dynamic_cast<BinaryAsset*>(asset);

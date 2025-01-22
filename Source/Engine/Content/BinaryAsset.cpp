@@ -372,6 +372,7 @@ bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool 
         const auto locks = storage->_chunksLock;
         storage->_chunksLock = 0;
         result = storage->Save(data, silentMode);
+        ASSERT(storage->_chunksLock == 0);
         storage->_chunksLock = locks;
     }
     else
