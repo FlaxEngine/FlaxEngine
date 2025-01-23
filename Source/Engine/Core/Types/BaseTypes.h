@@ -83,6 +83,8 @@ template<typename T, typename U>
 class Pair;
 template<typename KeyType, typename ValueType, typename AllocationType>
 class Dictionary;
+template<typename T, typename AllocationType>
+class HashSet;
 template<typename>
 class Function;
 template<typename... Params>
