@@ -6,6 +6,7 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Memory/AllocationUtils.h"
 
 /// <summary>
 /// Template for dynamic array with variable capacity.
@@ -25,22 +26,9 @@ private:
     int32 _capacity;
     AllocationData _allocation;
 
-    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, const int32 fromCount, const int32 fromCapacity)
-    {
-        if IF_CONSTEXPR (AllocationType::HasSwap)
-            to.Swap(from);
-        else
-        {
-            to.Allocate(fromCapacity);
-            Memory::MoveItems(to.Get(), from.Get(), fromCount);
-            Memory::DestructItems(from.Get(), fromCount);
-            from.Free();
-        }
-    }
-
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes an empty <see cref="Array"/> without reserving any space.
     /// </summary>
     FORCE_INLINE Array()
         : _count(0)
@@ -49,10 +37,10 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> by reserving space.
     /// </summary>
-    /// <param name="capacity">The initial capacity.</param>
-    explicit Array(const int32 capacity)
+    /// <param name="capacity">The number of elements that can be added without a need to allocate more memory.</param>
+    FORCE_INLINE explicit Array(const int32 capacity)
         : _count(0)
         , _capacity(capacity)
     {
@@ -61,21 +49,7 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
-    /// </summary>
-    /// <param name="initList">The initial values defined in the array.</param>
-    Array(std::initializer_list<T> initList)
-    {
-        _count = _capacity = static_cast<int32>(initList.size());
-        if (_count > 0)
-        {
-            _allocation.Allocate(_count);
-            Memory::ConstructItems(_allocation.Get(), initList.begin(), _count);
-        }
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> by copying elements.
     /// </summary>
     /// <param name="data">The initial data.</param>
     /// <param name="length">The amount of items.</param>
@@ -91,38 +65,25 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> by copying listed elements.
     /// </summary>
-    /// <param name="other">The other collection to copy.</param>
-    Array(const Array& other)
+    /// <param name="initList">The initial values defined in the array.</param>
+    FORCE_INLINE Array(std::initializer_list<T> initList)
+        : Array(initList.begin(), (int32)initList.size())
     {
-        _count = _capacity = other._count;
-        if (_capacity > 0)
-        {
-            _allocation.Allocate(_capacity);
-            Memory::ConstructItems(_allocation.Get(), other.Get(), other._count);
-        }
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> by copying the elements from the other collection.
     /// </summary>
     /// <param name="other">The other collection to copy.</param>
-    /// <param name="extraSize">The additionally amount of items to add to the add.</param>
-    Array(const Array& other, int32 extraSize)
+    FORCE_INLINE Array(const Array& other)
+        : Array(other.Get(), other.Count())
     {
-        ASSERT(extraSize >= 0);
-        _count = _capacity = other._count + extraSize;
-        if (_capacity > 0)
-        {
-            _allocation.Allocate(_capacity);
-            Memory::ConstructItems(_allocation.Get(), other.Get(), other._count);
-            Memory::ConstructItems(_allocation.Get() + other._count, extraSize);
-        }
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> by copying the elements from the other collection.
     /// </summary>
     /// <param name="other">The other collection to copy.</param>
     template<typename Other = T, typename OtherAllocationType = AllocationType>
@@ -138,7 +99,7 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Array"/> class.
+    /// Initializes <see cref="Array"/> by moving the content of the other collection.
     /// </summary>
     /// <param name="other">The other collection to move.</param>
     Array(Array&& other) noexcept
@@ -147,7 +108,7 @@ public:
         _capacity = other._capacity;
         other._count = 0;
         other._capacity = 0;
-        MoveToEmpty(_allocation, other._allocation, _count, _capacity);
+        AllocationUtils::MoveToEmpty<T, AllocationType>(_allocation, other._allocation, _count, _capacity);
     }
 
     /// <summary>
@@ -204,7 +165,7 @@ public:
             _capacity = other._capacity;
             other._count = 0;
             other._capacity = 0;
-            MoveToEmpty(_allocation, other._allocation, _count, _capacity);
+            AllocationUtils::MoveToEmpty<T, AllocationType>(_allocation, other._allocation, _count, _capacity);
         }
         return *this;
     }
@@ -377,10 +338,13 @@ public:
     /// <summary>
     /// Clear the collection without changing its capacity.
     /// </summary>
-    FORCE_INLINE void Clear()
+    void Clear()
     {
-        Memory::DestructItems(_allocation.Get(), _count);
-        _count = 0;
+        if (_count != 0)
+        {
+            Memory::DestructItems(_allocation.Get(), _count);
+            _count = 0;
+        }
     }
 
     /// <summary>

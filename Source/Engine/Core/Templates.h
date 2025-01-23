@@ -234,6 +234,12 @@ struct TIsCopyConstructible
 	enum { Value = __is_constructible(T, typename TAddLValueReference<typename TAddConst<T>::Type>::Type) };
 };
 
+template<typename T>
+struct TIsMoveConstructible
+{
+    enum { Value = __is_constructible(T, typename TAddRValueReference<T>::Type) };
+};
+
 ////////////////////////////////////////////////////////////////////////////////////
 
 // Checks if a type has a trivial copy constructor.

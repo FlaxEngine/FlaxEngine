@@ -198,7 +198,7 @@ namespace
             const MClass* attribute = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly->GetClass("FlaxEngine.DebugCommand");
             ASSERT_LOW_LAYER(attribute);
             const auto& classes = managedModule->Assembly->GetClasses();
-            for (auto e : classes)
+            for (const auto& e : classes)
             {
                 MClass* mclass = e.Value;
                 if (mclass->IsGeneric() ||

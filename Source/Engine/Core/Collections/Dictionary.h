@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Memory/AllocationUtils.h"
 #include "Engine/Core/Collections/BucketState.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Config.h"
@@ -25,6 +26,7 @@ public:
     struct Bucket
     {
         friend Dictionary;
+        friend Memory;
 
         /// <summary>The key.</summary>
         KeyType Key;
@@ -33,6 +35,57 @@ public:
 
     private:
         BucketState _state;
+
+        Bucket()
+            : _state(BucketState::Empty)
+        {
+        }
+
+        Bucket(Bucket&& other) noexcept
+        {
+            _state = other._state;
+            if (other._state == BucketState::Occupied)
+            {
+                Memory::MoveItems(&Key, &other.Key, 1);
+                Memory::MoveItems(&Value, &other.Value, 1);
+                other._state = BucketState::Empty;
+            }
+        }
+
+        Bucket& operator=(Bucket&& other) noexcept
+        {
+            if (this != &other)
+            {
+                if (_state == BucketState::Occupied)
+                {
+                    Memory::DestructItem(&Key);
+                    Memory::DestructItem(&Value);
+                }
+                _state = other._state;
+                if (other._state == BucketState::Occupied)
+                {
+                    Memory::MoveItems(&Key, &other.Key, 1);
+                    Memory::MoveItems(&Value, &other.Value, 1);
+                    other._state = BucketState::Empty;
+                }
+            }
+            return *this;
+        }
+
+        /// <summary>Copying a bucket is useless, because a key must be unique in the dictionary.</summary>
+        Bucket(const Bucket&) = delete;
+
+        /// <summary>Copying a bucket is useless, because a key must be unique in the dictionary.</summary>
+        Bucket& operator=(const Bucket&) = delete;
+
+        ~Bucket()
+        {
+            if (_state == BucketState::Occupied)
+            {
+                Memory::DestructItem(&Key);
+                Memory::DestructItem(&Value);
+            }
+        }
 
         FORCE_INLINE void Free()
         {
@@ -104,46 +157,19 @@ private:
     int32 _size = 0;
     AllocationData _allocation;
 
-    FORCE_INLINE static void MoveToEmpty(AllocationData& to, AllocationData& from, const int32 fromSize)
-    {
-        if IF_CONSTEXPR (AllocationType::HasSwap)
-            to.Swap(from);
-        else
-        {
-            to.Allocate(fromSize);
-            Bucket* toData = to.Get();
-            Bucket* fromData = from.Get();
-            for (int32 i = 0; i < fromSize; i++)
-            {
-                Bucket& fromBucket = fromData[i];
-                if (fromBucket.IsOccupied())
-                {
-                    Bucket& toBucket = toData[i];
-                    Memory::MoveItems(&toBucket.Key, &fromBucket.Key, 1);
-                    Memory::MoveItems(&toBucket.Value, &fromBucket.Value, 1);
-                    toBucket._state = BucketState::Occupied;
-                    Memory::DestructItem(&fromBucket.Key);
-                    Memory::DestructItem(&fromBucket.Value);
-                    fromBucket._state = BucketState::Empty;
-                }
-            }
-            from.Free();
-        }
-    }
-
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="Dictionary"/> class.
+    /// Initializes an empty <see cref="Dictionary"/> without reserving any space.
     /// </summary>
     Dictionary()
     {
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Dictionary"/> class.
+    /// Initializes <see cref="Dictionary"/> by reserving space.
     /// </summary>
-    /// <param name="capacity">The initial capacity.</param>
-    explicit Dictionary(const int32 capacity)
+    /// <param name="capacity">The number of elements that can be added without a need to allocate more memory.</param>
+    FORCE_INLINE explicit Dictionary(const int32 capacity)
     {
         SetCapacity(capacity);
     }
@@ -160,11 +186,11 @@ public:
         other._elementsCount = 0;
         other._deletedCount = 0;
         other._size = 0;
-        MoveToEmpty(_allocation, other._allocation, _size);
+        AllocationUtils::MoveToEmpty<Bucket, AllocationType>(_allocation, other._allocation, _size, _size);
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="Dictionary"/> class.
+    /// Initializes <see cref="Dictionary"/> by copying the elements from the other collection.
     /// </summary>
     /// <param name="other">Other collection to copy</param>
     Dictionary(const Dictionary& other)
@@ -201,7 +227,7 @@ public:
             other._elementsCount = 0;
             other._deletedCount = 0;
             other._size = 0;
-            MoveToEmpty(_allocation, other._allocation, _size);
+            AllocationUtils::MoveToEmpty<Bucket, AllocationType>(_allocation, other._allocation, _size, _size);
         }
         return *this;
     }
@@ -536,25 +562,16 @@ public:
     /// <param name="preserveContents">Enables preserving collection contents during resizing.</param>
     void SetCapacity(int32 capacity, const bool preserveContents = true)
     {
-        if (capacity == Capacity())
+        if (capacity == _size)
             return;
         ASSERT(capacity >= 0);
         AllocationData oldAllocation;
-        MoveToEmpty(oldAllocation, _allocation, _size);
+        AllocationUtils::MoveToEmpty<Bucket, AllocationType>(oldAllocation, _allocation, _size, _size);
         const int32 oldSize = _size;
         const int32 oldElementsCount = _elementsCount;
         _deletedCount = _elementsCount = 0;
         if (capacity != 0 && (capacity & (capacity - 1)) != 0)
-        {
-            // Align capacity value to the next power of two (http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
-            capacity--;
-            capacity |= capacity >> 1;
-            capacity |= capacity >> 2;
-            capacity |= capacity >> 4;
-            capacity |= capacity >> 8;
-            capacity |= capacity >> 16;
-            capacity++;
-        }
+            capacity = AllocationUtils::AlignToPowerOf2(capacity);
         if (capacity)
         {
             _allocation.Allocate(capacity);
@@ -574,11 +591,9 @@ public:
                 {
                     FindPosition(oldBucket.Key, pos);
                     ASSERT(pos.FreeSlotIndex != -1);
-                    Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
-                    Memory::MoveItems(&bucket->Key, &oldBucket.Key, 1);
-                    Memory::MoveItems(&bucket->Value, &oldBucket.Value, 1);
-                    bucket->_state = BucketState::Occupied;
-                    ++_elementsCount;
+                    Bucket& bucket = _allocation.Get()[pos.FreeSlotIndex];
+                    bucket = MoveTemp(oldBucket);
+                    _elementsCount++;
                 }
             }
         }
@@ -968,7 +983,7 @@ private:
         {
             // Rebuild entire table completely
             AllocationData oldAllocation;
-            MoveToEmpty(oldAllocation, _allocation, _size);
+            AllocationUtils::MoveToEmpty<Bucket, AllocationType>(oldAllocation, _allocation, _size, _size);
             _allocation.Allocate(_size);
             Bucket* data = _allocation.Get();
             for (int32 i = 0; i < _size; i++)
@@ -982,10 +997,8 @@ private:
                 {
                     FindPosition(oldBucket.Key, pos);
                     ASSERT(pos.FreeSlotIndex != -1);
-                    Bucket* bucket = &_allocation.Get()[pos.FreeSlotIndex];
-                    Memory::MoveItems(&bucket->Key, &oldBucket.Key, 1);
-                    Memory::MoveItems(&bucket->Value, &oldBucket.Value, 1);
-                    bucket->_state = BucketState::Occupied;
+                    Bucket& bucket = _allocation.Get()[pos.FreeSlotIndex];
+                    bucket = MoveTemp(oldBucket);
                 }
             }
             for (int32 i = 0; i < _size; i++)
