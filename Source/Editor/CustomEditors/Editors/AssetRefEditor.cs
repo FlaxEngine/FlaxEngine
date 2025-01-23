@@ -307,13 +307,13 @@ namespace FlaxEditor.CustomEditors.Editors
             _validator = new AssetPickerValidator(ScriptType.Null);
             _textBox = layout.Custom<TextBoxWithPicker>().CustomControl;
             _textBox.ShowPicker = OnShowPicker;
-            _textBox.OnAssetDropped = OnAssetDropped;
+            _textBox.OnAssetDropped = OnItemDropped;
             _textBox.EditEnd += OnEditEnd;
             _textBox.SetValidationMethod(_validator.IsValid);
             AssetRefEditor.ApplyAssetReferenceAttribute(Values, out _, _validator);
         }
 
-        private void OnAssetDropped(ContentItem item)
+        private void OnItemDropped(ContentItem item)
         {
             SetPickerPath(item);
         }
