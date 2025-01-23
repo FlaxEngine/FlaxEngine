@@ -217,7 +217,7 @@ public:
     /// <param name="name">The parameter name.</param>
     /// <param name="instance">The object instance.</param>
     /// <param name="value">The property value to set.</param>
-    API_FUNCTION() void SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, const Variant& value) const;
+    API_FUNCTION() void SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, const Variant& value);
 
     /// <summary>
     /// Sets the value of the Visual Script parameter of the given instance.
@@ -225,7 +225,7 @@ public:
     /// <param name="name">The parameter name.</param>
     /// <param name="instance">The object instance.</param>
     /// <param name="value">The property value to set.</param>
-    void SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, Variant&& value) const;
+    void SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, Variant&& value);
 
     /// <summary>
     /// Tries to find the method matching the given properties. Doesn't check base classes but just this script.

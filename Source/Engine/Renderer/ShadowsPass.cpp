@@ -72,7 +72,7 @@ struct ShadowAtlasLightTile
     Matrix WorldToShadow;
     float FramesToUpdate; // Amount of frames (with fraction) until the next shadow update can happen
     bool SkipUpdate;
-    bool HasStaticGeometry;
+    mutable bool HasStaticGeometry;
     Viewport CachedViewport; // The viewport used the last time to render shadow to the atlas
 
     void FreeDynamic(ShadowsCustomBuffer* buffer);
@@ -190,7 +190,7 @@ struct ShadowAtlasLight
     uint8 TilesNeeded;
     uint8 TilesCount;
     bool HasStaticShadowContext;
-    StaticStates StaticState;
+    mutable StaticStates StaticState;
     BoundingSphere Bounds;
     float Sharpness, Fade, NormalOffsetScale, Bias, FadeDistance, Distance, TileBorder;
     Float4 CascadeSplits;
@@ -1393,7 +1393,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
         bool renderedAny = false;
         for (auto& e : shadows.Lights)
         {
-            ShadowAtlasLight& atlasLight = e.Value;
+            const ShadowAtlasLight& atlasLight = e.Value;
             if (!atlasLight.HasStaticShadowContext || atlasLight.ContextCount == 0)
                 continue;
             int32 contextIndex = 0;
@@ -1403,7 +1403,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
                 // Check for any static geometry to use in static shadow map
                 for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
                 {
-                    ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
+                    const ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
                     contextIndex++; // Skip dynamic context
                     auto& shadowContextStatic = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
                     if (!shadowContextStatic.List->DrawCallsLists[(int32)DrawCallsListType::Depth].IsEmpty() || !shadowContextStatic.List->ShadowDepthDrawCallsList.IsEmpty())
@@ -1419,7 +1419,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
             contextIndex = 0;
             for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
             {
-                ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
+                const ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
                 if (!tile.RectTile)
                     break;
                 if (!tile.StaticRectTile)
@@ -1472,13 +1472,13 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
     context->SetRenderTarget(shadows.ShadowMapAtlas->View(), (GPUTextureView*)nullptr);
     for (auto& e : shadows.Lights)
     {
-        ShadowAtlasLight& atlasLight = e.Value;
+        const ShadowAtlasLight& atlasLight = e.Value;
         if (atlasLight.ContextCount == 0)
             continue;
         int32 contextIndex = 0;
         for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
         {
-            ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
+            const ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
             if (!tile.RectTile)
                 break;
             if (tile.SkipUpdate)

@@ -2142,7 +2142,7 @@ const Variant& VisualScript::GetScriptInstanceParameterValue(const StringView& n
     return Variant::Null;
 }
 
-void VisualScript::SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, const Variant& value) const
+void VisualScript::SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, const Variant& value)
 {
     CHECK(instance);
     for (int32 paramIndex = 0; paramIndex < Graph.Parameters.Count(); paramIndex++)
@@ -2163,7 +2163,7 @@ void VisualScript::SetScriptInstanceParameterValue(const StringView& name, Scrip
     LOG(Warning, "Failed to set {0} parameter '{1}'", ToString(), name);
 }
 
-void VisualScript::SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, Variant&& value) const
+void VisualScript::SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, Variant&& value)
 {
     CHECK(instance);
     for (int32 paramIndex = 0; paramIndex < Graph.Parameters.Count(); paramIndex++)
