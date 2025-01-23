@@ -6,7 +6,35 @@
 #include "Engine/Core/Memory/Allocation.h"
 #include "Engine/Core/Memory/AllocationUtils.h"
 #include "Engine/Core/Collections/HashFunctions.h"
-#include "Engine/Core/Collections/Config.h"
+
+/// <summary>
+/// Default capacity for the hash set collections (minimum initial amount of space for the elements).
+/// </summary>
+#ifndef HASH_SET_DEFAULT_CAPACITY
+#if PLATFORM_DESKTOP
+#define HASH_SET_DEFAULT_CAPACITY 256
+#else
+#define HASH_SET_DEFAULT_CAPACITY 64
+#endif
+#endif
+
+/// <summary>
+/// Default slack space divider for the hash sets.
+/// </summary>
+#define HASH_SET_DEFAULT_SLACK_SCALE 3
+
+/// <summary>
+/// Function for hash set that tells how change hash index during iteration (size param is a buckets table size).
+/// </summary>
+#define HASH_SET_PROB_FUNC(size, numChecks) (numChecks)
+//#define HASH_SET_PROB_FUNC(size, numChecks) (1)
+
+// [Deprecated in v1.10] Use HASH_SET_DEFAULT_CAPACITY
+#define DICTIONARY_DEFAULT_CAPACITY HASH_SET_DEFAULT_CAPACITY
+// [Deprecated in v1.10] Use HASH_SET_DEFAULT_SLACK_SCALE
+#define DICTIONARY_DEFAULT_SLACK_SCALE HASH_SET_DEFAULT_SLACK_SCALE
+// [Deprecated in v1.10] Use HASH_SET_PROB_FUNC
+#define DICTIONARY_PROB_FUNC(size, numChecks) (numChecks) HASH_SET_PROB_FUNC(size, numChecks)
 
 /// <summary>
 /// Tells if the object is occupied, and if not, if the bucket is a subject of compaction.
@@ -162,12 +190,12 @@ public:
     /// <param name="preserveContents">True if preserve collection data when changing its size, otherwise collection after resize will be empty.</param>
     void EnsureCapacity(int32 minCapacity, const bool preserveContents = true)
     {
-        minCapacity *= DICTIONARY_DEFAULT_SLACK_SCALE;
+        minCapacity *= HASH_SET_DEFAULT_SLACK_SCALE;
         if (_size >= minCapacity)
             return;
         int32 capacity = _allocation.CalculateCapacityGrow(_size, minCapacity);
-        if (capacity < DICTIONARY_DEFAULT_CAPACITY)
-            capacity = DICTIONARY_DEFAULT_CAPACITY;
+        if (capacity < HASH_SET_DEFAULT_CAPACITY)
+            capacity = HASH_SET_DEFAULT_CAPACITY;
         SetCapacity(capacity, preserveContents);
     }
 
@@ -324,7 +352,7 @@ protected:
 
             // Move to the next bucket
             checksCount++;
-            bucketIndex = (bucketIndex + DICTIONARY_PROB_FUNC(_size, checksCount)) & tableSizeMinusOne;
+            bucketIndex = (bucketIndex + HASH_SET_PROB_FUNC(_size, checksCount)) & tableSizeMinusOne;
         }
         result.ObjectIndex = -1;
         result.FreeSlotIndex = insertPos;
@@ -334,11 +362,11 @@ protected:
     BucketType* OnAdd(const KeyComparableType& key, bool checkUnique = true)
     {
         // Check if need to rehash elements (prevent many deleted elements that use too much of capacity)
-        if (_deletedCount > _size / DICTIONARY_DEFAULT_SLACK_SCALE)
+        if (_deletedCount > _size / HASH_SET_DEFAULT_SLACK_SCALE)
             Compact();
 
         // Ensure to have enough memory for the next item (in case of new element insertion)
-        EnsureCapacity(((_elementsCount + 1) * DICTIONARY_DEFAULT_SLACK_SCALE + _deletedCount) / DICTIONARY_DEFAULT_SLACK_SCALE);
+        EnsureCapacity(((_elementsCount + 1) * HASH_SET_DEFAULT_SLACK_SCALE + _deletedCount) / HASH_SET_DEFAULT_SLACK_SCALE);
 
         // Find location of the item or place to insert it
         FindPositionResult pos;

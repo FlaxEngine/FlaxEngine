@@ -185,8 +185,8 @@ TEST_CASE("HashSet")
     SECTION("Test Allocators")
     {
         HashSet<int32> a1;
-        HashSet<int32, InlinedAllocation<DICTIONARY_DEFAULT_CAPACITY>> a2;
-        HashSet<int32, FixedAllocation<DICTIONARY_DEFAULT_CAPACITY>> a3;
+        HashSet<int32, InlinedAllocation<HASH_SET_DEFAULT_CAPACITY>> a2;
+        HashSet<int32, FixedAllocation<HASH_SET_DEFAULT_CAPACITY>> a3;
         for (int32 i = 0; i < 7; i++)
         {
             a1.Add(i);
@@ -236,7 +236,7 @@ TEST_CASE("HashSet")
     {
         HashSet<int32> a1;
         a1.Add(1);
-        CHECK(a1.Capacity() <= DICTIONARY_DEFAULT_CAPACITY);
+        CHECK(a1.Capacity() <= HASH_SET_DEFAULT_CAPACITY);
     }
 
     SECTION("Test Add/Remove")
@@ -248,7 +248,7 @@ TEST_CASE("HashSet")
             a1.Remove(i);
         }
         CHECK(a1.Count() == 0);
-        CHECK(a1.Capacity() <= DICTIONARY_DEFAULT_CAPACITY);
+        CHECK(a1.Capacity() <= HASH_SET_DEFAULT_CAPACITY);
         a1.Clear();
         for (int32 i = 1; i <= 10; i++)
             a1.Add(-i);
@@ -258,7 +258,7 @@ TEST_CASE("HashSet")
             a1.Remove(i);
         }
         CHECK(a1.Count() == 10);
-        CHECK(a1.Capacity() <= DICTIONARY_DEFAULT_CAPACITY);
+        CHECK(a1.Capacity() <= HASH_SET_DEFAULT_CAPACITY);
     }
 }
 
@@ -267,8 +267,8 @@ TEST_CASE("Dictionary")
     SECTION("Test Allocators")
     {
         Dictionary<int32, int32> a1;
-        Dictionary<int32, int32, InlinedAllocation<DICTIONARY_DEFAULT_CAPACITY>> a2;
-        Dictionary<int32, int32, FixedAllocation<DICTIONARY_DEFAULT_CAPACITY>> a3;
+        Dictionary<int32, int32, InlinedAllocation<HASH_SET_DEFAULT_CAPACITY>> a2;
+        Dictionary<int32, int32, FixedAllocation<HASH_SET_DEFAULT_CAPACITY>> a3;
         for (int32 i = 0; i < 7; i++)
         {
             a1.Add(i, i);
@@ -322,7 +322,7 @@ TEST_CASE("Dictionary")
     {
         Dictionary<int32, int32> a1;
         a1.Add(1, 1);
-        CHECK(a1.Capacity() <= DICTIONARY_DEFAULT_CAPACITY);
+        CHECK(a1.Capacity() <= HASH_SET_DEFAULT_CAPACITY);
     }
 
     SECTION("Test Add/Remove")
@@ -334,7 +334,7 @@ TEST_CASE("Dictionary")
             a1.Remove(i);
         }
         CHECK(a1.Count() == 0);
-        CHECK(a1.Capacity() <= DICTIONARY_DEFAULT_CAPACITY);
+        CHECK(a1.Capacity() <= HASH_SET_DEFAULT_CAPACITY);
         a1.Clear();
         for (int32 i = 1; i <= 10; i++)
             a1.Add(-i, -i);
@@ -344,6 +344,6 @@ TEST_CASE("Dictionary")
             a1.Remove(i);
         }
         CHECK(a1.Count() == 10);
-        CHECK(a1.Capacity() <= DICTIONARY_DEFAULT_CAPACITY);
+        CHECK(a1.Capacity() <= HASH_SET_DEFAULT_CAPACITY);
     }
 }
