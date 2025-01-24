@@ -221,6 +221,11 @@ public:
     }
 
     /// <summary>
+    /// Gets the root parent Actor excluding the scene Actor.
+    /// </summary>
+    API_FUNCTION() Actor* GetRoot();
+
+    /// <summary>
     /// Gets the child actor at the given index.
     /// </summary>
     /// <param name="index">The child actor index.</param>
@@ -1068,6 +1073,7 @@ private:
     void SetSceneInHierarchy(Scene* scene);
     void OnEnableInHierarchy();
     void OnDisableInHierarchy();
+    Actor* GetRoot(Actor* actor);
 
     // Helper methods used by templates GetChildren/GetScripts to prevent including MClass/Script here
     static bool IsSubClassOf(const Actor* object, const MClass* klass);
