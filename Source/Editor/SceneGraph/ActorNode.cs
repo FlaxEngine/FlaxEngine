@@ -215,10 +215,10 @@ namespace FlaxEditor.SceneGraph
         public override bool CanDuplicate => (_actor.HideFlags & HideFlags.HideInHierarchy) == 0;
 
         /// <inheritdoc />
-        public override bool IsActive => _actor.IsActive;
+        public override bool IsActive => _actor?.IsActive ?? false;
 
         /// <inheritdoc />
-        public override bool IsActiveInHierarchy => _actor.IsActiveInHierarchy;
+        public override bool IsActiveInHierarchy => _actor?.IsActiveInHierarchy ?? false;
 
         /// <inheritdoc />
         public override int OrderInParent
