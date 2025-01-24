@@ -217,7 +217,7 @@ LinuxFileSystemWatcher::~LinuxFileSystemWatcher()
         FileSystemWatchers::Thread = nullptr;
         close(FileSystemWatchers::WacherFileDescriptor);
         FileSystemWatchers::WacherFileDescriptor = 0;
-        for (auto e : FileSystemWatchers::Watchers)
+        for (auto& e : FileSystemWatchers::Watchers)
             Delete(e.Value.Second.Second);
         FileSystemWatchers::Watchers.Clear();
     }
