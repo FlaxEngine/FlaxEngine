@@ -571,14 +571,14 @@ namespace FlaxEditor.Windows.Assets
         {
             if (IsDisposing)
                 return;
+            base.OnDestroy();
+
             ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             _undo.Enabled = false;
             _nodePropertiesEditor.Deselect();
             _knowledgePropertiesEditor.Deselect();
             _undo.Clear();
             _behaviorPicker = null;
-
-            base.OnDestroy();
         }
 
         /// <inheritdoc />

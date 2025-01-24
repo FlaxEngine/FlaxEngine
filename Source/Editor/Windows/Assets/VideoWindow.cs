@@ -199,12 +199,12 @@ namespace FlaxEditor.Windows.Assets
         {
             if (IsDisposing)
                 return;
+            base.OnDestroy();
+
             _videoPlayer.Stop();
             Object.Destroy(ref _videoPlayer);
             _item.RemoveReference(this);
             _item = null;
-
-            base.OnDestroy();
         }
 
         /// <inheritdoc />

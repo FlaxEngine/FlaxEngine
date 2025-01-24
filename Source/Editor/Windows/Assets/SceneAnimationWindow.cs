@@ -594,7 +594,12 @@ namespace FlaxEditor.Windows.Assets
 
             public override void OnDestroy()
             {
+                if (IsDisposing)
+                    return;
                 CancelRendering();
+
+                base.OnDestroy();
+
                 _window.Timeline.Enabled = true;
                 _window.Timeline.Visible = true;
                 _window._toolstrip.Enabled = true;
@@ -602,8 +607,6 @@ namespace FlaxEditor.Windows.Assets
                 _window = null;
                 _presenter = null;
                 _options = null;
-
-                base.OnDestroy();
             }
         }
 
@@ -1030,6 +1033,10 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
+            base.OnDestroy();
+
             Level.ActorDeleted -= OnActorDeleted;
 
             if (_previewButton.Checked)
@@ -1056,8 +1063,6 @@ namespace FlaxEditor.Windows.Assets
             _redoButton = null;
             _renderButton = null;
             _previewPlayerPicker = null;
-
-            base.OnDestroy();
         }
     }
 }

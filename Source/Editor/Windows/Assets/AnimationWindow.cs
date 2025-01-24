@@ -438,6 +438,10 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
+            base.OnDestroy();
+
             if (_undo != null)
             {
                 _undo.Enabled = false;
@@ -454,8 +458,6 @@ namespace FlaxEditor.Windows.Assets
             _saveButton = null;
             _undoButton = null;
             _redoButton = null;
-
-            base.OnDestroy();
         }
     }
 }

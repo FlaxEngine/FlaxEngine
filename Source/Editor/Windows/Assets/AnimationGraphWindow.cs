@@ -441,6 +441,7 @@ namespace FlaxEditor.Windows.Assets
         {
             if (IsDisposing)
                 return;
+            base.OnDestroy();
             Animations.DebugFlow -= OnDebugFlow;
 
             _properties = null;
@@ -448,8 +449,6 @@ namespace FlaxEditor.Windows.Assets
             _debugPicker = null;
             _showNodesButton = null;
             _previewTab = null;
-
-            base.OnDestroy();
         }
 
         /// <inheritdoc />

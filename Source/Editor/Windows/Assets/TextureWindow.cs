@@ -184,11 +184,13 @@ namespace FlaxEditor.Windows.Assets
             /// <inheritdoc />
             public override void OnDestroy()
             {
+                if (IsDisposing)
+                    return;
+                base.OnDestroy();
+
                 Presenter.Deselect();
                 Presenter = null;
                 Proxy = null;
-
-                base.OnDestroy();
             }
         }
 

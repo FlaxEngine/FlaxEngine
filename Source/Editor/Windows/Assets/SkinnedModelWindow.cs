@@ -734,6 +734,8 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
             base.OnDestroy();
 
             Object.Destroy(ref _highlightActor);
