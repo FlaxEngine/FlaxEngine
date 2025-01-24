@@ -19,22 +19,6 @@ public:
     {
     }
 
-    GPUTextureViewVulkan(const GPUTextureViewVulkan& other)
-        : GPUTextureViewVulkan()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    GPUTextureViewVulkan& operator=(const GPUTextureViewVulkan& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
-    }
-
 #if !BUILD_RELEASE
     ~GPUTextureViewVulkan()
     {

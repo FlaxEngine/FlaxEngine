@@ -94,22 +94,6 @@ public:
         : GraphParameter(SpawnParams(Guid::New(), TypeInitializer))
     {
     }
-
-    ShaderGraphParameter(const ShaderGraphParameter& other)
-        : ShaderGraphParameter()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    ShaderGraphParameter& operator=(const ShaderGraphParameter& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
-    }
 };
 
 template<class NodeType = ShaderGraphNode<>, class BoxType = ShaderGraphBox, class ParameterType = ShaderGraphParameter>

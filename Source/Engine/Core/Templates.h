@@ -234,6 +234,8 @@ struct TIsCopyConstructible
 	enum { Value = __is_constructible(T, typename TAddLValueReference<typename TAddConst<T>::Type>::Type) };
 };
 
+// Checks if a type has a move constructor.
+
 template<typename T>
 struct TIsMoveConstructible
 {

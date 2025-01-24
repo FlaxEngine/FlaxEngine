@@ -32,22 +32,6 @@ public:
     {
     }
 
-    ParticleEffectParameter(const ParticleEffectParameter& other)
-        : ParticleEffectParameter()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    ParticleEffectParameter& operator=(const ParticleEffectParameter& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
-    }
-
     /// <summary>
     /// Returns true if parameter object handle is valid.
     /// </summary>

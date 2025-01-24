@@ -103,22 +103,6 @@ public:
 API_CLASS() class FLAXENGINE_API VisjectGraphParameter : public GraphParameter
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(VisjectGraphParameter, GraphParameter);
-public:
-    VisjectGraphParameter(const VisjectGraphParameter& other)
-        : VisjectGraphParameter()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    VisjectGraphParameter& operator=(const VisjectGraphParameter& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
-    }
 };
 
 template<class NodeType = VisjectGraphNode<>, class BoxType = VisjectGraphBox, class ParameterType = VisjectGraphParameter>

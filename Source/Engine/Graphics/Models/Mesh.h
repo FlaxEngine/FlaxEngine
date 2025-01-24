@@ -16,16 +16,6 @@ API_CLASS(NoSpawn) class FLAXENGINE_API Mesh : public MeshBase
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(Mesh, MeshBase);
 
-public:
-    Mesh(const Mesh& other)
-        : Mesh()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-public:
     /// <summary>
     /// Gets the model owning this mesh.
     /// </summary>

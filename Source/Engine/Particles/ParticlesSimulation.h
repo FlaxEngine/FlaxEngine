@@ -21,22 +21,6 @@ public:
         : GraphParameter(SpawnParams(Guid::New(), TypeInitializer))
     {
     }
-
-    ParticleSystemParameter(const ParticleSystemParameter& other)
-        : ParticleSystemParameter()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    ParticleSystemParameter& operator=(const ParticleSystemParameter& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
-    }
 };
 
 /// <summary>

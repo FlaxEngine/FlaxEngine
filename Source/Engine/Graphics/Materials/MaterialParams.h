@@ -199,23 +199,6 @@ private:
     String _name;
 
 public:
-    MaterialParameter(const MaterialParameter& other)
-        : MaterialParameter()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    MaterialParameter& operator=(const MaterialParameter& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
-    }
-
-public:
     /// <summary>
     /// Gets the parameter ID (not the parameter instance Id but the original parameter ID).
     /// </summary>

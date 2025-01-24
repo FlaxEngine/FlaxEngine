@@ -12,16 +12,6 @@ API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedMesh : public MeshBase
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(SkinnedMesh, MeshBase);
 
-public:
-    SkinnedMesh(const SkinnedMesh& other)
-        : SkinnedMesh()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-public:
     /// <summary>
     /// Gets the skinned model owning this mesh.
     /// </summary>
@@ -48,7 +38,6 @@ public:
     /// <returns>True if cannot load data, otherwise false.</returns>
     DEPRECATED("Use Init intead.") bool Load(uint32 vertices, uint32 triangles, const void* vb0, const void* ib, bool use16BitIndexBuffer);
 
-public:
     /// <summary>
     /// Updates the model mesh (used by the virtual models created with Init rather than Load).
     /// [Deprecated in v1.10]

@@ -169,22 +169,6 @@ DECLARE_ENUM_OPERATORS(AnimGraphStateTransition::FlagTypes);
 API_CLASS() class AnimGraphParameter : public VisjectGraphParameter
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(AnimGraphParameter, VisjectGraphParameter);
-public:
-    AnimGraphParameter(const AnimGraphParameter& other)
-        : AnimGraphParameter()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    AnimGraphParameter& operator=(const AnimGraphParameter& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
-    }
 };
 
 /// <summary>
