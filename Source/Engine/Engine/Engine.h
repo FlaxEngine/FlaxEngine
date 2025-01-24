@@ -84,6 +84,11 @@ public:
     API_EVENT() static Action RequestingExit;
 
     /// <summary>
+    /// The custom handler for engine crash handling and reporting. Can be used to override default message box with a custom one or send crash report to telemetry service. Args are: error message and context pointer (for stack-trace access).
+    /// </summary>
+    API_EVENT() static Delegate<StringView, void*> ReportCrash;
+
+    /// <summary>
     /// The current state of the fatal error. Set to None if no error occurred yet.
     /// </summary>
     API_FIELD(ReadOnly) static FatalErrorType FatalError;

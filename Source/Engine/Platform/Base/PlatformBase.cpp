@@ -372,7 +372,10 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
     }
 
     // Show error message
-    Error(msg);
+    if (Engine::ReportCrash.IsBinded())
+        Engine::ReportCrash(msg, context);
+    else
+        Error(msg);
 
     // Only main thread can call exit directly
     if (IsInMainThread())

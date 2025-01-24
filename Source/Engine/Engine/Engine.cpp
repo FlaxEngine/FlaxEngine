@@ -71,6 +71,7 @@ Action Engine::Draw;
 Action Engine::Pause;
 Action Engine::Unpause;
 Action Engine::RequestingExit;
+Delegate<StringView, void*> Engine::ReportCrash;
 FatalErrorType Engine::FatalError = FatalErrorType::None;
 bool Engine::IsRequestingExit = false;
 int32 Engine::ExitCode = 0;
