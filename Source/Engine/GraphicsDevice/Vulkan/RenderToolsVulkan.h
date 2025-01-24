@@ -11,21 +11,13 @@
 
 #if GRAPHICS_API_VULKAN
 
-#if GPU_ENABLE_ASSERTION
-
-// Vulkan results validation
-#define VALIDATE_VULKAN_RESULT(x) { VkResult result = x; if (result != VK_SUCCESS) RenderToolsVulkan::ValidateVkResult(result, __FILE__, __LINE__); }
+#define VALIDATE_VULKAN_RESULT(x) { VkResult result = x; if (result != VK_SUCCESS) RenderToolsVulkan::LogVkResult(result, __FILE__, __LINE__, true); }
 #define LOG_VULKAN_RESULT(result) if (result != VK_SUCCESS) RenderToolsVulkan::LogVkResult(result, __FILE__, __LINE__)
 #define LOG_VULKAN_RESULT_WITH_RETURN(result) if (result != VK_SUCCESS) { RenderToolsVulkan::LogVkResult(result, __FILE__, __LINE__); return true; }
+#if GPU_ENABLE_ASSERTION
 #define VK_SET_DEBUG_NAME(device, handle, type, name) RenderToolsVulkan::SetObjectName(device->Device, (uint64)handle, type, name)
-
 #else
-
-#define VALIDATE_VULKAN_RESULT(x) x
-#define LOG_VULKAN_RESULT(result) if (result != VK_SUCCESS) RenderToolsVulkan::LogVkResult(result)
-#define LOG_VULKAN_RESULT_WITH_RETURN(result) if (result != VK_SUCCESS) { RenderToolsVulkan::LogVkResult(result); return true; }
 #define VK_SET_DEBUG_NAME(device, handle, type, name)
-
 #endif
 
 /// <summary>
@@ -46,9 +38,7 @@ public:
 #endif
 
     static String GetVkErrorString(VkResult result);
-    static void ValidateVkResult(VkResult result, const char* file, uint32 line);
-    static void LogVkResult(VkResult result, const char* file, uint32 line);
-    static void LogVkResult(VkResult result);
+    static void LogVkResult(VkResult result, const char* file = nullptr, uint32 line = 0, bool fatal = false);
 
     static inline VkPipelineStageFlags GetBufferBarrierFlags(VkAccessFlags accessFlags)
     {

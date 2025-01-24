@@ -97,6 +97,8 @@ protected:
     Array<GPUResource*> _resources;
     CriticalSection _resourcesLock;
 
+    void OnRequestingExit();
+
 protected:
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUDevice"/> class.

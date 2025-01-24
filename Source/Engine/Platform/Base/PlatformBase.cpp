@@ -348,8 +348,8 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
             LOG(Error, "Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(memoryStats.UsedPhysicalMemory), (int32)(100 * memoryStats.UsedPhysicalMemory / memoryStats.TotalPhysicalMemory));
             LOG(Error, "Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(memoryStats.UsedVirtualMemory), (int32)(100 * memoryStats.UsedVirtualMemory / memoryStats.TotalVirtualMemory));
             const ProcessMemoryStats processMemoryStats = Platform::GetProcessMemoryStats();
-            LOG(Error, "Process Used Physical Memory: {0}", Utilities::BytesToText(processMemoryStats.UsedPhysicalMemory));
-            LOG(Error, "Process Used Virtual Memory: {0}", Utilities::BytesToText(processMemoryStats.UsedVirtualMemory));
+            LOG(Error, "Process Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(processMemoryStats.UsedPhysicalMemory), (int32)(100 * processMemoryStats.UsedPhysicalMemory / memoryStats.TotalPhysicalMemory));
+            LOG(Error, "Process Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(processMemoryStats.UsedVirtualMemory), (int32)(100 * processMemoryStats.UsedVirtualMemory / memoryStats.TotalVirtualMemory));
         }
     }
     if (Log::Logger::LogFilePath.HasChars())

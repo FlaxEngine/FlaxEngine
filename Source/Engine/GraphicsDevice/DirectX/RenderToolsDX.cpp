@@ -130,7 +130,7 @@ DXGI_FORMAT RenderToolsDX::ToDxgiFormat(PixelFormat format)
     return PixelFormatToDXGIFormat[(int32)format];
 }
 
-const Char* RenderToolsDX::GetFeatureLevelString(const D3D_FEATURE_LEVEL featureLevel)
+const Char* RenderToolsDX::GetFeatureLevelString(D3D_FEATURE_LEVEL featureLevel)
 {
     switch (featureLevel)
     {
@@ -159,11 +159,24 @@ const Char* RenderToolsDX::GetFeatureLevelString(const D3D_FEATURE_LEVEL feature
     }
 }
 
-String RenderToolsDX::GetD3DErrorString(HRESULT errorCode)
+uint32 RenderToolsDX::CountAdapterOutputs(IDXGIAdapter* adapter)
 {
-    StringBuilder sb(256);
+    uint32 count = 0;
+    while (true)
+    {
+        IDXGIOutput* output;
+        HRESULT hr = adapter->EnumOutputs(count, &output);
+        if (FAILED(hr))
+        {
+            break;
+        }
+        count++;
+    }
+    return count;
+}
 
-    // Switch error code
+void FormatD3DErrorString(HRESULT errorCode, StringBuilder& sb, HRESULT& removedReason)
+{
 #define D3DERR(x) case x: sb.Append(TEXT(#x)); break
     switch (errorCode)
     {
@@ -184,6 +197,8 @@ String RenderToolsDX::GetD3DErrorString(HRESULT errorCode)
     // DirectX 11
     D3DERR(D3D11_ERROR_FILE_NOT_FOUND);
     D3DERR(D3D11_ERROR_TOO_MANY_UNIQUE_STATE_OBJECTS);
+    D3DERR(D3D11_ERROR_TOO_MANY_UNIQUE_VIEW_OBJECTS);
+    D3DERR(D3D11_ERROR_DEFERRED_CONTEXT_MAP_WITHOUT_INITIAL_DISCARD);
 
     // DirectX 12
     //D3DERR(D3D12_ERROR_FILE_NOT_FOUND);
@@ -221,22 +236,20 @@ String RenderToolsDX::GetD3DErrorString(HRESULT errorCode)
 #endif
 
     default:
-    {
         sb.AppendFormat(TEXT("0x{0:x}"), static_cast<unsigned int>(errorCode));
-    }
     break;
     }
 #undef D3DERR
 
     if (errorCode == DXGI_ERROR_DEVICE_REMOVED || errorCode == DXGI_ERROR_DEVICE_RESET || errorCode == DXGI_ERROR_DRIVER_INTERNAL_ERROR)
     {
-        HRESULT reason = S_OK;
-        const RendererType rendererType = GPUDevice::Instance ? GPUDevice::Instance->GetRendererType() : RendererType::Unknown;
-        void* nativePtr = GPUDevice::Instance ? GPUDevice::Instance->GetNativePtr() : nullptr;
+        GPUDevice* device = GPUDevice::Instance;
+        const RendererType rendererType = device ? device->GetRendererType() : RendererType::Unknown;
+        void* nativePtr = device ? device->GetNativePtr() : nullptr;
 #if GRAPHICS_API_DIRECTX12
         if (rendererType == RendererType::DirectX12 && nativePtr)
         {
-            reason = ((ID3D12Device*)nativePtr)->GetDeviceRemovedReason();
+            removedReason = ((ID3D12Device*)nativePtr)->GetDeviceRemovedReason();
         }
 #endif
 #if GRAPHICS_API_DIRECTX11
@@ -244,11 +257,11 @@ String RenderToolsDX::GetD3DErrorString(HRESULT errorCode)
             rendererType == RendererType::DirectX10_1 ||
             rendererType == RendererType::DirectX10) && nativePtr)
         {
-            reason = ((ID3D11Device*)nativePtr)->GetDeviceRemovedReason();
+            removedReason = ((ID3D11Device*)nativePtr)->GetDeviceRemovedReason();
         }
 #endif
         const Char* reasonStr = nullptr;
-        switch (reason)
+        switch (removedReason)
         {
         case DXGI_ERROR_DEVICE_HUNG:
             reasonStr = TEXT("HUNG");
@@ -269,8 +282,35 @@ String RenderToolsDX::GetD3DErrorString(HRESULT errorCode)
         if (reasonStr != nullptr)
             sb.AppendFormat(TEXT(", Device Removed Reason: {0}"), reasonStr);
     }
+}
 
-    return sb.ToString();
+void RenderToolsDX::LogD3DResult(HRESULT result, const char* file, uint32 line, bool fatal)
+{
+    ASSERT_LOW_LAYER(FAILED(result));
+
+    // Process error and format message
+    StringBuilder sb;
+    HRESULT removedReason = S_OK;
+    sb.Append(TEXT("DirectX error: "));
+    FormatD3DErrorString(result, sb, removedReason);
+    if (file)
+        sb.Append(TEXT(" at ")).Append(file).Append(':').Append(line);
+    const StringView msg(sb.ToStringView());
+
+    // Handle error
+    FatalErrorType errorType = FatalErrorType::None;
+    if (result == E_OUTOFMEMORY)
+        errorType = FatalErrorType::GPUOutOfMemory;
+    else if (removedReason != S_OK)
+    {
+        errorType = FatalErrorType::GPUCrash;
+        if (removedReason == DXGI_ERROR_DEVICE_HUNG)
+            errorType = FatalErrorType::GPUHang;
+    }
+    if (errorType != FatalErrorType::None)
+        Platform::Fatal(msg, nullptr, errorType);
+    else
+        Log::Logger::Write(fatal ? LogType::Fatal : LogType::Error, msg);
 }
 
 LPCSTR RenderToolsDX::GetVertexInputSemantic(VertexElement::Types type, UINT& semanticIndex)

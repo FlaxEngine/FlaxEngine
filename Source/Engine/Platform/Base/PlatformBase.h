@@ -140,6 +140,12 @@ API_ENUM() enum class FatalErrorType
     Assertion,
     // Program run out of memory to allocate.
     OutOfMemory,
+    // The graphics device crashed, has been removed or restarted.
+    GPUCrash,
+    // The graphics device stopped responding (eg. incorrect rendering code or bug in driver).
+    GPUHang,
+    // The graphics device run out of video memory to allocate.
+    GPUOutOfMemory,
 };
 
 API_INJECT_CODE(cpp, "#include \"Engine/Platform/Platform.h\"");

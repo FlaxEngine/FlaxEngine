@@ -9,6 +9,7 @@
 #include "RenderTools.h"
 #include "Graphics.h"
 #include "Shaders/GPUShader.h"
+#include "Shaders/GPUVertexLayout.h"
 #include "Async/DefaultGPUTasksExecutor.h"
 #include "Async/GPUTasksManager.h"
 #include "Engine/Core/Log.h"
@@ -25,8 +26,6 @@
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/Enums.h"
-
-#include "Shaders/GPUVertexLayout.h"
 
 GPUResourcePropertyBase::~GPUResourcePropertyBase()
 {
@@ -311,6 +310,16 @@ struct GPUDevice::PrivateData
 
 GPUDevice* GPUDevice::Instance = nullptr;
 
+void GPUDevice::OnRequestingExit()
+{
+    if (Engine::FatalError != FatalErrorType::GPUCrash && 
+        Engine::FatalError != FatalErrorType::GPUHang && 
+        Engine::FatalError != FatalErrorType::GPUOutOfMemory)
+        return;
+    // TODO: get and log actual GPU memory used by the engine (API-specific)
+    DumpResourcesToLog();
+}
+
 GPUDevice::GPUDevice(RendererType type, ShaderProfile profile)
     : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     , _state(DeviceState::Missing)
@@ -354,6 +363,7 @@ bool GPUDevice::Init()
     LOG(Info, "Total graphics memory: {0}", Utilities::BytesToText(TotalGraphicsMemory));
     if (!Limits.HasCompute)
         LOG(Warning, "Compute Shaders are not supported");
+    Engine::RequestingExit.Bind<GPUDevice, &GPUDevice::OnRequestingExit>(this);
     return false;
 }
 
@@ -450,9 +460,23 @@ void GPUDevice::DumpResourcesToLog() const
     output.AppendLine();
     output.AppendLine();
 
+    const bool printTypes[(int32)GPUResourceType::MAX] =
+    {
+        true, // RenderTarget
+        true, // Texture
+        true, // CubeTexture
+        true, // VolumeTexture
+        true, // Buffer
+        true, // Shader
+        false, // PipelineState
+        false, // Descriptor
+        false, // Query
+        false, // Sampler
+    };
     for (int32 typeIndex = 0; typeIndex < (int32)GPUResourceType::MAX; typeIndex++)
     {
         const auto type = static_cast<GPUResourceType>(typeIndex);
+        const auto printType = printTypes[typeIndex];
 
         output.AppendFormat(TEXT("Group: {0}s"), ScriptingEnum::ToString(type));
         output.AppendLine();
@@ -462,12 +486,12 @@ void GPUDevice::DumpResourcesToLog() const
         for (int32 i = 0; i < _resources.Count(); i++)
         {
             const GPUResource* resource = _resources[i];
-            if (resource->GetResourceType() == type)
+            if (resource->GetResourceType() == type && resource->GetMemoryUsage() != 0)
             {
                 count++;
                 memUsage += resource->GetMemoryUsage();
                 auto str = resource->ToString();
-                if (str.HasChars())
+                if (str.HasChars() && printType)
                 {
                     output.Append(TEXT('\t'));
                     output.Append(str);
