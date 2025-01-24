@@ -562,7 +562,7 @@ namespace Flax.Build.Bindings
                             {
                                 // Go up
                                 argStack.Pop();
-                                lastArg = argStack.Peek();
+                                lastArg = argStack.Count != 0 ? argStack.Peek() : null;
                                 continue;
                             }
                             if (token.Type == TokenType.Comma)
