@@ -58,17 +58,17 @@ public:
 
     // True if fatal error occurred (engine is exiting).
     // [Deprecated in v1.10]
-    static DEPRECATED("Use Engine::FatalError instead.") bool FatalErrorOccurred;
+    DEPRECATED("Use Engine::FatalError instead.") static bool FatalErrorOccurred;
 
     // True if engine needs to be closed.
     // [Deprecated in v1.10]
-    static DEPRECATED("Use Engine::IsRequestingExit instead.") bool IsRequestingExit;
+    DEPRECATED("Use Engine::IsRequestingExit instead.") static bool IsRequestingExit;
 
     /// <summary>
     /// Flags set to true if engine needs to be closed (exit is pending).
     /// [Deprecated in v1.10]
     /// </summary>
-    API_PROPERTY() DEPRECATED("Use Engine::IsRequestingExit instead.") FORCE_INLINE static bool GetIsRequestingExit()
+    API_PROPERTY() DEPRECATED("Use Engine::IsRequestingExit instead.") static bool GetIsRequestingExit()
     {
         PRAGMA_DISABLE_DEPRECATION_WARNINGS;
         return IsRequestingExit;
@@ -79,7 +79,7 @@ public:
     /// Flags set to true if fatal error occurred (engine is exiting).
     /// [Deprecated in v1.10]
     /// </summary>
-    API_PROPERTY() DEPRECATED("Use Engine::FatalError instead.") FORCE_INLINE static bool GetFatalErrorOccurred()
+    API_PROPERTY() DEPRECATED("Use Engine::FatalError instead.") static bool GetFatalErrorOccurred()
     {
         PRAGMA_DISABLE_DEPRECATION_WARNINGS;
         return FatalErrorOccurred;
@@ -88,7 +88,7 @@ public:
 
     // Process exit code (pending to return).
     // [Deprecated in v1.10]
-    static DEPRECATED("Use Engine::ExitCode instead.") int32 ExitCode;
+    DEPRECATED("Use Engine::ExitCode instead.") static int32 ExitCode;
 
 public:
     // Threading
