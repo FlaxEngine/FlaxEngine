@@ -18,9 +18,11 @@ String Globals::ProjectContentFolder;
 #if USE_MONO
 String Globals::MonoPath;
 #endif
+PRAGMA_DISABLE_DEPRECATION_WARNINGS;
 bool Globals::FatalErrorOccurred;
 bool Globals::IsRequestingExit;
 int32 Globals::ExitCode;
+PRAGMA_ENABLE_DEPRECATION_WARNINGS;
 uint64 Globals::MainThreadID;
 String Globals::EngineVersion(TEXT(FLAXENGINE_VERSION_TEXT));
 int32 Globals::EngineBuildNumber = FLAXENGINE_VERSION_BUILD;

@@ -282,7 +282,7 @@ long __stdcall WindowsPlatform::SehExceptionHandler(EXCEPTION_POINTERS* ep)
     }
 
     // Skip if engine already crashed
-    if (Globals::FatalErrorOccurred)
+    if (Engine::FatalError != FatalErrorType::None)
         return EXCEPTION_CONTINUE_SEARCH;
 
     // Get exception info
@@ -326,7 +326,7 @@ long __stdcall WindowsPlatform::SehExceptionHandler(EXCEPTION_POINTERS* ep)
     }
 
     // Crash engine
-    Platform::Fatal(errorMsg.Get(), ep);
+    Platform::Fatal(errorMsg.Get(), ep, FatalErrorType::Exception);
     return EXCEPTION_CONTINUE_SEARCH;
 }
 

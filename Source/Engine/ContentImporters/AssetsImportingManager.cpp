@@ -151,14 +151,7 @@ bool CreateAssetContext::AllocateChunk(int32 index)
     }
 
     // Create new chunk
-    const auto chunk = New<FlaxChunk>();
-    Data.Header.Chunks[index] = chunk;
-
-    if (chunk == nullptr)
-    {
-        OUT_OF_MEMORY;
-    }
-
+    Data.Header.Chunks[index] = New<FlaxChunk>();
     return false;
 }
 

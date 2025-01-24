@@ -247,10 +247,6 @@ void NetworkStream::WriteBytes(const void* data, uint32 bytes)
         while (newLength < position + bytes)
             newLength *= 2;
         byte* newBuf = (byte*)Allocator::Allocate(newLength);
-        if (newBuf == nullptr)
-        {
-            OUT_OF_MEMORY;
-        }
         if (_buffer && _length)
             Platform::MemoryCopy(newBuf, _buffer, _length);
         if (_allocated)

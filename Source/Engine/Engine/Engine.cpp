@@ -71,6 +71,9 @@ Action Engine::Draw;
 Action Engine::Pause;
 Action Engine::Unpause;
 Action Engine::RequestingExit;
+FatalErrorType Engine::FatalError = FatalErrorType::None;
+bool Engine::IsRequestingExit = false;
+int32 Engine::ExitCode = 0;
 Window* Engine::MainWindow = nullptr;
 
 int32 Engine::Main(const Char* cmdLine)
@@ -201,7 +204,7 @@ int32 Engine::Main(const Char* cmdLine)
             PROFILE_CPU_NAMED("Platform.Tick");
             Platform::Tick();
         }
-        
+
         // Update game logic
         if (Time::OnBeginUpdate(time))
         {
@@ -236,12 +239,13 @@ int32 Engine::Main(const Char* cmdLine)
         FileSystem::DeleteDirectory(Globals::TemporaryFolder);
     }
 
-    return Globals::ExitCode;
+    return ExitCode;
 }
 
-void Engine::Exit(int32 exitCode)
+void Engine::Exit(int32 exitCode, FatalErrorType error)
 {
     ASSERT(IsInMainThread());
+    FatalError = error;
 
     // Call on exit event
     OnExit();
@@ -250,23 +254,23 @@ void Engine::Exit(int32 exitCode)
     exit(exitCode);
 }
 
-void Engine::RequestExit(int32 exitCode)
+void Engine::RequestExit(int32 exitCode, FatalErrorType error)
 {
-    if (Globals::IsRequestingExit)
+    if (IsRequestingExit)
         return;
 #if USE_EDITOR
     // Send to editor (will leave play mode if need to)
-    if (Editor::Managed->OnAppExit())
-    {
-        Globals::IsRequestingExit = true;
-        Globals::ExitCode = exitCode;
-        RequestingExit();
-    }
-#else
+    if (!Editor::Managed->OnAppExit())
+        return;
+#endif
+    IsRequestingExit = true;
+    ExitCode = exitCode;
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS;
     Globals::IsRequestingExit = true;
     Globals::ExitCode = exitCode;
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS;
+    FatalError = error;
     RequestingExit();
-#endif
 }
 
 void Engine::OnFixedUpdate()
@@ -407,7 +411,7 @@ bool Engine::IsReady()
 
 bool Engine::ShouldExit()
 {
-    return Globals::IsRequestingExit;
+    return IsRequestingExit;
 }
 
 bool Engine::IsEditor()

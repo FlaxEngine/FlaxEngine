@@ -30,6 +30,8 @@ void* UnixPlatform::Allocate(uint64 size, uint64 alignment)
             // Calculate the offset and store it behind aligned pointer
             *((offset_t*)ptr - 1) = (offset_t)((uintptr_t)ptr - (uintptr_t)p);
         }
+        else
+            OutOfMemory();
 #if COMPILE_WITH_PROFILER
         OnMemoryAlloc(ptr, size);
 #endif

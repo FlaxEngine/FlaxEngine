@@ -328,11 +328,6 @@ void VideoBackendPlayer::UpdateVideoFrame(Span<byte> data, TimeSpan time, TimeSp
     if (VideoFrameMemory.Length() < (int32)slicePitch)
     {
         VideoFrameMemory.Allocate(slicePitch);
-        if (VideoFrameMemory.IsInvalid())
-        {
-            OUT_OF_MEMORY;
-            return;
-        }
     }
     Platform::MemoryCopy(VideoFrameMemory.Get(), data.Get(), slicePitch);
 

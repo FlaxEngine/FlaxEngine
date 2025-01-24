@@ -46,14 +46,7 @@ public:
         }
 
         // Create new chunk
-        const auto chunk = New<FlaxChunk>();
-        Output.Header.Chunks[index] = chunk;
-
-        if (chunk == nullptr)
-        {
-            OUT_OF_MEMORY;
-        }
-
+        Output.Header.Chunks[index] = New<FlaxChunk>();
         return false;
     }
 };

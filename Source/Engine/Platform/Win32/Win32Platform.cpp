@@ -259,6 +259,8 @@ void Win32Platform::Prefetch(void const* ptr)
 void* Win32Platform::Allocate(uint64 size, uint64 alignment)
 {
     void* ptr = _aligned_malloc((size_t)size, (size_t)alignment);
+    if (!ptr)
+        OutOfMemory();
 #if COMPILE_WITH_PROFILER
     OnMemoryAlloc(ptr, size);
 #endif

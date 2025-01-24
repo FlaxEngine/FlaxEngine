@@ -49,6 +49,7 @@ float PlatformBase::CustomDpiScale = 1.0f;
 Array<User*, FixedAllocation<8>> PlatformBase::Users;
 Delegate<User*> PlatformBase::UserAdded;
 Delegate<User*> PlatformBase::UserRemoved;
+void* OutOfMemoryBuffer = nullptr;
 
 const Char* ToString(NetworkConnectionType value)
 {
@@ -150,6 +151,12 @@ bool PlatformBase::Init()
 
     srand((unsigned int)Platform::GetTimeCycles());
 
+    // Preallocate safety dynamic buffer to be released before Out Of Memory reporting to ensure code can properly execute
+#ifndef PLATFORM_OUT_OF_MEMORY_BUFFER_SIZE
+#define PLATFORM_OUT_OF_MEMORY_BUFFER_SIZE (1ull * 1024 * 1024) // 1 MB
+#endif
+    OutOfMemoryBuffer = Allocator::Allocate(PLATFORM_OUT_OF_MEMORY_BUFFER_SIZE);
+
     return false;
 }
 
@@ -188,6 +195,8 @@ void PlatformBase::BeforeExit()
 
 void PlatformBase::Exit()
 {
+    Allocator::Free(OutOfMemoryBuffer);
+    OutOfMemoryBuffer = nullptr;
 }
 
 #if COMPILE_WITH_PROFILER
@@ -257,25 +266,35 @@ bool PlatformBase::Is64BitApp()
 #endif
 }
 
-void PlatformBase::Fatal(const Char* msg, void* context)
+void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType error)
 {
     // Check if is already during fatal state
-    if (Globals::FatalErrorOccurred)
+    if (Engine::FatalError != FatalErrorType::None)
     {
         // Just send one more error to the log and back
         LOG(Error, "Error after fatal error: {0}", msg);
         return;
     }
 
+    // Free OOM safety buffer
+    Allocator::Free(OutOfMemoryBuffer);
+    OutOfMemoryBuffer = nullptr;
+
     // Set flags
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS;
     Globals::FatalErrorOccurred = true;
     Globals::IsRequestingExit = true;
-    Globals::ExitCode = -1;
+    Globals::ExitCode = -Math::Max((int32)error, 1);
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS;
+    Engine::IsRequestingExit = true;
+    Engine::ExitCode = -Math::Max((int32)error, 1);
+    Engine::FatalError = error;
     Engine::RequestingExit();
 
     // Collect crash info (platform-dependant implementation that might collect stack trace and/or create memory dump)
     {
         // Log separation for crash info
+        LOG_FLUSH();
         Log::Logger::WriteFloor();
         LOG(Error, "");
         LOG(Error, "Critical error! Reason: {0}", msg);
@@ -358,11 +377,11 @@ void PlatformBase::Fatal(const Char* msg, void* context)
     // Only main thread can call exit directly
     if (IsInMainThread())
     {
-        Engine::Exit(-1);
+        Engine::Exit(Engine::ExitCode, error);
     }
 }
 
-void PlatformBase::Error(const Char* msg)
+void PlatformBase::Error(const StringView& msg)
 {
 #if PLATFORM_HAS_HEADLESS_MODE
     if (CommandLine::Options.Headless.IsTrue())
@@ -372,7 +391,7 @@ void PlatformBase::Error(const Char* msg)
         ansi += PLATFORM_LINE_TERMINATOR;
         printf("Error: %s\n", ansi.Get());
 #else
-        std::cout << "Error: " << msg << std::endl;
+        std::cout << "Error: " << *msg << std::endl;
 #endif
     }
     else
@@ -382,12 +401,12 @@ void PlatformBase::Error(const Char* msg)
     }
 }
 
-void PlatformBase::Warning(const Char* msg)
+void PlatformBase::Warning(const StringView& msg)
 {
 #if PLATFORM_HAS_HEADLESS_MODE
     if (CommandLine::Options.Headless.IsTrue())
     {
-        std::cout << "Warning: " << msg << std::endl;
+        std::cout << "Warning: " << *msg << std::endl;
     }
     else
 #endif
@@ -396,12 +415,12 @@ void PlatformBase::Warning(const Char* msg)
     }
 }
 
-void PlatformBase::Info(const Char* msg)
+void PlatformBase::Info(const StringView& msg)
 {
 #if PLATFORM_HAS_HEADLESS_MODE
     if (CommandLine::Options.Headless.IsTrue())
     {
-        std::cout << "Info: " << msg << std::endl;
+        std::cout << "Info: " << *msg << std::endl;
     }
     else
 #endif
@@ -410,24 +429,9 @@ void PlatformBase::Info(const Char* msg)
     }
 }
 
-void PlatformBase::Fatal(const StringView& msg)
+void PlatformBase::Fatal(const StringView& msg, FatalErrorType error)
 {
-    Fatal(*msg);
-}
-
-void PlatformBase::Error(const StringView& msg)
-{
-    Error(*msg);
-}
-
-void PlatformBase::Warning(const StringView& msg)
-{
-    Warning(*msg);
-}
-
-void PlatformBase::Info(const StringView& msg)
-{
-    Info(*msg);
+    Fatal(msg, nullptr, error);
 }
 
 void PlatformBase::Log(const StringView& msg)
@@ -443,28 +447,43 @@ void PlatformBase::Crash(int32 line, const char* file)
 {
     const StringAsUTF16<256> fileUTF16(file);
     const String msg = String::Format(TEXT("Fatal crash!\nFile: {0}\nLine: {1}"), fileUTF16.Get(), line);
-    LOG_STR(Fatal, msg);
+    LOG_STR(Error, msg);
+    Fatal(msg, nullptr, FatalErrorType::Assertion);
 }
 
 void PlatformBase::OutOfMemory(int32 line, const char* file)
 {
-    const StringAsUTF16<256> fileUTF16(file);
-    const String msg = String::Format(TEXT("Out of memory error!\nFile: {0}\nLine: {1}"), fileUTF16.Get(), line);
-    LOG_STR(Fatal, msg);
+    fmt_flax::allocator allocator;
+    fmt_flax::memory_buffer buffer(allocator);
+    static_assert(fmt::inline_buffer_size > 300, "Update stack buffer to prevent dynamic memory allocation on Out Of Memory.");
+    if (file)
+    {
+        const StringAsUTF16<256> fileUTF16(file);
+        fmt_flax::format(buffer, TEXT("Out of memory error!\nFile: {0}\nLine: {1}"), fileUTF16.Get(), line);
+    }
+    else
+    {
+        fmt_flax::format(buffer, TEXT("Out of memory error!"));
+    }
+    const StringView msg(buffer.data(), (int32)buffer.size());
+    LOG_STR(Error, msg);
+    Fatal(msg, nullptr, FatalErrorType::OutOfMemory);
 }
 
 void PlatformBase::MissingCode(int32 line, const char* file, const char* info)
 {
     const StringAsUTF16<256> fileUTF16(file);
     const String msg = String::Format(TEXT("TODO: {0}\nFile: {1}\nLine: {2}"), String(info), fileUTF16.Get(), line);
-    LOG_STR(Fatal, msg);
+    LOG_STR(Error, msg);
+    Fatal(msg, nullptr, FatalErrorType::Assertion);
 }
 
 void PlatformBase::Assert(const char* message, const char* file, int line)
 {
     const StringAsUTF16<256> fileUTF16(file);
     const String msg = String::Format(TEXT("Assertion failed!\nFile: {0}\nLine: {1}\n\nExpression: {2}"), fileUTF16.Get(), line, String(message));
-    LOG_STR(Fatal, msg);
+    LOG_STR(Error, msg);
+    Fatal(msg, nullptr, FatalErrorType::Assertion);
 }
 
 void PlatformBase::CheckFailed(const char* message, const char* file, int line)

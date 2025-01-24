@@ -125,6 +125,23 @@ enum class ThreadPriority
 
 extern FLAXENGINE_API const Char* ToString(ThreadPriority value);
 
+/// <summary>
+/// Possible fatal error types that cause engine exit.
+/// </summary>
+API_ENUM() enum class FatalErrorType
+{
+    // No fatal error set.
+    None,
+    // Not defined or custom error.
+    Unknown,
+    // Runtime exception caught by the handler (eg. stack overflow, invalid memory address access).
+    Exception,
+    // Data assertion failed (eg. invalid value or code usage).
+    Assertion,
+    // Program run out of memory to allocate.
+    OutOfMemory,
+};
+
 API_INJECT_CODE(cpp, "#include \"Engine/Platform/Platform.h\"");
 
 /// <summary>
@@ -457,32 +474,15 @@ public:
     /// </summary>
     /// <param name="msg">The message content.</param>
     /// <param name="context">The platform-dependent context for the stack trace collecting (eg. platform exception info).</param>
-    static void Fatal(const Char* msg, void* context = nullptr);
+    /// <param name="error">The fatal error type.</param>
+    API_FUNCTION() static void Fatal(const StringView& msg, void* context, FatalErrorType error = FatalErrorType::Unknown);
 
-    /// <summary>
-    /// Shows the error message to the user.
-    /// </summary>
-    /// <param name="msg">The message content.</param>
-    static void Error(const Char* msg);
-
-    /// <summary>
-    /// Shows the warning message to the user.
-    /// </summary>
-    /// <param name="msg">The message content.</param>
-    static void Warning(const Char* msg);
-
-    /// <summary>
-    /// Shows the information message to the user.
-    /// </summary>
-    /// <param name="msg">The message content.</param>
-    static void Info(const Char* msg);
-
-public:
     /// <summary>
     /// Shows the fatal error message to the user.
     /// </summary>
     /// <param name="msg">The message content.</param>
-    API_FUNCTION() static void Fatal(const StringView& msg);
+    /// <param name="error">The fatal error type.</param>
+    API_FUNCTION() static void Fatal(const StringView& msg, FatalErrorType error = FatalErrorType::Unknown);
 
     /// <summary>
     /// Shows the error message to the user.
@@ -527,7 +527,7 @@ public:
     /// </summary>
     /// <param name="line">The source line.</param>
     /// <param name="file">The source file.</param>
-    NO_RETURN static void OutOfMemory(int32 line, const char* file);
+    NO_RETURN static void OutOfMemory(int32 line = -1, const char* file = nullptr);
 
     /// <summary>
     /// Performs a fatal crash due to code not being implemented.

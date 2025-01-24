@@ -148,27 +148,17 @@ public:
         {
             ASSERT_LOW_LAYER(!_data);
             _data = static_cast<T*>(Allocator::Allocate(capacity * sizeof(T)));
-#if ENABLE_ASSERTION
-            if (!_data)
-                OUT_OF_MEMORY;
-#endif
         }
 
         FORCE_INLINE void Relocate(const int32 capacity, int32 oldCount, int32 newCount)
         {
             T* newData = capacity != 0 ? static_cast<T*>(Allocator::Allocate(capacity * sizeof(T))) : nullptr;
-#if ENABLE_ASSERTION
-            if (!newData && capacity != 0)
-                OUT_OF_MEMORY;
-#endif
-
             if (oldCount)
             {
                 if (newCount > 0)
                     Memory::MoveItems(newData, _data, newCount);
                 Memory::DestructItems(_data, oldCount);
             }
-
             Allocator::Free(_data);
             _data = newData;
         }

@@ -146,8 +146,10 @@ void Log::Logger::Write(const StringView& msg)
 #endif
     }
 
+#if !BUILD_RELEASE
     // Send message to platform logging
     Platform::Log(msg);
+#endif
 
     // Write message to log file
     constexpr int32 LogMaxWriteSize = 1 * 1024 * 1024; // 1GB

@@ -4,6 +4,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Level/Actors/BoxBrush.h"
 #include "Engine/Level/SceneQuery.h"
 #include "Engine/Renderer/Renderer.h"
@@ -414,7 +415,7 @@ int32 ShadowsOfMordor::Builder::doWork()
     // Clear
     _wasBuildCalled = false;
     IsBakingLightmaps = false;
-    if (!Globals::FatalErrorOccurred)
+    if (Engine::FatalError == FatalErrorType::None)
         deleteState();
 
     // Release scenes data
