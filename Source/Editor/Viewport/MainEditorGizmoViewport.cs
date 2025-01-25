@@ -342,7 +342,7 @@ namespace FlaxEditor.Viewport
                         {
                             UICanvas canvas = null;
                             var controlParent = control.Parent;
-                            while (controlParent != null || controlParent is Scene)
+                            while (controlParent != null || controlParent is not Scene)
                             {
                                 if (controlParent is UICanvas uiCanvas)
                                 {
