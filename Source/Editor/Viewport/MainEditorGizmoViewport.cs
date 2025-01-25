@@ -113,6 +113,7 @@ namespace FlaxEditor.Viewport
         private bool _isRubberBandSpanning;
         private Float2 _cachedStartingMousePosition;
         private Rectangle _rubberBandRect;
+        private Rectangle _lastRubberBandRect;
 
         /// <summary>
         /// Drag and drop handlers
@@ -295,13 +296,13 @@ namespace FlaxEditor.Viewport
             }
 
             // Dont allow rubber band selection when gizmo is controlling mouse, vertex painting mode, or cloth painting is enabled
-            if (_isRubberBandSpanning && (Gizmos.Active.IsControllingMouse || Gizmos.Active is VertexPaintingGizmo || Gizmos.Active is ClothPaintingGizmo) || IsControllingMouse || IsRightMouseButtonDown)
+            if (_isRubberBandSpanning && ((Gizmos.Active.IsControllingMouse || Gizmos.Active is VertexPaintingGizmo || Gizmos.Active is ClothPaintingGizmo) || IsControllingMouse || IsRightMouseButtonDown))
             {
                 _isRubberBandSpanning = false;
             }
 
             // Start rubber band selection
-            if (IsLeftMouseButtonDown && !MouseDelta.IsZero && !_isRubberBandSpanning && !Gizmos.Active.IsControllingMouse && !IsControllingMouse && !IsRightMouseButtonDown)
+            if (IsLeftMouseButtonDown && (Mathf.Abs(MouseDelta.X) > 0.1f || Mathf.Abs(MouseDelta.Y) > 0.1f) && !_isRubberBandSpanning && !Gizmos.Active.IsControllingMouse && !IsControllingMouse && !IsRightMouseButtonDown)
             {
                 _isRubberBandSpanning = true;
                 _cachedStartingMousePosition = _viewMousePos;
@@ -309,9 +310,104 @@ namespace FlaxEditor.Viewport
             }
             else if (_isRubberBandSpanning)
             {
-                var size = _viewMousePos - _cachedStartingMousePosition;
                 _rubberBandRect.Width = _viewMousePos.X - _cachedStartingMousePosition.X;
                 _rubberBandRect.Height = _viewMousePos.Y - _cachedStartingMousePosition.Y;
+
+                if (_lastRubberBandRect != _rubberBandRect)
+                {
+                    // Select rubberbanded rect actor nodes
+                    var adjustedRect = _rubberBandRect;
+                    _lastRubberBandRect = _rubberBandRect;
+                    if (adjustedRect.Width < 0 || adjustedRect.Height < 0)
+                    {
+                        // make sure we have a well-formed rectangle i.e. size is positive and X/Y is upper left corner
+                        var size = adjustedRect.Size;
+                        adjustedRect.X = Mathf.Min(adjustedRect.X, adjustedRect.X + adjustedRect.Width);
+                        adjustedRect.Y = Mathf.Min(adjustedRect.Y, adjustedRect.Y + adjustedRect.Height);
+                        size.X = Mathf.Abs(size.X);
+                        size.Y = Mathf.Abs(size.Y);
+                        adjustedRect.Size = size;
+                    }
+
+                    List<SceneGraphNode> hits = new List<SceneGraphNode>();
+                    var allActors = Level.GetActors<Actor>(true);
+                    foreach (var a in allActors)
+                    {
+                        var actorBox = a.EditorBox;
+                        if (ViewFrustum.Contains(actorBox) == ContainmentType.Disjoint)
+                            continue;
+                        
+                        // Check is control and skip if canvas is 2D
+                        if (a is UIControl control)
+                        {
+                            UICanvas canvas = null;
+                            var controlParent = control.Parent;
+                            while (controlParent != null || controlParent is Scene)
+                            {
+                                if (controlParent is UICanvas uiCanvas)
+                                {
+                                    canvas = uiCanvas;
+                                    break;
+                                }
+                                controlParent = controlParent.Parent;
+                            }
+
+                            if (canvas != null)
+                            {
+                                if (canvas.Is2D)
+                                {
+                                    continue;
+                                }
+                            }
+                        }
+                        
+                        // Check if all corners are in box to select it.
+                        var corners = actorBox.GetCorners();
+                        var containsAllCorners = true;
+                        foreach (var c in corners)
+                        {
+                            Viewport.ProjectPoint(c, out var loc);
+                            if (!adjustedRect.Contains(loc))
+                            {
+                                containsAllCorners = false;
+                                break;
+                            }
+                        }
+
+                        if (containsAllCorners)
+                        {
+                            hits.Add(SceneGraphRoot.Find(a));
+                        }
+                    }
+                    
+                    if (IsControlDown)
+                    {
+                        var newSelection = new List<SceneGraphNode>();
+                        var currentSelection = _editor.SceneEditing.Selection;
+                        newSelection.AddRange(currentSelection);
+                        foreach (var hit in hits)
+                        {
+                            if (currentSelection.Contains(hit))
+                                newSelection.Remove(hit);
+                            else
+                                newSelection.Add(hit);
+                        }
+                        Select(newSelection);
+                    }
+                    else if (((WindowRootControl)Root).GetKey(KeyboardKeys.Shift))
+                    {
+                        var newSelection = new List<SceneGraphNode>();
+                        var currentSelection = _editor.SceneEditing.Selection;
+                        newSelection.AddRange(hits);
+                        newSelection.AddRange(currentSelection);
+                        Select(newSelection);
+                    }
+                    else
+                    {
+                        Select(hits);
+                    }
+                }
+                
             }
         }
 
@@ -513,6 +609,20 @@ namespace FlaxEditor.Viewport
             TransformGizmo.EndTransforming();
         }
 
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            base.OnLostFocus();
+            _isRubberBandSpanning = false;
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            base.OnMouseLeave();
+            _isRubberBandSpanning = false;
+        }
+
         /// <summary>
         /// Focuses the viewport on the current selection of the gizmo.
         /// </summary>
@@ -622,59 +732,6 @@ namespace FlaxEditor.Viewport
             if (_isRubberBandSpanning)
             {
                 _isRubberBandSpanning = false;
-                if (_rubberBandRect.Width < 0 || _rubberBandRect.Height < 0)
-                {
-                    // make sure we have a well-formed rectangle i.e. size is positive and X/Y is upper left corner
-                    var size = _rubberBandRect.Size;
-                    _rubberBandRect.X = Mathf.Min(_rubberBandRect.X, _rubberBandRect.X + _rubberBandRect.Width);
-                    _rubberBandRect.Y = Mathf.Min(_rubberBandRect.Y, _rubberBandRect.Y + _rubberBandRect.Height);
-                    size.X = Mathf.Abs(size.X);
-                    size.Y = Mathf.Abs(size.Y);
-                    _rubberBandRect.Size = size;
-                }
-
-                var view = new Ray(ViewPosition, ViewDirection);
-                List<SceneGraphNode> hits = new List<SceneGraphNode>();
-                // Todo: expose resolution to editor settings
-                var resolution = 100;
-                for (int i = 0; i < resolution; i++)
-                {
-                    for (int j = 0; j < resolution; j++)
-                    {
-                        var point = new Float2(_rubberBandRect.Left + ((_rubberBandRect.Right - _rubberBandRect.Left) / resolution) * i, _rubberBandRect.Top + ((_rubberBandRect.Bottom - _rubberBandRect.Top) / resolution) * j);
-                        var ray = ConvertMouseToRay(ref point);
-                        var hit = SceneGraphRoot.RayCast(ref ray, ref view, out _);
-                        if (hit != null && hit is ActorNode actorNode)
-                            hits.Add(hit);
-                    }
-                }
-
-                if (IsControlDown)
-                {
-                    var newSelection = new List<SceneGraphNode>();
-                    var currentSelection = _editor.SceneEditing.Selection;
-                    newSelection.AddRange(currentSelection);
-                    foreach (var hit in hits)
-                    {
-                        if (currentSelection.Contains(hit))
-                            newSelection.Remove(hit);
-                        else
-                            newSelection.Add(hit);
-                    }
-                    Select(newSelection);
-                }
-                else if (((WindowRootControl)Root).GetKey(KeyboardKeys.Shift))
-                {
-                    var newSelection = new List<SceneGraphNode>();
-                    var currentSelection = _editor.SceneEditing.Selection;
-                    newSelection.AddRange(hits);
-                    newSelection.AddRange(currentSelection);
-                    Select(newSelection);
-                }
-                else
-                {
-                    Select(hits);
-                }
             }
             else
             {
