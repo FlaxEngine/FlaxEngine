@@ -342,7 +342,7 @@ namespace FlaxEditor.Viewport
                         {
                             UICanvas canvas = null;
                             var controlParent = control.Parent;
-                            while (controlParent != null || controlParent is not Scene)
+                            while (controlParent != null && controlParent is not Scene)
                             {
                                 if (controlParent is UICanvas uiCanvas)
                                 {
@@ -355,10 +355,13 @@ namespace FlaxEditor.Viewport
                             if (canvas != null)
                             {
                                 if (canvas.Is2D)
-                                {
                                     continue;
-                                }
                             }
+                        }
+                        else if (a is UICanvas uiCanvas)
+                        {
+                            if (uiCanvas.Is2D)
+                                continue;
                         }
                         
                         // Check if all corners are in box to select it.
