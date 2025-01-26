@@ -658,7 +658,7 @@ namespace FlaxEditor.Viewport
                         if (ViewFrustum.Contains(actorBox) == ContainmentType.Disjoint)
                             continue;
 
-                        // Check is control and skip if canvas is 2D
+                        // Check if control and skip if canvas is 2D
                         if (a is UIControl control)
                         {
                             UICanvas canvas = null;
@@ -700,7 +700,10 @@ namespace FlaxEditor.Viewport
 
                         if (containsAllCorners)
                         {
-                            hits.Add(SceneGraphRoot.Find(a));
+                            if (a.HasPrefabLink)
+                                hits.Add(SceneGraphRoot.Find(a.GetPrefabRoot()));
+                            else
+                                hits.Add(SceneGraphRoot.Find(a));
                         }
                     }
                     
