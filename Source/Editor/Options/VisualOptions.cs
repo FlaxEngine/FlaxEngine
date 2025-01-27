@@ -40,6 +40,20 @@ namespace FlaxEditor.Options
         public float UISelectionOutlineSize { get; set; } = 2.0f;
 
         /// <summary>
+        /// Gets or sets the pivot color for the UI Gizmo.
+        /// </summary>
+        [DefaultValue(typeof(Color), "0.0,0.5725,0.8,0.5")]
+        [EditorDisplay("UI Gizmo", "Pivot Color"), EditorOrder(103), Tooltip("The color of the pivot for the UI Gizmo.")]
+        public Color UIPivotColor { get; set; } = new Color(0.0f, 0.5725f, 0.8f, 0.5f);
+
+        /// <summary>
+        /// Gets or sets the anchor color for the UI Gizmo.
+        /// </summary>
+        [DefaultValue(typeof(Color), "0.8392,0.8471,0.8706,0.5")]
+        [EditorDisplay("UI Gizmo", "Anchor Color"), EditorOrder(103), Tooltip("The color of the anchors for the UI Gizmo.")]
+        public Color UIAnchorColor { get; set; } = new Color(0.8392f, 0.8471f, 0.8706f, 0.5f);
+
+        /// <summary>
         /// Gets or sets the transform gizmo size.
         /// </summary>
         [DefaultValue(1.0f), Limit(0.01f, 100.0f, 0.01f)]
