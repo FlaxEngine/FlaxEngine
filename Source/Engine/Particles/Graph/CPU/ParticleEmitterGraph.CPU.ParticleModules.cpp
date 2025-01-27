@@ -1161,15 +1161,14 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
         auto quatBox = node->GetBox(0);
 
 #define INPUTS_FETCH() \
-const Quaternion quat = (Quaternion)GetValue(quatBox, 2);
+    const Quaternion quat = (Quaternion)GetValue(quatBox, 2);
 #define LOGIC() \
-Quaternion nq = Quaternion::Invert(quat); \
-Float3 v3 = *((Float3*)positionPtr); \
-Float4 v4 = Float4(v3); \
-Quaternion q = Quaternion(v4); \
-Quaternion rq = quat * (q * nq); \
-*(Float3*)positionPtr = Float3(rq.X, rq.Y, rq.Z); \
-positionPtr += stride;
+    Quaternion nq = Quaternion::Invert(quat); \
+    Float3 v3 = *((Float3*)positionPtr); \
+    Quaternion q = Quaternion(v3.X, v3.Y, v3.Z, 0.0f); \
+    Quaternion rq = quat * (q * nq); \
+    *(Float3*)positionPtr = Float3(rq.X, rq.Y, rq.Z); \
+    positionPtr += stride;
 
         if (node->UsePerParticleDataResolve())
         {

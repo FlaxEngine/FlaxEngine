@@ -636,7 +636,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
     case 216:
     {
         auto positionAttr = AccessParticleAttribute(node, nodeGpu->Attributes[0], AccessMode::Write);
-        const Value quaternion = tryGetValue(node->GetBox(0), Value::InitForZero(VariantType::Quaternion)).Cast(VariantType::Quaternion);
+        const Value quaternion = GetValue(node->GetBox(0), 2).Cast(VariantType::Quaternion);
         _writer.Write(
             TEXT(
                 "   {{\n"
