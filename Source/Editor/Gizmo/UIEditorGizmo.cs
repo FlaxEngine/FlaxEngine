@@ -714,16 +714,15 @@ namespace FlaxEditor
 
         private bool RayCastControl(ref Float2 location, out Control hit)
         {
-#if false
-            // Raycast only controls with content (eg. skips transparent panels)
-            return RayCastChildren(ref location, out hit);
-#else
-            // Find any control under mouse (hierarchical)
-            hit = GetChildAtRecursive(location);
+            // First, raycast only controls with content (eg. skips transparent panels)
+            RayCastChildren(ref location, out hit);
+
+            // If raycast failed, then find any control under mouse (hierarchical)
+            hit = hit ?? GetChildAtRecursive(location);
             if (hit is View || hit is CanvasContainer)
                 hit = null;
+        
             return hit != null;
-#endif
         }
 
         private UIControlNode FindUIControlNode(Control control)
