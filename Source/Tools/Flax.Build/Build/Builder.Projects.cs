@@ -301,7 +301,7 @@ namespace Flax.Build
                             else
                                 project.Path = targets[0].CustomExternalProjectFilePath;
                             if (project.WorkspaceRootPath.StartsWith(rootProject.ProjectFolderPath))
-                                project.GroupName = Utilities.MakePathRelativeTo(project.WorkspaceRootPath, rootProject.ProjectFolderPath);
+                                project.GroupName = Utilities.NormalizePath(Utilities.MakePathRelativeTo(project.WorkspaceRootPath, rootProject.ProjectFolderPath));
                             else if (projectInfo != Globals.Project)
                                 project.GroupName = projectInfo.Name;
                             project.SourceDirectories = new List<string>
@@ -349,7 +349,10 @@ namespace Flax.Build
                                             var referenceBinaryModules = referenceModules.Keys.GroupBy(x => x.BinaryModuleName).ToArray();
                                             foreach (var binaryModule in referenceBinaryModules)
                                             {
-                                                project.Defines.Add(binaryModule.Key.ToUpperInvariant() + "_API=");
+                                                var binaryModuleName = binaryModule.Key;
+                                                if (string.IsNullOrEmpty(binaryModuleName))
+                                                    continue;
+                                                project.Defines.Add(binaryModuleName.ToUpperInvariant() + "_API=");
                                             }
                                         }
                                         catch
