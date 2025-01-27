@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -43,7 +43,9 @@ public:
     typedef typename Encoding::Ch Ch;
 
     GenericStringBuffer(Allocator* allocator = 0, size_t capacity = kDefaultCapacity) : stack_(allocator, capacity) {}
+#if false
     GenericStringBuffer(const GenericStringBuffer& other) : stack_(other.stack_) {}
+#endif
 
 #if RAPIDJSON_HAS_CXX11_RVALUE_REFS
     GenericStringBuffer(GenericStringBuffer&& rhs) : stack_(std::move(rhs.stack_)) {}
@@ -58,7 +60,9 @@ public:
     void PutUnsafe(Ch c) { *stack_.template PushUnsafe<Ch>() = c; }
     void Flush() {}
 
-	void Destroy() { stack_.Clear(); stack_.ShrinkToFit(); }
+#if false
+    void Destroy() { stack_.Clear(); stack_.ShrinkToFit(); }
+#endif
     void Clear() { stack_.Clear(); }
     void ShrinkToFit() {
         // Push and pop a null terminator. This is safe.
@@ -80,13 +84,20 @@ public:
         return stack_.template Bottom<Ch>();
     }
 
+    //! Get the size of string in bytes in the string buffer.
     size_t GetSize() const { return stack_.GetSize(); }
+
+    //! Get the length of string in Ch in the string buffer.
+    size_t GetLength() const { return stack_.GetSize() / sizeof(Ch); }
 
     static const size_t kDefaultCapacity = 256;
     mutable internal::Stack<Allocator> stack_;
 
 private:
-    // Prohibit assignment operator.
+    // Prohibit copy constructor & assignment operator.
+#if false
+    GenericStringBuffer(const GenericStringBuffer&);
+#endif
     GenericStringBuffer& operator=(const GenericStringBuffer&);
 };
 

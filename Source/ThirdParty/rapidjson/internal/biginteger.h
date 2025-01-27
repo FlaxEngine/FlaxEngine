@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -17,16 +17,14 @@
 
 #include "../rapidjson.h"
 
-#if defined(_MSC_VER) && (defined(_M_AMD64) || defined(_M_ARM64))
-#if _MSC_VER <= 1900
-#include <intrin.h>
-#else
-#include <intrin0.h>
-#endif
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && (defined(_M_AMD64) || defined(_M_ARM64))
+#include <intrin.h> // for _umul128
 #if defined(_M_ARM64)
 #pragma intrinsic(__umulh)
-#else
+#elif !defined(_ARM64EC_)
 #pragma intrinsic(_umul128)
+#else
+#pragma comment(lib,"softintrin")
 #endif
 #endif
 
@@ -38,14 +36,15 @@ public:
     typedef uint64_t Type;
 
     BigInteger(const BigInteger& rhs) : count_(rhs.count_) {
-        ::memcpy(digits_, rhs.digits_, count_ * sizeof(Type));
+        std::memcpy(digits_, rhs.digits_, count_ * sizeof(Type));
     }
 
     explicit BigInteger(uint64_t u) : count_(1) {
         digits_[0] = u;
     }
 
-    BigInteger(const char* decimals, size_t length) : count_(1) {
+    template<typename Ch>
+    BigInteger(const Ch* decimals, size_t length) : count_(1) {
         RAPIDJSON_ASSERT(length > 0);
         digits_[0] = 0;
         size_t i = 0;
@@ -64,7 +63,7 @@ public:
     {
         if (this != &rhs) {
             count_ = rhs.count_;
-            ::memcpy(digits_, rhs.digits_, count_ * sizeof(Type));
+            std::memcpy(digits_, rhs.digits_, count_ * sizeof(Type));
         }
         return *this;
     }
@@ -141,7 +140,7 @@ public:
         RAPIDJSON_ASSERT(count_ + offset <= kCapacity);
 
         if (interShift == 0) {
-            std::memmove(&digits_[count_ - 1 + offset], &digits_[count_ - 1], count_ * sizeof(Type));
+            std::memmove(digits_ + offset, digits_, count_ * sizeof(Type));
             count_ += offset;
         }
         else {
@@ -229,7 +228,8 @@ public:
     bool IsZero() const { return count_ == 1 && digits_[0] == 0; }
 
 private:
-    void AppendDecimal64(const char* begin, const char* end) {
+    template<typename Ch>
+    void AppendDecimal64(const Ch* begin, const Ch* end) {
         uint64_t u = ParseUint64(begin, end);
         if (IsZero())
             *this = u;
@@ -244,11 +244,12 @@ private:
         digits_[count_++] = digit;
     }
 
-    static uint64_t ParseUint64(const char* begin, const char* end) {
+    template<typename Ch>
+    static uint64_t ParseUint64(const Ch* begin, const Ch* end) {
         uint64_t r = 0;
-        for (const char* p = begin; p != end; ++p) {
-            RAPIDJSON_ASSERT(*p >= '0' && *p <= '9');
-            r = r * 10u + static_cast<unsigned>(*p - '0');
+        for (const Ch* p = begin; p != end; ++p) {
+            RAPIDJSON_ASSERT(*p >= Ch('0') && *p <= Ch('9'));
+            r = r * 10u + static_cast<unsigned>(*p - Ch('0'));
         }
         return r;
     }
@@ -260,7 +261,7 @@ private:
         if (low < k)
             (*outHigh)++;
         return low;
-#elif (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)) && defined(__x86_64__)
+#elif defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)) && defined(__x86_64__)
         __extension__ typedef unsigned __int128 uint128;
         uint128 p = static_cast<uint128>(a) * static_cast<uint128>(b);
         p += k;
