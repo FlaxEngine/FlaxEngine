@@ -234,7 +234,7 @@ namespace FlaxEditor.GUI
                     var k = _editor.GetKeyframe(_movingTangent.Index);
                     var kv = _editor.GetKeyframeValue(k);
                     var value = _editor.Accessor.GetCurveValue(ref kv, _movingTangent.Component);
-                    _movingTangent.TangentValue = PointToKeyframes(location, ref viewRect).Y - value;
+                    _movingTangent.TangentValue = (PointToKeyframes(location, ref viewRect).Y - value) * _editor.ViewScale.X;
                     _editor.UpdateTangents();
                     Cursor = CursorType.SizeNS;
                     _movedKeyframes = true;

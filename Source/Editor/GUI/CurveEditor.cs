@@ -163,10 +163,11 @@ namespace FlaxEditor.GUI
             /// <inheritdoc />
             public override void Draw()
             {
+                var style = Style.Current;
                 var rect = new Rectangle(Float2.Zero, Size);
-                var color = Editor.ShowCollapsed ? Color.Gray : Editor.Colors[Component];
+                var color = Editor.ShowCollapsed ? style.ForegroundDisabled : Editor.Colors[Component];
                 if (IsSelected)
-                    color = Editor.ContainsFocus ? Color.YellowGreen : Color.Lerp(Color.Gray, Color.YellowGreen, 0.4f);
+                    color = Editor.ContainsFocus ? style.SelectionBorder : Color.Lerp(style.ForegroundDisabled, style.SelectionBorder, 0.4f);
                 if (IsMouseOver)
                     color *= 1.1f;
                 Render2D.FillRectangle(rect, color);
@@ -244,14 +245,19 @@ namespace FlaxEditor.GUI
                 set => Editor.SetKeyframeTangentInternal(Index, IsIn, Component, value);
             }
 
+            internal float TangentOffset => 50.0f / Editor.ViewScale.X;
+
             /// <inheritdoc />
             public override void Draw()
             {
+                var style = Style.Current;
+                var thickness = 6.0f / Mathf.Max(Editor.ViewScale.X, 1.0f);
+                var size = Size;
                 var pointPos = PointFromParent(Point.Center);
-                Render2D.DrawLine(Size * 0.5f, pointPos, Color.Gray);
+                Render2D.DrawLine(size * 0.5f, pointPos, style.ForegroundDisabled, thickness);
 
-                var rect = new Rectangle(Float2.Zero, Size);
-                var color = Color.MediumVioletRed;
+                var rect = new Rectangle(Float2.Zero, size);
+                var color = style.BorderSelected;
                 if (IsMouseOver)
                     color *= 1.1f;
                 Render2D.FillRectangle(rect, color);
@@ -2202,7 +2208,7 @@ namespace FlaxEditor.GUI
 
                     var tangent = t.TangentValue;
                     var direction = t.IsIn ? -1.0f : 1.0f;
-                    var offset = 30.0f;
+                    var offset = t.TangentOffset;
                     var location = GetKeyframePoint(ref k, selectedComponent);
                     t.Size = KeyframesSize / ViewScale;
                     t.Location = new Float2
@@ -2226,6 +2232,18 @@ namespace FlaxEditor.GUI
                 {
                     _tangents[i].Visible = false;
                 }
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void SetScaleInternal(ref Float2 scale)
+        {
+            base.SetScaleInternal(ref scale);
+
+            if (!_showCollapsed)
+            {
+                // Refresh keyframes when zooming (their size depends on the scale)
+                UpdateKeyframes();
             }
         }
 
