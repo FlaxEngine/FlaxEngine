@@ -184,6 +184,10 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     // Initialize using the shared Display instance from SDL
     if (SDLPlatform::UsesX11() && SDLPlatform::GetXDisplay() == nullptr)
         SDLPlatform::InitX11(GetX11Display());
+
+    // Window focus changes breaks the text input for some reason, just keep it enabled for good
+    if (SDLPlatform::UsesX11() && _settings.AllowInput)
+        SDL_StartTextInput(_window);
 #endif
 }
 
@@ -416,7 +420,10 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
     {
         OnGotFocus();
-        SDL_StartTextInput(_window);
+        if (IsPopupWindow(_settings.Type))
+            _window = _window;
+        if (_settings.AllowInput && !SDLPlatform::UsesX11())
+            SDL_StartTextInput(_window);
         const SDL_Rect* currentClippingRect = SDL_GetWindowMouseRect(_window);
         if (_isClippingCursor && currentClippingRect == nullptr)
         {
@@ -427,7 +434,10 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     }
     case SDL_EVENT_WINDOW_FOCUS_LOST:
     {
-        SDL_StopTextInput(_window);
+        if (IsPopupWindow(_settings.Type))
+            _window = _window;
+        if (_settings.AllowInput && !SDLPlatform::UsesX11())
+            SDL_StopTextInput(_window);
         const SDL_Rect* currentClippingRect = SDL_GetWindowMouseRect(_window);
         if (currentClippingRect != nullptr)
             SDL_SetWindowMouseRect(_window, nullptr);
