@@ -150,7 +150,8 @@ namespace FlaxEditor
         private float _mouseMoveSum;
         private UndoMultiBlock _undoBlock;
         private View _view;
-        private float[] _gridTickSteps = Utilities.Utils.CurveTickSteps, _gridTickStrengths;
+        private double[] _gridTickSteps = Utilities.Utils.CurveTickSteps;
+        private float[] _gridTickStrengths;
         private List<Widget> _widgets;
         private Widget _activeWidget;
 
@@ -564,9 +565,9 @@ namespace FlaxEditor
             var linesColor = style.ForegroundDisabled.RGBMultiplied(0.5f);
             var labelsColor = style.ForegroundDisabled;
             var labelsSize = 10.0f;
-            Utilities.Utils.DrawCurveTicks((float tick, float strength) =>
+            Utilities.Utils.DrawCurveTicks((decimal tick, float strength) =>
             {
-                var p = _view.PointToParent(axis * tick);
+                var p = _view.PointToParent(axis * (float)tick);
 
                 // Draw line
                 var lineRect = new Rectangle

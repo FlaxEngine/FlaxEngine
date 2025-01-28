@@ -289,7 +289,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// The curve time/value axes tick steps.
         /// </summary>
-        protected float[] TickSteps = Utilities.Utils.CurveTickSteps;
+        protected double[] TickSteps = Utilities.Utils.CurveTickSteps;
 
         /// <summary>
         /// The curve contents area.
@@ -797,9 +797,9 @@ namespace FlaxEditor.GUI
 
         private void DrawAxis(Float2 axis, Rectangle viewRect, float min, float max, float pixelRange)
         {
-            Utilities.Utils.DrawCurveTicks((float tick, float strength) =>
+            Utilities.Utils.DrawCurveTicks((decimal tick, float strength) =>
             {
-                var p = PointFromKeyframes(axis * tick, ref viewRect);
+                var p = PointFromKeyframes(axis * (float)tick, ref viewRect);
 
                 // Draw line
                 var lineRect = new Rectangle
