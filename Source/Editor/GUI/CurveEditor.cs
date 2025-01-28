@@ -448,7 +448,7 @@ namespace FlaxEditor.GUI
             _mainPanel = new Panel(ScrollBars.Both)
             {
                 ScrollMargin = new Margin(150.0f),
-                AlwaysShowScrollbars = true,
+                AlwaysShowScrollbars = false,
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
                 Parent = this
