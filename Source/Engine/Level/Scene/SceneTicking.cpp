@@ -10,6 +10,8 @@ SceneTicking::TickData::TickData(int32 capacity)
 {
 }
 
+SceneTicking::TickData::~TickData() = default;
+
 void SceneTicking::TickData::AddScript(Script* script)
 {
     Scripts.Add(script);
@@ -32,11 +34,11 @@ void SceneTicking::TickData::RemoveTick(void* callee)
 {
     for (int32 i = 0; i < Ticks.Count(); i++)
     {
-        if (Ticks.Get()[i].Callee == callee)
-        {
-            Ticks.RemoveAt(i);
-            break;
-        }
+        if (Ticks.Get()[i].Callee != callee)
+            continue;
+
+        Ticks.RemoveAt(i);
+        break;
     }
 }
 
@@ -54,11 +56,11 @@ void SceneTicking::TickData::RemoveTickExecuteInEditor(void* callee)
 {
     for (int32 i = 0; i < TicksExecuteInEditor.Count(); i++)
     {
-        if (TicksExecuteInEditor.Get()[i].Callee == callee)
-        {
-            TicksExecuteInEditor.RemoveAt(i);
-            break;
-        }
+        if (TicksExecuteInEditor.Get()[i].Callee != callee)
+            continue;
+
+        TicksExecuteInEditor.RemoveAt(i);
+        break;
     }
 }
 
@@ -90,9 +92,7 @@ SceneTicking::FixedUpdateTickData::FixedUpdateTickData()
 void SceneTicking::FixedUpdateTickData::TickScripts(const Array<Script*>& scripts)
 {
     for (auto* script : scripts)
-    {
         script->OnFixedUpdate();
-    }
 }
 
 SceneTicking::UpdateTickData::UpdateTickData()
@@ -103,9 +103,7 @@ SceneTicking::UpdateTickData::UpdateTickData()
 void SceneTicking::UpdateTickData::TickScripts(const Array<Script*>& scripts)
 {
     for (auto* script : scripts)
-    {
         script->OnUpdate();
-    }
 }
 
 SceneTicking::LateUpdateTickData::LateUpdateTickData()
@@ -116,9 +114,7 @@ SceneTicking::LateUpdateTickData::LateUpdateTickData()
 void SceneTicking::LateUpdateTickData::TickScripts(const Array<Script*>& scripts)
 {
     for (auto* script : scripts)
-    {
         script->OnLateUpdate();
-    }
 }
 
 SceneTicking::LateFixedUpdateTickData::LateFixedUpdateTickData()
@@ -129,14 +125,13 @@ SceneTicking::LateFixedUpdateTickData::LateFixedUpdateTickData()
 void SceneTicking::LateFixedUpdateTickData::TickScripts(const Array<Script*>& scripts)
 {
     for (auto* script : scripts)
-    {
         script->OnLateFixedUpdate();
-    }
 }
 
 void SceneTicking::AddScript(Script* obj)
 {
     ASSERT_LOW_LAYER(obj && obj->GetParent() && obj->GetParent()->GetScene());
+
     if (obj->_tickFixedUpdate)
         FixedUpdate.AddScript(obj);
     if (obj->_tickUpdate)
@@ -150,6 +145,7 @@ void SceneTicking::AddScript(Script* obj)
 void SceneTicking::RemoveScript(Script* obj)
 {
     ASSERT_LOW_LAYER(obj && obj->GetParent() && obj->GetParent()->GetScene());
+
     if (obj->_tickFixedUpdate)
         FixedUpdate.RemoveScript(obj);
     if (obj->_tickUpdate)
