@@ -88,7 +88,7 @@ namespace Flax.Deps.Dependencies
                 Path.Combine(root, "include", "SDL3"),
             };
 
-            CloneGitRepoFast(root, "https://github.com/libsdl-org/SDL");
+            CloneGitRepo(root, "https://github.com/libsdl-org/SDL");
             GitFetch(root);
             GitResetToCommit(root, "535d80badefc83c5c527ec5748f2a20d6a9310fe");  // 3.2.0
 
