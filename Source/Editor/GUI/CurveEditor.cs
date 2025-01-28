@@ -671,6 +671,8 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override void ShowWholeCurve()
         {
+            if (_points.Count == 0)
+                return;
             _mainPanel.GetDesireClientArea(out var mainPanelArea);
             ViewScale = ApplyUseModeMask(EnableZoom, mainPanelArea.Size / _contents.Size, ViewScale);
             Float2 minPos = Float2.Maximum;
