@@ -355,11 +355,20 @@ namespace FlaxEditor.Windows.Assets
         private void OnPrefabOpened()
         {
             _viewport.Prefab = _asset;
-            _viewport.UpdateGizmoMode();
+            if (Editor.ProjectCache.TryGetCustomData($"UIMode:{_asset.ID}", out bool value))
+                _viewport.SetInitialUIMode(value);
+            else
+                _viewport.SetInitialUIMode(_viewport._hasUILinked);
+            _viewport.UIModeToggled += OnUIModeToggled;
             Graph.MainActor = _viewport.Instance;
             Selection.Clear();
             Select(Graph.Main);
             Graph.Root.TreeNode.Expand(true);
+        }
+
+        private void OnUIModeToggled(bool value)
+        {
+            Editor.ProjectCache.SetCustomData($"UIMode:{_asset.ID}", value);
         }
 
         /// <inheritdoc />
