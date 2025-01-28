@@ -1,13 +1,13 @@
 name: Continuous Deployment
 on:
   schedule:
-    - cron: '15 4 * * *'
+    - cron: '15 6 * * *'
   workflow_dispatch:
 
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: false
-  GIT_LFS_PULL_OPTIONS: '-c lfs.concurrenttransfers=10 -c lfs.transfer.maxretries=2'
+  GIT_LFS_PULL_OPTIONS: '-c lfs.concurrenttransfers=1 -c lfs.transfer.maxretries=2 -c http.version="HTTP/1.1" -c lfs.activitytimeout=60'
 
 jobs:
 
@@ -84,7 +84,7 @@ jobs:
     - name: Checkout LFS
       run: |
         git lfs version
-        GIT_TRACE=1 GIT_TRANSFER_TRACE=1 git ${{ env.GIT_LFS_PULL_OPTIONS }} lfs pull
+        git ${{ env.GIT_LFS_PULL_OPTIONS }} lfs pull
     - name: Install dependencies
       run: |
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
