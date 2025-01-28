@@ -12,6 +12,7 @@
 SplineRopeBody::SplineRopeBody(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Spline Rope Body");
 }
 
 void SplineRopeBody::Tick()

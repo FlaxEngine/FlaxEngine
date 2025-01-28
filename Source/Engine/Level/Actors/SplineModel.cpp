@@ -25,6 +25,7 @@
 SplineModel::SplineModel(const SpawnParams& params)
     : ModelInstanceActor(params)
 {
+    _name = TEXT("Spline Model");
     _drawCategory = SceneRendering::SceneDrawAsync;
     Model.Changed.Bind<SplineModel, &SplineModel::OnModelChanged>(this);
     Model.Loaded.Bind<SplineModel, &SplineModel::OnModelLoaded>(this);
