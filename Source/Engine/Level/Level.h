@@ -469,11 +469,12 @@ public:
     API_FUNCTION() static Array<Actor*> GetActors(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false);
 
     /// <summary>
-    /// Finds all the scripts of the given type in all the loaded scenes.
+    /// Finds all the scripts of the given type in an actor or all the loaded scenes.
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
+    /// <param name="root">The root to find scripts. If null, will search in all scenes</param>
     /// <returns>Found scripts list.</returns>
-    API_FUNCTION() static Array<Script*> GetScripts(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type);
+    API_FUNCTION() static Array<Script*> GetScripts(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type, Actor* root = nullptr);
 
     /// <summary>
     /// Tries to find scene with given ID.
