@@ -652,7 +652,7 @@ namespace FlaxEditor.Viewport
                     var allActors = Level.GetActors<Actor>(true);
                     foreach (var a in allActors)
                     {
-                        if (a.HideFlags is HideFlags.DontSelect or HideFlags.FullyHidden || a is EmptyActor || a is Scene)
+                        if (a.HideFlags is HideFlags.DontSelect or HideFlags.FullyHidden || a is EmptyActor || a is Scene || !a.IsActive)
                             continue;
 
                         var actorBox = a.EditorBox;
