@@ -358,7 +358,7 @@ namespace FlaxEditor.Windows.Assets
             if (Editor.ProjectCache.TryGetCustomData($"UIMode:{_asset.ID}", out bool value))
                 _viewport.SetInitialUIMode(value);
             else
-                _viewport.SetInitialUIMode(false);
+                _viewport.SetInitialUIMode(_viewport._hasUILinked);
             _viewport.UIModeToggled += OnUIModeToggled;
             Graph.MainActor = _viewport.Instance;
             Selection.Clear();

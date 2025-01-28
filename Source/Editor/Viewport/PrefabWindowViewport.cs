@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Cameras;
@@ -71,7 +72,7 @@ namespace FlaxEditor.Viewport
         private PrefabUIEditorRoot _uiRoot;
         private bool _showUI = false;
         
-        private ViewportWidgetButton _uiModeButton;
+        private ContextMenuButton _uiModeButton;
 
         /// <summary>
         /// Event fired when the UI Mode is toggled.
@@ -208,12 +209,11 @@ namespace FlaxEditor.Viewport
             _uiRoot = new PrefabUIEditorRoot(this);
             _uiRoot.IndexInParent = 0; // Move viewport down below other widgets in the viewport
             _uiParentLink = _uiRoot.UIRoot;
-            
-            var container = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);
-            container.Parent = this;
-            _uiModeButton = new ViewportWidgetButton("UI Mode", SpriteHandle.Invalid, null, true);
-            _uiModeButton.Clicked += button => ShowUI = button.Checked;
-            _uiModeButton.Parent = container;
+
+            // UI mode buton
+            _uiModeButton = ViewWidgetShowMenu.AddButton("UI Mode", (button) => ShowUI = button.Checked);
+            _uiModeButton.AutoCheck = true;
+            _uiModeButton.VisibleChanged += control => (control as ContextMenuButton).Checked = ShowUI;
 
             EditorGizmoViewport.AddGizmoViewportWidgets(this, TransformGizmo);
 
