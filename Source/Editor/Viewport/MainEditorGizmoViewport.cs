@@ -13,6 +13,7 @@ using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Tools;
+
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport
@@ -684,21 +685,53 @@ namespace FlaxEditor.Viewport
                             if (uiCanvas.Is2D)
                                 continue;
                         }
-                        
-                        // Check if all corners are in box to select it.
-                        var corners = actorBox.GetCorners();
-                        var containsAllCorners = true;
-                        foreach (var c in corners)
+
+                        var containsAllPoints = true;
+                        var fallBackToBox = false;
+                        if (a is StaticModel sm)
                         {
-                            Viewport.ProjectPoint(c, out var loc);
-                            if (!adjustedRect.Contains(loc))
+                            List<Float3> extraPoints = new List<Float3>();
+                            var m = sm.Model.LODs[0];
+                            foreach (var mesh in m.Meshes)
                             {
-                                containsAllCorners = false;
-                                break;
+                                var points = mesh.GetCollisionProxyPoints();
+                                if (points.Length == 0)
+                                {
+                                    fallBackToBox = true;
+                                    break;
+                                }
+                                foreach (var point in points)
+                                {
+                                    Viewport.ProjectPoint(a.Transform.LocalToWorld(point), out var loc);
+                                    if (!adjustedRect.Contains(loc))
+                                    {
+                                        containsAllPoints = false;
+                                        break;
+                                    }
+                                }
                             }
                         }
+                        else
+                        {
+                            fallBackToBox = true;
+                        }
 
-                        if (containsAllCorners)
+                        if (fallBackToBox)
+                        {
+                            // Check if all corners are in box to select it.
+                            var corners = actorBox.GetCorners();
+                            foreach (var c in corners)
+                            {
+                                Viewport.ProjectPoint(c, out var loc);
+                                if (!adjustedRect.Contains(loc))
+                                {
+                                    containsAllPoints = false;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (containsAllPoints)
                         {
                             if (a.HasPrefabLink)
                                 hits.Add(SceneGraphRoot.Find(a.GetPrefabRoot()));
