@@ -690,23 +690,25 @@ namespace FlaxEditor.Viewport
                         var fallBackToBox = false;
                         if (a is StaticModel sm)
                         {
-                            List<Float3> extraPoints = new List<Float3>();
-                            var m = sm.Model.LODs[0];
-                            foreach (var mesh in m.Meshes)
+                            if (sm.Model)
                             {
-                                var points = mesh.GetCollisionProxyPoints();
-                                if (points.Length == 0)
+                                var m = sm.Model.LODs[0];
+                                foreach (var mesh in m.Meshes)
                                 {
-                                    fallBackToBox = true;
-                                    break;
-                                }
-                                foreach (var point in points)
-                                {
-                                    Viewport.ProjectPoint(a.Transform.LocalToWorld(point), out var loc);
-                                    if (!adjustedRect.Contains(loc))
+                                    var points = mesh.GetCollisionProxyPoints();
+                                    if (points.Length == 0)
                                     {
-                                        containsAllPoints = false;
+                                        fallBackToBox = true;
                                         break;
+                                    }
+                                    foreach (var point in points)
+                                    {
+                                        Viewport.ProjectPoint(a.Transform.LocalToWorld(point), out var loc);
+                                        if (!adjustedRect.Contains(loc))
+                                        {
+                                            containsAllPoints = false;
+                                            break;
+                                        }
                                     }
                                 }
                             }
