@@ -968,8 +968,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 Tag = script
             };
             cm.AddButton("Remove", OnClickRemove).Icon = Editor.Instance.Icons.Cross12;
+            cm.AddSeparator();
+            cm.AddButton("Move to top", OnClickMoveToTop).Enabled = script.OrderInParent > 0;
             cm.AddButton("Move up", OnClickMoveUp).Enabled = script.OrderInParent > 0;
             cm.AddButton("Move down", OnClickMoveDown).Enabled = script.OrderInParent < script.Actor.Scripts.Length - 1;
+            cm.AddButton("Move to bottom", OnClickMoveToBottom).Enabled = script.OrderInParent < script.Actor.Scripts.Length - 1;
             // TODO: copy script
             // TODO: paste script values
             // TODO: paste script as new
@@ -991,6 +994,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
             Presenter.Undo?.AddAction(action);
         }
 
+        private void OnClickMoveToTop(ContextMenuButton button)
+        {
+            var script = (Script)button.ParentContextMenu.Tag;
+            var action = ChangeScriptAction.ChangeOrder(script, 0);
+            action.Do();
+            Presenter.Undo?.AddAction(action);
+        }
+
         private void OnClickMoveUp(ContextMenuButton button)
         {
             var script = (Script)button.ParentContextMenu.Tag;
@@ -1003,6 +1014,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             var script = (Script)button.ParentContextMenu.Tag;
             var action = ChangeScriptAction.ChangeOrder(script, script.OrderInParent + 1);
+            action.Do();
+            Presenter.Undo?.AddAction(action);
+        }
+
+        private void OnClickMoveToBottom(ContextMenuButton button)
+        {
+            var script = (Script)button.ParentContextMenu.Tag;
+            var action = ChangeScriptAction.ChangeOrder(script, script.Actor.Scripts.Length);
             action.Do();
             Presenter.Undo?.AddAction(action);
         }
