@@ -674,28 +674,82 @@ namespace FlaxEditor.GUI
             OnEditingEnd();
         }
 
-        /// <inheritdoc />
-        public override void ShowWholeCurve()
+        private void ShowCurve(bool selectedOnly)
         {
             if (_points.Count == 0)
                 return;
-            _mainPanel.GetDesireClientArea(out var mainPanelArea);
-            ViewScale = ApplyUseModeMask(EnableZoom, mainPanelArea.Size / _contents.Size, ViewScale);
-            Float2 minPos = Float2.Maximum;
+            int pass = 1;
+            REDO:
+
+            // Get curve bounds in Keyframes (time and value)
+            Float2 posMin = Float2.Maximum, posMax = Float2.Minimum;
+            // TODO: include bezier curve bounds calculation to handle curve outside the bounds made out of points
             foreach (var point in _points)
             {
-                var pos = point.PointToParent(point.Location);
-                Float2.Min(ref minPos, ref pos, out minPos);
+                if (selectedOnly && !point.IsSelected)
+                    continue;
+                var pos = point.Point;
+                Float2.Min(ref posMin, ref pos, out posMin);
+                Float2.Max(ref posMax, ref pos, out posMax);
             }
-            var minPosPoint = _contents.PointToParent(ref minPos);
-            var scroll = new Float2(_mainPanel.HScrollBar?.TargetValue ?? 0, _mainPanel.VScrollBar?.TargetValue ?? 0);
-            scroll = ApplyUseModeMask(EnablePanning, minPosPoint, scroll);
-            if (_mainPanel.HScrollBar != null)
-                _mainPanel.HScrollBar.TargetValue = scroll.X;
-            if (_mainPanel.VScrollBar != null)
-                _mainPanel.VScrollBar.TargetValue = scroll.Y;
+
+            // Apply margin around the area
+            var posMargin = (posMax - posMin) * 0.05f;
+            posMin -= posMargin;
+            posMax += posMargin;
+
+            // Convert from Keyframes to Contents
+            _mainPanel.GetDesireClientArea(out var viewRect);
+            PointFromKeyframesToContents(ref posMin, ref viewRect);
+            PointFromKeyframesToContents(ref posMax, ref viewRect);
+            var tmp = posMin;
+            Float2.Min(ref posMin, ref posMax, out posMin);
+            Float2.Max(ref posMax, ref tmp, out posMax);
+            var contentsSize = posMax - posMin;
+
+            // Convert from Contents to Main Panel
+            posMin = _contents.PointToParent(posMin);
+            posMax = _contents.PointToParent(posMax);
+            tmp = posMin;
+            Float2.Min(ref posMin, ref posMax, out posMin);
+            Float2.Max(ref posMax, ref tmp, out posMax);
+
+            // Update zoom (leave unchanged when focusing a single point)
+            var zoomMask = EnableZoom;
+            if (Mathf.IsZero(posMargin.X))
+                zoomMask &= ~UseMode.Horizontal;
+            if (Mathf.IsZero(posMargin.Y))
+                zoomMask &= ~UseMode.Vertical;
+            ViewScale = ApplyUseModeMask(zoomMask, viewRect.Size / contentsSize, ViewScale);
+
+            // Update scroll (attempt to center the area when it's smaller than the view)
+            Float2 viewOffset = -posMin;
+            Float2 viewSize = _mainPanel.Size;
+            Float2 viewSizeLeft = viewSize - Float2.Clamp(posMax - posMin, Float2.Zero, viewSize);
+            viewOffset += viewSizeLeft * 0.5f;
+            viewOffset = ApplyUseModeMask(EnablePanning, viewOffset, _mainPanel.ViewOffset);
+            _mainPanel.ViewOffset = viewOffset;
+
+            // Do it multiple times so the view offset can be properly calculate once the view scale gets changes
+            if (pass++ <= 2)
+                goto REDO;
 
             UpdateKeyframes();
+        }
+
+        /// <summary>
+        /// Focuses the view on the selected keyframes.
+        /// </summary>
+        public void FocusSelection()
+        {
+            // Fallback to showing whole curve if nothing is selected
+            ShowCurve(SelectionCount != 0);
+        }
+
+        /// <inheritdoc />
+        public override void ShowWholeCurve()
+        {
+            ShowCurve(false);
         }
 
         /// <inheritdoc />
@@ -774,10 +828,7 @@ namespace FlaxEditor.GUI
             point = _contents.PointFromParent(point);
 
             // Contents -> Keyframes
-            return new Float2(
-                              (point.X + _contents.Location.X) / UnitsPerSecond,
-                              (point.Y + _contents.Location.Y - curveContentAreaBounds.Height) / -UnitsPerSecond
-                             );
+            return PointFromContentsToKeyframes(ref point, ref curveContentAreaBounds);
         }
 
         /// <summary>
@@ -789,16 +840,29 @@ namespace FlaxEditor.GUI
         protected Float2 PointFromKeyframes(Float2 point, ref Rectangle curveContentAreaBounds)
         {
             // Keyframes -> Contents
-            point = new Float2(
-                               point.X * UnitsPerSecond - _contents.Location.X,
-                               point.Y * -UnitsPerSecond + curveContentAreaBounds.Height - _contents.Location.Y
-                              );
+            PointFromKeyframesToContents(ref point, ref curveContentAreaBounds);
 
             // Contents -> Main Panel
             point = _contents.PointToParent(point);
 
             // Main Panel -> Curve Editor
             return _mainPanel.PointToParent(point);
+        }
+
+        internal Float2 PointFromContentsToKeyframes(ref Float2 point, ref Rectangle curveContentAreaBounds)
+        {
+            return new Float2(
+                              (point.X + _contents.Location.X) / UnitsPerSecond,
+                              (point.Y + _contents.Location.Y - curveContentAreaBounds.Height) / -UnitsPerSecond
+                             );
+        }
+
+        internal void PointFromKeyframesToContents(ref Float2 point, ref Rectangle curveContentAreaBounds)
+        {
+            point = new Float2(
+                               point.X * UnitsPerSecond - _contents.Location.X,
+                               point.Y * -UnitsPerSecond + curveContentAreaBounds.Height - _contents.Location.Y
+                              );
         }
 
         private void DrawAxis(Float2 axis, Rectangle viewRect, float min, float max, float pixelRange)
@@ -947,7 +1011,7 @@ namespace FlaxEditor.GUI
             }
             else if (options.FocusSelection.Process(this))
             {
-                ShowWholeCurve();
+                FocusSelection();
                 return true;
             }
 
