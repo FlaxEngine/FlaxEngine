@@ -1000,6 +1000,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var action = ChangeScriptAction.ChangeOrder(script, 0);
             action.Do();
             Presenter.Undo?.AddAction(action);
+
+            if (Presenter.Panel.Parent is Panel p)
+            {
+                var loc = Layout.Control.UpperLeft;
+                p.ScrollViewTo(loc, true);
+            }
         }
 
         private void OnClickMoveUp(ContextMenuButton button)
@@ -1024,6 +1030,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var action = ChangeScriptAction.ChangeOrder(script, script.Actor.Scripts.Length);
             action.Do();
             Presenter.Undo?.AddAction(action);
+
+            if (Presenter.Panel.Parent is Panel p)
+            {
+                var loc = Layout.Control.BottomLeft;
+                p.ScrollViewTo(loc, true);
+            }
         }
 
         private void OnClickCopyTypeName(ContextMenuButton button)
