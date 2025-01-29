@@ -1,6 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-#if USE_EDITOR && PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS
 
 #include "Engine/Platform/Types.h"
 #include "Engine/Platform/ScreenUtilities.h"

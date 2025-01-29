@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if USE_EDITOR && PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS
 
 #include "Engine/Platform/Base/ScreenUtilitiesBase.h"
 #include "Engine/Core/Types/BaseTypes.h"
