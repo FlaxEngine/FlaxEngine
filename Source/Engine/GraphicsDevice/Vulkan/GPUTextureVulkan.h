@@ -77,6 +77,10 @@ public:
     // [DescriptorOwnerResourceVulkan]
     void DescriptorAsImage(GPUContextVulkan* context, VkImageView& imageView, VkImageLayout& layout) override;
     void DescriptorAsStorageImage(GPUContextVulkan* context, VkImageView& imageView, VkImageLayout& layout) override;
+#if !BUILD_RELEASE
+    bool HasSRV() const override { return ((GPUTexture*)_parent)->IsShaderResource(); }
+    bool HasUAV() const override { return ((GPUTexture*)_parent)->IsUnorderedAccess(); }
+#endif
 };
 
 /// <summary>

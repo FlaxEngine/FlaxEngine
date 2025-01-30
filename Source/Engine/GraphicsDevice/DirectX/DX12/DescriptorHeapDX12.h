@@ -35,8 +35,15 @@ public:
         }
 #endif
 
-        D3D12_CPU_DESCRIPTOR_HANDLE CPU() const;
-        D3D12_GPU_DESCRIPTOR_HANDLE GPU() const;
+        FORCE_INLINE D3D12_CPU_DESCRIPTOR_HANDLE CPU() const
+        {
+            return Heap ? Heap->CPU(Index) : D3D12_CPU_DESCRIPTOR_HANDLE {};
+        }
+
+        FORCE_INLINE D3D12_GPU_DESCRIPTOR_HANDLE GPU() const
+        {
+            return Heap ? Heap->GPU(Index) : D3D12_GPU_DESCRIPTOR_HANDLE {};
+        }
 
         void CreateSRV(GPUDeviceDX12* device, ID3D12Resource* resource, D3D12_SHADER_RESOURCE_VIEW_DESC* desc = nullptr);
         void CreateRTV(GPUDeviceDX12* device, ID3D12Resource* resource, D3D12_RENDER_TARGET_VIEW_DESC* desc = nullptr);

@@ -40,6 +40,11 @@ public:
 
 public:
 
+    void SetParnet(GPUBuffer* parent)
+    {
+        _parent = parent;
+    }
+
     /// <summary>
     /// Release the view.
     /// </summary>

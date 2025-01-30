@@ -13,6 +13,7 @@ void GPUBufferViewVulkan::Init(GPUDeviceVulkan* device, GPUBufferVulkan* owner, 
 {
     ASSERT(View == VK_NULL_HANDLE);
 
+    _parent = owner;
     Device = device;
     Owner = owner;
     Buffer = buffer;

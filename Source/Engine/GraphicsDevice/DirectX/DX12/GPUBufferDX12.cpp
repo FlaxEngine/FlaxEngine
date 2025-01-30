@@ -189,7 +189,7 @@ bool GPUBufferDX12::OnInit()
     }
 
     // Create views
-    _view.Init(_device, this);
+    _view.Init(_device, this, this);
     if (useSRV)
     {
         D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;

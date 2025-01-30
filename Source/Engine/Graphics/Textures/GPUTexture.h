@@ -21,7 +21,6 @@ API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUTextureView : public GPUResou
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUTextureView);
 protected:
-    GPUResource* _parent = nullptr;
     PixelFormat _format = PixelFormat::Unknown;
     MSAALevel _msaa = MSAALevel::None;
 
@@ -40,14 +39,6 @@ protected:
     }
 
 public:
-    /// <summary>
-    /// Gets parent GPU resource owning that view.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE GPUResource* GetParent() const
-    {
-        return _parent;
-    }
-
     /// <summary>
     /// Gets the view format.
     /// </summary>
