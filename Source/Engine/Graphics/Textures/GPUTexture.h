@@ -294,10 +294,7 @@ public:
     /// <summary>
     /// Checks if texture is a staging buffer (supports direct CPU access).
     /// </summary>
-    FORCE_INLINE bool IsStaging() const
-    {
-        return _desc.Usage == GPUResourceUsage::StagingUpload || _desc.Usage == GPUResourceUsage::StagingReadback;
-    }
+    bool IsStaging() const;
 
     /// <summary>
     /// Gets a boolean indicating whether this <see cref="GPUTexture"/> is a using a block compress format (BC1, BC2, BC3, BC4, BC5, BC6H, BC7, etc.).

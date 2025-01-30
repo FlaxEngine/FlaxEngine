@@ -142,6 +142,14 @@ GPUTextureDescription GPUTextureDescription::ToStagingReadback() const
     return copy;
 }
 
+GPUTextureDescription GPUTextureDescription::ToStaging() const
+{
+    auto copy = *this;
+    copy.Flags = GPUTextureFlags::None;
+    copy.Usage = GPUResourceUsage::Staging;
+    return copy;
+}
+
 bool GPUTextureDescription::Equals(const GPUTextureDescription& other) const
 {
     return Dimensions == other.Dimensions
@@ -206,6 +214,11 @@ GPUTexture::GPUTexture()
 {
     // Keep description data clear (we use _desc.MipLevels to check if it's has been initated)
     _desc.Clear();
+}
+
+bool GPUTexture::IsStaging() const
+{
+    return _desc.Usage == GPUResourceUsage::StagingUpload || _desc.Usage == GPUResourceUsage::StagingReadback || _desc.Usage == GPUResourceUsage::Staging;
 }
 
 Float2 GPUTexture::Size() const

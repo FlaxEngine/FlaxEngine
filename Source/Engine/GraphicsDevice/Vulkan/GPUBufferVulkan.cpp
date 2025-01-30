@@ -128,6 +128,9 @@ bool GPUBufferVulkan::OnInit()
     case GPUResourceUsage::StagingReadback:
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
         break;
+    case GPUResourceUsage::Staging:
+        allocInfo.usage = VMA_MEMORY_USAGE_CPU_COPY;
+        break;
     default:
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
     }
