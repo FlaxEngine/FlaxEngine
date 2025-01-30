@@ -8,6 +8,27 @@ using FlaxEngine.GUI;
 namespace FlaxEditor.CustomEditors.Editors
 {
     /// <summary>
+    /// The value changed by custom Vector3 editors.
+    /// </summary>
+    public enum ValueChanged
+    {
+        /// <summary>
+        /// X value changed.
+        /// </summary>
+        X = 0,
+
+        /// <summary>
+        /// Y value changed.
+        /// </summary>
+        Y = 1,
+
+        /// <summary>
+        /// Z value changed.
+        /// </summary>
+        Z = 2
+    }
+
+    /// <summary>
     /// Default implementation of the inspector used to edit Vector3 value type properties.
     /// </summary>
     [CustomEditor(typeof(Vector3)), DefaultEditor]
@@ -49,14 +70,14 @@ namespace FlaxEditor.CustomEditors.Editors
         /// </summary>
         public bool LinkValues = false;
 
-        private enum ValueChanged
-        {
-            X = 0,
-            Y = 1,
-            Z = 2
-        }
+        /// <summary>
+        /// Whether to use the average for sliding different values.
+        /// </summary>
+        public virtual bool AllowSlidingForDifferentValues => true;
 
         private ValueChanged _valueChanged;
+        private float _defaultSlidingSpeed;
+        private bool _slidingEnded = false;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -83,19 +104,32 @@ namespace FlaxEditor.CustomEditors.Editors
             XElement.SetLimits(limit);
             XElement.SetCategory(category);
             XElement.ValueBox.ValueChanged += OnXValueChanged;
-            XElement.ValueBox.SlidingEnd += ClearToken;
+            XElement.ValueBox.SlidingEnd += () =>
+            {
+                _slidingEnded = true;
+                ClearToken();
+            };
+            _defaultSlidingSpeed = XElement.ValueBox.SlideSpeed;
 
             YElement = grid.FloatValue();
             YElement.SetLimits(limit);
             YElement.SetCategory(category);
             YElement.ValueBox.ValueChanged += OnYValueChanged;
-            YElement.ValueBox.SlidingEnd += ClearToken;
+            YElement.ValueBox.SlidingEnd += () =>
+            {
+                _slidingEnded = true;
+                ClearToken();
+            };
 
             ZElement = grid.FloatValue();
             ZElement.SetLimits(limit);
             ZElement.SetCategory(category);
             ZElement.ValueBox.ValueChanged += OnZValueChanged;
-            ZElement.ValueBox.SlidingEnd += ClearToken;
+            ZElement.ValueBox.SlidingEnd += () =>
+            {
+                _slidingEnded = true;
+                ClearToken();
+            };
 
             if (LinkedLabel != null)
             {
@@ -118,8 +152,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (IsSetBlocked)
                 return;
-            if (LinkValues)
-                _valueChanged = ValueChanged.X;
+            _valueChanged = ValueChanged.X;
             OnValueChanged();
         }
 
@@ -127,8 +160,7 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (IsSetBlocked)
                 return;
-            if (LinkValues)
-                _valueChanged = ValueChanged.Y;
+            _valueChanged = ValueChanged.Y;
             OnValueChanged();
         }
 
@@ -136,14 +168,13 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (IsSetBlocked)
                 return;
-            if (LinkValues)
-                _valueChanged = ValueChanged.Z;
+            _valueChanged = ValueChanged.Z;
             OnValueChanged();
         }
 
         private void OnValueChanged()
         {
-            if (IsSetBlocked)
+            if (IsSetBlocked || Values == null)
                 return;
 
             var xValue = XElement.ValueBox.Value;
@@ -191,14 +222,101 @@ namespace FlaxEditor.CustomEditors.Editors
             var isSliding = XElement.IsSliding || YElement.IsSliding || ZElement.IsSliding;
             var token = isSliding ? this : null;
             var value = new Float3(xValue, yValue, zValue);
-            object v = Values[0];
-            if (v is Vector3)
-                v = (Vector3)value;
-            else if (v is Float3)
-                v = (Float3)value;
-            else if (v is Double3)
-                v = (Double3)value;
-            SetValue(v, token);
+            if (HasDifferentValues && Values.Count > 1)
+            {
+                var newObjects = new object[Values.Count];
+                // Handle Sliding
+                if (AllowSlidingForDifferentValues && (isSliding || _slidingEnded))
+                {
+                    Float3 average = Float3.Zero;
+                    for (int i = 0; i < Values.Count; i++)
+                    {
+                        var v = Values[i];
+                        var castedValue = Float3.Zero;
+                        if (v is Vector3 asVector3)
+                            castedValue = asVector3;
+                        else if (v is Float3 asFloat3)
+                            castedValue = asFloat3;
+                        else if (v is Double3 asDouble3)
+                            castedValue = asDouble3;
+
+                        average += castedValue;
+                    }
+                    
+                    average /= Values.Count;
+
+                    var newValue = value - average;
+
+                    for (int i = 0; i < Values.Count; i++)
+                    {
+                        var v = Values[i];
+                        if (LinkValues)
+                        {
+                            if (v is Vector3 asVector3)
+                                v = asVector3 + new Vector3(newValue.X, newValue.Y, newValue.Z);
+                            else if (v is Float3 asFloat3)
+                                v = asFloat3 + new Float3(newValue.X, newValue.Y, newValue.Z);
+                            else if (v is Double3 asDouble3)
+                                v = asDouble3 + new Double3(newValue.X, newValue.Y, newValue.Z);
+                        }
+                        else
+                        {
+                            if (v is Vector3 asVector3)
+                                v = asVector3 + new Vector3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+                            else if (v is Float3 asFloat3)
+                                v = asFloat3 + new Float3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+                            else if (v is Double3 asDouble3)
+                                v = asDouble3 + new Double3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+                        }
+
+                        newObjects[i] = v;
+                    }
+
+                    // Capture last sliding value
+                    if (_slidingEnded)
+                        _slidingEnded = false;
+                }
+                else
+                {
+                    for (int i = 0; i < Values.Count; i++)
+                    {
+                        object v = Values[i];
+                        if (LinkValues)
+                        {
+                            if (v is Vector3 asVector3)
+                                v = asVector3 + new Vector3(xValue, yValue, zValue);
+                            else if (v is Float3 asFloat3)
+                                v = asFloat3 + new Float3(xValue, yValue, zValue);
+                            else if (v is Double3 asDouble3)
+                                v = asDouble3 + new Double3(xValue, yValue, zValue);
+                        }
+                        else
+                        {
+                            if (v is Vector3 asVector3)
+                                v = new Vector3(_valueChanged == ValueChanged.X ? xValue : asVector3.X, _valueChanged == ValueChanged.Y ? yValue : asVector3.Y, _valueChanged == ValueChanged.Z ? zValue : asVector3.Z);
+                            else if (v is Float3 asFloat3)
+                                v = new Float3(_valueChanged == ValueChanged.X ? xValue : asFloat3.X, _valueChanged == ValueChanged.Y ? yValue : asFloat3.Y, _valueChanged == ValueChanged.Z ? zValue : asFloat3.Z);
+                            else if (v is Double3 asDouble3)
+                                v = new Double3(_valueChanged == ValueChanged.X ? xValue : asDouble3.X, _valueChanged == ValueChanged.Y ? yValue : asDouble3.Y, _valueChanged == ValueChanged.Z ? zValue : asDouble3.Z);
+                        }
+
+                        newObjects[i] = v;
+                    }
+                }
+                
+                SetValue(newObjects, token);
+            }
+            else
+            {
+                object v = Values[0];
+                if (v is Vector3)
+                    v = (Vector3)value;
+                else if (v is Float3)
+                    v = (Float3)value;
+                else if (v is Double3)
+                    v = (Double3)value;
+                SetValue(v, token);
+            }
         }
 
         private float GetRatio(float value, float initialValue)
@@ -218,7 +336,79 @@ namespace FlaxEditor.CustomEditors.Editors
 
             if (HasDifferentValues)
             {
-                // TODO: support different values for ValueBox<T>
+                // Get which values are different
+                bool xDifferent = false;
+                bool yDifferent = false;
+                bool zDifferent = false;
+                Float3 cachedFirstValue = Float3.Zero;
+                Float3 average = Float3.Zero;
+                for (int i = 0; i < Values.Count; i++)
+                {
+                    var v = Values[i];
+                    var value = Float3.Zero;
+                    if (v is Vector3 asVector3)
+                        value = asVector3;
+                    else if (v is Float3 asFloat3)
+                        value = asFloat3;
+                    else if (v is Double3 asDouble3)
+                        value = asDouble3;
+                    
+                    average += value;
+                    
+                    if (i == 0)
+                    {
+                        cachedFirstValue = value;
+                        continue;
+                    }
+
+                    if (!Mathf.NearEqual(cachedFirstValue.X, value.X))
+                        xDifferent = true;
+                    if (!Mathf.NearEqual(cachedFirstValue.Y, value.Y))
+                        yDifferent = true;
+                    if (!Mathf.NearEqual(cachedFirstValue.Z, value.Z))
+                        zDifferent = true;
+                }
+                
+                average /= Values.Count;
+                
+                if (!xDifferent)
+                {
+                    XElement.ValueBox.Value = cachedFirstValue.X;
+                }
+                else
+                {
+                    if (AllowSlidingForDifferentValues)
+                        XElement.ValueBox.Value = average.X;
+                    else
+                        XElement.ValueBox.SlideSpeed = 0;
+                    XElement.ValueBox.Text = "---";
+                }
+                
+                if (!yDifferent)
+                {
+                    YElement.ValueBox.Value = cachedFirstValue.Y;
+                }
+                else
+                {
+                    if (AllowSlidingForDifferentValues)
+                        YElement.ValueBox.Value = average.Y;
+                    else
+                        YElement.ValueBox.SlideSpeed = 0;
+                    YElement.ValueBox.Text = "---";
+                }
+                
+                if (!zDifferent)
+                {
+                    ZElement.ValueBox.Value = cachedFirstValue.Z;
+                }
+                else
+                {
+                    if (AllowSlidingForDifferentValues)
+                        ZElement.ValueBox.Value = average.Z;
+                    else
+                        ZElement.ValueBox.SlideSpeed = 0;
+                    ZElement.ValueBox.Text = "---";
+                }
             }
             else
             {
@@ -232,6 +422,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 XElement.ValueBox.Value = value.X;
                 YElement.ValueBox.Value = value.Y;
                 ZElement.ValueBox.Value = value.Z;
+
+                if (!Mathf.NearEqual(XElement.ValueBox.SlideSpeed, _defaultSlidingSpeed))
+                    XElement.ValueBox.SlideSpeed = _defaultSlidingSpeed;
+                if (!Mathf.NearEqual(YElement.ValueBox.SlideSpeed, _defaultSlidingSpeed))
+                    YElement.ValueBox.SlideSpeed = _defaultSlidingSpeed;
+                if (!Mathf.NearEqual(ZElement.ValueBox.SlideSpeed, _defaultSlidingSpeed))
+                    ZElement.ValueBox.SlideSpeed = _defaultSlidingSpeed;
             }
         }
     }
@@ -259,6 +456,15 @@ namespace FlaxEditor.CustomEditors.Editors
 
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
+        
+        /// <summary>
+        /// Whether to use the average for sliding different values.
+        /// </summary>
+        public virtual bool AllowSlidingForDifferentValues => true;
+
+        private ValueChanged _valueChanged;
+        private float _defaultSlidingSpeed;
+        private bool _slidingEnded = false;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -284,20 +490,33 @@ namespace FlaxEditor.CustomEditors.Editors
             XElement = grid.DoubleValue();
             XElement.SetLimits(limit);
             XElement.SetCategory(category);
-            XElement.ValueBox.ValueChanged += OnValueChanged;
-            XElement.ValueBox.SlidingEnd += ClearToken;
+            XElement.ValueBox.ValueChanged += OnXValueChanged;
+            XElement.ValueBox.SlidingEnd += () =>
+            {
+                _slidingEnded = true;
+                ClearToken();
+            };
+            _defaultSlidingSpeed = XElement.ValueBox.SlideSpeed;
 
             YElement = grid.DoubleValue();
             YElement.SetLimits(limit);
             YElement.SetCategory(category);
-            YElement.ValueBox.ValueChanged += OnValueChanged;
-            YElement.ValueBox.SlidingEnd += ClearToken;
+            YElement.ValueBox.ValueChanged += OnYValueChanged;
+            YElement.ValueBox.SlidingEnd += () =>
+            {
+                _slidingEnded = true;
+                ClearToken();
+            };
 
             ZElement = grid.DoubleValue();
             ZElement.SetLimits(limit);
             ZElement.SetCategory(category);
-            ZElement.ValueBox.ValueChanged += OnValueChanged;
-            ZElement.ValueBox.SlidingEnd += ClearToken;
+            ZElement.ValueBox.ValueChanged += OnZValueChanged;
+            ZElement.ValueBox.SlidingEnd += () =>
+            {
+                _slidingEnded = true;
+                ClearToken();
+            };
 
             if (LinkedLabel != null)
             {
@@ -316,22 +535,115 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
-        private void OnValueChanged()
+              private void OnXValueChanged()
         {
             if (IsSetBlocked)
                 return;
+            _valueChanged = ValueChanged.X;
+            OnValueChanged();
+        }
+
+        private void OnYValueChanged()
+        {
+            if (IsSetBlocked)
+                return;
+            _valueChanged = ValueChanged.Y;
+            OnValueChanged();
+        }
+
+        private void OnZValueChanged()
+        {
+            if (IsSetBlocked)
+                return;
+            _valueChanged = ValueChanged.Z;
+            OnValueChanged();
+        }
+
+        private void OnValueChanged()
+        {
+            if (IsSetBlocked || Values == null)
+                return;
+
+            var xValue = XElement.ValueBox.Value;
+            var yValue = YElement.ValueBox.Value;
+            var zValue = ZElement.ValueBox.Value;
 
             var isSliding = XElement.IsSliding || YElement.IsSliding || ZElement.IsSliding;
             var token = isSliding ? this : null;
-            var value = new Double3(XElement.ValueBox.Value, YElement.ValueBox.Value, ZElement.ValueBox.Value);
-            object v = Values[0];
-            if (v is Vector3)
-                v = (Vector3)value;
-            else if (v is Float3)
-                v = (Float3)value;
-            else if (v is Double3)
-                v = (Double3)value;
-            SetValue(v, token);
+            var value = new Double3(xValue, yValue, zValue);
+            if (HasDifferentValues && Values.Count > 1)
+            {
+                var newObjects = new object[Values.Count];
+                // Handle Sliding
+                if (AllowSlidingForDifferentValues && (isSliding || _slidingEnded))
+                {
+                    // TODO: handle linked values
+                    Double3 average = Double3.Zero;
+                    for (int i = 0; i < Values.Count; i++)
+                    {
+                        var v = Values[i];
+                        var castedValue = Double3.Zero;
+                        if (v is Vector3 asVector3)
+                            castedValue = asVector3;
+                        else if (v is Float3 asFloat3)
+                            castedValue = asFloat3;
+                        else if (v is Double3 asDouble3)
+                            castedValue = asDouble3;
+
+                        average += castedValue;
+                    }
+                    
+                    average /= Values.Count;
+
+                    var newValue = value - average;
+
+                    for (int i = 0; i < Values.Count; i++)
+                    {
+                        var v = Values[i];
+                        if (v is Vector3 asVector3)
+                            v = asVector3 + new Vector3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+                        else if (v is Float3 asFloat3)
+                            v = asFloat3 + new Float3(_valueChanged == ValueChanged.X ? (float)newValue.X : 0, _valueChanged == ValueChanged.Y ? (float)newValue.Y : 0, _valueChanged == ValueChanged.Z ? (float)newValue.Z : 0);
+                        else if (v is Double3 asDouble3)
+                            v = asDouble3 + new Double3(_valueChanged == ValueChanged.X ? newValue.X : 0, _valueChanged == ValueChanged.Y ? newValue.Y : 0, _valueChanged == ValueChanged.Z ? newValue.Z : 0);
+                        
+                        newObjects[i] = v;
+                    }
+
+                    // Capture last sliding value
+                    if (_slidingEnded)
+                        _slidingEnded = false;
+                }
+                else
+                {
+                    // TODO: handle linked values
+                    for (int i = 0; i < Values.Count; i++)
+                    {
+                        object v = Values[i];
+                        if (v is Vector3 asVector3)
+                            v = new Vector3(_valueChanged == ValueChanged.X ? xValue : asVector3.X, _valueChanged == ValueChanged.Y ? yValue : asVector3.Y, _valueChanged == ValueChanged.Z ? zValue : asVector3.Z);
+                        else if (v is Float3 asFloat3)
+                            v = new Float3(_valueChanged == ValueChanged.X ? (float)xValue : asFloat3.X, _valueChanged == ValueChanged.Y ? (float)yValue : asFloat3.Y, _valueChanged == ValueChanged.Z ? (float)zValue : asFloat3.Z);
+                        else if (v is Double3 asDouble3)
+                            v = new Double3(_valueChanged == ValueChanged.X ? xValue : asDouble3.X, _valueChanged == ValueChanged.Y ? yValue : asDouble3.Y, _valueChanged == ValueChanged.Z ? zValue : asDouble3.Z);
+                        
+                        newObjects[i] = v;
+                    }
+                }
+                
+                SetValue(newObjects, token);
+            }
+            else
+            {
+                object v = Values[0];
+                if (v is Vector3)
+                    v = (Vector3)value;
+                else if (v is Float3)
+                    v = (Float3)value;
+                else if (v is Double3)
+                    v = (Double3)value;
+                SetValue(v, token);
+            }
         }
 
         /// <inheritdoc />
@@ -341,7 +653,79 @@ namespace FlaxEditor.CustomEditors.Editors
 
             if (HasDifferentValues)
             {
-                // TODO: support different values for ValueBox<T>
+                // Get which values are different
+                bool xDifferent = false;
+                bool yDifferent = false;
+                bool zDifferent = false;
+                Double3 cachedFirstValue = Double3.Zero;
+                Double3 average = Double3.Zero;
+                for (int i = 0; i < Values.Count; i++)
+                {
+                    var v = Values[i];
+                    var value = Double3.Zero;
+                    if (v is Vector3 asVector3)
+                        value = asVector3;
+                    else if (v is Float3 asFloat3)
+                        value = asFloat3;
+                    else if (v is Double3 asDouble3)
+                        value = asDouble3;
+                    
+                    average += value;
+                    
+                    if (i == 0)
+                    {
+                        cachedFirstValue = value;
+                        continue;
+                    }
+
+                    if (!Mathd.NearEqual(cachedFirstValue.X, value.X))
+                        xDifferent = true;
+                    if (!Mathd.NearEqual(cachedFirstValue.Y, value.Y))
+                        yDifferent = true;
+                    if (!Mathd.NearEqual(cachedFirstValue.Z, value.Z))
+                        zDifferent = true;
+                }
+                
+                average /= Values.Count;
+                
+                if (!xDifferent)
+                {
+                    XElement.ValueBox.Value = cachedFirstValue.X;
+                }
+                else
+                {
+                    if (AllowSlidingForDifferentValues)
+                        XElement.ValueBox.Value = average.X;
+                    else
+                        XElement.ValueBox.SlideSpeed = 0;
+                    XElement.ValueBox.Text = "---";
+                }
+                
+                if (!yDifferent)
+                {
+                    YElement.ValueBox.Value = cachedFirstValue.Y;
+                }
+                else
+                {
+                    if (AllowSlidingForDifferentValues)
+                        YElement.ValueBox.Value = average.Y;
+                    else
+                        YElement.ValueBox.SlideSpeed = 0;
+                    YElement.ValueBox.Text = "---";
+                }
+                
+                if (!zDifferent)
+                {
+                    ZElement.ValueBox.Value = cachedFirstValue.Z;
+                }
+                else
+                {
+                    if (AllowSlidingForDifferentValues)
+                        ZElement.ValueBox.Value = average.Z;
+                    else
+                        ZElement.ValueBox.SlideSpeed = 0;
+                    ZElement.ValueBox.Text = "---";
+                }
             }
             else
             {
@@ -355,6 +739,19 @@ namespace FlaxEditor.CustomEditors.Editors
                 XElement.ValueBox.Value = value.X;
                 YElement.ValueBox.Value = value.Y;
                 ZElement.ValueBox.Value = value.Z;
+
+                if (!Mathf.NearEqual(XElement.ValueBox.SlideSpeed, _defaultSlidingSpeed))
+                {
+                    XElement.ValueBox.SlideSpeed = _defaultSlidingSpeed;
+                }
+                if (!Mathf.NearEqual(YElement.ValueBox.SlideSpeed, _defaultSlidingSpeed))
+                {
+                    YElement.ValueBox.SlideSpeed = _defaultSlidingSpeed;
+                }
+                if (!Mathf.NearEqual(ZElement.ValueBox.SlideSpeed, _defaultSlidingSpeed))
+                {
+                    ZElement.ValueBox.SlideSpeed = _defaultSlidingSpeed;
+                }
             }
         }
     }
@@ -418,7 +815,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void OnValueChanged()
         {
-            if (IsSetBlocked)
+            if (IsSetBlocked || Values == null)
                 return;
 
             var isSliding = XElement.IsSliding || YElement.IsSliding || ZElement.IsSliding;

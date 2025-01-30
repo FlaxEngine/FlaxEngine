@@ -2,7 +2,7 @@
 Open Asset Import Library (assimp)
 ----------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
+Copyright (c) 2006-2024, assimp team
 
 
 All rights reserved.
@@ -44,8 +44,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *  @brief Dummy logger
 */
 
+#pragma once
 #ifndef INCLUDED_AI_NULLLOGGER_H
 #define INCLUDED_AI_NULLLOGGER_H
+
+#ifdef __GNUC__
+#pragma GCC system_header
+#endif
 
 #include "Logger.hpp"
 
@@ -65,6 +70,11 @@ public:
     void OnDebug(const char* message) {
         (void)message; //this avoids compiler warnings
     }
+
+    /** @brief  Logs a verbose debug message */
+	void OnVerboseDebug(const char *message) {
+		(void)message; //this avoids compiler warnings
+	}
 
     /** @brief  Logs an info message */
     void OnInfo(const char* message) {
@@ -88,7 +98,7 @@ public:
     }
 
     /** @brief  Detach a still attached stream from logger */
-    bool detatchStream(LogStream *pStream, unsigned int severity) {
+    bool detachStream(LogStream *pStream, unsigned int severity) {
         (void)pStream; (void)severity; //this avoids compiler warnings
         return false;
     }

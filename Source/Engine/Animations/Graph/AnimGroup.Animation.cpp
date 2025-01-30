@@ -1421,6 +1421,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const auto cData = node->Values[4 + c * 2].AsFloat4();
 
             // Get triangle coords
+            byte anims[3] = { a, b, c };
             Float2 points[3] = {
                 Float2(aData.X, aData.Y),
                 Float2(bData.X, bData.Y),
@@ -1534,18 +1535,11 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                     bestPoint = closest;
                     hasBest = true;
 
-                    float d = Float2::Distance(s[0], s[1]);
-                    if (Math::IsZero(d))
-                    {
-                        bestWeight = 0;
-                    }
-                    else
-                    {
-                        bestWeight = Float2::Distance(s[0], closest) / d;
-                    }
-
-                    bestAnims[0] = j;
-                    bestAnims[1] = (j + 1) % 3;
+                    const float d = Float2::Distance(s[0], s[1]);
+                    bestWeight = d < ANIM_GRAPH_BLEND_THRESHOLD ? 0 : Float2::Distance(s[0], closest) / d;
+                    
+                    bestAnims[0] = anims[j];
+                    bestAnims[1] = anims[(j + 1) % 3];
                 }
             }
         }
@@ -2237,8 +2231,9 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
                 {
                     // Start playing animation
                     bucket.Index = i;
-                    bucket.TimePosition = 0.0f;
-                    bucket.BlendInPosition = 0.0f;
+                    // Keep bucket time position and blend in time for if blending between two anims in the same slot.
+                    bucket.TimePosition = bucket.TimePosition;
+                    bucket.BlendInPosition = bucket.BlendInPosition;
                     bucket.BlendOutPosition = 0.0f;
                     bucket.LoopsDone = 0;
                     bucket.LoopsLeft = slot.LoopCount;
@@ -2248,6 +2243,12 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             if (bucket.Index == -1 || !slots[bucket.Index].Animation->IsLoaded())
             {
                 value = tryGetValue(node->GetBox(1), Value::Null);
+                // Reset times if time is left over from playing between different anims in the same slot.
+                if (bucket.BlendInPosition > 0)
+                {
+                    bucket.TimePosition = 0;
+                    bucket.BlendInPosition = 0;
+                }
                 return;
             }
         }
@@ -2256,12 +2257,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         auto& slot = slots[bucket.Index];
         Animation* anim = slot.Animation;
         ASSERT(slot.Animation && slot.Animation->IsLoaded());
-        if (slot.Reset)
-        {
-            // Start from the begining
-            slot.Reset = false;
-            bucket.TimePosition = 0.0f;
-        }
         const float deltaTime = slot.Pause ? 0.0f : context.DeltaTime * slot.Speed;
         const float length = anim->GetLength();
         const bool loop = bucket.LoopsLeft != 0;
@@ -2285,6 +2280,57 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         // Speed is accounted for in the new time pos, so keep sample speed at 1
         value = SampleAnimation(node, loop, length, 0.0f, bucket.TimePosition, newTimePos, anim, 1);
         bucket.TimePosition = newTimePos;
+
+        // On animation slot stop
+        if (slot.Reset)
+        {
+            // Blend between last anim and new anim if found, otherwise blend back to input.
+            Animation* sAnim = nullptr;
+            for (int32 i = 0; i < slots.Count(); i++)
+            {
+                if (bucket.Index == i)
+                    continue;
+
+                auto& s = slots[i];
+                if (s.Animation && s.Name == slotName)
+                {
+                    sAnim = s.Animation;
+                }
+            }
+            float oldTimePos = bucket.BlendOutPosition;
+            bucket.BlendOutPosition += deltaTime;
+            bucket.BlendInPosition = bucket.BlendOutPosition;
+            const float alpha = bucket.BlendOutPosition / slot.BlendOutTime;
+            if (sAnim != nullptr)
+            {
+                auto sValue = SampleAnimation(node, false, sAnim->GetLength(), 0.0f, oldTimePos, bucket.BlendInPosition, sAnim, 1);
+                //value = SampleAnimationsWithBlend(node, false, length, 0.0f, bucket.TimePosition, newTimePos, anim, sAnim, 1, 1, alpha);
+                value = Blend(node, value, sValue, alpha, AlphaBlendMode::HermiteCubic);
+            }
+            else
+            {
+                auto input = tryGetValue(node->GetBox(1), Value::Null);
+                value = Blend(node, value, input, alpha, AlphaBlendMode::HermiteCubic);
+            }
+
+            if (bucket.BlendOutPosition >= slot.BlendOutTime)
+            {
+                // Start from the beginning or the blend in position if next anim found.
+                slot.Animation = nullptr;
+                slot.Reset = false;
+                if (!sAnim)
+                {
+                    bucket.TimePosition = 0;
+                    bucket.BlendInPosition = 0;
+                }
+                else
+                {
+                    bucket.TimePosition = bucket.BlendInPosition;
+                }
+            }
+            break;
+        }
+        
         if (bucket.LoopsLeft == 0 && slot.BlendOutTime > 0.0f && length - slot.BlendOutTime < bucket.TimePosition)
         {
             // Blend out

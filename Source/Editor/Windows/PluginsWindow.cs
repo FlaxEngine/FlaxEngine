@@ -366,13 +366,13 @@ namespace FlaxEditor.Windows
             }
 
             var clonePath = Path.Combine(Globals.ProjectFolder, "Plugins", pluginName);
-            if (!Directory.Exists(clonePath))
-                Directory.CreateDirectory(clonePath);
-            else
+            if (Directory.Exists(clonePath))
             {
                 Editor.LogError("Plugin Name is already used. Pick a different Name.");
                 return;
             }
+            Directory.CreateDirectory(clonePath);
+            
             try
             {
                 // Start git clone
@@ -384,7 +384,32 @@ namespace FlaxEditor.Windows
                     LogOutput = true,
                     WaitForEnd = true
                 };
-                Platform.CreateProcess(ref settings);
+                var asSubmodule = Directory.Exists(Path.Combine(Globals.ProjectFolder, ".git"));
+                if (asSubmodule)
+                {
+                    // Clone as submodule to the existing repo
+                    settings.Arguments = $"submodule add {gitPath} \"Plugins/{pluginName}\"";
+                    
+                    // Submodule add need the target folder to not exist
+                    Directory.Delete(clonePath);
+                }
+                int result = Platform.CreateProcess(ref settings);
+                if (result != 0)
+                    throw new Exception($"'{settings.FileName} {settings.Arguments}' failed with result {result}");
+
+                // Ensure that cloned repo exists
+                var checkPath = Path.Combine(clonePath, ".git");
+                if (asSubmodule)
+                {
+                    if (!File.Exists(checkPath))
+                        throw new Exception("Failed to clone repo.");
+                }
+                else
+                {
+                    if (!Directory.Exists(checkPath))
+                        throw new Exception("Failed to clone repo.");
+
+                }
             }
             catch (Exception e)
             {

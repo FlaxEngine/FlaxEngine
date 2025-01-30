@@ -242,6 +242,15 @@ namespace FlaxEditor.GUI
         public abstract void SetKeyframeValue(int index, object value);
 
         /// <summary>
+        /// Sets the existing keyframe value (as boxed object).
+        /// </summary>
+        /// <param name="index">The keyframe index.</param>
+        /// <param name="value">The keyframe value.</param>
+        /// <param name="tangentIn">The keyframe 'In' tangent value (boxed).</param>
+        /// <param name="tangentOut">The keyframe 'Out' tangent value (boxed).</param>
+        public abstract void SetKeyframeValue(int index, object value, object tangentIn, object tangentOut);
+
+        /// <summary>
         /// Gets the keyframe point (in keyframes space).
         /// </summary>
         /// <param name="index">The keyframe index.</param>

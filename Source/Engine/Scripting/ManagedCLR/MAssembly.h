@@ -14,6 +14,7 @@
 /// </summary>
 class FLAXENGINE_API MAssembly
 {
+    friend MCore;
     friend MDomain;
     friend Scripting;
 

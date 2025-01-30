@@ -111,6 +111,9 @@ namespace FlaxEditor.Viewport
                 IsMouseRightDown = useMouse && window.GetMouseButton(MouseButton.Right);
                 IsMouseMiddleDown = useMouse && window.GetMouseButton(MouseButton.Middle);
                 IsMouseLeftDown = useMouse && window.GetMouseButton(MouseButton.Left);
+
+                if (WasAltDownBefore && !IsMouseLeftDown && !IsAltDown)
+                    WasAltDownBefore = false;
             }
 
             /// <summary>
@@ -226,13 +229,11 @@ namespace FlaxEditor.Viewport
             {
                 if (Mathf.Abs(_movementSpeed - _maxMovementSpeed) < Mathf.Epsilon || Mathf.Abs(_movementSpeed - _minMovementSpeed) < Mathf.Epsilon)
                     return "{0:0.##}";
-
                 if (_movementSpeed < 10.0f)
                     return "{0:0.00}";
-                else if (_movementSpeed < 100.0f)
+                if (_movementSpeed < 100.0f)
                     return "{0:0.0}";
-                else
-                    return "{0:#}";
+                return "{0:#}";
             }
         }
 
@@ -284,11 +285,6 @@ namespace FlaxEditor.Viewport
         public Float2 MousePositionDelta => _mouseDelta;
 
         /// <summary>
-        /// Camera's pitch angle clamp range (in degrees).
-        /// </summary>
-        public Float2 CamPitchAngles = new Float2(-88, 88);
-
-        /// <summary>
         /// Gets the view transform.
         /// </summary>
         public Transform ViewTransform
@@ -323,7 +319,7 @@ namespace FlaxEditor.Viewport
             get => Float3.Forward * ViewOrientation;
             set
             {
-                var right = Float3.Cross(value, Float3.Up);
+                var right = Mathf.Abs(Float3.Dot(value, Float3.Up)) < 1.0f - Mathf.Epsilon ? Float3.Cross(value, Float3.Up) : Float3.Forward;
                 var up = Float3.Cross(right, value);
                 ViewOrientation = Quaternion.LookRotation(value, up);
             }
@@ -373,7 +369,11 @@ namespace FlaxEditor.Viewport
         public float Pitch
         {
             get => _pitch;
-            set => _pitch = Mathf.Clamp(value, CamPitchAngles.X, CamPitchAngles.Y);
+            set
+            {
+                var pitchLimit = _isOrtho ? new Float2(-90, 90) : new Float2(-88, 88);
+                _pitch = Mathf.Clamp(value, pitchLimit.X, pitchLimit.Y);
+            }
         }
 
         /// <summary>
@@ -540,30 +540,30 @@ namespace FlaxEditor.Viewport
             }
 
             // Initialize camera values from cache
-            if (_editor.ProjectCache.TryGetCustomData("CameraMovementSpeedValue", out var cachedState))
-                MovementSpeed = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraMinMovementSpeedValue", out cachedState))
-                _minMovementSpeed = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraMaxMovementSpeedValue", out cachedState))
-                _maxMovementSpeed = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("UseCameraEasingState", out cachedState))
-                _useCameraEasing = bool.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraPanningSpeedValue", out cachedState))
-                _panningSpeed = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraInvertPanningState", out cachedState))
-                _invertPanning = bool.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraRelativePanningState", out cachedState))
-                _relativePanning = bool.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraOrthographicState", out cachedState))
-                _isOrtho = bool.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraOrthographicSizeValue", out cachedState))
-                _orthoSize = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraFieldOfViewValue", out cachedState))
-                _fieldOfView = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraNearPlaneValue", out cachedState))
-                _nearPlane = float.Parse(cachedState);
-            if (_editor.ProjectCache.TryGetCustomData("CameraFarPlaneValue", out cachedState))
-                _farPlane = float.Parse(cachedState);
+            if (_editor.ProjectCache.TryGetCustomData("CameraMovementSpeedValue", out float cachedFloat))
+                MovementSpeed = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("CameraMinMovementSpeedValue", out cachedFloat))
+                _minMovementSpeed = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("CameraMaxMovementSpeedValue", out cachedFloat))
+                _maxMovementSpeed = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("UseCameraEasingState", out bool cachedBool))
+                _useCameraEasing = cachedBool;
+            if (_editor.ProjectCache.TryGetCustomData("CameraPanningSpeedValue", out cachedFloat))
+                _panningSpeed = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("CameraInvertPanningState", out cachedBool))
+                _invertPanning = cachedBool;
+            if (_editor.ProjectCache.TryGetCustomData("CameraRelativePanningState", out cachedBool))
+                _relativePanning = cachedBool;
+            if (_editor.ProjectCache.TryGetCustomData("CameraOrthographicState", out cachedBool))
+                _isOrtho = cachedBool;
+            if (_editor.ProjectCache.TryGetCustomData("CameraOrthographicSizeValue", out cachedFloat))
+                _orthoSize = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("CameraFieldOfViewValue", out cachedFloat))
+                _fieldOfView = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("CameraNearPlaneValue", out cachedFloat))
+                _nearPlane = cachedFloat;
+            if (_editor.ProjectCache.TryGetCustomData("CameraFarPlaneValue", out cachedFloat))
+                _farPlane = cachedFloat;
 
             OnCameraMovementProgressChanged();
 
@@ -1041,7 +1041,7 @@ namespace FlaxEditor.Viewport
             MovementSpeed = value;
 
             OnCameraMovementProgressChanged();
-            _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed.ToString());
+            _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed);
         }
 
         private void OnMinMovementSpeedChanged(FloatValueBox control)
@@ -1053,7 +1053,7 @@ namespace FlaxEditor.Viewport
                 MovementSpeed = value;
 
             OnCameraMovementProgressChanged();
-            _editor.ProjectCache.SetCustomData("CameraMinMovementSpeedValue", _minMovementSpeed.ToString());
+            _editor.ProjectCache.SetCustomData("CameraMinMovementSpeedValue", _minMovementSpeed);
         }
 
         private void OnMaxMovementSpeedChanged(FloatValueBox control)
@@ -1065,7 +1065,7 @@ namespace FlaxEditor.Viewport
                 MovementSpeed = value;
 
             OnCameraMovementProgressChanged();
-            _editor.ProjectCache.SetCustomData("CameraMaxMovementSpeedValue", _maxMovementSpeed.ToString());
+            _editor.ProjectCache.SetCustomData("CameraMaxMovementSpeedValue", _maxMovementSpeed);
         }
 
         private void OnCameraEasingToggled(Control control)
@@ -1073,25 +1073,25 @@ namespace FlaxEditor.Viewport
             _useCameraEasing = !_useCameraEasing;
 
             OnCameraMovementProgressChanged();
-            _editor.ProjectCache.SetCustomData("UseCameraEasingState", _useCameraEasing.ToString());
+            _editor.ProjectCache.SetCustomData("UseCameraEasingState", _useCameraEasing);
         }
 
         private void OnPanningSpeedChanged(FloatValueBox control)
         {
             _panningSpeed = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraPanningSpeedValue", _panningSpeed.ToString());
+            _editor.ProjectCache.SetCustomData("CameraPanningSpeedValue", _panningSpeed);
         }
 
         private void OnRelativePanningToggled(Control control)
         {
             _relativePanning = !_relativePanning;
-            _editor.ProjectCache.SetCustomData("CameraRelativePanningState", _relativePanning.ToString());
+            _editor.ProjectCache.SetCustomData("CameraRelativePanningState", _relativePanning);
         }
 
         private void OnInvertPanningToggled(Control control)
         {
             _invertPanning = !_invertPanning;
-            _editor.ProjectCache.SetCustomData("CameraInvertPanningState", _invertPanning.ToString());
+            _editor.ProjectCache.SetCustomData("CameraInvertPanningState", _invertPanning);
         }
 
 
@@ -1104,7 +1104,7 @@ namespace FlaxEditor.Viewport
         private void OnFieldOfViewChanged(FloatValueBox control)
         {
             _fieldOfView = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraFieldOfViewValue", _fieldOfView.ToString());
+            _editor.ProjectCache.SetCustomData("CameraFieldOfViewValue", _fieldOfView);
         }
 
         private void OnOrthographicModeToggled(Control control)
@@ -1120,25 +1120,25 @@ namespace FlaxEditor.Viewport
                 OrientViewport(ref orient);
             }
 
-            _editor.ProjectCache.SetCustomData("CameraOrthographicState", _isOrtho.ToString());
+            _editor.ProjectCache.SetCustomData("CameraOrthographicState", _isOrtho);
         }
 
         private void OnOrthographicSizeChanged(FloatValueBox control)
         {
             _orthoSize = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraOrthographicSizeValue", _orthoSize.ToString());
+            _editor.ProjectCache.SetCustomData("CameraOrthographicSizeValue", _orthoSize);
         }
 
         private void OnNearPlaneChanged(FloatValueBox control)
         {
             _nearPlane = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraNearPlaneValue", _nearPlane.ToString());
+            _editor.ProjectCache.SetCustomData("CameraNearPlaneValue", _nearPlane);
         }
 
         private void OnFarPlaneChanged(FloatValueBox control)
         {
             _farPlane = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraFarPlaneValue", _farPlane.ToString());
+            _editor.ProjectCache.SetCustomData("CameraFarPlaneValue", _farPlane);
         }
 
         /// <summary>
@@ -1152,8 +1152,7 @@ namespace FlaxEditor.Viewport
         /// <param name="orientation">The orientation.</param>
         protected void OrientViewport(Quaternion orientation)
         {
-            var quat = orientation;
-            OrientViewport(ref quat);
+            OrientViewport(ref orientation);
         }
 
         /// <summary>
@@ -1217,7 +1216,7 @@ namespace FlaxEditor.Viewport
 
             var speed = Mathf.Lerp(_minMovementSpeed, _maxMovementSpeed, progress);
             MovementSpeed = (float)Math.Round(speed, 3);
-            _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed.ToString());
+            _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed);
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
@@ -1364,7 +1363,7 @@ namespace FlaxEditor.Viewport
         {
             var direction = ViewDirection;
             var target = position + direction;
-            var right = Float3.Normalize(Float3.Cross(Float3.Up, direction));
+            var right = Mathf.Abs(Float3.Dot(direction, Float3.Up)) < 1.0f - Mathf.Epsilon ? Float3.Normalize(Float3.Cross(Float3.Up, direction)) : Float3.Forward;
             var up = Float3.Normalize(Float3.Cross(direction, right));
             Matrix.LookAt(ref position, ref target, ref up, out result);
         }
@@ -1385,15 +1384,32 @@ namespace FlaxEditor.Viewport
         /// <summary>
         /// Converts the mouse position to the ray (in world space of the viewport).
         /// </summary>
-        /// <param name="mousePosition">The mouse position.</param>
+        /// <param name="mousePosition">The mouse position (in UI space of the viewport [0; Size]).</param>
         /// <returns>The result ray.</returns>
         public Ray ConvertMouseToRay(ref Float2 mousePosition)
         {
-            // Prepare
             var viewport = new FlaxEngine.Viewport(0, 0, Width, Height);
-            CreateProjectionMatrix(out var p);
+            if (viewport.Width < Mathf.Epsilon || viewport.Height < Mathf.Epsilon)
+                return ViewRay;
+
             Vector3 viewOrigin = Task.View.Origin;
             Float3 position = ViewPosition - viewOrigin;
+
+            // Use different logic in orthographic projection
+            if (_isOrtho)
+            {
+                var screenPosition = new Float2(mousePosition.X / viewport.Width - 0.5f, -mousePosition.Y / viewport.Height + 0.5f);
+                var orientation = ViewOrientation;
+                var direction = Float3.Forward * orientation;
+                var rayOrigin = new Vector3(screenPosition.X * viewport.Width * _orthoSize, screenPosition.Y * viewport.Height * _orthoSize, 0);
+                rayOrigin = position + Vector3.Transform(rayOrigin, orientation);
+                rayOrigin += direction * _nearPlane;
+                rayOrigin += viewOrigin;
+                return new Ray(rayOrigin, direction);
+            }
+
+            // Create view frustum
+            CreateProjectionMatrix(out var p);
             CreateViewMatrix(position, out var v);
             Matrix.Multiply(ref v, ref p, out var ivp);
             ivp.Invert();
@@ -1404,11 +1420,27 @@ namespace FlaxEditor.Viewport
             viewport.Unproject(ref nearPoint, ref ivp, out nearPoint);
             viewport.Unproject(ref farPoint, ref ivp, out farPoint);
 
-            // Create direction vector
-            Vector3 direction = farPoint - nearPoint;
-            direction.Normalize();
+            return new Ray(nearPoint + viewOrigin, Vector3.Normalize(farPoint - nearPoint));
+        }
 
-            return new Ray(nearPoint + viewOrigin, direction);
+        /// <summary>
+        /// Projects the point from 3D world-space to viewport coordinates.
+        /// </summary>
+        /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
+        /// <param name="viewportSpaceLocation">The output viewport window coordinates (XY in screen pixels).</param>
+        public void ProjectPoint(Vector3 worldSpaceLocation, out Float2 viewportSpaceLocation)
+        {
+            viewportSpaceLocation = Float2.Minimum;
+            var viewport = new FlaxEngine.Viewport(0, 0, Width, Height);
+            if (viewport.Width < Mathf.Epsilon || viewport.Height < Mathf.Epsilon)
+                return;
+            Vector3 viewOrigin = Task.View.Origin;
+            Float3 position = ViewPosition - viewOrigin;
+            CreateProjectionMatrix(out var p);
+            CreateViewMatrix(position, out var v);
+            Matrix.Multiply(ref v, ref p, out var vp);
+            viewport.Project(ref worldSpaceLocation, ref vp, out var projected);
+            viewportSpaceLocation = new Float2((float)projected.X, (float)projected.Y);
         }
 
         /// <summary>
@@ -1612,7 +1644,7 @@ namespace FlaxEditor.Viewport
                     _input.IsPanning = !isAltDown && mbDown && !rbDown;
                     _input.IsRotating = !isAltDown && !mbDown && rbDown;
                     _input.IsMoving = !isAltDown && mbDown && rbDown;
-                    _input.IsZooming = wheelInUse && !_input.IsShiftDown;
+                    _input.IsZooming = wheelInUse && !(_input.IsShiftDown || (!ContainsFocus && FlaxEngine.Input.GetKey(KeyboardKeys.Shift)));
                     _input.IsOrbiting = isAltDown && lbDown && !mbDown && !rbDown;
 
                     // Control move speed with RMB+Wheel
@@ -1704,6 +1736,8 @@ namespace FlaxEditor.Viewport
                 // Update
                 moveDelta *= dt * (60.0f * 4.0f);
                 mouseDelta *= 0.1833f * MouseSpeed * _mouseSensitivity;
+                if (options.Viewport.InvertMouseYAxisRotation)
+                    mouseDelta *= new Float2(1, -1);
                 UpdateView(dt, ref moveDelta, ref mouseDelta, out var centerMouse);
 
                 // Move mouse back to the root position

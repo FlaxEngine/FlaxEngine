@@ -66,6 +66,7 @@ private:
     float _minMoveDistance;
     bool _isUpdatingTransform;
     Vector3 _upDirection;
+    Vector3 _gravityDisplacement;
     NonWalkableModes _nonWalkableMode;
     CollisionFlags _lastFlags;
 

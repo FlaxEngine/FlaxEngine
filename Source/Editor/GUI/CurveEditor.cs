@@ -289,7 +289,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// The curve time/value axes tick steps.
         /// </summary>
-        protected float[] TickSteps = Utilities.Utils.CurveTickSteps;
+        protected double[] TickSteps = Utilities.Utils.CurveTickSteps;
 
         /// <summary>
         /// The curve contents area.
@@ -671,8 +671,24 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override void ShowWholeCurve()
         {
-            ViewScale = ApplyUseModeMask(EnableZoom, _mainPanel.Size / _contents.Size, ViewScale);
-            ViewOffset = ApplyUseModeMask(EnablePanning, -_mainPanel.ControlsBounds.Location, ViewOffset);
+            if (_points.Count == 0)
+                return;
+            _mainPanel.GetDesireClientArea(out var mainPanelArea);
+            ViewScale = ApplyUseModeMask(EnableZoom, mainPanelArea.Size / _contents.Size, ViewScale);
+            Float2 minPos = Float2.Maximum;
+            foreach (var point in _points)
+            {
+                var pos = point.PointToParent(point.Location);
+                Float2.Min(ref minPos, ref pos, out minPos);
+            }
+            var minPosPoint = _contents.PointToParent(ref minPos);
+            var scroll = new Float2(_mainPanel.HScrollBar?.TargetValue ?? 0, _mainPanel.VScrollBar?.TargetValue ?? 0);
+            scroll = ApplyUseModeMask(EnablePanning, minPosPoint, scroll);
+            if (_mainPanel.HScrollBar != null)
+                _mainPanel.HScrollBar.TargetValue = scroll.X;
+            if (_mainPanel.VScrollBar != null)
+                _mainPanel.VScrollBar.TargetValue = scroll.Y;
+
             UpdateKeyframes();
         }
 
@@ -781,9 +797,9 @@ namespace FlaxEditor.GUI
 
         private void DrawAxis(Float2 axis, Rectangle viewRect, float min, float max, float pixelRange)
         {
-            Utilities.Utils.DrawCurveTicks((float tick, float strength) =>
+            Utilities.Utils.DrawCurveTicks((decimal tick, float strength) =>
             {
-                var p = PointFromKeyframes(axis * tick, ref viewRect);
+                var p = PointFromKeyframes(axis * (float)tick, ref viewRect);
 
                 // Draw line
                 var lineRect = new Rectangle
@@ -921,6 +937,11 @@ namespace FlaxEditor.GUI
             else if (options.Paste.Process(this))
             {
                 KeyframesEditorUtils.Paste(this);
+                return true;
+            }
+            else if (options.FocusSelection.Process(this))
+            {
+                ShowWholeCurve();
                 return true;
             }
 
@@ -1290,6 +1311,18 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
+        public override void SetKeyframeValue(int index, object value, object tangentIn, object tangentOut)
+        {
+            var k = _keyframes[index];
+            k.Value = (T)value;
+            _keyframes[index] = k;
+
+            UpdateKeyframes();
+            UpdateTooltips();
+            OnEdited();
+        }
+
+        /// <inheritdoc />
         public override Float2 GetKeyframePoint(int index, int component)
         {
             var k = _keyframes[index];
@@ -1372,9 +1405,7 @@ namespace FlaxEditor.GUI
             // Calculate bounds
             var bounds = _points[0].Bounds;
             for (var i = 1; i < _points.Count; i++)
-            {
                 bounds = Rectangle.Union(bounds, _points[i].Bounds);
-            }
 
             // Adjust contents bounds to fill the curve area
             if (EnablePanning != UseMode.Off || !ShowCollapsed)
@@ -1620,6 +1651,7 @@ namespace FlaxEditor.GUI
                     var o = _keyframes[p.Index - 1];
                     var oValue = Accessor.GetCurveValue(ref o.Value, p.Component);
                     var slope = (value - oValue) / (k.Time - o.Time);
+                    slope = -slope;
                     Accessor.SetCurveValue(slope, ref k.TangentIn, p.Component);
                 }
 
@@ -2012,6 +2044,20 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
+        public override void SetKeyframeValue(int index, object value, object tangentIn, object tangentOut)
+        {
+            var k = _keyframes[index];
+            k.Value = (T)value;
+            k.TangentIn = (T)tangentIn;
+            k.TangentOut = (T)tangentOut;
+            _keyframes[index] = k;
+
+            UpdateKeyframes();
+            UpdateTooltips();
+            OnEdited();
+        }
+
+        /// <inheritdoc />
         public override Float2 GetKeyframePoint(int index, int component)
         {
             var k = _keyframes[index];
@@ -2090,9 +2136,7 @@ namespace FlaxEditor.GUI
             // Calculate bounds
             var bounds = _points[0].Bounds;
             for (int i = 1; i < _points.Count; i++)
-            {
                 bounds = Rectangle.Union(bounds, _points[i].Bounds);
-            }
 
             // Adjust contents bounds to fill the curve area
             if (EnablePanning != UseMode.Off || !ShowCollapsed)
@@ -2158,12 +2202,12 @@ namespace FlaxEditor.GUI
 
                     var tangent = t.TangentValue;
                     var direction = t.IsIn ? -1.0f : 1.0f;
-                    var offset = 30.0f * direction;
+                    var offset = 30.0f;
                     var location = GetKeyframePoint(ref k, selectedComponent);
                     t.Size = KeyframesSize / ViewScale;
                     t.Location = new Float2
                     (
-                     location.X * UnitsPerSecond - t.Width * 0.5f + offset,
+                     location.X * UnitsPerSecond - t.Width * 0.5f + offset * direction,
                      location.Y * -UnitsPerSecond - t.Height * 0.5f + curveContentAreaBounds.Height - offset * tangent
                     );
 
@@ -2239,14 +2283,13 @@ namespace FlaxEditor.GUI
                     var startTangent = Accessor.GetCurveValue(ref startK.TangentOut, component);
                     var endTangent = Accessor.GetCurveValue(ref endK.TangentIn, component);
 
-                    var offset = (end.X - start.X) * 0.5f;
-
+                    var tangentScale = (endK.Time - startK.Time) / 3.0f;
                     var p1 = PointFromKeyframes(start, ref viewRect);
-                    var p2 = PointFromKeyframes(start + new Float2(offset, startTangent * offset), ref viewRect);
-                    var p3 = PointFromKeyframes(end - new Float2(offset, endTangent * offset), ref viewRect);
+                    var p2 = PointFromKeyframes(start + new Float2(0, startTangent * tangentScale), ref viewRect);
+                    var p3 = PointFromKeyframes(end + new Float2(0, endTangent * tangentScale), ref viewRect);
                     var p4 = PointFromKeyframes(end, ref viewRect);
 
-                    Render2D.DrawBezier(p1, p2, p3, p4, color);
+                    Render2D.DrawSpline(p1, p2, p3, p4, color);
                 }
             }
         }

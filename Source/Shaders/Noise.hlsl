@@ -71,6 +71,24 @@ float2 rand2dTo2d(float2 value)
     );
 }
 
+float rand3dTo1d(float3 value, float3 dotDir = float3(12.9898, 78.233, 37.719))
+{
+    // https://www.ronja-tutorials.com/post/024-white-noise/
+    float3 smallValue = sin(value);
+    float random = dot(smallValue, dotDir);
+    return frac(sin(random) * 143758.5453);
+}
+
+float3 rand3dTo3d(float3 value)
+{
+    // https://www.ronja-tutorials.com/post/024-white-noise/
+    return float3(
+        rand3dTo1d(value, float3(12.989, 78.233, 37.719)),
+        rand3dTo1d(value, float3(39.346, 11.135, 83.155)),
+        rand3dTo1d(value, float3(73.156, 52.235,  9.151))
+    );
+}
+
 // Classic Perlin noise
 float PerlinNoise(float2 p)
 {
@@ -321,23 +339,25 @@ float3 CustomNoise3D(float3 p)
     float c = CustomNoise(p + float3(0.0f, 0.0f, 0.0001f));
 
     float3 grad = float3(o - a, o - b, o - c);
-    float3 other = abs(grad.zxy);
-    return normalize(cross(grad,other));
+    float3 ret = cross(grad, abs(grad.zxy));
+    if (length(ret) <= 0.0001f) return float3(0.0f, 0.0f, 0.0f);
+    return normalize(ret);
 }
 
 float3 CustomNoise3D(float3 position, int octaves, float roughness)
 {
 	float weight = 0.0f;
-	float3 noise = float3(0.0, 0.0, 0.0);
+	float3 noise = float3(0.0f, 0.0f, 0.0f);
 	float scale = 1.0f;
+    roughness = lerp(2.0f, 0.2f, roughness);
 	for (int i = 0; i < octaves; i++)
 	{
-		float curWeight = pow((1.0 - ((float)i / octaves)), lerp(2.0, 0.2, roughness));
+		float curWeight = pow((1.0f - ((float)i / (float)octaves)), roughness);
 		noise += CustomNoise3D(position * scale) * curWeight;
 		weight += curWeight;
-		scale *= 1.72531;
+		scale *= 1.72531f;
 	}
-	return noise / weight;
+	return noise / max(weight, 0.0001f);
 }
 
 #endif

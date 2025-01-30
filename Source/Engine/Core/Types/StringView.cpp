@@ -35,7 +35,7 @@ StringView StringView::Left(int32 count) const
 StringView StringView::Right(int32 count) const
 {
     const int32 countClamped = count < 0 ? 0 : count < Length() ? count : Length();
-    return StringView(**this + Length() - countClamped);
+    return StringView(**this + countClamped, Length() - countClamped);
 }
 
 StringView StringView::Substring(int32 startIndex) const

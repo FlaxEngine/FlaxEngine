@@ -23,21 +23,20 @@
 #include <ThirdParty/assimp/LogStream.hpp>
 #include <ThirdParty/assimp/DefaultLogger.hpp>
 #include <ThirdParty/assimp/Logger.hpp>
-using namespace Assimp;
 
-class AssimpLogStream : public LogStream
+class AssimpLogStream : public Assimp::LogStream
 {
 public:
     AssimpLogStream()
     {
-        DefaultLogger::create("");
-        DefaultLogger::get()->attachStream(this);
+        Assimp::DefaultLogger::create("");
+        Assimp::DefaultLogger::get()->attachStream(this);
     }
 
     ~AssimpLogStream()
     {
-        DefaultLogger::get()->detatchStream(this);
-        DefaultLogger::kill();
+        Assimp::DefaultLogger::get()->detachStream(this);
+        Assimp::DefaultLogger::kill();
     }
 
     void write(const char* message) override
@@ -148,7 +147,7 @@ struct AssimpBone
 
 struct AssimpImporterData
 {
-    Importer AssimpImporter;
+    Assimp::Importer AssimpImporter;
     AssimpLogStream AssimpLogStream;
     const String Path;
     const aiScene* Scene = nullptr;
@@ -766,6 +765,8 @@ bool ModelTool::ImportDataAssimp(const String& path, ModelData& data, Options& o
             flags |= aiProcess_FixInfacingNormals | aiProcess_GenSmoothNormals;
         if (options.CalculateTangents)
             flags |= aiProcess_CalcTangentSpace;
+        if (options.ReverseWindingOrder)
+            flags &= ~aiProcess_FlipWindingOrder;
         if (options.OptimizeMeshes)
             flags |= aiProcess_OptimizeMeshes | aiProcess_SplitLargeMeshes | aiProcess_ImproveCacheLocality;
         if (options.MergeMeshes)

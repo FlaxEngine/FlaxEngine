@@ -46,7 +46,7 @@ typedef wchar_t Char;
 #define MIN_uint64 ((uint64)0x0000000000000000)
 #define MIN_int8 ((int8)-128)
 #define MIN_int16 ((int16)-32768)
-#define MIN_int32 -((int32)2147483648)
+#define MIN_int32 ((int32)-2147483648ll)
 #define MIN_int64 -((int64)9223372036854775808)
 #define MIN_float -(3.402823466e+38f)
 #define MIN_double -(1.7976931348623158e+308)

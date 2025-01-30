@@ -135,7 +135,7 @@ namespace Flax.Build
         /// <summary>
         /// The maximum SDK version.
         /// </summary>
-        public static Version MaximumVersion => new Version(8, 0);
+        public static Version MaximumVersion => new Version(9, 0);
 
         /// <inheritdoc />
         public override TargetPlatform[] Platforms
@@ -166,10 +166,11 @@ namespace Flax.Build
         /// </summary>
         public string CSharpLanguageVersion => Version.Major switch
         {
-            8 => "12.0",
-            7 => "11.0",
-            6 => "10.0",
-            5 => "9.0",
+            _ when Version.Major >= 9 => "13.0",
+            _ when Version.Major >= 8 => "12.0",
+            _ when Version.Major >= 7 => "11.0",
+            _ when Version.Major >= 6 => "10.0",
+            _ when Version.Major >= 5 => "9.0",
             _ => "7.3",
         };
 
@@ -281,6 +282,17 @@ namespace Flax.Build
 
             var dotnetSdkVersion = GetVersion(dotnetSdkVersions);
             var dotnetRuntimeVersion = GetVersion(dotnetRuntimeVersions);
+            if (!string.IsNullOrEmpty(dotnetRuntimeVersion) && ParseVersion(dotnetRuntimeVersion).Major > ParseVersion(dotnetSdkVersion).Major)
+            {
+                // Make sure the reference assemblies are not newer than the SDK itself
+                var dotnetRuntimeVersionsRemaining = dotnetRuntimeVersions;
+                do
+                {
+                    dotnetRuntimeVersionsRemaining = dotnetRuntimeVersionsRemaining.Skip(1);
+                    dotnetRuntimeVersion = GetVersion(dotnetRuntimeVersionsRemaining);
+                } while (!string.IsNullOrEmpty(dotnetRuntimeVersion) && ParseVersion(dotnetRuntimeVersion).Major > ParseVersion(dotnetSdkVersion).Major);
+            }
+            
             var minVer = string.IsNullOrEmpty(Configuration.Dotnet) ? MinimumVersion.ToString() : Configuration.Dotnet;
             if (string.IsNullOrEmpty(dotnetSdkVersion))
             {

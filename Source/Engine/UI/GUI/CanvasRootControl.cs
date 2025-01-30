@@ -200,6 +200,8 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
+            base.Update(deltaTime);
+
             // Update navigation
             if (SkipEvents)
             {
@@ -215,8 +217,6 @@ namespace FlaxEngine.GUI
                 UpdateNavigation(deltaTime, _canvas.NavigateRight.Name, NavDirection.Right, ref _navigationHeldTimeRight, ref _navigationRateTimeRight);
                 UpdateNavigation(deltaTime, _canvas.NavigateSubmit.Name, ref _navigationHeldTimeSubmit, ref _navigationRateTimeSubmit, SubmitFocused);
             }
-
-            base.Update(deltaTime);
         }
 
         private void ConditionalNavigate(NavDirection direction)

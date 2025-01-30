@@ -10,7 +10,7 @@ jobs:
   # Editor
   editor-mac:
     name: Editor (Mac, Development ARM64)
-    runs-on: "macos-latest"
+    runs-on: "macos-14"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
@@ -35,7 +35,7 @@ jobs:
   # Game
   game-mac:
     name: Game (Mac, Release ARM64)
-    runs-on: "macos-latest"
+    runs-on: "macos-14"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3

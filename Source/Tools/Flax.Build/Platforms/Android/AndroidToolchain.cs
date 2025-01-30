@@ -71,6 +71,7 @@ namespace Flax.Build.Platforms
             options.LinkEnv.InputLibraries.Add("c");
             options.LinkEnv.InputLibraries.Add("z");
             options.LinkEnv.InputLibraries.Add("log");
+            options.LinkEnv.InputLibraries.Add("mediandk");
             options.LinkEnv.InputLibraries.Add("android");
         }
 

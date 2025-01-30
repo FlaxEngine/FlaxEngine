@@ -35,7 +35,7 @@ void MaterialBase::SetParameterValue(const StringView& name, const Variant& valu
     }
     else if (warnIfMissing)
     {
-        LOG(Warning, "Missing material parameter '{0}' in material {1}", String(name), ToString());
+        LOG(Warning, "Missing material parameter '{0}' in material {1}", name, ToString());
     }
 }
 
@@ -45,3 +45,13 @@ MaterialInstance* MaterialBase::CreateVirtualInstance()
     instance->SetBaseMaterial(this);
     return instance;
 }
+
+#if USE_EDITOR
+
+void MaterialBase::GetReferences(Array<Guid>& assets, Array<String>& files) const
+{
+    BinaryAsset::GetReferences(assets, files);
+    Params.GetReferences(assets);
+}
+
+#endif

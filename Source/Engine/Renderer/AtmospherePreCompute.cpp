@@ -61,8 +61,7 @@ protected:
     bool Run() override;
 };
 
-PACK_STRUCT(struct Data
-    {
+GPU_CB_STRUCT(Data {
     float First;
     float AtmosphereR;
     int AtmosphereLayer;

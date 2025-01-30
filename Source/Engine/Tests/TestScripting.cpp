@@ -7,6 +7,12 @@
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include <ThirdParty/catch2/catch.hpp>
 
+Foo::Foo(const SpawnParams& params)
+    : ScriptingObject(params)
+    , FooInterface(nullptr)
+{
+}
+
 TestNesting::TestNesting(const SpawnParams& params)
     : SerializableScriptingObject(params)
 {

@@ -3,7 +3,7 @@ description: Downloads and installs Vulkan SDK.
 inputs:
   vulkan-version:
     description: 'Vulkan SDK release version (e.g. 1.2.198.1).'
-    default: '1.2.198.1'
+    default: '1.3.290.0'
     required: false
 runs:
   using: "composite"

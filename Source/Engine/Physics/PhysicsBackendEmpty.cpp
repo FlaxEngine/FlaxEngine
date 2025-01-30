@@ -899,6 +899,10 @@ void PhysicsBackend::DestroyController(void* controller)
 {
 }
 
+void PhysicsBackend::DestroyMaterial(void* material)
+{
+}
+
 void PhysicsBackend::DestroyObject(void* object)
 {
 }

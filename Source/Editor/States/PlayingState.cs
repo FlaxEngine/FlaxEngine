@@ -77,7 +77,6 @@ namespace FlaxEditor.States
             {
                 if (!IsActive)
                     throw new InvalidOperationException();
-
                 Time.GamePaused = value;
             }
         }

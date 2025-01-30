@@ -122,7 +122,7 @@ namespace FlaxEditor.Surface.Archetypes
                         {
                             Name = module.Title,
                             Tag = module.TypeID,
-                            TooltipText = module.Description,
+                            TooltipText = $"{(string.IsNullOrEmpty(module.Signature) ? module.Title : module.Signature)}\n{module.Description}",
                         });
                     }
                     cm.ItemClicked += item => AddModule((ushort)item.Tag);

@@ -22,11 +22,21 @@ API_CLASS(Namespace="FlaxEditor", Name="Editor", NoSpawn, NoConstructor) class M
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(ManagedEditor);
     static Guid ObjectID;
 
+    API_ENUM(Attributes="Flags", Internal) enum class StartupFlags
+    {
+        None = 0,
+        Headless = 1,
+        SkipCompile = 2,
+        NewProject = 4,
+        Exit = 8,
+    };
+
     struct InternalOptions
     {
         byte AutoReloadScriptsOnMainWindowFocus = 1;
         byte ForceScriptCompilationOnStartup = 1;
         byte UseAssetImportPathRelative = 1;
+        byte EnableParticlesPreview = 1;
         byte AutoRebuildCSG = 1;
         float AutoRebuildCSGTimeoutMs = 50;
         byte AutoRebuildNavMesh = 1;
@@ -217,6 +227,13 @@ public:
     /// <param name="outputPath">Output asset path.</param>
     API_FUNCTION() static bool CreateAsset(const String& tag, String outputPath);
 
+    /// <summary>
+    /// Gets a list of asset references of a given asset.
+    /// </summary>
+    /// <param name="assetId">The asset ID.</param>
+    /// <returns>List of referenced assets.</returns>
+    API_FUNCTION() static Array<Guid> GetAssetReferences(const Guid& assetId);
+
 public:
     API_STRUCT(Internal, NoDefault) struct VisualScriptStackFrame
     {
@@ -250,3 +267,5 @@ public:
     // [ScriptingObject]
     void DestroyManaged() override;
 };
+
+DECLARE_ENUM_OPERATORS(ManagedEditor::StartupFlags);

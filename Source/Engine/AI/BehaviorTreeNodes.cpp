@@ -140,7 +140,7 @@ void BehaviorTreeNode::Deserialize(DeserializeStream& stream, ISerializeModifier
 {
     SerializableScriptingObject::Deserialize(stream, modifier);
 
-    Name.Clear(); // Missing Name is assumes as unnamed node
+    Name.Clear(); // Missing Name is assumed as unnamed node
     DESERIALIZE(Name);
 }
 
@@ -197,7 +197,6 @@ BehaviorUpdateResult BehaviorTreeSequenceNode::Update(const BehaviorUpdateContex
         return BehaviorUpdateResult::Failed;
 
     auto result = Children[state->CurrentChildIndex]->InvokeUpdate(context);
-
     switch (result)
     {
     case BehaviorUpdateResult::Success:
@@ -232,7 +231,6 @@ BehaviorUpdateResult BehaviorTreeSelectorNode::Update(const BehaviorUpdateContex
         return BehaviorUpdateResult::Failed;
 
     auto result = Children[state->CurrentChildIndex]->InvokeUpdate(context);
-
     switch (result)
     {
     case BehaviorUpdateResult::Success:
@@ -396,8 +394,8 @@ void BehaviorTreeMoveToNode::GetAgentSize(Actor* agent, float& outRadius, float&
     // Estimate actor bounds to extract capsule information
     const BoundingBox box = agent->GetBox();
     const BoundingSphere sphere = agent->GetSphere();
-    outRadius = sphere.Radius;
-    outHeight = box.GetSize().Y;
+    outRadius = (float)sphere.Radius;
+    outHeight = (float)box.GetSize().Y;
 }
 
 int32 BehaviorTreeMoveToNode::GetStateSize() const
@@ -444,7 +442,6 @@ BehaviorUpdateResult BehaviorTreeMoveToNode::Update(const BehaviorUpdateContext&
         else
             goalLocation = TargetLocation.Get(context.Knowledge);
         repath |= Vector3::Distance(goalLocation, state->GoalLocation) > TargetGoalUpdateTolerance;
-        state->GoalLocation = goalLocation;
     }
 
     if (repath)
@@ -490,6 +487,7 @@ BehaviorUpdateResult BehaviorTreeMoveToNode::Update(const BehaviorUpdateContext&
         state->HasPath = true;
         state->TargetPathIndex = 1;
         state->Result = BehaviorUpdateResult::Running;
+        state->GoalLocation = goalLocation;
 
         // TODO: add path debugging in Editor (eg. via BT window)
 
@@ -522,7 +520,7 @@ String BehaviorTreeMoveToNode::GetDebugInfo(const BehaviorUpdateContext& context
                 goal = state->GoalLocation.ToString();
             const Vector3 agentLocation = state->Agent->GetPosition();
             const Vector3 agentLocationOnPath = agentLocation + state->AgentOffset;
-            float distanceLeft = state->Path.Count() > state->TargetPathIndex ? Vector3::Distance(state->Path[state->TargetPathIndex], agentLocationOnPath) : 0;
+            Real distanceLeft = state->Path.Count() > state->TargetPathIndex ? Vector3::Distance(state->Path[state->TargetPathIndex], agentLocationOnPath) : 0;
             for (int32 i = state->TargetPathIndex; i < state->Path.Count(); i++)
                 distanceLeft += Vector3::Distance(state->Path[i - 1], state->Path[i]);
             return String::Format(TEXT("Agent: '{}'\nGoal: '{}'\nDistance: {}"), agent, goal, (int32)distanceLeft);
@@ -559,7 +557,7 @@ void BehaviorTreeMoveToNode::State::OnUpdate()
     const float acceptableHeightPercentage = 1.05f;
     const float testHeight = agentHeight * acceptableHeightPercentage;
     const Vector3 toGoal = agentLocationOnPath - pathSegmentEnd;
-    const float toGoalHeightDiff = (toGoal * UpVector).SumValues();
+    const Real toGoalHeightDiff = (toGoal * UpVector).SumValues();
     if (toGoal.Length() <= testRadius && toGoalHeightDiff <= testHeight)
     {
         TargetPathIndex++;

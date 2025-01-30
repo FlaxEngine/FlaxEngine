@@ -303,9 +303,6 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a value indicating whether this instance is an identity Matrix3x3.
         /// </summary>
-        /// <value>
-        /// <c>true</c> if this instance is an identity Matrix3x3; otherwise, <c>false</c>.
-        /// </value>
         public bool IsIdentity => Equals(Identity);
 
         /// <summary>
@@ -566,19 +563,19 @@ namespace FlaxEngine
         /// </remarks>
         public bool DecomposeUniformScale(out float scale, out Quaternion rotation)
         {
-            //Scaling is the length of the rows. ( just take one row since this is a uniform matrix)
+            // Scaling is the length of the rows. ( just take one row since this is a uniform matrix)
             scale = (float)Math.Sqrt((M11 * M11) + (M12 * M12) + (M13 * M13));
             var invScale = 1f / scale;
 
-            //If any of the scaling factors are zero, then the rotation matrix can not exist.
+            // If any of the scaling factors are zero, then the rotation matrix can not exist
             if (Math.Abs(scale) < Mathf.Epsilon)
             {
                 rotation = Quaternion.Identity;
                 return false;
             }
 
-            //The rotation is the left over matrix after dividing out the scaling.
-            Matrix3x3 rotationmatrix = new Matrix3x3
+            // The rotation is the leftover matrix after dividing out the scaling
+            var rotationMatrix = new Matrix3x3
             {
                 M11 = M11 * invScale,
                 M12 = M12 * invScale,
@@ -590,8 +587,7 @@ namespace FlaxEngine
                 M32 = M32 * invScale,
                 M33 = M33 * invScale
             };
-
-            Quaternion.RotationMatrix(ref rotationmatrix, out rotation);
+            Quaternion.RotationMatrix(ref rotationMatrix, out rotation);
             return true;
         }
 

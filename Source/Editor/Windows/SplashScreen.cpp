@@ -135,6 +135,7 @@ const Char* SplashScreenQuotes[] =
     TEXT("Drum roll please"),
     TEXT("Good Luck Have Fun"),
     TEXT("GG Well Played"),
+    TEXT("Now with documentation."),
 };
 
 SplashScreen::~SplashScreen()

@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using FlaxEditor.CustomEditors.GUI;
@@ -111,6 +112,11 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         public PropertyNameLabel LinkedLabel;
 
+        /// <summary>
+        /// Gets the layout for this editor. Used to calculate bounds.
+        /// </summary>
+        public LayoutElementsContainer Layout => _layout;
+
         internal virtual void Initialize(CustomEditorPresenter presenter, LayoutElementsContainer layout, ValueContainer values)
         {
             _layout = layout;
@@ -122,10 +128,39 @@ namespace FlaxEditor.CustomEditors
 
             _isSetBlocked = true;
             Initialize(layout);
+            ShowButtons();
             Refresh();
             _isSetBlocked = false;
 
             CurrentCustomEditor = prev;
+        }
+
+        private void ShowButtons()
+        {
+            var values = Values;
+            if (values == null || values.HasDifferentTypes)
+                return;
+            var type = TypeUtils.GetObjectType(values[0]);
+            var methods = type.GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            foreach (var method in methods)
+            {
+                if (!method.HasAttribute(typeof(ButtonAttribute)) ||
+                    method.ParametersCount != 0)
+                    continue;
+                var attribute = method.GetAttribute<ButtonAttribute>();
+                var text = string.IsNullOrEmpty(attribute.Text) ? Utilities.Utils.GetPropertyNameUI(method.Name) : attribute.Text;
+                var tooltip = string.IsNullOrEmpty(attribute.Tooltip) ? Editor.Instance.CodeDocs.GetTooltip(method) : attribute.Tooltip;
+                var button = _layout.Button(text, tooltip);
+                button.Button.Tag = method;
+                button.Button.ButtonClicked += OnButtonClicked;
+            }
+        }
+
+        private void OnButtonClicked(Button button)
+        {
+            var method = (ScriptMemberInfo)button.Tag;
+            var obj = method.IsStatic ? null : Values[0];
+            method.Invoke(obj);
         }
 
         internal static CustomEditor CurrentCustomEditor;
@@ -266,8 +301,16 @@ namespace FlaxEditor.CustomEditors
                     _valueToSet = null;
 
                     // Assign value
-                    for (int i = 0; i < _values.Count; i++)
-                        _values[i] = val;
+                    if (val is IList l && l.Count == _values.Count && _values.Count > 1)
+                    {
+                        for (int i = 0; i < _values.Count; i++)
+                            _values[i] = l[i];
+                    }
+                    else
+                    {
+                        for (int i = 0; i < _values.Count; i++)
+                            _values[i] = val;
+                    }
                 }
                 finally
                 {
@@ -291,6 +334,16 @@ namespace FlaxEditor.CustomEditors
             _values.Set(_parent.Values, value);
         }
 
+        private bool SyncParent()
+        {
+            // TODO: add attribute for types that want to sync their contents with a parent
+            var type = Values.Type.Type;
+            if (type == typeof(LocalizedString) ||
+                type == typeof(FontReference))
+                return true;
+            return _parent != null && !(_parent is SyncPointEditor);
+        }
+
         internal virtual void RefreshInternal()
         {
             if (_values == null)
@@ -312,7 +365,7 @@ namespace FlaxEditor.CustomEditors
 
                     // Propagate values up (eg. when member of structure gets modified, also structure should be updated as a part of the other object)
                     var obj = _parent;
-                    while (obj._parent != null && !(obj._parent is SyncPointEditor))
+                    while (obj.SyncParent())
                     {
                         obj.Values.Set(obj._parent.Values, obj.Values);
                         obj = obj._parent;
@@ -377,6 +430,10 @@ namespace FlaxEditor.CustomEditors
                 else if (Values.HasDefaultValue && CanRevertDefaultValue)
                     color = Color.Yellow * 0.8f;
                 LinkedLabel.HighlightStripColor = color;
+
+                // Grey out deprecated members
+                if (Values.IsObsolete)
+                    LinkedLabel.TextColor = LinkedLabel.TextColorHighlighted = FlaxEngine.GUI.Style.Current.ForegroundGrey;
             }
         }
 
@@ -659,7 +716,7 @@ namespace FlaxEditor.CustomEditors
                 }
             }
 
-            if (obj == null || Values.Type.IsInstanceOfType(obj))
+            if ((obj == null && !Values.Type.IsValueType) || Values.Type.IsInstanceOfType(obj))
             {
                 result = obj;
                 return true;
@@ -671,20 +728,7 @@ namespace FlaxEditor.CustomEditors
         /// <summary>
         /// Gets a value indicating whether can paste value from the system clipboard to the property value container.
         /// </summary>
-        public bool CanPaste
-        {
-            get
-            {
-                try
-                {
-                    return GetClipboardObject(out _, false);
-                }
-                catch
-                {
-                    return false;
-                }
-            }
-        }
+        public bool CanPaste => !string.IsNullOrEmpty(Clipboard.Text);
 
         /// <summary>
         /// Sets the value from the system clipboard.
@@ -839,7 +883,7 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         protected virtual void ClearToken()
         {
-            ParentEditor.ClearToken();
+            ParentEditor?.ClearToken();
         }
     }
 }

@@ -70,8 +70,8 @@ public:
     /// Parses Json string to find any object references inside it. It can produce list of references to assets and/or scene objects. Supported only in Editor.
     /// </summary>
     /// <param name="json">The Json string.</param>
-    /// <param name="output">The output list of object IDs references by the asset (appended, not cleared).</param>
-    API_FUNCTION() static void GetReferences(const StringAnsiView& json, API_PARAM(Out) Array<Guid, HeapAllocation>& output);
+    /// <param name="assets">The output list of object IDs references by the asset (appended, not cleared).</param>
+    API_FUNCTION() static void GetReferences(const StringAnsiView& json, API_PARAM(Out) Array<Guid, HeapAllocation>& assets);
 
     /// <summary>
     /// Saves this asset to the file. Supported only in Editor.
@@ -97,7 +97,7 @@ public:
     const String& GetPath() const override;
     uint64 GetMemoryUsage() const override;
 #if USE_EDITOR
-    void GetReferences(Array<Guid, HeapAllocation>& output) const override;
+    void GetReferences(Array<Guid, HeapAllocation>& assets, Array<String, HeapAllocation>& files) const override;
 #endif
 
 protected:

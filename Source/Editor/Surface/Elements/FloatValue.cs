@@ -35,7 +35,7 @@ namespace FlaxEditor.Surface.Elements
             ParentNode.ValuesChanged += OnNodeValuesChanged;
 
             // Disable slider if surface doesn't allow it
-            if (!ParentNode.Surface.CanLivePreviewValueChanges)
+            if (ParentNode.Surface != null && !ParentNode.Surface.CanLivePreviewValueChanges)
                 _slideSpeed = 0.0f;
         }
 

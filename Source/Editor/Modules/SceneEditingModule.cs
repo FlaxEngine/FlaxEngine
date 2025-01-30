@@ -555,10 +555,20 @@ namespace FlaxEditor.Modules
         /// </summary>
         public void CreateParentForSelectedActors()
         {
-            Actor actor = new EmptyActor();
-            Editor.SceneEditing.Spawn(actor, null, false);
             List<SceneGraphNode> selection = Editor.SceneEditing.Selection;
             var actors = selection.Where(x => x is ActorNode).Select(x => ((ActorNode)x).Actor);
+            var actorsCount = actors.Count();
+            if (actorsCount == 0)
+                return;
+            Vector3 center = Vector3.Zero;
+            foreach (var actor in actors)
+                center += actor.Position;
+            center /= actorsCount;
+            Actor parent = new EmptyActor
+            {
+                Position = center,
+            };
+            Editor.SceneEditing.Spawn(parent, null, false);
             using (new UndoMultiBlock(Undo, actors, "Reparent actors"))
             {
                 for (int i = 0; i < selection.Count; i++)
@@ -574,15 +584,15 @@ namespace FlaxEditor.Modules
 
                             // Put created node as child of the Parent Node of node
                             int parentOrder = node.Actor.OrderInParent;
-                            actor.Parent = node.Actor.Parent;
-                            actor.OrderInParent = parentOrder;
+                            parent.SetParent(node.Actor.Parent, true, true);
+                            parent.OrderInParent = parentOrder;
                         }
-                        node.Actor.Parent = actor;
+                        node.Actor.SetParent(parent, true, false);
                     }
                 }
             }
-            Editor.SceneEditing.Select(actor);
-            Editor.Scene.GetActorNode(actor).TreeNode.StartRenaming(Editor.Windows.SceneWin, Editor.Windows.SceneWin.SceneTreePanel);
+            Editor.SceneEditing.Select(parent);
+            Editor.Scene.GetActorNode(parent).TreeNode.StartRenaming(Editor.Windows.SceneWin, Editor.Windows.SceneWin.SceneTreePanel);
         }
 
         /// <summary>

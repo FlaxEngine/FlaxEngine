@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Utilities;
@@ -62,7 +63,7 @@ namespace FlaxEditor.Surface.ContextMenu
             Group = group;
             _groupArchetype = groupArchetype;
             _archetype = archetype;
-            TooltipText = _archetype.Description;
+            TooltipText = GetTooltip();
         }
 
         /// <summary>
@@ -219,7 +220,7 @@ namespace FlaxEditor.Surface.ContextMenu
             }
 
             // Check archetype synonyms
-            if (_archetype.AlternativeTitles!= null && _archetype.AlternativeTitles.Any(altTitle => QueryFilterHelper.Match(filterText, altTitle, out ranges)))
+            if (_archetype.AlternativeTitles != null && _archetype.AlternativeTitles.Any(altTitle => QueryFilterHelper.Match(filterText, altTitle, out ranges)))
             {
                 // Update highlights
                 if (_highlights == null)
@@ -315,6 +316,23 @@ namespace FlaxEditor.Surface.ContextMenu
             }
         }
 
+        /// <summary>
+        /// Callback when selected by the visject CM
+        /// </summary>
+        public void OnSelect()
+        {
+            Group.ContextMenu.SetDescriptionPanelArchetype(_archetype);
+        }
+
+        private string GetTooltip()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(string.IsNullOrEmpty(_archetype.Signature) ? _archetype.Title : _archetype.Signature);
+            if (!string.IsNullOrEmpty(_archetype.Description))
+                sb.Append("\n" + _archetype.Description);
+            return sb.ToString();
+        }
+
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
@@ -336,6 +354,14 @@ namespace FlaxEditor.Surface.ContextMenu
             }
 
             return base.OnMouseUp(location, button);
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseEnter(Float2 location)
+        {
+            Group.ContextMenu.SetDescriptionPanelArchetype(_archetype);
+
+            base.OnMouseEnter(location);
         }
 
         /// <inheritdoc />

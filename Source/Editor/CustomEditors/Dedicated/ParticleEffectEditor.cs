@@ -117,6 +117,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var data = SurfaceUtils.InitGraphParameters(parametersGroup);
                 SurfaceUtils.DisplayGraphParameters(group, data, ParameterGet, ParameterSet, Values, ParameterDefaultValue);
             }
+            
+            if (!parameters.Any())
+                groups.Label("No parameters", TextAlignment.Center);
         }
 
         /// <inheritdoc />

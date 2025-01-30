@@ -545,12 +545,12 @@ public:
     /// <summary>
     /// Gets texture mipmap data (raw bytes). Can be used only with textures created with Staging flag.
     /// </summary>
-    /// <param name="arrayOrDepthSliceIndex">Array or depth slice index.</param>
+    /// <param name="arrayIndex">Array slice index.</param>
     /// <param name="mipMapIndex">Mip map index.</param>
     /// <param name="data">Output mip data.</param>
     /// <param name="mipRowPitch">Output mip data row pitch to use. Use 0 to use the pitch from the internal GPU storage.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    virtual bool GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch = 0) = 0;
+    virtual bool GetData(int32 arrayIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch = 0) = 0;
 
     /// <summary>
     /// Sets the number of resident mipmap levels in the texture (already uploaded to the GPU).

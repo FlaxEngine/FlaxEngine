@@ -185,7 +185,13 @@ void MeshCollider::GetGeometry(CollisionShape& collision)
     // Prepare scale
     Float3 scale = _cachedScale;
     const float minSize = 0.001f;
-    scale = Float3::Max(scale.GetAbsolute(), minSize);
+    Float3 scaleAbs = scale.GetAbsolute();
+    if (scaleAbs.X < minSize)
+        scale.X = Math::Sign(scale.X) * minSize;
+    if (scaleAbs.Y < minSize)
+        scale.Y = Math::Sign(scale.Y) * minSize;
+    if (scaleAbs.Z < minSize)
+        scale.Z = Math::Sign(scale.Z) * minSize;
 
     // Setup shape (based on type)
     CollisionDataType type = CollisionDataType::None;

@@ -5,10 +5,11 @@
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/CreateProcessSettings.h"
-#include "Engine/Core/Log.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
+#include "Engine/Core/Log.h"
+#include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Engine/Core/Config/BuildSettings.h"
 #include "Engine/Content/Content.h"
@@ -28,6 +29,7 @@ String EditorUtilities::GetOutputName()
     outputName.Replace(TEXT("${COMPANY_NAME}"), *gameSettings->CompanyName, StringSearchCase::IgnoreCase);
     if (outputName.IsEmpty())
         outputName = TEXT("FlaxGame");
+    ValidatePathChars(outputName, 0);
     return outputName;
 }
 
@@ -360,6 +362,28 @@ bool EditorUtilities::IsInvalidPathChar(Char c)
     return false;
 }
 
+void EditorUtilities::ValidatePathChars(String& filename, char invalidCharReplacement)
+{
+    if (invalidCharReplacement == 0)
+    {
+        StringBuilder result;
+        for (int32 i = 0; i < filename.Length(); i++)
+        {
+            if (!IsInvalidPathChar(filename[i]))
+                result.Append(filename[i]);
+        }
+        filename = result.ToString();
+    }
+    else
+    {
+        for (int32 i = 0; i < filename.Length(); i++)
+        {
+            if (IsInvalidPathChar(filename[i]))
+                filename[i] = invalidCharReplacement;
+        }
+    }
+}
+
 bool EditorUtilities::ReplaceInFiles(const String& folderPath, const Char* searchPattern, DirectorySearchOption searchOption, const String& findWhat, const String& replaceWith)
 {
     Array<String> files;
@@ -391,7 +415,7 @@ bool EditorUtilities::ReplaceInFile(const StringView& file, const Dictionary<Str
 
 bool EditorUtilities::CopyFileIfNewer(const StringView& dst, const StringView& src)
 {
-    if (FileSystem::FileExists(dst) && 
+    if (FileSystem::FileExists(dst) &&
         FileSystem::GetFileLastEditTime(src) <= FileSystem::GetFileLastEditTime(dst) &&
         FileSystem::GetFileSize(dst) == FileSystem::GetFileSize(src))
         return false;

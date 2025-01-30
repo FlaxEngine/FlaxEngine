@@ -399,7 +399,7 @@ namespace FlaxEditor.Surface.Archetypes
             private void UpdateInputBox()
             {
                 var facingMode = (ParticleSpriteFacingMode)Values[2];
-                GetBox(0).Enabled = facingMode == ParticleSpriteFacingMode.CustomFacingVector || facingMode == ParticleSpriteFacingMode.FixedAxis;
+                GetBox(0).IsActive = facingMode == ParticleSpriteFacingMode.CustomFacingVector || facingMode == ParticleSpriteFacingMode.FixedAxis;
             }
         }
 
@@ -923,6 +923,25 @@ namespace FlaxEditor.Surface.Archetypes
                     true,
                     (int)ModuleType.Initialize,
                 },
+            },
+            new NodeArchetype
+            {
+                TypeID = 216,
+                Create = CreateParticleModuleNode,
+                Title = "Rotate Position Shape",
+                Description = "Rotate the shape.",
+                Flags = DefaultModuleFlags,
+                Size = new Float2(200, 1 * Surface.Constants.LayoutOffsetY),
+                DefaultValues = new object[]
+                {
+                    true,
+                    (int)ModuleType.Initialize,
+                    Quaternion.Identity,
+                },
+                Elements = new []
+                {
+                    NodeElementArchetype.Factory.Input(-0.5f, "Rotation", true, typeof(Quaternion), 0, 2),
+                }
             },
             GetParticleAttribute(ModuleType.Initialize, 250, "Set Position", "Sets the particle position", typeof(Float3), Float3.Zero),
             GetParticleAttribute(ModuleType.Initialize, 251, "Set Lifetime", "Sets the particle lifetime (in seconds)", typeof(float), 10.0f),

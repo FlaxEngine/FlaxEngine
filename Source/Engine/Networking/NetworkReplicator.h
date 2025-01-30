@@ -116,6 +116,19 @@ public:
     /// <param name="obj">The network object.</param>
     /// <returns>True if object exists in networking, otherwise false.</returns>
     API_FUNCTION() static bool HasObject(const ScriptingObject* obj);
+
+    /// <summary>
+    /// Maps object ID into server or client ID (depending on the source ID). Leaves source value unchanged if that specific ID is unused.
+    /// </summary>
+    /// <param name="objectId">The network object identifier to map. Contains result ID once the method completes.</param>
+    API_FUNCTION() static void MapObjectId(API_PARAM(Ref) Guid& objectId);
+
+    /// <summary>
+    /// Adds a new mapping for object identifier. Can be used to link locally-spawned object with across different clients.
+    /// </summary>
+    /// <param name="obj">The network object.</param>
+    /// <param name="objectId">The network object identifier to use (eg. defined by server or global/static).</param>
+    API_FUNCTION() static void AddObjectIdMapping(const ScriptingObject* obj, API_PARAM(Ref) const Guid& objectId);
 	
     /// <summary>
     /// Resolves foreign Guid into a local ScriptingObject

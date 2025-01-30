@@ -133,7 +133,8 @@ Array<Guid> Scene::GetAssetReferences() const
     const auto asset = Content::Load<SceneAsset>(GetID());
     if (asset)
     {
-        asset->GetReferences(result);
+        Array<String> files;
+        asset->GetReferences(result, files);
     }
     else
     {
@@ -179,7 +180,7 @@ void Scene::CreateCsgCollider()
     // Create collider
     auto result = New<MeshCollider>();
     result->SetStaticFlags(StaticFlags::FullyStatic);
-    result->SetName(CSG_COLLIDER_NAME);
+    result->SetName(String(CSG_COLLIDER_NAME));
     result->CollisionData = CSGData.CollisionData;
     result->HideFlags |= HideFlags::DontSelect;
 
@@ -202,7 +203,7 @@ void Scene::CreateCsgModel()
     // Create model
     auto result = New<StaticModel>();
     result->SetStaticFlags(StaticFlags::FullyStatic);
-    result->SetName(CSG_MODEL_NAME);
+    result->SetName(String(CSG_MODEL_NAME));
     result->Model = CSGData.Model;
     result->HideFlags |= HideFlags::DontSelect;
 

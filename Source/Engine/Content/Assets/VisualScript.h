@@ -154,6 +154,7 @@ private:
     Array<Field, InlinedAllocation<32>> _fields;
 #if USE_EDITOR
     Array<Guid> _oldParamsLayout;
+    Array<Variant> _oldParamsValues;
 #endif
 
 public:
@@ -266,6 +267,9 @@ public:
     // Gets the signature data of the method.
     API_FUNCTION() void GetMethodSignature(int32 index, API_PARAM(Out) String& name, API_PARAM(Out) byte& flags, API_PARAM(Out) String& returnTypeName, API_PARAM(Out) Array<String>& paramNames, API_PARAM(Out) Array<String>& paramTypeNames, API_PARAM(Out) Array<bool>& paramOuts);
 
+    // Invokes the method.
+    API_FUNCTION() Variant InvokeMethod(int32 index, const Variant& instance, Span<Variant> parameters) const;
+
     // Gets the metadata of the script surface.
     API_FUNCTION() Span<byte> GetMetaData(int32 typeID);
 
@@ -277,12 +281,10 @@ public:
 public:
     // [BinaryAsset]
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override
     {
-        // Base
-        BinaryAsset::GetReferences(output);
-
-        Graph.GetReferences(output);
+        BinaryAsset::GetReferences(assets, files);
+        Graph.GetReferences(assets);
     }
 #endif
 
@@ -305,6 +307,7 @@ class FLAXENGINE_API VisualScriptingBinaryModule : public BinaryModule
     friend VisualScript;
 private:
     StringAnsi _name;
+    Array<char*> _unloadedScriptTypeNames;
 
 public:
     /// <summary>

@@ -46,6 +46,7 @@ void PixelFormatExtensions::Init()
         PixelFormat::BC7_UNorm_sRGB,
         PixelFormat::ASTC_4x4_UNorm,
         PixelFormat::ASTC_4x4_UNorm_sRGB,
+        PixelFormat::YUY2,
     };
     InitFormat(formats2, 8);
 
@@ -149,6 +150,8 @@ void PixelFormatExtensions::Init()
         PixelFormat::BC4_UNorm,
     };
     InitFormat(formats8, 4);
+
+    sizeOfInBits[(int32)PixelFormat::NV12] = 12;
 }
 
 int32 PixelFormatExtensions::SizeInBits(PixelFormat format)
@@ -373,19 +376,16 @@ bool PixelFormatExtensions::IsCompressedASTC(PixelFormat format)
     }
 }
 
-bool PixelFormatExtensions::IsPacked(const PixelFormat format)
-{
-    return format == PixelFormat::R8G8_B8G8_UNorm || format == PixelFormat::G8R8_G8B8_UNorm;
-}
-
-bool PixelFormatExtensions::IsPlanar(const PixelFormat format)
-{
-    return false;
-}
-
 bool PixelFormatExtensions::IsVideo(const PixelFormat format)
 {
-    return false;
+    switch (format)
+    {
+    case PixelFormat::YUY2:
+    case PixelFormat::NV12:
+        return true;
+    default:
+        return false;
+    }
 }
 
 bool PixelFormatExtensions::IsSRGB(const PixelFormat format)
@@ -966,7 +966,6 @@ PixelFormat PixelFormatExtensions::FindShaderResourceFormat(const PixelFormat fo
         return PixelFormat::R32_Float;
     case PixelFormat::R16_Typeless:
         return PixelFormat::R16_UNorm;
-
     case PixelFormat::D16_UNorm:
         return PixelFormat::R16_UNorm;
     case PixelFormat::D24_UNorm_S8_UInt:
@@ -975,6 +974,8 @@ PixelFormat PixelFormatExtensions::FindShaderResourceFormat(const PixelFormat fo
         return PixelFormat::R32_Float;
     case PixelFormat::D32_Float_S8X24_UInt:
         return PixelFormat::R32_Float_X8X24_Typeless;
+    case PixelFormat::YUY2:
+        return PixelFormat::R8G8B8A8_UNorm;
     }
     return format;
 }
@@ -986,6 +987,8 @@ PixelFormat PixelFormatExtensions::FindUnorderedAccessFormat(const PixelFormat f
     case PixelFormat::B8G8R8A8_Typeless:
         return PixelFormat::B8G8R8A8_UNorm;
     case PixelFormat::R8G8B8A8_Typeless:
+        return PixelFormat::R8G8B8A8_UNorm;
+    case PixelFormat::YUY2:
         return PixelFormat::R8G8B8A8_UNorm;
     }
     return format;

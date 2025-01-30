@@ -1,5 +1,7 @@
 // Copyright (c) 2012-2024 Flax Engine. All rights reserved.
 
+#define USE_STD
+
 using System;
 using System.IO;
 using System.Text;
@@ -93,6 +95,26 @@ namespace Flax.Deploy
                             BuildPlatform(platform, architectures);
                         }
                     }
+
+                    if (Platform.BuildTargetPlatform == TargetPlatform.Windows)
+                    {
+                        Log.Info("Compressing game debug symbols files...");
+                        var gamePackageZipPath = Path.Combine(Deployer.PackageOutputPath, "GameDebugSymbols.zip");
+                        Utilities.FileDelete(gamePackageZipPath);
+#if USE_STD
+                        System.IO.Compression.ZipFile.CreateFromDirectory(Path.Combine(Deployer.PackageOutputPath, "GameDebugSymbols"), gamePackageZipPath, System.IO.Compression.CompressionLevel.Optimal, false);
+#else
+                        using (var zip = new Ionic.Zip.ZipFile())
+                        {
+                            zip.AddDirectory(Path.Combine(Deployer.PackageOutputPath, "GameDebugSymbols"));
+                            zip.CompressionLevel = Ionic.Zlib.CompressionLevel.BestCompression;
+                            zip.Comment = string.Format("Flax Game {0}.{1}.{2}\nDate: {3}", Deployer.VersionMajor, Deployer.VersionMinor, Deployer.VersionBuild, DateTime.UtcNow);
+                            zip.Save(gamePackageZipPath);
+                        }
+#endif
+                        Log.Info("Compressed game debug symbols package size: " + Utilities.GetFileSize(gamePackageZipPath));
+                    }
+                    Utilities.DirectoryDelete(Path.Combine(Deployer.PackageOutputPath, "GameDebugSymbols"));
                 }
 
                 if (Configuration.DeployEditor)

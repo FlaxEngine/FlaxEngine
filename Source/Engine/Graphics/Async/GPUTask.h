@@ -19,7 +19,7 @@ public:
     /// <summary>
     /// Describes GPU work type
     /// </summary>
-    DECLARE_ENUM_4(Type, Custom, CopyResource, UploadTexture, UploadBuffer);
+    DECLARE_ENUM_EX_4(Type, byte, 0, Custom, CopyResource, UploadTexture, UploadBuffer);
 
     /// <summary>
     /// Describes GPU work result value
@@ -32,13 +32,15 @@ private:
     /// </summary>
     Type _type;
 
+    byte _syncLatency;
+
     /// <summary>
     /// Synchronization point when async task has been done
     /// </summary>
     GPUSyncPoint _syncPoint;
 
     /// <summary>
-    /// The context that performed this task, it's should synchronize it.
+    /// The context that performed this task, it should synchronize it.
     /// </summary>
     GPUTasksContext* _context;
 
@@ -47,8 +49,10 @@ protected:
     /// Initializes a new instance of the <see cref="GPUTask"/> class.
     /// </summary>
     /// <param name="type">The type.</param>
-    GPUTask(const Type type)
+    /// <param name="syncLatency">Amount of frames until async operation is synced with GPU.</param>
+    GPUTask(const Type type, byte syncLatency = GPU_ASYNC_LATENCY)
         : _type(type)
+        , _syncLatency(syncLatency)
         , _syncPoint(0)
         , _context(nullptr)
     {
@@ -58,7 +62,6 @@ public:
     /// <summary>
     /// Gets a task type.
     /// </summary>
-    /// <returns>The type.</returns>
     FORCE_INLINE Type GetType() const
     {
         return _type;
@@ -67,17 +70,15 @@ public:
     /// <summary>
     /// Gets work finish synchronization point
     /// </summary>
-    /// <returns>Finish task sync point</returns>
     FORCE_INLINE GPUSyncPoint GetSyncPoint() const
     {
-        return _syncPoint;
+        return _syncPoint + _syncLatency;
     }
 
 public:
     /// <summary>
     /// Checks if operation is syncing
     /// </summary>
-    /// <returns>True if operation is syncing, otherwise false</returns>
     FORCE_INLINE bool IsSyncing() const
     {
         return IsRunning() && _syncPoint != 0;

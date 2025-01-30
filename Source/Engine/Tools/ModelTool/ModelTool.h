@@ -98,7 +98,7 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API ModelTool
 
     // Optional: inputModel or modelData
     // Optional: outputSDF or null, outputStream or null
-    static bool GenerateModelSDF(class Model* inputModel, class ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, class MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold = 0.6f);
+    static bool GenerateModelSDF(class Model* inputModel, class ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, class MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold = 0.6f, bool useGPU = true);
 
 #if USE_EDITOR
 
@@ -170,6 +170,9 @@ public:
         // Specifies the maximum angle (in degrees) that may be between two vertex tangents before their tangents and bi-tangents are smoothed. The default value is 45.
         API_FIELD(Attributes="EditorOrder(45), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowSmoothingTangentsAngle)), Limit(0, 45, 0.1f)")
         float SmoothingTangentsAngle = 45.0f;
+        // If checked, the winding order of the vertices will be reversed.
+        API_FIELD(Attributes="EditorOrder(47), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
+        bool ReverseWindingOrder = false;
         // Enable/disable meshes geometry optimization.
         API_FIELD(Attributes="EditorOrder(50), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         bool OptimizeMeshes = true;

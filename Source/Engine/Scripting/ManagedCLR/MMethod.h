@@ -16,6 +16,7 @@ class FLAXENGINE_API MMethod
     friend MClass;
     friend MProperty;
     friend MEvent;
+    friend MCore;
 
 protected:
 #if USE_MONO
@@ -175,9 +176,9 @@ public:
     /// <summary>
     /// Checks if method has an attribute of the specified type.
     /// </summary>
-    /// <param name="monoClass">The attribute class to check.</param>
+    /// <param name="klass">The attribute class to check.</param>
     /// <returns>True if has attribute of that class type, otherwise false.</returns>
-    bool HasAttribute(MClass* monoClass) const;
+    bool HasAttribute(const MClass* klass) const;
 
     /// <summary>
     /// Checks if method has an attribute of any type.
@@ -188,9 +189,9 @@ public:
     /// <summary>
     /// Returns an instance of an attribute of the specified type. Returns null if the method doesn't have such an attribute.
     /// </summary>
-    /// <param name="monoClass">The attribute Class to take.</param>
+    /// <param name="klass">The attribute Class to take.</param>
     /// <returns>The attribute object.</returns>
-    MObject* GetAttribute(MClass* monoClass) const;
+    MObject* GetAttribute(const MClass* klass) const;
 
     /// <summary>
     /// Returns an instance of all attributes connected with given method. Returns null if the method doesn't have any attributes.

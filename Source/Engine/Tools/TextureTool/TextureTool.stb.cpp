@@ -458,7 +458,7 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     {
         if (!options.InternalLoad.IsBinded() || options.InternalLoad(textureData))
             return true;
-        if (options.FlipY)
+        if (options.FlipY || options.FlipX)
         {
             // TODO: impl this
             errorMsg = TEXT("Flipping images imported from Internal source is not supported by stb.");
@@ -489,7 +489,7 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     if (sourceWidth != width || sourceHeight != height)
     {
         // During resizing we need to keep texture aspect ratio
-        const bool keepAspectRatio = false; // TODO: expose as import option
+        const bool keepAspectRatio = options.KeepAspectRatio; // TODO: expose as import option
         if (keepAspectRatio)
         {
             const float aspectRatio = static_cast<float>(sourceWidth) / sourceHeight;
@@ -534,6 +534,22 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         // TODO: implement texture decompression
         errorMsg = String::Format(TEXT("Imported texture used compressed format {0}. Not supported for importing on this platform.."), (int32)textureDataSrc->Format);
         return true;
+    }
+
+    if (options.FlipX)
+    {
+        // TODO: impl this
+        LOG(Warning, "Option 'Flip X' is not supported");
+    }
+    if (options.InvertRedChannel || options.InvertGreenChannel || options.InvertBlueChannel || options.InvertAlphaChannel)
+    {
+        // TODO: impl this
+        LOG(Warning, "Option to invert channels is not supported");
+    }
+    if (options.ReconstructZChannel)
+    {
+        // TODO: impl this
+        LOG(Warning, "Option 'Reconstruct Z Channel' is not supported");
     }
 
     // Generate mip maps chain

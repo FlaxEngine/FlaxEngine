@@ -197,6 +197,12 @@ namespace FlaxEditor.Tools.Foliage
             {
                 PaintEnd();
             }
+            
+            // Increase or decrease brush size with scroll
+            if (Input.GetKey(KeyboardKeys.Shift) && !Input.GetMouseButton(MouseButton.Right))
+            {
+                Mode.CurrentBrush.Size += dt * Mode.CurrentBrush.Size * Input.Mouse.ScrollDelta * 5f;
+            }
 
             // Perform detailed tracing to find cursor location for the foliage placement
             var mouseRay = Owner.MouseRay;

@@ -51,7 +51,11 @@ bool BoundingSphere::Intersects(const BoundingBox& box) const
 
 bool BoundingSphere::Intersects(const BoundingSphere& sphere) const
 {
-    return CollisionsHelper::SphereIntersectsSphere(*this, sphere);
+    const Real radiisum = Radius + sphere.Radius;
+    const Real x = Center.X - sphere.Center.X;
+    const Real y = Center.Y - sphere.Center.Y;
+    const Real z = Center.Z - sphere.Center.Z;
+    return x * x + y * y + z * z <= radiisum * radiisum;
 }
 
 ContainmentType BoundingSphere::Contains(const Vector3& point) const
@@ -136,7 +140,11 @@ void BoundingSphere::FromPoints(const Double3* points, int32 pointsCount, Boundi
 
 void BoundingSphere::FromBox(const BoundingBox& box, BoundingSphere& result)
 {
-    ASSERT(!box.Minimum.IsNanOrInfinity() && !box.Maximum.IsNanOrInfinity());
+    if (box.Minimum.IsNanOrInfinity() || box.Maximum.IsNanOrInfinity())
+    {
+        result = Empty;
+        return;
+    }
     const Real x = box.Maximum.X - box.Minimum.X;
     const Real y = box.Maximum.Y - box.Minimum.Y;
     const Real z = box.Maximum.Z - box.Minimum.Z;

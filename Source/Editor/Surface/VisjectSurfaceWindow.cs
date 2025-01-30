@@ -350,6 +350,213 @@ namespace FlaxEditor.Surface
         }
     }
 
+    sealed class ReorderParamAction : IUndoAction
+    {
+        /// <summary>
+        /// The window reference.
+        /// </summary>
+        public IVisjectSurfaceWindow Window;
+
+        /// <summary>
+        /// The parameters editor for this action.
+        /// </summary>
+        public ParametersEditor Editor;
+
+        /// <summary>
+        /// The old index the parameter was at.
+        /// </summary>
+        public int OldIndex;
+
+        /// <summary>
+        /// The new index the parameter will be at.
+        /// </summary>
+        public int NewIndex;
+
+        /// <inheritdoc />
+        public string ActionString => "Reorder Parameter";
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            Window = null;
+            Editor = null;
+        }
+
+        public void Swap(int oldIdx, int newIdx)
+        {
+            if (oldIdx == newIdx)
+                return; // ?
+
+            var parameters = Window.VisjectSurface.Parameters;
+            if (newIdx > oldIdx)
+            {
+                for (int i = oldIdx; i < newIdx; i++)
+                {
+                    SurfaceParameter old = parameters[i + 1];
+                    parameters[i + 1] = parameters[i];
+                    parameters[i] = old;
+                }
+            }
+            else
+            {
+                for (int i = oldIdx; i > newIdx; i--)
+                {
+                    SurfaceParameter old = parameters[i - 1];
+                    parameters[i - 1] = parameters[i];
+                    parameters[i] = old;
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public void Do()
+        {
+            Swap(OldIndex, NewIndex);
+            Window.VisjectSurface.OnParamReordered();
+        }
+
+        /// <inheritdoc />
+        public void Undo()
+        {
+            Swap(NewIndex, OldIndex);
+            Window.VisjectSurface.OnParamReordered();
+        }
+    }
+
+    /// <summary>
+    /// Custom draggable property name label that handles reordering visject parameters.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.CustomEditors.GUI.DraggablePropertyNameLabel" />
+    [HideInEditor]
+    public class ParameterPropertyNameLabel : DraggablePropertyNameLabel
+    {
+        private ParametersEditor _editor;
+        private IVisjectSurfaceWindow _window;
+        private Rectangle _arrangeButtonRect;
+        private bool _arrangeButtonInUse;
+
+        /// <inheritdoc />
+        public ParameterPropertyNameLabel(string name, ParametersEditor editor)
+        : base(name)
+        {
+            _editor = editor;
+            _window = _editor.Values[0] as IVisjectSurfaceWindow;
+            _arrangeButtonRect = new Rectangle(2, 3, 12, 12);
+
+            // Extend margin of the label to support a dragging handle
+            Margin m = Margin;
+            m.Left += 16;
+            Margin = m;
+        }
+
+        private bool ArrangeAreaCheck(out int index, out Rectangle rect)
+        {
+            var child = _editor.ChildrenEditors[0];
+            var container = child.Layout.ContainerControl;
+            var mousePosition = container.PointFromScreen(Input.MouseScreenPosition);
+            var barSidesExtend = 20.0f;
+            var barHeight = 5.0f;
+            var barCheckAreaHeight = 40.0f;
+            var pos = mousePosition.Y + barCheckAreaHeight * 0.5f;
+
+            for (int i = 0; i < container.Children.Count / 2; i++)
+            {
+                var containerChild = container.Children[i * 2]; // times 2 to skip the value editor
+                if (Mathf.IsInRange(pos, containerChild.Top, containerChild.Top + barCheckAreaHeight) || (i == 0 && pos < containerChild.Top))
+                {
+                    index = i;
+                    var p1 = containerChild.UpperLeft;
+                    rect = new Rectangle(PointFromParent(p1) - new Float2(barSidesExtend * 0.5f, barHeight * 0.5f), Width + barSidesExtend, barHeight);
+                    return true;
+                }
+            }
+
+            var p2 = container.Children[((container.Children.Count / 2) - 1) * 2].BottomLeft;
+            if (pos > p2.Y)
+            {
+                index = (container.Children.Count / 2) - 1;
+                rect = new Rectangle(PointFromParent(p2) - new Float2(barSidesExtend * 0.5f, barHeight * 0.5f), Width + barSidesExtend, barHeight);
+                return true;
+            }
+
+            index = -1;
+            rect = Rectangle.Empty;
+            return false;
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            base.Draw();
+
+            var style = Style.Current;
+            var mousePosition = PointFromScreen(Input.MouseScreenPosition);
+            var dragBarColor = _arrangeButtonRect.Contains(mousePosition) ? style.Foreground : style.ForegroundGrey;
+            Render2D.DrawSprite(Editor.Instance.Icons.DragBar12, _arrangeButtonRect, _arrangeButtonInUse ? Color.Orange : dragBarColor);
+            if (_arrangeButtonInUse && ArrangeAreaCheck(out _, out var arrangeTargetRect))
+            {
+                Render2D.FillRectangle(arrangeTargetRect, style.Selection);
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            if (button == MouseButton.Left && _arrangeButtonRect.Contains(ref location))
+            {
+                _arrangeButtonInUse = true;
+                Focus();
+                StartMouseCapture();
+                return true;
+            }
+
+            return base.OnMouseDown(location, button);
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (button == MouseButton.Left && _arrangeButtonInUse)
+            {
+                _arrangeButtonInUse = false;
+                EndMouseCapture();
+                ArrangeAreaCheck(out var index, out _);
+                var action = new ReorderParamAction
+                {
+                    OldIndex = (int)Tag,
+                    NewIndex = index,
+                    Window = _window,
+                    Editor = _editor
+                };
+                action.Do();
+                _window.Undo.AddAction(action);
+            }
+
+            return base.OnMouseUp(location, button);
+        }
+
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            if (_arrangeButtonInUse)
+            {
+                _arrangeButtonInUse = false;
+                EndMouseCapture();
+            }
+
+            base.OnLostFocus();
+        }
+
+        /// <inheritdoc />
+        protected override void OnSizeChanged()
+        {
+            base.OnSizeChanged();
+
+            // Center the drag button vertically
+            _arrangeButtonRect = new Rectangle(2, Mathf.Ceil((Height - 12) * 0.5f) + 1, 12, 12);
+        }
+    }
+
     /// <summary>
     /// Custom editor for editing Visject Surface parameters collection.
     /// </summary>
@@ -431,10 +638,10 @@ namespace FlaxEditor.Surface
                  attributes
                 );
 
-                var propertyLabel = new DraggablePropertyNameLabel(name)
+                var propertyLabel = new ParameterPropertyNameLabel(name, this)
                 {
                     Tag = pIndex,
-                    Drag = OnDragParameter
+                    Drag = OnDragParameter,
                 };
                 if (!p.IsPublic)
                     propertyLabel.TextColor = propertyLabel.TextColor.RGBMultiplied(0.7f);
@@ -569,6 +776,15 @@ namespace FlaxEditor.Surface
         private void DeleteParameter(int index)
         {
             var window = (IVisjectSurfaceWindow)Values[0];
+            SurfaceParameter param = window.VisjectSurface.Parameters[index];
+
+            if (Editor.Instance.Options.Options.Interface.WarnOnDeletingUsedVisjectParameter && window.VisjectSurface.IsParamUsed(param))
+            {
+                string msg = $"Delete parameter {param.Name}?\nParameter is being used in a graph.\n\nYou can disable this warning in the editor settings.";
+                if (MessageBox.Show(msg, "Delete parameter", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
+                    return;
+            }
+
             var action = new AddRemoveParamAction
             {
                 Window = window,
@@ -684,9 +900,21 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected Tabs _tabs;
 
-        private readonly ToolStripButton _saveButton;
-        private readonly ToolStripButton _undoButton;
-        private readonly ToolStripButton _redoButton;
+        /// <summary>
+        /// Save button on a toolstrip.
+        /// </summary>
+        protected ToolStripButton _saveButton;
+
+        /// <summary>
+        /// Undo button on a toolstrip.
+        /// </summary>
+        protected ToolStripButton _undoButton;
+
+        /// <summary>
+        /// Redo button on a toolstrip.
+        /// </summary>
+        protected ToolStripButton _redoButton;
+
         private bool _showWholeGraphOnLoad = true;
 
         /// <summary>
@@ -743,8 +971,6 @@ namespace FlaxEditor.Surface
         protected VisjectSurfaceWindow(Editor editor, AssetItem item, bool useTabs = false)
         : base(editor, item)
         {
-            var inputOptions = Editor.Options.Options.Input;
-
             // Undo
             _undo = new FlaxEditor.Undo();
             _undo.UndoDone += OnUndoRedo;
@@ -791,20 +1017,6 @@ namespace FlaxEditor.Surface
                 _propertiesEditor.Panel.Parent = _split2.Panel2;
             }
             _propertiesEditor.Modified += OnPropertyEdited;
-
-            // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
-            _toolstrip.AddSeparator();
-            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
-            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
-            _toolstrip.AddSeparator();
-            _toolstrip.AddButton(Editor.Icons.Search64, Editor.ContentFinding.ShowSearch).LinkTooltip($"Open content search tool ({inputOptions.Search})");
-            _toolstrip.AddButton(editor.Icons.CenterView64, ShowWholeGraph).LinkTooltip("Show whole graph");
-
-            // Setup input actions
-            InputActions.Add(options => options.Undo, _undo.PerformUndo);
-            InputActions.Add(options => options.Redo, _undo.PerformRedo);
-            InputActions.Add(options => options.Search, Editor.ContentFinding.ShowSearch);
         }
 
         private void OnUndoRedo(IUndoAction action)

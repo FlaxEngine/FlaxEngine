@@ -41,6 +41,8 @@ namespace FlaxEngine.Utilities
         public static string GetTypeDisplayName(this Type type)
         {
             // Special display for in-built basic types
+            if (type == null)
+                return "Null";
             if (type == typeof(bool))
                 return "Bool";
             if (type == typeof(float))

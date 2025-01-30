@@ -132,6 +132,8 @@ namespace FlaxEditor.GUI.Input
                 _isSliding = false;
                 EndMouseCapture();
                 SlidingEnd?.Invoke();
+                Defocus();
+                Parent?.Focus();
             }
 
             /// <summary>
@@ -183,6 +185,8 @@ namespace FlaxEditor.GUI.Input
                     {
                         // Click change
                         Value += (mousePosition < _thumbCenter ? -1 : 1) * 10;
+                        Defocus();
+                        Parent?.Focus();
                     }
                 }
 
@@ -197,6 +201,10 @@ namespace FlaxEditor.GUI.Input
                     // Update sliding
                     var slidePosition = location + Root.TrackingMouseOffset;
                     Value = Mathf.Remap(slidePosition.X, 4, TrackSize - 4, Minimum, Maximum);
+                    if (Mathf.NearEqual(Value, Maximum))
+                        Value = Maximum;
+                    else if (Mathf.NearEqual(Value, Minimum))
+                        Value = Minimum;
                 }
                 else
                 {
@@ -364,7 +372,7 @@ namespace FlaxEditor.GUI.Input
             };
             _slider.ValueChanged += SliderOnValueChanged;
             _slider.SlidingStart += SlidingStart;
-            _slider.SlidingEnd += SlidingEnd;
+            _slider.SlidingEnd += SliderOnSliderEnd;
             _textBox = new TextBox(false, split, 0)
             {
                 Text = _value.ToString(CultureInfo.InvariantCulture),
@@ -373,6 +381,13 @@ namespace FlaxEditor.GUI.Input
                 Size = new Float2(Height, TextBoxSize),
             };
             _textBox.EditEnd += OnTextBoxEditEnd;
+        }
+
+        private void SliderOnSliderEnd()
+        {
+            SlidingEnd?.Invoke();
+            Defocus();
+            Parent?.Focus();
         }
 
         private void SliderOnValueChanged()
@@ -397,6 +412,8 @@ namespace FlaxEditor.GUI.Input
             {
                 UpdateText();
             }
+            Defocus();
+            Parent?.Focus();
         }
 
         /// <summary>

@@ -13,8 +13,8 @@
 // Primary constant buffer (with additional material parameters)
 META_CB_BEGIN(0, Data)
 float4x4 InverseViewProjectionMatrix;
-float4x4 WorldMatrix;
-float4x4 WorldMatrixInverseTransposed;
+float4x3 WorldMatrix;
+float4x3 WorldMatrixInverseTransposed;
 float3 GridSize;
 float PerInstanceRandom;
 float Dummy0;
@@ -49,7 +49,7 @@ struct MaterialInput
 #endif
 };
 
-#define GetInstanceTransform(input) WorldMatrix;
+#define GetInstanceTransform(input) ToMatrix4x4(WorldMatrix);
 
 // Removes the scale vector from the local to world transformation matrix (supports instancing)
 float3x3 RemoveScaleFromLocalToWorld(float3x3 localToWorld)
@@ -170,12 +170,12 @@ float4 GetParticleVec4(uint particleIndex, int offset)
 
 float3 TransformParticlePosition(float3 input)
 {
-	return mul(float4(input, 1.0f), WorldMatrix).xyz;
+	return mul(float4(input, 1.0f), ToMatrix4x4(WorldMatrix)).xyz;
 }
 
 float3 TransformParticleVector(float3 input)
 {
-	return mul(float4(input, 0.0f), WorldMatrixInverseTransposed).xyz;
+	return mul(float4(input, 0.0f), ToMatrix4x4(WorldMatrixInverseTransposed)).xyz;
 }
 
 @8
@@ -219,7 +219,7 @@ void PS_VolumetricFog(Quad_GS2PS input, out float4 VBufferA : SV_Target0, out fl
 	materialInput.ParticleIndex = ParticleIndex;
 	materialInput.TBN = float3x3(float3(1, 0, 0), float3(0, 1, 0), float3(0, 0, 1));
 	materialInput.TwoSidedSign = 1.0f;
-	materialInput.InstanceOrigin = WorldMatrix[3].xyz;
+	materialInput.InstanceOrigin = ToMatrix4x4(WorldMatrix)[3].xyz;
 	materialInput.InstanceParams = PerInstanceRandom;
 	materialInput.SvPosition = clipPos;
 	Material material = GetMaterialPS(materialInput);

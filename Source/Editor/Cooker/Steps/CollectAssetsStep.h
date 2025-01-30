@@ -12,15 +12,7 @@ class Asset;
 /// <seealso cref="GameCooker::BuildStep" />
 class CollectAssetsStep : public GameCooker::BuildStep
 {
-private:
-
-    Array<Guid> _assetsQueue;
-    Array<Guid> _references;
-
-    bool Process(CookingData& data, Asset* asset);
-
 public:
-
     // [BuildStep]
     bool Perform(CookingData& data) override;
 };

@@ -66,27 +66,23 @@ namespace AnimationUtils
     }
 
     template<class T>
-    FORCE_INLINE static void GetTangent(const T& a, const T& b, float length, T& result)
+    FORCE_INLINE static void GetTangent(const T& value, const T& tangent, float tangentScale, T& result)
     {
-        const float oneThird = 1.0f / 3.0f;
-        result = a + b * (length * oneThird);
+        result = value + tangent * tangentScale;
     }
 
     template<>
-    FORCE_INLINE void GetTangent<Quaternion>(const Quaternion& a, const Quaternion& b, float length, Quaternion& result)
+    FORCE_INLINE void GetTangent<Quaternion>(const Quaternion& value, const Quaternion& tangent, float tangentScale, Quaternion& result)
     {
-        const float oneThird = 1.0f / 3.0f;
-        Quaternion::Slerp(a, b, oneThird, result);
+        Quaternion::Slerp(value, tangent, 1.0f / 3.0f, result);
     }
 
     template<>
-    FORCE_INLINE void GetTangent<Transform>(const Transform& a, const Transform& b, float length, Transform& result)
+    FORCE_INLINE void GetTangent<Transform>(const Transform& value, const Transform& tangent, float tangentScale, Transform& result)
     {
-        const float oneThird = 1.0f / 3.0f;
-        const float oneThirdLength = length * oneThird;
-        result.Translation = a.Translation + b.Translation * oneThirdLength;
-        Quaternion::Slerp(a.Orientation, b.Orientation, oneThird, result.Orientation);
-        result.Scale = a.Scale + (b.Scale - a.Scale) * oneThirdLength;
+        GetTangent(value.Translation, tangent.Translation, tangentScale, result.Translation);
+        GetTangent(value.Orientation, tangent.Orientation, tangentScale, result.Orientation);
+        GetTangent(value.Scale, tangent.Scale, tangentScale, result.Scale);
     }
 
     template<class T>

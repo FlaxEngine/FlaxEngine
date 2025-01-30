@@ -21,6 +21,8 @@ Collider::Collider(const SpawnParams& params)
     , _cachedScale(1.0f)
     , _contactOffset(2.0f)
 {
+    Material.Loaded.Bind<Collider, &Collider::OnMaterialChanged>(this);
+    Material.Unload.Bind<Collider, &Collider::OnMaterialChanged>(this);
     Material.Changed.Bind<Collider, &Collider::OnMaterialChanged>(this);
 }
 
@@ -68,6 +70,7 @@ void Collider::SetContactOffset(float value)
 
 bool Collider::RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance) const
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     resultHitDistance = MAX_float;
     if (_shape == nullptr)
         return false;
@@ -76,6 +79,7 @@ bool Collider::RayCast(const Vector3& origin, const Vector3& direction, float& r
 
 bool Collider::RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, float maxDistance) const
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     if (_shape == nullptr)
         return false;
     return PhysicsBackend::RayCastShape(_shape, _transform.Translation, _transform.Orientation, origin, direction, hitInfo, maxDistance);

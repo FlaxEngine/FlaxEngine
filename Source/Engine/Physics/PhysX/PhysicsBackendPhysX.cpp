@@ -111,9 +111,13 @@ struct ScenePhysX
     Array<nv::cloth::Cloth*> ClothsList;
 #endif
 
+#if WITH_VEHICLE
+    void UpdateVehicles(float dt);
+#endif
 #if WITH_CLOTH
     void PreSimulateCloth(int32 i);
     void SimulateCloth(int32 i);
+    void UpdateCloths(float dt);
 #endif
 };
 
@@ -330,7 +334,12 @@ class CharacterControllerHitReportPhysX : public PxUserControllerHitReport
 {
     void onHit(const PxControllerHit& hit, Collision& c)
     {
-        ASSERT_LOW_LAYER(c.ThisActor && c.OtherActor);
+        if (c.ThisActor == nullptr || c.OtherActor == nullptr)
+        {
+            // One of the actors was deleted (eg. via RigidBody destroyed by gameplay) then skip processing this collision
+            return;
+        }
+
         c.Impulse = Vector3::Zero;
         c.ThisVelocity = P2C(hit.dir) * hit.length;
         c.OtherVelocity = Vector3::Zero;
@@ -573,6 +582,7 @@ namespace
     Array<PxBase*> DeleteObjects;
 
     bool _queriesHitTriggers = true;
+    bool _enableCCD = true;
     PhysicsCombineMode _frictionCombineMode = PhysicsCombineMode::Average;
     PhysicsCombineMode _restitutionCombineMode = PhysicsCombineMode::Average;
 
@@ -715,6 +725,8 @@ PxFilterFlags FilterShader(
         pairFlags |= PxPairFlag::eNOTIFY_TOUCH_LOST;
         pairFlags |= PxPairFlag::ePOST_SOLVER_VELOCITY;
         pairFlags |= PxPairFlag::eNOTIFY_CONTACT_POINTS;
+        if (_enableCCD)
+            pairFlags |= PxPairFlag::eDETECT_CCD_CONTACT;
         return PxFilterFlag::eDEFAULT;
     }
 
@@ -732,6 +744,451 @@ void InitVehicleSDK()
         PxInitVehicleSDK(*PhysX);
         PxVehicleSetBasisVectors(PxVec3(0, 1, 0), PxVec3(0, 0, 1));
         PxVehicleSetUpdateMode(PxVehicleUpdateMode::eVELOCITY_CHANGE);
+    }
+}
+
+void ScenePhysX::UpdateVehicles(float dt)
+{
+    if (WheelVehicles.IsEmpty())
+        return;
+    PROFILE_CPU_NAMED("Physics.Vehicles");
+
+    // Update vehicles steering
+    WheelVehiclesCache.Clear();
+    WheelVehiclesCache.EnsureCapacity(WheelVehicles.Count());
+    int32 wheelsCount = 0;
+    for (auto wheelVehicle : WheelVehicles)
+    {
+        if (!wheelVehicle->IsActiveInHierarchy() || !wheelVehicle->GetEnableSimulation())
+            continue;
+        auto drive = (PxVehicleWheels*)wheelVehicle->_vehicle;
+        ASSERT(drive);
+        WheelVehiclesCache.Add(drive);
+        wheelsCount += drive->mWheelsSimData.getNbWheels();
+
+        const float deadZone = 0.1f;
+        bool isTank = wheelVehicle->_driveType == WheeledVehicle::DriveTypes::Tank;
+        float throttle = wheelVehicle->_throttle;
+        float steering = wheelVehicle->_steering;
+        float brake = wheelVehicle->_brake;
+        float leftThrottle = wheelVehicle->_tankLeftThrottle;
+        float rightThrottle = wheelVehicle->_tankRightThrottle;
+        float leftBrake = Math::Max(wheelVehicle->_tankLeftBrake, wheelVehicle->_handBrake);
+        float rightBrake = Math::Max(wheelVehicle->_tankRightBrake, wheelVehicle->_handBrake);
+        WheeledVehicle::DriveModes vehicleDriveMode = wheelVehicle->_driveControl.DriveMode;
+
+        if (isTank)
+        {
+            // Converting default vehicle controls to tank controls.
+            if (throttle != 0 || steering != 0)
+            {
+                leftThrottle = Math::Clamp(throttle + steering, -1.0f, 1.0f);
+                rightThrottle = Math::Clamp(throttle - steering, -1.0f, 1.0f);
+            }
+        }
+
+        // Converting special tank drive mode to standard tank mode when is turning.
+        if (isTank && vehicleDriveMode == WheeledVehicle::DriveModes::Standard)
+        {
+            // Special inputs when turning vehicle -1 1 to left or 1 -1 to turn right
+            // to:
+            // Standard inputs when turning vehicle 0 1 to left or 1 0 to turn right
+
+            if (leftThrottle < -deadZone && rightThrottle > deadZone)
+            {
+                leftThrottle = 0;
+                leftBrake = 1;
+            }
+            else if (leftThrottle > deadZone && rightThrottle < -deadZone)
+            {
+                rightThrottle = 0;
+                rightBrake = 1;
+            }
+        }
+
+        if (wheelVehicle->UseReverseAsBrake)
+        {
+            const float invalidDirectionThreshold = 80.0f;
+            const float breakThreshold = 8.0f;
+            const float forwardSpeed = wheelVehicle->GetForwardSpeed();
+            int currentGear = wheelVehicle->GetCurrentGear();
+            // Tank tracks direction: 1 forward -1 backward 0 neutral
+            bool toForward = false;
+            toForward |= throttle > deadZone;
+            toForward |= (leftThrottle > deadZone) && (rightThrottle > deadZone); // 1  1
+
+            bool toBackward = false;
+            toBackward |= throttle < -deadZone;
+            toBackward |= (leftThrottle < -deadZone) && (rightThrottle < -deadZone); // -1 -1
+            toBackward |= (leftThrottle < -deadZone) && (rightThrottle < deadZone); // -1  0
+            toBackward |= (leftThrottle < deadZone) && (rightThrottle < -deadZone); //  0 -1
+
+            bool isTankTurning = false;
+
+            if (isTank)
+            {
+                isTankTurning |= leftThrottle > deadZone && rightThrottle < -deadZone; //  1 -1
+                isTankTurning |= leftThrottle < -deadZone && rightThrottle > deadZone; // -1  1
+                isTankTurning |= leftThrottle < deadZone && rightThrottle > deadZone; //  0  1
+                isTankTurning |= leftThrottle > deadZone && rightThrottle < deadZone; //  1  0
+                isTankTurning |= leftThrottle < -deadZone && rightThrottle < deadZone; // -1  0
+                isTankTurning |= leftThrottle < deadZone && rightThrottle < -deadZone; //  0 -1
+
+                if (toForward || toBackward)
+                {
+                    isTankTurning = false;
+                }
+            }
+
+            // Automatic gear change when changing driving direction
+            if (Math::Abs(forwardSpeed) < invalidDirectionThreshold)
+            {
+                int targetGear = wheelVehicle->GetTargetGear();
+                if (toBackward && currentGear > 0 && targetGear >= 0)
+                {
+                    currentGear = -1;
+                }
+                else if (!toBackward && currentGear <= 0 && targetGear <= 0)
+                {
+                    currentGear = 1;
+                }
+                else if (isTankTurning && currentGear <= 0)
+                {
+                    currentGear = 1;
+                }
+
+                if (wheelVehicle->GetCurrentGear() != currentGear)
+                {
+                    wheelVehicle->SetCurrentGear(currentGear);
+                }
+            }
+
+            // Automatic break when changing driving direction
+            if (toForward)
+            {
+                if (forwardSpeed < -invalidDirectionThreshold)
+                {
+                    brake = 1.0f;
+                    leftBrake = 1.0f;
+                    rightBrake = 1.0f;
+                }
+            }
+            else if (toBackward)
+            {
+                if (forwardSpeed > invalidDirectionThreshold)
+                {
+                    brake = 1.0f;
+                    leftBrake = 1.0f;
+                    rightBrake = 1.0f;
+                }
+            }
+            else
+            {
+                if (forwardSpeed < breakThreshold && forwardSpeed > -breakThreshold && !isTankTurning) // not accelerating, very slow speed -> stop
+                {
+                    brake = 1.0f;
+                    leftBrake = 1.0f;
+                    rightBrake = 1.0f;
+                }
+            }
+
+            // Block throttle if user is changing driving direction
+            if ((toForward && currentGear < 0) || (toBackward && currentGear > 0))
+            {
+                throttle = 0.0f;
+                leftThrottle = 0;
+                rightThrottle = 0;
+            }
+
+            throttle = Math::Abs(throttle);
+
+            if (isTank)
+            {
+                // invert acceleration when moving to backward because tank inputs can be < 0
+                if (currentGear < 0)
+                {
+                    float lt = -leftThrottle;
+                    float rt = -rightThrottle;
+                    float lb = leftBrake;
+                    float rb = rightBrake;
+                    leftThrottle = rt;
+                    rightThrottle = lt;
+                    leftBrake = rb;
+                    rightBrake = lb;
+                }
+            }
+        }
+        else
+        {
+            throttle = Math::Max(throttle, 0.0f);
+        }
+
+        // Force brake the another side track to turn faster
+        if (Math::Abs(leftThrottle) > deadZone && Math::Abs(rightThrottle) < deadZone)
+        {
+            rightBrake = 1.0f;
+        }
+        if (Math::Abs(rightThrottle) > deadZone && Math::Abs(leftThrottle) < deadZone)
+        {
+            leftBrake = 1.0f;
+        }
+
+        // Smooth input controls
+        // @formatter:off
+        PxVehiclePadSmoothingData padSmoothing =
+        {
+            {
+                wheelVehicle->_driveControl.RiseRateAcceleration, // rise rate eANALOG_INPUT_ACCEL
+                wheelVehicle->_driveControl.RiseRateBrake,        // rise rate eANALOG_INPUT_BRAKE
+                wheelVehicle->_driveControl.RiseRateHandBrake,    // rise rate eANALOG_INPUT_HANDBRAKE
+                wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_LEFT
+                wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_RIGHT
+            },
+            {
+                wheelVehicle->_driveControl.FallRateAcceleration, // fall rate eANALOG_INPUT_ACCEL
+                wheelVehicle->_driveControl.FallRateBrake,        // fall rate eANALOG_INPUT_BRAKE
+                wheelVehicle->_driveControl.FallRateHandBrake,    // fall rate eANALOG_INPUT_HANDBRAKE
+                wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_LEFT
+                wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_RIGHT
+            }
+        };
+        PxVehicleKeySmoothingData keySmoothing =
+        {
+            {
+                wheelVehicle->_driveControl.RiseRateAcceleration, // rise rate eANALOG_INPUT_ACCEL
+                wheelVehicle->_driveControl.RiseRateBrake,        // rise rate eANALOG_INPUT_BRAKE
+                wheelVehicle->_driveControl.RiseRateHandBrake,    // rise rate eANALOG_INPUT_HANDBRAKE
+                wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_LEFT
+                wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_RIGHT
+            },
+            {
+                wheelVehicle->_driveControl.FallRateAcceleration, // fall rate eANALOG_INPUT_ACCEL
+                wheelVehicle->_driveControl.FallRateBrake,        // fall rate eANALOG_INPUT_BRAKE
+                wheelVehicle->_driveControl.FallRateHandBrake,    // fall rate eANALOG_INPUT_HANDBRAKE
+                wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_LEFT
+                wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_RIGHT
+            }
+        };
+        // @formatter:on
+
+        // Reduce steer by speed to make vehicle easier to maneuver 
+        constexpr int steerVsSpeedN = 8;
+        PxF32 steerVsForwardSpeedData[steerVsSpeedN];
+        const int lastSteerVsSpeedIndex = wheelVehicle->_driveControl.SteerVsSpeed.Count() - 1;
+        int steerVsSpeedIndex = 0;
+
+        // Steer vs speed data structure example:
+        // array:
+        // speed,   steer
+        // 1000,    1.0,
+        // 2000,    0.7,
+        // 5000,    0.5,
+        // ..
+
+        // fill the steerVsForwardSpeedData with the speed and steer
+        for (int32 i = 0; i < 8; i += 2)
+        {
+            steerVsForwardSpeedData[i] = wheelVehicle->_driveControl.SteerVsSpeed[steerVsSpeedIndex].Speed;
+            steerVsForwardSpeedData[i + 1] = wheelVehicle->_driveControl.SteerVsSpeed[steerVsSpeedIndex].Steer;
+            steerVsSpeedIndex = Math::Min(steerVsSpeedIndex + 1, lastSteerVsSpeedIndex);
+        }
+        const PxFixedSizeLookupTable<steerVsSpeedN> steerVsForwardSpeed(steerVsForwardSpeedData, 4);
+
+        if (wheelVehicle->UseAnalogSteering)
+        {
+            switch (wheelVehicle->_driveTypeCurrent)
+            {
+            case WheeledVehicle::DriveTypes::Drive4W:
+            {
+                PxVehicleDrive4WRawInputData rawInputData;
+                rawInputData.setAnalogAccel(throttle);
+                rawInputData.setAnalogBrake(brake);
+                rawInputData.setAnalogSteer(wheelVehicle->_steering);
+                rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
+                PxVehicleDrive4WSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, dt, false, *(PxVehicleDrive4W*)drive);
+                break;
+            }
+            case WheeledVehicle::DriveTypes::DriveNW:
+            {
+                PxVehicleDriveNWRawInputData rawInputData;
+                rawInputData.setAnalogAccel(throttle);
+                rawInputData.setAnalogBrake(brake);
+                rawInputData.setAnalogSteer(wheelVehicle->_steering);
+                rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
+                PxVehicleDriveNWSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, dt, false, *(PxVehicleDriveNW*)drive);
+                break;
+            }
+            case WheeledVehicle::DriveTypes::Tank:
+            {
+                PxVehicleDriveTankRawInputData driveMode = vehicleDriveMode == WheeledVehicle::DriveModes::Standard ? PxVehicleDriveTankControlModel::eSTANDARD : PxVehicleDriveTankControlModel::eSPECIAL;
+                PxVehicleDriveTankRawInputData rawInputData = PxVehicleDriveTankRawInputData(driveMode);
+                rawInputData.setAnalogAccel(Math::Max(Math::Abs(leftThrottle), Math::Abs(rightThrottle)));
+                rawInputData.setAnalogLeftBrake(leftBrake);
+                rawInputData.setAnalogRightBrake(rightBrake);
+                rawInputData.setAnalogLeftThrust(leftThrottle);
+                rawInputData.setAnalogRightThrust(rightThrottle);
+                PxVehicleDriveTankSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, rawInputData, dt, *(PxVehicleDriveTank*)drive);
+                break;
+            }
+            }
+        }
+        else
+        {
+            switch (wheelVehicle->_driveTypeCurrent)
+            {
+            case WheeledVehicle::DriveTypes::Drive4W:
+            {
+                PxVehicleDrive4WRawInputData rawInputData;
+                rawInputData.setDigitalAccel(throttle > deadZone);
+                rawInputData.setDigitalBrake(brake > deadZone);
+                rawInputData.setDigitalSteerLeft(wheelVehicle->_steering < -deadZone);
+                rawInputData.setDigitalSteerRight(wheelVehicle->_steering > deadZone);
+                rawInputData.setDigitalHandbrake(wheelVehicle->_handBrake > deadZone);
+                PxVehicleDrive4WSmoothDigitalRawInputsAndSetAnalogInputs(keySmoothing, steerVsForwardSpeed, rawInputData, dt, false, *(PxVehicleDrive4W*)drive);
+                break;
+            }
+            case WheeledVehicle::DriveTypes::DriveNW:
+            {
+                PxVehicleDriveNWRawInputData rawInputData;
+                rawInputData.setDigitalAccel(throttle > deadZone);
+                rawInputData.setDigitalBrake(brake > deadZone);
+                rawInputData.setDigitalSteerLeft(wheelVehicle->_steering < -deadZone);
+                rawInputData.setDigitalSteerRight(wheelVehicle->_steering > deadZone);
+                rawInputData.setDigitalHandbrake(wheelVehicle->_handBrake > deadZone);
+                PxVehicleDriveNWSmoothDigitalRawInputsAndSetAnalogInputs(keySmoothing, steerVsForwardSpeed, rawInputData, dt, false, *(PxVehicleDriveNW*)drive);
+                break;
+            }
+            case WheeledVehicle::DriveTypes::Tank:
+            {
+                // Convert analog inputs to digital inputs
+                leftThrottle = Math::Round(leftThrottle);
+                rightThrottle = Math::Round(rightThrottle);
+                leftBrake = Math::Round(leftBrake);
+                rightBrake = Math::Round(rightBrake);
+
+                PxVehicleDriveTankRawInputData driveMode = vehicleDriveMode == WheeledVehicle::DriveModes::Standard ? PxVehicleDriveTankControlModel::eSTANDARD : PxVehicleDriveTankControlModel::eSPECIAL;
+                PxVehicleDriveTankRawInputData rawInputData = PxVehicleDriveTankRawInputData(driveMode);
+                rawInputData.setAnalogAccel(Math::Max(Math::Abs(leftThrottle), Math::Abs(rightThrottle)));
+                rawInputData.setAnalogLeftBrake(leftBrake);
+                rawInputData.setAnalogRightBrake(rightBrake);
+                rawInputData.setAnalogLeftThrust(leftThrottle);
+                rawInputData.setAnalogRightThrust(rightThrottle);
+
+                // Needs to pass analog values to vehicle to maintain current movement direction because digital inputs accept only true/false values to tracks thrust instead of -1 to 1 
+                PxVehicleDriveTankSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, rawInputData, dt, *(PxVehicleDriveTank*)drive);
+                break;
+            }
+            }
+        }
+    }
+
+    // Update batches queries cache
+    if (wheelsCount > WheelRaycastBatchQuerySize)
+    {
+        if (WheelRaycastBatchQuery)
+            WheelRaycastBatchQuery->release();
+        WheelRaycastBatchQuerySize = wheelsCount;
+        WheelRaycastBatchQuery = PxCreateBatchQueryExt(*Scene, &WheelRaycastFilter, wheelsCount, wheelsCount, 0, 0, 0, 0);
+    }
+
+    // Update lookup table that maps wheel type into the surface friction
+    if (!WheelTireFrictions || WheelTireFrictionsDirty)
+    {
+        WheelTireFrictionsDirty = false;
+        RELEASE_PHYSX(WheelTireFrictions);
+        Array<PxMaterial*, InlinedAllocation<8>> materials;
+        materials.Resize(Math::Min<int32>((int32)PhysX->getNbMaterials(), PxVehicleDrivableSurfaceToTireFrictionPairs::eMAX_NB_SURFACE_TYPES));
+        PxMaterial** materialsPtr = materials.Get();
+        PhysX->getMaterials(materialsPtr, materials.Count(), 0);
+        Array<PxVehicleDrivableSurfaceType, InlinedAllocation<8>> tireTypes;
+        tireTypes.Resize(materials.Count());
+        PxVehicleDrivableSurfaceType* tireTypesPtr = tireTypes.Get();
+        for (int32 i = 0; i < tireTypes.Count(); i++)
+            tireTypesPtr[i].mType = i;
+        WheelTireFrictions = PxVehicleDrivableSurfaceToTireFrictionPairs::allocate(WheelTireTypes.Count(), materials.Count());
+        WheelTireFrictions->setup(WheelTireTypes.Count(), materials.Count(), (const PxMaterial**)materialsPtr, tireTypesPtr);
+        for (int32 material = 0; material < materials.Count(); material++)
+        {
+            float friction = materialsPtr[material]->getStaticFriction();
+            for (int32 tireType = 0; tireType < WheelTireTypes.Count(); tireType++)
+            {
+                float scale = WheelTireTypes[tireType];
+                WheelTireFrictions->setTypePairFriction(material, tireType, friction * scale);
+            }
+        }
+    }
+
+    // Setup cache for wheel states
+    WheelVehiclesResultsPerVehicle.Resize(WheelVehiclesCache.Count(), false);
+    WheelVehiclesResultsPerWheel.Resize(wheelsCount, false);
+    wheelsCount = 0;
+    for (int32 i = 0, ii = 0; i < WheelVehicles.Count(); i++)
+    {
+        auto wheelVehicle = WheelVehicles[i];
+        if (!wheelVehicle->IsActiveInHierarchy() || !wheelVehicle->GetEnableSimulation())
+            continue;
+        auto drive = (PxVehicleWheels*)WheelVehicles[ii]->_vehicle;
+        auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
+        ii++;
+        perVehicle.nbWheelQueryResults = drive->mWheelsSimData.getNbWheels();
+        perVehicle.wheelQueryResults = WheelVehiclesResultsPerWheel.Get() + wheelsCount;
+        wheelsCount += perVehicle.nbWheelQueryResults;
+    }
+
+    // Update vehicles
+    if (WheelVehiclesCache.Count() != 0)
+    {
+        PxVehicleSuspensionRaycasts(WheelRaycastBatchQuery, WheelVehiclesCache.Count(), WheelVehiclesCache.Get());
+        PxVehicleUpdates(dt, Scene->getGravity(), *WheelTireFrictions, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelVehiclesResultsPerVehicle.Get());
+    }
+
+    // Synchronize state
+    for (int32 i = 0, ii = 0; i < WheelVehicles.Count(); i++)
+    {
+        auto wheelVehicle = WheelVehicles[i];
+        if (!wheelVehicle->IsActiveInHierarchy() || !wheelVehicle->GetEnableSimulation())
+            continue;
+        auto drive = WheelVehiclesCache[ii];
+        auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
+        ii++;
+#if PHYSX_VEHICLE_DEBUG_TELEMETRY
+        LOG(Info, "Vehicle[{}] Gear={}, RPM={}", ii, wheelVehicle->GetCurrentGear(), (int32)wheelVehicle->GetEngineRotationSpeed());
+#endif
+
+        // Update wheels
+        for (int32 j = 0; j < wheelVehicle->_wheelsData.Count(); j++)
+        {
+            auto& wheelData = wheelVehicle->_wheelsData[j];
+            auto& perWheel = perVehicle.wheelQueryResults[j];
+#if PHYSX_VEHICLE_DEBUG_TELEMETRY
+            LOG(Info, "Vehicle[{}] Wheel[{}] longitudinalSlip={}, lateralSlip={}, suspSpringForce={}", ii, j, Utilities::RoundTo2DecimalPlaces(perWheel.longitudinalSlip), Utilities::RoundTo2DecimalPlaces(perWheel.lateralSlip), (int32)perWheel.suspSpringForce);
+#endif
+
+            auto& state = wheelData.State;
+            state.IsInAir = perWheel.isInAir;
+            state.TireContactCollider = perWheel.tireContactShape ? static_cast<PhysicsColliderActor*>(perWheel.tireContactShape->userData) : nullptr;
+            state.TireContactPoint = P2C(perWheel.tireContactPoint) + Origin;
+            state.TireContactNormal = P2C(perWheel.tireContactNormal);
+            state.TireFriction = perWheel.tireFriction;
+            state.SteerAngle = RadiansToDegrees * perWheel.steerAngle;
+            state.RotationAngle = -RadiansToDegrees * drive->mWheelsDynData.getWheelRotationAngle(j);
+            state.SuspensionOffset = perWheel.suspJounce;
+#if USE_EDITOR
+            state.SuspensionTraceStart = P2C(perWheel.suspLineStart) + Origin;
+            state.SuspensionTraceEnd = P2C(perWheel.suspLineStart + perWheel.suspLineDir * perWheel.suspLineLength) + Origin;
+#endif
+
+            if (!wheelData.Collider)
+                continue;
+            auto shape = (PxShape*)wheelData.Collider->GetPhysicsShape();
+
+            // Update wheel collider transformation
+            auto localPose = shape->getLocalPose();
+            Transform t = wheelData.Collider->GetLocalTransform();
+            t.Orientation = Quaternion::Euler(-state.RotationAngle, state.SteerAngle, 0) * wheelData.LocalOrientation;
+            t.Translation = P2C(localPose.p) / wheelVehicle->GetScale() - t.Orientation * wheelData.Collider->GetCenter();
+            wheelData.Collider->SetLocalTransform(t);
+        }
     }
 }
 
@@ -936,6 +1393,58 @@ void ScenePhysX::SimulateCloth(int32 i)
 {
     PROFILE_CPU();
     ClothSolver->simulateChunk(i);
+}
+
+void ScenePhysX::UpdateCloths(float dt)
+{
+    nv::cloth::Solver* clothSolver = ClothSolver;
+    if (!clothSolver || ClothsList.IsEmpty())
+        return;
+    PROFILE_CPU_NAMED("Physics.Cloth");
+
+    {
+        PROFILE_CPU_NAMED("Pre");
+        Function<void(int32)> job;
+        job.Bind<ScenePhysX, &ScenePhysX::PreSimulateCloth>(this);
+        JobSystem::Execute(job, ClothsList.Count());
+    }
+
+    {
+        PROFILE_CPU_NAMED("Simulation");
+        if (clothSolver->beginSimulation(dt))
+        {
+            Function<void(int32)> job;
+            job.Bind<ScenePhysX, &ScenePhysX::SimulateCloth>(this);
+            JobSystem::Execute(job, clothSolver->getSimulationChunkCount());
+            clothSolver->endSimulation();
+        }
+    }
+
+    {
+        PROFILE_CPU_NAMED("Post");
+        ScopeLock lock(ClothLocker);
+        Array<Cloth*> brokenCloths;
+        for (auto clothPhysX : ClothsList)
+        {
+            const auto& clothSettings = Cloths[clothPhysX];
+            if (clothSettings.Culled)
+                continue;
+            if (clothSettings.UpdateBounds(clothPhysX))
+                brokenCloths.Add(clothSettings.Actor);
+            clothSettings.Actor->OnPostUpdate();
+        }
+        for (auto cloth : brokenCloths)
+        {
+            // Rebuild cloth object but keep fabric ref to prevent fabric recook
+            auto fabric = &((nv::cloth::Cloth*)cloth->GetPhysicsCloth())->getFabric();
+            Fabrics[fabric].Refs++;
+            fabric->incRefCount();
+            cloth->Rebuild();
+            fabric->decRefCount();
+            if (--Fabrics[fabric].Refs == 0)
+                Fabrics.Remove(fabric);
+        }
+    }
 }
 
 #endif
@@ -1148,6 +1657,24 @@ PxMaterial* PhysicsBackendPhysX::GetDefaultMaterial()
     return DefaultMaterial;
 }
 
+void PhysicsBackendPhysX::SimulationStepDone(PxScene* scene, float dt)
+{
+#if WITH_VEHICLE
+    ScenePhysX* scenePhysX = nullptr;
+    for (auto e : Physics::Scenes)
+    {
+        if (((ScenePhysX*)e->GetPhysicsScene())->Scene == scene)
+        {
+            scenePhysX = (ScenePhysX*)e->GetPhysicsScene();
+            break;
+        }
+    }
+    if (!scenePhysX)
+        return;
+    scenePhysX->UpdateVehicles(dt);
+#endif
+}
+
 bool PhysicsBackend::Init()
 {
 #define CHECK_INIT(value, msg) if (!value) { LOG(Error, msg); return true; }
@@ -1271,6 +1798,7 @@ void PhysicsBackend::Shutdown()
 void PhysicsBackend::ApplySettings(const PhysicsSettings& settings)
 {
     _queriesHitTriggers = settings.QueriesHitTriggers;
+    _enableCCD = !settings.DisableCCD;
     _frictionCombineMode = settings.FrictionCombineMode;
     _restitutionCombineMode = settings.RestitutionCombineMode;
 
@@ -1307,6 +1835,8 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     sceneDesc.simulationEventCallback = &scenePhysX->EventsCallback;
     sceneDesc.filterShader = FilterShader;
     sceneDesc.bounceThresholdVelocity = settings.BounceThresholdVelocity;
+    if (settings.EnableEnhancedDeterminism)
+        sceneDesc.flags |= PxSceneFlag::eENABLE_ENHANCED_DETERMINISM;
     switch (settings.SolverType)
     {
     case PhysicsSolverType::ProjectedGaussSeidelIterativeSolver:
@@ -1434,451 +1964,6 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         scenePhysX->Stepper.wait(scenePhysX->Scene);
     }
 
-#if WITH_VEHICLE
-    if (scenePhysX->WheelVehicles.HasItems())
-    {
-        PROFILE_CPU_NAMED("Physics.Vehicles");
-
-        // Update vehicles steering
-        WheelVehiclesCache.Clear();
-        WheelVehiclesCache.EnsureCapacity(scenePhysX->WheelVehicles.Count());
-        int32 wheelsCount = 0;
-        for (auto wheelVehicle : scenePhysX->WheelVehicles)
-        {
-            if (!wheelVehicle->IsActiveInHierarchy() || !wheelVehicle->GetEnableSimulation())
-                continue;
-            auto drive = (PxVehicleWheels*)wheelVehicle->_vehicle;
-            ASSERT(drive);
-            WheelVehiclesCache.Add(drive);
-            wheelsCount += drive->mWheelsSimData.getNbWheels();
-
-            const float deadZone = 0.1f;
-            bool isTank = wheelVehicle->_driveType == WheeledVehicle::DriveTypes::Tank;
-            float throttle = wheelVehicle->_throttle;
-            float steering = wheelVehicle->_steering;
-            float brake = wheelVehicle->_brake;
-            float leftThrottle = wheelVehicle->_tankLeftThrottle;
-            float rightThrottle = wheelVehicle->_tankRightThrottle;
-            float leftBrake = Math::Max(wheelVehicle->_tankLeftBrake, wheelVehicle->_handBrake);
-            float rightBrake = Math::Max(wheelVehicle->_tankRightBrake, wheelVehicle->_handBrake);
-            WheeledVehicle::DriveModes vehicleDriveMode = wheelVehicle->_driveControl.DriveMode;
-
-            if (isTank)
-            {
-                // Converting default vehicle controls to tank controls.
-                if (throttle != 0 || steering != 0)
-                {
-                    leftThrottle = Math::Clamp(throttle + steering, -1.0f, 1.0f);
-                    rightThrottle = Math::Clamp(throttle - steering, -1.0f, 1.0f);
-                }
-            }
-
-            // Converting special tank drive mode to standard tank mode when is turning.
-            if (isTank && vehicleDriveMode == WheeledVehicle::DriveModes::Standard)
-            {
-                // Special inputs when turning vehicle -1 1 to left or 1 -1 to turn right
-                // to:
-                // Standard inputs when turning vehicle 0 1 to left or 1 0 to turn right
-
-                if (leftThrottle < -deadZone && rightThrottle > deadZone)
-                {
-                    leftThrottle = 0;
-                    leftBrake = 1;
-                }
-                else if (leftThrottle > deadZone && rightThrottle < -deadZone)
-                {
-                    rightThrottle = 0;
-                    rightBrake = 1;
-                }
-            }
-
-            if (wheelVehicle->UseReverseAsBrake)
-            {
-                const float invalidDirectionThreshold = 80.0f;
-                const float breakThreshold = 8.0f;
-                const float forwardSpeed = wheelVehicle->GetForwardSpeed();
-                int currentGear = wheelVehicle->GetCurrentGear();
-                // Tank tracks direction: 1 forward -1 backward 0 neutral
-                bool toForward = false;
-                toForward |= throttle > deadZone;
-                toForward |= (leftThrottle > deadZone) && (rightThrottle > deadZone); // 1  1
-
-                bool toBackward = false;
-                toBackward |= throttle < -deadZone;
-                toBackward |= (leftThrottle < -deadZone) && (rightThrottle < -deadZone); // -1 -1
-                toBackward |= (leftThrottle < -deadZone) && (rightThrottle < deadZone); // -1  0
-                toBackward |= (leftThrottle < deadZone) && (rightThrottle < -deadZone); //  0 -1
-
-                bool isTankTurning = false;
-
-                if (isTank)
-                {
-                    isTankTurning |= leftThrottle > deadZone && rightThrottle < -deadZone; //  1 -1
-                    isTankTurning |= leftThrottle < -deadZone && rightThrottle > deadZone; // -1  1
-                    isTankTurning |= leftThrottle < deadZone && rightThrottle > deadZone; //  0  1
-                    isTankTurning |= leftThrottle > deadZone && rightThrottle < deadZone; //  1  0
-                    isTankTurning |= leftThrottle < -deadZone && rightThrottle < deadZone; // -1  0
-                    isTankTurning |= leftThrottle < deadZone && rightThrottle < -deadZone; //  0 -1
-
-                    if (toForward || toBackward)
-                    {
-                        isTankTurning = false;
-                    }
-                }
-
-                // Automatic gear change when changing driving direction
-                if (Math::Abs(forwardSpeed) < invalidDirectionThreshold)
-                {
-                    int targetGear = wheelVehicle->GetTargetGear();
-                    if (toBackward && currentGear > 0 && targetGear >= 0)
-                    {
-                        currentGear = -1;
-                    }
-                    else if (!toBackward && currentGear <= 0 && targetGear <= 0)
-                    {
-                        currentGear = 1;
-                    }
-                    else if (isTankTurning && currentGear <= 0)
-                    {
-                        currentGear = 1;
-                    }
-
-                    if (wheelVehicle->GetCurrentGear() != currentGear)
-                    {
-                        wheelVehicle->SetCurrentGear(currentGear);
-                    }
-                }
-
-                // Automatic break when changing driving direction
-                if (toForward)
-                {
-                    if (forwardSpeed < -invalidDirectionThreshold)
-                    {
-                        brake = 1.0f;
-                        leftBrake = 1.0f;
-                        rightBrake = 1.0f;
-                    }
-                }
-                else if (toBackward)
-                {
-                    if (forwardSpeed > invalidDirectionThreshold)
-                    {
-                        brake = 1.0f;
-                        leftBrake = 1.0f;
-                        rightBrake = 1.0f;
-                    }
-                }
-                else
-                {
-                    if (forwardSpeed < breakThreshold && forwardSpeed > -breakThreshold && !isTankTurning) // not accelerating, very slow speed -> stop
-                    {
-                        brake = 1.0f;
-                        leftBrake = 1.0f;
-                        rightBrake = 1.0f;
-                    }
-                }
-
-                // Block throttle if user is changing driving direction
-                if ((toForward && currentGear < 0) || (toBackward && currentGear > 0))
-                {
-                    throttle = 0.0f;
-                    leftThrottle = 0;
-                    rightThrottle = 0;
-                }
-
-                throttle = Math::Abs(throttle);
-
-                if (isTank)
-                {
-                    // invert acceleration when moving to backward because tank inputs can be < 0
-                    if (currentGear < 0)
-                    {
-                        float lt = -leftThrottle;
-                        float rt = -rightThrottle;
-                        float lb = leftBrake;
-                        float rb = rightBrake;
-                        leftThrottle = rt;
-                        rightThrottle = lt;
-                        leftBrake = rb;
-                        rightBrake = lb;
-                    }
-                }
-            }
-            else
-            {
-                throttle = Math::Max(throttle, 0.0f);
-            }
-
-            // Force brake the another side track to turn faster
-            if (Math::Abs(leftThrottle) > deadZone && Math::Abs(rightThrottle) < deadZone)
-            {
-                rightBrake = 1.0f;
-            }
-            if (Math::Abs(rightThrottle) > deadZone && Math::Abs(leftThrottle) < deadZone)
-            {
-                leftBrake = 1.0f;
-            }
-
-            // Smooth input controls
-            // @formatter:off
-            PxVehiclePadSmoothingData padSmoothing =
-            {
-                {
-                    wheelVehicle->_driveControl.RiseRateAcceleration, // rise rate eANALOG_INPUT_ACCEL
-                    wheelVehicle->_driveControl.RiseRateBrake,        // rise rate eANALOG_INPUT_BRAKE
-                    wheelVehicle->_driveControl.RiseRateHandBrake,    // rise rate eANALOG_INPUT_HANDBRAKE
-                    wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_LEFT
-                    wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_RIGHT
-                },
-                {
-                    wheelVehicle->_driveControl.FallRateAcceleration, // fall rate eANALOG_INPUT_ACCEL
-                    wheelVehicle->_driveControl.FallRateBrake,        // fall rate eANALOG_INPUT_BRAKE
-                    wheelVehicle->_driveControl.FallRateHandBrake,    // fall rate eANALOG_INPUT_HANDBRAKE
-                    wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_LEFT
-                    wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_RIGHT
-                }
-            };
-            PxVehicleKeySmoothingData keySmoothing =
-            {
-                {
-                    wheelVehicle->_driveControl.RiseRateAcceleration, // rise rate eANALOG_INPUT_ACCEL
-                    wheelVehicle->_driveControl.RiseRateBrake,        // rise rate eANALOG_INPUT_BRAKE
-                    wheelVehicle->_driveControl.RiseRateHandBrake,    // rise rate eANALOG_INPUT_HANDBRAKE
-                    wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_LEFT
-                    wheelVehicle->_driveControl.RiseRateSteer,        // rise rate eANALOG_INPUT_STEER_RIGHT
-                },
-                {
-                    wheelVehicle->_driveControl.FallRateAcceleration, // fall rate eANALOG_INPUT_ACCEL
-                    wheelVehicle->_driveControl.FallRateBrake,        // fall rate eANALOG_INPUT_BRAKE
-                    wheelVehicle->_driveControl.FallRateHandBrake,    // fall rate eANALOG_INPUT_HANDBRAKE
-                    wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_LEFT
-                    wheelVehicle->_driveControl.FallRateSteer,        // fall rate eANALOG_INPUT_STEER_RIGHT
-                }
-            };
-            // @formatter:on
-
-            // Reduce steer by speed to make vehicle easier to maneuver 
-            constexpr int steerVsSpeedN = 8;
-            PxF32 steerVsForwardSpeedData[steerVsSpeedN];
-            const int lastSteerVsSpeedIndex = wheelVehicle->_driveControl.SteerVsSpeed.Count() - 1;
-            int steerVsSpeedIndex = 0;
-
-            // Steer vs speed data structure example:
-            // array:
-            // speed,   steer
-            // 1000,    1.0,
-            // 2000,    0.7,
-            // 5000,    0.5,
-            // ..
-
-            // fill the steerVsForwardSpeedData with the speed and steer
-            for (int32 i = 0; i < 8; i += 2)
-            {
-                steerVsForwardSpeedData[i] = wheelVehicle->_driveControl.SteerVsSpeed[steerVsSpeedIndex].Speed;
-                steerVsForwardSpeedData[i + 1] = wheelVehicle->_driveControl.SteerVsSpeed[steerVsSpeedIndex].Steer;
-                steerVsSpeedIndex = Math::Min(steerVsSpeedIndex + 1, lastSteerVsSpeedIndex);
-            }
-            const PxFixedSizeLookupTable<steerVsSpeedN> steerVsForwardSpeed(steerVsForwardSpeedData, 4);
-
-            if (wheelVehicle->UseAnalogSteering)
-            {
-                switch (wheelVehicle->_driveTypeCurrent)
-                {
-                case WheeledVehicle::DriveTypes::Drive4W:
-                {
-                    PxVehicleDrive4WRawInputData rawInputData;
-                    rawInputData.setAnalogAccel(throttle);
-                    rawInputData.setAnalogBrake(brake);
-                    rawInputData.setAnalogSteer(wheelVehicle->_steering);
-                    rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
-                    PxVehicleDrive4WSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, scenePhysX->LastDeltaTime, false, *(PxVehicleDrive4W*)drive);
-                    break;
-                }
-                case WheeledVehicle::DriveTypes::DriveNW:
-                {
-                    PxVehicleDriveNWRawInputData rawInputData;
-                    rawInputData.setAnalogAccel(throttle);
-                    rawInputData.setAnalogBrake(brake);
-                    rawInputData.setAnalogSteer(wheelVehicle->_steering);
-                    rawInputData.setAnalogHandbrake(wheelVehicle->_handBrake);
-                    PxVehicleDriveNWSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, steerVsForwardSpeed, rawInputData, scenePhysX->LastDeltaTime, false, *(PxVehicleDriveNW*)drive);
-                    break;
-                }
-                case WheeledVehicle::DriveTypes::Tank:
-                {
-                    PxVehicleDriveTankRawInputData driveMode = vehicleDriveMode == WheeledVehicle::DriveModes::Standard ? PxVehicleDriveTankControlModel::eSTANDARD : PxVehicleDriveTankControlModel::eSPECIAL;
-                    PxVehicleDriveTankRawInputData rawInputData = PxVehicleDriveTankRawInputData(driveMode);
-                    rawInputData.setAnalogAccel(Math::Max(Math::Abs(leftThrottle), Math::Abs(rightThrottle)));
-                    rawInputData.setAnalogLeftBrake(leftBrake);
-                    rawInputData.setAnalogRightBrake(rightBrake);
-                    rawInputData.setAnalogLeftThrust(leftThrottle);
-                    rawInputData.setAnalogRightThrust(rightThrottle);
-                    PxVehicleDriveTankSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, rawInputData, scenePhysX->LastDeltaTime, *(PxVehicleDriveTank*)drive);
-                    break;
-                }
-                }
-            }
-            else
-            {
-                switch (wheelVehicle->_driveTypeCurrent)
-                {
-                case WheeledVehicle::DriveTypes::Drive4W:
-                {
-                    PxVehicleDrive4WRawInputData rawInputData;
-                    rawInputData.setDigitalAccel(throttle > deadZone);
-                    rawInputData.setDigitalBrake(brake > deadZone);
-                    rawInputData.setDigitalSteerLeft(wheelVehicle->_steering < -deadZone);
-                    rawInputData.setDigitalSteerRight(wheelVehicle->_steering > deadZone);
-                    rawInputData.setDigitalHandbrake(wheelVehicle->_handBrake > deadZone);
-                    PxVehicleDrive4WSmoothDigitalRawInputsAndSetAnalogInputs(keySmoothing, steerVsForwardSpeed, rawInputData, scenePhysX->LastDeltaTime, false, *(PxVehicleDrive4W*)drive);
-                    break;
-                }
-                case WheeledVehicle::DriveTypes::DriveNW:
-                {
-                    PxVehicleDriveNWRawInputData rawInputData;
-                    rawInputData.setDigitalAccel(throttle > deadZone);
-                    rawInputData.setDigitalBrake(brake > deadZone);
-                    rawInputData.setDigitalSteerLeft(wheelVehicle->_steering < -deadZone);
-                    rawInputData.setDigitalSteerRight(wheelVehicle->_steering > deadZone);
-                    rawInputData.setDigitalHandbrake(wheelVehicle->_handBrake > deadZone);
-                    PxVehicleDriveNWSmoothDigitalRawInputsAndSetAnalogInputs(keySmoothing, steerVsForwardSpeed, rawInputData, scenePhysX->LastDeltaTime, false, *(PxVehicleDriveNW*)drive);
-                    break;
-                }
-                case WheeledVehicle::DriveTypes::Tank:
-                {
-                    // Convert analog inputs to digital inputs
-                    leftThrottle = Math::Round(leftThrottle);
-                    rightThrottle = Math::Round(rightThrottle);
-                    leftBrake = Math::Round(leftBrake);
-                    rightBrake = Math::Round(rightBrake);
-
-                    PxVehicleDriveTankRawInputData driveMode = vehicleDriveMode == WheeledVehicle::DriveModes::Standard ? PxVehicleDriveTankControlModel::eSTANDARD : PxVehicleDriveTankControlModel::eSPECIAL;
-                    PxVehicleDriveTankRawInputData rawInputData = PxVehicleDriveTankRawInputData(driveMode);
-                    rawInputData.setAnalogAccel(Math::Max(Math::Abs(leftThrottle), Math::Abs(rightThrottle)));
-                    rawInputData.setAnalogLeftBrake(leftBrake);
-                    rawInputData.setAnalogRightBrake(rightBrake);
-                    rawInputData.setAnalogLeftThrust(leftThrottle);
-                    rawInputData.setAnalogRightThrust(rightThrottle);
-
-                    // Needs to pass analog values to vehicle to maintain current movement direction because digital inputs accept only true/false values to tracks thrust instead of -1 to 1 
-                    PxVehicleDriveTankSmoothAnalogRawInputsAndSetAnalogInputs(padSmoothing, rawInputData, scenePhysX->LastDeltaTime, *(PxVehicleDriveTank*)drive);
-                    break;
-                }
-                }
-            }
-        }
-
-        // Update batches queries cache
-        if (wheelsCount > scenePhysX->WheelRaycastBatchQuerySize)
-        {
-            if (scenePhysX->WheelRaycastBatchQuery)
-                scenePhysX->WheelRaycastBatchQuery->release();
-            scenePhysX->WheelRaycastBatchQuerySize = wheelsCount;
-            scenePhysX->WheelRaycastBatchQuery = PxCreateBatchQueryExt(*scenePhysX->Scene, &WheelRaycastFilter, wheelsCount, wheelsCount, 0, 0, 0, 0);
-        }
-
-        // Update lookup table that maps wheel type into the surface friction
-        if (!WheelTireFrictions || WheelTireFrictionsDirty)
-        {
-            WheelTireFrictionsDirty = false;
-            RELEASE_PHYSX(WheelTireFrictions);
-            Array<PxMaterial*, InlinedAllocation<8>> materials;
-            materials.Resize(Math::Min<int32>((int32)PhysX->getNbMaterials(), PxVehicleDrivableSurfaceToTireFrictionPairs::eMAX_NB_SURFACE_TYPES));
-            PxMaterial** materialsPtr = materials.Get();
-            PhysX->getMaterials(materialsPtr, materials.Count(), 0);
-            Array<PxVehicleDrivableSurfaceType, InlinedAllocation<8>> tireTypes;
-            tireTypes.Resize(materials.Count());
-            PxVehicleDrivableSurfaceType* tireTypesPtr = tireTypes.Get();
-            for (int32 i = 0; i < tireTypes.Count(); i++)
-                tireTypesPtr[i].mType = i;
-            WheelTireFrictions = PxVehicleDrivableSurfaceToTireFrictionPairs::allocate(WheelTireTypes.Count(), materials.Count());
-            WheelTireFrictions->setup(WheelTireTypes.Count(), materials.Count(), (const PxMaterial**)materialsPtr, tireTypesPtr);
-            for (int32 material = 0; material < materials.Count(); material++)
-            {
-                float friction = materialsPtr[material]->getStaticFriction();
-                for (int32 tireType = 0; tireType < WheelTireTypes.Count(); tireType++)
-                {
-                    float scale = WheelTireTypes[tireType];
-                    WheelTireFrictions->setTypePairFriction(material, tireType, friction * scale);
-                }
-            }
-        }
-
-        // Setup cache for wheel states
-        WheelVehiclesResultsPerVehicle.Resize(WheelVehiclesCache.Count(), false);
-        WheelVehiclesResultsPerWheel.Resize(wheelsCount, false);
-        wheelsCount = 0;
-        for (int32 i = 0, ii = 0; i < scenePhysX->WheelVehicles.Count(); i++)
-        {
-            auto wheelVehicle = scenePhysX->WheelVehicles[i];
-            if (!wheelVehicle->IsActiveInHierarchy() || !wheelVehicle->GetEnableSimulation())
-                continue;
-            auto drive = (PxVehicleWheels*)scenePhysX->WheelVehicles[ii]->_vehicle;
-            auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
-            ii++;
-            perVehicle.nbWheelQueryResults = drive->mWheelsSimData.getNbWheels();
-            perVehicle.wheelQueryResults = WheelVehiclesResultsPerWheel.Get() + wheelsCount;
-            wheelsCount += perVehicle.nbWheelQueryResults;
-        }
-
-        // Update vehicles
-        if (WheelVehiclesCache.Count() != 0)
-        {
-            PxVehicleSuspensionRaycasts(scenePhysX->WheelRaycastBatchQuery, WheelVehiclesCache.Count(), WheelVehiclesCache.Get());
-            PxVehicleUpdates(scenePhysX->LastDeltaTime, scenePhysX->Scene->getGravity(), *WheelTireFrictions, WheelVehiclesCache.Count(), WheelVehiclesCache.Get(), WheelVehiclesResultsPerVehicle.Get());
-        }
-
-        // Synchronize state
-        for (int32 i = 0, ii = 0; i < scenePhysX->WheelVehicles.Count(); i++)
-        {
-            auto wheelVehicle = scenePhysX->WheelVehicles[i];
-            if (!wheelVehicle->IsActiveInHierarchy() || !wheelVehicle->GetEnableSimulation())
-                continue;
-            auto drive = WheelVehiclesCache[ii];
-            auto& perVehicle = WheelVehiclesResultsPerVehicle[ii];
-            ii++;
-#if PHYSX_VEHICLE_DEBUG_TELEMETRY
-            LOG(Info, "Vehicle[{}] Gear={}, RPM={}", ii, wheelVehicle->GetCurrentGear(), (int32)wheelVehicle->GetEngineRotationSpeed());
-#endif
-
-            // Update wheels
-            for (int32 j = 0; j < wheelVehicle->_wheelsData.Count(); j++)
-            {
-                auto& wheelData = wheelVehicle->_wheelsData[j];
-                auto& perWheel = perVehicle.wheelQueryResults[j];
-#if PHYSX_VEHICLE_DEBUG_TELEMETRY
-                LOG(Info, "Vehicle[{}] Wheel[{}] longitudinalSlip={}, lateralSlip={}, suspSpringForce={}", ii, j, Utilities::RoundTo2DecimalPlaces(perWheel.longitudinalSlip), Utilities::RoundTo2DecimalPlaces(perWheel.lateralSlip), (int32)perWheel.suspSpringForce);
-#endif
-
-                auto& state = wheelData.State;
-                state.IsInAir = perWheel.isInAir;
-                state.TireContactCollider = perWheel.tireContactShape ? static_cast<PhysicsColliderActor*>(perWheel.tireContactShape->userData) : nullptr;
-                state.TireContactPoint = P2C(perWheel.tireContactPoint) + scenePhysX->Origin;
-                state.TireContactNormal = P2C(perWheel.tireContactNormal);
-                state.TireFriction = perWheel.tireFriction;
-                state.SteerAngle = RadiansToDegrees * perWheel.steerAngle;
-                state.RotationAngle = -RadiansToDegrees * drive->mWheelsDynData.getWheelRotationAngle(j);
-                state.SuspensionOffset = perWheel.suspJounce;
-#if USE_EDITOR
-                state.SuspensionTraceStart = P2C(perWheel.suspLineStart) + scenePhysX->Origin;
-                state.SuspensionTraceEnd = P2C(perWheel.suspLineStart + perWheel.suspLineDir * perWheel.suspLineLength) + scenePhysX->Origin;
-#endif
-
-                if (!wheelData.Collider)
-                    continue;
-                auto shape = (PxShape*)wheelData.Collider->GetPhysicsShape();
-
-                // Update wheel collider transformation
-                auto localPose = shape->getLocalPose();
-                Transform t = wheelData.Collider->GetLocalTransform();
-                t.Orientation = Quaternion::Euler(-state.RotationAngle, state.SteerAngle, 0) * wheelData.LocalOrientation;
-                t.Translation = P2C(localPose.p) / wheelVehicle->GetScale() - t.Orientation * wheelData.Collider->GetCenter();
-                wheelData.Collider->SetLocalTransform(t);
-            }
-        }
-    }
-#endif
-
     {
         PROFILE_CPU_NAMED("Physics.FlushActiveTransforms");
 
@@ -1900,55 +1985,8 @@ void PhysicsBackend::EndSimulateScene(void* scene)
     }
 
 #if WITH_CLOTH
-    nv::cloth::Solver* clothSolver = scenePhysX->ClothSolver;
-    if (clothSolver && scenePhysX->ClothsList.Count() != 0)
-    {
-        PROFILE_CPU_NAMED("Physics.Cloth");
-
-        {
-            PROFILE_CPU_NAMED("Pre");
-            Function<void(int32)> job;
-            job.Bind<ScenePhysX, &ScenePhysX::PreSimulateCloth>(scenePhysX);
-            JobSystem::Execute(job, scenePhysX->ClothsList.Count());
-        }
-
-        {
-            PROFILE_CPU_NAMED("Simulation");
-            if (clothSolver->beginSimulation(scenePhysX->LastDeltaTime))
-            {
-                Function<void(int32)> job;
-                job.Bind<ScenePhysX, &ScenePhysX::SimulateCloth>(scenePhysX);
-                JobSystem::Execute(job, clothSolver->getSimulationChunkCount());
-                clothSolver->endSimulation();
-            }
-        }
-
-        {
-            PROFILE_CPU_NAMED("Post");
-            ScopeLock lock(ClothLocker);
-            Array<Cloth*> brokenCloths;
-            for (auto clothPhysX : scenePhysX->ClothsList)
-            {
-                const auto& clothSettings = Cloths[clothPhysX];
-                if (clothSettings.Culled)
-                    continue;
-                if (clothSettings.UpdateBounds(clothPhysX))
-                    brokenCloths.Add(clothSettings.Actor);
-                clothSettings.Actor->OnPostUpdate();
-            }
-            for (auto cloth : brokenCloths)
-            {
-                // Rebuild cloth object but keep fabric ref to prevent fabric recook
-                auto fabric = &((nv::cloth::Cloth*)cloth->_cloth)->getFabric();
-                Fabrics[fabric].Refs++;
-                fabric->incRefCount();
-                cloth->Rebuild();
-                fabric->decRefCount();
-                if (--Fabrics[fabric].Refs == 0)
-                    Fabrics.Remove(fabric);
-            }
-        }
-    }
+    scenePhysX->UpdateCloths(scenePhysX->LastDeltaTime);
+#endif
 
     {
         PROFILE_CPU_NAMED("Physics.SendEvents");
@@ -1956,7 +1994,9 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         scenePhysX->EventsCallback.SendCollisionEvents();
         scenePhysX->EventsCallback.SendJointEvents();
     }
-#endif
+
+    // Clear delta after simulation ended
+    scenePhysX->LastDeltaTime = 0.0f;
 }
 
 Vector3 PhysicsBackend::GetSceneGravity(void* scene)
@@ -2825,7 +2865,14 @@ float PhysicsBackend::ComputeShapeSqrDistanceToPoint(void* shape, const Vector3&
 {
     auto shapePhysX = (PxShape*)shape;
     const PxTransform trans(C2P(position), C2P(orientation));
+#if USE_LARGE_WORLDS
+    PxVec3 closestPointPx;
+    float result = PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry(), trans, &closestPointPx);
+    *closestPoint = P2C(closestPointPx);
+    return result;
+#else
     return PxGeometryQuery::pointDistance(C2P(point), shapePhysX->getGeometry(), trans, (PxVec3*)closestPoint);
+#endif
 }
 
 bool PhysicsBackend::RayCastShape(void* shape, const Vector3& position, const Quaternion& orientation, const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance)
@@ -3491,39 +3538,13 @@ PxVehicleAntiRollBarData CreatePxPxVehicleAntiRollBarData(const WheeledVehicle::
     return antiRollBar;
 }
 
-bool SortWheelsFrontToBack(WheeledVehicle::Wheel const& a, WheeledVehicle::Wheel const& b)
+bool SortWheelsFrontToBack(WheeledVehicle::Wheel* const& a, WheeledVehicle::Wheel* const& b)
 {
-    return a.Collider && b.Collider && a.Collider->GetLocalPosition().Z > b.Collider->GetLocalPosition().Z;
+    return a->Collider && b->Collider && a->Collider->GetLocalPosition().Z > b->Collider->GetLocalPosition().Z;
 }
 
 void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
 {
-    // Physx vehicles needs to have all wheels sorted to apply controls correctly.
-    // Its needs to know what wheels are on front to turn wheel to correctly side
-    // and needs to know wheel side to apply throttle to correctly direction for each track when using tanks.
-    // Anti roll bars needs to have all wheels sorted to get correctly wheel index too.
-    if (actor->_driveType != WheeledVehicle::DriveTypes::NoDrive)
-    {
-        Sorting::QuickSort(actor->_wheels.Get(), actor->_wheels.Count(), SortWheelsFrontToBack);
-
-        // Sort wheels by side
-        if (actor->_driveType == WheeledVehicle::DriveTypes::Tank)
-        {
-            for (int32 i = 0; i < actor->_wheels.Count() - 1; i += 2)
-            {
-                auto a = actor->_wheels[i];
-                auto b = actor->_wheels[i + 1];
-                if (!a.Collider || !b.Collider)
-                    continue;
-                if (a.Collider->GetLocalPosition().X > b.Collider->GetLocalPosition().X)
-                {
-                    actor->_wheels[i] = b;
-                    actor->_wheels[i + 1] = a;
-                }
-            }
-        }
-    }
-
     // Get wheels
     Array<WheeledVehicle::Wheel*, FixedAllocation<PX_MAX_NB_WHEELS>> wheels;
     for (auto& wheel : actor->_wheels)
@@ -3554,6 +3575,33 @@ void* PhysicsBackend::CreateVehicle(WheeledVehicle* actor)
         // No woman, no cry
         return nullptr;
     }
+
+    // Physx vehicles needs to have all wheels sorted to apply controls correctly.
+    // Its needs to know what wheels are on front to turn wheel to correctly side
+    // and needs to know wheel side to apply throttle to correctly direction for each track when using tanks.
+    // Anti roll bars needs to have all wheels sorted to get correctly wheel index too.
+    if (actor->_driveType != WheeledVehicle::DriveTypes::NoDrive)
+    {
+        Sorting::QuickSort(wheels.Get(), wheels.Count(), SortWheelsFrontToBack);
+
+        // Sort wheels by side
+        if (actor->_driveType == WheeledVehicle::DriveTypes::Tank)
+        {
+            for (int32 i = 0; i < wheels.Count() - 1; i += 2)
+            {
+                auto a = wheels[i];
+                auto b = wheels[i + 1];
+                if (!a->Collider || !b->Collider)
+                    continue;
+                if (a->Collider->GetLocalPosition().X > b->Collider->GetLocalPosition().X)
+                {
+                    wheels[i] = b;
+                    wheels[i + 1] = a;
+                }
+            }
+        }
+    }
+    
     actor->_wheelsData.Resize(wheels.Count());
     auto actorPhysX = (PxRigidDynamic*)actor->GetPhysicsActor();
 
@@ -4565,8 +4613,22 @@ void PhysicsBackend::DestroyController(void* controller)
     controllerPhysX->release();
 }
 
+void PhysicsBackend::DestroyMaterial(void* material)
+{
+    if (!PhysX)
+        return; // Skip when called by Content unload after Physics is disposed
+    ASSERT_LOW_LAYER(material);
+    auto materialPhysX = (PxMaterial*)material;
+    materialPhysX->userData = nullptr;
+    FlushLocker.Lock();
+    DeleteObjects.Add(materialPhysX);
+    FlushLocker.Unlock();
+}
+
 void PhysicsBackend::DestroyObject(void* object)
 {
+    if (!PhysX)
+        return; // Skip when called by Content unload after Physics is disposed
     ASSERT_LOW_LAYER(object);
     auto objectPhysX = (PxBase*)object;
     FlushLocker.Lock();

@@ -171,7 +171,7 @@ namespace FlaxEngine
         /// <param name="ray">The ray to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        [Obsolete("Deprecated in v1.4")]
+        [Obsolete("Use Intersects with 'out Real distance' parameter instead")]
         public bool Intersects(ref Ray ray, out float distance)
         {
             var result = CollisionsHelper.RayIntersectsBox(ref ray, ref this, out Real dst);
@@ -474,9 +474,9 @@ namespace FlaxEngine
             var ya = up * box.Minimum.Y;
             var yb = up * box.Maximum.Y;
 
-            Double3 backward = transform.Backward;
-            var za = backward * box.Minimum.Z;
-            var zb = backward * box.Maximum.Z;
+            Double3 forward = transform.Forward;
+            var za = forward * box.Minimum.Z;
+            var zb = forward * box.Maximum.Z;
 
             var translation = transform.TranslationVector;
             var min = Vector3.Min(xa, xb) + Vector3.Min(ya, yb) + Vector3.Min(za, zb) + translation;
@@ -514,9 +514,9 @@ namespace FlaxEngine
             var ya = up * box.Minimum.Y;
             var yb = up * box.Maximum.Y;
 
-            Double3 backward = transform.Backward;
-            var za = backward * box.Minimum.Z;
-            var zb = backward * box.Maximum.Z;
+            Double3 forward = transform.Forward;
+            var za = forward * box.Minimum.Z;
+            var zb = forward * box.Maximum.Z;
 
             var min = Vector3.Min(xa, xb) + Vector3.Min(ya, yb) + Vector3.Min(za, zb) + transform.Translation;
             var max = Vector3.Max(xa, xb) + Vector3.Max(ya, yb) + Vector3.Max(za, zb) + transform.Translation;

@@ -3,6 +3,9 @@
 #ifndef __MATH__
 #define __MATH__
 
+#define RadiansToDegrees (180.0f / PI)
+#define DegreesToRadians (PI / 180.0f)
+
 uint NextPow2(uint value)
 {
     uint mask = (1 << firstbithigh(value)) - 1;

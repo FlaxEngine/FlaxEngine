@@ -166,6 +166,25 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override string Name { get; } = Utilities.Utils.GetPropertyNameUI(typeof(T).Name);
 
+        private SpriteHandle _thumbnail;
+
+        /// <summary>
+        /// Default Constructor.
+        /// </summary>
+        public SpawnableJsonAssetProxy()
+        {
+            _thumbnail = SpriteHandle.Invalid;
+        }
+        
+        /// <summary>
+        /// Constructor with overriden thumbnail.
+        /// </summary>
+        /// <param name="thumbnail">The thumbnail to use.</param>
+        public SpawnableJsonAssetProxy(SpriteHandle thumbnail)
+        {
+            _thumbnail = thumbnail;
+        }
+
         /// <inheritdoc />
         public override bool CanCreate(ContentFolder targetLocation)
         {
@@ -176,6 +195,12 @@ namespace FlaxEditor.Content
         public override void Create(string outputPath, object arg)
         {
             Editor.SaveJsonAsset(outputPath, new T());
+        }
+        
+        /// <inheritdoc />
+        public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
+        {
+            return _thumbnail.IsValid ? new JsonAssetItem(path, id, typeName, _thumbnail) : base.ConstructItem(path, typeName, ref id);
         }
 
         /// <inheritdoc />

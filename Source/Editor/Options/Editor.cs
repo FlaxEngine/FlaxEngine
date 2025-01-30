@@ -1,7 +1,9 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using System.Text;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
+using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
 
@@ -31,11 +33,33 @@ namespace FlaxEditor.Options
 
         private void OnResetButtonClicked()
         {
-            var obj = new T();
-            var str = JsonSerializer.Serialize(obj);
-            JsonSerializer.Deserialize(Values[0], str);
-            SetValue(Values[0]);
-            Refresh();
+            var editorClassName = typeof(T).Name;
+            
+            var editorName = new StringBuilder();
+            editorName.Append(editorClassName[0]);
+            for (var i = 1; i < editorClassName.Length; i++)
+            {
+                // Whenever there is an uppercase letter, add a space to make it more pretty for the end user
+                if (char.IsUpper(editorClassName[i]))
+                {
+                    editorName.Append(' ');
+                }
+                editorName.Append(editorClassName[i]);
+            }
+            
+            var result = MessageBox.Show($"Are you sure you want to reset \"{editorName}\" to default values?", 
+                                         "Reset values?",
+                                         MessageBoxButtons.YesNo
+                                         );
+            
+            if (result == DialogResult.Yes || result == DialogResult.OK)
+            {
+                var obj = new T();
+                var str = JsonSerializer.Serialize(obj);
+                JsonSerializer.Deserialize(Values[0], str);
+                SetValue(Values[0]);
+                Refresh();
+            }
         }
     }
 }

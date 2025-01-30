@@ -22,7 +22,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// <summary>
         /// The parent window.
         /// </summary>
-        protected Window _window;
+        protected volatile Window _window;
 
         /// <summary>
         /// The dialog result.

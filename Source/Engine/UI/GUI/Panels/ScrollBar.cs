@@ -100,6 +100,7 @@ namespace FlaxEngine.GUI
                 if (value > _maximum)
                     throw new ArgumentOutOfRangeException();
                 _minimum = value;
+                UpdateThumb();
                 if (Value < _minimum)
                     Value = _minimum;
             }
@@ -116,6 +117,7 @@ namespace FlaxEngine.GUI
                 if (value < _minimum)
                     throw new ArgumentOutOfRangeException();
                 _maximum = value;
+                UpdateThumb();
                 if (Value > _maximum)
                     Value = _maximum;
             }
@@ -346,6 +348,8 @@ namespace FlaxEngine.GUI
                             
                     // https://easings.net/#easeOutSine
                     var easedProgress = Mathf.Sin((progress * Mathf.Pi) / 2);
+                    if (progress >= 1.0f)
+                        easedProgress = 1.0f;
                     value = Mathf.Lerp(_startValue, _targetValue, easedProgress);
 
                     _scrollAnimationProgress = progress;

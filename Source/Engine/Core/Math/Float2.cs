@@ -184,7 +184,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a value indicting whether this instance is normalized.
         /// </summary>
-        public bool IsNormalized => Mathf.IsOne(X * X + Y * Y);
+        public bool IsNormalized => Mathf.Abs((X * X + Y * Y) - 1.0f) < 1e-4f;
 
         /// <summary>
         /// Gets a value indicting whether this vector is zero
@@ -863,6 +863,16 @@ namespace FlaxEngine
         public static Float2 Ceil(Float2 v)
         {
             return new Float2(Mathf.Ceil(v.X), Mathf.Ceil(v.Y));
+        }
+
+        /// <summary>
+        /// Returns the vector with components containing the smallest integer smaller to or equal to the original value.
+        /// </summary>
+        /// <param name="v">The value.</param>
+        /// <returns>The result.</returns>
+        public static Float2 Floor(Float2 v)
+        {
+            return new Float2(Mathf.Floor(v.X), Mathf.Floor(v.Y));
         }
 
         /// <summary>

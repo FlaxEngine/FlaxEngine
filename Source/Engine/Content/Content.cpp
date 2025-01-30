@@ -9,6 +9,7 @@
 #include "Storage/JsonStorageProxy.h"
 #include "Factories/IAssetFactory.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/LogContext.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Engine/EngineService.h"
@@ -970,6 +971,7 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
         if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()) && !result->Is(type))
         {
             LOG(Warning, "Different loaded asset type! Asset: \'{0}\'. Expected type: {1}", result->ToString(), type.ToString());
+            LogContext::Print(LogType::Warning);
             return nullptr;
         }
         return result;
@@ -1004,6 +1006,7 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     if (!GetAssetInfo(id, assetInfo))
     {
         LOG(Warning, "Invalid or missing asset ({0}, {1}).", id, type.ToString());
+        LogContext::Print(LogType::Warning);
         LOAD_FAILED();
     }
 #if ASSETS_LOADING_EXTRA_VERIFICATION
@@ -1064,7 +1067,7 @@ bool findAsset(const Guid& id, const String& directory, Array<String>& tmpCache,
 {
     // Get all asset files
     tmpCache.Clear();
-    if (FileSystem::DirectoryGetFiles(tmpCache, directory, TEXT("*"), DirectorySearchOption::AllDirectories))
+    if (FileSystem::DirectoryGetFiles(tmpCache, directory))
     {
         if (FileSystem::DirectoryExists(directory))
             LOG(Error, "Cannot query files in folder '{0}'.", directory);

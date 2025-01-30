@@ -328,6 +328,19 @@ namespace FlaxEditor.Windows
 
                         group.Object(new ReadOnlyValueContainer(platformObj));
 
+                        layout.Space(2);
+                        var openOutputButton = layout.Button("Open output folder").Button;
+                        openOutputButton.TooltipText = "Opens the defined out folder if the path exists.";
+                        openOutputButton.Clicked += () =>
+                        {
+                            string output = StringUtils.ConvertRelativePathToAbsolute(Globals.ProjectFolder, StringUtils.NormalizePath(proxy.PerPlatformOptions[_platform].Output));
+                            if (Directory.Exists(output))
+                                FlaxEngine.FileSystem.ShowFileExplorer(output);
+                            else
+                                FlaxEditor.Editor.LogWarning($"Can not open path: {output} because it does not exist.");
+                        };
+                        layout.Space(2);
+
                         _buildButton = layout.Button("Build").Button;
                         _buildButton.Clicked += OnBuildClicked;
                     }
@@ -767,13 +780,6 @@ namespace FlaxEditor.Windows
                         Platform = BuildPlatform.Windows64,
                         Mode = BuildConfiguration.Development,
                     },
-                    new BuildTarget
-                    {
-                        Name = "Windows 32bit",
-                        Output = "Output\\Win32",
-                        Platform = BuildPlatform.Windows32,
-                        Mode = BuildConfiguration.Development,
-                    },
                 }
             };
             _data = presets;
@@ -793,9 +799,9 @@ namespace FlaxEditor.Windows
                 Array.Copy(_data[_selectedPresetIndex].Targets, targets, count);
             targets[count] = new BuildTarget
             {
-                Name = "Xbox One",
-                Output = "Output\\XboxOne",
-                Platform = BuildPlatform.XboxOne,
+                Name = "Windows 64bit",
+                Output = "Output\\Win64",
+                Platform = BuildPlatform.Windows64,
                 Mode = BuildConfiguration.Development,
             };
             _data[_selectedPresetIndex].Targets = targets;

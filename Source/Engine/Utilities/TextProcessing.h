@@ -9,13 +9,13 @@
 #include "Engine/Platform/StringUtils.h"
 
 /// <summary>
-/// Helper class to fast ANSI text processing (tokenization, reading, streaming etc.)
+/// Helper class to fast ANSI text processing (tokenization, reading, streaming etc.).
 /// </summary>
 class FLAXENGINE_API TextProcessing : public NonCopyable
 {
 public:
     /// <summary>
-    /// Separator structure
+    /// Separator structure.
     /// </summary>
     struct SeparatorData
     {
@@ -200,18 +200,21 @@ public:
 
 public:
     /// <summary>
-    /// Array with all token separators
+    /// Array with all token separators.
     /// </summary>
     Array<SeparatorData> Separators;
 
     /// /// <summary>
-    /// Array with all white characters
+    /// Array with all white characters.
     /// </summary>
     Array<char> Whitespaces;
 
+    SeparatorData SingleLineComment;
+    SeparatorData MultiLineCommentSeparator;
+
 public:
     /// <summary>
-    /// Set separators and white chars for HLSL language
+    /// Sets up separators and white chars for HLSL language.
     /// </summary>
     void Setup_HLSL();
 
@@ -219,25 +222,22 @@ public:
     /// <summary>
     /// Returns true if there are still characters in the buffer and can read data from it
     /// </summary>
-    /// <returns>True if can read data, otherwise false</returns>
     FORCE_INLINE bool CanRead() const
     {
         return _position < _length;
     }
 
     /// <summary>
-    /// Peeks single character without moving forward in the buffer
+    /// Peeks a single character without moving forward in the buffer.
     /// </summary>
-    /// <returns>First character</returns>
     FORCE_INLINE char PeekChar() const
     {
         return *_cursor;
     }
 
     /// <summary>
-    /// Gets current line number
+    /// Gets the current line number.
     /// </summary>
-    /// <returns>Current line number</returns>
     FORCE_INLINE int32 GetLine() const
     {
         return _line;

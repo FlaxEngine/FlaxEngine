@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-using System.Collections.Generic;
 using System.ComponentModel;
 using FlaxEditor.CustomEditors;
 using FlaxEngine;
@@ -96,14 +95,6 @@ namespace FlaxEditor.Windows
                 set => Graphics.ShadowMapsQuality = value;
             }
 
-            [DefaultValue(false)]
-            [EditorOrder(1320), EditorDisplay("Quality", "Allow CSM Blending"), Tooltip("Enables cascades splits blending for directional light shadows.")]
-            public bool AllowCSMBlending
-            {
-                get => Graphics.AllowCSMBlending;
-                set => Graphics.AllowCSMBlending = value;
-            }
-
             [NoSerialize, DefaultValue(1.0f), Limit(0.05f, 5, 0)]
             [EditorOrder(1400), EditorDisplay("Quality")]
             [Tooltip("The scale of the rendering resolution relative to the output dimensions. If lower than 1 the scene and postprocessing will be rendered at a lower resolution and upscaled to the output backbuffer.")]
@@ -177,7 +168,7 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnInit()
         {
-            if (Editor.ProjectCache.TryGetCustomData(_optionsName, out var options) && !string.IsNullOrEmpty(options))
+            if (Editor.ProjectCache.TryGetCustomData(_optionsName, out string options) && !string.IsNullOrEmpty(options))
             {
                 // Load cached settings
                 JsonSerializer.Deserialize(_viewModel, options);

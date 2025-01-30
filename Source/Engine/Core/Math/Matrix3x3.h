@@ -175,32 +175,32 @@ public:
         M13 = -value.Z;
     }
 
-    // Gets the forward Float3 of the matrix; that is -M31, -M32, and -M33.
+    // Gets the forward Float3 of the matrix; that is M31, M32, and M33.
     Float3 GetForward() const
     {
         return -Float3(M31, M32, M33);
     }
 
-    // Sets the forward Float3 of the matrix; that is -M31, -M32, and -M33.
+    // Sets the forward Float3 of the matrix; that is M31, M32, and M33.
     void SetForward(const Float3& value)
-    {
-        M31 = -value.X;
-        M32 = -value.Y;
-        M33 = -value.Z;
-    }
-
-    // Gets the backward Float3 of the matrix; that is M31, M32, and M33.
-    Float3 GetBackward() const
-    {
-        return Float3(M31, M32, M33);
-    }
-
-    // Sets the backward Float3 of the matrix; that is M31, M32, and M33.
-    void SetBackward(const Float3& value)
     {
         M31 = value.X;
         M32 = value.Y;
         M33 = value.Z;
+    }
+
+    // Gets the backward Float3 of the matrix; that is -M31, -M32, and -M33.
+    Float3 GetBackward() const
+    {
+        return Float3(-M31, -M32, -M33);
+    }
+
+    // Sets the backward Float3 of the matrix; that is -M31, -M32, and -M33.
+    void SetBackward(const Float3& value)
+    {
+        M31 = -value.X;
+        M32 = -value.Y;
+        M33 = -value.Z;
     }
 
     // Gets the first row in the matrix; that is M11, M12 and M13.

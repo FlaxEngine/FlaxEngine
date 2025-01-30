@@ -61,6 +61,8 @@ namespace FlaxEditor.Content.GUI
         private bool _isRubberBandSpanning;
         private Float2 _mousePressLocation;
         private Rectangle _rubberBandRectangle;
+        private bool _isCutting;
+        private List<ContentItem> _cutItems = new List<ContentItem>();
 
         private bool _validDragOver;
         private DragActors _dragActors;
@@ -83,9 +85,9 @@ namespace FlaxEditor.Content.GUI
         public event Action<List<ContentItem>> OnDelete;
 
         /// <summary>
-        /// Called when user wants to paste the files/folders.
+        /// Called when user wants to paste the files/folders. Bool is for cutting.
         /// </summary>
-        public event Action<string[]> OnPaste;
+        public event Action<string[], bool> OnPaste;
 
         /// <summary>
         /// Called when user wants to duplicate the item(s).
@@ -210,6 +212,12 @@ namespace FlaxEditor.Content.GUI
                 }),
                 new InputActionsContainer.Binding(options => options.Copy, Copy),
                 new InputActionsContainer.Binding(options => options.Paste, Paste),
+                new InputActionsContainer.Binding(options => options.Cut, Cut),
+                new InputActionsContainer.Binding(options => options.Undo, () =>
+                {
+                    if (_isCutting)
+                        UpdateContentItemCut(false);
+                }),
                 new InputActionsContainer.Binding(options => options.Duplicate, Duplicate),
             });
         }
@@ -462,6 +470,7 @@ namespace FlaxEditor.Content.GUI
         /// </summary>
         public void Duplicate()
         {
+            UpdateContentItemCut(false);
             OnDuplicate?.Invoke(_selection);
         }
 
@@ -475,6 +484,7 @@ namespace FlaxEditor.Content.GUI
 
             var files = _selection.ConvertAll(x => x.Path).ToArray();
             Clipboard.Files = files;
+            UpdateContentItemCut(false);
         }
 
         /// <summary>
@@ -496,7 +506,36 @@ namespace FlaxEditor.Content.GUI
             if (files == null || files.Length == 0)
                 return;
 
-            OnPaste?.Invoke(files);
+            OnPaste?.Invoke(files, _isCutting);
+            UpdateContentItemCut(false);
+        }
+
+        /// <summary>
+        /// Cuts the items.
+        /// </summary>
+        public void Cut()
+        {
+            Copy();
+            UpdateContentItemCut(true);
+        }
+
+        private void UpdateContentItemCut(bool cut)
+        {
+            _isCutting = cut;
+  
+            // Add selection to cut list
+            if (cut)
+                _cutItems.AddRange(_selection);
+            
+            // Update item with if it is being cut.
+            foreach (var item in _cutItems)
+            {
+                item.IsBeingCut = cut;
+            }
+            
+            // Clean up cut items
+            if (!cut)
+                _cutItems.Clear();
         }
 
         /// <summary>

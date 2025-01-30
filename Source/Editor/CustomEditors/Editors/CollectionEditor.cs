@@ -2,14 +2,18 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Content;
+using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
+using FlaxEditor.Windows;
+using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -38,6 +42,9 @@ namespace FlaxEditor.CustomEditors.Editors
             /// </summary>
             public readonly int Index;
 
+            private Rectangle _arrangeButtonRect;
+            private bool _arrangeButtonInUse;
+
             /// <summary>
             /// Initializes a new instance of the <see cref="CollectionItemLabel"/> class.
             /// </summary>
@@ -50,6 +57,12 @@ namespace FlaxEditor.CustomEditors.Editors
                 Index = index;
 
                 SetupContextMenu += OnSetupContextMenu;
+                _arrangeButtonRect = new Rectangle(2, 4, 12, 12);
+
+                // Extend margin of the label to support a dragging handle.
+                Margin m = Margin;
+                m.Left += 16;
+                Margin = m;
             }
 
             private void OnSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
@@ -66,9 +79,117 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 b = menu.AddButton("Move down", OnMoveDownClicked);
                 b.Enabled = Index + 1 < Editor.Count && !Editor._readOnly;
-                
+
                 b = menu.AddButton("Remove", OnRemoveClicked);
                 b.Enabled = !Editor._readOnly;
+            }
+
+            /// <inheritdoc />
+            public override void OnEndMouseCapture()
+            {
+                base.OnEndMouseCapture();
+
+                _arrangeButtonInUse = false;
+            }
+
+            /// <inheritdoc />
+            public override void Draw()
+            {
+                base.Draw();
+
+                var style = FlaxEngine.GUI.Style.Current;
+                var mousePosition = PointFromScreen(Input.MouseScreenPosition);
+                var dragBarColor = _arrangeButtonRect.Contains(mousePosition) ? style.Foreground : style.ForegroundGrey;
+                Render2D.DrawSprite(FlaxEditor.Editor.Instance.Icons.DragBar12, _arrangeButtonRect, _arrangeButtonInUse ? Color.Orange : dragBarColor);
+                if (_arrangeButtonInUse && ArrangeAreaCheck(out _, out var arrangeTargetRect))
+                {
+                    Render2D.FillRectangle(arrangeTargetRect, style.Selection);
+                }
+            }
+
+            /// <inheritdoc />
+            protected override void OnSizeChanged()
+            {
+                base.OnSizeChanged();
+
+                _arrangeButtonRect.Y = (Height - _arrangeButtonRect.Height) * 0.5f;
+            }
+
+            private bool ArrangeAreaCheck(out int index, out Rectangle rect)
+            {
+                var child = Editor.ChildrenEditors[0];
+                var container = child.Layout.ContainerControl;
+                var mousePosition = container.PointFromScreen(Input.MouseScreenPosition);
+                var barSidesExtend = 20.0f;
+                var barHeight = 5.0f;
+                var barCheckAreaHeight = 40.0f;
+                var pos = mousePosition.Y + barCheckAreaHeight * 0.5f;
+
+                for (int i = 0; i < container.Children.Count / 2; i++)
+                {
+                    var containerChild = container.Children[i * 2]; // times 2 to skip the value editor
+                    if (Mathf.IsInRange(pos, containerChild.Top, containerChild.Top + barCheckAreaHeight) || (i == 0 && pos < containerChild.Top))
+                    {
+                        index = i;
+                        var p1 = containerChild.UpperLeft;
+                        rect = new Rectangle(PointFromParent(p1) - new Float2(barSidesExtend * 0.5f, barHeight * 0.5f), Width + barSidesExtend, barHeight);
+                        return true;
+                    }
+                }
+
+                var p2 = container.Children[((container.Children.Count / 2) - 1) * 2].BottomLeft;
+                if (pos > p2.Y)
+                {
+                    index = (container.Children.Count / 2) - 1;
+                    rect = new Rectangle(PointFromParent(p2) - new Float2(barSidesExtend * 0.5f, barHeight * 0.5f), Width + barSidesExtend, barHeight);
+                    return true;
+                }
+
+                index = -1;
+                rect = Rectangle.Empty;
+                return false;
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _arrangeButtonRect.Contains(ref location))
+                {
+                    _arrangeButtonInUse = true;
+                    Focus();
+                    StartMouseCapture();
+                    return true;
+                }
+
+                return base.OnMouseDown(location, button);
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _arrangeButtonInUse)
+                {
+                    _arrangeButtonInUse = false;
+                    EndMouseCapture();
+                    if (ArrangeAreaCheck(out var index, out _))
+                    {
+                        Editor.Shift(Index, index);
+                    }
+                }
+
+                return base.OnMouseUp(location, button);
+            }
+
+            /// <inheritdoc />
+            public override void OnLostFocus()
+            {
+                if (_arrangeButtonInUse)
+                {
+                    _arrangeButtonInUse = false;
+                    EndMouseCapture();
+                }
+
+                base.OnLostFocus();
             }
 
             private void OnMoveUpClicked()
@@ -106,6 +227,9 @@ namespace FlaxEditor.CustomEditors.Editors
 
             private bool _canReorder = true;
 
+            private Rectangle _arrangeButtonRect;
+            private bool _arrangeButtonInUse;
+
             public void Setup(CollectionEditor editor, int index, bool canReorder = true)
             {
                 HeaderHeight = 18;
@@ -115,7 +239,38 @@ namespace FlaxEditor.CustomEditors.Editors
                 ArrowImageClosed = new SpriteBrush(icons.ArrowRight12);
                 ArrowImageOpened = new SpriteBrush(icons.ArrowDown12);
                 HeaderText = $"Element {index}";
-                IsClosed = false;
+                
+                string saveName = string.Empty;
+                if (editor.Presenter?.Owner is PropertiesWindow propertiesWindow)
+                {
+                    var selection = FlaxEditor.Editor.Instance.SceneEditing.Selection[0];
+                    if (selection != null)
+                    {
+                        saveName += $"{selection.ID},";
+                    }
+                }
+                else if (editor.Presenter?.Owner is PrefabWindow prefabWindow)
+                {
+                    var selection = prefabWindow.Selection[0];
+                    if (selection != null)
+                    {
+                        saveName += $"{selection.ID},";
+                    }
+                }
+                if (editor.ParentEditor?.Layout.ContainerControl is DropPanel pdp)
+                {
+                    saveName += $"{pdp.HeaderText},";
+                }
+                if (editor.Layout.ContainerControl is DropPanel mainGroup)
+                {
+                    saveName += $"{mainGroup.HeaderText}";
+                    IsClosed = FlaxEditor.Editor.Instance.ProjectCache.IsGroupToggled($"{saveName}:{index}");
+                }
+                else
+                {
+                    IsClosed = false;
+                }
+                
                 Editor = editor;
                 Index = index;
                 Offsets = new Margin(7, 7, 0, 0);
@@ -123,8 +278,121 @@ namespace FlaxEditor.CustomEditors.Editors
                 MouseButtonRightClicked += OnMouseButtonRightClicked;
                 if (_canReorder)
                 {
-                    // TODO: Drag drop
+                    HeaderTextMargin = new Margin(18, 0, 0, 0);
+                    _arrangeButtonRect = new Rectangle(16, 3, 12, 12);
                 }
+                IsClosedChanged += OnIsClosedChanged;
+            }
+
+            private void OnIsClosedChanged(DropPanel panel)
+            {
+                string saveName = string.Empty;
+                if (Editor.Presenter?.Owner is PropertiesWindow pw)
+                {
+                    var selection = FlaxEditor.Editor.Instance.SceneEditing.Selection[0];
+                    if (selection != null)
+                    {
+                        saveName += $"{selection.ID},";
+                    }
+                }
+                else if (Editor.Presenter?.Owner is PrefabWindow prefabWindow)
+                {
+                    var selection = prefabWindow.Selection[0];
+                    if (selection != null)
+                    {
+                        saveName += $"{selection.ID},";
+                    }
+                }
+                if (Editor.ParentEditor?.Layout.ContainerControl is DropPanel pdp)
+                {
+                    saveName += $"{pdp.HeaderText},";
+                }
+                if (Editor.Layout.ContainerControl is DropPanel mainGroup)
+                {
+                    saveName += $"{mainGroup.HeaderText}";
+                    FlaxEditor.Editor.Instance.ProjectCache.SetGroupToggle($"{saveName}:{Index}", panel.IsClosed);
+                }
+            }
+
+            private bool ArrangeAreaCheck(out int index, out Rectangle rect)
+            {
+                var container = Parent;
+                var mousePosition = container.PointFromScreen(Input.MouseScreenPosition);
+                var barSidesExtend = 20.0f;
+                var barHeight = 5.0f;
+                var barCheckAreaHeight = 40.0f;
+                var pos = mousePosition.Y + barCheckAreaHeight * 0.5f;
+
+                for (int i = 0; i < (container.Children.Count + 1) / 2; i++) // Add 1 to pretend there is a spacer at the end.
+                {
+                    var containerChild = container.Children[i * 2]; // times 2 to skip the value editor
+                    if (Mathf.IsInRange(pos, containerChild.Top, containerChild.Top + barCheckAreaHeight) || (i == 0 && pos < containerChild.Top))
+                    {
+                        index = i;
+                        var p1 = containerChild.UpperLeft;
+                        rect = new Rectangle(PointFromParent(p1) - new Float2(barSidesExtend * 0.5f, barHeight * 0.5f), Width + barSidesExtend, barHeight);
+                        return true;
+                    }
+                }
+
+                var p2 = container.Children[container.Children.Count - 1].BottomLeft;
+                if (pos > p2.Y)
+                {
+                    index = ((container.Children.Count + 1) / 2) - 1;
+                    rect = new Rectangle(PointFromParent(p2) - new Float2(barSidesExtend * 0.5f, barHeight * 0.5f), Width + barSidesExtend, barHeight);
+                    return true;
+                }
+
+                index = -1;
+                rect = Rectangle.Empty;
+                return false;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+
+                if (_canReorder)
+                {
+                    var style = FlaxEngine.GUI.Style.Current;
+                    var mousePosition = PointFromScreen(Input.MouseScreenPosition);
+                    var dragBarColor = _arrangeButtonRect.Contains(mousePosition) ? style.Foreground : style.ForegroundGrey;
+                    Render2D.DrawSprite(FlaxEditor.Editor.Instance.Icons.DragBar12, _arrangeButtonRect, _arrangeButtonInUse ? Color.Orange : dragBarColor);
+                    if (_arrangeButtonInUse && ArrangeAreaCheck(out _, out var arrangeTargetRect))
+                    {
+                        Render2D.FillRectangle(arrangeTargetRect, style.Selection);
+                    }
+                }
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _arrangeButtonRect.Contains(ref location))
+                {
+                    _arrangeButtonInUse = true;
+                    Focus();
+                    StartMouseCapture();
+                    return true;
+                }
+
+                return base.OnMouseDown(location, button);
+            }
+
+            /// <inheritdoc />
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _arrangeButtonInUse)
+                {
+                    _arrangeButtonInUse = false;
+                    EndMouseCapture();
+                    if (ArrangeAreaCheck(out var index, out _))
+                    {
+                        Editor.Shift(Index, index);
+                    }
+                }
+
+                return base.OnMouseUp(location, button);
             }
 
             private void OnMouseButtonRightClicked(DropPanel panel, Float2 location)
@@ -182,6 +450,7 @@ namespace FlaxEditor.CustomEditors.Editors
         private bool _canResize;
         private bool _canReorderItems;
         private CollectionAttribute.DisplayType _displayType;
+        private List<CollectionDropPanel> _cachedDropPanels = new List<CollectionDropPanel>();
 
         /// <summary>
         /// Gets the length of the collection.
@@ -324,7 +593,10 @@ namespace FlaxEditor.CustomEditors.Editors
                               (elementType.GetProperties().Length == 1 && elementType.GetFields().Length == 0) ||
                               elementType.Equals(new ScriptType(typeof(JsonAsset))) ||
                               elementType.Equals(new ScriptType(typeof(SettingsBase)));
-
+                if (_cachedDropPanels == null)
+                    _cachedDropPanels = new List<CollectionDropPanel>();
+                else
+                    _cachedDropPanels.Clear();
                 for (int i = 0; i < size; i++)
                 {
                     // Apply spacing
@@ -348,12 +620,19 @@ namespace FlaxEditor.CustomEditors.Editors
                     else if (_displayType == CollectionAttribute.DisplayType.Header || (_displayType == CollectionAttribute.DisplayType.Default && !single))
                     {
                         var cdp = panel.CustomContainer<CollectionDropPanel>();
+                        _cachedDropPanels.Add(cdp.CustomControl);
                         cdp.CustomControl.Setup(this, i, _canReorderItems);
                         var itemLayout = cdp.VerticalPanel();
                         cdp.CustomControl.LinkedEditor = itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
                         if (_readOnly && itemLayout.Children.Count > 0)
                             GenericEditor.OnReadOnlyProperty(itemLayout);
                     }
+                }
+
+                if (_displayType == CollectionAttribute.DisplayType.Header || (_displayType == CollectionAttribute.DisplayType.Default && !single))
+                {
+                    if (Layout is GroupElement g)
+                        g.SetupContextMenu += OnSetupContextMenu;
                 }
             }
             _elementsCount = size;
@@ -387,6 +666,28 @@ namespace FlaxEditor.CustomEditors.Editors
                     Resize(Count + 1);
                 };
             }
+        }
+
+        private void OnSetupContextMenu(ContextMenu menu, DropPanel panel)
+        {
+            if (menu.Items.Any(x => x is ContextMenuButton b && b.Text.Equals("Open All", StringComparison.Ordinal)))
+                return;
+
+            menu.AddSeparator();
+            menu.AddButton("Open All", () =>
+            {
+                foreach (var cachedPanel in _cachedDropPanels)
+                {
+                    cachedPanel.IsClosed = false;
+                }
+            });
+            menu.AddButton("Close All", () =>
+            {
+                foreach (var cachedPanel in _cachedDropPanels)
+                {
+                    cachedPanel.IsClosed = true;
+                }
+            });
         }
 
         /// <inheritdoc />
@@ -437,6 +738,39 @@ namespace FlaxEditor.CustomEditors.Editors
             var tmp = cloned[dstIndex];
             cloned[dstIndex] = cloned[srcIndex];
             cloned[srcIndex] = tmp;
+            SetValue(cloned);
+        }
+
+        /// <summary>
+        /// Shifts the specified item at the given index and moves it through the list to the other item. It supports undo.
+        /// </summary>
+        /// <param name="srcIndex">Index of the source item.</param>
+        /// <param name="dstIndex">Index of the destination to move to.</param>
+        private void Shift(int srcIndex, int dstIndex)
+        {
+            if (IsSetBlocked)
+                return;
+
+            var cloned = CloneValues();
+            if (dstIndex > srcIndex)
+            {
+                for (int i = srcIndex; i < dstIndex; i++)
+                {
+                    var tmp = cloned[i + 1];
+                    cloned[i + 1] = cloned[i];
+                    cloned[i] = tmp;
+                }
+            }
+            else
+            {
+                for (int i = srcIndex; i > dstIndex; i--)
+                {
+                    var tmp = cloned[i - 1];
+                    cloned[i - 1] = cloned[i];
+                    cloned[i] = tmp;
+                }
+            }
+
             SetValue(cloned);
         }
 
@@ -564,9 +898,13 @@ namespace FlaxEditor.CustomEditors.Editors
                 base.Draw();
             }
 
+            /// <inheritdoc />
             public override void OnDestroy()
             {
                 _pickerValidator.OnDestroy();
+                _pickerValidator = null;
+
+                base.OnDestroy();
             }
 
             private bool ValidateActors(ActorNode node)

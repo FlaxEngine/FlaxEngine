@@ -7,6 +7,7 @@ using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Input;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -406,20 +407,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
     /// <seealso cref="FlaxEditor.CustomEditors.Editors.GenericEditor" />
     public class UIControlControlEditor : GenericEditor
     {
-        private Type _cachedType;
+        private ScriptType[] _valueTypes;
         private bool _anchorDropDownClosed = true;
         private Button _pivotRelativeButton;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            _cachedType = null;
-            if (HasDifferentTypes)
-            {
-                // TODO: support stable editing multiple different control types (via generic way or for transform-only)
-                return;
-            }
-
             // Set control type button
             var space = layout.Space(20);
             var buttonText = "Set Type";
@@ -444,12 +438,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             // Add control type helper label
+            if (!Values.HasDifferentTypes)
             {
-                var type = Values[0].GetType();
-                _cachedType = type;
                 var label = layout.AddPropertyItem("Type", "The type of the created control.");
-                label.Label(type.FullName);
+                label.Label(Values[0].GetType().FullName);
             }
+            _valueTypes = Values.ValuesTypes;
 
             // Show control properties
             base.Initialize(layout);
@@ -634,26 +628,29 @@ namespace FlaxEditor.CustomEditors.Dedicated
             LayoutElementsContainer vEl;
             Color axisColorX = ActorTransformEditor.AxisColorX;
             Color axisColorY = ActorTransformEditor.AxisColorY;
+            FloatValueBox xV, yV, wV, hV;
             if (xEq)
             {
-                xEl = UniformPanelCapsuleForObjectWithText(horUp, "X: ", xItem.GetValues(Values), axisColorX);
-                vEl = UniformPanelCapsuleForObjectWithText(horDown, "Width: ", widthItem.GetValues(Values), axisColorX);
+                xEl = UniformPanelCapsuleForObjectWithText(horUp, "X: ", xItem.GetValues(Values), axisColorX, out xV);
+                vEl = UniformPanelCapsuleForObjectWithText(horDown, "Width: ", widthItem.GetValues(Values), axisColorX, out wV);
             }
             else
             {
-                xEl = UniformPanelCapsuleForObjectWithText(horUp, "Left: ", leftItem.GetValues(Values), axisColorX);
-                vEl = UniformPanelCapsuleForObjectWithText(horDown, "Right: ", rightItem.GetValues(Values), axisColorX);
+                xEl = UniformPanelCapsuleForObjectWithText(horUp, "Left: ", leftItem.GetValues(Values), axisColorX, out xV);
+                vEl = UniformPanelCapsuleForObjectWithText(horDown, "Right: ", rightItem.GetValues(Values), axisColorX, out wV);
             }
             if (yEq)
             {
-                yEl = UniformPanelCapsuleForObjectWithText(horUp, "Y: ", yItem.GetValues(Values), axisColorY);
-                hEl = UniformPanelCapsuleForObjectWithText(horDown, "Height: ", heightItem.GetValues(Values), axisColorY);
+                yEl = UniformPanelCapsuleForObjectWithText(horUp, "Y: ", yItem.GetValues(Values), axisColorY, out yV);
+                hEl = UniformPanelCapsuleForObjectWithText(horDown, "Height: ", heightItem.GetValues(Values), axisColorY, out hV);
             }
             else
             {
-                yEl = UniformPanelCapsuleForObjectWithText(horUp, "Top: ", topItem.GetValues(Values), axisColorY);
-                hEl = UniformPanelCapsuleForObjectWithText(horDown, "Bottom: ", bottomItem.GetValues(Values), axisColorY);
+                yEl = UniformPanelCapsuleForObjectWithText(horUp, "Top: ", topItem.GetValues(Values), axisColorY, out yV);
+                hEl = UniformPanelCapsuleForObjectWithText(horDown, "Bottom: ", bottomItem.GetValues(Values), axisColorY, out hV);
             }
+
+            // Anchors
             xEl.Control.AnchorMin = new Float2(0, xEl.Control.AnchorMin.Y);
             xEl.Control.AnchorMax = new Float2(0.5f, xEl.Control.AnchorMax.Y);
 
@@ -665,6 +662,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             hEl.Control.AnchorMin = new Float2(0.5f, xEl.Control.AnchorMin.Y);
             hEl.Control.AnchorMax = new Float2(1, xEl.Control.AnchorMax.Y);
+
+            // Navigation path
+            xV.NavTargetRight = yV;
+            yV.NavTargetRight = wV;
+            wV.NavTargetRight = hV;
+
+            yV.NavTargetLeft = xV;
+            wV.NavTargetLeft = yV;
+            hV.NavTargetLeft = wV;
         }
 
         private VerticalPanelElement VerticalPanelWithoutMargin(LayoutElementsContainer cont)
@@ -684,17 +690,19 @@ namespace FlaxEditor.CustomEditors.Dedicated
             return grid;
         }
 
-        private CustomElementsContainer<UniformGridPanel> UniformPanelCapsuleForObjectWithText(LayoutElementsContainer el, string text, ValueContainer values, Color borderColor)
+        private CustomElementsContainer<UniformGridPanel> UniformPanelCapsuleForObjectWithText(LayoutElementsContainer el, string text, ValueContainer values, Color borderColor, out FloatValueBox valueBox)
         {
+            valueBox = null;
             var grid = UniformGridTwoByOne(el);
             grid.CustomControl.SlotPadding = new Margin(5, 5, 1, 1);
             var label = grid.Label(text, TextAlignment.Far);
             var editor = grid.Object(values);
             if (editor is FloatEditor floatEditor && floatEditor.Element is FloatValueElement floatEditorElement)
             {
+                valueBox = floatEditorElement.ValueBox;
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
-                floatEditorElement.ValueBox.BorderColor = Color.Lerp(borderColor, back, ActorTransformEditor.AxisGreyOutFactor);
-                floatEditorElement.ValueBox.BorderSelectedColor = borderColor;
+                valueBox.BorderColor = Color.Lerp(borderColor, back, ActorTransformEditor.AxisGreyOutFactor);
+                valueBox.BorderSelectedColor = borderColor;
             }
             return grid;
         }
@@ -705,17 +713,18 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <inheritdoc />
         public override void Refresh()
         {
-            if (_cachedType != null)
+            // Automatic layout rebuild if control type gets changed
+            if (_valueTypes != null && 
+                !Values.HasNull && 
+                !Utils.ArraysEqual(_valueTypes, Values.ValuesTypes))
             {
-                // Automatic layout rebuild if control type gets changed
-                var type = Values.HasNull ? null : Values[0].GetType();
-                if (type != _cachedType)
-                {
-                    RebuildLayout();
-                    return;
-                }
+                RebuildLayout();
+                return;
+            }
 
-                // Refresh anchors
+            // Refresh anchors
+            if (Values != null && Values[0] != null)
+            {
                 GetAnchorEquality(out bool xEq, out bool yEq, ValuesTypes);
                 if (xEq != _cachedXEq || yEq != _cachedYEq)
                 {

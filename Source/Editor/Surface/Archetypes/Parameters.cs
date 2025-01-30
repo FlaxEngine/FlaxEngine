@@ -426,6 +426,12 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
+            public bool IsParamUsed(SurfaceParameter param)
+            {
+                return (Guid)Values[0] == param.ID;
+            }
+
+            /// <inheritdoc />
             public override void OnLoaded(SurfaceNodeActions action)
             {
                 base.OnLoaded(action);
@@ -937,11 +943,15 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 // Deselect if that parameter is selected
                 if ((Guid)Values[0] == param.ID)
-                {
                     _combobox.SelectedIndex = -1;
-                }
 
                 UpdateCombo();
+            }
+
+            /// <inheritdoc />
+            public bool IsParamUsed(SurfaceParameter param)
+            {
+                return (Guid)Values[0] == param.ID;
             }
 
             /// <inheritdoc />

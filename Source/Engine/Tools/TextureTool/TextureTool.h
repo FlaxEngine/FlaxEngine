@@ -53,13 +53,33 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(60)")
         bool GenerateMipMaps = true;
 
-        // True if flip Y coordinate of the texture.
+        // True if flip Y coordinate of the texture (Flips over X axis).
         API_FIELD(Attributes="EditorOrder(70)")
         bool FlipY = false;
 
-        // True if to invert the green channel on a normal map. Good for OpenGL to DirectX conversion.
-        API_FIELD(Attributes = "EditorOrder(71)")
+        // True if flip X coordinate of the texture (Flips over Y axis).
+        API_FIELD(Attributes="EditorOrder(71)")
+        bool FlipX = false;
+
+        // Invert the red channel.
+        API_FIELD(Attributes = "EditorOrder(72), EditorDisplay(\"Invert Channels\"), ExpandGroups")
+        bool InvertRedChannel = false;
+
+        // Invert the green channel. Good for OpenGL to DirectX conversion.
+        API_FIELD(Attributes = "EditorOrder(73), EditorDisplay(\"Invert Channels\")")
         bool InvertGreenChannel = false;
+
+        // Invert the blue channel.
+        API_FIELD(Attributes = "EditorOrder(74), EditorDisplay(\"Invert Channels\")")
+        bool InvertBlueChannel = false;
+
+        // Invert the alpha channel.
+        API_FIELD(Attributes = "EditorOrder(75), EditorDisplay(\"Invert Channels\")")
+        bool InvertAlphaChannel = false;
+
+        // Rebuild Z (blue) channel assuming X/Y are normals.
+        API_FIELD(Attributes = "EditorOrder(76)")
+        bool ReconstructZChannel = false;
 
         // Texture size scale. Allows increasing or decreasing the imported texture resolution. Default is 1.
         API_FIELD(Attributes="EditorOrder(80), Limit(0.0001f, 1000.0f, 0.01f)")
@@ -72,6 +92,10 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         // True if resize texture on import. Use SizeX/SizeY properties to define texture width and height. Texture scale property will be ignored.
         API_FIELD(Attributes="EditorOrder(100)")
         bool Resize = false;
+
+        // Keeps the aspect ratio when resizing.
+        API_FIELD(Attributes="EditorOrder(101), VisibleIf(nameof(Resize))")
+        bool KeepAspectRatio = false;
 
         // The width of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
         API_FIELD(Attributes="HideInEditor")

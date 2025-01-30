@@ -723,11 +723,14 @@ void GPUContextVulkan::FrameBegin()
     Platform::MemoryCopy(_samplerHandles, _device->HelperResources.GetStaticSamplers(), sizeof(VkSampler) * GPU_STATIC_SAMPLERS_COUNT);
     Platform::MemoryClear(_samplerHandles + GPU_STATIC_SAMPLERS_COUNT, sizeof(_samplerHandles) - sizeof(VkSampler) * GPU_STATIC_SAMPLERS_COUNT);
 
+    // Init command buffer
+    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
+    vkCmdSetStencilReference(cmdBuffer->GetHandle(), VK_STENCIL_FRONT_AND_BACK, _stencilRef);
+
 #if VULKAN_RESET_QUERY_POOLS
     // Reset pending queries
     if (_device->QueriesToReset.HasItems())
     {
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
         for (auto query : _device->QueriesToReset)
             query->Reset(cmdBuffer);
         _device->QueriesToReset.Clear();
@@ -797,10 +800,9 @@ void GPUContextVulkan::Clear(GPUTextureView* rt, const Color& color)
     }
 }
 
-void GPUContextVulkan::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
+void GPUContextVulkan::ClearDepth(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue)
 {
     const auto rtVulkan = static_cast<GPUTextureViewVulkan*>(depthBuffer);
-
     if (rtVulkan)
     {
         // TODO: detect if inside render pass and use ClearAttachments
@@ -815,7 +817,7 @@ void GPUContextVulkan::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
 
         VkClearDepthStencilValue clear;
         clear.depth = depthValue;
-        clear.stencil = 0;
+        clear.stencil = stencilValue;
         vkCmdClearDepthStencilImage(cmdBuffer->GetHandle(), rtVulkan->Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear, 1, &rtVulkan->Info.subresourceRange);
     }
 }
@@ -1312,10 +1314,6 @@ void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
 
     // Use direct update for small buffers
     const uint32 alignedSize = Math::AlignUp<uint32>(size, 4);
-    if (alignedSize > buffer->GetSize())
-    {
-        int a= 1;
-    }
     if (size <= 16 * 1024 && alignedSize <= buffer->GetSize())
     {
         //AddBufferBarrier(bufferVulkan, VK_ACCESS_TRANSFER_WRITE_BIT);
@@ -1414,37 +1412,77 @@ void GPUContextVulkan::CopyTexture(GPUTexture* dstResource, uint32 dstSubresourc
     const auto dstTextureVulkan = static_cast<GPUTextureVulkan*>(dstResource);
     const auto srcTextureVulkan = static_cast<GPUTextureVulkan*>(srcResource);
 
-    // Transition resources
-    AddImageBarrier(dstTextureVulkan, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    AddImageBarrier(srcTextureVulkan, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-    FlushBarriers();
-
-    // Prepare
-    const int32 dstMipIndex = dstSubresource % dstTextureVulkan->MipLevels();
-    const int32 dstArrayIndex = dstSubresource / dstTextureVulkan->MipLevels();
-    const int32 srcMipIndex = srcSubresource % srcTextureVulkan->MipLevels();
-    const int32 srcArrayIndex = srcSubresource / srcTextureVulkan->MipLevels();
+    const int32 dstMipIndex = (int32)dstSubresource % dstTextureVulkan->MipLevels();
+    const int32 dstArrayIndex = (int32)dstSubresource / dstTextureVulkan->MipLevels();
+    const int32 srcMipIndex = (int32)srcSubresource % srcTextureVulkan->MipLevels();
+    const int32 srcArrayIndex = (int32)srcSubresource / srcTextureVulkan->MipLevels();
     int32 mipWidth, mipHeight, mipDepth;
     srcTextureVulkan->GetMipSize(srcMipIndex, mipWidth, mipHeight, mipDepth);
 
-    // Copy
-    VkImageCopy region;
-    Platform::MemoryClear(&region, sizeof(VkBufferImageCopy));
-    region.extent.width = mipWidth;
-    region.extent.height = mipHeight;
-    region.extent.depth = mipDepth;
-    region.dstOffset.x = dstX;
-    region.dstOffset.y = dstY;
-    region.dstOffset.z = dstZ;
-    region.srcSubresource.baseArrayLayer = srcArrayIndex;
-    region.srcSubresource.layerCount = 1;
-    region.srcSubresource.mipLevel = srcMipIndex;
-    region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.dstSubresource.baseArrayLayer = dstArrayIndex;
-    region.dstSubresource.layerCount = 1;
-    region.dstSubresource.mipLevel = dstMipIndex;
-    region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    vkCmdCopyImage(cmdBuffer->GetHandle(), srcTextureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTextureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    if (dstTextureVulkan->IsStaging())
+    {
+        // Staging Texture -> Staging Texture
+        if (srcTextureVulkan->IsStaging())
+        {
+            ASSERT(dstTextureVulkan->StagingBuffer && srcTextureVulkan->StagingBuffer);
+            CopyResource(dstTextureVulkan->StagingBuffer, srcTextureVulkan->StagingBuffer);
+        }
+        // Texture -> Staging Texture
+        else
+        {
+            // Transition resources
+            ASSERT(dstTextureVulkan->StagingBuffer);
+            AddBufferBarrier(dstTextureVulkan->StagingBuffer, VK_ACCESS_TRANSFER_WRITE_BIT);
+            AddImageBarrier(srcTextureVulkan, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            FlushBarriers();
+
+            // Copy
+            VkBufferImageCopy region;
+            Platform::MemoryClear(&region, sizeof(VkBufferImageCopy));
+            region.bufferOffset = 0; // TODO: calculate it based on dstSubresource and dstX/dstY/dstZ
+            ASSERT(dstX == dstY == dstZ == 0);
+            ASSERT(dstSubresource == 0);
+            region.bufferRowLength = mipWidth;
+            region.bufferImageHeight = mipHeight;
+            region.imageOffset.x = 0;
+            region.imageOffset.y = 0;
+            region.imageOffset.z = 0;
+            region.imageExtent.width = mipWidth;
+            region.imageExtent.height = mipHeight;
+            region.imageExtent.depth = mipDepth;
+            region.imageSubresource.baseArrayLayer = srcArrayIndex;
+            region.imageSubresource.layerCount = 1;
+            region.imageSubresource.mipLevel = srcMipIndex;
+            region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            vkCmdCopyImageToBuffer(cmdBuffer->GetHandle(), srcTextureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTextureVulkan->StagingBuffer->GetHandle(), 1, &region);
+        }
+    }
+    else
+    {
+        // Transition resources
+        AddImageBarrier(dstTextureVulkan, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        AddImageBarrier(srcTextureVulkan, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        FlushBarriers();
+
+        // Copy
+        VkImageCopy region;
+        Platform::MemoryClear(&region, sizeof(VkBufferImageCopy));
+        region.extent.width = mipWidth;
+        region.extent.height = mipHeight;
+        region.extent.depth = mipDepth;
+        region.dstOffset.x = (int32_t)dstX;
+        region.dstOffset.y = (int32_t)dstY;
+        region.dstOffset.z = (int32_t)dstZ;
+        region.srcSubresource.baseArrayLayer = srcArrayIndex;
+        region.srcSubresource.layerCount = 1;
+        region.srcSubresource.mipLevel = srcMipIndex;
+        region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.dstSubresource.baseArrayLayer = dstArrayIndex;
+        region.dstSubresource.layerCount = 1;
+        region.dstSubresource.mipLevel = dstMipIndex;
+        region.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        vkCmdCopyImage(cmdBuffer->GetHandle(), srcTextureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstTextureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    }
 }
 
 void GPUContextVulkan::ResetCounter(GPUBuffer* buffer)

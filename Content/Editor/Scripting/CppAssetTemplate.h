@@ -13,10 +13,10 @@ API_CLASS() class %module%%class% : public ISerializable
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(%class%);
 public:
-	// Custom float value.
+    // Custom float value.
     API_FIELD(Attributes = "Range(0, 20), EditorOrder(0), EditorDisplay(\"Data\")") 
     float FloatValue = 20.0f;
-	// Custom vector data.
+    // Custom vector data.
     API_FIELD(Attributes = "EditorOrder(1), EditorDisplay(\"Data\")")
     Vector3 Vector3Value = Vector3(0.1f);
 };

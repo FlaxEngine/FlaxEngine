@@ -468,12 +468,12 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
     if (settings.WaitForEnd)
     {
         id<NSObject> outputObserver = nil;
+        id<NSObject> outputObserverError = nil;
         
         if (captureStdOut)
         {
-            NSPipe *stdoutPipe = [NSPipe pipe];
+            NSPipe* stdoutPipe = [NSPipe pipe];
             [task setStandardOutput:stdoutPipe];
-            
             outputObserver = [[NSNotificationCenter defaultCenter]
                                           addObserverForName: NSFileHandleDataAvailableNotification
                                           object: [stdoutPipe fileHandleForReading]
@@ -497,8 +497,34 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                 }
             }
                 ];
-            
             [[stdoutPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
+
+            NSPipe *stderrPipe = [NSPipe pipe];
+            [task setStandardError:stderrPipe];
+            outputObserverError = [[NSNotificationCenter defaultCenter]
+                                          addObserverForName: NSFileHandleDataAvailableNotification
+                                          object: [stderrPipe fileHandleForReading]
+                                          queue: nil
+                              usingBlock:^(NSNotification* notification)
+            {
+                NSData* data = [stderrPipe fileHandleForReading].availableData;
+                if (data.length)
+                {
+                      String line((const char*)data.bytes, data.length);
+                      if (settings.SaveOutput)
+                        settings.Output.Add(line.Get(), line.Length());
+                      if (settings.LogOutput)
+                      {
+                        StringView lineView(line);
+                        if (line[line.Length() - 1] == '\n')
+                            lineView = StringView(line.Get(), line.Length() - 1);
+                        Log::Logger::Write(LogType::Error, lineView);
+                      }
+                    [[stderrPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
+                }
+            }
+                ];
+            [[stderrPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
         }
 
         String exception;

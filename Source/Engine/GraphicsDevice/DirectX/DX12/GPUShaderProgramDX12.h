@@ -16,12 +16,9 @@ template<typename BaseType>
 class GPUShaderProgramDX12 : public BaseType
 {
 protected:
-
     Array<byte> _data;
 
 public:
-
-
     GPUShaderProgramDX12(const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize)
         : Header(*header)
     {
@@ -30,11 +27,9 @@ public:
     }
 
 public:
-
     DxShaderHeader Header;
 
 public:
-
     // [BaseType]
     void* GetBufferHandle() const override
     {
@@ -52,12 +47,10 @@ public:
 class GPUShaderProgramVSDX12 : public GPUShaderProgramDX12<GPUShaderProgramVS>
 {
 private:
-
     byte _inputLayoutSize;
     D3D12_INPUT_ELEMENT_DESC _inputLayout[VERTEX_SHADER_MAX_INPUT_ELEMENTS];
 
 public:
-
     GPUShaderProgramVSDX12(const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize, D3D12_INPUT_ELEMENT_DESC* inputLayout, byte inputLayoutSize)
         : GPUShaderProgramDX12(initializer, header, cacheBytes, cacheSize)
         , _inputLayoutSize(inputLayoutSize)
@@ -67,7 +60,6 @@ public:
     }
 
 public:
-
     // [GPUShaderProgramDX12]
     void* GetInputLayout() const override
     {
@@ -86,7 +78,6 @@ public:
 class GPUShaderProgramHSDX12 : public GPUShaderProgramDX12<GPUShaderProgramHS>
 {
 public:
-
     GPUShaderProgramHSDX12(const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize, int32 controlPointsCount)
         : GPUShaderProgramDX12(initializer, header, cacheBytes, cacheSize)
     {
@@ -100,7 +91,6 @@ public:
 class GPUShaderProgramDSDX12 : public GPUShaderProgramDX12<GPUShaderProgramDS>
 {
 public:
-
     GPUShaderProgramDSDX12(const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize)
         : GPUShaderProgramDX12(initializer, header, cacheBytes, cacheSize)
     {
@@ -115,7 +105,6 @@ public:
 class GPUShaderProgramGSDX12 : public GPUShaderProgramDX12<GPUShaderProgramGS>
 {
 public:
-
     GPUShaderProgramGSDX12(const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize)
         : GPUShaderProgramDX12(initializer, header, cacheBytes, cacheSize)
     {
@@ -129,7 +118,6 @@ public:
 class GPUShaderProgramPSDX12 : public GPUShaderProgramDX12<GPUShaderProgramPS>
 {
 public:
-
     GPUShaderProgramPSDX12(const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize)
         : GPUShaderProgramDX12(initializer, header, cacheBytes, cacheSize)
     {
@@ -142,27 +130,24 @@ public:
 class GPUShaderProgramCSDX12 : public GPUShaderProgramDX12<GPUShaderProgramCS>
 {
 private:
-
     GPUDeviceDX12* _device;
     Array<byte> _data;
     ID3D12PipelineState* _state;
 
 public:
-
     GPUShaderProgramCSDX12(GPUDeviceDX12* device, const GPUShaderProgramInitializer& initializer, DxShaderHeader* header, byte* cacheBytes, uint32 cacheSize)
         : GPUShaderProgramDX12(initializer, header, cacheBytes, cacheSize)
         , _device(device)
         , _state(nullptr)
     {
     }
-   
+
     ~GPUShaderProgramCSDX12()
     {
         _device->AddResourceToLateRelease(_state);
     }
 
 public:
-
     /// <summary>
     /// Gets DirectX 12 compute pipeline state object
     /// </summary>

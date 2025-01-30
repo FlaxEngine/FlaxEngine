@@ -16,6 +16,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParameters(Box* box, Node* nod
     switch (node->TypeID)
     {
     // Get
+    case 1:
     case 2:
     {
         int32 paramIndex;

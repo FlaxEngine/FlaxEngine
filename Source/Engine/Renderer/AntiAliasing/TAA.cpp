@@ -11,15 +11,14 @@
 #include "Engine/Renderer/GBufferPass.h"
 #include "Engine/Engine/Engine.h"
 
-PACK_STRUCT(struct Data
-    {
+GPU_CB_STRUCT(Data {
     Float2 ScreenSizeInv;
     Float2 JitterInv;
     float Sharpness;
     float StationaryBlending;
     float MotionBlending;
     float Dummy0;
-    GBufferData GBuffer;
+    ShaderGBufferData GBuffer;
     });
 
 bool TAA::Init()

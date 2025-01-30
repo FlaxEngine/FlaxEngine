@@ -293,7 +293,7 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                 var assemblyPath = Utils.GetAssemblyLocation(assembly);
                 var assemblyName = assembly.GetName().Name;
                 var xmlFilePath = Path.ChangeExtension(assemblyPath, ".xml");
-                if (!File.Exists(assemblyPath))
+                if (!File.Exists(assemblyPath) && !string.IsNullOrEmpty(assemblyPath))
                 {
                     var uri = new UriBuilder(assemblyPath);
                     var path = Uri.UnescapeDataString(uri.Path);
@@ -316,7 +316,9 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                                     var memberReader = xmlReader.ReadSubtree();
                                     if (memberReader.ReadToDescendant("summary"))
                                     {
-                                        result[rawName] = memberReader.ReadInnerXml().Replace('\n', ' ').Trim();
+                                        // Remove <see cref=""/> and replace them with the captured group (the content of the cref). Additionally, getting rid of prefixes
+                                        const string crefPattern = @"<see\s+cref=""(?:[A-Z]:FlaxEngine\.)?([^""]+)""\s*\/>";
+                                        result[rawName] = Regex.Replace(memberReader.ReadInnerXml(), crefPattern, "$1").Replace('\n', ' ').Trim();
                                     }
                                 }
                             }

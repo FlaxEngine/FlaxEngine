@@ -5,6 +5,7 @@
 #include "GPUResourceProperty.h"
 #include "GPUBufferDescription.h"
 #include "PixelFormatExtensions.h"
+#include "RenderTask.h"
 #include "Async/Tasks/GPUCopyResourceTask.h"
 #include "Engine/Core/Utilities.h"
 #include "Engine/Core/Types/String.h"
@@ -358,6 +359,16 @@ void GPUBuffer::SetData(const void* data, uint32 size)
         Log::ArgumentOutOfRangeException(TEXT("Buffer.SetData"));
         return;
     }
+
+    if (_desc.Usage == GPUResourceUsage::Default && GPUDevice::Instance->IsRendering())
+    {
+        // Upload using the context (will use internal staging buffer inside command buffer)
+        RenderContext::GPULocker.Lock();
+        GPUDevice::Instance->GetMainContext()->UpdateBuffer(this, data, size);
+        RenderContext::GPULocker.Unlock();
+        return;
+    }
+
     void* mapped = Map(GPUResourceMapMode::Write);
     if (!mapped)
         return;

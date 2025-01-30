@@ -92,7 +92,7 @@ void SceneAnimationPlayer::Pause()
     if (_state != PlayState::Playing)
         return;
 
-    if (IsActiveInHierarchy() && _state == PlayState::Playing)
+    if (IsActiveInHierarchy())
     {
         UNREGISTER_TICK;
     }

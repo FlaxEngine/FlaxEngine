@@ -273,7 +273,7 @@ AnimGraphParameter* AnimatedModel::GetParameter(const StringView& name)
     return nullptr;
 }
 
-Variant AnimatedModel::GetParameterValue(const StringView& name)
+const Variant& AnimatedModel::GetParameterValue(const StringView& name) const
 {
     CHECK_ANIM_GRAPH_PARAM_ACCESS_RESULT(Variant::Null);
     for (auto& param : GraphInstance.Parameters)
@@ -292,14 +292,19 @@ void AnimatedModel::SetParameterValue(const StringView& name, const Variant& val
     {
         if (param.Name == name)
         {
-            param.Value = value;
+            if (param.Value.Type == value.Type)
+                param.Value = value;
+            else if (Variant::CanCast(value, param.Value.Type))
+                param.Value = Variant::Cast(value, param.Value.Type);
+            else
+                LOG(Warning, "Animation Graph parameter '{0}' in AnimatedModel {1} is type '{2}' and not type '{3}'.", name, ToString(), param.Value.Type, value.Type);
             return;
         }
     }
     LOG(Warning, "Failed to set animated model '{0}' missing parameter '{1}'", ToString(), name);
 }
 
-Variant AnimatedModel::GetParameterValue(const Guid& id)
+const Variant& AnimatedModel::GetParameterValue(const Guid& id) const
 {
     CHECK_ANIM_GRAPH_PARAM_ACCESS_RESULT(Variant::Null);
     for (auto& param : GraphInstance.Parameters)
@@ -506,7 +511,7 @@ void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* ani
     {
         if (slot.Animation == anim && slot.Name == slotName)
         {
-            slot.Animation = nullptr;
+            //slot.Animation = nullptr; // TODO: make an immediate version of this method and set the animation to nullptr.
             slot.Reset = true;
             break;
         }
@@ -758,7 +763,7 @@ void AnimatedModel::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
 void AnimatedModel::UpdateSockets()

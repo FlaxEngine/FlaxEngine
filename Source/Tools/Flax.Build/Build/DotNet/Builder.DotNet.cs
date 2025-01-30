@@ -256,6 +256,13 @@ namespace Flax.Build
 #endif
             if (buildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                 args.Add("-nowarn:1591");
+            if (buildOptions.ScriptingAPI.IgnoreSpecificWarnings.Any())
+            {
+                foreach (var warningString in buildOptions.ScriptingAPI.IgnoreSpecificWarnings)
+                {
+                    args.Add($"-nowarn:{warningString}");
+                }
+            }
 
             // Optimizations prevent debugging, only enable in release builds by default
             var optimize = optimizeAssembly.HasValue ? optimizeAssembly.Value : buildData.Configuration == TargetConfiguration.Release;
@@ -402,7 +409,7 @@ namespace Flax.Build
                                 var referencedBuild = buildData.FinReferenceBuildModule(dependencyModule.BinaryModuleName);
                                 if (referencedBuild != null && !string.IsNullOrEmpty(referencedBuild.ManagedPath))
                                 {
-                                    // Reference binary module build build for referenced target
+                                    // Reference binary module build for referenced target
                                     fileReferences.Add(referencedBuild.ManagedPath);
                                 }
                             }

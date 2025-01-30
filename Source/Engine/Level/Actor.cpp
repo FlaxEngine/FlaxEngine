@@ -544,6 +544,15 @@ void Actor::SetLayerRecursive(int32 layerIndex)
     OnLayerChanged();
 }
 
+void Actor::SetName(String&& value)
+{
+    if (_name == value)
+        return;
+    _name = MoveTemp(value);
+    if (GetScene())
+        Level::callActorEvent(Level::ActorEventType::OnActorNameChanged, this, nullptr);
+}
+
 void Actor::SetName(const StringView& value)
 {
     if (_name == value)
@@ -938,7 +947,7 @@ void Actor::EndPlay()
     }
 
     // Cleanup managed object
-    DestroyManaged();
+    //DestroyManaged();
     if (IsRegistered())
         UnregisterObject();
 }
@@ -1066,9 +1075,12 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
     // StaticFlags update - added StaticFlags::Navigation
     // [Deprecated on 17.05.2020, expires on 17.05.2021]
     if (modifier->EngineBuild < 6178 && (int32)_staticFlags == (1 + 2 + 4))
-    {
         _staticFlags |= StaticFlags::Navigation;
-    }
+
+    // StaticFlags update - added StaticFlags::Shadow
+    // [Deprecated on 17.05.2020, expires on 17.05.2021]
+    if (modifier->EngineBuild < 6601 && (int32)_staticFlags == (1 + 2 + 4 + 8))
+        _staticFlags |= StaticFlags::Shadow;
 
     const auto tag = stream.FindMember("Tag");
     if (tag != stream.MemberEnd())

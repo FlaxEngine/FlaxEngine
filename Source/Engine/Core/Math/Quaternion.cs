@@ -163,7 +163,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a value indicting whether this instance is normalized.
         /// </summary>
-        public bool IsNormalized => Mathf.IsOne(X * X + Y * Y + Z * Z + W * W);
+        public bool IsNormalized => Mathf.Abs((X * X + Y * Y + Z * Z + W * W) - 1.0f) < 1e-4f;
 
         /// <summary>
         /// Gets the euler angle (pitch, yaw, roll) in degrees.
@@ -580,7 +580,7 @@ namespace FlaxEngine
         public static float AngleBetween(Quaternion a, Quaternion b)
         {
             float num = Dot(a, b);
-            return num > 0.9999999f ? 0 : Mathf.Acos(Mathf.Min(Mathf.Abs(num), 1f)) * 2f * 57.29578f;
+            return num > Tolerance ? 0 : Mathf.Acos(Mathf.Min(Mathf.Abs(num), 1f)) * 2f * 57.29578f;
         }
 
         /// <summary>
@@ -653,6 +653,10 @@ namespace FlaxEngine
             if (Float3.Dot(direction, Float3.Up) >= 0.999f)
             {
                 orientation = RotationAxis(Float3.Left, Mathf.PiOverTwo);
+            }
+            else if (Float3.Dot(direction, Float3.Down) >= 0.999f)
+            {
+                orientation = RotationAxis(Float3.Right, Mathf.PiOverTwo);
             }
             else
             {
@@ -1480,6 +1484,45 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Gets rotation from a normal in relation to a transform.<br/>
+        /// This function is especially useful for axis aligned faces,
+        /// and with <seealso cref="Physics.RayCast(Vector3, Vector3, out RayCastHit, float, uint, bool)"/>.
+        /// 
+        /// <example><para><b>Example code:</b></para>
+        /// <code>
+        /// <see langword="public" /> <see langword="class" /> GetRotationFromNormalExample : <see cref="Script"/><br/>
+        ///     <see langword="public" /> <see cref="Actor"/> RayOrigin;<br/>
+        ///     <see langword="public" /> <see cref="Actor"/> SomeObject;<br/>
+        ///     <see langword="public" /> <see langword="override" /> <see langword="void" /> <see cref="Script.OnFixedUpdate"/><br/>
+        ///     {<br/>
+        ///         <see langword="if" /> (<see cref="Physics"/>.RayCast(RayOrigin.Position, RayOrigin.Transform.Forward, out <see cref="RayCastHit"/> hit)
+        ///         {<br/>
+        ///             <see cref="Vector3"/> position = hit.Collider.Position;
+        ///             <see cref="Transform"/> transform = hit.Collider.Transform;
+        ///             <see cref="Vector3"/> point = hit.Point;
+        ///             <see cref="Vector3"/> normal = hit.Normal;
+        ///             <see cref="Quaternion"/> rot = <see cref="Quaternion"/>.GetRotationFromNormal(normal,transform);
+        ///             SomeObject.Position = point;
+        ///             SomeObject.Orientation = rot;
+        ///         }
+        ///     }
+        /// }
+        /// </code>
+        /// </example>
+        /// </summary>
+        /// <param name="normal">The normal vector.</param>
+        /// <param name="reference">The reference transform.</param>
+        /// <returns>The rotation from the normal vector.</returns>
+        public static Quaternion GetRotationFromNormal(Vector3 normal, Transform reference)
+        {
+            Float3 up = reference.Up;
+            var dot = Vector3.Dot(normal, up);
+            if (Mathf.NearEqual(Math.Abs(dot), 1))
+                up = reference.Right;
+            return LookRotation(normal, up);
+        }
+
+        /// <summary>
         /// Adds two quaternions.
         /// </summary>
         /// <param name="left">The first quaternion to add.</param>
@@ -1559,7 +1602,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Quaternion left, Quaternion right)
         {
-            return Dot(ref left, ref right) > 0.9999999f;
+            return Dot(ref left, ref right) > Tolerance;
         }
 
         /// <summary>
@@ -1571,7 +1614,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Quaternion left, Quaternion right)
         {
-            return Dot(ref left, ref right) <= 0.9999999f;
+            return Dot(ref left, ref right) <= Tolerance;
         }
 
         /// <summary>
@@ -1671,7 +1714,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Quaternion other)
         {
-            //return Dot(ref this, ref other) > 0.9999999f;
+            //return Dot(ref this, ref other) > Tolerance;
             return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z) && Mathf.NearEqual(other.W, W);
         }
 

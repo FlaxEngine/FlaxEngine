@@ -124,9 +124,9 @@ void BoundingBox::Transform(const BoundingBox& box, const Matrix& matrix, Boundi
     const auto ya = up * box.Minimum.Y;
     const auto yb = up * box.Maximum.Y;
 
-    const auto backward = matrix.GetBackward();
-    const auto za = backward * box.Minimum.Z;
-    const auto zb = backward * box.Maximum.Z;
+    const auto forward = matrix.GetForward();
+    const auto za = forward * box.Minimum.Z;
+    const auto zb = forward * box.Maximum.Z;
 
     const auto translation = matrix.GetTranslation();
     const auto min = Vector3::Min(xa, xb) + Vector3::Min(ya, yb) + Vector3::Min(za, zb) + translation;
@@ -146,9 +146,9 @@ void BoundingBox::Transform(const BoundingBox& box, const ::Transform& transform
     const auto ya = up * box.Minimum.Y;
     const auto yb = up * box.Maximum.Y;
 
-    const auto backward = Float3::Transform(Float3::Backward, transform.Orientation);
-    const auto za = backward * box.Minimum.Z;
-    const auto zb = backward * box.Maximum.Z;
+    const auto forward = Float3::Transform(Float3::Forward, transform.Orientation);
+    const auto za = forward * box.Minimum.Z;
+    const auto zb = forward * box.Maximum.Z;
 
     const auto min = Vector3::Min(xa, xb) + Vector3::Min(ya, yb) + Vector3::Min(za, zb) + transform.Translation;
     const auto max = Vector3::Max(xa, xb) + Vector3::Max(ya, yb) + Vector3::Max(za, zb) + transform.Translation;

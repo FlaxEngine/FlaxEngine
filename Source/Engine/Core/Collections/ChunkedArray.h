@@ -173,6 +173,14 @@ public:
             return *this;
         }
 
+        Iterator& operator=(Iterator&& v)
+        {
+            _collection = v._collection;
+            _chunkIndex = v._chunkIndex;
+            _index = v._index;
+            return *this;
+        }
+
         Iterator& operator++()
         {
             // Check if it is not at end

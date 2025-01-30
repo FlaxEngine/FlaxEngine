@@ -31,6 +31,11 @@ namespace FlaxEditor.CustomEditors.GUI
         internal int FirstChildControlIndex;
 
         /// <summary>
+        /// Helper value used by the <see cref="PropertiesList"/> to draw property names in a proper area.
+        /// </summary>
+        internal PropertiesList FirstChildControlContainer;
+
+        /// <summary>
         /// The linked custom editor (shows the label property).
         /// </summary>
         internal CustomEditor LinkedEditor;
@@ -154,8 +159,16 @@ namespace FlaxEditor.CustomEditors.GUI
         public override void OnDestroy()
         {
             SetupContextMenu = null;
+            LinkedEditor = null;
+            FirstChildControlContainer = null;
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return Text.ToString();
         }
     }
 }

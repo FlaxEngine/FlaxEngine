@@ -6,11 +6,17 @@
 
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Core/Math/Color.h"
+#include "Engine/Core/Math/Color32.h"
+#include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Types/Span.h"
 
+struct RenderView;
+class Collider;
+class Light;
 struct RenderContext;
 class GPUTextureView;
 class GPUContext;
+class GPUBuffer;
 class RenderTask;
 class SceneRenderTask;
 class Actor;
@@ -22,6 +28,14 @@ struct Transform;
 API_CLASS(Static) class FLAXENGINE_API DebugDraw
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
+
+    /// <summary>
+    /// Vertex data for debug shapes.
+    /// </summary>
+    PACK_STRUCT(struct Vertex {
+        Float3 Position;
+        Color32 Color;
+        });
 
 #if USE_EDITOR
     /// <summary>
@@ -68,6 +82,28 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     API_FUNCTION() static void DrawActors(Actor** selectedActors, int32 selectedActorsCount, bool drawScenes);
 
     /// <summary>
+    /// Draws the debug shapes for the given actor and the actor's children
+    /// </summary>
+    /// <param name="actor">The actor to start drawing at.</param>
+    API_FUNCTION() static void DrawActorsTree(Actor* actor);
+
+#if USE_EDITOR
+    /// <summary>
+    /// Draws the physics debug shapes for the given collider. Editor Only
+    /// </summary>
+    /// <param name="collider">The collider to draw.</param>
+    /// <param name="view">The render view to draw in.</param>
+    API_FUNCTION() static void DrawColliderDebugPhysics(Collider* collider, RenderView& view);
+
+    /// <summary>
+    /// Draws the light debug shapes for the given light. Editor Only
+    /// </summary>
+    /// <param name="light">The light debug to draw.</param>
+    /// <param name="view">The render view to draw in.</param>
+    API_FUNCTION() static void DrawLightDebug(Light* light, RenderView& view);
+#endif
+
+    /// <summary>
     /// Draws the lines axis from direction.
     /// </summary>
     /// <param name="origin">The origin of the line.</param>
@@ -96,7 +132,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-    API_FUNCTION() DEPRECATED static void DrawRay(const Vector3& origin, const Vector3& direction, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
+    API_FUNCTION() DEPRECATED("Use DrawRay with length parameter instead") static void DrawRay(const Vector3& origin, const Vector3& direction, const Color& color, float duration, bool depthTest);
 
     /// <summary>
     /// Draws the line in a direction.
@@ -149,6 +185,15 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
     API_FUNCTION() static void DrawLines(const Span<Float3>& lines, const Matrix& transform, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the lines using the provided vertex buffer that contains pairs of Vertex elements. Line positions are located one after another (e.g. l0.start, l0.end, l1.start, l1.end,...).
+    /// </summary>
+    /// <param name="lines">The GPU buffer with vertices for lines (must have multiple of 2 elements).</param>
+    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawLines(GPUBuffer* lines, const Matrix& transform, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the lines. Line positions are located one after another (e.g. l0.start, l0.end, l1.start, l1.end,...).
@@ -664,6 +709,12 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="size">The font size.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     API_FUNCTION() static void DrawText(const StringView& text, const Transform& transform, const Color& color = Color::White, int32 size = 32, float duration = 0.0f);
+
+    /// <summary>
+    /// Clears all debug shapes displayed on screen.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    API_FUNCTION() static void Clear(void* context = nullptr);
 };
 
 #define DEBUG_DRAW_AXIS_FROM_DIRECTION(origin, direction, size, duration, depthTest)                 DebugDraw::DrawAxisFromDirection(origin, direction, size, duration, depthTest);
@@ -696,6 +747,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 #define DEBUG_DRAW_WIRE_ARC(position, orientation, radius, angle, color, duration, depthTest)               DebugDraw::DrawWireArc(position, orientation, radius, angle, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, capScale, color, duration, depthTest)           DebugDraw::DrawWireArrow(position, orientation, scale, capScale, color, duration, depthTest)
 #define DEBUG_DRAW_TEXT(text, position, color, size, duration)                                              DebugDraw::DrawText(text, position, color, size, duration)
+#define DEBUG_DRAW_CLEAR(context)                                                                           DebugDraw::Clear(context)
 
 #else
 
@@ -728,5 +780,6 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 #define DEBUG_DRAW_WIRE_ARC(position, orientation, radius, angle, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, capScale, color, duration, depthTest)
 #define DEBUG_DRAW_TEXT(text, position, color, size, duration)
+#define DEBUG_DRAW_CLEAR(context)
 
 #endif

@@ -930,6 +930,9 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     // Fire event
     CallSceneEvent(SceneEventType::OnSceneLoading, scene, sceneId);
 
+    // Get any injected children of the scene.
+    Array<Actor*> injectedSceneChildren = scene->Children;
+
     // Loaded scene objects list
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
     const int32 dataCount = (int32)data.Size();
@@ -1031,6 +1034,20 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     // /\ all above this has to be done on multiple threads at once
     // \/ all below this has to be done on an any thread
 
+    // Add injected children of scene (via OnSceneLoading) into sceneObjects to be initialized
+    for (auto child : injectedSceneChildren)
+    {
+        Array<SceneObject*> injectedSceneObjects;
+        injectedSceneObjects.Add(child);
+        SceneQuery::GetAllSceneObjects(child, injectedSceneObjects);
+        for (auto o : injectedSceneObjects)
+        {
+            if (!o->IsRegistered())
+                o->RegisterObject();
+            sceneObjects->Add(o);
+        }
+    }
+
     // Synchronize prefab instances (prefab may have objects removed or reordered so deserialized instances need to synchronize with it)
     // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
     SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
@@ -1047,7 +1064,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         PROFILE_CPU_NAMED("Initialize");
 
         SceneObject** objects = sceneObjects->Get();
-        for (int32 i = 0; i < dataCount; i++)
+        for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = objects[i];
             if (obj)

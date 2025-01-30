@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.Content.Settings;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Windows.Assets;
@@ -71,20 +72,20 @@ namespace FlaxEditor.Surface.Archetypes
                 // Layered material
                 if (GetBox(MaterialNodeBoxes.Layer).HasAnyConnection)
                 {
-                    GetBox(MaterialNodeBoxes.Color).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Mask).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Emissive).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Metalness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Specular).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Roughness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Normal).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Opacity).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = false;
-                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = false;
-                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
-                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
-                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Color).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Mask).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Emissive).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Metalness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Specular).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Roughness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Normal).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = false;
+                    GetBox(MaterialNodeBoxes.PositionOffset).IsActive = false;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = false;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = false;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).IsActive = false;
                     return;
                 }
 
@@ -102,94 +103,94 @@ namespace FlaxEditor.Surface.Archetypes
                     bool isNotUnlit = info.ShadingModel != MaterialShadingModel.Unlit;
                     bool withTess = info.TessellationMode != TessellationMethod.None;
 
-                    GetBox(MaterialNodeBoxes.Color).Enabled = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.Mask).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Emissive).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Metalness).Enabled = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.Specular).Enabled = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.Roughness).Enabled = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.Normal).Enabled = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.Opacity).Enabled = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage || info.BlendMode != MaterialBlendMode.Opaque;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = info.BlendMode != MaterialBlendMode.Opaque;
-                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = true;
-                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = withTess;
-                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = withTess;
-                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage;
+                    GetBox(MaterialNodeBoxes.Color).IsActive = isNotUnlit;
+                    GetBox(MaterialNodeBoxes.Mask).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Emissive).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Metalness).IsActive = isNotUnlit;
+                    GetBox(MaterialNodeBoxes.Specular).IsActive = isNotUnlit;
+                    GetBox(MaterialNodeBoxes.Roughness).IsActive = isNotUnlit;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = isNotUnlit;
+                    GetBox(MaterialNodeBoxes.Normal).IsActive = isNotUnlit;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage || info.BlendMode != MaterialBlendMode.Opaque;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = info.BlendMode != MaterialBlendMode.Opaque;
+                    GetBox(MaterialNodeBoxes.PositionOffset).IsActive = true;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = withTess;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = withTess;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).IsActive = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage;
                     break;
                 }
                 case MaterialDomain.PostProcess:
                 {
-                    GetBox(MaterialNodeBoxes.Color).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Mask).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Emissive).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Metalness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Specular).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Roughness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Normal).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Opacity).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = false;
-                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = false;
-                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
-                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
-                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Color).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Mask).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Emissive).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Metalness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Specular).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Roughness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Normal).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = false;
+                    GetBox(MaterialNodeBoxes.PositionOffset).IsActive = false;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = false;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = false;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).IsActive = false;
                     break;
                 }
                 case MaterialDomain.Decal:
                 {
                     var mode = info.DecalBlendingMode;
 
-                    GetBox(MaterialNodeBoxes.Color).Enabled = mode == MaterialDecalBlendingMode.Translucent || mode == MaterialDecalBlendingMode.Stain;
-                    GetBox(MaterialNodeBoxes.Mask).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Emissive).Enabled = mode == MaterialDecalBlendingMode.Translucent || mode == MaterialDecalBlendingMode.Emissive;
-                    GetBox(MaterialNodeBoxes.Metalness).Enabled = mode == MaterialDecalBlendingMode.Translucent;
-                    GetBox(MaterialNodeBoxes.Specular).Enabled = mode == MaterialDecalBlendingMode.Translucent;
-                    GetBox(MaterialNodeBoxes.Roughness).Enabled = mode == MaterialDecalBlendingMode.Translucent;
-                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Normal).Enabled = mode == MaterialDecalBlendingMode.Translucent || mode == MaterialDecalBlendingMode.Normal;
-                    GetBox(MaterialNodeBoxes.Opacity).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = false;
-                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = false;
-                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
-                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
-                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Color).IsActive = mode == MaterialDecalBlendingMode.Translucent || mode == MaterialDecalBlendingMode.Stain;
+                    GetBox(MaterialNodeBoxes.Mask).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Emissive).IsActive = mode == MaterialDecalBlendingMode.Translucent || mode == MaterialDecalBlendingMode.Emissive;
+                    GetBox(MaterialNodeBoxes.Metalness).IsActive = mode == MaterialDecalBlendingMode.Translucent;
+                    GetBox(MaterialNodeBoxes.Specular).IsActive = mode == MaterialDecalBlendingMode.Translucent;
+                    GetBox(MaterialNodeBoxes.Roughness).IsActive = mode == MaterialDecalBlendingMode.Translucent;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Normal).IsActive = mode == MaterialDecalBlendingMode.Translucent || mode == MaterialDecalBlendingMode.Normal;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = false;
+                    GetBox(MaterialNodeBoxes.PositionOffset).IsActive = false;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = false;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = false;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).IsActive = false;
                     break;
                 }
                 case MaterialDomain.GUI:
                 {
-                    GetBox(MaterialNodeBoxes.Color).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Mask).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Emissive).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Metalness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Specular).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Roughness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Normal).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Opacity).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = false;
-                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = false;
-                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
-                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
-                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Color).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Mask).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Emissive).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Metalness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Specular).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Roughness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Normal).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = false;
+                    GetBox(MaterialNodeBoxes.PositionOffset).IsActive = false;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = false;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = false;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).IsActive = false;
                     break;
                 }
                 case MaterialDomain.VolumeParticle:
                 {
-                    GetBox(MaterialNodeBoxes.Color).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Mask).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Emissive).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Metalness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Specular).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Roughness).Enabled = false;
-                    GetBox(MaterialNodeBoxes.AmbientOcclusion).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Normal).Enabled = false;
-                    GetBox(MaterialNodeBoxes.Opacity).Enabled = true;
-                    GetBox(MaterialNodeBoxes.Refraction).Enabled = false;
-                    GetBox(MaterialNodeBoxes.PositionOffset).Enabled = false;
-                    GetBox(MaterialNodeBoxes.TessellationMultiplier).Enabled = false;
-                    GetBox(MaterialNodeBoxes.WorldDisplacement).Enabled = false;
-                    GetBox(MaterialNodeBoxes.SubsurfaceColor).Enabled = false;
+                    GetBox(MaterialNodeBoxes.Color).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Mask).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Emissive).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Metalness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Specular).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Roughness).IsActive = false;
+                    GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Normal).IsActive = false;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = true;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = false;
+                    GetBox(MaterialNodeBoxes.PositionOffset).IsActive = false;
+                    GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = false;
+                    GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = false;
+                    GetBox(MaterialNodeBoxes.SubsurfaceColor).IsActive = false;
                     break;
                 }
                 default: throw new ArgumentOutOfRangeException();
@@ -590,7 +591,7 @@ namespace FlaxEditor.Surface.Archetypes
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.ComboBox(0, 0, 70.0f, 0, FlaxEditor.Tools.Terrain.PaintTerrainGizmoMode.TerrainLayerNames),
+                    NodeElementArchetype.Factory.ComboBox(0, 0, 70.0f, 0, LayersAndTagsSettings.GetCurrentTerrainLayers()),
                     NodeElementArchetype.Factory.Output(0, "", typeof(float), 0),
                 }
             },
@@ -935,6 +936,142 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(1, "Gradient", true, typeof(float), 1, 0),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 2),
                 }
+            },
+            new NodeArchetype
+            {
+                TypeID = 43,
+                Title = "Rotate UV",
+                Description = "Rotates 2D vector by given angle around (0,0) origin",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(250, 40),
+                ConnectionsHints = ConnectionsHint.Vector,
+                DefaultValues =
+                [
+                    0.0f,
+                ],
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float2), 2),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 44,
+                Title = "Cone Gradient",
+                Description = "Creates cone gradient around normalized UVs (range [-1; 1]), angle is in radians (range [0; TwoPi])",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 40),
+                ConnectionsHints = ConnectionsHint.Vector,
+                DefaultValues =
+                [
+                    0.0f,
+                ],
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 2),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 45,
+                Title = "Cycle Gradient",
+                Description = "Creates 2D sphere mask gradient around normalized UVs (range [-1; 1])",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 20),
+                ConnectionsHints = ConnectionsHint.Vector,
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 1),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 46,
+                Title = "Falloff and Offset",
+                Description = "",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 60),
+                ConnectionsHints = ConnectionsHint.Numeric,
+                DefaultValues =
+                [
+                    0.0f,
+                    0.9f
+                ],
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "Value", true, typeof(float), 0),
+                    NodeElementArchetype.Factory.Input(1, "Offset", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "Falloff", true, typeof(float), 2, 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 3),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 47,
+                Title = "Linear Gradient",
+                Description = "x = Gradient along X axis, y = Gradient along Y axis",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 60),
+                ConnectionsHints = ConnectionsHint.Vector,
+                DefaultValues =
+                [
+                    0.0f,
+                    false
+                ],
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "Mirror", true, typeof(bool), 2, 1),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float2), 3),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 48,
+                Title = "Radial Gradient",
+                Description = "",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 40),
+                ConnectionsHints = ConnectionsHint.Vector,
+                DefaultValues =
+                [
+                    0.0f,
+                ],
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "Angle", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 2),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 49,
+                Title = "Ring Gradient",
+                Description = "x = InnerMask,y = OuterMask,z = Mask",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 80),
+                ConnectionsHints = ConnectionsHint.Vector,
+                DefaultValues =
+                [
+                    1.0f,
+                    0.8f,
+                    0.05f,
+                ],
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "UV", true, typeof(Float2), 0),
+                    NodeElementArchetype.Factory.Input(1, "OuterBounds", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "InnerBounds", true, typeof(float), 2, 1),
+                    NodeElementArchetype.Factory.Input(3, "Falloff", true, typeof(float), 3, 2),
+                    NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 4),
+                ]
             },
         };
     }

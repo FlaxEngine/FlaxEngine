@@ -186,7 +186,8 @@ public:
     /// </summary>
     /// <param name="depthBuffer">The depth buffer to clear.</param>
     /// <param name="depthValue">The clear depth value.</param>
-    API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = 1.0f) = 0;
+    /// <param name="stencilValue">The clear stencil value.</param>
+    API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = 1.0f, uint8 stencilValue = 0) = 0;
 
     /// <summary>
     /// Clears an unordered access buffer with a float value.
@@ -196,14 +197,14 @@ public:
     API_FUNCTION() virtual void ClearUA(GPUBuffer* buf, const Float4& value) = 0;
 
     /// <summary>
-    /// Clears an unordered access buffer with a unsigned value.
+    /// Clears an unordered access buffer with an unsigned value.
     /// </summary>
     /// <param name="buf">The buffer to clear.</param>
     /// <param name="value">The clear value.</param>
     virtual void ClearUA(GPUBuffer* buf, const uint32 value[4]) = 0;
 
     /// <summary>
-    /// Clears an unordered access texture with a unsigned value.
+    /// Clears an unordered access texture with an unsigned value.
     /// </summary>
     /// <param name="texture">The texture to clear.</param>
     /// <param name="value">The clear value.</param>
@@ -484,7 +485,7 @@ public:
     /// </summary>
     /// <param name="startVertex">A value added to each index before reading a vertex from the vertex buffer.</param>
     /// <param name="verticesCount">The vertices count.</param>
-    API_FUNCTION() FORCE_INLINE void Draw(uint32 startVertex, uint32 verticesCount)
+    API_FUNCTION() FORCE_INLINE void Draw(int32 startVertex, uint32 verticesCount)
     {
         DrawInstanced(verticesCount, 1, 0, startVertex);
     }

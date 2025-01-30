@@ -165,16 +165,6 @@ public:
     }
 
     /// <summary>
-    /// Converts Flax blend mode to the Vulkan blend factor.
-    /// </summary>
-    /// <param name="value">The Flax blend mode.</param>
-    /// <returns>The Vulkan blend factor.</returns>
-    static FORCE_INLINE VkBlendFactor ToVulkanBlendFactor(const BlendingMode::Blend value)
-    {
-        return BlendToVkBlendFactor[(int32)value];
-    }
-
-    /// <summary>
     /// Converts Flax blend operation to the Vulkan blend operation.
     /// </summary>
     /// <param name="value">The Flax blend operation.</param>

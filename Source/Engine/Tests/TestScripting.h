@@ -8,6 +8,60 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/SerializableScriptingObject.h"
 
+// Test default values init on fields.
+API_STRUCT(NoDefault) struct TestDefaultValues
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(TestDefaultValues);
+
+    // Default value case 1
+    API_FIELD() float TestFloat1 = {};
+    // Default value case 2
+    API_FIELD() float TestFloat2 = { };
+    // Default value case 3
+    API_FIELD() float TestFloat3 = {1.0f};
+    // Default value case 4
+    API_FIELD() float TestFloat4 = float{};
+    // Default value case 5
+    API_FIELD() float TestFloat5 = float{ };
+    // Default value case 6
+    API_FIELD() float TestFloat6 = float{1.0f};
+    // Default value case 7
+    API_FIELD() float TestFloat7 {};
+    // Default value case 8
+    API_FIELD() float TestFloat8 {1.0f};
+    // Default value case 9
+    API_FIELD() float TestFloat9 = 1.0f;
+    // Default value case 10
+    API_FIELD() float TestFloat10 = 1.f;
+    // Default value case 11
+    API_FIELD() float TestFloat11 = 1;
+
+    // Test code injection parsing
+    API_INJECT_CODE(csharp, ""
+"namespace Test"
+"{"
+"\t/// <summary>\n\t/// Test code injection parsing\n\t/// </summary>"
+"    public static class TestClass"
+"    {"
+"    }"
+"}")
+};
+
+// Test interface (name conflict with namespace)
+API_INTERFACE(Namespace="Foo") class FLAXENGINE_API IFoo
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(IFoo);
+};
+
+// Test class (name conflict with namespace)
+API_CLASS(Namespace="Foo") class FLAXENGINE_API Foo : public ScriptingObject
+{
+    DECLARE_SCRIPTING_TYPE(Foo);
+
+    // Test field.
+    API_FIELD() IFoo* FooInterface;
+};
+
 // Test compilation with nested types.
 API_CLASS() class TestNesting : public SerializableScriptingObject
 {
@@ -127,6 +181,15 @@ public:
         nonPod.Vector = Float3::UnitY;
         return str.Length();
     }
+
+    // Test trailing return type
+    API_FUNCTION() auto TestTrailingReturn(int32 number) -> float
+    {
+        return static_cast<float>(number);
+    }
+
+    // Test nameless arguments
+    API_FUNCTION() void TestNamelessArguments(int32, float, bool){}
 
     int32 TestInterfaceMethod(const String& str) override
     {

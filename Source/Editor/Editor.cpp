@@ -141,7 +141,7 @@ bool Editor::CheckProjectUpgrade()
         FileSystem::DeleteDirectory(tempSourceSetup);
         FileSystem::CreateDirectory(tempSourceSetup);
         Array<String> files;
-        FileSystem::DirectoryGetFiles(files, sourceFolder, TEXT("*"), DirectorySearchOption::AllDirectories);
+        FileSystem::DirectoryGetFiles(files, sourceFolder);
         bool useEditorModule = false;
         for (auto& file : files)
         {
@@ -159,7 +159,7 @@ bool Editor::CheckProjectUpgrade()
             FileSystem::CopyFile(tempSourceFile, file);
         }
         FileSystem::DeleteDirectory(sourceFolder);
-        FileSystem::CopyDirectory(sourceFolder, tempSourceSetup, true);
+        FileSystem::CopyDirectory(sourceFolder, tempSourceSetup);
         FileSystem::DeleteDirectory(tempSourceSetup);
 
         // Generate module files
@@ -226,7 +226,7 @@ bool Editor::CheckProjectUpgrade()
                                "        base.Init();\n"
                                "\n"
                                "        // Reference the modules for game\n"
-                               "        Modules.Add(\"{0}\");\n"
+                               "        Modules.Add(nameof({0}));\n"
                                "    }}\n"
                                "}}\n"
                            ), codeName), Encoding::UTF8);
@@ -242,7 +242,7 @@ bool Editor::CheckProjectUpgrade()
                                "        base.Init();\n"
                                "\n"
                                "        // Reference the modules for editor\n"
-                               "        Modules.Add(\"{0}\");\n"
+                               "        Modules.Add(nameof({0}));\n"
                                "{1}"
                                "    }}\n"
                                "}}\n"
@@ -364,7 +364,7 @@ bool Editor::BackupProject()
     LOG(Info, "Backup project to \"{0}\"", dstPath);
 
     // Copy everything
-    return FileSystem::CopyDirectory(dstPath, Globals::ProjectFolder, true);
+    return FileSystem::CopyDirectory(dstPath, Globals::ProjectFolder);
 }
 
 int32 Editor::LoadProduct()
@@ -476,7 +476,7 @@ int32 Editor::LoadProduct()
                                              "        base.Init();\n"
                                              "\n"
                                              "        // Reference the modules for game\n"
-                                             "        Modules.Add(\"Game\");\n"
+                                             "        Modules.Add(nameof(Game));\n"
                                              "    }\n"
                                              "}\n"), Encoding::UTF8);
         failed |= File::WriteAllText(projectPath / TEXT("Source/GameEditorTarget.Build.cs"),TEXT(
@@ -490,7 +490,7 @@ int32 Editor::LoadProduct()
                                          "        base.Init();\n"
                                          "\n"
                                          "        // Reference the modules for editor\n"
-                                         "        Modules.Add(\"Game\");\n"
+                                         "        Modules.Add(nameof(Game));\n"
                                          "    }\n"
                                          "}\n"), Encoding::UTF8);
         failed |= File::WriteAllText(projectPath / TEXT("Source/Game/Game.Build.cs"),TEXT(
@@ -550,7 +550,7 @@ int32 Editor::LoadProduct()
         }
         if (!FileSystem::FileExists(files[0]))
         {
-            Platform::Fatal(TEXT("Cannot opoen selected project file because it doesn't exist."));
+            Platform::Fatal(TEXT("Cannot open selected project file because it doesn't exist."));
             return -1;
         }
         projectPath = StringUtils::GetDirectoryName(files[0]);
@@ -673,6 +673,7 @@ bool Editor::Init()
     Managed = New<ManagedEditor>();
 
     // Show splash screen
+    if (!CommandLine::Options.Headless.IsTrue())
     {
         PROFILE_CPU_NAMED("Splash");
         if (EditorImpl::Splash == nullptr)

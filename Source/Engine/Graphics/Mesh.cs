@@ -339,7 +339,7 @@ namespace FlaxEngine
         /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
-        [Obsolete("Deprecated in 1.4, use overload with Float3 and Float2 parameters")]
+        [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
         public void UpdateMesh(Vector3[] vertices, int[] triangles, Vector3[] normals = null, Vector3[] tangents = null, Vector2[] uv = null, Color32[] colors = null)
         {
             UpdateMesh(Utils.ConvertCollection(vertices), triangles, Utils.ConvertCollection(normals), Utils.ConvertCollection(tangents), Utils.ConvertCollection(uv), colors);
@@ -357,7 +357,7 @@ namespace FlaxEngine
         /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
-        [Obsolete("Deprecated in 1.4, use overload with Float3 and Float2 parameters")]
+        [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
         public void UpdateMesh(List<Vector3> vertices, List<int> triangles, List<Vector3> normals = null, List<Vector3> tangents = null, List<Vector2> uv = null, List<Color32> colors = null)
         {
             UpdateMesh(Utils.ConvertCollection(vertices), triangles, Utils.ConvertCollection(normals), Utils.ConvertCollection(tangents), Utils.ConvertCollection(uv), colors);
@@ -375,7 +375,7 @@ namespace FlaxEngine
         /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
-        [Obsolete("Deprecated in 1.4, use overload with Float3 and Float2 parameters")]
+        [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
         public void UpdateMesh(Vector3[] vertices, uint[] triangles, Vector3[] normals = null, Vector3[] tangents = null, Vector2[] uv = null, Color32[] colors = null)
         {
             UpdateMesh(Utils.ConvertCollection(vertices), triangles, Utils.ConvertCollection(normals), Utils.ConvertCollection(tangents), Utils.ConvertCollection(uv), colors);
@@ -393,7 +393,7 @@ namespace FlaxEngine
         /// <param name="tangents">The normal vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
-        [Obsolete("Deprecated in 1.4, use overload with Float3 and Float2 parameters")]
+        [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
         public void UpdateMesh(List<Vector3> vertices, List<uint> triangles, List<Vector3> normals = null, List<Vector3> tangents = null, List<Vector2> uv = null, List<Color32> colors = null)
         {
             UpdateMesh(Utils.ConvertCollection(vertices), triangles, Utils.ConvertCollection(normals), Utils.ConvertCollection(tangents), Utils.ConvertCollection(uv), colors);
@@ -411,7 +411,7 @@ namespace FlaxEngine
         /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
-        [Obsolete("Deprecated in 1.4, use overload with Float3 and Float2 parameters")]
+        [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
         public void UpdateMesh(Vector3[] vertices, ushort[] triangles, Vector3[] normals = null, Vector3[] tangents = null, Vector2[] uv = null, Color32[] colors = null)
         {
             UpdateMesh(Utils.ConvertCollection(vertices), triangles, Utils.ConvertCollection(normals), Utils.ConvertCollection(tangents), Utils.ConvertCollection(uv), colors);
@@ -429,7 +429,7 @@ namespace FlaxEngine
         /// <param name="tangents">The tangent vectors (per vertex). Use null to compute them from normal vectors.</param>
         /// <param name="uv">The texture coordinates (per vertex).</param>
         /// <param name="colors">The vertex colors (per vertex).</param>
-        [Obsolete("Deprecated in 1.4, use overload with Float3 and Float2 parameters")]
+        [Obsolete("Use UpdateMesh with Float3 and Float2 parameters instead")]
         public void UpdateMesh(List<Vector3> vertices, List<ushort> triangles, List<Vector3> normals = null, List<Vector3> tangents = null, List<Vector2> uv = null, List<Color32> colors = null)
         {
             UpdateMesh(Utils.ConvertCollection(vertices), triangles, Utils.ConvertCollection(normals), Utils.ConvertCollection(tangents), Utils.ConvertCollection(uv), colors);

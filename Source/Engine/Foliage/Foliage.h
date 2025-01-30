@@ -134,6 +134,11 @@ public:
     /// </summary>
     API_FUNCTION() void UpdateCullDistance();
 
+    /// <summary>
+    /// Clears all foliage instances. Preserves the foliage types and other properties.
+    /// </summary>
+    API_FUNCTION() void RemoveAllInstances();
+
 public:
     /// <summary>
     /// Gets the global density scale for all foliage instances. The default value is 1. Use values from range 0-1. Lower values decrease amount of foliage instances in-game. Use it to tweak game performance for slower devices.

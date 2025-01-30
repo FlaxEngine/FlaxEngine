@@ -3,6 +3,7 @@
 #include "TerrainMaterialShader.h"
 #include "MaterialShaderFeatures.h"
 #include "MaterialParams.h"
+#include "Engine/Core/Math/Matrix3x4.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -16,7 +17,7 @@
 #include "Engine/Terrain/TerrainPatch.h"
 
 PACK_STRUCT(struct TerrainMaterialShaderData {
-    Matrix WorldMatrix;
+    Matrix3x4 WorldMatrix;
     Float3 WorldInvScale;
     float WorldDeterminantSign;
     float PerInstanceRandom;
@@ -27,6 +28,7 @@ PACK_STRUCT(struct TerrainMaterialShaderData {
     Float4 NeighborLOD; // Per component LOD index for chunk neighbors ordered: top, left, right, bottom
     Float2 OffsetUV; // Offset applied to the texture coordinates (used to implement seamless UVs based on chunk location relative to terrain root)
     Float2 Dummy0;
+    Float4 LightmapArea;
     });
 
 DrawPass TerrainMaterialShader::GetDrawModes() const
@@ -44,7 +46,7 @@ void TerrainMaterialShader::Bind(BindParameters& params)
     // Prepare
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(TerrainMaterialShaderData));
     auto materialData = reinterpret_cast<TerrainMaterialShaderData*>(cb.Get());
@@ -66,7 +68,7 @@ void TerrainMaterialShader::Bind(BindParameters& params)
 
     // Setup material constants
     {
-        Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
+        materialData->WorldMatrix.SetMatrixTranspose(drawCall.World);
         const float scaleX = Float3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13).Length();
         const float scaleY = Float3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23).Length();
         const float scaleZ = Float3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33).Length();
@@ -82,6 +84,7 @@ void TerrainMaterialShader::Bind(BindParameters& params)
         materialData->HeightmapUVScaleBias = drawCall.Terrain.HeightmapUVScaleBias;
         materialData->NeighborLOD = drawCall.Terrain.NeighborLOD;
         materialData->OffsetUV = drawCall.Terrain.OffsetUV;
+        materialData->LightmapArea = *(Float4*)&drawCall.Terrain.LightmapUVsArea;
     }
 
     // Bind terrain textures

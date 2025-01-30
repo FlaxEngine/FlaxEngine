@@ -594,8 +594,6 @@ RenderPassVulkan::~RenderPassVulkan()
 QueryPoolVulkan::QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type)
     : _device(device)
     , _handle(VK_NULL_HANDLE)
-    , _count(0)
-    , _capacity(capacity)
     , _type(type)
 {
     VkQueryPoolCreateInfo createInfo;
@@ -603,9 +601,11 @@ QueryPoolVulkan::QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQuer
     createInfo.queryType = type;
     createInfo.queryCount = capacity;
     VALIDATE_VULKAN_RESULT(vkCreateQueryPool(device->Device, &createInfo, nullptr, &_handle));
+
 #if VULKAN_RESET_QUERY_POOLS
+    // New queries have to be reset before use
+    ResetBeforeUse = true;
     _resetRanges.Add(Range{ 0, static_cast<uint32>(capacity) });
-    device->QueriesToReset.Add(this);
 #endif
 }
 
@@ -626,6 +626,7 @@ void QueryPoolVulkan::Reset(CmdBufferVulkan* cmdBuffer)
         vkCmdResetQueryPool(cmdBuffer->GetHandle(), _handle, range.Start, range.Count);
     }
     _resetRanges.Clear();
+    ResetBeforeUse = false;
 }
 
 #endif
@@ -640,9 +641,9 @@ BufferedQueryPoolVulkan::BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 
     _readResultsBits.AddZeroed((capacity + 63) / 64);
 }
 
-bool BufferedQueryPoolVulkan::AcquireQuery(uint32& resultIndex)
+bool BufferedQueryPoolVulkan::AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& resultIndex)
 {
-    const uint64 allUsedMask = (uint64)-1;
+    const uint64 allUsedMask = MAX_uint64;
     for (int32 wordIndex = _lastBeginIndex / 64; wordIndex < _usedQueryBits.Count(); wordIndex++)
     {
         uint64 beginQueryWord = _usedQueryBits[wordIndex];
@@ -659,10 +660,11 @@ bool BufferedQueryPoolVulkan::AcquireQuery(uint32& resultIndex)
             _usedQueryBits[wordIndex] = _usedQueryBits[wordIndex] | bit;
             _readResultsBits[wordIndex] &= ~bit;
             _lastBeginIndex = resultIndex + 1;
+            if (ResetBeforeUse)
+                Reset(cmdBuffer);
             return true;
         }
     }
-
     return false;
 }
 
@@ -675,7 +677,7 @@ void BufferedQueryPoolVulkan::ReleaseQuery(uint32 queryIndex)
     if (queryIndex < (uint32)_lastBeginIndex)
     {
         // Use the lowest word available
-        const uint64 allUsedMask = (uint64)-1;
+        const uint64 allUsedMask = MAX_uint64;
         const int32 lastQueryWord = _lastBeginIndex / 64;
         if (lastQueryWord < _usedQueryBits.Count() && _usedQueryBits[lastQueryWord] == allUsedMask)
         {
@@ -736,7 +738,7 @@ bool BufferedQueryPoolVulkan::GetResults(GPUContextVulkan* context, uint32 index
 
 bool BufferedQueryPoolVulkan::HasRoom() const
 {
-    const uint64 allUsedMask = (uint64)-1;
+    const uint64 allUsedMask = MAX_uint64;
     if (_lastBeginIndex < _usedQueryBits.Count() * 64)
     {
         ASSERT((_usedQueryBits[_lastBeginIndex / 64] & allUsedMask) != allUsedMask);

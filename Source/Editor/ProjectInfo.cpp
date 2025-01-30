@@ -13,6 +13,37 @@ using namespace pugi;
 
 Array<ProjectInfo*> ProjectInfo::ProjectsCache;
 
+struct XmlCharAsChar
+{
+#if PLATFORM_TEXT_IS_CHAR16
+    Char* Str = nullptr;
+    
+    XmlCharAsChar(const pugi::char_t* str)
+    {
+        if (!str)
+            return;
+        int32 length = 0;
+        while (str[length])
+            length++;
+        Str = (Char*)Platform::Allocate(length * sizeof(Char), sizeof(Char));
+        for (int32 i = 0; i <= length; i++)
+            Str[i] = (Char)str[i];
+    }
+
+    ~XmlCharAsChar()
+    {
+        Platform::Free(Str);
+    }
+#else
+    const Char* Str;
+
+    XmlCharAsChar(const pugi::char_t* str)
+        : Str(str)
+    {
+    }
+#endif
+};
+
 void ShowProjectLoadError(const Char* errorMsg, const String& projectRootFolder)
 {
     Platform::Error(String::Format(TEXT("Failed to load project. {0}\nPath: '{1}'"), errorMsg, projectRootFolder));
@@ -28,14 +59,14 @@ Vector3 GetVector3FromXml(const xml_node& parent, const PUGIXML_CHAR* name, cons
         const auto z = node.child_value(PUGIXML_TEXT("Z"));
         if (x && y && z)
         {
-            Vector3 v;
-            if (!StringUtils::Parse(x, &v.X) && !StringUtils::Parse(y, &v.Y) && !StringUtils::Parse(z, &v.Z))
+            XmlCharAsChar xs(x), ys(y), zs(z);
+            Float3 v;
+            if (!StringUtils::Parse(xs.Str, &v.X) && !StringUtils::Parse(ys.Str, &v.Y) && !StringUtils::Parse(zs.Str, &v.Z))
             {
-                return v;
+                return (Vector3)v;
             }
         }
     }
-
     return defaultValue;
 }
 
@@ -44,8 +75,9 @@ int32 GetIntFromXml(const xml_node& parent, const PUGIXML_CHAR* name, const int3
     const auto node = parent.child_value(name);
     if (node)
     {
+        XmlCharAsChar s(node);
         int32 v;
-        if (!StringUtils::Parse(node, &v))
+        if (!StringUtils::Parse(s.Str, &v))
         {
             return v;
         }

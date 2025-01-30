@@ -12,6 +12,8 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #if USE_EDITOR
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "Engine/Serialization/JsonWriters.h"
+#include "Engine/Content/JsonAsset.h"
 #include "Engine/Level/Level.h"
 #endif
 
@@ -484,6 +486,34 @@ bool Animation::Save(const StringView& path)
     }
 
     return false;
+}
+
+void Animation::GetReferences(Array<Guid>& assets, Array<String>& files) const
+{
+    BinaryAsset::GetReferences(assets, files);
+
+    for (const auto& e : Events)
+    {
+        for (const auto& k : e.Second.GetKeyframes())
+        {
+            if (k.Value.Instance)
+            {
+                // Collect refs from Anim Event data (as Json)
+                rapidjson_flax::StringBuffer buffer;
+                CompactJsonWriter writer(buffer);
+                writer.StartObject();
+                k.Value.Instance->Serialize(writer, nullptr);
+                writer.EndObject();
+                JsonAssetBase::GetReferences(StringAnsiView((const char*)buffer.GetString(), (int32)buffer.GetSize()), assets);
+            }
+        }
+    }
+
+    // Add nested animations
+    for (const auto& e : NestedAnims)
+    {
+        assets.Add(e.Second.Anim.GetID());
+    }
 }
 
 #endif

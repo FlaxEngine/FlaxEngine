@@ -12,10 +12,13 @@
 class FLAXENGINE_API MProperty
 {
     friend MClass;
+    friend MCore;
 
 protected:
 #if USE_MONO
     MonoProperty* _monoProperty;
+#elif USE_NETCORE
+    void* _handle;
 #endif
 
     mutable MMethod* _getMethod;
@@ -34,7 +37,7 @@ public:
 #if USE_MONO
     explicit MProperty(MonoProperty* monoProperty, const char* name, MClass* parentClass);
 #elif USE_NETCORE
-    MProperty(MClass* parentClass, const char* name, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes);
+    MProperty(MClass* parentClass, const char* name, void* handle, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes);
 #endif
 
     /// <summary>
@@ -111,9 +114,9 @@ public:
     /// <summary>
     /// Checks if property has an attribute of the specified type.
     /// </summary>
-    /// <param name="monoClass">The attribute class to check.</param>
+    /// <param name="klass">The attribute class to check.</param>
     /// <returns>True if has attribute of that class type, otherwise false.</returns>
-    bool HasAttribute(MClass* monoClass) const;
+    bool HasAttribute(const MClass* klass) const;
 
     /// <summary>
     /// Checks if property has an attribute of any type.
@@ -124,9 +127,9 @@ public:
     /// <summary>
     /// Returns an instance of an attribute of the specified type. Returns null if the property doesn't have such an attribute.
     /// </summary>
-    /// <param name="monoClass">The attribute class to take.</param>
+    /// <param name="klass">The attribute class to take.</param>
     /// <returns>The attribute object.</returns>
-    MObject* GetAttribute(MClass* monoClass) const;
+    MObject* GetAttribute(const MClass* klass) const;
 
     /// <summary>
     /// Returns an instance of all attributes connected with given property. Returns null if the property doesn't have any attributes.

@@ -15,7 +15,7 @@ class PostProcessingPass : public RendererPass<PostProcessingPass>
 {
 private:
 
-    PACK_STRUCT(struct Data {
+    GPU_CB_STRUCT(Data {
         float BloomLimit;
         float BloomThreshold;
         float BloomMagnitude;
@@ -56,7 +56,7 @@ private:
         Matrix LensFlareStarMat;
         });
 
-    PACK_STRUCT(struct GaussianBlurData {
+    GPU_CB_STRUCT(GaussianBlurData {
         Float2 Size;
         float Dummy3;
         float Dummy4;

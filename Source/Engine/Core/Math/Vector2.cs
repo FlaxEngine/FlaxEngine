@@ -207,7 +207,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a value indicting whether this instance is normalized.
         /// </summary>
-        public bool IsNormalized => Mathr.IsOne(X * X + Y * Y);
+        public bool IsNormalized => Mathr.Abs((X * X + Y * Y) - 1.0f) < 1e-4f;
 
         /// <summary>
         /// Gets a value indicting whether this vector is zero

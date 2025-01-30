@@ -66,10 +66,6 @@ void ShaderProcessing::Parser::init()
 bool ShaderProcessing::Parser::process()
 {
     const Token defineToken("#define");
-    const Separator singleLineCommentSeparator('/', '/');
-    const Separator multiLineCommentSeparator('/', '*');
-
-    // TODO: split parsing into two phrases: comments preprocessing and parsing
 
     // Read whole source code
     Token token;
@@ -77,36 +73,8 @@ bool ShaderProcessing::Parser::process()
     {
         text.ReadToken(&token);
 
-        // Single line comment
-        if (token.Separator == singleLineCommentSeparator)
-        {
-            // Read whole line
-            text.ReadLine();
-        }
-            // Multi line comment
-        else if (token.Separator == multiLineCommentSeparator)
-        {
-            // Read tokens until end sequence
-            char prev = ' ';
-            char c;
-            while (text.CanRead())
-            {
-                c = text.ReadChar();
-                if (prev == '*' && c == '/')
-                {
-                    break;
-                }
-                prev = c;
-            }
-
-            // Check if comment is valid (has end before file end)
-            if (!text.CanRead())
-            {
-                OnWarning(TEXT("Missing multiline comment ending"));
-            }
-        }
-            // Preprocessor definition
-        else if (token == defineToken)
+        // Preprocessor definition
+        if (token == defineToken)
         {
             // Skip
             text.ReadLine();

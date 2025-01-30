@@ -23,10 +23,19 @@ namespace FlaxEditor.GUI.Tree
         /// </summary>
         public const float DefaultNodeOffsetY = 0;
 
+        private const float _targetHighlightScale = 1.25f;
+        private const float _highlightScaleAnimDuration = 0.85f;
+
         private Tree _tree;
 
         private bool _opened, _canChangeOrder;
         private float _animationProgress, _cachedHeight;
+        private bool _isHightlighted;
+        private float _targetHighlightTimeSec;
+        private float _currentHighlightTimeSec;
+        // Used to prevent showing highlight on double mouse click
+        private float _debounceHighlightTime;
+        private float _highlightScale;
         private bool _mouseOverArrow, _mouseOverHeader;
         private float _xOffset, _textWidth;
         private float _headerHeight = 16.0f;
@@ -605,9 +614,47 @@ namespace FlaxEditor.GUI.Tree
             }
         }
 
+        /// <summary>
+        /// Adds a box around the text to highlight the node.
+        /// </summary>
+        /// <param name="durationSec">The duration of the highlight in seconds.</param>
+        public void StartHighlight(float durationSec = 3)
+        {
+            _isHightlighted = true;
+            _targetHighlightTimeSec = durationSec;
+            _currentHighlightTimeSec = 0;
+            _debounceHighlightTime = 0;
+            _highlightScale = 2f;
+        }
+
+        /// <summary>
+        /// Stops any current highlight.
+        /// </summary>
+        public void StopHighlight()
+        {
+            _isHightlighted = false;
+            _targetHighlightTimeSec = 0;
+            _currentHighlightTimeSec = 0;
+            _debounceHighlightTime = 0;
+        }
+
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
+            // Highlight animations
+            if (_isHightlighted)
+            {
+                _debounceHighlightTime += deltaTime;
+                _currentHighlightTimeSec += deltaTime;
+
+                // In the first second, animate the highlight to shrink into it's resting position
+                if (_currentHighlightTimeSec < _highlightScaleAnimDuration)
+                    _highlightScale = Mathf.Lerp(_highlightScale, _targetHighlightScale, _currentHighlightTimeSec);
+
+                if (_currentHighlightTimeSec >= _targetHighlightTimeSec)
+                    _isHightlighted = false;
+            }
+
             // Drop/down animation
             if (_animationProgress < 1.0f)
             {
@@ -676,6 +723,18 @@ namespace FlaxEditor.GUI.Tree
                 textRect.Width -= 18.0f;
             }
 
+            float textWidth = TextFont.GetFont().MeasureText(_text).X;
+            Rectangle trueTextRect = textRect;
+            trueTextRect.Width = textWidth;
+            trueTextRect.Scale(_highlightScale);
+
+            if (_isHightlighted && _debounceHighlightTime > 0.1f)
+            {
+                Color highlightBackgroundColor = Editor.Instance.Options.Options.Visual.HighlightColor;
+                highlightBackgroundColor = highlightBackgroundColor.AlphaMultiplied(0.3f);
+                Render2D.FillRectangle(trueTextRect, highlightBackgroundColor);
+            }
+
             // Draw text
             Color textColor = CacheTextColor();
             Render2D.DrawText(TextFont.GetFont(), _text, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
@@ -698,7 +757,7 @@ namespace FlaxEditor.GUI.Tree
                 }
             }
 
-            // Show tree guide lines
+            // Show tree guidelines
             if (Editor.Instance.Options.Options.Interface.ShowTreeLines)
             {
                 TreeNode parentNode = Parent as TreeNode;
@@ -730,6 +789,12 @@ namespace FlaxEditor.GUI.Tree
                 }
             }
 
+            if (_isHightlighted && _debounceHighlightTime > 0.1f)
+            {
+                // Draw highlights
+                Render2D.DrawRectangle(trueTextRect, Editor.Instance.Options.Options.Visual.HighlightColor, 3);
+            }
+
             // Base
             if (_opened)
             {
@@ -753,15 +818,16 @@ namespace FlaxEditor.GUI.Tree
             var children = _children;
             if (children.Count == 0)
                 return;
+            var last = children.Count - 1;
 
             if (CullChildren)
             {
                 Render2D.PeekClip(out var globalClipping);
                 Render2D.PeekTransform(out var globalTransform);
 
-                // Try to estimate the rough location of the first node, assuming the node height is constant
+                // Try to estimate the rough location of the first and the last nodes, assuming the node height is constant
                 var firstChildGlobalRect = GetChildGlobalRectangle(children[0], ref globalTransform);
-                var firstVisibleChild = Math.Clamp((int)Math.Floor((globalClipping.Y - firstChildGlobalRect.Top) / _headerHeight) + 1, 0, children.Count - 1);
+                var firstVisibleChild = Math.Clamp((int)Math.Floor((globalClipping.Top - firstChildGlobalRect.Top) / _headerHeight) + 1, 0, last);
                 if (GetChildGlobalRectangle(children[firstVisibleChild], ref globalTransform).Top > globalClipping.Top || !children[firstVisibleChild].Visible)
                 {
                     // Estimate overshoot, either it's partially visible or hidden in the tree
@@ -770,22 +836,29 @@ namespace FlaxEditor.GUI.Tree
                         var child = children[firstVisibleChild];
                         if (!child.Visible)
                             continue;
-
                         if (GetChildGlobalRectangle(child, ref globalTransform).Top < globalClipping.Top)
                             break;
                     }
                 }
+                var lastVisibleChild = Math.Clamp((int)Math.Ceiling((globalClipping.Bottom - firstChildGlobalRect.Top) / _headerHeight) + 1, firstVisibleChild, last);
+                if (GetChildGlobalRectangle(children[lastVisibleChild], ref globalTransform).Top < globalClipping.Bottom || !children[lastVisibleChild].Visible)
+                {
+                    // Estimate overshoot, either it's partially visible or hidden in the tree
+                    for (; lastVisibleChild < last; lastVisibleChild++)
+                    {
+                        var child = children[lastVisibleChild];
+                        if (!child.Visible)
+                            continue;
+                        if (GetChildGlobalRectangle(child, ref globalTransform).Top > globalClipping.Bottom)
+                            break;
+                    }
+                }
 
-                for (int i = firstVisibleChild; i < children.Count; i++)
+                for (int i = firstVisibleChild; i <= lastVisibleChild; i++)
                 {
                     var child = children[i];
                     if (!child.Visible)
                         continue;
-
-                    var childGlobalRect = GetChildGlobalRectangle(child, ref globalTransform);
-                    if (!globalClipping.Intersects(ref childGlobalRect))
-                        break;
-
                     Render2D.PushTransform(ref child._cachedTransform);
                     child.Draw();
                     Render2D.PopTransform();
@@ -799,7 +872,7 @@ namespace FlaxEditor.GUI.Tree
             }
             else
             {
-                for (int i = 0; i < children.Count; i++)
+                for (int i = 0; i <= last; i++)
                 {
                     var child = children[i];
                     if (child.Visible)

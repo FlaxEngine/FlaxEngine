@@ -22,7 +22,6 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Windows,
-                        TargetPlatform.UWP,
                         TargetPlatform.Linux,
                         TargetPlatform.XboxOne,
                         TargetPlatform.XboxScarlett,
@@ -60,6 +59,7 @@ namespace Flax.Deps.Dependencies
             Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, buildPlatform);
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
@@ -84,6 +84,7 @@ namespace Flax.Deps.Dependencies
             Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, buildPlatform);
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.UWP:

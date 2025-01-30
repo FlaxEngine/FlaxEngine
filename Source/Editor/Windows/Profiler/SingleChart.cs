@@ -12,6 +12,7 @@ namespace FlaxEditor.Windows.Profiler
     /// <seealso cref="FlaxEngine.GUI.Control" />
     internal class SingleChart : Control
     {
+        internal const float DefaultHeight = TitleHeight + 60;
         private const float TitleHeight = 20;
         private const float PointsOffset = 4;
         private readonly SamplesBuffer<float> _samples;
@@ -63,7 +64,7 @@ namespace FlaxEditor.Windows.Profiler
         /// </summary>
         /// <param name="maxSamples">The maximum samples to collect.</param>
         public SingleChart(int maxSamples = ProfilerMode.MaxSamples)
-        : base(0, 0, 100, 60 + TitleHeight)
+        : base(0, 0, 100, DefaultHeight)
         {
             _samples = new SamplesBuffer<float>(maxSamples);
             _sample = string.Empty;

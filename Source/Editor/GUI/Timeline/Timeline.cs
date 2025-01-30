@@ -1288,10 +1288,7 @@ namespace FlaxEditor.GUI.Timeline
         public virtual void AddTrack(Track track, bool withUndo = true)
         {
             // Ensure name is unique
-            int idx = 1;
-            var name = track.Name;
-            while (!IsTrackNameValid(track.Name))
-                track.Name = string.Format("{0} {1}", name, idx++);
+            track.Name = GetValidTrackName(track.Name);
 
             // Add it to the timeline
             _tracks.Add(track);
@@ -1449,6 +1446,17 @@ namespace FlaxEditor.GUI.Timeline
             {
                 GetTracks(SelectedTracks[i], tracks);
             }
+            
+            // Find the lowest track position for selection
+            int lowestTrackLocation = Tracks.Count - 1;
+            for (int i = 0; i < tracks.Count; i++)
+            {
+                var trackToDelete = tracks[i];
+                if (trackToDelete.TrackIndex < lowestTrackLocation)
+                {
+                    lowestTrackLocation = trackToDelete.TrackIndex;
+                }
+            }
             SelectedTracks.Clear();
             if (withUndo && Undo != null && Undo.Enabled)
             {
@@ -1471,6 +1479,18 @@ namespace FlaxEditor.GUI.Timeline
             }
             OnTracksChanged();
             MarkAsEdited();
+
+            // Select track above deleted tracks unless track is first track
+            if (Tracks.Count > 0)
+            {
+                if (lowestTrackLocation - 1 >= 0)
+                    Select(Tracks[lowestTrackLocation - 1]);
+                else
+                    Select(Tracks[0]);
+                
+                SelectedTracks[0].Focus();
+            }
+
         }
 
         /// <summary>
@@ -1658,6 +1678,14 @@ namespace FlaxEditor.GUI.Timeline
             }
             OnTracksChanged();
             MarkAsEdited();
+            
+            // Deselect and select new clones.
+            Deselect();
+            foreach (var clone in clones)
+            {
+                Select(clone, true);
+            }
+
             SelectedTracks[0].Focus();
         }
 
@@ -1843,11 +1871,7 @@ namespace FlaxEditor.GUI.Timeline
         /// <returns>The track name.</returns>
         public string GetValidTrackName(string name)
         {
-            string newName = name;
-            int count = 0;
-            while (!IsTrackNameValid(newName))
-                newName = string.Format("{0} {1}", name, count++);
-            return newName;
+            return Utilities.Utils.IncrementNameNumber(name, IsTrackNameValid);
         }
 
         /// <summary>
