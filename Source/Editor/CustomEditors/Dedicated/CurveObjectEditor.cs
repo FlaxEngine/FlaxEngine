@@ -15,13 +15,23 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private int _firstTimeShow;
         private BezierCurveEditor<T> _curve;
         private Splitter _splitter;
+        private string _heightCachedPath;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
             var item = layout.CustomContainer<BezierCurveEditor<T>>();
             _curve = item.CustomControl;
-            _curve.Height = 120.0f;
+            var height = 120.0f;
+            var presenter = Presenter;
+            if (presenter != null && (presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
+            {
+                // Try to restore curve height
+                _heightCachedPath = layout.GetLayoutCachePath("Height");
+                if (Editor.Instance.ProjectCache.TryGetCustomData(_heightCachedPath, out float cachedHeight) && cachedHeight > 10.0f)
+                    height = cachedHeight;
+            }
+            _curve.Height = height;
             _curve.Edited += OnCurveEdited;
             _firstTimeShow = 4; // For some weird reason it needs several frames of warmup (probably due to sliders smoothing)
             _splitter = new Splitter
@@ -45,7 +55,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void OnSplitterMoved(Float2 location)
         {
-            _curve.Height  = Mathf.Clamp(_splitter.PointToParent(location).Y, 50.0f, 1000.0f);
+            _curve.Height = Mathf.Clamp(_splitter.PointToParent(location).Y, 50.0f, 1000.0f);
+
+            // Cache curve height
+            if (_heightCachedPath != null)
+                Editor.Instance.ProjectCache.SetCustomData(_heightCachedPath, _curve.Height);
         }
 
         /// <inheritdoc />
@@ -133,13 +147,23 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private int _firstTimeShow;
         private LinearCurveEditor<T> _curve;
         private Splitter _splitter;
+        private string _heightCachedPath;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
             var item = layout.CustomContainer<LinearCurveEditor<T>>();
             _curve = item.CustomControl;
-            _curve.Height = 120.0f;
+            var height = 120.0f;
+            var presenter = Presenter;
+            if (presenter != null && (presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
+            {
+                // Try to restore curve height
+                _heightCachedPath = layout.GetLayoutCachePath("Height");
+                if (Editor.Instance.ProjectCache.TryGetCustomData(_heightCachedPath, out float cachedHeight) && cachedHeight > 10.0f)
+                    height = cachedHeight;
+            }
+            _curve.Height = height;
             _curve.Edited += OnCurveEdited;
             _firstTimeShow = 4; // For some weird reason it needs several frames of warmup (probably due to sliders smoothing)
             _splitter = new Splitter
@@ -164,6 +188,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
         private void OnSplitterMoved(Float2 location)
         {
             _curve.Height  = Mathf.Clamp(_splitter.PointToParent(location).Y, 50.0f, 1000.0f);
+
+            // Cache curve height
+            if (_heightCachedPath != null)
+                Editor.Instance.ProjectCache.SetCustomData(_heightCachedPath, _curve.Height);
         }
 
         /// <inheritdoc />
