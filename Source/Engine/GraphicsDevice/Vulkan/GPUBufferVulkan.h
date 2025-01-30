@@ -46,6 +46,10 @@ public:
     void DescriptorAsUniformTexelBuffer(GPUContextVulkan* context, VkBufferView& bufferView) override;
     void DescriptorAsStorageBuffer(GPUContextVulkan* context, VkBuffer& buffer, VkDeviceSize& offset, VkDeviceSize& range) override;
     void DescriptorAsStorageTexelBuffer(GPUContextVulkan* context, VkBufferView& bufferView) override;
+#if !BUILD_RELEASE
+    bool HasSRV() const override { return ((GPUBuffer*)_parent)->IsShaderResource(); }
+    bool HasUAV() const override { return ((GPUBuffer*)_parent)->IsUnorderedAccess(); }
+#endif
 };
 
 /// <summary>

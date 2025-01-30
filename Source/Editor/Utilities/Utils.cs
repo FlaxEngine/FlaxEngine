@@ -246,7 +246,7 @@ namespace FlaxEditor.Utilities
             500000, 1000000, 5000000, 10000000, 100000000
         };
 
-        internal delegate void DrawCurveTick(decimal tick, float strength);
+        internal delegate void DrawCurveTick(decimal tick, double step, float strength);
 
         internal static Int2 DrawCurveTicks(DrawCurveTick drawTick, double[] tickSteps, ref float[] tickStrengths, float min, float max, float pixelRange, float minDistanceBetweenTicks = 20, float maxDistanceBetweenTicks = 60)
         {
@@ -298,11 +298,27 @@ namespace FlaxEditor.Utilities
                     if (l < biggestTick && (i % Mathd.RoundToInt(lNextStep / lStep) == 0))
                         continue;
                     var tick = (decimal)lStep * i;
-                    drawTick(tick, strength);
+                    drawTick(tick, lStep, strength);
                 }
             }
 
             return new Int2(smallestTick, biggestTick);
+        }
+
+        internal static float GetCurveGridSnap(double[] tickSteps, ref float[] tickStrengths, float min, float max, float pixelRange, float minDistanceBetweenTicks = 20, float maxDistanceBetweenTicks = 60)
+        {
+            double gridStep = 0; // No grid
+            float gridWeight = 0.0f;
+            DrawCurveTicks((decimal tick, double step, float strength) =>
+            {
+                // Find the smallest grid step that has meaningful strength (it's the most visible to the user)
+                if (strength > gridWeight && (step < gridStep || gridStep <= 0.0) && strength > 0.5f)
+                {
+                    gridStep = Math.Abs(step);
+                    gridWeight = strength;
+                }
+            }, tickSteps, ref tickStrengths, min, max, pixelRange, minDistanceBetweenTicks, maxDistanceBetweenTicks);
+            return (float)gridStep;
         }
 
         /// <summary>

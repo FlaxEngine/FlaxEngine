@@ -12,13 +12,11 @@
 class IShaderResourceDX11
 {
 public:
-
     IShaderResourceDX11()
     {
     }
 
 public:
-
     /// <summary>
     /// Gets handle to the shader resource view object.
     /// </summary>
@@ -28,7 +26,6 @@ public:
     /// <summary>
     /// Gets CPU to the unordered access view object.
     /// </summary>
-    /// <returns>UAV</returns>
     virtual ID3D11UnorderedAccessView* UAV() const = 0;
 };
 

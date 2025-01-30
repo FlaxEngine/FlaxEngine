@@ -10,6 +10,7 @@
 GPUBufferDX11::GPUBufferDX11(GPUDeviceDX11* device, const StringView& name)
     : GPUResourceDX11(device, name)
 {
+    _view.SetParnet(this);
 }
 
 GPUBufferView* GPUBufferDX11::View() const

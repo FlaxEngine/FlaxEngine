@@ -335,6 +335,7 @@ public:
     void Clear();
     GPUBufferDescription ToStagingUpload() const;
     GPUBufferDescription ToStagingReadback() const;
+    GPUBufferDescription ToStaging() const;
     bool Equals(const GPUBufferDescription& other) const;
     String ToString() const;
 

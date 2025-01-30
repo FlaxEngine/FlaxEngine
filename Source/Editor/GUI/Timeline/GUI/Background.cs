@@ -176,7 +176,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
             // Draw vertical lines for time axis
             var pixelsInRange = _timeline.Zoom;
             var pixelRange = pixelsInRange * (max - min);
-            var tickRange = Utilities.Utils.DrawCurveTicks((decimal tick, float strength) =>
+            var tickRange = Utilities.Utils.DrawCurveTicks((decimal tick, double step, float strength) =>
             {
                 var time = (float)tick / _timeline.FramesPerSecond;
                 var x = time * zoom + Timeline.StartOffset;
