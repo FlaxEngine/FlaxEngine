@@ -190,17 +190,6 @@ protected:
     /// </summary>
     void RemoveStaticActor();
 
-#if USE_EDITOR
-public:
-    virtual void DrawPhysicsDebug(RenderView& view);
-
-    /// <summary>
-    /// [Editor only] shows collider when it is deselected
-    /// </summary>
-    API_FIELD(public,Attributes = "EditorOrder(200), EditorDisplay(\"Collider\")")
-    bool DisplayCollider = false;
-#endif
-
 private:
     void OnMaterialChanged();
     RigidBody* GetAttachmentRigidBody();
