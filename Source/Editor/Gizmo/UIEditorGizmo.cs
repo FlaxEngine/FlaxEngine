@@ -565,7 +565,7 @@ namespace FlaxEditor
             var linesColor = style.ForegroundDisabled.RGBMultiplied(0.5f);
             var labelsColor = style.ForegroundDisabled;
             var labelsSize = 10.0f;
-            Utilities.Utils.DrawCurveTicks((decimal tick, float strength) =>
+            Utilities.Utils.DrawCurveTicks((decimal tick, double step, float strength) =>
             {
                 var p = _view.PointToParent(axis * (float)tick);
 

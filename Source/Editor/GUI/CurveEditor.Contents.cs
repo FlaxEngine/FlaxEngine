@@ -30,8 +30,10 @@ namespace FlaxEditor.GUI
             internal bool _isMovingTangent;
             internal bool _movedView;
             internal bool _movedKeyframes;
+            internal bool _toggledSelection;
             private TangentPoint _movingTangent;
             private Float2 _movingSelectionStart;
+            private Float2 _movingSelectionStartPosLock;
             private Float2[] _movingSelectionOffsets;
             private Float2 _cmShowPos;
 
@@ -56,12 +58,11 @@ namespace FlaxEditor.GUI
             internal void UpdateSelection(ref Rectangle selectionRect)
             {
                 // Find controls to select
-                for (int i = 0; i < Children.Count; i++)
+                var children = _children;
+                for (int i = 0; i < children.Count; i++)
                 {
-                    if (Children[i] is KeyframePoint p)
-                    {
+                    if (children[i] is KeyframePoint p)
                         p.IsSelected = p.Bounds.Intersects(ref selectionRect);
-                    }
                 }
                 _editor.UpdateTangents();
             }
@@ -72,6 +73,7 @@ namespace FlaxEditor.GUI
                 _isMovingSelection = true;
                 _movedKeyframes = false;
                 var viewRect = _editor._mainPanel.GetClientArea();
+                _movingSelectionStartPosLock = location;
                 _movingSelectionStart = PointToKeyframes(location, ref viewRect);
                 if (_movingSelectionOffsets == null || _movingSelectionOffsets.Length != _editor._points.Count)
                     _movingSelectionOffsets = new Float2[_editor._points.Count];
@@ -82,10 +84,17 @@ namespace FlaxEditor.GUI
 
             internal void OnMove(Float2 location)
             {
+                // Skip updating keyframes until move actual starts to be meaningful
+                if (Float2.Distance(ref _movingSelectionStartPosLock, ref location) < 1.5f)
+                    return;
+                _movingSelectionStartPosLock = Float2.Minimum;
+
                 var viewRect = _editor._mainPanel.GetClientArea();
                 var locationKeyframes = PointToKeyframes(location, ref viewRect);
                 var accessor = _editor.Accessor;
                 var components = accessor.GetCurveComponents();
+                var snapEnabled = Root.GetKey(KeyboardKeys.Control);
+                var snapGrid = snapEnabled ? _editor.GetGridSnap() : Float2.One;
                 for (var i = 0; i < _editor._points.Count; i++)
                 {
                     var p = _editor._points[i];
@@ -122,7 +131,20 @@ namespace FlaxEditor.GUI
                         if (isFirstSelected)
                         {
                             time = locationKeyframes.X + offset.X;
+                        }
 
+                        if (snapEnabled)
+                        {
+                            // Snap to the grid
+                            var key = new Float2(time, value);
+                            key = Float2.SnapToGrid(key, snapGrid);
+                            time = key.X;
+                            value = key.Y;
+                        }
+
+                        // Clamp and snap time to the valid range
+                        if (isFirstSelected)
+                        {
                             if (_editor.FPS.HasValue)
                             {
                                 float fps = _editor.FPS.Value;
@@ -130,8 +152,6 @@ namespace FlaxEditor.GUI
                             }
                             time = Mathf.Clamp(time, minTime, maxTime);
                         }
-
-                        // TODO: snapping keyframes to grid when moving
 
                         _editor.SetKeyframeInternal(p.Index, time, value, p.Component);
                     }
@@ -234,7 +254,11 @@ namespace FlaxEditor.GUI
                     var k = _editor.GetKeyframe(_movingTangent.Index);
                     var kv = _editor.GetKeyframeValue(k);
                     var value = _editor.Accessor.GetCurveValue(ref kv, _movingTangent.Component);
-                    _movingTangent.TangentValue = (PointToKeyframes(location, ref viewRect).Y - value) * _editor.ViewScale.X * 2;
+                    var tangent = PointToKeyframes(location, ref viewRect).Y - value;
+                    if (Root.GetKey(KeyboardKeys.Control))
+                        tangent = Float2.SnapToGrid(new Float2(0, tangent), _editor.GetGridSnap()).Y; // Snap tangent over Y axis
+                    tangent = tangent * _editor.ViewScale.X * 2;
+                    _movingTangent.TangentValue = tangent;
                     _editor.UpdateTangents();
                     Cursor = CursorType.SizeNS;
                     _movedKeyframes = true;
@@ -283,6 +307,7 @@ namespace FlaxEditor.GUI
                 }
 
                 // Cache data
+                _toggledSelection = false;
                 _isMovingSelection = false;
                 _isMovingTangent = false;
                 _mousePos = location;
@@ -305,13 +330,7 @@ namespace FlaxEditor.GUI
                 {
                     if (_leftMouseDown)
                     {
-                        if (Root.GetKey(KeyboardKeys.Control))
-                        {
-                            // Toggle selection
-                            keyframe.IsSelected = !keyframe.IsSelected;
-                            _editor.UpdateTangents();
-                        }
-                        else if (Root.GetKey(KeyboardKeys.Shift))
+                        if (Root.GetKey(KeyboardKeys.Shift))
                         {
                             // Select range
                             keyframe.IsSelected = true;
@@ -335,10 +354,14 @@ namespace FlaxEditor.GUI
                         else if (!keyframe.IsSelected)
                         {
                             // Select node
-                            if (_editor.KeyframesEditorContext != null)
-                                _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
-                            else
-                                _editor.ClearSelection();
+                            if (!Root.GetKey(KeyboardKeys.Control))
+                            {
+                                if (_editor.KeyframesEditorContext != null)
+                                    _editor.KeyframesEditorContext.OnKeyframesDeselect(_editor);
+                                else
+                                    _editor.ClearSelection();
+                            }
+                            _toggledSelection = true;
                             keyframe.IsSelected = true;
                             _editor.UpdateTangents();
                         }
@@ -429,6 +452,12 @@ namespace FlaxEditor.GUI
                         else
                             OnMoveEnd(location);
                     }
+                    // Toggle selection
+                    else if (!_toggledSelection && Root.GetKey(KeyboardKeys.Control) && GetChildAt(location) is KeyframePoint keyframe)
+                    {
+                        keyframe.IsSelected = !keyframe.IsSelected;
+                        _editor.UpdateTangents();
+                    }
 
                     _isMovingSelection = false;
                     _isMovingTangent = false;
@@ -514,11 +543,11 @@ namespace FlaxEditor.GUI
             {
                 if (base.OnMouseDoubleClick(location, button))
                     return true;
-                
+
                 // Add keyframe on double click
                 var child = GetChildAt(location);
-                if (child is not KeyframePoint && 
-                    child is not TangentPoint && 
+                if (child is not KeyframePoint &&
+                    child is not TangentPoint &&
                     _editor.KeyframesCount < _editor.MaxKeyframes)
                 {
                     var viewRect = _editor._mainPanel.GetClientArea();
@@ -545,7 +574,7 @@ namespace FlaxEditor.GUI
                     var viewRect = _editor._mainPanel.GetClientArea();
                     var locationInKeyframes = PointToKeyframes(location, ref viewRect);
                     var locationInEditorBefore = _editor.PointFromKeyframes(locationInKeyframes, ref viewRect);
-                    
+
                     // Scale relative to the curve size
                     var scale = new Float2(delta * 0.1f);
                     _editor._mainPanel.GetDesireClientArea(out var mainPanelArea);

@@ -867,7 +867,7 @@ namespace FlaxEditor.GUI
 
         private void DrawAxis(Float2 axis, Rectangle viewRect, float min, float max, float pixelRange)
         {
-            Utilities.Utils.DrawCurveTicks((decimal tick, float strength) =>
+            Utilities.Utils.DrawCurveTicks((decimal tick, double step, float strength) =>
             {
                 var p = PointFromKeyframes(axis * (float)tick, ref viewRect);
 
@@ -890,6 +890,24 @@ namespace FlaxEditor.GUI
                 );
                 Render2D.DrawText(_labelsFont, label, labelRect, _labelsColor.AlphaMultiplied(strength), TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, 0.7f);
             }, TickSteps, ref _tickStrengths, min, max, pixelRange);
+        }
+
+        private void SetupGrid(out Float2 min, out Float2 max, out Float2 pixelRange)
+        {
+            var viewRect = _mainPanel.GetClientArea();
+            var upperLeft = PointToKeyframes(viewRect.Location, ref viewRect);
+            var bottomRight = PointToKeyframes(viewRect.Size, ref viewRect);
+
+            min = Float2.Min(upperLeft, bottomRight);
+            max = Float2.Max(upperLeft, bottomRight);
+            pixelRange = (max - min) * ViewScale * UnitsPerSecond;
+        }
+
+        private Float2 GetGridSnap()
+        {
+            SetupGrid(out var min, out var max, out var pixelRange);
+            return new Float2(Utilities.Utils.GetCurveGridSnap(TickSteps, ref _tickStrengths, min.X, max.X, pixelRange.X),
+                              Utilities.Utils.GetCurveGridSnap(TickSteps, ref _tickStrengths, min.Y, max.Y, pixelRange.Y));
         }
 
         /// <summary>
@@ -921,12 +939,7 @@ namespace FlaxEditor.GUI
             // Draw time and values axes
             if (ShowAxes != UseMode.Off)
             {
-                var upperLeft = PointToKeyframes(viewRect.Location, ref viewRect);
-                var bottomRight = PointToKeyframes(viewRect.Size, ref viewRect);
-
-                var min = Float2.Min(upperLeft, bottomRight);
-                var max = Float2.Max(upperLeft, bottomRight);
-                var pixelRange = (max - min) * ViewScale * UnitsPerSecond;
+                SetupGrid(out var min, out var max, out var pixelRange);
 
                 Render2D.PushClip(ref viewRect);
 
