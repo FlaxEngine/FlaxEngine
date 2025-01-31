@@ -22,7 +22,7 @@ namespace Flax.Build.Projects.VisualStudio
             public override Guid ProjectTypeGuid => ProjectTypeGuids.Android;
 
             /// <inheritdoc />
-            public override void Generate(string solutionPath)
+            public override void Generate(string solutionPath, bool isMainProject)
             {
                 // Try to reuse the existing project guid from existing files
                 ProjectGuid = GetProjectGuid(Path, Name);
