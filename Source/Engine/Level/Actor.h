@@ -982,6 +982,11 @@ public:
     /// <param name="json">The serialized actor data (state).</param>
     API_FUNCTION() void FromJson(const StringAnsiView& json);
 
+    /// <summary>
+    /// Clones actor including all scripts and any child actors (whole scene tree). Objects are duplicated via serialization (any transient/non-saved state is ignored).
+    /// </summary>
+    API_FUNCTION() Actor* Clone();
+
 public:
     /// <summary>
     /// Called when actor gets added to game systems. Occurs on BeginPlay event or when actor gets activated in hierarchy. Use this event to register object to other game system (eg. audio).

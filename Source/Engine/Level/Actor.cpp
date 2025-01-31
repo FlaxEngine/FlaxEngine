@@ -3,6 +3,7 @@
 #include "Actor.h"
 #include "ActorsCache.h"
 #include "Level.h"
+#include "SceneQuery.h"
 #include "SceneObjectsFactory.h"
 #include "Scene/Scene.h"
 #include "Prefabs/Prefab.h"
@@ -1880,8 +1881,7 @@ String Actor::ToJson()
     CompactJsonWriter writer(buffer);
     writer.SceneObject(this);
     String result;
-    const char* c = buffer.GetString();
-    result.SetUTF8(c, (int32)buffer.GetSize());
+    result.SetUTF8(buffer.GetString(), (int32)buffer.GetSize());
     return result;
 }
 
@@ -1907,6 +1907,41 @@ void Actor::FromJson(const StringAnsiView& json)
     Deserialize(document, &*modifier);
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
     OnTransformChanged();
+}
+
+Actor* Actor::Clone()
+{
+    // Collect actors to clone
+    auto actors = ActorsCache::ActorsListCache.Get();
+    actors->Add(this);
+    SceneQuery::GetAllActors(this, *actors);
+
+    // Serialize objects
+    MemoryWriteStream stream;
+    if (ToBytes(*actors, stream))
+        return nullptr;
+
+    // Remap object ids into a new ones
+    auto modifier = Cache::ISerializeModifier.Get();
+    for (int32 i = 0; i < actors->Count(); i++)
+    {
+        auto actor = actors->At(i);
+        if (!actor)
+            continue;
+        modifier->IdsMapping.Add(actor->GetID(), Guid::New());
+        for (int32 j = 0; j < actor->Scripts.Count(); j++)
+        {
+            const auto script = actor->Scripts[j];
+            if (script)
+                modifier->IdsMapping.Add(script->GetID(), Guid::New());
+        }
+    }
+
+    // Deserialize objects
+    Array<Actor*> output;
+    if (FromBytes(ToSpan(stream.GetHandle(), (int32)stream.GetPosition()), output, modifier.Value) || output.IsEmpty())
+        return nullptr;
+    return output[0];
 }
 
 void Actor::SetPhysicsScene(PhysicsScene* scene)
