@@ -1,9 +1,11 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Linq;
 using FlaxEditor.Content.Create;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
+using FlaxEditor.Scripting;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
@@ -84,17 +86,66 @@ namespace FlaxEditor.Content
 
                     if (_element != null)
                     {
-                        // Define the rule for the types that can be used to create a json data asset
-                        _element.CustomControl.CheckValid += type =>
-                        type.Type != null &&
-                        type.IsClass &&
-                        type.Type.IsVisible &&
-                        !type.IsAbstract &&
-                        !type.IsGenericType &&
-                        type.Type.GetConstructor(Type.EmptyTypes) != null &&
-                        !typeof(FlaxEngine.GUI.Control).IsAssignableFrom(type.Type) &&
-                        !typeof(FlaxEngine.Object).IsAssignableFrom(type.Type);
+                        _element.CustomControl.CheckValid += OnCheckValidJsonAssetType;
                     }
+                }
+
+                private static Type[] BlacklistedClasses =
+                [
+                    typeof(System.Attribute),
+                    typeof(FlaxEngine.Object),
+                    typeof(FlaxEngine.GUI.Control),
+                ];
+
+                private static Type[] BlacklistedStructs =
+                [
+                    typeof(Float2),
+                    typeof(Float3),
+                    typeof(Float4),
+                    typeof(Double2),
+                    typeof(Double3),
+                    typeof(Double4),
+                    typeof(Vector2),
+                    typeof(Vector3),
+                    typeof(Vector4),
+                    typeof(Half2),
+                    typeof(Half3),
+                    typeof(Half4),
+                    typeof(Int2),
+                    typeof(Int3),
+                    typeof(Int4),
+                    typeof(Transform),
+                    typeof(Quaternion),
+                    typeof(BoundingBox),
+                    typeof(BoundingSphere),
+                    typeof(BoundingFrustum),
+                    typeof(Ray),
+                    typeof(Plane),
+                    typeof(Matrix),
+                    typeof(Color),
+                    typeof(Color32),
+                    typeof(FloatR11G11B10),
+                    typeof(FloatR10G10B10A2),
+                    typeof(FlaxEngine.Half),
+                ];
+
+                private static bool OnCheckValidJsonAssetType(ScriptType type)
+                {
+                    // Define the rule for the types that can be used to create a json data asset
+                    var mType = type.Type;
+                    if (mType == null ||
+                        type.IsAbstract ||
+                        type.IsStatic ||
+                        type.IsGenericType ||
+                        !mType.IsVisible)
+                        return false;
+                    if (type.IsClass)
+                        return mType.GetConstructor(Type.EmptyTypes) != null && BlacklistedClasses.FirstOrDefault(x => x.IsAssignableFrom(mType)) == null;
+                    if (type.IsStructure)
+                        return !type.IsPrimitive && 
+                               !type.IsVoid && 
+                               !BlacklistedStructs.Contains(mType);
+                    return false;
                 }
             }
         }
@@ -175,7 +226,7 @@ namespace FlaxEditor.Content
         {
             _thumbnail = SpriteHandle.Invalid;
         }
-        
+
         /// <summary>
         /// Constructor with overriden thumbnail.
         /// </summary>
@@ -196,7 +247,7 @@ namespace FlaxEditor.Content
         {
             Editor.SaveJsonAsset(outputPath, new T());
         }
-        
+
         /// <inheritdoc />
         public override AssetItem ConstructItem(string path, string typeName, ref Guid id)
         {
