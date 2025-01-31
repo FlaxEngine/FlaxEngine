@@ -741,6 +741,11 @@ void DebugDraw::SetContext(void* context)
 
 #endif
 
+Vector3 DebugDraw::GetViewPos()
+{
+    return Context->LastViewPos;
+}
+
 void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTextureView* depthBuffer, bool enableDepthTest)
 {
     PROFILE_GPU_CPU("Debug Draw");
