@@ -78,7 +78,7 @@ namespace FlaxEngine
         {
             Position = position;
             Direction = direction;
-            Assert.IsTrue(Direction.IsNormalized, "The Ray Direction was not normalized");
+            Assert.IsTrue(Direction.IsNormalized, $"The Ray Direction was not normalized\nRay Direction: {direction}, Ray Length: {direction.Length}");
         }
 
         /// <summary>
