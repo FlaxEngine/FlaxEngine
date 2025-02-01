@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -11,6 +11,7 @@ namespace FlaxEngine
     /// </summary>
     public class ComputeBuffer
     {
+        //Dictionary of types
         private Dictionary<System.Type, PixelFormat> RWBufferFromats = new Dictionary<System.Type, PixelFormat>()
         {
             { typeof(float),    PixelFormat.R32_Float },
@@ -19,8 +20,8 @@ namespace FlaxEngine
         };
 
 
-//can be null depends on the usage
-private GPUBuffer m_GraphicStageingBuffer;
+        //can be null depends on the usage
+        private GPUBuffer m_GraphicStageingBuffer;
         //never null unless somfing went very wrong
         private GPUBuffer m_GraphicBuffer;
         internal readonly Type m_Type;
@@ -28,48 +29,91 @@ private GPUBuffer m_GraphicStageingBuffer;
         private byte[] m_MemoryBuffer = null;
         private PixelFormat pixelFormat = PixelFormat.MAX;
         //--------------------------------------------------------------------
+
+        /// <summary>
+        /// Buffer type
+        /// </summary>
         public enum Type
         {
-            // Default ComputeBuffer type maps to Buffer<> / RWBuffer<> in hlsl.
+            /// <summary>
+            /// Default ComputeBuffer type maps to Buffer&lt;T&gt; / RWBuffer&lt;T&gt; in hlsl.
+            /// <br> note: </br>
+            /// <br> Buffer and RWBuffer support only 32-bit formats: float, int and uint.</br>
+            /// </summary>
             Default,
-            // ComputeBuffer that you can use as a structured buffer maps to StructuredBuffer<> / RWStructuredBuffer<> in hlsl.
+            /// <summary>
+            /// ComputeBuffer that you can use as a structured buffer maps to StructuredBuffer&lt;T&gt; / RWStructuredBuffer&lt;T&gt; in hlsl.
+            /// </summary>
             Structured,
-            // ComputeBuffer that you can use as a constant buffer(uniform buffer).
+            /// <summary>
+            /// ComputeBuffer that you can use as a constant buffer(uniform buffer).
+            /// </summary>
             Constant,
         }
+        /// <summary>
+        /// Buffer mode
+        /// </summary>
         public enum Mode
         {
-            // Static buffer, only initial upload allowed by the CPU
+            /// <summary>
+            /// Static buffer, only initial upload allowed by the CPU
+            /// </summary>
             Immutable,
-            // Dynamic buffer. can be only Write Only by the CPU
+            /// <summary>
+            /// Dynamic buffer. can be only Write Only by the CPU
+            /// </summary>
             DynamicWriteOnly,
-            // Dynamic buffer. can be only Read Only by the CPU
+            /// <summary>
+            /// Dynamic buffer. can be only Read Only by the CPU
+            /// </summary>
             DynamicReadOnly,
-            // Dynamic buffer. allows for read and write by the CPU
+            /// <summary>
+            /// Dynamic buffer. allows for read and write by the CPU
+            /// </summary>
             DynamicReadWrite,
         }
         //--------------------------------------------------------------------
 
-        // The debug label for the compute buffer.
+        /// <summary>
+        /// The debug label for the compute buffer.
+        /// </summary>
+        /// <value>
+        /// The name.
+        /// </value>
         public string Name
         {
             set
             {
+#if !BUILD_RELEASE
                 if (m_GraphicStageingBuffer != null)
                     m_GraphicStageingBuffer.Name = "ComputeStageingBuffer" + value;
                 if (m_GraphicBuffer != null)
                     m_GraphicBuffer.Name = "ComputeBuffer " + value;
+#endif
             }
         }
-        // Size of one element in the buffer in bytes.
+        /// <summary>
+        /// Size of one element in the buffer in bytes.
+        /// </summary>
         public readonly uint Stride;
-        // Number of elements in the buffer.
+        /// <summary>
+        /// Number of elements in the buffer.
+        /// </summary>
         public readonly uint Count;
+
+        /// <summary>
+        /// Gets the size in bytes.
+        /// </summary>
         public uint SizeInBytes => Stride * Count;
 
-        public ComputeBuffer(int count, int stride) : this(count, stride, Type.Default) { }
-        public ComputeBuffer(int count, int stride, Type type) : this(count, stride, Type.Default, Mode.Immutable) { }
-        public ComputeBuffer(int count, int stride, Type type, Mode mode)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ComputeBuffer"/> class.
+        /// </summary>
+        /// <param name="count">The count.</param>
+        /// <param name="stride">The stride.</param>
+        /// <param name="type">The type.</param>
+        /// <param name="mode">The mode.</param>
+        public ComputeBuffer(int count, int stride, Type type = Type.Default, Mode mode = Mode.Immutable)
         {
             if (count == 0)
             {
@@ -86,10 +130,30 @@ private GPUBuffer m_GraphicStageingBuffer;
             m_Mode = mode;
             m_Type = type;
         }
+        /// <summary>
+        /// Sets the data.<br></br>
+        /// Note:<br></br>
+        /// <see langword="sizeof"/>(<typeparamref name="T"/>) must be the same as <see cref="Stride"/><br></br>
+        /// and <see cref="Count"/> must be 1
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="data">The data.</param>
         public void SetData<T>(T data)
         {
+            if (Count != 1)
+            {
+                Debug.LogException(new Exception("SetData<T> can't set data buffer was created with more then 1 element or count is 0"));
+                return;
+            }
             SetData(new T[] {data});
         }
+        /// <summary>
+        /// Sets the data.<br></br>
+        /// Note:<br></br>
+        /// <see langword="sizeof"/>(<typeparamref name="T"/>) must be the same as <see cref="Stride"/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="data">The data.</param>
         public void SetData<T>(T[] data)
         {
             //let guard this funcion 
@@ -169,7 +233,7 @@ private GPUBuffer m_GraphicStageingBuffer;
                 Buffer.MemoryCopy(pSrc, pDest, SizeInBytes, SizeInBytes);
             }
             if (m_Type == Type.Constant)
-                return;//we are done data is inside the buffer on cpu when computer will get dispatched it can be pulled
+                return;//we are done data is inside the buffer on cpu, when compute will get dispatched data will be pulled
 
             if (m_GraphicBuffer == null)
                 CreateGPUBuffers();
@@ -198,6 +262,14 @@ private GPUBuffer m_GraphicStageingBuffer;
             }
         }
 
+        /// <summary>
+        /// Gets the data.
+        /// works only on buffers with mode set to <see cref="Mode.DynamicReadOnly"/>,<see cref="Mode.DynamicReadWrite"/>.<br></br>
+        /// Note:<br></br>
+        /// <see langword="sizeof"/>(<typeparamref name="T"/>) must be the same as <see cref="Stride"/>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns><see langword="null"/> or <typeparamref name="T"/>[] with size of <see cref="Count"/> </returns>
         public T[] GetData<T>()
         {
             //let guard this funcion 
@@ -366,13 +438,18 @@ private GPUBuffer m_GraphicStageingBuffer;
         {
             return m_GraphicBuffer;
         }
-
+        /// <summary>
+        /// Finalizes an instance of the <see cref="ComputeBuffer"/> class.
+        /// </summary>
         ~ComputeBuffer()
         {
             m_GraphicStageingBuffer?.ReleaseGPU();
             m_GraphicBuffer?.ReleaseGPU();
         }
-
+        /// <summary>
+        /// Coppies <see cref="ComputeBuffer"/> the specified destination.
+        /// </summary>
+        /// <param name="destination">The destination.</param>
         public void Coppy(ComputeBuffer destination) // to do allow for sub data coppy
         {
             if (destination == null)
