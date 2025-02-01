@@ -103,7 +103,19 @@ namespace FlaxEngine.GUI
             var context = GPUDevice.Instance.MainContext;
             _isDuringTextureDraw = true;
             context.Clear(_texture.View(), Color.Transparent);
-            Render2D.CallDrawing(this, context, _texture);
+            Render2D.Begin(context, _texture);
+            try
+            {
+                var scale = _textureSize / Size;
+                Matrix3x3.Scaling(scale.X, scale.Y, 1.0f, out var scaleMatrix);
+                Render2D.PushTransform(ref scaleMatrix);
+                Draw();
+                Render2D.PopTransform();
+            }
+            finally
+            {
+                Render2D.End();
+            }
             _isDuringTextureDraw = false;
             Profiler.EndEventGPU();
         }
