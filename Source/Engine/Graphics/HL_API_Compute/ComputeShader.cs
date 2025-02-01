@@ -1,6 +1,5 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 
 namespace FlaxEngine
 {
@@ -27,10 +26,12 @@ namespace FlaxEngine
             }
             public string GetName()
             {
+#if !BUILD_RELEASE
                 if (t != null)
                     return t.Name;
                 if (b != null)
                     return b.Name;
+#endif
                 return "";
             }
             public bool IsBuffer() { return b != null; }
@@ -48,7 +49,11 @@ namespace FlaxEngine
             bindings.Add(new Bind() { ID = id });
             return ret;
         }
-
+        /// <summary>
+        /// Sets the constant buffer.
+        /// </summary>
+        /// <param name="buffer">The buffer.</param>
+        /// <returns></returns>
         public void SetConstantBuffer(ComputeBuffer buffer)
         {
             if (buffer == null)
@@ -64,6 +69,12 @@ namespace FlaxEngine
             }
             constantBuffer = buffer;
         }
+        /// <summary>
+        /// Sets the buffer.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <param name="buffer">The buffer.</param>
+        /// <returns></returns>
         public void SetBuffer(int id, ComputeBuffer buffer)
         {
             if (buffer == null)
@@ -91,6 +102,12 @@ namespace FlaxEngine
             bind.IsUA = isUA;
             bindings[bindid] = bind;
         }
+        /// <summary>
+        /// Sets the texture.
+        /// </summary>
+        /// <param name="id">The identifier.</param>
+        /// <param name="texture">The texture.</param>
+        /// <returns></returns>
         public void SetTexture(int id, GPUTexture texture)
         {
             if (texture == null)
@@ -113,6 +130,13 @@ namespace FlaxEngine
             bind.IsUA = isUA;
             bindings[bindid] = bind;
         }
+        /// <summary>
+        /// Determines whether the specified name has kernel.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified name has kernel; otherwise, <c>false</c>.
+        /// </returns>
         public bool HasKernel(string name)
         {
             return shader.GPU.GetCS(name) != nint.Zero;
