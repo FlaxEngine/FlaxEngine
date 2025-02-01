@@ -171,6 +171,72 @@ void Script::SetOrderInParent(int32 index)
     }
 }
 
+
+namespace 
+{
+    constexpr CoroutineSuspendPoint DefaultCoroutineSuspendPoint = CoroutineSuspendPoint::Update;
+
+    CoroutineExecutor* TryGetScriptCoroutineExecutor(const Script* script)
+    {
+        Actor* actor = script->GetActor();
+        if (actor == nullptr)
+        {
+            LOG(Error, "Failed to execute coroutine. Script actor is not available.");
+            return nullptr;
+        }
+
+        Scene* scene = actor->GetScene();
+        if (scene == nullptr) 
+        {
+            LOG(Error, "Failed to execute coroutine. Actor scene is not available.");
+            return nullptr;
+        }
+
+        CoroutineExecutor* executor = scene->SceneCoroutinesExecutor;
+        if (executor == nullptr)
+        {
+            LOG(Error, "Failed to execute coroutine. Scene coroutine executor is not available.");
+            return nullptr;
+        }
+
+        return executor;
+    }
+}
+
+auto Script::ExecuteCoroutineOnce(ScriptingObjectReference<CoroutineSequence> sequence) const -> ScriptingObjectReference<CoroutineHandle>
+{
+    CoroutineExecutor* executor = TryGetScriptCoroutineExecutor(this);
+    if (executor == nullptr)
+    {
+        return nullptr;
+    }
+
+    return executor->ExecuteOnce(MoveTemp(sequence), DefaultCoroutineSuspendPoint);
+}
+
+auto Script::ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineSequence> sequence, const int32 repeats) const -> ScriptingObjectReference<CoroutineHandle>
+{
+    CoroutineExecutor* executor = TryGetScriptCoroutineExecutor(this);
+    if (executor == nullptr)
+    {
+        return nullptr;
+    }
+
+    return executor->ExecuteRepeats(MoveTemp(sequence), DefaultCoroutineSuspendPoint, repeats);
+}
+
+auto Script::ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineSequence> sequence) const -> ScriptingObjectReference<CoroutineHandle>
+{
+    CoroutineExecutor* executor = TryGetScriptCoroutineExecutor(this);
+    if (executor == nullptr)
+    {
+        return nullptr;
+    }
+
+    return executor->ExecuteLooped(MoveTemp(sequence), DefaultCoroutineSuspendPoint);
+}
+
+
 void Script::SetupType()
 {
     // Enable tick functions based on the method overriden in C# or Visual Script

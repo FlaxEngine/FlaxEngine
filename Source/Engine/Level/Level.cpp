@@ -66,14 +66,14 @@ bool LayersMask::HasLayer(const StringView& layerName) const
 
 enum class SceneEventType
 {
-    OnSceneSaving = 0,
-    OnSceneSaved = 1,
+    OnSceneSaving    = 0,
+    OnSceneSaved     = 1,
     OnSceneSaveError = 2,
-    OnSceneLoading = 3,
-    OnSceneLoaded = 4,
+    OnSceneLoading   = 3,
+    OnSceneLoaded    = 4,
     OnSceneLoadError = 5,
     OnSceneUnloading = 6,
-    OnSceneUnloaded = 7,
+    OnSceneUnloaded  = 7,
 };
 
 class SceneAction
@@ -116,15 +116,17 @@ namespace LevelImpl
 
     void CallSceneEvent(SceneEventType eventType, Scene* scene, Guid sceneId);
 
-    void flushActions();
-    bool unloadScene(Scene* scene);
-    bool unloadScenes();
-    bool saveScene(Scene* scene);
-    bool saveScene(Scene* scene, const String& path);
-    bool saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, bool prettyJson);
-    bool saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, JsonWriter& writer);
-    bool spawnActor(Actor* actor, Actor* parent);
-    bool deleteActor(Actor* actor);
+    void FlushActions();
+    bool UnloadScene(Scene* scene);
+    bool UnloadScenes();
+
+    bool SaveScene(Scene* scene);
+    bool SaveScene(Scene* scene, const String& path);
+    bool SaveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, bool prettyJson);
+    bool SaveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, JsonWriter& writer);
+
+    bool SpawnActor(Actor* actor, Actor* parent);
+    bool DeleteActor(Actor* actor);
 }
 
 using namespace LevelImpl;
@@ -144,17 +146,22 @@ public:
     void Dispose() override;
 };
 
-LevelService LevelServiceInstanceService;
+namespace 
+{
+    LevelService LevelServiceInstance;
+}
 
 CriticalSection Level::ScenesLock;
 Array<Scene*> Level::Scenes;
 bool Level::TickEnabled = true;
+
 Delegate<Actor*> Level::ActorSpawned;
 Delegate<Actor*> Level::ActorDeleted;
 Delegate<Actor*, Actor*> Level::ActorParentChanged;
 Delegate<Actor*> Level::ActorOrderInParentChanged;
 Delegate<Actor*> Level::ActorNameChanged;
 Delegate<Actor*> Level::ActorActiveChanged;
+
 Delegate<Scene*, const Guid&> Level::SceneSaving;
 Delegate<Scene*, const Guid&> Level::SceneSaved;
 Delegate<Scene*, const Guid&> Level::SceneSaveError;
@@ -163,6 +170,7 @@ Delegate<Scene*, const Guid&> Level::SceneLoaded;
 Delegate<Scene*, const Guid&> Level::SceneLoadError;
 Delegate<Scene*, const Guid&> Level::SceneUnloading;
 Delegate<Scene*, const Guid&> Level::SceneUnloaded;
+
 #if USE_EDITOR
 Action Level::ScriptsReloadStart;
 Action Level::ScriptsReload;
@@ -171,7 +179,8 @@ Action Level::ScriptsReloadEnd;
 #endif
 String Level::Layers[32];
 
-bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
+
+bool LevelImpl::SpawnActor(Actor* actor, Actor* parent)
 {
     if (actor == nullptr)
     {
@@ -195,7 +204,7 @@ bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
             actor->BeginPlay(&beginData);
             beginData.OnDone();
         }
-        CallSceneEvent(SceneEventType::OnSceneLoaded, (Scene*)actor, actor->GetID());
+        CallSceneEvent(SceneEventType::OnSceneLoaded, static_cast<Scene*>(actor), actor->GetID());
     }
     else
     {
@@ -215,7 +224,7 @@ bool LevelImpl::spawnActor(Actor* actor, Actor* parent)
     return false;
 }
 
-bool LevelImpl::deleteActor(Actor* actor)
+bool LevelImpl::DeleteActor(Actor* actor)
 {
     if (actor == nullptr)
     {
@@ -245,66 +254,100 @@ void LayersAndTagsSettings::Apply()
     }
 }
 
-#define TICK_LEVEL(tickingStage, name) \
-    PROFILE_CPU_NAMED(name); \
-    ScopeLock lock(Level::ScenesLock); \
-    auto& scenes = Level::Scenes; \
-    if (!Time::GetGamePaused() && Level::TickEnabled) \
-    { \
-        for (int32 i = 0; i < scenes.Count(); i++) \
-        { \
-            if (scenes[i]->GetIsActive()) \
-                scenes[i]->Ticking.tickingStage.Tick(); \
-        } \
+
+template<typename TickGetter>
+FORCE_INLINE void TickLevel()
+{
+    ScopeLock lock{ Level::ScenesLock };
+    auto& scenes = Level::Scenes;
+    if (!Time::GetGamePaused() && Level::TickEnabled)
+    {
+        for (int32 i = 0; i < scenes.Count(); i++)
+        {
+            if (scenes[i]->GetIsActive())
+                TickGetter::Get(scenes[i]).Tick();
+        }
     }
 #if USE_EDITOR
-#define TICK_LEVEL_EDITOR(tickingStage) \
-    else if (!Editor::IsPlayMode) \
-    { \
-        for (int32 i = 0; i < scenes.Count(); i++) \
-        { \
-            if (scenes[i]->GetIsActive()) \
-                scenes[i]->Ticking.tickingStage.TickExecuteInEditor(); \
-        } \
+    else if (!Editor::IsPlayMode)
+    {
+        for (int32 i = 0; i < scenes.Count(); i++)
+        {
+            if (scenes[i]->GetIsActive())
+                TickGetter::Get(scenes[i]).TickExecuteInEditor();
+        }
     }
-#else
-#define TICK_LEVEL_EDITOR(tickingStage)
 #endif
+}
 
 void LevelService::Update()
 {
-    TICK_LEVEL(Update, "Level::Update")
-    TICK_LEVEL_EDITOR(Update)
+    PROFILE_CPU_NAMED("Level::Update");
+
+    struct TickGetter
+    {
+        static SceneTicking::UpdateTickData& Get(Scene* scene)
+        {
+            return scene->Ticking.Update;
+        }
+    };
+
+    TickLevel<TickGetter>();
 }
 
 void LevelService::LateUpdate()
 {
-    TICK_LEVEL(LateUpdate, "Level::LateUpdate")
-    TICK_LEVEL_EDITOR(LateUpdate)
-    flushActions();
+    PROFILE_CPU_NAMED("Level::LateUpdate");
+
+    struct TickGetter
+    {
+        static SceneTicking::LateUpdateTickData& Get(Scene* scene)
+        {
+            return scene->Ticking.LateUpdate;
+        }
+    };
+
+    TickLevel<TickGetter>();
+
+    FlushActions();
 }
 
 void LevelService::FixedUpdate()
 {
-    TICK_LEVEL(FixedUpdate, "Level::FixedUpdate")
-    TICK_LEVEL_EDITOR(FixedUpdate)
+    PROFILE_CPU_NAMED("Level::FixedUpdate");
+
+    struct TickGetter
+    {
+        static SceneTicking::FixedUpdateTickData& Get(Scene* scene)
+        {
+            return scene->Ticking.FixedUpdate;
+        }
+    };
+
+    TickLevel<TickGetter>();
 }
 
 void LevelService::LateFixedUpdate()
 {
-    TICK_LEVEL(LateFixedUpdate, "Level::LateFixedUpdate")
-    TICK_LEVEL_EDITOR(LateFixedUpdate)
-}
+    PROFILE_CPU_NAMED("Level::LateFixedUpdate");
 
-#undef TICK_LEVEL
-#undef TICK_LEVEL_EDITOR
+    struct TickGetter
+    {
+        static SceneTicking::LateFixedUpdateTickData& Get(Scene* scene)
+        {
+            return scene->Ticking.LateFixedUpdate;
+        }
+    };
+
+    TickLevel<TickGetter>();
+}
 
 void LevelService::Dispose()
 {
     ScopeLock lock(_sceneActionsLocker);
 
     // Unload scenes
-    unloadScenes();
+    UnloadScenes();
 
     // Ensure that all scenes and actors has been destroyed (we don't leak!)
     ASSERT(Level::Scenes.IsEmpty());
@@ -340,14 +383,14 @@ bool Level::SpawnActor(Actor* actor, Actor* parent)
 {
     ASSERT(actor);
     ScopeLock lock(_sceneActionsLocker);
-    return spawnActor(actor, parent);
+    return LevelImpl::SpawnActor(actor, parent);
 }
 
 bool Level::DeleteActor(Actor* actor)
 {
     ASSERT(actor);
     ScopeLock lock(_sceneActionsLocker);
-    return deleteActor(actor);
+    return LevelImpl::DeleteActor(actor);
 }
 
 void Level::CallBeginPlay(Actor* obj)
@@ -369,7 +412,7 @@ void Level::DrawActors(RenderContextBatch& renderContextBatch, byte category)
     for (Scene* scene : Scenes)
     {
         if (scene->IsActiveInHierarchy())
-            scene->Rendering.Draw(renderContextBatch, (SceneRendering::DrawCategory)category);
+            scene->Rendering.Draw(renderContextBatch, static_cast<SceneRendering::DrawCategory>(category));
     }
 }
 
@@ -433,7 +476,7 @@ class UnloadSceneAction : public SceneAction
 public:
     Guid TargetScene;
 
-    UnloadSceneAction(Scene* scene)
+    explicit UnloadSceneAction(Scene* scene)
     {
         TargetScene = scene->GetID();
     }
@@ -443,7 +486,7 @@ public:
         auto scene = Level::FindScene(TargetScene);
         if (!scene)
             return true;
-        return unloadScene(scene);
+        return UnloadScene(scene);
     }
 };
 
@@ -456,7 +499,7 @@ public:
 
     bool Do() const override
     {
-        return unloadScenes();
+        return UnloadScenes();
     }
 };
 
@@ -466,7 +509,7 @@ public:
     Scene* TargetScene;
     bool PrettyJson;
 
-    SaveSceneAction(Scene* scene, bool prettyJson = true)
+    explicit SaveSceneAction(Scene* scene, const bool prettyJson = true)
     {
         TargetScene = scene;
         PrettyJson = prettyJson;
@@ -474,7 +517,7 @@ public:
 
     bool Do() const override
     {
-        if (saveScene(TargetScene))
+        if (SaveScene(TargetScene))
         {
             LOG(Error, "Failed to save scene {0}", TargetScene ? TargetScene->GetName() : String::Empty);
             return true;
@@ -548,7 +591,7 @@ public:
             LOG(Info, "Caching scene {0}", scenes[i].Name);
 
             // Serialize to json
-            if (saveScene(scene, scenes[i].Data, false))
+            if (SaveScene(scene, scenes[i].Data, false))
             {
                 LOG(Error, "Failed to save scene '{0}' for scripts reload.", scenes[i].Name);
                 CallSceneEvent(SceneEventType::OnSceneSaveError, scene, scene->GetID());
@@ -558,7 +601,7 @@ public:
         }
 
         // Unload scenes
-        unloadScenes();
+        UnloadScenes();
 
         // Reload scripting
         Level::ScriptsReload();
@@ -649,7 +692,7 @@ public:
 
     bool Do() const override
     {
-        return spawnActor(TargetActor, ParentActor);
+        return SpawnActor(TargetActor, ParentActor);
     }
 };
 
@@ -665,11 +708,11 @@ public:
 
     bool Do() const override
     {
-        return deleteActor(TargetActor);
+        return DeleteActor(TargetActor);
     }
 };
 
-void LevelImpl::CallSceneEvent(SceneEventType eventType, Scene* scene, Guid sceneId)
+void LevelImpl::CallSceneEvent(const SceneEventType eventType, Scene* scene, const Guid sceneId)
 {
     PROFILE_CPU_NAMED("Level::CallSceneEvent");
 
@@ -728,7 +771,7 @@ int32 Level::GetLayerIndex(const StringView& layer)
     return result;
 }
 
-void Level::callActorEvent(ActorEventType eventType, Actor* a, Actor* b)
+void Level::callActorEvent(const ActorEventType eventType, Actor* a, Actor* b)
 {
     PROFILE_CPU();
 
@@ -759,9 +802,11 @@ void Level::callActorEvent(ActorEventType eventType, Actor* a, Actor* b)
         ActorActiveChanged(a);
         break;
     }
+
+    //TODO Consider using other dispatch techniques https://www.youtube.com/watch?v=vUwsfmVkKtY
 }
 
-void LevelImpl::flushActions()
+void LevelImpl::FlushActions()
 {
     ScopeLock lock(_sceneActionsLocker);
 
@@ -773,7 +818,7 @@ void LevelImpl::flushActions()
     }
 }
 
-bool LevelImpl::unloadScene(Scene* scene)
+bool LevelImpl::UnloadScene(Scene* scene)
 {
     if (scene == nullptr)
     {
@@ -806,12 +851,12 @@ bool LevelImpl::unloadScene(Scene* scene)
     return false;
 }
 
-bool LevelImpl::unloadScenes()
+bool LevelImpl::UnloadScenes()
 {
     auto scenes = Level::Scenes;
     for (int32 i = scenes.Count() - 1; i >= 0; i--)
     {
-        if (unloadScene(scenes[i]))
+        if (UnloadScene(scenes[i]))
             return true;
     }
     return false;
@@ -935,7 +980,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
 
     // Loaded scene objects list
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
-    const int32 dataCount = (int32)data.Size();
+    const int32 dataCount = static_cast<int32>(data.Size());
     sceneObjects->Resize(dataCount);
     sceneObjects->At(0) = scene;
 
@@ -1106,7 +1151,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
     return false;
 }
 
-bool LevelImpl::saveScene(Scene* scene)
+bool LevelImpl::SaveScene(Scene* scene)
 {
 #if USE_EDITOR
     const auto path = scene->GetPath();
@@ -1116,14 +1161,14 @@ bool LevelImpl::saveScene(Scene* scene)
         return true;
     }
 
-    return saveScene(scene, path);
+    return SaveScene(scene, path);
 #else
     LOG(Error, "Cannot save data to the cooked content.");
     return false;
 #endif
 }
 
-bool LevelImpl::saveScene(Scene* scene, const String& path)
+bool LevelImpl::SaveScene(Scene* scene, const String& path)
 {
     ASSERT(scene && EnumHasNoneFlags(scene->Flags, ObjectFlags::WasMarkedToDelete));
     auto sceneId = scene->GetID();
@@ -1133,7 +1178,7 @@ bool LevelImpl::saveScene(Scene* scene, const String& path)
 
     // Serialize to json
     rapidjson_flax::StringBuffer buffer;
-    if (saveScene(scene, buffer, true) && buffer.GetSize() > 0)
+    if (SaveScene(scene, buffer, true) && buffer.GetSize() > 0)
     {
         CallSceneEvent(SceneEventType::OnSceneSaveError, scene, sceneId);
         return true;
@@ -1165,22 +1210,22 @@ bool LevelImpl::saveScene(Scene* scene, const String& path)
     return false;
 }
 
-bool LevelImpl::saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, bool prettyJson)
+bool LevelImpl::SaveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, const bool prettyJson)
 {
     PROFILE_CPU_NAMED("Level.SaveScene");
     if (prettyJson)
     {
         PrettyJsonWriter writerObj(outBuffer);
-        return saveScene(scene, outBuffer, writerObj);
+        return SaveScene(scene, outBuffer, writerObj);
     }
     else
     {
         CompactJsonWriter writerObj(outBuffer);
-        return saveScene(scene, outBuffer, writerObj);
+        return SaveScene(scene, outBuffer, writerObj);
     }
 }
 
-bool LevelImpl::saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, JsonWriter& writer)
+bool LevelImpl::SaveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, JsonWriter& writer)
 {
     ASSERT(scene);
     const auto sceneId = scene->GetID();
@@ -1218,13 +1263,13 @@ bool LevelImpl::saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer,
     return false;
 }
 
-bool Level::SaveScene(Scene* scene, bool prettyJson)
+bool Level::SaveScene(Scene* scene, const bool prettyJson)
 {
     ScopeLock lock(_sceneActionsLocker);
     return SaveSceneAction(scene, prettyJson).Do();
 }
 
-bool Level::SaveSceneToBytes(Scene* scene, rapidjson_flax::StringBuffer& outData, bool prettyJson)
+bool Level::SaveSceneToBytes(Scene* scene, rapidjson_flax::StringBuffer& outData, const bool prettyJson)
 {
     ASSERT(scene);
     ScopeLock lock(_sceneActionsLocker);
@@ -1232,7 +1277,7 @@ bool Level::SaveSceneToBytes(Scene* scene, rapidjson_flax::StringBuffer& outData
     LOG(Info, "Saving scene {0} to bytes", scene->GetName());
 
     // Serialize to json
-    if (saveScene(scene, outData, prettyJson))
+    if (LevelImpl::SaveScene(scene, outData, prettyJson))
     {
         CallSceneEvent(SceneEventType::OnSceneSaveError, scene, scene->GetID());
         return true;
@@ -1247,7 +1292,7 @@ bool Level::SaveSceneToBytes(Scene* scene, rapidjson_flax::StringBuffer& outData
     return false;
 }
 
-Array<byte> Level::SaveSceneToBytes(Scene* scene, bool prettyJson)
+Array<byte> Level::SaveSceneToBytes(Scene* scene, const bool prettyJson)
 {
     Array<byte> data;
     rapidjson_flax::StringBuffer sceneData;
@@ -1364,7 +1409,7 @@ bool Level::LoadSceneAsync(const Guid& id)
 
 bool Level::UnloadScene(Scene* scene)
 {
-    return unloadScene(scene);
+    return LevelImpl::UnloadScene(scene);
 }
 
 void Level::UnloadSceneAsync(Scene* scene)
@@ -1377,7 +1422,7 @@ void Level::UnloadSceneAsync(Scene* scene)
 bool Level::UnloadAllScenes()
 {
     ScopeLock lock(_sceneActionsLocker);
-    return unloadScenes();
+    return UnloadScenes();
 }
 
 void Level::UnloadAllScenesAsync()
@@ -1410,7 +1455,7 @@ Actor* Level::FindActor(const StringView& name)
     return result;
 }
 
-Actor* Level::FindActor(const MClass* type, bool activeOnly)
+Actor* Level::FindActor(const MClass* type, const bool activeOnly)
 {
     CHECK_RETURN(type, nullptr);
     Actor* result = nullptr;
@@ -1430,7 +1475,7 @@ Actor* Level::FindActor(const MClass* type, const StringView& name)
     return result;
 }
 
-Actor* FindActorRecursive(Actor* node, const Tag& tag, bool activeOnly)
+Actor* FindActorRecursive(Actor* node, const Tag& tag, const bool activeOnly)
 {
     if (activeOnly && !node->GetIsActive())
         return nullptr;
@@ -1446,7 +1491,7 @@ Actor* FindActorRecursive(Actor* node, const Tag& tag, bool activeOnly)
     return result;
 }
 
-Actor* FindActorRecursiveByType(Actor* node, const MClass* type, const Tag& tag, bool activeOnly)
+Actor* FindActorRecursiveByType(Actor* node, const MClass* type, const Tag& tag, const bool activeOnly)
 {
     CHECK_RETURN(type, nullptr);
     if (activeOnly && !node->GetIsActive())
@@ -1489,7 +1534,7 @@ void FindActorsRecursiveByParentTags(Actor* node, const Array<Tag>& tags, const 
         FindActorsRecursiveByParentTags(child, tags, activeOnly, result);
 }
 
-Actor* Level::FindActor(const Tag& tag, bool activeOnly, Actor* root)
+Actor* Level::FindActor(const Tag& tag, const bool activeOnly, Actor* root)
 {
     PROFILE_CPU();
     if (root)
@@ -1504,7 +1549,7 @@ Actor* Level::FindActor(const Tag& tag, bool activeOnly, Actor* root)
     return result;
 }
 
-Actor* Level::FindActor(const MClass* type, const Tag& tag, bool activeOnly, Actor* root)
+Actor* Level::FindActor(const MClass* type, const Tag& tag, const bool activeOnly, Actor* root)
 {
     CHECK_RETURN(type, nullptr);
     if (root)
@@ -1583,7 +1628,7 @@ Script* Level::FindScript(const MClass* type)
 
 namespace
 {
-    void GetActors(const MClass* type, Actor* actor, bool activeOnly, Array<Actor*>& result)
+    void GetActors(const MClass* type, Actor* actor, const bool activeOnly, Array<Actor*>& result)
     {
         if (activeOnly && !actor->GetIsActive())
             return;
@@ -1603,7 +1648,7 @@ namespace
     }
 }
 
-Array<Actor*> Level::GetActors(const MClass* type, bool activeOnly)
+Array<Actor*> Level::GetActors(const MClass* type, const bool activeOnly)
 {
     Array<Actor*> result;
     CHECK_RETURN(type, result);

@@ -30,7 +30,7 @@ private:
 
 protected:
 
-    EngineService(const Char* name, int32 order = 0);
+    explicit EngineService(const Char* name, int32 order = 0);
 
 public:
 
