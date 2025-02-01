@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using FlaxEngine;
 
 namespace FlaxEngine
 {
@@ -36,13 +34,13 @@ namespace FlaxEngine
         public enum Type
         {
             /// <summary>
-            /// Default ComputeBuffer type maps to Buffer&lt;T&gt; / RWBuffer&lt;T&gt; in hlsl.
+            /// Default ComputeBuffer type maps to Buffer or RWBuffer in hlsl.
             /// <br> note: </br>
-            /// <br> Buffer and RWBuffer support only 32-bit formats: float, int and uint.</br>
+            /// <br> Buffer support only 32-bit formats: <see langword="float"/>, <see langword="int"/> and <see langword="uint"/>.</br>
             /// </summary>
             Default,
             /// <summary>
-            /// ComputeBuffer that you can use as a structured buffer maps to StructuredBuffer&lt;T&gt; / RWStructuredBuffer&lt;T&gt; in hlsl.
+            /// ComputeBuffer that you can use as a structured buffer maps to StructuredBuffer or RWStructuredBuffer in hlsl.
             /// </summary>
             Structured,
             /// <summary>
@@ -472,6 +470,85 @@ namespace FlaxEngine
             {
                 //massage here
             }
+        }
+
+        //--------------------------------------------------------------------
+        //static helper funcions
+        //--------------------------------------------------------------------
+
+        /// <summary>
+        /// Creates the Buffer&lt;<typeparamref name="T"/>&gt;. and set the data
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="value">The values.</param>
+        /// <param name="Immutable">if set to <c>true</c> [immutable].</param>
+        /// <returns>new instance of the <see cref="ComputeBuffer"/> class</returns>
+        public static ComputeBuffer CreateConstantBuffer<T>(T value, bool Immutable = true)
+        {
+            var buff = new ComputeBuffer(1, Unsafe.SizeOf<T>(), Type.Constant, Immutable ? Mode.Immutable : Mode.DynamicWriteOnly);
+            buff.SetData(value);
+            return buff;
+        }
+
+        /// <summary>
+        /// Creates the Buffer&lt;<typeparamref name="T"/>&gt;. and set the data
+        /// <br> note: </br>
+        /// <br> Buffer support only 32-bit formats: <see langword="float"/>, <see langword="int"/> and <see langword="uint"/>.</br>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="values">The values.</param>
+        /// <param name="Immutable">if set to <c>true</c> [immutable].</param>
+        /// <returns>new instance of the <see cref="ComputeBuffer"/> class</returns>
+        public static ComputeBuffer CreateBuffer<T>(T[] values,bool Immutable = true) 
+        {
+            var buff = new ComputeBuffer(values.Length, Unsafe.SizeOf<T>(), Type.Default, Immutable ? Mode.Immutable : Mode.DynamicWriteOnly);
+            buff.SetData(values);
+            return buff;
+        }
+        /// <summary>
+        /// Creates the Buffer&lt;<typeparamref name = "T" />&gt;. and set the data if <paramref name="CPUReadOnly"/> is false
+        /// <br> Note: </br>
+        /// <br> Buffer support only 32-bit formats: <see langword="float"/>, <see langword="int"/> and <see langword="uint"/>.</br>
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="values">The values.</param>
+        /// <param name="CPUReadOnly">if set to <c>true</c> [cpu read only].</param>
+        /// <returns>new instance of the <see cref="ComputeBuffer"/> class</returns>
+        public static ComputeBuffer CreateRWBuffer<T>(T[] values, bool CPUReadOnly = false)
+        {
+            var buff = new ComputeBuffer(values.Length, Unsafe.SizeOf<T>(), Type.Default, CPUReadOnly ? Mode.DynamicReadOnly : Mode.DynamicReadWrite);
+            if (!CPUReadOnly)
+                buff.SetData(values);
+            return buff;
+        }
+
+        /// <summary>
+        /// Creates the StructuredBuffer&lt;<typeparamref name="T"/>&gt;. and set the data
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="values">The values.</param>
+        /// <param name="Immutable">if set to <c>true</c> [immutable].</param>
+        /// <returns>new instance of the <see cref="ComputeBuffer"/> class</returns>
+        public static ComputeBuffer CreateStructuredBuffer<T>(T[] values, bool Immutable = true)
+        {
+            var buff = new ComputeBuffer(values.Length, Unsafe.SizeOf<T>(), Type.Structured, Immutable ? Mode.Immutable : Mode.DynamicWriteOnly);
+            buff.SetData(values);
+            return buff;
+        }
+
+        /// <summary>
+        /// Creates the RWStructuredBuffer&lt;<typeparamref name = "T" />&gt;. and set the data if <paramref name="CPUReadOnly"/> is false
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="values">The values.</param>
+        /// <param name="CPUReadOnly">if set to <c>true</c> [cpu read only].</param>
+        /// <returns>new instance of the <see cref="ComputeBuffer"/> class</returns>
+        public static ComputeBuffer CreateRWStructuredBuffer<T>(T[] values, bool CPUReadOnly = false)
+        {
+            var buff = new ComputeBuffer(values.Length, Unsafe.SizeOf<T>(), Type.Structured, CPUReadOnly ? Mode.DynamicReadOnly : Mode.DynamicReadWrite);
+            if (!CPUReadOnly)
+                buff.SetData(values);
+            return buff;
         }
     }
 }
