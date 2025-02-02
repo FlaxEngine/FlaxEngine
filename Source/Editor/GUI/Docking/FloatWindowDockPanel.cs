@@ -75,7 +75,7 @@ namespace FlaxEditor.GUI.Docking
             settings.MaximumSize = Float2.Zero; // Unlimited size
             settings.Fullscreen = false;
             settings.HasBorder = true;
-            settings.SupportsTransparency = false;
+            settings.SupportsTransparency = true;
             settings.ActivateWhenFirstShown = true;
             settings.AllowInput = true;
             settings.AllowMinimize = true;
