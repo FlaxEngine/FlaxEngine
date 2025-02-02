@@ -84,13 +84,15 @@ namespace FlaxEditor.GUI
 
                 ScriptsBuilder.GetBinariesConfiguration(out _, out _, out _, out var configuration);
 
+                var driver = Platform.DisplayServer;
+
                 _icon = new Image
                 {
                     Margin = new Margin(6, 6, 6, 6),
                     Brush = new TextureBrush(windowIcon),
                     Color = Style.Current.Foreground,
                     KeepAspectRatio = false,
-                    TooltipText = string.Format("{0}\nVersion {1}\nConfiguration {3}\nGraphics {2}", _window.Title, Globals.EngineVersion, GPUDevice.Instance.RendererType, configuration),
+                    TooltipText = string.Format("{0}\nVersion {1}\nConfiguration {3}\nGraphics {2} {4}", _window.Title, Globals.EngineVersion, GPUDevice.Instance.RendererType, configuration, driver),
                     Parent = this,
                 };
 
