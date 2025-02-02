@@ -310,7 +310,7 @@ namespace WaylandImpl
                     LOG(Warning, "wl_display_roundtrip_queue failed, errno: {}", errno);
 
                 // Wait until window has showed up
-                if (wrappedToplevel == nullptr && dragWindow && Platform::AtomicRead(&WaitFlag) != 0)
+                if (DragManager != nullptr && wrappedToplevel == nullptr && dragWindow && Platform::AtomicRead(&WaitFlag) != 0)
                 {
                     auto toplevel = static_cast<xdg_toplevel*>(SDL_GetPointerProperty(SDL_GetWindowProperties(draggedWindow), SDL_PROP_WINDOW_WAYLAND_XDG_TOPLEVEL_POINTER, nullptr));
                     if (toplevel != nullptr)
@@ -1431,7 +1431,11 @@ DragDropEffect SDLWindow::DoDragDrop(const StringView& data, const Float2& offse
             else
                 SDL_ShowWindow(_window);
         }
-        WindowBase::Show();
+        // Only show the window if toplevel dragging is supported
+        if (WaylandImpl::DragManager != nullptr)
+            WindowBase::Show();
+        else
+            Hide();
         
         WaylandImpl::DraggingWindow = true;
         DoDragDropWayland(String(""), dragSourceWindow, dragOffset);
