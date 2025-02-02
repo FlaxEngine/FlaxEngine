@@ -262,6 +262,15 @@ PlatformType PlatformBase::GetPlatformType()
     return PLATFORM_TYPE;
 }
 
+#if !PLATFORM_SDL
+
+String PlatformBase::GetDisplayServer()
+{
+    return String::Empty;
+}
+
+#endif
+
 bool PlatformBase::Is64BitApp()
 {
 #if PLATFORM_64BITS

@@ -63,6 +63,7 @@ public:
     static bool Init();
     static void LogInfo();
     static void Tick();
+    static String GetDisplayServer();
     static void SetHighDpiAwarenessEnabled(bool enable);
     static BatteryInfo GetBatteryInfo();
     static int32 GetDpi();
