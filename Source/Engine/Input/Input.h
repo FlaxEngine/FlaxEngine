@@ -349,12 +349,14 @@ public:
     /// Gets the first action configuration by name.
     /// </summary>
     /// <param name="name">The name of the action config.</param>
+    /// <returns>The first Action configuration with the name. Empty configuration if not found.</returns>
     API_FUNCTION() static ActionConfig GetActionConfigByName(const StringView& name);
 
     /// <summary>
     /// Gets all the action configurations by name.
     /// </summary>
     /// <param name="name">The name of the action config.</param>
+    /// <returns>The Action configurations with the name.</returns>
     API_FUNCTION() static Array<ActionConfig> GetAllActionConfigsByName(const StringView& name);
 
     /// <summary>
@@ -394,12 +396,14 @@ public:
     /// Gets the first axis configurations by name.
     /// </summary>
     /// <param name="name">The name of the axis config.</param>
+    /// <returns>The first Axis configuration with the name. Empty configuration if not found.</returns>
     API_FUNCTION() static AxisConfig GetAxisConfigByName(const StringView& name);
 
     /// <summary>
     /// Gets all the axis configurations by name.
     /// </summary>
     /// <param name="name">The name of the axis config.</param>
+    /// <returns>The axis configurations with the name.</returns>
     API_FUNCTION() static Array<AxisConfig> GetAllAxisConfigsByName(const StringView& name);
 
     /// <summary>
@@ -432,7 +436,7 @@ public:
     API_FUNCTION() static void SetAxisConfigByName(const StringView& name, InputAxisType inputType, const GamepadButton positiveButton, const GamepadButton negativeButton, InputGamepadIndex gamepadIndex, bool all = false);
 
     /// <summary>
-    /// Sets the axis configuration accessories by name, and type..
+    /// Sets the axis configuration accessories by name, and type.
     /// </summary>
     /// <param name="name">The name of the action config.</param>
     /// <param name="inputType">The type to sort by.</param>
