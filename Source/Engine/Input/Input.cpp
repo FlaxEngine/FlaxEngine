@@ -616,7 +616,6 @@ float Input::GetAxisRaw(const StringView& name)
 
 void Input::SetInputMappingFromSettings(const JsonAssetReference<InputSettings>& settings)
 {
-    ActionMappings.Clear();
     auto actionMappings = settings.GetInstance()->ActionMappings;
     ActionMappings.Resize(actionMappings.Count(), false);
     for (int i = 0; i < actionMappings.Count(); i++)
