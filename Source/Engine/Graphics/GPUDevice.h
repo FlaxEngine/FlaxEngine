@@ -11,6 +11,7 @@
 #include "GPULimits.h"
 #include "Enums.h"
 #include "Config.h"
+#include "GPUFence.h"
 
 class ITextureOwner;
 class RenderTask;
@@ -389,6 +390,13 @@ public:
     /// <param name="name">The resource name.</param>
     /// <returns>The buffer.</returns>
     API_FUNCTION() virtual GPUBuffer* CreateBuffer(const StringView& name = StringView::Empty) = 0;
+
+    /// <summary>
+    /// Creates the buffer.
+    /// </summary>
+    /// <param name="name">The resource name.</param>
+    /// <returns>The buffer.</returns>
+    API_FUNCTION() virtual GPUFence* CreateFence() = 0;
 
     /// <summary>
     /// Creates the texture sampler.
