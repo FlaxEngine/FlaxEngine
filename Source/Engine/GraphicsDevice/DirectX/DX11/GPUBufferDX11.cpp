@@ -47,9 +47,30 @@ void* GPUBufferDX11::Map(GPUResourceMapMode mode)
     }
 
     const HRESULT result = _device->GetIM()->Map(_resource, 0, mapType, mapFlags, &map);
-    if (result != DXGI_ERROR_WAS_STILL_DRAWING)
+    switch (result)
+    {
+    case S_OK:
+        break;
+    case DXGI_ERROR_WAS_STILL_DRAWING:
+        switch (mode)
+        {
+        case GPUResourceMapMode::Read:
+            LOG(Error, "Falled to Map(GPUResourceMapMode::Read) GPU is bussy: The previous blit operation that is transferring information is incomplete.");
+            break;
+        case GPUResourceMapMode::Write:
+            LOG(Error, "Falled to Map(GPUResourceMapMode::Write) GPU is bussy: The previous blit operation that is transferring information is incomplete.");
+            break;
+        case GPUResourceMapMode::ReadWrite:
+            LOG(Error, "Falled to Map(GPUResourceMapMode::ReadWrite) GPU is bussy: The previous blit operation that is transferring information is incomplete.");
+            break;
+        default:
+            CRASH;
+        }
+        break;
+    default:
         LOG_DIRECTX_RESULT(result);
-
+        break;
+    }
     _mapped = map.pData != nullptr;
     if (!_mapped && !isMainThread)
         _device->Locker.Unlock();
