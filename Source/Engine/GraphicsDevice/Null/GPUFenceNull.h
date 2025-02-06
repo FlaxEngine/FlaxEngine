@@ -5,7 +5,7 @@
 #include "Engine/Graphics/GPUFence.h"
 
 /// <summary>
-/// GPU buffer for GPUFence backend.
+/// GPU buffer for GPUFenceNull backend.
 /// </summary>
 /// <seealso cref="GPUFence" />
 class GPUFenceNull : public GPUFence
