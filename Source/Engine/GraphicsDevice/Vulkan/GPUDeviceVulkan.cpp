@@ -2082,6 +2082,11 @@ GPUConstantBuffer* GPUDeviceVulkan::CreateConstantBuffer(uint32 size, const Stri
     return New<GPUConstantBufferVulkan>(this, size);
 }
 
+GPUFence* GPUDeviceVulkan::CreateFence(const StringView& name)
+{
+    return New<GPUFenceVulkan>(this, name);
+}
+
 SemaphoreVulkan::SemaphoreVulkan(GPUDeviceVulkan* device)
     : _device(device)
 {
