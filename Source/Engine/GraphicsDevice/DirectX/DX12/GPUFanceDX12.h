@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if GRAPHICS_API_DIRECTX11
+#if GRAPHICS_API_DIRECTX12
 
 #include "Engine/Graphics/GPUFence.h"
 #include "GPUDeviceDX12.h"
