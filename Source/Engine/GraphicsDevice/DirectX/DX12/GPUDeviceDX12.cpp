@@ -23,6 +23,7 @@
 #include "Engine/Core/Utilities.h"
 #include "Engine/Threading/Threading.h"
 #include "CommandSignatureDX12.h"
+#include "GPUFenceDX12.h"
 
 static bool CheckDX12Support(IDXGIAdapter* adapter)
 {
@@ -851,6 +852,11 @@ GPUSwapChain* GPUDeviceDX12::CreateSwapChain(Window* window)
 GPUConstantBuffer* GPUDeviceDX12::CreateConstantBuffer(uint32 size, const StringView& name)
 {
     return New<GPUConstantBufferDX12>(this, size, name);
+}
+
+GPUFence* GPUDeviceDX12::CreateFence(const StringView& name)
+{
+    return New<GPUFenceDX12>(this, name);
 }
 
 void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, uint32 safeFrameCount)
