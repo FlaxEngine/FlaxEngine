@@ -16,8 +16,7 @@ class GPUFenceDX11 : public GPUFence
 {
 private:
     GPUDeviceDX11* _device = nullptr;
-    ID3D11Query* queryStart = nullptr;
-    ID3D11Query* queryEnd = nullptr;
+    ID3D11Query* query = nullptr;
 public:
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUFanceDX11"/> class.

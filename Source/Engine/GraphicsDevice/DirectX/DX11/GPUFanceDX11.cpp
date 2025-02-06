@@ -14,39 +14,30 @@ GPUFenceDX11::GPUFenceDX11(GPUDeviceDX11* device)
     //but just in case
     //lets use the time querry
 
-    ID3D11Device* DX11Device = device->GetDevice();
+    ID3D11Device* DX11Device = _device->GetDevice();
 
     D3D11_QUERY_DESC queryDesc = {};
-    queryDesc.Query = D3D11_QUERY_TIMESTAMP;
+    queryDesc.Query = D3D11_QUERY_EVENT;
 
-    if (DX11Device->CreateQuery(&queryDesc, &queryStart) != S_OK) 
+    if (DX11Device->CreateQuery(&queryDesc, &query) != S_OK) 
     {
-        queryStart = nullptr;
-        return;
-    }
-    if (DX11Device->CreateQuery(&queryDesc, &queryEnd) != S_OK)
-    {
-        queryStart->Release();
-        queryStart = nullptr;
-        queryEnd = nullptr;
+        query = nullptr;
         return;
     }
 
-    if (queryStart == nullptr || queryEnd == nullptr)
-        return;
     auto DX11DeviceContext = _device->GetIM();
     // Issue the timestamp query
-    DX11DeviceContext->Begin(queryStart);
+    DX11DeviceContext->Begin(query);
 }
 void GPUFenceDX11::Signal()
 {
-    if (queryStart == nullptr || queryEnd == nullptr)
+    if (query == nullptr)
         return;
 
     auto DX11DeviceContext = _device->GetIM();
 
     // Issue the timestamp query
-    DX11DeviceContext->End(queryEnd);
+    DX11DeviceContext->End(query);
     
     SignalCalled = true;
 }
@@ -60,24 +51,32 @@ void GPUFenceDX11::Wait()
 
 
     //check when the query is complete
-    UINT64 startTimestamp = 0;
-    UINT64 endTimestamp = 0;
-
-    while (DX11DeviceContext->GetData(queryStart, &startTimestamp, sizeof(UINT64), 0) != S_OK) {
-        Platform::Sleep(1);
-    }
-
-    while (DX11DeviceContext->GetData(queryEnd, &endTimestamp, sizeof(UINT64), 0) != S_OK) {
-        Platform::Sleep(1);
+    BOOL Timestamp = 0;
+    while (true)
+    {
+        HRESULT Result = DX11DeviceContext->GetData(query, &Timestamp, sizeof(Timestamp), 0);
+        if (Result == S_OK) 
+        {
+            break;
+        }
+        else if (Result == S_FALSE) 
+        {
+            //pending speepy time ZzZzZ
+            Platform::Sleep(1);
+        }
+        else
+        {
+            // Handle errors
+            LOG_DIRECTX_RESULT(Result);
+            return;
+        }
     }
 }
 
 GPUFenceDX11::~GPUFenceDX11()
 {
-    if (queryStart)
-        queryStart->Release();
-    if (queryEnd)
-        queryEnd->Release();
+    if (query)
+        query->Release();
 }
 
 #endif
