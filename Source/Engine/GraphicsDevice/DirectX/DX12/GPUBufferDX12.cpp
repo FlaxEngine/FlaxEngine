@@ -64,13 +64,13 @@ void* GPUBufferDX12::Map(GPUResourceMapMode mode)
         switch (mode)
         {
         case GPUResourceMapMode::Read:
-            LOG(Error, "Falled to Map(GPUResourceMapMode::Read) GPU is bussy: The previous blit operation that is transferring information is incomplete.");
+            LOG(Error, "Falled to Map(GPUResourceMapMode::Read) GPU is busy: The previous blit operation that is transferring information is incomplete.");
             break;
         case GPUResourceMapMode::Write:
-            LOG(Error, "Falled to Map(GPUResourceMapMode::Write) GPU is bussy: The previous blit operation that is transferring information is incomplete.");
+            LOG(Error, "Falled to Map(GPUResourceMapMode::Write) GPU is busy: The previous blit operation that is transferring information is incomplete.");
             break;
         case GPUResourceMapMode::ReadWrite:
-            LOG(Error, "Falled to Map(GPUResourceMapMode::ReadWrite) GPU is bussy: The previous blit operation that is transferring information is incomplete.");
+            LOG(Error, "Falled to Map(GPUResourceMapMode::ReadWrite) GPU is busy: The previous blit operation that is transferring information is incomplete.");
             break;
         default:
             CRASH;
