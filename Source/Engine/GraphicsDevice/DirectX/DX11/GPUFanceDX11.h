@@ -12,9 +12,10 @@
 /// GPU buffer for DirectX 11 backend.
 /// </summary>
 /// <seealso cref="GPUResourceDX11" />
-class GPUFenceDX11 : public GPUResourceDX11<GPUFence>
+class GPUFenceDX11 : public GPUFence
 {
 private:
+    GPUDeviceDX11* _device = nullptr;
     ID3D11Query* queryStart = nullptr;
     ID3D11Query* queryEnd = nullptr;
 public:
@@ -23,15 +24,12 @@ public:
     /// </summary>
     /// <param name="device">The graphics device.</param>
     /// <param name="name">The resource name.</param>
-    GPUFenceDX11(GPUDeviceDX11* device, const StringView& name);
+    GPUFenceDX11(GPUDeviceDX11* device);
 
     ~GPUFenceDX11();
 
     virtual void Signal() override final;
     virtual void Wait() override final;
-
-    // Inherited via GPUResourceDX11
-    ID3D11Resource* GetResource() override;
 };
 
 #endif

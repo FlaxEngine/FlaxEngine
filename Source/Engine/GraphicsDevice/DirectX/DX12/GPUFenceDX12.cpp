@@ -2,13 +2,13 @@
 
 #if GRAPHICS_API_DIRECTX12
 
-#include "GPUFanceDX12.h"
+#include "GPUFenceDX12.h"
 #include "../RenderToolsDX.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "GPUContextDX12.h"
 
-GPUFenceDX12::GPUFenceDX12(GPUDeviceDX12* device, const StringView& name)
-    : GPUResourceDX12<GPUFence>(device, name)
+GPUFenceDX12::GPUFenceDX12(GPUDeviceDX12* device)
+    : GPUFence(), _device(device)
 {
     // Create a DX12 fence
     ID3D12Device* DX12Device = device->GetDevice();

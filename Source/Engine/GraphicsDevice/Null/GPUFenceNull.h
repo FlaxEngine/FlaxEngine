@@ -1,7 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #pragma once
-
+#if GRAPHICS_API_NULL
 #include "Engine/Graphics/GPUFence.h"
 
 /// <summary>
@@ -18,3 +18,4 @@ public:
     virtual void Wait() override final {};
 
 };
+#endif

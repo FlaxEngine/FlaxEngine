@@ -854,9 +854,9 @@ GPUConstantBuffer* GPUDeviceDX12::CreateConstantBuffer(uint32 size, const String
     return New<GPUConstantBufferDX12>(this, size, name);
 }
 
-GPUFence* GPUDeviceDX12::CreateFence(const StringView& name)
+GPUFence* GPUDeviceDX12::CreateFence()
 {
-    return New<GPUFenceDX12>(this, name);
+    return New<GPUFenceDX12>(this);
 }
 
 void GPUDeviceDX12::AddResourceToLateRelease(IGraphicsUnknown* resource, uint32 safeFrameCount)

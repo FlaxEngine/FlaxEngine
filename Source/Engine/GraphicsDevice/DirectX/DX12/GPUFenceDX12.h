@@ -11,10 +11,11 @@
 /// <summary>
 /// GPU buffer for DirectX 12 backend.
 /// </summary>
-/// <seealso cref="GPUResourceDX12" />
-class GPUFenceDX12 : public GPUResourceDX12<GPUFence>
+/// <seealso cref="GPUFence" />
+class GPUFenceDX12 : public GPUFence
 {
 private:
+    GPUDeviceDX12* _device = nullptr;
     ID3D12Fence* fence = nullptr;
     UINT64 fenceValue = 0;
 public:
@@ -22,8 +23,7 @@ public:
     /// Initializes a new instance of the <see cref="GPUFanceDX12"/> class.
     /// </summary>
     /// <param name="device">The graphics device.</param>
-    /// <param name="name">The resource name.</param>
-    GPUFenceDX12(GPUDeviceDX12* device, const StringView& name);
+    GPUFenceDX12(GPUDeviceDX12* device);
 
     ~GPUFenceDX12();
 

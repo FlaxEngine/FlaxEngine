@@ -803,9 +803,9 @@ GPUBuffer* GPUDeviceDX11::CreateBuffer(const StringView& name)
     return New<GPUBufferDX11>(this, name);
 }
 
-GPUFence* GPUDeviceDX11::CreateFence(const StringView& name)
+GPUFence* GPUDeviceDX11::CreateFence()
 {
-    return New<GPUFenceDX11>(_device, name);
+    return New<GPUFenceDX11>(this);
 }
 
 GPUSampler* GPUDeviceDX11::CreateSampler()

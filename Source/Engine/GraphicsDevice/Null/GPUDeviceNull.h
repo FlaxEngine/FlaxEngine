@@ -49,6 +49,9 @@ public:
     GPUSampler* CreateSampler() override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
     GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name) override;
+
+    // Inherited via GPUDevice
+    API_FUNCTION()GPUFence* CreateFence() override;
 };
 
 extern GPUDevice* CreateGPUDeviceNull();

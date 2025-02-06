@@ -15,14 +15,14 @@
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Threading/Threading.h"
 
-GPUBuffer* GPUFence::Spawn(const SpawnParams& params)
+GPUFence* GPUFence::Spawn(const SpawnParams& params)
 {
-    return GPUDevice::Instance->CreateBuffer(String::Empty);
+    return GPUDevice::Instance->CreateFence();
 }
 
-GPUBuffer* GPUFence::New()
+GPUFence* GPUFence::New()
 {
-    return GPUDevice::Instance->CreateBuffer(String::Empty);
+    return GPUDevice::Instance->CreateFence();
 }
 
 GPUFence::GPUFence() : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))

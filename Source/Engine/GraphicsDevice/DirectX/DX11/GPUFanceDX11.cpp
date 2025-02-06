@@ -6,9 +6,10 @@
 #include "../RenderToolsDX.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 
-GPUFenceDX11::GPUFenceDX11(GPUDeviceDX11* device, const StringView& name)
-    : GPUResourceDX11<GPUFence>(device, name)
+GPUFenceDX11::GPUFenceDX11(GPUDeviceDX11* device)
+    : GPUFence(), _device(device)
 {
+    
     //ID3D11Fence that are available on Windows 10 v1703 and later.
     //but just in case
     //lets use the time querry
@@ -78,11 +79,5 @@ GPUFenceDX11::~GPUFenceDX11()
     if (queryEnd)
         queryEnd->Release();
 }
-
-ID3D11Resource* GPUFenceDX11::GetResource()
-{
-    return nullptr;
-}
-
 
 #endif

@@ -182,6 +182,11 @@ GPUConstantBuffer* GPUDeviceNull::CreateConstantBuffer(uint32 size, const String
     return nullptr;
 }
 
+GPUFence* GPUDeviceNull::CreateFence()
+{
+    return nullptr;
+}
+
 GPUDevice* CreateGPUDeviceNull()
 {
     return GPUDeviceNull::Create();

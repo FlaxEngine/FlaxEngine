@@ -39,6 +39,7 @@
 #if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX)
 #include "Engine/Core/Config/PlatformSettings.h"
 #endif
+#include "GPUFenceVulkan.h"
 
 GPUDeviceVulkan::OptionalVulkanDeviceExtensions GPUDeviceVulkan::OptionalDeviceExtensions;
 VkInstance GPUDeviceVulkan::Instance;
@@ -2082,9 +2083,9 @@ GPUConstantBuffer* GPUDeviceVulkan::CreateConstantBuffer(uint32 size, const Stri
     return New<GPUConstantBufferVulkan>(this, size);
 }
 
-GPUFence* GPUDeviceVulkan::CreateFence(const StringView& name)
+GPUFence* GPUDeviceVulkan::CreateFence()
 {
-    return New<GPUFenceVulkan>(this, name);
+    return New<GPUFenceVulkan>(this);
 }
 
 SemaphoreVulkan::SemaphoreVulkan(GPUDeviceVulkan* device)

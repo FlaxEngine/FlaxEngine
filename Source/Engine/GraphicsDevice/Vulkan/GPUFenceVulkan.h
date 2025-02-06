@@ -23,8 +23,7 @@ public:
     /// Initializes a new instance of the <see cref="GPUFenceVulkan"/> class.
     /// </summary>
     /// <param name="device">The graphics device.</param>
-    /// <param name="name">The resource name.</param>
-    GPUFenceVulkan(GPUDeviceVulkan* device, const StringView& name);
+    GPUFenceVulkan(GPUDeviceVulkan* device);
 
     ~GPUFenceVulkan();
 

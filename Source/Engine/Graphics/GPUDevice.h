@@ -396,7 +396,7 @@ public:
     /// </summary>
     /// <param name="name">The resource name.</param>
     /// <returns>the Fence</returns>
-    API_FUNCTION() virtual GPUFence* CreateFence(const StringView& name = StringView::Empty) = 0;
+    API_FUNCTION() virtual GPUFence* CreateFence() = 0;
 
     /// <summary>
     /// Creates the texture sampler.

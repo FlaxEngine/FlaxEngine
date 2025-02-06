@@ -2,11 +2,11 @@
 
 #if GRAPHICS_API_VULKAN
 
-#include "GPUFanceVulkan.h"
+#include "GPUFenceVulkan.h"
 #include "GPUContextVulkan.h"
 #include "QueueVulkan.h"
 
-GPUFenceVulkan::GPUFenceVulkan(GPUDeviceVulkan* device, const StringView& name) : 
+GPUFenceVulkan::GPUFenceVulkan(GPUDeviceVulkan* device) : 
     GPUFence(), _device(device)
 {
     // Create Vulkan fence
