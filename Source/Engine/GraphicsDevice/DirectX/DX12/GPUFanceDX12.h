@@ -9,9 +9,9 @@
 #include "../IncludeDirectXHeaders.h"
 
 /// <summary>
-/// GPU buffer for DirectX 11 backend.
+/// GPU buffer for DirectX 12 backend.
 /// </summary>
-/// <seealso cref="GPUResourceDX11" />
+/// <seealso cref="GPUResourceDX12" />
 class GPUFenceDX12 : public GPUResourceDX12<GPUFence>
 {
 private:
@@ -19,7 +19,7 @@ private:
     UINT64 fenceValue = 0;
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="GPUFanceDX11"/> class.
+    /// Initializes a new instance of the <see cref="GPUFanceDX12"/> class.
     /// </summary>
     /// <param name="device">The graphics device.</param>
     /// <param name="name">The resource name.</param>
