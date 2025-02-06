@@ -2,7 +2,7 @@
 
 #pragma once
 
-#if GRAPHICS_API_DIRECTX11
+#if GRAPHICS_API_VULKAN
 
 #include "Engine/Graphics/GPUFence.h"
 #include "GPUDeviceVulkan.h"
