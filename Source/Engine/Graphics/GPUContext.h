@@ -623,4 +623,7 @@ public:
     /// Forces graphics backend to rebind descriptors after command list was used by external graphics library.
     /// </summary>
     virtual void ForceRebindDescriptors();
+
+public:
+    API_FUNCTION() virtual GPUFence* CreateFence() = 0;
 };
