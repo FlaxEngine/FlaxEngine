@@ -130,6 +130,7 @@ public:
     GPUSampler* CreateSampler() override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
     GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name) override;
+    GPUFence* CreateFence(const StringView& name) override;
 };
 
 /// <summary>

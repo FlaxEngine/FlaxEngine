@@ -392,6 +392,13 @@ public:
     API_FUNCTION() virtual GPUBuffer* CreateBuffer(const StringView& name = StringView::Empty) = 0;
 
     /// <summary>
+    /// Creates the Fence.
+    /// </summary>
+    /// <param name="name">The resource name.</param>
+    /// <returns>the Fence</returns>
+    API_FUNCTION() virtual GPUFence* CreateFence(const StringView& name = StringView::Empty) = 0;
+
+    /// <summary>
     /// Creates the texture sampler.
     /// </summary>
     /// <returns>The sampler.</returns>

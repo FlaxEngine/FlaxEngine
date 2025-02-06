@@ -624,6 +624,4 @@ public:
     /// </summary>
     virtual void ForceRebindDescriptors();
 
-public:
-    API_FUNCTION() virtual GPUFence* CreateFence() = 0;
 };

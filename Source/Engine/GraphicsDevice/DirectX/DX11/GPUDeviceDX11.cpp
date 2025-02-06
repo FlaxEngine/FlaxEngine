@@ -16,6 +16,7 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Engine/CommandLine.h"
+#include "GPUFanceDX11.h"
 
 #if !USE_EDITOR && PLATFORM_WINDOWS
 #include "Engine/Core/Config/PlatformSettings.h"
@@ -800,6 +801,11 @@ GPUTimerQuery* GPUDeviceDX11::CreateTimerQuery()
 GPUBuffer* GPUDeviceDX11::CreateBuffer(const StringView& name)
 {
     return New<GPUBufferDX11>(this, name);
+}
+
+GPUFence* GPUDeviceDX11::CreateFence(const StringView& name)
+{
+    return New<GPUFenceDX11>(_device, name);
 }
 
 GPUSampler* GPUDeviceDX11::CreateSampler()
