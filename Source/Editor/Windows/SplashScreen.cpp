@@ -274,13 +274,15 @@ void SplashScreen::OnDraw()
         {
             lightBarHeight = height - lightBarHeight + 20 * s;
             Render2D::DrawTexture(_splashTexture, Rectangle(0, 0, width, height));
+            Color rectColor = Color::FromRGB(0x0C0C0C);
+            Render2D::FillRectangle(Rectangle(0, lightBarHeight, width, height - lightBarHeight),rectColor.AlphaMultiplied(0.85f), rectColor.AlphaMultiplied(0.85f), rectColor, rectColor);
         }
     }
     else
     {
         Render2D::FillRectangle(Rectangle(0, 0, width, 150 * s), Color::FromRGB(0x1C1C1C));
+        Render2D::FillRectangle(Rectangle(0, lightBarHeight, width, height), Color::FromRGB(0x0C0C0C));
     }
-    Render2D::FillRectangle(Rectangle(0, lightBarHeight, width, height), Color::FromRGB(0x0C0C0C));
 
     // Animated border
     const float anim = Math::Sin(time * 4.0f) * 0.5f + 0.5f;
