@@ -1378,7 +1378,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Vector4" /> to <see cref="Float4" />.
+        /// Performs an implicit conversion from <see cref="Vector4" /> to <see cref="Float4" />.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
@@ -1388,13 +1388,23 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Vector4" /> to <see cref="Double4" />.
+        /// Performs an implicit conversion from <see cref="Vector4" /> to <see cref="Double4" />.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
         public static implicit operator Double4(Vector4 value)
         {
             return new Double4(value.X, value.Y, value.Z, value.W);
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Vector4" /> to <see cref="Int4" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static explicit operator Int4(Vector4 value)
+        {
+            return new Int4((int)value.X, (int)value.Y, (int)value.Z, (int)value.W);
         }
 
         /// <summary>
