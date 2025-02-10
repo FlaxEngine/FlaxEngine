@@ -399,24 +399,28 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(1, "Start Cascade", true, typeof(int), 3, 0),
                 }
             },
+
             new NodeArchetype
             {
                 TypeID = 16,
                 Title = "World Triplanar Texture",
                 Description = "Projects a texture using world-space coordinates instead of UVs.",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(240, 60),
+                Size = new Float2(240, 90),
                 DefaultValues = new object[]
                 {
                     1.0f,
-                    1.0f
+                    1.0f,
+                    2,
                 },
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Texture", true, typeof(FlaxEngine.Object), 0),
                     NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(Float4), 1, 0),
                     NodeElementArchetype.Factory.Input(2, "Blend", true, typeof(float), 2, 1),
-                    NodeElementArchetype.Factory.Output(0, "Color", typeof(Float4), 3)
+                    NodeElementArchetype.Factory.Output(0, "Color", typeof(Float4), 3),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 3, "Sampler"),
+                    NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 3, 100, 2, typeof(CommonSamplerType))
                 }
             },
             new NodeArchetype

@@ -693,6 +693,24 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
     // World Triplanar Texture
     case 16:
     {
+
+        enum CommonSamplerType
+        {
+            LinearClamp = 0,
+            PointClamp = 1,
+            LinearWrap = 2,
+            PointWrap = 3,
+            TextureGroup = 4,
+        };
+        const Char* SamplerNames[]
+        {
+            TEXT("SamplerLinearClamp"),
+            TEXT("SamplerPointClamp"),
+            TEXT("SamplerLinearWrap"),
+            TEXT("SamplerPointWrap"),
+        };
+
+
         auto textureBox = node->GetBox(0);
         auto scaleBox = node->GetBox(1);
         auto blendBox = node->GetBox(2);
@@ -706,24 +724,46 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
         const auto scale = tryGetValue(scaleBox, node->Values[0]).AsFloat4();
         const auto blend = tryGetValue(blendBox, node->Values[1]).AsFloat();
+        
+        const Char* samplerName;
+        const int32 samplerIndex = node->Values[2].AsInt;
+        if (samplerIndex == TextureGroup)
+        {
+            auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[2].AsInt);
+            samplerName = *textureGroupSampler.ShaderName;
+        }
+        else if (samplerIndex >= 0 && samplerIndex < ARRAY_COUNT(SamplerNames))
+        {
+            samplerName = SamplerNames[samplerIndex];
+        }
+        else
+        {
+            OnError(node, box, TEXT("Invalid texture sampler."));
+            return;
+        }
+
+
         auto result = writeLocal(Value::InitForZero(ValueType::Float4), node);
+
+
         const String triplanarTexture = String::Format(TEXT(
             "	{{\n"
             "   float3 worldPos = input.WorldPosition.xyz * ({1} * 0.001f);\n"
             "   float3 normal = abs(input.TBN[2]);\n"
             "   normal = pow(normal, {2});\n"
             "   normal = normal / (normal.x + normal.y + normal.z);\n"
-            "   {3} += {0}.{4}(SamplerLinearWrap, worldPos.yz{5}) * normal.x;\n"
-            "   {3} += {0}.{4}(SamplerLinearWrap, worldPos.xz{5}) * normal.y;\n"
-            "   {3} += {0}.{4}(SamplerLinearWrap, worldPos.xy{5}) * normal.z;\n"
+            "   {3} += {0}.{4}({6}, worldPos.yz{5}) * normal.x;\n"
+            "   {3} += {0}.{4}({6}, worldPos.xz{5}) * normal.y;\n"
+            "   {3} += {0}.{4}({6}, worldPos.xy{5}) * normal.z;\n"
             "	}}\n"
         ),
-                                                       texture.Value, //  {0}
-                                                       scale.Value, //  {1}
-                                                       blend.Value, //  {2}
-                                                       result.Value, //  {3}
-                                                       canUseSample ? TEXT("Sample") : TEXT("SampleLevel"), //  {4}
-                                                       canUseSample ? TEXT("") : TEXT(", 0") //  {5}
+                texture.Value, //  {0}
+                scale.Value, //  {1}
+                blend.Value, //  {2}
+                result.Value, //  {3}
+                canUseSample ? TEXT("Sample") : TEXT("SampleLevel"), //  {4}
+                canUseSample ? TEXT("") : TEXT(", 0"), //  {5}
+                samplerName // 6
         );
         _writer.Write(*triplanarTexture);
         value = result;
