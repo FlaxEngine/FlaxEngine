@@ -400,27 +400,30 @@ namespace FlaxEditor.Surface.Archetypes
                 }
             },
 
+
             new NodeArchetype
             {
                 TypeID = 16,
                 Title = "World Triplanar Texture",
-                Description = "Projects a texture using world-space coordinates instead of UVs.",
+                Description = "Projects a texture using world-space coordinates with offset.",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(240, 90),
+                Size = new Float2(280, 100),  // Increased size to accommodate new input
                 DefaultValues = new object[]
                 {
+                    new Float2(1, 1),
                     1.0f,
-                    1.0f,
+                    new Float2(0, 0),  // Default offset,
                     2,
                 },
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Texture", true, typeof(FlaxEngine.Object), 0),
-                    NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(Float4), 1, 0),
+                    NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(Float2), 1, 0),
                     NodeElementArchetype.Factory.Input(2, "Blend", true, typeof(float), 2, 1),
-                    NodeElementArchetype.Factory.Output(0, "Color", typeof(Float4), 3),
-                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 3, "Sampler"),
-                    NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 3, 100, 2, typeof(CommonSamplerType))
+                    NodeElementArchetype.Factory.Input(3, "Offset", true, typeof(Float2), 3, 2),
+                    NodeElementArchetype.Factory.Output(0, "Color", typeof(Float3), 5),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 4, "Sampler"),
+                    NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 4, 100, 3, typeof(CommonSamplerType))
                 }
             },
             new NodeArchetype
@@ -460,7 +463,124 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     NodeElementArchetype.Factory.Output(0, "UVs", typeof(Float2), 0)
                 }
-            }
+            },
+            new NodeArchetype
+            {
+                TypeID = 19,
+                Title = "Local Triplanar Texture",
+                Description = "Projects a texture using local-space coordinates with offset.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(280, 100),  // Increased size to accommodate new input
+                DefaultValues = new object[]
+                {
+                    new Float2(1, 1),
+                    1.0f,
+                    new Float2(0, 0),  // Default offset,
+                    2,
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Texture", true, typeof(FlaxEngine.Object), 0),
+                    NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(Float2), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "Blend", true, typeof(float), 2, 1),
+                    NodeElementArchetype.Factory.Input(3, "Offset", true, typeof(Float2), 3, 2),
+                    NodeElementArchetype.Factory.Output(0, "Color", typeof(Float3), 5),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 4, "Sampler"),
+                    NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 4, 100, 3, typeof(CommonSamplerType))
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 20,
+                Title = "Local Triplanar Normal Map",
+                Description = " Normal Map using local-space coordinates. using triplanar",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(280, 100),  // Increased size to accommodate new inputs
+                DefaultValues = new object[]
+                {
+                    1.0f,
+                    1.0f,
+                    new Float2(0, 0),  // Default offset
+                    2,
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Texture", true, typeof(FlaxEngine.Object), 0),
+                    NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(Float2), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "Blend", true, typeof(float), 2, 1),
+                    NodeElementArchetype.Factory.Input(3, "Offset", true, typeof(Float2), 3, 2),
+                    NodeElementArchetype.Factory.Output(0, "Vector", typeof(Float3), 5),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 4, "Sampler"),
+                    NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 4, 100, 3, typeof(CommonSamplerType))
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 21,
+                Title = "Tangent To World Space",
+                Description = "Transforms a normal from tangent space to world space",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(180, 40),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Tangent Normal", true, typeof(Float3), 0),
+                    NodeElementArchetype.Factory.Output(0, "World Normal", typeof(Float3), 1)
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 22,
+                Title = "World To Tangent Space",
+                Description = "Transforms a normal from world space to tangent space",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(180, 40),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "World Normal", true, typeof(Float3), 0),
+                    NodeElementArchetype.Factory.Output(0, "Tangent Normal", typeof(Float3), 1)
+                }
+
+            },
+            new NodeArchetype
+            {
+                TypeID = 23,
+                Title = "World Triplanar Normal Map",
+                Description = " Normal Map using local-space coordinates. using triplanar",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(280, 100),  // Increased size to accommodate new inputs
+                DefaultValues = new object[]
+                {
+                    1.0f,
+                    1.0f,
+                    new Float2(0, 0),  // Default offset
+                    2,
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Texture", true, typeof(FlaxEngine.Object), 0),
+                    NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(Float2), 1, 0),
+                    NodeElementArchetype.Factory.Input(2, "Blend", true, typeof(float), 2, 1),
+                    NodeElementArchetype.Factory.Input(3, "Offset", true, typeof(Float2), 3, 2),
+                    NodeElementArchetype.Factory.Output(0, "Vector", typeof(Float3), 5),
+                    NodeElementArchetype.Factory.Text(0, Surface.Constants.LayoutOffsetY * 4, "Sampler"),
+                    NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 4, 100, 3, typeof(CommonSamplerType))
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 24,
+                Title = "Local Generated 3D UVS",
+                AlternativeTitles = new string[] { "local pos" },
+                Description = "Local Generated 3d UVs, taking into account scale and rotation",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(200, 50),
+                Elements = new []
+                {
+                    NodeElementArchetype.Factory.Output(0, "UV", typeof(Float3), 0)
+
+                }
+            },
+
         };
     }
 }

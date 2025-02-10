@@ -232,6 +232,18 @@ float3 GetObjectSize(MaterialInput input)
 	return input.Object.GeometrySize * float3(world._m00, world._m11, world._m22);
 }
 
+float3 GetObjectScale(MaterialInput input)
+{
+    float4x4 world = input.Object.WorldMatrix;
+    
+    // Get scale from the magnitude of each axis basis vector
+    return float3(
+        length(world._m00_m01_m02),
+        length(world._m10_m11_m12),
+        length(world._m20_m21_m22)
+    );
+}
+
 // Get the current object random value (supports instancing)
 float GetPerInstanceRandom(MaterialInput input)
 {
