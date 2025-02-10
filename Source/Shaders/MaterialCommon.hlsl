@@ -171,6 +171,8 @@ cbuffer ViewData : register(b1)
     float4 ViewInfo;
     float4 ScreenSize;
     float4 TemporalAAJitter;
+    float3 LargeWorldsChunkIndex;
+    float LargeWorldsChunkSize;
 };
 #endif
 
@@ -276,5 +278,15 @@ float2 Flipbook(float2 uv, float frame, float2 sizeXY, float2 flipXY = 0.0f)
     frameXY = lerp(frameXY, flipFrameXY, flipXY);
     return (uv + frameXY) / sizeXY;
 }
+
+#if USE_PER_VIEW_CONSTANTS
+
+// Calculates the world-position offset to stabilize tiling (eg. via triplanar mapping) due to Large Worlds view origin offset.
+float3 GetLargeWorldsTileOffset(float tileSize)
+{
+    return LargeWorldsChunkIndex * fmod(LargeWorldsChunkSize, tileSize);
+}
+
+#endif
 
 #endif
