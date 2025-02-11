@@ -3,6 +3,7 @@
 #include "RenderView.h"
 #include "Engine/Level/LargeWorlds.h"
 #include "Engine/Level/Actors/Camera.h"
+#include "Engine/Core/Math/Double4x4.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/RendererPass.h"
 #include "RenderBuffers.h"
