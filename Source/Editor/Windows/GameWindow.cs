@@ -691,7 +691,7 @@ namespace FlaxEditor.Windows
             {
                 var button = menu.AddButton("Audio Volume");
                 button.CloseMenuOnClick = false;
-                var slider = new FloatValueBox(1, 140, 2, 50, 0, 1) { Parent = button };
+                var slider = new FloatValueBox(AudioVolume, 140, 2, 50, 0, 1) { Parent = button };
                 slider.ValueChanged += () => AudioVolume = slider.Value;
             }
 
