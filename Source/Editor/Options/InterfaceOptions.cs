@@ -261,6 +261,13 @@ namespace FlaxEditor.Options
 #endif
 
         /// <summary>
+        /// Gets or sets a value indicating the height of window tabs. Editor restart required.
+        /// </summary>
+        [DefaultValue(20.0f), Limit(15.0f, 40.0f)]
+        [EditorDisplay("Tabs & Windows"), EditorOrder(100)]
+        public float TabHeight { get; set; } = 20.0f;
+
+        /// <summary>
         /// Gets or sets a value indicating whether center mouse position on window focus in play mode. Helps when working with games that lock mouse cursor.
         /// </summary>
         [DefaultValue(false)]
