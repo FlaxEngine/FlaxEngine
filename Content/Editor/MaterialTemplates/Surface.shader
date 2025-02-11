@@ -42,6 +42,12 @@ struct GeometryData
 	nointerpolation uint ObjectIndex : TEXCOORD8;
 };
 
+float3 DecodeNormal(float4 normalMap)
+{
+    float2 xy = normalMap.rg * 2.0 - 1.0;
+    return float3(xy, sqrt(1.0 - saturate(dot(xy, xy))));
+}
+
 // Interpolants passed from the vertex shader
 struct VertexOutput
 {
@@ -120,6 +126,8 @@ MaterialInput GetGeometryMaterialInput(GeometryData geometry)
 // Offsets the geometry positions data only (used by the tessallation when generating vertices)
 #define OffsetGeometryPositions(geometry, offset) geometry.WorldPosition += offset; geometry.PrevWorldPosition += offset
 
+
+
 // Applies the Phong tessallation to the geometry positions (used by the tessallation when doing Phong tess)
 #define ApplyGeometryPositionsPhongTess(geometry, p0, p1, p2, U, V, W) \
 	float3 posProjectedU = TessalationProjectOntoPlane(p0.WorldNormal, p0.WorldPosition, geometry.WorldPosition); \
@@ -161,6 +169,8 @@ MaterialInput GetMaterialInput(PixelInput input)
 #endif
 	return output;
 }
+
+
 
 // Removes the scale vector from the local to world transformation matrix (supports instancing)
 float3x3 RemoveScaleFromLocalToWorld(float3x3 localToWorld)
@@ -232,18 +242,23 @@ float3 GetObjectSize(MaterialInput input)
 	return input.Object.GeometrySize * float3(world._m00, world._m11, world._m22);
 }
 
+// Gets the current object scale (supports instancing)
 float3 GetObjectScale(MaterialInput input)
 {
     float4x4 world = input.Object.WorldMatrix;
     
-    // Get scale from the magnitude of each axis basis vector
+    // Get the squares of the scale factors
+    float scaleXSquared = dot(world[0].xyz, world[0].xyz);
+    float scaleYSquared = dot(world[1].xyz, world[1].xyz);
+    float scaleZSquared = dot(world[2].xyz, world[2].xyz);
+    
+    // Take square root to get actual scales
     return float3(
-        length(world._m00_m01_m02),
-        length(world._m10_m11_m12),
-        length(world._m20_m21_m22)
+        sqrt(scaleXSquared),
+        sqrt(scaleYSquared),
+        sqrt(scaleZSquared)
     );
 }
-
 // Get the current object random value (supports instancing)
 float GetPerInstanceRandom(MaterialInput input)
 {
