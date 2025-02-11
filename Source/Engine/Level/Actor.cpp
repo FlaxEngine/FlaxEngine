@@ -418,10 +418,21 @@ Actor* Actor::GetChild(const StringView& name) const
 Actor* Actor::GetChild(const MClass* type) const
 {
     CHECK_RETURN(type, nullptr);
-    for (auto child : Children)
+    if (type->IsInterface())
     {
-        if (child->GetClass()->IsSubClassOf(type))
-            return child;
+        for (auto child : Children)
+        {
+            if (child->GetClass()->HasInterface(type))
+                return child;
+        }
+    }
+    else
+    {
+        for (auto child : Children)
+        {
+            if (child->GetClass()->IsSubClassOf(type))
+                return child;
+        }
     }
     return nullptr;
 }
@@ -429,9 +440,18 @@ Actor* Actor::GetChild(const MClass* type) const
 Array<Actor*> Actor::GetChildren(const MClass* type) const
 {
     Array<Actor*> result;
-    for (auto child : Children)
-        if (child->GetClass()->IsSubClassOf(type))
-            result.Add(child);
+    if (type->IsInterface())
+    {
+        for (auto child : Children)
+            if (child->GetClass()->HasInterface(type))
+                result.Add(child);
+    }
+    else
+    {
+        for (auto child : Children)
+            if (child->GetClass()->IsSubClassOf(type))
+                result.Add(child);
+    }
     return result;
 }
 
@@ -1441,7 +1461,7 @@ Actor* Actor::FindActor(const MClass* type, bool activeOnly) const
     CHECK_RETURN(type, nullptr);
     if (activeOnly && !_isActive)
         return nullptr;
-    if (GetClass()->IsSubClassOf(type))
+    if ((GetClass()->IsSubClassOf(type) || GetClass()->HasInterface(type)))
         return const_cast<Actor*>(this);
     for (auto child : Children)
     {
@@ -1455,7 +1475,7 @@ Actor* Actor::FindActor(const MClass* type, bool activeOnly) const
 Actor* Actor::FindActor(const MClass* type, const StringView& name) const
 {
     CHECK_RETURN(type, nullptr);
-    if (GetClass()->IsSubClassOf(type) && _name == name)
+    if ((GetClass()->IsSubClassOf(type) || GetClass()->HasInterface(type)) && _name == name)
         return const_cast<Actor*>(this);
     for (auto child : Children)
     {
@@ -1471,7 +1491,7 @@ Actor* Actor::FindActor(const MClass* type, const Tag& tag, bool activeOnly) con
     CHECK_RETURN(type, nullptr);
     if (activeOnly && !_isActive)
         return nullptr;
-    if (GetClass()->IsSubClassOf(type) && HasTag(tag))
+    if ((GetClass()->IsSubClassOf(type) || GetClass()->HasInterface(type)) && HasTag(tag))
         return const_cast<Actor*>(this);
     for (auto child : Children)
     {
@@ -1485,10 +1505,21 @@ Actor* Actor::FindActor(const MClass* type, const Tag& tag, bool activeOnly) con
 Script* Actor::FindScript(const MClass* type) const
 {
     CHECK_RETURN(type, nullptr);
-    for (auto script : Scripts)
+    if (type->IsInterface())
     {
-        if (script->GetClass()->IsSubClassOf(type) || script->GetClass()->HasInterface(type))
-            return script;
+        for (const auto script : Scripts)
+        {
+            if (script->GetClass()->HasInterface(type))
+                return script;
+        }
+    }
+    else
+    {
+        for (const auto script : Scripts)
+        {
+            if (script->GetClass()->IsSubClassOf(type))
+                return script;
+        }
     }
     for (auto child : Children)
     {
