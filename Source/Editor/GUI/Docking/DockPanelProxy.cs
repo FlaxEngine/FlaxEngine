@@ -16,6 +16,8 @@ namespace FlaxEditor.GUI.Docking
         private DockPanel _panel;
         private double _dragEnterTime = -1;
         private float _tabHeight = Editor.Instance.Options.Options.Interface.TabHeight;
+        private bool _useMinimumTabWidth = Editor.Instance.Options.Options.Interface.UseMinimumTabWidth;
+        private float _minimumTabWidth = Editor.Instance.Options.Options.Interface.MinimumTabWidth;
 #if PLATFORM_WINDOWS
         private readonly bool _hideTabForSingleTab = Editor.Instance.Options.Options.Interface.HideSingleTabWindowTabBars;
 #else
@@ -56,6 +58,7 @@ namespace FlaxEditor.GUI.Docking
         /// The start drag asynchronous window.
         /// </summary>
         public DockWindow StartDragAsyncWindow;
+
         private Rectangle HeaderRectangle => new Rectangle(0, 0, Width, _tabHeight);
         private bool IsSingleFloatingWindow => _hideTabForSingleTab && _panel.TabsCount == 1 && _panel.IsFloating && _panel.ChildPanelsCount == 0;
 
@@ -97,6 +100,10 @@ namespace FlaxEditor.GUI.Docking
                     var titleSize = tab.TitleSize;
                     var iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
                     var width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin + iconWidth;
+
+                    if (_useMinimumTabWidth && width < _minimumTabWidth)
+                        width = _minimumTabWidth;
+
                     var tabRect = new Rectangle(x, 0, width, HeaderRectangle.Height);
                     var isMouseOver = tabRect.Contains(position);
                     if (isMouseOver)
@@ -248,7 +255,12 @@ namespace FlaxEditor.GUI.Docking
                     var tabColor = Color.Black;
                     var titleSize = tab.TitleSize;
                     var iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
+                   
                     var width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin + iconWidth;
+
+                    if (_useMinimumTabWidth && width < _minimumTabWidth)
+                        width = _minimumTabWidth;
+
                     var tabRect = new Rectangle(x, 0, width, headerRect.Height);
                     var isMouseOver = tabRect.Contains(MousePosition);
                     var isSelected = _panel.SelectedTab == tab;

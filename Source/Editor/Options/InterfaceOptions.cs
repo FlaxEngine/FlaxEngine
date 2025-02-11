@@ -261,6 +261,20 @@ namespace FlaxEditor.Options
 #endif
 
         /// <summary>
+        /// Gets or sets a value indicating wether the minum tab width should be used. Editor restart required.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Tabs & Windows"), EditorOrder(99)]
+        public bool UseMinimumTabWidth { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating the minimum tab width. If a tab is smaller than this width, its width will be set to this. Editor restart required.
+        /// </summary>
+        [DefaultValue(80.0f), Limit(50.0f, 150.0f)]
+        [EditorDisplay("Tabs & Windows"), EditorOrder(99), VisibleIf(nameof(UseMinimumTabWidth))]
+        public float MinimumTabWidth { get; set; } = 80.0f;
+
+        /// <summary>
         /// Gets or sets a value indicating the height of window tabs. Editor restart required.
         /// </summary>
         [DefaultValue(20.0f), Limit(15.0f, 40.0f)]
