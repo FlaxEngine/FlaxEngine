@@ -167,35 +167,12 @@ namespace FlaxEditor.Options
         [EditorDisplay("Interface"), EditorOrder(10), Tooltip("Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.")]
         public float InterfaceScale { get; set; } = 1.0f;
 
-#if PLATFORM_WINDOWS
-        /// <summary>
-        /// Gets or sets a value indicating whether use native window title bar. Editor restart required.
-        /// </summary>
-        [DefaultValue(false)]
-        [EditorDisplay("Interface"), EditorOrder(70), Tooltip("Determines whether use native window title bar. Editor restart required.")]
-        public bool UseNativeWindowSystem { get; set; } = false;
-#endif
-
         /// <summary>
         /// Gets or sets a value indicating whether show selected camera preview in the editor window.
         /// </summary>
         [DefaultValue(true)]
         [EditorDisplay("Interface"), EditorOrder(80), Tooltip("Determines whether show selected camera preview in the edit window.")]
         public bool ShowSelectedCameraPreview { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether center mouse position on window focus in play mode. Helps when working with games that lock mouse cursor.
-        /// </summary>
-        [DefaultValue(false)]
-        [EditorDisplay("Interface", "Center Mouse On Game Window Focus"), EditorOrder(100), Tooltip("Determines whether center mouse position on window focus in play mode. Helps when working with games that lock mouse cursor.")]
-        public bool CenterMouseOnGameWinFocus { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets the method window opening.
-        /// </summary>
-        [DefaultValue(DockStateProxy.Float)]
-        [EditorDisplay("Interface", "New Window Location"), EditorOrder(150), Tooltip("Define the opening method for new windows, open in a new tab by default.")]
-        public DockStateProxy NewWindowLocation { get; set; } = DockStateProxy.Float;
 
         /// <summary>
         /// Gets or sets the editor icons scale. Editor restart required.
@@ -264,6 +241,38 @@ namespace FlaxEditor.Options
         [DefaultValue(true)]
         [EditorDisplay("Interface"), EditorOrder(322)]
         public bool ScrollToScriptOnAdd { get; set; } = true;
+
+#if PLATFORM_WINDOWS
+        /// <summary>
+        /// Gets or sets a value indicating whether use native window title bar. Editor restart required.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Tabs & Windows"), EditorOrder(70), Tooltip("Determines whether use native window title bar. Editor restart required.")]
+        public bool UseNativeWindowSystem { get; set; } = false;
+#endif
+
+#if PLATFORM_WINDOWS
+        /// <summary>
+        /// Gets or sets a value indicating whether a window containing a single tabs hides the tab bar. Editor restart recommended.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Tabs & Windows", "Hide Single-Tab Window Tab Bars"), EditorOrder(71)]
+        public bool HideSingleTabWindowTabBars { get; set; } = true;
+#endif
+
+        /// <summary>
+        /// Gets or sets a value indicating whether center mouse position on window focus in play mode. Helps when working with games that lock mouse cursor.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Tabs & Windows", "Center Mouse On Game Window Focus"), EditorOrder(101), Tooltip("Determines whether center mouse position on window focus in play mode. Helps when working with games that lock mouse cursor.")]
+        public bool CenterMouseOnGameWinFocus { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the method window opening.
+        /// </summary>
+        [DefaultValue(DockStateProxy.Float)]
+        [EditorDisplay("Tabs & Windows", "New Window Location"), EditorOrder(150), Tooltip("Define the opening method for new windows, open in a new tab by default.")]
+        public DockStateProxy NewWindowLocation { get; set; } = DockStateProxy.Float;
 
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
