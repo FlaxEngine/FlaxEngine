@@ -919,9 +919,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // No supported
-    Matrix world;
-    GetLocalToWorldMatrix(world);
-    renderContext.View.GetWorldMatrix(world);
+    ACTOR_GET_WORLD_MATRIX(this, view, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));

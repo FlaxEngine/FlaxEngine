@@ -655,6 +655,18 @@ public:
     /// <param name="localToWorld">The world to local matrix.</param>
     API_FUNCTION() void GetLocalToWorldMatrix(API_PARAM(Out) Matrix& localToWorld) const;
 
+    /// <summary>
+    /// Gets the matrix that transforms a point from the world space to local space of the actor.
+    /// </summary>
+    /// <param name="worldToLocal">The world to local matrix.</param>
+    void GetWorldToLocalMatrix(Double4x4& worldToLocal) const;
+
+    /// <summary>
+    /// Gets the matrix that transforms a point from the local space of the actor to world space.
+    /// </summary>
+    /// <param name="localToWorld">The world to local matrix.</param>
+    void GetLocalToWorldMatrix(Double4x4& localToWorld) const;
+
 public:
     /// <summary>
     /// Gets actor bounding sphere that defines 3D space intersecting with the actor (for determination of the visibility for actor).

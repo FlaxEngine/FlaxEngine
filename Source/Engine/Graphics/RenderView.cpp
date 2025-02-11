@@ -215,6 +215,13 @@ void RenderView::GetWorldMatrix(const Transform& transform, Matrix& world) const
     Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
 }
 
+void RenderView::GetWorldMatrix(Double4x4& world) const
+{
+    world.M41 -= Origin.X;
+    world.M42 -= Origin.Y;
+    world.M43 -= Origin.Z;
+}
+
 TaaJitterRemoveContext::TaaJitterRemoveContext(const RenderView& view)
 {
     if (view.IsTaaResolved)

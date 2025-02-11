@@ -15,6 +15,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/Core/Collections/CollectionPoolCache.h"
+#include "Engine/Core/Math/Double4x4.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderView.h"
@@ -779,6 +780,27 @@ void Actor::GetLocalToWorldMatrix(Matrix& localToWorld) const
     if (_parent)
     {
         Matrix parentToWorld;
+        _parent->GetLocalToWorldMatrix(parentToWorld);
+        localToWorld = localToWorld * parentToWorld;
+    }
+#endif
+}
+
+void Actor::GetWorldToLocalMatrix(Double4x4& worldToLocal) const
+{
+    GetLocalToWorldMatrix(worldToLocal);
+    worldToLocal.Invert();
+}
+
+void Actor::GetLocalToWorldMatrix(Double4x4& localToWorld) const
+{
+#if 0
+    _transform.GetWorld(localToWorld);
+#else
+    _localTransform.GetWorld(localToWorld);
+    if (_parent)
+    {
+        Double4x4 parentToWorld;
         _parent->GetLocalToWorldMatrix(parentToWorld);
         localToWorld = localToWorld * parentToWorld;
     }

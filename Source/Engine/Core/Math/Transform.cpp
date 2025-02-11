@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "Transform.h"
+#include "Double4x4.h"
 #include "Matrix.h"
 #include "Matrix3x3.h"
 #include "../Types/String.h"
@@ -55,6 +56,11 @@ Matrix Transform::GetWorld() const
 void Transform::GetWorld(Matrix& result) const
 {
     Matrix::Transformation(Scale, Orientation, Translation, result);
+}
+
+void Transform::GetWorld(Double4x4& result) const
+{
+    Double4x4::Transformation(Scale, Orientation, Translation, result);
 }
 
 Transform Transform::Add(const Vector3& translation) const
