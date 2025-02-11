@@ -949,6 +949,9 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const String triplanarNormalMap = ShaderStringBuilder()
                 .Code(TEXT(R"(
         {
+            //Techniques implemented from. 
+            //https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a
+
             // Get local position for correct texture projection
             float3 localPos = TransformWorldVectorToLocal(input, input.WorldPosition - GetObjectPosition(input));
             float3 localScale = GetObjectScale(input);
@@ -1131,6 +1134,10 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const String triplanarNormalMap = ShaderStringBuilder()
                 .Code(TEXT(R"(
         {
+            //Techniques implemented from. 
+            //https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a
+
+
             // Get world position and normal
             float3 worldPos = input.WorldPosition.xyz;
             float3 worldNormal = normalize(input.TBN[2]);
