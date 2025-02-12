@@ -130,6 +130,11 @@ namespace FlaxEditor.CustomEditors.Editors
         public Func<Object, ScriptType, bool> CheckValid;
 
         /// <summary>
+        /// Utility flag used to indicate that there are different values assigned to this reference editor and user should be informed about it.
+        /// </summary>
+        public bool DifferentValues;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="FlaxObjectRefPickerControl"/> class.
         /// </summary>
         public FlaxObjectRefPickerControl()
@@ -197,7 +202,14 @@ namespace FlaxEditor.CustomEditors.Editors
             Render2D.DrawRectangle(frameRect, isEnabled && (IsMouseOver || IsNavFocused) ? style.BorderHighlighted : style.BorderNormal);
 
             // Check if has item selected
-            if (isSelected)
+            if (DifferentValues)
+            {
+                // Draw info
+                Render2D.PushClip(nameRect);
+                Render2D.DrawText(style.FontMedium, Type != null ? $"Multiple Values ({Utilities.Utils.GetPropertyNameUI(Type.ToString())})" : "-", nameRect, isEnabled ? style.ForegroundGrey : style.ForegroundGrey.AlphaMultiplied(0.75f), TextAlignment.Near, TextAlignment.Center);
+                Render2D.PopClip();
+            }
+            else if (isSelected)
             {
                 // Draw name
                 Render2D.PushClip(nameRect);
@@ -546,7 +558,9 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             base.Refresh();
 
-            if (!HasDifferentValues)
+            var differentValues = HasDifferentValues;
+            _element.CustomControl.DifferentValues = differentValues;
+            if (!differentValues)
             {
                 _element.CustomControl.Value = Values[0] as Object;
             }

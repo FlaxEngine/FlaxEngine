@@ -123,7 +123,9 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             base.Refresh();
 
-            if (!HasDifferentValues)
+            var differentValues = HasDifferentValues;
+            Picker.DifferentValues = differentValues;
+            if (!differentValues)
             {
                 _isRefreshing = true;
                 var value = Values[0];
@@ -375,12 +377,9 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             base.Refresh();
 
-            if (!HasDifferentValues)
-            {
-                _isRefreshing = true;
-                _textBox.Text = GetPath();
-                _isRefreshing = false;
-            }
+            _isRefreshing = true;
+            _textBox.Text = HasDifferentValues ? "Multiple Values" : GetPath();
+            _isRefreshing = false;
         }
 
         /// <inheritdoc />
