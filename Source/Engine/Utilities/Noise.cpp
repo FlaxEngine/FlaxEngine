@@ -114,7 +114,7 @@ namespace
         Float2 fade_xy = PerlinNoiseFade(Float2(Pf));
         Float2 n_x = Float2::Lerp(Float2(n00, n01), Float2(n10, n11), fade_xy.X);
         float n_xy = Math::Lerp(n_x.X, n_x.Y, fade_xy.Y);
-        return Math::Saturate(2.3f * n_xy);
+        return Math::Saturate(n_xy * 2.136f + 0.5f); // Rescale to [0;1]
     }
 }
 
@@ -169,7 +169,7 @@ float Noise::SimplexNoise(const Float2& p)
     float gx = a0.X * x0.X + h.X * x0.Y;
     Float2 gyz = Float2(a0.Y, a0.Z) * Float2(x12.X, x12.Z) + Float2(h.Y, h.Z) * Float2(x12.Y, x12.W);
     Float3 g(gx, gyz.X, gyz.Y);
-    return Math::Saturate(130.0f * Float3::Dot(m, g));
+    return Math::Saturate(Float3::Dot(m, g) * 71.428f + 0.5f); // Rescale to [0;1]
 }
 
 Float2 Noise::WorleyNoise(const Float2& p)

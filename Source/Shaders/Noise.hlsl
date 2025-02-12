@@ -89,7 +89,6 @@ float3 rand3dTo3d(float3 value)
     );
 }
 
-
 float PerlinNoiseImpl(float4 Pi, float4 Pf)
 {
     Pi = Mod289(Pi);
@@ -124,7 +123,7 @@ float PerlinNoiseImpl(float4 Pi, float4 Pf)
     float2 fade_xy = PerlinNoiseFade(Pf.xy);
     float2 n_x = lerp(float2(n00, n01), float2(n10, n11), fade_xy.x);
     float n_xy = lerp(n_x.x, n_x.y, fade_xy.y);
-    return saturate(2.3 * n_xy);
+    return saturate(n_xy * 2.136f + 0.5f); // Rescale to [0;1]
 }
 
 // Classic Perlin noise
@@ -183,7 +182,7 @@ float SimplexNoise(float2 p)
     float gx = a0.x * x0.x + h.x * x0.y;
     float2 gyz = a0.yz * x12.xz + h.yz * x12.yw;
     float3 g = float3(gx, gyz);
-    return saturate(130.0f * dot(m, g));
+    return saturate(dot(m, g) * 71.428f + 0.5f); // Rescale to [0;1]
 }
 
 // Worley noise (cellar noise with standard 3x3 search window for F1 and F2 values)
