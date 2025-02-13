@@ -1182,9 +1182,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void DrawEditorBackground(ref Rectangle rect)
+            public override void DrawEditorGrid(ref Rectangle rect)
             {
-                base.DrawEditorBackground(ref rect);
+                base.DrawEditorGrid(ref rect);
 
                 // Draw triangulated multi blend space
                 var style = Style.Current;
@@ -1195,15 +1195,8 @@ namespace FlaxEditor.Surface.Archetypes
                 else
                     Render2D.FillTriangles(_triangles, style.TextBoxBackgroundSelected.AlphaMultiplied(0.6f));
                 Render2D.DrawTriangles(_triangles, style.Foreground);
-            }
-
-            /// <inheritdoc />
-            public override void DrawEditorGrid(ref Rectangle rect)
-            {
-                base.DrawEditorGrid(ref rect);
 
                 // Highlight selected blend point
-                var style = Style.Current;
                 var selectedIndex = _selectedAnimation.SelectedIndex;
                 if (selectedIndex != -1 && selectedIndex < _editor.BlendPoints.Count && (ContainsFocus || IsMouseOver))
                 {
