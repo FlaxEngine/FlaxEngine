@@ -68,12 +68,16 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         // Use default prefab instance as a reference for the editor
                         Values.SetReferenceValue(prefabInstance);
 
-                        if (Presenter == Editor.Instance.Windows.PropertiesWin.Presenter)
+                        // Display prefab UI (when displaying object inside Prefab Window then display only nested prefabs)
+                        var prefabId = prefab.ID;
+                        Editor.GetPrefabNestedObject(ref prefabId, ref prefabObjectId, out var nestedPrefabId, out var nestedPrefabObjectId);
+                        var nestedPrefab = FlaxEngine.Content.Load<Prefab>(nestedPrefabId);
+                        var panel = layout.CustomContainer<UniformGridPanel>();
+                        panel.CustomControl.Height = 20.0f;
+                        panel.CustomControl.SlotsVertically = 1;
+                        if (Presenter == Editor.Instance.Windows.PropertiesWin.Presenter || nestedPrefab)
                         {
-                            // Add some UI
-                            var panel = layout.CustomContainer<UniformGridPanel>();
-                            panel.CustomControl.Height = 20.0f;
-                            panel.CustomControl.SlotsVertically = 1;
+                            var targetPrefab = nestedPrefab ?? prefab;
                             panel.CustomControl.SlotsHorizontally = 3;
                             
                             // Selecting actor prefab asset
@@ -81,17 +85,21 @@ namespace FlaxEditor.CustomEditors.Dedicated
                             selectPrefab.Button.Clicked += () =>
                             {
                                 Editor.Instance.Windows.ContentWin.ClearItemsSearch();
-                                Editor.Instance.Windows.ContentWin.Select(prefab);
+                                Editor.Instance.Windows.ContentWin.Select(targetPrefab);
                             };
 
                             // Edit selected prefab asset
                             var editPrefab = panel.Button("Edit Prefab");
-                            editPrefab.Button.Clicked += () => Editor.Instance.Windows.ContentWin.Open(Editor.Instance.ContentDatabase.FindAsset(prefab.ID));
-
-                            // Viewing changes applied to this actor
-                            var viewChanges = panel.Button("View Changes");
-                            viewChanges.Button.Clicked += () => ViewChanges(viewChanges.Button, new Float2(0.0f, 20.0f));
+                            editPrefab.Button.Clicked += () => Editor.Instance.Windows.ContentWin.Open(Editor.Instance.ContentDatabase.FindAsset(targetPrefab.ID));
                         }
+                        else
+                        {
+                            panel.CustomControl.SlotsHorizontally = 1;
+                        }
+
+                        // Viewing changes applied to this actor
+                        var viewChanges = panel.Button("View Changes");
+                        viewChanges.Button.Clicked += () => ViewChanges(viewChanges.Button, new Float2(0.0f, 20.0f));
 
                         // Link event to update editor on prefab apply
                         _linkedPrefabId = prefab.ID;

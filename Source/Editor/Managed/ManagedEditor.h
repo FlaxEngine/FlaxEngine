@@ -259,6 +259,7 @@ public:
     API_FUNCTION(Internal) static Array<VisualScriptLocal> GetVisualScriptLocals();
     API_FUNCTION(Internal) static bool EvaluateVisualScriptLocal(VisualScript* script, API_PARAM(Ref) VisualScriptLocal& local);
     API_FUNCTION(Internal) static void WipeOutLeftoverSceneObjects();
+    API_FUNCTION(Internal) static void GetPrefabNestedObject(API_PARAM(Ref) const Guid& prefabId, API_PARAM(Ref) const Guid& prefabObjectId, API_PARAM(Out) Guid& outPrefabId, API_PARAM(Out) Guid& outPrefabObjectId);
 
 private:
     void OnEditorAssemblyLoaded(MAssembly* assembly);

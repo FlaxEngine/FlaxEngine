@@ -12,11 +12,14 @@
 #include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/Internal/MainThreadManagedInvokeAction.h"
 #include "Engine/Content/Assets/VisualScript.h"
+#include "Engine/Content/Content.h"
 #include "Engine/CSG/CSGBuilder.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Renderer/ProbesRenderer.h"
 #include "Engine/Animations/Graph/AnimGraph.h"
 #include "Engine/Core/ObjectsRemovalService.h"
+#include "Engine/Level/Prefabs/Prefab.h"
+#include "Engine/Serialization/JsonTools.h"
 
 ManagedEditor::InternalOptions ManagedEditor::ManagedEditorOptions;
 
@@ -592,6 +595,7 @@ bool ManagedEditor::EvaluateVisualScriptLocal(VisualScript* script, VisualScript
 
 void ManagedEditor::WipeOutLeftoverSceneObjects()
 {
+    PROFILE_CPU();
     Array<ScriptingObject*> objects = Scripting::GetObjects();
     bool removedAny = false;
     for (ScriptingObject* object : objects)
@@ -611,6 +615,21 @@ void ManagedEditor::WipeOutLeftoverSceneObjects()
     }
     if (removedAny)
         ObjectsRemovalService::Flush();
+}
+
+void ManagedEditor::GetPrefabNestedObject(const Guid& prefabId, const Guid& prefabObjectId, Guid& outPrefabId, Guid& outPrefabObjectId)
+{
+    outPrefabId = Guid::Empty;
+    outPrefabObjectId = Guid::Empty;
+    const auto prefab = Content::Load<Prefab>(prefabId);
+    if (!prefab)
+        return;
+    const ISerializable::DeserializeStream** prefabObjectDataPtr = prefab->ObjectsDataCache.TryGet(prefabObjectId);
+    if (!prefabObjectDataPtr)
+        return;
+    const ISerializable::DeserializeStream& prefabObjectData = **prefabObjectDataPtr;
+    JsonTools::GetGuidIfValid(outPrefabId, prefabObjectData, "PrefabID");
+    JsonTools::GetGuidIfValid(outPrefabObjectId, prefabObjectData, "PrefabObjectID");
 }
 
 void ManagedEditor::OnEditorAssemblyLoaded(MAssembly* assembly)
