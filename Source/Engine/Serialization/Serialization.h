@@ -7,6 +7,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Level/SceneObject.h"
 #include "Engine/Utilities/Encryption.h"
 
 struct Version;

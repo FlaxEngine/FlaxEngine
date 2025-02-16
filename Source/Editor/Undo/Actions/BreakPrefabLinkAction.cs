@@ -23,7 +23,7 @@ namespace FlaxEditor.Actions
             public Guid PrefabID;
             public Guid PrefabObjectID;
 
-            public unsafe Item(SceneObject obj, List<Item> nestedPrefabLinks)
+            public Item(SceneObject obj, List<Item> nestedPrefabLinks)
             {
                 ID = obj.ID;
                 PrefabID = obj.PrefabID;
@@ -33,8 +33,7 @@ namespace FlaxEditor.Actions
                     // Check if this object comes from another nested prefab (to break link only from the top-level prefab)
                     Item nested;
                     nested.ID = ID;
-                    fixed (Item* i = &this)
-                        Editor.Internal_GetPrefabNestedObject(new IntPtr(&i->PrefabID), new IntPtr(&i->PrefabObjectID), new IntPtr(&nested.PrefabID), new IntPtr(&nested.PrefabObjectID));
+                    Editor.GetPrefabNestedObject(ref PrefabID, ref PrefabObjectID, out nested.PrefabID, out nested.PrefabObjectID);
                     if (nested.PrefabID != Guid.Empty && nested.PrefabObjectID != Guid.Empty)
                         nestedPrefabLinks.Add(nested);
                 }
