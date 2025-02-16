@@ -9,6 +9,8 @@ using FlaxEditor.GUI.Drag;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.GUI;
 using FlaxEditor.Scripting;
+using FlaxEditor.Windows;
+using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -39,6 +41,11 @@ namespace FlaxEditor.CustomEditors.Editors
         private DragAssets _dragAssets;
         private DragScripts _dragScripts;
         private DragHandlers _dragHandlers;
+
+        /// <summary>
+        /// The presenter using this control.
+        /// </summary>
+        public IPresenterOwner PresenterContext;
 
         /// <summary>
         /// Gets or sets the allowed objects type (given type and all sub classes). Must be <see cref="Object"/> type of any subclass.
@@ -159,7 +166,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Value = actor;
                     RootWindow.Focus();
                     Focus();
-                });
+                }, PresenterContext);
             }
             else
             {
@@ -168,7 +175,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Value = script;
                     RootWindow.Focus();
                     Focus();
-                });
+                }, PresenterContext);
             }
         }
 
@@ -427,13 +434,13 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Ensure to have valid drag helpers (uses lazy init)
             if (_dragActors == null)
-                _dragActors = new DragActors(x => IsValid(x.Actor));
+                _dragActors = new DragActors(ValidateDragActor);
             if (_dragActorsWithScript == null)
                 _dragActorsWithScript = new DragActors(ValidateDragActorWithScript);
             if (_dragAssets == null)
                 _dragAssets = new DragAssets(ValidateDragAsset);
             if (_dragScripts == null)
-                _dragScripts = new DragScripts(IsValid);
+                _dragScripts = new DragScripts(ValidateDragScript);
             if (_dragHandlers == null)
             {
                 _dragHandlers = new DragHandlers
@@ -458,6 +465,43 @@ namespace FlaxEditor.CustomEditors.Editors
             return DragEffect;
         }
 
+        private bool ValidateDragActor(ActorNode a)
+        {
+            if (!IsValid(a.Actor))
+                return false;
+            
+            if (PresenterContext is PrefabWindow prefabWindow)
+            {
+                if (prefabWindow.Tree == a.TreeNode.ParentTree)
+                    return true;
+            }
+            else if (PresenterContext is PropertiesWindow || PresenterContext == null)
+            {
+                if (a.ParentScene != null)
+                    return true;
+            }
+            return false;
+        }
+
+        private bool ValidateDragScript(Script script)
+        {
+            if (!IsValid(script))
+                return false;
+            
+            if (PresenterContext is PrefabWindow prefabWindow)
+            {
+                var actorNode = prefabWindow.Graph.Root.Find(script.Actor);
+                if (actorNode != null)
+                    return true;
+            }
+            else if (PresenterContext is PropertiesWindow || PresenterContext == null)
+            {
+                if (script.Actor.HasScene)
+                    return true;
+            }
+            return false;
+        }
+
         private bool ValidateDragAsset(AssetItem assetItem)
         {
             // Check if can accept assets
@@ -476,7 +520,18 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private bool ValidateDragActorWithScript(ActorNode node)
         {
-            return node.Actor.Scripts.Any(IsValid);
+            bool isCorrectContext = false;
+            if (PresenterContext is PrefabWindow prefabWindow)
+            {
+                if (prefabWindow.Tree == node.TreeNode.ParentTree)
+                    isCorrectContext =  true;
+            }
+            else if (PresenterContext is PropertiesWindow || PresenterContext == null)
+            {
+                if (node.ParentScene != null)
+                    isCorrectContext =  true;
+            }
+            return node.Actor.Scripts.Any(IsValid) && isCorrectContext;
         }
 
         /// <inheritdoc />
@@ -548,6 +603,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (!HasDifferentTypes)
             {
                 _element = layout.Custom<FlaxObjectRefPickerControl>();
+                _element.CustomControl.PresenterContext = Presenter.Owner;
                 _element.CustomControl.Type = Values.Type.Type != typeof(object) || Values[0] == null ? Values.Type : TypeUtils.GetObjectType(Values[0]);
                 _element.CustomControl.ValueChanged += () => SetValue(_element.CustomControl.Value);
             }
