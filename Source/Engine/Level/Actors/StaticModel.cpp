@@ -334,9 +334,7 @@ void StaticModel::Draw(RenderContext& renderContext)
             GlobalSurfaceAtlasPass::Instance()->RasterizeActor(this, this, _sphere, _transform, Model->LODs.Last().GetBox());
         return;
     }
-    Matrix world;
-    GetLocalToWorldMatrix(world);
-    renderContext.View.GetWorldMatrix(world);
+    ACTOR_GET_WORLD_MATRIX(this, view, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
     if (_vertexColorsDirty)
         FlushVertexColors();
@@ -372,9 +370,7 @@ void StaticModel::Draw(RenderContextBatch& renderContextBatch)
     if (!Model || !Model->IsLoaded())
         return;
     const RenderContext& renderContext = renderContextBatch.GetMainContext();
-    Matrix world;
-    GetLocalToWorldMatrix(world);
-    renderContext.View.GetWorldMatrix(world);
+    ACTOR_GET_WORLD_MATRIX(this, view, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
     if (_vertexColorsDirty)
         FlushVertexColors();

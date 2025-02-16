@@ -126,6 +126,7 @@ API_TYPEDEF(Alias) typedef Vector4Base<Real> Vector4;
 struct BoundingBox;
 struct Matrix;
 struct Matrix3x3;
+struct Double4x4;
 struct Ray;
 struct Plane;
 struct Rectangle;
@@ -136,6 +137,11 @@ struct OrientedBoundingBox;
 struct Transform;
 struct Color;
 struct Color32;
+#if USE_LARGE_WORLDS
+typedef Double4x4 Real4x4;
+#else
+typedef Matrix Real4x4;
+#endif
 
 // @formatter:on
 

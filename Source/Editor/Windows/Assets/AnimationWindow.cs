@@ -2,6 +2,7 @@
 
 using System;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Xml;
 using FlaxEditor.Content;
@@ -210,8 +211,11 @@ namespace FlaxEditor.Windows.Assets
                         var importSettingsValues = new ValueContainer(new ScriptMemberInfo(importSettingsField)) { proxy.ImportSettings };
                         group.Object(importSettingsValues);
 
+                        // Creates the import path UI
+                        Utilities.Utils.CreateImportPathUI(layout, proxy.Window.Item as BinaryAssetItem);
+
                         layout.Space(5);
-                        var reimportButton = group.Button("Reimport");
+                        var reimportButton = layout.Button("Reimport");
                         reimportButton.Button.Clicked += () => ((PropertiesProxy)Values[0]).Reimport();
                     }
                 }

@@ -1690,6 +1690,16 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Performs an explicit conversion from <see cref="Vector2" /> to <see cref="Int2" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static explicit operator Int2(Vector2 value)
+        {
+            return new Int2((int)value.X, (int)value.Y);
+        }
+
+        /// <summary>
         /// Performs an explicit conversion from <see cref="Vector2" /> to <see cref="Vector3" />.
         /// </summary>
         /// <param name="value">The value.</param>

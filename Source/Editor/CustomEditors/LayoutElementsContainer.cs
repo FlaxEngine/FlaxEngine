@@ -96,6 +96,20 @@ namespace FlaxEditor.CustomEditors
             menu.Show(groupPanel, location);
         }
 
+        internal string GetLayoutCachePath(string name)
+        {
+            // Build group identifier (made of path from group titles)
+            var expandPath = name;
+            var container = this;
+            while (container != null && !(container is CustomEditorPresenter))
+            {
+                if (container.ContainerControl is DropPanel dropPanel)
+                    expandPath = dropPanel.HeaderText + "/" + expandPath;
+                container = container._parent;
+            }
+            return expandPath;
+        }
+
         /// <summary>
         /// Adds new group element.
         /// </summary>
@@ -112,14 +126,7 @@ namespace FlaxEditor.CustomEditors
             if (presenter != null && (presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
             {
                 // Build group identifier (made of path from group titles)
-                var expandPath = title;
-                var container = this;
-                while (container != null && !(container is CustomEditorPresenter))
-                {
-                    if (container.ContainerControl is DropPanel dropPanel)
-                        expandPath = dropPanel.HeaderText + "/" + expandPath;
-                    container = container._parent;
-                }
+                var expandPath = GetLayoutCachePath(title);
 
                 // Caching/restoring expanded groups (non-root groups cache expanded state so invert boolean expression)
                 if (Editor.Instance.ProjectCache.IsGroupToggled(expandPath) ^ isSubGroup)

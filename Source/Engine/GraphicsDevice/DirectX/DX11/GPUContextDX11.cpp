@@ -355,7 +355,11 @@ void GPUContextDX11::BindCB(int32 slot, GPUConstantBuffer* cb)
 
 void GPUContextDX11::BindSR(int32 slot, GPUResourceView* view)
 {
+#if !BUILD_RELEASE
     ASSERT(slot >= 0 && slot < GPU_MAX_SR_BINDED);
+    if (view && ((IShaderResourceDX11*)view->GetNativePtr())->SRV() == nullptr)
+        LogInvalidResourceUsage(slot, view, InvalidBindPoint::SRV);
+#endif
     auto handle = view ? ((IShaderResourceDX11*)view->GetNativePtr())->SRV() : nullptr;
     if (_srHandles[slot] != handle)
     {
@@ -369,7 +373,11 @@ void GPUContextDX11::BindSR(int32 slot, GPUResourceView* view)
 
 void GPUContextDX11::BindUA(int32 slot, GPUResourceView* view)
 {
+#if !BUILD_RELEASE
     ASSERT(slot >= 0 && slot < GPU_MAX_UA_BINDED);
+    if (view && ((IShaderResourceDX11*)view->GetNativePtr())->UAV() == nullptr)
+        LogInvalidResourceUsage(slot, view, InvalidBindPoint::UAV);
+#endif
     auto handle = view ? ((IShaderResourceDX11*)view->GetNativePtr())->UAV() : nullptr;
     if (_uaHandles[slot] != handle)
     {

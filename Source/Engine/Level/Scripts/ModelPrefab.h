@@ -19,7 +19,7 @@ API_CLASS(Attributes="HideInEditor") class FLAXENGINE_API ModelPrefab : public S
     /// <summary>
     /// Source model file path (absolute or relative to the project).
     /// </summary>
-    API_FIELD(Attributes="ReadOnly") String ImportPath;
+    API_FIELD(Attributes="ReadOnly, HideInEditor") String ImportPath;
 
     /// <summary>
     /// Model file import settings.

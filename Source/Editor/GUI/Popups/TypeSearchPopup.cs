@@ -1,10 +1,13 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using System.ComponentModel;
 using System.Linq;
+using FlaxEditor.History;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using CategoryAttribute = FlaxEngine.CategoryAttribute;
 
 namespace FlaxEditor.GUI
 {
@@ -101,16 +104,42 @@ namespace FlaxEditor.GUI
                 if (_isValid(type))
                 {
                     var attributes = type.GetAttributes(true);
-                    if (attributes.FirstOrDefault(x => x is HideInEditorAttribute || x is System.Runtime.CompilerServices.CompilerGeneratedAttribute) == null)
+                    if (IsHideAttributes(attributes))
                     {
                         var mType = type.Type;
-                        if (mType != null && mType.IsValueType && mType.ReflectedType != null && string.Equals(mType.ReflectedType.Name, "<PrivateImplementationDetails>", StringComparison.Ordinal))
-                            continue;
+                        if (mType != null)
+                        {
+                            // Skip if type is compiler-generated
+                            if (mType.IsValueType && mType.ReflectedType != null && string.Equals(mType.ReflectedType.Name, "<PrivateImplementationDetails>", StringComparison.Ordinal))
+                                continue;
+
+                            // Skip if outer type is hidden
+                            if (mType.DeclaringType != null && IsHideAttributes(mType.DeclaringType.GetCustomAttributes(true)))
+                                continue;
+
+                            // Blacklist some types
+                            if (typeof(TypeConverter).IsAssignableFrom(mType) ||
+                                typeof(IHistoryAction).IsAssignableFrom(mType) ||
+                                (mType.Namespace != null && mType.Namespace.StartsWith("Newtonsoft.Json")))
+                                continue;
+                        }
+
                         AddItem(new TypeItemView(type, attributes));
                     }
                 }
             }
             SortItems();
+        }
+
+        private bool IsHideAttributes(object[] attributes)
+        {
+            return attributes.FirstOrDefault(IsHideAttribute) == null;
+        }
+
+        private bool IsHideAttribute(object attr)
+        {
+            return attr is HideInEditorAttribute || 
+                   attr is System.Runtime.CompilerServices.CompilerGeneratedAttribute;
         }
 
         private void OnItemClicked(Item item)

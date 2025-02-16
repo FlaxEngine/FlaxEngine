@@ -7,6 +7,7 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Level/SceneObject.h"
 #include "Engine/Utilities/Encryption.h"
 
 struct Version;
@@ -441,10 +442,12 @@ namespace Serialization
 
     // Scripting Object
 
+    FLAXENGINE_API bool ShouldSerialize(const SceneObject* v, const SceneObject* other);
+
     template<typename T>
     inline typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value, bool>::Type ShouldSerialize(const T*& v, const void* otherObj)
     {
-        return !otherObj || v != *(T**)otherObj;
+        return !otherObj || v != *(const T**)otherObj;
     }
     template<typename T>
     inline typename TEnableIf<TIsBaseOf<ScriptingObject, T>::Value>::Type Serialize(ISerializable::SerializeStream& stream, const T*& v, const void* otherObj)
@@ -460,12 +463,18 @@ namespace Serialization
         v = (T*)::FindObject(id, T::GetStaticClass());
     }
 
+    template<typename T>
+    inline typename TEnableIf<TIsBaseOf<SceneObject, T>::Value, bool>::Type ShouldSerialize(const T*& v, const void* otherObj)
+    {
+        return !otherObj || ShouldSerialize((const SceneObject*)v, *(const SceneObject**)otherObj);
+    }
+
     // Scripting Object Reference
 
     template<typename T>
     inline bool ShouldSerialize(const ScriptingObjectReference<T>& v, const void* otherObj)
     {
-        return !otherObj || v.Get() != ((ScriptingObjectReference<T>*)otherObj)->Get();
+        return !otherObj || ShouldSerialize(v.Get(), ((ScriptingObjectReference<T>*)otherObj)->Get());
     }
     template<typename T>
     inline void Serialize(ISerializable::SerializeStream& stream, const ScriptingObjectReference<T>& v, const void* otherObj)
@@ -486,7 +495,7 @@ namespace Serialization
     template<typename T>
     inline bool ShouldSerialize(const SoftObjectReference<T>& v, const void* otherObj)
     {
-        return !otherObj || v.Get() != ((SoftObjectReference<T>*)otherObj)->Get();
+        return !otherObj || ShouldSerialize(v.Get(), ((SoftObjectReference<T>*)otherObj)->Get());
     }
     template<typename T>
     inline void Serialize(ISerializable::SerializeStream& stream, const SoftObjectReference<T>& v, const void* otherObj)

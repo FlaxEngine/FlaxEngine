@@ -58,15 +58,13 @@ namespace FlaxEngine.Utilities
         /// <param name="x">The x coordinate.</param>
         /// <param name="y">The y coordinate.</param>
         /// <returns>The noise value.</returns>
-        public float Sample(int x, int y)
+        public float Sample(float x, float y)
         {
             float noise = 0.0f;
-
             if (NoiseScale > Mathf.Epsilon)
             {
-                x = Math.Abs(x);
-                y = Math.Abs(y);
-
+                x = Mathf.Abs(x);
+                y = Mathf.Abs(y);
                 for (int octave = 0; octave < Octaves; octave++)
                 {
                     float octaveShift = 1 << octave;
@@ -74,7 +72,6 @@ namespace FlaxEngine.Utilities
                     noise += PerlinNoise2D(x * octaveScale, y * octaveScale) / octaveShift;
                 }
             }
-
             return Base + noise * NoiseAmount;
         }
 

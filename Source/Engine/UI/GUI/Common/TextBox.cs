@@ -249,7 +249,7 @@ namespace FlaxEngine.GUI
             var text = ConvertedText();
 
             // Check if sth is selected to draw selection
-            if (HasSelection)
+            if (HasSelection && IsFocused)
             {
                 var leftEdge = font.GetCharPosition(text, SelectionLeft, ref _layout);
                 var rightEdge = font.GetCharPosition(text, SelectionRight, ref _layout);
@@ -294,6 +294,8 @@ namespace FlaxEngine.GUI
                 var color = TextColor;
                 if (!enabled)
                     color *= 0.6f;
+                else if (_isReadOnly)
+                    color *= 0.85f;
                 Render2D.DrawText(font, text, color, ref _layout, TextMaterial);
             }
             else if (!string.IsNullOrEmpty(_watermarkText))

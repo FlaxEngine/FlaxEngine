@@ -161,7 +161,10 @@ public:
         case 2:
         default: // TODO: implement multi-channel support (eg. 5.1, 7.1)
             outputMatrix[0] = channels[FrontLeft];
-            outputMatrix[sourceChannels + 1] = channels[FrontRight];
+            if (sourceChannels == 1)
+                outputMatrix[1] = channels[FrontRight];
+            else
+                outputMatrix[sourceChannels + 1] = channels[FrontRight];
             break;
         }
     }

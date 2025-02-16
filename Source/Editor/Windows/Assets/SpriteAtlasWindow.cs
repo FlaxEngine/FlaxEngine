@@ -1,5 +1,6 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using System.IO;
 using System.Linq;
 using System.Xml;
 using FlaxEditor.Content;
@@ -110,9 +111,19 @@ namespace FlaxEditor.Windows.Assets
             {
                 public override void Initialize(LayoutElementsContainer layout)
                 {
+                    var proxy = (PropertiesProxy)Values[0];
+                    if (proxy._window == null)
+                    {
+                        layout.Label("Loading...", TextAlignment.Center);
+                        return;
+                    }
+                    
                     base.Initialize(layout);
+                    
+                    // Creates the import path UI
+                    Utilities.Utils.CreateImportPathUI(layout, proxy._window.Item as BinaryAssetItem);
 
-                    layout.Space(10);
+                    layout.Space(5);
                     var reimportButton = layout.Button("Reimport");
                     reimportButton.Button.Clicked += () => ((PropertiesProxy)Values[0]).Reimport();
                 }

@@ -292,7 +292,12 @@ void AnimatedModel::SetParameterValue(const StringView& name, const Variant& val
     {
         if (param.Name == name)
         {
-            param.Value = value;
+            if (param.Value.Type == value.Type)
+                param.Value = value;
+            else if (Variant::CanCast(value, param.Value.Type))
+                param.Value = Variant::Cast(value, param.Value.Type);
+            else
+                LOG(Warning, "Animation Graph parameter '{0}' in AnimatedModel {1} is type '{2}' and not type '{3}'.", name, ToString(), param.Value.Type, value.Type);
             return;
         }
     }
@@ -914,9 +919,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // No supported
-    Matrix world;
-    GetLocalToWorldMatrix(world);
-    renderContext.View.GetWorldMatrix(world);
+    ACTOR_GET_WORLD_MATRIX(this, view, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));

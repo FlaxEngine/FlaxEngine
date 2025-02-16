@@ -750,7 +750,8 @@ namespace FlaxEditor.Content
 
             // Draw short name
             Render2D.PushClip(ref textRect);
-            Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 1f, 0.95f);
+            var scale = 0.95f * view.ViewScale;
+            Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 1f, scale);
             Render2D.PopClip();
 
             if (IsBeingCut)

@@ -42,7 +42,7 @@ namespace FlaxEditor
     /// </summary>
     /// <typeparam name="TData">The type of the data. Must have <see cref="SerializableAttribute"/>.</typeparam>
     /// <seealso cref="FlaxEditor.IUndoAction" />
-    [Serializable]
+    [Serializable, HideInEditor]
     public abstract class UndoActionBase<TData> : IUndoAction where TData : struct
     {
         /// <summary>

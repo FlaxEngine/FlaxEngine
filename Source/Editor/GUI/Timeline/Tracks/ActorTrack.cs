@@ -264,7 +264,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
 
         private void OnClickedSelect()
         {
-            ActorSearchPopup.Show(this, PointFromScreen(FlaxEngine.Input.MouseScreenPosition), IsActorValid, SetActor);
+            ActorSearchPopup.Show(this, PointFromScreen(FlaxEngine.Input.MouseScreenPosition), IsActorValid, SetActor, null);
         }
 
         private void OnClickedSelectActor(Image image, MouseButton button)

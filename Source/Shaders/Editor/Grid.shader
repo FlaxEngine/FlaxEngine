@@ -8,12 +8,11 @@
 #include "./Flax/Common.hlsl"
 
 META_CB_BEGIN(0, Data)
-float4x4 WorldMatrix;
 float4x4 ViewProjectionMatrix;
 float4 GridColor;
 float3 ViewPos;
 float Far;
-float3 Padding;
+float3 ViewOrigin;
 float GridSize;
 META_CB_END
 
@@ -46,8 +45,9 @@ META_VS_IN_ELEMENT(TEXCOORD, 0, R16G16_FLOAT, 1, ALIGN, PER_VERTEX, 0, true)
 VertexOutput VS_Grid(ModelInput input)
 {
     VertexOutput output;
-    output.WorldPosition = mul(float4(input.Position.xyz, 1), WorldMatrix).xyz;
-    output.Position = mul(float4(input.Position.xyz, 1), ViewProjectionMatrix);
+    output.WorldPosition = input.Position.xyz + ViewOrigin;
+    float3 geoPosition = input.Position.xyz - float3(0, ViewOrigin.y, 0);
+    output.Position = mul(float4(geoPosition, 1), ViewProjectionMatrix);
     return output;
 }
 
@@ -139,6 +139,7 @@ float4 GetColor(float3 pos, float scale)
     color = lerp(color, float4(1,0,0,1), l2);
     color = lerp(color, float4(0,0,1,1), l1);
     color *= dist;
+    color *= 1 - saturate(length(pos) - 600000); // Fade out when far from origin (60km)
     return color;
 }
 

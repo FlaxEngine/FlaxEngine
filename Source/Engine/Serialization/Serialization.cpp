@@ -23,6 +23,7 @@
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
 #include "Engine/Content/Asset.h"
+#include "Engine/Level/SceneObject.h"
 #include "Engine/Utilities/Encryption.h"
 
 void ISerializable::DeserializeIfExists(DeserializeStream& stream, const char* memberName, ISerializeModifier* modifier)
@@ -787,6 +788,18 @@ void Serialization::Deserialize(ISerializable::DeserializeStream& stream, Matrix
     DESERIALIZE_HELPER(stream, "M42", v.M42, 0);
     DESERIALIZE_HELPER(stream, "M43", v.M43, 0);
     DESERIALIZE_HELPER(stream, "M44", v.M44, 0);
+}
+
+bool Serialization::ShouldSerialize(const SceneObject* v, const SceneObject* other)
+{
+    bool result = v != other;
+    if (result && v && other && v->HasPrefabLink() && other->HasPrefabLink())
+    {
+        // Special case when saving reference to prefab object and the objects are different but the point to the same prefab object
+        // In that case, skip saving reference as it's defined in prefab (will be populated via IdsMapping during deserialization)
+        result &= v->GetPrefabObjectID() != other->GetPrefabObjectID();
+    }
+    return result;
 }
 
 #undef DESERIALIZE_HELPER

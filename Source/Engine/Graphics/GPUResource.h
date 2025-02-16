@@ -190,6 +190,7 @@ API_CLASS(Abstract, NoSpawn, Attributes="HideInEditor") class FLAXENGINE_API GPU
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUResourceView);
 protected:
     static double DummyLastRenderTime;
+    GPUResource* _parent = nullptr;
 
     explicit GPUResourceView(const SpawnParams& params)
         : ScriptingObject(params)
@@ -200,6 +201,14 @@ protected:
 public:
     // Points to the cache used by the resource for the resource visibility/usage detection. Written during rendering when resource view is used.
     double* LastRenderTime;
+
+    /// <summary>
+    /// Gets parent GPU resource owning that view.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE GPUResource* GetParent() const
+    {
+        return _parent;
+    }
 
     /// <summary>
     /// Gets the native pointer to the underlying view. It's a platform-specific handle.

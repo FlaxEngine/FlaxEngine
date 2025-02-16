@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.Drag;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -122,7 +123,9 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             base.Refresh();
 
-            if (!HasDifferentValues)
+            var differentValues = HasDifferentValues;
+            Picker.DifferentValues = differentValues;
+            if (!differentValues)
             {
                 _isRefreshing = true;
                 var value = Values[0];
@@ -156,6 +159,17 @@ namespace FlaxEditor.CustomEditors.Editors
             private Rectangle DropdownRect => new Rectangle(Width - DropdownIconSize - DropdownIconMargin, DropdownIconMargin, DropdownIconSize, DropdownIconSize);
 
             public Action ShowPicker;
+            public Action<ContentItem> OnAssetDropped;
+            
+            private DragItems _dragItems;
+            private DragHandlers _dragHandlers;
+            private bool _hasValidDragOver;
+            private Func<ContentItem, bool> _validate;
+
+            public void SetValidationMethod(Func<ContentItem, bool> validate)
+            {
+                _validate = validate;
+            }
 
             public override void Draw()
             {
@@ -164,6 +178,14 @@ namespace FlaxEditor.CustomEditors.Editors
                 var style = FlaxEngine.GUI.Style.Current;
                 var dropdownRect = DropdownRect;
                 Render2D.DrawSprite(style.ArrowDown, dropdownRect, Enabled ? (DropdownRect.Contains(PointFromWindow(RootWindow.MousePosition)) ? style.BorderSelected : style.Foreground) : style.ForegroundDisabled);
+                
+                // Check if drag is over
+                if (IsDragOver && _hasValidDragOver)
+                {
+                    var bounds = new Rectangle(Float2.Zero, Size);
+                    Render2D.FillRectangle(bounds, style.Selection);
+                    Render2D.DrawRectangle(bounds, style.SelectionBorder);
+                }
             }
 
             public override bool OnMouseDown(Float2 location, MouseButton button)
@@ -207,6 +229,68 @@ namespace FlaxEditor.CustomEditors.Editors
                     return result;
                 }
             }
+
+            private DragDropEffect DragEffect => _hasValidDragOver ? DragDropEffect.Move : DragDropEffect.None;
+
+            /// <inheritdoc />
+            public override DragDropEffect OnDragEnter(ref Float2 location, DragData data)
+            {
+                base.OnDragEnter(ref location, data);
+
+                // Ensure to have valid drag helpers (uses lazy init)
+                if (_dragItems == null)
+                    _dragItems = new DragItems(ValidateDragAsset);
+                if (_dragHandlers == null)
+                {
+                    _dragHandlers = new DragHandlers
+                    {
+                        _dragItems,
+                    };
+                }
+
+                _hasValidDragOver = _dragHandlers.OnDragEnter(data) != DragDropEffect.None;
+                
+
+                return DragEffect;
+            }
+
+            private bool ValidateDragAsset(ContentItem contentItem)
+            {
+                // Load or get asset
+                return _validate?.Invoke(contentItem) ?? false;
+            }
+
+            /// <inheritdoc />
+            public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
+            {
+                base.OnDragMove(ref location, data);
+
+                return DragEffect;
+            }
+
+            /// <inheritdoc />
+            public override void OnDragLeave()
+            {
+                _hasValidDragOver = false;
+                _dragHandlers.OnDragLeave();
+
+                base.OnDragLeave();
+            }
+
+            /// <inheritdoc />
+            public override DragDropEffect OnDragDrop(ref Float2 location, DragData data)
+            {
+                var result = DragEffect;
+
+                base.OnDragDrop(ref location, data);
+                
+                if (_dragItems.HasValidDrag)
+                {
+                    OnAssetDropped(_dragItems.Objects[0]);
+                }
+
+                return result;
+            }
         }
 
         private TextBoxWithPicker _textBox;
@@ -221,11 +305,19 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             if (HasDifferentTypes)
                 return;
+
+            _validator = new AssetPickerValidator(ScriptType.Null);
             _textBox = layout.Custom<TextBoxWithPicker>().CustomControl;
             _textBox.ShowPicker = OnShowPicker;
+            _textBox.OnAssetDropped = OnItemDropped;
             _textBox.EditEnd += OnEditEnd;
-            _validator = new AssetPickerValidator(ScriptType.Null);
+            _textBox.SetValidationMethod(_validator.IsValid);
             AssetRefEditor.ApplyAssetReferenceAttribute(Values, out _, _validator);
+        }
+
+        private void OnItemDropped(ContentItem item)
+        {
+            SetPickerPath(item);
         }
 
         private void OnShowPicker()
@@ -285,12 +377,9 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             base.Refresh();
 
-            if (!HasDifferentValues)
-            {
-                _isRefreshing = true;
-                _textBox.Text = GetPath();
-                _isRefreshing = false;
-            }
+            _isRefreshing = true;
+            _textBox.Text = HasDifferentValues ? "Multiple Values" : GetPath();
+            _isRefreshing = false;
         }
 
         /// <inheritdoc />

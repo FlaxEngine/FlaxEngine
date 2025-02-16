@@ -28,6 +28,7 @@ namespace RenderToolsDX
         {
         case GPUResourceUsage::Dynamic:
             return D3D11_USAGE_DYNAMIC;
+        case GPUResourceUsage::Staging:
         case GPUResourceUsage::StagingUpload:
         case GPUResourceUsage::StagingReadback:
             return D3D11_USAGE_STAGING;
@@ -47,6 +48,8 @@ namespace RenderToolsDX
         {
         case GPUResourceUsage::Dynamic:
             return D3D11_CPU_ACCESS_WRITE;
+        case GPUResourceUsage::Staging:
+            return D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
         case GPUResourceUsage::StagingReadback:
             return D3D11_CPU_ACCESS_READ;
         case GPUResourceUsage::StagingUpload:

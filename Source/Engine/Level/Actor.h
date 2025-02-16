@@ -237,7 +237,7 @@ public:
     /// <summary>
     /// Gets the child actor of the given type.
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <returns>The child actor or null.</returns>
     API_FUNCTION() Actor* GetChild(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type) const;
 
@@ -270,7 +270,7 @@ public:
     /// <summary>
     /// Gets the child actors of the given type.
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <returns>The child actors.</returns>
     API_FUNCTION() Array<Actor*> GetChildren(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type) const;
 
@@ -315,7 +315,7 @@ public:
     /// <summary>
     /// Gets the script of the given type from this actor.
     /// </summary>
-    /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
+    /// <param name="type">Type of the script to search for. Includes any scripts derived from the type. Supports interface types.</param>
     /// <returns>The script or null.</returns>
     API_FUNCTION() Script* GetScript(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type) const;
 
@@ -332,7 +332,7 @@ public:
     /// <summary>
     /// Gets the scripts of the given type from this actor.
     /// </summary>
-    /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
+    /// <param name="type">Type of the script to search for. Includes any scripts derived from the type. Supports interface types.</param>
     /// <returns>The scripts.</returns>
     API_FUNCTION() Array<Script*> GetScripts(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type) const;
 
@@ -655,6 +655,18 @@ public:
     /// <param name="localToWorld">The world to local matrix.</param>
     API_FUNCTION() void GetLocalToWorldMatrix(API_PARAM(Out) Matrix& localToWorld) const;
 
+    /// <summary>
+    /// Gets the matrix that transforms a point from the world space to local space of the actor.
+    /// </summary>
+    /// <param name="worldToLocal">The world to local matrix.</param>
+    void GetWorldToLocalMatrix(Double4x4& worldToLocal) const;
+
+    /// <summary>
+    /// Gets the matrix that transforms a point from the local space of the actor to world space.
+    /// </summary>
+    /// <param name="localToWorld">The world to local matrix.</param>
+    void GetLocalToWorldMatrix(Double4x4& localToWorld) const;
+
 public:
     /// <summary>
     /// Gets actor bounding sphere that defines 3D space intersecting with the actor (for determination of the visibility for actor).
@@ -766,7 +778,7 @@ public:
     /// <summary>
     /// Tries to find the actor of the given type in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <param name="activeOnly">Finds only a active actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
     API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false) const;
@@ -774,7 +786,7 @@ public:
     /// <summary>
     /// Tries to find the actor of the given type and name in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <param name="name">The name of the actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
     API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const StringView& name) const;
@@ -782,7 +794,7 @@ public:
     /// <summary>
     /// Tries to find the actor of the given type and tag in this actor hierarchy.
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <param name="tag">The tag of the actor to search for.</param>
     /// <param name="activeOnly">Finds only an active actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
@@ -823,7 +835,7 @@ public:
     /// <summary>
     /// Tries to find the script of the given type in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <returns>Script instance if found, null otherwise.</returns>
     API_FUNCTION() Script* FindScript(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type) const;
 
@@ -981,6 +993,11 @@ public:
     /// </summary>
     /// <param name="json">The serialized actor data (state).</param>
     API_FUNCTION() void FromJson(const StringAnsiView& json);
+
+    /// <summary>
+    /// Clones actor including all scripts and any child actors (whole scene tree). Objects are duplicated via serialization (any transient/non-saved state is ignored).
+    /// </summary>
+    API_FUNCTION() Actor* Clone();
 
 public:
     /// <summary>

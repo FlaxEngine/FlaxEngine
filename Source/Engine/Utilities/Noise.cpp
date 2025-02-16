@@ -71,88 +71,61 @@ namespace
             rand2dTo1d(value, Float2(39.346f, 11.135f))
         );
     }
+
+    float PerlinNoiseImpl(const Float2& p, const Float2* rep)
+    {
+        Float4 Pxy(p.X, p.Y, p.X, p.Y);
+        Float4 Pi = Float4::Floor(Pxy) + Float4(0.0, 0.0, 1.0, 1.0);
+        Float4 Pf = Float4::Frac(Pxy) - Float4(0.0, 0.0, 1.0, 1.0);
+        if (rep)
+        {
+            Float4 Repxy(rep->X, rep->Y, rep->X, rep->Y);
+            Pi = Float4::Mod(Pi, Repxy);
+        }
+        Pi = Mod289(Pi);
+        Float4 ix(Pi.X, Pi.Z, Pi.X, Pi.Z);
+        Float4 iy(Pi.Y, Pi.Y, Pi.W, Pi.W);
+        Float4 fx(Pf.X, Pf.Z, Pf.X, Pf.Z);
+        Float4 fy(Pf.Y, Pf.Y, Pf.W, Pf.W);
+
+        Float4 i = Permute(Permute(ix) + iy);
+
+        Float4 gx = Float4::Frac(i * (1.0 / 41.0)) * 2.0 - 1.0;
+        Float4 gy = Float4::Abs(gx) - 0.5;
+        Float4 tx = Float4::Floor(gx + 0.5);
+        gx = gx - tx;
+
+        Float2 g00(gx.X, gy.X);
+        Float2 g10(gx.Y, gy.Y);
+        Float2 g01(gx.Z, gy.Z);
+        Float2 g11(gx.W, gy.W);
+
+        Float4 norm = TaylorInvSqrt(Float4(Float2::Dot(g00, g00), Float2::Dot(g01, g01), Float2::Dot(g10, g10), Float2::Dot(g11, g11)));
+        g00 *= norm.X;
+        g01 *= norm.Y;
+        g10 *= norm.Z;
+        g11 *= norm.W;
+
+        float n00 = Float2::Dot(g00, Float2(fx.X, fy.X));
+        float n10 = Float2::Dot(g10, Float2(fx.Y, fy.Y));
+        float n01 = Float2::Dot(g01, Float2(fx.Z, fy.Z));
+        float n11 = Float2::Dot(g11, Float2(fx.W, fy.W));
+
+        Float2 fade_xy = PerlinNoiseFade(Float2(Pf));
+        Float2 n_x = Float2::Lerp(Float2(n00, n01), Float2(n10, n11), fade_xy.X);
+        float n_xy = Math::Lerp(n_x.X, n_x.Y, fade_xy.Y);
+        return Math::Saturate(n_xy * 2.136f + 0.5f); // Rescale to [0;1]
+    }
 }
 
 float Noise::PerlinNoise(const Float2& p)
 {
-    Float4 Pxy(p.X, p.Y, p.X, p.Y);
-    Float4 Pi = Float4::Floor(Pxy) + Float4(0.0, 0.0, 1.0, 1.0);
-    Float4 Pf = Float4::Frac(Pxy) - Float4(0.0, 0.0, 1.0, 1.0);
-    Pi = Mod289(Pi);
-    Float4 ix(Pi.X, Pi.Z, Pi.X, Pi.Z);
-    Float4 iy(Pi.Y, Pi.Y, Pi.W, Pi.W);
-    Float4 fx(Pf.X, Pf.Z, Pf.X, Pf.Z);
-    Float4 fy(Pf.Y, Pf.Y, Pf.W, Pf.W);
-
-    Float4 i = Permute(Permute(ix) + iy);
-
-    Float4 gx = Float4::Frac(i * (1.0 / 41.0)) * 2.0 - 1.0;
-    Float4 gy = Float4::Abs(gx) - 0.5;
-    Float4 tx = Float4::Floor(gx + 0.5);
-    gx = gx - tx;
-
-    Float2 g00(gx.X, gy.X);
-    Float2 g10(gx.Y, gy.Y);
-    Float2 g01(gx.Z, gy.Z);
-    Float2 g11(gx.W, gy.W);
-
-    Float4 norm = TaylorInvSqrt(Float4(Float2::Dot(g00, g00), Float2::Dot(g01, g01), Float2::Dot(g10, g10), Float2::Dot(g11, g11)));
-    g00 *= norm.X;
-    g01 *= norm.Y;
-    g10 *= norm.Z;
-    g11 *= norm.W;
-
-    float n00 = Float2::Dot(g00, Float2(fx.X, fy.X));
-    float n10 = Float2::Dot(g10, Float2(fx.Y, fy.Y));
-    float n01 = Float2::Dot(g01, Float2(fx.Z, fy.Z));
-    float n11 = Float2::Dot(g11, Float2(fx.W, fy.W));
-
-    Float2 fade_xy = PerlinNoiseFade(Float2(Pf));
-    Float2 n_x = Float2::Lerp(Float2(n00, n01), Float2(n10, n11), fade_xy.X);
-    float n_xy = Math::Lerp(n_x.X, n_x.Y, fade_xy.Y);
-    return Math::Saturate(2.3f * n_xy);
+    return PerlinNoiseImpl(p, nullptr);
 }
 
 float Noise::PerlinNoise(const Float2& p, const Float2& rep)
 {
-    Float4 Pxy(p.X, p.Y, p.X, p.Y);
-    Float4 Repxy(rep.X, rep.Y, rep.X, rep.Y);
-    Float4 Pi = Float4::Floor(Pxy) + Float4(0.0, 0.0, 1.0, 1.0);
-    Float4 Pf = Float4::Frac(Pxy) - Float4(0.0, 0.0, 1.0, 1.0);
-    Pi = Float4::Mod(Pi, Repxy);
-    Pi = Mod289(Pi);
-    Float4 ix(Pi.X, Pi.Z, Pi.X, Pi.Z);
-    Float4 iy(Pi.Y, Pi.Y, Pi.W, Pi.W);
-    Float4 fx(Pf.X, Pf.Z, Pf.X, Pf.Z);
-    Float4 fy(Pf.Y, Pf.Y, Pf.W, Pf.W);
-
-    Float4 i = Permute(Permute(ix) + iy);
-
-    Float4 gx = Float4::Frac(i * (1.0 / 41.0)) * 2.0 - 1.0;
-    Float4 gy = Float4::Abs(gx) - 0.5;
-    Float4 tx = Float4::Floor(gx + 0.5);
-    gx = gx - tx;
-
-    Float2 g00(gx.X, gy.X);
-    Float2 g10(gx.Y, gy.Y);
-    Float2 g01(gx.Z, gy.Z);
-    Float2 g11(gx.W, gy.W);
-
-    Float4 norm = TaylorInvSqrt(Float4(Float2::Dot(g00, g00), Float2::Dot(g01, g01), Float2::Dot(g10, g10), Float2::Dot(g11, g11)));
-    g00 *= norm.X;
-    g01 *= norm.Y;
-    g10 *= norm.Z;
-    g11 *= norm.W;
-
-    float n00 = Float2::Dot(g00, Float2(fx.X, fy.X));
-    float n10 = Float2::Dot(g10, Float2(fx.Y, fy.Y));
-    float n01 = Float2::Dot(g01, Float2(fx.Z, fy.Z));
-    float n11 = Float2::Dot(g11, Float2(fx.W, fy.W));
-
-    Float2 fade_xy = PerlinNoiseFade(Float2(Pf));
-    Float2 n_x = Float2::Lerp(Float2(n00, n01), Float2(n10, n11), fade_xy.X);
-    float n_xy = Math::Lerp(n_x.X, n_x.Y, fade_xy.Y);
-    return Math::Saturate(2.3f * n_xy);
+    return PerlinNoiseImpl(p, &rep);
 }
 
 float Noise::SimplexNoise(const Float2& p)
@@ -196,7 +169,7 @@ float Noise::SimplexNoise(const Float2& p)
     float gx = a0.X * x0.X + h.X * x0.Y;
     Float2 gyz = Float2(a0.Y, a0.Z) * Float2(x12.X, x12.Z) + Float2(h.Y, h.Z) * Float2(x12.Y, x12.W);
     Float3 g(gx, gyz.X, gyz.Y);
-    return Math::Saturate(130.0f * Float3::Dot(m, g));
+    return Math::Saturate(Float3::Dot(m, g) * 71.428f + 0.5f); // Rescale to [0;1]
 }
 
 Float2 Noise::WorleyNoise(const Float2& p)
