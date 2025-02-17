@@ -63,7 +63,7 @@ public struct ControlReference<T> : IControlReference where T : Control
                 return t;
             else
             {
-                Debug.LogWarning("Trying to get Control from ControlReference but UIControl is null, or UIControl.Control is null, or UIControl.Control is not the correct type.");
+                Debug.Write(LogType.Warning, "Trying to get Control from ControlReference but UIControl is null, or UIControl.Control is null, or UIControl.Control is not the correct type.");
                 return null;
             }
         }
@@ -84,7 +84,7 @@ public struct ControlReference<T> : IControlReference where T : Control
         if (uiControl.Control is T castedControl)
             _uiControl = uiControl;
         else
-            Debug.LogWarning("Trying to set ControlReference but UIControl.Control is null or UIControl.Control is not the correct type.");
+            Debug.Write(LogType.Warning, "Trying to set ControlReference but UIControl.Control is null or UIControl.Control is not the correct type.");
     }
 
     /// <summary>

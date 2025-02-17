@@ -4,7 +4,10 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Drag;
+using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.GUI;
+using FlaxEditor.Windows;
+using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -30,6 +33,11 @@ public class UIControlRefPickerControl : Control
     private bool _hasValidDragOver;
     private DragActors _dragActors;
     private DragHandlers _dragHandlers;
+    
+    /// <summary>
+    /// The presenter using this control.
+    /// </summary>
+    public IPresenterOwner PresenterContext;
     
     /// <summary>
     /// Occurs when value gets changed.
@@ -126,13 +134,31 @@ public class UIControlRefPickerControl : Control
                 Value = actor as UIControl;
                 RootWindow.Focus();
                 Focus();
-            });
+            }, PresenterContext);
         }
     }
 
     private bool IsValid(Actor actor)
     {
         return actor == null || actor is UIControl a && a.Control.GetType() == _controlType;
+    }
+    
+    private bool ValidateDragActor(ActorNode a)
+    {
+        if (!IsValid(a.Actor))
+            return false;
+            
+        if (PresenterContext is PrefabWindow prefabWindow)
+        {
+            if (prefabWindow.Tree == a.TreeNode.ParentTree)
+                return true;
+        }
+        else if (PresenterContext is PropertiesWindow || PresenterContext == null)
+        {
+            if (a.ParentScene != null)
+                return true;
+        }
+        return false;
     }
 
     /// <inheritdoc />
@@ -365,7 +391,7 @@ public class UIControlRefPickerControl : Control
 
         // Ensure to have valid drag helpers (uses lazy init)
         if (_dragActors == null)
-            _dragActors = new DragActors(x => IsValid(x.Actor));
+            _dragActors = new DragActors(ValidateDragActor);
         if (_dragHandlers == null)
         {
             _dragHandlers = new DragHandlers
@@ -448,6 +474,7 @@ public class ControlReferenceEditor : CustomEditor
             Type genType = ValuesTypes[0].GetGenericArguments()[0];
             if (typeof(Control).IsAssignableFrom(genType))
             {
+                _element.CustomControl.PresenterContext = Presenter.Owner;
                 _element.CustomControl.ControlType = genType;
             }
             _element.CustomControl.ValueChanged += () =>
