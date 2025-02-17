@@ -10054,7 +10054,20 @@
             Helper utilities.
             </summary>
         </member>
-        <member name="M:Newtonsoft.Json.Utilities.MiscellaneousUtils.ValueEquals(System.Object,System.Object)">
+        <member name="T:Newtonsoft.Json.Utilities.MiscellaneousUtils.ValueEqualsDelegate">
+            <summary>
+            Compares two objects data.
+            </summary>
+            <param name="objA">The object a.</param>
+            <param name="objB">The object b.</param>
+            <returns>True if both objects are equal, otherwise false.</returns>
+        </member>
+        <member name="F:Newtonsoft.Json.Utilities.MiscellaneousUtils.ValueEquals">
+            <summary>
+            The custom value comparision callback.
+            </summary>
+        </member>
+        <member name="M:Newtonsoft.Json.Utilities.MiscellaneousUtils.DefaultValueEquals(System.Object,System.Object)">
             <summary>
             The default implementation of the values comparision function.
             </summary>
