@@ -7,7 +7,6 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Scripting/ScriptingObject.h"
-#include "Engine/Level/SceneObject.h"
 #include "Engine/Utilities/Encryption.h"
 
 struct Version;
@@ -22,6 +21,13 @@ template<typename T>
 class WeakAssetReference;
 template<typename T>
 class SoftAssetReference;
+
+// Clang fails to properly resolve TIsBaseOf<SceneObject, T> without SceneObject defined
+#ifdef _MSC_VER
+class SceneObject;
+#else
+#include "Engine/Level/SceneObject.h"
+#endif
 
 // @formatter:off
 
