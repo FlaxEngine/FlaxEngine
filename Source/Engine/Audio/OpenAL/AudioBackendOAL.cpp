@@ -94,7 +94,7 @@ namespace ALC
             alSourcef(sourceID, AL_PITCH, pitch);
             alSourcef(sourceID, AL_SEC_OFFSET, 0.0f);
             alSourcei(sourceID, AL_LOOPING, loop);
-            alSourcei(sourceID, AL_SOURCE_RELATIVE, AL_TRUE); // Non-spatial sounds use AL_POSITION for panning
+            alSourcei(sourceID, AL_SOURCE_RELATIVE, !spatial); // Non-spatial sounds use AL_POSITION for panning
             alSourcei(sourceID, AL_BUFFER, 0);
 #ifdef AL_SOFT_source_spatialize
             alSourcei(sourceID, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE); // Always spatialize, fixes multi-channel played as spatial
