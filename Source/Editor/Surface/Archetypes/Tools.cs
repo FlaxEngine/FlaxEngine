@@ -1469,12 +1469,12 @@ namespace FlaxEditor.Surface.Archetypes
                     2,
 
                     // Stop 0
-                    0.1f,
-                    Color.CornflowerBlue,
+                    0.05f,
+                    Color.Black,
 
                     // Stop 1
-                    0.9f,
-                    Color.GreenYellow,
+                    0.95f,
+                    Color.White,
 
                     // Empty stops 2-7
                     0.0f, Color.Black,
