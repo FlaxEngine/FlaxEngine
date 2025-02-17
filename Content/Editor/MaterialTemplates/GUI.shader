@@ -163,6 +163,12 @@ float3 GetObjectSize(MaterialInput input)
 	return float3(1, 1, 1);
 }
 
+// Gets the current object scale (supports instancing)
+float3 GetObjectScale(MaterialInput input)
+{
+	return float3(1, 1, 1);
+}
+
 // Get the current object random value supports instancing)
 float GetPerInstanceRandom(MaterialInput input)
 {

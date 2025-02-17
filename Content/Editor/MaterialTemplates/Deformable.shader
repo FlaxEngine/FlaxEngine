@@ -137,6 +137,8 @@ MaterialInput GetMaterialInput(PixelInput input)
 	return output;
 }
 
+
+
 // Removes the scale vector from the local to world transformation matrix
 float3x3 RemoveScaleFromLocalToWorld(float3x3 localToWorld)
 {
@@ -205,6 +207,20 @@ float3 GetObjectSize(MaterialInput input)
 {
 	float4x4 world = WorldMatrix;
 	return GeometrySize * float3(world._m00, world._m11, world._m22);
+}
+
+// Gets the current object scale (supports instancing)
+float3 GetObjectScale(MaterialInput input)
+{
+    float4x4 world = input.Object.WorldMatrix;
+    
+    // Extract scale from the world matrix
+    float3 scale;
+    scale.x = length(float3(world._11, world._12, world._13));
+    scale.y = length(float3(world._21, world._22, world._23));
+    scale.z = length(float3(world._31, world._32, world._33));
+    
+    return scale;
 }
 
 // Get the current object random value
