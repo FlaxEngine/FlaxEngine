@@ -335,6 +335,8 @@ namespace MF
                 }
 
             PROCESS_SAMPLE_END:
+                if (buffer2D)
+                    buffer2D->Release();
                 buffer->Release();
             }
             if (sample)
