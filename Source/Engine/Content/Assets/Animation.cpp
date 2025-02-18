@@ -6,6 +6,7 @@
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Animations/CurveSerialization.h"
 #include "Engine/Animations/AnimEvent.h"
+#include "Engine/Animations/Animations.h"
 #include "Engine/Animations/SceneAnimations/SceneAnimation.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Threading/Threading.h"
@@ -407,7 +408,6 @@ bool Animation::Save(const StringView& path)
         LOG(Error, "Asset loading failed. Cannot save it.");
         return true;
     }
-
     ScopeLock lock(Locker);
 
     // Serialize animation data to the stream
@@ -552,6 +552,8 @@ void Animation::OnScriptingDispose()
 
 Asset::LoadResult Animation::load()
 {
+    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+
     // Get stream with animations data
     const auto dataChunk = GetChunk(0);
     if (dataChunk == nullptr)
@@ -682,6 +684,7 @@ Asset::LoadResult Animation::load()
 
 void Animation::unload(bool isReloading)
 {
+    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
 #if USE_EDITOR
     if (_registeredForScriptingReload)
     {

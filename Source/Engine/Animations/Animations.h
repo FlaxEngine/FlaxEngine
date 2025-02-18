@@ -4,6 +4,7 @@
 
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Core/Delegate.h"
+#include "Engine/Threading/ConcurrentSystemLocker.h"
 
 class TaskGraphSystem;
 class AnimatedModel;
@@ -20,6 +21,9 @@ API_CLASS(Static) class FLAXENGINE_API Animations
     /// The system for Animations update.
     /// </summary>
     API_FIELD(ReadOnly) static TaskGraphSystem* System;
+
+    // Data access locker for animations data.
+    static ConcurrentSystemLocker SystemLocker;
 
 #if USE_EDITOR
     // Data wrapper for the debug flow information.
