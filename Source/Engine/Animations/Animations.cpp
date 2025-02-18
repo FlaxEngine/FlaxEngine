@@ -120,7 +120,7 @@ void AnimationsSystem::Execute(TaskGraph* graph)
         return;
     Active = true;
 
-    // Ensure no animation assets it being reloading/modified before running async update
+    // Ensure no animation assets can be reloaded/modified during async update
     Animations::SystemLocker.Begin(false);
 
     // Setup data for async update

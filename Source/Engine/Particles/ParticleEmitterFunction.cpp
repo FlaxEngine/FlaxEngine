@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitterFunction.h"
+#include "Particles.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Threading.h"
@@ -39,6 +40,8 @@ ParticleEmitterFunction::ParticleEmitterFunction(const SpawnParams& params, cons
 
 Asset::LoadResult ParticleEmitterFunction::load()
 {
+    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
+
     // Load graph
     const auto surfaceChunk = GetChunk(0);
     if (!surfaceChunk || !surfaceChunk->IsLoaded())
@@ -90,6 +93,7 @@ Asset::LoadResult ParticleEmitterFunction::load()
 
 void ParticleEmitterFunction::unload(bool isReloading)
 {
+    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
     Graph.Clear();
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
     GraphGPU.Clear();
@@ -190,7 +194,7 @@ bool ParticleEmitterFunction::SaveSurface(BytesContainer& data)
         LOG(Error, "Asset loading failed. Cannot save it.");
         return true;
     }
-
+    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
     ScopeLock lock(Locker);
 
     // Set Visject Surface data
