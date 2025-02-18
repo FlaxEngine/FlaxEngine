@@ -1999,7 +1999,7 @@ Actor* Actor::Clone()
 
     // Deserialize objects
     Array<Actor*> output;
-    if (FromBytes(ToSpan(stream.GetHandle(), (int32)stream.GetPosition()), output, modifier.Value) || output.IsEmpty())
+    if (FromBytes(ToSpan(stream), output, modifier.Value) || output.IsEmpty())
         return nullptr;
     return output[0];
 }
