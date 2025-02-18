@@ -17,6 +17,7 @@
 ExponentialHeightFog::ExponentialHeightFog(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Exponential Height Fog");
     _drawNoCulling = 1;
     _drawCategory = SceneRendering::PreRender;
 

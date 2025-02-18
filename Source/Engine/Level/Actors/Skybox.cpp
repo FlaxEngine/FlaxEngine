@@ -15,6 +15,7 @@
 Skybox::Skybox(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Skybox");
     _drawNoCulling = 1;
     _drawCategory = SceneRendering::PreRender;
 }
