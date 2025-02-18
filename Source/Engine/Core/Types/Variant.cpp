@@ -3948,7 +3948,7 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         case VariantType::Float4:
             return Variant(Float4(*(Double2*)v.AsData, 0.0f, 0.0f));
         case VariantType::Color:
-            return Variant(Color(((Double2*)v.AsData)->X, ((Double2*)v.AsData)->Y, 0.0f, 0.0f));
+            return Variant(Color((float)((Double2*)v.AsData)->X, (float)((Double2*)v.AsData)->Y, 0.0f, 0.0f));
         case VariantType::Double3:
             return Variant(Double3(*(Double2*)v.AsData, 0.0));
         case VariantType::Double4:
@@ -3984,7 +3984,7 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         case VariantType::Float4:
             return Variant(Float4(*(Double3*)v.AsData, 0.0f));
         case VariantType::Color:
-            return Variant(Color(((Double3*)v.AsData)->X, ((Double3*)v.AsData)->Y, ((Double3*)v.AsData)->Z, 0.0f));
+            return Variant(Color((float)((Double3*)v.AsData)->X, (float)((Double3*)v.AsData)->Y, (float)((Double3*)v.AsData)->Z, 0.0f));
         case VariantType::Double2:
             return Variant(Double2(*(Double3*)v.AsData));
         case VariantType::Double4:
