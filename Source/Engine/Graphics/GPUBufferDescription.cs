@@ -320,7 +320,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets the staging upload description for this instance.
+        /// Gets the staging upload (CPU write) description for this instance.
         /// </summary>
         /// <returns>A staging buffer description</returns>
         public GPUBufferDescription ToStagingUpload()
@@ -333,13 +333,26 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets the staging readback description for this instance.
+        /// Gets the staging readback (CPU read) description for this instance.
         /// </summary>
         /// <returns>A staging buffer description</returns>
         public GPUBufferDescription ToStagingReadback()
         {
             var desc = this;
             desc.Usage = GPUResourceUsage.StagingReadback;
+            desc.Flags = GPUBufferFlags.None;
+            desc.InitData = IntPtr.Zero;
+            return desc;
+        }
+
+        /// <summary>
+        /// Gets the staging (CPU read/write) description for this instance.
+        /// </summary>
+        /// <returns>A staging buffer description</returns>
+        public GPUBufferDescription ToStaging()
+        {
+            var desc = this;
+            desc.Usage = GPUResourceUsage.Staging;
             desc.Flags = GPUBufferFlags.None;
             desc.InitData = IntPtr.Zero;
             return desc;

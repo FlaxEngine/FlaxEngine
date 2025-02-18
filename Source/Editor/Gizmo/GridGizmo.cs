@@ -19,12 +19,11 @@ namespace FlaxEditor.Gizmo
             [StructLayout(LayoutKind.Sequential)]
             private struct Data
             {
-                public Matrix WorldMatrix;
                 public Matrix ViewProjectionMatrix;
                 public Float4 GridColor;
                 public Float3 ViewPos;
                 public float Far;
-                public Float3 Padding;
+                public Float3 ViewOrigin;
                 public float GridSize;
             }
 
@@ -62,7 +61,6 @@ namespace FlaxEditor.Gizmo
                 Profiler.BeginEventGPU("Editor Grid");
 
                 var options = Editor.Instance.Options.Options;
-                Float3 camPos = renderContext.View.WorldPosition;
                 float gridSize = renderContext.View.Far + 20000;
 
                 // Lazy-init resources
@@ -98,10 +96,10 @@ namespace FlaxEditor.Gizmo
                 float y = 1.5f; // Add small bias to reduce Z-fighting with geometry at scene origin
                 var vertices = new Float3[]
                 {
-                    new Float3(-gridSize + camPos.X, y, -gridSize + camPos.Z),
-                    new Float3(gridSize + camPos.X, y, gridSize + camPos.Z),
-                    new Float3(-gridSize + camPos.X, y, gridSize + camPos.Z),
-                    new Float3(gridSize + camPos.X, y, -gridSize + camPos.Z),
+                    new Float3(-gridSize, y, -gridSize),
+                    new Float3(gridSize, y, gridSize),
+                    new Float3(-gridSize, y, gridSize),
+                    new Float3(gridSize, y, -gridSize),
                 };
                 fixed (Float3* ptr = vertices)
                 {
@@ -114,12 +112,12 @@ namespace FlaxEditor.Gizmo
                 {
                     var data = new Data();
                     Matrix.Multiply(ref renderContext.View.View, ref renderContext.View.Projection, out var viewProjection);
-                    data.WorldMatrix = Matrix.Identity;
                     Matrix.Transpose(ref viewProjection, out data.ViewProjectionMatrix);
                     data.ViewPos = renderContext.View.WorldPosition;
                     data.GridColor = options.Viewport.ViewportGridColor;
                     data.Far = renderContext.View.Far;
                     data.GridSize = options.Viewport.ViewportGridViewDistance;
+                    data.ViewOrigin = renderContext.View.Origin;
                     context.UpdateCB(cb, new IntPtr(&data));
                 }
 

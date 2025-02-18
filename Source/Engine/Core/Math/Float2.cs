@@ -1291,8 +1291,10 @@ namespace FlaxEngine
         /// <returns>The position snapped to the grid.</returns>
         public static Float2 SnapToGrid(Float2 pos, Float2 gridSize)
         {
-            pos.X = Mathf.Ceil((pos.X - (gridSize.X * 0.5f)) / gridSize.X) * gridSize.X;
-            pos.Y = Mathf.Ceil((pos.Y - (gridSize.Y * 0.5f)) / gridSize.Y) * gridSize.Y;
+            if (Mathf.Abs(gridSize.X) > Mathf.Epsilon)
+                pos.X = Mathf.Ceil((pos.X - (gridSize.X * 0.5f)) / gridSize.X) * gridSize.X;
+            if (Mathf.Abs(gridSize.Y) > Mathf.Epsilon)
+                pos.Y = Mathf.Ceil((pos.Y - (gridSize.Y * 0.5f)) / gridSize.Y) * gridSize.Y;
             return pos;
         }
 

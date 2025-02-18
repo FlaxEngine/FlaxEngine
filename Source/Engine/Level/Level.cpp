@@ -1489,7 +1489,7 @@ Actor* FindActorRecursiveByType(Actor* node, const MClass* type, const Tag& tag,
     CHECK_RETURN(type, nullptr);
     if (activeOnly && !node->GetIsActive())
         return nullptr;
-    if (node->HasTag(tag) && node->GetClass()->IsSubClassOf(type))
+    if (node->HasTag(tag) && (node->GetClass()->IsSubClassOf(type) || node->GetClass()->HasInterface(type)))
         return node;
     Actor* result = nullptr;
     for (Actor* child : node->Children)
@@ -1621,23 +1621,27 @@ Script* Level::FindScript(const MClass* type)
 
 namespace
 {
-    void GetActors(const MClass* type, Actor* actor, bool activeOnly, Array<Actor*>& result)
+    void GetActors(const MClass* type, bool isInterface, Actor* actor, bool activeOnly, Array<Actor*>& result)
     {
         if (activeOnly && !actor->GetIsActive())
             return;
-        if (actor->GetClass()->IsSubClassOf(type))
+        if ((!isInterface && actor->GetClass()->IsSubClassOf(type)) ||
+            (isInterface && actor->GetClass()->HasInterface(type)))
             result.Add(actor);
         for (auto child : actor->Children)
-            GetActors(type, child, activeOnly, result);
+            GetActors(type, isInterface, child, activeOnly, result);
     }
 
-    void GetScripts(const MClass* type, Actor* actor, Array<Script*>& result)
+    void GetScripts(const MClass* type, bool isInterface, Actor* actor, Array<Script*>& result)
     {
         for (auto script : actor->Scripts)
-            if (script->GetClass()->IsSubClassOf(type))
+        {
+            if ((!isInterface && script->GetClass()->IsSubClassOf(type)) ||
+                (isInterface && script->GetClass()->HasInterface(type)))
                 result.Add(script);
+        }
         for (auto child : actor->Children)
-            GetScripts(type, child, result);
+            GetScripts(type, isInterface, child, result);
     }
 }
 
@@ -1647,7 +1651,7 @@ Array<Actor*> Level::GetActors(const MClass* type, bool activeOnly)
     CHECK_RETURN(type, result);
     ScopeLock lock(ScenesLock);
     for (int32 i = 0; i < Scenes.Count(); i++)
-        ::GetActors(type, Scenes[i], activeOnly, result);
+        ::GetActors(type, type->IsInterface(), Scenes[i], activeOnly, result);
     return result;
 }
 
@@ -1657,7 +1661,7 @@ Array<Script*> Level::GetScripts(const MClass* type)
     CHECK_RETURN(type, result);
     ScopeLock lock(ScenesLock);
     for (int32 i = 0; i < Scenes.Count(); i++)
-        ::GetScripts(type, Scenes[i], result);
+        ::GetScripts(type, type->IsInterface(), Scenes[i], result);
     return result;
 }
 

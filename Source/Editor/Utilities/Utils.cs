@@ -236,19 +236,19 @@ namespace FlaxEditor.Utilities
         /// <summary>
         /// The time/value axes tick steps for editors with timeline.
         /// </summary>
-        internal static readonly float[] CurveTickSteps =
+        internal static readonly double[] CurveTickSteps =
         {
-            0.0000001f, 0.0000005f, 0.000001f, 0.000005f, 0.00001f,
-            0.00005f, 0.0001f, 0.0005f, 0.001f, 0.005f,
-            0.01f, 0.05f, 0.1f, 0.5f, 1,
+            0.0000001, 0.0000005, 0.000001, 0.000005, 0.00001,
+            0.00005, 0.0001, 0.0005, 0.001, 0.005,
+            0.01, 0.05, 0.1, 0.5, 1,
             5, 10, 50, 100, 500,
             1000, 5000, 10000, 50000, 100000,
             500000, 1000000, 5000000, 10000000, 100000000
         };
 
-        internal delegate void DrawCurveTick(float tick, float strength);
+        internal delegate void DrawCurveTick(decimal tick, double step, float strength);
 
-        internal static Int2 DrawCurveTicks(DrawCurveTick drawTick, float[] tickSteps, ref float[] tickStrengths, float min, float max, float pixelRange, float minDistanceBetweenTicks = 20, float maxDistanceBetweenTicks = 60)
+        internal static Int2 DrawCurveTicks(DrawCurveTick drawTick, double[] tickSteps, ref float[] tickStrengths, float min, float max, float pixelRange, float minDistanceBetweenTicks = 20, float maxDistanceBetweenTicks = 60)
         {
             if (pixelRange <= Mathf.Epsilon || maxDistanceBetweenTicks <= minDistanceBetweenTicks)
                 return Int2.Zero;
@@ -262,10 +262,10 @@ namespace FlaxEditor.Utilities
             for (int i = tickSteps.Length - 1; i >= 0; i--)
             {
                 // Calculate how far apart these modulo tick steps are spaced
-                float tickSpacing = tickSteps[i] * pixelsInRange;
+                var tickSpacing = tickSteps[i] * pixelsInRange;
 
                 // Calculate the strength of the tick markers based on the spacing
-                tickStrengths[i] = Mathf.Saturate((tickSpacing - minDistanceBetweenTicks) / (maxDistanceBetweenTicks - minDistanceBetweenTicks));
+                tickStrengths[i] = (float)Mathd.Saturate((tickSpacing - minDistanceBetweenTicks) / (maxDistanceBetweenTicks - minDistanceBetweenTicks));
 
                 // Beyond threshold the ticks don't get any bigger or fatter
                 if (tickStrengths[i] >= 1)
@@ -283,7 +283,7 @@ namespace FlaxEditor.Utilities
             // Draw all tick levels
             for (int level = 0; level < tickLevels; level++)
             {
-                float strength = tickStrengths[smallestTick + level];
+                var strength = tickStrengths[smallestTick + level];
                 if (strength <= Mathf.Epsilon)
                     continue;
 
@@ -291,18 +291,34 @@ namespace FlaxEditor.Utilities
                 int l = Mathf.Clamp(smallestTick + level, 0, tickSteps.Length - 2);
                 var lStep = tickSteps[l];
                 var lNextStep = tickSteps[l + 1];
-                int startTick = Mathf.FloorToInt(min / lStep);
-                int endTick = Mathf.CeilToInt(max / lStep);
-                for (int i = startTick; i <= endTick; i++)
+                var startTick = Mathd.FloorToInt(min / lStep);
+                var endTick = Mathd.CeilToInt(max / lStep);
+                for (var i = startTick; i <= endTick; i++)
                 {
-                    if (l < biggestTick && (i % Mathf.RoundToInt(lNextStep / lStep) == 0))
+                    if (l < biggestTick && (i % Mathd.RoundToInt(lNextStep / lStep) == 0))
                         continue;
-                    var tick = i * lStep;
-                    drawTick(tick, strength);
+                    var tick = (decimal)lStep * i;
+                    drawTick(tick, lStep, strength);
                 }
             }
 
             return new Int2(smallestTick, biggestTick);
+        }
+
+        internal static float GetCurveGridSnap(double[] tickSteps, ref float[] tickStrengths, float min, float max, float pixelRange, float minDistanceBetweenTicks = 20, float maxDistanceBetweenTicks = 60)
+        {
+            double gridStep = 0; // No grid
+            float gridWeight = 0.0f;
+            DrawCurveTicks((decimal tick, double step, float strength) =>
+            {
+                // Find the smallest grid step that has meaningful strength (it's the most visible to the user)
+                if (strength > gridWeight && (step < gridStep || gridStep <= 0.0) && strength > 0.5f)
+                {
+                    gridStep = Math.Abs(step);
+                    gridWeight = strength;
+                }
+            }, tickSteps, ref tickStrengths, min, max, pixelRange, minDistanceBetweenTicks, maxDistanceBetweenTicks);
+            return (float)gridStep;
         }
 
         /// <summary>

@@ -34,7 +34,7 @@ namespace FlaxEngine.Utilities
             if (value == null)
                 return default;
             var type = value.GetType();
-            if (type != typeof(T))
+            if (type != typeof(T) && !typeof(T).IsAssignableFrom(type))
             {
                 if (typeof(T) == typeof(Vector2))
                 {

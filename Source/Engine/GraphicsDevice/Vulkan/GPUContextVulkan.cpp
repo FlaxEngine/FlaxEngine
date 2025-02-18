@@ -1005,7 +1005,11 @@ void GPUContextVulkan::BindCB(int32 slot, GPUConstantBuffer* cb)
 
 void GPUContextVulkan::BindSR(int32 slot, GPUResourceView* view)
 {
+#if !BUILD_RELEASE
     ASSERT(slot >= 0 && slot < GPU_MAX_SR_BINDED);
+    if (view && ((DescriptorOwnerResourceVulkan*)view->GetNativePtr())->HasSRV() == false)
+        LogInvalidResourceUsage(slot, view, InvalidBindPoint::SRV);
+#endif
     const auto handle = view ? (DescriptorOwnerResourceVulkan*)view->GetNativePtr() : nullptr;
     if (_srHandles[slot] != handle)
     {
@@ -1017,7 +1021,11 @@ void GPUContextVulkan::BindSR(int32 slot, GPUResourceView* view)
 
 void GPUContextVulkan::BindUA(int32 slot, GPUResourceView* view)
 {
+#if !BUILD_RELEASE
     ASSERT(slot >= 0 && slot < GPU_MAX_UA_BINDED);
+    if (view && ((DescriptorOwnerResourceVulkan*)view->GetNativePtr())->HasUAV() == false)
+        LogInvalidResourceUsage(slot, view, InvalidBindPoint::UAV);
+#endif
     const auto handle = view ? (DescriptorOwnerResourceVulkan*)view->GetNativePtr() : nullptr;
     if (_uaHandles[slot] != handle)
     {

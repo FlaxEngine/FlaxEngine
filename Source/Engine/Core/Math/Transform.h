@@ -136,6 +136,12 @@ public:
     /// <param name="result">World matrix</param>
     void GetWorld(Matrix& result) const;
 
+    /// <summary>
+    /// Gets world matrix that describes transformation as a 4 by 4 matrix.
+    /// </summary>
+    /// <param name="result">World matrix</param>
+    void GetWorld(Double4x4& result) const;
+
 public:
     /// <summary>
     /// Adds translation to this transform.

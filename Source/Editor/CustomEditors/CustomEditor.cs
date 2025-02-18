@@ -883,7 +883,7 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         protected virtual void ClearToken()
         {
-            ParentEditor.ClearToken();
+            ParentEditor?.ClearToken();
         }
     }
 }

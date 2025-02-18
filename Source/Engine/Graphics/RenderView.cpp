@@ -3,6 +3,7 @@
 #include "RenderView.h"
 #include "Engine/Level/LargeWorlds.h"
 #include "Engine/Level/Actors/Camera.h"
+#include "Engine/Core/Math/Double4x4.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/RendererPass.h"
 #include "RenderBuffers.h"
@@ -213,6 +214,13 @@ void RenderView::GetWorldMatrix(const Transform& transform, Matrix& world) const
 {
     const Float3 translation = transform.Translation - Origin;
     Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
+}
+
+void RenderView::GetWorldMatrix(Double4x4& world) const
+{
+    world.M41 -= Origin.X;
+    world.M42 -= Origin.Y;
+    world.M43 -= Origin.Z;
 }
 
 TaaJitterRemoveContext::TaaJitterRemoveContext(const RenderView& view)

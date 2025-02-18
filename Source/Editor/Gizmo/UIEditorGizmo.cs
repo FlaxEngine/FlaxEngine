@@ -150,7 +150,8 @@ namespace FlaxEditor
         private float _mouseMoveSum;
         private UndoMultiBlock _undoBlock;
         private View _view;
-        private float[] _gridTickSteps = Utilities.Utils.CurveTickSteps, _gridTickStrengths;
+        private double[] _gridTickSteps = Utilities.Utils.CurveTickSteps;
+        private float[] _gridTickStrengths;
         private List<Widget> _widgets;
         private Widget _activeWidget;
 
@@ -564,9 +565,9 @@ namespace FlaxEditor
             var linesColor = style.ForegroundDisabled.RGBMultiplied(0.5f);
             var labelsColor = style.ForegroundDisabled;
             var labelsSize = 10.0f;
-            Utilities.Utils.DrawCurveTicks((float tick, float strength) =>
+            Utilities.Utils.DrawCurveTicks((decimal tick, double step, float strength) =>
             {
-                var p = _view.PointToParent(axis * tick);
+                var p = _view.PointToParent(axis * (float)tick);
 
                 // Draw line
                 var lineRect = new Rectangle
@@ -641,7 +642,68 @@ namespace FlaxEditor
                 DrawControlWidget(uiControl, ref eu, ref mousePos, ref widgetHandleSize, viewScale, new Float2(0, -1), CursorType.SizeNS);
                 DrawControlWidget(uiControl, ref eb, ref mousePos, ref widgetHandleSize, viewScale, new Float2(0, 1), CursorType.SizeNS);
 
-                // TODO: draw anchors
+                // Draw pivot
+                var pivotSize = 8.0f;
+                if (viewScale < 0.7f)
+                    pivotSize *= viewScale;
+                var pivotX = Mathf.Remap(control.Pivot.X, 0, 1, bounds.Location.X, bounds.Location.X + bounds.Width);
+                var pivotY = Mathf.Remap(control.Pivot.Y, 0, 1, bounds.Location.Y, bounds.Location.Y + bounds.Height);
+                var pivotLoc = control.PointToParent(this, new Float2(pivotX, pivotY));
+                var pivotRect = new Rectangle(pivotLoc - pivotSize * 0.5f, new Float2(pivotSize));
+                var pivotColor = options.UIPivotColor;
+                Render2D.FillRectangle(pivotRect, pivotColor);
+
+                // Draw anchors
+                var controlParent = control.Parent;
+                if (controlParent != null)
+                {
+                    var parentBounds = controlParent.EditorBounds;
+                    var anchorMin = control.AnchorMin;
+                    var anchorMax = control.AnchorMax;
+                    var newMinX = Mathf.Remap(anchorMin.X, 0, 1, parentBounds.UpperLeft.X, parentBounds.UpperRight.X);
+                    var newMinY = Mathf.Remap(anchorMin.Y, 0, 1, parentBounds.UpperLeft.Y, parentBounds.LowerLeft.Y);
+                    var newMaxX = Mathf.Remap(anchorMax.X, 0, 1, parentBounds.UpperLeft.X, parentBounds.UpperRight.X);
+                    var newMaxY = Mathf.Remap(anchorMax.Y, 0, 1, parentBounds.UpperLeft.Y, parentBounds.LowerLeft.Y);
+
+                    var anchorUpperLeft = controlParent.PointToParent(this, new Float2(newMinX, newMinY));
+                    var anchorUpperRight = controlParent.PointToParent(this, new Float2(newMaxX, newMinY));
+                    var anchorLowerLeft = controlParent.PointToParent(this, new Float2(newMinX, newMaxY));
+                    var anchorLowerRight = controlParent.PointToParent(this, new Float2(newMaxX, newMaxY));
+
+                    var anchorRectSize = 8.0f;
+                    if (viewScale < 0.7f)
+                        anchorRectSize *= viewScale;
+
+                    // Make anchor rects and rotate if parent is rotated.
+                    var parentRotation = controlParent.Rotation * Mathf.DegreesToRadians;
+
+                    var rect1Axis = new Float2(-1, -1);
+                    var rect1 = new Rectangle(anchorUpperLeft + 
+                                              new Float2(anchorRectSize * rect1Axis.X * Mathf.Cos(parentRotation) - anchorRectSize * rect1Axis.Y * Mathf.Sin(parentRotation), 
+                                                         anchorRectSize * rect1Axis.Y * Mathf.Cos(parentRotation) + anchorRectSize * rect1Axis.X * Mathf.Sin(parentRotation)) - anchorRectSize * 0.5f, new Float2(anchorRectSize));
+                    var rect2Axis = new Float2(1, -1);
+                    var rect2 = new Rectangle(anchorUpperRight + 
+                                              new Float2(anchorRectSize * rect2Axis.X * Mathf.Cos(parentRotation) - anchorRectSize * rect2Axis.Y * Mathf.Sin(parentRotation), 
+                                                         anchorRectSize * rect2Axis.Y * Mathf.Cos(parentRotation) + anchorRectSize * rect2Axis.X * Mathf.Sin(parentRotation)) - anchorRectSize * 0.5f, new Float2(anchorRectSize));
+                    var rect3Axis = new Float2(-1, 1);
+                    var rect3 = new Rectangle(anchorLowerLeft + 
+                                              new Float2(anchorRectSize * rect3Axis.X * Mathf.Cos(parentRotation) - anchorRectSize * rect3Axis.Y * Mathf.Sin(parentRotation), 
+                                                         anchorRectSize * rect3Axis.Y * Mathf.Cos(parentRotation) + anchorRectSize * rect3Axis.X * Mathf.Sin(parentRotation)) - anchorRectSize * 0.5f, new Float2(anchorRectSize));
+                    var rect4Axis = new Float2(1, 1);
+                    var rect4 = new Rectangle(anchorLowerRight + 
+                                              new Float2(anchorRectSize * rect4Axis.X * Mathf.Cos(parentRotation) - anchorRectSize * rect4Axis.Y * Mathf.Sin(parentRotation), 
+                                                         anchorRectSize * rect4Axis.Y * Mathf.Cos(parentRotation) + anchorRectSize * rect4Axis.X * Mathf.Sin(parentRotation)) - anchorRectSize * 0.5f, new Float2(anchorRectSize));
+
+                    var rectColor = options.UIAnchorColor;
+                    Render2D.DrawLine(anchorUpperLeft, anchorUpperRight, rectColor);
+                    Render2D.DrawLine(anchorUpperRight, anchorLowerRight, rectColor);
+                    Render2D.DrawLine(anchorLowerRight, anchorLowerLeft, rectColor);
+                    Render2D.DrawLine(anchorLowerLeft, anchorUpperLeft, rectColor);
+                    Render2D.FillRectangle(rect1, rectColor);
+                    Render2D.FillRectangle(rect2, rectColor);
+                    Render2D.FillRectangle(rect3, rectColor);
+                    Render2D.FillRectangle(rect4, rectColor);
+                }
             }
         }
 
@@ -651,8 +713,7 @@ namespace FlaxEditor
             var control = uiControl.Control;
             var rotation = control.Rotation;
             var rotationInRadians = rotation * Mathf.DegreesToRadians;
-            var rect = new Rectangle(
-                                     (pos + 
+            var rect = new Rectangle((pos + 
                                       new Float2(resizeAxis.X * Mathf.Cos(rotationInRadians) - resizeAxis.Y * Mathf.Sin(rotationInRadians), 
                                                  resizeAxis.Y * Mathf.Cos(rotationInRadians) + resizeAxis.X * Mathf.Sin(rotationInRadians)) * 10 * scale) - size * 0.5f,
                                      size);
@@ -714,16 +775,15 @@ namespace FlaxEditor
 
         private bool RayCastControl(ref Float2 location, out Control hit)
         {
-#if false
-            // Raycast only controls with content (eg. skips transparent panels)
-            return RayCastChildren(ref location, out hit);
-#else
-            // Find any control under mouse (hierarchical)
-            hit = GetChildAtRecursive(location);
+            // First, raycast only controls with content (eg. skips transparent panels)
+            RayCastChildren(ref location, out hit);
+
+            // If raycast failed, then find any control under mouse (hierarchical)
+            hit = hit ?? GetChildAtRecursive(location);
             if (hit is View || hit is CanvasContainer)
                 hit = null;
+        
             return hit != null;
-#endif
         }
 
         private UIControlNode FindUIControlNode(Control control)

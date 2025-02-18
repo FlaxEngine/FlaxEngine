@@ -122,6 +122,12 @@ protected:
     double _lastRenderTime = -1;
     GPUContext(GPUDevice* device);
 
+#if !BUILD_RELEASE
+    enum class InvalidBindPoint { SRV, UAV, DSV, RTV };
+
+    static void LogInvalidResourceUsage(int32 slot, const GPUResourceView* view, InvalidBindPoint bindPoint);
+#endif
+
 public:
     /// <summary>
     /// Gets the graphics device.
@@ -144,7 +150,6 @@ public:
 
 public:
 #if GPU_ALLOW_PROFILE_EVENTS
-
     /// <summary>
     /// Begins the profile event.
     /// </summary>
@@ -159,7 +164,6 @@ public:
     virtual void EventEnd()
     {
     }
-
 #endif
 
 public:

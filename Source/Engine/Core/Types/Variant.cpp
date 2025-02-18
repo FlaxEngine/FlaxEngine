@@ -3920,6 +3920,114 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         default: ;
         }
         break;
+    case VariantType::Double2:
+        switch (to.Type)
+        {
+        case VariantType::Bool:
+            return Variant(Math::Abs(((Double2*)v.AsData)->X) > ZeroTolerance);
+        case VariantType::Int16:
+            return Variant((int16)((Double2*)v.AsData)->X);
+        case VariantType::Int:
+            return Variant((int32)((Double2*)v.AsData)->X);
+        case VariantType::Uint16:
+            return Variant((uint16)((Double2*)v.AsData)->X);
+        case VariantType::Uint:
+            return Variant((uint32)((Double2*)v.AsData)->X);
+        case VariantType::Int64:
+            return Variant((int64)((Double2*)v.AsData)->X);
+        case VariantType::Uint64:
+            return Variant((uint64)((Double2*)v.AsData)->X);
+        case VariantType::Float:
+            return Variant((float)((Double2*)v.AsData)->X);
+        case VariantType::Double:
+            return Variant((double)((Double2*)v.AsData)->X);
+        case VariantType::Float2:
+            return Variant(Float2(*(Double2*)v.AsData));
+        case VariantType::Float3:
+            return Variant(Float3(*(Double2*)v.AsData, 0.0f));
+        case VariantType::Float4:
+            return Variant(Float4(*(Double2*)v.AsData, 0.0f, 0.0f));
+        case VariantType::Color:
+            return Variant(Color(((Double2*)v.AsData)->X, ((Double2*)v.AsData)->Y, 0.0f, 0.0f));
+        case VariantType::Double3:
+            return Variant(Double3(*(Double2*)v.AsData, 0.0));
+        case VariantType::Double4:
+            return Variant(Double4(*(Double2*)v.AsData, 0.0, 0.0));
+        default: ;
+        }
+        break;
+    case VariantType::Double3:
+        switch (to.Type)
+        {
+        case VariantType::Bool:
+            return Variant(Math::Abs(((Double3*)v.AsData)->X) > ZeroTolerance);
+        case VariantType::Int16:
+            return Variant((int16)((Double3*)v.AsData)->X);
+        case VariantType::Int:
+            return Variant((int32)((Double3*)v.AsData)->X);
+        case VariantType::Uint16:
+            return Variant((uint16)((Double3*)v.AsData)->X);
+        case VariantType::Uint:
+            return Variant((uint32)((Double3*)v.AsData)->X);
+        case VariantType::Int64:
+            return Variant((int64)((Double3*)v.AsData)->X);
+        case VariantType::Uint64:
+            return Variant((uint64)((Double3*)v.AsData)->X);
+        case VariantType::Float:
+            return Variant((float)((Double3*)v.AsData)->X);
+        case VariantType::Double:
+            return Variant((double)((Double3*)v.AsData)->X);
+        case VariantType::Float2:
+            return Variant(Float2(*(Double3*)v.AsData));
+        case VariantType::Float3:
+            return Variant(Float3(*(Double3*)v.AsData));
+        case VariantType::Float4:
+            return Variant(Float4(*(Double3*)v.AsData, 0.0f));
+        case VariantType::Color:
+            return Variant(Color(((Double3*)v.AsData)->X, ((Double3*)v.AsData)->Y, ((Double3*)v.AsData)->Z, 0.0f));
+        case VariantType::Double2:
+            return Variant(Double2(*(Double3*)v.AsData));
+        case VariantType::Double4:
+            return Variant(Double4(*(Double3*)v.AsData, 0.0));
+        default: ;
+        }
+        break;
+    case VariantType::Double4:
+        switch (to.Type)
+        {
+        case VariantType::Bool:
+            return Variant(Math::Abs(((Double4*)v.AsData)->X) > ZeroTolerance);
+        case VariantType::Int16:
+            return Variant((int16)((Double4*)v.AsData)->X);
+        case VariantType::Int:
+            return Variant((int32)((Double4*)v.AsData)->X);
+        case VariantType::Uint16:
+            return Variant((uint16)((Double4*)v.AsData)->X);
+        case VariantType::Uint:
+            return Variant((uint32)((Double4*)v.AsData)->X);
+        case VariantType::Int64:
+            return Variant((int64)((Double4*)v.AsData)->X);
+        case VariantType::Uint64:
+            return Variant((uint64)((Double4*)v.AsData)->X);
+        case VariantType::Float:
+            return Variant((float)((Double4*)v.AsData)->X);
+        case VariantType::Double:
+            return Variant((double)((Double4*)v.AsData)->X);
+        case VariantType::Float2:
+            return Variant(Float2(*(Double4*)v.AsData));
+        case VariantType::Float3:
+            return Variant(Float3(*(Double4*)v.AsData));
+        case VariantType::Float4:
+            return Variant(Float4(*(Double4*)v.AsData));
+        case VariantType::Color:
+            return Variant(*(Double4*)v.AsData);
+        case VariantType::Double2:
+            return Variant(Double2(*(Double4*)v.AsData));
+        case VariantType::Double3:
+            return Variant(Double3(*(Double4*)v.AsData));
+        default: ;
+        }
+        break;
     case VariantType::Color:
         switch (to.Type)
         {

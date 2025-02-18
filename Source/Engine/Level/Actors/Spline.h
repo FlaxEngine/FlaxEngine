@@ -372,7 +372,7 @@ private:
     // Internal bindings
 #if !COMPILE_WITHOUT_CSHARP
     API_FUNCTION(NoProxy) void GetKeyframes(MArray* data);
-    API_FUNCTION(NoProxy) void SetKeyframes(MArray* data);
+    API_FUNCTION(NoProxy) void SetKeyframes(MArray* data, int32 keySize);
 #endif
 
 public:

@@ -5,6 +5,8 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Actors/EmptyActor.h"
+#include "Engine/Level/Actors/DirectionalLight.h"
+#include "Engine/Level/Actors/ExponentialHeightFog.h"
 #include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
@@ -556,5 +558,60 @@ TEST_CASE("Prefabs")
         Content::DeleteAsset(prefabNested2);
         Content::DeleteAsset(prefabNested1);
         Content::DeleteAsset(prefabBase);
+    }
+    SECTION("Test Applying Prefab ChangeTo Object References")
+    {
+        // https://github.com/FlaxEngine/FlaxEngine/issues/3136
+
+        // Create Prefab
+        AssetReference<Prefab> prefab = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(prefab);
+        Guid id;
+        Guid::Parse("690e55514cd6fdc2a269429a2bf84133", id);
+        prefab->ChangeID(id);
+        auto prefabInit = prefab->Init(Prefab::TypeName,
+                                         "["
+                                         "{"
+                                         "\"ID\": \"fc3f88cf413c2e668039a0bb7429900d\","
+                                         "\"TypeName\": \"FlaxEngine.ExponentialHeightFog\","
+                                         "\"Name\": \"Fog\","
+                                         "\"DirectionalInscatteringLight\": \"44873cc44e950c754f0c7bb59dd432d6\""
+                                         "},"
+                                         "{"
+                                         "\"ID\": \"44873cc44e950c754f0c7bb59dd432d6\","
+                                         "\"TypeName\": \"FlaxEngine.DirectionalLight\","
+                                         "\"ParentID\": \"fc3f88cf413c2e668039a0bb7429900d\","
+                                         "\"Name\": \"Sun 1\""
+                                         "},"
+                                         "{"
+                                         "\"ID\": \"583f91604b622e3b7aa698b51c9966d6\","
+                                         "\"TypeName\": \"FlaxEngine.DirectionalLight\","
+                                         "\"ParentID\": \"fc3f88cf413c2e668039a0bb7429900d\","
+                                         "\"Name\": \"Sun 2\""
+                                         "}"
+                                         "]");
+        REQUIRE(!prefabInit);
+        
+        // Spawn test instances
+        ScriptingObjectReference<Actor> instanceA = PrefabManager::SpawnPrefab(prefab);
+        ScriptingObjectReference<Actor> instanceB = PrefabManager::SpawnPrefab(prefab);
+
+        // Swap reference from Sun 1 to Sun 2 on a Fog
+        REQUIRE(instanceA);
+        REQUIRE(instanceA->Children.Count() == 2);
+        CHECK(instanceA.As<ExponentialHeightFog>()->DirectionalInscatteringLight == instanceA->Children[0]);
+        instanceA.As<ExponentialHeightFog>()->DirectionalInscatteringLight = (DirectionalLight*)instanceA->Children[1];
+
+        // Apply change on instance A and verify it's applied on instance B
+        bool applyResult = PrefabManager::ApplyAll(instanceA);
+        REQUIRE(!applyResult);
+        REQUIRE(instanceB);
+        REQUIRE(instanceB->Children.Count() == 2);
+        CHECK(instanceB.As<ExponentialHeightFog>()->DirectionalInscatteringLight == instanceB->Children[1]);
+
+        // Cleanup
+        instanceA->DeleteObject();
+        instanceB->DeleteObject();
+        Content::DeleteAsset(prefab);
     }
 }

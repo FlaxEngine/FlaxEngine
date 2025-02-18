@@ -42,7 +42,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 
 #if USE_EDITOR
     /// <summary>
-    /// Allocates the context for Debug Drawing. Can be use to redirect debug shapes collecting to a separate container (instead of global state).
+    /// Allocates the context for Debug Drawing. Can be used to redirect debug shapes collecting to a separate container (instead of global state).
     /// </summary>
     /// <returns>The context object. Release it wil FreeContext. Returns null if failed.</returns>
     API_FUNCTION() static void* AllocateContext();
@@ -66,6 +66,9 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="context">The context or null.</param>
     API_FUNCTION() static void SetContext(void* context);
 #endif
+
+    // Gets the last view position when rendering the current context. Can be sued for custom culling or LODing when drawing more complex shapes.
+    static Vector3 GetViewPos();
 
     /// <summary>
     /// Draws the collected debug shapes to the output.
@@ -720,7 +723,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     API_FUNCTION() static void Clear(void* context = nullptr);
 };
 
-#define DEBUG_DRAW_AXIS_FROM_DIRECTION(origin, direction, size, duration, depthTest)                 DebugDraw::DrawAxisFromDirection(origin, direction, size, duration, depthTest);
+#define DEBUG_DRAW_AXIS_FROM_DIRECTION(origin, direction, size, duration, depthTest)                        DebugDraw::DrawAxisFromDirection(origin, direction, size, duration, depthTest);
 #define DEBUG_DRAW_DIRECTION(origin, direction, color, duration, depthTest)                                 DebugDraw::DrawDirection(origin, direction, color, duration, depthTest);
 #define DEBUG_DRAW_RAY(origin, direction, color, length, duration, depthTest)                               DebugDraw::DrawRay(origin, direction, color, length, duration, depthTest);
 #define DEBUG_DRAW_RAY(ray, color, length, duration, depthTest)                                             DebugDraw::DrawRay(ray, color, length, duration, depthTest);

@@ -21,7 +21,6 @@ API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUTextureView : public GPUResou
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUTextureView);
 protected:
-    GPUResource* _parent = nullptr;
     PixelFormat _format = PixelFormat::Unknown;
     MSAALevel _msaa = MSAALevel::None;
 
@@ -40,14 +39,6 @@ protected:
     }
 
 public:
-    /// <summary>
-    /// Gets parent GPU resource owning that view.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE GPUResource* GetParent() const
-    {
-        return _parent;
-    }
-
     /// <summary>
     /// Gets the view format.
     /// </summary>
@@ -294,10 +285,7 @@ public:
     /// <summary>
     /// Checks if texture is a staging buffer (supports direct CPU access).
     /// </summary>
-    FORCE_INLINE bool IsStaging() const
-    {
-        return _desc.Usage == GPUResourceUsage::StagingUpload || _desc.Usage == GPUResourceUsage::StagingReadback;
-    }
+    bool IsStaging() const;
 
     /// <summary>
     /// Gets a boolean indicating whether this <see cref="GPUTexture"/> is a using a block compress format (BC1, BC2, BC3, BC4, BC5, BC6H, BC7, etc.).
