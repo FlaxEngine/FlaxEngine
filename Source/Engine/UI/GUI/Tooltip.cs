@@ -74,10 +74,15 @@ namespace FlaxEngine.GUI
             UnlockChildrenRecursive();
             PerformLayout();
 
-            // Calculate popup direction and initial location
             var parentWin = target.Root;
             if (parentWin == null)
                 return;
+
+            // Showing a popup window might bring up the parent window on top
+            if (!parentWin.IsFocused)
+                return;
+
+            // Calculate popup direction and initial location
             var dpiScale = target.RootWindow.DpiScale;
             var dpiSize = Size * dpiScale;
             var locationWS = target.PointToWindow(location);
