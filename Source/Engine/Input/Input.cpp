@@ -614,6 +614,209 @@ float Input::GetAxisRaw(const StringView& name)
     return e ? e->ValueRaw : false;
 }
 
+void Input::SetInputMappingFromSettings(const JsonAssetReference<InputSettings>& settings)
+{
+    auto actionMappings = settings.GetInstance()->ActionMappings;
+    ActionMappings.Resize(actionMappings.Count(), false);
+    for (int i = 0; i < actionMappings.Count(); i++)
+    {
+        ActionMappings[i] = actionMappings.At(i);
+    }
+
+    auto axisMappings = settings.GetInstance()->AxisMappings;
+    AxisMappings.Resize(axisMappings.Count(), false);
+    for (int i = 0; i < axisMappings.Count(); i++)
+    {
+        AxisMappings[i] = axisMappings.At(i);
+    }
+    Axes.Clear();
+    Actions.Clear();
+}
+
+void Input::SetInputMappingToDefaultSettings()
+{
+    InputSettings* settings = InputSettings::Get();
+    if (settings)
+    {
+        ActionMappings = settings->ActionMappings;
+        AxisMappings = settings->AxisMappings;
+        Axes.Clear();
+        Actions.Clear();
+    }
+}
+
+ActionConfig Input::GetActionConfigByName(const StringView& name)
+{
+    ActionConfig config = {};
+    for (const auto& a : ActionMappings)
+    {
+        if (a.Name == name)
+        {
+            config = a;
+            return config;
+        }
+    }
+    return config;
+}
+
+Array<ActionConfig> Input::GetAllActionConfigsByName(const StringView& name)
+{
+    Array<ActionConfig> actionConfigs;
+    for (const auto& a : ActionMappings)
+    {
+        if (a.Name == name)
+            actionConfigs.Add(a);
+    }
+    return actionConfigs;
+}
+
+AxisConfig Input::GetAxisConfigByName(const StringView& name)
+{
+    AxisConfig config = {};
+    for (const auto& a : AxisMappings)
+    {
+        if (a.Name == name)
+        {
+            config = a;
+            return config;
+        }
+    }
+    return config;
+}
+
+Array<AxisConfig> Input::GetAllAxisConfigsByName(const StringView& name)
+{
+    Array<AxisConfig> actionConfigs;
+    for (const auto& a : AxisMappings)
+    {
+        if (a.Name == name)
+            actionConfigs.Add(a);
+    }
+    return actionConfigs;
+}
+
+void Input::SetAxisConfigByName(const StringView& name, AxisConfig& config, bool all)
+{
+    for (int i = 0; i < AxisMappings.Count(); ++i)
+    {
+        auto& mapping = AxisMappings.At(i);
+        if (mapping.Name.Compare(name.ToString()) == 0)
+        {
+            if (config.Name.IsEmpty())
+                config.Name = name;
+            mapping = config;
+            if (!all)
+                break;
+        }
+    }
+}
+
+void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType, const KeyboardKeys positiveButton, const KeyboardKeys negativeButton, bool all)
+{
+    for (int i = 0; i < AxisMappings.Count(); ++i)
+    {
+        auto& mapping = AxisMappings.At(i);
+        if (mapping.Name.Compare(name.ToString()) == 0 && mapping.Axis == inputType)
+        {
+            mapping.PositiveButton = positiveButton;
+            mapping.NegativeButton = negativeButton;
+            if (!all)
+                break;
+        }
+    }
+}
+
+void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType, const GamepadButton positiveButton, const GamepadButton negativeButton, InputGamepadIndex gamepadIndex, bool all)
+{
+    for (int i = 0; i < AxisMappings.Count(); ++i)
+    {
+        auto& mapping = AxisMappings.At(i);
+        if (mapping.Name.Compare(name.ToString()) == 0 && mapping.Gamepad == gamepadIndex && mapping.Axis == inputType)
+        {
+            mapping.GamepadPositiveButton = positiveButton;
+            mapping.GamepadNegativeButton = negativeButton;
+            if (!all)
+                break;
+        }
+    }
+}
+
+void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType, const float gravity, const float deadZone, const float sensitivity, const float scale, const bool snap, bool all)
+{
+    for (int i = 0; i < AxisMappings.Count(); ++i)
+    {
+        auto& mapping = AxisMappings.At(i);
+        if (mapping.Name.Compare(name.ToString()) == 0 && mapping.Axis == inputType)
+        {
+            mapping.Gravity = gravity;
+            mapping.DeadZone = deadZone;
+            mapping.Sensitivity = sensitivity;
+            mapping.Scale = scale;
+            mapping.Snap = snap;
+            if (!all)
+                break;
+        }
+    }
+}
+
+void Input::SetActionConfigByName(const StringView& name, const KeyboardKeys key, bool all)
+{
+    for (int i = 0; i < ActionMappings.Count(); ++i)
+    {
+        auto& mapping = ActionMappings.At(i);
+        if (mapping.Name.Compare(name.ToString()) == 0)
+        {
+            mapping.Key = key;
+            if (!all)
+                break;
+        }
+    }
+}
+
+void Input::SetActionConfigByName(const StringView& name, const MouseButton mouseButton, bool all)
+{
+    for (int i = 0; i < ActionMappings.Count(); ++i)
+    {
+        auto& mapping = ActionMappings.At(i);
+        if (mapping.Name.Compare(name.ToString()) == 0)
+        {
+            mapping.MouseButton = mouseButton;
+            if (!all)
+                break;
+        }
+    }
+}
+
+void Input::SetActionConfigByName(const StringView& name, const GamepadButton gamepadButton, InputGamepadIndex gamepadIndex, bool all)
+{
+    for (int i = 0; i < ActionMappings.Count(); ++i)
+    {
+        auto& mapping = ActionMappings.At(i);
+        if (mapping.Name.Compare(name.ToString()) == 0 && mapping.Gamepad == gamepadIndex)
+        {
+            mapping.GamepadButton = gamepadButton;
+            if (!all)
+                break;
+        }
+    }
+}
+
+void Input::SetActionConfigByName(const StringView& name, ActionConfig& config, bool all)
+{
+    for (int i = 0; i < ActionMappings.Count(); ++i)
+    {
+        auto& mapping = ActionMappings.At(i);
+        if (mapping.Name.Compare(name.ToString()) == 0)
+        {
+            if (config.Name.IsEmpty())
+                config.Name = name;
+            mapping = config;
+            if (!all)
+                break;
+        }
+    }
+}
+
 void InputService::Update()
 {
     PROFILE_CPU();
