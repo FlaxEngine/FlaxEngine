@@ -38,7 +38,7 @@ API_ENUM() enum class NetworkIPVersion
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NetworkSocket
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkSocketGroup)
+DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkSocketGroup);
 
     /// <summary>Socket protocol type.</summary>
     API_FIELD() NetworkProtocol Protocol = NetworkProtocol::Undefined;
@@ -52,7 +52,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkSocketGroup)
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NetworkEndPoint
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkSocketGroup)
+DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkSocketGroup);
 
     /// <summary>End-point IP version.</summary>
     API_FIELD(ReadOnly) NetworkIPVersion IPVersion = NetworkIPVersion::Undefined;
@@ -126,7 +126,7 @@ DECLARE_ENUM_OPERATORS(NetworkSocketState);
 /// </summary>
 API_STRUCT() struct FLAXENGINE_API NetworkSocketGroup
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkSocketGroup)
+DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkSocketGroup);
 
     /// <summary>Group size.</summary>
     API_FIELD(ReadOnly) uint32 Count = 0;

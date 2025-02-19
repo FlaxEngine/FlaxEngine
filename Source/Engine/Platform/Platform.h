@@ -44,7 +44,7 @@
             PLATFORM_DEBUG_BREAK; \
         } \
         Platform::Assert(#expression, __FILE__, __LINE__); \
-    }
+    } static_assert(true, "")
 #else
 // Performs a hard assertion of the expression. Crashes the engine and triggers a debugger break if the expression fails.
 #define ASSERT(expression) ((void)0)
@@ -63,14 +63,14 @@
     { \
         Platform::CheckFailed(#expression, __FILE__, __LINE__); \
         return; \
-    }
+    } static_assert(true, "")
 // Performs a soft check of the expression. Logs the expression failure and returns from the function call using the given return value.
 #define CHECK_RETURN(expression, returnValue) \
     if (!(expression)) \
     { \
         Platform::CheckFailed(#expression, __FILE__, __LINE__); \
         return returnValue; \
-    }
+    } static_assert(true, "")
 
 #if ENABLE_ASSERTION
 // Performs a soft check of the expression. Logs the expression failure and returns from the function call.

@@ -543,7 +543,7 @@ int32 Foliage::GetFoliageTypesCount() const
 
 FoliageType* Foliage::GetFoliageType(int32 index)
 {
-    CHECK_RETURN(index >= 0 && index < FoliageTypes.Count(), nullptr)
+    CHECK_RETURN(index >= 0 && index < FoliageTypes.Count(), nullptr);
     return &FoliageTypes[index];
 }
 

@@ -489,7 +489,7 @@ void SplineModel::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(BoundsScale, _boundsScale);
     SERIALIZE_MEMBER(LODBias, _lodBias);
     SERIALIZE_MEMBER(ForcedLOD, _forcedLod);
-    SERIALIZE_MEMBER(PreTransform, _preTransform)
+    SERIALIZE_MEMBER(PreTransform, _preTransform);
     SERIALIZE(Model);
     SERIALIZE(DrawModes);
 

@@ -370,7 +370,8 @@ struct ScriptingObjectSpawnParams
     friend class type##Internal; \
     static ScriptingTypeInitializer TypeInitializer; \
     FORCE_INLINE static const ScriptingType& GetStaticType() { return TypeInitializer.GetType(); } \
-    FORCE_INLINE static MClass* GetStaticClass() { return TypeInitializer.GetType().ManagedClass; }
+    FORCE_INLINE static MClass* GetStaticClass() { return TypeInitializer.GetType().ManagedClass; } \
+    static_assert(true, "")
 
 /// <summary>
 /// Helper define used to declare required components for native types that have managed type (for objects that cannot be spawned).
@@ -380,7 +381,8 @@ struct ScriptingObjectSpawnParams
     friend class type##Internal; \
     static ScriptingTypeInitializer TypeInitializer; \
     FORCE_INLINE static const ScriptingType& GetStaticType() { return TypeInitializer.GetType(); } \
-    FORCE_INLINE static MClass* GetStaticClass() { return TypeInitializer.GetType().ManagedClass; }
+    FORCE_INLINE static MClass* GetStaticClass() { return TypeInitializer.GetType().ManagedClass; } \
+    static_assert(true, "")
 
 /// <summary>
 /// Helper define used to declare required components for native types that have managed type (for objects that can be spawned).
@@ -398,7 +400,8 @@ struct ScriptingObjectSpawnParams
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(type); \
     static type* Spawn(const SpawnParams& params) { return ::New<type>(params); } \
     explicit type(const SpawnParams& params) : baseType(params) { } \
-    explicit type() : baseType(SpawnParams(Guid::New(), type::TypeInitializer)) { }
+    explicit type() : baseType(SpawnParams(Guid::New(), type::TypeInitializer)) { } \
+    static_assert(true, "")
 
 /// <summary>
 /// Helper define used to implement required components for native types that have managed type (for objects that can be spawned).
@@ -414,7 +417,7 @@ struct ScriptingObjectSpawnParams
 	    &baseType::TypeInitializer, \
 	    setupScriptVTable, \
 	    setupScriptObjectVTable \
-    );
+    )
 
 /// <summary>
 /// Helper define used to implement required components for native types that have managed type (for objects that can be spawned).
@@ -430,7 +433,7 @@ struct ScriptingObjectSpawnParams
 	    nullptr, \
 	    setupScriptVTable, \
 	    setupScriptObjectVTable \
-    );
+    )
 
 /// <summary>
 /// Helper define used to implement required components for native types that have managed type (for objects that cannot be spawned). With base class specified.
@@ -446,7 +449,7 @@ struct ScriptingObjectSpawnParams
 	    &baseType::TypeInitializer, \
 	    setupScriptVTable, \
 	    setupScriptObjectVTable \
-    );
+    )
 
 /// <summary>
 /// Helper define used to implement required components for native types that have managed type (for objects that cannot be spawned).
@@ -462,7 +465,7 @@ struct ScriptingObjectSpawnParams
 	    nullptr, \
 	    setupScriptVTable, \
 	    setupScriptObjectVTable \
-    );
+    )
 
 /// <summary>
 /// The core library assembly. Main C# library with core functionalities.

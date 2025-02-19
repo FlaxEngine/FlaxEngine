@@ -154,7 +154,8 @@ typedef Matrix Real4x4;
     inline constexpr T operator^(T a, T b) { return (T)((__underlying_type(T))a ^ (__underlying_type(T))b); } \
     inline T& operator|=(T& a, T b) { return a = (T)((__underlying_type(T))a | (__underlying_type(T))b); } \
     inline T& operator&=(T& a, T b) { return a = (T)((__underlying_type(T))a & (__underlying_type(T))b); } \
-    inline T& operator^=(T& a, T b) { return a = (T)((__underlying_type(T))a ^ (__underlying_type(T))b); }
+    inline T& operator^=(T& a, T b) { return a = (T)((__underlying_type(T))a ^ (__underlying_type(T))b); } \
+    static_assert(true, "")
 
 // Returns true if given enum value has one or more enum flags set
 template<typename T>
