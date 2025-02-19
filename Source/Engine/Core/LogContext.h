@@ -14,7 +14,7 @@ struct Guid;
 /// </summary>
 API_STRUCT(NoDefault) struct FLAXENGINE_API LogContextData
 {
-    DECLARE_SCRIPTING_TYPE_STRUCTURE(LogContextData)
+    DECLARE_SCRIPTING_TYPE_STRUCTURE(LogContextData);
 
     /// <summary>
     /// A GUID for an object which this context applies to.
@@ -40,7 +40,7 @@ struct TIsPODType<LogContextData>
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API LogContext
 {
-    DECLARE_SCRIPTING_TYPE_MINIMAL(LogContext)
+    DECLARE_SCRIPTING_TYPE_MINIMAL(LogContext);
 
     /// <summary>
     /// Adds a log context element to the stack to be displayed in warning and error logs.

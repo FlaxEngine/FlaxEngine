@@ -280,7 +280,7 @@ void CmdBufferManagerVulkan::WaitForCmdBuffer(CmdBufferVulkan* cmdBuffer, float 
 void CmdBufferManagerVulkan::PrepareForNewActiveCommandBuffer()
 {
     PROFILE_CPU();
-    ASSERT_LOW_LAYER(_activeCmdBuffer == nullptr)
+    ASSERT_LOW_LAYER(_activeCmdBuffer == nullptr);
     for (int32 i = 0; i < _pool._cmdBuffers.Count(); i++)
     {
         auto cmdBuffer = _pool._cmdBuffers.Get()[i];
