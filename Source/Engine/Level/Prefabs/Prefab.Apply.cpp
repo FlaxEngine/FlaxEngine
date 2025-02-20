@@ -78,6 +78,14 @@ namespace
         }
         return nullptr;
     }
+
+    String GetObjectName(SceneObject* obj)
+    {
+        String name = obj->GetSceneObjectId().ToString();
+        if (auto actor = ScriptingObject::Cast<Actor>(obj))
+            name += TEXT(":") + actor->GetName();
+        return name;
+    }
 };
 
 /// <summary>
@@ -176,10 +184,31 @@ public:
     /// <returns>True if failed, otherwise false.</returns>
     static bool SynchronizePrefabInstances(PrefabInstancesData& prefabInstancesData, Actor* defaultInstance, SceneObjectsListCacheType& sceneObjects, const Guid& prefabId, rapidjson_flax::StringBuffer& tmpBuffer, const Array<Guid>& oldObjectsIds, const Array<Guid>& newObjectIds);
 
-    static void DeletePrefabObject(SceneObject* obj)
+    static int32 DeletePrefabObject(SceneObject* obj, int32 index, SceneObjectsListCacheType& sceneObjects, bool removeDeleted)
     {
+        int32 removed = 1;
+        if (auto actor = ScriptingObject::Cast<Actor>(obj))
+        {
+            // Ensure to dereference scripts (will be removed with actor)
+            for (auto script : actor->Scripts)
+            {
+                const int32 scriptIndex = sceneObjects.Value->Find(script);
+                if (scriptIndex == -1)
+                    continue;
+                if (removeDeleted)
+                    sceneObjects.Value->RemoveAtKeepOrder(scriptIndex);
+                else
+                    sceneObjects->At(scriptIndex) = nullptr;
+                removed++;
+            }
+        }
         obj->SetParent(nullptr);
         obj->DeleteObject();
+        if (removeDeleted)
+            sceneObjects.Value->RemoveAtKeepOrder(index);
+        else
+            sceneObjects->At(index) = nullptr;
+        return removed;
     }
 };
 
@@ -308,11 +337,10 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                 if (modifier.Value->IdsMapping.ContainsKey(obj->GetPrefabObjectID()))
                 {
                     // Remove object
-                    LOG(Info, "Removing object {0} from instance {1} (prefab: {2})", obj->GetSceneObjectId(), instance.TargetActor->ToString(), prefabId);
-                    DeletePrefabObject(obj);
-                    sceneObjects.Value->RemoveAtKeepOrder(i);
-                    existingObjectsCount--;
-                    i--;
+                    LOG(Info, "Removing object {0} from instance {1} (prefab: {2})", GetObjectName(obj), instance.TargetActor->ToString(), prefabId);
+                    const int32 removed = DeletePrefabObject(obj, i, sceneObjects, true);
+                    existingObjectsCount -= removed;
+                    i -= removed;
                     continue;
                 }
 
@@ -360,11 +388,10 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                 else
                 {
                     // Remove object removed from the prefab
-                    LOG(Info, "Removing prefab instance object {0} from instance {1} (prefab object: {2}, prefab: {3})", obj->GetSceneObjectId(), instance.TargetActor->ToString(), obj->GetPrefabObjectID(), prefabId);
-                    DeletePrefabObject(obj);
-                    sceneObjects.Value->RemoveAtKeepOrder(i);
-                    deserializeSceneObjectIndex--;
-                    existingObjectsCount--;
+                    LOG(Info, "Removing prefab instance object {0} from instance {1} (prefab object: {2}, prefab: {3})", GetObjectName(obj), instance.TargetActor->ToString(), obj->GetPrefabObjectID(), prefabId);
+                    int32 removed = DeletePrefabObject(obj, i, sceneObjects, true);
+                    deserializeSceneObjectIndex -= removed;
+                    existingObjectsCount -= removed;
                 }
             }
         }
@@ -933,9 +960,8 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
             else
             {
                 // Remove object removed from the prefab
-                LOG(Info, "Removing object {0} from prefab default instance", obj->GetSceneObjectId());
-                PrefabInstanceData::DeletePrefabObject(obj);
-                sceneObjects->At(i) = nullptr;
+                LOG(Info, "Removing object {0} from prefab default instance", GetObjectName(obj));
+                PrefabInstanceData::DeletePrefabObject(obj, i, sceneObjects, false);
             }
         }
 
