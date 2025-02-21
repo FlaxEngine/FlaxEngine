@@ -95,6 +95,7 @@ namespace Flax.Build
 
             // Build all modules from target binary modules but in order of collecting (from independent to more dependant ones)
             var sourceFiles = new List<string>();
+            Dictionary<string, string> embeddedResources = new Dictionary<string, string>();
             using (new ProfileEventScope("BuildModules"))
             {
                 foreach (var module in buildData.ModulesOrderList)
@@ -105,6 +106,14 @@ namespace Flax.Build
 
                         // Get source files
                         sourceFiles.AddRange(moduleOptions.SourceFiles.Where(x => x.EndsWith(".cs")));
+                        
+                        // Get embedded resource files
+                        foreach (string resouceFilename in buildData.Modules[module].EmbeddedResources)
+                        {
+                            embeddedResources.Add(resouceFilename,
+                                resouceFilename.Replace(module.FolderPath + "\\", string.Empty, StringComparison.OrdinalIgnoreCase)
+                                    .Replace("\\", "."));
+                        }
 
                         // Merge module into target environment
                         buildData.TargetOptions.LinkEnv.InputFiles.AddRange(moduleOptions.OutputFiles);
@@ -128,7 +137,7 @@ namespace Flax.Build
                 sourceFiles.Sort();
 
                 // Build assembly
-                BuildDotNet(graph, buildData, targetBuildOptions, target.OutputName, sourceFiles, optimizeAssembly: buildData.TargetOptions.ScriptingAPI.Optimization);
+                BuildDotNet(graph, buildData, targetBuildOptions, target.OutputName, sourceFiles, embeddedResources, optimizeAssembly: buildData.TargetOptions.ScriptingAPI.Optimization);
             }
 
             // Deploy files
@@ -152,7 +161,7 @@ namespace Flax.Build
             }
         }
 
-        private static void BuildDotNet(TaskGraph graph, BuildData buildData, BuildOptions buildOptions, string name, List<string> sourceFiles, HashSet<string> fileReferences = null, IGrouping<string, Module> binaryModule = null, bool? optimizeAssembly = null)
+        private static void BuildDotNet(TaskGraph graph, BuildData buildData, BuildOptions buildOptions, string name, List<string> sourceFiles, Dictionary<string, string> resourceFiles, HashSet<string> fileReferences = null, IGrouping<string, Module> binaryModule = null, bool? optimizeAssembly = null)
         {
             // Setup build options
             var buildPlatform = Platform.BuildTargetPlatform;
@@ -292,6 +301,9 @@ namespace Flax.Build
             foreach (var sourceFile in sourceFiles)
                 args.Add("\"" + sourceFile + "\"");
 
+            foreach (var resourceFile in resourceFiles)
+                args.Add(" /res:\"" + resourceFile.Key + "\",\"" + resourceFile.Value + "\"");
+
 #if USE_NETCORE
             // Inject some assembly metadata (similar to msbuild in Visual Studio)
             var assemblyAttributesPath = Path.Combine(buildOptions.IntermediateFolder, name + ".AssemblyAttributes.cs");
@@ -354,6 +366,7 @@ namespace Flax.Build
         private static void BuildTargetBindings(TaskGraph graph, BuildData buildData)
         {
             var sourceFiles = new List<string>();
+            var embeddedResources = new Dictionary<string, string>();
             var fileReferences = new HashSet<string>();
             var buildOptions = buildData.TargetOptions;
             var outputPath = Path.GetDirectoryName(buildData.Target.GetOutputFilePath(buildOptions));
@@ -370,7 +383,17 @@ namespace Flax.Build
                     // Get source files
                     sourceFiles.Clear();
                     foreach (var module in binaryModule)
+                    {
                         sourceFiles.AddRange(buildData.Modules[module].SourceFiles.Where(x => x.EndsWith(".cs")));
+                        
+                        foreach (string resouceFilename in buildData.Modules[module].EmbeddedResources)
+                        {
+                            embeddedResources.Add(resouceFilename, 
+                                resouceFilename.Replace(module.FolderPath + "\\", string.Empty, StringComparison.OrdinalIgnoreCase)
+                                    .Replace("\\", "."));
+                        }
+                    }
+
                     sourceFiles.RemoveAll(x => x.EndsWith(BuildFilesPostfix));
                     var moduleGen = Path.Combine(project.ProjectFolderPath, "Source", binaryModuleName + ".Gen.cs");
                     if (!sourceFiles.Contains(moduleGen))
@@ -417,7 +440,7 @@ namespace Flax.Build
                     }
 
                     // Build assembly
-                    BuildDotNet(graph, buildData, buildOptions, binaryModuleName + ".CSharp", sourceFiles, fileReferences, binaryModule, optimizeAssembly);
+                    BuildDotNet(graph, buildData, buildOptions, binaryModuleName + ".CSharp", sourceFiles, embeddedResources, fileReferences, binaryModule, optimizeAssembly);
                 }
             }
         }
