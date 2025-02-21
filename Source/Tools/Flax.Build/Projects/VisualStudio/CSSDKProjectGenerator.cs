@@ -219,12 +219,6 @@ namespace Flax.Build.Projects.VisualStudio
                 foreach (var file in project.EmbeddedResources)
                 {
                     var projectPath = Utilities.MakePathRelativeTo(file, projectDirectory);
-                    csProjectFileContent.AppendLine(string.Format("    <None Remove=\"{0}\" />", projectPath));
-                }
-
-                foreach (var file in project.EmbeddedResources)
-                {
-                    var projectPath = Utilities.MakePathRelativeTo(file, projectDirectory);
                     csProjectFileContent.AppendLine(string.Format("    <EmbeddedResource Include=\"{0}\" />", projectPath));
                 }
             }
