@@ -139,10 +139,6 @@ public:
     static bool CheckSphere(void* scene, const Vector3& center, float radius, uint32 layerMask, bool hitTriggers);
     static bool CheckCapsule(void* scene, const Vector3& center, float radius, float height, const Quaternion& rotation, uint32 layerMask, bool hitTriggers);
     static bool CheckConvex(void* scene, const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Quaternion& rotation, uint32 layerMask, bool hitTriggers);
-    static bool OverlapBox(void* scene, const Vector3& center, const Vector3& halfExtents, Array<Collider*, HeapAllocation>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers);
-    static bool OverlapSphere(void* scene, const Vector3& center, float radius, Array<Collider*, HeapAllocation>& results, uint32 layerMask, bool hitTriggers);
-    static bool OverlapCapsule(void* scene, const Vector3& center, float radius, float height, Array<Collider*, HeapAllocation>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers);
-    static bool OverlapConvex(void* scene, const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<Collider*, HeapAllocation>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers);
     static bool OverlapBox(void* scene, const Vector3& center, const Vector3& halfExtents, Array<PhysicsColliderActor*, HeapAllocation>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers);
     static bool OverlapSphere(void* scene, const Vector3& center, float radius, Array<PhysicsColliderActor*, HeapAllocation>& results, uint32 layerMask, bool hitTriggers);
     static bool OverlapCapsule(void* scene, const Vector3& center, float radius, float height, Array<PhysicsColliderActor*, HeapAllocation>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers);

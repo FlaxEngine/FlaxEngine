@@ -536,15 +536,6 @@ protected:
 			hitInfo = hit.shape ? static_cast<PhysicsColliderActor*>(hit.shape->userData) : nullptr; \
 		}
 
-#define SCENE_QUERY_COLLECT_OVERLAP_COLLIDER() results.Clear();  \
-		results.Resize(buffer.getNbTouches(), false); \
-		for (int32 i = 0; i < results.Count(); i++) \
-		{ \
-			auto& hitInfo = results[i]; \
-			const auto& hit = buffer.getTouch(i); \
-			hitInfo = hit.shape ? static_cast<Collider*>(hit.shape->userData) : nullptr; \
-		}
-
 namespace
 {
     PxFoundation* Foundation = nullptr;
@@ -2264,51 +2255,6 @@ bool PhysicsBackend::CheckConvex(void* scene, const Vector3& center, const Colli
     const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
     const PxConvexMeshGeometry geometry((PxConvexMesh*)convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
     return scenePhysX->Scene->overlap(geometry, pose, buffer, filterData, &QueryFilter);
-}
-
-bool PhysicsBackend::OverlapBox(void* scene, const Vector3& center, const Vector3& halfExtents, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
-{
-    SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
-    const PxBoxGeometry geometry(C2P(halfExtents));
-    if (!scenePhysX->Scene->overlap(geometry, pose, buffer, filterData, &QueryFilter))
-        return false;
-    SCENE_QUERY_COLLECT_OVERLAP_COLLIDER();
-    return true;
-}
-
-bool PhysicsBackend::OverlapSphere(void* scene, const Vector3& center, const float radius, Array<Collider*>& results, uint32 layerMask, bool hitTriggers)
-{
-    SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center - scenePhysX->Origin));
-    const PxSphereGeometry geometry(radius);
-    if (!scenePhysX->Scene->overlap(geometry, pose, buffer, filterData, &QueryFilter))
-        return false;
-    SCENE_QUERY_COLLECT_OVERLAP_COLLIDER();
-    return true;
-}
-
-bool PhysicsBackend::OverlapCapsule(void* scene, const Vector3& center, const float radius, const float height, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
-{
-    SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
-    const PxCapsuleGeometry geometry(radius, height * 0.5f);
-    if (!scenePhysX->Scene->overlap(geometry, pose, buffer, filterData, &QueryFilter))
-        return false;
-    SCENE_QUERY_COLLECT_OVERLAP_COLLIDER();
-    return true;
-}
-
-bool PhysicsBackend::OverlapConvex(void* scene, const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
-{
-    CHECK_RETURN(convexMesh && convexMesh->GetOptions().Type == CollisionDataType::ConvexMesh, false)
-    SCENE_QUERY_SETUP_OVERLAP();
-    const PxTransform pose(C2P(center - scenePhysX->Origin), C2P(rotation));
-    const PxConvexMeshGeometry geometry((PxConvexMesh*)convexMesh->GetConvex(), PxMeshScale(C2P(scale)));
-    if (!scenePhysX->Scene->overlap(geometry, pose, buffer, filterData, &QueryFilter))
-        return false;
-    SCENE_QUERY_COLLECT_OVERLAP_COLLIDER();
-    return true;
 }
 
 bool PhysicsBackend::OverlapBox(void* scene, const Vector3& center, const Vector3& halfExtents, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
