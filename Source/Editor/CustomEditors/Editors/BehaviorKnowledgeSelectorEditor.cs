@@ -26,6 +26,8 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Initialize(LayoutElementsContainer layout)
         {
             _label = layout.ClickableLabel(Path).CustomControl;
+            _label.Margin = new Margin(0, 20.0f, 0, 0);
+            _label.ClipText = true;
             _label.RightClick += ShowPicker;
             var button = new Button
             {
