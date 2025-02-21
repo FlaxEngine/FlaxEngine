@@ -135,6 +135,8 @@ namespace FlaxEditor.Viewport.Cameras
                     float a = Mathf.Saturate(progress);
                     a = a * a * a;
                     var targetTransform = Transform.Lerp(_startMove, _endMove, a);
+                    if (progress >= 1.0f)
+                        targetTransform = _endMove; // Be precise
                     targetTransform.Scale = Vector3.Zero;
                     Viewport.ViewPosition = targetTransform.Translation;
                     Viewport.ViewOrientation = targetTransform.Orientation;

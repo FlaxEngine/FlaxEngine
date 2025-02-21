@@ -409,7 +409,7 @@ namespace Flax.Build
                                 var referencedBuild = buildData.FinReferenceBuildModule(dependencyModule.BinaryModuleName);
                                 if (referencedBuild != null && !string.IsNullOrEmpty(referencedBuild.ManagedPath))
                                 {
-                                    // Reference binary module build build for referenced target
+                                    // Reference binary module build for referenced target
                                     fileReferences.Add(referencedBuild.ManagedPath);
                                 }
                             }

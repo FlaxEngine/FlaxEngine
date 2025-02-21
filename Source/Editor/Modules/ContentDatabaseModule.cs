@@ -1140,6 +1140,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new CSharpEmptyStructProxy());
             Proxy.Add(new CSharpEmptyInterfaceProxy());
             Proxy.Add(new CSharpActorProxy());
+            Proxy.Add(new CSharpGamePluginProxy());
             Proxy.Add(new CppAssetProxy());
             Proxy.Add(new CppStaticClassProxy());
             Proxy.Add(new CppScriptProxy());

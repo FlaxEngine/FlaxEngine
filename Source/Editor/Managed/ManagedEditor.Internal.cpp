@@ -501,7 +501,8 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_CanSetToRoot(Prefab* prefab, Actor* ta
             return false;
         const ISerializable::DeserializeStream& newRootData = **newRootDataPtr;
         Guid prefabId, prefabObjectID;
-        if (JsonTools::GetGuidIfValid(prefabId, newRootData, "PrefabID") && JsonTools::GetGuidIfValid(prefabObjectID, newRootData, "PrefabObjectID"))
+        if (JsonTools::GetGuidIfValid(prefabId, newRootData, "PrefabID") && 
+            JsonTools::GetGuidIfValid(prefabObjectID, newRootData, "PrefabObjectID"))
         {
             const auto nestedPrefab = Content::Load<Prefab>(prefabId);
             if (nestedPrefab && nestedPrefab->GetRootObjectId() != prefabObjectID)
@@ -509,21 +510,6 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_CanSetToRoot(Prefab* prefab, Actor* ta
         }
     }
     return true;
-}
-
-DEFINE_INTERNAL_CALL(void) EditorInternal_GetPrefabNestedObject(Guid* prefabId, Guid* prefabObjectId, Guid* outPrefabId, Guid* outPrefabObjectId)
-{
-    *outPrefabId = Guid::Empty;
-    *outPrefabObjectId = Guid::Empty;
-    const auto prefab = Content::Load<Prefab>(*prefabId);
-    if (!prefab)
-        return;
-    const ISerializable::DeserializeStream** prefabObjectDataPtr = prefab->ObjectsDataCache.TryGet(*prefabObjectId);
-    if (!prefabObjectDataPtr)
-        return;
-    const ISerializable::DeserializeStream& prefabObjectData = **prefabObjectDataPtr;
-    JsonTools::GetGuidIfValid(*outPrefabId, prefabObjectData, "PrefabID");
-    JsonTools::GetGuidIfValid(*outPrefabObjectId, prefabObjectData, "PrefabObjectID");
 }
 
 DEFINE_INTERNAL_CALL(float) EditorInternal_GetAnimationTime(AnimatedModel* animatedModel)

@@ -229,13 +229,11 @@ namespace FlaxEditor.Viewport
             {
                 if (Mathf.Abs(_movementSpeed - _maxMovementSpeed) < Mathf.Epsilon || Mathf.Abs(_movementSpeed - _minMovementSpeed) < Mathf.Epsilon)
                     return "{0:0.##}";
-
                 if (_movementSpeed < 10.0f)
                     return "{0:0.00}";
-                else if (_movementSpeed < 100.0f)
+                if (_movementSpeed < 100.0f)
                     return "{0:0.0}";
-                else
-                    return "{0:#}";
+                return "{0:#}";
             }
         }
 
@@ -287,11 +285,6 @@ namespace FlaxEditor.Viewport
         public Float2 MousePositionDelta => _mouseDelta;
 
         /// <summary>
-        /// Camera's pitch angle clamp range (in degrees).
-        /// </summary>
-        public Float2 CamPitchAngles = new Float2(-88, 88);
-
-        /// <summary>
         /// Gets the view transform.
         /// </summary>
         public Transform ViewTransform
@@ -326,7 +319,7 @@ namespace FlaxEditor.Viewport
             get => Float3.Forward * ViewOrientation;
             set
             {
-                var right = Float3.Cross(value, Float3.Up);
+                var right = Mathf.Abs(Float3.Dot(value, Float3.Up)) < 1.0f - Mathf.Epsilon ? Float3.Cross(value, Float3.Up) : Float3.Forward;
                 var up = Float3.Cross(right, value);
                 ViewOrientation = Quaternion.LookRotation(value, up);
             }
@@ -376,7 +369,11 @@ namespace FlaxEditor.Viewport
         public float Pitch
         {
             get => _pitch;
-            set => _pitch = Mathf.Clamp(value, CamPitchAngles.X, CamPitchAngles.Y);
+            set
+            {
+                var pitchLimit = _isOrtho ? new Float2(-90, 90) : new Float2(-88, 88);
+                _pitch = Mathf.Clamp(value, pitchLimit.X, pitchLimit.Y);
+            }
         }
 
         /// <summary>
@@ -1155,8 +1152,7 @@ namespace FlaxEditor.Viewport
         /// <param name="orientation">The orientation.</param>
         protected void OrientViewport(Quaternion orientation)
         {
-            var quat = orientation;
-            OrientViewport(ref quat);
+            OrientViewport(ref orientation);
         }
 
         /// <summary>
@@ -1367,7 +1363,7 @@ namespace FlaxEditor.Viewport
         {
             var direction = ViewDirection;
             var target = position + direction;
-            var right = Float3.Normalize(Float3.Cross(Float3.Up, direction));
+            var right = Mathf.Abs(Float3.Dot(direction, Float3.Up)) < 1.0f - Mathf.Epsilon ? Float3.Normalize(Float3.Cross(Float3.Up, direction)) : Float3.Forward;
             var up = Float3.Normalize(Float3.Cross(direction, right));
             Matrix.LookAt(ref position, ref target, ref up, out result);
         }

@@ -89,11 +89,8 @@ float3 rand3dTo3d(float3 value)
     );
 }
 
-// Classic Perlin noise
-float PerlinNoise(float2 p)
+float PerlinNoiseImpl(float4 Pi, float4 Pf)
 {
-    float4 Pi = floor(p.xyxy) + float4(0.0, 0.0, 1.0, 1.0);
-    float4 Pf = frac(p.xyxy) - float4(0.0, 0.0, 1.0, 1.0);
     Pi = Mod289(Pi);
     float4 ix = Pi.xzxz;
     float4 iy = Pi.yyww;
@@ -126,7 +123,15 @@ float PerlinNoise(float2 p)
     float2 fade_xy = PerlinNoiseFade(Pf.xy);
     float2 n_x = lerp(float2(n00, n01), float2(n10, n11), fade_xy.x);
     float n_xy = lerp(n_x.x, n_x.y, fade_xy.y);
-    return saturate(2.3 * n_xy);
+    return saturate(n_xy * 2.136f + 0.5f); // Rescale to [0;1]
+}
+
+// Classic Perlin noise
+float PerlinNoise(float2 p)
+{
+    float4 Pi = floor(p.xyxy) + float4(0.0, 0.0, 1.0, 1.0);
+    float4 Pf = frac(p.xyxy) - float4(0.0, 0.0, 1.0, 1.0);
+    return PerlinNoiseImpl(Pi, Pf);
 }
 
 // Classic Perlin noise with periodic variant
@@ -135,39 +140,7 @@ float PerlinNoise(float2 p, float2 rep)
     float4 Pi = floor(p.xyxy) + float4(0.0, 0.0, 1.0, 1.0);
     float4 Pf = frac(p.xyxy) - float4(0.0, 0.0, 1.0, 1.0);
     Pi = fmod(Pi, rep.xyxy);
-    Pi = Mod289(Pi);
-    float4 ix = Pi.xzxz;
-    float4 iy = Pi.yyww;
-    float4 fx = Pf.xzxz;
-    float4 fy = Pf.yyww;
-
-    float4 i = Permute(Permute(ix) + iy);
-
-    float4 gx = frac(i * (1.0 / 41.0)) * 2.0 - 1.0;
-    float4 gy = abs(gx) - 0.5;
-    float4 tx = floor(gx + 0.5);
-    gx = gx - tx;
-
-    float2 g00 = float2(gx.x, gy.x);
-    float2 g10 = float2(gx.y, gy.y);
-    float2 g01 = float2(gx.z, gy.z);
-    float2 g11 = float2(gx.w, gy.w);
-
-    float4 norm = TaylorInvSqrt(float4(dot(g00, g00), dot(g01, g01), dot(g10, g10), dot(g11, g11)));
-    g00 *= norm.x;
-    g01 *= norm.y;
-    g10 *= norm.z;
-    g11 *= norm.w;
-
-    float n00 = dot(g00, float2(fx.x, fy.x));
-    float n10 = dot(g10, float2(fx.y, fy.y));
-    float n01 = dot(g01, float2(fx.z, fy.z));
-    float n11 = dot(g11, float2(fx.w, fy.w));
-
-    float2 fade_xy = PerlinNoiseFade(Pf.xy);
-    float2 n_x = lerp(float2(n00, n01), float2(n10, n11), fade_xy.x);
-    float n_xy = lerp(n_x.x, n_x.y, fade_xy.y);
-    return saturate(2.3 * n_xy);
+    return PerlinNoiseImpl(Pi, Pf);
 }
 
 // Simplex noise
@@ -209,7 +182,7 @@ float SimplexNoise(float2 p)
     float gx = a0.x * x0.x + h.x * x0.y;
     float2 gyz = a0.yz * x12.xz + h.yz * x12.yw;
     float3 g = float3(gx, gyz);
-    return saturate(130.0f * dot(m, g));
+    return saturate(dot(m, g) * 71.428f + 0.5f); // Rescale to [0;1]
 }
 
 // Worley noise (cellar noise with standard 3x3 search window for F1 and F2 values)

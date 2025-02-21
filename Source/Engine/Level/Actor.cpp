@@ -3,6 +3,7 @@
 #include "Actor.h"
 #include "ActorsCache.h"
 #include "Level.h"
+#include "SceneQuery.h"
 #include "SceneObjectsFactory.h"
 #include "Scene/Scene.h"
 #include "Prefabs/Prefab.h"
@@ -14,6 +15,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Core/Cache.h"
 #include "Engine/Core/Collections/CollectionPoolCache.h"
+#include "Engine/Core/Math/Double4x4.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderView.h"
@@ -416,10 +418,21 @@ Actor* Actor::GetChild(const StringView& name) const
 Actor* Actor::GetChild(const MClass* type) const
 {
     CHECK_RETURN(type, nullptr);
-    for (auto child : Children)
+    if (type->IsInterface())
     {
-        if (child->GetClass()->IsSubClassOf(type))
-            return child;
+        for (auto child : Children)
+        {
+            if (child->GetClass()->HasInterface(type))
+                return child;
+        }
+    }
+    else
+    {
+        for (auto child : Children)
+        {
+            if (child->GetClass()->IsSubClassOf(type))
+                return child;
+        }
     }
     return nullptr;
 }
@@ -427,9 +440,18 @@ Actor* Actor::GetChild(const MClass* type) const
 Array<Actor*> Actor::GetChildren(const MClass* type) const
 {
     Array<Actor*> result;
-    for (auto child : Children)
-        if (child->GetClass()->IsSubClassOf(type))
-            result.Add(child);
+    if (type->IsInterface())
+    {
+        for (auto child : Children)
+            if (child->GetClass()->HasInterface(type))
+                result.Add(child);
+    }
+    else
+    {
+        for (auto child : Children)
+            if (child->GetClass()->IsSubClassOf(type))
+                result.Add(child);
+    }
     return result;
 }
 
@@ -778,6 +800,27 @@ void Actor::GetLocalToWorldMatrix(Matrix& localToWorld) const
     if (_parent)
     {
         Matrix parentToWorld;
+        _parent->GetLocalToWorldMatrix(parentToWorld);
+        localToWorld = localToWorld * parentToWorld;
+    }
+#endif
+}
+
+void Actor::GetWorldToLocalMatrix(Double4x4& worldToLocal) const
+{
+    GetLocalToWorldMatrix(worldToLocal);
+    worldToLocal.Invert();
+}
+
+void Actor::GetLocalToWorldMatrix(Double4x4& localToWorld) const
+{
+#if 0
+    _transform.GetWorld(localToWorld);
+#else
+    _localTransform.GetWorld(localToWorld);
+    if (_parent)
+    {
+        Double4x4 parentToWorld;
         _parent->GetLocalToWorldMatrix(parentToWorld);
         localToWorld = localToWorld * parentToWorld;
     }
@@ -1418,7 +1461,7 @@ Actor* Actor::FindActor(const MClass* type, bool activeOnly) const
     CHECK_RETURN(type, nullptr);
     if (activeOnly && !_isActive)
         return nullptr;
-    if (GetClass()->IsSubClassOf(type))
+    if ((GetClass()->IsSubClassOf(type) || GetClass()->HasInterface(type)))
         return const_cast<Actor*>(this);
     for (auto child : Children)
     {
@@ -1432,7 +1475,7 @@ Actor* Actor::FindActor(const MClass* type, bool activeOnly) const
 Actor* Actor::FindActor(const MClass* type, const StringView& name) const
 {
     CHECK_RETURN(type, nullptr);
-    if (GetClass()->IsSubClassOf(type) && _name == name)
+    if ((GetClass()->IsSubClassOf(type) || GetClass()->HasInterface(type)) && _name == name)
         return const_cast<Actor*>(this);
     for (auto child : Children)
     {
@@ -1448,7 +1491,7 @@ Actor* Actor::FindActor(const MClass* type, const Tag& tag, bool activeOnly) con
     CHECK_RETURN(type, nullptr);
     if (activeOnly && !_isActive)
         return nullptr;
-    if (GetClass()->IsSubClassOf(type) && HasTag(tag))
+    if ((GetClass()->IsSubClassOf(type) || GetClass()->HasInterface(type)) && HasTag(tag))
         return const_cast<Actor*>(this);
     for (auto child : Children)
     {
@@ -1462,10 +1505,21 @@ Actor* Actor::FindActor(const MClass* type, const Tag& tag, bool activeOnly) con
 Script* Actor::FindScript(const MClass* type) const
 {
     CHECK_RETURN(type, nullptr);
-    for (auto script : Scripts)
+    if (type->IsInterface())
     {
-        if (script->GetClass()->IsSubClassOf(type) || script->GetClass()->HasInterface(type))
-            return script;
+        for (const auto script : Scripts)
+        {
+            if (script->GetClass()->HasInterface(type))
+                return script;
+        }
+    }
+    else
+    {
+        for (const auto script : Scripts)
+        {
+            if (script->GetClass()->IsSubClassOf(type))
+                return script;
+        }
     }
     for (auto child : Children)
     {
@@ -1880,8 +1934,7 @@ String Actor::ToJson()
     CompactJsonWriter writer(buffer);
     writer.SceneObject(this);
     String result;
-    const char* c = buffer.GetString();
-    result.SetUTF8(c, (int32)buffer.GetSize());
+    result.SetUTF8(buffer.GetString(), (int32)buffer.GetSize());
     return result;
 }
 
@@ -1907,6 +1960,41 @@ void Actor::FromJson(const StringAnsiView& json)
     Deserialize(document, &*modifier);
     Scripting::ObjectsLookupIdMapping.Set(nullptr);
     OnTransformChanged();
+}
+
+Actor* Actor::Clone()
+{
+    // Collect actors to clone
+    auto actors = ActorsCache::ActorsListCache.Get();
+    actors->Add(this);
+    SceneQuery::GetAllActors(this, *actors);
+
+    // Serialize objects
+    MemoryWriteStream stream;
+    if (ToBytes(*actors, stream))
+        return nullptr;
+
+    // Remap object ids into a new ones
+    auto modifier = Cache::ISerializeModifier.Get();
+    for (int32 i = 0; i < actors->Count(); i++)
+    {
+        auto actor = actors->At(i);
+        if (!actor)
+            continue;
+        modifier->IdsMapping.Add(actor->GetID(), Guid::New());
+        for (int32 j = 0; j < actor->Scripts.Count(); j++)
+        {
+            const auto script = actor->Scripts[j];
+            if (script)
+                modifier->IdsMapping.Add(script->GetID(), Guid::New());
+        }
+    }
+
+    // Deserialize objects
+    Array<Actor*> output;
+    if (FromBytes(ToSpan(stream.GetHandle(), (int32)stream.GetPosition()), output, modifier.Value) || output.IsEmpty())
+        return nullptr;
+    return output[0];
 }
 
 void Actor::SetPhysicsScene(PhysicsScene* scene)

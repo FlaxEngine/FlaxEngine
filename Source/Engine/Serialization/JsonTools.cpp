@@ -41,7 +41,7 @@ void ChangeIds(rapidjson_flax::Value& obj, rapidjson_flax::Document& document, c
                 '0','0','0','0','0','0','0','0','0','0',
                 '0','0','0','0','0','0','0','0','0','0',
                 '0','0'
-                // @formatter:on
+            // @formatter:on
             };
             static const char* digits = "0123456789abcdef";
             uint32 n = value.A;

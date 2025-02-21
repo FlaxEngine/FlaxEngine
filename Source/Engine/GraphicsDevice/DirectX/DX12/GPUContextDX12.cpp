@@ -926,9 +926,13 @@ void GPUContextDX12::BindCB(int32 slot, GPUConstantBuffer* cb)
 
 void GPUContextDX12::BindSR(int32 slot, GPUResourceView* view)
 {
+#if !BUILD_RELEASE
     ASSERT(slot >= 0 && slot < GPU_MAX_SR_BINDED);
+    if (view && ((IShaderResourceDX12*)view->GetNativePtr())->SRV().ptr == 0)
+        LogInvalidResourceUsage(slot, view, InvalidBindPoint::SRV);
+#endif
     auto handle = view ? (IShaderResourceDX12*)view->GetNativePtr() : nullptr;
-    if (_srHandles[slot] != handle || !handle)
+    if (_srHandles[slot] != handle)
     {
         _srMaskDirtyGraphics |= 1 << slot;
         _srMaskDirtyCompute |= 1 << slot;
@@ -940,7 +944,11 @@ void GPUContextDX12::BindSR(int32 slot, GPUResourceView* view)
 
 void GPUContextDX12::BindUA(int32 slot, GPUResourceView* view)
 {
+#if !BUILD_RELEASE
     ASSERT(slot >= 0 && slot < GPU_MAX_UA_BINDED);
+    if (view && ((IShaderResourceDX12*)view->GetNativePtr())->UAV().ptr == 0)
+        LogInvalidResourceUsage(slot, view, InvalidBindPoint::UAV);
+#endif
     _uaHandles[slot] = view ? (IShaderResourceDX12*)view->GetNativePtr() : nullptr;
     if (view)
         *view->LastRenderTime = _lastRenderTime;

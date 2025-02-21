@@ -282,6 +282,17 @@ namespace Flax.Build
 
             var dotnetSdkVersion = GetVersion(dotnetSdkVersions);
             var dotnetRuntimeVersion = GetVersion(dotnetRuntimeVersions);
+            if (!string.IsNullOrEmpty(dotnetRuntimeVersion) && ParseVersion(dotnetRuntimeVersion).Major > ParseVersion(dotnetSdkVersion).Major)
+            {
+                // Make sure the reference assemblies are not newer than the SDK itself
+                var dotnetRuntimeVersionsRemaining = dotnetRuntimeVersions;
+                do
+                {
+                    dotnetRuntimeVersionsRemaining = dotnetRuntimeVersionsRemaining.Skip(1);
+                    dotnetRuntimeVersion = GetVersion(dotnetRuntimeVersionsRemaining);
+                } while (!string.IsNullOrEmpty(dotnetRuntimeVersion) && ParseVersion(dotnetRuntimeVersion).Major > ParseVersion(dotnetSdkVersion).Major);
+            }
+            
             var minVer = string.IsNullOrEmpty(Configuration.Dotnet) ? MinimumVersion.ToString() : Configuration.Dotnet;
             if (string.IsNullOrEmpty(dotnetSdkVersion))
             {

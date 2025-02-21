@@ -86,20 +86,14 @@ public:
     }
 
     /// <summary>
-    /// Checks if buffer is a staging buffer (supports CPU readback).
+    /// Checks if buffer is a staging buffer (supports CPU access).
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool IsStaging() const
-    {
-        return _desc.Usage == GPUResourceUsage::StagingReadback || _desc.Usage == GPUResourceUsage::StagingUpload;
-    }
+    API_PROPERTY() bool IsStaging() const;
 
     /// <summary>
-    /// Checks if buffer is a staging buffer (supports CPU readback).
+    /// Checks if buffer is a dynamic buffer.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool IsDynamic() const
-    {
-        return _desc.Usage == GPUResourceUsage::Dynamic;
-    }
+    API_PROPERTY() bool IsDynamic() const;
 
     /// <summary>
     /// Gets a value indicating whether this buffer is a shader resource.
@@ -173,7 +167,7 @@ public:
     Task* DownloadDataAsync(BytesContainer& result);
 
     /// <summary>
-    /// Gets the buffer data via map/memcpy/unmap sequence. Always supported for dynamic and staging readback buffers (other types support depends on graphics backend implementation).
+    /// Gets the buffer data via map/memcpy/unmap sequence. Always supported for dynamic and staging buffers (other types support depends on graphics backend implementation).
     /// </summary>
     /// <param name="output">The output data container.</param>
     /// <returns>True if failed, otherwise false.</returns>

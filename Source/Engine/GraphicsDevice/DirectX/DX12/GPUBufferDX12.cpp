@@ -120,6 +120,7 @@ bool GPUBufferDX12::OnInit()
     switch (_desc.Usage)
     {
     case GPUResourceUsage::StagingUpload:
+    case GPUResourceUsage::Staging:
         heapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
         break;
     case GPUResourceUsage::StagingReadback:
@@ -152,7 +153,7 @@ bool GPUBufferDX12::OnInit()
         // But if we are doing it during update or from the other thread we have to register resource data upload job.
         // In both cases options.InitData data have to exist for a few next frames.
 
-        if (_desc.Usage == GPUResourceUsage::StagingUpload)
+        if (_desc.Usage == GPUResourceUsage::StagingUpload || _desc.Usage == GPUResourceUsage::Staging)
         {
             // Modify staging resource data now
             SetData(_desc.InitData, _desc.Size);
@@ -188,7 +189,7 @@ bool GPUBufferDX12::OnInit()
     }
 
     // Create views
-    _view.Init(_device, this);
+    _view.Init(_device, this, this);
     if (useSRV)
     {
         D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;

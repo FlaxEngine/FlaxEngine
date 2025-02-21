@@ -46,10 +46,12 @@ public:
     /// </summary>
     /// <param name="device">The graphics device.</param>
     /// <param name="owner">The resource owner.</param>
-    void Init(GPUDeviceDX12* device, ResourceOwnerDX12* owner)
+    /// <param name="parent">The parent resource.</param>
+    void Init(GPUDeviceDX12* device, ResourceOwnerDX12* owner, GPUResource* parent)
     {
         _device = device;
         _owner = owner;
+        _parent = parent;
     }
 
     /// <summary>

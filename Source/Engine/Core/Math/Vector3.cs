@@ -2011,7 +2011,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Vector3" /> to <see cref="Float3" />.
+        /// Performs an implicit conversion from <see cref="Vector3" /> to <see cref="Float3" />.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
@@ -2021,13 +2021,23 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Vector3" /> to <see cref="Double3" />.
+        /// Performs an implicit conversion from <see cref="Vector3" /> to <see cref="Double3" />.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
         public static implicit operator Double3(Vector3 value)
         {
             return new Double3(value.X, value.Y, value.Z);
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Vector3" /> to <see cref="Int3" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static explicit operator Int3(Vector3 value)
+        {
+            return new Int3((int)value.X, (int)value.Y, (int)value.Z);
         }
 
         /// <summary>

@@ -5,7 +5,7 @@ namespace FlaxEditor.Utilities;
 /// <summary>
 /// Units display utilities for Editor.
 /// </summary>
-public class Units
+public static class Units
 {
     /// <summary>
     /// Factor of units per meter.

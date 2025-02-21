@@ -13,6 +13,7 @@ void GPUBufferViewVulkan::Init(GPUDeviceVulkan* device, GPUBufferVulkan* owner, 
 {
     ASSERT(View == VK_NULL_HANDLE);
 
+    _parent = owner;
     Device = device;
     Owner = owner;
     Buffer = buffer;
@@ -127,6 +128,9 @@ bool GPUBufferVulkan::OnInit()
         break;
     case GPUResourceUsage::StagingReadback:
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_TO_CPU;
+        break;
+    case GPUResourceUsage::Staging:
+        allocInfo.usage = VMA_MEMORY_USAGE_CPU_COPY;
         break;
     default:
         allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;

@@ -859,6 +859,14 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override bool ContainsPoint(ref Float2 location, bool precise = false)
+        {
+            if (precise && this.GetType() == typeof(ContainerControl) && BackgroundColor.A <= 0.0f) // Go through transparency
+                return false;
+            return base.ContainsPoint(ref location, precise);
+        }
+
+        /// <inheritdoc />
         public override void PerformLayout(bool force = false)
         {
             if (_isLayoutLocked && !force)

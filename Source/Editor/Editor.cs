@@ -1686,9 +1686,6 @@ namespace FlaxEditor
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CanSetToRoot(IntPtr prefab, IntPtr newRoot);
 
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetPrefabNestedObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        internal static partial void Internal_GetPrefabNestedObject(IntPtr prefabId, IntPtr prefabObjectId, IntPtr outPrefabId, IntPtr outPrefabObjectId);
-
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetAnimationTime", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         internal static partial float Internal_GetAnimationTime(IntPtr animatedModel);
 

@@ -27,6 +27,7 @@ class AnimationsSystem : public TaskGraphSystem
 {
 public:
     float DeltaTime, UnscaledDeltaTime, Time, UnscaledTime;
+    bool Active;
 
     void Job(int32 index);
     void Execute(TaskGraph* graph) override;
@@ -51,6 +52,7 @@ namespace
 
 AnimationsService AnimationManagerInstance;
 TaskGraphSystem* Animations::System = nullptr;
+ConcurrentSystemLocker Animations::SystemLocker;
 #if USE_EDITOR
 Delegate<Animations::DebugFlowInfo> Animations::DebugFlow;
 #endif
@@ -116,6 +118,10 @@ void AnimationsSystem::Execute(TaskGraph* graph)
 {
     if (AnimationManagerInstance.UpdateList.Count() == 0)
         return;
+    Active = true;
+
+    // Ensure no animation assets can be reloaded/modified during async update
+    Animations::SystemLocker.Begin(false);
 
     // Setup data for async update
     const auto& tickData = Time::Update;
@@ -138,6 +144,8 @@ void AnimationsSystem::Execute(TaskGraph* graph)
 
 void AnimationsSystem::PostExecute(TaskGraph* graph)
 {
+    if (!Active)
+        return;
     PROFILE_CPU_NAMED("Animations.PostExecute");
 
     // Update gameplay
@@ -153,6 +161,8 @@ void AnimationsSystem::PostExecute(TaskGraph* graph)
 
     // Cleanup
     AnimationManagerInstance.UpdateList.Clear();
+    Animations::SystemLocker.End(false);
+    Active = false;
 }
 
 void Animations::AddToUpdate(AnimatedModel* obj)

@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -23,7 +24,7 @@ namespace FlaxEngine.Json
         : base(sb, formatProvider)
         {
             Encoding = encoding;
-        }    
+        }
     }
 
     partial class JsonSerializer
@@ -174,7 +175,7 @@ namespace FlaxEngine.Json
 
         internal static JsonSerializerSettings CreateDefaultSettings(bool isManagedOnly)
         {
-            //Newtonsoft.Json.Utilities.MiscellaneousUtils.ValueEquals = ValueEquals;
+            Newtonsoft.Json.Utilities.MiscellaneousUtils.ValueEquals = ValueEquals;
             if (SerializationBinder is null)
                 SerializationBinder = new();
             var settings = new JsonSerializerSettings
@@ -234,8 +235,66 @@ namespace FlaxEngine.Json
         /// <returns>True if both objects are equal, otherwise false.</returns>
         public static bool ValueEquals(object objA, object objB)
         {
+#if false
             // Use default value comparision used by C# json serialization library
             return Newtonsoft.Json.Utilities.MiscellaneousUtils.ValueEquals(objA, objB);
+#else
+            // Based on Newtonsoft.Json MiscellaneousUtils.ValueEquals but with customization for prefab object references diff
+            if (objA == objB)
+                return true;
+            if (objA == null || objB == null)
+                return false;
+            
+            // Special case when saving reference to prefab object and the objects are different but the point to the same prefab object
+            // In that case, skip saving reference as it's defined in prefab (will be populated via IdsMapping during deserialization)
+            if (objA is SceneObject sceneA && objB is SceneObject sceneB && sceneA.HasPrefabLink && sceneB.HasPrefabLink)
+                return sceneA.PrefabObjectID == sceneB.PrefabObjectID;
+
+            // Comparing an Int32 and Int64 both of the same value returns false, make types the same then compare
+            if (objA.GetType() != objB.GetType())
+            {
+                bool IsInteger(object value)
+                {
+                    var type = value.GetType();
+                    return type == typeof(SByte) ||
+                           type == typeof(Byte) ||
+                           type == typeof(Int16) ||
+                           type == typeof(UInt16) ||
+                           type == typeof(Int32) ||
+                           type == typeof(UInt32) ||
+                           type == typeof(Int64) ||
+                           type == typeof(SByte) ||
+                           type == typeof(UInt64);
+                }
+                if (IsInteger(objA) && IsInteger(objB))
+                    return Convert.ToDecimal(objA, CultureInfo.CurrentCulture).Equals(Convert.ToDecimal(objB, CultureInfo.CurrentCulture));
+                if ((objA is double || objA is float || objA is decimal) && (objB is double || objB is float || objB is decimal))
+                    return Mathd.NearEqual(Convert.ToDouble(objA, CultureInfo.CurrentCulture), Convert.ToDouble(objB, CultureInfo.CurrentCulture));
+                return false;
+            }
+
+            // Diff on collections
+            if (objA is IList aList && objB is IList bList)
+            {
+                if (aList.Count != bList.Count)
+                    return false;
+            }
+            if (objA is IEnumerable aEnumerable && objB is IEnumerable bEnumerable)
+            {
+                var aEnumerator = aEnumerable.GetEnumerator();
+                var bEnumerator = bEnumerable.GetEnumerator();
+                using var aEnumerator1 = aEnumerator as IDisposable;
+                using var bEnumerator1 = bEnumerator as IDisposable;
+                while (aEnumerator.MoveNext())
+                {
+                    if (!bEnumerator.MoveNext() || !ValueEquals(aEnumerator.Current, bEnumerator.Current))
+                        return false;
+                }
+                return !bEnumerator.MoveNext();
+            }
+
+            return objA.Equals(objB);
+#endif
         }
 
         /// <summary>

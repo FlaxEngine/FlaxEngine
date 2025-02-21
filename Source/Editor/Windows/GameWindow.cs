@@ -23,6 +23,8 @@ namespace FlaxEditor.Windows
         private readonly GameRoot _guiRoot;
         private bool _showGUI = true;
         private bool _showDebugDraw = false;
+        private bool _audioMuted = false;
+        private float _audioVolume = 1;
         private bool _isMaximized = false, _isUnlockingMouse = false;
         private bool _isFloating = false, _isBorderless = false;
         private bool _cursorVisible = true;
@@ -89,6 +91,35 @@ namespace FlaxEditor.Windows
         {
             get => _showDebugDraw;
             set => _showDebugDraw = value;
+        }
+
+
+        /// <summary>
+        /// Gets or set a value indicating whether Audio is muted.
+        /// </summary>
+        public bool AudioMuted
+        {
+            get => _audioMuted;
+            set
+            {
+                Audio.MasterVolume = value ? 0 : AudioVolume;
+                _audioMuted = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value that set the audio volume.
+        /// </summary>
+        public float AudioVolume
+        {
+            get => _audioVolume;
+            set
+            {
+                if (!AudioMuted)
+                    Audio.MasterVolume = value;
+
+                _audioVolume = value;
+            }
         }
 
         /// <summary>
@@ -644,6 +675,24 @@ namespace FlaxEditor.Windows
                 button.CloseMenuOnClick = false;
                 var checkbox = new CheckBox(140, 2, ShowDebugDraw) { Parent = button };
                 checkbox.StateChanged += x => ShowDebugDraw = x.Checked;
+            }
+
+            menu.AddSeparator();
+
+            // Mute Audio
+            {
+                var button = menu.AddButton("Mute Audio");
+                button.CloseMenuOnClick = false;
+                var checkbox = new CheckBox(140, 2, AudioMuted) { Parent = button };
+                checkbox.StateChanged += x => AudioMuted = x.Checked;
+            }
+
+            // Audio Volume
+            {
+                var button = menu.AddButton("Audio Volume");
+                button.CloseMenuOnClick = false;
+                var slider = new FloatValueBox(AudioVolume, 140, 2, 50, 0, 1) { Parent = button };
+                slider.ValueChanged += () => AudioVolume = slider.Value;
             }
 
             menu.MinimumWidth = 200;

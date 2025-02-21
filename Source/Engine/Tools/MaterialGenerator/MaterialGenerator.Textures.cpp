@@ -697,10 +697,11 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         auto result = writeLocal(Value::InitForZero(ValueType::Float4), node);
         const String triplanarTexture = String::Format(TEXT(
             "	{{\n"
-            "   float3 worldPos = input.WorldPosition.xyz * ({1} * 0.001f);\n"
+            "   float tiling = {1} * 0.001f;\n"
+            "   float3 worldPos = (input.WorldPosition.xyz + GetLargeWorldsTileOffset(1.0f / tiling)) * tiling;\n"
             "   float3 normal = abs(input.TBN[2]);\n"
             "   normal = pow(normal, {2});\n"
-            "   normal = normal / (normal.x + normal.y + normal.z);\n"
+            "   normal = normalize(normal);\n"
             "   {3} += {0}.{4}(SamplerLinearWrap, worldPos.yz{5}) * normal.x;\n"
             "   {3} += {0}.{4}(SamplerLinearWrap, worldPos.xz{5}) * normal.y;\n"
             "   {3} += {0}.{4}(SamplerLinearWrap, worldPos.xy{5}) * normal.z;\n"

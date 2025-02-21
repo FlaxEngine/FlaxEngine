@@ -1,12 +1,13 @@
 name: Continuous Deployment
 on:
   schedule:
-    - cron: '15 4 * * *'
+    - cron: '15 6 * * *'
   workflow_dispatch:
 
 env:
   DOTNET_NOLOGO: true
   DOTNET_CLI_TELEMETRY_OPTOUT: false
+  GIT_LFS_PULL_OPTIONS: '-c lfs.concurrenttransfers=1 -c lfs.transfer.maxretries=2 -c http.version="HTTP/1.1" -c lfs.activitytimeout=60'
 
 jobs:
 
@@ -20,7 +21,7 @@ jobs:
     - name: Checkout LFS
       run: |
         git lfs version
-        git lfs pull
+        git ${{ env.GIT_LFS_PULL_OPTIONS }} lfs pull
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
@@ -35,12 +36,12 @@ jobs:
       run: |
         .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Windows-Editor
         path: Output/Editor.zip
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Windows-EditorDebugSymbols
         path: Output/EditorDebugSymbols.zip
@@ -53,7 +54,7 @@ jobs:
     - name: Checkout LFS
       run: |
         git lfs version
-        git lfs pull
+        git ${{ env.GIT_LFS_PULL_OPTIONS }} lfs pull
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
@@ -68,7 +69,7 @@ jobs:
       run: |
         .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Windows-Game
         path: Output/Windows.zip
@@ -83,7 +84,7 @@ jobs:
     - name: Checkout LFS
       run: |
         git lfs version
-        git lfs pull
+        git ${{ env.GIT_LFS_PULL_OPTIONS }} lfs pull
     - name: Install dependencies
       run: |
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
@@ -101,7 +102,7 @@ jobs:
       run: |
         ./PackageEditor.sh -arch=x64 -platform=Linux -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Linux-Editor
         path: Output/FlaxEditorLinux.zip
@@ -114,7 +115,7 @@ jobs:
     - name: Checkout LFS
       run: |
         git lfs version
-        git lfs pull
+        git ${{ env.GIT_LFS_PULL_OPTIONS }} lfs pull
     - name: Install dependencies
       run: |
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
@@ -132,7 +133,7 @@ jobs:
       run: |
         ./PackagePlatforms.sh -arch=x64 -platform=Linux -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Linux-Game
         path: Output/Linux.zip
@@ -147,7 +148,7 @@ jobs:
     - name: Checkout LFS
       run: |
         git lfs version
-        git lfs pull
+        git ${{ env.GIT_LFS_PULL_OPTIONS }} lfs pull
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
@@ -162,7 +163,7 @@ jobs:
       run: |
         ./PackageEditor.command -arch=ARM64 -platform=Mac -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Mac-Editor
         path: Output/FlaxEditorMac.zip
@@ -175,7 +176,7 @@ jobs:
     - name: Checkout LFS
       run: |
         git lfs version
-        git lfs pull
+        git ${{ env.GIT_LFS_PULL_OPTIONS }} lfs pull
     - name: Setup Vulkan
       uses: ./.github/actions/vulkan
     - name: Setup .NET
@@ -190,7 +191,7 @@ jobs:
       run: |
         ./PackagePlatforms.command -arch=ARM64 -platform=Mac -deployOutput=Output
     - name: Upload
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Mac-Game
         path: Output/Mac.zip

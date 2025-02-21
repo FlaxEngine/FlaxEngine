@@ -632,6 +632,20 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
             ), position.Value, param.ShaderName, wsPos);
         break;
     }
+    // Rotate position shape
+    case 216:
+    {
+        auto positionAttr = AccessParticleAttribute(node, nodeGpu->Attributes[0], AccessMode::Write);
+        const Value quaternion = GetValue(node->GetBox(0), 2).Cast(VariantType::Quaternion);
+        _writer.Write(
+            TEXT(
+                "   {{\n"
+                "       // Rotate position shape\n"
+                "       {0} = QuatRotateVector({1}, {0});\n"
+                "   }}\n"
+                ), positionAttr.Value, quaternion.Value);
+        break;
+    }
 
     // Helper macros for collision modules to share the code
 #define COLLISION_BEGIN() \

@@ -741,6 +741,11 @@ void DebugDraw::SetContext(void* context)
 
 #endif
 
+Vector3 DebugDraw::GetViewPos()
+{
+    return Context->LastViewPos;
+}
+
 void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTextureView* depthBuffer, bool enableDepthTest)
 {
     PROFILE_GPU_CPU("Debug Draw");
@@ -2064,16 +2069,23 @@ void DebugDraw::DrawWireArc(const Vector3& position, const Quaternion& orientati
         prevPos = Float3(Math::Cos(TWO_PI - angleStep) * radius, Math::Sin(TWO_PI - angleStep) * radius, 0);
         Float3::Transform(prevPos, world, prevPos);
     }
+    const Color32 color32(color);
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+#define ADD_LINE(a, b) if (duration > 0) debugDrawData.DefaultLines.Add({ a, b, color32, duration }); else { debugDrawData.OneFrameLines.Add({ a, color32 }); debugDrawData.OneFrameLines.Add({ b, color32 }); }
     for (int32 i = 0; i <= resolution; i++)
     {
         Float3 pos(Math::Cos(currentAngle) * radius, Math::Sin(currentAngle) * radius, 0);
         Float3::Transform(pos, world, pos);
-        DrawLine(prevPos, pos, color, duration, depthTest);
+        ADD_LINE(prevPos, pos);
         currentAngle += angleStep;
         prevPos = pos;
     }
     if (angle < TWO_PI)
-        DrawLine(prevPos, world.GetTranslation(), color, duration, depthTest);
+    {
+        Float3 pos(world.GetTranslation());
+        ADD_LINE(prevPos, pos);
+    }
+#undef ADD_LINE
 }
 
 void DebugDraw::DrawWireArrow(const Vector3& position, const Quaternion& orientation, float scale, float capScale, const Color& color, float duration, bool depthTest)

@@ -146,7 +146,7 @@ DEFINE_DEFAULT_FORMATTING_VIA_TO_STRING(VariantType);
 API_STRUCT(InBuild) struct FLAXENGINE_API Variant
 {
     /// <summary>
-    /// Thee value type.
+    /// The value type.
     /// </summary>
     VariantType Type;
 

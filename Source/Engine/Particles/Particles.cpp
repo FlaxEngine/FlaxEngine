@@ -111,6 +111,7 @@ namespace ParticleManagerImpl
 using namespace ParticleManagerImpl;
 
 TaskGraphSystem* Particles::System = nullptr;
+ConcurrentSystemLocker Particles::SystemLocker;
 bool Particles::EnableParticleBufferPooling = true;
 float Particles::ParticleBufferRecycleTimeout = 10.0f;
 
@@ -139,6 +140,8 @@ class ParticlesSystem : public TaskGraphSystem
 {
 public:
     float DeltaTime, UnscaledDeltaTime, Time, UnscaledTime;
+    bool Active;
+
     void Job(int32 index);
     void Execute(TaskGraph* graph) override;
     void PostExecute(TaskGraph* graph) override;
@@ -1053,7 +1056,6 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
     ScopeLock lock(GpuUpdateListLocker);
     if (GpuUpdateList.IsEmpty())
         return;
-
     PROFILE_GPU("GPU Particles");
 
     for (ParticleEffect* effect : GpuUpdateList)
@@ -1093,6 +1095,7 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
 
 ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
 {
+    PROFILE_CPU();
     ParticleBuffer* result = nullptr;
     ASSERT(emitter && emitter->IsLoaded());
 
@@ -1102,7 +1105,7 @@ ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
         const auto entries = Pool.TryGet(emitter);
         if (entries)
         {
-            while (entries->HasItems())
+            while (entries->HasItems() && !result)
             {
                 // Reuse buffer
                 result = entries->Last().Buffer;
@@ -1113,11 +1116,6 @@ ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
                 {
                     Delete(result);
                     result = nullptr;
-                    if (entries->IsEmpty())
-                    {
-                        Pool.Remove(emitter);
-                        break;
-                    }
                 }
             }
         }
@@ -1146,6 +1144,7 @@ ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
 
 void Particles::RecycleParticleBuffer(ParticleBuffer* buffer)
 {
+    PROFILE_CPU();
     if (buffer->Emitter->EnablePooling && EnableParticleBufferPooling)
     {
         // Return to pool
@@ -1166,6 +1165,7 @@ void Particles::RecycleParticleBuffer(ParticleBuffer* buffer)
 
 void Particles::OnEmitterUnload(ParticleEmitter* emitter)
 {
+    PROFILE_CPU();
     PoolLocker.Lock();
     const auto entries = Pool.TryGet(emitter);
     if (entries)
@@ -1393,6 +1393,10 @@ void ParticlesSystem::Execute(TaskGraph* graph)
 {
     if (UpdateList.Count() == 0)
         return;
+    Active = true;
+
+    // Ensure no particle assets can be reloaded/modified during async update
+    Particles::SystemLocker.Begin(false);
 
     // Setup data for async update
     const auto& tickData = Time::Update;
@@ -1409,8 +1413,13 @@ void ParticlesSystem::Execute(TaskGraph* graph)
 
 void ParticlesSystem::PostExecute(TaskGraph* graph)
 {
+    if (!Active)
+        return;
     PROFILE_CPU_NAMED("Particles.PostExecute");
 
+    // Cleanup
+    Particles::SystemLocker.End(false);
+    Active = false;
     UpdateList.Clear();
 
 #if COMPILE_WITH_GPU_PARTICLES

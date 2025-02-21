@@ -722,6 +722,12 @@ public:
     {
         CRASH;
     }
+
+#if !BUILD_RELEASE
+    // Utilities for incorrect resource usage.
+    virtual bool HasSRV() const { return false; }
+    virtual bool HasUAV() const { return false; }
+#endif
 };
 
 extern GPUDevice* CreateGPUDeviceVulkan();

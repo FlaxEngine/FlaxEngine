@@ -397,6 +397,7 @@ public:
     void Clear();
     GPUTextureDescription ToStagingUpload() const;
     GPUTextureDescription ToStagingReadback() const;
+    GPUTextureDescription ToStaging() const;
     bool Equals(const GPUTextureDescription& other) const;
     String ToString() const;
 

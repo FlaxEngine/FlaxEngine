@@ -730,6 +730,9 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     if (!options.FlipY &&
         !options.FlipX &&
         !options.InvertGreenChannel &&
+        !options.InvertRedChannel &&
+        !options.InvertAlphaChannel &&
+        !options.InvertBlueChannel &&
         !options.ReconstructZChannel &&
         options.Compress && 
         type == ImageType::DDS && 
@@ -824,22 +827,90 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
             [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
             {
-                static const DirectX::XMVECTORU32 s_selecty = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0 } } };
-
+                const DirectX::XMVECTORU32 s_selecty = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0 } } };
                 UNREFERENCED_PARAMETER(y);
-
                 for (size_t j = 0; j < w; ++j)
                 {
                     const DirectX::XMVECTOR value = inPixels[j];
-
                     const DirectX::XMVECTOR inverty = DirectX::XMVectorSubtract(DirectX::g_XMOne, value);
-
                     outPixels[j] = DirectX::XMVectorSelect(value, inverty, s_selecty);
                 }
             }, timage);
         if (FAILED(result))
         {
             errorMsg = String::Format(TEXT("Cannot invert green channel in texture, error: {0:x}"), static_cast<uint32>(result));
+            return true;
+        }
+        SET_CURRENT_IMG(timage);
+    }
+    
+    // Check if invert red channel
+    if (!keepAsIs && options.InvertRedChannel)
+    {
+        auto& timage = GET_TMP_IMG();
+        result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
+            [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
+            {
+                const DirectX::XMVECTORU32 s_selectx = { { { DirectX::XM_SELECT_1, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0 } } };
+                UNREFERENCED_PARAMETER(y);
+                for (size_t j = 0; j < w; ++j)
+                {
+                    const DirectX::XMVECTOR value = inPixels[j];
+                    const DirectX::XMVECTOR inverty = DirectX::XMVectorSubtract(DirectX::g_XMOne, value);
+                    outPixels[j] = DirectX::XMVectorSelect(value, inverty, s_selectx);
+                }
+            }, timage);
+        if (FAILED(result))
+        {
+            errorMsg = String::Format(TEXT("Cannot invert red channel in texture, error: {0:x}"), static_cast<uint32>(result));
+            return true;
+        }
+        SET_CURRENT_IMG(timage);
+    }
+
+    // Check if invert blue channel
+    if (!keepAsIs && options.InvertBlueChannel)
+    {
+        auto& timage = GET_TMP_IMG();
+        result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
+            [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
+            {
+                const DirectX::XMVECTORU32 s_selectz = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0 } } };
+                UNREFERENCED_PARAMETER(y);
+                for (size_t j = 0; j < w; ++j)
+                {
+                    const DirectX::XMVECTOR value = inPixels[j];
+                    const DirectX::XMVECTOR inverty = DirectX::XMVectorSubtract(DirectX::g_XMOne, value);
+                    outPixels[j] = DirectX::XMVectorSelect(value, inverty, s_selectz);
+                }
+            }, timage);
+        if (FAILED(result))
+        {
+            errorMsg = String::Format(TEXT("Cannot invert blue channel in texture, error: {0:x}"), static_cast<uint32>(result));
+            return true;
+        }
+        SET_CURRENT_IMG(timage);
+    }
+
+    // Check if invert alpha channel
+    if (!keepAsIs && options.InvertAlphaChannel)
+    {
+        auto& timage = GET_TMP_IMG();
+        result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
+            [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
+            {
+                const DirectX::XMVECTORU32 s_selectw = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_1 } } };
+                UNREFERENCED_PARAMETER(y);
+                for (size_t j = 0; j < w; ++j)
+                {
+                    const DirectX::XMVECTOR value = inPixels[j];
+                    const DirectX::XMVECTOR inverty = DirectX::XMVectorSubtract(DirectX::g_XMOne, value);
+                    outPixels[j] = DirectX::XMVectorSelect(value, inverty, s_selectw);
+                }
+            }, timage);
+        if (FAILED(result))
+        {
+            errorMsg = String::Format(TEXT("Cannot invert alpha channel in texture, error: {0:x}"), static_cast<uint32>(result));
             return true;
         }
         SET_CURRENT_IMG(timage);
@@ -853,10 +924,8 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
         result = TransformImage(currentImage->GetImages(), currentImage->GetImageCount(), currentImage->GetMetadata(),
             [&](DirectX::XMVECTOR* outPixels, const DirectX::XMVECTOR* inPixels, size_t w, size_t y)
             {
-                static const DirectX::XMVECTORU32 s_selectz = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0 } } };
-
+                const DirectX::XMVECTORU32 s_selectz = { { { DirectX::XM_SELECT_0, DirectX::XM_SELECT_0, DirectX::XM_SELECT_1, DirectX::XM_SELECT_0 } } };
                 UNREFERENCED_PARAMETER(y);
-
                 for (size_t j = 0; j < w; ++j)
                 {
                     const DirectX::XMVECTOR value = inPixels[j];

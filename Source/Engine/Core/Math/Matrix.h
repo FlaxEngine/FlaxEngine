@@ -146,6 +146,7 @@ public:
     }
 
     explicit Matrix(const Matrix3x3& matrix);
+    explicit Matrix(const Double4x4& matrix);
 
 public:
     String ToString() const;

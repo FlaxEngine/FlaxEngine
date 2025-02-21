@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Linq;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.Surface;
 using FlaxEngine;
@@ -35,6 +36,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                                                     (instance, parameter, tag) => ((AnimatedModel)instance).GetParameterValue(parameter.Identifier),
                                                     (instance, value, parameter, tag) => ((AnimatedModel)instance).SetParameterValue(parameter.Identifier, value),
                                                     Values);
+                if (!parameters.Any())
+                    group.Label("No parameters", TextAlignment.Center);
                 _parametersAdded = true;
             }
         }
