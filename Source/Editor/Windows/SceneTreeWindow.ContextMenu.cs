@@ -145,6 +145,7 @@ namespace FlaxEditor.Windows
             bool hasPrefabLink = canEditScene && isSingleActorSelected && (firstSelection != null ? firstSelection.HasPrefabLink : false);
             if (hasPrefabLink)
             {
+                contextMenu.AddButton("Open Prefab", () => Editor.Prefabs.OpenPrefab(actorNode.Actor.PrefabID));
                 contextMenu.AddButton("Select Prefab", Editor.Prefabs.SelectPrefab);
                 contextMenu.AddButton("Break Prefab Link", Editor.Prefabs.BreakLinks);
             }

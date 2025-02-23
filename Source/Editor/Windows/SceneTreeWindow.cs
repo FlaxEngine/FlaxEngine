@@ -382,6 +382,29 @@ namespace FlaxEditor.Windows
 
             return false;
         }
+        
+        /// <inheritdoc />
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+        {
+            if(button == MouseButton.Left)
+            {
+                switch (Editor.Options.Options.Input.DoubleClickSceneNode)
+                {
+                    case SceneNodeDoubleClick.RenameActor:
+                        Rename();
+                        return true;
+                    case SceneNodeDoubleClick.FocusActor:
+                        Editor.Windows.EditWin.Viewport.FocusSelection();
+                        return true;
+                    case SceneNodeDoubleClick.OpenPrefab:
+                        return Editor.Prefabs.OpenPrefab();
+                    case SceneNodeDoubleClick.None:
+                    default:
+                        return base.OnMouseDoubleClick(location, button);
+                }
+            }
+            return base.OnMouseDoubleClick(location, button);
+        }
 
         /// <inheritdoc />
         public override void OnLostFocus()
@@ -569,5 +592,29 @@ namespace FlaxEditor.Windows
 
             base.OnDestroy();
         }
+    }
+
+    /// <summary>
+    /// Action to perform when a Scene Node receive a double mouse click (Left)
+    /// </summary>
+    [Serializable]
+    public enum SceneNodeDoubleClick
+    {
+        /// <summary>
+        /// No action is performed
+        /// </summary>
+        None, 
+        /// <summary>
+        /// Rename the Scene Node
+        /// </summary>
+        RenameActor,
+        /// <summary>
+        /// Focus the Scene Node object in the Scene View
+        /// </summary>
+        FocusActor,
+        /// <summary>
+        /// If possible, open the scene node in an associated Editor (e.g. Prefab Editor)
+        /// </summary>
+        OpenPrefab
     }
 }

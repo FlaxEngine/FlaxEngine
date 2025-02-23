@@ -344,6 +344,9 @@ namespace FlaxEditor.Options
         [EditorDisplay("Interface"), EditorOrder(2020)]
         public InputBinding PreviousTab = new InputBinding(KeyboardKeys.Tab, KeyboardKeys.Control, KeyboardKeys.Shift);
 
+        [DefaultValue(Windows.SceneNodeDoubleClick.None)]
+        [EditorDisplay("Interface"), EditorOrder(2030)]
+        public Windows.SceneNodeDoubleClick DoubleClickSceneNode = Windows.SceneNodeDoubleClick.None;
         #endregion
     }
 }
