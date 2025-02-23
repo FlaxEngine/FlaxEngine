@@ -108,25 +108,28 @@ namespace FlaxEditor.Modules
         /// <summary>
         /// Opens a prefab editor window.
         /// </summary>
-        /// 
-        /// <returns>Whether the prefab was successfully opened in a Prefab Editor.</returns>
-        public bool OpenPrefab(Guid prefabID = default)
+        public void OpenPrefab(ActorNode actorNode)
+        {
+            if (actorNode != null)
+                OpenPrefab(actorNode.Actor.PrefabID);
+        }
+
+        /// <summary>
+        /// Opens a prefab editor window.
+        /// </summary>
+        public void OpenPrefab(Guid prefabID = default)
         {
             if (prefabID == Guid.Empty)
             {
                 var selection = Editor.SceneEditing.Selection.Where(x => x is ActorNode actorNode && actorNode.HasPrefabLink).ToList().BuildNodesParents();
                 if (selection.Count == 0 || !((ActorNode)selection[0]).Actor.HasPrefabLink)
-                    return false;
+                    return;
                 prefabID = ((ActorNode)selection[0]).Actor.PrefabID;
             }
 
-            var item = Editor.Instance.ContentDatabase.Find(prefabID);
+            var item = Editor.ContentDatabase.Find(prefabID);
             if (item != null)
-            {
-                Editor.Instance.ContentEditing.Open(item);
-                return true;
-            }
-            return false;
+                Editor.ContentEditing.Open(item);
         }
 
         private void OnPrefabCreated(ContentItem contentItem, Actor actor, Windows.Assets.PrefabWindow prefabWindow)

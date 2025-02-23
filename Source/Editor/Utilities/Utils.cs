@@ -1544,5 +1544,12 @@ namespace FlaxEditor.Utilities
             }
             return path;
         }
+
+        internal static ISceneContextWindow GetSceneContext(this Control c)
+        {
+            while (c != null && !(c is ISceneContextWindow))
+                c = c.Parent;
+            return c as ISceneContextWindow;
+        }
     }
 }
