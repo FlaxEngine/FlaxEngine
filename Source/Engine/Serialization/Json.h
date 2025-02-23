@@ -5,13 +5,13 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/StringView.h"
 
-// TODO: config RAPIDJSON_SSE42 for rapidjson
-#if defined(__x86_64) || defined(__x86_64__) || defined(__amd64__) || defined(_M_X64) || defined(_M_AMD64)
-//#define RAPIDJSON_SSE42
-#elif defined(__arm64__) || defined(__aarch64__) || defined(_M_ARM64)
-//#define RAPIDJSON_NEON
+#if PLATFORM_SIMD_SSE4_2
+#define RAPIDJSON_SSE42
+#elif PLATFORM_SIMD_SSE2
+#define RAPIDJSON_SSE2
+#elif PLATFORM_SIMD_NEON
+#define RAPIDJSON_NEON
 #endif
-
 #define RAPIDJSON_ERROR_CHARTYPE Char
 #define RAPIDJSON_ERROR_STRING(x) TEXT(x)
 #define RAPIDJSON_ASSERT(x) ASSERT(x)
