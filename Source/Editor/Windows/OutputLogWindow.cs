@@ -604,7 +604,7 @@ namespace FlaxEditor.Windows
                 var cachedScrollValue = _vScroll.Value;
                 var cachedSelection = _output.SelectionRange;
                 var cachedOutputTargetViewOffset = _output.TargetViewOffset;
-                var isBottomScroll = _vScroll.Value >= _vScroll.Maximum - (_scrollSize*2) || wasEmpty;
+                var isBottomScroll = _vScroll.Value >= _vScroll.Maximum - (_scrollSize * 2) || wasEmpty;
                 _output.Text = _textBuffer.ToString();
                 _output.TargetViewOffset = cachedOutputTargetViewOffset;
                 _textBufferCount = _entries.Count;
