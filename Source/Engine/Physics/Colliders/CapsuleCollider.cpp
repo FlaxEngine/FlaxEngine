@@ -48,9 +48,9 @@ void CapsuleCollider::DrawPhysicsDebug(RenderView& view)
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
     const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
-        DEBUG_DRAW_TUBE(_transform.LocalToWorld(_center), rotation, radius, height, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+        DEBUG_DRAW_CAPSULE(_transform.LocalToWorld(_center), rotation, radius, height, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
     else
-        DEBUG_DRAW_WIRE_TUBE(_transform.LocalToWorld(_center), rotation, radius, height, Color::GreenYellow * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_CAPSULE(_transform.LocalToWorld(_center), rotation, radius, height, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void CapsuleCollider::OnDebugDrawSelected()
@@ -62,11 +62,11 @@ void CapsuleCollider::OnDebugDrawSelected()
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
     const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
     const Vector3 position = _transform.LocalToWorld(_center);
-    DEBUG_DRAW_WIRE_TUBE(position, rotation, radius, height, Color::GreenYellow, 0, false);
+    DEBUG_DRAW_WIRE_CAPSULE(position, rotation, radius, height, Color::GreenYellow, 0, false);
 
     if (_contactOffset > 0)
     {
-        DEBUG_DRAW_WIRE_TUBE(position, rotation, radius + _contactOffset, height, Color::Blue.AlphaMultiplied(0.2f), 0, false);
+        DEBUG_DRAW_WIRE_CAPSULE(position, rotation, radius + _contactOffset, height, Color::Blue.AlphaMultiplied(0.2f), 0, false);
     }
 
     // Base

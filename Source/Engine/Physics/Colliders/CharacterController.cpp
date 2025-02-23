@@ -187,9 +187,9 @@ void CharacterController::DrawPhysicsDebug(RenderView& view)
     const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
     const Vector3 position = _transform.LocalToWorld(_center);
     if (view.Mode == ViewMode::PhysicsColliders)
-        DEBUG_DRAW_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::LightYellow, 0, true);
+        DEBUG_DRAW_CAPSULE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::LightYellow, 0, true);
     else
-        DEBUG_DRAW_WIRE_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::GreenYellow * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_CAPSULE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void CharacterController::OnDebugDrawSelected()
@@ -198,7 +198,7 @@ void CharacterController::OnDebugDrawSelected()
     const float radius = Math::Max(Math::Abs(_radius) * scaling, CC_MIN_SIZE);
     const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
     const Vector3 position = _transform.LocalToWorld(_center);
-    DEBUG_DRAW_WIRE_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::GreenYellow, 0, false);
+    DEBUG_DRAW_WIRE_CAPSULE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::GreenYellow, 0, false);
 
     // Base
     Collider::OnDebugDrawSelected();
