@@ -157,7 +157,7 @@ namespace FlaxEditor.Options
             /// <summary>
             /// Focus the Game Window. On play mode end restore focus to the previous window.
             /// </summary>
-            GameWindowThenRestore,  
+            GameWindowThenRestore,
         }
 
         /// <summary>
