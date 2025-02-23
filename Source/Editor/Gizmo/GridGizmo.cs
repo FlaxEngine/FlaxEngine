@@ -43,6 +43,7 @@ namespace FlaxEditor.Gizmo
             {
                 UseSingleTarget = true;
                 Location = PostProcessEffectLocation.Default;
+                Order = -100000; // Draw before any other editor shapes
                 _shader = FlaxEngine.Content.LoadAsyncInternal<Shader>("Shaders/Editor/Grid");
             }
 

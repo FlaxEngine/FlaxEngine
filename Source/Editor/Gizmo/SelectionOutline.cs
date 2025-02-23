@@ -85,6 +85,8 @@ namespace FlaxEditor.Gizmo
         /// </summary>
         public SelectionOutline()
         {
+            Order = -90000; // Draw before any other editor shapes (except grid gizmo)
+
             _outlineMaterial = FlaxEngine.Content.LoadAsyncInternal<Material>("Editor/Gizmo/SelectionOutlineMaterial");
             if (_outlineMaterial)
             {
