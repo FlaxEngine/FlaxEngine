@@ -96,7 +96,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.ScaleMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
             InputActions.Add(options => options.FocusSelection, () => Editor.Windows.EditWin.Viewport.FocusSelection());
             InputActions.Add(options => options.LockFocusSelection, () => Editor.Windows.EditWin.Viewport.LockFocusSelection());
-            InputActions.Add(options => options.Rename, Rename);
+            InputActions.Add(options => options.Rename, RenameSelection);
         }
 
         /// <summary>
@@ -143,31 +143,6 @@ namespace FlaxEditor.Windows
             PerformLayout();
         }
 
-        private void Rename()
-        {
-            var selection = Editor.SceneEditing.Selection;
-            var selectionCount = selection.Count;
-
-            // Show a window with options to rename multiple actors.
-            if (selectionCount > 1)
-            {
-                var selectedActors = new Actor[selectionCount];
-
-                for (int i = 0; i < selectionCount; i++)
-                    if (selection[i] is ActorNode actorNode)
-                        selectedActors[i] = actorNode.Actor;
-
-                RenameWindow.Show(selectedActors, Editor);
-                return;
-            }
-
-            if (selectionCount != 0 && selection[0] is ActorNode actor)
-            {
-                Editor.SceneEditing.Select(actor);
-                actor.TreeNode.StartRenaming(this, _sceneTreePanel);
-            }
-        }
-
         private void Spawn(Type type)
         {
             // Create actor
@@ -197,7 +172,7 @@ namespace FlaxEditor.Windows
             Editor.SceneEditing.Spawn(actor, parentActor);
 
             Editor.SceneEditing.Select(actor);
-            Rename();
+            RenameSelection();
         }
 
         /// <summary>
@@ -293,7 +268,7 @@ namespace FlaxEditor.Windows
         {
             return Editor.Instance.CodeEditing.Actors.Get().Contains(actorType);
         }
-        
+
         private static bool ValidateDragControlType(ScriptType controlType)
         {
             return Editor.Instance.CodeEditing.Controls.Get().Contains(controlType);

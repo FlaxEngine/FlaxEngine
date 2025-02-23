@@ -8,6 +8,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using static FlaxEditor.Viewport.EditorViewport;
 
 namespace FlaxEditor.Options
 {
@@ -18,7 +19,7 @@ namespace FlaxEditor.Options
     [HideInEditor]
     [TypeConverter(typeof(InputBindingConverter))]
     [CustomEditor(typeof(InputBindingEditor))]
-    public struct InputBinding
+    public struct InputBinding : IEquatable<InputBinding>
     {
         /// <summary>
         /// The key to bind.
@@ -250,6 +251,40 @@ namespace FlaxEditor.Options
                 result += ToString(Key);
             }
             return result;
+        }
+
+        /// <inheritdoc />
+        public bool Equals(InputBinding other)
+        {
+            return Key == other.Key && Modifier1 == other.Modifier1 && Modifier2 == other.Modifier2;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is InputBinding other && Equals(other);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine((int)Key, (int)Modifier1, (int)Modifier2);
+        }
+
+        /// <summary>
+        /// Compares two values.
+        /// </summary>
+        public static bool operator ==(InputBinding left, InputBinding right)
+        {
+            return left.Equals(right);
+        }
+
+        /// <summary>
+        /// Compares two values.
+        /// </summary>
+        public static bool operator !=(InputBinding left, InputBinding right)
+        {
+            return !left.Equals(right);
         }
     }
 
@@ -520,6 +555,28 @@ namespace FlaxEditor.Options
                 }
             }
 
+            return false;
+        }
+
+        /// <summary>
+        /// Invokes a specific binding.
+        /// </summary>
+        /// <param name="editor">The editor instance.</param>
+        /// <param name="binding">The binding to execute.</param>
+        /// <returns>True if event has been handled, otherwise false.</returns>
+        public bool Invoke(Editor editor, InputBinding binding)
+        {
+            if (binding == new InputBinding())
+                return false;
+            var options = editor.Options.Options.Input;
+            for (int i = 0; i < Bindings.Count; i++)
+            {
+                if (Bindings[i].Binder(options) == binding)
+                {
+                    Bindings[i].Callback();
+                    return true;
+                }
+            }
             return false;
         }
     }
