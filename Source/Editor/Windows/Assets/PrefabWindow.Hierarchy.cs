@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Drag;
@@ -86,7 +85,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 return Editor.Instance.CodeEditing.Actors.Get().Contains(actorType);
             }
-            
+
             private static bool ValidateDragControlType(ScriptType controlType)
             {
                 return Editor.Instance.CodeEditing.Controls.Get().Contains(controlType);
@@ -171,7 +170,8 @@ namespace FlaxEditor.Windows.Assets
                             var actor = item.OnEditorDrop(this);
                             actor.Name = item.ShortName;
                             _window.Spawn(actor);
-                            var graphNode = _window.Graph.Root.Find(actor);;
+                            var graphNode = _window.Graph.Root.Find(actor);
+                            ;
                             if (graphNode != null)
                                 graphNodes.Add(graphNode);
                         }
@@ -235,7 +235,8 @@ namespace FlaxEditor.Windows.Assets
                                 }
                                 actor.Name = actorType.Name;
                                 _window.Spawn(actor);
-                                var graphNode = _window.Graph.Root.Find(actor);;
+                                var graphNode = _window.Graph.Root.Find(actor);
+                                ;
                                 if (graphNode != null)
                                     graphNodes.Add(graphNode);
                             }
@@ -292,7 +293,7 @@ namespace FlaxEditor.Windows.Assets
 
             // Basic editing options
 
-            var b = contextMenu.AddButton("Rename", Rename);
+            var b = contextMenu.AddButton("Rename", RenameSelection);
             b.Enabled = isSingleActorSelected;
 
             b = contextMenu.AddButton("Duplicate", Duplicate);
@@ -416,7 +417,8 @@ namespace FlaxEditor.Windows.Assets
             contextMenu.Show(parent, location);
         }
 
-        private void Rename()
+        /// <inheritdoc />
+        public void RenameSelection()
         {
             var selection = Selection;
             if (selection.Count != 0 && selection[0] is ActorNode actor)
@@ -425,6 +427,12 @@ namespace FlaxEditor.Windows.Assets
                     Select(actor);
                 actor.TreeNode.StartRenaming(this, _treePanel);
             }
+        }
+
+        /// <inheritdoc />
+        public void FocusSelection()
+        {
+            _viewport.FocusSelection();
         }
 
         /// <summary>
@@ -470,7 +478,7 @@ namespace FlaxEditor.Windows.Assets
 
             // Spawn it
             Spawn(actor);
-            Rename();
+            RenameSelection();
         }
 
         /// <summary>

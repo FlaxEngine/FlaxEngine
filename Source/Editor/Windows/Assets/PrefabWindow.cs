@@ -19,7 +19,7 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="Prefab" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed partial class PrefabWindow : AssetEditorWindowBase<Prefab>, IPresenterOwner
+    public sealed partial class PrefabWindow : AssetEditorWindowBase<Prefab>, IPresenterOwner, ISceneContextWindow
     {
         private readonly SplitPanel _split1;
         private readonly SplitPanel _split2;
@@ -212,8 +212,8 @@ namespace FlaxEditor.Windows.Assets
             InputActions.Add(options => options.Paste, Paste);
             InputActions.Add(options => options.Duplicate, Duplicate);
             InputActions.Add(options => options.Delete, Delete);
-            InputActions.Add(options => options.Rename, Rename);
-            InputActions.Add(options => options.FocusSelection, _viewport.FocusSelection);
+            InputActions.Add(options => options.Rename, RenameSelection);
+            InputActions.Add(options => options.FocusSelection, FocusSelection);
         }
 
         /// <summary>

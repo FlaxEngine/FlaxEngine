@@ -8,6 +8,32 @@ using FlaxEngine;
 namespace FlaxEditor.Options
 {
     /// <summary>
+    /// Action to perform when a Scene Node receive a double mouse left click.
+    /// </summary>
+    public enum SceneNodeDoubleClick
+    {
+        /// <summary>
+        /// Toggles expand/state of the node.
+        /// </summary>
+        Expand,
+
+        /// <summary>
+        /// Rename the node.
+        /// </summary>
+        RenameActor,
+
+        /// <summary>
+        /// Focus the object in the viewport.
+        /// </summary>
+        FocusActor,
+
+        /// <summary>
+        /// If possible, open the scene node in an associated Editor (eg. Prefab Editor).
+        /// </summary>
+        OpenPrefab,
+    }
+
+    /// <summary>
     /// Input editor options data container.
     /// </summary>
     [CustomEditor(typeof(Editor<InputOptions>))]
@@ -343,6 +369,10 @@ namespace FlaxEditor.Options
         [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Tab")]
         [EditorDisplay("Interface"), EditorOrder(2020)]
         public InputBinding PreviousTab = new InputBinding(KeyboardKeys.Tab, KeyboardKeys.Control, KeyboardKeys.Shift);
+
+        [DefaultValue(SceneNodeDoubleClick.Expand)]
+        [EditorDisplay("Interface"), EditorOrder(2030)]
+        public SceneNodeDoubleClick DoubleClickSceneNode = SceneNodeDoubleClick.Expand;
 
         #endregion
     }

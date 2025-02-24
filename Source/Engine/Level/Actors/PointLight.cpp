@@ -131,8 +131,8 @@ void PointLight::OnDebugDraw()
 {
     if (SourceRadius > ZeroTolerance || SourceLength > ZeroTolerance)
     {
-        // Draw source tube
-        DEBUG_DRAW_WIRE_TUBE(GetPosition(), GetOrientation(), SourceRadius, SourceLength, Color::Orange, 0, true);
+        // Draw source capsule
+        DEBUG_DRAW_WIRE_CAPSULE(GetPosition(), GetOrientation(), SourceRadius, SourceLength, Color::Orange, 0, true);
     }
 
     // Base

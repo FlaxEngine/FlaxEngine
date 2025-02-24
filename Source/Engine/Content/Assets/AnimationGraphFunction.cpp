@@ -7,6 +7,7 @@
 #if USE_EDITOR
 #include "Engine/Serialization/MemoryWriteStream.h"
 #endif
+#include "Engine/Animations/Animations.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Threading/Threading.h"
 
@@ -19,6 +20,8 @@ AnimationGraphFunction::AnimationGraphFunction(const SpawnParams& params, const 
 
 Asset::LoadResult AnimationGraphFunction::load()
 {
+    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+
     // Get graph data from chunk
     const auto surfaceChunk = GetChunk(0);
     if (!surfaceChunk || !surfaceChunk->IsLoaded())
@@ -44,6 +47,7 @@ Asset::LoadResult AnimationGraphFunction::load()
 
 void AnimationGraphFunction::unload(bool isReloading)
 {
+    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
     GraphData.Release();
     Inputs.Clear();
     Outputs.Clear();
@@ -68,6 +72,7 @@ BytesContainer AnimationGraphFunction::LoadSurface() const
 
 void AnimationGraphFunction::GetSignature(Array<StringView, FixedAllocation<32>>& types, Array<StringView, FixedAllocation<32>>& names)
 {
+    ScopeLock lock(Locker);
     types.Resize(32);
     names.Resize(32);
     for (int32 i = 0, j = 0; i < Inputs.Count(); i++)
@@ -91,6 +96,7 @@ bool AnimationGraphFunction::SaveSurface(const BytesContainer& data) const
 {
     if (OnCheckSave())
         return true;
+    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
     ScopeLock lock(Locker);
 
     // Set Visject Surface data
@@ -114,6 +120,7 @@ bool AnimationGraphFunction::SaveSurface(const BytesContainer& data) const
 
 void AnimationGraphFunction::ProcessGraphForSignature(AnimGraphBase* graph, bool canUseOutputs)
 {
+    ScopeLock lock(Locker);
     for (int32 i = 0; i < graph->Nodes.Count(); i++)
     {
         auto& node = graph->Nodes[i];

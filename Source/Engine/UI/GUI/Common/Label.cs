@@ -257,10 +257,12 @@ namespace FlaxEngine.GUI
         {
             base.DrawSelf();
 
-            if (ClipText)
-                Render2D.PushClip(new Rectangle(Float2.Zero, Size));
+            var margin = _margin;
+            var rect = new Rectangle(margin.Location, Size - margin.Size);
 
-            var rect = new Rectangle(new Float2(Margin.Left, Margin.Top), Size - Margin.Size);
+            if (ClipText)
+                Render2D.PushClip(ref rect);
+
             var color = IsMouseOver || IsNavFocused ? TextColorHighlighted : TextColor;
             if (!EnabledInHierarchy)
                 color *= 0.6f;

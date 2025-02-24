@@ -1558,7 +1558,7 @@ bool ManagedBinaryModule::SetFieldValue(void* field, const Variant& instance, Va
     if ((uintptr)field & ManagedBinaryModuleFieldIsPropertyBit)
     {
         const auto mProperty = (MProperty*)((uintptr)field & ~ManagedBinaryModuleFieldIsPropertyBit);
-        mProperty->SetValue(instanceObject, MUtils::BoxVariant(value), nullptr);
+        mProperty->SetValue(instanceObject, MUtils::VariantToManagedArgPtr(value, mProperty->GetType(), failed), nullptr);
     }
     else
     {

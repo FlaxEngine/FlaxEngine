@@ -345,10 +345,19 @@ namespace FlaxEditor.CustomEditors.Editors
                         }
                         else
                         {
-                            _linkedTreeNode = Editor.Instance.Scene.GetActorNode(actor).TreeNode;
-                            _linkedTreeNode.ExpandAllParents();
-                            Editor.Instance.Windows.SceneWin.SceneTreePanel.ScrollViewTo(_linkedTreeNode, true);
-                            _linkedTreeNode.StartHighlight();
+                            if (PresenterContext is PropertiesWindow)
+                                _linkedTreeNode = Editor.Instance.Scene.GetActorNode(actor).TreeNode;
+                            else if (PresenterContext is PrefabWindow prefabWindow)
+                                _linkedTreeNode = prefabWindow.Graph.Root.Find(actor).TreeNode;
+                            if (_linkedTreeNode != null)
+                            {
+                                _linkedTreeNode.ExpandAllParents();
+                                if (PresenterContext is PropertiesWindow)
+                                    Editor.Instance.Windows.SceneWin.SceneTreePanel.ScrollViewTo(_linkedTreeNode, true);
+                                else if (PresenterContext is PrefabWindow prefabWindow)
+                                    (prefabWindow.Tree.Parent as Panel).ScrollViewTo(_linkedTreeNode, true);
+                                _linkedTreeNode.StartHighlight();
+                            }
                         }
                         return true;
                     }
@@ -413,24 +422,10 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void Select(Actor actor)
         {
-            var node = SceneGraphFactory.FindNode(actor.ID) as ActorNode;
-            if (node == null)
-                return;
-
-            var c = Parent;
-            while (c != null)
-            {
-                if (c is Windows.Assets.PrefabWindow prefabWindow)
-                {
-                    // Prefab editor
-                    prefabWindow.Select(node);
-                    return;
-                }
-                c = c.Parent;
-            }
-
-            // Global selection
-            Editor.Instance.SceneEditing.Select(actor);
+            if (PresenterContext is PropertiesWindow)
+                Editor.Instance.SceneEditing.Select(actor);
+            else if (PresenterContext is PrefabWindow prefabWindow)
+                prefabWindow.Select(prefabWindow.Graph.Root.Find(actor));
         }
 
         private void DoDrag()

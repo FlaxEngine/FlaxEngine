@@ -1740,6 +1740,11 @@ void DebugDraw::DrawWireTriangles(const Array<Double3>& vertices, const Array<in
 
 void DebugDraw::DrawTube(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color, float duration, bool depthTest)
 {
+    DrawCapsule(position, orientation, radius, length, color, duration, depthTest);
+}
+
+void DebugDraw::DrawCapsule(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color, float duration, bool depthTest)
+{
     // Check if has no length (just sphere)
     if (length < ZeroTolerance)
     {
@@ -1758,6 +1763,11 @@ void DebugDraw::DrawTube(const Vector3& position, const Quaternion& orientation,
 }
 
 void DebugDraw::DrawWireTube(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color, float duration, bool depthTest)
+{
+    DrawWireCapsule(position, orientation, radius, length, color, duration, depthTest);
+}
+
+void DebugDraw::DrawWireCapsule(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color, float duration, bool depthTest)
 {
     // Check if has no length (just sphere)
     if (length < ZeroTolerance)

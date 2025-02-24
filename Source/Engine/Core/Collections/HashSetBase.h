@@ -362,7 +362,7 @@ protected:
     BucketType* OnAdd(const KeyComparableType& key, bool checkUnique = true)
     {
         // Check if need to rehash elements (prevent many deleted elements that use too much of capacity)
-        if (_deletedCount > _size / HASH_SET_DEFAULT_SLACK_SCALE)
+        if (_deletedCount * HASH_SET_DEFAULT_SLACK_SCALE > _size)
             Compact();
 
         // Ensure to have enough memory for the next item (in case of new element insertion)

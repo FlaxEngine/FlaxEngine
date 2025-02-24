@@ -72,6 +72,8 @@ namespace
 
 Asset::LoadResult ParticleEmitter::load()
 {
+    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
+
     // Load the graph
     const auto surfaceChunk = GetChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE);
     if (!surfaceChunk)
@@ -297,6 +299,7 @@ Asset::LoadResult ParticleEmitter::load()
 
 void ParticleEmitter::unload(bool isReloading)
 {
+    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
 #if COMPILE_WITH_SHADER_COMPILER
     UnregisterForShaderReloads(this);
 #endif
@@ -387,6 +390,7 @@ bool ParticleEmitter::SaveSurface(const BytesContainer& data)
 {
     if (OnCheckSave())
         return true;
+    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
     ScopeLock lock(Locker);
 
     // Release all chunks
