@@ -215,8 +215,8 @@ namespace FlaxEditor.GUI.Docking
             switch (state)
             {
             case DockState.DockFill:
-                result.Location.Y += DockPanel.DefaultHeaderHeight;
-                result.Size.Y -= DockPanel.DefaultHeaderHeight;
+                result.Location.Y += Editor.Instance.Options.Options.Interface.TabHeight;
+                result.Size.Y -= Editor.Instance.Options.Options.Interface.TabHeight;
                 break;
             case DockState.DockTop:
                 result.Size.Y *= DockPanel.DefaultSplitterValue;
