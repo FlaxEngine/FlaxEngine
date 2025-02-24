@@ -89,6 +89,16 @@ public:
 
         // Check input data and stream type with IsLinear before calling.
         void SetLinear(const void* data);
+
+        // Copies the contents of the input data span into the elements of this stream.
+        void Set(Span<Float2> src);
+        void Set(Span<Float3> src);
+        void Set(Span<Color> src);
+
+        // Copies the contents of this stream into a destination data span.
+        void CopyTo(Span<Float2> dst) const;
+        void CopyTo(Span<Float3> dst) const;
+        void CopyTo(Span<Color> dst) const;
     };
 
 private:

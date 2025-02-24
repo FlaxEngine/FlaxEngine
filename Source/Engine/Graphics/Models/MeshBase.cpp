@@ -89,6 +89,96 @@ void MeshAccessor::Stream::SetLinear(const void* data)
     Platform::MemoryCopy(_data.Get(), data, _data.Length());
 }
 
+void MeshAccessor::Stream::Set(Span<Float2> src)
+{
+    const int32 count = GetCount();
+    ASSERT(src.Length() >= count);
+    if (IsLinear(PixelFormat::R32G32_Float))
+    {
+        Platform::MemoryCopy(_data.Get(), src.Get(), _data.Length());
+    }
+    else
+    {
+        for (int32 i = 0; i < count; i++)
+            _sampler.Write(_data.Get() + i * _stride, Float4(src.Get()[i], 0, 0));
+    }
+}
+
+void MeshAccessor::Stream::Set(Span<Float3> src)
+{
+    const int32 count = GetCount();
+    ASSERT(src.Length() >= count);
+    if (IsLinear(PixelFormat::R32G32B32_Float))
+    {
+        Platform::MemoryCopy(_data.Get(), src.Get(), _data.Length());
+    }
+    else
+    {
+        for (int32 i = 0; i < count; i++)
+            _sampler.Write(_data.Get() + i * _stride, Float4(src.Get()[i], 0));
+    }
+}
+
+inline void MeshAccessor::Stream::Set(Span<::Color> src)
+{
+    const int32 count = GetCount();
+    ASSERT(src.Length() >= count);
+    if (IsLinear(PixelFormat::R32G32B32A32_Float))
+    {
+        Platform::MemoryCopy(_data.Get(), src.Get(), _data.Length());
+    }
+    else
+    {
+        for (int32 i = 0; i < count; i++)
+            _sampler.Write(_data.Get() + i * _stride, Float4(src.Get()[i]));
+    }
+}
+
+void MeshAccessor::Stream::CopyTo(Span<Float2> dst) const
+{
+    const int32 count = GetCount();
+    ASSERT(dst.Length() >= count);
+    if (IsLinear(PixelFormat::R32G32_Float))
+    {
+        Platform::MemoryCopy(dst.Get(), _data.Get(), _data.Length());
+    }
+    else
+    {
+        for (int32 i = 0; i < count; i++)
+            dst.Get()[i] = Float2(_sampler.Read(_data.Get() + i * _stride));
+    }
+}
+
+void MeshAccessor::Stream::CopyTo(Span<Float3> dst) const
+{
+    const int32 count = GetCount();
+    ASSERT(dst.Length() >= count);
+    if (IsLinear(PixelFormat::R32G32B32_Float))
+    {
+        Platform::MemoryCopy(dst.Get(), _data.Get(), _data.Length());
+    }
+    else
+    {
+        for (int32 i = 0; i < count; i++)
+            dst.Get()[i] = Float3(_sampler.Read(_data.Get() + i * _stride));
+    }
+}
+
+void MeshAccessor::Stream::CopyTo(Span<::Color> dst) const
+{
+    const int32 count = GetCount();
+    ASSERT(dst.Length() >= count);
+    if (IsLinear(PixelFormat::R32G32B32A32_Float))
+    {
+        Platform::MemoryCopy(dst.Get(), _data.Get(), _data.Length());
+    }
+    else
+    {
+        for (int32 i = 0; i < count; i++)
+            dst.Get()[i] = ::Color(_sampler.Read(_data.Get() + i * _stride));
+    }
+}
+
 bool MeshAccessor::LoadMesh(const MeshBase* mesh, bool forceGpu, Span<MeshBufferType> buffers)
 {
     CHECK_RETURN(mesh, true);
