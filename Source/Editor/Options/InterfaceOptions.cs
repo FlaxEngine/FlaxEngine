@@ -344,8 +344,8 @@ namespace FlaxEditor.Options
         /// Gets or set a value indicating wether the outpug log panel should be focussed on begin play.
         /// </summary>
         [DefaultValue(false)]
-        [EditorDisplay("Output Log", "Focus Output Log Panel on Begin Play"), EditorOrder(471), Tooltip("Focus the Output Log panel on Begin Play. Focuses the previously selected panel on End Play.")]
-        public bool FocusOutputLogOnBeginPlay { get; set; } = false;
+        [EditorDisplay("Output Log", "Show Output Log Panel on Begin Play"), EditorOrder(471), Tooltip("Show the Output Log panel on Begin Play. Shows the previously selected panel on End Play.")]
+        public bool ShowOutputLogOnBeginPlay { get; set; } = false;
 
         /// <summary>
         /// Gets or sets a value indicating whether auto-focus game window on play mode start.

@@ -223,7 +223,7 @@ namespace FlaxEditor.Windows
 
         private void OnPlayModeBeginning()
         {
-            if (!Editor.Instance.Options.Options.Interface.FocusOutputLogOnBeginPlay)
+            if (!Editor.Instance.Options.Options.Interface.ShowOutputLogOnBeginPlay)
                 return;
 
             _previousWindow = this.ParentDockPanel.SelectedTab;
@@ -233,7 +233,7 @@ namespace FlaxEditor.Windows
 
         private void OnPlayModeEnd()
         {
-            if (!Editor.Instance.Options.Options.Interface.FocusOutputLogOnBeginPlay || !this.ParentDockPanel.ContainsTab(_previousWindow))
+            if (!Editor.Instance.Options.Options.Interface.ShowOutputLogOnBeginPlay || !this.ParentDockPanel.ContainsTab(_previousWindow) || !_previousWindow.IsDisposing)
                 return;
 
             _previousWindow.Focus();
