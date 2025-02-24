@@ -113,7 +113,7 @@ namespace FlaxEngine.GUI
                 return;
             var border = Border;
             var borderUV = *(Float4*)&border;
-            var borderSize = borderUV * new Float4(BorderSize, BorderSize, BorderSize, BorderSize);
+            var borderSize = new Float4(BorderSize, BorderSize, BorderSize, BorderSize);
             if (Filter == BrushFilter.Point)
                 Render2D.Draw9SlicingTexturePoint(Texture, rect, borderSize, borderUV, color);
             else

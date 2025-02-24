@@ -363,17 +363,17 @@ void Write9SlicingRect(const Rectangle& rect, const Color& color, const Float4& 
     const Float2 bottomLeftUV(borderUVs.X, 1.0f - borderUVs.W);
     const Float2 bottomRightUV(1.0f - borderUVs.Y, 1.0f - borderUVs.W);
 
-    WriteRect(upperLeft, color, Float2::Zero, upperLeftUV);
-    WriteRect(upperRight, color, Float2(upperRightUV.X, 0), Float2(1, upperLeftUV.Y));
-    WriteRect(bottomLeft, color, Float2(0, bottomLeftUV.Y), Float2(bottomLeftUV.X, 1));
-    WriteRect(bottomRight, color, bottomRightUV, Float2::One);
+    WriteRect(upperLeft, color, Float2::Zero, upperLeftUV); // Upper left corner
+    WriteRect(upperRight, color, Float2(upperRightUV.X, 0), Float2(1, upperLeftUV.Y)); // Upper right corner
+    WriteRect(bottomLeft, color, Float2(0, bottomLeftUV.Y), Float2(bottomLeftUV.X, 1)); // Bottom left corner
+    WriteRect(bottomRight, color, bottomRightUV, Float2::One); // Bottom right corner
 
-    WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Float2(upperLeftUV.X, 0), upperRightUV);
-    WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Float2(0, upperLeftUV.Y), bottomLeftUV);
-    WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Float2(bottomRightUV.X, 1));
-    WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Float2(1, bottomRightUV.Y));
+    WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Float2(upperLeftUV.X, 0), upperRightUV); // Top side
+    WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Float2(0, upperLeftUV.Y), bottomLeftUV); // Left side
+    WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Float2(bottomRightUV.X, 1)); // Bottom side
+    WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Float2(1, bottomRightUV.Y)); // Right Side
 
-    WriteRect(Rectangle(upperLeft.GetBottomRight(), bottomRight.GetUpperLeft() - upperLeft.GetBottomRight()), color, upperRightUV, bottomRightUV);
+    WriteRect(Rectangle(upperLeft.GetBottomRight(), bottomRight.GetUpperLeft() - upperLeft.GetBottomRight()), color, upperLeftUV, bottomRightUV); // Center
 }
 
 void Write9SlicingRect(const Rectangle& rect, const Color& color, const Float4& border, const Float4& borderUVs, const Float2& uvLocation, const Float2& uvSize)

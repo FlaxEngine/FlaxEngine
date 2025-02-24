@@ -100,9 +100,11 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public unsafe void Draw(Rectangle rect, Color color)
         {
+            if (!Sprite.IsValid)
+                return;
             var border = Border;
             var borderUV = *(Float4*)&border;
-            var borderSize = borderUV * new Float4(BorderSize, BorderSize, BorderSize, BorderSize);
+            var borderSize = new Float4(BorderSize, BorderSize, BorderSize, BorderSize);
             if (Filter == BrushFilter.Point)
                 Render2D.Draw9SlicingSpritePoint(Sprite, rect, borderSize, borderUV, color);
             else
