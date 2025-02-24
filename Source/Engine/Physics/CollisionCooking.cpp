@@ -216,7 +216,21 @@ bool CollisionCooking::CookCollision(const Argument& arg, CollisionData::Seriali
             const int32 vertexCount = vertexCounts[i];
             if (vertexCount == 0)
                 continue;
-            Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, vData.Get(), vertexCount * sizeof(Float3));
+            const int32 vStride = vData.Length() / vertexCount;
+            if (vStride == sizeof(Float3))
+                Platform::MemoryCopy(finalVertexData.Get() + firstVertexIndex, vData.Get(), vertexCount * sizeof(Float3));
+            else
+            {
+                // This assumes that each vertex structure contains position as Float3 in the beginning
+                auto dst = finalVertexData.Get() + firstVertexIndex;
+                auto src = vData.Get();
+                for (int32 j = 0; j < vertexCount; j++)
+                {
+                    *dst++ = *(Float3*)src;
+                    src += vStride;
+                
+                }
+            }
             vertexCounter += vertexCount;
 
             if (needIndexBuffer)
