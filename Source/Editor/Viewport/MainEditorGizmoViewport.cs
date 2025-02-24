@@ -7,10 +7,13 @@ using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
+using FlaxEditor.Tools;
 using FlaxEditor.Viewport.Modes;
 using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Tools;
+
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport
@@ -107,6 +110,12 @@ namespace FlaxEditor.Viewport
         private double _lockedFocusOffset;
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private EditorSpritesRenderer _editorSpritesRenderer;
+
+        private bool _isRubberBandSpanning;
+        private bool _tryStartRubberBand;
+        private Float2 _cachedStartingMousePosition;
+        private Rectangle _rubberBandRect;
+        private Rectangle _lastRubberBandRect;
 
         /// <summary>
         /// Drag and drop handlers
@@ -367,7 +376,16 @@ namespace FlaxEditor.Viewport
             {
                 Gizmos[i].Draw(ref renderContext);
             }
-
+            
+            // Draw RubberBand for rect selection
+            if (_isRubberBandSpanning)
+            {
+                Render2D.Begin(context, target, targetDepth);
+                Render2D.FillRectangle(_rubberBandRect, Style.Current.Selection);
+                Render2D.DrawRectangle(_rubberBandRect, Style.Current.SelectionBorder);
+                Render2D.End();
+            }
+            
             // Draw selected objects debug shapes and visuals
             if (DrawDebugDraw && (renderContext.View.Flags & ViewFlags.DebugDraw) == ViewFlags.DebugDraw)
             {
@@ -478,6 +496,22 @@ namespace FlaxEditor.Viewport
             TransformGizmo.EndTransforming();
         }
 
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            base.OnLostFocus();
+            _isRubberBandSpanning = false;
+            _tryStartRubberBand = false;
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            base.OnMouseLeave();
+            _isRubberBandSpanning = false;
+            _tryStartRubberBand = false;
+        }
+
         /// <summary>
         /// Focuses the viewport on the current selection of the gizmo.
         /// </summary>
@@ -577,14 +611,201 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
+        public override void OnMouseMove(Float2 location)
+        {
+            base.OnMouseMove(location);
+
+            // Dont allow rubber band selection when gizmo is controlling mouse, vertex painting mode, or cloth painting is enabled
+            if (_isRubberBandSpanning && ((Gizmos.Active.IsControllingMouse || Gizmos.Active is VertexPaintingGizmo || Gizmos.Active is ClothPaintingGizmo) || IsControllingMouse || IsRightMouseButtonDown))
+            {
+                _isRubberBandSpanning = false;
+            }
+
+            if (_tryStartRubberBand && (Mathf.Abs(MouseDelta.X) > 0.1f || Mathf.Abs(MouseDelta.Y) > 0.1f) && !_isRubberBandSpanning && !Gizmos.Active.IsControllingMouse && !IsControllingMouse && !IsRightMouseButtonDown)
+            {
+                _isRubberBandSpanning = true;
+                _cachedStartingMousePosition = _viewMousePos;
+                _rubberBandRect = new Rectangle(_cachedStartingMousePosition, Float2.Zero);
+            }
+            else if (_isRubberBandSpanning && !Gizmos.Active.IsControllingMouse && !IsControllingMouse && !IsRightMouseButtonDown)
+            {
+                _rubberBandRect.Width = _viewMousePos.X - _cachedStartingMousePosition.X;
+                _rubberBandRect.Height = _viewMousePos.Y - _cachedStartingMousePosition.Y;
+
+                if (_lastRubberBandRect != _rubberBandRect)
+                {
+                    // Select rubberbanded rect actor nodes
+                    var adjustedRect = _rubberBandRect;
+                    _lastRubberBandRect = _rubberBandRect;
+                    if (adjustedRect.Width < 0 || adjustedRect.Height < 0)
+                    {
+                        // make sure we have a well-formed rectangle i.e. size is positive and X/Y is upper left corner
+                        var size = adjustedRect.Size;
+                        adjustedRect.X = Mathf.Min(adjustedRect.X, adjustedRect.X + adjustedRect.Width);
+                        adjustedRect.Y = Mathf.Min(adjustedRect.Y, adjustedRect.Y + adjustedRect.Height);
+                        size.X = Mathf.Abs(size.X);
+                        size.Y = Mathf.Abs(size.Y);
+                        adjustedRect.Size = size;
+                    }
+
+                    List<SceneGraphNode> hits = new List<SceneGraphNode>();
+                    var allActors = Level.GetActors<Actor>(true);
+                    foreach (var a in allActors)
+                    {
+                        if (a.HideFlags is HideFlags.DontSelect or HideFlags.FullyHidden || a is EmptyActor || a is Scene || !a.IsActive)
+                            continue;
+
+                        var actorBox = a.EditorBox;
+                        if (ViewFrustum.Contains(actorBox) == ContainmentType.Disjoint)
+                            continue;
+
+                        // Check if control and skip if canvas is 2D
+                        if (a is UIControl control)
+                        {
+                            UICanvas canvas = null;
+                            var controlParent = control.Parent;
+                            while (controlParent != null && controlParent is not Scene)
+                            {
+                                if (controlParent is UICanvas uiCanvas)
+                                {
+                                    canvas = uiCanvas;
+                                    break;
+                                }
+                                controlParent = controlParent.Parent;
+                            }
+
+                            if (canvas != null)
+                            {
+                                if (canvas.Is2D)
+                                    continue;
+                            }
+                        }
+                        else if (a is UICanvas uiCanvas)
+                        {
+                            if (uiCanvas.Is2D)
+                                continue;
+                        }
+
+                        var containsAllPoints = true;
+                        var fallBackToBox = false;
+                        if (a is StaticModel sm)
+                        {
+                            if (sm.Model)
+                            {
+                                var m = sm.Model.LODs[0];
+                                foreach (var mesh in m.Meshes)
+                                {
+                                    var points = mesh.GetCollisionProxyPoints();
+                                    if (points.Length == 0)
+                                    {
+                                        fallBackToBox = true;
+                                        break;
+                                    }
+                                    foreach (var point in points)
+                                    {
+                                        Viewport.ProjectPoint(a.Transform.LocalToWorld(point), out var loc);
+                                        if (!adjustedRect.Contains(loc))
+                                        {
+                                            containsAllPoints = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            fallBackToBox = true;
+                        }
+
+                        if (fallBackToBox)
+                        {
+                            // Check if all corners are in box to select it.
+                            var corners = actorBox.GetCorners();
+                            foreach (var c in corners)
+                            {
+                                Viewport.ProjectPoint(c, out var loc);
+                                if (!adjustedRect.Contains(loc))
+                                {
+                                    containsAllPoints = false;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (containsAllPoints)
+                        {
+                            if (a.HasPrefabLink)
+                                hits.Add(SceneGraphRoot.Find(a.GetPrefabRoot()));
+                            else
+                                hits.Add(SceneGraphRoot.Find(a));
+                        }
+                    }
+                    
+                    if (IsControlDown)
+                    {
+                        var newSelection = new List<SceneGraphNode>();
+                        var currentSelection = _editor.SceneEditing.Selection;
+                        newSelection.AddRange(currentSelection);
+                        foreach (var hit in hits)
+                        {
+                            if (currentSelection.Contains(hit))
+                                newSelection.Remove(hit);
+                            else
+                                newSelection.Add(hit);
+                        }
+                        Select(newSelection);
+                    }
+                    else if (((WindowRootControl)Root).GetKey(KeyboardKeys.Shift))
+                    {
+                        var newSelection = new List<SceneGraphNode>();
+                        var currentSelection = _editor.SceneEditing.Selection;
+                        newSelection.AddRange(hits);
+                        newSelection.AddRange(currentSelection);
+                        Select(newSelection);
+                    }
+                    else
+                    {
+                        Select(hits);
+                    }
+                }
+                
+            }
+        }
+
+        /// <inheritdoc />
+        protected override void OnLeftMouseButtonDown()
+        {
+            base.OnLeftMouseButtonDown();
+
+            if (!_isRubberBandSpanning && !Gizmos.Active.IsControllingMouse && !IsControllingMouse && !IsRightMouseButtonDown)
+            {
+                _tryStartRubberBand = true;
+            }
+        }
+
+        /// <inheritdoc />
         protected override void OnLeftMouseButtonUp()
         {
             // Skip if was controlling mouse or mouse is not over the area
             if (_prevInput.IsControllingMouse || !Bounds.Contains(ref _viewMousePos))
                 return;
 
-            // Try to pick something with the current gizmo
-            Gizmos.Active?.Pick();
+            if (_tryStartRubberBand)
+            {
+                _tryStartRubberBand = false;
+            }
+            
+            // Select rubberbanded rect actor nodes
+            if (_isRubberBandSpanning)
+            {
+                _isRubberBandSpanning = false;
+            }
+            else
+            {
+                // Try to pick something with the current gizmo
+                Gizmos.Active?.Pick();
+            }
 
             // Keep focus
             Focus();
