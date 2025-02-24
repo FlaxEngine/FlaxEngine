@@ -207,7 +207,7 @@ bool MeshAccessor::UpdateMesh(MeshBase* mesh, bool calculateBounds)
     {
         ibData = _data[IB].Get();
         use16BitIndexBuffer = _formats[IB] == PixelFormat::R16_UInt;
-        triangles = _data[IB].Length() / PixelFormatExtensions::SizeInBytes(_formats[IB]);
+        triangles = _data[IB].Length() / PixelFormatExtensions::SizeInBytes(_formats[IB]) / 3;
     }
 
     if (mesh->Init(vertices, triangles, vbData, ibData, use16BitIndexBuffer, vbLayout))
@@ -340,6 +340,11 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
     CHECK_RETURN(vbData.HasItems() && vertices, true);
     CHECK_RETURN(ibData, true);
     CHECK_RETURN(vbLayout.Count() >= vbData.Count(), true);
+    const uint32 indices = triangles * 3;
+    if (use16BitIndexBuffer)
+    {
+        CHECK_RETURN(indices <= MAX_uint16, true);
+    }
     ASSERT(_model);
     GPUBuffer* vertexBuffer0 = nullptr;
     GPUBuffer* vertexBuffer1 = nullptr;
@@ -369,7 +374,7 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
             goto ERROR_LOAD_END;
     }
     indexBuffer = GPUDevice::Instance->CreateBuffer(MESH_BUFFER_NAME(".IB"));
-    if (indexBuffer->Init(GPUBufferDescription::Index(use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32), triangles * 3, ibData)))
+    if (indexBuffer->Init(GPUBufferDescription::Index(use16BitIndexBuffer ? sizeof(uint16) : sizeof(uint32), indices, ibData)))
         goto ERROR_LOAD_END;
 
     // Init collision proxy
