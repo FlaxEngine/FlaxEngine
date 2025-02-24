@@ -159,9 +159,13 @@ void RigidBody::SetCenterOfMassOffset(const Float3& value)
 {
     if (Float3::NearEqual(value, _centerOfMassOffset))
         return;
+
+    //get un offseted center of mass
+    auto com = GetCenterOfMass() - _centerOfMassOffset;
     _centerOfMassOffset = value;
-    if (_actor)
-        PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
+    //applay offset
+    SetCenterOfMass(com + value);
+    //set new offset
 }
 
 void RigidBody::SetConstraints(const RigidbodyConstraints value)
@@ -217,9 +221,16 @@ void RigidBody::SetSleepThreshold(const float value) const
         PhysicsBackend::SetRigidDynamicActorSleepThreshold(_actor, value);
 }
 
-Vector3 RigidBody::GetCenterOfMass() const
+Vector3  RigidBody::GetCenterOfMass() const
 {
-    return _actor ? PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor) : Vector3::Zero;
+    return _actor ? (PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor) - _centerOfMassOffset) : Vector3::Zero;
+}
+
+void RigidBody::SetCenterOfMass(const Vector3& value)
+{
+    if (_actor) {
+        PhysicsBackend::SetRigidDynamicActorCenterOfMass(_actor, value + _centerOfMassOffset);
+    }
 }
 
 bool RigidBody::IsSleeping() const
@@ -277,6 +288,19 @@ void RigidBody::SetSolverIterationCounts(int32 minPositionIters, int32 minVeloci
 {
     if (_actor)
         PhysicsBackend::SetRigidDynamicActorSolverIterationCounts(_actor, minPositionIters, minVelocityIters);
+}
+
+void RigidBody::SnapToCenterOfMass()
+{
+    Vector3 delta = GetCenterOfMass();
+    if (Vector3::NearEqual(delta, Vector3::Zero))
+        return;
+    SetPosition(GetPosition() + delta);
+    for (auto i = 0; i < Children.Count(); i++)
+    {
+        Children[i]->SetPosition(Children[i]->GetPosition() - delta);
+    }
+    SetCenterOfMass(Float3::Zero);
 }
 
 void RigidBody::ClosestPoint(const Vector3& position, Vector3& result) const
@@ -389,6 +413,29 @@ void RigidBody::UpdateScale()
         UpdateMass();
 }
 
+#if USE_EDITOR
+#include "Engine/Debug/DebugDraw.h"
+#include "Engine/Graphics/RenderView.h"
+
+void RigidBody::OnDebugDrawSelected()
+{
+    if (DisplayAttachedColliders)
+    {
+        for (auto i = 0; i < AttachedColliders.Count(); i++)
+        {
+            if (auto c = AttachedColliders[i])
+            {
+                c->OnDebugDrawSelected();
+            }
+        }
+    }
+    //draw center of mass
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition() + (GetOrientation() * (GetCenterOfMass() - GetCenterOfMassOffset())), 5.0f), Color::Red, 0, false);
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition() + (GetOrientation() * GetCenterOfMass()), 2.5f), Color::Aqua, 0, false);
+    Actor::OnDebugDrawSelected();
+}
+#endif
+
 void RigidBody::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base
@@ -491,22 +538,11 @@ void RigidBody::BeginPlay(SceneBeginData* data)
     PhysicsBackend::SetRigidDynamicActorMaxAngularVelocity(_actor, _maxAngularVelocity);
     PhysicsBackend::SetRigidDynamicActorConstraints(_actor, _constraints);
 
-    // Find colliders to attach
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        auto collider = dynamic_cast<Collider*>(Children[i]);
-        if (collider && collider->CanAttach(this))
-        {
-            collider->Attach(this);
-        }
-    }
-
     // Setup mass (calculate or use overriden value)
     UpdateMass();
 
     // Apply the Center Of Mass offset
-    if (!_centerOfMassOffset.IsZero())
-        PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
+    SetCenterOfMassOffset(_centerOfMassOffset);
 
     // Register actor
     PhysicsBackend::AddSceneActor(scene, _actor);
@@ -563,8 +599,15 @@ void RigidBody::OnTransformChanged()
     // Update physics is not during physics state synchronization
     if (!_isUpdatingTransform && _actor)
     {
+        //[Note] the PhysicsBackend::SetRigidActorPose cant exist here
+        //leaving this note as a reminder
+        //it creates phantom forces on children RigidBody, clipping colliders thru the ground and more...
+        //but kinematic bodies need this so nothing is broken the set transform comps shall implement the flag for forcing a update
+        //insted of doing this always
+
         const bool kinematic = GetIsKinematic() && GetEnableSimulation();
-        PhysicsBackend::SetRigidActorPose(_actor, _transform.Translation, _transform.Orientation, kinematic, true);
+        if (kinematic)
+            PhysicsBackend::SetRigidActorPose(_actor, _transform.Translation, _transform.Orientation, kinematic, true);
         UpdateScale();
     }
 
