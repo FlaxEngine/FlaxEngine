@@ -1617,13 +1617,16 @@ Array<Actor*> Level::GetActors(const MClass* type, bool activeOnly)
     return result;
 }
 
-Array<Script*> Level::GetScripts(const MClass* type)
+Array<Script*> Level::GetScripts(const MClass* type, Actor* root)
 {
     Array<Script*> result;
     CHECK_RETURN(type, result);
     ScopeLock lock(ScenesLock);
-    for (int32 i = 0; i < Scenes.Count(); i++)
-        ::GetScripts(type, type->IsInterface(), Scenes[i], result);
+    const bool isInterface = type->IsInterface();
+    if (root)
+        ::GetScripts(type, isInterface, root, result);
+    else for (int32 i = 0; i < Scenes.Count(); i++)
+        ::GetScripts(type, isInterface, Scenes[i], result);
     return result;
 }
 
