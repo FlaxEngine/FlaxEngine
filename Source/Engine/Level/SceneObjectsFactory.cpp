@@ -244,9 +244,7 @@ SceneObject* SceneObjectsFactory::Spawn(Context& context, const ISerializable::D
 
 void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISerializable::DeserializeStream& stream)
 {
-#if ENABLE_ASSERTION
-    CHECK(obj);
-#endif
+    CHECK_DEBUG(obj);
     ISerializeModifier* modifier = context.GetModifier();
     LogContextScope logContext(obj->GetID());
 
