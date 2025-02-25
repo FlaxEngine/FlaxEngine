@@ -37,6 +37,10 @@
 
 #define ACTOR_ORIENTATION_EPSILON 0.000000001f
 
+// Start loop over actor children/scripts from the beginning to account for any newly added or removed actors.
+#define ACTOR_LOOP_START_MODIFIED_HIERARCHY() _isHierarchyDirty = false
+#define ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY() if (_isHierarchyDirty) { _isHierarchyDirty = false; i = -1; }
+
 namespace
 {
     Actor* GetChildByPrefabObjectId(Actor* a, const Guid& prefabObjectId)
@@ -74,6 +78,7 @@ Actor::Actor(const SpawnParams& params)
     , _isActiveInHierarchy(true)
     , _isPrefabRoot(false)
     , _isEnabled(false)
+    , _isHierarchyDirty(false)
     , _layer(0)
     , _staticFlags(StaticFlags::FullyStatic)
     , _localTransform(Transform::Identity)
@@ -109,9 +114,11 @@ void Actor::OnEnableInHierarchy()
     {
         OnEnable();
 
+        ACTOR_LOOP_START_MODIFIED_HIERARCHY();
         for (int32 i = 0; i < Children.Count(); i++)
         {
             Children.Get()[i]->OnEnableInHierarchy();
+            ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY();
         }
     }
 }
@@ -120,9 +127,11 @@ void Actor::OnDisableInHierarchy()
 {
     if (IsActiveInHierarchy() && GetScene() && _isEnabled)
     {
+        ACTOR_LOOP_START_MODIFIED_HIERARCHY();
         for (int32 i = 0; i < Children.Count(); i++)
         {
             Children.Get()[i]->OnDisableInHierarchy();
+            ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY();
         }
 
         OnDisable();
@@ -165,6 +174,7 @@ void Actor::OnDeleteObject()
         {
             // Unlink from the parent
             _parent->Children.RemoveKeepOrder(this);
+            _parent->_isHierarchyDirty = true;
             _parent = nullptr;
             _scene = nullptr;
         }
@@ -173,6 +183,7 @@ void Actor::OnDeleteObject()
     {
         // Unlink from the parent
         _parent->Children.RemoveKeepOrder(this);
+        _parent->_isHierarchyDirty = true;
         _parent = nullptr;
         _scene = nullptr;
     }
@@ -289,6 +300,7 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
     if (_parent)
     {
         _parent->Children.RemoveKeepOrder(this);
+        _parent->_isHierarchyDirty = true;
     }
 
     // Set value
@@ -298,6 +310,7 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
     if (_parent)
     {
         _parent->Children.Add(this);
+        _parent->_isHierarchyDirty = true;
     }
 
     // Sync scene change if need to
@@ -388,6 +401,7 @@ void Actor::SetOrderInParent(int32 index)
             // Change order
             parentChildren.Insert(index, this);
         }
+        _parent->_isHierarchyDirty = true;
 
         // Fire event
         OnOrderInParentChanged();
@@ -912,11 +926,15 @@ void Actor::BeginPlay(SceneBeginData* data)
     OnBeginPlay();
 
     // Update scripts
+    ACTOR_LOOP_START_MODIFIED_HIERARCHY();
     for (int32 i = 0; i < Scripts.Count(); i++)
     {
         auto e = Scripts.Get()[i];
         if (!e->IsDuringPlay())
+        {
             e->BeginPlay(data);
+            ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY();
+        }
     }
 
     // Update children
@@ -924,7 +942,10 @@ void Actor::BeginPlay(SceneBeginData* data)
     {
         auto e = Children.Get()[i];
         if (!e->IsDuringPlay())
+        {
             e->BeginPlay(data);
+            ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY();
+        }
     }
 
     // Fire events for scripting
@@ -963,19 +984,27 @@ void Actor::EndPlay()
     Flags &= ~ObjectFlags::IsDuringPlay;
 
     // Call event deeper
+    ACTOR_LOOP_START_MODIFIED_HIERARCHY();
     for (int32 i = 0; i < Children.Count(); i++)
     {
         auto e = Children.Get()[i];
         if (e->IsDuringPlay())
+        {
             e->EndPlay();
+            ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY();
+        }
     }
 
     // Inform attached scripts
+    ACTOR_LOOP_START_MODIFIED_HIERARCHY();
     for (int32 i = 0; i < Scripts.Count(); i++)
     {
         auto e = Scripts.Get()[i];
         if (e->IsDuringPlay())
+        {
             e->EndPlay();
+            ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY();
+        }
     }
 
     // Cleanup managed object
@@ -1177,18 +1206,25 @@ void Actor::OnEnable()
     CHECK_DEBUG(!_isEnabled);
     _isEnabled = true;
 
+    ACTOR_LOOP_START_MODIFIED_HIERARCHY();
     for (int32 i = 0; i < Scripts.Count(); i++)
     {
         auto script = Scripts[i];
         if (script->GetEnabled() && !script->_wasStartCalled)
+        {
             script->Start();
+            ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY();
+        }
     }
 
     for (int32 i = 0; i < Scripts.Count(); i++)
     {
         auto script = Scripts[i];
         if (script->GetEnabled() && !script->_wasEnableCalled)
+        {
             script->Enable();
+            ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY();
+        }
     }
 }
 

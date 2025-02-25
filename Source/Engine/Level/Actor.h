@@ -37,6 +37,7 @@ protected:
     uint16 _isActiveInHierarchy : 1;
     uint16 _isPrefabRoot : 1;
     uint16 _isEnabled : 1;
+    uint16 _isHierarchyDirty : 1;
     uint16 _drawNoCulling : 1;
     uint16 _drawCategory : 4;
     byte _layer;
