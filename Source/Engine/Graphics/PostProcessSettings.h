@@ -464,7 +464,7 @@ API_STRUCT() struct FLAXENGINE_API BloomSettings : ISerializable
     /// <summary>
     /// Overall bloom effect strength. Higher values create a stronger glow effect.
     /// </summary>
-    API_FIELD(Attributes "Limit(0, 100.0f, 0.001f), EditorOrder(1), PostProcessSetting((int)BloomSettingsOverride.Intensity)")
+    API_FIELD(Attributes="Limit(0, 100.0f, 0.001f), EditorOrder(1), PostProcessSetting((int)BloomSettingsOverride.Intensity)")
         float Intensity = 1.0f;
 
     /// <summary>
