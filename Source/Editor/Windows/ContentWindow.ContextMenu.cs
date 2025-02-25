@@ -76,6 +76,15 @@ namespace FlaxEditor.Windows
                     });
 
                 cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(item.Path)));
+                
+                if (!String.IsNullOrEmpty(Editor.Instance.Windows.ContentWin._itemsSearchBox.Text))
+                {
+                    cm.AddButton("Show in Content Panel", () =>
+                    {
+                        Editor.Instance.Windows.ContentWin.ClearItemsSearch();
+                        Editor.Instance.Windows.ContentWin.Select(item);
+                    });
+                }
 
                 if (item.HasDefaultThumbnail == false)
                 {
