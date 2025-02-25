@@ -21,6 +21,7 @@ namespace FlaxEditor.Modules
         private bool _enableEvents;
         private bool _isDuringFastSetup;
         private bool _rebuildFlag;
+        private bool _rebuildInitFlag;
         private int _itemsCreated;
         private int _itemsDeleted;
         private readonly HashSet<MainContentTreeNode> _dirtyNodes = new HashSet<MainContentTreeNode>();
@@ -820,6 +821,7 @@ namespace FlaxEditor.Modules
             Profiler.BeginEvent("ContentDatabase.Rebuild");
             var startTime = Platform.TimeSeconds;
             _rebuildFlag = false;
+            _rebuildInitFlag = false;
             _enableEvents = false;
 
             // Load all folders
@@ -1240,6 +1242,15 @@ namespace FlaxEditor.Modules
                     FlaxEngine.Scripting.InvokeOnUpdate(() => OnImportFileDone(path));
             };
             _enableEvents = true;
+            _rebuildInitFlag = true;
+        }
+
+        /// <inheritdoc />
+        public override void OnEndInit()
+        {
+            // Handle init when project was loaded without scripts loading ()
+            if (_rebuildInitFlag)
+                RebuildInternal();
         }
 
         private void OnImportFileDone(string path)
