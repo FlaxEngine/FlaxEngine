@@ -15,11 +15,16 @@ class PostProcessingPass : public RendererPass<PostProcessingPass>
 {
 private:
 
-    GPU_CB_STRUCT(Data {
-        float BloomLimit;
-        float BloomThreshold;
-        float BloomMagnitude;
-        float BloomBlurSigma;
+    GPU_CB_STRUCT(Data{
+        float BloomIntensity;             // Overall bloom strength multiplier
+        float BloomClamp;                 // Maximum brightness limit for bloom
+        float BloomThreshold;             // Luminance threshold where bloom begins
+        float BloomThresholdKnee;         // Controls the threshold rolloff curve
+        float BloomBaseMix;               // Base mip contribution
+        float BloomHighMix;               // High mip contribution
+        float BloomMipCount;
+        float BloomLayer;
+
 
         Float3 VignetteColor;
         float VignetteShapeFactor;
@@ -56,7 +61,7 @@ private:
         Matrix LensFlareStarMat;
         });
 
-    GPU_CB_STRUCT(GaussianBlurData {
+    GPU_CB_STRUCT(GaussianBlurData{
         Float2 Size;
         float Dummy3;
         float Dummy4;
@@ -65,8 +70,9 @@ private:
 
     // Post Processing
     AssetReference<Shader> _shader;
-    GPUPipelineState* _psThreshold;
-    GPUPipelineState* _psScale;
+    GPUPipelineState* _psBloomBrightPass;
+    GPUPipelineState* _psBloomDownsample;
+    GPUPipelineState* _psBloomDualFilterUpsample;
     GPUPipelineState* _psBlurH;
     GPUPipelineState* _psBlurV;
     GPUPipelineState* _psGenGhosts;
@@ -115,8 +121,9 @@ private:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
-        _psThreshold->ReleaseGPU();
-        _psScale->ReleaseGPU();
+        _psBloomBrightPass->ReleaseGPU();
+        _psBloomDownsample->ReleaseGPU();
+        _psBloomDualFilterUpsample->ReleaseGPU();
         _psBlurH->ReleaseGPU();
         _psBlurV->ReleaseGPU();
         _psGenGhosts->ReleaseGPU();
