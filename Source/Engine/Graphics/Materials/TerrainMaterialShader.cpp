@@ -191,8 +191,11 @@ bool TerrainMaterialShader::Load()
     psDesc.DepthFunc = ComparisonFunc::Less;
     psDesc.HS = nullptr;
     psDesc.DS = nullptr;
-    // TODO: masked terrain materials (depth pass should clip holes)
     psDesc.PS = nullptr;
+    if (EnumHasAnyFlags(_info.UsageFlags, MaterialUsageFlags::UseMask))
+    {
+        psDesc.PS = _shader->GetPS("PS_Depth");
+    }
     _cache.Depth.Init(psDesc);
 
     return false;
