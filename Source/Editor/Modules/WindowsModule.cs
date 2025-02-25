@@ -814,15 +814,31 @@ namespace FlaxEditor.Modules
 
         internal void AddToRestore(AssetEditorWindow win)
         {
-            var type = win.GetType();
-            var winData = new WindowRestoreData();
+            AddToRestore(win, win.GetType(), new WindowRestoreData
+            {
+                AssetItemID = win.Item.ID,
+            });
+        }
+
+        internal void AddToRestore(CustomEditorWindow win)
+        {
+            AddToRestore(win.Window, win.GetType(), new WindowRestoreData());
+        }
+
+        private void AddToRestore(EditorWindow win, Type type, WindowRestoreData winData)
+        {
+            // Validate if can restore type
+            var constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
+            if (constructor == null || type.IsGenericType)
+                return;
+
             var panel = win.ParentDockPanel;
 
             // Ensure that this window is only selected following recompilation
             // if it was the active tab in its dock panel. Otherwise, there is a
             // risk of interrupting the user's workflow by potentially selecting
             // background tabs.
-            var window = win.RootWindow?.Window;
+            var window = win.RootWindow.Window;
             winData.SelectOnShow = panel.SelectedTab == win;
             winData.DockedTabIndex = 0;
             if (panel is FloatWindowDockPanel && window != null && panel.TabsCount == 1)
@@ -844,52 +860,6 @@ namespace FlaxEditor.Modules
                         break;
                     }
                 }
-                if (panel.TabsCount > 1)
-                {
-                    winData.DockState = DockState.DockFill;
-                    winData.DockedTo = panel;
-                }
-                else
-                {
-                    winData.DockState = panel.TryGetDockState(out var splitterValue);
-                    winData.DockedTo = panel.ParentDockPanel;
-                    winData.SplitterValue = splitterValue;
-                }
-            }
-            winData.AssemblyName = type.Assembly.GetName().Name;
-            winData.TypeName = type.FullName;
-            winData.AssetItemID = win.Item.ID;
-            _restoreWindows.Add(winData);
-        }
-
-        internal void AddToRestore(CustomEditorWindow win)
-        {
-            var type = win.GetType();
-
-            // Validate if can restore type
-            var constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
-            if (constructor == null || type.IsGenericType)
-                return;
-
-            var winData = new WindowRestoreData();
-            var panel = win.Window.ParentDockPanel;
-
-            // Ensure that this window is only selected following recompilation
-            // if it was the active tab in its dock panel. Otherwise, there is a
-            // risk of interrupting the user's workflow by potentially selecting
-            // background tabs.
-            winData.SelectOnShow = panel.SelectedTab == win.Window;
-            if (panel is FloatWindowDockPanel)
-            {
-                winData.DockState = DockState.Float;
-                var window = win.Window.RootWindow.Window;
-                winData.FloatPosition = window.Position;
-                winData.FloatSize = window.ClientSize;
-                winData.Maximize = window.IsMaximized;
-                winData.Minimize = window.IsMinimized;
-            }
-            else
-            {
                 if (panel.TabsCount > 1)
                 {
                     winData.DockState = DockState.DockFill;
