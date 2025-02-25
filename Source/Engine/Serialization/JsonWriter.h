@@ -86,7 +86,7 @@ public:
 
     void String(const StringAnsi& value)
     {
-        String(value.Get(), static_cast<unsigned>(value.Length()));
+        String(value.Get(), value.Length());
     }
 
     FORCE_INLINE void RawValue(const StringAnsi& str)

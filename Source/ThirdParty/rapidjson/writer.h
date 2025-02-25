@@ -202,7 +202,6 @@ public:
     }
 
     bool String(const Ch* str, SizeType length, bool copy = false) {
-        RAPIDJSON_ASSERT(str != 0);
         (void)copy;
         Prefix(kStringType);
         return EndValue(WriteString(str, length));
