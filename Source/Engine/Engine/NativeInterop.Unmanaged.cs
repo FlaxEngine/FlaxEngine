@@ -1148,24 +1148,44 @@ namespace FlaxEngine.Interop
                     clearCacheMethod.Invoke(null, new object[] { null });
 
                 Type TypeDescriptorType = typeof(System.ComponentModel.TypeDescriptor);
+                object s_providerTable = TypeDescriptorType?.GetField("s_providerTable", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
 
+                // Added in .NET runtime 8.0.10, used as the main locking object
+                object s_commonSyncObject = TypeDescriptorType?.GetField("s_commonSyncObject", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                if (s_commonSyncObject == null)
+                    s_commonSyncObject = s_providerTable;
+
+                // Removed in .NET runtime 8.0.7
                 object s_internalSyncObject = TypeDescriptorType?.GetField("s_internalSyncObject", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
-                System.Collections.Hashtable s_defaultProviders = (System.Collections.Hashtable)TypeDescriptorType?.GetField("s_defaultProviders", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                object s_defaultProviders = TypeDescriptorType?.GetField("s_defaultProviders", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
                 if (s_internalSyncObject != null && s_defaultProviders != null)
                 {
                     lock (s_internalSyncObject)
-                        s_defaultProviders.Clear();
+                        InvokeClear(s_defaultProviders);
                 }
 
-                object s_providerTable = TypeDescriptorType?.GetField("s_providerTable", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
-                System.Collections.Hashtable s_providerTypeTable = (System.Collections.Hashtable)TypeDescriptorType?.GetField("s_providerTypeTable", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                // Replaces s_defaultProviders in 8.0.7
+                object s_defaultProviderInitialized = TypeDescriptorType?.GetField("s_defaultProviderInitialized", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                if (s_commonSyncObject != null && s_defaultProviderInitialized != null)
+                {
+                    lock (s_commonSyncObject)
+                        InvokeClear(s_defaultProviderInitialized);
+                }
+
+                object s_providerTypeTable = TypeDescriptorType?.GetField("s_providerTypeTable", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
                 if (s_providerTable != null && s_providerTypeTable != null)
                 {
-                    lock (s_providerTable)
-                        s_providerTypeTable.Clear();
-                    TypeDescriptorType.GetField("s_providerTable", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
-                        ?.FieldType.GetMethods(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault(x => x.Name == "Clear")
-                        ?.Invoke(s_providerTable, new object[] { });
+                    lock (s_commonSyncObject)
+                        InvokeClear(s_providerTypeTable);
+                    InvokeClear(s_providerTable);
+                }
+
+                static void InvokeClear(object instance)
+                {
+                    Type type = instance.GetType();
+                    FlaxEngine.Assertions.Assert.IsTrue(type.Name == "ConcurrentDictionary`2" || type.Name == "Hashtable" || type.Name == "WeakHashtable");
+                    type.GetMethods(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault(x => x.Name == "Clear")
+                        ?.Invoke(instance, new object[] { });
                 }
             }
 
