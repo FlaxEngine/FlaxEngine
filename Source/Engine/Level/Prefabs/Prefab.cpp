@@ -94,6 +94,24 @@ SceneObject* Prefab::GetDefaultInstance(const Guid& objectId)
     return result;
 }
 
+bool Prefab::GetNestedObject(const Guid& objectId, Guid& outPrefabId, Guid& outObjectId) const
+{
+    if (WaitForLoaded())
+        return false;
+    bool result = false;
+    Guid result1 = Guid::Empty, result2 = Guid::Empty;
+    const ISerializable::DeserializeStream** prefabObjectDataPtr = ObjectsDataCache.TryGet(objectId);
+    if (prefabObjectDataPtr)
+    {
+        const ISerializable::DeserializeStream& prefabObjectData = **prefabObjectDataPtr;
+        result = JsonTools::GetGuidIfValid(result1, prefabObjectData, "PrefabID") &&
+                JsonTools::GetGuidIfValid(result2, prefabObjectData, "PrefabObjectID");
+    }
+    outPrefabId = result1;
+    outObjectId = result2;
+    return result;
+}
+
 void Prefab::DeleteDefaultInstance()
 {
     ScopeLock lock(Locker);

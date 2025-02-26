@@ -617,21 +617,6 @@ void ManagedEditor::WipeOutLeftoverSceneObjects()
         ObjectsRemovalService::Flush();
 }
 
-void ManagedEditor::GetPrefabNestedObject(const Guid& prefabId, const Guid& prefabObjectId, Guid& outPrefabId, Guid& outPrefabObjectId)
-{
-    outPrefabId = Guid::Empty;
-    outPrefabObjectId = Guid::Empty;
-    const auto prefab = Content::Load<Prefab>(prefabId);
-    if (!prefab)
-        return;
-    const ISerializable::DeserializeStream** prefabObjectDataPtr = prefab->ObjectsDataCache.TryGet(prefabObjectId);
-    if (!prefabObjectDataPtr)
-        return;
-    const ISerializable::DeserializeStream& prefabObjectData = **prefabObjectDataPtr;
-    JsonTools::GetGuidIfValid(outPrefabId, prefabObjectData, "PrefabID");
-    JsonTools::GetGuidIfValid(outPrefabObjectId, prefabObjectData, "PrefabObjectID");
-}
-
 void ManagedEditor::OnEditorAssemblyLoaded(MAssembly* assembly)
 {
     ASSERT(!HasManagedInstance());

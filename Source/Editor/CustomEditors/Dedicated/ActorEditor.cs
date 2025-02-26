@@ -69,8 +69,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         Values.SetReferenceValue(prefabInstance);
 
                         // Display prefab UI (when displaying object inside Prefab Window then display only nested prefabs)
-                        var prefabId = prefab.ID;
-                        Editor.GetPrefabNestedObject(ref prefabId, ref prefabObjectId, out var nestedPrefabId, out var nestedPrefabObjectId);
+                        prefab.GetNestedObject(ref prefabObjectId, out var nestedPrefabId, out var nestedPrefabObjectId);
                         var nestedPrefab = FlaxEngine.Content.Load<Prefab>(nestedPrefabId);
                         var panel = layout.CustomContainer<UniformGridPanel>();
                         panel.CustomControl.Height = 20.0f;
