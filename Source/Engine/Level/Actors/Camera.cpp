@@ -246,11 +246,16 @@ Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewp
 Viewport Camera::GetViewport() const
 {
     Viewport result = Viewport(Float2::Zero);
+    float dpiScale = Platform::GetDpiScale();
 
 #if USE_EDITOR
     // Editor
     if (Editor::Managed)
+    {
         result.Size = Editor::Managed->GetGameWindowSize();
+        if (auto* window = Editor::Managed->GetGameWindow())
+            dpiScale = window->GetDpiScale();
+    }
 #else
 	// Game
 	auto mainWin = Engine::MainWindow;
@@ -258,8 +263,12 @@ Viewport Camera::GetViewport() const
 	{
 		const auto size = mainWin->GetClientSize();
 		result.Size = size;
+        dpiScale = mainWin->GetDpiScale();
 	}
 #endif
+
+    // Remove DPI scale (game viewport coords are unscaled)
+    result.Size /= dpiScale;
 
     // Fallback to the default value
     if (result.Size.MinValue() <= ZeroTolerance)

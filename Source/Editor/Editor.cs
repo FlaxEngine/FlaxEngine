@@ -1550,9 +1550,9 @@ namespace FlaxEditor
                 // Handle case when Game window is not selected in tab view
                 var dockedTo = gameWin.ParentDockPanel;
                 if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
-                    result = dockedTo.SelectedTab.Size * root.DpiScale;
+                    result = dockedTo.SelectedTab.Size;
                 else
-                    result = gameWin.Viewport.Size * root.DpiScale;
+                    result = gameWin.Viewport.Size;
 
                 result = Float2.Round(result);
             }
