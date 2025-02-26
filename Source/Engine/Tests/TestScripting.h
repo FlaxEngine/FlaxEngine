@@ -7,6 +7,8 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/SerializableScriptingObject.h"
+#include "Engine/Scripting/SoftTypeReference.h"
+#include "Engine/Content/SceneReference.h"
 
 // Test default values init on fields.
 API_STRUCT(NoDefault) struct TestDefaultValues
@@ -124,10 +126,17 @@ API_STRUCT(NoDefault) struct TestStruct : public ISerializable
     API_FIELD() Float3 Vector = Float3::One;
     // Ref
     API_FIELD() ScriptingObject* Object = nullptr;
+    // Soft Type Ref
+    API_FIELD() SoftTypeReference<ScriptingObject> SoftTypeRef;
+    // Scene Ref
+    API_FIELD() SceneReference SceneRef;
 
     friend bool operator==(const TestStruct& lhs, const TestStruct& rhs)
     {
-        return lhs.Vector == rhs.Vector && lhs.Object == rhs.Object;
+        return lhs.Vector == rhs.Vector && 
+            lhs.Object == rhs.Object && 
+            lhs.SoftTypeRef == rhs.SoftTypeRef &&
+            lhs.SceneRef == rhs.SceneRef;
     }
 };
 

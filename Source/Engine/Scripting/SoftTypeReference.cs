@@ -39,6 +39,16 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Implicit cast operator from type name to string.
+        /// </summary>
+        /// <param name="s">The soft type reference.</param>
+        /// <returns>The type name.</returns>
+        public static implicit operator string(SoftTypeReference s)
+        {
+            return s._typeName;
+        }
+
+        /// <summary>
         /// Gets the soft type reference from full name.
         /// </summary>
         /// <param name="s">The type name.</param>

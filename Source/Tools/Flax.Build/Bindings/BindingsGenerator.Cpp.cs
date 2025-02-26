@@ -169,6 +169,8 @@ namespace Flax.Build.Bindings
                 return $"Variant(StringAnsiView({value}))";
             if (typeInfo.IsObjectRef)
                 return $"Variant({value}.Get())";
+            if (typeInfo.Type == "SoftTypeReference")
+                return $"Variant::Typename(StringAnsiView({value}))";
             if (typeInfo.IsArray)
             {
                 var wrapperName = GenerateCppWrapperNativeToVariantMethodName(typeInfo);
@@ -227,6 +229,8 @@ namespace Flax.Build.Bindings
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((ScriptingObject*){value})";
             if (typeInfo.IsObjectRef)
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((Asset*){value})";
+            if (typeInfo.Type == "SoftTypeReference")
+                return $"(StringAnsiView){value}";
             if (typeInfo.IsArray)
                 throw new Exception($"Not supported type to convert from the Variant to fixed-size array '{typeInfo}[{typeInfo.ArraySize}]'.");
             if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
@@ -258,10 +262,24 @@ namespace Flax.Build.Bindings
                 if (apiType.IsScriptingObject)
                     return $"ScriptingObject::Cast<{typeInfo.Type}>((ScriptingObject*){value})";
                 if (apiType.IsStruct && !CppInBuildVariantStructures.Contains(apiType.Name))
+                {
+                    var name = apiType.FullNameNative;
+                    if (typeInfo.GenericArgs != null)
+                    {
+                        name += '<';
+                        for (var i = 0; i < typeInfo.GenericArgs.Count; i++)
+                        {
+                            if (i != 0)
+                                name += ", ";
+                            name += typeInfo.GenericArgs[i];
+                        }
+                        name += '>';
+                    }
                     if (typeInfo.IsPtr)
-                        return $"({apiType.FullNameNative}*){value}.AsBlob.Data";
+                        return $"({name}*){value}.AsBlob.Data";
                     else
-                        return $"*({apiType.FullNameNative}*){value}.AsBlob.Data";
+                        return $"*({name}*){value}.AsBlob.Data";
+                }
             }
 
             if (typeInfo.IsPtr)
