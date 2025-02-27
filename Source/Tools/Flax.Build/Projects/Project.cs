@@ -253,9 +253,9 @@ namespace Flax.Build.Projects
         /// <summary>
         /// Generates the project.
         /// </summary>
-        public virtual void Generate(string solutionPath)
+        public virtual void Generate(string solutionPath, bool isMainProject)
         {
-            Generator.GenerateProject(this, solutionPath);
+            Generator.GenerateProject(this, solutionPath, isMainProject);
         }
 
         /// <inheritdoc />

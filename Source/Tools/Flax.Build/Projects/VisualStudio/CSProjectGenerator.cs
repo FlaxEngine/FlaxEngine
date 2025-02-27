@@ -26,7 +26,7 @@ namespace Flax.Build.Projects.VisualStudio
         public override TargetType? Type => TargetType.DotNet;
 
         /// <inheritdoc />
-        public override void GenerateProject(Project project, string solutionPath)
+        public override void GenerateProject(Project project, string solutionPath, bool isMainProject)
         {
             var csProjectFileContent = new StringBuilder();
 
