@@ -712,7 +712,7 @@ bool Prefab::ApplyAll(Actor* targetActor)
         for (int32 i = 0; i < nestedPrefabIds.Count(); i++)
         {
             const auto nestedPrefab = Content::LoadAsync<Prefab>(nestedPrefabIds[i]);
-            if (nestedPrefab && nestedPrefab != this && (nestedPrefab->Flags & ObjectFlags::WasMarkedToDelete) == ObjectFlags::None)
+            if (nestedPrefab && nestedPrefab != this && EnumHasNoneFlags(nestedPrefab->Flags, ObjectFlags::WasMarkedToDelete))
             {
                 allPrefabs.Add(nestedPrefab);
             }
@@ -822,7 +822,37 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
     rapidjson_flax::StringBuffer dataBuffer;
     {
         CompactJsonWriter writerObj(dataBuffer);
-        PrefabInstanceData::SerializeObjects(*targetObjects.Value, writerObj);
+        JsonWriter& writer = writerObj;
+        writer.StartArray();
+        for (int32 i = 0; i < targetObjects->Count(); i++)
+        {
+            SceneObject* obj = targetObjects.Value->At(i);
+
+            // Check the whole chain of prefab references to be valid for this object
+            bool brokenPrefab = false;
+            Guid nestedPrefabId = obj->GetPrefabID(), nestedPrefabObjectId = obj->GetPrefabObjectID();
+            while (!brokenPrefab && nestedPrefabId.IsValid() && nestedPrefabObjectId.IsValid())
+            {
+                auto prefab = Content::Load<Prefab>(nestedPrefabId);
+                if (prefab)
+                {
+                    prefab->GetNestedObject(nestedPrefabObjectId, nestedPrefabId, nestedPrefabObjectId);
+                }
+                else
+                {
+                    LOG(Warning, "Missing prefab {0}.", nestedPrefabId);
+                    brokenPrefab = true;
+                }
+            }
+            if (brokenPrefab)
+            {
+                LOG(Warning, "Broken prefab reference on object {0}. Breaking linkage to inline object inside prefab.", GetObjectName(obj));
+                obj->BreakPrefabLink();
+            }
+
+            writer.SceneObject(obj);
+        }
+        writer.EndArray();
     }
 
     // Parse json document and modify serialized data to extract only modified properties
@@ -851,7 +881,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
             SceneObject* obj = targetObjects.Value->At(i);
             auto data = it->GetObject();
 
-            // Check if object is from that prefab
+            // Check if object is from this prefab
             if (obj->GetPrefabID() == prefabId)
             {
                 if (!obj->GetPrefabObjectID().IsValid())
@@ -925,7 +955,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         {
             const SceneObject* obj = targetObjects->At(i);
 
-            // Check if object is from that prefab
+            // Check if object is from this prefab
             if (obj->GetPrefabID() == prefabId)
             {
                 // Map prefab instance to existing prefab object

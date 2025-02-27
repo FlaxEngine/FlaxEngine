@@ -70,6 +70,15 @@ public:
     /// <returns>The object of the prefab loaded from the prefab. Contains the default values. It's not added to gameplay but deserialized with postLoad and init event fired.</returns>
     API_FUNCTION() SceneObject* GetDefaultInstance(API_PARAM(Ref) const Guid& objectId);
 
+    /// <summary>
+    /// Gets the reference to the other nested prefab for a specific prefab object.
+    /// </summary>
+    /// <param name="objectId">The ID of the object in this prefab.</param>
+    /// <param name="outPrefabId">Result ID of the prefab asset referenced by the given object.</param>
+    /// <param name="outObjectId">Result ID of the prefab object referenced by the given object.</param>
+    /// <returns>True if got valid reference, otherwise false.</returns>
+    API_FUNCTION() bool GetNestedObject(API_PARAM(Ref) const Guid& objectId, API_PARAM(Out) Guid& outPrefabId, API_PARAM(Out) Guid& outObjectId) const;
+
 #if USE_EDITOR
     /// <summary>
     /// Applies the difference from the prefab object instance, saves the changes and synchronizes them with the active instances of the prefab asset.

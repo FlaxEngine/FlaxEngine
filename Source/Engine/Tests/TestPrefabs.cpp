@@ -559,7 +559,7 @@ TEST_CASE("Prefabs")
         Content::DeleteAsset(prefabNested1);
         Content::DeleteAsset(prefabBase);
     }
-    SECTION("Test Applying Prefab ChangeTo Object References")
+    SECTION("Test Applying Prefab Change To Object References")
     {
         // https://github.com/FlaxEngine/FlaxEngine/issues/3136
 
@@ -613,5 +613,79 @@ TEST_CASE("Prefabs")
         instanceA->DeleteObject();
         instanceB->DeleteObject();
         Content::DeleteAsset(prefab);
+    }
+    SECTION("Test Applying Prefab With Missing Nested Prefab")
+    {
+        // https://github.com/FlaxEngine/FlaxEngine/issues/3244
+
+        // Create Prefab B with just root object
+        AssetReference<Prefab> prefabB = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(prefabB);
+        Guid id;
+        Guid::Parse("25dbe4b0416be0777a6ce59e8788b10f", id);
+        prefabB->ChangeID(id);
+        auto prefabBInit = prefabB->Init(Prefab::TypeName,
+                                         "["
+                                         "{"
+                                         "\"ID\": \"aac6b9644492fbca1a6ab0a7904a557e\","
+                                         "\"TypeName\": \"FlaxEngine.ExponentialHeightFog\","
+                                         "\"Name\": \"Prefab B.Root\""
+                                         "}"
+                                         "]");
+        REQUIRE(!prefabBInit);
+
+        // Create Prefab A with nested Prefab B attached to the root
+        AssetReference<Prefab> prefabA = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(prefabA);
+        Guid::Parse("4cb744714f746e31855f41815612d14b", id);
+        prefabA->ChangeID(id);
+        auto prefabAInit = prefabA->Init(Prefab::TypeName,
+                                         "["
+                                         "{"
+                                         "\"ID\": \"244274a04cc60d56a2f024bfeef5772d\","
+                                         "\"TypeName\": \"FlaxEngine.SpotLight\","
+                                         "\"Name\": \"Prefab A.Root\""
+                                         "},"
+                                         "{"
+                                         "\"ID\": \"1e51f1094f430733333f8280e78dfcc3\","
+                                         "\"PrefabID\": \"25dbe4b0416be0777a6ce59e8788b10f\","
+                                         "\"PrefabObjectID\": \"aac6b9644492fbca1a6ab0a7904a557e\","
+                                         "\"ParentID\": \"244274a04cc60d56a2f024bfeef5772d\""
+                                         "}"
+                                         "]");
+        REQUIRE(!prefabAInit);
+
+        // Spawn test instances of both prefabs
+        ScriptingObjectReference<Actor> instanceA = PrefabManager::SpawnPrefab(prefabA);
+        ScriptingObjectReference<Actor> instanceB = PrefabManager::SpawnPrefab(prefabB);
+
+        // Delete nested prefab
+        Content::DeleteAsset(prefabB);
+        
+        // Apply instance A and verify it's fine even tho prefab B doesn't exist anymore
+        bool applyResult = PrefabManager::ApplyAll(instanceA);
+        REQUIRE(!applyResult);
+
+        // Check state of objects
+        REQUIRE(instanceA);
+        REQUIRE(instanceA->Children.Count() == 1);
+        REQUIRE(instanceA->Children[0] != nullptr);
+        REQUIRE(instanceA->Children[0]->Is<ExponentialHeightFog>());
+        REQUIRE(instanceB);
+        REQUIRE(instanceB->Is<ExponentialHeightFog>());
+
+        // Verify if prefab has new data to properly spawn another prefab
+        ScriptingObjectReference<Actor> instanceC = PrefabManager::SpawnPrefab(prefabA);
+        REQUIRE(instanceC);
+        REQUIRE(instanceC->Children.Count() == 1);
+        REQUIRE(instanceC->Children[0] != nullptr);
+        REQUIRE(instanceC->Children[0]->Is<ExponentialHeightFog>());
+
+        // Cleanup
+        instanceA->DeleteObject();
+        instanceB->DeleteObject();
+        instanceC->DeleteObject();
+        Content::DeleteAsset(prefabA);
+
     }
 }

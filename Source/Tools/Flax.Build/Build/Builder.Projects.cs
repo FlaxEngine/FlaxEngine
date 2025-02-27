@@ -559,7 +559,7 @@ namespace Flax.Build
                     foreach (var project in projects)
                     {
                         Log.Verbose(project.Name + " -> " + project.Path);
-                        project.Generate(solutionPath);
+                        project.Generate(solutionPath, project == mainSolutionProject);
                     }
                 }
 
@@ -638,7 +638,7 @@ namespace Flax.Build
                     using (new ProfileEventScope("GenerateProject"))
                     {
                         Log.Verbose("Project " + rulesProjectName + " -> " + project.Path);
-                        dotNetProjectGenerator.GenerateProject(project, solutionPath);
+                        dotNetProjectGenerator.GenerateProject(project, solutionPath, project == mainSolutionProject);
                     }
 
                     projects.Add(project);

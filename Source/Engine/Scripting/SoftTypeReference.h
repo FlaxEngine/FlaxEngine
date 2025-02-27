@@ -12,7 +12,7 @@
 /// The soft reference to the scripting type contained in the scripting assembly.
 /// </summary>
 template<typename T = ScriptingObject>
-API_STRUCT(InBuild) struct SoftTypeReference
+API_STRUCT(InBuild, MarshalAs=StringAnsi) struct SoftTypeReference
 {
 protected:
     StringAnsi _typeName;
@@ -64,7 +64,7 @@ public:
         return *this;
     }
 
-    FORCE_INLINE SoftTypeReference& operator=(const StringAnsiView& s)
+    FORCE_INLINE SoftTypeReference& operator=(const StringAnsiView& s) noexcept
     {
         _typeName = s;
         return *this;
@@ -93,6 +93,16 @@ public:
     FORCE_INLINE operator bool() const
     {
         return _typeName.HasChars();
+    }
+
+    operator StringAnsi() const
+    {
+        return _typeName;
+    }
+
+    String ToString() const
+    {
+        return _typeName.ToString();
     }
 
 public:

@@ -3158,6 +3158,13 @@ Variant Variant::Parse(const StringView& text, const VariantType& type)
     return result;
 }
 
+Variant Variant::Typename(const StringAnsiView& value)
+{
+    Variant result;
+    result.SetTypename(value);
+    return result;
+}
+
 bool Variant::CanCast(const Variant& v, const VariantType& to)
 {
     if (v.Type == to)

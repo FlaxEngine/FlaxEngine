@@ -410,6 +410,8 @@ public:
         return MoveTemp(v);
     }
 
+    static Variant Typename(const StringAnsiView& value);
+
     static bool CanCast(const Variant& v, const VariantType& to);
     static Variant Cast(const Variant& v, const VariantType& to);
     static bool NearEqual(const Variant& a, const Variant& b, float epsilon = 1e-6f);

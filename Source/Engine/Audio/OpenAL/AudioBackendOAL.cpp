@@ -38,6 +38,28 @@
     }
 #endif
 
+const Char* GetOpenALErrorString(int error)
+{
+    switch (error)
+    {
+    case AL_NO_ERROR:
+        return TEXT("AL_NO_ERROR");
+    case AL_INVALID_NAME:
+        return TEXT("AL_INVALID_NAME");
+    case AL_INVALID_ENUM:
+        return TEXT("AL_INVALID_ENUM");
+    case AL_INVALID_VALUE:
+        return TEXT("AL_INVALID_VALUE");
+    case AL_INVALID_OPERATION:
+        return TEXT("AL_INVALID_OPERATION");
+    case AL_OUT_OF_MEMORY:
+        return TEXT("AL_OUT_OF_MEMORY");
+    default:
+        break;
+    }
+    return TEXT("???");
+}
+
 namespace ALC
 {
     struct SourceData
@@ -181,6 +203,12 @@ namespace ALC
             {
                 states.Add({ source->GetState(), source->GetTime() });
                 source->Stop();
+                if (source->SourceID)
+                {
+                    alDeleteSources(1, &source->SourceID);
+                    ALC_CHECK_ERROR(alDeleteSources);
+                    source->SourceID = 0;
+                }
             }
         }
 
@@ -251,28 +279,6 @@ ALenum GetOpenALBufferFormat(uint32 numChannels, uint32 bitDepth)
         }
     }
     return 0;
-}
-
-const Char* GetOpenALErrorString(int error)
-{
-    switch (error)
-    {
-    case AL_NO_ERROR:
-        return TEXT("AL_NO_ERROR");
-    case AL_INVALID_NAME:
-        return TEXT("AL_INVALID_NAME");
-    case AL_INVALID_ENUM:
-        return TEXT("AL_INVALID_ENUM");
-    case AL_INVALID_VALUE:
-        return TEXT("AL_INVALID_VALUE");
-    case AL_INVALID_OPERATION:
-        return TEXT("AL_INVALID_OPERATION");
-    case AL_OUT_OF_MEMORY:
-        return TEXT("AL_OUT_OF_MEMORY");
-    default:
-        break;
-    }
-    return TEXT("???");
 }
 
 void AudioBackendOAL::Listener_Reset()
