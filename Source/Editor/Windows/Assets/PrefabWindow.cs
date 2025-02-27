@@ -194,7 +194,6 @@ namespace FlaxEditor.Windows.Assets
 
             Editor.Prefabs.PrefabApplied += OnPrefabApplied;
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
-            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
 
             // Setup input actions
             InputActions.Add(options => options.Undo, () =>
@@ -287,8 +286,10 @@ namespace FlaxEditor.Windows.Assets
             return false;
         }
 
-        private void OnScriptsReloadBegin()
+        /// <inheritdoc />
+        protected override void OnScriptsReloadBegin()
         {
+            base.OnScriptsReloadBegin();
             _isScriptsReloading = true;
 
             if (_asset == null || !_asset.IsLoaded)
@@ -316,19 +317,8 @@ namespace FlaxEditor.Windows.Assets
             Graph.MainActor = null;
             _viewport.Prefab = null;
             _undo?.Clear(); // TODO: maybe don't clear undo?
-        }
 
-        private void OnScriptsReloadEnd()
-        {
-            _isScriptsReloading = false;
-
-            if (_asset == null || !_asset.IsLoaded)
-                return;
-
-            // Restore
-            OnPrefabOpened();
-            _undo.Clear();
-            ClearEditedFlag();
+            Close();
         }
 
         private void OnUndoEvent(IUndoAction action)
@@ -547,7 +537,6 @@ namespace FlaxEditor.Windows.Assets
         {
             Editor.Prefabs.PrefabApplied -= OnPrefabApplied;
             ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
-            ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
 
             _undo.Dispose();
             Graph.Dispose();

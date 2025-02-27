@@ -58,7 +58,7 @@ namespace FlaxEditor.Modules
         : base(editor)
         {
             // After editor cache but before the windows
-            InitOrder = -900;
+            InitOrder = -800;
         }
 
         /// <summary>
