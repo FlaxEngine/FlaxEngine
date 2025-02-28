@@ -210,7 +210,7 @@ float3 GetObjectSize(MaterialInput input)
 // Gets the current object scale (supports instancing)
 float3 GetObjectScale(MaterialInput input)
 {
-    float4x4 world = input.Object.WorldMatrix;
+    float4x4 world = WorldMatrix;
 
     // Extract scale from the world matrix
     float3 scale;
