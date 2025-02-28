@@ -14,7 +14,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Utilities/StringConverter.h"
 
-AmbientOcclusionPass::ASSAO_Settings::ASSAO_Settings()
+AmbientOcclusionPass::SSAO_Settings::SSAO_Settings()
 {
     Radius = 1.2f;
     ShadowMultiplier = 1.0f;
@@ -69,7 +69,7 @@ bool AmbientOcclusionPass::Init()
     for (int32 i = 0; i < ARRAY_COUNT(_psPrepareDepthMip); i++)
         _psPrepareDepthMip[i] = GPUDevice::Instance->CreatePipelineState();
     for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
-        _psGenerate[i] = GPUDevice::Instance->CreatePipelineState();
+        _psGenerate[i].CreatePipelineStates();
     _psSmartBlur = GPUDevice::Instance->CreatePipelineState();
     _psSmartBlurWide = GPUDevice::Instance->CreatePipelineState();
     _psNonSmartBlur = GPUDevice::Instance->CreatePipelineState();
@@ -97,9 +97,9 @@ bool AmbientOcclusionPass::setupResources()
     const auto shader = _shader->GetShader();
 
     // Validate shader constant buffer size
-    if (shader->GetCB(0)->GetSize() != sizeof(ASSAOConstants))
+    if (shader->GetCB(0)->GetSize() != sizeof(SSAOConstants))
     {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, ASSAOConstants);
+        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, SSAOConstants);
         return true;
     }
 
@@ -133,12 +133,12 @@ bool AmbientOcclusionPass::setupResources()
     // AO Generate
     for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
     {
-        if (!_psGenerate[i]->IsValid())
+        if (!_psGenerate[i].IsValid())
         {
             const auto str = String::Format(TEXT("PS_GenerateQ{0}"), i);
             const StringAsANSI<50> strAnsi(*str, str.Length());
             psDesc.PS = shader->GetPS(strAnsi.Get());
-            if (_psGenerate[i]->Init(psDesc))
+            if (_psGenerate[i].Create(psDesc, shader, strAnsi.Get()))
                 return true;
         }
     }
@@ -189,7 +189,8 @@ void AmbientOcclusionPass::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_psPrepareDepths);
     SAFE_DELETE_GPU_RESOURCE(_psPrepareDepthsHalf);
     SAFE_DELETE_GPU_RESOURCES(_psPrepareDepthMip);
-    SAFE_DELETE_GPU_RESOURCES(_psGenerate);
+    for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
+        _psGenerate[i].Release();
     SAFE_DELETE_GPU_RESOURCE(_psSmartBlur);
     SAFE_DELETE_GPU_RESOURCE(_psSmartBlurWide);
     SAFE_DELETE_GPU_RESOURCE(_psNonSmartBlur);
@@ -214,12 +215,15 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
         return;
     PROFILE_GPU_CPU("Ambient Occlusion");
 
-    settings = ASSAO_Settings();
+    settings = SSAO_Settings();
+    settings.Method = static_cast<int>(aoSettings.Method);
     settings.Radius = aoSettings.Radius * 0.006f;
     settings.ShadowMultiplier = aoSettings.Intensity;
     settings.ShadowPower = aoSettings.Power;
     settings.FadeOutTo = aoSettings.FadeOutDistance;
     settings.FadeOutFrom = aoSettings.FadeOutDistance - aoSettings.FadeDistance;
+    settings.GTAORadius = aoSettings.GTAORadius;
+    settings.GTAOThickness = aoSettings.GTAOThickness;
 
     // expose param for HorizonAngleThreshold ?
     // expose param for Sharpness ?
@@ -269,10 +273,9 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
     // Request temporary buffers
     InitRTs(renderContext);
 
-    // Update and bind constant buffer
+    // Update and bind SSAO constant buffer
     UpdateCB(renderContext, context, 0);
-    context->BindCB(SSAO_CONSTANTS_BUFFER_SLOT, _shader->GetShader()->GetCB(SSAO_CONSTANTS_BUFFER_SLOT));
-
+    
     // Generate depths
     PrepareDepths(renderContext);
 
@@ -348,7 +351,7 @@ void AmbientOcclusionPass::UpdateCB(const RenderContext& renderContext, GPUConte
     _constantsBufferData.Viewport2xPixelSize = Float2(_constantsBufferData.ViewportPixelSize.X * 2.0f, _constantsBufferData.ViewportPixelSize.Y * 2.0f);
     _constantsBufferData.Viewport2xPixelSize_x_025 = Float2(_constantsBufferData.Viewport2xPixelSize.X * 0.25f, _constantsBufferData.Viewport2xPixelSize.Y * 0.25f);
 
-    const float tanHalfFOVY = 1.0f / proj.Values[1][1];
+    const float invTanHalfFOVY = view.IsPerspectiveProjection() ? proj.Values[1][1] : 1.0f;
 
     _constantsBufferData.EffectRadius = Math::Clamp(settings.Radius / farPlane * 10000.0f, 0.0f, 100000.0f);
     _constantsBufferData.EffectShadowStrength = Math::Clamp(settings.ShadowMultiplier * 4.3f, 0.0f, 10.0f);
@@ -376,9 +379,16 @@ void AmbientOcclusionPass::UpdateCB(const RenderContext& renderContext, GPUConte
         //_constantsBufferData.EffectShadowStrength *= 0.9f;
         effectSamplingRadiusNearLimit *= 1.50f;
     }
-    effectSamplingRadiusNearLimit /= tanHalfFOVY; // to keep the effect same regardless of FOV
+    effectSamplingRadiusNearLimit *= invTanHalfFOVY; // to keep the effect same regardless of FOV
     if (settings.SkipHalfPixels)
         _constantsBufferData.EffectRadius *= 0.8f;
+
+    // Bind GTAO constants if needed
+    if (settings.Method == static_cast<int>(SSAOMethod::GTAO)) {
+        _constantsBufferData.GTAOThickness = settings.GTAOThickness;
+        _constantsBufferData.GTAOAttenFactor = 2.0f / (settings.GTAORadius * settings.GTAORadius);
+        _constantsBufferData.GTAOAdjustedRadius = settings.GTAORadius * invTanHalfFOVY;
+    }
 
     _constantsBufferData.EffectSamplingRadiusNearLimitRec = 1.0f / effectSamplingRadiusNearLimit;
 
@@ -527,7 +537,7 @@ void AmbientOcclusionPass::GenerateSSAO(const RenderContext& renderContext)
             context->SetRenderTarget(rts);
             context->BindSR(SSAO_TEXTURE_SLOT0, m_halfDepths[pass]);
             context->BindSR(SSAO_TEXTURE_SLOT1, normalMapSRV);
-            context->SetState(_psGenerate[settings.QualityLevel]);
+            context->SetState(_psGenerate[settings.QualityLevel].Get(settings.Method));
             context->DrawFullscreenTriangle();
             context->ResetRenderTarget();
         }
