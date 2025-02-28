@@ -16,6 +16,29 @@ namespace FlaxEditor.Surface.Archetypes
     public static class Material
     {
         /// <summary>
+        /// Blend modes (each enum item value maps to box ID).
+        /// </summary>
+        internal enum BlendMode
+        {
+            Normal,
+            Add,
+            Subtract,
+            Multiply,
+            Screen,
+            Overlay,
+            LinearBurn,
+            LinearLight,
+            Darken,
+            Lighten,
+            Difference,
+            Exclusion,
+            Divide,
+            HardLight,
+            PinLight,
+            HardMix
+        };
+
+        /// <summary>
         /// Customized <see cref="SurfaceNode"/> for main material node.
         /// </summary>
         /// <seealso cref="FlaxEditor.Surface.SurfaceNode" />
@@ -1072,6 +1095,49 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Input(3, "Falloff", true, typeof(float), 3, 2),
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(Float3), 4),
                 ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 50,
+                Title = "Shift HSV",
+                Description = "Modifies the HSV of a color, values are from -1:1, preserves alpha",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(175, 80),
+                DefaultValues =
+                [
+                    0.0f,  // For Hue (index 0)
+                    0.0f,  // For Sat (index 1)
+                    0.0f,  // For Val (index 2)
+                ],
+                Elements =
+                [
+                    NodeElementArchetype.Factory.Input(0, "RGBA", true, typeof(Float4), 0),          // No default
+                    NodeElementArchetype.Factory.Input(1, "Hue", true, typeof(float), 1, 0),        // Uses DefaultValues[0]
+                    NodeElementArchetype.Factory.Input(2, "Sat", true, typeof(float), 2, 1),        // Uses DefaultValues[1]
+                    NodeElementArchetype.Factory.Input(3, "Val", true, typeof(float), 3, 2),        // Uses DefaultValues[2]
+                    NodeElementArchetype.Factory.Output(0, "RGBA", typeof(Float4), 4),
+                ]
+            },
+            new NodeArchetype
+            {
+                TypeID = 51,
+                Title = "Color Blend",
+                Description = "Blends two colors using various blend modes. Passes base alpha through.",
+                Flags = NodeFlags.MaterialGraph,
+                Size = new Float2(180, 80),
+                DefaultValues = new object[]
+                {
+                    BlendMode.Normal, // Default blend mode
+                    1.0f,            // Default blend amount
+                },
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(1, "Base Color", true, typeof(Float4), 0),
+                    NodeElementArchetype.Factory.Input(2, "Blend Color", true, typeof(Float4), 1),
+                    NodeElementArchetype.Factory.Input(3, "Intensity", true, typeof(float), 2, 1),
+                    NodeElementArchetype.Factory.Enum(0, 0, 120, 0, typeof(BlendMode)), // Blend mode selector
+                    NodeElementArchetype.Factory.Output(0, "Result", typeof(Float4), 3),
+                }
             },
         };
     }

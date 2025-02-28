@@ -261,6 +261,14 @@ struct GBufferOutput
     float4 RT3 : SV_Target4;
 };
 
+float3 UnpackNormalMap(float2 value)
+{
+    float3 normal;
+    normal.xy = value * 2.0 - 1.0;
+    normal.z = sqrt(saturate(1.0 - dot(normal.xy, normal.xy)));
+    return normal;
+}
+
 float3x3 CalcTangentBasis(float3 normal, float3 pos, float2 uv)
 {
     // References:

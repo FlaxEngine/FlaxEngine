@@ -42,6 +42,12 @@ struct GeometryData
 	nointerpolation uint ObjectIndex : TEXCOORD8;
 };
 
+float3 DecodeNormal(float4 normalMap)
+{
+    float2 xy = normalMap.rg * 2.0 - 1.0;
+    return float3(xy, sqrt(1.0 - saturate(dot(xy, xy))));
+}
+
 // Interpolants passed from the vertex shader
 struct VertexOutput
 {
@@ -230,6 +236,24 @@ float3 GetObjectSize(MaterialInput input)
 {
 	float4x4 world = input.Object.WorldMatrix;
 	return input.Object.GeometrySize * float3(world._m00, world._m11, world._m22);
+}
+
+// Gets the current object scale (supports instancing)
+float3 GetObjectScale(MaterialInput input)
+{
+    float4x4 world = input.Object.WorldMatrix;
+
+    // Get the squares of the scale factors
+    float scaleXSquared = dot(world[0].xyz, world[0].xyz);
+    float scaleYSquared = dot(world[1].xyz, world[1].xyz);
+    float scaleZSquared = dot(world[2].xyz, world[2].xyz);
+
+    // Take square root to get actual scales
+    return float3(
+        sqrt(scaleXSquared),
+        sqrt(scaleYSquared),
+        sqrt(scaleZSquared)
+    );
 }
 
 // Get the current object random value (supports instancing)

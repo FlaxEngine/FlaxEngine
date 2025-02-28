@@ -147,6 +147,11 @@ namespace FlaxEditor.Surface.Elements
             {
                 value = (double)toSet;
             }
+            else if (parentNode.GroupArchetype.GroupID != 2)
+            {
+                // Per-component editing is used only by nodes from Constant group, otherwise use float
+                value = toSet;
+            }
             else if (value is Vector2 asVector2)
             {
                 if (arch.BoxID == 0)
