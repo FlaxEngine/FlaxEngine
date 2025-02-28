@@ -760,8 +760,10 @@ namespace FlaxEditor.Modules
             {
                 settings.HasBorder = false;
 
+#if !PLATFORM_SDL
                 // Skip OS sizing frame and implement it using LeftButtonHit
                 settings.HasSizingFrame = false;
+#endif
             }
 #elif PLATFORM_LINUX
             settings.HasBorder = false;
