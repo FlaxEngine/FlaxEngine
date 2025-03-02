@@ -306,6 +306,13 @@ namespace FlaxEditor.SceneGraph.Actors
 
         private void OnUpdate()
         {
+            // Prevent update event called when actor got deleted (incorrect state)
+            if (!Actor)
+            {
+                FlaxEngine.Scripting.Update -= OnUpdate;
+                return;
+            }
+
             // If this node's point is selected
             var selection = Editor.Instance.SceneEditing.Selection;
             if (selection.Count == 1 && selection[0] is SplinePointNode selectedPoint && selectedPoint.ParentNode == this)
