@@ -41,7 +41,7 @@ namespace FlaxEditor.Modules
             public override Undo Undo => Editor.Instance.Undo;
 
             /// <inheritdoc />
-            public override List<SceneGraphNode> Selection => _editor.SceneEditing.Selection;
+            public override ISceneEditingContext SceneContext => _editor.Windows.EditWin;
         }
 
         /// <summary>

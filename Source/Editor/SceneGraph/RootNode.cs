@@ -168,7 +168,14 @@ namespace FlaxEditor.SceneGraph
 
         /// <summary>
         /// Gets the list of selected scene graph nodes in the editor context.
+        /// [Deprecated in v1.10]
         /// </summary>
-        public abstract List<SceneGraphNode> Selection { get; }
+        [Obsolete("Use SceneContext.Selection instead.")]
+        public List<SceneGraphNode> Selection => SceneContext.Selection;
+
+        /// <summary>
+        /// Gets the list of selected scene graph nodes in the editor context.
+        /// </summary>
+        public abstract ISceneEditingContext SceneContext { get; }
     }
 }

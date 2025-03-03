@@ -1,32 +1,18 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.Viewport;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
 namespace FlaxEditor.Windows
 {
     /// <summary>
-    /// Shared interface for scene editing utilities.
-    /// </summary>
-    public interface ISceneContextWindow
-    {
-        /// <summary>
-        /// Opends popup for renaming selected objects.
-        /// </summary>
-        void RenameSelection();
-
-        /// <summary>
-        /// Focuses selected objects.
-        /// </summary>
-        void FocusSelection();
-    }
-
-    /// <summary>
     /// Base class for editor windows dedicated to scene editing.
     /// </summary>
     /// <seealso cref="FlaxEditor.Windows.EditorWindow" />
-    public abstract class SceneEditorWindow : EditorWindow, ISceneContextWindow
+    public abstract class SceneEditorWindow : EditorWindow, ISceneEditingContext
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="SceneEditorWindow"/> class.
@@ -44,6 +30,24 @@ namespace FlaxEditor.Windows
         public void FocusSelection()
         {
             Editor.Windows.EditWin.Viewport.FocusSelection();
+        }
+
+        /// <inheritdoc />
+        public EditorViewport Viewport => Editor.Windows.EditWin.Viewport;
+
+        /// <inheritdoc />
+        public List<SceneGraphNode> Selection => Editor.SceneEditing.Selection;
+
+        /// <inheritdoc />
+        public void Select(SceneGraphNode node, bool additive = false)
+        {
+            Editor.SceneEditing.Select(node, additive);
+        }
+
+        /// <inheritdoc />
+        public void Deselect(SceneGraphNode node)
+        {
+            Editor.SceneEditing.Deselect(node);
         }
 
         /// <inheritdoc />

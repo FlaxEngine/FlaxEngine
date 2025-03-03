@@ -1,6 +1,7 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
@@ -19,7 +20,7 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="Prefab" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed partial class PrefabWindow : AssetEditorWindowBase<Prefab>, IPresenterOwner, ISceneContextWindow
+    public sealed partial class PrefabWindow : AssetEditorWindowBase<Prefab>, IPresenterOwner, ISceneEditingContext
     {
         private readonly SplitPanel _split1;
         private readonly SplitPanel _split2;
@@ -53,6 +54,9 @@ namespace FlaxEditor.Windows.Assets
         /// Gets the viewport.
         /// </summary>
         public PrefabWindowViewport Viewport => _viewport;
+
+        /// <inheritdoc />
+        public List<SceneGraphNode> Selection => _selection;
 
         /// <summary>
         /// Gets the prefab objects properties editor.
@@ -557,5 +561,8 @@ namespace FlaxEditor.Windows.Assets
 
         /// <inheritdoc />
         public EditorViewport PresenterViewport => _viewport;
+
+        /// <inheritdoc />
+        EditorViewport ISceneEditingContext.Viewport => Viewport;
     }
 }
