@@ -8,6 +8,7 @@ BoxCollider::BoxCollider(const SpawnParams& params)
     : Collider(params)
     , _size(100.0f)
 {
+    _name = TEXT("Box Collider");
 }
 
 void BoxCollider::SetSize(const Float3& value)

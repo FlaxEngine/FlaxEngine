@@ -6,6 +6,7 @@ SphereCollider::SphereCollider(const SpawnParams& params)
     : Collider(params)
     , _radius(50.0f)
 {
+    _name = TEXT("Sphere Collider");
 }
 
 void SphereCollider::SetRadius(const float value)

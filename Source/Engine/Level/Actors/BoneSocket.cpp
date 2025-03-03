@@ -10,6 +10,7 @@ BoneSocket::BoneSocket(const SpawnParams& params)
     , _index(-1)
     , _useScale(false)
 {
+    _name = TEXT("Bone Socket");
 }
 
 void BoneSocket::SetNode(const StringView& name)
