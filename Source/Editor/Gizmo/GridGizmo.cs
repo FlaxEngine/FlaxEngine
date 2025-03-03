@@ -88,6 +88,7 @@ namespace FlaxEditor.Gizmo
                     desc.CullMode = CullMode.TwoSided;
                     desc.VS = _shader.GPU.GetVS("VS_Grid");
                     desc.PS = _shader.GPU.GetPS("PS_Grid");
+                    desc.DepthWriteEnable = false;
                     _psGrid.Init(ref desc);
                 }
 
