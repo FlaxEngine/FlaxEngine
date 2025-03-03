@@ -796,6 +796,17 @@ ScriptingObject* ManagedBinaryModule::ManagedObjectSpawn(const ScriptingObjectSp
     // Mark as managed type
     object->Flags |= ObjectFlags::IsManagedType;
 
+    // Initialize managed instance
+    if (params.Managed)
+    {
+        object->SetManagedInstance((MObject*)params.Managed);
+    }
+    else
+    {
+        // Invoke managed ctor (to match C++ logic)
+        object->CreateManaged();
+    }
+
     return object;
 }
 

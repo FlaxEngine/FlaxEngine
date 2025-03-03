@@ -956,10 +956,12 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
                 objects[i] = obj;
                 if (obj)
                 {
-                    obj->RegisterObject();
+                    if (!obj->IsRegistered())
+                        obj->RegisterObject();
 #if USE_EDITOR
                     // Auto-create C# objects for all actors in Editor during scene load when running in async (so main thread already has all of them)
-                    obj->CreateManaged();
+                    if (!obj->GetManagedInstance())
+                        obj->CreateManaged();
 #endif
                 }
                 else
