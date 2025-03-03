@@ -117,7 +117,6 @@ namespace FlaxEditor.Windows
             {
                 if (!AudioMuted)
                     Audio.MasterVolume = value;
-
                 _audioVolume = value;
             }
         }
@@ -677,6 +676,14 @@ namespace FlaxEditor.Windows
                 checkbox.StateChanged += x => ShowDebugDraw = x.Checked;
             }
 
+            // Clear Debug Draw
+            if (DebugDraw.CanClear())
+            {
+                var button = menu.AddButton("Clear Debug Draw");
+                button.CloseMenuOnClick = false;
+                button.Clicked += () => DebugDraw.Clear();
+            }
+
             menu.AddSeparator();
 
             // Mute Audio
@@ -693,13 +700,6 @@ namespace FlaxEditor.Windows
                 button.CloseMenuOnClick = false;
                 var slider = new FloatValueBox(AudioVolume, 140, 2, 50, 0, 1) { Parent = button };
                 slider.ValueChanged += () => AudioVolume = slider.Value;
-            }
-
-            // Debug Draw Clear
-            {
-                var button = menu.AddButton("Clear Debug Draw");
-                button.CloseMenuOnClick = false;
-                button.Clicked += () => DebugDraw.Clear();
             }
 
             menu.MinimumWidth = 200;

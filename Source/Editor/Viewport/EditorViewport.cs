@@ -968,13 +968,12 @@ namespace FlaxEditor.Viewport
                     debugView.VisibleChanged += WidgetViewModeShowHide;
                 }
 
-                ViewWidgetButtonMenu.AddSeparator();
-
                 // Clear Debug Draw
                 {
                     var button = ViewWidgetButtonMenu.AddButton("Clear Debug Draw");
                     button.CloseMenuOnClick = false;
                     button.Clicked += () => DebugDraw.Clear();
+                    ViewWidgetButtonMenu.VisibleChanged += (Control cm) => { button.Visible = DebugDraw.CanClear(); };
                 }
 
                 ViewWidgetButtonMenu.AddSeparator();
