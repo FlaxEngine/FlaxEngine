@@ -970,6 +970,15 @@ namespace FlaxEditor.Viewport
 
                 ViewWidgetButtonMenu.AddSeparator();
 
+                // Clear Debug Draw
+                {
+                    var button = ViewWidgetButtonMenu.AddButton("Clear Debug Draw");
+                    button.CloseMenuOnClick = false;
+                    button.Clicked += () => DebugDraw.Clear();
+                }
+
+                ViewWidgetButtonMenu.AddSeparator();
+
                 // Brightness
                 {
                     var brightness = ViewWidgetButtonMenu.AddButton("Brightness");
