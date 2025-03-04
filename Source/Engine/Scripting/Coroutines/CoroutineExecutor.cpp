@@ -21,7 +21,7 @@ ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteOnce(
     return handle;
 }
 
-ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeats(
+ScriptingObjectReference<CoroutineHandle> CoroutineExecutor::ExecuteRepeated(
     ScriptingObjectReference<CoroutineSequence> sequence,
     const CoroutineSuspendPoint accumulationPoint,
     const int32 repeats

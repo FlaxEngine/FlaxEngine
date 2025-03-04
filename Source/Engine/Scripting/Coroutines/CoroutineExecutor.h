@@ -25,7 +25,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     /// Adds a coroutine to the executor to be executed multiple times.
     /// </summary>
     API_FUNCTION()
-    ScriptingObjectReference<CoroutineHandle> ExecuteRepeats(
+    ScriptingObjectReference<CoroutineHandle> ExecuteRepeated(
         ScriptingObjectReference<CoroutineSequence> sequence,
         CoroutineSuspendPoint accumulationPoint,
         int32 repeats

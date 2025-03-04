@@ -152,7 +152,7 @@ TEST_CASE("CoroutineExecuteRepeating")
 
     constexpr int32 repeats = 4;
     const ExecutorReference executor = NewCoroutineExecutor();
-    const HandleReference handle = executor->ExecuteRepeats(
+    const HandleReference handle = executor->ExecuteRepeated(
         ScriptingObject::NewObject<CoroutineSequence>()
             ->ThenRunFunc([&result] { ++result; })
             ->ThenWaitFrames(1),

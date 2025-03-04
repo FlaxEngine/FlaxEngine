@@ -226,7 +226,7 @@ auto Script::ExecuteCoroutineRepeats(ScriptingObjectReference<CoroutineSequence>
         return nullptr;
     }
 
-    return executor->ExecuteRepeats(MoveTemp(sequence), DefaultCoroutineSuspendPoint, repeats);
+    return executor->ExecuteRepeated(MoveTemp(sequence), DefaultCoroutineSuspendPoint, repeats);
 }
 
 auto Script::ExecuteCoroutineLooped(ScriptingObjectReference<CoroutineSequence> sequence) const -> ScriptingObjectReference<CoroutineHandle>
