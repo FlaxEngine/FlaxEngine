@@ -48,7 +48,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public IPresenterOwner PresenterContext;
 
         /// <summary>
-        /// Gets or sets the allowed objects type (given type and all sub classes). Must be <see cref="Object"/> type of any subclass.
+        /// Gets or sets the allowed objects type (given type and all subclasses). Must be <see cref="Object"/> type of any subclass.
         /// </summary>
         public ScriptType Type
         {
@@ -61,7 +61,8 @@ namespace FlaxEditor.CustomEditors.Editors
                     throw new ArgumentException(string.Format("Invalid type for FlaxObjectRefEditor. Input type: {0}", value != ScriptType.Null ? value.TypeName : "null"));
 
                 _type = value;
-                _supportsPickDropDown = new ScriptType(typeof(Actor)).IsAssignableFrom(value) || new ScriptType(typeof(Script)).IsAssignableFrom(value);
+                _supportsPickDropDown = new ScriptType(typeof(Actor)).IsAssignableFrom(value) || 
+                                        new ScriptType(typeof(Script)).IsAssignableFrom(value);
 
                 // Deselect value if it's not valid now
                 if (!IsValid(_value))
@@ -80,7 +81,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 if (_value == value)
                     return;
                 if (!IsValid(value))
-                    throw new ArgumentException("Invalid object type.");
+                    value = null;
 
                 // Special case for missing objects (eg. referenced actor in script that is deleted in editor)
                 if (value != null && (Object.GetUnmanagedPtr(value) == IntPtr.Zero || value.ID == Guid.Empty))
@@ -91,27 +92,17 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 // Get name to display
                 if (_value is Script script)
-                {
                     _valueName = script.Actor ? $"{type.Name} ({script.Actor.Name})" : type.Name;
-                }
                 else if (_value != null)
-                {
                     _valueName = _value.ToString();
-                }
                 else
-                {
                     _valueName = string.Empty;
-                }
 
                 // Update tooltip
                 if (_value is SceneObject sceneObject)
-                {
                     TooltipText = Utilities.Utils.GetTooltip(sceneObject);
-                }
                 else
-                {
                     TooltipText = string.Empty;
-                }
 
                 OnValueChanged();
             }
@@ -150,7 +141,12 @@ namespace FlaxEditor.CustomEditors.Editors
             _type = ScriptType.Object;
         }
 
-        private bool IsValid(Object obj)
+        /// <summary>
+        /// Object validation check routine.
+        /// </summary>
+        /// <param name="obj">Input object to check.</param>
+        /// <returns>True if it can be assigned, otherwise false.</returns>
+        protected virtual bool IsValid(Object obj)
         {
             var type = TypeUtils.GetObjectType(obj);
             return obj == null || _type.IsAssignableFrom(type) && (CheckValid == null || CheckValid(obj, type));
@@ -164,6 +160,15 @@ namespace FlaxEditor.CustomEditors.Editors
                 ActorSearchPopup.Show(this, new Float2(0, Height), IsValid, actor =>
                 {
                     Value = actor;
+                    RootWindow.Focus();
+                    Focus();
+                }, PresenterContext);
+            }
+            else if (new ScriptType(typeof(Control)).IsAssignableFrom(_type))
+            {
+                ActorSearchPopup.Show(this, new Float2(0, Height), IsValid, actor =>
+                {
+                    Value = actor as UIControl;
                     RootWindow.Focus();
                     Focus();
                 }, PresenterContext);
