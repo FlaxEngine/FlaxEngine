@@ -56,7 +56,7 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineExecutor final : public Scriptin
     /// <summary>
     /// Returns the number of coroutines currently being executed.
     /// </summary>
-    API_FUNCTION()
+    API_PROPERTY()
     int32 GetCoroutinesCount() const;
 
     using ExecutionID = uint64;
