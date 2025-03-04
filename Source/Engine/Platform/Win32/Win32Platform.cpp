@@ -304,11 +304,6 @@ CPUInfo Win32Platform::GetCPUInfo()
     return CpuInfo;
 }
 
-int32 Win32Platform::GetCacheLineSize()
-{
-    return CpuInfo.CacheLineSize;
-}
-
 MemoryStats Win32Platform::GetMemoryStats()
 {
     // Get memory stats

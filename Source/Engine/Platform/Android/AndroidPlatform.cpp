@@ -709,11 +709,6 @@ CPUInfo AndroidPlatform::GetCPUInfo()
     return AndroidCpu;
 }
 
-int32 AndroidPlatform::GetCacheLineSize()
-{
-    return AndroidCpu.CacheLineSize;
-}
-
 MemoryStats AndroidPlatform::GetMemoryStats()
 {
     const uint64 pageSize = getpagesize();

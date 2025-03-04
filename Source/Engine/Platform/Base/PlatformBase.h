@@ -357,9 +357,10 @@ public:
 
     /// <summary>
     /// Gets the CPU cache line size.
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <returns>The cache line size.</returns>
-    API_PROPERTY() static int32 GetCacheLineSize() = delete;
+    API_PROPERTY() DEPRECATED("Use CacheLineSize field from CPUInfo.") static int32 GetCacheLineSize();
 
     /// <summary>
     /// Gets the current memory stats.

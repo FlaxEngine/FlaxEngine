@@ -1766,11 +1766,6 @@ CPUInfo LinuxPlatform::GetCPUInfo()
     return UnixCpu;
 }
 
-int32 LinuxPlatform::GetCacheLineSize()
-{
-    return UnixCpu.CacheLineSize;
-}
-
 MemoryStats LinuxPlatform::GetMemoryStats()
 {
     // Get memory usage
