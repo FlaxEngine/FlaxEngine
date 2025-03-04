@@ -43,9 +43,11 @@ namespace FlaxEngine
         {
             get
             {
-                if (_uiControl != null && _uiControl.Control is T t)
+                if (_uiControl == null)
+                    return null;
+                if (_uiControl.Control is T t)
                     return t;
-                Debug.Write(LogType.Warning, "Trying to get Control from ControlReference but UIControl is null, or UIControl.Control is null, or UIControl.Control is not the correct type.");
+                Debug.Write(LogType.Warning, "Trying to get Control from ControlReference but UIControl.Control is null, or the correct type.");
                 return null;
             }
         }
@@ -66,7 +68,7 @@ namespace FlaxEngine
                 }
                 else
                 {
-                    Debug.Write(LogType.Warning, "Trying to set ControlReference but UIControl.Control is null or UIControl.Control is not the correct type.");
+                    Debug.Write(LogType.Warning, "Trying to set UIControl but UIControl.Control is null or not the correct type.");
                 }
             }
         }
