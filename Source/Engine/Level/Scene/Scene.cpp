@@ -15,6 +15,7 @@
 #include "Engine/Navigation/NavMeshBoundsVolume.h"
 #include "Engine/Navigation/NavMesh.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Scripting/Coroutines/CoroutineExecutor.h"
 #include "Engine/Serialization/Serialization.h"
 #if USE_EDITOR
 #include "Engine/Engine/Globals.h"

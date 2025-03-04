@@ -8,6 +8,10 @@
 #include "Editor/Editor.h"
 #endif
 #include "Scripting.h"
+
+#include "Coroutines/CoroutineExecutor.h"
+#include "Coroutines/CoroutineHandle.h"
+#include "Coroutines/CoroutineSequence.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/Scene.h"

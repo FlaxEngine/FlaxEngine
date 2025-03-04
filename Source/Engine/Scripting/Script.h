@@ -4,9 +4,10 @@
 
 #include "ScriptingObject.h"
 #include "ScriptingObjectReference.h"
-#include "Coroutines/CoroutineHandle.h"
-#include "Coroutines/CoroutineSequence.h"
 #include "Engine/Level/SceneObject.h"
+
+class CoroutineHandle;
+class CoroutineSequence;
 
 /// <summary>
 /// Base class for all scripts.

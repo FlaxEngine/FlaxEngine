@@ -9,8 +9,8 @@
 #include "SceneRendering.h"
 #include "SceneTicking.h"
 #include "SceneNavigation.h"
-#include "Engine/Scripting/Coroutines/CoroutineExecutor.h"
 
+class CoroutineExecutor;
 class MeshCollider;
 
 /// <summary>
