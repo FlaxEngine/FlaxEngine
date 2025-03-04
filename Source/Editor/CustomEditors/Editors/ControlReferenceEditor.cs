@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using FlaxEditor.CustomEditors;
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+
+using System;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Drag;
@@ -25,7 +25,7 @@ public class UIControlRefPickerControl : Control
     private ActorTreeNode _linkedTreeNode;
     private string _valueName;
     private bool _supportsPickDropDown;
-    
+
     private bool _isMouseDown;
     private Float2 _mouseDownPos;
     private Float2 _mousePos;
@@ -33,17 +33,17 @@ public class UIControlRefPickerControl : Control
     private bool _hasValidDragOver;
     private DragActors _dragActors;
     private DragHandlers _dragHandlers;
-    
+
     /// <summary>
     /// The presenter using this control.
     /// </summary>
     public IPresenterOwner PresenterContext;
-    
+
     /// <summary>
     /// Occurs when value gets changed.
     /// </summary>
     public event Action ValueChanged;
-    
+
     /// <summary>
     /// The type of the Control
     /// </summary>
@@ -100,7 +100,7 @@ public class UIControlRefPickerControl : Control
             OnValueChanged();
         }
     }
-    
+
     /// <summary>
     /// Gets or sets the selected object value by identifier.
     /// </summary>
@@ -109,14 +109,13 @@ public class UIControlRefPickerControl : Control
         get => _value ? _value.ID : Guid.Empty;
         set => Value = Object.Find<UIControl>(ref value);
     }
-    
+
     /// <summary>
     /// Initializes a new instance of the <see cref="UIControlRefPickerControl"/> class.
     /// </summary>
     public UIControlRefPickerControl()
-        : base(0, 0, 50, 16)
+    : base(0, 0, 50, 16)
     {
-        
     }
 
     private void OnValueChanged()
@@ -142,12 +141,12 @@ public class UIControlRefPickerControl : Control
     {
         return actor == null || actor is UIControl a && a.Control.GetType() == _controlType;
     }
-    
+
     private bool ValidateDragActor(ActorNode a)
     {
         if (!IsValid(a.Actor))
             return false;
-            
+
         if (PresenterContext is PrefabWindow prefabWindow)
         {
             if (prefabWindow.Tree == a.TreeNode.ParentTree)
@@ -216,7 +215,7 @@ public class UIControlRefPickerControl : Control
             Render2D.DrawRectangle(bounds, style.SelectionBorder);
         }
     }
-    
+
     /// <inheritdoc />
     public override void OnMouseEnter(Float2 location)
     {
@@ -225,8 +224,8 @@ public class UIControlRefPickerControl : Control
 
         base.OnMouseEnter(location);
     }
-    
-     /// <inheritdoc />
+
+    /// <inheritdoc />
     public override void OnMouseLeave()
     {
         _mousePos = Float2.Minimum;
@@ -326,7 +325,7 @@ public class UIControlRefPickerControl : Control
 
         return base.OnMouseUp(location, button);
     }
-    
+
     /// <inheritdoc />
     public override bool OnMouseDown(Float2 location, MouseButton button)
     {
@@ -339,7 +338,7 @@ public class UIControlRefPickerControl : Control
 
         return base.OnMouseDown(location, button);
     }
-    
+
     /// <inheritdoc />
     public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
     {
@@ -361,7 +360,7 @@ public class UIControlRefPickerControl : Control
 
         return base.OnMouseDoubleClick(location, button);
     }
-    
+
     /// <inheritdoc />
     public override void OnSubmit()
     {
@@ -404,7 +403,7 @@ public class UIControlRefPickerControl : Control
 
         return DragEffect;
     }
-    
+
     /// <inheritdoc />
     public override DragDropEffect OnDragMove(ref Float2 location, DragData data)
     {
@@ -456,10 +455,10 @@ public class UIControlRefPickerControl : Control
 public class ControlReferenceEditor : CustomEditor
 {
     private CustomElement<UIControlRefPickerControl> _element;
-    
+
     /// <inheritdoc />
     public override DisplayStyle Style => DisplayStyle.Inline;
-    
+
     /// <inheritdoc />
     public override void Initialize(LayoutElementsContainer layout)
     {
@@ -485,7 +484,7 @@ public class ControlReferenceEditor : CustomEditor
                     Type t = typeof(ControlReference<>);
                     Type tw = t.MakeGenericType(new Type[] { genericType });
                     var instance = Activator.CreateInstance(tw);
-                    (instance as IControlReference).Set(_element.CustomControl.Value);
+                    ((IControlReference)instance).UIControl = _element.CustomControl.Value;
                     SetValue(instance);
                 }
             };

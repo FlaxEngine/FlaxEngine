@@ -1,58 +1,36 @@
-﻿using System;
-using System.Collections.Generic;
-using FlaxEngine;
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+
+using System;
 using FlaxEngine.GUI;
 
 namespace FlaxEngine;
 
 /// <summary>
-/// The control reference interface.
+/// Interface for control references access.
 /// </summary>
 public interface IControlReference
 {
     /// <summary>
-    /// The UIControl.
+    /// Gets or sets the reference to <see cref="FlaxEngine.UIControl"/> actor.
     /// </summary>
-    public UIControl UIControl { get; }
-    
+    public UIControl UIControl { get; set; }
+
     /// <summary>
-    /// The Control type
+    /// Gets the type of the control the interface uses.
     /// </summary>
-    /// <returns>The Control Type</returns>
-    public Type GetControlType();
-    
-    /// <summary>
-    /// A safe set of the UI Control. Will warn if Control is of the wrong type.
-    /// </summary>
-    /// <param name="uiControl">The UIControl to set.</param>
-    public void Set(UIControl uiControl);
+    public Type ControlType { get; }
 }
 
 /// <summary>
-/// ControlReference class.
+/// UI Control reference utility. References UI Control actor with a typed control type.
 /// </summary>
 [Serializable]
 public struct ControlReference<T> : IControlReference where T : Control
 {
-    [Serialize, ShowInEditor]
     private UIControl _uiControl;
 
     /// <summary>
-    /// Default constructor for ControlReference;
-    /// </summary>
-    public ControlReference()
-    {
-        _uiControl = null;
-    }
-
-    /// <inheritdoc />
-    public Type GetControlType()
-    {
-        return typeof(T);
-    }
-
-    /// <summary>
-    /// The Control attached to the UI Control.
+    /// Gets the typed UI control object owned by the referenced <see cref="FlaxEngine.UIControl"/> actor.
     /// </summary>
     [HideInEditor]
     public T Control
@@ -61,39 +39,34 @@ public struct ControlReference<T> : IControlReference where T : Control
         {
             if (_uiControl != null && _uiControl.Control is T t)
                 return t;
+            Debug.Write(LogType.Warning, "Trying to get Control from ControlReference but UIControl is null, or UIControl.Control is null, or UIControl.Control is not the correct type.");
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    public UIControl UIControl
+    {
+        get => _uiControl;
+        set
+        {
+            if (value == null)
+            {
+                _uiControl = null;
+            }
+            else if (value.Control is T t)
+            {
+                _uiControl = value;
+            }
             else
             {
-                Debug.Write(LogType.Warning, "Trying to get Control from ControlReference but UIControl is null, or UIControl.Control is null, or UIControl.Control is not the correct type.");
-                return null;
+                Debug.Write(LogType.Warning, "Trying to set ControlReference but UIControl.Control is null or UIControl.Control is not the correct type.");
             }
         }
     }
 
     /// <inheritdoc />
-    public UIControl UIControl => _uiControl;
-
-    /// <inheritdoc />
-    public void Set(UIControl uiControl)
-    {
-        if (uiControl == null)
-        {
-            Clear();
-            return;
-        }
-        
-        if (uiControl.Control is T castedControl)
-            _uiControl = uiControl;
-        else
-            Debug.Write(LogType.Warning, "Trying to set ControlReference but UIControl.Control is null or UIControl.Control is not the correct type.");
-    }
-
-    /// <summary>
-    /// Clears the UIControl reference.
-    /// </summary>
-    public void Clear()
-    {
-        _uiControl = null;
-    }
+    public Type ControlType => typeof(T);
 
     /// <summary>
     /// The implicit operator for the Control.
