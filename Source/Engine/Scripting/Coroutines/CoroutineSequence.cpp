@@ -148,7 +148,7 @@ void CoroutineSequence::Step::EmplaceCopy(const Step& other)
         break;
 
         case StepType::None: CRASH;
-        default:             break;
+        default: break;
     }
 }
 
@@ -179,7 +179,7 @@ void CoroutineSequence::Step::EmplaceMove(Step&& other) noexcept
         break;
 
         case StepType::None: CRASH;
-        default:             break;
+        default: break;
     }
 }
 
@@ -190,7 +190,7 @@ CoroutineSequence::Step::~Step()
     ASSERT(_type == StepType::None);
 }
 
-auto CoroutineSequence::Step::operator=(const Step& other) -> Step&
+CoroutineSequence::Step& CoroutineSequence::Step::operator=(const Step& other)
 {
     if (this == &other)
         return *this;
@@ -202,7 +202,7 @@ auto CoroutineSequence::Step::operator=(const Step& other) -> Step&
     return *this;
 }
 
-auto CoroutineSequence::Step::operator=(Step&& other) noexcept -> Step&
+CoroutineSequence::Step& CoroutineSequence::Step::operator=(Step&& other) noexcept
 {
     if (this == &other)
         return *this;
@@ -220,19 +220,19 @@ CoroutineSequence::StepType CoroutineSequence::Step::GetType() const
     return _type;
 }
 
-auto CoroutineSequence::Step::GetRunnable() const -> const RunnableReference&
+const CoroutineSequence::RunnableReference& CoroutineSequence::Step::GetRunnable() const
 {
     ASSERT(_type == StepType::Run);
     return _runnable;
 }
 
-auto CoroutineSequence::Step::GetPredicate() const -> const PredicateReference&
+const CoroutineSequence::PredicateReference& CoroutineSequence::Step::GetPredicate() const
 {
     ASSERT(_type == StepType::WaitUntil);
     return _predicate;
 }
 
-auto CoroutineSequence::Step::GetFramesDelay() const -> int32
+int32 CoroutineSequence::Step::GetFramesDelay() const
 {
     ASSERT(_type == StepType::WaitFrames);
     return _framesDelay;

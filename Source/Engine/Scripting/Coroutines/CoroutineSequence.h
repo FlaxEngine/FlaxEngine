@@ -140,15 +140,15 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineSequence final : public Scriptin
     public:
         ~Step();
 
-        auto operator=(const Step& other) -> Step&;
-        auto operator=(Step&& other) noexcept -> Step&;
+        Step& operator=(const Step& other);
+        Step& operator=(Step&& other) noexcept;
 
-        auto GetType() const -> StepType;
-        auto GetRunnable() const -> const RunnableReference&;
-        auto GetPredicate() const -> const PredicateReference&;
-        auto GetFramesDelay() const -> int32;
-        auto GetSecondsDelay() const -> float;
-        auto GetSuspensionPoint() const -> CoroutineSuspendPoint;
+        StepType GetType() const;
+        const RunnableReference& GetRunnable() const;
+        const PredicateReference& GetPredicate() const;
+        int32 GetFramesDelay() const;
+        float GetSecondsDelay() const;
+        CoroutineSuspendPoint GetSuspensionPoint() const;
     };
 
 private:
