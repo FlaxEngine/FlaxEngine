@@ -213,39 +213,3 @@ CoroutineSequence::Step& CoroutineSequence::Step::operator=(Step&& other) noexce
 
     return *this;
 }
-
-
-CoroutineSequence::StepType CoroutineSequence::Step::GetType() const
-{
-    return _type;
-}
-
-const CoroutineSequence::RunnableReference& CoroutineSequence::Step::GetRunnable() const
-{
-    ASSERT(_type == StepType::Run);
-    return _runnable;
-}
-
-const CoroutineSequence::PredicateReference& CoroutineSequence::Step::GetPredicate() const
-{
-    ASSERT(_type == StepType::WaitUntil);
-    return _predicate;
-}
-
-int32 CoroutineSequence::Step::GetFramesDelay() const
-{
-    ASSERT(_type == StepType::WaitFrames);
-    return _framesDelay;
-}
-
-auto CoroutineSequence::Step::GetSecondsDelay() const -> float
-{
-    ASSERT(_type == StepType::WaitSeconds);
-    return _secondsDelay;
-}
-
-auto CoroutineSequence::Step::GetSuspensionPoint() const -> CoroutineSuspendPoint
-{
-    ASSERT(_type == StepType::WaitSuspensionPoint);
-    return _suspensionPoint;
-}

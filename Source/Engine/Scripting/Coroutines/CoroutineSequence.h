@@ -143,12 +143,41 @@ API_CLASS(Sealed) class FLAXENGINE_API CoroutineSequence final : public Scriptin
         Step& operator=(const Step& other);
         Step& operator=(Step&& other) noexcept;
 
-        StepType GetType() const;
-        const RunnableReference& GetRunnable() const;
-        const PredicateReference& GetPredicate() const;
-        int32 GetFramesDelay() const;
-        float GetSecondsDelay() const;
-        CoroutineSuspendPoint GetSuspensionPoint() const;
+
+        FORCE_INLINE StepType GetType() const
+        {
+            return _type;
+        }
+
+        FORCE_INLINE const RunnableReference& GetRunnable() const
+        {
+            ASSERT(_type == StepType::Run);
+            return _runnable;
+        }
+
+        FORCE_INLINE const PredicateReference& GetPredicate() const
+        {
+            ASSERT(_type == StepType::WaitUntil);
+            return _predicate;
+        }
+
+        FORCE_INLINE int32 GetFramesDelay() const
+        {
+            ASSERT(_type == StepType::WaitFrames);
+            return _framesDelay;
+        }
+
+        FORCE_INLINE float GetSecondsDelay() const
+        {
+            ASSERT(_type == StepType::WaitSeconds);
+            return _secondsDelay;
+        }
+
+        FORCE_INLINE CoroutineSuspendPoint GetSuspensionPoint() const
+        {
+            ASSERT(_type == StepType::WaitSuspensionPoint);
+            return _suspensionPoint;
+        }
     };
 
 private:
