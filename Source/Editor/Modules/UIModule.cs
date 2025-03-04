@@ -160,7 +160,7 @@ namespace FlaxEditor.Modules
         internal UIModule(Editor editor)
         : base(editor)
         {
-            InitOrder = -90;
+            InitOrder = -70;
             VisjectSurfaceBackground = FlaxEngine.Content.LoadAsyncInternal<Texture>("Editor/VisjectSurface");
             ColorValueBox.ShowPickColorDialog += ShowPickColorDialog;
         }
