@@ -234,7 +234,9 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             {
                 if (methodGenericMap.TryGetValue(type.Name, out var methodIndex))
                     return "``" + methodIndex;
-                return "`" + typeGenericMap[type.Name];
+                if (typeGenericMap.TryGetValue(type.Name, out var typeKey))
+                    return "`" + typeKey;
+                return "`";
             }
             if (type.HasElementType)
             {
