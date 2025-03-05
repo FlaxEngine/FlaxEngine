@@ -174,6 +174,7 @@ void PlatformBase::LogInfo()
     const MemoryStats memStats = Platform::GetMemoryStats();
     LOG(Info, "Physical Memory: {0} total, {1} used ({2}%)", Utilities::BytesToText(memStats.TotalPhysicalMemory), Utilities::BytesToText(memStats.UsedPhysicalMemory), Utilities::RoundTo2DecimalPlaces((float)memStats.UsedPhysicalMemory * 100.0f / (float)memStats.TotalPhysicalMemory));
     LOG(Info, "Virtual Memory: {0} total, {1} used ({2}%)", Utilities::BytesToText(memStats.TotalVirtualMemory), Utilities::BytesToText(memStats.UsedVirtualMemory), Utilities::RoundTo2DecimalPlaces((float)memStats.UsedVirtualMemory * 100.0f / (float)memStats.TotalVirtualMemory));
+    LOG(Info, "Program Size: {0}", Utilities::BytesToText(memStats.ProgramSizeMemory));
 
     LOG(Info, "Main thread id: 0x{0:x}, Process id: {1}", Globals::MainThreadID, Platform::GetCurrentProcessId());
     LOG(Info, "Desktop size: {0}", Platform::GetDesktopSize());
@@ -345,15 +346,21 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
         // Log memory stats
         {
             const MemoryStats memoryStats = Platform::GetMemoryStats();
-            LOG(Error, "Total Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(memoryStats.UsedPhysicalMemory), (int32)(100 * memoryStats.UsedPhysicalMemory / memoryStats.TotalPhysicalMemory));
-            LOG(Error, "Total Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(memoryStats.UsedVirtualMemory), (int32)(100 * memoryStats.UsedVirtualMemory / memoryStats.TotalVirtualMemory));
             const ProcessMemoryStats processMemoryStats = Platform::GetProcessMemoryStats();
-            LOG(Error, "Process Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(processMemoryStats.UsedPhysicalMemory), (int32)(100 * processMemoryStats.UsedPhysicalMemory / memoryStats.TotalPhysicalMemory));
-            LOG(Error, "Process Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(processMemoryStats.UsedVirtualMemory), (int32)(100 * processMemoryStats.UsedVirtualMemory / memoryStats.TotalVirtualMemory));
 #define GET_MEM(totalUsed, processUsed) totalUsed > processUsed ? totalUsed - processUsed : 0
 	        const uint64 externalUsedPhysical = GET_MEM(memoryStats.UsedPhysicalMemory, processMemoryStats.UsedPhysicalMemory);
 	        const uint64 externalUsedVirtual = GET_MEM(memoryStats.UsedVirtualMemory, processMemoryStats.UsedVirtualMemory);
 #undef GET_MEM
+
+            // Total memory usage
+            LOG(Error, "Total Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(memoryStats.UsedPhysicalMemory), (int32)(100 * memoryStats.UsedPhysicalMemory / memoryStats.TotalPhysicalMemory));
+            LOG(Error, "Total Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(memoryStats.UsedVirtualMemory), (int32)(100 * memoryStats.UsedVirtualMemory / memoryStats.TotalVirtualMemory));
+
+            // Engine memory usage
+            LOG(Error, "Process Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(processMemoryStats.UsedPhysicalMemory), (int32)(100 * processMemoryStats.UsedPhysicalMemory / memoryStats.TotalPhysicalMemory));
+            LOG(Error, "Process Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(processMemoryStats.UsedVirtualMemory), (int32)(100 * processMemoryStats.UsedVirtualMemory / memoryStats.TotalVirtualMemory));
+
+            // External apps memory usage
             LOG(Error, "External Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(externalUsedPhysical), (int32)(100 * externalUsedPhysical / memoryStats.TotalPhysicalMemory));
             LOG(Error, "External Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(externalUsedVirtual), (int32)(100 * externalUsedVirtual / memoryStats.TotalVirtualMemory));
         }

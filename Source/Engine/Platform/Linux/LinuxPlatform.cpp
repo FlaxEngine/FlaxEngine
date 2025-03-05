@@ -57,6 +57,7 @@
 
 CPUInfo UnixCpu;
 int ClockSource;
+uint64 ProgramSizeMemory;
 Guid DeviceId;
 String UserLocale, ComputerName, HomeDir;
 byte MacAddress[6];
@@ -1773,32 +1774,25 @@ int32 LinuxPlatform::GetCacheLineSize()
 
 MemoryStats LinuxPlatform::GetMemoryStats()
 {
-    // Get memory usage
     const uint64 pageSize = getpagesize();
     const uint64 totalPages = get_phys_pages();
     const uint64 availablePages = get_avphys_pages();
-
-    // Fill result data
     MemoryStats result;
     result.TotalPhysicalMemory = totalPages * pageSize;
     result.UsedPhysicalMemory = (totalPages - availablePages) * pageSize;
     result.TotalVirtualMemory = result.TotalPhysicalMemory;
     result.UsedVirtualMemory = result.UsedPhysicalMemory;
-
+    result.ProgramSizeMemory = ProgramSizeMemory;
     return result;
 }
 
 ProcessMemoryStats LinuxPlatform::GetProcessMemoryStats()
 {
-    // Get memory usage
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
-
-    // Fill result data
     ProcessMemoryStats result;
     result.UsedPhysicalMemory = usage.ru_maxrss;
     result.UsedVirtualMemory = result.UsedPhysicalMemory;
-
     return result;
 }
 
@@ -1929,6 +1923,9 @@ bool LinuxPlatform::Init()
     {
         ClockSource = CLOCK_MONOTONIC;
     }
+
+	// Estimate program size by checking physical memory usage on start
+	ProgramSizeMemory = Platform::GetProcessMemoryStats().UsedPhysicalMemory;
 
     // Set info about the CPU
     cpu_set_t cpus;

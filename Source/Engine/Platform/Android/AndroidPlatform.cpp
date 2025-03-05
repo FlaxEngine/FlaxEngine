@@ -283,6 +283,7 @@ namespace
     bool IsPaused = true;
     bool IsVibrating = false;
     int32 ScreenWidth = 0, ScreenHeight = 0;
+    uint64 ProgramSizeMemory = 0;
     Guid DeviceId;
     String AppPackageName, DeviceManufacturer, DeviceModel, DeviceBuildNumber;
     String SystemVersion, SystemLanguage, CacheDir, ExecutablePath;
@@ -724,6 +725,7 @@ MemoryStats AndroidPlatform::GetMemoryStats()
     result.UsedPhysicalMemory = (totalPages - availablePages) * pageSize;
     result.TotalVirtualMemory = result.TotalPhysicalMemory;
     result.UsedVirtualMemory = result.UsedPhysicalMemory;
+    result.ProgramSizeMemory = ProgramSizeMemory;
     return result;
 }
 
@@ -825,6 +827,9 @@ bool AndroidPlatform::Init()
     {
         ClockSource = CLOCK_MONOTONIC;
     }
+
+	// Estimate program size by checking physical memory usage on start
+	ProgramSizeMemory = Platform::GetProcessMemoryStats().UsedPhysicalMemory;
 
     // Set info about the CPU
     cpu_set_t cpus;

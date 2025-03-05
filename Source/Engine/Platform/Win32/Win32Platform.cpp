@@ -26,6 +26,7 @@ namespace
 {
     Guid DeviceId;
     CPUInfo CpuInfo;
+    uint64 ProgramSizeMemory;
     uint64 ClockFrequency;
     double CyclesToSeconds;
     WSAData WsaData;
@@ -71,6 +72,9 @@ bool Win32Platform::Init()
     ASSERT(freqResult && frequency.QuadPart > 0);
     ClockFrequency = frequency.QuadPart;
     CyclesToSeconds = 1.0 / static_cast<double>(frequency.QuadPart);
+
+	// Estimate program size by checking physical memory usage on start
+	ProgramSizeMemory = Platform::GetProcessMemoryStats().UsedPhysicalMemory;
 
     // Count CPUs
     BOOL done = FALSE;
@@ -313,33 +317,26 @@ int32 Win32Platform::GetCacheLineSize()
 
 MemoryStats Win32Platform::GetMemoryStats()
 {
-    // Get memory stats
     MEMORYSTATUSEX statex;
     statex.dwLength = sizeof(statex);
     GlobalMemoryStatusEx(&statex);
-
-    // Fill result data
     MemoryStats result;
     result.TotalPhysicalMemory = statex.ullTotalPhys;
     result.UsedPhysicalMemory = statex.ullTotalPhys - statex.ullAvailPhys;
     result.TotalVirtualMemory = statex.ullTotalVirtual;
     result.UsedVirtualMemory = statex.ullTotalVirtual - statex.ullAvailVirtual;
-
+    result.ProgramSizeMemory = ProgramSizeMemory;
     return result;
 }
 
 ProcessMemoryStats Win32Platform::GetProcessMemoryStats()
 {
-    // Get memory stats
     PROCESS_MEMORY_COUNTERS_EX countersEx;
     countersEx.cb = sizeof(countersEx);
     GetProcessMemoryInfo(GetCurrentProcess(), (PPROCESS_MEMORY_COUNTERS)&countersEx, sizeof(countersEx));
-
-    // Fill result data
     ProcessMemoryStats result;
     result.UsedPhysicalMemory = countersEx.WorkingSetSize;
     result.UsedVirtualMemory = countersEx.PrivateUsage;
-
     return result;
 }
 
