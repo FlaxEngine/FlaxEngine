@@ -198,8 +198,7 @@ void GameBaseImpl::OnMainWindowClosed()
     Engine::MainWindow = nullptr;
 
     // Request engine exit
-    Globals::IsRequestingExit = true;
-    Engine::RequestingExit();
+    Engine::RequestExit(0);
 }
 
 void GameBaseImpl::OnPostRender(GPUContext* context, RenderContext& renderContext)
