@@ -342,14 +342,20 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
             LOG(Error, "");
         }
 
-        // Log process memory stats
+        // Log memory stats
         {
             const MemoryStats memoryStats = Platform::GetMemoryStats();
-            LOG(Error, "Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(memoryStats.UsedPhysicalMemory), (int32)(100 * memoryStats.UsedPhysicalMemory / memoryStats.TotalPhysicalMemory));
-            LOG(Error, "Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(memoryStats.UsedVirtualMemory), (int32)(100 * memoryStats.UsedVirtualMemory / memoryStats.TotalVirtualMemory));
+            LOG(Error, "Total Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(memoryStats.UsedPhysicalMemory), (int32)(100 * memoryStats.UsedPhysicalMemory / memoryStats.TotalPhysicalMemory));
+            LOG(Error, "Total Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(memoryStats.UsedVirtualMemory), (int32)(100 * memoryStats.UsedVirtualMemory / memoryStats.TotalVirtualMemory));
             const ProcessMemoryStats processMemoryStats = Platform::GetProcessMemoryStats();
             LOG(Error, "Process Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(processMemoryStats.UsedPhysicalMemory), (int32)(100 * processMemoryStats.UsedPhysicalMemory / memoryStats.TotalPhysicalMemory));
             LOG(Error, "Process Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(processMemoryStats.UsedVirtualMemory), (int32)(100 * processMemoryStats.UsedVirtualMemory / memoryStats.TotalVirtualMemory));
+#define GET_MEM(totalUsed, processUsed) totalUsed > processUsed ? totalUsed - processUsed : 0
+	        const uint64 externalUsedPhysical = GET_MEM(memoryStats.UsedPhysicalMemory, processMemoryStats.UsedPhysicalMemory);
+	        const uint64 externalUsedVirtual = GET_MEM(memoryStats.UsedVirtualMemory, processMemoryStats.UsedVirtualMemory);
+#undef GET_MEM
+            LOG(Error, "External Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(externalUsedPhysical), (int32)(100 * externalUsedPhysical / memoryStats.TotalPhysicalMemory));
+            LOG(Error, "External Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(externalUsedVirtual), (int32)(100 * externalUsedVirtual / memoryStats.TotalVirtualMemory));
         }
     }
     if (Log::Logger::LogFilePath.HasChars())
