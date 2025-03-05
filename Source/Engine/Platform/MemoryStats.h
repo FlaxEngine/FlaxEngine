@@ -35,6 +35,11 @@ API_STRUCT(NoDefault) struct MemoryStats
     /// Amount of memory used initially by the program data (executable code, exclusive shared libraries and global static data sections).
     /// </summary>
     API_FIELD() uint64 ProgramSizeMemory = 0;
+
+    /// <summary>
+    /// Amount of extra memory assigned by the platform for development. Only used on platforms with fixed memory and no paging.
+    /// </summary>
+    API_FIELD() uint64 ExtraDevelopmentMemory = 0;
 };
 
 /// <summary>

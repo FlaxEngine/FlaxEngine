@@ -175,6 +175,9 @@ void PlatformBase::LogInfo()
     LOG(Info, "Physical Memory: {0} total, {1} used ({2}%)", Utilities::BytesToText(memStats.TotalPhysicalMemory), Utilities::BytesToText(memStats.UsedPhysicalMemory), Utilities::RoundTo2DecimalPlaces((float)memStats.UsedPhysicalMemory * 100.0f / (float)memStats.TotalPhysicalMemory));
     LOG(Info, "Virtual Memory: {0} total, {1} used ({2}%)", Utilities::BytesToText(memStats.TotalVirtualMemory), Utilities::BytesToText(memStats.UsedVirtualMemory), Utilities::RoundTo2DecimalPlaces((float)memStats.UsedVirtualMemory * 100.0f / (float)memStats.TotalVirtualMemory));
     LOG(Info, "Program Size: {0}", Utilities::BytesToText(memStats.ProgramSizeMemory));
+#if !BUILD_RELEASE && !PLATFORM_DESKTOP
+    LOG(Info, "Extra Development Memory: {0}", Utilities::BytesToText(memStats.ExtraDevelopmentMemory));
+#endif
 
     LOG(Info, "Main thread id: 0x{0:x}, Process id: {1}", Globals::MainThreadID, Platform::GetCurrentProcessId());
     LOG(Info, "Desktop size: {0}", Platform::GetDesktopSize());

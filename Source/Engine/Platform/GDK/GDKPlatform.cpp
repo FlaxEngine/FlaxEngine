@@ -6,7 +6,6 @@
 #include "Engine/Platform/Window.h"
 #include "Engine/Platform/CreateWindowSettings.h"
 #include "Engine/Platform/WindowsManager.h"
-#include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/BatteryInfo.h"
 #include "Engine/Platform/Base/PlatformUtils.h"
 #include "Engine/Profiler/ProfilerCPU.h"
