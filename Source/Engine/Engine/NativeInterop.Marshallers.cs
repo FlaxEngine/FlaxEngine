@@ -228,6 +228,17 @@ namespace FlaxEngine.Interop
 #if FLAX_EDITOR
     [HideInEditor]
 #endif
+    [CustomMarshaller(typeof(Version), MarshalMode.Default, typeof(VersionMarshaller))]
+    public static class VersionMarshaller
+    {
+        public static Version ConvertToManaged(IntPtr unmanaged) => Unsafe.As<Version>(ManagedHandleMarshaller.ConvertToManaged(unmanaged));
+        public static IntPtr ConvertToUnmanaged(Version managed) => ManagedHandleMarshaller.ConvertToUnmanaged(managed);
+        public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.Free(unmanaged);
+    }
+
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
     [CustomMarshaller(typeof(Array), MarshalMode.ManagedToUnmanagedIn, typeof(SystemArrayMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(Array), MarshalMode.UnmanagedToManagedOut, typeof(SystemArrayMarshaller.ManagedToNative))]
     [CustomMarshaller(typeof(Array), MarshalMode.ManagedToUnmanagedOut, typeof(SystemArrayMarshaller.NativeToManaged))]

@@ -56,90 +56,6 @@ namespace FlaxEngine.Interop
         internal uint setterAttributes;
     }
 
-    [StructLayout(LayoutKind.Explicit)]
-    public struct NativeVariant
-    {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct NativeVariantType
-        {
-            internal VariantUtils.VariantType types;
-            internal IntPtr TypeName; // char*
-        }
-
-        [FieldOffset(0)]
-        NativeVariantType Type;
-
-        [FieldOffset(8)]
-        byte AsBool;
-
-        [FieldOffset(8)]
-        short AsInt16;
-
-        [FieldOffset(8)]
-        ushort AsUint16;
-
-        [FieldOffset(8)]
-        int AsInt;
-
-        [FieldOffset(8)]
-        uint AsUint;
-
-        [FieldOffset(8)]
-        long AsInt64;
-
-        [FieldOffset(8)]
-        ulong AsUint64;
-
-        [FieldOffset(8)]
-        float AsFloat;
-
-        [FieldOffset(8)]
-        double AsDouble;
-
-        [FieldOffset(8)]
-        IntPtr AsPointer;
-
-        [FieldOffset(8)]
-        int AsData0;
-
-        [FieldOffset(12)]
-        int AsData1;
-
-        [FieldOffset(16)]
-        int AsData2;
-
-        [FieldOffset(20)]
-        int AsData3;
-
-        [FieldOffset(24)]
-        int AsData4;
-
-        [FieldOffset(28)]
-        int AsData5;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct NativeVersion
-    {
-        internal int _Major;
-        internal int _Minor;
-        internal int _Build;
-        internal int _Revision;
-
-        internal NativeVersion(Version ver)
-        {
-            _Major = ver.Major;
-            _Minor = ver.Minor;
-            _Build = ver.Build;
-            _Revision = ver.Revision;
-        }
-
-        internal Version GetVersion()
-        {
-            return new Version(_Major, _Minor, _Build, _Revision);
-        }
-    }
-
     unsafe partial class NativeInterop
     {
         [LibraryImport("FlaxEngine", EntryPoint = "NativeInterop_CreateClass", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(Interop.StringMarshaller))]
@@ -1100,8 +1016,6 @@ namespace FlaxEngine.Interop
         {
             Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             Type nativeType = GetInternalType(type) ?? type;
-            if (nativeType == typeof(Version))
-                nativeType = typeof(NativeVersion);
             int size;
             if (nativeType.IsClass)
                 size = sizeof(IntPtr);

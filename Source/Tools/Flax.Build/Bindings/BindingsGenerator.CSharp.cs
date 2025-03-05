@@ -615,6 +615,8 @@ namespace Flax.Build.Bindings
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemTypeMarshaller))";
             else if (returnValueType == "CultureInfo")
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.CultureInfoMarshaller))";
+            else if (returnValueType == "Version")
+                returnMarshalType = "MarshalUsing(typeof(VersionMarshaller))";
             else if (functionInfo.ReturnType.Type == "Variant") // object
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.ManagedHandleMarshaller))";
             else if (FindApiTypeInfo(buildData, functionInfo.ReturnType, caller)?.IsInterface ?? false)
@@ -676,6 +678,8 @@ namespace Flax.Build.Bindings
                     parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemTypeMarshaller))";
                 else if (parameterInfo.Type.Type == "CultureInfo")
                     parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.CultureInfoMarshaller))";
+                else if (parameterInfo.Type.Type == "Version")
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.VersionMarshaller))";
                 else if (parameterInfo.Type.Type == "Variant") // object
                     parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.ManagedHandleMarshaller))";
                 else if (parameterInfo.Type.Type == "MonoArray" || parameterInfo.Type.Type == "MArray")
@@ -731,10 +735,15 @@ namespace Flax.Build.Bindings
                 string parameterMarshalType = "";
                 if (parameterInfo.IsOut && parameterInfo.DefaultValue == "var __resultAsRef")
                 {
+                    // TODO: make this code shared with MarshalUsing selection from the above
                     if (parameterInfo.Type.Type == "Array" || parameterInfo.Type.Type == "Span" || parameterInfo.Type.Type == "DataContainer" || parameterInfo.Type.Type == "BytesContainer")
                         parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = \"{parameterInfo.Name}Count\")";
                     else if (parameterInfo.Type.Type == "Dictionary")
                         parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.DictionaryMarshaller<,>), ConstantElementCount = 0)";
+                    else if (parameterInfo.Type.Type == "CultureInfo")
+                        parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.CultureInfoMarshaller))";
+                    else if (parameterInfo.Type.Type == "Version")
+                        parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.VersionMarshaller))";
                 }
                 if (nativeType == "System.Type")
                     parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemTypeMarshaller))";
