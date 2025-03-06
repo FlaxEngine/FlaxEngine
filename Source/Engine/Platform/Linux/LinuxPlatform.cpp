@@ -1767,11 +1767,6 @@ CPUInfo LinuxPlatform::GetCPUInfo()
     return UnixCpu;
 }
 
-int32 LinuxPlatform::GetCacheLineSize()
-{
-    return UnixCpu.CacheLineSize;
-}
-
 MemoryStats LinuxPlatform::GetMemoryStats()
 {
     const uint64 pageSize = getpagesize();

@@ -90,7 +90,6 @@ public:
     static void FreePages(void* ptr);
     static bool Is64BitPlatform();
     static CPUInfo GetCPUInfo();
-    static int32 GetCacheLineSize();
     static MemoryStats GetMemoryStats();
     static ProcessMemoryStats GetProcessMemoryStats();
     static uint64 GetCurrentProcessId();

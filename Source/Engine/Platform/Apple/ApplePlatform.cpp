@@ -134,11 +134,6 @@ CPUInfo ApplePlatform::GetCPUInfo()
     return Cpu;
 }
 
-int32 ApplePlatform::GetCacheLineSize()
-{
-    return Cpu.CacheLineSize;
-}
-
 MemoryStats ApplePlatform::GetMemoryStats()
 {
     MemoryStats result;
