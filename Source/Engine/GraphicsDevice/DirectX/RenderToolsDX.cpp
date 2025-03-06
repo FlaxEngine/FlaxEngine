@@ -3,9 +3,76 @@
 #if GRAPHICS_API_DIRECTX11 || GRAPHICS_API_DIRECTX12
 
 #include "RenderToolsDX.h"
+#include "GPUDeviceDX.h"
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include <winerror.h>
+
+namespace Windows
+{
+    typedef struct _devicemodeW
+    {
+        WCHAR dmDeviceName[32];
+        WORD dmSpecVersion;
+        WORD dmDriverVersion;
+        WORD dmSize;
+        WORD dmDriverExtra;
+        DWORD dmFields;
+
+        union
+        {
+            struct
+            {
+                short dmOrientation;
+                short dmPaperSize;
+                short dmPaperLength;
+                short dmPaperWidth;
+                short dmScale;
+                short dmCopies;
+                short dmDefaultSource;
+                short dmPrintQuality;
+            } DUMMYSTRUCTNAME;
+
+            POINTL dmPosition;
+
+            struct
+            {
+                POINTL dmPosition;
+                DWORD dmDisplayOrientation;
+                DWORD dmDisplayFixedOutput;
+            } DUMMYSTRUCTNAME2;
+        } DUMMYUNIONNAME;
+
+        short dmColor;
+        short dmDuplex;
+        short dmYResolution;
+        short dmTTOption;
+        short dmCollate;
+        WCHAR dmFormName[32];
+        WORD dmLogPixels;
+        DWORD dmBitsPerPel;
+        DWORD dmPelsWidth;
+        DWORD dmPelsHeight;
+
+        union
+        {
+            DWORD dmDisplayFlags;
+            DWORD dmNup;
+        } DUMMYUNIONNAME2;
+
+        DWORD dmDisplayFrequency;
+        DWORD dmICMMethod;
+        DWORD dmICMIntent;
+        DWORD dmMediaType;
+        DWORD dmDitherType;
+        DWORD dmReserved1;
+        DWORD dmReserved2;
+        DWORD dmPanningWidth;
+        DWORD dmPanningHeight;
+    } DEVMODEW, *PDEVMODEW, *NPDEVMODEW, *LPDEVMODEW;
+
+    WIN_API BOOL WIN_API_CALLCONV EnumDisplaySettingsW(LPCWSTR lpszDeviceName, DWORD iModeNum, DEVMODEW* lpDevMode);
+}
 
 // @formatter:off
 
@@ -371,6 +438,94 @@ LPCSTR RenderToolsDX::GetVertexInputSemantic(VertexElement::Types type, UINT& se
         LOG(Fatal, "Invalid vertex shader element semantic type");
         return "";
     }
+}
+void GPUDeviceDX::UpdateOutputs(IDXGIAdapter* adapter)
+{
+#if PLATFORM_WINDOWS
+    // Collect output devices
+    uint32 outputIdx = 0;
+    ComPtr<IDXGIOutput> output;
+    DXGI_FORMAT defaultBackbufferFormat = RenderToolsDX::ToDxgiFormat(GPU_BACK_BUFFER_PIXEL_FORMAT);
+    Array<DXGI_MODE_DESC> modeDesc;
+    while (adapter->EnumOutputs(outputIdx, &output) != DXGI_ERROR_NOT_FOUND)
+    {
+        auto& outputDX11 = Outputs.AddOne();
+
+        outputDX11.Output = output;
+        output->GetDesc(&outputDX11.Desc);
+
+        uint32 numModes = 0;
+        HRESULT hr = output->GetDisplayModeList(defaultBackbufferFormat, 0, &numModes, nullptr);
+        if (FAILED(hr))
+        {
+            LOG(Warning, "Error while enumerating adapter output video modes.");
+            continue;
+        }
+
+        modeDesc.Resize(numModes, false);
+        hr = output->GetDisplayModeList(defaultBackbufferFormat, 0, &numModes, modeDesc.Get());
+        if (FAILED(hr))
+        {
+            LOG(Warning, "Error while enumerating adapter output video modes.");
+            continue;
+        }
+
+        for (auto& mode : modeDesc)
+        {
+            bool foundVideoMode = false;
+            for (auto& videoMode : outputDX11.VideoModes)
+            {
+                if (videoMode.Width == mode.Width &&
+                    videoMode.Height == mode.Height &&
+                    videoMode.RefreshRate.Numerator == mode.RefreshRate.Numerator &&
+                    videoMode.RefreshRate.Denominator == mode.RefreshRate.Denominator)
+                {
+                    foundVideoMode = true;
+                    break;
+                }
+            }
+
+            if (!foundVideoMode)
+            {
+                outputDX11.VideoModes.Add(mode);
+
+                // Collect only from the main monitor
+                if (Outputs.Count() == 1)
+                {
+                    VideoOutputModes.Add({ mode.Width, mode.Height, (uint32)(mode.RefreshRate.Numerator / (float)mode.RefreshRate.Denominator) });
+                }
+            }
+        }
+
+        // Get desktop display mode
+        HMONITOR hMonitor = outputDX11.Desc.Monitor;
+        MONITORINFOEX monitorInfo;
+        monitorInfo.cbSize = sizeof(MONITORINFOEX);
+        GetMonitorInfo(hMonitor, &monitorInfo);
+
+        Windows::DEVMODEW devMode;
+        devMode.dmSize = sizeof(Windows::DEVMODEW);
+        devMode.dmDriverExtra = 0;
+        Windows::EnumDisplaySettingsW(monitorInfo.szDevice, ((DWORD)-1), &devMode);
+
+        DXGI_MODE_DESC currentMode;
+        currentMode.Width = devMode.dmPelsWidth;
+        currentMode.Height = devMode.dmPelsHeight;
+        bool useDefaultRefreshRate = 1 == devMode.dmDisplayFrequency || 0 == devMode.dmDisplayFrequency;
+        currentMode.RefreshRate.Numerator = useDefaultRefreshRate ? 0 : devMode.dmDisplayFrequency;
+        currentMode.RefreshRate.Denominator = useDefaultRefreshRate ? 0 : 1;
+        currentMode.Format = defaultBackbufferFormat;
+        currentMode.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+        currentMode.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+
+        if (output->FindClosestMatchingMode(&currentMode, &outputDX11.DesktopViewMode, nullptr) != S_OK)
+            outputDX11.DesktopViewMode = currentMode;
+
+        float refreshRate = outputDX11.DesktopViewMode.RefreshRate.Numerator / (float)outputDX11.DesktopViewMode.RefreshRate.Denominator;
+        LOG(Info, "Video output '{0}' {1}x{2} {3} Hz", outputDX11.Desc.DeviceName, devMode.dmPelsWidth, devMode.dmPelsHeight, refreshRate);
+        outputIdx++;
+    }
+#endif
 }
 
 #endif
