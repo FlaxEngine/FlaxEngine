@@ -29,6 +29,7 @@ protected:
     float _maxAngularVelocity;
     float _massScale;
     Float3 _centerOfMassOffset;
+    Float3 _centerOfMass;
     RigidbodyConstraints _constraints;
 
     uint32 _enableSimulation : 1;
@@ -39,6 +40,13 @@ protected:
     uint32 _updateMassWhenScaleChanges : 1;
     uint32 _overrideMass : 1;
     uint32 _isUpdatingTransform : 1;
+
+    //the dumbest thing, API work araund...
+    //we need the px to add all the actors before we can do stuff with COM
+    //else the COM is 0 and it will be set COM + COMO but COM is 0 so COM = COMO
+    //yes this meens the COM is on enable is incorect with out changes to how engine calles the actors it will presest
+    uint16 _hasCenterOfMass : 1;
+
 
     friend Collider;
     //API_FIELD(public,Attributes = "EditorOrder(100), DefaultValue(false), EditorDisplay(\"Rigid Body\"),RadyOnly")
@@ -208,7 +216,10 @@ public:
     /// Gets the center of the mass in the local space.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(200),ReadOnly, DefaultValue(typeof(Float3), \"0,0,0\"), EditorDisplay(\"Rigid Body\", \"Center Of Mass\")")
-    Vector3 GetCenterOfMass() const;
+    Vector3 GetCenterOfMass() const
+    {
+        return _centerOfMass + _centerOfMassOffset;
+    }
 
     /// <summary>
     /// Sets the center of the mass in the local space.
@@ -511,6 +522,9 @@ public:
     }
 public:
 #if USE_EDITOR
+    virtual void DrawPhysicsDebug(RenderView& view);
+#endif
+#if USE_EDITOR
     /// <summary>
     /// [Editor only] shows attached colliders when selected (value is not saved safety guard, debug draw is kinda slow :D )
     /// </summary>
@@ -531,6 +545,8 @@ public:
 
 protected:
     // [Actor]
+    void OnEnable() override;
+    void OnDisable() override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
     void OnActiveInTreeChanged() override;

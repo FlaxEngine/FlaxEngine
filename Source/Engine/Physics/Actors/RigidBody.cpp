@@ -7,6 +7,12 @@
 #include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Serialization/Serialization.h"
 
+
+#if USE_EDITOR
+#include "Engine/Debug/DebugLog.h"
+#include "Engine/Level/Scene/SceneRendering.h"
+#endif
+
 RigidBody::RigidBody(const SpawnParams& params)
     : Actor(params)
     , _actor(nullptr)
@@ -26,6 +32,7 @@ RigidBody::RigidBody(const SpawnParams& params)
     , _updateMassWhenScaleChanges(false)
     , _overrideMass(false)
     , _isUpdatingTransform(false)
+    , _hasCenterOfMass(false)
 {
 }
 
@@ -160,12 +167,17 @@ void RigidBody::SetCenterOfMassOffset(const Float3& value)
     if (Float3::NearEqual(value, _centerOfMassOffset))
         return;
 
-    //get un offseted center of mass
-    auto com = GetCenterOfMass() - _centerOfMassOffset;
+    if (!_hasCenterOfMass)
+    {
+        LOG(Warning, "Unanable to set center of mass offset yet,attached colliders are not initialized yet");
+        return;
+    }
+
     _centerOfMassOffset = value;
-    //applay offset
-    SetCenterOfMass(com + value);
-    //set new offset
+    if (_actor)
+    {
+        PhysicsBackend::SetRigidDynamicActorCenterOfMass(_actor, _centerOfMass + _centerOfMassOffset);
+    }
 }
 
 void RigidBody::SetConstraints(const RigidbodyConstraints value)
@@ -221,15 +233,12 @@ void RigidBody::SetSleepThreshold(const float value) const
         PhysicsBackend::SetRigidDynamicActorSleepThreshold(_actor, value);
 }
 
-Vector3  RigidBody::GetCenterOfMass() const
-{
-    return _actor ? (PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor) - _centerOfMassOffset) : Vector3::Zero;
-}
-
 void RigidBody::SetCenterOfMass(const Vector3& value)
 {
-    if (_actor) {
-        PhysicsBackend::SetRigidDynamicActorCenterOfMass(_actor, value + _centerOfMassOffset);
+    _centerOfMass = value;
+    if (_actor)
+    {
+        PhysicsBackend::SetRigidDynamicActorCenterOfMass(_actor, _centerOfMass + _centerOfMassOffset);
     }
 }
 
@@ -292,7 +301,7 @@ void RigidBody::SetSolverIterationCounts(int32 minPositionIters, int32 minVeloci
 
 void RigidBody::SnapToCenterOfMass()
 {
-    Vector3 delta = GetCenterOfMass();
+    Vector3 delta = _centerOfMass;
     if (Vector3::NearEqual(delta, Vector3::Zero))
         return;
     SetPosition(GetPosition() + delta);
@@ -385,7 +394,7 @@ void RigidBody::OnTriggerExit(PhysicsColliderActor* c)
 void RigidBody::OnColliderChanged(Collider* c)
 {
     UpdateMass();
-
+    _centerOfMass = PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor);
     // TODO: maybe wake up only if one ore more shapes attached is active?
     //if (GetStartAwake())
     //	WakeUp();
@@ -434,6 +443,38 @@ void RigidBody::OnDebugDrawSelected()
     DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition() + (GetOrientation() * GetCenterOfMass()), 2.5f), Color::Aqua, 0, false);
     Actor::OnDebugDrawSelected();
 }
+
+void RigidBody::DrawPhysicsDebug(RenderView& view)
+{
+    if (view.Mode == ViewMode::PhysicsColliders)
+    {
+        if (_actor)
+        {
+            auto comback = PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor);
+            Vector3 position; Quaternion orientation;
+            PhysicsBackend::GetRigidActorPose(_actor, position, orientation);
+            if (comback != GetCenterOfMass())
+            {
+                //display it at the invalid position
+                auto falsepoint = position + (orientation * GetCenterOfMass());
+                bool d = Vector3::Distance(view.WorldPosition, falsepoint) > 100.0f;
+
+                if (d)
+                {
+                    String WarnMsg{ TEXT("Warning:\n Center Of Mass is not in sync with back end\n") };
+                    DEBUG_DRAW_TEXT(WarnMsg, falsepoint, Color::Yellow, 5, 0);
+                }
+                DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(position + (orientation * GetCenterOfMass()), 2.5f), Color::Red, 0, false);
+                DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(position + (orientation * comback), 2.0f), Color::Green, 0, false);
+            }
+            else
+            {
+                DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(position + (orientation * comback), 2.5f), Color::Green, 0, false);
+            }
+        }
+    }
+}
+
 #endif
 
 void RigidBody::Serialize(SerializeStream& stream, const void* otherObj)
@@ -513,6 +554,26 @@ void RigidBody::OnActiveTransformChanged()
     _isUpdatingTransform = false;
 }
 
+void RigidBody::OnEnable()
+{
+#if USE_EDITOR
+    GetSceneRendering()->AddPhysicsDebug<RigidBody, &RigidBody::DrawPhysicsDebug>(this);
+#endif
+    // Base
+    Actor::OnEnable();
+}
+
+void RigidBody::OnDisable()
+{
+#if USE_EDITOR
+    GetSceneRendering()->RemovePhysicsDebug<RigidBody, &RigidBody::DrawPhysicsDebug>(this);
+#endif
+    // Base
+    Actor::OnDisable();
+}
+
+
+
 void RigidBody::BeginPlay(SceneBeginData* data)
 {
     // Create rigid body
@@ -541,9 +602,6 @@ void RigidBody::BeginPlay(SceneBeginData* data)
     // Setup mass (calculate or use overriden value)
     UpdateMass();
 
-    // Apply the Center Of Mass offset
-    SetCenterOfMassOffset(_centerOfMassOffset);
-
     // Register actor
     PhysicsBackend::AddSceneActor(scene, _actor);
     const bool putToSleep = !_startAwake && GetEnableSimulation() && !GetIsKinematic() && IsActiveInHierarchy();
@@ -555,6 +613,13 @@ void RigidBody::BeginPlay(SceneBeginData* data)
 
     // Base
     Actor::BeginPlay(data);
+
+    //pull the COM this is incorect place but o well will do the OnEnable needs the _centerOfMass
+    _centerOfMass = PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor);
+    _hasCenterOfMass = true;
+
+    //update COMO
+    PhysicsBackend::SetRigidDynamicActorCenterOfMass(_actor, _centerOfMass + _centerOfMassOffset);
 }
 
 void RigidBody::EndPlay()
@@ -581,6 +646,19 @@ void RigidBody::OnActiveInTreeChanged()
     {
         const bool isActive = _enableSimulation && IsActiveInHierarchy();
         PhysicsBackend::SetActorFlag(_actor, PhysicsBackend::ActorFlags::NoSimulation, !isActive);
+
+        if (_hasCenterOfMass && IsActiveInHierarchy())
+        {
+            //update COM
+            if (_actor)
+            {
+                PhysicsBackend::SetRigidDynamicActorCenterOfMass(_actor, _centerOfMass + _centerOfMassOffset);
+            }
+            else
+            {
+                LOG(Error, "SetRigidDynamicActorCenterOfMass call faled _actor == null");
+            }
+        }
 
         // Auto wake up
         if (isActive && GetStartAwake())
