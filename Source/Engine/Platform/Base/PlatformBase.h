@@ -7,6 +7,7 @@
 #include <string.h>
 
 struct Guid;
+struct Version;
 struct CPUInfo;
 struct MemoryStats;
 struct ProcessMemoryStats;
@@ -371,6 +372,16 @@ public:
     /// </summary>
     /// <returns>True if running on 64-bit computer, otherwise false.</returns>
     API_PROPERTY() static bool Is64BitPlatform() = delete;
+
+    /// <summary>
+    /// Gets the name of the operating system.
+    /// </summary>
+    API_PROPERTY() static String GetSystemName() = delete;
+
+    /// <summary>
+    /// Gets the version of the operating system version.
+    /// </summary>
+    API_PROPERTY() static Version GetSystemVersion() = delete;
 
     /// <summary>
     /// Gets the CPU information.

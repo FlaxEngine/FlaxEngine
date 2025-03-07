@@ -61,6 +61,8 @@ public:
     static void Log(const StringView& msg);
     static bool IsDebuggerPresent();
 #endif
+    static String GetSystemName();
+    static Version GetSystemVersion();
     static BatteryInfo GetBatteryInfo();
     static int32 GetDpi();
     static String GetUserLocaleName();

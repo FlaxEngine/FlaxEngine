@@ -8,6 +8,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
@@ -681,11 +682,6 @@ String AndroidPlatform::GetDeviceBuildNumber()
     return DeviceBuildNumber;
 }
 
-String AndroidPlatform::GetSystemVersion()
-{
-    return SystemVersion;
-}
-
 void AndroidPlatform::PreInit(android_app* app)
 {
     App = app;
@@ -889,8 +885,8 @@ void AndroidPlatform::LogInfo()
 {
     UnixPlatform::LogInfo();
 
-    LOG(Info, "App Package Name: {0}", AppPackageName);
-    LOG(Info, "System Version: {0}", SystemVersion);
+    LOG(Info, "App Package: {0}", AppPackageName);
+    LOG(Info, "Android {0}", SystemVersion);
     LOG(Info, "Device: {0} {1}, {2}", DeviceManufacturer, DeviceModel, DeviceBuildNumber);
 }
 
@@ -944,6 +940,18 @@ void AndroidPlatform::Log(const StringView& msg)
 }
 
 #endif
+
+String AndroidPlatform::GetSystemName()
+{
+    return String::Format(TEXT("Android {}"), SystemVersion);
+}
+
+Version AndroidPlatform::GetSystemVersion()
+{
+    Version version(0, 0);
+    Version::Parse(SystemVersion, &version);
+    return version;
+}
 
 int32 AndroidPlatform::GetDpi()
 {

@@ -7,7 +7,7 @@
 /// <summary>
 /// Contains information about power supply (battery).
 /// </summary>
-API_STRUCT() struct BatteryInfo
+API_STRUCT(NoDefault) struct BatteryInfo
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(BatteryInfo);
 

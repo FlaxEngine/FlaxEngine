@@ -8,6 +8,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
@@ -19,6 +20,7 @@
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/MessageBox.h"
+#include "Engine/Platform/File.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/Clipboard.h"
@@ -2644,6 +2646,25 @@ void LinuxPlatform::Exit()
 		X11::XCloseDisplay(xDisplay);
 		xDisplay = nullptr;
 	}
+}
+
+String LinuxPlatform::GetSystemName()
+{
+    Dictionary<String, String> configs = LoadConfigFile(TEXT("/etc/os-release"));
+    String str;
+    if (configs.TryGet(TEXT("NAME"), str))
+        return str;
+    return TEXT("Linux");
+}
+
+Version LinuxPlatform::GetSystemVersion()
+{
+    Dictionary<String, String> configs = LoadConfigFile(TEXT("/etc/os-release"));
+    String str;
+    Version version;
+    if (configs.TryGet(TEXT("VERSION_ID"), str) && !Version::Parse(str, &version))
+        return version;
+    return Version(0, 0);
 }
 
 int32 LinuxPlatform::GetDpi()

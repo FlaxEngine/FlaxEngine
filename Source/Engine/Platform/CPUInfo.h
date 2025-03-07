@@ -7,9 +7,9 @@
 /// <summary>
 /// Contains information about CPU (Central Processing Unit).
 /// </summary>
-API_STRUCT() struct CPUInfo
+API_STRUCT(NoDefault) struct CPUInfo
 {
-DECLARE_SCRIPTING_TYPE_MINIMAL(CPUInfo);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(CPUInfo);
 
     /// <summary>
     /// The number of physical processor packages.

@@ -10,6 +10,7 @@
 #include "Engine/Platform/Base/PlatformUtils.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/MessageBox.h"
@@ -41,6 +42,7 @@ namespace
     HANDLE PlmSignalResume = nullptr;
     PAPPSTATE_REGISTRATION Plm = {};
     String UserLocale, ComputerName;
+    XSystemAnalyticsInfo SystemAnalyticsInfo;
     XTaskQueueHandle TaskQueue = nullptr;
     XTaskQueueRegistrationToken UserChangeEventCallbackToken;
     XTaskQueueRegistrationToken UserDeviceAssociationChangedCallbackToken;
@@ -377,6 +379,8 @@ bool GDKPlatform::Init()
     DWORD tmp;
     Char buffer[256];
 
+    SystemAnalyticsInfo = XSystemGetAnalyticsInfo();
+
     // Get user locale string
     if (GetUserDefaultLocaleName(buffer, LOCALE_NAME_MAX_LENGTH))
     {
@@ -419,7 +423,7 @@ void GDKPlatform::LogInfo()
     Win32Platform::LogInfo();
 
     // Log system info
-    const XSystemAnalyticsInfo analyticsInfo = XSystemGetAnalyticsInfo();
+    const XSystemAnalyticsInfo& analyticsInfo = SystemAnalyticsInfo;
     LOG(Info, "{0}, {1}", StringAsUTF16<64>(analyticsInfo.family).Get(), StringAsUTF16<64>(analyticsInfo.form).Get());
     LOG(Info, "OS Version {0}.{1}.{2}.{3}", analyticsInfo.osVersion.major, analyticsInfo.osVersion.minor, analyticsInfo.osVersion.build, analyticsInfo.osVersion.revision);
 }
@@ -503,6 +507,17 @@ bool GDKPlatform::IsDebuggerPresent()
 }
 
 #endif
+
+String GDKPlatform::GetSystemName()
+{
+    return String(SystemAnalyticsInfo.form);
+}
+
+Version GDKPlatform::GetSystemVersion()
+{
+    XVersion version = SystemAnalyticsInfo.hostingOsVersion;
+    return Version(version.major, version.minor, version.build, version.revision);
+}
 
 BatteryInfo GDKPlatform::GetBatteryInfo()
 {

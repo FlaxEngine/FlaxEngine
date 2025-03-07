@@ -18,7 +18,6 @@ public:
     static void RunOnMainThread(const Function<void()>& func, bool wait = false);
 
 public:
-
     // [ApplePlatform]
     static bool Init();
     static void LogInfo();

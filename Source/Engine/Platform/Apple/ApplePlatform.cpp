@@ -7,6 +7,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
@@ -32,9 +33,11 @@
 #include <sys/sysctl.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/utsname.h>
 #include <mach/mach_time.h>
 #include <mach-o/dyld.h>
 #include <uuid/uuid.h>
+#include <os/proc.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <Foundation/Foundation.h>
 #include <CoreGraphics/CoreGraphics.h>
@@ -127,6 +130,19 @@ typedef uint16_t offset_t;
 bool ApplePlatform::Is64BitPlatform()
 {
     return PLATFORM_64BITS;
+}
+
+String ApplePlatform::GetSystemName()
+{
+	struct utsname systemInfo;
+	uname(&systemInfo);
+    return String(systemInfo.machine);
+}
+
+Version ApplePlatform::GetSystemVersion()
+{
+    NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
+    return Version(version.major, version.majorVersion, version.minorVersion, version.patchVersion);
 }
 
 CPUInfo ApplePlatform::GetCPUInfo()

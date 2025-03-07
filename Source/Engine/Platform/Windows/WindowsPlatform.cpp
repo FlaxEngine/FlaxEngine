@@ -11,8 +11,8 @@
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/BatteryInfo.h"
 #include "Engine/Platform/Base/PlatformUtils.h"
-#include "Engine/Engine/Globals.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/MessageBox.h"
@@ -791,6 +791,16 @@ void WindowsPlatform::SetHighDpiAwarenessEnabled(bool enable)
     }
     SystemDpi = CalculateDpi(shCoreDll);
     ::FreeLibrary(shCoreDll);
+}
+
+String WindowsPlatform::GetSystemName()
+{
+    return WindowsName;
+}
+
+Version WindowsPlatform::GetSystemVersion()
+{
+    return Version(VersionMajor, VersionMinor, VersionBuild);
 }
 
 BatteryInfo WindowsPlatform::GetBatteryInfo()
