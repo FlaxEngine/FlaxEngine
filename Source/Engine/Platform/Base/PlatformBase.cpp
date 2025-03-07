@@ -272,7 +272,7 @@ bool PlatformBase::Is64BitApp()
 
 int32 PlatformBase::GetCacheLineSize()
 {
-    return Platform::GetCPUInfo().CacheLineSize;
+    return (int32)Platform::GetCPUInfo().CacheLineSize;
 }
 
 void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType error)

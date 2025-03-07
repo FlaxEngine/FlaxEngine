@@ -117,7 +117,6 @@ namespace FlaxEditor.Windows
             {
                 if (!AudioMuted)
                     Audio.MasterVolume = value;
-
                 _audioVolume = value;
             }
         }
@@ -677,6 +676,14 @@ namespace FlaxEditor.Windows
                 button.CloseMenuOnClick = false;
                 var checkbox = new CheckBox(140, 2, ShowDebugDraw) { Parent = button };
                 checkbox.StateChanged += x => ShowDebugDraw = x.Checked;
+            }
+
+            // Clear Debug Draw
+            if (DebugDraw.CanClear())
+            {
+                var button = menu.AddButton("Clear Debug Draw");
+                button.CloseMenuOnClick = false;
+                button.Clicked += () => DebugDraw.Clear();
             }
 
             menu.AddSeparator();

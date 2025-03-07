@@ -1051,6 +1051,7 @@ Asset* Content::CreateVirtualAsset(const ScriptingTypeHandle& type)
         LOG(Error, "Cannot create virtual asset object.");
         return nullptr;
     }
+    asset->RegisterObject();
 
     // Call initializer function
     asset->InitAsVirtual();
@@ -1291,6 +1292,7 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
         LOAD_FAILED();
     }
 #endif
+    result->RegisterObject();
 
     // Register asset
     AssetsLocker.Lock();

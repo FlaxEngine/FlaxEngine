@@ -348,6 +348,11 @@ struct DebugDrawContext
     DebugDrawData DebugDrawDepthTest;
     Float3 LastViewPos = Float3::Zero;
     Matrix LastViewProj = Matrix::Identity;
+
+    inline int32 Count() const
+    {
+        return DebugDrawDefault.Count() + DebugDrawDepthTest.Count();
+    }
 };
 
 namespace
@@ -746,6 +751,13 @@ void DebugDraw::UpdateContext(void* context, float deltaTime)
 void DebugDraw::SetContext(void* context)
 {
     Context = context ? (DebugDrawContext*)context : &GlobalContext;
+}
+
+bool DebugDraw::CanClear(void* context)
+{
+    if (!context)
+        context = &GlobalContext;
+    return ((DebugDrawContext*)context)->Count() != 0;
 }
 
 #endif

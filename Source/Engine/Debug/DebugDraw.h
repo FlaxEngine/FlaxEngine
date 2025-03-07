@@ -65,6 +65,13 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// </summary>
     /// <param name="context">The context or null.</param>
     API_FUNCTION() static void SetContext(void* context);
+
+    /// <summary>
+    /// Checks if can clear all debug shapes displayed on screen. Can be used to disable this functionality when not needed for the user.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>True fi context can be cleared (has any shapes), otherwise false.</returns>
+    API_FUNCTION() static bool CanClear(void* context = nullptr);
 #endif
 
     // Gets the last view position when rendering the current context. Can be sued for custom culling or LODing when drawing more complex shapes.

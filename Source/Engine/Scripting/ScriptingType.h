@@ -355,9 +355,15 @@ struct ScriptingObjectSpawnParams
     /// </summary>
     const ScriptingTypeHandle Type;
 
+    /// <summary>
+    /// Optional C# object instance to use for unmanaged object.
+    /// </summary>
+    void* Managed;
+
     FORCE_INLINE ScriptingObjectSpawnParams(const Guid& id, const ScriptingTypeHandle& typeHandle)
         : ID(id)
         , Type(typeHandle)
+        , Managed(nullptr)
     {
     }
 };

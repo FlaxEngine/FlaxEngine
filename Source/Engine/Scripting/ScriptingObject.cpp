@@ -412,7 +412,8 @@ void ScriptingObject::DestroyManaged()
 
 void ScriptingObject::RegisterObject()
 {
-    ASSERT(!IsRegistered());
+    if (IsRegistered())
+        return;
     Flags |= ObjectFlags::IsRegistered;
     Scripting::RegisterObject(this);
 }
@@ -532,10 +533,6 @@ bool ManagedScriptingObject::CreateManaged()
     }
 #endif
 
-    // Ensure to be registered
-    if (!IsRegistered())
-        RegisterObject();
-
     return false;
 }
 
@@ -598,8 +595,7 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_Create1(MTypeObject* type)
     }
 
     // Create managed object
-    obj->CreateManaged();
-    MObject* managedInstance = obj->GetManagedInstance();
+    MObject* managedInstance = obj->GetOrCreateManagedInstance();
     if (managedInstance == nullptr)
     {
         LOG(Error, "Cannot create managed instance for type \'{0}\'.", String(typeClass->GetFullName()));
@@ -636,8 +632,7 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_Create2(MString* typeNameObj)
     }
 
     // Create managed object
-    obj->CreateManaged();
-    MObject* managedInstance = obj->GetManagedInstance();
+    MObject* managedInstance = obj->GetOrCreateManagedInstance();
     if (managedInstance == nullptr)
     {
         LOG(Error, "Cannot create managed instance for type \'{0}\'.", String(typeName));
@@ -667,16 +662,14 @@ DEFINE_INTERNAL_CALL(void) ObjectInternal_ManagedInstanceCreated(MObject* manage
     const ScriptingType& scriptingType = module->Types[typeIndex];
 
     // Create unmanaged object
-    const ScriptingObjectSpawnParams params(Guid::New(), ScriptingTypeHandle(module, typeIndex));
+    ScriptingObjectSpawnParams params(Guid::New(), ScriptingTypeHandle(module, typeIndex));
+    params.Managed = managedInstance; // Link created managed instance to the unmanaged object
     ScriptingObject* obj = scriptingType.Script.Spawn(params);
     if (obj == nullptr)
     {
         LOG(Error, "Failed to spawn object of type \'{0}\'.", String(typeClass->GetFullName()));
         return;
     }
-
-    // Link created managed instance to the unmanaged object
-    obj->SetManagedInstance(managedInstance);
 
     // Set default name for actors
     if (auto* actor = dynamic_cast<Actor*>(obj))
@@ -689,8 +682,7 @@ DEFINE_INTERNAL_CALL(void) ObjectInternal_ManagedInstanceCreated(MObject* manage
     MCore::ScriptingObject::SetInternalValues(klass, managedInstance, obj, &id);
 
     // Register object
-    if (!obj->IsRegistered())
-        obj->RegisterObject();
+    obj->RegisterObject();
 }
 
 DEFINE_INTERNAL_CALL(void) ObjectInternal_ManagedInstanceDeleted(ScriptingObject* obj)

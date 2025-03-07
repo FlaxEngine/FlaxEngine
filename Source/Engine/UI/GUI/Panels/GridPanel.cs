@@ -35,7 +35,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The cells heights in container height percentage (from top to bottom). Use negative values to set fixed widths for the cells.
         /// </summary>
-        [EditorOrder(10), Tooltip("The cells heights in container height percentage (from top to bottom). Use negative values to set fixed height for the cells.")]
+        [EditorOrder(10), Limit(float.MinValue, float.MaxValue, 0.001f), Tooltip("The cells heights in container height percentage (from top to bottom). Use negative values to set fixed height for the cells.")]
         public float[] RowFill
         {
             get => _cellsV;
@@ -49,7 +49,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// The cells heights in container width percentage (from left to right). Use negative values to set fixed heights for the cells.
         /// </summary>
-        [EditorOrder(20), Tooltip("The cells heights in container width percentage (from left to right). Use negative values to set fixed width for the cells.")]
+        [EditorOrder(20), Limit(float.MinValue, float.MaxValue, 0.001f), Tooltip("The cells heights in container width percentage (from left to right). Use negative values to set fixed width for the cells.")]
         public float[] ColumnFill
         {
             get => _cellsH;

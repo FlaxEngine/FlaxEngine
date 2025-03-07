@@ -130,7 +130,7 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// The viewport control.
         /// </summary>
-        public readonly MainEditorGizmoViewport Viewport;
+        public new readonly MainEditorGizmoViewport Viewport;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditGameWindow"/> class.

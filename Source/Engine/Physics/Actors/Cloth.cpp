@@ -644,6 +644,14 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
     int32 indicesCount;
     if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Index, indicesData, indicesCount))
         return;
+    if (_paint.Count() != verticesCount)
+    {
+        // Fix incorrect paint data
+        int32 countBefore = _paint.Count();
+        _paint.Resize(verticesCount);
+        for (int32 i = countBefore; i < verticesCount; i++)
+            _paint.Get()[i] = 0.0f;
+    }
     const int32 verticesStride = verticesData.Length() / verticesCount;
     const bool indices16bit = indicesData.Length() / indicesCount == sizeof(uint16);
     const int32 trianglesCount = indicesCount / 3;
@@ -697,12 +705,12 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
     float massSum = 0;
     for (int32 i = 0; i < verticesCount; i++)
     {
-        float& mass = invMasses[i];
+        float& mass = invMasses.Get()[i];
 #if USE_CLOTH_SANITY_CHECKS
         // Sanity check
         ASSERT(!isnan(mass) && !isinf(mass) && mass >= 0.0f);
 #endif
-        const float maxDistance = _paint[i];
+        const float maxDistance = _paint.Get()[i];
         if (maxDistance < 0.01f)
         {
             // Fixed
@@ -722,7 +730,7 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
         const float massScale = (float)(verticesCount - fixedCount) / massSum;
         for (int32 i = 0; i < verticesCount; i++)
         {
-            float& mass = invMasses[i];
+            float& mass = invMasses.Get()[i];
             if (mass > 0.0f)
             {
                 mass *= massScale;
@@ -785,6 +793,8 @@ bool Cloth::OnPreUpdate()
         auto blendIndicesStream = accessor.BlendIndices();
         auto blendWeightsStream = accessor.BlendWeights();
         if (!positionStream.IsValid() || !blendIndicesStream.IsValid() || !blendWeightsStream.IsValid())
+            return false;
+        if (verticesCount != _paint.Count())
             return false;
         PROFILE_CPU_NAMED("Skinned Pose");
         PhysicsBackend::LockClothParticles(_cloth);

@@ -194,6 +194,7 @@ namespace FlaxEngine.Json
             settings.Converters.Add(new SoftObjectReferenceConverter());
             settings.Converters.Add(new SoftTypeReferenceConverter());
             settings.Converters.Add(new BehaviorKnowledgeSelectorAnyConverter());
+            settings.Converters.Add(new ControlReferenceConverter());
             settings.Converters.Add(new MarginConverter());
             settings.Converters.Add(new VersionConverter());
             settings.Converters.Add(new LocalizedStringConverter());
@@ -225,6 +226,23 @@ namespace FlaxEngine.Json
             Current.Dispose();
             Cache.Dispose();
             CacheManagedOnly.Dispose();
+        }
+
+        /// <summary>
+        /// The default implementation of the values comparision function used by the serialization system.
+        /// </summary>
+        /// <param name="objA">The object a.</param>
+        /// <param name="objB">The object b.</param>
+        /// <returns>True if both objects are equal, otherwise false.</returns>
+        public static bool SceneObjectEquals(SceneObject objA, SceneObject objB)
+        {
+            if (objA == objB)
+                return true;
+            if (objA == null || objB == null)
+                return false;
+            if (objA.HasPrefabLink && objB.HasPrefabLink)
+                return objA.PrefabObjectID == objB.PrefabObjectID;
+            return false;
         }
 
         /// <summary>
