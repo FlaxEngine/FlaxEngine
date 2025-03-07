@@ -710,6 +710,24 @@ void WindowsPlatform::LogInfo()
 {
     Win32Platform::LogInfo();
 
+#if PLATFORM_ARCH_X86 || PLATFORM_ARCH_X64
+    // Log CPU brand
+    {
+	    char brandBuffer[0x40] = {};
+	    int32 cpuInfo[4] = { -1 };
+	    __cpuid(cpuInfo, 0x80000000);
+	    if (cpuInfo[0] >= 0x80000004)
+	    {
+		    for (uint32 i = 0; i < 3; i++)
+		    {
+			    __cpuid(cpuInfo, 0x80000002 + i);
+			    memcpy(brandBuffer + i * sizeof(cpuInfo), cpuInfo, sizeof(cpuInfo));
+		    }
+	    }
+        LOG(Info, "CPU: {0}", String(brandBuffer));
+    }
+#endif
+
     LOG(Info, "Microsoft {0} {1}-bit ({2}.{3}.{4})", WindowsName, Platform::Is64BitPlatform() ? TEXT("64") : TEXT("32"), VersionMajor, VersionMinor, VersionBuild);
 
     // Check minimum amount of RAM
