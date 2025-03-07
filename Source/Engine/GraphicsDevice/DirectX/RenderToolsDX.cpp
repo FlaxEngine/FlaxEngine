@@ -3,10 +3,23 @@
 #if GRAPHICS_API_DIRECTX11 || GRAPHICS_API_DIRECTX12
 
 #include "RenderToolsDX.h"
+#include "GPUAdapterDX.h"
 #include "GPUDeviceDX.h"
+#include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "IncludeDirectXHeaders.h"
 #include <winerror.h>
+
+#define GPU_DRIVER_DETECTION_WIN32_REGISTRY (PLATFORM_WINDOWS)
+#define GPU_DRIVER_DETECTION_WIN32_SETUPAPI (PLATFORM_WINDOWS)
+
+#if GPU_DRIVER_DETECTION_WIN32_SETUPAPI
+#define _SETUPAPI_VER WINVER
+typedef void* LPCDLGTEMPLATE;
+#include <SetupAPI.h>
+#pragma comment(lib, "SetupAPI.lib")
+#endif
 
 namespace Windows
 {
@@ -304,7 +317,7 @@ void FormatD3DErrorString(HRESULT errorCode, StringBuilder& sb, HRESULT& removed
 
     default:
         sb.AppendFormat(TEXT("0x{0:x}"), static_cast<unsigned int>(errorCode));
-    break;
+        break;
     }
 #undef D3DERR
 
@@ -439,6 +452,140 @@ LPCSTR RenderToolsDX::GetVertexInputSemantic(VertexElement::Types type, UINT& se
         return "";
     }
 }
+
+void GPUAdapterDX::GetDriverVersion()
+{
+#if GPU_DRIVER_DETECTION_WIN32_REGISTRY
+    {
+        // Reference: https://github.com/GameTechDev/gpudetect/blob/master/GPUDetect.cpp
+
+        // Fetch registry data
+        HKEY dxKeyHandle = nullptr;
+        DWORD numOfAdapters = 0;
+        LSTATUS returnCode = RegOpenKeyExW(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\DirectX"), 0, KEY_READ, &dxKeyHandle);
+        if (returnCode == S_OK)
+        {
+            // Find all sub keys
+            DWORD subKeyMaxLength = 0;
+            returnCode = RegQueryInfoKeyW(dxKeyHandle, 0, 0, 0, &numOfAdapters, &subKeyMaxLength, 0, 0, 0, 0, 0, 0);
+            if (returnCode == S_OK && subKeyMaxLength < 100)
+            {
+                subKeyMaxLength += 1;
+                uint64_t driverVersionRaw = 0;
+                TCHAR subKeyName[100];
+                for (DWORD i = 0; i < numOfAdapters; i++)
+                {
+                    DWORD subKeyLength = subKeyMaxLength;
+                    returnCode = RegEnumKeyExW(dxKeyHandle, i, subKeyName, &subKeyLength, 0, 0, 0, 0);
+                    if (returnCode == S_OK)
+                    {
+                        LUID adapterLUID = {};
+                        DWORD qwordSize = sizeof(uint64_t);
+                        returnCode = RegGetValueW(dxKeyHandle, subKeyName, TEXT("AdapterLuid"), RRF_RT_QWORD, 0, &adapterLUID, &qwordSize);
+                        if (returnCode == S_OK && adapterLUID.HighPart == Description.AdapterLuid.HighPart && adapterLUID.LowPart == Description.AdapterLuid.LowPart)
+                        {
+                            // Get driver version
+                            returnCode = RegGetValueW(dxKeyHandle, subKeyName, TEXT("DriverVersion"), RRF_RT_QWORD, 0, &driverVersionRaw, &qwordSize);
+                            if (returnCode == S_OK)
+                            {
+                                Version driverVersion(
+                                    (int32)((driverVersionRaw & 0xFFFF000000000000) >> 16 * 3),
+                                    (int32)((driverVersionRaw & 0x0000FFFF00000000) >> 16 * 2),
+                                    (int32)((driverVersionRaw & 0x00000000FFFF0000) >> 16 * 1),
+                                    (int32)((driverVersionRaw & 0x000000000000FFFF)));
+                                SetDriverVersion(driverVersion);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            RegCloseKey(dxKeyHandle);
+        }
+
+        if (DriverVersion != Version(0, 0))
+            return;
+    }
+#endif
+
+#if GPU_DRIVER_DETECTION_WIN32_SETUPAPI
+    {
+        // Reference: https://gist.github.com/LxLasso/eccee4d71c2e49492f2cbf01a966fa73
+
+        // Copied from devguid.h and devpkey.h
+#define MAKE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
+#define MAKE_DEVPROPKEY(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8, pid) const DEVPROPKEY name = { { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }, pid }
+        MAKE_GUID(GUID_DEVCLASS_DISPLAY, 0x4d36e968L, 0xe325, 0x11ce, 0xbf, 0xc1, 0x08, 0x00, 0x2b, 0xe1, 0x03, 0x18);
+        MAKE_DEVPROPKEY(DEVPKEY_Device_DriverDate, 0xa8b865dd, 0x2e3d, 0x4094, 0xad, 0x97, 0xe5, 0x93, 0xa7, 0xc, 0x75, 0xd6, 2);
+        MAKE_DEVPROPKEY(DEVPKEY_Device_DriverVersion, 0xa8b865dd, 0x2e3d, 0x4094, 0xad, 0x97, 0xe5, 0x93, 0xa7, 0xc, 0x75, 0xd6, 3);
+#undef MAKE_DEVPROPKEY
+#undef MAKE_GUID
+
+        HDEVINFO deviceInfoList = SetupDiGetClassDevs(&GUID_DEVCLASS_DISPLAY, NULL, NULL, DIGCF_PRESENT);
+        if (deviceInfoList != INVALID_HANDLE_VALUE)
+        {
+            SP_DEVINFO_DATA deviceInfo;
+            ZeroMemory(&deviceInfo, sizeof(deviceInfo));
+            deviceInfo.cbSize = sizeof(SP_DEVINFO_DATA);
+
+            wchar_t searchBuffer[128];
+            swprintf(searchBuffer, sizeof(searchBuffer) / 2, L"PCI\\VEN_%04X&DEV_%04X&SUBSYS_%04X", Description.VendorId, Description.DeviceId, Description.SubSysId);
+            size_t searchBufferLen = wcslen(searchBuffer);
+
+            DWORD deviceIndex = 0;
+            DEVPROPTYPE propertyType;
+            wchar_t buffer[300];
+            while (SetupDiEnumDeviceInfo(deviceInfoList, deviceIndex, &deviceInfo))
+            {
+                DWORD deviceIdSize;
+                if (SetupDiGetDeviceInstanceId(deviceInfoList, &deviceInfo, buffer, sizeof(buffer), &deviceIdSize) &&
+                    wcsncmp(buffer, searchBuffer, searchBufferLen) == 0)
+                {
+                    // Get driver version
+                    if (SetupDiGetDeviceProperty(deviceInfoList, &deviceInfo, &DEVPKEY_Device_DriverVersion, &propertyType, (PBYTE)buffer, sizeof(buffer), NULL, 0) &&
+                        propertyType == DEVPROP_TYPE_STRING)
+                    {
+                        //ParseDriverVersionBuffer(buffer);
+                        Version driverVersion;
+                        String bufferStr(buffer);
+                        if (!Version::Parse(bufferStr, &driverVersion))
+                            SetDriverVersion(driverVersion);
+                    }
+
+#if 0
+                    // Get driver date
+					DEVPROPTYPE propertyType;
+					if (SetupDiGetDeviceProperty(deviceInfoList, &deviceInfo, &DEVPKEY_Device_DriverDate, &propertyType, (PBYTE)buffer, sizeof(FILETIME), NULL, 0) &&
+                        propertyType == DEVPROP_TYPE_FILETIME)
+					{
+						SYSTEMTIME deviceDriverSystemTime;
+						FileTimeToSystemTime((FILETIME*)buffer, &deviceDriverSystemTime);
+						DriverDate = DateTime(deviceDriverSystemTime.wYear, deviceDriverSystemTime.wMonth, deviceDriverSystemTime.wDay, deviceDriverSystemTime.wHour, deviceDriverSystemTime.wMinute, deviceDriverSystemTime.wSecond, deviceDriverSystemTime.wMilliseconds);
+					}
+#endif
+                }
+                deviceIndex++;
+            }
+
+            SetupDiDestroyDeviceInfoList(deviceInfoList);
+        }
+
+        if (DriverVersion != Version(0, 0))
+            return;
+    }
+#endif
+}
+
+void GPUAdapterDX::SetDriverVersion(Version& ver)
+{
+    if (IsNVIDIA() && ver.Build() > 0 && ver.Revision() > 99)
+    {
+        // Convert NVIDIA version from 32.0.15.7247 into 572.47
+        ver = Version((ver.Build() % 10) * 100 + ver.Revision() / 100, ver.Revision() % 100);
+    }
+    DriverVersion = ver;
+}
+
 void GPUDeviceDX::UpdateOutputs(IDXGIAdapter* adapter)
 {
 #if PLATFORM_WINDOWS

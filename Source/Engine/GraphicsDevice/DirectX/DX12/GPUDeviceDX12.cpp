@@ -198,17 +198,14 @@ GPUDevice* GPUDeviceDX12::Create()
             }
         }
     }
-
-    // Validate adapter
     if (!selectedAdapter.IsValid())
     {
         LOG(Error, "Failed to choose valid DirectX adapter!");
         return nullptr;
     }
-
-    // Check if selected adapter does not support DirectX 12
-    if (!selectedAdapter.IsSupportingDX12())
+    if (selectedAdapter.MaxFeatureLevel < D3D_FEATURE_LEVEL_12_0)
     {
+        LOG(Error, "Failed to choose valid DirectX adapter!");
         return nullptr;
     }
 #endif

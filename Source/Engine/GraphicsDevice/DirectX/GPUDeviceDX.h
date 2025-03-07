@@ -36,17 +36,10 @@ protected:
         : GPUDevice(type, profile)
         , _adapter(adapter)
     {
+        adapter->GetDriverVersion();
     }
 
 public:
-    /// <summary>
-    /// Gets DirectX device feature level.
-    /// </summary>
-    FORCE_INLINE D3D_FEATURE_LEVEL GetD3DFeatureLevel() const
-    {
-        return _adapter->MaxFeatureLevel;
-    }
-
     /// <summary>
     /// The video outputs.
     /// </summary>

@@ -296,8 +296,6 @@ GPUDevice* GPUDeviceDX11::Create()
             }
         }
     }
-
-    // Validate adapter
     if (!selectedAdapter.IsValid())
     {
         LOG(Error, "Failed to choose valid DirectX adapter!");
@@ -427,7 +425,7 @@ bool GPUDeviceDX11::Init()
 
     // Create DirectX device
     D3D_FEATURE_LEVEL createdFeatureLevel = static_cast<D3D_FEATURE_LEVEL>(0);
-    auto targetFeatureLevel = GetD3DFeatureLevel();
+    D3D_FEATURE_LEVEL targetFeatureLevel = _adapter->MaxFeatureLevel;
     VALIDATE_DIRECTX_CALL(D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext));
     ASSERT(_device);
     ASSERT(_imContext);

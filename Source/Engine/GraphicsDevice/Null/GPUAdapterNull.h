@@ -29,6 +29,10 @@ public:
     {
         return TEXT("Null");
     }
+    Version GetDriverVersion() const override
+    {
+        return Version(0, 0);
+    }
 };
 
 #endif

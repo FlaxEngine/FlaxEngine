@@ -182,12 +182,12 @@ bool GraphicsService::Init()
         return true;
     }
     GPUDevice::Instance = device;
-    LOG(Info,
-        "Graphics Device created! Adapter: \'{0}\', Renderer: {1}, Shader Profile: {2}, Feature Level: {3}",
-        device->GetAdapter()->GetDescription(),
+    LOG(Info, "GPU Device created: {}", device->GetAdapter()->GetDescription());
+    LOG(Info, "Renderer: {}, Shader Profile: {}, Feature Level: {}, Driver: {}",
         ::ToString(device->GetRendererType()),
         ::ToString(device->GetShaderProfile()),
-        ::ToString(device->GetFeatureLevel())
+        ::ToString(device->GetFeatureLevel()),
+        device->GetAdapter()->GetDriverVersion().ToString()
     );
 
     // Initialize

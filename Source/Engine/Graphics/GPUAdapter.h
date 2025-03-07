@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Core/Types/Version.h"
 #include "Engine/Scripting/ScriptingObject.h"
 
 // GPU vendors IDs
@@ -55,6 +56,11 @@ public:
     /// Gets a string that contains the adapter description. Used for presentation to the user.
     /// </summary>
     API_PROPERTY() virtual String GetDescription() const = 0;
+
+    /// <summary>
+    /// Gets the GPU driver version.
+    /// </summary>
+    API_PROPERTY() virtual Version GetDriverVersion() const = 0;
 
 public:
     // Returns true if adapter's vendor is AMD.
