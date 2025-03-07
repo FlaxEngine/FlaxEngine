@@ -637,12 +637,32 @@ bool WindowsPlatform::Init()
         }
     }
 
-    // Check if can run Engine on current platform (requires Windows Vista SP1 or above)
-    if (!IsWindowsVistaSP1OrGreater() && !IsWindowsServer())
+    // Check if can run Engine on current platform
+#if WINVER >= 0x0A00
+    if (!IsWindows10OrGreater() && !IsWindowsServer())
     {
-        Platform::Fatal(TEXT("Flax Engine requires Windows Vista SP1 or higher."));
+        Platform::Fatal(TEXT("Flax Engine requires Windows 10 or higher."));
         return true;
     }
+#elif WINVER >= 0x0603
+    if (!IsWindows8Point1OrGreater() && !IsWindowsServer())
+    {
+        Platform::Fatal(TEXT("Flax Engine requires Windows 8.1 or higher."));
+        return true;
+    }
+#elif WINVER >= 0x0602
+    if (!IsWindows8OrGreater() && !IsWindowsServer())
+    {
+        Platform::Fatal(TEXT("Flax Engine requires Windows 8 or higher."));
+        return true;
+    }
+#else
+    if (!IsWindows7OrGreater() && !IsWindowsServer())
+    {
+        Platform::Fatal(TEXT("Flax Engine requires Windows 7 or higher."));
+        return true;
+    }
+#endif
 
     // Set the lowest possible timer resolution
     const HMODULE ntdll = LoadLibraryW(L"ntdll.dll");
