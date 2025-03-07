@@ -469,13 +469,10 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
 
     // Init collision proxy
 #if MODEL_USE_PRECISE_MESH_INTERSECTS
-    if (!_collisionProxy.HasData())
-    {
-        if (use16BitIndexBuffer)
-            _collisionProxy.Init<uint16>(vertices, triangles, (const Float3*)vbData[0], (const uint16*)ibData);
-        else
-            _collisionProxy.Init<uint32>(vertices, triangles, (const Float3*)vbData[0], (const uint32*)ibData);
-    }
+    if (use16BitIndexBuffer)
+        _collisionProxy.Init<uint16>(vertices, triangles, (const Float3*)vbData[0], (const uint16*)ibData);
+    else
+        _collisionProxy.Init<uint32>(vertices, triangles, (const Float3*)vbData[0], (const uint32*)ibData);
 #endif
 
     // Initialize
