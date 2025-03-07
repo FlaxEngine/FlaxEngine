@@ -493,13 +493,23 @@ namespace FlaxEngine.Json
         }
 
         /// <inheritdoc />
+        public override void WriteJsonDiff(JsonWriter writer, object value, object other, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            if (value is IControlReference valueRef &&
+                other is IControlReference otherRef &&
+                JsonSerializer.SceneObjectEquals(valueRef.UIControl, otherRef.UIControl))
+                return;
+            base.WriteJsonDiff(writer, value, other, serializer);
+        }
+
+        /// <inheritdoc />
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
         {
             var result = existingValue ?? Activator.CreateInstance(objectType);
             if (reader.TokenType == JsonToken.String && result is IControlReference controlReference)
             {
                 JsonSerializer.ParseID((string)reader.Value, out var id);
-                controlReference.UIControl = Object.Find<UIControl>(ref id);
+                controlReference.Load(Object.Find<UIControl>(ref id));
             }
             return result;
         }

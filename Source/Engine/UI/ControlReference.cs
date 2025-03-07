@@ -22,6 +22,12 @@ namespace FlaxEngine
         /// Gets the type of the control the interface uses.
         /// </summary>
         public Type ControlType { get; }
+
+        /// <summary>
+        /// Sets control ref by force - used during loading when <see cref="UIControl.Control"/> is not loaded yet.
+        /// </summary>
+        /// <param name="control">The reference.</param>
+        internal void Load(UIControl control);
     }
 
     /// <summary>
@@ -43,11 +49,12 @@ namespace FlaxEngine
         {
             get
             {
-                if (_uiControl == null)
+                var control = _uiControl?.Control;
+                if (control == null)
                     return null;
-                if (_uiControl.Control is T t)
+                if (control is T t)
                     return t;
-                Debug.Write(LogType.Warning, "Trying to get Control from ControlReference but UIControl.Control is null, or the correct type.");
+                Debug.Write(LogType.Warning, $"Trying to get Control from ControlReference but UIControl.Control is not correct type. It should be {typeof(T)} but is {control.GetType()}.");
                 return null;
             }
         }
@@ -58,23 +65,30 @@ namespace FlaxEngine
             get => _uiControl;
             set
             {
+                var control = value?.Control;
                 if (value == null)
                 {
                     _uiControl = null;
                 }
-                else if (value.Control is T t)
+                else if (control is T)
                 {
                     _uiControl = value;
                 }
                 else
                 {
-                    Debug.Write(LogType.Warning, "Trying to set UIControl but UIControl.Control is null or not the correct type.");
+                    Debug.Write(LogType.Warning, $"Trying to set UIControl but UIControl.Control is not the correct type. It should be {typeof(T)} but is {control.GetType()}.");
                 }
             }
         }
 
         /// <inheritdoc />
         public Type ControlType => typeof(T);
+
+        /// <inheritdoc />
+        public void Load(UIControl value)
+        {
+            _uiControl = value;
+        }
 
         /// <inheritdoc />
         public override string ToString()
@@ -92,26 +106,26 @@ namespace FlaxEngine
         public int CompareTo(object obj)
         {
             if (obj is IControlReference other)
-                return CompareTo(other);
-            return 0;
+                return Json.JsonSerializer.SceneObjectEquals(_uiControl, other.UIControl) ? 0 : 1;
+            return 1;
         }
 
         /// <inheritdoc />
         public int CompareTo(ControlReference<T> other)
         {
-            return _uiControl == other._uiControl ? 0 : 1;
+            return Json.JsonSerializer.SceneObjectEquals(_uiControl, other._uiControl) ? 0 : 1;
         }
 
         /// <inheritdoc />
         public bool Equals(ControlReference<T> other)
         {
-            return _uiControl == other._uiControl;
+            return Json.JsonSerializer.SceneObjectEquals(_uiControl, other._uiControl);
         }
 
         /// <inheritdoc />
         public override bool Equals(object obj)
         {
-            return obj is ControlReference<T> other && _uiControl == other._uiControl;
+            return obj is ControlReference<T> other && Json.JsonSerializer.SceneObjectEquals(_uiControl, other._uiControl);
         }
 
         /// <summary>
@@ -142,13 +156,13 @@ namespace FlaxEngine
         /// Checks whether the two objects are equal.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator ==(ControlReference<T> left, ControlReference<T> right) => left._uiControl == right._uiControl;
+        public static bool operator ==(ControlReference<T> left, ControlReference<T> right) => Json.JsonSerializer.SceneObjectEquals(left._uiControl, right._uiControl);
 
         /// <summary>
         /// Checks whether the two objects are not equal.
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool operator !=(ControlReference<T> left, ControlReference<T> right) => left._uiControl != right._uiControl;
+        public static bool operator !=(ControlReference<T> left, ControlReference<T> right) => !Json.JsonSerializer.SceneObjectEquals(left._uiControl, right._uiControl);
     }
 }
 
@@ -166,7 +180,7 @@ namespace FlaxEngine.TypeConverters
                 if (result is IControlReference control)
                 {
                     Json.JsonSerializer.ParseID(valueStr, out var id);
-                    control.UIControl = Object.Find<UIControl>(ref id);
+                    control.Load(Object.Find<UIControl>(ref id));
                 }
                 return result;
             }

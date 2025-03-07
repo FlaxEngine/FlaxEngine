@@ -234,6 +234,23 @@ namespace FlaxEngine.Json
         /// <param name="objA">The object a.</param>
         /// <param name="objB">The object b.</param>
         /// <returns>True if both objects are equal, otherwise false.</returns>
+        public static bool SceneObjectEquals(SceneObject objA, SceneObject objB)
+        {
+            if (objA == objB)
+                return true;
+            if (objA == null || objB == null)
+                return false;
+            if (objA.HasPrefabLink && objB.HasPrefabLink)
+                return objA.PrefabObjectID == objB.PrefabObjectID;
+            return false;
+        }
+
+        /// <summary>
+        /// The default implementation of the values comparision function used by the serialization system.
+        /// </summary>
+        /// <param name="objA">The object a.</param>
+        /// <param name="objB">The object b.</param>
+        /// <returns>True if both objects are equal, otherwise false.</returns>
         public static bool ValueEquals(object objA, object objB)
         {
 #if false
