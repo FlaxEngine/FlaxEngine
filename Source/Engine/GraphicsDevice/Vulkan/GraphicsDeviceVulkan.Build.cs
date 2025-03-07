@@ -11,6 +11,8 @@ using Flax.Build.NativeCpp;
 /// </summary>
 public sealed class VulkanSdk : Sdk
 {
+    private bool _missingMoltenVkError;
+
     /// <summary>
     /// The singleton instance.
     /// </summary>
@@ -137,7 +139,7 @@ public sealed class VulkanSdk : Sdk
     /// <summary>
     /// Adds any runtime dependency files to the build that uses Vulkan SDK.
     /// </summary>
-    /// <param name="platform">Build options.</param>
+    /// <param name="options">Build options.</param>
     public void AddDependencyFiles(BuildOptions options)
     {
         switch (options.Platform.Target)
@@ -181,7 +183,7 @@ public sealed class VulkanSdk : Sdk
                     return;
                 }
             }
-            Log.Error($"Missing MoltenVK files for {platformName} in VulkanSDK '{RootPath}'");
+            Log.ErrorOnce($"Missing MoltenVK files for {platformName} in VulkanSDK '{RootPath}'", ref _missingMoltenVkError);
             break;
         }
         }
