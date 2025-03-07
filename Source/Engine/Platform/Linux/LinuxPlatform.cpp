@@ -2677,7 +2677,7 @@ void LinuxPlatform::Exit()
 
 String LinuxPlatform::GetSystemName()
 {
-    Dictionary<String, String> configs = LoadConfigFile(TEXT("/etc/os-release"));
+    Dictionary<String, String> configs = Impl::LoadConfigFile(TEXT("/etc/os-release"));
     String str;
     if (configs.TryGet(TEXT("NAME"), str))
         return str;
@@ -2686,7 +2686,7 @@ String LinuxPlatform::GetSystemName()
 
 Version LinuxPlatform::GetSystemVersion()
 {
-    Dictionary<String, String> configs = LoadConfigFile(TEXT("/etc/os-release"));
+    Dictionary<String, String> configs = Impl::LoadConfigFile(TEXT("/etc/os-release"));
     String str;
     Version version;
     if (configs.TryGet(TEXT("VERSION_ID"), str) && !Version::Parse(str, &version))

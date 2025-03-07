@@ -142,7 +142,7 @@ String ApplePlatform::GetSystemName()
 Version ApplePlatform::GetSystemVersion()
 {
     NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
-    return Version(version.major, version.majorVersion, version.minorVersion, version.patchVersion);
+    return Version(version.majorVersion, version.minorVersion, version.patchVersion);
 }
 
 CPUInfo ApplePlatform::GetCPUInfo()
