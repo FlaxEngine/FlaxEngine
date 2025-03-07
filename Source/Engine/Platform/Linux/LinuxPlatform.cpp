@@ -1331,6 +1331,33 @@ namespace Impl
         X11::XQueryPointer(display, w, &wtmp, &child, &tmp, &tmp, &tmp, &tmp, &utmp);
         return FindAppWindow(display, child);
     }
+
+    Dictionary<String, String> LoadConfigFile(StringView path)
+	{
+        Dictionary<String, String> results;
+        String data;
+        File::ReadAllText(path, data);
+        Array<String> lines, parts;
+        data.Split('\n', lines);
+		for (String& line : lines)
+		{
+		    line = line.TrimTrailing();
+			if (line.StartsWith('#'))
+                continue; // Skip comments
+		    line.Split('=', parts);
+            if (parts.Count() == 2)
+            {
+                String key = parts[0].TrimTrailing();
+                String value = parts[1].TrimTrailing();
+                if (key.StartsWith('\"'))
+                    key = key.Substring(1, key.Length() - 2);
+                if (value.StartsWith('\"'))
+                    value = value.Substring(1, value.Length() - 2);
+                results[key] = value;
+			}
+		}
+		return results;
+	}
 }
 
 class LinuxDropFilesData : public IGuiData
@@ -2062,28 +2089,6 @@ bool LinuxPlatform::Init()
 
     UnixGetMacAddress(MacAddress);
 
-    // Generate unique device ID
-    {
-        DeviceId = Guid::Empty;
-
-        // A - Computer Name and User Name
-        uint32 hash = GetHash(Platform::GetComputerName());
-        CombineHash(hash, GetHash(Platform::GetUserName()));
-        DeviceId.A = hash;
-
-        // B - MAC address
-        hash = MacAddress[0];
-        for (uint32 i = 0; i < 6; i++)
-            CombineHash(hash, MacAddress[i]);
-        DeviceId.B = hash;
-
-        // C - memory
-        DeviceId.C = (uint32)Platform::GetMemoryStats().TotalPhysicalMemory;
-
-        // D - cpuid
-        DeviceId.D = (uint32)UnixCpu.ClockSpeed * UnixCpu.LogicalProcessorCount * UnixCpu.ProcessorCoreCount * UnixCpu.CacheLineSize;
-    }
-
     // Get user locale string
     setlocale(LC_ALL, "");
     const char* locale = setlocale(LC_CTYPE, NULL);
@@ -2110,6 +2115,28 @@ bool LinuxPlatform::Init()
 
 	Platform::MemoryClear(Cursors, sizeof(Cursors));
 	Platform::MemoryClear(CursorsImg, sizeof(CursorsImg));
+
+    // Generate unique device ID
+    {
+        DeviceId = Guid::Empty;
+
+        // A - Computer Name and User Name
+        uint32 hash = GetHash(Platform::GetComputerName());
+        CombineHash(hash, GetHash(Platform::GetUserName()));
+        DeviceId.A = hash;
+
+        // B - MAC address
+        hash = MacAddress[0];
+        for (uint32 i = 0; i < 6; i++)
+            CombineHash(hash, MacAddress[i]);
+        DeviceId.B = hash;
+
+        // C - memory
+        DeviceId.C = (uint32)Platform::GetMemoryStats().TotalPhysicalMemory;
+
+        // D - cpuid
+        DeviceId.D = (uint32)UnixCpu.ClockSpeed * UnixCpu.LogicalProcessorCount * UnixCpu.ProcessorCoreCount * UnixCpu.CacheLineSize;
+    }
 
     // Skip setup if running in headless mode (X11 might not be available on servers)
     if (CommandLine::Options.Headless.IsTrue())
