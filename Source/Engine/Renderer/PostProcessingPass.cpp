@@ -9,19 +9,61 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Engine/Time.h"
 
-PostProcessingPass::PostProcessingPass()
-    : _shader(nullptr)
-    , _psBloomBrightPass(nullptr)
-    , _psBloomDownsample(nullptr)
-    , _psBloomDualFilterUpsample(nullptr)
-    , _psBlurH(nullptr)
-    , _psBlurV(nullptr)
-    , _psGenGhosts(nullptr)
-    , _defaultLensColor(nullptr)
-    , _defaultLensStar(nullptr)
-    , _defaultLensDirt(nullptr)
-{
-}
+#define GB_RADIUS 6
+#define GB_KERNEL_SIZE (GB_RADIUS * 2 + 1)
+
+GPU_CB_STRUCT(Data{
+    float BloomIntensity; // Overall bloom strength multiplier
+    float BloomClamp; // Maximum brightness limit for bloom
+    float BloomThreshold; // Luminance threshold where bloom begins
+    float BloomThresholdKnee; // Controls the threshold rolloff curve
+
+    float BloomBaseMix; // Base mip contribution
+    float BloomHighMix; // High mip contribution
+    float BloomMipCount;
+    float BloomLayer;
+
+    Float3 VignetteColor;
+    float VignetteShapeFactor;
+
+    Float2 InputSize;
+    float InputAspect;
+    float GrainAmount;
+
+    float GrainTime;
+    float GrainParticleSize;
+    int32 Ghosts;
+    float HaloWidth;
+
+    float HaloIntensity;
+    float Distortion;
+    float GhostDispersal;
+    float LensFlareIntensity;
+
+    Float2 LensInputDistortion;
+    float LensScale;
+    float LensBias;
+
+    Float2 InvInputSize;
+    float ChromaticDistortion;
+    float Time;
+
+    float Dummy1;
+    float PostExposure;
+    float VignetteIntensity;
+    float LensDirtIntensity;
+
+    Color ScreenFadeColor;
+
+    Matrix LensFlareStarMat;
+    });
+
+GPU_CB_STRUCT(GaussianBlurData{
+    Float2 Size;
+    float Dummy3;
+    float Dummy4;
+    Float4 GaussianBlurCache[GB_KERNEL_SIZE]; // x-weight, y-offset
+    });
 
 String PostProcessingPass::ToString() const
 {
@@ -116,7 +158,7 @@ bool PostProcessingPass::setupResources()
     return false;
 }
 
-GPUTexture* PostProcessingPass::getCustomOrDefault(Texture* customTexture, AssetReference<Texture>& defaultTexture, const Char* defaultName)
+GPUTexture* GetCustomOrDefault(Texture* customTexture, AssetReference<Texture>& defaultTexture, const Char* defaultName)
 {
     // Check if use custom texture
     if (customTexture)
@@ -133,7 +175,15 @@ GPUTexture* PostProcessingPass::getCustomOrDefault(Texture* customTexture, Asset
     return defaultTexture ? defaultTexture->GetTexture() : nullptr;
 }
 
-void PostProcessingPass::GB_ComputeKernel(float sigma, float width, float height)
+/// <summary>
+/// Calculates the Gaussian blur filter kernel. This implementation is
+/// ported from the original Java code appearing in chapter 16 of
+/// "Filthy Rich Clients: Developing Animated and Graphical Effects for Desktop Java".
+/// </summary>
+/// <param name="sigma">Gaussian Blur sigma parameter</param>
+/// <param name="width">Texture to blur width in pixels</param>
+/// <param name="height">Texture to blur height in pixels</param>
+void GB_ComputeKernel(float sigma, float width, float height, Float4 gaussianBlurCacheH[GB_KERNEL_SIZE], Float4 gaussianBlurCacheV[GB_KERNEL_SIZE])
 {
     float total = 0.0f;
     float twoSigmaSquare = 2.0f * sigma * sigma;
@@ -154,19 +204,16 @@ void PostProcessingPass::GB_ComputeKernel(float sigma, float width, float height
         // Calculate total weights sum
         total += weight;
 
-        GaussianBlurCacheH[index] = Float4(weight, i * xOffset, 0, 0);
-        GaussianBlurCacheV[index] = Float4(weight, i * yOffset, 0, 0);
+        gaussianBlurCacheH[index] = Float4(weight, i * xOffset, 0, 0);
+        gaussianBlurCacheV[index] = Float4(weight, i * yOffset, 0, 0);
     }
 
     // Normalize weights
     for (int32 i = 0; i < GB_KERNEL_SIZE; i++)
     {
-        GaussianBlurCacheH[i].X /= total;
-        GaussianBlurCacheV[i].X /= total;
+        gaussianBlurCacheH[i].X /= total;
+        gaussianBlurCacheV[i].X /= total;
     }
-
-    // Assign size
-    _gbData.Size = Float2(width, height);
 }
 
 void PostProcessingPass::Dispose()
@@ -405,8 +452,8 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     if (useLensFlares)
     {
         // Prepare lens flares helper textures
-        context->BindSR(5, getCustomOrDefault(settings.LensFlares.LensStar, _defaultLensStar, TEXT("Engine/Textures/DefaultLensStarburst")));
-        context->BindSR(6, getCustomOrDefault(settings.LensFlares.LensColor, _defaultLensColor, TEXT("Engine/Textures/DefaultLensColor")));
+        context->BindSR(5, GetCustomOrDefault(settings.LensFlares.LensStar, _defaultLensStar, TEXT("Engine/Textures/DefaultLensStarburst")));
+        context->BindSR(6, GetCustomOrDefault(settings.LensFlares.LensColor, _defaultLensColor, TEXT("Engine/Textures/DefaultLensColor")));
 
         // Render lens flares
         context->SetRenderTarget(bloomBuffer2->View(0, 1));
@@ -418,11 +465,15 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         context->UnBindSR(3);
 
         // Gaussian blur kernel
-        GB_ComputeKernel(2.0f, static_cast<float>(w4), static_cast<float>(h4));
+        GaussianBlurData gbData;
+        Float4 GaussianBlurCacheH[GB_KERNEL_SIZE];
+        Float4 GaussianBlurCacheV[GB_KERNEL_SIZE];
+        gbData.Size = Float2(static_cast<float>(w4), static_cast<float>(h4));
+        GB_ComputeKernel(2.0f, gbData.Size.X, gbData.Size.Y, GaussianBlurCacheH, GaussianBlurCacheV);
 
         // Gaussian blur H
-        Platform::MemoryCopy(_gbData.GaussianBlurCache, GaussianBlurCacheH, sizeof(GaussianBlurCacheH));
-        context->UpdateCB(cb1, &_gbData);
+        Platform::MemoryCopy(gbData.GaussianBlurCache, GaussianBlurCacheH, sizeof(GaussianBlurCacheH));
+        context->UpdateCB(cb1, &gbData);
         context->BindCB(1, cb1);
         context->SetRenderTarget(bloomBuffer1->View(0, 1));
         context->BindSR(0, bloomBuffer2->View(0, 1));
@@ -431,8 +482,8 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         context->ResetRenderTarget();
 
         // Gaussian blur V
-        Platform::MemoryCopy(_gbData.GaussianBlurCache, GaussianBlurCacheV, sizeof(GaussianBlurCacheV));
-        context->UpdateCB(cb1, &_gbData);
+        Platform::MemoryCopy(gbData.GaussianBlurCache, GaussianBlurCacheV, sizeof(GaussianBlurCacheV));
+        context->UpdateCB(cb1, &gbData);
         context->BindCB(1, cb1);
         context->SetRenderTarget(bloomBuffer2->View(0, 1));
         context->BindSR(0, bloomBuffer1->View(0, 1));
@@ -481,7 +532,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     // - 5 - LensStar - lens star texture
     // - 7 - ColorGradingLUT
     context->BindSR(0, input->View());
-    context->BindSR(4, getCustomOrDefault(settings.LensFlares.LensDirt, _defaultLensDirt, TEXT("Engine/Textures/DefaultLensDirt")));
+    context->BindSR(4, GetCustomOrDefault(settings.LensFlares.LensDirt, _defaultLensDirt, TEXT("Engine/Textures/DefaultLensDirt")));
     context->BindSR(7, colorGradingLutView);
 
     // Composite final frame during single pass (done in full resolution)
