@@ -231,6 +231,19 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         LOG(Info, "[Vulkan] {0} {1}:{2}({3}) {4}", type, severity, callbackData->messageIdNumber, String(callbackData->pMessageIdName), message);
     else
         LOG(Info, "[Vulkan] {0} {1}:{2} {3}", type, severity, callbackData->messageIdNumber, message);
+
+#if BUILD_DEBUG
+    if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
+    {
+        if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
+        {
+            const StringAnsi vsName = state->DebugDesc.VS ? state->DebugDesc.VS->GetName() : StringAnsi::Empty;
+            const StringAnsi psName = state->DebugDesc.PS ? state->DebugDesc.PS->GetName() : StringAnsi::Empty;
+            LOG(Warning, "[Vulkan] Error during rendering with VS={}, PS={}", String(vsName), String(psName));
+        }
+    }
+#endif
+
     return VK_FALSE;
 }
 
