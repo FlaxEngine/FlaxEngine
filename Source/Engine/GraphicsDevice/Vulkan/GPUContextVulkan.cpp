@@ -557,14 +557,9 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                 VkBuffer buffer = VK_NULL_HANDLE;
                 VkDeviceSize offset = 0, range = 0;
                 uint32 dynamicOffset = 0;
-                if (handle)
-                    handle->DescriptorAsDynamicUniformBuffer(this, buffer, offset, range, dynamicOffset);
-                else
-                {
-                    const auto dummy = _device->HelperResources.GetDummyBuffer();
-                    buffer = dummy->GetHandle();
-                    range = dummy->GetSize();
-                }
+                if (!handle)
+                    handle = (GPUConstantBufferVulkan*)_device->HelperResources.GetDummyConstantBuffer();
+                handle->DescriptorAsDynamicUniformBuffer(this, buffer, offset, range, dynamicOffset);
                 needsWrite |= dsWriter.WriteDynamicUniformBuffer(descriptorIndex, buffer, offset, range, dynamicOffset, index);
                 break;
             }

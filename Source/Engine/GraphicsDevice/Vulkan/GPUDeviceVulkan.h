@@ -308,8 +308,9 @@ class HelperResourcesVulkan
 private:
     GPUDeviceVulkan* _device;
     GPUTextureVulkan* _dummyTextures[6];
-    GPUBufferVulkan* _dummyBuffer;
-    GPUBufferVulkan* _dummyVB;
+    GPUBufferVulkan* _dummyBuffer = nullptr;
+    GPUBufferVulkan* _dummyVB = nullptr;
+    GPUConstantBuffer* _dummyCB = nullptr;
     VkSampler _staticSamplers[GPU_STATIC_SAMPLERS_COUNT];
 
 public:
@@ -320,6 +321,7 @@ public:
     GPUTextureVulkan* GetDummyTexture(SpirvShaderResourceType type);
     GPUBufferVulkan* GetDummyBuffer();
     GPUBufferVulkan* GetDummyVertexBuffer();
+    GPUConstantBuffer* GetDummyConstantBuffer();
     void Dispose();
 };
 

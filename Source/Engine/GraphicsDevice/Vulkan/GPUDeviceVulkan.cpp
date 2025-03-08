@@ -749,8 +749,6 @@ bool BufferedQueryPoolVulkan::HasRoom() const
 
 HelperResourcesVulkan::HelperResourcesVulkan(GPUDeviceVulkan* device)
     : _device(device)
-    , _dummyBuffer(nullptr)
-    , _dummyVB(nullptr)
 {
     Platform::MemoryClear(_dummyTextures, sizeof(_dummyTextures));
     Platform::MemoryClear(_staticSamplers, sizeof(_staticSamplers));
@@ -883,7 +881,6 @@ GPUBufferVulkan* HelperResourcesVulkan::GetDummyBuffer()
         _dummyBuffer = (GPUBufferVulkan*)_device->CreateBuffer(TEXT("DummyBuffer"));
         _dummyBuffer->Init(GPUBufferDescription::Buffer(sizeof(int32) * 256, GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_SInt));
     }
-
     return _dummyBuffer;
 }
 
@@ -894,8 +891,16 @@ GPUBufferVulkan* HelperResourcesVulkan::GetDummyVertexBuffer()
         _dummyVB = (GPUBufferVulkan*)_device->CreateBuffer(TEXT("DummyVertexBuffer"));
         _dummyVB->Init(GPUBufferDescription::Vertex(sizeof(Color32), 1, &Color32::Transparent));
     }
-
     return _dummyVB;
+}
+
+GPUConstantBuffer* HelperResourcesVulkan::GetDummyConstantBuffer()
+{
+    if (!_dummyCB)
+    {
+        _dummyCB = _device->CreateConstantBuffer(256, TEXT("DummyConstantBuffer"));
+    }
+    return _dummyCB;
 }
 
 void HelperResourcesVulkan::Dispose()
@@ -903,6 +908,7 @@ void HelperResourcesVulkan::Dispose()
     SAFE_DELETE_GPU_RESOURCES(_dummyTextures);
     SAFE_DELETE_GPU_RESOURCE(_dummyBuffer);
     SAFE_DELETE_GPU_RESOURCE(_dummyVB);
+    SAFE_DELETE_GPU_RESOURCE(_dummyCB);
 
     for (int32 i = 0; i < ARRAY_COUNT(_staticSamplers); i++)
     {
