@@ -65,7 +65,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         /// <param name="index">The character index.</param>
         /// <param name="result">The result text block descriptor.</param>
-        /// <param name="snapToNext">If true, the when the index is between two text blocks, it will return the next block.</param>
+        /// <param name="snapToNext">If true, when the index is between two text blocks, it will return the next block.</param>
         /// <returns>True if a text block is found, otherwise false.</returns>
         public bool GetNearestTextBlock(int index, out TextBlock result, bool snapToNext = false)
         {
@@ -85,7 +85,8 @@ namespace FlaxEngine.GUI
                 if (i < blockCount - 1)
                 {
                     ref TextBlock nextBlock = ref textBlocksSpan[i + 1];
-                    if (index >= currentBlock.Range.EndIndex && index < nextBlock.Range.StartIndex)
+                    var containsY = nextBlock.Bounds.Y >= currentBlock.Bounds.Top && nextBlock.Bounds.Y < currentBlock.Bounds.Bottom;
+                    if (index >= currentBlock.Range.EndIndex && index < nextBlock.Range.StartIndex && containsY)
                     {
                         result = snapToNext ? nextBlock : currentBlock;
                         return true;
@@ -94,9 +95,14 @@ namespace FlaxEngine.GUI
             }
 
             // Handle case when index is outside all text ranges
-            if (index >= 0 && blockCount > 0)
+            if (index >= 0 && blockCount > 0 && index <= textBlocksSpan[0].Range.StartIndex)
             {
-                result = (index <= textBlocksSpan[0].Range.StartIndex) ? textBlocksSpan[0] : textBlocksSpan[blockCount - 1];
+                result = textBlocksSpan[0];
+                return true;
+            }
+            if (index >= 0 && blockCount > 0 && index >= textBlocksSpan[blockCount - 1].Range.StartIndex)
+            {
+                result = textBlocksSpan[blockCount - 1];
                 return true;
             }
 
@@ -233,8 +239,8 @@ namespace FlaxEngine.GUI
             {
                 ref TextBlock textBlock = ref textBlocks[i];
 
-                var containsX = location.X >= textBlock.Bounds.Location.X && location.X < textBlock.Bounds.Location.X + textBlock.Bounds.Size.X;
-                var containsY = location.Y >= textBlock.Bounds.Location.Y && location.Y < textBlock.Bounds.Location.Y + textBlock.Bounds.Size.Y;
+                var containsX = location.X >= textBlock.Bounds.Left && location.X < textBlock.Bounds.Right;
+                var containsY = location.Y >= textBlock.Bounds.Top && location.Y < textBlock.Bounds.Bottom;
 
                 if (containsY && (containsX || (i + 1 < count && textBlocks[i + 1].Bounds.Location.Y > textBlock.Bounds.Location.Y + 1.0f)))
                 {
@@ -260,6 +266,7 @@ namespace FlaxEngine.GUI
                 var left = spaceLoc == -1 ? 0 : spaceLoc + 1;
                 spaceLoc = _text.IndexOfAny(Separators, Math.Min(hitPos + 1, _text.Length));
                 var right = spaceLoc == -1 ? textLength : spaceLoc;
+                Deselect();
                 SetSelection(left, right);
             }
 
@@ -272,24 +279,30 @@ namespace FlaxEngine.GUI
             int snappedStart = start;
             int snappedEnd = end;
 
+            // Snapping selection between text blocks
             if (start != -1 && end != -1)
             {
                 bool movingBack = (_selectionStart != -1 && _selectionEnd != -1) && (end < _selectionEnd || start < _selectionStart);
 
-                GetNearestTextBlock(start, out TextBlock startTextBlock, !movingBack);
-                GetNearestTextBlock(end, out TextBlock endTextBlock, !movingBack);
+                if (GetNearestTextBlock(start, out TextBlock startTextBlock, !movingBack))
+                {
+                    snappedStart = startTextBlock.Range.Contains(start) ? start : (movingBack ? startTextBlock.Range.EndIndex - 1 : startTextBlock.Range.StartIndex);
+                    snappedStart = movingBack ? Math.Min(start, snappedStart) : Math.Max(start, snappedStart);
 
-                snappedStart = startTextBlock.Range.Contains(start) ? start : (movingBack ? startTextBlock.Range.EndIndex - 1 : startTextBlock.Range.StartIndex);
-                snappedEnd = endTextBlock.Range.Contains(end) ? end : (movingBack ? endTextBlock.Range.EndIndex - 1 : endTextBlock.Range.StartIndex);
+                    // Don't snap if selection is right in the end of the text
+                    if (start == _text.Length)
+                        snappedStart = _text.Length;
+                }
 
-                snappedStart = movingBack ? Math.Min(start, snappedStart) : Math.Max(start, snappedStart);
-                snappedEnd = movingBack ? Math.Min(end, snappedEnd) : Math.Max(end, snappedEnd);
-
-                // Don't snap if selection is right in the end of the text
-                if (start == _text.Length)
-                    snappedStart = _text.Length;
-                if (end == _text.Length)
-                    snappedEnd = _text.Length;
+                if (GetNearestTextBlock(end, out TextBlock endTextBlock, !movingBack))
+                {
+                    snappedEnd = endTextBlock.Range.Contains(end) ? end : (movingBack ? endTextBlock.Range.EndIndex - 1 : endTextBlock.Range.StartIndex);
+                    snappedEnd = movingBack ? Math.Min(end, snappedEnd) : Math.Max(end, snappedEnd);
+                    
+                    // Don't snap if selection is right in the end of the text
+                    if (end == _text.Length)
+                        snappedEnd = _text.Length;
+                }
             }
 
             base.SetSelection(snappedStart, snappedEnd, withScroll);

@@ -388,11 +388,11 @@ int32 Font::HitTestText(const StringView& text, const Float2& location, const Te
     if (dst < smallestDst)
     {
         // Pointer is behind the last character in the line
-        smallestIndex = line.LastCharIndex;
+        smallestIndex = line.LastCharIndex + 1;
 
         // Fix for last line
-        if (lineIndex == lines.Count() - 1)
-            smallestIndex++;
+        //if (lineIndex == lines.Count() - 1)
+        //    smallestIndex++;
     }
 
     return smallestIndex;
