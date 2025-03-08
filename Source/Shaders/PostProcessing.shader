@@ -36,7 +36,6 @@
 
 META_CB_BEGIN(0, Data)
 
-// Bloom parameters 
 float BloomIntensity;             
 float BloomClamp;                 
 float BloomThreshold;             
@@ -46,7 +45,6 @@ float BloomBaseMix;
 float BloomHighMix;               
 float BloomMipCount;              
 float BloomLayer;               
-
 
 float3 VignetteColor;
 float VignetteShapeFactor;
@@ -260,7 +258,6 @@ float2 coordRot(in float2 tc, in float angle)
 }
 
 // Uses a lower exposure to produce a value suitable for a bloom pass
-
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_BloomBrightPass(Quad_VS2PS input) : SV_Target
 {
@@ -278,10 +275,11 @@ float4 PS_BloomBrightPass(Quad_VS2PS input) : SV_Target
    // Apply Karis average to prevent bright pixels from dominating
    float centerLuma = max(dot(center, float3(0.2126, 0.7152, 0.0722)), 0.0001);
    center = center / (1.0 + centerLuma);
-   
+
    float centerWeight = 4.0;
    color += center * centerWeight;
    totalWeight += centerWeight;
+
    // Inner ring - fixed offset at 1.0 texel distance
    UNROLL
    for (int i = 0; i < 4; i++)
@@ -293,11 +291,12 @@ float4 PS_BloomBrightPass(Quad_VS2PS input) : SV_Target
        // Apply Karis average
        float sampleLuma = max(dot(sample, float3(0.2126, 0.7152, 0.0722)), 0.0001);
        sample = sample / (1.0 + sampleLuma);
-       
+
        float weight = 2.0;
        color += sample * weight;
        totalWeight += weight;
    }
+
    // Outer ring - fixed offset at 1.4142 texel distance (diagonal)
    UNROLL
    for (int j = 0; j < 8; j++)
@@ -305,11 +304,11 @@ float4 PS_BloomBrightPass(Quad_VS2PS input) : SV_Target
        float angle = j * (PI / 4.0);
        float2 offset = float2(cos(angle), sin(angle)) * texelSize * 1.4142;
        float3 sample = Input0.Sample(SamplerLinearClamp, input.TexCoord + offset).rgb;
-       
+
        // Apply Karis average
        float sampleLuma = max(dot(sample, float3(0.2126, 0.7152, 0.0722)), 0.0001);
        sample = sample / (1.0 + sampleLuma);
-       
+
        float weight = 1.0;
        color += sample * weight;
        totalWeight += weight;
@@ -320,24 +319,28 @@ float4 PS_BloomBrightPass(Quad_VS2PS input) : SV_Target
    float finalLuma = max(dot(color, float3(0.2126, 0.7152, 0.0722)), 0.0001);
    color = color * (1.0 + finalLuma);
 
-   // Apply threshold with quadratic rolloff for smoother transition
+    // Apply threshold with quadratic rolloff for smoother transition
     float luminance = dot(color, float3(0.2126, 0.7152, 0.0722));
     float threshold = max(BloomThreshold, 0.2);
     float knee = threshold * BloomThresholdKnee;
-    float soft_max = threshold + knee;
+    float softMax = threshold + knee;
 
    float contribution = 0;
-   if (luminance > threshold) {
-       if (luminance < soft_max) {
+   if (luminance > threshold)
+   {
+       if (luminance < softMax)
+       {
            // Quadratic softening between threshold and (threshold + knee)
            float x = (luminance - threshold) / knee;
            contribution = x * x * 0.5;
-       } else {
-           // Full contribution above soft_max
+       }
+       else
+       {
+           // Full contribution above softMax
            contribution = luminance - threshold;
        }
    }
-   
+
    float testc = BloomClamp;
    float3 clamped = (color * contribution);
    clamped.r = min(clamped.r, testc);
@@ -360,7 +363,8 @@ float4 PS_BloomDownsample(Quad_VS2PS input) : SV_Target
     float totalWeight = 0;
 
     // Sample offsets (fixed)
-    const float2 offsets[9] = {
+    const float2 offsets[9] =
+    {
         float2( 0,  0),    // Center
         float2(-1, -1),    // Corners
         float2( 1, -1),
@@ -373,7 +377,8 @@ float4 PS_BloomDownsample(Quad_VS2PS input) : SV_Target
     };
 
     // Sample weights (fixed)
-    const float weights[9] = {
+    const float weights[9] =
+    {
         4.0,    // Center
         1.0,    // Corners
         1.0,
@@ -401,11 +406,10 @@ META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_BloomDualFilterUpsample(Quad_VS2PS input) : SV_Target
 {
     float anisotropy = 1.0; 
-    
     uint width, height;
     Input0.GetDimensions(width, height);
     float2 texelSize = 1.0 / float2(width, height);
-        
+
     // Maintain fixed scale through mip chain
     float baseOffset = 1.0;
     float offsetScale =  (1.0)  * baseOffset;
@@ -436,7 +440,8 @@ float4 PS_BloomDualFilterUpsample(Quad_VS2PS input) : SV_Target
     }
 
     // Corners - fixed distance samples
-    float2 cornerOffsets[4] = {
+    float2 cornerOffsets[4] =
+    {
         float2(offsetScale * anisotropy, offsetScale), 
         float2(-offsetScale * anisotropy, offsetScale), 
         float2(offsetScale * anisotropy, -offsetScale), 
@@ -451,12 +456,12 @@ float4 PS_BloomDualFilterUpsample(Quad_VS2PS input) : SV_Target
         color += sample.rgb * weight;
         totalWeight += weight;
     }
-    
+
     color /= totalWeight;
-    
+
     uint width1, height1;
     Input1.GetDimensions(width1, height1);
-    
+
     // Calculate mip fade factor (0 = smallest mip, 1 = largest mip)
     float mipFade = BloomLayer / (BloomMipCount - 1);
 
@@ -476,24 +481,20 @@ float4 PS_BloomDualFilterUpsample(Quad_VS2PS input) : SV_Target
         float3 previousMip = Input1.Sample(SamplerLinearClamp, input.TexCoord).rgb;
         color += previousMip;
     }
-    
+
     return float4(color, 1.0);
 }
-
-
 
 // Horizontal gaussian blur
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_GaussainBlurH(Quad_VS2PS input) : SV_Target
 {
 	float4 color = 0;
-
 	UNROLL
 	for (int i = 0; i < GB_KERNEL_SIZE; i++)
 	{
 		color += Input0.Sample(SamplerLinearClamp, input.TexCoord + float2(GaussianBlurCache[i].y, 0.0)) * GaussianBlurCache[i].x;
 	}
-
 	return color;
 }
 
@@ -502,17 +503,13 @@ META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_GaussainBlurV(Quad_VS2PS input) : SV_Target
 {
 	float4 color = 0;
-
 	UNROLL
 	for (int i = 0; i < GB_KERNEL_SIZE; i++)
 	{
 		color += Input0.Sample(SamplerLinearClamp, input.TexCoord + float2(0.0, GaussianBlurCache[i].y)) * GaussianBlurCache[i].x;
 	}
-
 	return color;
 }
-
-
 
 // Generate 'ghosts' for lens flare
 META_PS(true, FEATURE_LEVEL_ES2)
@@ -553,8 +550,7 @@ float4 PS_Ghosts(Quad_VS2PS input) : SV_Target
 			Input3.Sample(SamplerLinearClamp, offset + ghostVecnNorm * distortion.r).r,
 			Input3.Sample(SamplerLinearClamp, offset + ghostVecnNorm * distortion.g).g,
 			Input3.Sample(SamplerLinearClamp, offset + ghostVecnNorm * distortion.b).b);
-		color = clamp((color * 1.0f) + LensBias, 0, 10) * (LensScale * weight);
-
+		color = clamp(color + LensBias, 0, 10) * (LensScale * weight);
 
 		// Accumulate color
 		result += color;
@@ -610,8 +606,6 @@ float nrand(float2 n)
 	return frac(sin(dot(n.xy, float2(12.9898, 78.233)))* 43758.5453);
 }
 
-
-
 // Applies exposure, color grading and tone mapping to the input.
 // Combines it with the results of the bloom pass and other postFx.
 META_PS(true, FEATURE_LEVEL_ES2)
@@ -658,8 +652,7 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 		color = Input0.Sample(SamplerLinearClamp, uv);
 	}
 
-    
-	// Lens Flaresf
+	// Lens Flares
 	BRANCH
 	if (LensFlareIntensity > 0)
 	{
@@ -677,21 +670,17 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 		lensLight += lensFlares * 1.5f;
 		color.rgb += lensFlares;
 	}
-    
 
-// In PS_Composite:
-BRANCH
-if (BloomIntensity > 0)
-{
-    // Sample the final bloom result
-    float3 bloom = Input2.Sample(SamplerLinearClamp, input.TexCoord).rgb;
-    bloom = bloom * BloomIntensity;
-
-    
-    
-    lensLight += max(0, bloom * 3.0f + (- 1.0f * 3.0f));
-    color.rgb += bloom;
-}
+    // Bloom
+    BRANCH
+    if (BloomIntensity > 0)
+    {
+        // Sample the final bloom result
+        float3 bloom = Input2.Sample(SamplerLinearClamp, input.TexCoord).rgb;
+        bloom = bloom * BloomIntensity;
+        lensLight += max(0, bloom * 3.0f + (-1.0f * 3.0f));
+        color.rgb += bloom;
+    }
 
 	// Lens Dirt
 	float3 lensDirt = LensDirt.SampleLevel(SamplerLinearClamp, uv, 0).rgb;

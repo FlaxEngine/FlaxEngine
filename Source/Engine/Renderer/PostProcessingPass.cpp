@@ -83,7 +83,6 @@ bool PostProcessingPass::setupResources()
         if (_psBloomDownsample->Init(psDesc))
             return true;
     }
-
     if (!_psBloomDualFilterUpsample->IsValid())
     {
         psDesc.PS = shader->GetPS("PS_BloomDualFilterUpsample");
@@ -189,7 +188,7 @@ void PostProcessingPass::Dispose()
     _defaultLensStar = nullptr;
 }
 
-float CalculateBloomMipCount(int32 width, int32 height)
+int32 CalculateBloomMipCount(int32 width, int32 height)
 {
     // Calculate the smallest dimension
     int32 minDimension = Math::Min(width, height);
@@ -197,14 +196,12 @@ float CalculateBloomMipCount(int32 width, int32 height)
     // Calculate how many times we can half the dimension until we hit a minimum size
     // (e.g., 16x16 pixels as the smallest mip)
     const int32 MIN_MIP_SIZE = 16;
-    float mipCount = 1.0f;
-
-    while (minDimension > MIN_MIP_SIZE) {
+    int32 mipCount = 1;
+    while (minDimension > MIN_MIP_SIZE)
+    {
         minDimension /= 2;
-        mipCount += 1.0f;
+        mipCount++;
     }
-
-
     return mipCount;
 }
 
@@ -282,7 +279,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         data.BloomThresholdKnee = settings.Bloom.ThresholdKnee;
         data.BloomBaseMix = settings.Bloom.BaseMix;
         data.BloomHighMix = settings.Bloom.HighMix;
-        data.BloomMipCount = bloomMipCount;
+        data.BloomMipCount = (float)bloomMipCount;
         data.BloomLayer = 0.0f;
     }
     else
@@ -333,7 +330,6 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     ////////////////////////////////////////////////////////////////////////////////////
     // Bloom
 
-
     auto tempDesc = GPUTextureDescription::New2D(w2, h2, bloomMipCount, output->Format(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
     auto bloomBuffer1 = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(bloomBuffer1, "PostProcessing.Bloom");
@@ -346,10 +342,8 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         context->Clear(bloomBuffer2->View(0, mip), Color::Transparent);
     }
 
-    // Check if use bloom
     if (useBloom)
     {
-
         context->SetRenderTarget(bloomBuffer1->View(0, 0));
         context->SetViewportAndScissors((float)w2, (float)h2);
         context->BindSR(0, input->View());
@@ -360,47 +354,44 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         // Progressive downsamples
         for (int32 mip = 1; mip < bloomMipCount; mip++)
         {
-            const float mipWidth = w2 >> mip;
-            const float mipHeight = h2 >> mip;
+            const int32 mipWidth = w2 >> mip;
+            const int32 mipHeight = h2 >> mip;
 
             context->SetRenderTarget(bloomBuffer1->View(0, mip));
-            context->SetViewportAndScissors(mipWidth, mipHeight);
+            context->SetViewportAndScissors((float)mipWidth, (float)mipHeight);
             context->BindSR(0, bloomBuffer1->View(0, mip - 1));
             context->SetState(_psBloomDownsample);
             context->DrawFullscreenTriangle();
             context->ResetRenderTarget();
-
         }
 
         // Progressive upsamples
         for (int32 mip = bloomMipCount - 2; mip >= 0; mip--)
         {
-            auto upscalebuffer = bloomBuffer2;
+            auto upscaleBuffer = bloomBuffer2;
             if (mip == bloomMipCount - 2)
             {
-                // if it's the first, copy the chain over. 
-                upscalebuffer = bloomBuffer1;
-
+                // If it's the first, copy the chain over
+                upscaleBuffer = bloomBuffer1;
             }
+            const int32 mipWidth = w2 >> mip;
+            const int32 mipHeight = h2 >> mip;
 
-            const float mipWidth = w2 >> mip;
-            const float mipHeight = h2 >> mip;
-
-            data.BloomLayer = static_cast<float>(mip);  // Set the current mip as bloom layer
-            context->UpdateCB(cb0, &data);              // Update the constant buffer
-
+            data.BloomLayer = static_cast<float>(mip);
+            context->UpdateCB(cb0, &data);
             context->SetRenderTarget(bloomBuffer2->View(0, mip));
-            context->SetViewportAndScissors(mipWidth, mipHeight);
-            context->BindSR(0, upscalebuffer->View(0, mip + 1));
+            context->SetViewportAndScissors((float)mipWidth, (float)mipHeight);
+            context->BindSR(0, upscaleBuffer->View(0, mip + 1));
             context->BindSR(1, bloomBuffer1->View(0, mip + 1));
             context->SetState(_psBloomDualFilterUpsample);
             context->DrawFullscreenTriangle();
             context->ResetRenderTarget();
         }
 
-        // Final composite
-        context->BindSR(1, bloomBuffer1);
-        context->BindSR(2, bloomBuffer2);
+        // Set bloom output
+        context->UnBindSR(0);
+        context->UnBindSR(1);
+        context->BindSR(2, bloomBuffer2->View(0, 0));
     }
     else
     {
@@ -408,8 +399,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     }
 
     ////////////////////////////////////////////////////////////////////////////////////
-     //Lens Flares
-
+    // Lens Flares
 
     // Check if use lens flares
     if (useLensFlares)
@@ -417,8 +407,6 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
         // Prepare lens flares helper textures
         context->BindSR(5, getCustomOrDefault(settings.LensFlares.LensStar, _defaultLensStar, TEXT("Engine/Textures/DefaultLensStarburst")));
         context->BindSR(6, getCustomOrDefault(settings.LensFlares.LensColor, _defaultLensColor, TEXT("Engine/Textures/DefaultLensColor")));
-
-        // use bloomBuffer1's mip 1 as input for lens flares
 
         // Render lens flares
         context->SetRenderTarget(bloomBuffer2->View(0, 1));

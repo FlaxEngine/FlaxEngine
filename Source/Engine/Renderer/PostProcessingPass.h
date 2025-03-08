@@ -16,15 +16,15 @@ class PostProcessingPass : public RendererPass<PostProcessingPass>
 private:
 
     GPU_CB_STRUCT(Data{
-        float BloomIntensity;             // Overall bloom strength multiplier
-        float BloomClamp;                 // Maximum brightness limit for bloom
-        float BloomThreshold;             // Luminance threshold where bloom begins
-        float BloomThresholdKnee;         // Controls the threshold rolloff curve
-        float BloomBaseMix;               // Base mip contribution
-        float BloomHighMix;               // High mip contribution
+        float BloomIntensity; // Overall bloom strength multiplier
+        float BloomClamp; // Maximum brightness limit for bloom
+        float BloomThreshold; // Luminance threshold where bloom begins
+        float BloomThresholdKnee; // Controls the threshold rolloff curve
+
+        float BloomBaseMix; // Base mip contribution
+        float BloomHighMix; // High mip contribution
         float BloomMipCount;
         float BloomLayer;
-
 
         Float3 VignetteColor;
         float VignetteShapeFactor;

@@ -48,7 +48,6 @@ void BloomSettings::BlendWith(BloomSettings& other, float weight)
     BLEND_FLOAT(HighMix);
 }
 
-
 void ToneMappingSettings::BlendWith(ToneMappingSettings& other, float weight)
 {
     const bool isHalf = weight >= 0.5f;
