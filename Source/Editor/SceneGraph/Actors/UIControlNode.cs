@@ -64,7 +64,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 if (canvas.Is2D)
                     return false;
             }
-            return true;
+            return base.CanSelectActorNodeWithSelector();
         }
     }
 }

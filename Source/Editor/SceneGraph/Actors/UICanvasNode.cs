@@ -82,7 +82,7 @@ namespace FlaxEditor.SceneGraph.Actors
         /// <inheritdoc />
         public override bool CanSelectActorNodeWithSelector()
         {
-            return Actor is UICanvas uiCanvas && uiCanvas.Is3D;
+            return Actor is UICanvas uiCanvas && uiCanvas.Is3D && base.CanSelectActorNodeWithSelector();
         }
     }
 }
