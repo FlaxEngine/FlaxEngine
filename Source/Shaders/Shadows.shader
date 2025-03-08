@@ -30,7 +30,7 @@ float RayCastScreenSpaceShadow(GBufferData gBufferData, GBufferSample gBuffer, f
 {
 #if SHADOWS_QUALITY == 3
 	const uint maxSteps = 16;
-#elif SHADOWS_QUALITY == 3
+#elif SHADOWS_QUALITY == 2
 	const uint maxSteps = 12;
 #else
 	const uint maxSteps = 8;
@@ -92,7 +92,7 @@ float4 PS_PointLight(Model_VS2PS input) : SV_Target0
 	// Sample shadow
     ShadowSample shadow = SamplePointLightShadow(Light, ShadowsBuffer, ShadowMap, gBuffer);
 
-#if CONTACT_SHADOWS
+#if CONTACT_SHADOWS && SHADOWS_QUALITY > 0
 	// Calculate screen-space contact shadow
 	shadow.SurfaceShadow *= RayCastScreenSpaceShadow(gBufferData, gBuffer, gBuffer.WorldPos, normalize(Light.Position - gBuffer.WorldPos), ContactShadowsLength);
 #endif
@@ -119,7 +119,7 @@ float4 PS_DirLight(Quad_VS2PS input) : SV_Target0
 	// Sample shadow
     ShadowSample shadow = SampleDirectionalLightShadow(Light, ShadowsBuffer, ShadowMap, gBuffer, TemporalTime);
 
-#if CONTACT_SHADOWS
+#if CONTACT_SHADOWS && SHADOWS_QUALITY > 0
 	// Calculate screen-space contact shadow
 	shadow.SurfaceShadow *= RayCastScreenSpaceShadow(gBufferData, gBuffer, gBuffer.WorldPos, Light.Direction, ContactShadowsLength);
 #endif
@@ -149,7 +149,7 @@ float4 PS_SpotLight(Model_VS2PS input) : SV_Target0
 	// Sample shadow
     ShadowSample shadow = SampleSpotLightShadow(Light, ShadowsBuffer, ShadowMap, gBuffer);
 
-#if CONTACT_SHADOWS
+#if CONTACT_SHADOWS && SHADOWS_QUALITY > 0
 	// Calculate screen-space contact shadow
 	shadow.SurfaceShadow *= RayCastScreenSpaceShadow(gBufferData, gBuffer, gBuffer.WorldPos, normalize(Light.Position - gBuffer.WorldPos), ContactShadowsLength);
 #endif
