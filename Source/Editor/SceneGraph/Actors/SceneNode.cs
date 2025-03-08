@@ -33,6 +33,12 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
+        /// <inheritdoc />
+        public override bool CanSelectActorNodeWithSelector()
+        {
+            return false;
+        }
+
         /// <summary>
         /// Gets the scene.
         /// </summary>

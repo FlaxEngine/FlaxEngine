@@ -88,6 +88,30 @@ namespace FlaxEditor.SceneGraph.Actors
             contextMenu.AddButton("Add collider", () => OnAddMeshCollider(window)).Enabled = ((StaticModel)Actor).Model != null;
         }
 
+        /// <inheritdoc />
+        public override Vector3[] GetActorSelectionPoints()
+        {
+            if (Actor is not StaticModel sm || !sm.Model)
+                return base.GetActorSelectionPoints();
+
+            // Check collision proxy points for more accurate selection.
+            var vecPoints = new List<Vector3>();
+            var m = sm.Model.LODs[0];
+            foreach (var mesh in m.Meshes)
+            {
+                var points = mesh.GetCollisionProxyPoints();
+                foreach (var point in points)
+                {
+                    vecPoints.Add(Actor.Transform.LocalToWorld(point));
+                }
+            }
+            
+            // Fall back to base actor editor box if no points from collision proxy.
+            if (vecPoints.Count == 0)
+                return base.GetActorSelectionPoints();
+            return vecPoints.ToArray();
+        }
+
         private void OnAddMeshCollider(EditorWindow window)
         {
             // Allow collider to be added to evey static model selection

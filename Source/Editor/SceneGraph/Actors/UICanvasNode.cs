@@ -78,5 +78,11 @@ namespace FlaxEditor.SceneGraph.Actors
             if (Actor is UICanvas uiCanvas && uiCanvas.Is3D)
                 DebugDraw.DrawWireBox(uiCanvas.Bounds, Color.BlueViolet);
         }
+
+        /// <inheritdoc />
+        public override bool CanSelectActorNodeWithSelector()
+        {
+            return Actor is UICanvas uiCanvas && uiCanvas.Is3D;
+        }
     }
 }
