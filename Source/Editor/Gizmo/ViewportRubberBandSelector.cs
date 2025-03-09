@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using FlaxEditor;
 using FlaxEditor.Gizmo;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.Viewport;
 using FlaxEngine.GUI;
 
 namespace FlaxEngine.Gizmo;
@@ -132,7 +133,7 @@ public class ViewportRubberBandSelector
                     }
                     if (containsAllPoints)
                     {
-                        if (a.HasPrefabLink)
+                        if (a.HasPrefabLink && _owner is not PrefabWindowViewport)
                             hits.Add(_owner.SceneGraphRoot.Find(a.GetPrefabRoot()));
                         else
                             hits.Add(node);
@@ -143,7 +144,7 @@ public class ViewportRubberBandSelector
                 if (_owner.IsControlDown)
                 {
                     var newSelection = new List<SceneGraphNode>();
-                    var currentSelection = editor.SceneEditing.Selection;
+                    var currentSelection = _owner.SceneGraphRoot.Selection;
                     newSelection.AddRange(currentSelection);
                     foreach (var hit in hits)
                     {
@@ -157,7 +158,7 @@ public class ViewportRubberBandSelector
                 else if (Input.GetKey(KeyboardKeys.Shift))
                 {
                     var newSelection = new List<SceneGraphNode>();
-                    var currentSelection = editor.SceneEditing.Selection;
+                    var currentSelection = _owner.SceneGraphRoot.Selection;
                     newSelection.AddRange(hits);
                     newSelection.AddRange(currentSelection);
                     _owner.Select(newSelection);
@@ -167,7 +168,6 @@ public class ViewportRubberBandSelector
                     _owner.Select(hits);
                 }
             }
-            
         }
     }
 
