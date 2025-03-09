@@ -35,12 +35,12 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// The inner minimum of the multiscale
         /// </summary>
-        private const float InnerExtend = AxisOffset + 0.5f;
+        private const float InnerExtend = AxisOffset;
 
         /// <summary>
         /// The outer maximum of the multiscale
         /// </summary>
-        private const float OuterExtend = AxisOffset * 3.5f;
+        private const float OuterExtend = AxisOffset + 1.25f;
 
         // Cube with the size AxisThickness, then moves it along the axis (AxisThickness) and finally makes it really long (AxisLength)
         private BoundingBox XAxisBox = new BoundingBox(new Vector3(-AxisThickness), new Vector3(AxisThickness)).MakeOffsetted(AxisOffset * Vector3.UnitX).Merge(AxisLength * Vector3.UnitX);
