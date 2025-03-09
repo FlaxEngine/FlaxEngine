@@ -74,6 +74,11 @@ namespace FlaxEditor.Windows
             if (Level.ScenesCount > 1)
                 return;
             _actorScrollValues.Clear();
+            if (LockObjects)
+            {
+                LockObjects = false;
+                Presenter.Deselect();
+            }
         }
 
         private void OnScrollValueChanged()
