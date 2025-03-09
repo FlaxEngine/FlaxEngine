@@ -280,7 +280,7 @@ void AnimGraphExecutor::Update(AnimGraphInstanceData& data, float dt)
         context.EmptyNodes.Length = 0.0f;
         context.EmptyNodes.Nodes.Resize(_skeletonNodesCount, false);
         for (int32 i = 0; i < _skeletonNodesCount; i++)
-            context.EmptyNodes.Nodes[i] = skeleton.Nodes[i].LocalTransform;
+            context.EmptyNodes.Nodes.Get()[i] = skeleton.Nodes.Get()[i].LocalTransform;
     }
 
     // Update the animation graph and gather skeleton nodes transformations in nodes local space
