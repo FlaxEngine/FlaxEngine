@@ -771,6 +771,15 @@ namespace FlaxEngine.GUI
                 Tooltip.OnMouseLeaveControl(this);
             }
         }
+        
+        /// <summary>
+        /// When mouse moves over control's area while mouse is in relative mode
+        /// </summary>
+        /// <param name="mouseMotion">Mouse relative motion</param>
+        [NoAnimate]
+        public virtual void OnMouseMoveRelative(Float2 mouseMotion)
+        {
+        }
 
         /// <summary>
         /// When mouse leaves control's area

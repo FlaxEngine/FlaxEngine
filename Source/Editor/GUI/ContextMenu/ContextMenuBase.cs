@@ -1,6 +1,9 @@
-#if PLATFORM_WINDOWS
+#if PLATFORM_WINDOWS || PLATFORM_SDL
 #define USE_IS_FOREGROUND
 #else
+#endif
+#if PLATFORM_SDL
+#define USE_SDL_WORKAROUNDS
 #endif
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
@@ -111,7 +114,7 @@ namespace FlaxEditor.GUI.ContextMenu
         }
 
         /// <summary>
-        /// Shows the empty menu popup o na screen.
+        /// Shows the empty menu popup on a screen.
         /// </summary>
         /// <param name="control">The target control.</param>
         /// <param name="area">The target control area to cover.</param>
@@ -215,12 +218,20 @@ namespace FlaxEditor.GUI.ContextMenu
             desc.AllowMaximize = false;
             desc.AllowDragAndDrop = false;
             desc.IsTopmost = true;
-            desc.IsRegularWindow = false;
+            desc.Type = WindowType.Popup;
+            desc.Parent = parentWin.Window;
+            desc.Title = "ContextMenu";
             desc.HasSizingFrame = false;
             OnWindowCreating(ref desc);
             _window = Platform.CreateWindow(ref desc);
             _window.GotFocus += OnWindowGotFocus;
             _window.LostFocus += OnWindowLostFocus;
+
+#if USE_IS_FOREGROUND && USE_SDL_WORKAROUNDS
+            // The focus between popup and parent windows doesn't change, force hide the popup when clicked on parent
+            parentWin.Window.MouseDown += OnWindowMouseDown;
+            _window.Closed += () => parentWin.Window.MouseDown -= OnWindowMouseDown;
+#endif
 
             // Attach to the window
             _parentCM = parent as ContextMenuBase;
@@ -228,8 +239,6 @@ namespace FlaxEditor.GUI.ContextMenu
 
             // Show
             Visible = true;
-            if (_window == null)
-                return;
             _window.Show();
             PerformLayout();
             _previouslyFocused = parentWin.FocusedControl;
@@ -378,6 +387,17 @@ namespace FlaxEditor.GUI.ContextMenu
             }
         }
 
+#if USE_SDL_WORKAROUNDS
+        private void OnWindowGotFocus()
+        {
+        }
+        
+        private void OnWindowMouseDown(ref Float2 mousePosition, MouseButton button, ref bool handled)
+        {
+            // The user clicked outside the popup window
+            Hide();
+        }
+#else
         private void OnWindowGotFocus()
         {
             var child = _childCM;
@@ -391,6 +411,7 @@ namespace FlaxEditor.GUI.ContextMenu
                 });
             }
         }
+#endif
 
         private void OnWindowLostFocus()
         {
@@ -489,7 +510,12 @@ namespace FlaxEditor.GUI.ContextMenu
             // Let root context menu to check if none of the popup windows
             if (_parentCM == null && !IsForeground)
             {
+#if USE_SDL_WORKAROUNDS
+                if (!IsMouseOver)
+                    Hide();
+#else
                 Hide();
+#endif
             }
         }
 #endif
