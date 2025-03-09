@@ -232,6 +232,19 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         LOG(Info, "[Vulkan] {0} {1}:{2}({3}) {4}", type, severity, callbackData->messageIdNumber, String(callbackData->pMessageIdName), message);
     else
         LOG(Info, "[Vulkan] {0} {1}:{2} {3}", type, severity, callbackData->messageIdNumber, message);
+
+#if BUILD_DEBUG
+    if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
+    {
+        if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
+        {
+            const StringAnsi vsName = state->DebugDesc.VS ? state->DebugDesc.VS->GetName() : StringAnsi::Empty;
+            const StringAnsi psName = state->DebugDesc.PS ? state->DebugDesc.PS->GetName() : StringAnsi::Empty;
+            LOG(Warning, "[Vulkan] Error during rendering with VS={}, PS={}", String(vsName), String(psName));
+        }
+    }
+#endif
+
     return VK_FALSE;
 }
 
@@ -765,7 +778,6 @@ bool BufferedQueryPoolVulkan::HasRoom() const
 
 HelperResourcesVulkan::HelperResourcesVulkan(GPUDeviceVulkan* device)
     : _device(device)
-    , _dummyVB(nullptr)
 {
     Platform::MemoryClear(_dummyTextures, sizeof(_dummyTextures));
     Platform::MemoryClear(_staticSamplers, sizeof(_staticSamplers));
@@ -918,10 +930,20 @@ GPUBufferVulkan* HelperResourcesVulkan::GetDummyVertexBuffer()
     return _dummyVB;
 }
 
+GPUConstantBuffer* HelperResourcesVulkan::GetDummyConstantBuffer()
+{
+    if (!_dummyCB)
+    {
+        _dummyCB = _device->CreateConstantBuffer(256, TEXT("DummyConstantBuffer"));
+    }
+    return _dummyCB;
+}
+
 void HelperResourcesVulkan::Dispose()
 {
     SAFE_DELETE_GPU_RESOURCES(_dummyTextures);
     SAFE_DELETE_GPU_RESOURCE(_dummyVB);
+    SAFE_DELETE_GPU_RESOURCE(_dummyCB);
     if (_dummyBuffers)
     {
         for (int32 i = 0; i < (int32)PixelFormat::MAX; i++)

@@ -1292,7 +1292,8 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
         LOAD_FAILED();
     }
 #endif
-    result->RegisterObject();
+    if (!result->IsInternalType())
+        result->RegisterObject();
 
     // Register asset
     AssetsLocker.Lock();

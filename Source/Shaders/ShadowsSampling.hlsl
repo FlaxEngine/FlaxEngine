@@ -17,6 +17,11 @@
 #define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) (sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0).r)
 #define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) (sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0, texelOffset).r)
 #endif
+#if VULKAN || FEATURE_LEVEL < FEATURE_LEVEL_SM5
+#define SAMPLE_SHADOW_MAP_SAMPLER SamplerPointClamp
+#else
+#define SAMPLE_SHADOW_MAP_SAMPLER SamplerLinearClamp
+#endif
 
 float4 GetShadowMask(ShadowSample shadow)
 {
@@ -276,7 +281,7 @@ ShadowSample SampleDirectionalLightShadow(LightData light, Buffer<float4> shadow
 	{
 		float opacity = gBuffer.CustomData.a;
         shadowMapUV = GetLightShadowAtlasUV(shadow, shadowTile, gBuffer.WorldPos, shadowPosition);
-		float shadowMapDepth = shadowMap.SampleLevel(SamplerLinearClamp, shadowMapUV, 0).r;
+		float shadowMapDepth = shadowMap.SampleLevel(SAMPLE_SHADOW_MAP_SAMPLER, shadowMapUV, 0).r;
 		result.TransmissionShadow = CalculateSubsurfaceOcclusion(opacity, shadowPosition.z, shadowMapDepth);
         result.TransmissionShadow = PostProcessShadow(shadow, result.TransmissionShadow);
 	}
@@ -337,7 +342,7 @@ ShadowSample SampleLocalLightShadow(LightData light, Buffer<float4> shadowsBuffe
 	{
 		float opacity = gBuffer.CustomData.a;
         shadowMapUV = GetLightShadowAtlasUV(shadow, shadowTile, gBuffer.WorldPos, shadowPosition);
-		float shadowMapDepth = shadowMap.SampleLevel(SamplerLinearClamp, shadowMapUV, 0).r;
+		float shadowMapDepth = shadowMap.SampleLevel(SAMPLE_SHADOW_MAP_SAMPLER, shadowMapUV, 0).r;
 		result.TransmissionShadow = CalculateSubsurfaceOcclusion(opacity, shadowPosition.z, shadowMapDepth);
         result.TransmissionShadow = PostProcessShadow(shadow, result.TransmissionShadow);
 	}
