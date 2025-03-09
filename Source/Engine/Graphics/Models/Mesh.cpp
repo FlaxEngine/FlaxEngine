@@ -847,4 +847,19 @@ MArray* Mesh::DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI
     return result;
 }
 
+Array<Float3> Mesh::GetCollisionProxyPoints() const
+{
+    Array<Vector3> result;
+#if USE_PRECISE_MESH_INTERSECTS
+    for (int i = 0; i < _collisionProxy.Triangles.Count(); ++i)
+    {
+        auto triangle = _collisionProxy.Triangles[i];
+        result.Add(triangle.V0);
+        result.Add(triangle.V1);
+        result.Add(triangle.V2);
+    }
+#endif
+    return result;
+}
+
 #endif

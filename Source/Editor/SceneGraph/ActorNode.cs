@@ -183,6 +183,51 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <summary>
+        /// Get all nested actor nodes under this actor node.
+        /// </summary>
+        /// <returns>An array of ActorNodes</returns>
+        public ActorNode[] GetAllChildActorNodes()
+        {
+            // Check itself
+            if (ChildNodes == null || ChildNodes.Count == 0)
+                return [];
+
+            // Check deeper
+            var nodes = new List<ActorNode>();
+            for (int i = 0; i < ChildNodes.Count; i++)
+            {
+                if (ChildNodes[i] is ActorNode node)
+                {
+                    nodes.Add(node);
+                    var childNodes = node.GetAllChildActorNodes();
+                    if (childNodes.Length > 0)
+                    {
+                        nodes.AddRange(childNodes);
+                    }
+                }
+            }
+            return nodes.ToArray();
+        }
+
+        /// <summary>
+        /// Whether an actor node can be selected with a selector.
+        /// </summary>
+        /// <returns>True if the actor node can be selected</returns>
+        public virtual bool CanSelectActorNodeWithSelector()
+        {
+            return Actor && Actor.HideFlags is not (HideFlags.DontSelect or HideFlags.FullyHidden) && Actor is not EmptyActor && IsActive;
+        }
+
+        /// <summary>
+        /// The selection points used to check if an actor node can be selected.
+        /// </summary>
+        /// <returns>The points to use if the actor can be selected.</returns>
+        public virtual Vector3[] GetActorSelectionPoints()
+        {
+            return Actor.EditorBox.GetCorners();
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this actor can be used to create prefab from it (as a root).
         /// </summary>
         public virtual bool CanCreatePrefab => (_actor.HideFlags & HideFlags.DontSave) != HideFlags.DontSave;

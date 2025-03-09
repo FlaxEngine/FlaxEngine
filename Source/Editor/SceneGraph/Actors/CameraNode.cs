@@ -58,5 +58,11 @@ namespace FlaxEditor.SceneGraph.Actors
 
             return Camera.Internal_IntersectsItselfEditor(FlaxEngine.Object.GetUnmanagedPtr(_actor), ref ray.Ray, out distance);
         }
+
+        /// <inheritdoc />
+        public override Vector3[] GetActorSelectionPoints()
+        {
+            return [Actor.Position];
+        }
     }
 }
