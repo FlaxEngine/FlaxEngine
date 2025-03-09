@@ -706,11 +706,11 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
         const auto scale = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat();
         const auto blend = tryGetValue(node->GetBox(2), node->Values[1]).AsFloat();
-        const auto offset = tryGetValue(node->GetBox(3), node->Values.Count() > 2 ? node->Values[2] : Float2::Zero).AsFloat2();
+        const auto offset = tryGetValue(node->TryGetBox(6), node->Values.Count() >= 3 ? node->Values[2] : Float2::Zero).AsFloat2();
         const bool local = node->Values.Count() >= 5 ? node->Values[4].AsBool : false;
 
         const Char* samplerName;
-        const int32 samplerIndex = node->Values[3].AsInt;
+        const int32 samplerIndex = node->Values.Count() >= 4 ? node->Values[3].AsInt : LinearWrap;
         if (samplerIndex == TextureGroup)
         {
             auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[3].AsInt);
@@ -795,7 +795,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
         const auto scale = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat();
         const auto blend = tryGetValue(node->GetBox(2), node->Values[1]).AsFloat();
-        const auto offset = tryGetValue(node->GetBox(3), node->Values[2]).AsFloat2();
+        const auto offset = tryGetValue(node->GetBox(6), node->Values[2]).AsFloat2();
         const bool local = node->Values.Count() >= 5 ? node->Values[4].AsBool : false;
 
         const Char* samplerName;
