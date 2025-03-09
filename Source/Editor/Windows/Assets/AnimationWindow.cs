@@ -32,6 +32,8 @@ namespace FlaxEditor.Windows.Assets
             private readonly AnimationWindow _window;
             private AnimationGraph _animGraph;
 
+            public SkinnedModel BaseModel;
+
             public Preview(AnimationWindow window)
             : base(true)
             {
@@ -46,10 +48,11 @@ namespace FlaxEditor.Windows.Assets
                 Object.Destroy(ref _animGraph);
                 if (!model)
                     return;
+                var baseModel = BaseModel ?? model;
 
                 // Use virtual animation graph to playback the animation
                 _animGraph = FlaxEngine.Content.CreateVirtualAsset<AnimationGraph>();
-                _animGraph.InitAsAnimation(model, _window.Asset, true, true);
+                _animGraph.InitAsAnimation(baseModel, _window.Asset, true, true);
                 PreviewActor.AnimationGraph = _animGraph;
             }
 
@@ -69,6 +72,7 @@ namespace FlaxEditor.Windows.Assets
             /// <inheritdoc />
             public override void OnDestroy()
             {
+                BaseModel = null;
                 Object.Destroy(ref _animGraph);
 
                 base.OnDestroy();
@@ -145,6 +149,24 @@ namespace FlaxEditor.Windows.Assets
                         else
                             Window.Editor.ProjectCache.RemoveCustomData(customDataName);
                     }
+                }
+            }
+
+            private bool ShowBaseModel => PreviewModel != null;
+
+            [EditorDisplay("Preview"), NoSerialize, AssetReference(true), VisibleIf(nameof(ShowBaseModel))]
+            [Tooltip("The skinned model to use as a retarget source. Animation will be played using its skeleton and retarget into the Preview Model.")]
+            public SkinnedModel BaseModel
+            {
+                get => Window?._preview?.BaseModel;
+                set
+                {
+                    if (Window == null || PreviewModel == value)
+                        return;
+
+                    // Reinit
+                    Window._preview.BaseModel = value;
+                    Window._preview.SetModel(PreviewModel);
                 }
             }
 
@@ -230,7 +252,7 @@ namespace FlaxEditor.Windows.Assets
         private ToolStripButton _undoButton;
         private ToolStripButton _redoButton;
         private bool _isWaitingForTimelineLoad;
-        private SkinnedModel _initialPreviewModel;
+        private SkinnedModel _initialPreviewModel, _initialBaseModel;
         private float _initialPanel2Splitter = 0.6f;
 
         /// <summary>
@@ -322,7 +344,12 @@ namespace FlaxEditor.Windows.Assets
                 _properties.PreviewModel = _initialPreviewModel;
                 _panel2.SplitterValue = _initialPanel2Splitter;
                 _initialPreviewModel = null;
+                if (_initialBaseModel)
+                {
+                    _properties.BaseModel = _initialBaseModel;
+                }
             }
+            _initialBaseModel = null;
 
             base.OnAssetLoaded();
         }
@@ -412,6 +439,8 @@ namespace FlaxEditor.Windows.Assets
             writer.WriteAttributeString("ShowPreviewValues", _timeline.ShowPreviewValues.ToString());
             if (_properties.PreviewModel)
                 writer.WriteAttributeString("PreviewModel", _properties.PreviewModel.ID.ToString());
+            if (_properties.BaseModel)
+                writer.WriteAttributeString("BaseModel", _properties.BaseModel.ID.ToString());
         }
 
         /// <inheritdoc />
@@ -427,6 +456,8 @@ namespace FlaxEditor.Windows.Assets
                 _timeline.ShowPreviewValues = value3;
             if (Guid.TryParse(node.GetAttribute("PreviewModel"), out Guid value4))
                 _initialPreviewModel = FlaxEngine.Content.LoadAsync<SkinnedModel>(value4);
+            if (Guid.TryParse(node.GetAttribute("BaseModel"), out value4))
+                _initialBaseModel = FlaxEngine.Content.LoadAsync<SkinnedModel>(value4);
         }
 
         /// <inheritdoc />
