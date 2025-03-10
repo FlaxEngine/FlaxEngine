@@ -214,31 +214,39 @@ bool DeployDataStep::Perform(CookingData& data)
                 FileSystem::NormalizePath(srcDotnet);
                 LOG(Info, "Using .NET Runtime {} at {}", TEXT("Host"), srcDotnet);
 
-                // Get major Version
-                Array<String> pathParts;
-                srcDotnet.Split('/', pathParts);
+                // Get .NET runtime version
                 String version;
-                for (int i = 0; i < pathParts.Count(); i++)
+                if (usAOT)
                 {
-                    if (pathParts[i] == TEXT("runtimes"))
+                    // Precompiled
+                    version = StringUtils::ToString(GAME_BUILD_DOTNET_RUNTIME_MIN_VER);
+                }
+                else
+                {
+                    // Detect from path
+                    Array<String> pathParts;
+                    srcDotnet.Split('/', pathParts);
+                    for (int i = 0; i < pathParts.Count(); i++)
                     {
-                        Array<String> versionParts;
-                        pathParts[i - 1].Split('.', versionParts);
-                        if (!versionParts.IsEmpty())
+                        if (pathParts[i] == TEXT("runtimes"))
                         {
-                            const String majorVersion = versionParts[0].TrimTrailing();
-                            int32 versionNum;
-                            StringUtils::Parse(*majorVersion, majorVersion.Length(), &versionNum);
-                            if (Math::IsInRange(versionNum, GAME_BUILD_DOTNET_RUNTIME_MIN_VER, GAME_BUILD_DOTNET_RUNTIME_MAX_VER)) // Check for major part
-                                version = majorVersion;
+                            Array<String> versionParts;
+                            pathParts[i - 1].Split('.', versionParts);
+                            if (!versionParts.IsEmpty())
+                            {
+                                const String majorVersion = versionParts[0].TrimTrailing();
+                                int32 versionNum;
+                                StringUtils::Parse(*majorVersion, majorVersion.Length(), &versionNum);
+                                if (Math::IsInRange(versionNum, GAME_BUILD_DOTNET_RUNTIME_MIN_VER, GAME_BUILD_DOTNET_RUNTIME_MAX_VER)) // Check for major part
+                                    version = majorVersion;
+                            }
                         }
                     }
-                }
-
-                if (version.IsEmpty())
-                {
-                    data.Error(TEXT("Failed to find supported .NET version for the current host platform."));
-                    return true;
+                    if (version.IsEmpty())
+                    {
+                        data.Error(TEXT("Failed to find supported .NET version for the current host platform."));
+                        return true;
+                    }
                 }
 
                 // Deploy runtime files
