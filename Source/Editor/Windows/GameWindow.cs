@@ -21,7 +21,7 @@ namespace FlaxEditor.Windows
     {
         private readonly RenderOutputControl _viewport;
         private readonly GameRoot _guiRoot;
-        private bool _showGUI = true;
+        private bool _showGUI = true, _editGUI = true;
         private bool _showDebugDraw = false;
         private bool _audioMuted = false;
         private float _audioVolume = 1;
@@ -80,6 +80,22 @@ namespace FlaxEditor.Windows
                 {
                     _showGUI = value;
                     _guiRoot.Visible = value;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether allow editing game GUI in the view or keep it visible-only.
+        /// </summary>
+        public bool EditGUI
+        {
+            get => _editGUI;
+            set
+            {
+                if (value != _editGUI)
+                {
+                    _editGUI = value;
+                    _guiRoot.Editable = value;
                 }
             }
         }
@@ -275,8 +291,9 @@ namespace FlaxEditor.Windows
         /// </summary>
         private class GameRoot : UIEditorRoot
         {
-            public override bool EnableInputs => !Time.GamePaused && Editor.IsPlayMode;
-            public override bool EnableSelecting => !Editor.IsPlayMode || Time.GamePaused;
+            internal bool Editable = true;
+            public override bool EnableInputs => !Time.GamePaused && Editor.IsPlayMode && Editable;
+            public override bool EnableSelecting => (!Editor.IsPlayMode || Time.GamePaused) && Editable;
             public override TransformGizmo TransformGizmo => Editor.Instance.MainTransformGizmo;
         }
 
@@ -666,6 +683,13 @@ namespace FlaxEditor.Windows
                 button.CloseMenuOnClick = false;
                 var checkbox = new CheckBox(140, 2, ShowGUI) { Parent = button };
                 checkbox.StateChanged += x => ShowGUI = x.Checked;
+            }
+
+            // Edit GUI
+            {
+                var button = menu.AddButton("Edit GUI");
+                var checkbox = new CheckBox(140, 2, EditGUI) { Parent = button };
+                checkbox.StateChanged += x => EditGUI = x.Checked;
             }
 
             // Show Debug Draw
@@ -1191,6 +1215,7 @@ namespace FlaxEditor.Windows
         public override void OnLayoutSerialize(XmlWriter writer)
         {
             writer.WriteAttributeString("ShowGUI", ShowGUI.ToString());
+            writer.WriteAttributeString("EditGUI", EditGUI.ToString());
             writer.WriteAttributeString("ShowDebugDraw", ShowDebugDraw.ToString());
             writer.WriteAttributeString("DefaultViewportScaling", JsonSerializer.Serialize(_defaultViewportScaling));
             writer.WriteAttributeString("CustomViewportScaling", JsonSerializer.Serialize(_customViewportScaling));
@@ -1201,6 +1226,8 @@ namespace FlaxEditor.Windows
         {
             if (bool.TryParse(node.GetAttribute("ShowGUI"), out bool value1))
                 ShowGUI = value1;
+            if (bool.TryParse(node.GetAttribute("EditGUI"), out value1))
+                EditGUI = value1;
             if (bool.TryParse(node.GetAttribute("ShowDebugDraw"), out value1))
                 ShowDebugDraw = value1;
             if (node.HasAttribute("CustomViewportScaling"))
@@ -1226,6 +1253,7 @@ namespace FlaxEditor.Windows
         public override void OnLayoutDeserialize()
         {
             ShowGUI = true;
+            EditGUI = true;
             ShowDebugDraw = false;
         }
     }
