@@ -482,7 +482,6 @@ bool ShadowsPass::Init()
 
     // Select format for shadow maps
     _shadowMapFormat = PixelFormat::Unknown;
-#if !PLATFORM_SWITCH // TODO: fix shadows performance issue on Switch
     for (const PixelFormat format : { PixelFormat::D16_UNorm, PixelFormat::D24_UNorm_S8_UInt, PixelFormat::D32_Float })
     {
         const auto formatTexture = PixelFormatExtensions::FindShaderResourceFormat(format, false);
@@ -495,7 +494,6 @@ bool ShadowsPass::Init()
             break;
         }
     }
-#endif
     if (_shadowMapFormat == PixelFormat::Unknown)
         LOG(Warning, "GPU doesn't support shadows rendering");
 
