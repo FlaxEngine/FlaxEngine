@@ -76,7 +76,7 @@ namespace FlaxEditor.Gizmo
         public bool ScaleSnapEnabled = false;
 
         /// <summary>
-        /// True if enable absolute grid snapping
+        /// True if enable absolute grid snapping (snaps objects to world-space grid, not the one relative to gizmo location)
         /// </summary>
         public bool AbsoluteSnapEnabled = false;
 

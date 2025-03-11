@@ -164,29 +164,31 @@ namespace FlaxEditor.Viewport
                 TooltipText = $"Gizmo transform space (world or local) ({inputOptions.ToggleTransformSpace})",
                 Parent = transformSpaceWidget
             };
-            transformSpaceToggle.Toggled += _ =>
-            {
-                transformGizmo.ToggleTransformSpace();
-                if (useProjectCache)
-                    editor.ProjectCache.SetCustomData("TransformSpaceState", transformGizmo.ActiveTransformSpace.ToString());
-            };
             transformSpaceWidget.Parent = viewport;
 
             // Absolute snapping widget
             var absoluteSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-            var enableAbsoluteSnapping = new ViewportWidgetButton("A", SpriteHandle.Default, null, true)
+            var enableAbsoluteSnapping = new ViewportWidgetButton("A", SpriteHandle.Invalid, null, true)
             {
                 Checked = transformGizmo.AbsoluteSnapEnabled,
-                TooltipText = "Enable absolute snapping",
+                TooltipText = "Enable absolute grid snapping (world-space absolute grid, rather than object-relative grid)",
                 Parent = absoluteSnappingWidget
             };
             enableAbsoluteSnapping.Toggled += _ =>
             {
                 transformGizmo.AbsoluteSnapEnabled = !transformGizmo.AbsoluteSnapEnabled;
                 if (useProjectCache)
-                    editor.ProjectCache.SetCustomData("AbsoluteSnapState", transformGizmo.AbsoluteSnapEnabled);  
+                    editor.ProjectCache.SetCustomData("AbsoluteSnapState", transformGizmo.AbsoluteSnapEnabled);
             };
             absoluteSnappingWidget.Parent = viewport;
+
+            transformSpaceToggle.Toggled += _ =>
+            {
+                transformGizmo.ToggleTransformSpace();
+                if (useProjectCache)
+                    editor.ProjectCache.SetCustomData("TransformSpaceState", transformGizmo.ActiveTransformSpace.ToString());
+                absoluteSnappingWidget.Visible = transformGizmo.ActiveTransformSpace == TransformGizmoBase.TransformSpace.World;
+            };
 
             // Scale snapping widget
             var scaleSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
@@ -401,17 +403,17 @@ namespace FlaxEditor.Viewport
                 gizmoModeRotate.Checked = mode == TransformGizmoBase.Mode.Rotate;
                 gizmoModeScale.Checked = mode == TransformGizmoBase.Mode.Scale;
             };
-            
+
             // Setup input actions
-            viewport.InputActions.Add(options => options.TranslateMode, () => 
+            viewport.InputActions.Add(options => options.TranslateMode, () =>
             {
                 viewport.GetInput(out var input);
                 if (input.IsMouseRightDown)
                     return;
-                
+
                 transformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate;
             });
-            viewport.InputActions.Add(options => options.RotateMode, () => 
+            viewport.InputActions.Add(options => options.RotateMode, () =>
             {
                 viewport.GetInput(out var input);
                 if (input.IsMouseRightDown)

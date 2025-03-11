@@ -2,8 +2,10 @@
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
+using Mathr = FlaxEngine.Mathd;
 #else
 using Real = System.Single;
+using Mathr = FlaxEngine.Mathf;
 #endif
 
 using System;
@@ -390,13 +392,13 @@ namespace FlaxEditor.Gizmo
                 Vector3 absoluteDelta = Vector3.Zero;
                 if (!_hasAbsoluteSnapped && AbsoluteSnapEnabled && ActiveTransformSpace == TransformSpace.World)
                 {
+                    // Remove delta to offset local-space grid into the world-space grid
                     _hasAbsoluteSnapped = true;
-
                     Vector3 currentTranslationScale = isScaling ? GetSelectedTransform(0).Scale : GetSelectedTransform(0).Translation; 
                     absoluteDelta = currentTranslationScale - new Vector3(
-                        (Real)Math.Round(currentTranslationScale.X / snapValue.X) * snapValue.X,
-                        (Real)Math.Round(currentTranslationScale.Y / snapValue.Y) * snapValue.Y,
-                        (Real)Math.Round(currentTranslationScale.Z / snapValue.Z) * snapValue.Z);
+                        Mathr.Round(currentTranslationScale.X / snapValue.X) * snapValue.X,
+                        Mathr.Round(currentTranslationScale.Y / snapValue.Y) * snapValue.Y,
+                        Mathr.Round(currentTranslationScale.Z / snapValue.Z) * snapValue.Z);
                 }
 
                 delta = new Vector3(
@@ -442,8 +444,8 @@ namespace FlaxEditor.Gizmo
                 float absoluteDelta = 0.0f;
                 if (!_hasAbsoluteSnapped && AbsoluteSnapEnabled && ActiveTransformSpace == TransformSpace.World)
                 {
+                    // Remove delta to offset world-space grid into the local-space grid
                     _hasAbsoluteSnapped = true;
-
                     float currentAngle = 0.0f;
                     switch (_activeAxis)
                     {
@@ -451,7 +453,6 @@ namespace FlaxEditor.Gizmo
                         case Axis.Y: currentAngle = GetSelectedTransform(0).Orientation.EulerAngles.Y; break;
                         case Axis.Z: currentAngle = GetSelectedTransform(0).Orientation.EulerAngles.Z; break;
                     }
-
                     absoluteDelta = currentAngle - (Mathf.Round(currentAngle / RotationSnapValue) * RotationSnapValue);
                 }
 
