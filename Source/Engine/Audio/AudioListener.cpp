@@ -12,6 +12,7 @@ AudioListener::AudioListener(const SpawnParams& params)
     , _velocity(Vector3::Zero)
     , _prevPos(Vector3::Zero)
 {
+    _name = TEXT("Audio Listener");
 }
 
 bool AudioListener::IntersectsItself(const Ray& ray, Real& distance, Vector3& normal)

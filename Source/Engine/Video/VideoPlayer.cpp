@@ -13,6 +13,7 @@
 VideoPlayer::VideoPlayer(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Video Player");
 }
 
 VideoPlayer::~VideoPlayer()

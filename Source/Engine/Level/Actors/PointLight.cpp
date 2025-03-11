@@ -12,6 +12,7 @@ PointLight::PointLight(const SpawnParams& params)
     : LightWithShadow(params)
     , _radius(1000.0f)
 {
+    _name = TEXT("Point Light");
     CastVolumetricShadow = false;
     ShadowsDistance = 2000.0f;
     ShadowsFadeDistance = 100.0f;
