@@ -138,7 +138,9 @@ namespace FlaxEditor.Viewport
             if (useProjectCache)
             {
                 // Initialize snapping enabled from cached values
-                if (editor.ProjectCache.TryGetCustomData("TranslateSnapState", out bool cachedBool))
+                if (editor.ProjectCache.TryGetCustomData("AbsoluteSnapState", out bool cachedBool))
+                    transformGizmo.AbsoluteSnapEnabled = cachedBool;
+                if (editor.ProjectCache.TryGetCustomData("TranslateSnapState", out cachedBool))
                     transformGizmo.TranslationSnapEnable = cachedBool;
                 if (editor.ProjectCache.TryGetCustomData("RotationSnapState", out cachedBool))
                     transformGizmo.RotationSnapEnabled = cachedBool;
@@ -169,6 +171,22 @@ namespace FlaxEditor.Viewport
                     editor.ProjectCache.SetCustomData("TransformSpaceState", transformGizmo.ActiveTransformSpace.ToString());
             };
             transformSpaceWidget.Parent = viewport;
+
+            // Absolute snapping widget
+            var absoluteSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
+            var enableAbsoluteSnapping = new ViewportWidgetButton("A", SpriteHandle.Default, null, true)
+            {
+                Checked = transformGizmo.AbsoluteSnapEnabled,
+                TooltipText = "Enable absolute snapping",
+                Parent = absoluteSnappingWidget
+            };
+            enableAbsoluteSnapping.Toggled += _ =>
+            {
+                transformGizmo.AbsoluteSnapEnabled = !transformGizmo.AbsoluteSnapEnabled;
+                if (useProjectCache)
+                    editor.ProjectCache.SetCustomData("AbsoluteSnapState", transformGizmo.AbsoluteSnapEnabled);  
+            };
+            absoluteSnappingWidget.Parent = viewport;
 
             // Scale snapping widget
             var scaleSnappingWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
