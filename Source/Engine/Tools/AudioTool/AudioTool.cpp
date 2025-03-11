@@ -5,6 +5,7 @@
 #include "AudioTool.h"
 #include "Engine/Core/Core.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Memory/Allocation.h"
 #if USE_EDITOR
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Scripting/Enums.h"
