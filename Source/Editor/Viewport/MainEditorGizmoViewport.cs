@@ -7,10 +7,14 @@ using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
+using FlaxEditor.Tools;
 using FlaxEditor.Viewport.Modes;
 using FlaxEditor.Windows;
 using FlaxEngine;
+using FlaxEngine.Gizmo;
 using FlaxEngine.GUI;
+using FlaxEngine.Tools;
+
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport
@@ -107,6 +111,8 @@ namespace FlaxEditor.Viewport
         private double _lockedFocusOffset;
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private EditorSpritesRenderer _editorSpritesRenderer;
+
+        private ViewportRubberBandSelector _rubberBandSelector;
 
         /// <summary>
         /// Drag and drop handlers
@@ -213,6 +219,9 @@ namespace FlaxEditor.Viewport
             TransformGizmo.ApplyTransformation += ApplyTransform;
             TransformGizmo.Duplicate += _editor.SceneEditing.Duplicate;
             Gizmos.Active = TransformGizmo;
+            
+            // Add rubber band selector
+            _rubberBandSelector = new ViewportRubberBandSelector(this);
 
             // Add grid
             Grid = new GridGizmo(this);
@@ -367,7 +376,10 @@ namespace FlaxEditor.Viewport
             {
                 Gizmos[i].Draw(ref renderContext);
             }
-
+            
+            // Draw RubberBand for rect selection
+            _rubberBandSelector.Draw(context, target, targetDepth);
+            
             // Draw selected objects debug shapes and visuals
             if (DrawDebugDraw && (renderContext.View.Flags & ViewFlags.DebugDraw) == ViewFlags.DebugDraw)
             {
@@ -478,6 +490,20 @@ namespace FlaxEditor.Viewport
             TransformGizmo.EndTransforming();
         }
 
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            base.OnLostFocus();
+            _rubberBandSelector.StopRubberBand();
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            base.OnMouseLeave();
+            _rubberBandSelector.StopRubberBand();
+        }
+
         /// <summary>
         /// Focuses the viewport on the current selection of the gizmo.
         /// </summary>
@@ -577,14 +603,36 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
+        public override void OnMouseMove(Float2 location)
+        {
+            base.OnMouseMove(location);
+
+            // Dont allow rubber band selection when gizmo is controlling mouse, vertex painting mode, or cloth painting is enabled
+            _rubberBandSelector.TryCreateRubberBand(!((Gizmos.Active.IsControllingMouse || Gizmos.Active is VertexPaintingGizmo || Gizmos.Active is ClothPaintingGizmo) || IsControllingMouse || IsRightMouseButtonDown), 
+                                                   _viewMousePos, ViewFrustum);
+        }
+
+        /// <inheritdoc />
+        protected override void OnLeftMouseButtonDown()
+        {
+            base.OnLeftMouseButtonDown();
+            
+            _rubberBandSelector.TryStartingRubberBandSelection();
+        }
+
+        /// <inheritdoc />
         protected override void OnLeftMouseButtonUp()
         {
             // Skip if was controlling mouse or mouse is not over the area
             if (_prevInput.IsControllingMouse || !Bounds.Contains(ref _viewMousePos))
                 return;
 
-            // Try to pick something with the current gizmo
-            Gizmos.Active?.Pick();
+            // Select rubberbanded rect actor nodes or pick with gizmo
+            if (!_rubberBandSelector.ReleaseRubberBandSelection())
+            {
+                // Try to pick something with the current gizmo
+                Gizmos.Active?.Pick();
+            }
 
             // Keep focus
             Focus();
