@@ -166,7 +166,7 @@ namespace FlaxEditor.SceneGraph.GUI
         /// <param name="filterText">The filter text.</param>
         public void UpdateFilter(string filterText)
         {
-            // SKip hidden actors
+            // Skip hidden actors
             var actor = Actor;
             if (actor != null && (actor.HideFlags & HideFlags.HideInHierarchy) != 0)
                 return;
