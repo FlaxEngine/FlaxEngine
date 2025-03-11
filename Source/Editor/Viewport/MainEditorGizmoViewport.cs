@@ -493,14 +493,18 @@ namespace FlaxEditor.Viewport
         public override void OnLostFocus()
         {
             base.OnLostFocus();
-            _rubberBandSelector.StopRubberBand();
+
+            if (_rubberBandSelector.StopRubberBand())
+                EndMouseCapture();
         }
 
         /// <inheritdoc />
         public override void OnMouseLeave()
         {
             base.OnMouseLeave();
-            _rubberBandSelector.StopRubberBand();
+
+            if (_rubberBandSelector.StopRubberBand())
+                EndMouseCapture();
         }
 
         /// <summary>
@@ -615,8 +619,11 @@ namespace FlaxEditor.Viewport
         protected override void OnLeftMouseButtonDown()
         {
             base.OnLeftMouseButtonDown();
-            
-            _rubberBandSelector.TryStartingRubberBandSelection();
+
+            if (_rubberBandSelector.TryStartingRubberBandSelection())
+            {
+                StartMouseCapture();
+            }
         }
 
         /// <inheritdoc />
@@ -629,6 +636,8 @@ namespace FlaxEditor.Viewport
             // Select rubberbanded rect actor nodes or pick with gizmo
             if (!_rubberBandSelector.ReleaseRubberBandSelection())
             {
+                EndMouseCapture();
+
                 // Try to pick something with the current gizmo
                 Gizmos.Active?.Pick();
             }

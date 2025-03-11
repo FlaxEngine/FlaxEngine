@@ -34,12 +34,15 @@ public class ViewportRubberBandSelector
     /// <summary>
     /// Triggers the start of a rubber band selection.
     /// </summary>
-    public void TryStartingRubberBandSelection()
+    /// <returns>True if selection started, otherwise false.</returns>
+    public bool TryStartingRubberBandSelection()
     {
         if (!_isRubberBandSpanning && !_owner.Gizmos.Active.IsControllingMouse && !_owner.IsRightMouseButtonDown)
         {
             _tryStartRubberBand = true;
+            return true;
         }
+        return false;
     }
 
     /// <summary>
@@ -248,9 +251,12 @@ public class ViewportRubberBandSelector
     /// <summary>
     /// Immediately stops the rubber band.
     /// </summary>
-    public void StopRubberBand()
+    /// <returns>True if rubber band was active before stopping.</returns>
+    public bool StopRubberBand()
     {
+        var result = _tryStartRubberBand;
         _isRubberBandSpanning = false;
         _tryStartRubberBand = false;
+        return result;
     }
 }
