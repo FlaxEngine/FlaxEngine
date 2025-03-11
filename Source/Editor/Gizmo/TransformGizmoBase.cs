@@ -42,6 +42,7 @@ namespace FlaxEditor.Gizmo
         private bool _isDuplicating;
 
         private bool _isTransforming;
+        private bool _isSelected;
         private Vector3 _lastIntersectionPosition;
 
         private Quaternion _rotationDelta = Quaternion.Identity;
@@ -455,7 +456,7 @@ namespace FlaxEditor.Gizmo
         }
 
         /// <inheritdoc />
-        public override bool IsControllingMouse => _isTransforming;
+        public override bool IsControllingMouse => _isTransforming || _isSelected;
 
         /// <inheritdoc />
         public override void Update(float dt)
@@ -480,6 +481,7 @@ namespace FlaxEditor.Gizmo
                 // Check if user is holding left mouse button and any axis is selected
                 if (isLeftBtnDown && _activeAxis != Axis.None)
                 {
+                    _isSelected = true; // setting later is too late, need to set here for rubber band selection in GizmoViewport
                     switch (_activeMode)
                     {
                     case Mode.Translate:
@@ -497,6 +499,7 @@ namespace FlaxEditor.Gizmo
                 }
                 else
                 {
+                    _isSelected = false;
                     // If nothing selected, try to select any axis
                     if (!isLeftBtnDown && !Owner.IsRightMouseButtonDown)
                     {
@@ -564,6 +567,7 @@ namespace FlaxEditor.Gizmo
                     // Clear cache
                     _accMoveDelta = Vector3.Zero;
                     _lastIntersectionPosition = _intersectPosition = Vector3.Zero;
+                    _isSelected = false;
                     EndTransforming();
                 }
             }

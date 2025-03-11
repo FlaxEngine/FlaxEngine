@@ -633,5 +633,16 @@ namespace FlaxEngine
                 throw new Exception("Failed to download mesh data.");
             return result;
         }
+
+#if FLAX_EDITOR
+        /// <summary>
+        /// Gets the collision proxy points for the mesh.
+        /// </summary>
+        /// <returns>The triangle points in the collision proxy.</returns>
+        internal Vector3[] GetCollisionProxyPoints()
+        {
+            return Internal_GetCollisionProxyPoints(__unmanagedPtr, out _);
+        }
+#endif
     }
 }

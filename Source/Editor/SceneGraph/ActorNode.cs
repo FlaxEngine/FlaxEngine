@@ -183,6 +183,54 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <summary>
+        /// Get all nested actor nodes under this actor node.
+        /// </summary>
+        /// <returns>An array of ActorNodes</returns>
+        public ActorNode[] GetAllChildActorNodes()
+        {
+            var nodes = new List<ActorNode>();
+            GetAllChildActorNodes(nodes);
+            return nodes.ToArray();
+        }
+        
+        /// <summary>
+        /// Get all nested actor nodes under this actor node.
+        /// </summary>
+        /// <param name="nodes">The output list to fill with results.</param>
+        public void GetAllChildActorNodes(List<ActorNode> nodes)
+        {
+            var children = ChildNodes;
+            if (children == null)
+                return;
+            for (int i = 0; i < children.Count; i++)
+            {
+                if (children[i] is ActorNode node)
+                {
+                    nodes.Add(node);
+                    node.GetAllChildActorNodes(nodes);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether an actor node can be selected with a selector.
+        /// </summary>
+        /// <returns>True if the actor node can be selected</returns>
+        public virtual bool CanSelectActorNodeWithSelector()
+        {
+            return Actor && Actor.HideFlags is not (HideFlags.DontSelect or HideFlags.FullyHidden) && Actor is not EmptyActor && IsActive;
+        }
+
+        /// <summary>
+        /// The selection points used to check if an actor node can be selected.
+        /// </summary>
+        /// <returns>The points to use if the actor can be selected.</returns>
+        public virtual Vector3[] GetActorSelectionPoints()
+        {
+            return Actor.EditorBox.GetCorners();
+        }
+
+        /// <summary>
         /// Gets a value indicating whether this actor can be used to create prefab from it (as a root).
         /// </summary>
         public virtual bool CanCreatePrefab => (_actor.HideFlags & HideFlags.DontSave) != HideFlags.DontSave;
