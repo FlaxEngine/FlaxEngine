@@ -634,13 +634,15 @@ namespace FlaxEngine
             return result;
         }
 
+#if FLAX_EDITOR
         /// <summary>
         /// Gets the collision proxy points for the mesh.
         /// </summary>
         /// <returns>The triangle points in the collision proxy.</returns>
-        internal Float3[] GetCollisionProxyPoints()
+        internal Vector3[] GetCollisionProxyPoints()
         {
             return Internal_GetCollisionProxyPoints(__unmanagedPtr, out _);
         }
+#endif
     }
 }

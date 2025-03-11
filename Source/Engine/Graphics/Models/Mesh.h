@@ -320,6 +320,8 @@ private:
     API_FUNCTION(NoProxy) bool UpdateTrianglesUInt(int32 triangleCount, const MArray* trianglesObj);
     API_FUNCTION(NoProxy) bool UpdateTrianglesUShort(int32 triangleCount, const MArray* trianglesObj);
     API_FUNCTION(NoProxy) MArray* DownloadBuffer(bool forceGpu, MTypeObject* resultType, int32 typeI);
-    API_FUNCTION(NoProxy) Array<Float3> GetCollisionProxyPoints() const;
+#if USE_EDITOR
+    API_FUNCTION(NoProxy) Array<Vector3> GetCollisionProxyPoints() const;
+#endif
 #endif
 };

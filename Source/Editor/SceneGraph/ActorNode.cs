@@ -188,25 +188,28 @@ namespace FlaxEditor.SceneGraph
         /// <returns>An array of ActorNodes</returns>
         public ActorNode[] GetAllChildActorNodes()
         {
-            // Check itself
-            if (ChildNodes == null || ChildNodes.Count == 0)
-                return [];
-
-            // Check deeper
             var nodes = new List<ActorNode>();
-            for (int i = 0; i < ChildNodes.Count; i++)
+            GetAllChildActorNodes(nodes);
+            return nodes.ToArray();
+        }
+        
+        /// <summary>
+        /// Get all nested actor nodes under this actor node.
+        /// </summary>
+        /// <param name="nodes">The output list to fill with results.</param>
+        public void GetAllChildActorNodes(List<ActorNode> nodes)
+        {
+            var children = ChildNodes;
+            if (children == null)
+                return;
+            for (int i = 0; i < children.Count; i++)
             {
-                if (ChildNodes[i] is ActorNode node)
+                if (children[i] is ActorNode node)
                 {
                     nodes.Add(node);
-                    var childNodes = node.GetAllChildActorNodes();
-                    if (childNodes.Length > 0)
-                    {
-                        nodes.AddRange(childNodes);
-                    }
+                    node.GetAllChildActorNodes(nodes);
                 }
             }
-            return nodes.ToArray();
         }
 
         /// <summary>

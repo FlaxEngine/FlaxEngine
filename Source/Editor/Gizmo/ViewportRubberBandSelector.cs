@@ -1,8 +1,6 @@
-﻿// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-using System;
 using System.Collections.Generic;
-using FlaxEditor;
 using FlaxEditor.Gizmo;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Viewport;
@@ -20,7 +18,8 @@ public class ViewportRubberBandSelector
     private Float2 _cachedStartingMousePosition;
     private Rectangle _rubberBandRect;
     private Rectangle _lastRubberBandRect;
-
+    private List<ActorNode> _nodesCache;
+    private List<SceneGraphNode> _hitsCache;
     private IGizmoOwner _owner;
 
     /// <summary>
@@ -53,7 +52,7 @@ public class ViewportRubberBandSelector
         {
             _tryStartRubberBand = false;
         }
-        
+
         if (_isRubberBandSpanning)
         {
             _isRubberBandSpanning = false;
@@ -61,7 +60,7 @@ public class ViewportRubberBandSelector
         }
         return false;
     }
-    
+
     /// <summary>
     /// Tries to create a rubber band selection.
     /// </summary>
@@ -75,7 +74,7 @@ public class ViewportRubberBandSelector
             _isRubberBandSpanning = false;
             return;
         }
-        
+
         if (_tryStartRubberBand && (Mathf.Abs(_owner.MouseDelta.X) > 0.1f || Mathf.Abs(_owner.MouseDelta.Y) > 0.1f) && canStart)
         {
             _isRubberBandSpanning = true;
@@ -87,88 +86,136 @@ public class ViewportRubberBandSelector
         {
             _rubberBandRect.Width = mousePosition.X - _cachedStartingMousePosition.X;
             _rubberBandRect.Height = mousePosition.Y - _cachedStartingMousePosition.Y;
-
             if (_lastRubberBandRect != _rubberBandRect)
             {
-                // Select rubberbanded rect actor nodes
-                var adjustedRect = _rubberBandRect;
-                _lastRubberBandRect = _rubberBandRect;
-                if (adjustedRect.Width < 0 || adjustedRect.Height < 0)
-                {
-                    // make sure we have a well-formed rectangle i.e. size is positive and X/Y is upper left corner
-                    var size = adjustedRect.Size;
-                    adjustedRect.X = Mathf.Min(adjustedRect.X, adjustedRect.X + adjustedRect.Width);
-                    adjustedRect.Y = Mathf.Min(adjustedRect.Y, adjustedRect.Y + adjustedRect.Height);
-                    size.X = Mathf.Abs(size.X);
-                    size.Y = Mathf.Abs(size.Y);
-                    adjustedRect.Size = size;
-                }
-
-                // Get hits from graph nodes.
-                List<SceneGraphNode> hits = new List<SceneGraphNode>();
-                var nodes = _owner.SceneGraphRoot.GetAllChildActorNodes();
-                foreach (var node in nodes)
-                {
-                    // Check for custom can select code
-                    if (!node.CanSelectActorNodeWithSelector())
-                        continue;
- 
-                    var a = node.Actor;
-                    // Skip actor if outside of view frustum
-                    var actorBox = a.EditorBox;
-                    if (viewFrustum.Contains(actorBox) == ContainmentType.Disjoint)
-                        continue;
-
-                    // Get valid selection points
-                    var points = node.GetActorSelectionPoints();
-                    bool containsAllPoints = points.Length != 0;
-                    foreach (var point in points)
-                    {
-                        _owner.Viewport.ProjectPoint(point, out var loc);
-                        if (!adjustedRect.Contains(loc))
-                        {
-                            containsAllPoints = false;
-                            break;
-                        }
-                    }
-                    if (containsAllPoints)
-                    {
-                        if (a.HasPrefabLink && _owner is not PrefabWindowViewport)
-                            hits.Add(_owner.SceneGraphRoot.Find(a.GetPrefabRoot()));
-                        else
-                            hits.Add(node);
-                    }
-                }
-
-                var editor = Editor.Instance;
-                if (_owner.IsControlDown)
-                {
-                    var newSelection = new List<SceneGraphNode>();
-                    var currentSelection = _owner.SceneGraphRoot.Selection;
-                    newSelection.AddRange(currentSelection);
-                    foreach (var hit in hits)
-                    {
-                        if (currentSelection.Contains(hit))
-                            newSelection.Remove(hit);
-                        else
-                            newSelection.Add(hit);
-                    }
-                    _owner.Select(newSelection);
-                }
-                else if (Input.GetKey(KeyboardKeys.Shift))
-                {
-                    var newSelection = new List<SceneGraphNode>();
-                    var currentSelection = _owner.SceneGraphRoot.Selection;
-                    newSelection.AddRange(hits);
-                    newSelection.AddRange(currentSelection);
-                    _owner.Select(newSelection);
-                }
-                else
-                {
-                    _owner.Select(hits);
-                }
+                UpdateRubberBand(ref viewFrustum);
             }
         }
+    }
+
+    private struct ViewportProjection
+    {
+        private Viewport _viewport;
+        private Matrix _viewProjection;
+
+        public void Init(EditorViewport editorViewport)
+        {
+            // Inline EditorViewport.ProjectPoint to save on calculation for large set of points
+            _viewport = new Viewport(0, 0, editorViewport.Width, editorViewport.Height);
+            var frustum = editorViewport.ViewFrustum;
+            _viewProjection = frustum.Matrix;
+        }
+
+        public void ProjectPoint(ref Vector3 worldSpaceLocation, out Float2 viewportSpaceLocation)
+        {
+            _viewport.Project(ref worldSpaceLocation, ref _viewProjection, out var projected);
+            viewportSpaceLocation = new Float2((float)projected.X, (float)projected.Y);
+        }
+    }
+
+    private void UpdateRubberBand(ref BoundingFrustum viewFrustum)
+    {
+        Profiler.BeginEvent("UpdateRubberBand");
+
+        // Select rubberbanded rect actor nodes
+        var adjustedRect = _rubberBandRect;
+        _lastRubberBandRect = _rubberBandRect;
+        if (adjustedRect.Width < 0 || adjustedRect.Height < 0)
+        {
+            // Make sure we have a well-formed rectangle i.e. size is positive and X/Y is upper left corner
+            var size = adjustedRect.Size;
+            adjustedRect.X = Mathf.Min(adjustedRect.X, adjustedRect.X + adjustedRect.Width);
+            adjustedRect.Y = Mathf.Min(adjustedRect.Y, adjustedRect.Y + adjustedRect.Height);
+            size.X = Mathf.Abs(size.X);
+            size.Y = Mathf.Abs(size.Y);
+            adjustedRect.Size = size;
+        }
+
+        // Get hits from graph nodes
+        if (_nodesCache == null)
+            _nodesCache = new List<ActorNode>();
+        else
+            _nodesCache.Clear();
+        var nodes = _nodesCache;
+        _owner.SceneGraphRoot.GetAllChildActorNodes(nodes);
+        if (_hitsCache == null)
+            _hitsCache = new List<SceneGraphNode>();
+        else
+            _hitsCache.Clear();
+        var hits = _hitsCache;
+
+        // Process all nodes
+        var projection = new ViewportProjection();
+        projection.Init(_owner.Viewport);
+        foreach (var node in nodes)
+        {
+            // Check for custom can select code
+            if (!node.CanSelectActorNodeWithSelector())
+                continue;
+            var a = node.Actor;
+
+            // Skip actor if outside of view frustum
+            var actorBox = a.EditorBox;
+            if (viewFrustum.Contains(actorBox) == ContainmentType.Disjoint)
+                continue;
+
+            // Get valid selection points
+            var points = node.GetActorSelectionPoints();
+            if (LoopOverPoints(points, ref adjustedRect, ref projection))
+            {
+                if (a.HasPrefabLink && _owner is not PrefabWindowViewport)
+                    hits.Add(_owner.SceneGraphRoot.Find(a.GetPrefabRoot()));
+                else
+                    hits.Add(node);
+            }
+        }
+
+        // Process selection
+        if (_owner.IsControlDown)
+        {
+            var newSelection = new List<SceneGraphNode>();
+            var currentSelection = new List<SceneGraphNode>(_owner.SceneGraphRoot.SceneContext.Selection);
+            newSelection.AddRange(currentSelection);
+            foreach (var hit in hits)
+            {
+                if (currentSelection.Contains(hit))
+                    newSelection.Remove(hit);
+                else
+                    newSelection.Add(hit);
+            }
+            _owner.Select(newSelection);
+        }
+        else if (Input.GetKey(KeyboardKeys.Shift))
+        {
+            var newSelection = new List<SceneGraphNode>();
+            var currentSelection = new List<SceneGraphNode>(_owner.SceneGraphRoot.SceneContext.Selection);
+            newSelection.AddRange(hits);
+            newSelection.AddRange(currentSelection);
+            _owner.Select(newSelection);
+        }
+        else
+        {
+            _owner.Select(hits);
+        }
+
+        Profiler.EndEvent();
+    }
+
+    private bool LoopOverPoints(Vector3[] points, ref Rectangle adjustedRect, ref ViewportProjection projection)
+    {
+        Profiler.BeginEvent("LoopOverPoints");
+        bool containsAllPoints = points.Length != 0;
+        for (int i = 0; i < points.Length; i++)
+        {
+            projection.ProjectPoint(ref points[i], out var loc);
+            if (!adjustedRect.Contains(loc))
+            {
+                containsAllPoints = false;
+                break;
+            }
+        }
+        Profiler.EndEvent();
+        return containsAllPoints;
     }
 
     /// <summary>

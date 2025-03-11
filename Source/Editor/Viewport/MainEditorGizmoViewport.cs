@@ -111,7 +111,6 @@ namespace FlaxEditor.Viewport
         private double _lockedFocusOffset;
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private EditorSpritesRenderer _editorSpritesRenderer;
-
         private ViewportRubberBandSelector _rubberBandSelector;
 
         /// <summary>
@@ -607,9 +606,9 @@ namespace FlaxEditor.Viewport
         {
             base.OnMouseMove(location);
 
-            // Dont allow rubber band selection when gizmo is controlling mouse, vertex painting mode, or cloth painting is enabled
-            _rubberBandSelector.TryCreateRubberBand(!((Gizmos.Active.IsControllingMouse || Gizmos.Active is VertexPaintingGizmo || Gizmos.Active is ClothPaintingGizmo) || IsControllingMouse || IsRightMouseButtonDown), 
-                                                   _viewMousePos, ViewFrustum);
+            // Don't allow rubber band selection when gizmo is controlling mouse, vertex painting mode, or cloth painting is enabled
+            bool canStart = !((Gizmos.Active.IsControllingMouse || Gizmos.Active is VertexPaintingGizmo || Gizmos.Active is ClothPaintingGizmo) || IsControllingMouse || IsRightMouseButtonDown);
+            _rubberBandSelector.TryCreateRubberBand(canStart, _viewMousePos, ViewFrustum);
         }
 
         /// <inheritdoc />
