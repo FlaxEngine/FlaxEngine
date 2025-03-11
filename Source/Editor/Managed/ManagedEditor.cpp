@@ -606,6 +606,11 @@ void ManagedEditor::WipeOutLeftoverSceneObjects()
             {
                 if (sceneObject->HasParent())
                     continue; // Skip sub-objects
+                auto* actor = Cast<Actor>(sceneObject);
+                if (!actor)
+                    actor = sceneObject->GetParent();
+                if (actor && actor->HasTag(TEXT("__EditorInternal")))
+                    continue; // Skip internal objects used by Editor (eg. EditorScene)
 
                 LOG(Error, "Object '{}' (ID={}, Type={}) is still in memory after play end but should be destroyed (memory leak).", sceneObject->GetNamePath(), sceneObject->GetID(), sceneObject->GetType().ToString());
                 sceneObject->DeleteObject();

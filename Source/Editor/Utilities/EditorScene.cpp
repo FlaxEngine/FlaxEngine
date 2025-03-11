@@ -10,6 +10,9 @@ EditorScene::EditorScene(const SpawnParams& params)
     SceneBeginData beginData;
     EditorScene::BeginPlay(&beginData);
     beginData.OnDone();
+
+    // Mark as internal to prevent collection in ManagedEditor::WipeOutLeftoverSceneObjects
+    Tags.Add(Tags::Get(TEXT("__EditorInternal")));
 }
 
 void EditorScene::Update()
