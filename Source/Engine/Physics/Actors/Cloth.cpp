@@ -644,6 +644,7 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
     if (_paint.Count() != verticesCount)
     {
         // Fix incorrect paint data
+        LOG(Warning, "Incorrect cloth '{}' paint size {} for mesh '{}' that has {} vertices", GetNamePath(), _paint.Count(), mesh.ToString(), verticesCount);
         int32 countBefore = _paint.Count();
         _paint.Resize(verticesCount);
         for (int32 i = countBefore; i < verticesCount; i++)
@@ -781,7 +782,10 @@ bool Cloth::OnPreUpdate()
         if (mesh.Actor->GetMeshData(mesh, MeshBufferType::Vertex0, verticesData, verticesCount))
             return false;
         if (verticesCount != _paint.Count())
+        {
+            LOG(Warning, "Incorrect cloth '{}' paint size {} for mesh '{}' that has {} vertices", GetNamePath(), _paint.Count(), mesh.ToString(), verticesCount);
             return false;
+        }
         PROFILE_CPU_NAMED("Skinned Pose");
         auto vbStride = (uint32)verticesData.Length() / verticesCount;
         ASSERT(vbStride == sizeof(VB0SkinnedElementType));

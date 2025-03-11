@@ -27,6 +27,8 @@ API_CLASS(Abstract) class FLAXENGINE_API ModelInstanceActor : public Actor
         API_FIELD() int32 LODIndex = 0;
         // Index of the mesh (within the LOD).
         API_FIELD() int32 MeshIndex = 0;
+
+        String ToString() const;
     };
 
 protected:
