@@ -13,6 +13,7 @@ namespace FlaxEngine.Gizmo;
 /// </summary>
 public class ViewportRubberBandSelector
 {
+    private bool _isMosueCaptured;
     private bool _isRubberBandSpanning;
     private bool _tryStartRubberBand;
     private Float2 _cachedStartingMousePosition;
@@ -51,11 +52,15 @@ public class ViewportRubberBandSelector
     /// <returns>Returns true if rubber band is currently spanning</returns>
     public bool ReleaseRubberBandSelection()
     {
+        if (_isMosueCaptured)
+        {
+            _isMosueCaptured = false;
+            _owner.Viewport.EndMouseCapture();
+        }
         if (_tryStartRubberBand)
         {
             _tryStartRubberBand = false;
         }
-
         if (_isRubberBandSpanning)
         {
             _isRubberBandSpanning = false;
@@ -91,6 +96,11 @@ public class ViewportRubberBandSelector
             _rubberBandRect.Height = mousePosition.Y - _cachedStartingMousePosition.Y;
             if (_lastRubberBandRect != _rubberBandRect)
             {
+                if (!_isMosueCaptured)
+                {
+                    _isMosueCaptured = true;
+                    _owner.Viewport.StartMouseCapture();
+                }
                 UpdateRubberBand(ref viewFrustum);
             }
         }
@@ -254,6 +264,11 @@ public class ViewportRubberBandSelector
     /// <returns>True if rubber band was active before stopping.</returns>
     public bool StopRubberBand()
     {
+        if (_isMosueCaptured)
+        {
+            _isMosueCaptured = false;
+            _owner.Viewport.EndMouseCapture();
+        }
         var result = _tryStartRubberBand;
         _isRubberBandSpanning = false;
         _tryStartRubberBand = false;

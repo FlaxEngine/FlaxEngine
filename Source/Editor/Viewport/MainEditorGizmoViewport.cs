@@ -494,8 +494,7 @@ namespace FlaxEditor.Viewport
         {
             base.OnLostFocus();
 
-            if (_rubberBandSelector.StopRubberBand())
-                EndMouseCapture();
+            _rubberBandSelector.StopRubberBand();
         }
 
         /// <inheritdoc />
@@ -503,8 +502,7 @@ namespace FlaxEditor.Viewport
         {
             base.OnMouseLeave();
 
-            if (_rubberBandSelector.StopRubberBand())
-                EndMouseCapture();
+            _rubberBandSelector.StopRubberBand();
         }
 
         /// <summary>
@@ -620,10 +618,7 @@ namespace FlaxEditor.Viewport
         {
             base.OnLeftMouseButtonDown();
 
-            if (_rubberBandSelector.TryStartingRubberBandSelection())
-            {
-                StartMouseCapture();
-            }
+            _rubberBandSelector.TryStartingRubberBandSelection();
         }
 
         /// <inheritdoc />
@@ -636,8 +631,6 @@ namespace FlaxEditor.Viewport
             // Select rubberbanded rect actor nodes or pick with gizmo
             if (!_rubberBandSelector.ReleaseRubberBandSelection())
             {
-                EndMouseCapture();
-
                 // Try to pick something with the current gizmo
                 Gizmos.Active?.Pick();
             }
@@ -646,6 +639,22 @@ namespace FlaxEditor.Viewport
             Focus();
 
             base.OnLeftMouseButtonUp();
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseUp(location, button))
+                return true;
+
+            // Handle mouse going up when using rubber band with mouse capture that click up outside the view
+            if (button == MouseButton.Left && !new Rectangle(Float2.Zero, Size).Contains(ref location))
+            {
+                _rubberBandSelector.ReleaseRubberBandSelection();
+                return true;
+            }
+
+            return false;
         }
 
         /// <inheritdoc />
