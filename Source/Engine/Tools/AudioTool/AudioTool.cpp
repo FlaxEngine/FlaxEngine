@@ -4,7 +4,7 @@
 
 #include "AudioTool.h"
 #include "Engine/Core/Core.h"
-#include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Math/Math.h"
 #if USE_EDITOR
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Scripting/Enums.h"
@@ -307,8 +307,9 @@ void AudioTool::ConvertFromFloat(const float* input, int32* output, uint32 numSa
 {
     for (uint32 i = 0; i < numSamples; i++)
     {
-        const float sample = *(float*)input;
-        output[i] = static_cast<int32>(sample * 2147483647.0f);
+        float sample = *(float*)input;
+        sample = Math::Clamp(sample, -1.0f + ZeroTolerance, +1.0f - ZeroTolerance);
+        output[i] = static_cast<int32>(sample * 2147483648.0f);
         input++;
     }
 }
