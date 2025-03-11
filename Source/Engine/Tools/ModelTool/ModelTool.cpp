@@ -1549,23 +1549,25 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
 
     // Prepare import transformation
     Transform importTransform(options.Translation, options.Rotation, Float3(options.Scale));
-    if (options.UseLocalOrigin && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
-    {
-        importTransform.Translation -= importTransform.Orientation * data.LODs[0].Meshes[0]->OriginTranslation * importTransform.Scale;
-    }
-    if (options.CenterGeometry && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
-    {
-        // Calculate the bounding box (use LOD0 as a reference)
-        BoundingBox box = data.LODs[0].GetBox();
-        auto center = data.LODs[0].Meshes[0]->OriginOrientation * importTransform.Orientation * box.GetCenter() * importTransform.Scale * data.LODs[0].Meshes[0]->Scaling;
-        importTransform.Translation -= center;
-    }
 
     // Apply the import transformation
-    if (!importTransform.IsIdentity() && data.Nodes.HasItems())
+    if ((!importTransform.IsIdentity() || options.UseLocalOrigin || options.CenterGeometry) && data.Nodes.HasItems())
     {
         if (options.Type == ModelType::SkinnedModel)
         {
+            // Setup other transform options
+            if (options.UseLocalOrigin && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
+            {
+                importTransform.Translation -= importTransform.Orientation * data.LODs[0].Meshes[0]->OriginTranslation * importTransform.Scale;
+            }
+            if (options.CenterGeometry && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
+            {
+                // Calculate the bounding box (use LOD0 as a reference)
+                BoundingBox box = data.LODs[0].GetBox();
+                auto center = data.LODs[0].Meshes[0]->OriginOrientation * importTransform.Orientation * box.GetCenter() * importTransform.Scale * data.LODs[0].Meshes[0]->Scaling;
+                importTransform.Translation -= center;
+            }
+            
             // Transform the root node using the import transformation
             auto& root = data.Skeleton.RootNode();
             Transform meshTransform = root.LocalTransform.WorldToLocal(importTransform).LocalToWorld(root.LocalTransform);
@@ -1596,9 +1598,31 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         }
         else
         {
-            // Transform the root node using the import transformation
-            auto& root = data.Nodes[0];
-            root.LocalTransform = importTransform.LocalToWorld(root.LocalTransform);
+            // Transform the nodes using the import transformation
+            if (data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
+            {
+                for (int i = 0; i < data.LODs[0].Meshes.Count(); ++i)
+                {
+                    auto* meshData = data.LODs[0].Meshes[i];
+                    Transform transform = importTransform;
+                    if (options.UseLocalOrigin)
+                    {
+                        transform.Translation -= transform.Orientation * meshData->OriginTranslation * transform.Scale;
+                    }
+                    if (options.CenterGeometry)
+                    {
+                        // Calculate the bounding box (use LOD0 as a reference)
+                        BoundingBox box = data.LODs[0].GetBox();
+                        auto center = meshData->OriginOrientation * transform.Orientation * box.GetCenter() * transform.Scale * meshData->Scaling;
+                        transform.Translation -= center;
+                    }
+
+                    int32 nodeIndex = meshData->NodeIndex;
+                    
+                    auto& node = data.Nodes[nodeIndex];
+                    node.LocalTransform = transform.LocalToWorld(node.LocalTransform);
+                }
+            }
         }
     }
 

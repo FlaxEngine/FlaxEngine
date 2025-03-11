@@ -645,24 +645,10 @@ bool ImportMesh(int32 index, ModelData& result, AssimpImporterData& data, String
         // Link mesh
         meshData->NodeIndex = nodeIndex;
         AssimpNode* curNode = &data.Nodes[meshData->NodeIndex];
-        Vector3 translation = Vector3::Zero;
-        Vector3 scale = Vector3::One;
-        Quaternion rotation = Quaternion::Identity;
-
-        while (true)
-        {
-            translation += curNode->LocalTransform.Translation;
-            scale *= curNode->LocalTransform.Scale;
-            rotation *= curNode->LocalTransform.Orientation;
-
-            if (curNode->ParentIndex == -1)
-                break;
-            curNode = &data.Nodes[curNode->ParentIndex];
-        }
-
-        meshData->OriginTranslation = translation;
-        meshData->OriginOrientation = rotation;
-        meshData->Scaling = scale;
+        
+        meshData->OriginTranslation = curNode->LocalTransform.Translation;
+        meshData->OriginOrientation = curNode->LocalTransform.Orientation;
+        meshData->Scaling = curNode->LocalTransform.Scale;
 
         if (result.LODs.Count() <= lodIndex)
             result.LODs.Resize(lodIndex + 1);
