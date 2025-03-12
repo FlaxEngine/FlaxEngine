@@ -715,9 +715,13 @@ void MCore::UnloadEngine()
 #endif
 }
 
+void MCore::CreateScriptingAssemblyLoadContext()
+{
+}
+
 #if USE_EDITOR
 
-void MCore::ReloadScriptingAssemblyLoadContext()
+void MCore::UnloadScriptingAssemblyLoadContext()
 {
 }
 
