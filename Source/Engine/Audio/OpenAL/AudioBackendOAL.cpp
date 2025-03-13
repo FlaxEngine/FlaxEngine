@@ -65,6 +65,7 @@ namespace ALC
     struct SourceData
     {
         AudioDataInfo Format;
+        float Pan;
         bool Spatial;
     };
 
@@ -106,6 +107,26 @@ namespace ALC
 
     namespace Source
     {
+        void SetupSpatial(uint32 sourceID, float pan, bool spatial)
+        {
+            alSourcei(sourceID, AL_SOURCE_RELATIVE, !spatial); // Non-spatial sounds use AL_POSITION for panning
+#ifdef AL_SOFT_source_spatialize
+            alSourcei(sourceID, AL_SOURCE_SPATIALIZE_SOFT, spatial || Math::Abs(pan) > ZeroTolerance ? AL_TRUE : AL_FALSE); // Fix multi-channel sources played as spatial or non-spatial sources played with panning
+#endif
+            if (spatial)
+            {
+#ifdef AL_EXT_STEREO_ANGLES
+                const float panAngle = pan * PI_HALF;
+                const ALfloat panAngles[2] = { (ALfloat)(PI / 6.0 - panAngle), (ALfloat)(-PI / 6.0 - panAngle) }; // Angles are specified counter-clockwise in radians
+                alSourcefv(sourceID, AL_STEREO_ANGLES, panAngles);
+#endif
+            }
+            else
+            {
+                alSource3f(sourceID, AL_POSITION, pan, 0, -sqrtf(1.0f - pan * pan));
+            }
+        }
+
         void Rebuild(uint32& sourceID, const Vector3& position, const Quaternion& orientation, float volume, float pitch, float pan, bool loop, bool spatial, float attenuation, float minDistance, float doppler)
         {
             ASSERT_LOW_LAYER(sourceID == 0);
@@ -116,11 +137,8 @@ namespace ALC
             alSourcef(sourceID, AL_PITCH, pitch);
             alSourcef(sourceID, AL_SEC_OFFSET, 0.0f);
             alSourcei(sourceID, AL_LOOPING, loop);
-            alSourcei(sourceID, AL_SOURCE_RELATIVE, !spatial); // Non-spatial sounds use AL_POSITION for panning
             alSourcei(sourceID, AL_BUFFER, 0);
-#ifdef AL_SOFT_source_spatialize
-            alSourcei(sourceID, AL_SOURCE_SPATIALIZE_SOFT, AL_TRUE); // Always spatialize, fixes multi-channel played as spatial
-#endif
+            SetupSpatial(sourceID, pan, spatial);
             if (spatial)
             {
                 alSourcef(sourceID, AL_ROLLOFF_FACTOR, attenuation);
@@ -128,18 +146,12 @@ namespace ALC
                 alSourcef(sourceID, AL_REFERENCE_DISTANCE, FLAX_DST_TO_OAL(minDistance));
                 alSource3f(sourceID, AL_POSITION, FLAX_POS_TO_OAL(position));
                 alSource3f(sourceID, AL_VELOCITY, FLAX_VEL_TO_OAL(Vector3::Zero));
-#ifdef AL_EXT_STEREO_ANGLES
-                const float panAngle = pan * PI_HALF;
-                const ALfloat panAngles[2] = { (ALfloat)(PI / 6.0 - panAngle), (ALfloat)(-PI / 6.0 - panAngle) }; // Angles are specified counter-clockwise in radians
-                alSourcefv(sourceID, AL_STEREO_ANGLES, panAngles);
-#endif
             }
             else
             {
                 alSourcef(sourceID, AL_ROLLOFF_FACTOR, 0.0f);
                 alSourcef(sourceID, AL_DOPPLER_FACTOR, 1.0f);
                 alSourcef(sourceID, AL_REFERENCE_DISTANCE, 0.0f);
-                alSource3f(sourceID, AL_POSITION, pan, 0, -sqrtf(1.0f - pan * pan));
                 alSource3f(sourceID, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
             }
         }
@@ -160,12 +172,11 @@ namespace ALC
         if (Device == nullptr)
             return;
 
-        ALCint attrsHrtf[] = { ALC_HRTF_SOFT, ALC_TRUE };
-        const ALCint* attrList = nullptr;
+        ALCint attrList[] = { ALC_HRTF_SOFT, ALC_FALSE };
         if (Audio::GetEnableHRTF())
         {
             LOG(Info, "Enabling OpenAL HRTF");
-            attrList = attrsHrtf;
+            attrList[1] = ALC_TRUE; 
         }
 
         Context = alcCreateContext(Device, attrList);
@@ -318,6 +329,7 @@ uint32 AudioBackendOAL::Source_Add(const AudioDataInfo& format, const Vector3& p
     auto& data = ALC::SourcesData[sourceID];
     data.Format = format;
     data.Spatial = spatial;
+    data.Pan = pan;
     ALC::Locker.Unlock();
 
     return sourceID;
@@ -370,20 +382,11 @@ void AudioBackendOAL::Source_PitchChanged(uint32 sourceID, float pitch)
 void AudioBackendOAL::Source_PanChanged(uint32 sourceID, float pan)
 {
     ALC::Locker.Lock();
-    const bool spatial = ALC::SourcesData[sourceID].Spatial;
+    auto& e = ALC::SourcesData[sourceID];
+    e.Pan = pan;
+    const bool spatial = e.Spatial;
     ALC::Locker.Unlock();
-    if (spatial)
-    {
-#ifdef AL_EXT_STEREO_ANGLES
-        const float panAngle = pan * PI_HALF;
-        const ALfloat panAngles[2] = { (ALfloat)(PI / 6.0 - panAngle), (ALfloat)(-PI / 6.0 - panAngle) }; // Angles are specified counter-clockwise in radians
-        alSourcefv(sourceID, AL_STEREO_ANGLES, panAngles);
-#endif
-    }
-    else
-    {
-        alSource3f(sourceID, AL_POSITION, pan, 0, -sqrtf(1.0f - pan * pan));
-    }
+    ALC::Source::SetupSpatial(sourceID, pan, spatial);
 }
 
 void AudioBackendOAL::Source_IsLoopingChanged(uint32 sourceID, bool loop)
@@ -393,6 +396,9 @@ void AudioBackendOAL::Source_IsLoopingChanged(uint32 sourceID, bool loop)
 
 void AudioBackendOAL::Source_SpatialSetupChanged(uint32 sourceID, bool spatial, float attenuation, float minDistance, float doppler)
 {
+    ALC::Locker.Lock();
+    const bool pan = ALC::SourcesData[sourceID].Spatial;
+    ALC::Locker.Unlock();
     if (spatial)
     {
         alSourcef(sourceID, AL_ROLLOFF_FACTOR, attenuation);
@@ -405,6 +411,7 @@ void AudioBackendOAL::Source_SpatialSetupChanged(uint32 sourceID, bool spatial, 
         alSourcef(sourceID, AL_DOPPLER_FACTOR, 1.0f);
         alSourcef(sourceID, AL_REFERENCE_DISTANCE, 0.0f);
     }
+    ALC::Source::SetupSpatial(sourceID, pan, spatial);
 }
 
 void AudioBackendOAL::Source_Play(uint32 sourceID)
@@ -602,7 +609,7 @@ void AudioBackendOAL::Buffer_Write(uint32 bufferID, byte* samples, const AudioDa
 
     if (!format)
     {
-        LOG(Error, "Not suppported audio data format for OpenAL device: BitDepth={}, NumChannels={}", info.BitDepth, info.NumChannels);
+        LOG(Error, "Not supported audio data format for OpenAL device: BitDepth={}, NumChannels={}", info.BitDepth, info.NumChannels);
     }
 }
 

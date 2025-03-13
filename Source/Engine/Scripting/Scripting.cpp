@@ -732,7 +732,12 @@ Array<ScriptingObject*, HeapAllocation> Scripting::GetObjects()
 {
     Array<ScriptingObject*> objects;
     _objectsLocker.Lock();
+#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
+    for (const auto& e : _objectsDictionary)
+        objects.Add(e.Value.Ptr);
+#else
     _objectsDictionary.GetValues(objects);
+#endif
     _objectsLocker.Unlock();
     return objects;
 }

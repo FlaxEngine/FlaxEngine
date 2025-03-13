@@ -204,7 +204,7 @@ namespace FlaxEditor.CustomEditors.Editors
             var frameRect = new Rectangle(0, 0, Width, 16);
             if (isSelected)
                 frameRect.Width -= 16;
-            if (_supportsPickDropDown)
+            if (_supportsPickDropDown && isEnabled)
                 frameRect.Width -= 16;
             var nameRect = new Rectangle(2, 1, frameRect.Width - 4, 14);
             var button1Rect = new Rectangle(nameRect.Right + 2, 1, 14, 14);
@@ -240,7 +240,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
 
             // Draw picker button
-            if (_supportsPickDropDown)
+            if (_supportsPickDropDown && isEnabled)
             {
                 var pickerRect = isSelected ? button2Rect : button1Rect;
                 Render2D.DrawSprite(style.ArrowDown, pickerRect, isEnabled && pickerRect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);

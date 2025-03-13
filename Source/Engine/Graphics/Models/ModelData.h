@@ -91,7 +91,7 @@ public:
     int32 LightmapUVsIndex = -1;
 
     /// <summary>
-    /// Global translation for this mesh to be at its local origin.
+    /// Local translation for this mesh to be at it's local origin.
     /// </summary>
     Vector3 OriginTranslation = Vector3::Zero;
 

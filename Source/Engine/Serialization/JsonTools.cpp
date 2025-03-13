@@ -185,7 +185,7 @@ Ray JsonTools::GetRay(const Value& value)
 {
     return Ray(
         GetVector3(value, "Position", Vector3::Zero),
-        GetVector3(value, "Direction", Vector3::One)
+        GetVector3(value, "Direction", Vector3::Forward)
     );
 }
 

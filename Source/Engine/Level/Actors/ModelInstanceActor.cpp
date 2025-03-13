@@ -9,6 +9,11 @@ ModelInstanceActor::ModelInstanceActor(const SpawnParams& params)
 {
 }
 
+String ModelInstanceActor::MeshReference::ToString() const
+{
+    return String::Format(TEXT("Actor={},LOD={},Mesh={}"), Actor ? Actor->GetNamePath() : String::Empty, LODIndex, MeshIndex);
+}
+
 void ModelInstanceActor::SetEntries(const Array<ModelInstanceEntry>& value)
 {
     WaitForModelLoad();

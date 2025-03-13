@@ -520,4 +520,24 @@ PRAGMA_ENABLE_DEPRECATION_WARNINGS
     return result;
 }
 
+#if USE_EDITOR
+
+Array<Vector3> Mesh::GetCollisionProxyPoints() const
+{
+    PROFILE_CPU();
+    Array<Vector3> result;
+#if USE_PRECISE_MESH_INTERSECTS
+    for (int32 i = 0; i < _collisionProxy.Triangles.Count(); i++)
+    {
+        auto triangle = _collisionProxy.Triangles.Get()[i];
+        result.Add(triangle.V0);
+        result.Add(triangle.V1);
+        result.Add(triangle.V2);
+    }
+#endif
+    return result;
+}
+
+#endif
+
 #endif

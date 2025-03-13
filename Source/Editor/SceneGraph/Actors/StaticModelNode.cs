@@ -24,11 +24,24 @@ namespace FlaxEditor.SceneGraph.Actors
     public sealed class StaticModelNode : ActorNode
     {
         private Dictionary<IntPtr, Float3[]> _vertices;
+        private Vector3[] _selectionPoints;
+        private Transform _selectionPointsTransform;
+        private Model _selectionPointsModel;
 
         /// <inheritdoc />
         public StaticModelNode(Actor actor)
         : base(actor)
         {
+        }
+
+        /// <inheritdoc />
+        public override void OnDispose()
+        {
+            _vertices = null;
+            _selectionPoints = null;
+            _selectionPointsModel = null;
+
+            base.OnDispose();
         }
 
         /// <inheritdoc />
@@ -89,6 +102,45 @@ namespace FlaxEditor.SceneGraph.Actors
             base.OnContextMenu(contextMenu, window);
 
             contextMenu.AddButton("Add collider", () => OnAddMeshCollider(window)).Enabled = ((StaticModel)Actor).Model != null;
+        }
+
+        /// <inheritdoc />
+        public override Vector3[] GetActorSelectionPoints()
+        {
+            if (Actor is StaticModel sm && sm.Model)
+            {
+                // Try to use cache
+                var model = sm.Model;
+                var transform = Actor.Transform;
+                if (_selectionPoints != null && 
+                    _selectionPointsTransform == transform && 
+                    _selectionPointsModel == model)
+                    return _selectionPoints;
+                Profiler.BeginEvent("GetActorSelectionPoints");
+
+                // Check collision proxy points for more accurate selection
+                var vecPoints = new List<Vector3>();
+                var m = model.LODs[0];
+                foreach (var mesh in m.Meshes)
+                {
+                    var points = mesh.GetCollisionProxyPoints();
+                    vecPoints.EnsureCapacity(vecPoints.Count + points.Length);
+                    for (int i = 0; i < points.Length; i++)
+                    {
+                        vecPoints.Add(transform.LocalToWorld(points[i]));
+                    }
+                }
+
+                Profiler.EndEvent();
+                if (vecPoints.Count != 0)
+                {
+                    _selectionPoints = vecPoints.ToArray();
+                    _selectionPointsTransform = transform;
+                    _selectionPointsModel = model;
+                    return _selectionPoints;
+                }
+            }
+            return base.GetActorSelectionPoints();
         }
 
         private void OnAddMeshCollider(EditorWindow window)
