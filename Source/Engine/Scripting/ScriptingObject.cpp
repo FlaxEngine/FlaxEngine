@@ -89,7 +89,11 @@ void SerializableScriptingObject::Deserialize(DeserializeStream& stream, ISerial
 }
 
 ScriptingObject::ScriptingObject(const SpawnParams& params)
-    : _gcHandle(0)
+#if USE_NETCORE
+    : _gcHandle((MGCHandle)params.Managed)
+#elif !COMPILE_WITHOUT_CSHARP
+    : _gcHandle(params.Managed ? MCore::GCHandle::New(params.Managed) : 0)
+#endif
     , _type(params.Type)
     , _id(params.ID)
 {
