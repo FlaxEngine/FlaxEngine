@@ -14,7 +14,12 @@ namespace FlaxEditor.GUI.Input
     [HideInEditor]
     public class ColorValueBox : Control
     {
+        private const String ScaleParamName = "Scale";
+        // 4.8 is a magic number that makes the grid fit perfect in the color value box
+        private const float GridScale = 4.8f;
+
         private bool _isMouseDown;
+        private MaterialBase checkerMaterial;
 
         /// <summary>
         /// Delegate function used for the color picker events handling.
@@ -101,6 +106,9 @@ namespace FlaxEditor.GUI.Input
         public ColorValueBox()
         : base(0, 0, 32, 18)
         {
+            checkerMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.ColorAlphaBackgroundGrid);
+            checkerMaterial = checkerMaterial.CreateVirtualInstance();
+            checkerMaterial.SetParameterValue(ScaleParamName, GridScale);
         }
 
         /// <summary>
@@ -138,6 +146,7 @@ namespace FlaxEditor.GUI.Input
             if (isTransparent)
             {
                 var alphaRect = new Rectangle(colorRect.Right, 0, Width - colorRect.Right, Height);
+                Render2D.DrawMaterial(checkerMaterial, alphaRect);
                 Render2D.FillRectangle(alphaRect, _value);
             }
 
