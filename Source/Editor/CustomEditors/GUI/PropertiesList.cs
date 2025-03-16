@@ -14,6 +14,9 @@ namespace FlaxEditor.CustomEditors.GUI
     public class PropertiesList : PanelWithMargins
     {
         // TODO: sync splitter for whole presenter
+       
+        private const float splitterPadding = 15;
+        private const float editorsMinWdithRatio = 0.4f;
 
         /// <summary>
         /// The splitter size (in pixels).
@@ -32,6 +35,7 @@ namespace FlaxEditor.CustomEditors.GUI
         private Rectangle _splitterRect;
         private bool _splitterClicked, _mouseOverSplitter;
         private bool _cursorChanged;
+        private bool _hasCustomSplitterValue;
 
         /// <summary>
         /// Gets or sets the splitter value (always in range [0; 1]).
@@ -69,6 +73,26 @@ namespace FlaxEditor.CustomEditors.GUI
             _splitterValue = 0.4f;
             BottomMargin = TopMargin = RightMargin = SplitterMargin;
             UpdateSplitRect();
+        }
+
+        private void AutoSizeSplitter()
+        {
+            if (_hasCustomSplitterValue || !Editor.Instance.Options.Options.Interface.AutoSizePropertiesPanelSplitter)
+                return;
+
+            Font font = Style.Current.FontMedium;
+
+            float largestWidth = 0f;
+            for (int i = 0; i < _element.Labels.Count; i++)
+            {
+                Label currentLabel = _element.Labels[i];
+                Float2 dimensions = font.MeasureText(currentLabel.Text);
+                float width = dimensions.X + currentLabel.Margin.Left + splitterPadding;
+
+                largestWidth = Mathf.Max(largestWidth, width);
+            }
+
+            SplitterValue = Mathf.Clamp(largestWidth / Width, 0, 1 - editorsMinWdithRatio);
         }
 
         private void UpdateSplitRect()
@@ -127,6 +151,7 @@ namespace FlaxEditor.CustomEditors.GUI
                 SplitterValue = location.X / Width;
                 Cursor = CursorType.SizeWE;
                 _cursorChanged = true;
+                _hasCustomSplitterValue = true;
             }
             else if (_mouseOverSplitter)
             {
@@ -200,6 +225,7 @@ namespace FlaxEditor.CustomEditors.GUI
             // Refresh
             UpdateSplitRect();
             PerformLayout(true);
+            AutoSizeSplitter();
         }
 
         /// <inheritdoc />
