@@ -15,8 +15,8 @@ namespace FlaxEditor.CustomEditors.GUI
     {
         // TODO: sync splitter for whole presenter
        
-        private const float splitterPadding = 15;
-        private const float editorsMinWdithRatio = 0.4f;
+        private const float SplitterPadding = 15;
+        private const float EditorsMinWidthRatio = 0.4f;
 
         /// <summary>
         /// The splitter size (in pixels).
@@ -87,12 +87,12 @@ namespace FlaxEditor.CustomEditors.GUI
             {
                 Label currentLabel = _element.Labels[i];
                 Float2 dimensions = font.MeasureText(currentLabel.Text);
-                float width = dimensions.X + currentLabel.Margin.Left + splitterPadding;
+                float width = dimensions.X + currentLabel.Margin.Left + SplitterPadding;
 
                 largestWidth = Mathf.Max(largestWidth, width);
             }
 
-            SplitterValue = Mathf.Clamp(largestWidth / Width, 0, 1 - editorsMinWdithRatio);
+            SplitterValue = Mathf.Clamp(largestWidth / Width, 0, 1 - EditorsMinWidthRatio);
         }
 
         private void UpdateSplitRect()
