@@ -232,6 +232,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
             public void Setup(CollectionEditor editor, int index, bool canReorder = true)
             {
+                Pivot = Float2.Zero;
                 HeaderHeight = 18;
                 _canReorder = canReorder;
                 EnableDropDownIcon = true;
@@ -882,6 +883,11 @@ namespace FlaxEditor.CustomEditors.Editors
             public string FileExtension
             {
                 set => _pickerValidator.FileExtension = value;
+            }
+
+            public DragAreaControl()
+            {
+                Pivot = Float2.Zero;
             }
 
             /// <inheritdoc />

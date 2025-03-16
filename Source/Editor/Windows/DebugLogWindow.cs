@@ -390,6 +390,7 @@ namespace FlaxEditor.Windows
             _entriesPanel = new VerticalPanel
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Pivot = Float2.Zero,
                 Offsets = Margin.Zero,
                 IsScrollable = true,
                 Parent = _split.Panel1,

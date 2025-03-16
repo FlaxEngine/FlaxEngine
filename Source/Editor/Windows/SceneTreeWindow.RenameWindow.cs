@@ -92,6 +92,7 @@ namespace FlaxEditor.Windows
                 Parent = this,
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offset = Vector2.Zero,
+                Pivot = Float2.Zero,
                 AutoSize = false,
                 Bounds = Rectangle.Empty
             };

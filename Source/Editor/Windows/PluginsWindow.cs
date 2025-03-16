@@ -162,11 +162,13 @@ namespace FlaxEditor.Windows
                 {
                     AnchorPreset = AnchorPresets.StretchAll,
                     Offsets = Margin.Zero,
+                    Pivot = Float2.Zero,
                     Parent = this,
                 };
                 var panel = new VerticalPanel
                 {
                     AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                    Pivot = Float2.Zero,
                     Offsets = Margin.Zero,
                     IsScrollable = true,
                     Parent = scroll,
@@ -187,6 +189,7 @@ namespace FlaxEditor.Windows
             var vp = new Panel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
                 Parent = this,
             };
             _addPluginProjectButton = new Button

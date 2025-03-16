@@ -473,6 +473,7 @@ namespace FlaxEngine.GUI
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 BackgroundColor = Color.Transparent,
+                Pivot = Float2.Zero,
                 IsScrollable = true,
                 AutoSize = true,
                 Parent = popup.MainPanel,

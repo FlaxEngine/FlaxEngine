@@ -833,6 +833,7 @@ namespace FlaxEditor.GUI.Timeline
             {
                 AutoFocus = false,
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Pivot = Float2.Zero,
                 Offsets = Margin.Zero,
                 IsScrollable = true,
                 BottomMargin = 40.0f,

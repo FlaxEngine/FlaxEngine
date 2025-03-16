@@ -204,6 +204,7 @@ namespace FlaxEditor.Tools.Foliage
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = new Margin(4, 4, 4, 0),
+                Pivot = Float2.Zero,
                 IsScrollable = true,
                 Parent = splitPanel.Panel1
             };
