@@ -38,7 +38,7 @@ public class ViewportRubberBandSelector
     /// <returns>True if selection started, otherwise false.</returns>
     public bool TryStartingRubberBandSelection()
     {
-        if (!_isRubberBandSpanning && !_owner.Gizmos.Active.IsControllingMouse && !_owner.IsRightMouseButtonDown)
+        if (!_isRubberBandSpanning && _owner.Gizmos.Active != null && !_owner.Gizmos.Active.IsControllingMouse && !_owner.IsRightMouseButtonDown)
         {
             _tryStartRubberBand = true;
             return true;
@@ -90,7 +90,7 @@ public class ViewportRubberBandSelector
             _rubberBandRect = new Rectangle(_cachedStartingMousePosition, Float2.Zero);
             _tryStartRubberBand = false;
         }
-        else if (_isRubberBandSpanning && !_owner.Gizmos.Active.IsControllingMouse && !_owner.IsRightMouseButtonDown)
+        else if (_isRubberBandSpanning && _owner.Gizmos.Active != null && !_owner.Gizmos.Active.IsControllingMouse && !_owner.IsRightMouseButtonDown)
         {
             _rubberBandRect.Width = mousePosition.X - _cachedStartingMousePosition.X;
             _rubberBandRect.Height = mousePosition.Y - _cachedStartingMousePosition.Y;
