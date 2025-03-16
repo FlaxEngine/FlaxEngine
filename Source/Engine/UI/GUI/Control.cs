@@ -122,8 +122,6 @@ namespace FlaxEngine.GUI
                 if (_parent == value)
                     return;
 
-                Defocus();
-
                 Float2 oldParentSize;
                 if (_parent != null)
                 {

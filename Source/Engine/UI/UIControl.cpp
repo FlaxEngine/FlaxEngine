@@ -22,10 +22,11 @@ MMethod* UIControl_BeginPlay = nullptr;
 MMethod* UIControl_EndPlay = nullptr;
 
 #define UICONTROL_INVOKE(event) \
-	if (HasManagedInstance()) \
+    auto* managed = GetManagedInstance(); \
+    if (managed) \
 	{ \
 	    MObject* exception = nullptr; \
-	    UIControl_##event->Invoke(GetManagedInstance(), nullptr, &exception); \
+	    UIControl_##event->Invoke(managed, nullptr, &exception); \
 	    if (exception) \
 	    { \
 		    MException ex(exception); \
