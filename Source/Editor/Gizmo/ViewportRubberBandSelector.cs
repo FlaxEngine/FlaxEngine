@@ -11,7 +11,7 @@ namespace FlaxEngine.Gizmo;
 /// <summary>
 /// Class for adding viewport rubber band selection.
 /// </summary>
-public class ViewportRubberBandSelector
+public sealed class ViewportRubberBandSelector
 {
     private bool _isMosueCaptured;
     private bool _isRubberBandSpanning;
@@ -232,30 +232,15 @@ public class ViewportRubberBandSelector
     }
 
     /// <summary>
-    /// Used to draw the rubber band. Begins render 2D.
+    /// Draws the ruber band during owner viewport UI drawing.
     /// </summary>
-    /// <param name="context">The GPU Context.</param>
-    /// <param name="target">The GPU texture target.</param>
-    /// <param name="targetDepth">The GPU texture target depth.</param>
-    public void Draw(GPUContext context, GPUTexture target, GPUTexture targetDepth)
-    {
-        // Draw RubberBand for rect selection
-        if (!_isRubberBandSpanning)
-            return;
-        Render2D.Begin(context, target, targetDepth);
-        Draw2D();
-        Render2D.End();
-    }
-
-    /// <summary>
-    /// Used to draw the rubber band. Use if already rendering 2D context.
-    /// </summary>
-    public void Draw2D()
+    public void Draw()
     {
         if (!_isRubberBandSpanning)
             return;
-        Render2D.FillRectangle(_rubberBandRect, Style.Current.Selection);
-        Render2D.DrawRectangle(_rubberBandRect, Style.Current.SelectionBorder);
+        var style = Style.Current;
+        Render2D.FillRectangle(_rubberBandRect, style.Selection);
+        Render2D.DrawRectangle(_rubberBandRect, style.SelectionBorder);
     }
 
     /// <summary>

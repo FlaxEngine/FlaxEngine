@@ -375,10 +375,7 @@ namespace FlaxEditor.Viewport
             {
                 Gizmos[i].Draw(ref renderContext);
             }
-            
-            // Draw RubberBand for rect selection
-            _rubberBandSelector.Draw(context, target, targetDepth);
-            
+
             // Draw selected objects debug shapes and visuals
             if (DrawDebugDraw && (renderContext.View.Flags & ViewFlags.DebugDraw) == ViewFlags.DebugDraw)
             {
@@ -592,6 +589,15 @@ namespace FlaxEditor.Viewport
 
                 obj.Transform = trans;
             }
+        }
+
+        /// <inheritdoc />
+        public override void Draw()
+        {
+            base.Draw();
+
+            // Draw rubber band for rectangle selection
+            _rubberBandSelector.Draw();
         }
 
         /// <inheritdoc />
