@@ -211,7 +211,7 @@ void AnimationGraph::FindDependencies(AnimGraphBase* graph)
 {
     for (const auto& node : graph->Nodes)
     {
-        if (node.Type == GRAPH_NODE_MAKE_TYPE(9, 24))
+        if (node.Type == GRAPH_NODE_MAKE_TYPE(9, 24) && node.Assets.Count() > 0)
         {
             const auto function = node.Assets[0].As<AnimationGraphFunction>();
             if (function)
