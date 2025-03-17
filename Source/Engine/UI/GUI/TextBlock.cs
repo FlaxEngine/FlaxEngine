@@ -31,5 +31,18 @@ namespace FlaxEngine.GUI
         /// The custom tag.
         /// </summary>
         public object Tag;
+
+        internal float GetAscender()
+        {
+            float ascender = Ascender;
+            if (Mathf.IsZero(ascender))
+            {
+                // Use ascender from the font
+                var textBlockFont = Style.Font.GetFont();
+                if (textBlockFont)
+                    ascender = textBlockFont.Ascender;
+            }
+            return ascender;
+        }
     }
 }
