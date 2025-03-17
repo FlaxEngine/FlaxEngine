@@ -1,6 +1,5 @@
 // Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
 
-using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tabs;
 using FlaxEngine;
@@ -37,8 +36,10 @@ namespace FlaxEditor.GUI.Dialogs
         private const float ColorWheelSize = 180.0f;
         private const float SaturationAlphaSlidersThickness = 20.0f;
         private const float HSVRGBFloatBoxesWidht = 100;
+        private const float GridScale = 4f;
         private const string AddSavedColorButtonTooltip = "Save current color.";
         private const string SavedColorButtonTooltip = "Saved color";
+        private const string ScaleParamName = "Scale";
 
         private const int maxSavedColorsAmount = 20; // Will begin new row when half of this value is reached.
 
@@ -76,9 +77,10 @@ namespace FlaxEditor.GUI.Dialogs
         private FloatValueBox _cAlpha;
         private TextBox _cHex;
         private Button _cEyedropper;
+        private MaterialBase _checkerMaterial;
 
         private List<Color> _savedColors = new List<Color>();
-        private List<Button> _savedColorButtons = new List<Button>();
+        private List<SavedColorButton> _savedColorButtons = new List<SavedColorButton>();
 
         /// <summary>
         /// Gets the selected color.
@@ -119,7 +121,7 @@ namespace FlaxEditor.GUI.Dialogs
 
                 _disableEvents = false;
 
-                SetAddSavedColorsButtonStatus();
+                UpdateAddSavedColorsButton();
             }
         }
 
@@ -138,6 +140,11 @@ namespace FlaxEditor.GUI.Dialogs
             _value = Color.Transparent;
             _onChanged = colorChanged;
             _onClosed = pickerClosed;
+
+            // Load alpha grid material
+            _checkerMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.ColorAlphaBackgroundGrid);
+            _checkerMaterial = _checkerMaterial.CreateVirtualInstance();
+            _checkerMaterial.SetParameterValue(ScaleParamName, GridScale);
 
             // Get saved colors if they exist
             if (Editor.Instance.ProjectCache.TryGetCustomData("ColorPickerSavedColors", out string savedColors))
@@ -244,7 +251,7 @@ namespace FlaxEditor.GUI.Dialogs
             _dialogSize = Size = new Float2(_chsvRGBTabs.Right + _pickerMargin.Left + _pickerMargin.Left, _cSelector.Bottom + SmallMargin + SavedColorButtonHeight * 3 + _pickerMargin.Top * 3);
 
             CreateSavedSaveColorButtons();
-            SetAddSavedColorsButtonStatus();
+            UpdateAddSavedColorsButton();
 
             // Old and new color preview rectangles
             float previewYPosition = _cSelector.Bottom + LargeMargin;
@@ -318,7 +325,7 @@ namespace FlaxEditor.GUI.Dialogs
             else
                 SelectedColor = (Color)button.Tag;
 
-            SetAddSavedColorsButtonStatus();
+            UpdateAddSavedColorsButton();
         }
 
         private void OnColorPicked(Color32 colorPicked)
@@ -446,31 +453,13 @@ namespace FlaxEditor.GUI.Dialogs
             var hex = new Rectangle(_cHex.Left - 26, _cHex.Y, 25, _cHex.Height);
             Render2D.DrawText(style.FontMedium, "Hex", hex, textColor, TextAlignment.Near, TextAlignment.Center);
 
-            const int smallRectSize = 9;
-
             if (_initialValue.A < 1 || _value.A < 1)
             {
-                // Checkerboard background
-                var alphaBackground = new Rectangle(oldColorRect.Left, newColorRect.Y, ColorPreviewWidth, oldColorRect.Height);
-
                 // Draw checkerboard for background of color preview to help with transparency
-                Render2D.FillRectangle(alphaBackground, Color.White);
-                
-                var numHor = Mathf.FloorToInt(ColorPreviewWidth / smallRectSize);
-                var numVer = Mathf.FloorToInt(oldColorRect.Height / smallRectSize);
-                for (int i = 0; i < numHor; i++)
-                {
-                    for (int j = 0; j < numVer; j++)
-                    {
-                        if ((i + j) % 2 == 0)
-                        {
-                            var rect = new Rectangle(oldColorRect.X + smallRectSize * i, oldColorRect.Y + smallRectSize * j, new Float2(smallRectSize));
-                            Render2D.FillRectangle(rect, Color.Gray);
-                        }
-                    }
-                }
+                var checkerRect = new Rectangle(oldColorRect.Left, newColorRect.Y, ColorPreviewWidth, oldColorRect.Height);
+                Render2D.DrawMaterial(_checkerMaterial, checkerRect);
             }
-            
+
             // Old and new color preview
             Vector2 textOffset = new Vector2(0, -15);
             Render2D.DrawText(style.FontMedium, "Old", Color.White, oldColorRect.UpperLeft + textOffset);
@@ -489,9 +478,9 @@ namespace FlaxEditor.GUI.Dialogs
                 Color resetColor = oldhsv.Z > 0.5f ? Color.Black : Color.White;
                 Render2D.DrawSprite(Editor.Instance.Icons.Rotate32, resetRect, resetColor);
             }
-      
+
             // Draw all outlines all as separate lines to prevent bleeding issues with separator lines
-            
+
             // Draw Old outlines
             Color oldOutlineColor = oldhsv.X > 205 && oldhsv.Y > 0.65f ? Color.White : Color.Black;
             Render2D.DrawLine(oldColorRect.UpperLeft, oldColorRect.UpperRight, oldOutlineColor, 0.5f);
@@ -504,7 +493,7 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.DrawLine(newColorRect.BottomLeft, newColorRect.BottomRight, newOutlineColor, 0.5f);
 
             // Small separators between Old and New color preview
-            Float2 separatorOffset = new Vector2(0, smallRectSize);
+            Float2 separatorOffset = new Vector2(0, 9);
 
             Render2D.DrawLine(oldColorRect.UpperRight, oldColorRect.UpperRight + separatorOffset / 2, newOutlineColor, 0.5f);
             Render2D.DrawLine(oldColorRect.BottomRight, oldColorRect.BottomRight - separatorOffset / 2, newOutlineColor, 0.5f);
@@ -640,7 +629,7 @@ namespace FlaxEditor.GUI.Dialogs
                 float buttonXPositionOffset = savedGreaterThanHalfMax ? (SavedColorButtonWidth + SmallMargin) * Mathf.Abs(maxSavedColorsAmount / 2 - i) : (SavedColorButtonWidth + SmallMargin) * i;
 
                 var savedColor = _savedColors[i];       
-                var savedColorButton = new Button(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
+                var savedColorButton = new SavedColorButton(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
                 {
                     Parent = this,
                     Tag = savedColor,
@@ -665,7 +654,7 @@ namespace FlaxEditor.GUI.Dialogs
             float buttonYPosition = savedGreaterThanHalfMax ? savedColorsYPosition + SavedColorButtonHeight + SmallMargin : savedColorsYPosition;
             float buttonXPositionOffset = savedGreaterThanHalfMax ? (SavedColorButtonWidth + SmallMargin) * Mathf.Abs(maxSavedColorsAmount / 2 - _savedColors.Count) : (SavedColorButtonWidth + SmallMargin) * _savedColors.Count;
 
-            var savedColorButton = new Button(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
+            var savedColorButton = new SavedColorButton(_cSelector.Location.X + buttonXPositionOffset, buttonYPosition, SavedColorButtonWidth, SavedColorButtonHeight)
             {
                 Text = "+",
                 Parent = this,
@@ -676,7 +665,7 @@ namespace FlaxEditor.GUI.Dialogs
             _savedColorButtons.Add(savedColorButton);
         }
 
-        private void SetAddSavedColorsButtonStatus()
+        private void UpdateAddSavedColorsButton()
         {
             // Make not being able to save the same color twice a bit more intuitive by disabeling the button when the color is already saved
             if (_savedColors.Contains(_value))

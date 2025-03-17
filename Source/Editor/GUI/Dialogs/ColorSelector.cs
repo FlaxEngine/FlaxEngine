@@ -264,10 +264,14 @@ namespace FlaxEditor.GUI.Dialogs
     /// <seealso cref="ColorSelector" />
     public class ColorSelectorWithSliders : ColorSelector
     {
+        private const float GridScale = 4f;
+        private const String ScaleParamName = "Scale";
+
         private Rectangle _valueSliderRect;
         private Rectangle _valueSliderHitbox;
         private Rectangle _alphaSliderRect;
         private Rectangle _alphaSliderHitbox;
+        private MaterialBase _checkerMaterial;
         private bool _isMouseDownValueSlider;
         private bool _isMouseDownAlphaSlider;
 
@@ -279,6 +283,11 @@ namespace FlaxEditor.GUI.Dialogs
         public ColorSelectorWithSliders(float wheelSize, float slidersThickness)
         : base(wheelSize)
         {
+            // Load alpha grid material
+            _checkerMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.ColorAlphaBackgroundGrid);
+            _checkerMaterial = _checkerMaterial.CreateVirtualInstance();
+            _checkerMaterial.SetParameterValue(ScaleParamName, GridScale);
+
             // Setup dimensions
             const float slidersMargin = 16.0f;
             const float SliderHitboxExpansion = 12.0f;
@@ -354,7 +363,6 @@ namespace FlaxEditor.GUI.Dialogs
             float valueKnobY = _valueSliderRect.Height * (1 - hsv.Z);
             valueKnobY = Mathf.Clamp(valueKnobY, 0.0f, _valueSliderRect.Height) - valueKnobHeight * 0.5f;
 
-            // TODO: Make this lerp the outline color to white instead of just abruptly showing it
             Color valueSliderTopOutlineColor = hsv.X > 205 && hsv.Y > 0.65f ? Color.White : Color.Black;
             Color valueKnobColor = Color.FromHSV(new Float3(0, 0, Mathf.Clamp(1f - hsv.Z, 0.45f, 1)));
             
@@ -382,7 +390,7 @@ namespace FlaxEditor.GUI.Dialogs
             Render2D.DrawRectangle(valueKnob, valueKnobColor, _isMouseDownValueSlider ? 3 : 2);
 
             // Draw alpha slider, grid and knob
-            DrawAlphaGrid(_alphaSliderRect.Width / 2, ref _alphaSliderRect.Location, _alphaSliderRect.Width, _alphaSliderRect.Height);
+            Render2D.DrawMaterial(_checkerMaterial, _alphaSliderRect);
             Render2D.FillRectangle(_alphaSliderRect, opaqueColor, opaqueColor, Color.Transparent, Color.Transparent);
             Render2D.DrawRectangle(_alphaSliderRect, alphaSliderTopOutlineColor, alphaSliderTopOutlineColor, Color.Transparent, Color.Transparent);
             Render2D.DrawRectangle(alphaKnob, alphaKnobColor, _isMouseDownAlphaSlider ? 3 : 2);
@@ -390,26 +398,6 @@ namespace FlaxEditor.GUI.Dialogs
             // Sliders hitbox debug
             //Render2D.DrawRectangle(_valueSliderHitbox, Color.Green);
             //Render2D.DrawRectangle(_alphaSliderHitbox, Color.Red);
-        }
-
-        private static void DrawAlphaGrid(float gridElementSize, ref Float2 startingPosition, float width, float height)
-        {
-            Rectangle backgroundRectangle = new Rectangle(startingPosition, new Float2(width, height));
-            Render2D.FillRectangle(backgroundRectangle, Color.White);
-
-            var numHor = Mathf.FloorToInt(width / gridElementSize);
-            var numVer = Mathf.FloorToInt(height / gridElementSize);
-            for (int i = 0; i < numHor; i++)
-            {
-                for (int j = 0; j < numVer; j++)
-                {
-                    if ((i + j) % 2 == 0)
-                    {
-                        var rect = new Rectangle(startingPosition.X + gridElementSize * i, startingPosition.Y + gridElementSize * j, new Float2(gridElementSize));
-                        Render2D.FillRectangle(rect, Color.Gray);
-                    }
-                }
-            }
         }
 
         /// <inheritdoc />
