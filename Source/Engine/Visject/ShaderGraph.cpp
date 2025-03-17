@@ -364,7 +364,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
     // Fmod
     case 40:
     {
-        Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
+        Value v1 = tryGetValue(node->GetBox(0), 0, Value::Zero);
         Value v2 = tryGetValue(node->GetBox(1), 1, Value::Zero);
         value = writeFunction2(node, v1, v2, TEXT("fmod"));
         break;
