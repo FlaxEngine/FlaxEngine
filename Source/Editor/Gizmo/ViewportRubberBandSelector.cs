@@ -162,8 +162,8 @@ public sealed class ViewportRubberBandSelector
         projection.Init(_owner.Viewport);
         foreach (var node in nodes)
         {
-            // Check for custom can select code
-            if (!node.CanSelectActorNodeWithSelector())
+            // Skip actors that cannot be selected
+            if (!node.CanSelectInViewport)
                 continue;
             var a = node.Actor;
 
