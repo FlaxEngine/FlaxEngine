@@ -851,6 +851,11 @@ namespace FlaxEditor
         {
             LogWarning("Exception: " + ex.Message);
             LogWarning(ex.StackTrace);
+            if (ex.InnerException != null)
+            {
+                LogWarning("Inner exception:");
+                LogWarning(ex.InnerException);
+            }
         }
 
         /// <summary>
