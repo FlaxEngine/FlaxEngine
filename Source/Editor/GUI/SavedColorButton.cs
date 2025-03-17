@@ -20,10 +20,10 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Creates a new instance of the <see cref="SavedColorButton"/>.
         /// </summary>
-        /// <param name="x">The x position</param>
-        /// <param name="y">The y position</param>
-        /// <param name="width">The width</param>
-        /// <param name="height">The height</param>
+        /// <param name="x">The x position.</param>
+        /// <param name="y">The y position.</param>
+        /// <param name="width">The width.</param>
+        /// <param name="height">The height.</param>
         public SavedColorButton(float x, float y, float width, float height)
         : base(x, y, width, height)
         {

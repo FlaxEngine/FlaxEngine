@@ -510,7 +510,7 @@ namespace FlaxEditor.GUI.Dialogs
         {
             // Auto cancel on lost focus
 #if !PLATFORM_LINUX
-            ((WindowRootControl)Root).Window.LostFocus += OnCancel;
+            ((WindowRootControl)Root).Window.LostFocus += OnSubmit;
 #endif
 
             base.OnShow();
@@ -680,19 +680,8 @@ namespace FlaxEditor.GUI.Dialogs
         }
 
         /// <inheritdoc />
-        public override void OnCancel()
-        {
-            if (_disableEvents)
-                return;
-
-            _value = _initialValue;
-
-            base.OnCancel();
-        }
-
-        /// <inheritdoc />
         public override void OnSubmit()
-        {     
+        {
             if (_disableEvents)
                 return;
             _disableEvents = true;
@@ -701,16 +690,27 @@ namespace FlaxEditor.GUI.Dialogs
             if (_value != _initialValue)
                 _onChanged?.Invoke(_value, false);
 
-            // Ensure mouse cursor is reset to default
-            Cursor = CursorType.Default;
+            base.OnSubmit();
+        }
 
-            base.OnSubmit(); 
+        /// <inheritdoc />
+        public override void OnCancel()
+        {
+            if (_disableEvents)
+                return;
+            _disableEvents = true;
+
+            // Restore color if modified
+            if (_useDynamicEditing && _initialValue != _value)
+                _onChanged?.Invoke(_initialValue, false);
+
+            base.OnCancel();
         }
 
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            OnSubmit();
+            _onClosed?.Invoke();
 
             base.OnDestroy();
         }
@@ -718,7 +718,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// <inheritdoc />
         public void ClosePicker()
         {
-            OnSubmit();
+            OnCancel();
         }
     }
 }
