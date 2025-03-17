@@ -853,8 +853,8 @@ namespace FlaxEditor
             LogWarning(ex.StackTrace);
             if (ex.InnerException != null)
             {
-                LogWarning("Cause: " + ex.InnerException.Message);
-                LogWarning(ex.InnerException.StackTrace);
+                LogWarning("Inner exception:");
+                LogWarning(ex.InnerException);
             }
         }
 
