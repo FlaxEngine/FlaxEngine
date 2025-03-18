@@ -464,7 +464,7 @@ namespace FlaxEditor.GUI.Docking
         {
             base.Focus();
 
-            SelectTab();
+            SelectTab(false);
             BringToFront();
         }
 

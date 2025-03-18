@@ -170,6 +170,10 @@ namespace FlaxEngine
             AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
             TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
             Localization.LocalizationChanged += OnLocalizationChanged;
+#if FLAX_EDITOR
+            FlaxEditor.ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+            FlaxEditor.ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
+#endif
 
             OnLocalizationChanged();
             if (!Engine.IsEditor)
@@ -177,6 +181,19 @@ namespace FlaxEngine
                 CreateGuiStyle();
             }
         }
+
+#if FLAX_EDITOR
+        private static void OnScriptsReloadBegin()
+        {
+            // Tooltip might hold references to scripting assemblies
+            Style.Current.SharedTooltip = null;
+        }
+
+        private static void OnScriptsReloadEnd()
+        {
+            Style.Current.SharedTooltip = new Tooltip();
+        }
+#endif
 
         private static void OnLocalizationChanged()
         {
@@ -359,6 +376,10 @@ namespace FlaxEngine
 
             MainThreadTaskScheduler.Dispose();
             Json.JsonSerializer.Dispose();
+#if FLAX_EDITOR
+            FlaxEditor.ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+            FlaxEditor.ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
+#endif
         }
 
         /// <summary>

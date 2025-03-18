@@ -21,6 +21,7 @@ namespace FlaxEditor.Modules
         private bool _enableEvents;
         private bool _isDuringFastSetup;
         private bool _rebuildFlag;
+        private bool _rebuildInitFlag;
         private int _itemsCreated;
         private int _itemsDeleted;
         private readonly HashSet<MainContentTreeNode> _dirtyNodes = new HashSet<MainContentTreeNode>();
@@ -61,7 +62,7 @@ namespace FlaxEditor.Modules
         public event Action WorkspaceModified;
 
         /// <summary>
-        /// Occurs when workspace has will be rebuilt.
+        /// Occurs when workspace will be rebuilt.
         /// </summary>
         public event Action WorkspaceRebuilding;
 
@@ -88,6 +89,9 @@ namespace FlaxEditor.Modules
 
             // Register AssetItems serialization helper (serialize ref ID only)
             FlaxEngine.Json.JsonSerializer.Settings.Converters.Add(new AssetItemConverter());
+
+            ScriptsBuilder.ScriptsReload += OnScriptsReload;
+            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
         }
 
         private void OnContentAssetDisposing(Asset asset)
@@ -817,6 +821,7 @@ namespace FlaxEditor.Modules
             Profiler.BeginEvent("ContentDatabase.Rebuild");
             var startTime = Platform.TimeSeconds;
             _rebuildFlag = false;
+            _rebuildInitFlag = false;
             _enableEvents = false;
 
             // Load all folders
@@ -1230,8 +1235,6 @@ namespace FlaxEditor.Modules
                 LoadProjects(Game.Project);
             }
 
-            RebuildInternal();
-
             Editor.ContentImporting.ImportFileEnd += (obj, failed) =>
             {
                 var path = obj.ResultUrl;
@@ -1239,6 +1242,15 @@ namespace FlaxEditor.Modules
                     FlaxEngine.Scripting.InvokeOnUpdate(() => OnImportFileDone(path));
             };
             _enableEvents = true;
+            _rebuildInitFlag = true;
+        }
+
+        /// <inheritdoc />
+        public override void OnEndInit()
+        {
+            // Handle init when project was loaded without scripts loading ()
+            if (_rebuildInitFlag)
+                RebuildInternal();
         }
 
         private void OnImportFileDone(string path)
@@ -1313,6 +1325,52 @@ namespace FlaxEditor.Modules
             }
         }
 
+        private void OnScriptsReload()
+        {
+            var enabledEvents = _enableEvents;
+            _enableEvents = false;
+            _isDuringFastSetup = true;
+            var startItems = _itemsCreated;
+            foreach (var project in Projects)
+            {
+                if (project.Content != null)
+                {
+                    //Dispose(project.Content.Folder);
+                    for (int i = 0; i < project.Content.Folder.Children.Count; i++)
+                    {
+                        Dispose(project.Content.Folder.Children[i]);
+                        i--;
+                    }
+                }
+                if (project.Source != null)
+                {
+                    //Dispose(project.Source.Folder);
+                    for (int i = 0; i < project.Source.Folder.Children.Count; i++)
+                    {
+                        Dispose(project.Source.Folder.Children[i]);
+                        i--;
+                    }
+                }
+            }
+
+            List<ContentProxy> removeProxies = new List<ContentProxy>();
+            foreach (var proxy in Editor.Instance.ContentDatabase.Proxy)
+            {
+                if (proxy.GetType().IsCollectible)
+                    removeProxies.Add(proxy);
+            }
+            foreach (var proxy in removeProxies)
+                RemoveProxy(proxy, false);
+
+            _isDuringFastSetup = false;
+            _enableEvents = enabledEvents;
+        }
+
+        private void OnScriptsReloadEnd()
+        {
+            RebuildInternal();
+        }
+
         /// <inheritdoc />
         public override void OnUpdate()
         {
@@ -1340,6 +1398,8 @@ namespace FlaxEditor.Modules
         public override void OnExit()
         {
             FlaxEngine.Content.AssetDisposing -= OnContentAssetDisposing;
+            ScriptsBuilder.ScriptsReload -= OnScriptsReload;
+            ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
 
             // Disable events
             _enableEvents = false;
