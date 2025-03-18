@@ -170,5 +170,5 @@ public:
     /// <summary>
     /// Releases data.
     /// </summary>
-    void Dispose();
+    void Release();
 };

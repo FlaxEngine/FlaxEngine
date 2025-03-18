@@ -73,7 +73,7 @@ void AnimationData::Swap(AnimationData& other)
     Channels.Swap(other.Channels);
 }
 
-void AnimationData::Dispose()
+void AnimationData::Release()
 {
     Name.Clear();
     Duration = 0.0;

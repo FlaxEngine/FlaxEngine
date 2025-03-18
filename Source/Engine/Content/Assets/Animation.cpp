@@ -692,7 +692,7 @@ void Animation::unload(bool isReloading)
         Level::ScriptsReloadStart.Unbind<Animation, &Animation::OnScriptsReloadStart>(this);
     }
 #endif
-    Data.Dispose();
+    Data.Release();
     for (const auto& e : Events)
     {
         for (const auto& k : e.Second.GetKeyframes())
