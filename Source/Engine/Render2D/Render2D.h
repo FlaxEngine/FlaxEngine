@@ -55,6 +55,7 @@ API_CLASS(Static) class FLAXENGINE_API Render2D
     {
         Matrix ViewProjection;
         Float2 ViewSize;
+        bool UseDepthBuffer;
     };
 
 public:

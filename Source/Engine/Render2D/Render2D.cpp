@@ -759,10 +759,7 @@ void Render2D::End()
     IsScissorsRectEmpty = false;
     for (int32 i = 0; i < DrawCalls.Count(); i++)
     {
-        // Peek draw call
         const auto& drawCall = DrawCalls[i];
-
-        // Check if cannot add element to the batching
         if (batchSize != 0 && !CanBatchDrawCalls(DrawCalls[batchStart], drawCall))
         {
             // Flush batched elements
@@ -990,6 +987,7 @@ void DrawBatch(int32 startIndex, int32 count)
         Render2D::CustomData customData;
         customData.ViewProjection = ViewProjection;
         customData.ViewSize = Float2::One;
+        customData.UseDepthBuffer = DepthBuffer != nullptr;
         bindParams.CustomData = &customData;
         material->Bind(bindParams);
 
@@ -1026,6 +1024,7 @@ void DrawBatch(int32 startIndex, int32 count)
         Render2D::CustomData customData;
         customData.ViewProjection = ViewProjection;
         customData.ViewSize = Float2(d.AsMaterial.Width, d.AsMaterial.Height);
+        customData.UseDepthBuffer = DepthBuffer != nullptr;
         bindParams.CustomData = &customData;
         material->Bind(bindParams);
 
