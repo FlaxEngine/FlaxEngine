@@ -1062,7 +1062,7 @@ namespace FlaxEngine.Interop
                 // Wait for previous ALC to finish unloading, track it without holding strong references to it
                 GCHandle weakRef = GCHandle.Alloc(scriptingAssemblyLoadContext, GCHandleType.WeakTrackResurrection);
                 scriptingAssemblyLoadContext = null;
-#if true
+#if false
                 // In case the ALC doesn't unload properly: https://learn.microsoft.com/en-us/dotnet/standard/assembly/unloadability#debug-unloading-issues
                 while (true)
 #else
@@ -1077,7 +1077,7 @@ namespace FlaxEngine.Interop
                     System.Threading.Thread.Sleep(1);
                 }
                 if (IsHandleAlive(weakRef))
-                    Debug.LogWarning("Scripting AssemblyLoadContext was not unloaded.");
+                    Debug.Logger.LogHandler.LogWrite(LogType.Warning, "Scripting AssemblyLoadContext was not unloaded.");
                 weakRef.Free();
 
                 static bool IsHandleAlive(GCHandle weakRef)
@@ -1142,8 +1142,8 @@ namespace FlaxEngine.Interop
             {
                 // HACK: Workaround for TypeDescriptor holding references to collectible types (https://github.com/dotnet/runtime/issues/30656)
 
-                Type TypeDescriptionProviderType = typeof(System.ComponentModel.TypeDescriptionProvider);
-                MethodInfo clearCacheMethod = TypeDescriptionProviderType?.Assembly.GetType("System.ComponentModel.ReflectionCachesUpdateHandler")?.GetMethod("ClearCache");
+                Type typeDescriptionProviderType = typeof(System.ComponentModel.TypeDescriptionProvider);
+                MethodInfo clearCacheMethod = typeDescriptionProviderType?.Assembly.GetType("System.ComponentModel.ReflectionCachesUpdateHandler")?.GetMethod("ClearCache");
                 if (clearCacheMethod != null)
                     clearCacheMethod.Invoke(null, new object[] { null });
 
@@ -1183,9 +1183,8 @@ namespace FlaxEngine.Interop
                 static void InvokeClear(object instance)
                 {
                     Type type = instance.GetType();
-                    FlaxEngine.Assertions.Assert.IsTrue(type.Name == "ConcurrentDictionary`2" || type.Name == "Hashtable" || type.Name == "WeakHashtable");
-                    type.GetMethods(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault(x => x.Name == "Clear")
-                        ?.Invoke(instance, new object[] { });
+                    Assertions.Assert.IsTrue(type.Name == "ConcurrentDictionary`2" || type.Name == "Hashtable" || type.Name == "WeakHashtable");
+                    type.GetMethods(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault(x => x.Name == "Clear")?.Invoke(instance, Array.Empty<object>());
                 }
             }
 
