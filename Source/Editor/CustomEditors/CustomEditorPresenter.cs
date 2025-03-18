@@ -197,6 +197,15 @@ namespace FlaxEditor.CustomEditors
             }
 
             /// <inheritdoc />
+            protected override void Deinitialize()
+            {
+                Editor = null;
+                _overrideEditor = null;
+
+                base.Deinitialize();
+            }
+
+            /// <inheritdoc />
             protected override void OnModified()
             {
                 Presenter.OnModified();

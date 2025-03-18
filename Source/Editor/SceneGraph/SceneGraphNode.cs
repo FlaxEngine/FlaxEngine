@@ -469,6 +469,7 @@ namespace FlaxEditor.SceneGraph
             {
                 ChildNodes[i].OnDispose();
             }
+            ChildNodes.Clear();
 
             SceneGraphFactory.Nodes.Remove(ID);
         }

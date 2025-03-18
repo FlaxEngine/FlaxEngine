@@ -330,9 +330,15 @@ void MCore::UnloadEngine()
     ShutdownHostfxr();
 }
 
+void MCore::CreateScriptingAssemblyLoadContext()
+{
+    static void* CreateScriptingAssemblyLoadContextPtr = GetStaticMethodPointer(TEXT("CreateScriptingAssemblyLoadContext"));
+    CallStaticMethod<void>(CreateScriptingAssemblyLoadContextPtr);
+}
+
 #if USE_EDITOR
 
-void MCore::ReloadScriptingAssemblyLoadContext()
+void MCore::UnloadScriptingAssemblyLoadContext()
 {
     // Clear any cached class attributes (see https://github.com/FlaxEngine/FlaxEngine/issues/1108)
     for (auto e : CachedClassHandles)
@@ -377,8 +383,8 @@ void MCore::ReloadScriptingAssemblyLoadContext()
         }
     }
 
-    static void* ReloadScriptingAssemblyLoadContextPtr = GetStaticMethodPointer(TEXT("ReloadScriptingAssemblyLoadContext"));
-    CallStaticMethod<void>(ReloadScriptingAssemblyLoadContextPtr);
+    static void* UnloadScriptingAssemblyLoadContextPtr = GetStaticMethodPointer(TEXT("UnloadScriptingAssemblyLoadContext"));
+    CallStaticMethod<void>(UnloadScriptingAssemblyLoadContextPtr);
 }
 
 #endif

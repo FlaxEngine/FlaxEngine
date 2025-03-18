@@ -205,7 +205,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (_linkedPrefabId != Guid.Empty)
             {
                 _linkedPrefabId = Guid.Empty;
-                Editor.Instance.Prefabs.PrefabApplied -= OnPrefabApplying;
+                Editor.Instance.Prefabs.PrefabApplying -= OnPrefabApplying;
                 Editor.Instance.Prefabs.PrefabApplied -= OnPrefabApplied;
             }
         }
