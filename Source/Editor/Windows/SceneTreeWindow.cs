@@ -62,6 +62,7 @@ namespace FlaxEditor.Windows
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
                 Parent = headerPanel,
                 Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
+                TooltipText = "Search the scene tree.\n\nYou can prefix your search with different search operators:\ns: -> Actor with script of type\na: -> Actor type\nc: -> Control type",
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 
