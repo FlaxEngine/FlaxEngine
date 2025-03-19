@@ -18,6 +18,7 @@ SkyLight::SkyLight(const SpawnParams& params)
     : Light(params)
     , _radius(1000000.0f)
 {
+    _name = TEXT("Sky Light");
     _drawNoCulling = 1;
     Brightness = 2.0f;
     UpdateBounds();

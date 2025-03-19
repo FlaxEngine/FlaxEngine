@@ -42,6 +42,7 @@ Camera::Camera(const SpawnParams& params)
     , _orthoSize(0.0f)
     , _orthoScale(1.0f)
 {
+    _name = TEXT("Camera");
 #if USE_EDITOR
     _previewModel.Loaded.Bind<Camera, &Camera::OnPreviewModelLoaded>(this);
 #endif

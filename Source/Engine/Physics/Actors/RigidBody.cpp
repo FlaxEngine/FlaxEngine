@@ -27,6 +27,7 @@ RigidBody::RigidBody(const SpawnParams& params)
     , _overrideMass(false)
     , _isUpdatingTransform(false)
 {
+    _name = TEXT("RigidBody");
 }
 
 void RigidBody::SetIsKinematic(const bool value)

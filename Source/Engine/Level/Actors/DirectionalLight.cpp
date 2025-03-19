@@ -10,6 +10,7 @@
 DirectionalLight::DirectionalLight(const SpawnParams& params)
     : LightWithShadow(params)
 {
+    _name = TEXT("Directional Light");
     _drawNoCulling = 1;
     Brightness = 8.0f;
 }

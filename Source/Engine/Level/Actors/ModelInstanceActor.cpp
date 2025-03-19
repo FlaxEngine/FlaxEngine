@@ -7,6 +7,7 @@
 ModelInstanceActor::ModelInstanceActor(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("Model Instance Actor");
 }
 
 String ModelInstanceActor::MeshReference::ToString() const

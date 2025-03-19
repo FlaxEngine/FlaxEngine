@@ -38,6 +38,7 @@ MMethod* UIControl_EndPlay = nullptr;
 UIControl::UIControl(const SpawnParams& params)
     : Actor(params)
 {
+    _name = TEXT("UI Control");
 #if !COMPILE_WITHOUT_CSHARP
     Platform::MemoryBarrier();
     if (UIControl_Serialize == nullptr)

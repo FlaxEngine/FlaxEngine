@@ -6,6 +6,7 @@
 FixedJoint::FixedJoint(const SpawnParams& params)
     : Joint(params)
 {
+    _name = TEXT("Fixed Joint");
 }
 
 #if USE_EDITOR
