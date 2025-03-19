@@ -443,8 +443,10 @@ namespace FlaxEditor.Windows
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
                 TabsSize = new Float2(tabSize, tabSize),
+                ShowTopLine = false,
                 Parent = this
             };
+            TabsControl.TabStripColor = Style.Current.BackgroundNormal;
 
             TabsControl.AddTab(Spawn = new SpawnTab(Editor.Icons.Toolbox96, Editor));
             TabsControl.AddTab(VertexPaint = new VertexPaintingTab(Editor.Icons.Paint96, Editor));

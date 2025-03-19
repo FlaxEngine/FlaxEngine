@@ -328,6 +328,7 @@ namespace FlaxEditor.Windows
             {
                 Parent = this,
             };
+            toolstrip.BackgroundColor = Style.Current.BackgroundNormal;
             toolstrip.AddButton("Clear", Clear).LinkTooltip("Clears all log entries");
             _clearOnPlayButton = (ToolStripButton)toolstrip.AddButton("Clear on Play", () =>
             {
