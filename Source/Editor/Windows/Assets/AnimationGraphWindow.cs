@@ -149,6 +149,10 @@ namespace FlaxEditor.Windows.Assets
                                                         (instance, parameter, tag) => ((AnimationGraphWindow)instance).PreviewActor.GetParameterValue(parameter.Identifier),
                                                         (instance, value, parameter, tag) => ((AnimationGraphWindow)instance).PreviewActor.SetParameterValue(parameter.Identifier, value),
                                                         Values);
+
+                    // Parameters will always have one element
+                    if (parameters.Length < 2)
+                        layout.Label("No parameters", TextAlignment.Center);
                 }
             }
         }

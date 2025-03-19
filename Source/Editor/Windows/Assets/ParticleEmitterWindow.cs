@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.Scripting;
@@ -104,6 +105,9 @@ namespace FlaxEditor.Windows.Assets
                                                         (instance, parameter, tag) => ((ParticleEmitterWindow)instance).Preview.PreviewActor.GetParameterValue(string.Empty, parameter.Name),
                                                         (instance, value, parameter, tag) => ((ParticleEmitterWindow)instance).Preview.PreviewActor.SetParameterValue(string.Empty, parameter.Name, value),
                                                         Values);
+
+                    if (!parameters.Any())
+                        layout.Label("No parameters", TextAlignment.Center);
                 }
             }
         }
