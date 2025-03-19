@@ -164,21 +164,10 @@ namespace FlaxEditor.States
         {
             Assert.AreEqual(Guid.Empty, _lastSceneFromRequest, "Invalid state.");
 
-            // Bind events, only bind loading event and error if re-loading the same scene to avoid issues.
-            if (_scenesToUnload.Count == 1 && _scenesToLoad.Count == 1)
-            {
-                if (_scenesToLoad[0] == _scenesToUnload[0].ID)
-                {
-                    Level.SceneLoaded += OnSceneEvent;
-                    Level.SceneLoadError += OnSceneEvent;
-                }
-            }
-            else
-            {
-                Level.SceneLoaded += OnSceneEvent;
-                Level.SceneLoadError += OnSceneEvent;
-                Level.SceneUnloaded += OnSceneEvent;
-            }
+            // Bind events
+            Level.SceneLoaded += OnSceneEvent;
+            Level.SceneLoadError += OnSceneEvent;
+            Level.SceneUnloaded += OnSceneEvent;
 
             // Push scenes changing requests
             for (int i = 0; i < _scenesToUnload.Count; i++)
