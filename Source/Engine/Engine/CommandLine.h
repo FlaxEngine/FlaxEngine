@@ -127,6 +127,20 @@ public:
         /// </summary>
         Nullable<bool> LowDPI;
 
+#if PLATFORM_LINUX && PLATFORM_SDL
+
+        /// <summary>
+        /// -wayland (prefer Wayland over X11 as display server)
+        /// </summary>
+        Nullable<bool> Wayland;
+
+        /// <summary>
+        /// -x11 (prefer X11 over Wayland as display server)
+        /// </summary>
+        Nullable<bool> X11;
+
+#endif
+
 #if USE_EDITOR
         /// <summary>
         /// -project !path! (Startup project path)

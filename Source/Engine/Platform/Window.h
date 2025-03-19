@@ -2,7 +2,9 @@
 
 #pragma once
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_SDL
+#include "SDL/SDLWindow.h"
+#elif PLATFORM_WINDOWS
 #include "Windows/WindowsWindow.h"
 #elif PLATFORM_UWP
 #include "UWP/UWPWindow.h"
