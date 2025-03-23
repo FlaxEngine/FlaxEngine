@@ -708,7 +708,7 @@ namespace FlaxEditor.Windows
             }
             else
             {
-                // TODO: remove items that depend on different items in the list: use wants to remove `folderA` and `folderA/asset.x`, we should just remove `folderA`
+                // TODO: remove items that depend on different items in the list: user wants to remove `folderA` and `folderA/asset.x`, we should just remove `folderA`
                 var toDuplicate = new List<ContentItem>(items);
 
                 // Duplicate every item
