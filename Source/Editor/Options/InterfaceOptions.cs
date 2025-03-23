@@ -77,6 +77,25 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
+        /// Options for the visibility status of the tab close button.
+        /// </summary>
+        public enum TabCloseButtonVisibility
+        {
+            /// <summary>
+            /// Never show the close button.
+            /// </summary>
+            Never,
+            /// <summary>
+            /// Show the close button on tabs that are currently selected.
+            /// </summary>
+            SelectedTab,
+            /// <summary>
+            /// Show the close button on all tabs that can be closed.
+            /// </summary>
+            Always
+        }
+
+        /// <summary>
         /// Options for the action taken by the play button.
         /// </summary>
         public enum PlayAction
@@ -294,6 +313,13 @@ namespace FlaxEditor.Options
         [DefaultValue(DockStateProxy.Float)]
         [EditorDisplay("Tabs & Windows", "New Window Location"), EditorOrder(150), Tooltip("Define the opening method for new windows, open in a new tab by default.")]
         public DockStateProxy NewWindowLocation { get; set; } = DockStateProxy.Float;
+
+        /// <summary>
+        /// Gets or sets a value indicating when the tab close button should be visible.
+        /// </summary>
+        [DefaultValue(TabCloseButtonVisibility.SelectedTab)]
+        [EditorDisplay("Tabs & Windows"), EditorOrder(151)]
+        public TabCloseButtonVisibility ShowTabCloseButton { get; set; } = TabCloseButtonVisibility.SelectedTab;
 
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
