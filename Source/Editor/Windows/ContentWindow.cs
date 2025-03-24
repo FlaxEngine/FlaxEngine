@@ -280,7 +280,7 @@ namespace FlaxEditor.Windows
             scaleValue.ValueChanged += () => View.ViewScale = scaleValue.Value;
             menu.VisibleChanged += control => { scaleValue.Value = View.ViewScale; };
 
-            var viewType = menu.AddChildMenu("View Type");
+            var viewType = menu.AddChildMenu("View Type Override");
             viewType.ContextMenu.AddButton("Tiles", OnViewTypeButtonClicked).Tag = ContentViewType.Tiles;
             viewType.ContextMenu.AddButton("List", OnViewTypeButtonClicked).Tag = ContentViewType.List;
             viewType.ContextMenu.VisibleChanged += control =>
