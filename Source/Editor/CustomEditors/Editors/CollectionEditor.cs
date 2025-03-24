@@ -81,7 +81,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 b.Enabled = Index + 1 < Editor.Count && !Editor._readOnly;
 
                 b = menu.AddButton("Remove", OnRemoveClicked);
-                b.Enabled = !Editor._readOnly;
+                b.Enabled = !Editor._readOnly && Editor._canResize;
             }
 
             /// <inheritdoc />
