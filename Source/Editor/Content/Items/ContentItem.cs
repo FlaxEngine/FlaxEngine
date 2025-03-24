@@ -514,7 +514,10 @@ namespace FlaxEditor.Content
             if (_thumbnail.IsValid)
                 Render2D.DrawSprite(_thumbnail, rectangle);
             else
+            {
                 Render2D.FillRectangle(rectangle, Color.Black);
+                Render2D.DrawText(Style.Current.FontTitle, "?", rectangle, Color.White, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap, 1f, rectangle.Width * 0.035f);
+            }
         }
 
         /// <summary>
@@ -538,7 +541,10 @@ namespace FlaxEditor.Content
             if (_thumbnail.IsValid)
                 Render2D.DrawSprite(_thumbnail, rectangle);
             else
+            {
                 Render2D.FillRectangle(rectangle, Color.Black);
+                Render2D.DrawText(Style.Current.FontTitle, "?", rectangle, Color.White, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords, 1f, rectangle.Width * 0.035f);
+            }
         }
 
         /// <summary>
