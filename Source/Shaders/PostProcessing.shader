@@ -96,12 +96,12 @@ static const float permTexUnit = 1.0 / 256.0;      // Perm texture texel-size
 static const float permTexUnitHalf = 0.5 / 256.0;  // Half perm texture texel-size
 
 // Input textures
-Texture2D Input0    : register(t0);
-Texture2D Input1    : register(t1);
-Texture2D Input2    : register(t2);
-Texture2D Input3    : register(t3);
-Texture2D LensDirt  : register(t4);
-Texture2D LensStar  : register(t5);
+Texture2D Input0 : register(t0);
+Texture2D Input1 : register(t1);
+Texture2D Input2 : register(t2);
+Texture2D Input3 : register(t3);
+Texture2D LensDirt : register(t4);
+Texture2D LensStar : register(t5);
 Texture2D LensColor : register(t6);
 #if USE_VOLUME_LUT
 Texture3D ColorGradingLUT : register(t7);
@@ -261,63 +261,63 @@ float2 coordRot(in float2 tc, in float angle)
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_BloomBrightPass(Quad_VS2PS input) : SV_Target
 {
-   // Get dimensions for precise texel calculations
-   uint width, height;
-   Input0.GetDimensions(width, height);
-   float2 texelSize = 1.0 / float2(width, height);
-   // Use fixed 13-tap sample pattern for initial bright pass
-   float3 color = 0;
-   float totalWeight = 0;
-   
-   // Center sample with high weight for energy preservation
-   float3 center = Input0.Sample(SamplerLinearClamp, input.TexCoord).rgb;
-   
-   // Apply Karis average to prevent bright pixels from dominating
-   float centerLuma = max(dot(center, float3(0.2126, 0.7152, 0.0722)), 0.0001);
-   center = center / (1.0 + centerLuma);
+    // Get dimensions for precise texel calculations
+    uint width, height;
+    Input0.GetDimensions(width, height);
+    float2 texelSize = 1.0 / float2(width, height);
+    // Use fixed 13-tap sample pattern for initial bright pass
+    float3 color = 0;
+    float totalWeight = 0;
 
-   float centerWeight = 4.0;
-   color += center * centerWeight;
-   totalWeight += centerWeight;
+    // Center sample with high weight for energy preservation
+    float3 center = Input0.Sample(SamplerLinearClamp, input.TexCoord).rgb;
 
-   // Inner ring - fixed offset at 1.0 texel distance
-   UNROLL
-   for (int i = 0; i < 4; i++)
-   {
-       float angle = i * (PI / 2.0);
-       float2 offset = float2(cos(angle), sin(angle)) * texelSize;
-       float3 sample = Input0.Sample(SamplerLinearClamp, input.TexCoord + offset).rgb;
-       
-       // Apply Karis average
-       float sampleLuma = max(dot(sample, float3(0.2126, 0.7152, 0.0722)), 0.0001);
-       sample = sample / (1.0 + sampleLuma);
+    // Apply Karis average to prevent bright pixels from dominating
+    float centerLuma = max(dot(center, float3(0.2126, 0.7152, 0.0722)), 0.0001);
+    center = center / (1.0 + centerLuma);
 
-       float weight = 2.0;
-       color += sample * weight;
-       totalWeight += weight;
-   }
+    float centerWeight = 4.0;
+    color += center * centerWeight;
+    totalWeight += centerWeight;
 
-   // Outer ring - fixed offset at 1.4142 texel distance (diagonal)
-   UNROLL
-   for (int j = 0; j < 8; j++)
-   {
-       float angle = j * (PI / 4.0);
-       float2 offset = float2(cos(angle), sin(angle)) * texelSize * 1.4142;
-       float3 sample = Input0.Sample(SamplerLinearClamp, input.TexCoord + offset).rgb;
+    // Inner ring - fixed offset at 1.0 texel distance
+    UNROLL
+    for (int i = 0; i < 4; i++)
+    {
+        float angle = i * (PI / 2.0);
+        float2 offset = float2(cos(angle), sin(angle)) * texelSize;
+        float3 sampleColor = Input0.Sample(SamplerLinearClamp, input.TexCoord).rgb;
 
-       // Apply Karis average
-       float sampleLuma = max(dot(sample, float3(0.2126, 0.7152, 0.0722)), 0.0001);
-       sample = sample / (1.0 + sampleLuma);
+        // Apply Karis average
+        float sampleLuma = max(dot(sampleColor, float3(0.2126, 0.7152, 0.0722)), 0.0001);
+        sampleColor = sampleColor / (1.0 + sampleLuma);
 
-       float weight = 1.0;
-       color += sample * weight;
-       totalWeight += weight;
-   }
-   color /= totalWeight;
-   
-   // Un-apply Karis average to maintain energy
-   float finalLuma = max(dot(color, float3(0.2126, 0.7152, 0.0722)), 0.0001);
-   color = color * (1.0 + finalLuma);
+        float weight = 2.0;
+        color += sampleColor * weight;
+        totalWeight += weight;
+    }
+
+    // Outer ring - fixed offset at 1.4142 texel distance (diagonal)
+    UNROLL
+    for (int j = 0; j < 8; j++)
+    {
+        float angle = j * (PI / 4.0);
+        float2 offset = float2(cos(angle), sin(angle)) * texelSize * 1.4142;
+        float3 sampleColor = Input0.Sample(SamplerLinearClamp, input.TexCoord + offset).rgb;
+
+        // Apply Karis average
+        float sampleLuma = max(dot(sampleColor, float3(0.2126, 0.7152, 0.0722)), 0.0001);
+        sampleColor = sampleColor / (1.0 + sampleLuma);
+
+        float weight = 1.0;
+        color += sampleColor * weight;
+        totalWeight += weight;
+    }
+    color /= totalWeight;
+
+    // Un-apply Karis average to maintain energy
+    float finalLuma = max(dot(color, float3(0.2126, 0.7152, 0.0722)), 0.0001);
+    color = color * (1.0 + finalLuma);
 
     // Apply threshold with quadratic rolloff for smoother transition
     float luminance = dot(color, float3(0.2126, 0.7152, 0.0722));
@@ -325,30 +325,30 @@ float4 PS_BloomBrightPass(Quad_VS2PS input) : SV_Target
     float knee = threshold * BloomThresholdKnee;
     float softMax = threshold + knee;
 
-   float contribution = 0;
-   if (luminance > threshold)
-   {
-       if (luminance < softMax)
-       {
-           // Quadratic softening between threshold and (threshold + knee)
-           float x = (luminance - threshold) / knee;
-           contribution = x * x * 0.5;
-       }
-       else
-       {
-           // Full contribution above softMax
-           contribution = luminance - threshold;
-       }
-   }
+    float contribution = 0;
+    if (luminance > threshold)
+    {
+        if (luminance < softMax)
+        {
+            // Quadratic softening between threshold and (threshold + knee)
+            float x = (luminance - threshold) / knee;
+            contribution = x * x * 0.5;
+        }
+        else
+        {
+            // Full contribution above softMax
+            contribution = luminance - threshold;
+        }
+    }
 
-   float testc = BloomClamp;
-   float3 clamped = (color * contribution);
-   clamped.r = min(clamped.r, testc);
-   clamped.g = min(clamped.g, testc);
-   clamped.b = min(clamped.b, testc);
+    float testc = BloomClamp;
+    float3 clamped = (color * contribution);
+    clamped.r = min(clamped.r, testc);
+    clamped.g = min(clamped.g, testc);
+    clamped.b = min(clamped.b, testc);
 
-   // Store threshold result in alpha for downsample chain
-   return float4(clamped, luminance);
+    // Store threshold result in alpha for downsample chain
+    return float4(clamped, luminance);
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
@@ -394,8 +394,8 @@ float4 PS_BloomDownsample(Quad_VS2PS input) : SV_Target
     for (int i = 0; i < 9; i++)
     {
         float2 offset = offsets[i] * texelSize * 2.0; // Fixed scale factor for stability
-        float4 sample = Input0.Sample(SamplerLinearClamp, input.TexCoord + offset);
-        color += sample.rgb * weights[i];
+        float4 sampleColor = Input0.Sample(SamplerLinearClamp, input.TexCoord + offset);
+        color += sampleColor.rgb * weights[i];
         totalWeight += weights[i];
     }
 
@@ -433,9 +433,9 @@ float4 PS_BloomDualFilterUpsample(Quad_VS2PS input) : SV_Target
     UNROLL
     for (int i = 0; i < 4; i++)
     {
-        float4 sample = Input0.Sample(SamplerLinearClamp, input.TexCoord + crossOffsets[i] * texelSize);
+        float4 sampleColor = Input0.Sample(SamplerLinearClamp, input.TexCoord + crossOffsets[i] * texelSize);
         float weight = 2.0;
-        color += sample.rgb * weight;
+        color += sampleColor.rgb * weight;
         totalWeight += weight;
     }
 
@@ -451,9 +451,9 @@ float4 PS_BloomDualFilterUpsample(Quad_VS2PS input) : SV_Target
     UNROLL
     for (int j = 0; j < 4; j++)
     {
-        float4 sample = Input0.Sample(SamplerLinearClamp, input.TexCoord + cornerOffsets[j] * texelSize);
+        float4 sampleColor = Input0.Sample(SamplerLinearClamp, input.TexCoord + cornerOffsets[j] * texelSize);
         float weight = 1.0;
-        color += sample.rgb * weight;
+        color += sampleColor.rgb * weight;
         totalWeight += weight;
     }
 
