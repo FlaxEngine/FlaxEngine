@@ -4,6 +4,8 @@
 
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/Window.h"
+#include "Engine/Platform/Windows/WindowsInput.h"
+#include "Engine/Platform/Windows/WindowsWindow.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/CreateWindowSettings.h"
 #include "Engine/Platform/CreateProcessSettings.h"
@@ -33,7 +35,6 @@
 #define CLR_EXCEPTION 0xE0434352
 #define VCPP_EXCEPTION 0xE06D7363
 
-const Char* WindowsPlatform::ApplicationWindowClass = TEXT("FlaxWindow");
 void* WindowsPlatform::Instance = nullptr;
 
 #if CRASH_LOG_ENABLE || TRACY_ENABLE
@@ -256,6 +257,8 @@ void GetWindowsVersion(String& windowsName, int32& versionMajor, int32& versionM
     RegCloseKey(hKey);
 }
 
+#if !PLATFORM_SDL
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
     // Find window to process that message
@@ -272,6 +275,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
     // Default
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
+
+#endif
 
 long __stdcall WindowsPlatform::SehExceptionHandler(EXCEPTION_POINTERS* ep)
 {
@@ -437,11 +442,12 @@ DialogResult MessageBox::Show(Window* parent, const StringView& text, const Stri
         flags |= MB_ICONHAND;
         break;
     case MessageBoxIcon::Information:
+    case MessageBoxIcon::Question:
         flags |= MB_ICONINFORMATION;
         break;
-    case MessageBoxIcon::Question:
-        flags |= MB_ICONQUESTION;
-        break;
+    //case MessageBoxIcon::Question:
+    //    flags |= MB_ICONQUESTION;
+    //    break;
     case MessageBoxIcon::Stop:
         flags |= MB_ICONSTOP;
         break;
@@ -519,6 +525,7 @@ void WindowsPlatform::PreInit(void* hInstance)
     // Disable the process from being showing "ghosted" while not responding messages during slow tasks
     DisableProcessWindowsGhosting();
 
+#if !PLATFORM_SDL
     // Register window class
     WNDCLASS windowsClass;
     Platform::MemoryClear(&windowsClass, sizeof(WNDCLASS));
@@ -527,12 +534,13 @@ void WindowsPlatform::PreInit(void* hInstance)
     windowsClass.hInstance = (HINSTANCE)Instance;
     windowsClass.hIcon = LoadIconW(GetModuleHandle(nullptr), MAKEINTRESOURCE(IDR_MAINFRAME));
     windowsClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
-    windowsClass.lpszClassName = ApplicationWindowClass;
+    windowsClass.lpszClassName = ApplicationClassName;
     if (!RegisterClassW(&windowsClass))
     {
         Error(TEXT("Window class registration failed!"));
         exit(-1);
     }
+#endif
 
     // Init OLE
     if (OleInitialize(nullptr) != S_OK)
@@ -661,11 +669,13 @@ bool WindowsPlatform::Init()
     DWORD tmp;
     Char buffer[256];
 
+#if !PLATFORM_SDL
     // Get user locale string
     if (GetUserDefaultLocaleName(buffer, LOCALE_NAME_MAX_LENGTH))
     {
         UserLocale = String(buffer);
     }
+#endif
 
     // Get computer name string
     if (GetComputerNameW(buffer, &tmp))
@@ -681,7 +691,9 @@ bool WindowsPlatform::Init()
     }
     OnPlatformUserAdd(New<User>(userName));
 
+#if !PLATFORM_SDL
     WindowsInput::Init();
+#endif
 
     return false;
 }
@@ -709,7 +721,9 @@ void WindowsPlatform::LogInfo()
 
 void WindowsPlatform::Tick()
 {
+#if !PLATFORM_SDL
     WindowsInput::Update();
+#endif
 
     // Check to see if any messages are waiting in the queue
     MSG msg;
@@ -740,8 +754,10 @@ void WindowsPlatform::Exit()
     DbgHelpUnlock();
 #endif
 
+#if !PLATFORM_SDL
     // Unregister app class
-    UnregisterClassW(ApplicationWindowClass, nullptr);
+    UnregisterClassW(ApplicationClassName, nullptr);
+#endif
 
     Win32Platform::Exit();
 }
@@ -808,6 +824,7 @@ BatteryInfo WindowsPlatform::GetBatteryInfo()
     return info;
 }
 
+#if !PLATFORM_SDL
 int32 WindowsPlatform::GetDpi()
 {
     return SystemDpi;
@@ -817,6 +834,7 @@ String WindowsPlatform::GetUserLocaleName()
 {
     return UserLocale;
 }
+#endif
 
 String WindowsPlatform::GetComputerName()
 {
@@ -1186,10 +1204,12 @@ int32 WindowsPlatform::CreateProcess(CreateProcessSettings& settings)
     return result;
 }
 
+#if !PLATFORM_SDL
 Window* WindowsPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
     return New<WindowsWindow>(settings);
 }
+#endif
 
 void* WindowsPlatform::LoadLibrary(const Char* filename)
 {
