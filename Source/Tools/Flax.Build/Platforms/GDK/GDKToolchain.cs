@@ -14,6 +14,11 @@ namespace Flax.Build.Platforms
     public abstract class GDKToolchain : WindowsToolchainBase
     {
         /// <summary>
+        /// Gets the version of Xbox Services toolset.
+        /// </summary>
+        public WindowsPlatformToolset XboxServicesToolset => Toolset > WindowsPlatformToolset.v142 ? WindowsPlatformToolset.v142 : Toolset;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GDKToolchain"/> class.
         /// </summary>
         /// <param name="platform">The platform.</param>
@@ -26,9 +31,12 @@ namespace Flax.Build.Platforms
             SystemIncludePaths.Add(Path.Combine(GDK.Instance.RootPath, "GRDK\\GameKit\\Include"));
             SystemLibraryPaths.Add(Path.Combine(GDK.Instance.RootPath, "GRDK\\GameKit\\Lib\\amd64"));
             var xboxServicesPath = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries\\Xbox.Services.API.C\\DesignTime\\CommonConfiguration\\Neutral\\");
-            var xboxServicesToolset = Toolset > WindowsPlatformToolset.v142 ? WindowsPlatformToolset.v142 : Toolset;
+            var xboxServicesToolset = XboxServicesToolset;
             SystemIncludePaths.Add(xboxServicesPath + "Include");
             SystemLibraryPaths.Add(xboxServicesPath + "Lib\\Release\\" + xboxServicesToolset);
+            var curlPath = Path.Combine(GDK.Instance.RootPath, "GRDK\\ExtensionLibraries\\Xbox.XCurl.API\\DesignTime\\CommonConfiguration\\Neutral\\");
+            SystemIncludePaths.Add(curlPath + "Include");
+            SystemLibraryPaths.Add(curlPath + "Lib");
         }
 
         /// <inheritdoc />
@@ -43,7 +51,7 @@ namespace Flax.Build.Platforms
 
             options.LinkEnv.InputLibraries.Add("xgameruntime.lib");
             options.LinkEnv.InputLibraries.Add("xgameplatform.lib");
-            var xboxServicesToolset = Toolset > WindowsPlatformToolset.v142 ? WindowsPlatformToolset.v142 : Toolset;
+            var xboxServicesToolset = XboxServicesToolset;
             options.LinkEnv.InputLibraries.Add($"Microsoft.Xbox.Services.{(int)xboxServicesToolset}.GDK.C.lib");
 
             var toolsetPath = WindowsPlatformBase.GetToolsets()[Toolset];
