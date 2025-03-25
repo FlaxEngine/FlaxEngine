@@ -1211,6 +1211,7 @@ namespace FlaxEditor.Utilities
             {
                 Parent = panel1,
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Pivot = Float2.Zero,
                 IsScrollable = true,
             };
             tree = new Tree(false)

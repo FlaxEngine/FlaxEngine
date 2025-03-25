@@ -24,6 +24,7 @@
 #include "Engine/Level/Scripts/ModelPrefab.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Utilities/RectPack.h"
+#include "Engine/Scripting/Scripting.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "AssetsImportingManager.h"
 
@@ -169,6 +170,33 @@ void SetupMaterialSlots(ModelData& data, const Array<MaterialSlotEntry>& materia
 bool SortMeshGroups(IGrouping<StringView, MeshData*> const& i1, IGrouping<StringView, MeshData*> const& i2)
 {
     return i1.GetKey().Compare(i2.GetKey()) < 0;
+}
+
+void CloneObject(rapidjson_flax::StringBuffer& buffer, SceneObject* src, SceneObject* dst, bool stripName = false)
+{
+    // Serialize source
+    buffer.Clear();
+    CompactJsonWriter writer(buffer);
+    writer.StartObject();
+    const void* defaultInstance = src->GetType().GetDefaultInstance();
+    src->Serialize(writer, defaultInstance);
+    writer.EndObject();
+
+    // Parse json
+    rapidjson_flax::Document document;
+    document.Parse(buffer.GetString(), buffer.GetSize());
+
+    // Strip unwanted data
+    document.RemoveMember("ID");
+    document.RemoveMember("ParentID");
+    document.RemoveMember("PrefabID");
+    document.RemoveMember("PrefabObjectID");
+    if (stripName)
+        document.RemoveMember("Name");
+
+    // Deserialize destination
+    auto modifier = Cache::ISerializeModifier.Get();
+    dst->Deserialize(document, &*modifier);
 }
 
 CreateAssetResult ImportModel::Import(CreateAssetContext& context)
@@ -659,6 +687,8 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, const M
 
     // Create prefab structure
     Dictionary<int32, Actor*> nodeToActor;
+    Dictionary<Guid, SceneObject*> newPrefabObjects; // Maps prefab object id to the restored and linked object
+    rapidjson_flax::StringBuffer jsonBuffer;
     Array<Actor*> nodeActors;
     Actor* rootActor = nullptr;
     for (int32 nodeIndex = 0; nodeIndex < data.Nodes.Count(); nodeIndex++)
@@ -749,7 +779,6 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, const M
         // Link with object from prefab (if reimporting)
         if (prefab)
         {
-            rapidjson_flax::StringBuffer buffer;
             for (Actor* a : nodeActors)
             {
                 for (const auto& i : prefab->ObjectsCache)
@@ -761,33 +790,12 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, const M
                         continue;
 
                     // Preserve local changes made in the prefab
-                    {
-                        // Serialize
-                        buffer.Clear();
-                        CompactJsonWriter writer(buffer);
-                        writer.StartObject();
-                        const void* defaultInstance = o->GetType().GetDefaultInstance();
-                        o->Serialize(writer, defaultInstance);
-                        writer.EndObject();
-
-                        // Parse json
-                        rapidjson_flax::Document document;
-                        document.Parse(buffer.GetString(), buffer.GetSize());
-
-                        // Strip unwanted data
-                        document.RemoveMember("ID");
-                        document.RemoveMember("ParentID");
-                        document.RemoveMember("PrefabID");
-                        document.RemoveMember("PrefabObjectID");
-                        document.RemoveMember("Name");
-
-                        // Deserialize object
-                        auto modifier = Cache::ISerializeModifier.Get();
-                        a->Deserialize(document, &*modifier);
-                    }
+                    CloneObject(jsonBuffer, o, a, true);
 
                     // Mark as this object already exists in prefab so will be preserved when updating it
-                    a->LinkPrefab(o->GetPrefabID(), o->GetPrefabObjectID());
+                    const Guid prefabObjectId = o->GetPrefabObjectID();
+                    a->LinkPrefab(o->GetPrefabID(), prefabObjectId);
+                    newPrefabObjects.Add(prefabObjectId, a);
                     break;
                 }
             }
@@ -808,10 +816,41 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, const M
             {
                 if (i.Value->GetTypeHandle() == modelPrefabScript->GetTypeHandle())
                 {
-                    modelPrefabScript->LinkPrefab(i.Value->GetPrefabID(), i.Value->GetPrefabObjectID());
+                    const Guid prefabObjectId = i.Value->GetPrefabObjectID();
+                    modelPrefabScript->LinkPrefab(i.Value->GetPrefabID(), prefabObjectId);
+                    newPrefabObjects.Add(prefabObjectId, modelPrefabScript);
                     break;
                 }
             }
+        }
+    }
+    if (prefab)
+    {
+        // Preserve existing objects added by user (eg. colliders, sfx, vfx, scripts)
+        for (const auto& i : prefab->ObjectsCache)
+        {
+            // Skip already restored objects
+            const Guid prefabObjectId = i.Key;
+            if (newPrefabObjects.ContainsKey(prefabObjectId))
+                continue;
+            SceneObject* defaultObject = i.Value;
+            // TODO: ignore objects that were imported previously but not now (eg. mesh was removed from source asset)
+
+            // Find parent to link
+            SceneObject* parent;
+            if (!newPrefabObjects.TryGet(defaultObject->GetParent()->GetPrefabObjectID(), parent))
+                continue;
+
+            // Duplicate object
+            SceneObject* restoredObject = (SceneObject*)Scripting::NewObject(defaultObject->GetTypeHandle());
+            if (!restoredObject)
+                continue;
+            CloneObject(jsonBuffer, defaultObject, restoredObject);
+            restoredObject->SetParent((Actor*)parent);
+
+            // Link with existing prefab instance
+            restoredObject->LinkPrefab(i.Value->GetPrefabID(), prefabObjectId);
+            newPrefabObjects.Add(prefabObjectId, restoredObject);
         }
     }
 

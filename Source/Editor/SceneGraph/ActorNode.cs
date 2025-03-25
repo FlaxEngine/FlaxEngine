@@ -192,7 +192,7 @@ namespace FlaxEditor.SceneGraph
             GetAllChildActorNodes(nodes);
             return nodes.ToArray();
         }
-        
+
         /// <summary>
         /// Get all nested actor nodes under this actor node.
         /// </summary>
@@ -213,12 +213,18 @@ namespace FlaxEditor.SceneGraph
         }
 
         /// <summary>
-        /// Whether an actor node can be selected with a selector.
+        /// Whether an actor node can be selected with a selector inside editor viewport.
         /// </summary>
-        /// <returns>True if the actor node can be selected</returns>
-        public virtual bool CanSelectActorNodeWithSelector()
+        public virtual bool CanSelectInViewport
         {
-            return Actor && Actor.HideFlags is not (HideFlags.DontSelect or HideFlags.FullyHidden) && Actor is not EmptyActor && IsActive;
+            get
+            {
+                var actor = Actor;
+                return actor &&
+                       actor.IsActiveInHierarchy &&
+                       (actor.HideFlags & HideFlags.DontSelect) == HideFlags.None &&
+                       actor.GetType() != typeof(EmptyActor);
+            }
         }
 
         /// <summary>

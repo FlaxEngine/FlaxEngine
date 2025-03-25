@@ -124,8 +124,10 @@ namespace FlaxEditor.Windows.Assets
             UpdateToolstrip();
         }
 
-        private void OnScriptsReloadBegin()
+        /// <inheritdoc />
+        protected override void OnScriptsReloadBegin()
         {
+            base.OnScriptsReloadBegin();
             Close();
         }
 
@@ -308,6 +310,20 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            base.OnLostFocus();
+            _optionsCM?.Dispose();
+        }
+
+        /// <inheritdoc />
+        public override void OnExit()
+        {
+            base.OnExit();
+            _optionsCM?.Dispose();
+        }
+
+        /// <inheritdoc />
         public override void OnItemReimported(ContentItem item)
         {
             // Refresh the properties (will get new data in OnAssetLoaded)
@@ -329,6 +345,7 @@ namespace FlaxEditor.Windows.Assets
                 _isRegisteredForScriptsReload = false;
                 ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             }
+            _optionsCM?.Dispose();
             _typeText = null;
         }
     }

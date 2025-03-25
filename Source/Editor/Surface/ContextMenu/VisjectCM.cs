@@ -235,6 +235,7 @@ namespace FlaxEditor.Surface.ContextMenu
             {
                 Parent = panel1,
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Pivot = Float2.Zero,
                 IsScrollable = true,
             };
             _groupsPanel = panel2;
@@ -292,6 +293,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     X = 8,
                     Width = Width * 0.5f - 16,
                     AutoSize = true,
+                    Pivot = Float2.Zero,
                 };
 
                 _descriptionOutputPanel = new VerticalPanel()
@@ -300,6 +302,7 @@ namespace FlaxEditor.Surface.ContextMenu
                     X = Width * 0.5f + 8,
                     Width = Width * 0.5f - 16,
                     AutoSize = true,
+                    Pivot = Float2.Zero,
                 };
             }
 

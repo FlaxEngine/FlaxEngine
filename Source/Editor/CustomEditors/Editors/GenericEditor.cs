@@ -820,6 +820,15 @@ namespace FlaxEditor.CustomEditors.Editors
         }
 
         /// <inheritdoc />
+        protected override void Deinitialize()
+        {
+            _visibleIfCaches = null;
+            _visibleIfPropertiesListsCache = null;
+
+            base.Deinitialize();
+        }
+
+        /// <inheritdoc />
         public override void Refresh()
         {
             // Automatic refresh when value nullability changed

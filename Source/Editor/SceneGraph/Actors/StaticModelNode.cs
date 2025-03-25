@@ -169,7 +169,6 @@ namespace FlaxEditor.SceneGraph.Actors
                     var actor = new BoxCollider
                     {
                         StaticFlags = staticModelNode.Actor.StaticFlags,
-                        Transform = staticModelNode.Actor.Transform,
                     };
                     staticModelNode.Root.Spawn(actor, staticModelNode.Actor);
                     createdNodes.Add(window is PrefabWindow pWindow ? pWindow.Graph.Root.Find(actor) : Editor.Instance.Scene.GetActorNode(actor));
@@ -180,7 +179,6 @@ namespace FlaxEditor.SceneGraph.Actors
                     var actor = new SphereCollider
                     {
                         StaticFlags = staticModelNode.Actor.StaticFlags,
-                        Transform = staticModelNode.Actor.Transform,
                     };
                     staticModelNode.Root.Spawn(actor, staticModelNode.Actor);
                     createdNodes.Add(window is PrefabWindow pWindow ? pWindow.Graph.Root.Find(actor) : Editor.Instance.Scene.GetActorNode(actor));
@@ -191,7 +189,6 @@ namespace FlaxEditor.SceneGraph.Actors
                     var actor = new BoxCollider
                     {
                         StaticFlags = staticModelNode.Actor.StaticFlags,
-                        Transform = staticModelNode.Actor.Transform,
                         Size = new Float3(100.0f, 100.0f, 1.0f),
                     };
                     staticModelNode.Root.Spawn(actor, staticModelNode.Actor);
@@ -203,7 +200,6 @@ namespace FlaxEditor.SceneGraph.Actors
                     var actor = new CapsuleCollider
                     {
                         StaticFlags = staticModelNode.Actor.StaticFlags,
-                        Transform = staticModelNode.Actor.Transform,
                         Radius = 25.0f,
                         Height = 50.0f,
                     };
@@ -220,7 +216,6 @@ namespace FlaxEditor.SceneGraph.Actors
                     var actor = new MeshCollider
                     {
                         StaticFlags = staticModelNode.Actor.StaticFlags,
-                        Transform = staticModelNode.Actor.Transform,
                         CollisionData = collisionData,
                     };
                     staticModelNode.Root.Spawn(actor, staticModelNode.Actor);

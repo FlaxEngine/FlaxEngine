@@ -78,7 +78,7 @@ namespace FlaxEngine.GUI
                 size.Y = top + bottom;
                 if (!ControlChildSize)
                     size.X = maxWidth;
-                Size = size;
+                Resize(ref size);
             }
             else if (_alignment != TextAlignment.Near && hasAnyTop)
             {

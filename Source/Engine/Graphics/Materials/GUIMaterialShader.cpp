@@ -34,8 +34,8 @@ void GUIMaterialShader::Bind(BindParameters& params)
     auto materialData = reinterpret_cast<GUIMaterialShaderData*>(cb.Get());
     cb = cb.Slice(sizeof(GUIMaterialShaderData));
     int32 srv = 0;
-    const auto ps = context->IsDepthBufferBinded() ? _cache.Depth : _cache.NoDepth;
     auto customData = (Render2D::CustomData*)params.CustomData;
+    const auto ps = customData->UseDepthBuffer ? _cache.Depth : _cache.NoDepth;
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
@@ -83,26 +83,21 @@ void GUIMaterialShader::Unload()
 
 bool GUIMaterialShader::Load()
 {
-    GPUPipelineState::Description psDesc0 = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    psDesc0.Wireframe = EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::Wireframe);
-    psDesc0.VS = _shader->GetVS("VS_GUI");
-    psDesc0.PS = _shader->GetPS("PS_GUI");
-    psDesc0.BlendMode = BlendingMode::AlphaBlend;
-
-    psDesc0.DepthEnable = psDesc0.DepthWriteEnable = true;
+    auto desc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+    desc.Wireframe = EnumHasAnyFlags(_info.FeaturesFlags, MaterialFeaturesFlags::Wireframe);
+    desc.VS = _shader->GetVS("VS_GUI");
+    desc.PS = _shader->GetPS("PS_GUI");
+    desc.BlendMode = BlendingMode::AlphaBlend;
+    desc.DepthEnable = true;
     _cache.Depth = GPUDevice::Instance->CreatePipelineState();
     _cache.NoDepth = GPUDevice::Instance->CreatePipelineState();
-
-    bool failed = _cache.Depth->Init(psDesc0);
-
-    psDesc0.DepthEnable = psDesc0.DepthWriteEnable = false;
-    failed |= _cache.NoDepth->Init(psDesc0);
-
+    bool failed = _cache.Depth->Init(desc);
+    desc.DepthEnable = false;
+    failed |= _cache.NoDepth->Init(desc);
     if (failed)
     {
         LOG(Warning, "Failed to create GUI material pipeline state.");
         return true;
     }
-
     return false;
 }

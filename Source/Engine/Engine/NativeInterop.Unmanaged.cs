@@ -972,7 +972,49 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
-        internal static void ReloadScriptingAssemblyLoadContext()
+        internal static void CreateScriptingAssemblyLoadContext()
+        {
+#if FLAX_EDITOR
+            if (scriptingAssemblyLoadContext != null)
+            {
+                // Wait for previous ALC to finish unloading, track it without holding strong references to it
+                GCHandle weakRef = GCHandle.Alloc(scriptingAssemblyLoadContext, GCHandleType.WeakTrackResurrection);
+                scriptingAssemblyLoadContext = null;
+#if false
+                // In case the ALC doesn't unload properly: https://learn.microsoft.com/en-us/dotnet/standard/assembly/unloadability#debug-unloading-issues
+                while (true)
+#else
+                for (int attempts = 5; attempts > 0; attempts--)
+#endif
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+
+                    if (!IsHandleAlive(weakRef))
+                        break;
+                    System.Threading.Thread.Sleep(1);
+                }
+                if (IsHandleAlive(weakRef))
+                    Debug.Logger.LogHandler.LogWrite(LogType.Warning, "Scripting AssemblyLoadContext was not unloaded.");
+                weakRef.Free();
+
+                static bool IsHandleAlive(GCHandle weakRef)
+                {
+                    // Checking the target in scope somehow holds a reference to it...?
+                    return weakRef.Target != null;
+                }
+            }
+
+            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible: true);
+            scriptingAssemblyLoadContext.Resolving += OnScriptingAssemblyLoadContextResolving;
+#else
+            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible: false);
+#endif
+            DelegateHelpers.InitMethods();
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void UnloadScriptingAssemblyLoadContext()
         {
 #if FLAX_EDITOR
             // Clear all caches which might hold references to assemblies in collectible ALC
@@ -990,24 +1032,86 @@ namespace FlaxEngine.Interop
                 handle.Free();
             propertyHandleCacheCollectible.Clear();
 
+            foreach (var key in assemblyHandles.Keys.Where(x => x.IsCollectible))
+                assemblyHandles.Remove(key);
+            foreach (var key in assemblyOwnedNativeLibraries.Keys.Where(x => x.IsCollectible))
+                assemblyOwnedNativeLibraries.Remove(key);
+
             _typeSizeCache.Clear();
 
             foreach (var pair in classAttributesCacheCollectible)
                 pair.Value.Free();
             classAttributesCacheCollectible.Clear();
 
+            ArrayFactory.marshalledTypes.Clear();
+            ArrayFactory.arrayTypes.Clear();
+            ArrayFactory.createArrayDelegates.Clear();
+
             FlaxEngine.Json.JsonSerializer.ResetCache();
+            DelegateHelpers.Release();
+
+            // Ensure both pools are empty
+            ManagedHandle.ManagedHandlePool.TryCollectWeakHandles(true);
+            ManagedHandle.ManagedHandlePool.TryCollectWeakHandles(true);
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            {
+                // HACK: Workaround for TypeDescriptor holding references to collectible types (https://github.com/dotnet/runtime/issues/30656)
+
+                Type typeDescriptionProviderType = typeof(System.ComponentModel.TypeDescriptionProvider);
+                MethodInfo clearCacheMethod = typeDescriptionProviderType?.Assembly.GetType("System.ComponentModel.ReflectionCachesUpdateHandler")?.GetMethod("ClearCache");
+                if (clearCacheMethod != null)
+                    clearCacheMethod.Invoke(null, new object[] { null });
+
+                Type TypeDescriptorType = typeof(System.ComponentModel.TypeDescriptor);
+                object s_providerTable = TypeDescriptorType?.GetField("s_providerTable", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+
+                // Added in .NET runtime 8.0.10, used as the main locking object
+                object s_commonSyncObject = TypeDescriptorType?.GetField("s_commonSyncObject", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                if (s_commonSyncObject == null)
+                    s_commonSyncObject = s_providerTable;
+
+                // Removed in .NET runtime 8.0.7
+                object s_internalSyncObject = TypeDescriptorType?.GetField("s_internalSyncObject", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                object s_defaultProviders = TypeDescriptorType?.GetField("s_defaultProviders", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                if (s_internalSyncObject != null && s_defaultProviders != null)
+                {
+                    lock (s_internalSyncObject)
+                        InvokeClear(s_defaultProviders);
+                }
+
+                // Replaces s_defaultProviders in 8.0.7
+                object s_defaultProviderInitialized = TypeDescriptorType?.GetField("s_defaultProviderInitialized", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                if (s_commonSyncObject != null && s_defaultProviderInitialized != null)
+                {
+                    lock (s_commonSyncObject)
+                        InvokeClear(s_defaultProviderInitialized);
+                }
+
+                object s_providerTypeTable = TypeDescriptorType?.GetField("s_providerTypeTable", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                if (s_providerTable != null && s_providerTypeTable != null)
+                {
+                    lock (s_commonSyncObject)
+                        InvokeClear(s_providerTypeTable);
+                    InvokeClear(s_providerTable);
+                }
+
+                static void InvokeClear(object instance)
+                {
+                    Type type = instance.GetType();
+                    Assertions.Assert.IsTrue(type.Name == "ConcurrentDictionary`2" || type.Name == "Hashtable" || type.Name == "WeakHashtable");
+                    type.GetMethods(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault(x => x.Name == "Clear")?.Invoke(instance, Array.Empty<object>());
+                }
+            }
 
             // Unload the ALC
-            bool unloading = true;
-            scriptingAssemblyLoadContext.Unloading += (alc) => { unloading = false; };
             scriptingAssemblyLoadContext.Unload();
+            scriptingAssemblyLoadContext.Resolving -= OnScriptingAssemblyLoadContextResolving;
 
-            while (unloading)
-                System.Threading.Thread.Sleep(1);
-
-            InitScriptingAssemblyLoadContext();
-            DelegateHelpers.InitMethods();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
 #endif
         }
 

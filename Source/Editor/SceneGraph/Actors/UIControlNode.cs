@@ -42,29 +42,31 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         /// <inheritdoc />
-        public override bool CanSelectActorNodeWithSelector()
+        public override bool CanSelectInViewport
         {
-            // Check if control and skip if canvas is 2D
-            if (Actor is not UIControl uiControl)
-                return false;
-            UICanvas canvas = null;
-            var controlParent = uiControl.Parent;
-            while (controlParent != null && controlParent is not Scene)
+            get
             {
-                if (controlParent is UICanvas uiCanvas)
-                {
-                    canvas = uiCanvas;
-                    break;
-                }
-                controlParent = controlParent.Parent;
-            }
-
-            if (canvas != null)
-            {
-                if (canvas.Is2D)
+                // Check if control and skip if canvas is 2D
+                if (Actor is not UIControl uiControl)
                     return false;
+                UICanvas canvas = null;
+                var controlParent = uiControl.Parent;
+                while (controlParent != null && controlParent is not Scene)
+                {
+                    if (controlParent is UICanvas uiCanvas)
+                    {
+                        canvas = uiCanvas;
+                        break;
+                    }
+                    controlParent = controlParent.Parent;
+                }
+                if (canvas != null)
+                {
+                    if (canvas.Is2D)
+                        return false;
+                }
+                return base.CanSelectInViewport;
             }
-            return base.CanSelectActorNodeWithSelector();
         }
     }
 }

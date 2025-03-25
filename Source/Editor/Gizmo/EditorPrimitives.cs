@@ -35,7 +35,7 @@ namespace FlaxEditor.Gizmo
         /// <inheritdoc />
         public EditorPrimitives()
         {
-            Order = -100;
+            Order = 100;
         }
 
         /// <inheritdoc />

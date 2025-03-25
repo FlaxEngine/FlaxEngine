@@ -56,6 +56,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             var bottomLeftCell = new VerticalPanel
             {
+                Pivot = Float2.Zero,
                 Spacing = 0,
                 TopMargin = 0,
                 BottomMargin = 0,

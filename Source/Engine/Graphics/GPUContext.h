@@ -174,8 +174,10 @@ public:
 
     /// <summary>
     /// Determines whether depth buffer is binded to the pipeline.
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <returns><c>true</c> if  depth buffer is binded; otherwise, <c>false</c>.</returns>
+    DEPRECATED("IsDepthBufferBinded has been deprecated and will be removed in ")
     virtual bool IsDepthBufferBinded() = 0;
 
 public:

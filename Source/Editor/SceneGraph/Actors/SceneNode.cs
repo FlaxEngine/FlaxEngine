@@ -33,12 +33,6 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
-        /// <inheritdoc />
-        public override bool CanSelectActorNodeWithSelector()
-        {
-            return false;
-        }
-
         /// <summary>
         /// Gets the scene.
         /// </summary>
@@ -52,6 +46,9 @@ namespace FlaxEditor.SceneGraph.Actors
         : base(scene, new SceneTreeNode())
         {
         }
+
+        /// <inheritdoc />
+        public override bool CanSelectInViewport => false;
 
         /// <inheritdoc />
         public override bool CanCreatePrefab => false;

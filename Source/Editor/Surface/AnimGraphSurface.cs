@@ -161,6 +161,8 @@ namespace FlaxEditor.Surface
 
         private void OnScriptsReloadBegin()
         {
+            _nodesCache.Clear();
+
             // Check if any of the nodes comes from the game scripts - those can be reloaded at runtime so prevent crashes
             bool hasTypeFromGameScripts = Editor.Instance.CodeEditing.AnimGraphNodes.HasTypeFromGameScripts;
 

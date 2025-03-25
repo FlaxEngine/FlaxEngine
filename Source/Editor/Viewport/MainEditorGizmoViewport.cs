@@ -7,14 +7,11 @@ using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
-using FlaxEditor.Tools;
 using FlaxEditor.Viewport.Modes;
 using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.Gizmo;
 using FlaxEngine.GUI;
-using FlaxEngine.Tools;
-
 using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Viewport
@@ -26,10 +23,8 @@ namespace FlaxEditor.Viewport
     public class MainEditorGizmoViewport : EditorGizmoViewport, IEditorPrimitivesOwner
     {
         private readonly Editor _editor;
-
         private readonly ContextMenuButton _showGridButton;
         private readonly ContextMenuButton _showNavigationButton;
-
         private SelectionOutline _customSelectionOutline;
 
         /// <summary>
@@ -218,7 +213,7 @@ namespace FlaxEditor.Viewport
             TransformGizmo.ApplyTransformation += ApplyTransform;
             TransformGizmo.Duplicate += _editor.SceneEditing.Duplicate;
             Gizmos.Active = TransformGizmo;
-            
+
             // Add rubber band selector
             _rubberBandSelector = new ViewportRubberBandSelector(this);
 
@@ -375,10 +370,7 @@ namespace FlaxEditor.Viewport
             {
                 Gizmos[i].Draw(ref renderContext);
             }
-            
-            // Draw RubberBand for rect selection
-            _rubberBandSelector.Draw(context, target, targetDepth);
-            
+
             // Draw selected objects debug shapes and visuals
             if (DrawDebugDraw && (renderContext.View.Flags & ViewFlags.DebugDraw) == ViewFlags.DebugDraw)
             {
@@ -595,6 +587,15 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
+        public override void Draw()
+        {
+            base.Draw();
+
+            // Draw rubber band for rectangle selection
+            _rubberBandSelector.Draw();
+        }
+
+        /// <inheritdoc />
         protected override void OrientViewport(ref Quaternion orientation)
         {
             if (TransformGizmo.SelectedParents.Count != 0)
@@ -609,7 +610,8 @@ namespace FlaxEditor.Viewport
             base.OnMouseMove(location);
 
             // Don't allow rubber band selection when gizmo is controlling mouse, vertex painting mode, or cloth painting is enabled
-            bool canStart = !((Gizmos.Active.IsControllingMouse || Gizmos.Active is VertexPaintingGizmo || Gizmos.Active is ClothPaintingGizmo) || IsControllingMouse || IsRightMouseButtonDown || IsAltKeyDown);
+            bool canStart = !(IsControllingMouse || IsRightMouseButtonDown || IsAltKeyDown) &&
+                            Gizmos.Active is TransformGizmo && !Gizmos.Active.IsControllingMouse;
             _rubberBandSelector.TryCreateRubberBand(canStart, _viewMousePos, ViewFrustum);
         }
 

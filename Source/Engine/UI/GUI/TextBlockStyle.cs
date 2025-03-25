@@ -79,7 +79,7 @@ namespace FlaxEngine.GUI
         public Color Color;
 
         /// <summary>
-        /// The text shadow color (tint and opacity). Set to transparent to disable shadow drawing.
+        /// The text shadow color (tint and opacity). Transparent color disables shadow drawing.
         /// </summary>
         [EditorOrder(30)]
         public Color ShadowColor;

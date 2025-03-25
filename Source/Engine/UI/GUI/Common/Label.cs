@@ -337,9 +337,7 @@ namespace FlaxEngine.GUI
                             size.X = _textSize.X + Margin.Width;
                         if (_autoHeight)
                             size.Y = _textSize.Y + Margin.Height;
-                        var pivotRelative = PivotRelative;
-                        Size = size;
-                        PivotRelative = pivotRelative;
+                        Resize(ref size);
                     }
                 }
             }

@@ -851,6 +851,11 @@ namespace FlaxEditor
         {
             LogWarning("Exception: " + ex.Message);
             LogWarning(ex.StackTrace);
+            if (ex.InnerException != null)
+            {
+                LogWarning("Inner exception:");
+                LogWarning(ex.InnerException);
+            }
         }
 
         /// <summary>
@@ -1509,7 +1514,8 @@ namespace FlaxEditor
             var win = Windows.GameWin?.Root;
             if (win?.RootWindow is WindowRootControl root)
             {
-                pos = Float2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
+                pos = Windows.GameWin.Viewport.PointFromScreen(pos);
+                pos = Float2.Round(pos);
             }
             else
             {
@@ -1522,7 +1528,8 @@ namespace FlaxEditor
             var win = Windows.GameWin?.Root;
             if (win?.RootWindow is WindowRootControl root)
             {
-                pos = Float2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
+                pos = Windows.GameWin.Viewport.PointToScreen(pos);
+                pos = Float2.Round(pos);
             }
             else
             {
@@ -1554,6 +1561,7 @@ namespace FlaxEditor
                 else
                     result = gameWin.Viewport.Size;
 
+                result *= root.DpiScale;
                 result = Float2.Round(result);
             }
         }

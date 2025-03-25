@@ -150,6 +150,22 @@ namespace FlaxEditor.Windows
             _searchBox.Clear();
             _groupSearch.DisposeChildren();
             _groupSearch.PerformLayout();
+
+            // Remove tabs
+            var tabs = new List<Tab>();
+            foreach (var child in _actorGroups.Children)
+            {
+                if (child is Tab tab)
+                {
+                    if (tab.Text != "Search")
+                        tabs.Add(tab);
+                }
+            }
+            foreach (var tab in tabs)
+            {
+                var group = _actorGroups.Children.Find(T => T == tab);
+                group.Dispose();
+            }
         }
 
         private void OnScriptsReloadEnd()

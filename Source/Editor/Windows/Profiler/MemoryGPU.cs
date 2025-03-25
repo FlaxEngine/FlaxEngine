@@ -69,6 +69,7 @@ namespace FlaxEditor.Windows.Profiler
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = Margin.Zero,
+                Pivot = Float2.Zero,
                 IsScrollable = true,
                 Parent = panel,
             };

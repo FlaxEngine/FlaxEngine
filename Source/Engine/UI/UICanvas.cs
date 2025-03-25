@@ -314,7 +314,8 @@ namespace FlaxEngine
         {
             _guiRoot = new CanvasRootControl(this)
             {
-                IsLayoutLocked = false
+                IsLayoutLocked = false,
+                Pivot = Float2.Zero,
             };
         }
 

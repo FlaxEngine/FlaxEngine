@@ -294,6 +294,7 @@ namespace FlaxEditor.GUI
                 Parent = _scrollPanel,
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 IsScrollable = true,
+                Pivot = Float2.Zero,
             };
         }
 

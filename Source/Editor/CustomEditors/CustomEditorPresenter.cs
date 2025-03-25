@@ -79,6 +79,7 @@ namespace FlaxEditor.CustomEditors
                 _presenter = presenter;
                 AnchorPreset = AnchorPresets.StretchAll;
                 Offsets = Margin.Zero;
+                Pivot = Float2.Zero;
                 IsScrollable = true;
             }
 
@@ -193,6 +194,15 @@ namespace FlaxEditor.CustomEditors
                 base.Initialize(layout);
 
                 Presenter.AfterLayout?.Invoke(layout);
+            }
+
+            /// <inheritdoc />
+            protected override void Deinitialize()
+            {
+                Editor = null;
+                _overrideEditor = null;
+
+                base.Deinitialize();
             }
 
             /// <inheritdoc />
