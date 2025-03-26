@@ -888,9 +888,9 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
         if (!CommandLine::Options.Headless.IsTrue())
         {
             if (ScriptsBuilder::LastCompilationFailed())
-                MessageBox::Show(TEXT("Scripts compilation failed. Cannot load scene without game script modules. Please fix the compilation issues. See logs for more info."), TEXT("Failed to compile scripts"), MessageBoxButtons::OK, MessageBoxIcon::Error);
+                MessageBox::Show(TEXT("Script compilation failed.\n\nCannot load scene without game script modules. Please fix any compilation issues.\n\nSee Output Log or logs for more info."), TEXT("Failed to compile scripts"), MessageBoxButtons::OK, MessageBoxIcon::Error);
             else
-                MessageBox::Show(TEXT("Failed to load scripts. Cannot load scene without game script modules. See logs for more info."), TEXT("Missing game modules"), MessageBoxButtons::OK, MessageBoxIcon::Error);
+                MessageBox::Show(TEXT("Failed to load scripts.\n\nCannot load scene without game script modules.\n\nSee logs for more info."), TEXT("Missing game modules"), MessageBoxButtons::OK, MessageBoxIcon::Error);
         }
 #endif
         return true;

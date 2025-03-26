@@ -2,6 +2,7 @@
 
 using FlaxEditor.Utilities;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -33,8 +34,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
                                             totalSize.X / Units.Meters2Units * 0.001f,
                                             totalSize.Z / Units.Meters2Units * 0.001f
                 );
-                var label = layout.Label(text);
+
+                var group = layout.Group("Info");
+                var label = group.Label(text);
                 label.Label.AutoHeight = true;
+                // Add a bit of padding to make it look nicer
+                label.Label.Margin = new Margin(3);
             }
         }
     }

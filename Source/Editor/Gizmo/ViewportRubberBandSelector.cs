@@ -74,8 +74,7 @@ public sealed class ViewportRubberBandSelector
     /// </summary>
     /// <param name="canStart">Whether the creation can start.</param>
     /// <param name="mousePosition">The current mouse position.</param>
-    /// <param name="viewFrustum">The view frustum.</param>
-    public void TryCreateRubberBand(bool canStart, Float2 mousePosition, BoundingFrustum viewFrustum)
+    public void TryCreateRubberBand(bool canStart, Float2 mousePosition)
     {
         if (_isRubberBandSpanning && !canStart)
         {
@@ -101,32 +100,43 @@ public sealed class ViewportRubberBandSelector
                     _isMosueCaptured = true;
                     _owner.Viewport.StartMouseCapture();
                 }
-                UpdateRubberBand(ref viewFrustum);
+                UpdateRubberBand();
             }
         }
     }
 
     private struct ViewportProjection
     {
-        private Viewport _viewport;
         private Matrix _viewProjection;
+        private BoundingFrustum _frustum;
+        private Viewport _viewport;
+        private Vector3 _origin;
 
         public void Init(EditorViewport editorViewport)
         {
             // Inline EditorViewport.ProjectPoint to save on calculation for large set of points
             _viewport = new Viewport(0, 0, editorViewport.Width, editorViewport.Height);
-            var frustum = editorViewport.ViewFrustum;
-            _viewProjection = frustum.Matrix;
+            _frustum = editorViewport.ViewFrustum;
+            _viewProjection = _frustum.Matrix;
+            _origin = editorViewport.Task.View.Origin;
         }
 
-        public void ProjectPoint(ref Vector3 worldSpaceLocation, out Float2 viewportSpaceLocation)
+        public void ProjectPoint(Vector3 worldSpaceLocation, out Float2 viewportSpaceLocation)
         {
+            worldSpaceLocation -= _origin;
             _viewport.Project(ref worldSpaceLocation, ref _viewProjection, out var projected);
             viewportSpaceLocation = new Float2((float)projected.X, (float)projected.Y);
         }
+
+        public ContainmentType FrustumCull(ref BoundingBox bounds)
+        {
+            bounds.Minimum -= _origin;
+            bounds.Maximum -= _origin;
+            return _frustum.Contains(ref bounds);
+        }
     }
 
-    private void UpdateRubberBand(ref BoundingFrustum viewFrustum)
+    private void UpdateRubberBand()
     {
         Profiler.BeginEvent("UpdateRubberBand");
 
@@ -169,7 +179,7 @@ public sealed class ViewportRubberBandSelector
 
             // Skip actor if outside of view frustum
             var actorBox = a.EditorBox;
-            if (viewFrustum.Contains(actorBox) == ContainmentType.Disjoint)
+            if (projection.FrustumCull(ref actorBox) == ContainmentType.Disjoint)
                 continue;
 
             // Get valid selection points
@@ -220,7 +230,7 @@ public sealed class ViewportRubberBandSelector
         bool containsAllPoints = points.Length != 0;
         for (int i = 0; i < points.Length; i++)
         {
-            projection.ProjectPoint(ref points[i], out var loc);
+            projection.ProjectPoint(points[i], out var loc);
             if (!adjustedRect.Contains(loc))
             {
                 containsAllPoints = false;

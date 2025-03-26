@@ -223,7 +223,7 @@ bool AnimGraphBase::onNodeLoaded(Node* n)
 
             // Store triangles vertices indices (map the back to the anim node slots)
             n->Data.MultiBlend2D.TrianglesCount = triangles.Count();
-            n->Data.MultiBlend2D.Triangles = (ANIM_GRAPH_MULTI_BLEND_INDEX*)Allocator::Allocate(triangles.Count() * 3 - sizeof(ANIM_GRAPH_MULTI_BLEND_INDEX));
+            n->Data.MultiBlend2D.Triangles = (ANIM_GRAPH_MULTI_BLEND_INDEX*)Allocator::Allocate(triangles.Count() * 3 * sizeof(ANIM_GRAPH_MULTI_BLEND_INDEX));
             for (int32 i = 0, t = 0; i < triangles.Count(); i++)
             {
                 n->Data.MultiBlend2D.Triangles[t++] = vertexToAnim[triangles[i].Indices[0]];
