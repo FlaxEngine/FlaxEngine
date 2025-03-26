@@ -114,6 +114,18 @@ namespace FlaxEditor.Surface.Elements
             {
                 result = (arch.BoxID == 0 ? asFloat4.X : arch.BoxID == 1 ? asFloat4.Y : arch.BoxID == 2 ? asFloat4.Z : asFloat4.W);
             }
+            else if (value is Double2 asDouble2)
+            {
+                result = (float)(arch.BoxID == 0 ? asDouble2.X : asDouble2.Y);
+            }
+            else if (value is Double3 asDouble3)
+            {
+                result = (float)(arch.BoxID == 0 ? asDouble3.X : arch.BoxID == 1 ? asDouble3.Y : asDouble3.Z);
+            }
+            else if (value is Double4 asDouble4)
+            {
+                result = (float)(arch.BoxID == 0 ? asDouble4.X : arch.BoxID == 1 ? asDouble4.Y : arch.BoxID == 2 ? asDouble4.Z : asDouble4.W);
+            }
             else
             {
                 result = 0;
@@ -207,6 +219,36 @@ namespace FlaxEditor.Surface.Elements
                     asFloat4.W = toSet;
                 value = asFloat4;
             }
+            else if (value is Double2 asDouble2)
+            {
+                if (arch.BoxID == 0)
+                    asDouble2.X = toSet;
+                else
+                    asDouble2.Y = toSet;
+                value = asDouble2;
+            }
+            else if (value is Double3 asDouble3)
+            {
+                if (arch.BoxID == 0)
+                    asDouble3.X = toSet;
+                else if (arch.BoxID == 1)
+                    asDouble3.Y = toSet;
+                else
+                    asDouble3.Z = toSet;
+                value = asDouble3;
+            }
+            else if (value is Double4 asDouble4)
+            {
+                if (arch.BoxID == 0)
+                    asDouble4.X = toSet;
+                else if (arch.BoxID == 1)
+                    asDouble4.Y = toSet;
+                else if (arch.BoxID == 2)
+                    asDouble4.Z = toSet;
+                else
+                    asDouble4.W = toSet;
+                value = asDouble4;
+            }
             else
             {
                 value = 0;
@@ -263,6 +305,18 @@ namespace FlaxEditor.Surface.Elements
             else if (value is Float4)
             {
                 value = new Float4(toSet);
+            }
+            else if (value is Double2)
+            {
+                value = new Double2(toSet);
+            }
+            else if (value is Double3)
+            {
+                value = new Double3(toSet);
+            }
+            else if (value is Double4)
+            {
+                value = new Double4(toSet);
             }
             else
             {
