@@ -18,32 +18,32 @@ namespace FlaxEditor.Content.Create
         public enum Templates
         {
             /// <summary>
-            /// The empty asset.
+            /// An empty emitter.
             /// </summary>
             Empty,
 
             /// <summary>
-            /// The simple particle system that uses constant emission rate.
+            /// An emitter that emits particles at a constant emission rate.
             /// </summary>
             ConstantBurst,
 
             /// <summary>
-            /// The simple periodic burst particle system.
+            /// An emitter that produces simple, periodic bursts of particles.
             /// </summary>
             PeriodicBurst,
 
             /// <summary>
-            /// The layers and tags settings.
+            /// An emitter that uses a blended spritesheet to produce a smooth, thick cloud of smoke.
             /// </summary>
             Smoke,
 
             /// <summary>
-            /// The GPU sparks with depth-buffer collisions.
+            /// A GPU emitter that produces sparks that can collide, thanks to depth-buffer based collisions.
             /// </summary>
             Sparks,
 
             /// <summary>
-            /// The ribbon spiral particles.
+            /// An emitter that produces a spiral shaped ribbon.
             /// </summary>
             RibbonSpiral,
         }
