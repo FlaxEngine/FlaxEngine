@@ -797,6 +797,7 @@ void GPUDeviceDX12::Dispose()
     updateRes2Dispose();
 
     // Clear pipeline objects
+    SAFE_DELETE_GPU_RESOURCE(DummyVB);
     for (auto& srv : _nullSrv)
         srv.Release();
     _nullUav.Release();

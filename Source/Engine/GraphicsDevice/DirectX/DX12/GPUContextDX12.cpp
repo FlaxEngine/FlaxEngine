@@ -15,9 +15,9 @@
 #include <d3d12.h>
 #include <ThirdParty/WinPixEventRuntime/pix3.h>
 #endif
-
 #include "GPUContextDX12.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Rectangle.h"
 #include "GPUShaderDX12.h"
@@ -250,6 +250,17 @@ void GPUContextDX12::Reset()
     Platform::MemoryClear(&_cbHandles, sizeof(_cbHandles));
     Platform::MemoryClear(&_samplers, sizeof(_samplers));
     _swapChainsUsed = 0;
+    
+    // Bind dummy vertex buffer (used by missing bindings)
+    D3D12_VERTEX_BUFFER_VIEW dummyVBView;
+    if (!_device->DummyVB)
+    {
+        _device->DummyVB = _device->CreateBuffer(TEXT("DummyVertexBuffer"));
+        auto* layout = GPUVertexLayout::Get({{ VertexElement::Types::Attribute3, 0, 0, 0, PixelFormat::R8G8B8A8_UNorm }});
+        _device->DummyVB->Init(GPUBufferDescription::Vertex(layout, sizeof(Color32), 1, &Color32::Transparent));
+    }
+    ((GPUBufferDX12*)_device->DummyVB)->GetVBView(dummyVBView);
+    _commandList->IASetVertexBuffers(GPU_MAX_VB_BINDED, 1, &dummyVBView);
 
     ForceRebindDescriptors();
 }

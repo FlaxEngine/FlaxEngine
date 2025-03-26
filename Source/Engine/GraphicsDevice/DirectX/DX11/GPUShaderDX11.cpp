@@ -29,8 +29,9 @@ ID3D11InputLayout* GPUShaderProgramVSDX11::GetInputLayout(GPUVertexLayoutDX11* v
             GPUVertexLayoutDX11* mergedVertexLayout = vertexLayout;
             if (!mergedVertexLayout)
                 mergedVertexLayout = (GPUVertexLayoutDX11*)Layout; // Fallback to shader-specified layout (if using old APIs)
+            int32 missingSlotOverride = GPU_MAX_VB_BINDED; // Use additional slot with empty VB
             if (InputLayout)
-                mergedVertexLayout = (GPUVertexLayoutDX11*)GPUVertexLayout::Merge(mergedVertexLayout, InputLayout);
+                mergedVertexLayout = (GPUVertexLayoutDX11*)GPUVertexLayout::Merge(mergedVertexLayout, InputLayout, false, true, missingSlotOverride);
             LOG_DIRECTX_RESULT(vertexLayout->GetDevice()->GetDevice()->CreateInputLayout(mergedVertexLayout->InputElements, mergedVertexLayout->InputElementsCount, Bytecode.Get(), Bytecode.Length(), &inputLayout));
         }
         _cache.Add(vertexLayout, inputLayout);

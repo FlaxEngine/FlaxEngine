@@ -59,6 +59,7 @@ private:
 
     GPUContextDX11* _mainContext = nullptr;
     bool _allowTearing = false;
+    GPUBuffer* _dummyVB = nullptr;
 
     // Static Samplers
     ID3D11SamplerState* _samplerLinearClamp = nullptr;
@@ -106,6 +107,7 @@ public:
 
     ID3D11DepthStencilState* GetDepthStencilState(const void* descriptionPtr);
     ID3D11BlendState* GetBlendState(const BlendingMode& blending);
+    GPUBuffer* GetDummyVB();
 
 public:
 

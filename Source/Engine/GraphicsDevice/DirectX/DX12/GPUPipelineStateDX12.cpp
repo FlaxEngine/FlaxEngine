@@ -87,8 +87,9 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
         vertexLayout = VertexBufferLayout; // Fallback to shader-specified layout (if using old APIs)
     if (vertexLayout)
     {
+        int32 missingSlotOverride = GPU_MAX_VB_BINDED; // Use additional slot with empty VB
         if (VertexInputLayout)
-            vertexLayout = (GPUVertexLayoutDX12*)GPUVertexLayout::Merge(vertexLayout, VertexInputLayout);
+            vertexLayout = (GPUVertexLayoutDX12*)GPUVertexLayout::Merge(vertexLayout, VertexInputLayout, false, true, missingSlotOverride);
         _desc.InputLayout.pInputElementDescs = vertexLayout->InputElements;
         _desc.InputLayout.NumElements = vertexLayout->InputElementsCount;
     }

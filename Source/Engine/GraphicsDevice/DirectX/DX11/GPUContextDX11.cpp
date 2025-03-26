@@ -114,6 +114,12 @@ void GPUContextDX11::FrameBegin()
     CurrentPrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
     CurrentStencilRef = 0;
     CurrentBlendFactor = Float4::One;
+    
+    // Bind dummy vertex buffer (used by missing bindings)
+    auto dummyVB = (GPUBufferDX11*)_device->GetDummyVB();
+    ID3D11Buffer* dummyVBBuffer = dummyVB->GetBuffer();
+    UINT stride = dummyVB->GetStride(), offset = 0;
+    _context->IASetVertexBuffers(GPU_MAX_VB_BINDED, 1, &dummyVBBuffer, &stride, &offset);
 
     // Bind static samplers
     ID3D11SamplerState* samplers[] =

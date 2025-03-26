@@ -85,6 +85,7 @@ public:
     CommandSignatureDX12* DispatchIndirectCommandSignature = nullptr;
     CommandSignatureDX12* DrawIndexedIndirectCommandSignature = nullptr;
     CommandSignatureDX12* DrawIndirectCommandSignature = nullptr;
+    GPUBuffer* DummyVB = nullptr;
 
     D3D12_CPU_DESCRIPTOR_HANDLE NullSRV(D3D12_SRV_DIMENSION dimension) const;
     D3D12_CPU_DESCRIPTOR_HANDLE NullUAV() const;

@@ -14,6 +14,7 @@
 #include "GPUSwapChainDX11.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
@@ -403,6 +404,17 @@ ID3D11BlendState* GPUDeviceDX11::GetBlendState(const BlendingMode& blending)
     return state;
 }
 
+GPUBuffer* GPUDeviceDX11::GetDummyVB()
+{
+    if (!_dummyVB)
+    {
+        _dummyVB = CreateBuffer(TEXT("DummyVertexBuffer"));
+        auto* layout = GPUVertexLayout::Get({{ VertexElement::Types::Attribute3, 0, 0, 0, PixelFormat::R8G8B8A8_UNorm }});
+        _dummyVB->Init(GPUBufferDescription::Vertex(layout, sizeof(Color32), 1, &Color32::Transparent));
+    }
+    return _dummyVB;
+}
+
 bool GPUDeviceDX11::Init()
 {
     HRESULT result;
@@ -560,6 +572,7 @@ bool GPUDeviceDX11::Init()
             D3D11_MESSAGE_ID_DEVICE_DRAW_INDEX_BUFFER_TOO_SMALL,
             D3D11_MESSAGE_ID_DEVICE_DRAW_RENDERTARGETVIEW_NOT_SET,
             D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+            D3D11_MESSAGE_ID_DEVICE_DRAW_VERTEX_BUFFER_TOO_SMALL,
         };
 
         filter.DenyList.NumIDs = ARRAY_COUNT(disabledMessages);
