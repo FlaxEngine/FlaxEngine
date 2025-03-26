@@ -94,5 +94,26 @@ namespace FlaxEditor.Options
         [DefaultValue(true)]
         [EditorDisplay("Preview"), EditorOrder(1000)]
         public bool EnableParticlesPreview { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the output log text color.
+        /// </summary>
+        [DefaultValue(typeof(Color), "1,1,1,1")]
+        [EditorDisplay("Log", "Info Color"), EditorOrder(1500), Tooltip("The color used for info messages in the Debug and Output Log.")]
+        public Color LogInfoColor { get; set; } = Color.White;
+
+        /// <summary>
+        /// Gets or sets the output log text color for warnings
+        /// </summary>
+        [DefaultValue(typeof(Color), "1,1,0,1")]
+        [EditorDisplay("Log", "Warning Color"), EditorOrder(1501), Tooltip("The color used for warnings in the Debug and Output Log.")]
+        public Color LogWarningColor { get; set; } = Color.Yellow;
+
+        /// <summary>
+        /// Gets or sets the output log text color for errors
+        /// </summary>
+        [DefaultValue(typeof(Color), "1,0,0,1")]
+        [EditorDisplay("Log", "Error Color"), EditorOrder(1502), Tooltip("The color used for errors in the Debug and Output Log.")]
+        public Color LogErrorColor { get; set; } = Color.Red;
     }
 }

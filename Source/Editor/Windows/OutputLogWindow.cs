@@ -284,26 +284,26 @@ namespace FlaxEditor.Windows
             if (options.Interface.OutputLogTimestampsFormat == _timestampsFormats &&
                 options.Interface.OutputLogShowLogType == _showLogType &&
                 _output.DefaultStyle.Font == options.Interface.OutputLogTextFont &&
-                _output.DefaultStyle.Color == options.Interface.OutputLogTextColor &&
+                _output.DefaultStyle.Color == options.Visual.LogInfoColor &&
                 _output.DefaultStyle.ShadowColor == options.Interface.OutputLogTextShadowColor &&
                 _output.DefaultStyle.ShadowOffset == options.Interface.OutputLogTextShadowOffset &&
-                _output.WarningStyle.Color == options.Interface.OutputLogWarningTextColor &&
-                _output.ErrorStyle.Color == options.Interface.OutputLogErrorTextColor)
+                _output.WarningStyle.Color == options.Visual.LogWarningColor &&
+                _output.ErrorStyle.Color == options.Visual.LogErrorColor)
                 return;
 
             _output.DefaultStyle = new TextBlockStyle
             {
                 Font = options.Interface.OutputLogTextFont,
-                Color = options.Interface.OutputLogTextColor,
+                Color = options.Visual.LogInfoColor,
                 ShadowColor = options.Interface.OutputLogTextShadowColor,
                 ShadowOffset = options.Interface.OutputLogTextShadowOffset,
                 BackgroundSelectedBrush = new SolidColorBrush(Style.Current.BackgroundSelected),
             };
 
             _output.WarningStyle = _output.DefaultStyle;
-            _output.WarningStyle.Color = options.Interface.OutputLogWarningTextColor;
+            _output.WarningStyle.Color = options.Visual.LogWarningColor;
             _output.ErrorStyle = _output.DefaultStyle;
-            _output.ErrorStyle.Color = options.Interface.OutputLogErrorTextColor;
+            _output.ErrorStyle.Color = options.Visual.LogErrorColor;
 
             _timestampsFormats = options.Interface.OutputLogTimestampsFormat;
             _showLogType = options.Interface.OutputLogShowLogType;

@@ -419,9 +419,9 @@ namespace FlaxEditor.Windows
             _groupButtons[0].Checked = options.Interface.DebugLogShowErrorMessages;
             _groupButtons[1].Checked = options.Interface.DebugLogShowWarningMessages;
             _groupButtons[2].Checked = options.Interface.DebugLogShowInfoMessages;
-            _colorInfo = options.Interface.OutputLogTextColor;
-            _colorWarning = options.Interface.OutputLogWarningTextColor;
-            _colorError = options.Interface.OutputLogErrorTextColor;
+            _colorInfo = options.Visual.LogInfoColor;
+            _colorWarning = options.Visual.LogWarningColor;
+            _colorError = options.Visual.LogErrorColor;
         }
 
         /// <summary>
