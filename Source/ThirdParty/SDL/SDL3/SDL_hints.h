@@ -2192,6 +2192,28 @@ extern "C" {
 #define SDL_HINT_JOYSTICK_ZERO_CENTERED_DEVICES "SDL_JOYSTICK_ZERO_CENTERED_DEVICES"
 
 /**
+ * A variable containing a list of devices and their desired number of haptic
+ * (force feedback) enabled axis.
+ *
+ * The format of the string is a comma separated list of USB VID/PID pairs in
+ * hexadecimal form plus the number of desired axes, e.g.
+ *
+ * `0xAAAA/0xBBBB/1,0xCCCC/0xDDDD/3`
+ *
+ * This hint supports a "wildcard" device that will set the number of haptic
+ * axes on all initialized haptic devices which were not defined explicitly in
+ * this hint.
+ *
+ * `0xFFFF/0xFFFF/1`
+ *
+ * This hint should be set before a controller is opened. The number of haptic
+ * axes won't exceed the number of real axes found on the device.
+ *
+ * \since This hint is available since SDL 3.2.5.
+ */
+#define SDL_HINT_JOYSTICK_HAPTIC_AXES "SDL_JOYSTICK_HAPTIC_AXES"
+
+/**
  * A variable that controls keycode representation in keyboard events.
  *
  * This variable is a comma separated set of options for translating keycodes
@@ -3584,6 +3606,22 @@ extern "C" {
  * \since This hint is available since SDL 3.2.0.
  */
 #define SDL_HINT_VIDEO_WIN_D3DCOMPILER "SDL_VIDEO_WIN_D3DCOMPILER"
+
+/**
+ * A variable controlling whether SDL should call XSelectInput() to enable
+ * input events on X11 windows wrapped by SDL windows.
+ *
+ * The variable can be set to the following values:
+ *
+ * - "0": Don't call XSelectInput(), assuming the native window code has done
+ *   it already.
+ * - "1": Call XSelectInput() to enable input events. (default)
+ *
+ * This hint should be set before creating a window.
+ *
+ * \since This hint is available since SDL 3.2.10.
+ */
+#define SDL_HINT_VIDEO_X11_EXTERNAL_WINDOW_INPUT "SDL_VIDEO_X11_EXTERNAL_WINDOW_INPUT"
 
 /**
  * A variable controlling whether the X11 _NET_WM_BYPASS_COMPOSITOR hint
