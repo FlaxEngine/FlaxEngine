@@ -115,5 +115,12 @@ namespace FlaxEditor.Options
         [DefaultValue(typeof(Color), "1,0,0,1")]
         [EditorDisplay("Log", "Error Color"), EditorOrder(1502), Tooltip("The color used for errors in the Debug and Output Log.")]
         public Color LogErrorColor { get; set; } = Color.Red;
+
+        /// <summary>
+        /// Gets or sets a value wether the Debug Log entry text color should use the set color.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Log", "Color Debug Log Text"), EditorOrder(1503), Tooltip("Wether to use the set colors in the text of a Debug Log entry.")]
+        public bool ColorDebugLogText = true;
     }
 }

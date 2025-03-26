@@ -125,7 +125,12 @@ namespace FlaxEditor.Windows
 
                 // Background
                 if (_window._selected == this)
-                    Render2D.FillRectangle(clientRect, IsFocused ? style.BackgroundSelected : style.LightBackground);
+                {
+                    Render2D.FillRectangle(clientRect, style.LightBackground);
+                    // Small rectangle to signal that entry is selected
+                    Rectangle selectionHighlightRect = clientRect with { Width = 5 };
+                    Render2D.FillRectangle(selectionHighlightRect, style.BackgroundSelected);
+                }
                 else if (IsMouseOver)
                     Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
                 else if (index % 2 == 0)
@@ -134,18 +139,19 @@ namespace FlaxEditor.Windows
                 var color = Group == LogGroup.Error ? _window._colorError : (Group == LogGroup.Warning ? _window._colorWarning : _window._colorInfo);
 
                 // Icon
-                Render2D.DrawSprite(Icon, new Rectangle(5, 0, 32, 32), color);
+                Render2D.DrawSprite(Icon, new Rectangle(8, 0, 32, 32), color);
 
                 // Title
-                var textRect = new Rectangle(38, 2, clientRect.Width - 40, clientRect.Height - 10);
+                var textRect = new Rectangle(43, 2, clientRect.Width - 40, clientRect.Height - 10);
                 Render2D.PushClip(ref clientRect);
+                bool coloredText = _window._colorDebugLogText;
                 if (LogCount == 1)
                 {
-                    Render2D.DrawText(style.FontMedium, Desc.Title, textRect, color);
+                    Render2D.DrawText(style.FontMedium, Desc.Title, textRect, coloredText ? color : style.Foreground);
                 }
                 else if (LogCount > 1)
                 {
-                    Render2D.DrawText(style.FontMedium, $"{Desc.Title} ({LogCount})", textRect, color);
+                    Render2D.DrawText(style.FontMedium, $"{Desc.Title} ({LogCount})", textRect, coloredText ? color : style.Foreground);
                 }
                 Render2D.PopClip();
             }
@@ -311,7 +317,8 @@ namespace FlaxEditor.Windows
         private Color _colorInfo;
         private Color _colorWarning;
         private Color _colorError;
-
+        private bool _colorDebugLogText;
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="DebugLogWindow"/> class.
         /// </summary>
@@ -422,6 +429,7 @@ namespace FlaxEditor.Windows
             _colorInfo = options.Visual.LogInfoColor;
             _colorWarning = options.Visual.LogWarningColor;
             _colorError = options.Visual.LogErrorColor;
+            _colorDebugLogText = options.Visual.ColorDebugLogText;
         }
 
         /// <summary>
