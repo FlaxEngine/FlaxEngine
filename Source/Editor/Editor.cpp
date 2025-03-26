@@ -50,30 +50,31 @@ bool Editor::CheckProjectUpgrade()
     const auto versionFilePath = Globals::ProjectCacheFolder / TEXT("version");
 
     // Load version cache file
-    int32 lastMajor = FLAXENGINE_VERSION_MAJOR;
-    int32 lastMinor = FLAXENGINE_VERSION_MINOR;
-    int32 lastBuild = FLAXENGINE_VERSION_BUILD;
+    struct VersionCache
+    {
+        int32 Major = FLAXENGINE_VERSION_MAJOR;
+        int32 Minor = FLAXENGINE_VERSION_MINOR;
+        int32 Build = FLAXENGINE_VERSION_BUILD;
+        int32 RealSize = sizeof(Real); // Rebuild when changing between Large Worlds
+    };
+    VersionCache lastVersion;
     if (FileSystem::FileExists(versionFilePath))
     {
         auto file = FileReadStream::Open(versionFilePath);
         if (file)
         {
-            file->ReadInt32(&lastMajor);
-            file->ReadInt32(&lastMinor);
-            file->ReadInt32(&lastBuild);
+            file->ReadBytes(&lastVersion, sizeof(lastVersion));
 
             // Invalidate results if data has issues
-            if (file->HasError() || lastMajor < 0 || lastMinor < 0 || lastMajor > 100 || lastMinor > 1000)
+            if (file->HasError() || lastVersion.Major < 0 || lastVersion.Minor < 0 || lastVersion.Major > 100 || lastVersion.Minor > 1000)
             {
-                lastMajor = FLAXENGINE_VERSION_MAJOR;
-                lastMinor = FLAXENGINE_VERSION_MINOR;
-                lastBuild = FLAXENGINE_VERSION_BUILD;
+                lastVersion = VersionCache();
                 LOG(Warning, "Invalid version cache data");
             }
             else
             {
-                LOG(Info, "Last project open version: {0}.{1}.{2}", lastMajor, lastMinor, lastBuild);
-                LastProjectOpenedEngineBuild = lastBuild;
+                LOG(Info, "Last project open version: {0}.{1}.{2}", lastVersion.Major, lastVersion.Minor, lastVersion.Build);
+                LastProjectOpenedEngineBuild = lastVersion.Build;
             }
 
             Delete(file);
@@ -260,13 +261,13 @@ bool Editor::CheckProjectUpgrade()
         LOG(Warning, "Project layout upgraded!");
     }
     // Check if last version was the same
-    else if (lastMajor == FLAXENGINE_VERSION_MAJOR && lastMinor == FLAXENGINE_VERSION_MINOR)
+    else if (lastVersion.Major == FLAXENGINE_VERSION_MAJOR && lastVersion.Minor == FLAXENGINE_VERSION_MINOR)
     {
         // Do nothing
         IsOldProjectOpened = false;
     }
     // Check if last version was older
-    else if (lastMajor < FLAXENGINE_VERSION_MAJOR || (lastMajor == FLAXENGINE_VERSION_MAJOR && lastMinor < FLAXENGINE_VERSION_MINOR))
+    else if (lastVersion.Major < FLAXENGINE_VERSION_MAJOR || (lastVersion.Major == FLAXENGINE_VERSION_MAJOR && lastVersion.Minor < FLAXENGINE_VERSION_MINOR))
     {
         LOG(Warning, "The project was opened with the older editor version last time");
         const auto result = MessageBox::Show(TEXT("The project was opened with the older editor version last time. Loading it may modify existing data so older editor version won't open it. Do you want to perform a backup before or cancel operation?"), TEXT("Project upgrade"), MessageBoxButtons::YesNoCancel, MessageBoxIcon::Question);
@@ -289,7 +290,7 @@ bool Editor::CheckProjectUpgrade()
         }
     }
     // Check if last version was newer
-    else if (lastMajor > FLAXENGINE_VERSION_MAJOR || (lastMajor == FLAXENGINE_VERSION_MAJOR && lastMinor > FLAXENGINE_VERSION_MINOR))
+    else if (lastVersion.Major > FLAXENGINE_VERSION_MAJOR || (lastVersion.Major == FLAXENGINE_VERSION_MAJOR && lastVersion.Minor > FLAXENGINE_VERSION_MINOR))
     {
         LOG(Warning, "The project was opened with the newer editor version last time");
         const auto result = MessageBox::Show(TEXT("The project was opened with the newer editor version last time. Loading it may fail and corrupt existing data. Do you want to perform a backup before or cancel operation?"), TEXT("Project upgrade"), MessageBoxButtons::YesNoCancel, MessageBoxIcon::Warning);
@@ -313,7 +314,7 @@ bool Editor::CheckProjectUpgrade()
     }
 
     // When changing between major/minor version clear some caches to prevent possible issues
-    if (lastMajor != FLAXENGINE_VERSION_MAJOR || lastMinor != FLAXENGINE_VERSION_MINOR)
+    if (lastVersion.Major != FLAXENGINE_VERSION_MAJOR || lastVersion.Minor != FLAXENGINE_VERSION_MINOR || lastVersion.RealSize != sizeof(Real))
     {
         LOG(Info, "Cleaning cache files from different engine version");
         FileSystem::DeleteDirectory(Globals::ProjectFolder / TEXT("Cache/Cooker"));
@@ -322,7 +323,7 @@ bool Editor::CheckProjectUpgrade()
 
     // Upgrade old 0.7 projects
     // [Deprecated: 01.11.2020, expires 01.11.2021]
-    if (lastMajor == 0 && lastMinor == 7 && lastBuild <= 6197)
+    if (lastVersion.Major == 0 && lastVersion.Minor == 7 && lastVersion.Build <= 6197)
     {
         Array<String> files;
         FileSystem::DirectoryGetFiles(files, Globals::ProjectSourceFolder, TEXT("*.Gen.cs"));
@@ -335,9 +336,8 @@ bool Editor::CheckProjectUpgrade()
         auto file = FileWriteStream::Open(versionFilePath);
         if (file)
         {
-            file->WriteInt32(FLAXENGINE_VERSION_MAJOR);
-            file->WriteInt32(FLAXENGINE_VERSION_MINOR);
-            file->WriteInt32(FLAXENGINE_VERSION_BUILD);
+            lastVersion = VersionCache();
+            file->WriteBytes(&lastVersion, sizeof(lastVersion));
             Delete(file);
         }
         else
