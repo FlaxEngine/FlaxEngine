@@ -63,6 +63,11 @@ void Script::SetEnabled(bool value)
     }
 }
 
+bool Script::IsEnabledInHierarchy() const
+{
+    return _enabled && (_parent == nullptr || _parent->IsActiveInHierarchy());
+}
+
 Actor* Script::GetActor() const
 {
     return _parent;
