@@ -69,6 +69,7 @@ void GraphicsSettings::Apply()
     Graphics::VolumetricFogQuality = VolumetricFogQuality;
     Graphics::ShadowsQuality = ShadowsQuality;
     Graphics::ShadowMapsQuality = ShadowMapsQuality;
+    Graphics::AllowCSMBlending = AllowCSMBlending;
     Graphics::GlobalSDFQuality = GlobalSDFQuality;
     Graphics::GIQuality = GIQuality;
     Graphics::GICascadesBlending = GICascadesBlending;

@@ -24,7 +24,7 @@
 #define SHADOWS_MAX_TILES 6
 #define SHADOWS_MIN_RESOLUTION 32
 #define SHADOWS_MAX_STATIC_ATLAS_CAPACITY_TO_DEFRAG 0.7f
-#define SHADOWS_BASE_LIGHT_RESOLUTION(atlasResolution) atlasResolution / MAX_CSM_CASCADES // Allow to store 4 CSM cascades in a single row in all cases
+#define SHADOWS_BASE_LIGHT_RESOLUTION(atlasResolution) (atlasResolution / MAX_CSM_CASCADES) // Allow to store 4 CSM cascades in a single row in all cases
 #define NormalOffsetScaleTweak METERS_TO_UNITS(1)
 #define LocalLightNearPlane METERS_TO_UNITS(0.1f)
 
@@ -190,6 +190,7 @@ struct ShadowAtlasLight
     uint8 TilesNeeded;
     uint8 TilesCount;
     bool HasStaticShadowContext;
+    bool BlendCSM;
     mutable StaticStates StaticState;
     BoundingSphere Bounds;
     float Sharpness, Fade, NormalOffsetScale, Bias, FadeDistance, Distance, TileBorder;
@@ -769,6 +770,15 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     const RenderView& view = renderContext.View;
     const int32 csmCount = atlasLight.TilesCount;
     const auto shadowMapsSize = (float)atlasLight.Resolution;
+    atlasLight.BlendCSM = Graphics::AllowCSMBlending;
+#if USE_EDITOR
+    // Disable cascades blending when baking lightmaps
+    if (IsRunningRadiancePass)
+        atlasLight.BlendCSM = false;
+#elif PLATFORM_SWITCH || PLATFORM_IOS || PLATFORM_ANDROID
+    // Disable cascades blending on low-end platforms
+    atlasLight.BlendCSM = false;
+#endif
 
     // Calculate cascade splits
     const float minDistance = view.Near;
@@ -895,7 +905,8 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
         Float3 frustumCornersVs[8];
         for (int32 j = 0; j < 4; j++)
         {
-            float overlapWithPrevSplit = 0.1f * (splitMinRatio - oldSplitMinRatio); // CSM blending overlap
+            float csmOverlap = atlasLight.BlendCSM ? 0.2f : 0.1f;
+            float overlapWithPrevSplit = csmOverlap * (splitMinRatio - oldSplitMinRatio);
             const auto frustumRangeVS = frustumCorners[j + 4] - frustumCorners[j];
             frustumCornersVs[j] = frustumCorners[j] + frustumRangeVS * (splitMinRatio - overlapWithPrevSplit);
             frustumCornersVs[j + 4] = frustumCorners[j] + frustumRangeVS * splitMaxRatio;
@@ -1602,7 +1613,9 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     }
     else //if (light.IsDirectionalLight)
     {
-        context->SetState(_psShadowDir.Get(permutationIndex));
+        auto* atlasLight = shadows.Lights.TryGet(light.ID);
+        ASSERT_LOW_LAYER(atlasLight);
+        context->SetState(_psShadowDir.Get(permutationIndex + (atlasLight->BlendCSM ? 8 : 0)));
         context->DrawFullscreenTriangle();
     }
 
