@@ -159,7 +159,7 @@ namespace FlaxEditor.Modules
         internal WindowsModule(Editor editor)
         : base(editor)
         {
-            InitOrder = -100;
+            InitOrder = -75;
         }
 
         /// <summary>
