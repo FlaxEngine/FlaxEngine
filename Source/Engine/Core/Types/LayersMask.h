@@ -78,6 +78,29 @@ public:
     {
         return ~Mask;
     }
+
+    LayersMask operator~() const
+    {
+        return ~Mask;
+    }
+
+    LayersMask& operator|=(const LayersMask& other)
+    {
+        Mask |= other.Mask;
+        return *this;
+    }
+
+    LayersMask& operator&=(const LayersMask& other)
+    {
+        Mask &= other.Mask;
+        return *this;
+    }
+
+    LayersMask& operator^=(const LayersMask& other)
+    {
+        Mask ^= other.Mask;
+        return *this;
+    }
 };
 
 // @formatter:off
