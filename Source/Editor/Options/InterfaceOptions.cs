@@ -138,7 +138,7 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
-        /// Avaliable options for focusing a log panel on Begin Play.
+        /// Avaliable options for showing a log panel on Begin Play.
         /// </summary>
         public enum LogWindowType
         {
