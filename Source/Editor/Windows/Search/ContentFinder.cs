@@ -161,7 +161,7 @@ namespace FlaxEditor.Windows.Search
 
             // Setup
             _resultPanel.ScrollViewTo(Float2.Zero);
-            _searchBox.Text = string.Empty;
+            _searchBox.SelectionRange = new TextRange(0, _searchBox.TextLength);
             _searchBox.Focus();
         }
 
