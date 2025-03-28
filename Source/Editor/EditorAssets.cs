@@ -135,6 +135,11 @@ namespace FlaxEditor
         public static string FlaxIconBlueTexture = "Engine/Textures/FlaxIconBlue";
 
         /// <summary>
+        /// The checkboard material used as a background for displaying transparent colors.
+        /// </summary>
+        public static string ColorAlphaBackgroundGrid = "Editor/AlphaBackgroundGrid";
+
+        /// <summary>
         /// The icon lists used by editor from the SegMDL2 font.
         /// </summary>
         /// <remarks>

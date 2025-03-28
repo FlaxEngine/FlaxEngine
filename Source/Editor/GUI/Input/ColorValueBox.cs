@@ -14,7 +14,12 @@ namespace FlaxEditor.GUI.Input
     [HideInEditor]
     public class ColorValueBox : Control
     {
+        private const String ScaleParamName = "Scale";
+        // 4.8 is a magic number that makes the grid fit perfect in the color value box
+        private const float GridScale = 4.8f;
+
         private bool _isMouseDown;
+        private MaterialBase checkerMaterial;
 
         /// <summary>
         /// Delegate function used for the color picker events handling.
@@ -101,6 +106,9 @@ namespace FlaxEditor.GUI.Input
         public ColorValueBox()
         : base(0, 0, 32, 18)
         {
+            checkerMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.ColorAlphaBackgroundGrid);
+            checkerMaterial = checkerMaterial.CreateVirtualInstance();
+            checkerMaterial.SetParameterValue(ScaleParamName, GridScale);
         }
 
         /// <summary>
@@ -129,11 +137,21 @@ namespace FlaxEditor.GUI.Input
         {
             base.Draw();
 
-            var style = Style.Current;
-            var r = new Rectangle(0, 0, Width, Height);
+            bool isTransparent = _value.A < 1;
 
-            Render2D.FillRectangle(r, _value);
-            Render2D.DrawRectangle(r, IsMouseOver || IsNavFocused ? style.BackgroundSelected : Color.Black);
+            var style = Style.Current;
+            var fullRect = new Rectangle(0, 0, Width, Height);
+            var colorRect = new Rectangle(0, 0, isTransparent ? Width * 0.7f : Width, Height);
+
+            if (isTransparent)
+            {
+                var alphaRect = new Rectangle(colorRect.Right, 0, Width - colorRect.Right, Height);
+                Render2D.DrawMaterial(checkerMaterial, alphaRect);
+                Render2D.FillRectangle(alphaRect, _value);
+            }
+
+            Render2D.FillRectangle(colorRect, _value with { A = 1 });
+            Render2D.DrawRectangle(fullRect, IsMouseOver || IsNavFocused ? style.BackgroundSelected : Color.Black);
         }
 
         /// <inheritdoc />
