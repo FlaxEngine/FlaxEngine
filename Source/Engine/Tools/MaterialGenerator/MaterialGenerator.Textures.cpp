@@ -704,7 +704,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
         const bool canUseSample = CanUseSample(_treeType);
         const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
-        const auto scale = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat();
+        const auto scale = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat3();
         const auto blend = tryGetValue(node->GetBox(2), node->Values[1]).AsFloat();
         const auto offset = tryGetValue(node->TryGetBox(6), node->Values.Count() >= 3 ? node->Values[2] : Float2::Zero).AsFloat2();
         const bool local = node->Values.Count() >= 5 ? node->Values[4].AsBool : false;
@@ -732,8 +732,8 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             .Code(TEXT(R"(
         {
             // Get world position and normal
-            float tiling = %SCALE% * 0.001f;
-            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / tiling)) * tiling;
+            float3 tiling = %SCALE% * 0.001f;
+            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / length(tiling))) * tiling;
             float3 normal = normalize(%NORMAL%);
 
             // Compute triplanar blend weights using power distribution
@@ -793,7 +793,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
         const bool canUseSample = CanUseSample(_treeType);
         const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
-        const auto scale = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat();
+        const auto scale = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat3();
         const auto blend = tryGetValue(node->GetBox(2), node->Values[1]).AsFloat();
         const auto offset = tryGetValue(node->GetBox(6), node->Values[2]).AsFloat2();
         const bool local = node->Values.Count() >= 5 ? node->Values[4].AsBool : false;
@@ -822,8 +822,8 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
                 .Code(TEXT(R"(
         {
             // Get world position and normal
-            float tiling = %SCALE% * 0.001f;
-            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / tiling)) * tiling;
+            float3 tiling = %SCALE% * 0.001f;
+            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / length(tiling))) * tiling;
             float3 normal = normalize(%NORMAL%);
 
             // Compute triplanar blend weights using power distribution

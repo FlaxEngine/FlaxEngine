@@ -408,7 +408,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Float2(280, 100),
                 DefaultValues = new object[]
                 {
-                    1.0f, // Scale
+                    Float3.One, // Scale
                     1.0f, // Blend
                     Float2.Zero, // Offset
                     2, // Sampler
@@ -417,7 +417,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Texture", true, typeof(FlaxEngine.Object), 0),
-                    NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(Float3), 1, 0),
                     NodeElementArchetype.Factory.Input(2, "Blend", true, typeof(float), 2, 1),
                     NodeElementArchetype.Factory.Input(3, "Offset", true, typeof(Float2), 6, 2),
                     NodeElementArchetype.Factory.Output(0, "Color", typeof(Float4), 3),
@@ -474,7 +474,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Size = new Float2(280, 100),
                 DefaultValues = new object[]
                 {
-                    1.0f, // Scale
+                    Float3.One, // Scale
                     1.0f, // Blend
                     Float2.Zero, // Offset
                     2, // Sampler
@@ -483,7 +483,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Input(0, "Texture", true, typeof(FlaxEngine.Object), 0),
-                    NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(float), 1, 0),
+                    NodeElementArchetype.Factory.Input(1, "Scale", true, typeof(Float3), 1, 0),
                     NodeElementArchetype.Factory.Input(2, "Blend", true, typeof(float), 2, 1),
                     NodeElementArchetype.Factory.Input(3, "Offset", true, typeof(Float2), 6, 2),
                     NodeElementArchetype.Factory.Output(0, "Vector", typeof(Float3), 3),
