@@ -195,6 +195,8 @@ namespace FlaxEditor.States
             SceneRestoring?.Invoke();
             _duplicateScenes.UnloadScenes();
             PluginManager.Internal_DeinitializeGamePlugins();
+            FlaxEngine.Scripting.FlushRemovedObjects();
+            Editor.WipeOutLeftoverSceneObjects();
             Editor.Internal_SetPlayMode(false);
             _duplicateScenes.RestoreSceneData();
             SceneRestored?.Invoke();

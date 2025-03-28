@@ -144,8 +144,6 @@ namespace FlaxEditor.Utilities
                 Editor.LogError("Failed to unload scenes.");
                 return;
             }
-            FlaxEngine.Scripting.FlushRemovedObjects();
-            Editor.WipeOutLeftoverSceneObjects();
 
             Profiler.EndEvent();
         }
