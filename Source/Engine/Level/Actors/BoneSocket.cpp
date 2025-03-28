@@ -89,6 +89,8 @@ void BoneSocket::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
     _index = -1;
     DESERIALIZE_MEMBER(Node, _node);
     DESERIALIZE_MEMBER(UseScale, _useScale);
+    if (IsDuringPlay())
+        UpdateTransformation();
 }
 
 void BoneSocket::OnTransformChanged()
