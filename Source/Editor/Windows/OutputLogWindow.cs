@@ -241,7 +241,7 @@ namespace FlaxEditor.Windows
 
         private void OnPlayModeEnd()
         {
-            if (!focusOnBeginPlay || !this.ParentDockPanel.ContainsTab(_previousWindow) || !_previousWindow.IsDisposing)
+            if (!focusOnBeginPlay || !this.ParentDockPanel.ContainsTab(_previousWindow))
                 return;
 
             _previousWindow.Focus();
