@@ -2,7 +2,6 @@
 
 using System.ComponentModel;
 using FlaxEditor.GUI.Docking;
-using FlaxEditor.Utilities;
 using FlaxEngine;
 
 namespace FlaxEditor.Options
@@ -136,6 +135,25 @@ namespace FlaxEditor.Options
             /// Format using a unit that matches the value best.
             /// </summary>
             AutoUnit,
+        }
+
+        /// <summary>
+        /// Avaliable options for focusing a log panel on Begin Play.
+        /// </summary>
+        public enum LogWindowType
+        {
+            /// <summary>
+            /// Don't show any log panel.
+            /// </summary>
+            None,
+            /// <summary>
+            /// Show the Debug Log panel.
+            /// </summary>
+            DebugLog,
+            /// <summary>
+            /// Show the Output Log panel.
+            /// </summary>
+            OutputLog,
         }
 
         /// <summary>
@@ -341,18 +359,18 @@ namespace FlaxEditor.Options
         public bool OutputLogScrollToBottom { get; set; } = true;
 
         /// <summary>
-        /// Gets or set a value indicating wether the outpug log panel should be focussed on begin play.
-        /// </summary>
-        [DefaultValue(false)]
-        [EditorDisplay("Output Log", "Show Output Log Panel on Begin Play"), EditorOrder(471), Tooltip("Show the Output Log panel on Begin Play. Shows the previously selected panel on End Play.")]
-        public bool ShowOutputLogOnBeginPlay { get; set; } = false;
-
-        /// <summary>
         /// Gets or sets a value indicating whether auto-focus game window on play mode start.
         /// </summary>
         [DefaultValue(true)]
         [EditorDisplay("Play In-Editor", "Focus Game Window On Play"), EditorOrder(500), Tooltip("Determines whether auto-focus game window on play mode start.")]
         public bool FocusGameWinOnPlay { get; set; } = true;
+
+        /// <summary>
+        /// Gets or set a value indicating wether the outpug log panel should be focussed on begin play.
+        /// </summary>
+        [DefaultValue(LogWindowType.None)]
+        [EditorDisplay("Play In-Editor", "Show Log Panel On Begin Play"), EditorOrder(501), Tooltip("Show the set log panel on Begin Play. Shows the previously selected panel on End Play.")]
+        public LogWindowType ShowLogPanelOnBeginPlay { get; set; } = LogWindowType.None;
 
         /// <summary>
         /// Gets or sets a value indicating what action should be taken upon pressing the play button.

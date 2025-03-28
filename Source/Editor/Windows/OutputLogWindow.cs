@@ -126,6 +126,14 @@ namespace FlaxEditor.Windows
             }
         }
 
+        private bool focusOnBeginPlay
+        {
+            get 
+            {
+                return Editor.Instance.Options.Options.Interface.ShowLogPanelOnBeginPlay == InterfaceOptions.LogWindowType.OutputLog;
+            }
+        }
+
         private InterfaceOptions.TimestampsFormats _timestampsFormats;
         private bool _showLogType;
 
@@ -223,7 +231,7 @@ namespace FlaxEditor.Windows
 
         private void OnPlayModeBeginning()
         {
-            if (!Editor.Instance.Options.Options.Interface.ShowOutputLogOnBeginPlay)
+            if (!focusOnBeginPlay)
                 return;
 
             _previousWindow = this.ParentDockPanel.SelectedTab;
@@ -233,7 +241,7 @@ namespace FlaxEditor.Windows
 
         private void OnPlayModeEnd()
         {
-            if (!Editor.Instance.Options.Options.Interface.ShowOutputLogOnBeginPlay || !this.ParentDockPanel.ContainsTab(_previousWindow) || !_previousWindow.IsDisposing)
+            if (!focusOnBeginPlay || !this.ParentDockPanel.ContainsTab(_previousWindow) || !_previousWindow.IsDisposing)
                 return;
 
             _previousWindow.Focus();

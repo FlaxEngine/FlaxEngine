@@ -9,6 +9,7 @@ using System.Threading;
 using System.Xml;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Docking;
 using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.Assertions;
@@ -303,6 +304,16 @@ namespace FlaxEditor.Windows
         private readonly ToolStripButton _pauseOnErrorButton;
         private readonly ToolStripButton[] _groupButtons = new ToolStripButton[3];
 
+        private bool focusOnBeginPlay
+        {
+            get 
+            {
+                return Editor.Instance.Options.Options.Interface.ShowLogPanelOnBeginPlay == InterfaceOptions.LogWindowType.DebugLog;
+            }
+        }
+
+        private DockWindow _previousWindow;
+
         private LogType _iconType = LogType.Info;
 
         internal SpriteHandle IconInfo;
@@ -402,6 +413,8 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged += OnEditorOptionsChanged;
             Debug.Logger.LogHandler.SendLog += LogHandlerOnSendLog;
             Debug.Logger.LogHandler.SendExceptionLog += LogHandlerOnSendExceptionLog;
+            Editor.Instance.PlayModeBeginning += OnPlayModeBeginning;
+            Editor.Instance.PlayModeEnd += OnPlayModeEnd;
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
@@ -413,6 +426,24 @@ namespace FlaxEditor.Windows
             _groupButtons[0].Checked = options.Interface.DebugLogShowErrorMessages;
             _groupButtons[1].Checked = options.Interface.DebugLogShowWarningMessages;
             _groupButtons[2].Checked = options.Interface.DebugLogShowInfoMessages;
+        }
+
+        private void OnPlayModeBeginning()
+        {
+            if (!focusOnBeginPlay)
+                return;
+
+            _previousWindow = this.ParentDockPanel.SelectedTab;
+
+            this.ParentDockPanel.SelectTab(this);
+        }
+
+        private void OnPlayModeEnd()
+        {
+            if (!focusOnBeginPlay || !this.ParentDockPanel.ContainsTab(_previousWindow) || !_previousWindow.IsDisposing)
+                return;
+
+            _previousWindow.Focus();
         }
 
         /// <summary>
@@ -742,6 +773,8 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged -= OnEditorOptionsChanged;
             Debug.Logger.LogHandler.SendLog -= LogHandlerOnSendLog;
             Debug.Logger.LogHandler.SendExceptionLog -= LogHandlerOnSendExceptionLog;
+            Editor.Instance.PlayModeBeginning -= OnPlayModeBeginning;
+            Editor.Instance.PlayModeEnd -= OnPlayModeEnd;
 
             base.OnDestroy();
         }
