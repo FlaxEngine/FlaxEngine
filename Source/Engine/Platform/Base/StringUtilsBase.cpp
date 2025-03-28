@@ -392,13 +392,20 @@ int32 StringUtils::HexDigit(Char c)
 
 bool StringUtils::Parse(const Char* str, float* result)
 {
-#if PLATFORM_TEXT_IS_CHAR16
-    std::u16string u16str = str;
-    std::wstring wstr(u16str.begin(), u16str.end());
-    float v = wcstof(wstr.c_str(), nullptr);
-#else
-    float v = wcstof(str, nullptr);
-#endif
+    // Convert '.' into ','
+    char buffer[64];
+    char* ptr = buffer;
+    char* end = buffer + ARRAY_COUNT(buffer);
+    while (str && *str && ptr != end)
+    {
+        Char c = *str++;
+        if (c == '.')
+            c = ',';
+        *ptr++ = (char)c;
+    }
+    *ptr = 0;
+
+    float v = (float)atof(buffer);
     *result = v;
     if (v == 0)
     {
