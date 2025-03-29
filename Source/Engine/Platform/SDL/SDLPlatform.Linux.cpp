@@ -993,31 +993,43 @@ bool SDLWindow::HandleEventInternal(SDL_Event& event)
             const Float2 mousePos = Float2(event.drop.x * dpiScale, event.drop.y * dpiScale);
             DragDropEffect effect = DragDropEffect::None;
             String text(event.drop.data);
+            LinuxDropTextData textData;
+            LinuxDropFilesData filesData;
 
-            LinuxDropTextData dropData;
-            dropData.Text = text;
-
-            if (event.type == SDL_EVENT_DROP_BEGIN || event.type == SDL_EVENT_DROP_POSITION)
+            if (WaylandImpl::DraggingActive && (event.type == SDL_EVENT_DROP_BEGIN || event.type == SDL_EVENT_DROP_POSITION))
             {
-                // We don't have the drag data during these events...
-                dropData.Text = WaylandImpl::DraggingData;
+                // We don't have the window dragging data during these events...
+                text = WaylandImpl::DraggingData;
             }
+            textData.Text = text;
 
             if (event.type == SDL_EVENT_DROP_BEGIN)
             {
-                OnDragEnter(&dropData, mousePos, effect);
+                // We don't know the type of dragged data at this point, so call the events for both types
+                OnDragEnter(&filesData, mousePos, effect);
+                if (effect == DragDropEffect::None)
+                    OnDragEnter(&textData, mousePos, effect);
             }
             else if (event.type == SDL_EVENT_DROP_POSITION)
             {
                 Input::Mouse->OnMouseMove(ClientToScreen(mousePos), this);
-                OnDragOver(&dropData, mousePos, effect);
+
+                // We don't know the type of dragged data at this point, so call the events for both types
+                OnDragOver(&filesData, mousePos, effect);
+                if (effect == DragDropEffect::None)
+                    OnDragOver(&textData, mousePos, effect);
             }
             else if (event.type == SDL_EVENT_DROP_FILE)
-                OnDragDrop(&dropData, mousePos, effect);
+            {
+                text.Split('\n', filesData.Files);
+                OnDragDrop(&filesData, mousePos, effect);
+            }
             else if (event.type == SDL_EVENT_DROP_TEXT)
-                OnDragDrop(&dropData, mousePos, effect);
+                OnDragDrop(&textData, mousePos, effect);
             else if (event.type == SDL_EVENT_DROP_COMPLETE)
                 OnDragLeave();
+
+            // TODO: Implement handling for feedback effect result (https://github.com/libsdl-org/SDL/issues/10448)
         }
         break;
     }
