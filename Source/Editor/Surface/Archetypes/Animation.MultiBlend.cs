@@ -570,7 +570,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var icon = Editor.Instance.Icons.VisjectBoxOpen32;
                 var size = BlendPoint.DefaultSize * _debugScale;
                 var debugPos = BlendSpacePosToBlendPointPos(_debugPos);
-                var debugRect = new Rectangle(debugPos + new Float2(size * -0.5f) + size * 0.5f, new Float2(size));
+                var debugRect = new Rectangle(debugPos + new Float2(size * -0.5f), new Float2(size));
                 var outline = Color.Black; // Shadow
                 Render2D.DrawSprite(icon, debugRect.MakeExpanded(2.0f), outline);
                 Render2D.DrawSprite(icon, debugRect, style.ProgressNormal);

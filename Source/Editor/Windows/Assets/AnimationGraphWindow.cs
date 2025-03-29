@@ -371,6 +371,9 @@ namespace FlaxEditor.Windows.Assets
             // Update navbar
             _surface.UpdateNavigationBar(_navigationBar, _toolstrip);
 
+            // Show whole model
+            _preview.ResetCamera();
+
             return false;
         }
 
@@ -435,6 +438,16 @@ namespace FlaxEditor.Windows.Assets
                     box?.HighlightConnections();
                 }
                 _debugFlows.Clear();
+            }
+
+            // Update preview values when debugging specific instance
+            if (debugActor != null && debugActor != _preview.PreviewActor)
+            {
+                var parameters = debugActor.Parameters;
+                foreach (var p in parameters)
+                {
+                    _preview.PreviewActor.SetParameterValue(p.Identifier, p.Value);
+                }
             }
 
             _showNodesButton.Checked = _preview.ShowNodes;

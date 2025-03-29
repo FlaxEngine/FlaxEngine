@@ -228,6 +228,13 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected virtual void OnContextChanged()
         {
+            // Cache viewport of the context (used to restore when leaving it)
+            if (_context != null)
+            {
+                _context._cachedViewCenterPosition = ViewCenterPosition;
+                _context._cachedViewScale = ViewScale;
+            }
+
             var context = ContextStack.Count > 0 ? ContextStack.Peek() : null;
             _context = context;
             if (ContextStack.Count == 0)
@@ -249,6 +256,18 @@ namespace FlaxEditor.Surface
             }
 
             ContextChanged?.Invoke(_context);
+
+            // Restore viewport in the context
+            if (_context?._cachedViewScale > 0.0f)
+            {
+                ViewScale = _context._cachedViewScale;
+                ViewCenterPosition = _context._cachedViewCenterPosition;
+            }
+            else
+            {
+                // Show whole surface on load
+                ShowWholeGraph();
+            }
         }
     }
 }

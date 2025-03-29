@@ -67,7 +67,7 @@ public:
     /// <param name="predicate">The prediction function. Should return true for the target element to find.</param>
     /// <returns>The first found item or default value if nothing found.</returns>
     template<typename T, typename AllocationType>
-    static T First(const Array<T, AllocationType>& obj, const Function<bool(const T&)> predicate)
+    static T First(const Array<T, AllocationType>& obj, const Function<bool(const T&)>& predicate)
     {
         for (int32 i = 0; i < obj.Count(); i++)
         {
@@ -84,7 +84,7 @@ public:
     /// <param name="predicate">The prediction function. Should return true for the target element to find.</param>
     /// <returns>The first found item or default value if nothing found.</returns>
     template<typename T, typename AllocationType>
-    static T* First(const Array<T*, AllocationType>& obj, const Function<bool(const T*)> predicate)
+    static T* First(const Array<T*, AllocationType>& obj, const Function<bool(const T*)>& predicate)
     {
         for (int32 i = 0; i < obj.Count(); i++)
         {
