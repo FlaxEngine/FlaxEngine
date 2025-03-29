@@ -1927,7 +1927,8 @@ namespace FlaxEditor.Viewport
 
             if (_isControllingMouse)
             {
-                OnControlMouseEnd(RootWindow.Window);
+                if (RootWindow?.Window != null)
+                    OnControlMouseEnd(RootWindow.Window);
                 _isControllingMouse = false;
                 _isVirtualMouseRightDown = false;
             }
