@@ -557,7 +557,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     MinValue = _minCount,
                     MaxValue = _maxCount,
                     AnchorPreset = AnchorPresets.TopRight,
-                    Bounds = new Rectangle(-40 - dropPanel.ItemsMargin.Right, y, 40, height),
+                    Bounds = new Rectangle(-55 - dropPanel.ItemsMargin.Right, y, 55, height),
                     Parent = dropPanel,
                 };
 
@@ -566,7 +566,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Text = "Size",
                     AnchorPreset = AnchorPresets.TopRight,
                     Bounds = new Rectangle(-_sizeBox.Width - 40 - dropPanel.ItemsMargin.Right - 2, y, 40, height),
-                    Parent = dropPanel
+                    Parent = dropPanel,
                 };
 
                 if (!_canResize || (NotNullItems && size == 0))
