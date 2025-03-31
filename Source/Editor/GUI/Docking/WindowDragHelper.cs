@@ -39,16 +39,6 @@ namespace FlaxEditor.GUI.Docking
             _toSet = DockState.Float;
             var window = toMove.Window.Window;
 
-            // Check if window is maximized and restore window.
-            if (window.IsMaximized)
-            {
-                // Restore window and set position to mouse.
-                var mousePos = window.MousePosition;
-                var previousSize = window.Size;
-                window.Restore();
-                window.Position = Platform.MousePosition - mousePos * window.Size / previousSize;
-            }
-
             // Bind events
             FlaxEngine.Scripting.Update += OnUpdate;
             window.MouseUp += OnMouseUp;
