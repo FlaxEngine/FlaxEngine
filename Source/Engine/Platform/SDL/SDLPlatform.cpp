@@ -70,7 +70,7 @@ bool SDLPlatform::Init()
     
     SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_WARP_MOTION, "0");
     SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_CURSOR_VISIBLE, "1"); // Needed for tracking mode
-    SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "0"); // 
+    SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_CENTER, "0"); // Relative mode can be active when cursor is shown and clipped
     SDL_SetHint(SDL_HINT_MOUSE_DOUBLE_CLICK_RADIUS, "8"); // Reduce the default mouse double-click radius
 
     //SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_MODE_WARP, "1"); // Disables raw mouse input
@@ -118,6 +118,7 @@ bool SDLPlatform::Init()
     }
 
     SDLInput::Init();
+    SDLWindow::Init();
 
     SystemDpi = (int)(SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay()) * DefaultDPI);
 

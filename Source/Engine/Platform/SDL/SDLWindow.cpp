@@ -73,6 +73,10 @@ void* GetNativeWindowPointer(SDL_Window* window)
     return windowPtr;
 }
 
+void SDLWindow::Init()
+{
+}
+
 SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     : WindowBase(settings)
     , _handle(nullptr)
@@ -420,26 +424,29 @@ void SDLWindow::HandleEvent(SDL_Event& event)
     case SDL_EVENT_WINDOW_FOCUS_GAINED:
     {
         OnGotFocus();
-        if (IsPopupWindow(_settings.Type))
-            _window = _window;
         if (_settings.AllowInput && !SDLPlatform::UsesX11())
             SDL_StartTextInput(_window);
-        const SDL_Rect* currentClippingRect = SDL_GetWindowMouseRect(_window);
-        if (_isClippingCursor && currentClippingRect == nullptr)
+        if (_isClippingCursor)
         {
+            // The relative mode needs to be disabled for clipping to take effect
+            bool inRelativeMode = Input::Mouse->IsRelative(this) || _restoreRelativeMode;
+            if (inRelativeMode)
+                Input::Mouse->SetRelativeMode(false, this);
+
+            // Restore previous clipping region
             SDL_Rect rect{ (int)_clipCursorRect.GetX(), (int)_clipCursorRect.GetY(), (int)_clipCursorRect.GetWidth(), (int)_clipCursorRect.GetHeight() };
             SDL_SetWindowMouseRect(_window, &rect);
+
+            if (inRelativeMode)
+                Input::Mouse->SetRelativeMode(true, this);
         }
         return;
     }
     case SDL_EVENT_WINDOW_FOCUS_LOST:
     {
-        if (IsPopupWindow(_settings.Type))
-            _window = _window;
         if (_settings.AllowInput && !SDLPlatform::UsesX11())
             SDL_StopTextInput(_window);
-        const SDL_Rect* currentClippingRect = SDL_GetWindowMouseRect(_window);
-        if (currentClippingRect != nullptr)
+        if (_isClippingCursor)
             SDL_SetWindowMouseRect(_window, nullptr);
         OnLostFocus();
         return;
@@ -802,9 +809,23 @@ void SDLWindow::StartClippingCursor(const Rectangle& bounds)
     if (!IsFocused())
         return;
 
+#if PLATFORM_LINUX
+    {
+        auto oldValue = SDL_GetHint(SDL_HINT_MOUSE_RELATIVE_WARP_MOTION);
+        SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_WARP_MOTION, "1");
+        
+        // The cursor is not fully constrained when positioned outside of the clip region...
+        Float2 center = bounds.GetCenter();
+        SDL_WarpMouseInWindow(_window, center.X, center.Y);
+
+        SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_WARP_MOTION, oldValue);
+    }
+#endif
+
     _isClippingCursor = true;
     SDL_Rect rect{ (int)bounds.GetX(), (int)bounds.GetY(), (int)bounds.GetWidth(), (int)bounds.GetHeight() };
     SDL_SetWindowMouseRect(_window, &rect);
+    _clipCursorRect = bounds;
 }
 
 void SDLWindow::EndClippingCursor()
