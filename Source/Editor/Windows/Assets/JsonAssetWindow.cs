@@ -221,6 +221,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 Text = $"{Asset.DataTypeName}",
                 TooltipText = "Asset data type (full name)",
+                Pivot = Float2.Zero,
                 AnchorPreset = AnchorPresets.TopRight,
                 AutoWidth = true,
                 Parent = this,

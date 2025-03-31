@@ -110,7 +110,7 @@ namespace FlaxEditor.Windows
                     AnchorPreset = AnchorPresets.TopRight,
                     Text = versionString,
                     Parent = this,
-                    Bounds = new Rectangle(Width - 140 - margin - xOffset, margin, 140, 14),
+                    Bounds = new Rectangle(Width - 140 - margin, margin, 140, 14),
                 };
 
                 string url = null;
@@ -130,7 +130,7 @@ namespace FlaxEditor.Windows
                     AnchorPreset = AnchorPresets.TopRight,
                     Text = desc.Author,
                     Parent = this,
-                    Bounds = new Rectangle(Width - authorWidth - margin - xOffset, versionLabel.Bottom + margin, authorWidth, 14),
+                    Bounds = new Rectangle(Width - authorWidth - margin, versionLabel.Bottom + margin, authorWidth, 14),
                 };
                 if (url != null)
                 {
@@ -245,6 +245,7 @@ namespace FlaxEditor.Windows
                 Text = "Name",
                 HorizontalAlignment = TextAlignment.Near,
             };
+            nameLabel.LocalX -= 10;
             nameLabel.LocalY += 10;
 
             var nameTextBox = new TextBox
@@ -291,7 +292,7 @@ namespace FlaxEditor.Windows
                 Text = "Git Path",
                 HorizontalAlignment = TextAlignment.Near,
             };
-            gitPathLabel.LocalX += (300 - gitPathLabel.Width) * 0.5f;
+            gitPathLabel.LocalX += (250 - gitPathLabel.Width) * 0.5f;
             gitPathLabel.LocalY += 35;
 
             var gitPathTextBox = new TextBox

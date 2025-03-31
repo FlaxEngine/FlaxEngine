@@ -391,6 +391,7 @@ namespace FlaxEditor.Windows
                 VerticalAlignment = TextAlignment.Near,
                 HorizontalAlignment = TextAlignment.Near,
                 Offsets = Margin.Zero,
+                Pivot = Float2.Zero,
             };
 
             // Entries panel
