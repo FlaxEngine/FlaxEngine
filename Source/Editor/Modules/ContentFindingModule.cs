@@ -92,7 +92,7 @@ namespace FlaxEditor.Modules
             DockWindow window = null;
             foreach (var editorWindow in Editor.Windows.Windows)
             {
-                if (editorWindow.Visible && editorWindow.ContainsFocus)
+                if (editorWindow.Visible && editorWindow.ContainsFocus && editorWindow.Parent != null)
                 {
                     window = editorWindow;
                     break;
