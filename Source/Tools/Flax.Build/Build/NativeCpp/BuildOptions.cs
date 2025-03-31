@@ -121,6 +121,11 @@ namespace Flax.Build.NativeCpp
         public List<string> SourceFiles = new List<string>();
 
         /// <summary>
+        /// The embededded resource files to include in module build.
+        /// </summary>
+        public List<string> EmbeddedResources = new List<string>();
+
+        /// <summary>
         /// The collection of the modules that are required by this module (for linking). Inherited by the modules that include it.
         /// </summary>
         public List<string> PublicDependencies = new List<string>();
