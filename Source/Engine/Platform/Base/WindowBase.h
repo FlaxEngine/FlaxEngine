@@ -45,6 +45,7 @@ protected:
     bool _isHorizontalFlippingMouse = false;
     bool _isVerticalFlippingMouse = false;
     bool _isClippingCursor = false;
+    bool _restoreRelativeMode = false;
 
     explicit WindowBase(const CreateWindowSettings& settings);
     virtual ~WindowBase();

@@ -440,6 +440,9 @@ void SDLWindow::HandleEvent(SDL_Event& event)
             if (inRelativeMode)
                 Input::Mouse->SetRelativeMode(true, this);
         }
+        else if (_restoreRelativeMode)
+            Input::Mouse->SetRelativeMode(true, this);
+        _restoreRelativeMode = false;
         return;
     }
     case SDL_EVENT_WINDOW_FOCUS_LOST:
@@ -448,6 +451,13 @@ void SDLWindow::HandleEvent(SDL_Event& event)
             SDL_StopTextInput(_window);
         if (_isClippingCursor)
             SDL_SetWindowMouseRect(_window, nullptr);
+
+        if (Input::Mouse->IsRelative(this))
+        {
+            Input::Mouse->SetRelativeMode(false, this);
+            _restoreRelativeMode = true;
+        }
+
         OnLostFocus();
         return;
     }
