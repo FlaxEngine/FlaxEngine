@@ -566,6 +566,14 @@ public:
     }
 
     // Interpolates between two quaternions, using spherical linear interpolation.
+    static Quaternion Slerp(const Quaternion& start, const Quaternion& end, float amount)
+    {
+        Quaternion result;
+        Slerp(start, end, amount, result);
+        return result;
+    }
+
+    // Interpolates between two quaternions, using spherical linear interpolation.
     static void Slerp(const Quaternion& start, const Quaternion& end, float amount, Quaternion& result);
 
     // Creates a quaternion given a yaw, pitch, and roll value (in degrees).

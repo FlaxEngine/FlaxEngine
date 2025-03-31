@@ -14,6 +14,7 @@
 #include "Engine/Platform/File.h"
 
 #define OPEN_FBX_CONVERT_SPACE 1
+#define OPEN_FBX_NAME_SIZE 256
 #if BUILD_DEBUG
 #define OPEN_FBX_GET_CACHE_LIST(arrayName, varName, size) data.arrayName.Resize(size, false); auto& varName = data.arrayName
 #else
@@ -204,7 +205,7 @@ struct OpenFbxImporterData
             ofbx::DataView aFilename = tex->getRelativeFileName();
             if (aFilename == "")
                 aFilename = tex->getFileName();
-            char filenameData[256];
+            char filenameData[OPEN_FBX_NAME_SIZE];
             aFilename.toString(filenameData);
             const String filename(filenameData);
             String path;
@@ -498,7 +499,6 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
 
                 // Add bone
                 boneIndex = data.Bones.Count();
-                data.Bones.EnsureCapacity(256);
                 data.Bones.Resize(boneIndex + 1);
                 auto& bone = data.Bones[boneIndex];
 
@@ -1089,7 +1089,6 @@ struct AnimInfo
     double TimeEnd;
     double Duration;
     int32 FramesCount;
-    float SamplingPeriod;
 };
 
 struct Frame
@@ -1122,7 +1121,7 @@ void ExtractKeyframeScale(const ofbx::Object* bone, ofbx::DVec3& trans, const Fr
 }
 
 template<typename T>
-void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curve, AnimInfo& info, void (*ExtractKeyframe)(const ofbx::Object*, ofbx::DVec3&, const Frame&, T&))
+void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curve, AnimInfo& info, void (*extractKeyframe)(const ofbx::Object*, ofbx::DVec3&, const Frame&, T&))
 {
     if (curveNode == nullptr)
         return;
@@ -1136,12 +1135,11 @@ void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curv
     for (int32 i = 0; i < info.FramesCount; i++)
     {
         auto& key = keyframes[i];
-        const double t = info.TimeStart + ((double)i / info.FramesCount) * info.Duration;
-
+        const double alpha = (double)i / (info.FramesCount - 1);
+        const double t = Math::Lerp(info.TimeStart, info.TimeEnd, alpha);
         key.Time = (float)i;
-
         ofbx::DVec3 trans = curveNode->getNodeLocalTransform(t);
-        ExtractKeyframe(bone, trans, localFrame, key.Value);
+        extractKeyframe(bone, trans, localFrame, key.Value);
     }
 }
 
@@ -1179,7 +1177,7 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
     auto& animation = data.Animations.AddOne();
     animation.Duration = (double)(int32)(localDuration * frameRate + 0.5f);
     animation.FramesPerSecond = frameRate;
-    char nameData[256];
+    char nameData[OPEN_FBX_NAME_SIZE];
     takeInfo->name.toString(nameData);
     animation.Name = nameData;
     animation.Name = animation.Name.TrimTrailing();
@@ -1190,8 +1188,7 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
     info.TimeStart = takeInfo->local_time_from;
     info.TimeEnd = takeInfo->local_time_to;
     info.Duration = localDuration;
-    info.FramesCount = (int32)animation.Duration;
-    info.SamplingPeriod = 1.0f / frameRate;
+    info.FramesCount = (int32)animation.Duration + 1;
 
     // Import curves
     for (int32 i = 0; i < animatedNodes.Count(); i++)
@@ -1319,7 +1316,7 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
         {
             const ofbx::DataView aEmbedded = scene->getEmbeddedData(i);
             ofbx::DataView aFilename = scene->getEmbeddedFilename(i);
-            char filenameData[256];
+            char filenameData[OPEN_FBX_NAME_SIZE];
             aFilename.toString(filenameData);
             if (outputPath.IsEmpty())
             {

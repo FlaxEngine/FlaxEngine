@@ -160,7 +160,7 @@ namespace FlaxEditor.GUI.Timeline
         {
             if (_preview != null)
             {
-                frame = Mathf.Clamp(frame, 0, DurationFrames - 1);
+                frame = Mathf.Clamp(frame, 0, DurationFrames);
                 var time = frame / FramesPerSecond;
                 Editor.Internal_SetAnimationTime(Object.GetUnmanagedPtr(_preview.PreviewActor), time);
                 if (!_preview.PlayAnimation)
