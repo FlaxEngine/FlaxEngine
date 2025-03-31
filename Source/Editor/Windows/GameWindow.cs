@@ -1179,9 +1179,10 @@ namespace FlaxEditor.Windows
                 _cursorVisible = Screen.CursorVisible;
                 _cursorLockMode = Screen.CursorLock;
 
-                // Restore cursor visibility (could be hidden by the game)
+                // Restore cursor state, could be hidden or locked by the game
                 if (!_cursorVisible)
                     Screen.CursorVisible = true;
+                Screen.CursorLock = CursorLockMode.None;
             }
         }
 
