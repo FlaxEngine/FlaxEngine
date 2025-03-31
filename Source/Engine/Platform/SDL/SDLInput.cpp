@@ -394,7 +394,7 @@ public:
         Float2 position = window->ScreenToClient(screenPosition);
         SDL_WarpMouseInWindow(static_cast<SDLWindow*>(window)->_window, position.X, position.Y);
 
-        OnMouseMoved(position);
+        OnMouseMoved(screenPosition);
     }
 
     void SetRelativeMode(bool relativeMode, Window* window) final override
