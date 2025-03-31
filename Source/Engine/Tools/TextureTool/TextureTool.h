@@ -62,7 +62,7 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         bool FlipX = false;
 
         // Invert the red channel.
-        API_FIELD(Attributes = "EditorOrder(72), EditorDisplay(\"Invert Channels\"), ExpandGroups")
+        API_FIELD(Attributes = "EditorOrder(72), EditorDisplay(\"Invert Channels\")")
         bool InvertRedChannel = false;
 
         // Invert the green channel. Good for OpenGL to DirectX conversion.
