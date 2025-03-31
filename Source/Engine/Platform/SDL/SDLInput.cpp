@@ -432,6 +432,13 @@ public:
         if (!SDL_SetWindowRelativeMouseMode(windowHandle, relativeMode))
             LOG(Error, "Failed to set mouse relative mode: {0}", String(SDL_GetError()));
     }
+
+    bool IsRelative(Window* window) const override
+    {
+        if (window == nullptr)
+            return _relativeMode;
+        return _relativeModeWindow == window && _relativeMode;
+    }
 };
 
 /// <summary>
