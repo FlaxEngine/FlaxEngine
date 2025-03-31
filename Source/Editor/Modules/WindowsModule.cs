@@ -822,16 +822,17 @@ namespace FlaxEditor.Modules
 
         internal void AddToRestore(CustomEditorWindow win)
         {
-            AddToRestore(win.Window, win.GetType(), new WindowRestoreData());
-        }
-
-        private void AddToRestore(EditorWindow win, Type type, WindowRestoreData winData)
-        {
             // Validate if can restore type
+            var type = win.GetType();
             var constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
             if (constructor == null || type.IsGenericType)
                 return;
 
+            AddToRestore(win.Window, type, new WindowRestoreData());
+        }
+
+        private void AddToRestore(EditorWindow win, Type type, WindowRestoreData winData)
+        {
             var panel = win.ParentDockPanel;
 
             // Ensure that this window is only selected following recompilation

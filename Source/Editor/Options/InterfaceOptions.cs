@@ -347,13 +347,6 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
-        /// Gets or sets the output log text color.
-        /// </summary>
-        [DefaultValue(typeof(Color), "1,1,1,1")]
-        [EditorDisplay("Output Log", "Text Color"), EditorOrder(430), Tooltip("The output log text color.")]
-        public Color OutputLogTextColor { get; set; } = Color.White;
-
-        /// <summary>
         /// Gets or sets the output log text shadow color.
         /// </summary>
         [DefaultValue(typeof(Color), "0,0,0,0.5")]
@@ -378,22 +371,6 @@ namespace FlaxEditor.Options
                 FocusOnPlayMode = value ? PlayModeFocus.GameWindow : PlayModeFocus.None;
             }
         }
-
-        /// <summary>
-        /// Gets or sets the output log text color for warnings
-        /// </summary>
-        [DefaultValue(typeof(Color), "1,1,0,1")]
-        [EditorDisplay("Output Log", "Warning Color"), EditorOrder(446), Tooltip("The output log text color for warnings.")]
-        public Color OutputLogWarningTextColor { get; set; } = Color.Yellow;
-
-
-        /// <summary>
-        /// Gets or sets the output log text color for errors
-        /// </summary>
-        [DefaultValue(typeof(Color), "1,0,0,1")]
-        [EditorDisplay("Output Log", "Error Color"), EditorOrder(445), Tooltip("The output log text color for errors.")]
-        public Color OutputLogErrorTextColor { get; set; } = Color.Red;
-
 
         /// <summary>
         /// Gets or sets a value indicating whether auto-focus output log window on code compilation error.
