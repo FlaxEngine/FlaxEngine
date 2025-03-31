@@ -41,6 +41,9 @@ private:
     Rectangle _cachedClientRectangle;
 
 public:
+    static void Init();
+
+public:
     /// <summary>
     /// Initializes a new instance of the <see cref="SDLWindow"/> class.
     /// </summary>
