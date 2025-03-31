@@ -862,6 +862,16 @@ namespace FlaxEditor.Surface
             }
         }
 
+        /// <summary>
+        /// Custom function to check if node matches a given search query.
+        /// </summary>
+        /// <param name="text">Text to check.</param>
+        /// <returns>True if node contains a given value.</returns>
+        public virtual bool Search(string text)
+        {
+            return false;
+        }
+
         private string GetTooltip()
         {
             StringBuilder sb = new StringBuilder();

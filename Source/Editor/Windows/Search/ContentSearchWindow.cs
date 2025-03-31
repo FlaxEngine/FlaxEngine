@@ -617,7 +617,7 @@ namespace FlaxEngine.Windows.Search
                 }
                 var nodeSearchText = node.ContentSearchText;
 
-                if (newTreeNodes.Count != 0 || (nodeSearchText != null && IsSearchMatch(ref nodeSearchText)))
+                if (newTreeNodes.Count != 0 || (nodeSearchText != null && IsSearchMatch(ref nodeSearchText)) || node.Search(_searchText))
                 {
                     AddAssetSearchResult(ref assetTreeNode, asset);
                     var nodeTreeNode = new SearchResultTreeNode

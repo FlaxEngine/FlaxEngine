@@ -937,6 +937,22 @@ namespace FlaxEditor.Surface.Archetypes
 
                 UpdateUI();
             }
+
+            /// <inheritdoc />
+            public override bool Search(string text)
+            {
+                FlaxEngine.Json.JsonSerializer.ParseID(text, out var id);
+                if (id != Guid.Empty)
+                {
+                    for (int i = 5; i < Values.Length; i += 2)
+                    {
+                        if ((Guid)Values[i] == id)
+                            return true;
+                    }
+                }
+
+                return base.Search(text);
+            }
         }
 
         /// <summary>
