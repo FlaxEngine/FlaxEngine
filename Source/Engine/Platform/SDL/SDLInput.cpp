@@ -357,9 +357,9 @@ public:
 class SDLMouse : public Mouse
 {
 private:
-    Float2 oldPosition = Float2::Zero;
-    Window* relativeModeWindow = nullptr;
-    const SDL_Rect* oldScreenRect = nullptr;
+    Float2 _oldPosition = Float2::Zero;
+    Window* _relativeModeWindow = nullptr;
+    const SDL_Rect* _oldScreenRect = nullptr;
 public:
 
     /// <summary>
@@ -377,8 +377,8 @@ public:
     /// </summary>
     Float2 GetOldMousePosition() const
     {
-        ASSERT(relativeModeWindow != nullptr);
-        return relativeModeWindow->ClientToScreen(oldPosition);
+        ASSERT(_relativeModeWindow != nullptr);
+        return _relativeModeWindow->ClientToScreen(_oldPosition);
     }
 
     // [Mouse]
@@ -405,27 +405,27 @@ public:
         auto windowHandle = static_cast<SDLWindow*>(window)->_window;
         if (relativeMode)
         {
-            relativeModeWindow = window;
-            SDL_GetMouseState(&oldPosition.X, &oldPosition.Y);
+            _relativeModeWindow = window;
+            SDL_GetMouseState(&_oldPosition.X, &_oldPosition.Y);
             if (!SDL_CursorVisible())
             {
                 // Trap the cursor in current location
-                SDL_Rect clipRect = { (int)oldPosition.X, (int)oldPosition.Y, 1, 1 };
-                oldScreenRect = SDL_GetWindowMouseRect(windowHandle);
+                SDL_Rect clipRect = { (int)_oldPosition.X, (int)_oldPosition.Y, 1, 1 };
+                _oldScreenRect = SDL_GetWindowMouseRect(windowHandle);
                 SDL_SetWindowMouseRect(windowHandle, &clipRect);
             }
         }
         else
         {
-            if (relativeModeWindow != window)
+            if (_relativeModeWindow != window)
             {
                 // FIXME: When floating game window is focused and editor viewport activated, the relative mode gets stuck
                 return;
             }
             SDL_SetWindowMouseRect(windowHandle, nullptr);//oldScreenRect);
-            SDL_WarpMouseInWindow(windowHandle, oldPosition.X, oldPosition.Y);
-            oldScreenRect = nullptr;
-            relativeModeWindow = nullptr;
+            SDL_WarpMouseInWindow(windowHandle, _oldPosition.X, _oldPosition.Y);
+            _oldScreenRect = nullptr;
+            _relativeModeWindow = nullptr;
         }
 
         Mouse::SetRelativeMode(relativeMode, window);

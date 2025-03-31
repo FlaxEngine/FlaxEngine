@@ -106,25 +106,11 @@ void Screen::SetCursorVisible(const bool value)
 #else
 	const auto win = Engine::MainWindow;
 #endif
-    bool focused = false;
     if (win && Engine::HasGameViewportFocus())
-    {
         win->SetCursor(value ? CursorType::Default : CursorType::Hidden);
-        focused = true;
-    }
     else if (win)
         win->SetCursor(CursorType::Default);
     CursorVisible = value;
-
-    // Just enable relative mode when cursor is constrained and not visible
-    if (CursorLock != CursorLockMode::None && !CursorVisible && focused)
-    {
-        Input::Mouse->SetRelativeMode(true, win);
-    }
-    else if (CursorLock == CursorLockMode::None || CursorVisible || !focused)
-    {
-        Input::Mouse->SetRelativeMode(false, win);
-    }
 }
 
 CursorLockMode Screen::GetCursorLock()
@@ -136,34 +122,35 @@ void Screen::SetCursorLock(CursorLockMode mode)
 {
 #if USE_EDITOR
     const auto win = Editor::Managed->GetGameWindow(true);
+    Rectangle bounds(Editor::Managed->GameViewportToScreen(Float2::Zero), Editor::Managed->GetGameWindowSize());
 #else
     const auto win = Engine::MainWindow;
+    Rectangle bounds = win != nullptr ? win->GetClientBounds() : Rectangle();
 #endif
+    bool inRelativeMode = Input::Mouse->IsRelative();
     if (win && mode == CursorLockMode::Clipped)
-    {
-#if USE_EDITOR
-        Rectangle bounds(Editor::Managed->GameViewportToScreen(Float2::Zero), Editor::Managed->GetGameWindowSize());
-#else
-        Rectangle bounds = win->GetClientBounds();
-#endif
         win->StartClippingCursor(bounds);
-    }
-    else if (win && CursorLock == CursorLockMode::Clipped)
+    else if (win && mode == CursorLockMode::Locked)
     {
-        win->EndClippingCursor();
+        // Use mouse clip region to restrict the cursor in one spot
+        Rectangle centerBounds;
+        auto mousePosition = win->GetMousePosition();
+        if (bounds.Contains(mousePosition))
+            centerBounds = Rectangle(mousePosition, Float2(1, 1));
+        else
+            centerBounds = Rectangle(bounds.GetCenter(), Float2(1, 1));
+        win->StartClippingCursor(centerBounds);
     }
+    else if (win && (CursorLock == CursorLockMode::Locked || CursorLock == CursorLockMode::Clipped))
+        win->EndClippingCursor();
     CursorLock = mode;
 
-    // Just enable relative mode when cursor is constrained and not visible
+    // Enable relative mode when cursor is restricted
     bool focused = win && Engine::HasGameViewportFocus();
-    if (CursorLock != CursorLockMode::None && !CursorVisible && focused)
-    {
+    if (CursorLock != CursorLockMode::None)
         Input::Mouse->SetRelativeMode(true, win);
-    }
-    else if (CursorLock == CursorLockMode::None || CursorVisible || !focused)
-    {
+    else if (CursorLock == CursorLockMode::None && inRelativeMode)
         Input::Mouse->SetRelativeMode(false, win);
-    }
 }
 
 GameWindowMode Screen::GetGameWindowMode()
