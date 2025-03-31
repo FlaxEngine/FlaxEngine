@@ -298,10 +298,10 @@ void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float 
     }
 }
 
-float GetAnimPos(float& timePos, float startTimePos, bool loop, float length)
+float GetAnimPos(float& timePos, float startTimePos, float speed, bool loop, float length)
 {
     // Apply animation offset and looping to calculate the animation sampling position within [0;length]
-    float result = startTimePos + timePos;
+    float result = startTimePos + timePos * speed;
     if (result < 0.0f)
     {
         if (loop)
@@ -335,7 +335,7 @@ float GetAnimPos(float& timePos, float startTimePos, bool loop, float length)
     return result;
 }
 
-float GetAnimSamplePos(float length, Animation* anim, float pos, float speed)
+float GetAnimSamplePos(float length, Animation* anim, float pos)
 {
     // Convert into animation local time (track length may be bigger so fill the gaps with animation clip and include playback speed)
     // Also, scale the animation to fit the total animation node length without cut in a middle
@@ -343,7 +343,7 @@ float GetAnimSamplePos(float length, Animation* anim, float pos, float speed)
     const int32 cyclesCount = Math::Max(Math::FloorToInt(length / animLength), 1);
     const float cycleLength = animLength * (float)cyclesCount;
     const float adjustRateScale = length / cycleLength;
-    auto animPos = pos * speed * adjustRateScale;
+    auto animPos = pos * adjustRateScale;
     while (animPos > animLength)
     {
         animPos -= animLength;
@@ -354,11 +354,11 @@ float GetAnimSamplePos(float length, Animation* anim, float pos, float speed)
     return animPos;
 }
 
-FORCE_INLINE void GetAnimPos(bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, float& pos, float& prevPos)
+FORCE_INLINE void GetAnimPos(bool loop, float length, float speed, float startTimePos, float prevTimePos, float& newTimePos, float& pos, float& prevPos)
 {
     // Calculate actual time position within the animation node (defined by length and loop mode)
-    pos = GetAnimPos(newTimePos, startTimePos, loop, length);
-    prevPos = GetAnimPos(prevTimePos, startTimePos, loop, length);
+    pos = GetAnimPos(newTimePos, startTimePos, speed, loop, length);
+    prevPos = GetAnimPos(prevTimePos, startTimePos, speed, loop, length);
 }
 
 void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight, ProcessAnimationMode mode, BitArray<InlinedAllocation<8>>* usedNodes)
@@ -366,8 +366,8 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
     PROFILE_CPU_ASSET(anim);
 
     // Get animation position (animation track position for channels sampling)
-    const float animPos = GetAnimSamplePos(length, anim, pos, speed);
-    const float animPrevPos = GetAnimSamplePos(length, anim, prevPos, speed);
+    const float animPos = GetAnimSamplePos(length, anim, pos);
+    const float animPrevPos = GetAnimSamplePos(length, anim, prevPos);
 
     // Add to trace
     auto& context = *Context.Get();
@@ -407,7 +407,7 @@ void AnimGraphExecutor::ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode*
                 const float frameRateMatchScale = (float)(nestedAnimSpeed / anim->Data.FramesPerSecond);
                 nestedAnimPos = nestedAnimPos * frameRateMatchScale;
                 nestedAnimPrevPos = nestedAnimPrevPos * frameRateMatchScale;
-                GetAnimPos(nestedAnim.Loop, nestedAnimLength, nestedAnim.StartTime, nestedAnimPrevPos, nestedAnimPos, nestedAnimPos, nestedAnimPrevPos);
+                GetAnimPos(nestedAnim.Loop, nestedAnimLength, speed, nestedAnim.StartTime, nestedAnimPrevPos, nestedAnimPos, nestedAnimPos, nestedAnimPrevPos);
 
                 ProcessAnimation(nodes, node, true, nestedAnimLength, nestedAnimPos, nestedAnimPrevPos, nestedAnim.Anim, 1.0f, weight, mode, usedNodes);
             }
@@ -590,7 +590,7 @@ Variant AnimGraphExecutor::SampleAnimation(AnimGraphNode* node, bool loop, float
         return Value::Null;
 
     float pos, prevPos;
-    GetAnimPos(loop, length, startTimePos, prevTimePos, newTimePos, pos, prevPos);
+    GetAnimPos(loop, length, speed, startTimePos, prevTimePos, newTimePos, pos, prevPos);
 
     const auto nodes = node->GetNodes(this);
     InitNodes(nodes);
@@ -638,8 +638,8 @@ Variant AnimGraphExecutor::SampleAnimationsWithBlend(AnimGraphNode* node, bool l
 
     // Get actual animation position (includes looping and start offset)
     float posA, prevPosA, posB, prevPosB;
-    GetAnimPos(loop, a.Length, startTimePos, a.PrevTimePos, a.TimePos, posA, prevPosA);
-    GetAnimPos(loop, b.Length, startTimePos, b.PrevTimePos, b.TimePos, posB, prevPosB);
+    GetAnimPos(loop, a.Length, a.Speed, startTimePos, a.PrevTimePos, a.TimePos, posA, prevPosA);
+    GetAnimPos(loop, b.Length, b.Speed, startTimePos, b.PrevTimePos, b.TimePos, posB, prevPosB);
 
     // Sample the animations with blending
     const auto nodes = node->GetNodes(this);
@@ -663,9 +663,9 @@ Variant AnimGraphExecutor::SampleAnimationsWithBlend(AnimGraphNode* node, bool l
 
     // Get actual animation position (includes looping and start offset)
     float posA, prevPosA, posB, prevPosB, posC, prevPosC;
-    GetAnimPos(loop, a.Length, startTimePos, a.PrevTimePos, a.TimePos, posA, prevPosA);
-    GetAnimPos(loop, b.Length, startTimePos, b.PrevTimePos, b.TimePos, posB, prevPosB);
-    GetAnimPos(loop, c.Length, startTimePos, c.PrevTimePos, c.TimePos, posC, prevPosC);
+    GetAnimPos(loop, a.Length, a.Speed, startTimePos, a.PrevTimePos, a.TimePos, posA, prevPosA);
+    GetAnimPos(loop, b.Length, b.Speed, startTimePos, b.PrevTimePos, b.TimePos, posB, prevPosB);
+    GetAnimPos(loop, c.Length, c.Speed, startTimePos, c.PrevTimePos, c.TimePos, posC, prevPosC);
 
     // Sample the animations with blending
     const auto nodes = node->GetNodes(this);
