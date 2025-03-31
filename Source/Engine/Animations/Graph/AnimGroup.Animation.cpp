@@ -607,28 +607,6 @@ Variant AnimGraphExecutor::SampleAnimation(AnimGraphNode* node, bool loop, float
     return SampleAnimation(node, loop, sample.Length, startTimePos, sample.PrevTimePos, sample.TimePos, sample.Anim, sample.Speed);
 }
 
-Variant AnimGraphExecutor::SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, float speedA, float speedB, float alpha)
-{
-    // Skip if any animation is not ready to use
-    if (animA == nullptr || !animA->IsLoaded() ||
-        animB == nullptr || !animB->IsLoaded())
-        return Value::Null;
-
-    float pos, prevPos;
-    GetAnimPos(loop, length, startTimePos, prevTimePos, newTimePos, pos, prevPos);
-
-    // Sample the animations with blending
-    const auto nodes = node->GetNodes(this);
-    InitNodes(nodes);
-    nodes->Position = pos;
-    nodes->Length = length;
-    ProcessAnimation(nodes, node, loop, length, pos, prevPos, animA, speedA, 1.0f - alpha, ProcessAnimationMode::Override);
-    ProcessAnimation(nodes, node, loop, length, pos, prevPos, animB, speedB, alpha, ProcessAnimationMode::BlendAdditive);
-    NormalizeRotations(nodes, _rootMotionMode);
-
-    return nodes;
-}
-
 Variant AnimGraphExecutor::SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float startTimePos, AnimSampleData& a, AnimSampleData& b, float alpha)
 {
     // Skip if any animation is not ready to use

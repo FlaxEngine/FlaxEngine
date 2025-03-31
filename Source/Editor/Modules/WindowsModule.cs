@@ -833,13 +833,14 @@ namespace FlaxEditor.Modules
 
         private void AddToRestore(EditorWindow win, Type type, WindowRestoreData winData)
         {
-            var panel = win.ParentDockPanel;
-
             // Ensure that this window is only selected following recompilation
             // if it was the active tab in its dock panel. Otherwise, there is a
             // risk of interrupting the user's workflow by potentially selecting
             // background tabs.
-            var window = win.RootWindow.Window;
+            var window = win.RootWindow?.Window;
+            if (window == null)
+                return;
+            var panel = win.ParentDockPanel;
             winData.SelectOnShow = panel.SelectedTab == win;
             winData.DockedTabIndex = 0;
             if (panel is FloatWindowDockPanel && window != null && panel.TabsCount == 1)

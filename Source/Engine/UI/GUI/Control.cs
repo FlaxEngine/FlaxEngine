@@ -783,7 +783,7 @@ namespace FlaxEngine.GUI
             if (_tooltipUpdate != null)
             {
                 SetUpdate(ref _tooltipUpdate, null);
-                Tooltip.OnMouseLeaveControl(this);
+                Tooltip?.OnMouseLeaveControl(this);
             }
         }
 
