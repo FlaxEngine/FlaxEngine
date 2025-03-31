@@ -161,7 +161,8 @@ namespace FlaxEditor.Windows.Search
 
             // Setup
             _resultPanel.ScrollViewTo(Float2.Zero);
-            _searchBox.Text = string.Empty;
+            // Select the text in the search bar so that the user can just start typing
+            _searchBox.SelectAll();
             _searchBox.Focus();
         }
 
