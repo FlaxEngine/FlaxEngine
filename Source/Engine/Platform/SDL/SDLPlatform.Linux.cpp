@@ -471,12 +471,20 @@ namespace X11Impl
         return p;
     }
 
+    static StringAnsi GetAtomName(X11::Display* display, X11::Atom atom)
+    {
+        char* atomNamePtr = X11::XGetAtomName(display, atom);
+        StringAnsi atomName = StringAnsi(atomNamePtr);
+        X11::XFree(atomNamePtr);
+        return atomName;
+    }
+    
     static X11::Atom SelectTargetFromList(X11::Display* display, const char* targetType, X11::Atom* list, int count)
     {
         for (int i = 0; i < count; i++)
         {
             X11::Atom atom = list[i];
-            if (atom != 0 && StringAnsi(XGetAtomName(display, atom)) == targetType)
+            if (atom != 0 && GetAtomName(display, atom) == targetType)
                 return atom;
         }
         return 0;
@@ -484,11 +492,11 @@ namespace X11Impl
 
     static X11::Atom SelectTargetFromAtoms(X11::Display* display, const char* targetType, X11::Atom t1, X11::Atom t2, X11::Atom t3)
     {
-        if (t1 != 0 && StringAnsi(XGetAtomName(display, t1)) == targetType)
+        if (t1 != 0 && GetAtomName(display, t1) == targetType)
             return t1;
-        if (t2 != 0 && StringAnsi(XGetAtomName(display, t2)) == targetType)
+        if (t2 != 0 && GetAtomName(display, t2) == targetType)
             return t2;
-        if (t3 != 0 && StringAnsi(XGetAtomName(display, t3)) == targetType)
+        if (t3 != 0 && GetAtomName(display, t3) == targetType)
             return t3;
         return 0;
     }
@@ -1164,10 +1172,11 @@ bool SDLCALL SDLPlatform::X11EventHook(void* userdata, _XEvent* xevent)
             m.data.l[4] = xAtomXdndActionCopy;
             X11::XSendEvent(xDisplay, event.xclient.data.l[0], 0, NoEventMask, (X11::XEvent*)&m);
             X11::XFlush(xDisplay);
-            xDndPos = Float2((float)(event.xclient.data.l[2]  >> 16), (float)(event.xclient.data.l[2] & 0xffff));
+            xDndPos = Float2((float)(event.xclient.data.l[2] >> 16), (float)(event.xclient.data.l[2] & 0xffff));
             window = WindowsManager::GetByNativePtr((void*)event.xany.window);
             if (window)
             {
+                xDndPos = window->ScreenToClient(xDndPos);
                 LinuxDropFilesData dropData;
                 xDndResult = DragDropEffect::None;
                 if (window->_dragOver)
@@ -1194,14 +1203,12 @@ bool SDLCALL SDLPlatform::X11EventHook(void* userdata, _XEvent* xevent)
         }
         else if ((uint32)event.xclient.message_type == (uint32)xAtomXdndDrop)
         {
-            auto w = event.xany.window;
             if (xDnDRequested != 0)
             {
                 xDndSourceWindow = event.xclient.data.l[0];
-                if (xDnDVersion >= 1)
-                    XConvertSelection(xDisplay, xAtomXdndSelection, xDnDRequested, xAtomPrimary, w, event.xclient.data.l[2]);
-                else
-                    XConvertSelection(xDisplay, xAtomXdndSelection, xDnDRequested, xAtomPrimary, w, CurrentTime);
+                XConvertSelection(xDisplay, xAtomXdndSelection, xDnDRequested, xAtomPrimary,
+                    event.xany.window, xDnDVersion >= 1 ? event.xclient.data.l[2] : CurrentTime);
+                X11::XFlush(xDisplay);
             }
             else
             {
@@ -1212,7 +1219,7 @@ bool SDLCALL SDLPlatform::X11EventHook(void* userdata, _XEvent* xevent)
                 m.window = event.xclient.data.l[0];
                 m.message_type = xAtomXdndFinished;
                 m.format = 32;
-                m.data.l[0] = w;
+                m.data.l[0] = event.xany.window;
                 m.data.l[1] = 0;
                 m.data.l[2] = 0;
                 X11::XSendEvent(xDisplay, event.xclient.data.l[0], 0, NoEventMask, (X11::XEvent*)&m);
