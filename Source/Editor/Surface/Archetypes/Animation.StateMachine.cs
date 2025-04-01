@@ -1353,6 +1353,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// </summary>
             public void Edit()
             {
+                Cursor = CursorType.Default;
                 Surface.OpenContext(this);
             }
 
