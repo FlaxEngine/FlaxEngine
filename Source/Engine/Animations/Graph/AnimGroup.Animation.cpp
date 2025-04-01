@@ -1447,8 +1447,8 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             const auto aData = node->Values[4 + aIndex * 2].AsFloat4();
             AnimSampleData a(node->Assets[aIndex].As<Animation>(), aData.W, aIndex);
 
-            // Check single A case or the last valid animation
-            if (x <= aData.X + ANIM_GRAPH_BLEND_THRESHOLD || i + 2 == data.Count)
+            // Check single A case
+            if (x <= aData.X + ANIM_GRAPH_BLEND_THRESHOLD)
             {
                 MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, speed);
                 value = SampleAnimation(node, loop, startTimePos, a);
@@ -1479,6 +1479,16 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
             MultiBlendAnimData::AfterSample(newList, a);
             MultiBlendAnimData::AfterSample(newList, b);
             break;
+        }
+        if (newList.IsEmpty())
+        {
+            // Sample the last animation if had no result
+            const auto aIndex = data.IndicesSorted[data.Count - 1];
+            const auto aData = node->Values[4 + aIndex * 2].AsFloat4();
+            AnimSampleData a(node->Assets[aIndex].As<Animation>(), aData.W, aIndex);
+            MultiBlendAnimData::BeforeSample(context, bucket, prevList, a, speed);
+            value = SampleAnimation(node, loop, startTimePos, a);
+            MultiBlendAnimData::AfterSample(newList, a);
         }
 
         MultiBlendAnimData::SetList(bucket, newList);
@@ -1734,7 +1744,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
 
         break;
     }
-    // Blend Pose
+    // Blend Poses
     case 14:
     {
         ASSERT(box->ID == 0);
