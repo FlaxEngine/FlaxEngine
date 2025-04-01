@@ -1831,7 +1831,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         const AnimGraphImpulse* poseData = (AnimGraphImpulse*)pose.AsPointer;
 
         auto nodes = node->GetNodes(this);
-        nodes->Nodes = poseData->Nodes;
+        *nodes = *poseData;
         nodes->RootMotion.Translation = (Vector3)tryGetValue(node->GetBox(2), Value::Zero);
         nodes->RootMotion.Orientation = (Quaternion)tryGetValue(node->GetBox(3), Value::Zero);
         value = nodes;
@@ -1849,7 +1849,7 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         const AnimGraphImpulse* poseData = (AnimGraphImpulse*)pose.AsPointer;
 
         auto nodes = node->GetNodes(this);
-        nodes->Nodes = poseData->Nodes;
+        *nodes = *poseData;
         nodes->RootMotion.Translation = poseData->RootMotion.Translation + (Vector3)tryGetValue(node->GetBox(2), Value::Zero);
         nodes->RootMotion.Orientation = poseData->RootMotion.Orientation * (Quaternion)tryGetValue(node->GetBox(3), Value::Zero);
         value = nodes;
