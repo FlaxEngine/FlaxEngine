@@ -540,7 +540,7 @@ public:
     // <summary>
     /// Sets axles anti roll bars to increase vehicle stability.
     /// </summary>
-    API_PROPERTY() void SetAntiRollBars(const Array<AntiRollBar>& value);
+    API_PROPERTY(Attributes="EditorOrder(10), EditorDisplay(\"Vehicle\")") void SetAntiRollBars(const Array<AntiRollBar>& value);
 
     // <summary>
     /// Gets axles anti roll bars.
