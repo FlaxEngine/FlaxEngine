@@ -554,6 +554,12 @@ public:
     API_FUNCTION() void SetSteering(float value);
 
     /// <summary>
+    /// Gets the vehicle steering. Steer is the analog steer value in range (-1,1) where -1 represents the steering wheel at left lock and +1 represents the steering wheel at right lock.
+    /// </summary>
+    /// <returns>The vehicle steering.</returns>
+    API_FUNCTION() float GetSteering();
+
+    /// <summary>
     /// Sets the input for vehicle brakes. Brake is the analog brake pedal value in range (0,1) where 1 represents the pedal fully pressed and 0 represents the pedal in its rest state.
     /// </summary>
     /// <param name="value">The value (0,1 range).</param>

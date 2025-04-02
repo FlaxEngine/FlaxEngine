@@ -200,6 +200,11 @@ void WheeledVehicle::SetSteering(float value)
     _steering = Math::Clamp(value, -1.0f, 1.0f);
 }
 
+float WheeledVehicle::GetSteering()
+{
+    return _steering;
+}
+
 void WheeledVehicle::SetBrake(float value)
 {
     value = Math::Saturate(value);
