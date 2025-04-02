@@ -399,6 +399,7 @@ public:
 
     void SetRelativeMode(bool relativeMode, Window* window) final override
     {
+        ASSERT(window != nullptr);
         if (relativeMode == _relativeMode)
             return;
 

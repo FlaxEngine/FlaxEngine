@@ -113,6 +113,7 @@ public:
     void EndTrackingMouse() override;
     void StartClippingCursor(const Rectangle& bounds) override;
     void EndClippingCursor() override;
+    void SetMousePosition(const Float2& position) const override;
     void SetCursor(CursorType type) override;
 
 #if USE_EDITOR && PLATFORM_WINDOWS

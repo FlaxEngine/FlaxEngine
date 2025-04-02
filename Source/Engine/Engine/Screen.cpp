@@ -123,34 +123,32 @@ void Screen::SetCursorLock(CursorLockMode mode)
 #if USE_EDITOR
     const auto win = Editor::Managed->GetGameWindow(true);
     Rectangle bounds(Editor::Managed->GameViewportToScreen(Float2::Zero), Editor::Managed->GetGameWindowSize());
+    if (win)
+        bounds = Rectangle(win->ScreenToClient(bounds.GetTopLeft()), bounds.Size);
 #else
     const auto win = Engine::MainWindow;
     Rectangle bounds = win != nullptr ? win->GetClientBounds() : Rectangle();
 #endif
-    bool inRelativeMode = Input::Mouse->IsRelative();
-    if (win && mode == CursorLockMode::Clipped)
-        win->StartClippingCursor(bounds);
-    else if (win && mode == CursorLockMode::Locked)
+    if (win)
     {
-        // Use mouse clip region to restrict the cursor in one spot
-        Rectangle centerBounds;
-        auto mousePosition = win->GetMousePosition();
-        if (bounds.Contains(mousePosition))
-            centerBounds = Rectangle(mousePosition, Float2(1, 1));
-        else
-            centerBounds = Rectangle(bounds.GetCenter(), Float2(1, 1));
-        win->StartClippingCursor(centerBounds);
-    }
-    else if (win && (CursorLock == CursorLockMode::Locked || CursorLock == CursorLockMode::Clipped))
-        win->EndClippingCursor();
-    CursorLock = mode;
+        bool inRelativeMode = Input::Mouse->IsRelative();
+        if (mode == CursorLockMode::Clipped)
+            win->StartClippingCursor(bounds);
+        else if (mode == CursorLockMode::Locked)
+        {
+            // Use mouse clip region to restrict the cursor in one spot
+            win->StartClippingCursor(Rectangle(bounds.GetCenter(), Float2(1, 1)));
+        }
+        else if (CursorLock == CursorLockMode::Locked || CursorLock == CursorLockMode::Clipped)
+            win->EndClippingCursor();
 
-    // Enable relative mode when cursor is restricted
-    bool focused = win && Engine::HasGameViewportFocus();
-    if (win && CursorLock != CursorLockMode::None)
-        Input::Mouse->SetRelativeMode(true, win);
-    else if (win && CursorLock == CursorLockMode::None && inRelativeMode)
-        Input::Mouse->SetRelativeMode(false, win);
+        // Enable relative mode when cursor is restricted
+        if (mode != CursorLockMode::None)
+            Input::Mouse->SetRelativeMode(true, win);
+        else if (mode == CursorLockMode::None && inRelativeMode)
+            Input::Mouse->SetRelativeMode(false, win);
+    }
+    CursorLock = mode;
 }
 
 GameWindowMode Screen::GetGameWindowMode()

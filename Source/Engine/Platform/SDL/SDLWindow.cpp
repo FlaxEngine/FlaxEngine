@@ -820,16 +820,8 @@ void SDLWindow::StartClippingCursor(const Rectangle& bounds)
         return;
 
 #if PLATFORM_LINUX
-    {
-        auto oldValue = SDL_GetHint(SDL_HINT_MOUSE_RELATIVE_WARP_MOTION);
-        SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_WARP_MOTION, "1");
-        
-        // The cursor is not fully constrained when positioned outside of the clip region...
-        Float2 center = bounds.GetCenter();
-        SDL_WarpMouseInWindow(_window, center.X, center.Y);
-
-        SDL_SetHint(SDL_HINT_MOUSE_RELATIVE_WARP_MOTION, oldValue);
-    }
+    // The cursor is not fully constrained when positioned outside the clip region
+    SetMousePosition(bounds.GetCenter());
 #endif
 
     _isClippingCursor = true;
@@ -845,6 +837,17 @@ void SDLWindow::EndClippingCursor()
 
     _isClippingCursor = false;
     SDL_SetWindowMouseRect(_window, nullptr);
+}
+
+void SDLWindow::SetMousePosition(const Float2& position) const
+{
+    if (!_settings.AllowInput || !_focused)
+        return;
+        
+    SDL_WarpMouseInWindow(_window, position.X, position.Y);
+
+    Float2 screenPosition = ClientToScreen(position);
+    Input::Mouse->OnMouseMoved(screenPosition);
 }
 
 void SDLWindow::SetCursor(CursorType type)
