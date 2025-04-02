@@ -145,6 +145,7 @@ bool AnimGraph::Load(ReadStream* stream, bool loadMeta)
 {
     Version++;
     _bucketsCounter = 0;
+    _bucketInitializerList.Clear();
     _customNodes.Clear();
 
     // Base

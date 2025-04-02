@@ -1764,12 +1764,6 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         const float blendDuration = (float)tryGetValue(node->GetBox(2), node->Values[1]);
         const int32 poseCount = Math::Clamp(node->Values[2].AsInt, 0, MaxBlendPoses);
         const AlphaBlendMode mode = (AlphaBlendMode)node->Values[3].AsInt;
-        if (bucket.PreviousBlendPoseIndex >= poseCount || bucket.PreviousBlendPoseIndex < -1)
-        {
-            // TODO: find out why BlendPoseBucketInit is not called in some state machines?
-            bucket.TransitionPosition = 0.0f;
-            bucket.PreviousBlendPoseIndex = -1;
-        }
 
         // Skip if nothing to blend
         if (poseCount == 0 || poseIndex < 0 || poseIndex >= poseCount)

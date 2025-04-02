@@ -698,7 +698,6 @@ public:
         : AnimGraphBase(this)
         , _isFunction(isFunction)
         , _isRegisteredForScriptingEvents(false)
-        , _bucketInitializerList(64)
         , _owner(owner)
     {
     }
