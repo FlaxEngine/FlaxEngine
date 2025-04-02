@@ -52,5 +52,11 @@ namespace FlaxEngine.Utilities
         public virtual void OnExit(State nextState)
         {
         }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return GetType().Name;
+        }
     }
 }
