@@ -145,6 +145,12 @@ bool CommandLine::Parse(const Char* cmdLine)
     PARSE_BOOL_SWITCH("-monolog ", MonoLog);
     PARSE_BOOL_SWITCH("-mute ", Mute);
     PARSE_BOOL_SWITCH("-lowdpi ", LowDPI);
+
+#if PLATFORM_LINUX && PLATFORM_SDL
+    PARSE_BOOL_SWITCH("-wayland ", Wayland);
+    PARSE_BOOL_SWITCH("-x11 ", X11);
+#endif
+
 #if USE_EDITOR
     PARSE_BOOL_SWITCH("-clearcache ", ClearCache);
     PARSE_BOOL_SWITCH("-clearcooker ", ClearCookerCache);
