@@ -213,9 +213,19 @@ void WheeledVehicle::SetBrake(float value)
     _tankRightBrake = value;
 }
 
+float WheeledVehicle::GetBrake()
+{
+    return _brake;
+}
+
 void WheeledVehicle::SetHandbrake(float value)
 {
     _handBrake = Math::Saturate(value);
+}
+
+float WheeledVehicle::GetHandbrake()
+{
+    return _handBrake;
 }
 
 void WheeledVehicle::SetTankLeftThrottle(float value)

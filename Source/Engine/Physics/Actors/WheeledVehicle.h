@@ -579,10 +579,22 @@ public:
     API_FUNCTION() void SetBrake(float value);
 
     /// <summary>
+    /// Gets the vehicle brakes. Brake is the analog brake pedal value in range (0,1) where 1 represents the pedal fully pressed and 0 represents the pedal in its rest state.
+    /// </summary>
+    /// <returns>The vehicle brake.</returns>
+    API_FUNCTION() float GetBrake();
+
+    /// <summary>
     /// Sets the input for vehicle handbrake. Handbrake is the analog handbrake value in range (0,1) where 1 represents the handbrake fully engaged and 0 represents the handbrake in its rest state.
     /// </summary>
     /// <param name="value">The value (0,1 range).</param>
     API_FUNCTION() void SetHandbrake(float value);
+
+    /// <summary>
+    /// Gets the vehicle handbrake. Handbrake is the analog handbrake value in range (0,1) where 1 represents the handbrake fully engaged and 0 represents the handbrake in its rest state.
+    /// </summary>
+    /// <returns>The vehicle handbrake.</returns>
+    API_FUNCTION() float GetHandbrake();
 
     /// <summary>
     /// Sets the input for tank left track throttle. It is the analog accelerator pedal value in range (-1,1) where 1 represents the pedal fully pressed to move to forward, 0 to represents the 
