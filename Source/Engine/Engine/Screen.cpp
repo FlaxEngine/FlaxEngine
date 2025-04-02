@@ -147,9 +147,9 @@ void Screen::SetCursorLock(CursorLockMode mode)
 
     // Enable relative mode when cursor is restricted
     bool focused = win && Engine::HasGameViewportFocus();
-    if (CursorLock != CursorLockMode::None)
+    if (win && CursorLock != CursorLockMode::None)
         Input::Mouse->SetRelativeMode(true, win);
-    else if (CursorLock == CursorLockMode::None && inRelativeMode)
+    else if (win && CursorLock == CursorLockMode::None && inRelativeMode)
         Input::Mouse->SetRelativeMode(false, win);
 }
 
