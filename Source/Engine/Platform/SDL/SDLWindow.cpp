@@ -819,10 +819,8 @@ void SDLWindow::StartClippingCursor(const Rectangle& bounds)
     if (!IsFocused())
         return;
 
-#if PLATFORM_LINUX
     // The cursor is not fully constrained when positioned outside the clip region
     SetMousePosition(bounds.GetCenter());
-#endif
 
     _isClippingCursor = true;
     SDL_Rect rect{ (int)bounds.GetX(), (int)bounds.GetY(), (int)bounds.GetWidth(), (int)bounds.GetHeight() };
