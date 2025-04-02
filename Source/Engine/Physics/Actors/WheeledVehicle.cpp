@@ -424,6 +424,12 @@ void WheeledVehicle::OnDebugDrawSelected()
             {
                 DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(data.State.TireContactPoint, 5.0f), Color::Green, 0, false);
             }
+
+            if (DisplayWheelInfo)
+            {
+                const String text = String::Format(TEXT("Index: {}\nCollider: {}"), wheelIndex, wheel.Collider->GetName());
+                DEBUG_DRAW_TEXT(text, currentPos, WheelInfoColor, 10, 0);
+            }
         }
     }
 

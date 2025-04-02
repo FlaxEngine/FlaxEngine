@@ -5,6 +5,7 @@
 #include "Engine/Physics/Actors/RigidBody.h"
 #include "Engine/Physics/Colliders/Collider.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
+#include "Engine/Core/Math/Color.h"
 
 /// <summary>
 /// Representation of the car vehicle that uses wheels. Built on top of the RigidBody with collider representing its chassis shape and wheels.
@@ -465,9 +466,21 @@ public:
     bool UseAnalogSteering = false;
 
     /// <summary>
+    /// If checked, will draw some useful information about the wheels at the position of their colliders.
+    /// </summary>
+    API_FIELD(Attributes ="EditorOrder(2), EditorDisplay(\"Vehicle\")")
+    bool DisplayWheelInfo = false;
+
+    /// <summary>
+    /// If checked, will draw some useful information about the wheels at the position of their colliders.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(3), EditorDisplay(\"Vehicle\"), VisibleIf(\"DisplayWheelInfo\")")
+    Color WheelInfoColor = Color::White;
+
+    /// <summary>
     /// Gets the vehicle driving model type.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(2), EditorDisplay(\"Vehicle\")") DriveTypes GetDriveType() const;
+    API_PROPERTY(Attributes="EditorOrder(4), EditorDisplay(\"Vehicle\")") DriveTypes GetDriveType() const;
 
     /// <summary>
     /// Sets the vehicle driving model type.
@@ -477,12 +490,12 @@ public:
     /// <summary>
     /// Gets the vehicle wheels settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(4), EditorDisplay(\"Vehicle\")") const Array<Wheel>& GetWheels() const;
+    API_PROPERTY(Attributes="EditorOrder(5), EditorDisplay(\"Vehicle\")") const Array<Wheel>& GetWheels() const;
 
     /// <summary>
     /// Gets the vehicle drive control settings.
     /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(5), EditorDisplay(\"Vehicle\")") DriveControlSettings GetDriveControl() const;
+    API_PROPERTY(Attributes = "EditorOrder(6), EditorDisplay(\"Vehicle\")") DriveControlSettings GetDriveControl() const;
 
     /// <summary>
     /// Sets the vehicle drive control settings.
@@ -497,7 +510,7 @@ public:
     /// <summary>
     /// Gets the vehicle engine settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(6), EditorDisplay(\"Vehicle\")") EngineSettings GetEngine() const;
+    API_PROPERTY(Attributes="EditorOrder(7), EditorDisplay(\"Vehicle\")") EngineSettings GetEngine() const;
 
     /// <summary>
     /// Sets the vehicle engine settings.
@@ -507,7 +520,7 @@ public:
     /// <summary>
     /// Gets the vehicle differential settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(7), EditorDisplay(\"Vehicle\")") DifferentialSettings GetDifferential() const;
+    API_PROPERTY(Attributes="EditorOrder(8), EditorDisplay(\"Vehicle\")") DifferentialSettings GetDifferential() const;
 
     /// <summary>
     /// Sets the vehicle differential settings.
@@ -517,7 +530,7 @@ public:
     /// <summary>
     /// Gets the vehicle gearbox settings.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(8), EditorDisplay(\"Vehicle\")") GearboxSettings GetGearbox() const;
+    API_PROPERTY(Attributes="EditorOrder(9), EditorDisplay(\"Vehicle\")") GearboxSettings GetGearbox() const;
 
     /// <summary>
     /// Sets the vehicle gearbox settings.
