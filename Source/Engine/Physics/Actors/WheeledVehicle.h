@@ -468,13 +468,13 @@ public:
     /// <summary>
     /// If checked, will draw some useful information about the wheels at the position of their colliders.
     /// </summary>
-    API_FIELD(Attributes ="EditorOrder(2), EditorDisplay(\"Vehicle\")")
+    API_FIELD(Attributes="EditorOrder(2), EditorDisplay(\"Vehicle\")")
     bool DisplayWheelInfo = false;
 
     /// <summary>
     /// If checked, will draw some useful information about the wheels at the position of their colliders.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(3), EditorDisplay(\"Vehicle\"), VisibleIf(\"DisplayWheelInfo\")")
+    API_FIELD(Attributes="EditorOrder(3), EditorDisplay(\"Vehicle\"), VisibleIf(\"DisplayWheelInfo\")")
     Color WheelInfoColor = Color::White;
 
     /// <summary>
