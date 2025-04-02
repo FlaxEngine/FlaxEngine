@@ -640,7 +640,8 @@ Window* GDKPlatform::CreateWindow(const CreateWindowSettings& settings)
 
 void* GDKPlatform::LoadLibrary(const Char* filename)
 {
-    ASSERT(filename);
+    PROFILE_CPU();
+    ZoneText(filename, StringUtils::Length(filename));
     void* handle = ::LoadLibraryW(filename);
     if (!handle)
     {

@@ -25,6 +25,7 @@
 #include "Engine/Input/Gamepad.h"
 #include "Engine/Input/Keyboard.h"
 #include "Engine/Input/Mouse.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 #include <sys/syscall.h>
@@ -1082,6 +1083,8 @@ bool AndroidPlatform::SetEnvironmentVariable(const String& name, const String& v
 
 void* AndroidPlatform::LoadLibrary(const Char* filename)
 {
+    PROFILE_CPU();
+    ZoneText(filename, StringUtils::Length(filename));
     const StringAsANSI<> filenameANSI(filename);
     void* result = dlopen(filenameANSI.Get(), RTLD_LAZY);
     if (!result)

@@ -27,6 +27,7 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include <unistd.h>
 #include <cstdint>
 #include <stdlib.h>
@@ -482,6 +483,8 @@ bool ApplePlatform::SetEnvironmentVariable(const String& name, const String& val
 
 void* ApplePlatform::LoadLibrary(const Char* filename)
 {
+    PROFILE_CPU();
+    ZoneText(filename, StringUtils::Length(filename));
     const StringAsANSI<> filenameANSI(filename);
     void* result = dlopen(filenameANSI.Get(), RTLD_LAZY | RTLD_LOCAL);
     if (!result)

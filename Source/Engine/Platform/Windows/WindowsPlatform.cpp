@@ -18,6 +18,7 @@
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "../Win32/IncludeWindowsHeaders.h"
 #include <VersionHelpers.h>
 #include <ShellAPI.h>
@@ -1242,6 +1243,8 @@ Window* WindowsPlatform::CreateWindow(const CreateWindowSettings& settings)
 void* WindowsPlatform::LoadLibrary(const Char* filename)
 {
     ASSERT(filename);
+    PROFILE_CPU();
+    ZoneText(filename, StringUtils::Length(filename));
 
     // Add folder to search path to load dependency libraries
     StringView folder = StringUtils::GetDirectoryName(filename);
