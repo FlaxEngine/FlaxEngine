@@ -471,6 +471,8 @@ void WheeledVehicle::Serialize(SerializeStream& stream, const void* otherObj)
 
     SERIALIZE_GET_OTHER_OBJ(WheeledVehicle);
 
+    SERIALIZE_MEMBER(DisplayWheelInfo, DisplayWheelInfo);
+    SERIALIZE_MEMBER(WheelInfoColor, WheelInfoColor);
     SERIALIZE_MEMBER(DriveType, _driveType);
     SERIALIZE_MEMBER(Wheels, _wheels);
     SERIALIZE_MEMBER(DriveControl, _driveControl);
@@ -486,6 +488,8 @@ void WheeledVehicle::Deserialize(DeserializeStream& stream, ISerializeModifier* 
 {
     RigidBody::Deserialize(stream, modifier);
 
+    DESERIALIZE(DisplayWheelInfo);
+    DESERIALIZE(WheelInfoColor);
     DESERIALIZE_MEMBER(DriveType, _driveType);
     DESERIALIZE_MEMBER(Wheels, _wheels);
     DESERIALIZE_MEMBER(DriveControl, _driveControl);
