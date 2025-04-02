@@ -120,7 +120,8 @@ public:
     /// Gets the current state of mouse relative mode. 
     /// </summary>
     /// <param name="window">The window to check against, or null to check for any window.</param>
-    virtual API_FUNCTION() bool IsRelative(Window* window = nullptr) const
+    /// <returns>True if mouse is in relative mode, otherwise false.</returns>
+    API_FUNCTION() virtual bool IsRelative(Window* window = nullptr) const
     {
         return _relativeMode;
     }
