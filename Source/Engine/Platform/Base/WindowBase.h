@@ -522,6 +522,17 @@ public:
     }
 
     /// <summary>
+    /// Gets the mouse position in window coordinates.
+    /// </summary>
+    API_PROPERTY() virtual Float2 GetMousePosition() const;
+
+    /// <summary>
+    /// Sets the mouse position in window coordinates.
+    /// </summary>
+    /// <param name="position">Mouse position to set on</param>
+    API_PROPERTY() virtual void SetMousePosition(const Float2& position) const;
+
+    /// <summary>
     /// Gets the mouse cursor.
     /// </summary>
     API_PROPERTY() FORCE_INLINE CursorType GetCursor() const
@@ -717,16 +728,6 @@ public:
     API_FUNCTION() bool GetKeyUp(KeyboardKeys key) const;
 
 public:
-    /// <summary>
-    /// Gets the mouse position in window coordinates.
-    /// </summary>
-    API_PROPERTY() Float2 GetMousePosition() const;
-
-    /// <summary>
-    /// Sets the mouse position in window coordinates.
-    /// </summary>
-    /// <param name="position">Mouse position to set on</param>
-    API_PROPERTY() void SetMousePosition(const Float2& position) const;
 
     /// <summary>
     /// Gets the mouse position change during the last frame.
