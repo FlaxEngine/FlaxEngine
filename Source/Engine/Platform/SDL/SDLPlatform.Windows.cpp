@@ -134,9 +134,9 @@ bool SDLPlatform::EventFilterCallback(void* userdata, SDL_Event* event)
         if (WinImpl::DraggedWindowSize != window->GetClientSize())
         {
             // The window size changed while dragging, most likely due to maximized window restoring back to previous size.
+            WinImpl::DraggedWindowMousePosition = WinImpl::DraggedWindowStartPosition + WinImpl::DraggedWindowMousePosition - window->GetClientPosition();
             WinImpl::DraggedWindowStartPosition = window->GetClientPosition();
             WinImpl::DraggedWindowSize = window->GetClientSize();
-            WinImpl::DraggedWindowMousePosition = WinImpl::DraggedWindowStartPosition + WinImpl::DraggedWindowMousePosition - window->GetClientPosition();
         }
         Float2 windowPosition = Float2(static_cast<float>(event->window.data1), static_cast<float>(event->window.data2));
         Float2 mousePosition = WinImpl::DraggedWindowMousePosition;
