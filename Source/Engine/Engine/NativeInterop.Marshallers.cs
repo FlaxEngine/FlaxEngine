@@ -563,7 +563,7 @@ namespace FlaxEngine.Interop
         {
             T[] sourceArray;
             ManagedArray managedArray;
-            ManagedHandle handle;
+            ManagedHandle handle; // Valid only for pooled array
 
             public void FromManaged(T[] managed)
             {
@@ -588,7 +588,13 @@ namespace FlaxEngine.Interop
             {
                 ManagedArray arr = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
                 if (sourceArray == null || sourceArray.Length != arr.Length)
+                {
+                    // Array was resized when returned from native code (as ref parameter)
+                    managedArray.FreePooled();
                     sourceArray = new T[arr.Length];
+                    managedArray = arr;
+                    handle = new ManagedHandle(); // Invalidate as it's not pooled array anymore
+                }
             }
 
             public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
@@ -602,7 +608,11 @@ namespace FlaxEngine.Interop
 
             public T[] ToManaged() => sourceArray;
 
-            public void Free() => managedArray.FreePooled();
+            public void Free()
+            {
+                if (handle.IsAllocated)
+                    managedArray.FreePooled();
+            }
         }
 
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[] managed, out int numElements)
