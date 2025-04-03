@@ -409,8 +409,8 @@ GPUBuffer* GPUDeviceDX11::GetDummyVB()
     if (!_dummyVB)
     {
         _dummyVB = CreateBuffer(TEXT("DummyVertexBuffer"));
-        auto* layout = GPUVertexLayout::Get({{ VertexElement::Types::Attribute3, 0, 0, 0, PixelFormat::R8G8B8A8_UNorm }});
-        _dummyVB->Init(GPUBufferDescription::Vertex(layout, sizeof(Color32), 1, &Color32::Transparent));
+        auto* layout = GPUVertexLayout::Get({{ VertexElement::Types::Attribute3, 0, 0, 0, PixelFormat::R32G32B32A32_Float }});
+        _dummyVB->Init(GPUBufferDescription::Vertex(layout, sizeof(Color), 1, &Color::Transparent));
     }
     return _dummyVB;
 }
