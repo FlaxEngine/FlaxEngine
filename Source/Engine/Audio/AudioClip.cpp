@@ -72,6 +72,7 @@ void AudioClip::StreamingTask::OnEnd()
     // Unlink
     if (_asset)
     {
+        ScopeLock lock(_asset->Locker);
         ASSERT(_asset->_streamingTask == this);
         _asset->_streamingTask = nullptr;
         _asset = nullptr;
@@ -292,6 +293,7 @@ Task* AudioClip::CreateStreamingTask(int32 residency)
 
 void AudioClip::CancelStreamingTasks()
 {
+    ScopeLock lock(Locker);
     if (_streamingTask)
     {
         _streamingTask->Cancel();
