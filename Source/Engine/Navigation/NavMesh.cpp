@@ -104,6 +104,7 @@ void NavMesh::OnDataAssetLoaded()
     // Skip if already has data (prevent reloading navmesh on saving)
     if (Data.Tiles.HasItems())
         return;
+    ScopeLock lock(DataAsset->Locker);
 
     // Remove added tiles
     if (_navMeshActive)

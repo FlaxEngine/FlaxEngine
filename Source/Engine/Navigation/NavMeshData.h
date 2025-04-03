@@ -7,13 +7,13 @@
 
 class WriteStream;
 
-struct NavMeshTileDataHeader
+PACK_STRUCT(struct NavMeshTileDataHeader
 {
     int32 PosX;
     int32 PosY;
     int32 Layer;
     int32 DataSize;
-};
+});
 
 struct NavMeshTileData
 {

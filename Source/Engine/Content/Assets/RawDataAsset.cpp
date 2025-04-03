@@ -70,9 +70,8 @@ Asset::LoadResult RawDataAsset::load()
     if (chunk0 == nullptr || chunk0->IsMissing())
         return LoadResult::MissingDataChunk;
 
-    Data.Clear();
-    Data.EnsureCapacity(chunk0->Data.Length());
-    Data.Add(chunk0->Data.Get(), chunk0->Data.Length());
+    // TODO: swap memory alloc pointer to optimize this asset
+    Data.Set(chunk0->Data.Get(), chunk0->Data.Length());
 
     return LoadResult::Ok;
 }

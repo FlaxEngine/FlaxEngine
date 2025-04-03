@@ -80,7 +80,7 @@ bool NavMeshData::Load(BytesContainer& data, bool copyData)
         tile.Layer = tileHeader->Layer;
 
         // Read tile data
-        const auto tileData = stream.Move<byte>(tileHeader->DataSize);
+        const auto* tileData = (const byte*)stream.Move(tileHeader->DataSize);
         if (copyData)
             tile.Data.Copy(tileData, tileHeader->DataSize);
         else
