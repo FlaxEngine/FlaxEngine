@@ -338,6 +338,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 IsClosed = true,
                 ItemsMargin = new Margin(2.0f),
                 CloseAnimationTime = 0,
+                Pivot = Float2.Zero
             };
             var tagNamePanel = new HorizontalPanel
             {
