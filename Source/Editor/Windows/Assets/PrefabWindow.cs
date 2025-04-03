@@ -45,6 +45,8 @@ namespace FlaxEditor.Windows.Assets
         private DateTime _modifiedTime = DateTime.MinValue;
         private bool _isDropping = false;
 
+        private bool _lockSelection = false;
+
         /// <summary>
         /// Gets the prefab hierarchy tree control.
         /// </summary>
@@ -76,7 +78,18 @@ namespace FlaxEditor.Windows.Assets
         /// <summary>
         /// Indication of if the prefab window selection is locked on specific objects.
         /// </summary>
-        public bool LockSelectedObjects = false;
+        public bool LockSelectedObjects
+        {
+            get => _lockSelection;
+            set
+            {
+                if (_lockSelection == value)
+                    return;
+                _lockSelection = value;
+                if (!value)
+                    OnSelectionChanged(Graph.Root.SceneContext.Selection.ToArray());
+            }
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether use live reloading for the prefab changes (applies prefab changes on modification by auto).
