@@ -49,7 +49,9 @@ namespace Flax.Deps.Dependencies
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
-            var version = "1.23.1";
+            var version = "1.24.3";
+            string configuration = "Release";
+            int concurrency = Math.Min(Math.Max(1, (int)(Environment.ProcessorCount * Configuration.ConcurrencyProcessorScale)), Configuration.MaxConcurrency);
             var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "OpenAL");
 
             foreach (var platform in options.Platforms)
@@ -65,11 +67,9 @@ namespace Flax.Deps.Dependencies
                         "OpenAL32.dll",
                     };
 
-                    string configuration = "Release";
-
                     // Get the source
                     CloneGitRepo(root, "https://github.com/kcat/openal-soft.git");
-                    GitCheckout(root, "master", "d3875f333fb6abe2f39d82caca329414871ae53b"); // 1.23.1
+                    GitCheckout(root, "master", "dc7d7054a5b4f3bec1dc23a42fd616a0847af948"); // 1.24.3
 
                     // Build for Win64 and ARM64
                     foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
@@ -121,8 +121,9 @@ namespace Flax.Deps.Dependencies
                     };
                     var envVars = new Dictionary<string, string>
                     {
-                        { "CC", "clang-7" },
-                        { "CC_FOR_BUILD", "clang-7" }
+                        { "CC", "clang" },
+                        { "CC_FOR_BUILD", "clang" },
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", concurrency.ToString() },
                     };
                     var config = "-DALSOFT_REQUIRE_ALSA=ON -DALSOFT_REQUIRE_OSS=ON -DALSOFT_REQUIRE_PORTAUDIO=ON -DALSOFT_REQUIRE_PULSEAUDIO=ON -DALSOFT_REQUIRE_JACK=ON -DALSOFT_EMBED_HRTF_DATA=YES";
 
@@ -138,8 +139,8 @@ namespace Flax.Deps.Dependencies
                     SetupDirectory(buildDir, true);
 
                     // Build for Linux
-                    Utilities.Run("cmake", "-G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLIBTYPE=STATIC " + config + " ..", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
+                    Utilities.Run("cmake", $"-G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE={configuration} -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLIBTYPE=STATIC {config} ..", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
+                    BuildCmake(buildDir, configuration, envVars);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var file in binariesToCopy)
                         Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
