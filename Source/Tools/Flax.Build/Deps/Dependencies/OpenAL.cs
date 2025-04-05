@@ -125,7 +125,13 @@ namespace Flax.Deps.Dependencies
                         { "CC_FOR_BUILD", "clang" },
                         { "CMAKE_BUILD_PARALLEL_LEVEL", concurrency.ToString() },
                     };
-                    var config = "-DALSOFT_REQUIRE_ALSA=ON -DALSOFT_REQUIRE_OSS=ON -DALSOFT_REQUIRE_PORTAUDIO=ON -DALSOFT_REQUIRE_PULSEAUDIO=ON -DALSOFT_REQUIRE_JACK=ON -DALSOFT_EMBED_HRTF_DATA=YES";
+                    var config = $"-DALSOFT_REQUIRE_ALSA=ON " +
+                                 $"-DALSOFT_REQUIRE_OSS=ON " +
+                                 $"-DALSOFT_REQUIRE_PORTAUDIO=ON " +
+                                 $"-DALSOFT_REQUIRE_PULSEAUDIO=ON " +
+                                 $"-DALSOFT_REQUIRE_JACK=ON " +
+                                 $"-DALSOFT_REQUIRE_PIPEWIRE=ON " +
+                                 $"-DALSOFT_EMBED_HRTF_DATA=YES ";
 
                     // Get the source
                     var packagePath = Path.Combine(root, "package.zip");
