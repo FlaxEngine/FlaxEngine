@@ -157,7 +157,8 @@ namespace FlaxEditor.GUI.Input
                 Render2D.FillRectangle(lineRect, TrackLineColor);
 
                 // Draw thumb
-                Render2D.FillRectangle(_thumbRect, _isSliding ? ThumbColorSelected : (_thumbRect.Contains(PointFromWindow(Root.MousePosition)) ? ThumbColorHovered : ThumbColor));
+                bool mouseOverThumb = _thumbRect.Contains(PointFromWindow(Root.MousePosition));
+                Render2D.FillRectangle(_thumbRect, _isSliding ? ThumbColorSelected : mouseOverThumb ? ThumbColorHovered : ThumbColor);
             }
 
             /// <inheritdoc />
