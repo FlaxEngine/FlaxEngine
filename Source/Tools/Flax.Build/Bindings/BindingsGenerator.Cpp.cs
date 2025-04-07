@@ -875,6 +875,12 @@ namespace Flax.Build.Bindings
                         type = "MObject*";
                         return "(" + typeInfo.Type + "*)ScriptingObject::ToNative({0})";
                     }
+                    else if (apiType.IsScriptingObject && typeInfo.IsRef && !typeInfo.IsPtr)
+                    {
+                        // Scripting Object is passed as pointer from C# but C++ uses reference
+                        type = typeInfo.ToString(false) + '*';
+                        return $"InternalGetReference({{0}})";
+                    }
 
                     // Nested type (namespace prefix is required)
                     if (!(apiType.Parent is FileInfo))

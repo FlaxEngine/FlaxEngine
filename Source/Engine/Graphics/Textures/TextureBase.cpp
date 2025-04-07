@@ -202,6 +202,43 @@ void TextureMipData::Copy(void* data, uint32 dataRowPitch, uint32 dataDepthPitch
     }
 }
 
+int32 TextureData::GetArraySize() const
+{
+    return Items.Count();
+}
+
+int32 TextureData::GetMipLevels() const
+{
+    return Items.HasItems() ? Items[0].Mips.Count() : 0;
+}
+
+void TextureData::Clear()
+{
+    Items.Resize(0, false);
+}
+
+bool TextureData::GetPixels(Array<Color32>& pixels, int32 mipIndex, int32 arrayIndex)
+{
+    if (Items.IsValidIndex(arrayIndex) && Items.Get()[arrayIndex].Mips.IsValidIndex(mipIndex))
+    {
+        const int32 mipWidth = Math::Max(1, Width >> mipIndex);
+        const int32 mipHeight = Math::Max(1, Height >> mipIndex);
+        return Items.Get()[arrayIndex].Mips.Get()[mipIndex].GetPixels(pixels, mipWidth, mipHeight, Format);
+    }
+    return true;
+}
+
+bool TextureData::GetPixels(Array<Color>& pixels, int32 mipIndex, int32 arrayIndex)
+{
+    if (Items.IsValidIndex(arrayIndex) && Items.Get()[arrayIndex].Mips.IsValidIndex(mipIndex))
+    {
+        const int32 mipWidth = Math::Max(1, Width >> mipIndex);
+        const int32 mipHeight = Math::Max(1, Height >> mipIndex);
+        return Items.Get()[arrayIndex].Mips.Get()[mipIndex].GetPixels(pixels, mipWidth, mipHeight, Format);
+    }
+    return true;
+}
+
 REGISTER_BINARY_ASSET_ABSTRACT(TextureBase, "FlaxEngine.TextureBase");
 
 TextureBase::TextureBase(const SpawnParams& params, const AssetInfo* info)

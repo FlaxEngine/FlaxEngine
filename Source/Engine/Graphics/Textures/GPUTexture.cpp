@@ -697,7 +697,7 @@ bool GPUTexture::DownloadData(TextureData& result)
     PROFILE_CPU();
 
     // Use faster path for staging resources
-    if (IsStaging())
+    if (IsStaging()) // TODO: what about chips with unified memory? if rendering is not active then we can access GPU memory from CPU directly (eg. mobile, integrated GPUs and some consoles)
     {
         const auto arraySize = ArraySize();
         const auto mipLevels = MipLevels();
@@ -736,7 +736,11 @@ bool GPUTexture::DownloadData(TextureData& result)
         return false;
     }
 
+#if GPU_ENABLE_RESOURCE_NAMING
     const auto name = ToString();
+#else
+    const StringView name = TEXT("Texture");
+#endif
 
     // Ensure not running on main thread - we support DownloadData from textures only on a worker threads (Thread Pool Workers or Content Loaders)
     if (IsInMainThread())
