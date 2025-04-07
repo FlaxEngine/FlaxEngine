@@ -21,8 +21,6 @@ namespace Flax.Build.Bindings
         public override bool IsPod => _isPod;
 
         private bool _isPod;
-        
-        internal HashSet<string> UniqueFunctionNames;
 
         public override void Init(Builder.BuildData buildData)
         {
@@ -69,21 +67,7 @@ namespace Flax.Build.Bindings
             }
 
             foreach (var functionInfo in Functions)
-            {
                 ProcessAndValidate(functionInfo);
-            }
-        }
-        
-        protected void ProcessAndValidate(FunctionInfo functionInfo)
-        {
-            // Ensure that methods have unique names for bindings
-            if (UniqueFunctionNames == null)
-                UniqueFunctionNames = new HashSet<string>();
-            int idx = 1;
-            functionInfo.UniqueName = functionInfo.Name;
-            while (UniqueFunctionNames.Contains(functionInfo.UniqueName))
-                functionInfo.UniqueName = functionInfo.Name + idx++;
-            UniqueFunctionNames.Add(functionInfo.UniqueName);
         }
 
         public override void Write(BinaryWriter writer)

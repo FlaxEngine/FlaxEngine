@@ -18,6 +18,8 @@ namespace Flax.Build.Bindings
         public List<InterfaceInfo> Interfaces;
         public List<TypeInfo> Inheritance; // Data from parsing, used to interfaces and base type construct in Init
         public List<FunctionInfo> Functions = new List<FunctionInfo>();
+        
+        internal HashSet<string> UniqueFunctionNames;
 
         public override bool SkipGeneration => IsInBuild || IsTemplate;
 
@@ -48,6 +50,18 @@ namespace Flax.Build.Bindings
                 }
             }
             BaseType?.EnsureInited(buildData);
+        }
+        
+        protected void ProcessAndValidate(FunctionInfo functionInfo)
+        {
+            // Ensure that methods have unique names for bindings
+            if (UniqueFunctionNames == null)
+                UniqueFunctionNames = new HashSet<string>();
+            int idx = 1;
+            functionInfo.UniqueName = functionInfo.Name;
+            while (UniqueFunctionNames.Contains(functionInfo.UniqueName))
+                functionInfo.UniqueName = functionInfo.Name + idx++;
+            UniqueFunctionNames.Add(functionInfo.UniqueName);
         }
 
         public override void Write(BinaryWriter writer)
@@ -80,7 +94,7 @@ namespace Flax.Build.Bindings
     /// </summary>
     public abstract class VirtualClassInfo : ClassStructInfo
     {
-        internal HashSet<string> UniqueFunctionNames;
+
 
         public override void Init(Builder.BuildData buildData)
         {
@@ -88,18 +102,6 @@ namespace Flax.Build.Bindings
 
             foreach (var functionInfo in Functions)
                 ProcessAndValidate(functionInfo);
-        }
-
-        protected void ProcessAndValidate(FunctionInfo functionInfo)
-        {
-            // Ensure that methods have unique names for bindings
-            if (UniqueFunctionNames == null)
-                UniqueFunctionNames = new HashSet<string>();
-            int idx = 1;
-            functionInfo.UniqueName = functionInfo.Name;
-            while (UniqueFunctionNames.Contains(functionInfo.UniqueName))
-                functionInfo.UniqueName = functionInfo.Name + idx++;
-            UniqueFunctionNames.Add(functionInfo.UniqueName);
         }
 
         public abstract int GetScriptVTableSize(out int offset);
