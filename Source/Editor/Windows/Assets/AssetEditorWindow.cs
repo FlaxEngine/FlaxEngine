@@ -141,6 +141,8 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void OnClose()
         {
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+
             if (_item != null)
             {
                 // Ensure to remove linkage to the item
@@ -170,6 +172,7 @@ namespace FlaxEditor.Windows.Assets
             if (!IsHidden)
             {
                 Editor.Instance.Windows.AddToRestore(this);
+                Close();
             }
         }
 
