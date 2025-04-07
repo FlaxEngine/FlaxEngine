@@ -183,6 +183,21 @@ namespace FlaxEditor.GUI.Docking
             return new WindowDragHelper(floatingPanelToMove, dragSourceWindow);
         }
 
+        private sealed class DragVisuals : Control
+        {
+            public DragVisuals()
+            {
+                AnchorPreset = AnchorPresets.StretchAll;
+                Offsets = Margin.Zero;
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+                Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Style.Current.SelectionBorder);
+            }
+        }
+
         private void AddDockHints()
         {
             if (_toDock == null)
@@ -199,11 +214,9 @@ namespace FlaxEditor.GUI.Docking
 
             Control AddHintControl(Float2 pivot)
             {
-                Control hintControl = _toDock.AddChild<Control>();
-                hintControl.AnchorPreset = AnchorPresets.StretchAll;
-                hintControl.Offsets = Margin.Zero;
+                DragVisuals hintControl = _toDock.AddChild<DragVisuals>();
                 hintControl.Size = new Float2(HintControlSize);
-                hintControl.BackgroundColor = Style.Current.DragWindow.AlphaMultiplied(0.6f);
+                hintControl.BackgroundColor = Style.Current.Selection.AlphaMultiplied(0.6f);
                 hintControl.Pivot = pivot;
                 hintControl.PivotRelative = true;
                 return hintControl;
@@ -358,34 +371,34 @@ namespace FlaxEditor.GUI.Docking
                 if (hoveredHintControl != _dockHintDown)
                 {
                     _dockHintDown.Size = new Float2(HintControlSize);
-                    _dockHintDown.BackgroundColor = Style.Current.DragWindow.AlphaMultiplied(0.6f);
+                    _dockHintDown.BackgroundColor = Style.Current.Selection.AlphaMultiplied(0.6f);
                 }
                 if (hoveredHintControl != _dockHintLeft)
                 {
                     _dockHintLeft.Size = new Float2(HintControlSize);
-                    _dockHintLeft.BackgroundColor = Style.Current.DragWindow.AlphaMultiplied(0.6f);
+                    _dockHintLeft.BackgroundColor = Style.Current.Selection.AlphaMultiplied(0.6f);
                 }
                 if (hoveredHintControl != _dockHintRight)
                 {
                     _dockHintRight.Size = new Float2(HintControlSize);
-                    _dockHintRight.BackgroundColor = Style.Current.DragWindow.AlphaMultiplied(0.6f);
+                    _dockHintRight.BackgroundColor = Style.Current.Selection.AlphaMultiplied(0.6f);
                 }
                 if (hoveredHintControl != _dockHintUp)
                 {
                     _dockHintUp.Size = new Float2(HintControlSize);
-                    _dockHintUp.BackgroundColor = Style.Current.DragWindow.AlphaMultiplied(0.6f);
+                    _dockHintUp.BackgroundColor = Style.Current.Selection.AlphaMultiplied(0.6f);
                 }
                 if (hoveredHintControl != _dockHintCenter)
                 {
                     _dockHintCenter.Size = new Float2(HintControlSize);
-                    _dockHintCenter.BackgroundColor = Style.Current.DragWindow.AlphaMultiplied(0.6f);
+                    _dockHintCenter.BackgroundColor = Style.Current.Selection.AlphaMultiplied(0.6f);
                 }
 
                 if (_toSet != DockState.Float)
                 {
                     if (hoveredHintControl != null)
                     {
-                        hoveredHintControl.BackgroundColor = Style.Current.DragWindow.AlphaMultiplied(1.0f);
+                        hoveredHintControl.BackgroundColor = Style.Current.Selection.AlphaMultiplied(1.0f);
                         hoveredHintControl.Size = hoveredSizeOverride;
                     }
                 }
