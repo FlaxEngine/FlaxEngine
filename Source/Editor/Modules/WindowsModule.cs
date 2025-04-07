@@ -946,6 +946,7 @@ namespace FlaxEditor.Modules
                             win.ParentDockPanel.MoveTabRight(currentTabIndex);
                             currentTabIndex++;
                         }
+                        panel.PerformLayout(true);
                     }
                     else
                     {
