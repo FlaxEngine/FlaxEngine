@@ -789,7 +789,10 @@ namespace Flax.Build.Bindings
             var separator = false;
             if (!functionInfo.IsStatic)
             {
-                contents.Append("__unmanagedPtr");
+                if (caller is StructureInfo)
+                    contents.Append("FlaxEngine.Interop.NativeInterop.GetTypeHolder(GetType()).managedClassPointer"); // TODO: put this somewhere that a struct can use it like __unmanagedPtr
+                else 
+                    contents.Append("__unmanagedPtr");
                 separator = true;
             }
             for (var i = 0; i < functionInfo.Parameters.Count; i++)
