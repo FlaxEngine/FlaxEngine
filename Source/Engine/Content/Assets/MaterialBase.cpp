@@ -16,6 +16,8 @@ MaterialBase::MaterialBase(const SpawnParams& params, const AssetInfo* info)
 
 Variant MaterialBase::GetParameterValue(const StringView& name)
 {
+    if (!IsLoaded() && WaitForLoaded())
+        return Variant::Null;
     const auto param = Params.Get(name);
     if (param)
     {
@@ -27,6 +29,8 @@ Variant MaterialBase::GetParameterValue(const StringView& name)
 
 void MaterialBase::SetParameterValue(const StringView& name, const Variant& value, bool warnIfMissing)
 {
+    if (!IsLoaded() && WaitForLoaded())
+        return;
     const auto param = Params.Get(name);
     if (param)
     {
