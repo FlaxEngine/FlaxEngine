@@ -6,6 +6,7 @@
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Math/Mathd.h"
 #include "Engine/Core/Collections/Array.h"
 #if PLATFORM_TEXT_IS_CHAR16
 #include <string>
@@ -390,8 +391,52 @@ int32 StringUtils::HexDigit(Char c)
     return result;
 }
 
+template<typename C, typename T>
+bool ParseFloat(const C* str, T* ret)
+{
+    // [Reference: https://stackoverflow.com/a/44741229]
+    T result = 0;
+    T sign = *str == '-' ? str++, -1.0 : 1.0;
+    while (*str >= '0' && *str <= '9')
+    {
+        result *= 10;
+        result += *str - '0';
+        str++;
+    }
+    if (*str == ',' || *str == '.')
+    {
+        str++;
+        T multiplier = 0.1;
+        while (*str >= '0' && *str <= '9')
+        {
+            result += (*str - '0') * multiplier;
+            multiplier /= 10;
+            str++;
+        }
+    }
+    result *= sign;
+    if (*str == 'e' || *str == 'E')
+    {
+        str++;
+        T powerer = *str == '-' ? str++, 0.1 : 10;
+        T power = 0;
+        while (*str >= '0' && *str <= '9')
+        {
+            power *= 10;
+            power += *str - '0';
+            str++;
+        }
+        result *= Math::Pow(powerer, power);
+    }
+    if (*str)
+        return true;
+    *ret = result;
+    return false;
+}
+
 bool StringUtils::Parse(const Char* str, float* result)
 {
+#if 0
     // Convert '.' into ','
     char buffer[64];
     char* ptr = buffer;
@@ -413,12 +458,19 @@ bool StringUtils::Parse(const Char* str, float* result)
         return !(str[0] == '0' && ((len == 1) || (len == 3 && (str[1] == ',' || str[1] == '.') && str[2] == '0')));
     }
     return false;
+#else
+    return ParseFloat(str, result);
+#endif
 }
 
 bool StringUtils::Parse(const char* str, float* result)
 {
+#if 0
     *result = (float)atof(str);
     return false;
+#else
+    return ParseFloat(str, result);
+#endif
 }
 
 String StringUtils::ToString(int32 value)
