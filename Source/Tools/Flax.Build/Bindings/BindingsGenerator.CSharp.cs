@@ -2098,10 +2098,10 @@ namespace Flax.Build.Bindings
                     GenerateCSharpComment(contents, indent, functionInfo.Comment);
                     GenerateCSharpAttributes(buildData, contents, indent, structureInfo, functionInfo, true);
                     contents.Append(indent).Append(GenerateCSharpAccessLevel(functionInfo.Access));
+                    if (functionInfo.IsVirtual)
+                        throw new Exception($"Not supported {"virtual"} function {functionInfo.Name} inside structure {structureInfo.Name}.");
                     if (functionInfo.IsStatic)
                         contents.Append("static ");
-                    if (functionInfo.IsVirtual)
-                        contents.Append("virtual ");
                     var returnValueType = GenerateCSharpNativeToManaged(buildData, functionInfo.ReturnType, structureInfo);
                     contents.Append(returnValueType).Append(' ').Append(functionInfo.Name).Append('(');
 
