@@ -42,7 +42,7 @@ namespace FlaxEditor.Viewport
             /// <inheritdoc />
             public EditorSpritesRenderer()
             {
-                Order = -10000000;
+                Order = -100000 + 1; // Draw after grid
                 UseSingleTarget = true;
             }
 
