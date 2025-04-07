@@ -36,9 +36,9 @@ namespace
 bool SDLPlatform::Init()
 {
 #if PLATFORM_LINUX
-    if (CommandLine::Options.X11)
+    if (CommandLine::Options.X11.IsTrue())
         SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "x11", SDL_HINT_OVERRIDE);
-    else if (CommandLine::Options.Wayland)
+    else if (CommandLine::Options.Wayland.IsTrue())
         SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "wayland", SDL_HINT_OVERRIDE);
     else
     {
