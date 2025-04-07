@@ -1345,6 +1345,7 @@ namespace Impl
         X11::XQueryPointer(display, w, &wtmp, &child, &tmp, &tmp, &tmp, &tmp, &utmp);
         return FindAppWindow(display, child);
     }
+#endif
 
     Dictionary<String, String> LoadConfigFile(StringView path)
 	{
@@ -1372,7 +1373,6 @@ namespace Impl
 		}
 		return results;
 	}
-#endif
 }
 
 #if !PLATFORM_SDL
@@ -2704,7 +2704,6 @@ void LinuxPlatform::Exit()
 #endif
 }
 
-#if !PLATFORM_SDL
 String LinuxPlatform::GetSystemName()
 {
     Dictionary<String, String> configs = Impl::LoadConfigFile(TEXT("/etc/os-release"));
@@ -2724,6 +2723,7 @@ Version LinuxPlatform::GetSystemVersion()
     return Version(0, 0);
 }
 
+#if !PLATFORM_SDL
 int32 LinuxPlatform::GetDpi()
 {
     return SystemDpi;
