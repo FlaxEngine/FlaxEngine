@@ -838,8 +838,6 @@ namespace FlaxEditor.Modules
             // risk of interrupting the user's workflow by potentially selecting
             // background tabs.
             var window = win.RootWindow?.Window;
-            if (window == null)
-                return;
             var panel = win.ParentDockPanel;
             winData.SelectOnShow = panel.SelectedTab == win;
             winData.DockedTabIndex = 0;
