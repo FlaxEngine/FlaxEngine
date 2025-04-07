@@ -18,7 +18,7 @@ namespace Flax.Build.Bindings
         public List<InterfaceInfo> Interfaces;
         public List<TypeInfo> Inheritance; // Data from parsing, used to interfaces and base type construct in Init
         public List<FunctionInfo> Functions = new List<FunctionInfo>();
-        
+
         internal HashSet<string> UniqueFunctionNames;
 
         public override bool SkipGeneration => IsInBuild || IsTemplate;
@@ -94,8 +94,6 @@ namespace Flax.Build.Bindings
     /// </summary>
     public abstract class VirtualClassInfo : ClassStructInfo
     {
-
-
         public override void Init(Builder.BuildData buildData)
         {
             base.Init(buildData);
