@@ -62,23 +62,23 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         bool FlipX = false;
 
         // Invert the red channel.
-        API_FIELD(Attributes = "EditorOrder(72), EditorDisplay(\"Invert Channels\"), ExpandGroups")
+        API_FIELD(Attributes="EditorOrder(72), EditorDisplay(\"Invert Channels\")")
         bool InvertRedChannel = false;
 
         // Invert the green channel. Good for OpenGL to DirectX conversion.
-        API_FIELD(Attributes = "EditorOrder(73), EditorDisplay(\"Invert Channels\")")
+        API_FIELD(Attributes="EditorOrder(73), EditorDisplay(\"Invert Channels\")")
         bool InvertGreenChannel = false;
 
         // Invert the blue channel.
-        API_FIELD(Attributes = "EditorOrder(74), EditorDisplay(\"Invert Channels\")")
+        API_FIELD(Attributes="EditorOrder(74), EditorDisplay(\"Invert Channels\")")
         bool InvertBlueChannel = false;
 
         // Invert the alpha channel.
-        API_FIELD(Attributes = "EditorOrder(75), EditorDisplay(\"Invert Channels\")")
+        API_FIELD(Attributes="EditorOrder(75), EditorDisplay(\"Invert Channels\")")
         bool InvertAlphaChannel = false;
 
         // Rebuild Z (blue) channel assuming X/Y are normals.
-        API_FIELD(Attributes = "EditorOrder(76)")
+        API_FIELD(Attributes="EditorOrder(76)")
         bool ReconstructZChannel = false;
 
         // Texture size scale. Allows increasing or decreasing the imported texture resolution. Default is 1.
