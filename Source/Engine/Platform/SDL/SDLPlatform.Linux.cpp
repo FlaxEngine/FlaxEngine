@@ -2,37 +2,37 @@
 
 #if PLATFORM_SDL && PLATFORM_LINUX
 
-#include "Engine/Platform/Platform.h"
 #include "SDLWindow.h"
-#include "Engine/Platform/IGuiData.h"
-#include "Engine/Engine/Engine.h"
-#include "Engine/Platform/SDL/SDLClipboard.h"
-#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Array.h"
-#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Engine/CommandLine.h"
-#include "Engine/Platform/WindowsManager.h"
-#include "Engine/Platform/Linux/IncludeX11.h"
-#include "Engine/Input/Input.h"
-#include "Engine/Input/Mouse.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Platform/Base/DragDropHelper.h"
-#include "Engine/Platform/Unix/UnixFile.h"
+#include "Engine/Input/Input.h"
+#include "Engine/Input/Mouse.h"
+#include "Engine/Platform/IGuiData.h"
 #include "Engine/Platform/MessageBox.h"
+#include "Engine/Platform/Platform.h"
+#include "Engine/Platform/WindowsManager.h"
+#include "Engine/Platform/Base/DragDropHelper.h"
+#include "Engine/Platform/SDL/SDLClipboard.h"
+#include "Engine/Platform/Unix/UnixFile.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
-#include <SDL3/SDL_messagebox.h>
-#include <SDL3/SDL_video.h>
-#include <SDL3/SDL_system.h>
-#include <SDL3/SDL_hints.h>
+#include "Engine/Platform/Linux/IncludeX11.h"
+
 #include <SDL3/SDL_events.h>
+#include <SDL3/SDL_hints.h>
+#include <SDL3/SDL_messagebox.h>
 #include <SDL3/SDL_mouse.h>
+#include <SDL3/SDL_system.h>
 #include <SDL3/SDL_timer.h>
+#include <SDL3/SDL_video.h>
 
 #include <errno.h>
-#include <wayland/xdg-toplevel-drag-v1.h>
 #include <wayland/xdg-shell.h>
+#include <wayland/xdg-toplevel-drag-v1.h>
 
 // Missing Wayland features:
 // - Application icon (xdg-toplevel-icon-v1) https://github.com/libsdl-org/SDL/pull/9584
@@ -544,7 +544,7 @@ namespace X11Impl
 
 DragDropEffect Window::DoDragDrop(const StringView& data)
 {
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
         return DragDropEffect::None;
 
     if (SDLPlatform::UsesWayland())
@@ -1055,7 +1055,7 @@ void SDLClipboard::Clear()
 
 void SDLClipboard::SetText(const StringView& text)
 {
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
         return;
     auto mainWindow = Engine::MainWindow;
     if (!mainWindow)
@@ -1087,7 +1087,7 @@ void SDLClipboard::SetFiles(const Array<String>& files)
 
 String SDLClipboard::GetText()
 {
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
         return String::Empty;
     String result;
     auto mainWindow = Engine::MainWindow;
@@ -1318,8 +1318,8 @@ int X11ErrorHandler(X11::Display* display, X11::XErrorEvent* event)
 
 bool SDLPlatform::InitInternal()
 {
-    bool waylandRequested = (!CommandLine::Options.X11 || CommandLine::Options.Wayland) && StringAnsi(SDL_GetHint(SDL_HINT_VIDEO_DRIVER)) == "wayland";
-    if (!CommandLine::Options.Headless && waylandRequested)
+    bool waylandRequested = (!CommandLine::Options.X11.GetValueOr(false) || CommandLine::Options.Wayland.IsTrue()) && StringAnsi(SDL_GetHint(SDL_HINT_VIDEO_DRIVER)) == "wayland";
+    if (!CommandLine::Options.Headless.IsTrue() && waylandRequested)
     {
         // Ignore in X11 session
         String waylandDisplayEnv;
