@@ -424,7 +424,7 @@ namespace FlaxEngine.GUI
 
         private void OnUpdateTooltip(float deltaTime)
         {
-            Tooltip.OnMouseOverControl(this, deltaTime);
+            Tooltip?.OnMouseOverControl(this, deltaTime);
         }
 
         /// <summary>
@@ -742,7 +742,7 @@ namespace FlaxEngine.GUI
             // Update tooltip
             if (ShowTooltip && OnTestTooltipOverControl(ref location))
             {
-                Tooltip.OnMouseEnterControl(this);
+                Tooltip?.OnMouseEnterControl(this);
                 SetUpdate(ref _tooltipUpdate, OnUpdateTooltip);
             }
         }
@@ -759,14 +759,14 @@ namespace FlaxEngine.GUI
             {
                 if (_tooltipUpdate == null)
                 {
-                    Tooltip.OnMouseEnterControl(this);
+                    Tooltip?.OnMouseEnterControl(this);
                     SetUpdate(ref _tooltipUpdate, OnUpdateTooltip);
                 }
             }
             else if (_tooltipUpdate != null)
             {
                 SetUpdate(ref _tooltipUpdate, null);
-                Tooltip.OnMouseLeaveControl(this);
+                Tooltip?.OnMouseLeaveControl(this);
             }
         }
 
