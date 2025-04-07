@@ -1,6 +1,6 @@
 @echo off
 
-rem Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+rem Copyright (c) Wojciech Figat. All rights reserved.
 
 set MSBUILD_PATH=
 

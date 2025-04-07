@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 // Interpolation and prediction logic based on https://www.gabrielgambetta.com/client-server-game-architecture.html
 

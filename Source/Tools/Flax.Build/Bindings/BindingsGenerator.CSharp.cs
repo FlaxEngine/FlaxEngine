@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 //#define AUTO_DOC_TOOLTIPS
 //#define MARSHALLER_FULL_NAME
