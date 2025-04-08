@@ -747,7 +747,7 @@ namespace FlaxEngine.GUI
             {
                 SetSelection(SelectionRight);
             }
-            else if (SelectionRight < TextLength)
+            else if (SelectionRight < TextLength || (_selectionEnd < _selectionStart && _selectionStart == TextLength))
             {
                 int position;
                 if (ctrl)
