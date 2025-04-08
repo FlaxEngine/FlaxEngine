@@ -32,7 +32,7 @@ namespace FlaxEditor.Windows.Assets
             }
 
             /// <inheritdoc />
-            public override void Spawn(Actor actor, Actor parent, int orderInParent)
+            public override void Spawn(Actor actor, Actor parent, int orderInParent = -1)
             {
                 _window.Spawn(actor, parent, orderInParent);
             }
