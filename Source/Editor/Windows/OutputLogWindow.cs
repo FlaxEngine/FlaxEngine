@@ -150,6 +150,12 @@ namespace FlaxEditor.Windows
                         Owner.Set(Owner.Text + c);
                         return true;
                     }
+                    else if (Owner != null && Owner._searchPopup != null && Owner._searchPopup.Visible)
+                    {
+                        // Redirect input into search textbox while typing and using command history
+                        Owner.OnCharInput(c);
+                        return true;
+                    }
                     return false;
                 }
 
@@ -177,7 +183,20 @@ namespace FlaxEditor.Windows
                             return true;
                         }
                         break;
+                    case KeyboardKeys.ArrowDown:
+                    case KeyboardKeys.ArrowUp:
+                        // UI navigation
+                        return base.OnKeyDown(key);
+                    default:
+                        if (Owner != null && (Owner._searchPopup?.Visible ?? false))
+                        {
+                            // Redirect input into search textbox while typing and using command history
+                            Owner.OnKeyDown(key);
+                            return true;
+                        }
+                        break;
                     }
+
                     return base.OnKeyDown(key);
                 }
 
