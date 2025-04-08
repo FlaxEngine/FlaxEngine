@@ -350,14 +350,14 @@ namespace FlaxEditor.CustomEditors.Editors
                         }
                         else
                         {
-                            if (PresenterContext is PropertiesWindow)
+                            if (PresenterContext is PropertiesWindow || PresenterContext == null)
                                 _linkedTreeNode = Editor.Instance.Scene.GetActorNode(actor).TreeNode;
                             else if (PresenterContext is PrefabWindow prefabWindow)
                                 _linkedTreeNode = prefabWindow.Graph.Root.Find(actor).TreeNode;
                             if (_linkedTreeNode != null)
                             {
                                 _linkedTreeNode.ExpandAllParents();
-                                if (PresenterContext is PropertiesWindow)
+                                if (PresenterContext is PropertiesWindow || PresenterContext == null)
                                     Editor.Instance.Windows.SceneWin.SceneTreePanel.ScrollViewTo(_linkedTreeNode, true);
                                 else if (PresenterContext is PrefabWindow prefabWindow)
                                     (prefabWindow.Tree.Parent as Panel).ScrollViewTo(_linkedTreeNode, true);
@@ -427,7 +427,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private void Select(Actor actor)
         {
-            if (PresenterContext is PropertiesWindow)
+            if (PresenterContext is PropertiesWindow || PresenterContext == null)
                 Editor.Instance.SceneEditing.Select(actor);
             else if (PresenterContext is PrefabWindow prefabWindow)
                 prefabWindow.Select(prefabWindow.Graph.Root.Find(actor));

@@ -415,8 +415,24 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override unsafe void OnUpdate()
         {
-            // Extract animations playback state from the events tracing
+            // Auto-attach preview
             var debugActor = _debugPicker.Value as AnimatedModel;
+            if (!debugActor && Editor.IsPlayMode && Editor.Options.Options.General.AutoAttachDebugPreviewActor)
+            {
+                var animationGraph = OriginalAsset;
+                var animatedModels = Level.GetActors<AnimatedModel>();
+                foreach (var animatedModel in animatedModels)
+                {
+                    if (animatedModel.AnimationGraph == animationGraph &&
+                        animatedModel.IsActiveInHierarchy)
+                    {
+                        _debugPicker.Value = animatedModel;
+                        break;
+                    }
+                }
+            }
+
+            // Extract animations playback state from the events tracing
             if (debugActor == null)
                 debugActor = _preview.PreviewActor;
             if (debugActor != null)
