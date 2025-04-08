@@ -327,7 +327,7 @@ public:
     /// <param name="value">The result value.</param>
     /// <param name="localUser">The local user (null if use default one).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() virtual bool GetLeaderboard(const StringView& name, API_PARAM(Out) OnlineLeaderboard& value, User* localUser = nullptr) = 0;
+    API_FUNCTION() virtual bool GetLeaderboard(const StringView& name, API_PARAM(Out) OnlineLeaderboard& value, User* localUser = nullptr) { return true; }
 
     /// <summary>
     /// Gets or creates the online leaderboard. It will not create it if already exists.
@@ -338,7 +338,7 @@ public:
     /// <param name="value">The result value.</param>
     /// <param name="localUser">The local user (null if use default one).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() virtual bool GetOrCreateLeaderboard(const StringView& name, OnlineLeaderboardSortModes sortMode, OnlineLeaderboardValueFormats valueFormat, API_PARAM(Out) OnlineLeaderboard& value, User* localUser = nullptr) = 0;
+    API_FUNCTION() virtual bool GetOrCreateLeaderboard(const StringView& name, OnlineLeaderboardSortModes sortMode, OnlineLeaderboardValueFormats valueFormat, API_PARAM(Out) OnlineLeaderboard& value, User* localUser = nullptr) { return true; }
 
     /// <summary>
     /// Gets the online leaderboard entries. Allows to specify the range for ranks to gather.
@@ -348,7 +348,7 @@ public:
     /// <param name="start">The zero-based index to start downloading entries from. For example, to display the top 10 on a leaderboard pass value of 0.</param>
     /// <param name="count">The amount of entries to read, starting from the first entry at <paramref name="start"/>.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() virtual bool GetLeaderboardEntries(const OnlineLeaderboard& leaderboard, API_PARAM(Out) Array<OnlineLeaderboardEntry, HeapAllocation>& entries, int32 start = 0, int32 count = 10) = 0;
+    API_FUNCTION() virtual bool GetLeaderboardEntries(const OnlineLeaderboard& leaderboard, API_PARAM(Out) Array<OnlineLeaderboardEntry, HeapAllocation>& entries, int32 start = 0, int32 count = 10) { return true; }
 
     /// <summary>
     /// Gets the online leaderboard entries around the player. Allows to specify the range for ranks to gather around the user rank. The current user's entry is always included.
@@ -358,7 +358,7 @@ public:
     /// <param name="start">The zero-based index to start downloading entries relative to the user. For example, to display the 4 higher scores on a leaderboard pass value of -4. Value 0 will return current user as the first one.</param>
     /// <param name="count">The amount of entries to read, starting from the first entry at <paramref name="start"/>.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() virtual bool GetLeaderboardEntriesAroundUser(const OnlineLeaderboard& leaderboard, API_PARAM(Out) Array<OnlineLeaderboardEntry, HeapAllocation>& entries, int32 start = -4, int32 count = 10) = 0;
+    API_FUNCTION() virtual bool GetLeaderboardEntriesAroundUser(const OnlineLeaderboard& leaderboard, API_PARAM(Out) Array<OnlineLeaderboardEntry, HeapAllocation>& entries, int32 start = -4, int32 count = 10) { return true; }
 
     /// <summary>
     /// Gets the online leaderboard entries for player friends.
@@ -366,7 +366,7 @@ public:
     /// <param name="leaderboard">The leaderboard.</param>
     /// <param name="entries">The list of result entries.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() virtual bool GetLeaderboardEntriesForFriends(const OnlineLeaderboard& leaderboard, API_PARAM(Out) Array<OnlineLeaderboardEntry, HeapAllocation>& entries) = 0;
+    API_FUNCTION() virtual bool GetLeaderboardEntriesForFriends(const OnlineLeaderboard& leaderboard, API_PARAM(Out) Array<OnlineLeaderboardEntry, HeapAllocation>& entries) { return true; }
 
     /// <summary>
     /// Gets the online leaderboard entries for an arbitrary set of users.
@@ -375,7 +375,7 @@ public:
     /// <param name="entries">The list of result entries.</param>
     /// <param name="users">The list of users to read their ranks on the leaderboard.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() virtual bool GetLeaderboardEntriesForUsers(const OnlineLeaderboard& leaderboard, API_PARAM(Out) Array<OnlineLeaderboardEntry, HeapAllocation>& entries, const Array<OnlineUser, HeapAllocation>& users) = 0;
+    API_FUNCTION() virtual bool GetLeaderboardEntriesForUsers(const OnlineLeaderboard& leaderboard, API_PARAM(Out) Array<OnlineLeaderboardEntry, HeapAllocation>& entries, const Array<OnlineUser, HeapAllocation>& users) { return true; }
 
     /// <summary>
     /// Sets the online leaderboard entry for the user.
@@ -384,7 +384,7 @@ public:
     /// <param name="score">The score value to set.</param>
     /// <param name="keepBest">True if store value only if it's better than existing value (if any), otherwise will override any existing score for that user.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    API_FUNCTION() virtual bool SetLeaderboardEntry(const OnlineLeaderboard& leaderboard, int32 score, bool keepBest = false) = 0;
+    API_FUNCTION() virtual bool SetLeaderboardEntry(const OnlineLeaderboard& leaderboard, int32 score, bool keepBest = false) { return true; }
 
 public:
     /// <summary>
