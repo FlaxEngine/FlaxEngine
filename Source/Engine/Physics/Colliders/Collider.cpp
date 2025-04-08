@@ -53,7 +53,7 @@ void Collider::SetCenter(const Vector3& value)
         return;
     _center = value;
     if (_staticActor)
-        PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
+        PhysicsBackend::SetShapeLocalPose(_shape, _center * GetScale(), Quaternion::Identity);
     else if (const RigidBody* rigidBody = GetAttachedRigidBody())
         PhysicsBackend::SetShapeLocalPose(_shape, (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale(), _localTransform.Orientation);
     UpdateBounds();
@@ -271,7 +271,7 @@ void Collider::CreateStaticActor()
     _staticActor = PhysicsBackend::CreateRigidStaticActor(nullptr, _transform.Translation, _transform.Orientation, scene);
 
     // Reset local pos of the shape and link it to the actor
-    PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
+    PhysicsBackend::SetShapeLocalPose(_shape, _center * GetScale(), Quaternion::Identity);
     PhysicsBackend::AttachShape(_shape, _staticActor);
 
     PhysicsBackend::AddSceneActor(scene, _staticActor);
