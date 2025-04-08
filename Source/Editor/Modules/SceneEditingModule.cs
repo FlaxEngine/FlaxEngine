@@ -320,6 +320,10 @@ namespace FlaxEditor.Modules
 
             SpawnBegin?.Invoke();
 
+            // During play in editor mode spawned actors should be dynamic (user can move them)
+            if (isPlayMode)
+                actor.StaticFlags = StaticFlags.None;
+
             // Add it
             Level.SpawnActor(actor, parent);
 
@@ -327,10 +331,6 @@ namespace FlaxEditor.Modules
             var actorNode = Editor.Instance.Scene.GetActorNode(actor);
             if (actorNode == null)
                 throw new InvalidOperationException("Failed to create scene node for the spawned actor.");
-
-            // During play in editor mode spawned actors should be dynamic (user can move them)
-            if (isPlayMode)
-                actor.StaticFlags = StaticFlags.None;
 
             // Call post spawn action (can possibly setup custom default values)
             actorNode.PostSpawn();
