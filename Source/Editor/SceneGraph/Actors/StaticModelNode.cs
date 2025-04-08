@@ -170,7 +170,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
                 // Refit into the sphere bounds that are usually calculated from mesh box bounds
                 Position = bounds.Center,
-                Radius = bounds.Radius / Mathf.Max(actor.Scale.MaxValue, 0.0001f) * 0.707f,
+                Radius = bounds.Radius / (Real)(Mathf.Max((float)actor.Scale.MaxValue, 0.0001f) * 0.707f),
             };
             spawner(collider);
         }
