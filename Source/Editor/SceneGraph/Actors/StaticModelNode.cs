@@ -133,9 +133,7 @@ namespace FlaxEditor.SceneGraph.Actors
             {
                 if (node is not StaticModelNode staticModelNode)
                     continue;
-                var actor = (StaticModel)staticModelNode.Actor;
-                var model = ((StaticModel)staticModelNode.Actor).Model;
-                if (!model)
+                if (!((StaticModel)staticModelNode.Actor).Model)
                     continue;
                 if (!staticModelNode.IsPrimitive)
                 {
