@@ -14,7 +14,8 @@ class NavMeshRuntime;
 /// <summary>
 /// The navigation mesh actor that holds a navigation data for a scene.
 /// </summary>
-API_CLASS() class FLAXENGINE_API NavMesh : public Actor
+API_CLASS(Attributes = "ActorContextMenu(\"New/Navigation/Nav Mesh\")") 
+class FLAXENGINE_API NavMesh : public Actor
 {
     DECLARE_SCENE_OBJECT(NavMesh);
 public:
