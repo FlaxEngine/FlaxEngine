@@ -325,7 +325,7 @@ namespace FlaxEditor.Windows
                 }
 
                 var text = (attribute == null) ? actorType.Name : string.IsNullOrEmpty(attribute.Name) ? actorType.Name : attribute.Name;
-                
+
                 // Display all actors on no search
                 if (string.IsNullOrEmpty(filterText))
                     _groupSearch.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType));
@@ -333,19 +333,8 @@ namespace FlaxEditor.Windows
                 if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
                     continue;
 
-                var item = _groupSearch.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType));
-
-                var highlights = new List<Rectangle>(ranges.Length);
-                var style = Style.Current;
-                var font = style.FontSmall;
-                var textRect = item.TextRect;
-                for (int i = 0; i < ranges.Length; i++)
-                {
-                    var start = font.GetCharPosition(text, ranges[i].StartIndex);
-                    var end = font.GetCharPosition(text, ranges[i].EndIndex);
-                    highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
-                }
-                item.SetHighlights(highlights);
+                var item = CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType);
+                SearchFilterHighlights(item, text, ranges);
             }
 
             // Hack primitive models into the search results
@@ -353,26 +342,16 @@ namespace FlaxEditor.Windows
             {
                 if (child is Item primitiveAssetItem)
                 {
-                    String text = primitiveAssetItem.Text;
+                    var text = primitiveAssetItem.Text;
 
                     if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
                         continue;
 
                     // Rebuild the path based on item name (it would be better to convert the drag data back to a string somehow)
                     string path = $"Primitives/{text}.flax";
-                    var item = _groupSearch.AddChild(CreateEditorAssetItem(text, path));
 
-                    var highlights = new List<Rectangle>(ranges.Length);
-                    var style = Style.Current;
-                    var font = style.FontSmall;
-                    var textRect = item.TextRect;
-                    for (int i = 0; i < ranges.Length; i++)
-                    {
-                        var start = font.GetCharPosition(text, ranges[i].StartIndex);
-                        var end = font.GetCharPosition(text, ranges[i].EndIndex);
-                        highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
-                    }
-                    item.SetHighlights(highlights);
+                    var item = CreateEditorAssetItem(text, path);
+                    SearchFilterHighlights(item, text, ranges);
                 }
             }
 
@@ -382,6 +361,21 @@ namespace FlaxEditor.Windows
             _groupSearch.UnlockChildrenRecursive();
             PerformLayout();
             PerformLayout();
+        }
+
+        private void SearchFilterHighlights(Item item, string text, QueryFilterHelper.Range[] ranges)
+        {
+            _groupSearch.AddChild(item);
+            var highlights = new List<Rectangle>(ranges.Length);
+            var font = Style.Current.FontSmall;
+            var textRect = item.TextRect;
+            for (int i = 0; i < ranges.Length; i++)
+            {
+                var start = font.GetCharPosition(text, ranges[i].StartIndex);
+                var end = font.GetCharPosition(text, ranges[i].EndIndex);
+                highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
+            }
+            item.SetHighlights(highlights);
         }
 
         private Item CreateEditorAssetItem(string name, string path)
