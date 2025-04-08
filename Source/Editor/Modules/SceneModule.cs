@@ -32,9 +32,9 @@ namespace FlaxEditor.Modules
             }
 
             /// <inheritdoc />
-            public override void Spawn(Actor actor, Actor parent)
+            public override void Spawn(Actor actor, Actor parent, int orderInParent = -1)
             {
-                _editor.SceneEditing.Spawn(actor, parent);
+                _editor.SceneEditing.Spawn(actor, parent, orderInParent);
             }
 
             /// <inheritdoc />

@@ -690,9 +690,8 @@ namespace FlaxEditor.SceneGraph.GUI
                     if (_dragAssets.Objects[i] is not PrefabItem)
                         actor.Transform = Transform.Identity;
                     var previousTrans = actor.Transform;
-                    ActorNode.Root.Spawn(actor, spawnParent);
+                    ActorNode.Root.Spawn(actor, spawnParent, newOrder);
                     actor.LocalTransform = previousTrans;
-                    actor.OrderInParent = newOrder;
                 }
                 result = DragDropEffect.Move;
             }
@@ -710,8 +709,7 @@ namespace FlaxEditor.SceneGraph.GUI
                     }
                     actor.StaticFlags = newParent.StaticFlags;
                     actor.Name = item.Name;
-                    ActorNode.Root.Spawn(actor, newParent);
-                    actor.OrderInParent = newOrder;
+                    ActorNode.Root.Spawn(actor, newParent, newOrder);
                 }
                 result = DragDropEffect.Move;
             }
@@ -733,8 +731,7 @@ namespace FlaxEditor.SceneGraph.GUI
                         StaticFlags = newParent.StaticFlags,
                         Name = item.Name,
                     };
-                    ActorNode.Root.Spawn(uiControl, newParent);
-                    uiControl.OrderInParent = newOrder;
+                    ActorNode.Root.Spawn(uiControl, newParent, newOrder);
                 }
                 result = DragDropEffect.Move;
             }
@@ -761,8 +758,7 @@ namespace FlaxEditor.SceneGraph.GUI
                         actor.StaticFlags = spawnParent.StaticFlags;
                         actor.Name = actorType.Name;
                         actor.Transform = spawnParent.Transform;
-                        ActorNode.Root.Spawn(actor, spawnParent);
-                        actor.OrderInParent = newOrder;
+                        ActorNode.Root.Spawn(actor, spawnParent, newOrder);
                     }
                     else if (scriptType != ScriptType.Null)
                     {

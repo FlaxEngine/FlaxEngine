@@ -159,7 +159,7 @@ namespace FlaxEditor.SceneGraph
         /// </summary>
         /// <param name="actor">The actor.</param>
         /// <param name="parent">The parent.</param>
-        public abstract void Spawn(Actor actor, Actor parent);
+        public abstract void Spawn(Actor actor, Actor parent, int orderInParent = -1);
 
         /// <summary>
         /// Gets the undo.
