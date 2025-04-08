@@ -12,7 +12,7 @@
 /// <summary>
 /// Performs an animation and renders a skinned model.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Other/Animated Model\"), ActorToolbox(\"Visuals\")")
+API_CLASS(Attributes="ActorContextMenu(\"New/Animation/Animated Model\"), ActorToolbox(\"Visuals\")")
 class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
 {
     DECLARE_SCENE_OBJECT(AnimatedModel);

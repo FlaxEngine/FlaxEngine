@@ -11,7 +11,7 @@
 /// <summary>
 /// The scene animation playback actor.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Other/Scene Animation\"), ActorToolbox(\"Other\", \"Scene Animation\")")
+API_CLASS(Attributes="ActorContextMenu(\"New/Animation/Scene Animation\"), ActorToolbox(\"Other\", \"Scene Animation\")")
 class FLAXENGINE_API SceneAnimationPlayer : public Actor, public IPostFxSettingsProvider
 {
     DECLARE_SCENE_OBJECT(SceneAnimationPlayer);
