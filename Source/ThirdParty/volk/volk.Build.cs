@@ -36,6 +36,7 @@ public class volk : ThirdPartyModule
             break;
         case TargetPlatform.Linux:
             options.PrivateDefinitions.Add("VK_USE_PLATFORM_XLIB_KHR");
+            options.PrivateDefinitions.Add("VK_USE_PLATFORM_WAYLAND_KHR");
             break;
         case TargetPlatform.Android:
             options.PublicDefinitions.Add("VK_USE_PLATFORM_ANDROID_KHR");

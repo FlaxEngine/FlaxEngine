@@ -192,7 +192,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     ASSERT_LOW_LAYER(_backBuffers.Count() == 0);
 
     // Create platform-dependent surface
-    VulkanPlatform::CreateSurface(windowHandle, GPUDeviceVulkan::Instance, &_surface);
+    VulkanPlatform::CreateSurface(_window, GPUDeviceVulkan::Instance, &_surface);
     if (_surface == VK_NULL_HANDLE)
     {
         LOG(Warning, "Failed to create Vulkan surface.");
@@ -374,7 +374,9 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
     swapChainInfo.presentMode = presentMode;
     swapChainInfo.clipped = VK_TRUE;
     swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
-    if (surfProperties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
+    if (_window->GetSettings().SupportsTransparency && surfProperties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR)
+        swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+    else if (surfProperties.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
         swapChainInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 
     // Create swap chain
