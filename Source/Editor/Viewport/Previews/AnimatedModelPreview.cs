@@ -317,7 +317,7 @@ namespace FlaxEditor.Viewport.Previews
         private void OnScriptsReloadBegin()
         {
             // Prevent any crashes due to dangling references to anim events
-            _previewModel.ResetAnimation();
+            _previewModel?.ResetAnimation();
         }
 
         /// <inheritdoc />

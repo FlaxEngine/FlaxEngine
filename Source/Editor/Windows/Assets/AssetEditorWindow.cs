@@ -171,6 +171,11 @@ namespace FlaxEditor.Windows.Assets
         {
             if (!IsHidden)
             {
+                if (IsEdited && _item != null)
+                {
+                    Editor.Log($"Auto-saving local changes to asset '{_item.Path}' before reloading code");
+                    Save();
+                }
                 Editor.Instance.Windows.AddToRestore(this);
                 Close();
             }

@@ -167,7 +167,7 @@ namespace FlaxEditor.Surface
             bool hasTypeFromGameScripts = Editor.Instance.CodeEditing.AnimGraphNodes.HasTypeFromGameScripts;
 
             // Check any surface parameter comes from Game scripts module to handle scripts reloads in Editor
-            if (!hasTypeFromGameScripts)
+            if (!hasTypeFromGameScripts && RootContext != null)
             {
                 foreach (var param in Parameters)
                 {
