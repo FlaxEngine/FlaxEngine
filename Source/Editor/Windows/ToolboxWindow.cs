@@ -466,6 +466,7 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc/>
+        public override void Draw()
         {
             base.Draw();
 
