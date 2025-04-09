@@ -112,7 +112,6 @@ namespace FlaxEditor.Windows
         private ContainerControl groupPrimitives;
         private Button _viewDropdown;
 
-        private int _searchTypeShowMask = (int)SearchFilter.Ui | (int)SearchFilter.Actors | (int)SearchFilter.Models;
         private int _searchFilterMask = (int)SearchFilter.Ui | (int)SearchFilter.Actors | (int)SearchFilter.Primitives;
 
         /// <summary>
@@ -168,16 +167,16 @@ namespace FlaxEditor.Windows
         {
             var menu = new ContextMenu();
 
-            infoLogButton.Checked = (_searchTypeShowMask & (int)SearchFilter.Ui) != 0;
-            infoLogButton.Clicked += () => ToggleSearchFilter(SearchFilter.Ui);
+            var uiFilterButton = menu.AddButton("Ui");
+            uiFilterButton.AutoCheck = true;
+            uiFilterButton.Checked = (_searchFilterMask & (int)SearchFilter.Ui) != 0;
+            uiFilterButton.Clicked += () => ToggleSearchFilter(SearchFilter.Ui);
 
-            var warningLogButton = menu.AddButton("Actors");
-            warningLogButton.AutoCheck = true;
-            warningLogButton.Checked = (_searchTypeShowMask & (int)SearchFilter.Actors) != 0;
-            warningLogButton.Clicked += () => ToggleSearchFilter(SearchFilter.Actors);
+            var actorFilterButton = menu.AddButton("Actors");
+            actorFilterButton.AutoCheck = true;
+            actorFilterButton.Checked = (_searchFilterMask & (int)SearchFilter.Actors) != 0;
+            actorFilterButton.Clicked += () => ToggleSearchFilter(SearchFilter.Actors);
 
-            var errorLogButton = menu.AddButton("Models");
-            errorLogButton.AutoCheck = true;
             var primitiveFilterButton = menu.AddButton("Primitives");
             primitiveFilterButton.AutoCheck = true;
             primitiveFilterButton.Checked = (_searchFilterMask & (int)SearchFilter.Primitives) != 0;
