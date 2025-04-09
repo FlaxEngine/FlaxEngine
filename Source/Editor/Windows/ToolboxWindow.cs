@@ -458,7 +458,7 @@ namespace FlaxEditor.Windows
             }   
 
             if (string.IsNullOrEmpty(filterText))
-            _groupSearch.SortChildren();
+                _groupSearch.SortChildren();
 
             _groupSearch.UnlockChildrenRecursive();
             PerformLayout();
