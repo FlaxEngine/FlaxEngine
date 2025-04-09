@@ -767,6 +767,24 @@ namespace FlaxEditor.Windows
             }
         }
 
+        /// <inheritdoc/>
+        public override void Draw()
+        {
+            base.Draw();
+
+            bool showHint = (((int)LogType.Info & _logTypeShowMask) == 0 &&
+                            ((int)LogType.Warning & _logTypeShowMask) == 0 &&
+                            ((int)LogType.Error & _logTypeShowMask) == 0) ||
+                            String.IsNullOrEmpty(_output.Text);
+
+            if (showHint)
+            {
+                var textRect = _output.Bounds;
+                var style = Style.Current;
+                Render2D.DrawText(style.FontMedium, "No log level filter active or no entries that apply to the current filter exist.", textRect, style.ForegroundGrey, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords);
+            }
+        }
+
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
