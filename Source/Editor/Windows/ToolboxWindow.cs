@@ -103,7 +103,7 @@ namespace FlaxEditor.Windows
         {
             Ui = 1,
             Actors = 2,
-            Models = 4,
+            Primitives = 4,
         }
 
         private TextBox _searchBox;
@@ -113,6 +113,7 @@ namespace FlaxEditor.Windows
         private Button _viewDropdown;
 
         private int _searchTypeShowMask = (int)SearchFilter.Ui | (int)SearchFilter.Actors | (int)SearchFilter.Models;
+        private int _searchFilterMask = (int)SearchFilter.Ui | (int)SearchFilter.Actors | (int)SearchFilter.Primitives;
 
         /// <summary>
         /// The editor instance.
@@ -167,8 +168,6 @@ namespace FlaxEditor.Windows
         {
             var menu = new ContextMenu();
 
-            var infoLogButton = menu.AddButton("Ui");
-            infoLogButton.AutoCheck = true;
             infoLogButton.Checked = (_searchTypeShowMask & (int)SearchFilter.Ui) != 0;
             infoLogButton.Clicked += () => ToggleSearchFilter(SearchFilter.Ui);
 
@@ -179,15 +178,17 @@ namespace FlaxEditor.Windows
 
             var errorLogButton = menu.AddButton("Models");
             errorLogButton.AutoCheck = true;
-            errorLogButton.Checked = (_searchTypeShowMask & (int)SearchFilter.Models) != 0;
-            errorLogButton.Clicked += () => ToggleSearchFilter(SearchFilter.Models);
+            var primitiveFilterButton = menu.AddButton("Primitives");
+            primitiveFilterButton.AutoCheck = true;
+            primitiveFilterButton.Checked = (_searchFilterMask & (int)SearchFilter.Primitives) != 0;
+            primitiveFilterButton.Clicked += () => ToggleSearchFilter(SearchFilter.Primitives);
 
             menu.Show(_viewDropdown.Parent, _viewDropdown.BottomLeft);
         }
 
         private void ToggleSearchFilter(SearchFilter type)
         {
-            _searchTypeShowMask ^= (int)type;
+            _searchFilterMask ^= (int)type;
             OnSearchBoxTextChanged();
         }
 
@@ -246,14 +247,21 @@ namespace FlaxEditor.Windows
                 group.Dispose();
             }
 
-            // Setup primitives tabs
+            // Add primitives to primtives and search tab
             groupPrimitives = CreateGroupWithList(_actorGroups, "Primitives");
+
             groupPrimitives.AddChild(CreateEditorAssetItem("Cube", "Primitives/Cube.flax"));
+            _groupSearch.AddChild(CreateEditorAssetItem("Cube", "Primitives/Cube.flax"));
             groupPrimitives.AddChild(CreateEditorAssetItem("Sphere", "Primitives/Sphere.flax"));
+            _groupSearch.AddChild(CreateEditorAssetItem("Sphere", "Primitives/Sphere.flax"));
             groupPrimitives.AddChild(CreateEditorAssetItem("Plane", "Primitives/Plane.flax"));
+            _groupSearch.AddChild(CreateEditorAssetItem("Plane", "Primitives/Plane.flax"));
             groupPrimitives.AddChild(CreateEditorAssetItem("Cylinder", "Primitives/Cylinder.flax"));
+            _groupSearch.AddChild(CreateEditorAssetItem("Cylinder", "Primitives/Cylinder.flax"));
             groupPrimitives.AddChild(CreateEditorAssetItem("Cone", "Primitives/Cone.flax"));
+            _groupSearch.AddChild(CreateEditorAssetItem("Cone", "Primitives/Cone.flax"));
             groupPrimitives.AddChild(CreateEditorAssetItem("Capsule", "Primitives/Capsule.flax"));
+            _groupSearch.AddChild(CreateEditorAssetItem("Capsule", "Primitives/Capsule.flax"));
 
             // Created first to order specific tabs
             CreateGroupWithList(_actorGroups, "Lights");
@@ -267,7 +275,7 @@ namespace FlaxEditor.Windows
             {
                 if (controlType.IsAbstract)
                     continue;
-
+                _groupSearch.AddChild(CreateControlItem(Utilities.Utils.GetPropertyNameUI(controlType.Name), controlType));
                 ActorToolboxAttribute attribute = null;
                 foreach (var e in controlType.GetAttributes(false))
                 {
@@ -366,7 +374,7 @@ namespace FlaxEditor.Windows
             _groupSearch.LockChildrenRecursive();
             _groupSearch.DisposeChildren();
 
-            if (((int)SearchFilter.Actors & _searchTypeShowMask) != 0)
+            if (((int)SearchFilter.Actors & _searchFilterMask) != 0)
             {
                 foreach (var actorType in Editor.CodeEditing.Actors.Get())
                 {
@@ -394,7 +402,7 @@ namespace FlaxEditor.Windows
                 }
             }
 
-            if (((int)SearchFilter.Models & _searchTypeShowMask) != 0)
+            if (((int)SearchFilter.Primitives & _searchFilterMask) != 0)
             {
                 // Hack primitive models into the search results
                 foreach (var child in groupPrimitives.Children)
@@ -419,7 +427,7 @@ namespace FlaxEditor.Windows
                 }
             }
 
-            if (((int)SearchFilter.Ui & _searchTypeShowMask) != 0)
+            if (((int)SearchFilter.Ui & _searchFilterMask) != 0)
             { 
                 foreach (var controlType in Editor.Instance.CodeEditing.Controls.Get())
                 {
