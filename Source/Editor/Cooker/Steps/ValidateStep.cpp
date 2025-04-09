@@ -51,7 +51,7 @@ bool ValidateStep::Perform(CookingData& data)
 
     // Validate game settings
     auto gameSettings = GameSettings::Get();
-    if (gameSettings = nullptr)
+    if (gameSettings == nullptr)
     {
         data.Error(TEXT("Missing game settings."));
         return true;
