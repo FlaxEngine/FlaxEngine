@@ -146,7 +146,7 @@ namespace FlaxEditor.Windows
 
             _viewDropdown = new Button(2, 2, 45.0f, TextBoxBase.DefaultHeight)
             {
-                TooltipText = "Change search filter options",
+                TooltipText = "Change search filter options.",
                 Text = "Filters",
                 Parent = _groupSearch.Parent.Parent,
             };
@@ -463,6 +463,22 @@ namespace FlaxEditor.Windows
             _groupSearch.UnlockChildrenRecursive();
             PerformLayout();
             PerformLayout();
+        }
+
+        /// <inheritdoc/>
+        {
+            base.Draw();
+
+            bool showFilterHint = ((int)SearchFilter.Actors & _searchFilterMask) == 0 &&
+                ((int)SearchFilter.Primitives & _searchFilterMask) == 0 &&
+                ((int)SearchFilter.Ui & _searchFilterMask) == 0;
+            
+            if (showFilterHint)
+            {
+                var textRect = _groupSearch.Parent.Parent.Bounds;
+                var style = Style.Current;
+                Render2D.DrawText(style.FontMedium, "No search filter active, please enable at least one filter.", textRect, style.ForegroundGrey, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords);
+            }
         }
 
         private void SearchFilterHighlights(Item item, string text, QueryFilterHelper.Range[] ranges)
