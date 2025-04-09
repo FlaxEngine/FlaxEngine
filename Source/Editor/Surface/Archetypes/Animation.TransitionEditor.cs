@@ -41,6 +41,8 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     Font = new FontReference(Style.Current.FontLarge),
                     Text = transition.SurfaceName,
+                    Margin = new Margin(4),
+                    AutoFitText = true,
                     Parent = this
                 };
 
