@@ -170,7 +170,8 @@ cbuffer ViewData : register(b1)
     float3 ViewPos;
     float ViewFar;
     float3 ViewDir;
-    float TimeParam;
+    float UnscaledTimeParam;
+    float ScaledTimeParam;
     float4 ViewInfo;
     float4 ScreenSize;
     float4 TemporalAAJitter;
