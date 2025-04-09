@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.GUI.Tree;
@@ -98,10 +99,20 @@ namespace FlaxEditor.Windows
             }
         }
 
+        private enum SearchFilter
+        {
+            Ui = 1,
+            Actors = 2,
+            Models = 4,
+        }
+
         private TextBox _searchBox;
         private ContainerControl _groupSearch;
         private Tabs _actorGroups;
         private ContainerControl groupPrimitives;
+        private Button _viewDropdown;
+
+        private int _searchTypeShowMask = (int)SearchFilter.Ui | (int)SearchFilter.Actors | (int)SearchFilter.Models;
 
         /// <summary>
         /// The editor instance.
@@ -127,22 +138,65 @@ namespace FlaxEditor.Windows
                 UseScroll = true,
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
-                TabsSize = new Float2(120, 32),
+                TabsSize = new Float2(90, 32),
                 Parent = this,
             };
 
             _groupSearch = CreateGroupWithList(_actorGroups, "Search", 26);
-            _searchBox = new SearchBox
+
+            _viewDropdown = new Button(2, 2, 45.0f, TextBoxBase.DefaultHeight)
             {
-                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                TooltipText = "Change search filter options",
+                Text = "Filters",
                 Parent = _groupSearch.Parent.Parent,
-                Bounds = new Rectangle(4, 4, _actorGroups.Width - 8, 18),
+            };
+            _viewDropdown.Clicked += OnViewButtonClicked;
+
+            _searchBox = new SearchBox(false, _viewDropdown.Right + 2, 2, _groupSearch.Width - _viewDropdown.Right - 4)
+            {
+                Parent = _groupSearch.Parent.Parent,
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 
             RefreshActorTabs();
 
             _actorGroups.SelectedTabIndex = 1;
+        }
+
+        private void OnViewButtonClicked()
+        {
+            var menu = new ContextMenu();
+
+            var infoLogButton = menu.AddButton("Ui");
+            infoLogButton.AutoCheck = true;
+            infoLogButton.Checked = (_searchTypeShowMask & (int)SearchFilter.Ui) != 0;
+            infoLogButton.Clicked += () => ToggleSearchFilter(SearchFilter.Ui);
+
+            var warningLogButton = menu.AddButton("Actors");
+            warningLogButton.AutoCheck = true;
+            warningLogButton.Checked = (_searchTypeShowMask & (int)SearchFilter.Actors) != 0;
+            warningLogButton.Clicked += () => ToggleSearchFilter(SearchFilter.Actors);
+
+            var errorLogButton = menu.AddButton("Models");
+            errorLogButton.AutoCheck = true;
+            errorLogButton.Checked = (_searchTypeShowMask & (int)SearchFilter.Models) != 0;
+            errorLogButton.Clicked += () => ToggleSearchFilter(SearchFilter.Models);
+
+            menu.Show(_viewDropdown.Parent, _viewDropdown.BottomLeft);
+        }
+
+        private void ToggleSearchFilter(SearchFilter type)
+        {
+            _searchTypeShowMask ^= (int)type;
+            OnSearchBoxTextChanged();
+        }
+
+        /// <inheritdoc/>
+        protected override void PerformLayoutBeforeChildren()
+        {
+            base.PerformLayoutBeforeChildren();
+
+            _searchBox.Width = _groupSearch.Width - _viewDropdown.Right - 4;
         }
 
         private void OnScriptsReload()
@@ -213,7 +267,7 @@ namespace FlaxEditor.Windows
             {
                 if (controlType.IsAbstract)
                     continue;
-                _groupSearch.AddChild(CreateControlItem(Utilities.Utils.GetPropertyNameUI(controlType.Name), controlType));
+
                 ActorToolboxAttribute attribute = null;
                 foreach (var e in controlType.GetAttributes(false))
                 {
@@ -312,51 +366,92 @@ namespace FlaxEditor.Windows
             _groupSearch.LockChildrenRecursive();
             _groupSearch.DisposeChildren();
 
-            foreach (var actorType in Editor.CodeEditing.Actors.Get())
+            if (((int)SearchFilter.Actors & _searchTypeShowMask) != 0)
             {
-                ActorToolboxAttribute attribute = null;
-                foreach (var e in actorType.GetAttributes(false))
+                foreach (var actorType in Editor.CodeEditing.Actors.Get())
                 {
-                    if (e is ActorToolboxAttribute actorToolboxAttribute)
+                    ActorToolboxAttribute attribute = null;
+                    foreach (var e in actorType.GetAttributes(false))
                     {
-                        attribute = actorToolboxAttribute;
-                        break;
+                        if (e is ActorToolboxAttribute actorToolboxAttribute)
+                        {
+                            attribute = actorToolboxAttribute;
+                            break;
+                        }
                     }
-                }
 
-                var text = (attribute == null) ? actorType.Name : string.IsNullOrEmpty(attribute.Name) ? actorType.Name : attribute.Name;
+                    var text = (attribute == null) ? actorType.Name : string.IsNullOrEmpty(attribute.Name) ? actorType.Name : attribute.Name;
 
-                // Display all actors on no search
-                if (string.IsNullOrEmpty(filterText))
-                    _groupSearch.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType));
-
-                if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
-                    continue;
-
-                var item = CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType);
-                SearchFilterHighlights(item, text, ranges);
-            }
-
-            // Hack primitive models into the search results
-            foreach (var child in groupPrimitives.Children)
-            {
-                if (child is Item primitiveAssetItem)
-                {
-                    var text = primitiveAssetItem.Text;
+                    // Display all actors on no search
+                    if (string.IsNullOrEmpty(filterText))
+                        _groupSearch.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType));
 
                     if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
                         continue;
 
-                    // Rebuild the path based on item name (it would be better to convert the drag data back to a string somehow)
-                    string path = $"Primitives/{text}.flax";
-
-                    var item = CreateEditorAssetItem(text, path);
+                    var item = CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType);
                     SearchFilterHighlights(item, text, ranges);
                 }
             }
 
+            if (((int)SearchFilter.Models & _searchTypeShowMask) != 0)
+            {
+                // Hack primitive models into the search results
+                foreach (var child in groupPrimitives.Children)
+                {
+                    if (child is Item primitiveAssetItem)
+                    {
+                        var text = primitiveAssetItem.Text;
+
+                        // Rebuild the path based on item name (it would be better to convert the drag data back to a string somehow)
+                        string path = $"Primitives/{text}.flax";
+
+                        // Display all primitives on no search
+                        if (string.IsNullOrEmpty(filterText))
+                            _groupSearch.AddChild(CreateEditorAssetItem(text, path));
+
+                        if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
+                            continue;
+
+                        var item = CreateEditorAssetItem(text, path);
+                        SearchFilterHighlights(item, text, ranges);
+                    }
+                }
+            }
+
+            if (((int)SearchFilter.Ui & _searchTypeShowMask) != 0)
+            { 
+                foreach (var controlType in Editor.Instance.CodeEditing.Controls.Get())
+                {
+                    if (controlType.IsAbstract)
+                        continue;
+
+                    ActorToolboxAttribute attribute = null;
+                    foreach (var e in controlType.GetAttributes(false))
+                    {
+                        if (e is ActorToolboxAttribute actorToolboxAttribute)
+                        {
+                            attribute = actorToolboxAttribute;
+                            break;
+                        }
+                    }
+
+                    var text = (attribute == null) ? controlType.Name : string.IsNullOrEmpty(attribute.Name) ? controlType.Name : attribute.Name;
+
+                    // Display all controls on no search
+                    if (string.IsNullOrEmpty(filterText))
+                        _groupSearch.AddChild(CreateControlItem(Utilities.Utils.GetPropertyNameUI(controlType.Name), controlType));
+
+                    if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
+                        continue;
+
+                    var item = CreateControlItem(Utilities.Utils.GetPropertyNameUI(controlType.Name), controlType);
+                    SearchFilterHighlights(item, text, ranges);
+                }
+            }   
+
             if (string.IsNullOrEmpty(filterText))
-                _groupSearch.SortChildren();
+            _groupSearch.SortChildren();
 
             _groupSearch.UnlockChildrenRecursive();
             PerformLayout();
