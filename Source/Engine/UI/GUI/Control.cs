@@ -1082,6 +1082,11 @@ namespace FlaxEngine.GUI
         [NoAnimate]
         public void UnlinkTooltip()
         {
+            if (_tooltipUpdate != null)
+            {
+                SetUpdate(ref _tooltipUpdate, null);
+                Tooltip?.OnMouseLeaveControl(this);
+            }
             _tooltipText = null;
             _tooltip = null;
         }
