@@ -896,7 +896,18 @@ namespace FlaxEditor.Modules
 
                     if (type.IsAssignableTo(typeof(AssetEditorWindow)))
                     {
-                        var ctor = type.GetConstructor(new Type[] { typeof(Editor), typeof(AssetItem) });
+                        ConstructorInfo ctor = null;
+                        var ctors = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public);
+                        for (int j = 0; j < ctors.Length; j++)
+                        {
+                            var parameterTypes = ctors[j].GetParameterTypes();
+                            if (parameterTypes.Length == 2 && parameterTypes[0].IsAssignableTo(typeof(Editor)) && parameterTypes[1].IsAssignableTo(typeof(AssetItem)))
+                            {
+                                ctor = ctors[j];
+                                break;
+                            }
+                        }
+                        Assert.IsNotNull(ctor, $"Restored window of type '{type.FullName}' is missing a constructor accepting parameters Editor and AssetItem");
                         var assetItem = Editor.ContentDatabase.FindAsset(winData.AssetItemID);
                         var win = (AssetEditorWindow)ctor.Invoke(new object[] { Editor.Instance, assetItem });
                         win.Show(winData.DockState, winData.DockState != DockState.Float ? winData.DockedTo : null, winData.SelectOnShow, winData.SplitterValue);
