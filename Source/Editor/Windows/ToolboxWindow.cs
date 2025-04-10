@@ -455,10 +455,10 @@ namespace FlaxEditor.Windows
                     var item = CreateControlItem(Utilities.Utils.GetPropertyNameUI(controlType.Name), controlType);
                     SearchFilterHighlights(item, text, ranges);
                 }
-            }   
+            }
 
-            if (string.IsNullOrEmpty(filterText))
-                _groupSearch.SortChildren();
+            // Sort the search results alphabetically
+            _groupSearch.SortChildren();
 
             _groupSearch.UnlockChildrenRecursive();
             PerformLayout();
