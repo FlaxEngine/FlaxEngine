@@ -235,8 +235,8 @@ namespace Flax.Build
                 ridFallback = "";
                 if (string.IsNullOrEmpty(dotnetPath))
                 {
-                    dotnetPath = "/usr/local/share/dotnet/";
-                    if (!Directory.Exists(dotnetPath)) // Officially recommended dotnet location
+                    dotnetPath = "/usr/local/share/dotnet/"; // Officially recommended dotnet location
+                    if (!Directory.Exists(dotnetPath))
                     {
                         if (Environment.GetEnvironmentVariable("PATH") is string globalBinPath)
                             dotnetPath = globalBinPath.Split(':').FirstOrDefault(x => File.Exists(Path.Combine(x, "dotnet")));
@@ -261,7 +261,7 @@ namespace Flax.Build
                 Log.Warning("Missing .NET SDK");
                 return;
             }
-            if (!Directory.Exists(dotnetPath))
+            if (!Directory.Exists(Path.Combine(dotnetPath, "sdk")))
             {
                 Log.Warning($"Missing .NET SDK ({dotnetPath})");
                 return;
@@ -513,6 +513,8 @@ namespace Flax.Build
 
         private static IEnumerable<string> GetVersions(string folder)
         {
+            if (!Directory.Exists(folder))
+                return Enumerable.Empty<string>();
             return Directory.GetDirectories(folder).Select(Path.GetFileName);
         }
 
