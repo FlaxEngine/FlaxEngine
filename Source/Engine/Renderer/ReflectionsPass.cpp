@@ -33,212 +33,212 @@ GPU_CB_STRUCT(Data {
 
 namespace PreIntegratedGF
 {
-	static const int Resolution = 128;
-	static const int NumSamples = 512;
+    static const int Resolution = 128;
+    static const int NumSamples = 512;
 
-	struct vec2 {
-		double x, y;
-		vec2(double _x, double _y) :x(_x), y(_y) { };
+    struct vec2 {
+        double x, y;
+        vec2(double _x, double _y) :x(_x), y(_y) { };
 
-		vec2& operator /=(const double& b)
-		{
-			x /= b;
-			y /= b;
-			return *this;
-		}
-	};
+        vec2& operator /=(const double& b)
+        {
+            x /= b;
+            y /= b;
+            return *this;
+        }
+    };
 
-	struct ivec2 {
-		int x, y;
-	};
+    struct ivec2 {
+        int x, y;
+    };
 
-	struct vec3 {
-		double x, y, z;
-		vec3(double _x, double _y, double _z) :x(_x), y(_y), z(_z) { };
+    struct vec3 {
+        double x, y, z;
+        vec3(double _x, double _y, double _z) :x(_x), y(_y), z(_z) { };
 
-		double dot(const vec3& b)
-		{
-			return x*b.x + y*b.y + z*b.z;
-		}
-	};
+        double dot(const vec3& b)
+        {
+            return x*b.x + y*b.y + z*b.z;
+        }
+    };
 
-	vec3 operator*(const double& a, const vec3& b)
-	{
-		return vec3(b.x * a, b.y * a, b.z * a);
-	}
-	vec3 operator-(const vec3& a, const vec3& b)
-	{
-		return vec3(a.x - b.x, a.y - b.y, a.z - b.z);
-	}
+    vec3 operator*(const double& a, const vec3& b)
+    {
+        return vec3(b.x * a, b.y * a, b.z * a);
+    }
+    vec3 operator-(const vec3& a, const vec3& b)
+    {
+        return vec3(a.x - b.x, a.y - b.y, a.z - b.z);
+    }
 
-	inline double saturate(double x)
-	{
-		if (x < 0) x = 0;
-		if (x > 1) x = 1;
-		return x;
-	}
+    inline double saturate(double x)
+    {
+        if (x < 0) x = 0;
+        if (x > 1) x = 1;
+        return x;
+    }
 
-	unsigned int ReverseBits32(unsigned int bits)
-	{
-		bits = (bits << 16) | (bits >> 16);
-		bits = ((bits & 0x00ff00ff) << 8) | ((bits & 0xff00ff00) >> 8);
-		bits = ((bits & 0x0f0f0f0f) << 4) | ((bits & 0xf0f0f0f0) >> 4);
-		bits = ((bits & 0x33333333) << 2) | ((bits & 0xcccccccc) >> 2);
-		bits = ((bits & 0x55555555) << 1) | ((bits & 0xaaaaaaaa) >> 1);
-		return bits;
-	}
+    unsigned int ReverseBits32(unsigned int bits)
+    {
+        bits = (bits << 16) | (bits >> 16);
+        bits = ((bits & 0x00ff00ff) << 8) | ((bits & 0xff00ff00) >> 8);
+        bits = ((bits & 0x0f0f0f0f) << 4) | ((bits & 0xf0f0f0f0) >> 4);
+        bits = ((bits & 0x33333333) << 2) | ((bits & 0xcccccccc) >> 2);
+        bits = ((bits & 0x55555555) << 1) | ((bits & 0xaaaaaaaa) >> 1);
+        return bits;
+    }
 
-	inline double rand_0_1()
-	{
-		return 1.0 * rand() / RAND_MAX;
-	}
+    inline double rand_0_1()
+    {
+        return 1.0 * rand() / RAND_MAX;
+    }
 
-	inline unsigned int rand_32bit()
-	{
-		unsigned int x = rand() & 0xff;
-		x |= (rand() & 0xff) << 8;
-		x |= (rand() & 0xff) << 16;
-		x |= (rand() & 0xff) << 24;
-		return x;
-	}
+    inline unsigned int rand_32bit()
+    {
+        unsigned int x = rand() & 0xff;
+        x |= (rand() & 0xff) << 8;
+        x |= (rand() & 0xff) << 16;
+        x |= (rand() & 0xff) << 24;
+        return x;
+    }
 
-	// using uniform randomness :(
-	double t1 = rand_0_1();
-	unsigned int t2 = rand_32bit();
-	vec2 Hammersley(int Index, int NumSamples)
-	{
-		double E1 = 1.0 * Index / NumSamples + t1;
-		E1 = E1 - int(E1);
-		double E2 = double(ReverseBits32(Index) ^ t2) * 2.3283064365386963e-10;
-		return vec2(E1, E2);
-	}
+    // using uniform randomness :(
+    double t1 = rand_0_1();
+    unsigned int t2 = rand_32bit();
+    vec2 Hammersley(int Index, int NumSamples)
+    {
+        double E1 = 1.0 * Index / NumSamples + t1;
+        E1 = E1 - int(E1);
+        double E2 = double(ReverseBits32(Index) ^ t2) * 2.3283064365386963e-10;
+        return vec2(E1, E2);
+    }
 
-	vec3 ImportanceSampleGGX(vec2 E, double Roughness)
-	{
-		double m = Roughness * Roughness;
-		double m2 = m * m;
+    vec3 ImportanceSampleGGX(vec2 E, double Roughness)
+    {
+        double m = Roughness * Roughness;
+        double m2 = m * m;
 
-		double phi = 2 * PI * E.x;
-		double cosTheta = sqrt((1 - E.y) / (1 + (m2 - 1) * E.y));
-		double sinTheta = sqrt(1 - cosTheta * cosTheta);
+        double phi = 2 * PI * E.x;
+        double cosTheta = sqrt((1 - E.y) / (1 + (m2 - 1) * E.y));
+        double sinTheta = sqrt(1 - cosTheta * cosTheta);
 
-		vec3 H(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+        vec3 H(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
 
-		double d = (cosTheta * m2 - cosTheta) * cosTheta + 1;
-		double D = m2 / (M_PI*d*d);
-		double PDF = D * cosTheta;
+        double d = (cosTheta * m2 - cosTheta) * cosTheta + 1;
+        double D = m2 / (M_PI*d*d);
+        double PDF = D * cosTheta;
 
-		return H;
-	}
+        return H;
+    }
 
-	double Vis_SmithJointApprox(double Roughness, double NoV, double NoL)
-	{
-		double a = Roughness * Roughness;
-		double Vis_SmithV = NoL * (NoV * (1 - a) + a);
-		double Vis_SmithL = NoV * (NoL * (1 - a) + a);
-		return 0.5 / (Vis_SmithV + Vis_SmithL);
-	}
+    double Vis_SmithJointApprox(double Roughness, double NoV, double NoL)
+    {
+        double a = Roughness * Roughness;
+        double Vis_SmithV = NoL * (NoV * (1 - a) + a);
+        double Vis_SmithL = NoV * (NoL * (1 - a) + a);
+        return 0.5 / (Vis_SmithV + Vis_SmithL);
+    }
 
-	vec2 IntegrateBRDF(double Roughness, double NoV)
-	{
-		if (Roughness < 0.04) Roughness = 0.04;
+    vec2 IntegrateBRDF(double Roughness, double NoV)
+    {
+        if (Roughness < 0.04) Roughness = 0.04;
 
-		vec3 V(sqrt(1 - NoV*NoV), 0, NoV);
-		double A = 0, B = 0;
-		for (int i = 0; i < NumSamples; i++)
-		{
-			vec2 E = Hammersley(i, NumSamples);
-			vec3 H = ImportanceSampleGGX(E, Roughness);
-			vec3 L = 2 * V.dot(H) * H - V;
+        vec3 V(sqrt(1 - NoV*NoV), 0, NoV);
+        double A = 0, B = 0;
+        for (int i = 0; i < NumSamples; i++)
+        {
+            vec2 E = Hammersley(i, NumSamples);
+            vec3 H = ImportanceSampleGGX(E, Roughness);
+            vec3 L = 2 * V.dot(H) * H - V;
 
-			double NoL = saturate(L.z);
-			double NoH = saturate(H.z);
-			double VoH = saturate(V.dot(H));
+            double NoL = saturate(L.z);
+            double NoH = saturate(H.z);
+            double VoH = saturate(V.dot(H));
 
-			if (NoL > 0)
-			{
-				double Vis = Vis_SmithJointApprox(Roughness, NoV, NoL);
+            if (NoL > 0)
+            {
+                double Vis = Vis_SmithJointApprox(Roughness, NoV, NoL);
 
-				double a = Roughness * Roughness;
-				double a2 = a*a;
-				double Vis_SmithV = NoL * sqrt(NoV * (NoV - NoV * a2) + a2);
-				double Vis_SmithL = NoV * sqrt(NoL * (NoL - NoL * a2) + a2);
+                double a = Roughness * Roughness;
+                double a2 = a*a;
+                double Vis_SmithV = NoL * sqrt(NoV * (NoV - NoV * a2) + a2);
+                double Vis_SmithL = NoV * sqrt(NoL * (NoL - NoL * a2) + a2);
 
-				double NoL_Vis_PDF = NoL * Vis * (4 * VoH / NoH);
+                double NoL_Vis_PDF = NoL * Vis * (4 * VoH / NoH);
 
-				double Fc = pow(1 - VoH, 5);
-				A += (1 - Fc) * NoL_Vis_PDF;
-				B += Fc * NoL_Vis_PDF;
-			}
-		}
-		vec2 res(A, B);
-		res /= NumSamples;
-		return res;
-	}
+                double Fc = pow(1 - VoH, 5);
+                A += (1 - Fc) * NoL_Vis_PDF;
+                B += Fc * NoL_Vis_PDF;
+            }
+        }
+        vec2 res(A, B);
+        res /= NumSamples;
+        return res;
+    }
 
-	void Generate()
-	{
-		String path = Globals::TemporaryFolder / TEXT("PreIntegratedGF.bmp");
+    void Generate()
+    {
+        String path = Globals::TemporaryFolder / TEXT("PreIntegratedGF.bmp");
 
-		FILE* pFile = fopen(path.ToSTD().c_str(), "wb");
+        FILE* pFile = fopen(path.ToSTD().c_str(), "wb");
 
-		byte data[Resolution * 3 * Resolution];
-		int c = 0;
-		for (int x = 0; x < Resolution; x++)
-		{
-			for (int y = 0; y < Resolution; y++)
-			{
-				vec2 brdf = IntegrateBRDF(1 - 1.0 * x / (Resolution - 1), 1.0 * y / (Resolution - 1));
-				data[c + 2] = byte(brdf.x * 255);
-				data[c + 1] = byte(brdf.y * 255);
-				data[c + 0] = 0;
-				c += 3;
-			}
-		}
+        byte data[Resolution * 3 * Resolution];
+        int c = 0;
+        for (int x = 0; x < Resolution; x++)
+        {
+            for (int y = 0; y < Resolution; y++)
+            {
+                vec2 brdf = IntegrateBRDF(1 - 1.0 * x / (Resolution - 1), 1.0 * y / (Resolution - 1));
+                data[c + 2] = byte(brdf.x * 255);
+                data[c + 1] = byte(brdf.y * 255);
+                data[c + 0] = 0;
+                c += 3;
+            }
+        }
 
-		BITMAPINFOHEADER BMIH;
-		BMIH.biSize = sizeof(BITMAPINFOHEADER);
-		BMIH.biSizeImage = Resolution * Resolution * 3;
-		BMIH.biSize = sizeof(BITMAPINFOHEADER);
-		BMIH.biWidth = Resolution;
-		BMIH.biHeight = Resolution;
-		BMIH.biPlanes = 1;
-		BMIH.biBitCount = 24;
-		BMIH.biCompression = BI_RGB;
-		BMIH.biSizeImage = Resolution * Resolution * 3;
+        BITMAPINFOHEADER BMIH;
+        BMIH.biSize = sizeof(BITMAPINFOHEADER);
+        BMIH.biSizeImage = Resolution * Resolution * 3;
+        BMIH.biSize = sizeof(BITMAPINFOHEADER);
+        BMIH.biWidth = Resolution;
+        BMIH.biHeight = Resolution;
+        BMIH.biPlanes = 1;
+        BMIH.biBitCount = 24;
+        BMIH.biCompression = BI_RGB;
+        BMIH.biSizeImage = Resolution * Resolution * 3;
 
-		BITMAPFILEHEADER bmfh;
-		int nBitsOffset = sizeof(BITMAPFILEHEADER) + BMIH.biSize;
-		LONG lImageSize = BMIH.biSizeImage;
-		LONG lFileSize = nBitsOffset + lImageSize;
+        BITMAPFILEHEADER bmfh;
+        int nBitsOffset = sizeof(BITMAPFILEHEADER) + BMIH.biSize;
+        LONG lImageSize = BMIH.biSizeImage;
+        LONG lFileSize = nBitsOffset + lImageSize;
 
-		bmfh.bfType = 'B' + ('M' << 8);
-		bmfh.bfOffBits = nBitsOffset;
-		bmfh.bfSize = lFileSize;
-		bmfh.bfReserved1 = bmfh.bfReserved2 = 0;
+        bmfh.bfType = 'B' + ('M' << 8);
+        bmfh.bfOffBits = nBitsOffset;
+        bmfh.bfSize = lFileSize;
+        bmfh.bfReserved1 = bmfh.bfReserved2 = 0;
 
-		//Write the bitmap file header
-		UINT nWrittenFileHeaderSize = fwrite(&bmfh, 1, sizeof(BITMAPFILEHEADER), pFile);
+        //Write the bitmap file header
+        UINT nWrittenFileHeaderSize = fwrite(&bmfh, 1, sizeof(BITMAPFILEHEADER), pFile);
 
-		//And then the bitmap info header
-		UINT nWrittenInfoHeaderSize = fwrite(&BMIH, 1, sizeof(BITMAPINFOHEADER), pFile);
+        //And then the bitmap info header
+        UINT nWrittenInfoHeaderSize = fwrite(&BMIH, 1, sizeof(BITMAPINFOHEADER), pFile);
 
-		//Finally, write the image data itself 
+        //Finally, write the image data itself 
 
-		//-- the data represents our drawing
-		UINT nWrittenDIBDataSize = fwrite(data, 1, lImageSize, pFile);
+        //-- the data represents our drawing
+        UINT nWrittenDIBDataSize = fwrite(data, 1, lImageSize, pFile);
 
-		fclose(pFile);
+        fclose(pFile);
 
-		Guid id;
-		Importers::TextureImportArgument arg;
-		arg.Options.Type = FormatType::HdrRGB;
-		arg.Options.IndependentChannels = true;
-		arg.Options.IsAtlas = false;
-		arg.Options.IsSRGB = false;
-		arg.Options.NeverStream = true;
-		Content::Import(path, Globals:... + PRE_INTEGRATED_GF_ASSET_NAME, &id, &arg);
-	}
+        Guid id;
+        Importers::TextureImportArgument arg;
+        arg.Options.Type = FormatType::HdrRGB;
+        arg.Options.IndependentChannels = true;
+        arg.Options.IsAtlas = false;
+        arg.Options.IsSRGB = false;
+        arg.Options.NeverStream = true;
+        Content::Import(path, Globals:... + PRE_INTEGRATED_GF_ASSET_NAME, &id, &arg);
+    }
 };
 
 #endif
@@ -253,8 +253,8 @@ String ReflectionsPass::ToString() const
 bool ReflectionsPass::Init()
 {
 #if GENERATE_GF_CACHE
-	// Generate cache
-	PreIntegratedGF::Generate();
+    // Generate cache
+    PreIntegratedGF::Generate();
 #endif
 
     // Create pipeline states
@@ -335,12 +335,12 @@ void ReflectionsPass::Dispose()
 
 bool SortProbes(RenderEnvironmentProbeData const& p1, RenderEnvironmentProbeData const& p2)
 {
-    // Compare by radius
+    // Sort by radius
     int32 res = static_cast<int32>(p2.Radius - p1.Radius);
     if (res == 0)
     {
         // Compare by ID to prevent flickering
-        res = p2.HashID - p1.HashID;
+        res = p1.HashID - p2.HashID;
     }
     return res < 0;
 }
@@ -382,15 +382,22 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
 
     auto tempDesc = GPUTextureDescription::New2D(renderContext.Buffers->GetWidth(), renderContext.Buffers->GetHeight(), PixelFormat::R11G11B10_Float);
     auto reflectionsBuffer = RenderTargetPool::Get(tempDesc);
+    auto diffuseReflectionsBuffer = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(reflectionsBuffer, "Reflections");
+    RENDER_TARGET_POOL_SET_NAME(diffuseReflectionsBuffer, "DiffuseReflections");
     context->Clear(*reflectionsBuffer, Color::Black);
+    context->Clear(*diffuseReflectionsBuffer, Color::Black);
+
+
 
     // Reflection Probes pass
     if (renderProbes)
     {
         PROFILE_GPU_CPU("Env Probes");
 
-        context->SetRenderTarget(*reflectionsBuffer);
+        GPUTextureView* rts[] = { reflectionsBuffer->View(), diffuseReflectionsBuffer->View() };
+        context->SetRenderTarget(nullptr, Span<GPUTextureView*>(rts, 2));
+
 
         // Sort probes by the radius
         Sorting::QuickSort(renderContext.List->EnvironmentProbes.Get(), renderContext.List->EnvironmentProbes.Count(), &SortProbes);
@@ -463,9 +470,11 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         }
         context->BindSR(5, reflectionsBuffer);
         context->BindSR(6, _preIntegratedGF->GetTexture());
+        context->BindSR(7, diffuseReflectionsBuffer);
         context->SetState(_psCombinePass);
         context->DrawFullscreenTriangle();
     }
 
     RenderTargetPool::Release(reflectionsBuffer);
+    RenderTargetPool::Release(diffuseReflectionsBuffer);
 }
