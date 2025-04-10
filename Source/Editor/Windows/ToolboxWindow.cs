@@ -470,15 +470,20 @@ namespace FlaxEditor.Windows
         {
             base.Draw();
 
-            bool showFilterHint = ((int)SearchFilter.Actors & _searchFilterMask) == 0 &&
+            // Show a text to hint the user that either no filter is active or the search does not return any results
+            bool noSearchResults = _groupSearch.Children.Count == 0 && !string.IsNullOrEmpty(_searchBox.Text);
+            bool showHint = (((int)SearchFilter.Actors & _searchFilterMask) == 0 &&
                 ((int)SearchFilter.Primitives & _searchFilterMask) == 0 &&
-                ((int)SearchFilter.Ui & _searchFilterMask) == 0;
-            
-            if (showFilterHint)
+                ((int)SearchFilter.Ui & _searchFilterMask) == 0) ||
+                noSearchResults;
+
+            String hint = noSearchResults ? "No results." : "No search filter active, please enable at least one filter.";
+
+            if (showHint)
             {
                 var textRect = _groupSearch.Parent.Parent.Bounds;
                 var style = Style.Current;
-                Render2D.DrawText(style.FontMedium, "No search filter active, please enable at least one filter.", textRect, style.ForegroundGrey, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords);
+                Render2D.DrawText(style.FontMedium, hint, textRect, style.ForegroundGrey, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords);
             }
         }
 
