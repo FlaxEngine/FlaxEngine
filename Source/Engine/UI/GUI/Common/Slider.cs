@@ -294,7 +294,7 @@ public class Slider : ContainerControl
     /// <summary>
     /// The color of the ticks.
     /// </summary>
-    [EditorDisplay("Tick Style"), EditorOrder(2051)]
+    [EditorDisplay("Tick Style"), EditorOrder(2051), ExpandGroups]
     public Color TickColor = Color.Gray;
 
     /// <summary>
