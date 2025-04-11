@@ -152,9 +152,11 @@ namespace FlaxEditor.Windows
             };
             _viewDropdown.Clicked += OnViewButtonClicked;
 
-            _searchBox = new SearchBox(false, _viewDropdown.Right + 2, 2, _groupSearch.Width - _viewDropdown.Right - 4)
+            _searchBox = new SearchBox
             {
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Parent = _groupSearch.Parent.Parent,
+                Bounds = new Rectangle(_viewDropdown.Right + 2, 2, _actorGroups.Width - 4, TextBoxBase.DefaultHeight),
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 
