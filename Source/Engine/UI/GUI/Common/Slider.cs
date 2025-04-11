@@ -192,15 +192,45 @@ public class Slider : ContainerControl
     }
 
     /// <summary>
+    /// Wether to draw ticks on the slider.
+    /// </summary>
+    [EditorOrder(43)]
+    public bool ShowTicks = true;
+
+    /// <summary>
+    /// The amount of ticks to draw.
+    /// </summary>
+    [EditorOrder(44), VisibleIf(nameof(ShowTicks)), Limit(0, int.MaxValue, 0.05f)]
+    public int TickCount = 5;
+
+    /// <summary>
+    /// Wether to show the first and last tick on the start and end of the slider.
+    /// </summary>
+    [EditorOrder(45), VisibleIf(nameof(ShowTicks))]
+    public bool ShowBorderTicks = false;
+
+    /// <summary>
+    /// The size of the ticks. Negative values will make the tick the same dimension as the size of the slider divided by the absolute of that number.
+    /// </summary>
+    [EditorOrder(46), VisibleIf(nameof(ShowTicks)), Limit(float.MinValue, float.MaxValue, 0.005f)]
+    public Float2 TickSize = new Float2(3, 18);
+
+    /// <summary>
+    /// The offset for the ticks.
+    /// </summary>
+    [EditorOrder(47), VisibleIf(nameof(ShowTicks)), Limit(float.MinValue, float.MaxValue, 0.025f)]
+    public Float2 TickOffset = new Float2(0, -4);
+    
+    /// <summary>
     /// Whether to fill the track.
     /// </summary>
-    [EditorOrder(42), Tooltip("Fill the track.")]
+    [EditorOrder(48), Tooltip("Fill the track.")]
     public bool FillTrack = true;
 
     /// <summary>
     /// Whether to use whole numbers.
     /// </summary>
-    [EditorOrder(43), Tooltip("Use whole numbers.")]
+    [EditorOrder(49), Tooltip("Use whole numbers.")]
     public bool WholeNumbers = false;
 
     /// <summary>
@@ -260,6 +290,18 @@ public class Slider : ContainerControl
     /// </summary>
     [EditorDisplay("Thumb Style"), EditorOrder(2033), Tooltip("The brush of the slider thumb.")]
     public IBrush ThumbBrush { get; set; }
+
+    /// <summary>
+    /// The color of the ticks.
+    /// </summary>
+    [EditorDisplay("Tick Style"), EditorOrder(2051)]
+    public Color TickColor = Color.Gray;
+
+    /// <summary>
+    /// Gets or sets the brush used for slider thumb drawing.
+    /// </summary>
+    [EditorDisplay("Tick Style"), EditorOrder(2054), Tooltip("The brush used for drawing ticks.")]
+    public IBrush TickBrush { get; set; }
 
     /// <summary>
     /// Gets a value indicating whether user is using a slider.
@@ -385,6 +427,44 @@ public class Slider : ContainerControl
             else
                 Render2D.FillRectangle(lineRect, TrackFillLineColor);
             Render2D.PopClip();
+        }
+
+        if (ShowTicks && TickCount > 0 && TickSize != Float2.Zero)
+        {
+            float tickDistance = TrackWidth / (TickCount - 1);
+            Float2 startPosition = new Float2(ShowBorderTicks ? lineRect.Left : lineRect.Left + tickDistance, lineRect.Top);
+            Float2 drawOffset = new Float2(tickDistance, 0);
+            // Auto adjust the tick width if the size is negative
+            Float2 realTickSize = Float2.Zero;
+            realTickSize.X = (TickSize.X > 0) ? TickSize.X : lineRect.Width / Mathf.Abs(TickSize.X);
+            realTickSize.Y = (TickSize.Y > 0) ? TickSize.Y : lineRect.Height / Mathf.Abs(TickSize.Y);
+
+            switch (Direction)
+            {
+            case SliderDirection.HorizontalRight:
+            case SliderDirection.HorizontalLeft:
+                break;
+            case SliderDirection.VerticalUp:
+            case SliderDirection.VerticalDown:
+                tickDistance = TrackHeight / (TickCount - 1);
+                startPosition = new Float2(lineRect.Left, ShowBorderTicks ? lineRect.Top : lineRect.Top + tickDistance);
+                drawOffset = new Float2(0, tickDistance);
+                break;
+            }
+
+            startPosition += TickOffset;
+            int ticksToDraw = ShowBorderTicks ? TickCount : TickCount - 2;
+
+            for (int i = 0; i < ticksToDraw; i++)
+            {
+                Float2 tickPosition = startPosition + drawOffset * i + TickOffset;
+                var tickRect = new Rectangle(tickPosition, realTickSize);
+
+                if (TickBrush != null)
+                    TickBrush.Draw(tickRect, TickColor);
+                else
+                    Render2D.FillRectangle(tickRect, TickColor);
+            }
         }
 
         // Draw thumb
