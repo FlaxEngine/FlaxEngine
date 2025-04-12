@@ -172,7 +172,7 @@ bool JsonAssetBase::Save(const StringView& path)
     rapidjson_flax::StringBuffer buffer;
     PrettyJsonWriter writerObj(buffer);
     _isResaving = true;
-    Save(writerObj);
+    saveInternal(writerObj);
     _isResaving = false;
 
     // Save json to file
@@ -189,6 +189,12 @@ bool JsonAssetBase::Save(JsonWriter& writer) const
 {
     if (OnCheckSave())
         return true;
+    
+    return saveInternal(writer);
+}
+
+bool JsonAssetBase::saveInternal(JsonWriter& writer) const
+{
     ScopeLock lock(Locker);
 
     writer.StartObject();

@@ -101,6 +101,7 @@ protected:
     void unload(bool isReloading) override;
 #if USE_EDITOR
     void onRename(const StringView& newPath) override;
+    bool saveInternal(JsonWriter& writer) const;
 #endif
 };
 
