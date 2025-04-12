@@ -266,6 +266,7 @@ namespace Flax.Build
                     if (targetGroup.Project == null && target is ProjectTarget projectTarget)
                         targetGroup.Project = projectTarget.Project;
                     targetGroup.Targets.Add(target);
+                    Log.Verbose($"Found target {target}");
                 }
                 foreach (var targetGroup in targetGroups)
                 {
@@ -294,6 +295,7 @@ namespace Flax.Build
                         var projectInfo = e.Project;
 
                         // Create project
+                        Log.Verbose($"Found project {projectName}");
                         Project mainProject;
                         var binaryModules = new Dictionary<string, HashSet<Module>>();
                         var modulesBuildOptions = new Dictionary<Module, BuildOptions>();
@@ -401,11 +403,17 @@ namespace Flax.Build
 
                             // Skip bindings projects for prebuilt targets (eg. no sources to build/view - just binaries)
                             if (targets[0].IsPreBuilt)
+                            {
+                                Log.Verbose($"Skipping prebuilt module {binaryModuleName}");
                                 continue;
+                            }
 
                             // Skip if project of that name has been already added
                             if (projects.Any(x => x.OutputType == TargetOutputType.Library && x.Type == TargetType.DotNetCore && x.BaseName == binaryModuleName))
+                            {
+                                Log.Verbose($"Skipping already added module {binaryModuleName}");
                                 continue;
+                            }
 
                             using (new ProfileEventScope(binaryModuleName))
                             {
@@ -554,6 +562,7 @@ namespace Flax.Build
                     }
                     if (flaxDependencyToRemove != null)
                     {
+                        Log.Verbose($"Removing project reference {flaxDependencyToRemove.Name}");
                         projects.Remove(flaxDependencyToRemove);
                         foreach (var project in projects)
                             project.Dependencies.Remove(flaxDependencyToRemove);
@@ -569,7 +578,7 @@ namespace Flax.Build
                 {
                     foreach (var project in projects)
                     {
-                        Log.Verbose(project.Name + " -> " + project.Path);
+                        Log.Verbose($"Project {project.Name} -> {project.Path}");
                         project.Generate(solutionPath, project == mainSolutionProject);
                     }
                 }
@@ -648,7 +657,7 @@ namespace Flax.Build
                     // Generate project
                     using (new ProfileEventScope("GenerateProject"))
                     {
-                        Log.Verbose("Project " + rulesProjectName + " -> " + project.Path);
+                        Log.Verbose($"Project {rulesProjectName} -> {project.Path}");
                         dotNetProjectGenerator.GenerateProject(project, solutionPath, project == mainSolutionProject);
                     }
 
