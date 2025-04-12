@@ -114,7 +114,6 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 _linkButton = new Button
                 {
-                    BackgroundBrush = new SpriteBrush(Editor.Instance.Icons.Link32),
                     Parent = LinkedLabel,
                     Width = 18,
                     Height = 18,
@@ -201,6 +200,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 _linkButton.SetColors(backgroundColor);
                 _linkButton.BorderColor = _linkButton.BorderColorSelected = _linkButton.BorderColorHighlighted = Color.Transparent;
                 _linkButton.TooltipText = LinkValues ? "Unlinks scale components from uniform scaling" : "Links scale components for uniform scaling";
+                _linkButton.BackgroundBrush = new SpriteBrush(LinkValues ? Editor.Instance.Icons.Link32 : Editor.Instance.Icons.BrokenLink32);
             }
         }
     }
