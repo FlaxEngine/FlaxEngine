@@ -9,7 +9,7 @@
 /// <summary>
 /// Half-precision 16 bit floating point number consisting of a sign bit, a 5 bit biased exponent, and a 10 bit mantissa
 /// </summary>
-typedef uint16 Half;
+API_TYPEDEF() typedef uint16 Half;
 
 #define USE_SSE_HALF_CONVERSION 0
 
