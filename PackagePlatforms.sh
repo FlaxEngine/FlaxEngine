@@ -9,4 +9,4 @@ echo Building and packaging platforms data...
 cd "`dirname "$0"`"
 
 # Run Flax.Build (also pass the arguments)
-bash ./Development/Scripts/Linux/CallBuildTool.sh --deploy --deployPlatforms --dotnet=8 --verbose --log --logFile="Cache/Intermediate/PackageLog.txt" "$@"
+bash ./Development/Scripts/Linux/CallBuildTool.sh --deploy --deployPlatforms --verbose --log --logFile="Cache/Intermediate/PackageLog.txt" "$@"

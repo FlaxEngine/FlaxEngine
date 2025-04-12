@@ -211,13 +211,16 @@ namespace Flax.Build
                 rid = $"win-{arch}";
                 ridFallback = "";
 #pragma warning disable CA1416
-                using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
-                using RegistryKey sdkVersionsKey = baseKey.OpenSubKey($@"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{arch}\sdk");
-                using RegistryKey runtimeKey = baseKey.OpenSubKey(@$"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{arch}\sharedfx\Microsoft.NETCore.App");
-                using RegistryKey hostKey = baseKey.OpenSubKey(@$"SOFTWARE\dotnet\Setup\InstalledVersions\{arch}\sharedhost");
-                dotnetPath = (string)hostKey.GetValue("Path");
-                dotnetSdkVersions = sdkVersionsKey.GetValueNames();
-                dotnetRuntimeVersions = runtimeKey.GetValueNames();
+                if (string.IsNullOrEmpty(dotnetPath))
+                {
+                    using RegistryKey baseKey = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64);
+                    using RegistryKey sdkVersionsKey = baseKey.OpenSubKey($@"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{arch}\sdk");
+                    using RegistryKey runtimeKey = baseKey.OpenSubKey(@$"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{arch}\sharedfx\Microsoft.NETCore.App");
+                    using RegistryKey hostKey = baseKey.OpenSubKey(@$"SOFTWARE\dotnet\Setup\InstalledVersions\{arch}\sharedhost");
+                    dotnetPath = (string)hostKey.GetValue("Path");
+                    dotnetSdkVersions = sdkVersionsKey.GetValueNames();
+                    dotnetRuntimeVersions = runtimeKey.GetValueNames();
+                }
 #pragma warning restore CA1416
                 break;
             }
@@ -282,7 +285,7 @@ namespace Flax.Build
 
             var dotnetSdkVersion = GetVersion(dotnetSdkVersions);
             var dotnetRuntimeVersion = GetVersion(dotnetRuntimeVersions);
-            if (!string.IsNullOrEmpty(dotnetRuntimeVersion) && ParseVersion(dotnetRuntimeVersion).Major > ParseVersion(dotnetSdkVersion).Major)
+            if (!string.IsNullOrEmpty(dotnetSdkVersion) && !string.IsNullOrEmpty(dotnetRuntimeVersion) && ParseVersion(dotnetRuntimeVersion).Major > ParseVersion(dotnetSdkVersion).Major)
             {
                 // Make sure the reference assemblies are not newer than the SDK itself
                 var dotnetRuntimeVersionsRemaining = dotnetRuntimeVersions;
