@@ -152,7 +152,7 @@ public:
     /// <summary>
     /// Determines the time (in seconds) at which the audio clip starts playing if Play On Start is enabled.
     /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(51), DefaultValue(0.0f), Limit(0, float.MaxValue, 0.01f), EditorDisplay(\"Audio Source\", \"Start Time\"), VisibleIf(nameof(PlayOnStart))")
+    API_PROPERTY(Attributes="EditorOrder(51), DefaultValue(0.0f), Limit(0, float.MaxValue, 0.01f), EditorDisplay(\"Audio Source\", \"Start Time\"), VisibleIf(nameof(PlayOnStart))")
     FORCE_INLINE float GetStartTime() const
     {
         return _startTime;

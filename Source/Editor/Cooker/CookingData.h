@@ -142,7 +142,7 @@ API_ENUM() enum class BuildPlatform
     /// <summary>
     /// Windows (ARM64)
     /// </summary>
-    API_ENUM(Attributes = "EditorDisplay(null, \"Windows ARM64\")")
+    API_ENUM(Attributes="EditorDisplay(null, \"Windows ARM64\")")
     WindowsARM64 = 15,
 };
 

@@ -118,7 +118,7 @@ public:
     /// <summary>
     /// Called every fixed framerate frame (after FixedUpdate) if object is enabled.
     /// </summary>
-    API_FUNCTION(Attributes = "NoAnimate") virtual void OnLateFixedUpdate()
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnLateFixedUpdate()
     {
     }
 

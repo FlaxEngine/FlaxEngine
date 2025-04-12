@@ -150,13 +150,13 @@ public:
     /// <summary>
     /// Frame rendering flags used to switch between graphics features for this camera.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(110), EditorDisplay(\"Camera\")")
+    API_FIELD(Attributes="EditorOrder(110), EditorDisplay(\"Camera\")")
     ViewFlags RenderFlags = ViewFlags::DefaultGame;
 
     /// <summary>
     /// Describes frame rendering modes for this camera.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(120), EditorDisplay(\"Camera\")")
+    API_FIELD(Attributes="EditorOrder(120), EditorDisplay(\"Camera\")")
     ViewMode RenderMode = ViewMode::Default;
 
 public:

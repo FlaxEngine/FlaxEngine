@@ -68,13 +68,13 @@ public:
     /// <summary>
     /// Default probes cubemap resolution (use for Environment Probes, can be overriden per-actor).
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(1500), EditorDisplay(\"Quality\")")
+    API_FIELD(Attributes="EditorOrder(1500), EditorDisplay(\"Quality\")")
     ProbeCubemapResolution DefaultProbeResolution = ProbeCubemapResolution::_128;
 
     /// <summary>
     /// If checked, Environment Probes will use HDR texture format. Improves quality in very bright scenes at cost of higher memory usage.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(1502), EditorDisplay(\"Quality\")")
+    API_FIELD(Attributes="EditorOrder(1502), EditorDisplay(\"Quality\")")
     bool UseHDRProbes = false;
 
     /// <summary>

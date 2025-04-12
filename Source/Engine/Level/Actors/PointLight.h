@@ -33,7 +33,7 @@ public:
     /// <summary>
     /// Whether to use physically based inverse squared distance falloff, where Radius is only clamping the light's contribution.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(13), DefaultValue(false), EditorDisplay(\"Light\")")
+    API_FIELD(Attributes="EditorOrder(13), DefaultValue(false), EditorDisplay(\"Light\")")
     bool UseInverseSquaredFalloff = false;
 
     /// <summary>

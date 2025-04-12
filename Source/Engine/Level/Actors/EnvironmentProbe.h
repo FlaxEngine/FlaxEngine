@@ -42,7 +42,7 @@ public:
     /// <summary>
     /// The reflections texture resolution.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(0), EditorDisplay(\"Probe\")")
+    API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Probe\")")
     ProbeCubemapResolution CubemapResolution = ProbeCubemapResolution::UseGraphicsSettings;
 
     /// <summary>
