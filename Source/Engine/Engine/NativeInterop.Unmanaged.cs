@@ -1017,6 +1017,13 @@ namespace FlaxEngine.Interop
         internal static void UnloadScriptingAssemblyLoadContext()
         {
 #if FLAX_EDITOR
+            // Any of the windows might still process events while GC is blocking, the events
+            // might go through the interop layer and require DelegateHelpers to invoke internal methods.
+            // This seems to happen quite often with OnLostFocus event from debugger stealing the focus
+            // after hitting a breakpoint in the middle of scripting ALC being reloaded.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             // Clear all caches which might hold references to assemblies in collectible ALC
             cachedDelegatesCollectible.Clear();
             foreach (var pair in managedTypesCollectible)
@@ -1048,7 +1055,6 @@ namespace FlaxEngine.Interop
             ArrayFactory.createArrayDelegates.Clear();
 
             FlaxEngine.Json.JsonSerializer.ResetCache();
-            DelegateHelpers.Release();
 
             // Ensure both pools are empty
             ManagedHandle.ManagedHandlePool.TryCollectWeakHandles(true);
@@ -1056,6 +1062,9 @@ namespace FlaxEngine.Interop
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
+
+            // Release these as late as possible in case native code tries to call managed side during cleanup
+            DelegateHelpers.Release();
 
             {
                 // HACK: Workaround for TypeDescriptor holding references to collectible types (https://github.com/dotnet/runtime/issues/30656)
