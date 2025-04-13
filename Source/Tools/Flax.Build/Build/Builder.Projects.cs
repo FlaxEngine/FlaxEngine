@@ -121,17 +121,28 @@ namespace Flax.Build
                         string configurationName = configuration.ToString();
                         foreach (var architecture in target.GetArchitectures(targetPlatform))
                         {
+                            string configurationText = targetName + '.' + platformName + '.' + configurationName;
                             if (!Platform.IsPlatformSupported(targetPlatform, architecture))
                                 continue;
                             var platform = Platform.GetPlatform(targetPlatform, true);
                             if (platform == null)
                                 continue;
                             if (!platform.HasRequiredSDKsInstalled && (!projectInfo.IsCSharpOnlyProject || platform != Platform.BuildPlatform))
+                            {
+                                Log.Verbose($"Skipping configuration {configurationText} for {architecture}: Missing platform SDK");
                                 continue;
-                            if (!platform.CanBuildArchitecture(architecture))
+                            }
+                            if (!projectInfo.IsCSharpOnlyProject && !platform.CanBuildArchitecture(architecture))
+                            {
+                                Log.Verbose($"Skipping configuration {configurationText} for {architecture}: Unsupported target architecture");
                                 continue;
+                            }
+                            if (projectInfo.IsCSharpOnlyProject && !Platform.IsPlatformSupported(platform.Target, architecture))
+                            {
+                                Log.Verbose($"Skipping configuration {configurationText} for {architecture}: Unsupported target architecture");
+                                continue;
+                            }
 
-                            string configurationText = targetName + '.' + platformName + '.' + configurationName;
                             string architectureName = architecture.ToString();
                             if (platform is IProjectCustomizer customizer)
                                 customizer.GetProjectArchitectureName(project, platform, architecture, ref architectureName);
