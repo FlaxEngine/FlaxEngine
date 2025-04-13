@@ -396,7 +396,7 @@ bool ParseFloat(const C* str, T* ret)
 {
     // [Reference: https://stackoverflow.com/a/44741229]
     T result = 0;
-    T sign = *str == '-' ? str++, -1.0 : 1.0;
+    T sign = *str == '-' ? str++, (T)-1.0 : (T)1.0;
     while (*str >= '0' && *str <= '9')
     {
         result *= 10;
@@ -418,7 +418,7 @@ bool ParseFloat(const C* str, T* ret)
     if (*str == 'e' || *str == 'E')
     {
         str++;
-        T powerer = *str == '-' ? str++, 0.1 : 10;
+        T powerer = *str == '-' ? str++, (T)0.1 : (T)10;
         T power = 0;
         while (*str >= '0' && *str <= '9')
         {
