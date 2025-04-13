@@ -97,6 +97,18 @@ public class Editor : EditorModule
             if (path != null && File.Exists(path))
                 options.PrivateDefinitions.Add("USE_VISUAL_STUDIO_DTE");
         }
+
+        // Setup .NET versions range valid for Game Cooker (minimal is the one used by the native runtime)
+        var dotnetSdk = DotNetSdk.Instance;
+        if (dotnetSdk.IsValid)
+        {
+            var sdkVer = dotnetSdk.Version.Major;
+            var minVer = Math.Max(DotNetSdk.MinimumVersion.Major, sdkVer);
+            var maxVer = DotNetSdk.MaximumVersion.Major;
+            options.PrivateDefinitions.Add("GAME_BUILD_DOTNET_RUNTIME_MIN_VER=" + minVer);
+            options.PrivateDefinitions.Add("GAME_BUILD_DOTNET_RUNTIME_MAX_VER=" + DotNetSdk.MaximumVersion.Major);
+            Log.Verbose($"Using Dotnet runtime versions range {minVer}-{maxVer} for Game Cooker");
+        }
     }
 
     /// <inheritdoc />
