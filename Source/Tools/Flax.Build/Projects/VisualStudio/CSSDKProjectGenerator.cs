@@ -174,6 +174,7 @@ namespace Flax.Build.Projects.VisualStudio
                 }
             }
 
+            var rootPath = project.WorkspaceRootPath.Replace('/', '\\') + '\\';
             foreach (var file in files)
             {
                 string fileType;
@@ -185,7 +186,7 @@ namespace Flax.Build.Projects.VisualStudio
                 var filePath = file.Replace('/', '\\'); // Normalize path
                 var projectPath = Utilities.MakePathRelativeTo(filePath, projectDirectory);
                 string linkPath = null;
-                if (projectPath.StartsWith(@"..\..\..\"))
+                if (!filePath.StartsWith(rootPath))
                 {
                     // Create folder structure for project external files
                     var sourceIndex = filePath.LastIndexOf(@"\Source\");
