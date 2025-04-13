@@ -71,7 +71,7 @@ namespace FlaxEditor.GUI.Docking
             settings.Title = title;
             settings.Size = size;
             settings.Position = location;
-            settings.MinimumSize = new Float2(1);
+            settings.MinimumSize = new Float2(200, 150);
             settings.MaximumSize = Float2.Zero; // Unlimited size
             settings.Fullscreen = false;
             settings.HasBorder = true;

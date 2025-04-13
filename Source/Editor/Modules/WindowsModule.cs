@@ -758,6 +758,7 @@ namespace FlaxEditor.Modules
             var settings = CreateWindowSettings.Default;
             settings.Title = "Flax Editor";
             settings.Size = Platform.DesktopSize * 0.75f;
+            settings.MinimumSize = new Float2(200, 150);
             settings.StartPosition = WindowStartPosition.CenterScreen;
             settings.ShowAfterFirstPaint = true;
 #if PLATFORM_WINDOWS
