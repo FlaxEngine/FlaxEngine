@@ -129,6 +129,10 @@ bool DeployDataStep::Perform(CookingData& data)
                 if (version.IsEmpty())
                 {
                     data.Error(TEXT("Failed to find supported .NET hostfxr version for the current host platform."));
+                    if (GAME_BUILD_DOTNET_RUNTIME_MIN_VER == GAME_BUILD_DOTNET_RUNTIME_MAX_VER)
+                        data.Error(String::Format(TEXT("The only supported version is .NET {}. Ensure the version is installed."), GAME_BUILD_DOTNET_RUNTIME_MIN_VER));
+                    else
+                        data.Error(String::Format(TEXT("Minimum supported version is .NET {}, maximum is .NET {}. Ensure the version within that range is installed."), GAME_BUILD_DOTNET_RUNTIME_MIN_VER, GAME_BUILD_DOTNET_RUNTIME_MAX_VER));
                     return true;
                 }
 
@@ -258,7 +262,7 @@ bool DeployDataStep::Perform(CookingData& data)
                         }
                         if (version.IsEmpty())
                         {
-                            data.Error(TEXT("Failed to find supported .NET version for the current host platform."));
+                            data.Error(String::Format(TEXT("Failed to find supported .NET {} version for the current host platform."), GAME_BUILD_DOTNET_RUNTIME_MIN_VER));
                             return true;
                         }
                     }
