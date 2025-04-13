@@ -28,6 +28,26 @@ namespace FlaxEditor.SceneGraph.Actors
         private Transform _selectionPointsTransform;
         private Model _selectionPointsModel;
 
+        /// <summary>
+        /// Wether the model of the static model is one of the primitive models.
+        /// </summary>
+        public bool IsPrimitive
+        {
+            get
+            {
+                Model model = ((StaticModel)Actor).Model;
+
+                if (!model)
+                    return false;
+
+                string modelPath = model.Path;
+                return modelPath.EndsWith("/Primitives/Cube.flax", StringComparison.Ordinal) ||
+                modelPath.EndsWith("/Primitives/Sphere.flax", StringComparison.Ordinal) ||
+                modelPath.EndsWith("/Primitives/Plane.flax", StringComparison.Ordinal) ||
+                modelPath.EndsWith("/Primitives/Capsule.flax", StringComparison.Ordinal);
+            }
+        }
+
         /// <inheritdoc />
         public StaticModelNode(Actor actor)
         : base(actor)
@@ -101,12 +121,41 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.OnContextMenu(contextMenu, window);
 
+            // Check that every selected node is a primitive...
+            var selection = Array.Empty<SceneGraphNode>();
+            if (window is SceneTreeWindow)
+                selection = Editor.Instance.SceneEditing.Selection.ToArray();
+            else if (window is PrefabWindow prefabWindow)
+                selection = prefabWindow.Selection.ToArray();
+
+            bool autoOptionEnabled = true;
+            foreach (var node in selection)
+            {
+                if (node is not StaticModelNode staticModelNode)
+                    continue;
+                if (!((StaticModel)staticModelNode.Actor).Model)
+                    continue;
+                if (!staticModelNode.IsPrimitive)
+                {
+                    autoOptionEnabled = false;
+                    break;
+                }
+            }            
+
             var menu = contextMenu.AddChildMenu("Add collider");
             menu.Enabled = ((StaticModel)Actor).Model != null;
-            menu.ContextMenu.AddButton("Box", () => OnAddCollider(window, CreateBox));
-            menu.ContextMenu.AddButton("Sphere", () => OnAddCollider(window, CreateSphere));
-            menu.ContextMenu.AddButton("Convex", () => OnAddCollider(window, CreateConvex));
-            menu.ContextMenu.AddButton("Triangle Mesh", () => OnAddCollider(window, CreateTriangle));
+            var b = menu.ContextMenu.AddButton("Auto", () => OnAddCollider(window, CreateAuto));
+            b.TooltipText = "Add the best fitting collider to every model that uses an in-built Editor primitive.";
+            // ... and if not, disable the "Auto" option
+            b.Enabled = autoOptionEnabled;
+            b = menu.ContextMenu.AddButton("Box", () => OnAddCollider(window, CreateBox));
+            b.TooltipText = "Add a box collider to every selected model that will auto resize based on the model bounds.";
+            b = menu.ContextMenu.AddButton("Sphere", () => OnAddCollider(window, CreateSphere));
+            b.TooltipText = "Add a sphere collider to every selected model that will auto resize based on the model bounds.";
+            b = menu.ContextMenu.AddButton("Convex", () => OnAddCollider(window, CreateConvex));
+            b.TooltipText = "Generate and add a convex collider for every selected model.";
+            b = menu.ContextMenu.AddButton("Triangle Mesh", () => OnAddCollider(window, CreateTriangle));
+            b.TooltipText = "Generate and add a triangle mesh collider for every selected model.";
         }
 
         /// <inheritdoc />
@@ -150,6 +199,50 @@ namespace FlaxEditor.SceneGraph.Actors
 
         private delegate void Spawner(Collider collider);
         private delegate void CreateCollider(StaticModel actor, Spawner spawner, bool singleNode);
+
+        private void CreateAuto(StaticModel actor, Spawner spawner, bool singleNode)
+        {
+            // Special case for in-built Editor models that can use analytical collision
+            Model model = actor.Model;
+            var modelPath = model.Path;
+            if (modelPath.EndsWith("/Primitives/Cube.flax", StringComparison.Ordinal))
+            {
+                var collider = new BoxCollider
+                {
+                    Transform = actor.Transform,
+                };
+                spawner(collider);
+            }
+            else if (modelPath.EndsWith("/Primitives/Sphere.flax", StringComparison.Ordinal))
+            {
+                var collider = new SphereCollider
+                {
+                    Transform = actor.Transform,
+                };
+                spawner(collider);
+                collider.LocalTransform = Transform.Identity;
+            }
+            else if (modelPath.EndsWith("/Primitives/Plane.flax", StringComparison.Ordinal))
+            {
+                spawner(new BoxCollider
+                {
+                    Transform = actor.Transform,
+                    Size = new Float3(100.0f, 100.0f, 1.0f),
+                });
+            }
+            else if (modelPath.EndsWith("/Primitives/Capsule.flax", StringComparison.Ordinal))
+            {
+                var collider = new CapsuleCollider
+                {
+                    Transform = actor.Transform,
+                    Radius = 25.0f,
+                    Height = 50.0f,
+                };
+                spawner(collider);
+                collider.LocalPosition = new Vector3(0, 50.0f, 0);
+                collider.LocalOrientation = Quaternion.Euler(0, 0, 90.0f);
+            }
+        }
 
         private void CreateBox(StaticModel actor, Spawner spawner, bool singleNode)
         {
@@ -226,50 +319,6 @@ namespace FlaxEditor.SceneGraph.Actors
                     var colliderNode = window is PrefabWindow prefabWindow ? prefabWindow.Graph.Root.Find(collider) : Editor.Instance.Scene.GetActorNode(collider);
                     createdNodes.Add(colliderNode);
                 };
-
-                // Special case for in-built Editor models that can use analytical collision
-                var modelPath = model.Path;
-                if (modelPath.EndsWith("/Primitives/Cube.flax", StringComparison.Ordinal))
-                {
-                    var collider = new BoxCollider
-                    {
-                        Transform = actor.Transform,
-                    };
-                    spawner(collider);
-                    continue;
-                }
-                if (modelPath.EndsWith("/Primitives/Sphere.flax", StringComparison.Ordinal))
-                {
-                    var collider = new SphereCollider
-                    {
-                        Transform = actor.Transform,
-                    };
-                    spawner(collider);
-                    collider.LocalTransform = Transform.Identity;
-                    continue;
-                }
-                if (modelPath.EndsWith("/Primitives/Plane.flax", StringComparison.Ordinal))
-                {
-                    spawner(new BoxCollider
-                    {
-                        Transform = actor.Transform,
-                        Size = new Float3(100.0f, 100.0f, 1.0f),
-                    });
-                    continue;
-                }
-                if (modelPath.EndsWith("/Primitives/Capsule.flax", StringComparison.Ordinal))
-                {
-                    var collider = new CapsuleCollider
-                    {
-                        Transform = actor.Transform,
-                        Radius = 25.0f,
-                        Height = 50.0f,
-                    };
-                    spawner(collider);
-                    collider.LocalPosition = new Vector3(0, 50.0f, 0);
-                    collider.LocalOrientation = Quaternion.Euler(0, 0, 90.0f);
-                    continue;
-                }
 
                 createCollider(actor, spawner, selection.Length == 1);
             }
