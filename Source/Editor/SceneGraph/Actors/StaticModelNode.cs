@@ -8,6 +8,7 @@ using Real = System.Single;
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Windows;
@@ -29,22 +30,20 @@ namespace FlaxEditor.SceneGraph.Actors
         private Model _selectionPointsModel;
 
         /// <summary>
-        /// Wether the model of the static model is one of the primitive models.
+        /// Whether the model of the static model is one of the primitive models (box/sphere/capsule/etc.).
         /// </summary>
         public bool IsPrimitive
         {
             get
             {
                 Model model = ((StaticModel)Actor).Model;
-
                 if (!model)
                     return false;
-
-                string modelPath = model.Path;
-                return modelPath.EndsWith("/Primitives/Cube.flax", StringComparison.Ordinal) ||
-                modelPath.EndsWith("/Primitives/Sphere.flax", StringComparison.Ordinal) ||
-                modelPath.EndsWith("/Primitives/Plane.flax", StringComparison.Ordinal) ||
-                modelPath.EndsWith("/Primitives/Capsule.flax", StringComparison.Ordinal);
+                string path = model.Path;
+                return path.EndsWith("/Primitives/Cube.flax", StringComparison.Ordinal) ||
+                       path.EndsWith("/Primitives/Sphere.flax", StringComparison.Ordinal) ||
+                       path.EndsWith("/Primitives/Plane.flax", StringComparison.Ordinal) ||
+                       path.EndsWith("/Primitives/Capsule.flax", StringComparison.Ordinal);
             }
         }
 
@@ -121,32 +120,22 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.OnContextMenu(contextMenu, window);
 
-            // Check that every selected node is a primitive...
-            var selection = Array.Empty<SceneGraphNode>();
-            if (window is SceneTreeWindow)
-                selection = Editor.Instance.SceneEditing.Selection.ToArray();
-            else if (window is PrefabWindow prefabWindow)
-                selection = prefabWindow.Selection.ToArray();
-
+            // Check if every selected node is a primitive
+            var selection = GetSelection(window);
             bool autoOptionEnabled = true;
             foreach (var node in selection)
             {
-                if (node is not StaticModelNode staticModelNode)
-                    continue;
-                if (!((StaticModel)staticModelNode.Actor).Model)
-                    continue;
-                if (!staticModelNode.IsPrimitive)
+                if (node is StaticModelNode staticModelNode && !staticModelNode.IsPrimitive)
                 {
                     autoOptionEnabled = false;
                     break;
                 }
-            }            
+            }
 
             var menu = contextMenu.AddChildMenu("Add collider");
             menu.Enabled = ((StaticModel)Actor).Model != null;
             var b = menu.ContextMenu.AddButton("Auto", () => OnAddCollider(window, CreateAuto));
             b.TooltipText = "Add the best fitting collider to every model that uses an in-built Editor primitive.";
-            // ... and if not, disable the "Auto" option
             b.Enabled = autoOptionEnabled;
             b = menu.ContextMenu.AddButton("Box", () => OnAddCollider(window, CreateBox));
             b.TooltipText = "Add a box collider to every selected model that will auto resize based on the model bounds.";
@@ -166,8 +155,8 @@ namespace FlaxEditor.SceneGraph.Actors
                 // Try to use cache
                 var model = sm.Model;
                 var transform = Actor.Transform;
-                if (_selectionPoints != null && 
-                    _selectionPointsTransform == transform && 
+                if (_selectionPoints != null &&
+                    _selectionPointsTransform == transform &&
                     _selectionPointsModel == model)
                     return _selectionPoints;
                 Profiler.BeginEvent("GetActorSelectionPoints");
@@ -198,7 +187,17 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         private delegate void Spawner(Collider collider);
+
         private delegate void CreateCollider(StaticModel actor, Spawner spawner, bool singleNode);
+
+        private IEnumerable<SceneGraphNode> GetSelection(EditorWindow window)
+        {
+            if (window is SceneTreeWindow)
+                return Editor.Instance.SceneEditing.Selection;
+            if (window is PrefabWindow prefabWindow)
+                return prefabWindow.Selection;
+            return Array.Empty<SceneGraphNode>();
+        }
 
         private void CreateAuto(StaticModel actor, Spawner spawner, bool singleNode)
         {
@@ -296,13 +295,8 @@ namespace FlaxEditor.SceneGraph.Actors
 
         private void OnAddCollider(EditorWindow window, CreateCollider createCollider)
         {
-            // Allow collider to be added to evey static model selection
-            var selection = Array.Empty<SceneGraphNode>();
-            if (window is SceneTreeWindow)
-                selection = Editor.Instance.SceneEditing.Selection.ToArray();
-            else if (window is PrefabWindow prefabWindow)
-                selection = prefabWindow.Selection.ToArray();
-
+            // Allow collider to be added to every static model selection
+            var selection = GetSelection(window).ToArray();
             var createdNodes = new List<SceneGraphNode>();
             foreach (var node in selection)
             {
