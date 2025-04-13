@@ -34,7 +34,7 @@ jobs:
         dotnet workload --info
     - name: Build
       run: |
-        .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output
+        .\PackageEditor.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=8
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
@@ -67,7 +67,7 @@ jobs:
         dotnet workload --info
     - name: Build
       run: |
-        .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output
+        .\PackagePlatforms.bat -arch=x64 -platform=Windows -deployOutput=Output -dotnet=8
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
@@ -100,7 +100,7 @@ jobs:
         dotnet workload --info
     - name: Build
       run: |
-        ./PackageEditor.sh -arch=x64 -platform=Linux -deployOutput=Output
+        ./PackageEditor.sh -arch=x64 -platform=Linux -deployOutput=Output -dotnet=8
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
@@ -131,7 +131,7 @@ jobs:
         dotnet workload --info
     - name: Build
       run: |
-        ./PackagePlatforms.sh -arch=x64 -platform=Linux -deployOutput=Output
+        ./PackagePlatforms.sh -arch=x64 -platform=Linux -deployOutput=Output -dotnet=8
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
@@ -161,7 +161,7 @@ jobs:
         dotnet workload --info
     - name: Build
       run: |
-        ./PackageEditor.command -arch=ARM64 -platform=Mac -deployOutput=Output
+        ./PackageEditor.command -arch=ARM64 -platform=Mac -deployOutput=Output -dotnet=8
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
@@ -189,7 +189,7 @@ jobs:
         dotnet workload --info
     - name: Build
       run: |
-        ./PackagePlatforms.command -arch=ARM64 -platform=Mac -deployOutput=Output
+        ./PackagePlatforms.command -arch=ARM64 -platform=Mac -deployOutput=Output -dotnet=8
     - name: Upload
       uses: actions/upload-artifact@v4
       with:
