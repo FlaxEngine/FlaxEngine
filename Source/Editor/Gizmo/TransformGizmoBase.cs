@@ -42,7 +42,6 @@ namespace FlaxEditor.Gizmo
         private Vector3 _intersectPosition;
         private bool _isActive;
         private bool _isDuplicating;
-        private bool _hasAbsoluteSnapped;
 
         private bool _isTransforming;
         private bool _isSelected;
@@ -390,10 +389,9 @@ namespace FlaxEditor.Gizmo
                 }
 
                 Vector3 absoluteDelta = Vector3.Zero;
-                if (!_hasAbsoluteSnapped && AbsoluteSnapEnabled && ActiveTransformSpace == TransformSpace.World)
+                if (AbsoluteSnapEnabled && ActiveTransformSpace == TransformSpace.World)
                 {
                     // Remove delta to offset local-space grid into the world-space grid
-                    _hasAbsoluteSnapped = true;
                     Vector3 currentTranslationScale = isScaling ? GetSelectedTransform(0).Scale : GetSelectedTransform(0).Translation; 
                     absoluteDelta = currentTranslationScale - new Vector3(
                         Mathr.Round(currentTranslationScale.X / snapValue.X) * snapValue.X,
@@ -407,10 +405,6 @@ namespace FlaxEditor.Gizmo
                                     (int)(_translationScaleSnapDelta.Z / snapValue.Z) * snapValue.Z);
                 _translationScaleSnapDelta -= delta;
                 delta -= absoluteDelta;
-            }
-            else
-            {
-                _hasAbsoluteSnapped = false;
             }
 
             if (_activeMode == Mode.Translate)
@@ -442,10 +436,9 @@ namespace FlaxEditor.Gizmo
                 float snapValue = RotationSnapValue * Mathf.DegreesToRadians;
 
                 float absoluteDelta = 0.0f;
-                if (!_hasAbsoluteSnapped && AbsoluteSnapEnabled && ActiveTransformSpace == TransformSpace.World)
+                if (AbsoluteSnapEnabled && ActiveTransformSpace == TransformSpace.World)
                 {
                     // Remove delta to offset world-space grid into the local-space grid
-                    _hasAbsoluteSnapped = true;
                     float currentAngle = 0.0f;
                     switch (_activeAxis)
                     {
@@ -463,10 +456,6 @@ namespace FlaxEditor.Gizmo
 
                 delta = snapped;
                 delta -= absoluteDelta * Mathf.DegreesToRadians;
-            }
-            else
-            {
-                _hasAbsoluteSnapped = false;
             }
 
             switch (_activeAxis)
