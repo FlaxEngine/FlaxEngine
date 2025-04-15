@@ -653,6 +653,8 @@ bool Asset::OnCheckSave(const StringView& path) const
     if (LastLoadFailed())
     {
         LOG(Warning, "Saving asset that failed to load.");
+        if (path.IsEmpty())
+            return false;
     }
     if (WaitForLoaded())
     {
