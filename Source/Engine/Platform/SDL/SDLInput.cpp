@@ -541,6 +541,11 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
     case SDL_EVENT_MOUSE_BUTTON_UP:
     {
         Float2 mousePos = window->ClientToScreen({ event.button.x, event.button.y });
+
+        // In case of activating the window from non-focused state, we might not have received the motion event yet
+        if (!Input::Mouse->IsRelative() && event.button.down)
+            Input::Mouse->OnMouseMove(mousePos, window);
+
         MouseButton button = MouseButton::None;
         if (event.button.button == SDL_BUTTON_LEFT)
             button = MouseButton::Left;
