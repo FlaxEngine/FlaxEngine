@@ -349,13 +349,22 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
         LOG(Error, "Vulkan swapchain dimensions are invalid {}x{} (minImageExtent={}x{}, maxImageExtent={}x{})", width, height, surfProperties.minImageExtent.width, surfProperties.minImageExtent.height, surfProperties.maxImageExtent.width, surfProperties.maxImageExtent.height);
         return true;
     }
+
+    uint32_t backbuffersCount = VULKAN_BACK_BUFFERS_COUNT;
+#if PLATFORM_SDL && PLATFORM_LINUX && USE_EDITOR
+    // Wayland compositor might block one of the backbuffers while the window is minimized or fully occluded,
+    // make sure we have at least 3 backbuffers available so double-buffering can be used while we are blocked.
+    if (Platform::UsesWayland())
+        backbuffersCount = Math::Max<uint32_t>(backbuffersCount, 3);
+#endif
+    
     ASSERT(surfProperties.minImageCount <= VULKAN_BACK_BUFFERS_COUNT_MAX);
     VkSwapchainCreateInfoKHR swapChainInfo;
     RenderToolsVulkan::ZeroStruct(swapChainInfo, VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR);
     swapChainInfo.surface = _surface;
     swapChainInfo.minImageCount = surfProperties.maxImageCount > 0 // A value of 0 means that there is no limit on the number of image
-                                      ? Math::Min<uint32_t>(VULKAN_BACK_BUFFERS_COUNT, surfProperties.maxImageCount)
-                                      : VULKAN_BACK_BUFFERS_COUNT;
+                                      ? Math::Min<uint32_t>(backbuffersCount, surfProperties.maxImageCount)
+                                      : backbuffersCount;
     swapChainInfo.minImageCount = Math::Max<uint32_t>(swapChainInfo.minImageCount, surfProperties.minImageCount);
     swapChainInfo.minImageCount = Math::Min<uint32_t>(swapChainInfo.minImageCount, VULKAN_BACK_BUFFERS_COUNT_MAX);
     swapChainInfo.imageFormat = result.format;
