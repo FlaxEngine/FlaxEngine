@@ -1570,13 +1570,10 @@ namespace FlaxEditor.Viewport
 
             // Get parent window
             var win = (WindowRootControl)Root;
-
-            // Get current mouse position in the view
+            if (win.IsFocused)
             {
-                // When the window is not focused, the position in window does not return sane values
-                Float2 pos = PointFromWindow(win.MousePosition);
-                if (!float.IsInfinity(pos.LengthSquared))
-                    _viewMousePos = pos;
+                // Get current mouse position in the view
+                _viewMousePos = PointFromWindow(win.MousePosition);
             }
 
             // Update input
@@ -1594,8 +1591,8 @@ namespace FlaxEditor.Viewport
                         EndMouseCapture();
                 }
 #if PLATFORM_SDL
-                bool useMouse = IsControllingMouse || true;
                 _prevInput = _input;
+                bool useMouse = IsControllingMouse || ContainsPoint(ref _viewMousePos) || _prevInput.IsControllingMouse;
                 if (canUseInput && ContainsFocus)
                     _input.Gather(win.Window, useMouse, ref _prevInput);
                 else
