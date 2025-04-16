@@ -309,10 +309,11 @@ float3 AOMultiBounce(float visibility, float3 albedo)
 
 float2 Flipbook(float2 uv, float frame, float2 sizeXY, float2 flipXY = 0.0f)
 {
-    float2 frameXY = float2((uint)frame / (uint)sizeXY.y, (uint)frame / (uint)sizeXY.x);
-    float2 flipFrameXY = sizeXY - frameXY - float2(1, 1);
-    frameXY = lerp(frameXY, flipFrameXY, flipXY);
-    return (uv + frameXY) / sizeXY;
+    uint tile = (uint)fmod(frame, sizeXY.x * sizeXY.y);
+    float2 tileCount = float2(1.0, 1.0) / sizeXY;
+    float tileY = abs(flipXY.y * sizeXY.y - (floor(tile * tileCount.x) + flipXY.y * 1));
+    float tileX = abs(flipXY.x * sizeXY.x - ((tile - sizeXY.x * floor(tile * tileCount.x)) + flipXY.x * 1));
+    return (uv + float2(tileX, tileY)) * tileCount;
 }
 
 // Calculates the world-position offset to stabilize tiling (eg. via triplanar mapping) due to Large Worlds view origin offset.
