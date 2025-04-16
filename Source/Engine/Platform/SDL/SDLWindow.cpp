@@ -231,6 +231,9 @@ SDLWindow::~SDLWindow()
 
     if (_window == nullptr)
         return;
+
+    if (Input::Mouse != nullptr && Input::Mouse->IsRelative(this))
+        Input::Mouse->SetRelativeMode(false, this);
     
     SDL_StopTextInput(_window);
     SDL_DestroyWindow(_window);
