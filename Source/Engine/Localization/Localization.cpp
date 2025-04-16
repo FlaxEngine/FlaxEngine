@@ -34,13 +34,20 @@ public:
         if (id.IsEmpty())
             return fallback;
 
+#define TRY_RETURN(messages) \
+        if (messages && messages->Count() > index) \
+        { \
+            const String& result = messages->At(index); \
+            if (result.HasChars()) \
+                return result; \
+        }
+
         // Try current tables
         for (auto& e : LocalizedStringTables)
         {
             const auto table = e.Get();
             const auto messages = table ? table->Entries.TryGet(id) : nullptr;
-            if (messages && messages->Count() > index)
-                return messages->At(index);
+            TRY_RETURN(messages);
         }
 
         // Try fallback tables for current tables
@@ -49,8 +56,7 @@ public:
             const auto table = e.Get();
             const auto fallbackTable = table ? table->FallbackTable.Get() : nullptr;
             const auto messages = fallbackTable ? fallbackTable->Entries.TryGet(id) : nullptr;
-            if (messages && messages->Count() > index)
-                return messages->At(index);
+            TRY_RETURN(messages);
         }
 
         // Try fallback language tables
@@ -58,8 +64,7 @@ public:
         {
             const auto table = e.Get();
             const auto messages = table ? table->Entries.TryGet(id) : nullptr;
-            if (messages && messages->Count() > index)
-                return messages->At(index);
+            TRY_RETURN(messages);
         }
 
         return fallback;
