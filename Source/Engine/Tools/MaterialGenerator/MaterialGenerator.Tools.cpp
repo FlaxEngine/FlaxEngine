@@ -49,7 +49,19 @@ void MaterialGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
     // Time
     case 3:
     {
-        value = getTime;
+        switch (box->ID)
+        {
+        // Scaled Time
+        case 0:
+            value = getScaledTime;
+            break;
+        // Unscaled Time
+        case 1:
+            value = getUnscaledTime;
+            break;
+        default:
+            break;
+        }
         break;
     }
     // Panner
@@ -57,7 +69,7 @@ void MaterialGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
     {
         // Get inputs
         const Value uv = tryGetValue(node->GetBox(0), getUVs).AsFloat2();
-        const Value time = tryGetValue(node->GetBox(1), getTime).AsFloat();
+        const Value time = tryGetValue(node->GetBox(1), getUnscaledTime).AsFloat();
         const Value speed = tryGetValue(node->GetBox(2), Value::One).AsFloat2();
         const bool useFractionalPart = (bool)node->Values[0];
 
