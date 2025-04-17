@@ -17,8 +17,8 @@ class GPUTasksContext
 protected:
     CriticalSection _locker;
     GPUSyncPoint _currentSyncPoint;
-    Array<GPUTask*> _tasksDone;
-    int32 _totalTasksDoneCount;
+    int32 _totalTasksDoneCount = 0;
+    Array<GPUTask*, InlinedAllocation<64>> _tasksSyncing;
 
 public:
     /// <summary>

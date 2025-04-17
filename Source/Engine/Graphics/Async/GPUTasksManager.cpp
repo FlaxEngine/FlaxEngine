@@ -7,16 +7,6 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Graphics/GPUDevice.h"
 
-GPUTask::~GPUTask()
-{
-    // Ensure to dereference task
-    if (auto context = _context)
-    {
-        _context = nullptr;
-        context->OnCancelSync(this);
-    }
-}
-
 void GPUTask::Execute(GPUTasksContext* context)
 {
     ASSERT(IsQueued() && _context == nullptr);
@@ -56,6 +46,21 @@ String GPUTask::ToString() const
 void GPUTask::Enqueue()
 {
     GPUDevice::Instance->GetTasksManager()->_tasks.Add(this);
+}
+
+void GPUTask::OnCancel()
+{
+    // Check if task is waiting for sync (very likely situation)
+    if (IsSyncing())
+    {
+        // Task has been performed but is waiting for a CPU/GPU sync so we have to cancel that
+        ASSERT(_context != nullptr);
+        _context->OnCancelSync(this);
+        _context = nullptr;
+    }
+
+    // Base
+    Task::OnCancel();
 }
 
 GPUTasksManager::GPUTasksManager()
