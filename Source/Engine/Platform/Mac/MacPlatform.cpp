@@ -305,15 +305,14 @@ void MacPlatform::LogInfo()
 {
     ApplePlatform::LogInfo();
 
-    char str[250];
-    size_t strSize = sizeof(str);
-    if (sysctlbyname("kern.osrelease", str, &strSize, nullptr, 0) != 0)
-        str[0] = 0;
-    String osRelease(str);
-    if (sysctlbyname("kern.osproductversion", str, &strSize, nullptr, 0) != 0)
-        str[0] = 0;
-    String osProductVer(str);
-    LOG(Info, "macOS {1} (kernel {0})", osRelease, osProductVer);
+    constexpr int32 BufferSize = 250;
+    char osRelease[BufferSize], osProductVer[BufferSize];
+    size_t strSize = BufferSize;
+    if (sysctlbyname("kern.osrelease", osRelease, &strSize, nullptr, 0) != 0)
+        osRelease[0] = 0;
+    if (sysctlbyname("kern.osproductversion", osProductVer, &strSize, nullptr, 0) != 0)
+        osProductVer[0] = 0;
+    LOG(Info, "macOS {1} (kernel {0})", StringAsUTF16<BufferSize>(osRelease).Get(), StringAsUTF16<BufferSize>(osProductVer).Get());
 }
 
 void MacPlatform::BeforeRun()
