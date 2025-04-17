@@ -13,7 +13,7 @@ namespace FlaxEditor
     /// <seealso cref="FlaxEditor.CustomEditors.CustomEditor" />
     public abstract class CustomEditorWindow : CustomEditor
     {
-        private class Win : EditorWindow
+        internal class Win : EditorWindow
         {
             private readonly CustomEditorPresenter _presenter;
             private CustomEditorWindow _customEditor;
