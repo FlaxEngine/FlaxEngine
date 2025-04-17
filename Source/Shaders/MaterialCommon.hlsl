@@ -309,7 +309,7 @@ float3 AOMultiBounce(float visibility, float3 albedo)
 
 float2 Flipbook(float2 uv, float frame, float2 sizeXY, float2 flipXY = 0.0f)
 {
-    float tile = fmod(frame, sizeXY.x * sizeXY.y);
+    float tile = (int)fmod(frame, sizeXY.x * sizeXY.y);
     float2 tileCount = float2(1.0, 1.0) / sizeXY;
     float tileY = abs(flipXY.y * sizeXY.y - (floor(tile * tileCount.x) + flipXY.y * 1));
     float tileX = abs(flipXY.x * sizeXY.x - ((tile - sizeXY.x * floor(tile * tileCount.x)) + flipXY.x * 1));
