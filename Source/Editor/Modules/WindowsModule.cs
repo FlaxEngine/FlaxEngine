@@ -38,7 +38,7 @@ namespace FlaxEditor.Modules
         {
             public string AssemblyName;
             public string TypeName;
-            
+
             public DockState DockState;
             public DockPanel DockedTo;
             public int DockedTabIndex;
@@ -889,7 +889,7 @@ namespace FlaxEditor.Modules
                     var assembly = Utils.GetAssemblyByName(winData.AssemblyName);
                     if (assembly == null)
                         continue;
-                    
+
                     var type = assembly.GetType(winData.TypeName);
                     if (type == null)
                         continue;
@@ -1037,9 +1037,11 @@ namespace FlaxEditor.Modules
             MainWindow = null;
 
             // Capture project icon screenshot (not in play mode and if editor was used for some time)
-            if (!Editor.StateMachine.IsPlayMode && 
-                Time.TimeSinceStartup >= 5.0f && 
-                !Editor.IsHeadlessMode && 
+            if (!Editor.StateMachine.IsPlayMode &&
+                Time.TimeSinceStartup >= 5.0f &&
+                !Editor.IsHeadlessMode &&
+                EditWin.Viewport.Task != null &&
+                EditWin.Viewport.Task.LastUsedFrame > 100 &&
                 GPUDevice.Instance?.RendererType != RendererType.Null)
             {
                 Editor.Log("Capture project icon screenshot");
