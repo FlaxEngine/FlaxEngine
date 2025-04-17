@@ -52,6 +52,7 @@ bool Editor::CheckProjectUpgrade()
     // Load version cache file
     struct VersionCache
     {
+        // When changing this ensure that Flax Launcher properly reads the version
         int32 Major = FLAXENGINE_VERSION_MAJOR;
         int32 Minor = FLAXENGINE_VERSION_MINOR;
         int32 Build = FLAXENGINE_VERSION_BUILD;
