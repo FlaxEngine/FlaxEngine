@@ -1206,7 +1206,9 @@ void InputService::Update()
     const auto lockMode = Screen::GetCursorLock();
     if (lockMode == CursorLockMode::Locked)
     {
-        Input::SetMousePosition(Screen::GetSize() * 0.5f);
+        const Float2 pos = Screen::ScreenToGameViewport(Screen::GetSize() * 0.5f) - 
+                           Screen::ScreenToGameViewport(Float2::Zero);
+        Input::SetMousePosition(pos);
     }
 
     // Send events for the active actions and axes (send events only in play mode)
