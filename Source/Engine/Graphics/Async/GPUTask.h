@@ -58,6 +58,8 @@ protected:
     {
     }
 
+    ~GPUTask();
+
 public:
     /// <summary>
     /// Gets a task type.

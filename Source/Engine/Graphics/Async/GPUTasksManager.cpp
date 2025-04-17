@@ -7,6 +7,16 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Graphics/GPUDevice.h"
 
+GPUTask::~GPUTask()
+{
+    // Ensure to dereference task
+    if (auto context = _context)
+    {
+        _context = nullptr;
+        context->OnCancelSync(this);
+    }
+}
+
 void GPUTask::Execute(GPUTasksContext* context)
 {
     ASSERT(IsQueued() && _context == nullptr);
