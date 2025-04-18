@@ -64,8 +64,8 @@ namespace FlaxEngine
                    && DecalBlendingMode == other.DecalBlendingMode
                    && TransparentLightingMode == other.TransparentLightingMode
                    && PostFxLocation == other.PostFxLocation
-                   && Mathf.NearEqual(MaskThreshold, other.MaskThreshold)
-                   && Mathf.NearEqual(OpacityThreshold, other.OpacityThreshold)
+                   && MaskThreshold == other.MaskThreshold
+                   && OpacityThreshold == other.OpacityThreshold
                    && TessellationMode == other.TessellationMode
                    && MaxTessellationFactor == other.MaxTessellationFactor;
         }

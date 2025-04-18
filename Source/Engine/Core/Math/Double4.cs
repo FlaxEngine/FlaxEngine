@@ -1258,7 +1258,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Double4 left, Double4 right)
         {
-            return Mathd.NearEqual(left.X, right.X) && Mathd.NearEqual(left.Y, right.Y) && Mathd.NearEqual(left.Z, right.Z) && Mathd.NearEqual(left.W, right.W);
+            return left.Equals(ref right);
         }
 
         /// <summary>
@@ -1379,7 +1379,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="Double4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public bool Equals(ref Double4 other)
         {
-            return Mathd.NearEqual(other.X, X) && Mathd.NearEqual(other.Y, Y) && Mathd.NearEqual(other.Z, Z) && Mathd.NearEqual(other.W, W);
+            return X == other.X && Y == other.Y && Z == other.Z && W == other.W;
         }
 
         /// <summary>
@@ -1390,7 +1390,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Double4 other)
         {
-            return Mathd.NearEqual(other.X, X) && Mathd.NearEqual(other.Y, Y) && Mathd.NearEqual(other.Z, Z) && Mathd.NearEqual(other.W, W);
+            return Equals(ref other);
         }
 
         /// <summary>
@@ -1400,7 +1400,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            return value is Double4 other && Mathd.NearEqual(other.X, X) && Mathd.NearEqual(other.Y, Y) && Mathd.NearEqual(other.Z, Z) && Mathd.NearEqual(other.W, W);
+            return value is Double4 other && Equals(ref other);
         }
     }
 }

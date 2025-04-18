@@ -1602,7 +1602,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Quaternion left, Quaternion right)
         {
-            return Dot(ref left, ref right) > Tolerance;
+            return left.Equals(ref right);
         }
 
         /// <summary>
@@ -1614,7 +1614,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Quaternion left, Quaternion right)
         {
-            return Dot(ref left, ref right) <= Tolerance;
+            return !left.Equals(ref right);
         }
 
         /// <summary>
@@ -1714,8 +1714,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Quaternion other)
         {
-            //return Dot(ref this, ref other) > Tolerance;
-            return Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z) && Mathf.NearEqual(other.W, W);
+            return X == other.X && Y == other.Y && Z == other.Z && W == other.W;
         }
 
         /// <summary>
@@ -1736,10 +1735,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            if (!(value is Quaternion))
-                return false;
-            var strongValue = (Quaternion)value;
-            return Equals(ref strongValue);
+            return value is Quaternion other && Equals(ref other);
         }
     }
 }
