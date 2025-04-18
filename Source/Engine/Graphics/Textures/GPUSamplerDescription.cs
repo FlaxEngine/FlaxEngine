@@ -40,9 +40,9 @@ namespace FlaxEngine
                    AddressU == other.AddressU &&
                    AddressV == other.AddressV &&
                    AddressW == other.AddressW &&
-                   Mathf.NearEqual(MipBias, other.MipBias) &&
-                   Mathf.NearEqual(MinMipLevel, other.MinMipLevel) &&
-                   Mathf.NearEqual(MaxMipLevel, other.MaxMipLevel) &&
+                   MipBias == other.MipBias &&
+                   MinMipLevel == other.MinMipLevel &&
+                   MaxMipLevel == other.MaxMipLevel &&
                    MaxAnisotropy == other.MaxAnisotropy &&
                    BorderColor == other.BorderColor &&
                    ComparisonFunction == other.ComparisonFunction;

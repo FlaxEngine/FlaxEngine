@@ -483,7 +483,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="Matrix2x2"/> is equal to this instance; otherwise, <c>false</c>.</returns>
         public bool Equals(ref Matrix2x2 other)
         {
-            return Mathf.NearEqual(other.M11, M11) && Mathf.NearEqual(other.M12, M12) && Mathf.NearEqual(other.M21, M21) && Mathf.NearEqual(other.M22, M22);
+            return M11 == other.M11 && M12 == other.M12 && M21 == other.M21 && M22 == other.M22;
         }
 
         /// <summary>
@@ -502,7 +502,7 @@ namespace FlaxEngine
         /// </summary>
         public static bool Equals(ref Matrix2x2 a, ref Matrix2x2 b)
         {
-            return Mathf.NearEqual(a.M11, b.M11) && Mathf.NearEqual(a.M12, b.M12) && Mathf.NearEqual(a.M21, b.M21) && Mathf.NearEqual(a.M22, b.M22);
+            return a.Equals(ref b);
         }
 
         /// <summary>

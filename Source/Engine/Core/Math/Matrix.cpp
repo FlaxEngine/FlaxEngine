@@ -163,7 +163,7 @@ bool Matrix::operator==(const Matrix& other) const
 {
     for (int32 i = 0; i < 16; i++)
     {
-        if (Math::NotNearEqual(other.Raw[i], Raw[i]))
+        if (other.Raw[i] != Raw[i])
             return false;
     }
     return true;

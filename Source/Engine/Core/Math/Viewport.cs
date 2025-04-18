@@ -173,12 +173,12 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="Viewport"/> is equal to this instance; otherwise, <c>false</c>.</returns>
         public bool Equals(ref Viewport other)
         {
-            return Mathf.NearEqual(X, other.X) &&
-                   Mathf.NearEqual(Y, other.Y) &&
-                   Mathf.NearEqual(Width, other.Width) &&
-                   Mathf.NearEqual(Height, other.Height) &&
-                   Mathf.NearEqual(MinDepth, other.MinDepth) &&
-                   Mathf.NearEqual(MaxDepth, other.MaxDepth);
+            return X == other.X &&
+                   Y == other.Y &&
+                   Width == other.Width &&
+                   Height == other.Height &&
+                   MinDepth == other.MinDepth &&
+                   MaxDepth == other.MaxDepth;
         }
 
         /// <summary>

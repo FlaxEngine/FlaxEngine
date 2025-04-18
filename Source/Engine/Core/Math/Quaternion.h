@@ -348,7 +348,7 @@ public:
     /// <returns><c>true</c> if the specified <see cref="Quaternion" /> is equal to this instance; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool operator==(const Quaternion& other) const
     {
-        return Dot(*this, other) > Tolerance;
+        return X == other.X && Y == other.Y && Z == other.Z && W == other.W;
     }
 
     /// <summary>
@@ -358,7 +358,7 @@ public:
     /// <returns><c>true</c> if the specified <see cref="Quaternion" /> isn't equal to this instance; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool operator!=(const Quaternion& other) const
     {
-        return Dot(*this, other) < Tolerance;
+        return X != other.X || Y != other.Y || Z != other.Z || W != other.W;
     }
 
 public:

@@ -24,8 +24,8 @@ bool MaterialInfo8::operator==(const MaterialInfo8& other) const
             && TransparentLighting == other.TransparentLighting
             && DecalBlendingMode == other.DecalBlendingMode
             && PostFxLocation == other.PostFxLocation
-            && Math::NearEqual(MaskThreshold, other.MaskThreshold)
-            && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
+            && MaskThreshold == other.MaskThreshold
+            && OpacityThreshold == other.OpacityThreshold
             && Flags == other.Flags
             && TessellationMode == other.TessellationMode
             && MaxTessellationFactor == other.MaxTessellationFactor;
@@ -89,8 +89,8 @@ bool MaterialInfo9::operator==(const MaterialInfo9& other) const
             && DecalBlendingMode == other.DecalBlendingMode
             && PostFxLocation == other.PostFxLocation
             && CullMode == other.CullMode
-            && Math::NearEqual(MaskThreshold, other.MaskThreshold)
-            && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
+            && MaskThreshold == other.MaskThreshold
+            && OpacityThreshold == other.OpacityThreshold
             && TessellationMode == other.TessellationMode
             && MaxTessellationFactor == other.MaxTessellationFactor;
 }
@@ -123,8 +123,8 @@ bool MaterialInfo::operator==(const MaterialInfo& other) const
             && TransparentLightingMode == other.TransparentLightingMode
             && PostFxLocation == other.PostFxLocation
             && CullMode == other.CullMode
-            && Math::NearEqual(MaskThreshold, other.MaskThreshold)
-            && Math::NearEqual(OpacityThreshold, other.OpacityThreshold)
+            && MaskThreshold == other.MaskThreshold
+            && OpacityThreshold == other.OpacityThreshold
             && TessellationMode == other.TessellationMode
             && MaxTessellationFactor == other.MaxTessellationFactor;
 }
