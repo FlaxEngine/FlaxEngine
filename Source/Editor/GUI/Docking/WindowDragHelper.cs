@@ -32,9 +32,15 @@ namespace FlaxEditor.GUI.Docking
         /// The opacity of the dragged window when hint controls are shown.
         /// </summary>
         public const float DragWindowOpacity = 0.4f;
+        
+        /// <summary>
+        /// Returns true if any windows are being dragged.
+        /// </summary>
+        public static bool IsDragActive { get; private set; }
 
         private WindowDragHelper(FloatWindowDockPanel toMove, Window dragSourceWindow)
         {
+            IsDragActive = true;
             _toMove = toMove;
             _toSet = DockState.Float;
             var window = toMove.Window.Window;
@@ -72,6 +78,7 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         public void Dispose()
         {
+            IsDragActive = false;
             var window = _toMove?.Window?.Window;
 
             // Unbind events

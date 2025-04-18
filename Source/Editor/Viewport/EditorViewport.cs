@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Docking;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.Options;
 using FlaxEditor.Viewport.Cameras;
@@ -1578,7 +1579,7 @@ namespace FlaxEditor.Viewport
 
             // Update input
             var window = win.Window;
-            var canUseInput = window != null && window.IsFocused && window.IsForegroundWindow;
+            var canUseInput = window != null && window.IsFocused && window.IsForegroundWindow && !WindowDragHelper.IsDragActive;
             {
                 // Get input buttons and keys (skip if viewport has no focus or mouse is over a child control)
                 var isViewportControllingMouse = canUseInput && IsControllingMouse;
