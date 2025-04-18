@@ -17,10 +17,10 @@ namespace FlaxEngine.Tests
         [Test]
         public void TestEuler()
         {
-            Assert.AreEqual(Quaternion.Euler(90, 0, 0), new Quaternion(0.7071068f, 0, 0, 0.7071068f));
-            Assert.AreEqual(Quaternion.Euler(25, 0, 10), new Quaternion(0.215616f, -0.018864f, 0.0850898f, 0.9725809f));
-            Assert.AreEqual(new Float3(25, 0, 10), Quaternion.Euler(25, 0, 10).EulerAngles);
-            Assert.AreEqual(new Float3(25, -5, 10), Quaternion.Euler(25, -5, 10).EulerAngles);
+            Assert.IsTrue(Quaternion.NearEqual(Quaternion.Euler(90, 0, 0), new Quaternion(0.7071068f, 0, 0, 0.7071068f)));
+            Assert.IsTrue(Quaternion.NearEqual(Quaternion.Euler(25, 0, 10), new Quaternion(0.215616f, -0.018864f, 0.0850898f, 0.9725809f)));
+            Assert.IsTrue(Float3.NearEqual(new Float3(25, 0, 10), Quaternion.Euler(25, 0, 10).EulerAngles, 0.00001f));
+            Assert.IsTrue(Float3.NearEqual(new Float3(25, -5, 10), Quaternion.Euler(25, -5, 10).EulerAngles, 0.00001f));
         }
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace FlaxEngine.Tests
             var delta = Quaternion.Euler(0, 10, 0);
             for (int i = 0; i < 9; i++)
                 q *= delta;
-            Assert.AreEqual(Quaternion.Euler(0, 90, 0), q);
+            Assert.IsTrue(Quaternion.NearEqual(Quaternion.Euler(0, 90, 0), q));
         }
     }
 }
