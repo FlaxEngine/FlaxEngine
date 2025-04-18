@@ -132,7 +132,7 @@ namespace FlaxEngine.GUI
             set
             {
                 value = Mathf.Clamp(value, _minimum, _maximum);
-                if (!Mathf.NearEqual(value, _targetValue))
+                if (value != _targetValue)
                 {
                     _targetValue = value;
                     _startValue = _value;
@@ -163,7 +163,7 @@ namespace FlaxEngine.GUI
             set
             {
                 value = Mathf.Clamp(value, _minimum, _maximum);
-                if (!Mathf.NearEqual(value, _targetValue))
+                if (value != _targetValue)
                 {
                     _targetValue = value;
                     _value = value;
@@ -237,7 +237,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         public void FastScroll()
         {
-            if (!Mathf.NearEqual(_value, _targetValue))
+            if (_value != _targetValue)
             {
                 _value = _targetValue = _startValue;
                 _scrollAnimationProgress = 0f;

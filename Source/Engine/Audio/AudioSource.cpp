@@ -29,7 +29,7 @@ AudioSource::AudioSource(const SpawnParams& params)
 void AudioSource::SetVolume(float value)
 {
     value = Math::Saturate(value);
-    if (Math::NearEqual(_volume, value))
+    if (_volume == value)
         return;
     _volume = value;
     if (SourceID)
@@ -39,7 +39,7 @@ void AudioSource::SetVolume(float value)
 void AudioSource::SetPitch(float value)
 {
     value = Math::Clamp(value, 0.5f, 2.0f);
-    if (Math::NearEqual(_pitch, value))
+    if (_pitch == value)
         return;
     _pitch = value;
     if (SourceID)
@@ -49,7 +49,7 @@ void AudioSource::SetPitch(float value)
 void AudioSource::SetPan(float value)
 {
     value = Math::Clamp(value, -1.0f, 1.0f);
-    if (Math::NearEqual(_pan, value))
+    if (_pan == value)
         return;
     _pan = value;
     if (SourceID)
@@ -80,7 +80,7 @@ void AudioSource::SetStartTime(float value)
 void AudioSource::SetMinDistance(float value)
 {
     value = Math::Max(0.0f, value);
-    if (Math::NearEqual(_minDistance, value))
+    if (_minDistance == value)
         return;
     _minDistance = value;
     if (SourceID)
@@ -90,7 +90,7 @@ void AudioSource::SetMinDistance(float value)
 void AudioSource::SetAttenuation(float value)
 {
     value = Math::Max(0.0f, value);
-    if (Math::NearEqual(_attenuation, value))
+    if (_attenuation == value)
         return;
     _attenuation = value;
     if (SourceID)
@@ -100,7 +100,7 @@ void AudioSource::SetAttenuation(float value)
 void AudioSource::SetDopplerFactor(float value)
 {
     value = Math::Max(0.0f, value);
-    if (Math::NearEqual(_dopplerFactor, value))
+    if (_dopplerFactor == value)
         return;
     _dopplerFactor = value;
     if (SourceID)
@@ -401,7 +401,7 @@ void AudioSource::Update()
         _startingToPlay = false;
     }
 
-    if (!UseStreaming() && Math::NearEqual(GetTime(), 0.0f) && _isActuallyPlayingSth && !_startingToPlay)
+    if (!UseStreaming() && GetTime() == 0.0f && _isActuallyPlayingSth && !_startingToPlay)
     {
         int32 queuedBuffers;
         AudioBackend::Source::GetQueuedBuffersCount(SourceID, queuedBuffers);

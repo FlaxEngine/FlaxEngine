@@ -219,7 +219,7 @@ void AudioService::Update()
         // Mute audio if app has no user focus
         masterVolume = 0.0f;
     }
-    if (Math::NotNearEqual(Volume, masterVolume))
+    if (Volume != masterVolume)
     {
         Volume = masterVolume;
         AudioBackend::SetVolume(masterVolume);

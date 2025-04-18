@@ -28,7 +28,7 @@ namespace FlaxEditor.GUI
             set
             {
                 value = Mathf.Max(value, 1);
-                if (!Mathf.NearEqual(value, _headerHeight))
+                if (value != _headerHeight)
                 {
                     _headerHeight = value;
                     PerformLayout();

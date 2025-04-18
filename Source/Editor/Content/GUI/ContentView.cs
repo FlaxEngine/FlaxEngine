@@ -145,7 +145,7 @@ namespace FlaxEditor.Content.GUI
             set
             {
                 value = Mathf.Clamp(value, 0.3f, 3.0f);
-                if (!Mathf.NearEqual(value, _viewScale))
+                if (value != _viewScale)
                 {
                     _viewScale = value;
                     ViewScaleChanged?.Invoke();

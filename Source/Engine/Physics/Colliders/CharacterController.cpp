@@ -33,7 +33,7 @@ float CharacterController::GetRadius() const
 
 void CharacterController::SetRadius(const float value)
 {
-    if (Math::NearEqual(value, _radius))
+    if (value == _radius)
         return;
 
     _radius = value;
@@ -49,7 +49,7 @@ float CharacterController::GetHeight() const
 
 void CharacterController::SetHeight(const float value)
 {
-    if (Math::NearEqual(value, _height))
+    if (value == _height)
         return;
 
     _height = value;
@@ -66,7 +66,7 @@ float CharacterController::GetSlopeLimit() const
 void CharacterController::SetSlopeLimit(float value)
 {
     value = Math::Clamp(value, 0.0f, 89.0f);
-    if (Math::NearEqual(value, _slopeLimit))
+    if (value == _slopeLimit)
         return;
     _slopeLimit = value;
     if (_controller)
@@ -94,7 +94,7 @@ float CharacterController::GetStepOffset() const
 
 void CharacterController::SetStepOffset(float value)
 {
-    if (Math::NearEqual(value, _stepOffset))
+    if (value == _stepOffset)
         return;
 
     _stepOffset = value;
@@ -384,7 +384,7 @@ void CharacterController::OnTransformChanged()
     {
         PhysicsBackend::SetControllerPosition(_controller, position);
         const Float3 scale = GetScale();
-        if (!Float3::NearEqual(_cachedScale, scale))
+        if (_cachedScale != scale)
             UpdateGeometry();
         UpdateBounds();
     }

@@ -71,7 +71,7 @@ namespace FlaxEngine.GUI
             get => _headerHeight;
             set
             {
-                if (!Mathf.NearEqual(_headerHeight, value))
+                if (_headerHeight != value)
                 {
                     _headerHeight = value;
                     PerformLayout();
