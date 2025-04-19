@@ -41,7 +41,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
             get => Preview.ViewOffset;
             set
             {
-                if (Mathf.NearEqual(Preview.ViewOffset, value))
+                if (Preview.ViewOffset == value)
                     return;
                 Preview.ViewOffset = value;
                 Timeline?.MarkAsEdited();
