@@ -1001,6 +1001,37 @@ void Double4x4::Invert(const Double4x4& value, Double4x4& result)
     result.M44 = +d44 * det;
 }
 
+void Double4x4::LookAt(const Double3& eye, const Double3& target, const Double3& up, Double4x4& result)
+{
+    Double3 xaxis, yaxis, zaxis;
+    Double3::Subtract(target, eye, zaxis);
+    zaxis.Normalize();
+    Double3::Cross(up, zaxis, xaxis);
+    xaxis.Normalize();
+    Double3::Cross(zaxis, xaxis, yaxis);
+
+    result.M11 = xaxis.X;
+    result.M21 = xaxis.Y;
+    result.M31 = xaxis.Z;
+
+    result.M12 = yaxis.X;
+    result.M22 = yaxis.Y;
+    result.M32 = yaxis.Z;
+
+    result.M13 = zaxis.X;
+    result.M23 = zaxis.Y;
+    result.M33 = zaxis.Z;
+
+    result.M14 = 0.0f;
+    result.M24 = 0.0f;
+    result.M34 = 0.0f;
+
+    result.M41 = -Double3::Dot(xaxis, eye);
+    result.M42 = -Double3::Dot(yaxis, eye);
+    result.M43 = -Double3::Dot(zaxis, eye);
+    result.M44 = 1.0f;
+}
+
 void Double4x4::Multiply(const Double4x4& left, const Double4x4& right, Double4x4& result)
 {
     result.M11 = left.M11 * right.M11 + left.M12 * right.M21 + left.M13 * right.M31 + left.M14 * right.M41;

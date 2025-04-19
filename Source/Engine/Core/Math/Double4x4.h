@@ -93,6 +93,9 @@ public:
     // Calculates the inverse of the specified matrix.
     static void Invert(const Double4x4& value, Double4x4& result);
 
+    // Creates a left-handed, look-at matrix.
+    static void LookAt(const Double3& eye, const Double3& target, const Double3& up, Double4x4& result);
+
     // Calculates the product of two matrices.
     static void Multiply(const Double4x4& left, const Double4x4& right, Double4x4& result);
 
