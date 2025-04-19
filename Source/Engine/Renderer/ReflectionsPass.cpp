@@ -301,7 +301,11 @@ bool ReflectionsPass::setupResources()
         psDesc.DepthEnable = true;
         if (_psProbe->Init(psDesc))
             return true;
+#if FLAX_REVERSE_Z
+        psDesc.DepthFunc = ComparisonFunc::Less;
+#else
         psDesc.DepthFunc = ComparisonFunc::Greater;
+#endif
         psDesc.CullMode = CullMode::Inverted;
         if (_psProbeInside->Init(psDesc))
             return true;

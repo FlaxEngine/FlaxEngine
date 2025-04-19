@@ -18,8 +18,20 @@
 #endif
 
 #if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
+
+#if FLAX_REVERSE_Z
+#define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) (1 - shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth))
+#define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) (1 - shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth, texelOffset))
+#else
 #define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth)
 #define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth, texelOffset)
+#endif
+
+#else
+
+#if FLAX_REVERSE_Z
+#define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) (sceneDepth > shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0).r)
+#define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) (sceneDepth > shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0, texelOffset).r)
 #else
 #define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) (sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0).r)
 #define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) (sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0, texelOffset).r)
@@ -28,6 +40,8 @@
 #define SAMPLE_SHADOW_MAP_SAMPLER SamplerPointClamp
 #else
 #define SAMPLE_SHADOW_MAP_SAMPLER SamplerLinearClamp
+#endif
+
 #endif
 
 float4 GetShadowMask(ShadowSample shadow)
@@ -55,7 +69,11 @@ float2 GetLightShadowAtlasUV(ShadowData shadow, ShadowTileData shadowTile, float
 {
     // Project into shadow space (WorldToShadow is pre-multiplied to convert Clip Space to UV Space)
     shadowPosition = mul(float4(samplePosition, 1.0f), shadowTile.WorldToShadow);
+#if FLAX_REVERSE_Z
+    shadowPosition.z += shadow.Bias;
+#else
     shadowPosition.z -= shadow.Bias;
+#endif
     shadowPosition.xyz /= shadowPosition.w;
 
     // UV Space -> Atlas Tile UV Space
@@ -119,14 +137,14 @@ float SampleShadowMapOptimizedPCF(Texture2D<float> shadowMap, float2 shadowMapUV
 	float uw0 = (3 - 2 * s);
 	float uw1 = (1 + 2 * s);
 
-	float u0 = (2 - s) / uw0 - 1;
-	float u1 = s / uw1 + 1;
+    float u0 = (2 - s) / uw0 - 1;
+    float u1 = s / uw1 + 1;
 
-	float vw0 = (3 - 2 * t);
-	float vw1 = (1 + 2 * t);
+    float vw0 = (3 - 2 * t);
+    float vw1 = (1 + 2 * t);
 
-	float v0 = (2 - t) / vw0 - 1;
-	float v1 = t / vw1 + 1;
+    float v0 = (2 - t) / vw0 - 1;
+    float v1 = t / vw1 + 1;
 
 	sum += uw0 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v0, shadowMapSizeInv, sceneDepth);
 	sum += uw1 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v0, shadowMapSizeInv, sceneDepth);
@@ -139,17 +157,17 @@ float SampleShadowMapOptimizedPCF(Texture2D<float> shadowMap, float2 shadowMapUV
 	float uw1 = 7;
 	float uw2 = (1 + 3 * s);
 
-	float u0 = (3 - 2 * s) / uw0 - 2;
-	float u1 = (3 + s) / uw1;
-	float u2 = s / uw2 + 2;
+    float u0 = (3 - 2 * s) / uw0 - 2;
+    float u1 = (3 + s) / uw1;
+    float u2 = s / uw2 + 2;
 
-	float vw0 = (4 - 3 * t);
-	float vw1 = 7;
-	float vw2 = (1 + 3 * t);
+    float vw0 = (4 - 3 * t);
+    float vw1 = 7;
+    float vw2 = (1 + 3 * t);
 
-	float v0 = (3 - 2 * t) / vw0 - 2;
-	float v1 = (3 + t) / vw1;
-	float v2 = t / vw2 + 2;
+    float v0 = (3 - 2 * t) / vw0 - 2;
+    float v1 = (3 + t) / vw1;
+    float v2 = t / vw2 + 2;
 
 	sum += uw0 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v0, shadowMapSizeInv, sceneDepth);
 	sum += uw1 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v0, shadowMapSizeInv, sceneDepth);
@@ -170,20 +188,20 @@ float SampleShadowMapOptimizedPCF(Texture2D<float> shadowMap, float2 shadowMapUV
 	float uw2 = -(11 * s + 17);
 	float uw3 = -(5 * s + 1);
 
-	float u0 = (4 * s - 5) / uw0 - 3;
-	float u1 = (4 * s - 16) / uw1 - 1;
-	float u2 = -(7 * s + 5) / uw2 + 1;
-	float u3 = -s / uw3 + 3;
+    float u0 = (4 * s - 5) / uw0 - 3;
+    float u1 = (4 * s - 16) / uw1 - 1;
+    float u2 = -(7 * s + 5) / uw2 + 1;
+    float u3 = -s / uw3 + 3;
 
-	float vw0 = (5 * t - 6);
-	float vw1 = (11 * t - 28);
-	float vw2 = -(11 * t + 17);
-	float vw3 = -(5 * t + 1);
+    float vw0 = (5 * t - 6);
+    float vw1 = (11 * t - 28);
+    float vw2 = -(11 * t + 17);
+    float vw3 = -(5 * t + 1);
 
-	float v0 = (4 * t - 5) / vw0 - 3;
-	float v1 = (4 * t - 16) / vw1 - 1;
-	float v2 = -(7 * t + 5) / vw2 + 1;
-	float v3 = -t / vw3 + 3;
+    float v0 = (4 * t - 5) / vw0 - 3;
+    float v1 = (4 * t - 16) / vw1 - 1;
+    float v2 = -(7 * t + 5) / vw2 + 1;
+    float v3 = -t / vw3 + 3;
 
 	sum += uw0 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v0, shadowMapSizeInv, sceneDepth);
 	sum += uw1 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v0, shadowMapSizeInv, sceneDepth);
