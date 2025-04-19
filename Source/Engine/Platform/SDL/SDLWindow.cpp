@@ -320,14 +320,18 @@ SDLWindow* SDLWindow::GetWindowFromEvent(const SDL_Event& event)
 
 SDLWindow* SDLWindow::GetWindowWithSDLWindow(SDL_Window* window)
 {
+    SDLWindow* found = nullptr;
     WindowsManager::WindowsLocker.Lock();
     for (auto win : WindowsManager::Windows)
     {
         if (win->_window == window)
-            return win;
+        {
+            found = win;
+            break;
+        }
     }
     WindowsManager::WindowsLocker.Unlock();
-    return nullptr;
+    return found;
 }
 
 void SDLWindow::HandleEvent(SDL_Event& event)
