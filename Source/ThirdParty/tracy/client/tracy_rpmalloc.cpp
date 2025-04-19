@@ -795,8 +795,7 @@ _rpmalloc_spin(void) {
 #elif defined(__sparc__)
 	__asm__ volatile("rd %ccr, %g0 \n\trd %ccr, %g0 \n\trd %ccr, %g0");
 #else
-	struct timespec ts = {0};
-	nanosleep(&ts, 0);
+	std::this_thread::yield();
 #endif
 }
 
