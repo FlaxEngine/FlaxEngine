@@ -114,6 +114,7 @@ namespace Flax.Build.Projects.VisualStudio
             if (Version >= VisualStudioVersion.VisualStudio2022)
                 vcProjectFileContent.AppendLine("    <ResolveNuGetPackages>false</ResolveNuGetPackages>");
             vcProjectFileContent.AppendLine("    <VCTargetsPath Condition=\"$(Configuration.Contains('Linux'))\">./</VCTargetsPath>");
+            vcProjectFileContent.AppendLine("    <VCTargetsPath Condition=\"$(Configuration.Contains('Mac'))\">./</VCTargetsPath>");
             vcProjectFileContent.AppendLine("  </PropertyGroup>");
 
             // Default properties
@@ -376,9 +377,9 @@ namespace Flax.Build.Projects.VisualStudio
 
             vcUserFileContent.AppendLine("</Project>");
 
-            if (platforms.Any(x => x.Target == TargetPlatform.Linux))
+            if (platforms.Any(x => x.Target == TargetPlatform.Linux || x.Target == TargetPlatform.Mac))
             {
-                // Override MSBuild .targets file with one that runs NMake commands (workaround for Rider on Linux)
+                // Override MSBuild .targets file with one that runs NMake commands (workaround for Rider not finding "Microsoft.Cpp.Default.props" file)
                 var cppTargetsFileContent = new StringBuilder();
                 cppTargetsFileContent.AppendLine("<Project xmlns=\"http://schemas.microsoft.com/developer/msbuild/2003\" TreatAsLocalProperty=\"Platform\">");
                 cppTargetsFileContent.AppendLine("  <Target Name=\"Build\">");
