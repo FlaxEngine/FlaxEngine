@@ -32,26 +32,9 @@ namespace WinImpl
 // The events for releasing the mouse during window dragging are missing, handle the mouse release event here
 bool SDLCALL SDLPlatform::EventMessageHook(void* userdata, MSG* msg)
 {
-#define GET_WINDOW_WITH_HWND(window, hwnd) \
-    do { \
-        (window) = nullptr; \
-        WindowsManager::WindowsLocker.Lock(); \
-        for (int32 i = 0; i < WindowsManager::Windows.Count(); i++) \
-        { \
-            if (WindowsManager::Windows[i]->GetNativePtr() == (hwnd)) \
-            { \
-                (window) = WindowsManager::Windows[i]; \
-                break; \
-            } \
-        } \
-        WindowsManager::WindowsLocker.Unlock(); \
-        ASSERT((window) != nullptr); \
-    } while (false)
-
     if (msg->message == WM_NCLBUTTONDOWN)
     {
-        Window* window;
-        GET_WINDOW_WITH_HWND(window, msg->hwnd);
+        Window* window = WindowsManager::GetByNativePtr(msg->hwnd);
         Float2 mousePosition(static_cast<float>(static_cast<LONG>(WINDOWS_GET_X_LPARAM(msg->lParam))), static_cast<float>(static_cast<LONG>(WINDOWS_GET_Y_LPARAM(msg->lParam))));
 
         WinImpl::DraggedWindow = window;
@@ -81,7 +64,6 @@ bool SDLCALL SDLPlatform::EventMessageHook(void* userdata, MSG* msg)
         }
     }
     return true;
-#undef GET_WINDOW_WITH_HWND
 }
 
 bool SDLPlatform::InitInternal()

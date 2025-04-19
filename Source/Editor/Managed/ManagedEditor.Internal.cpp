@@ -402,10 +402,11 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
                 break;
             }
         }
+        WindowsManager::WindowsLocker.Unlock();
         for (const auto& e : inputEvents)
         {
             auto window = e.Target ? e.Target : defaultWindow;
-            if (!window)
+            if (!window || window->IsClosed())
                 continue;
             switch (e.Type)
             {
@@ -443,7 +444,6 @@ DEFINE_INTERNAL_CALL(void) EditorInternal_RunVisualScriptBreakpointLoopTick(floa
                 break;
             }
         }
-        WindowsManager::WindowsLocker.Unlock();
     }
     WindowsManager::WindowsLocker.Lock();
     Array<Window*, InlinedAllocation<32>> windows;

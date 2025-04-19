@@ -913,11 +913,10 @@ void InputService::Update()
     WindowsManager::WindowsLocker.Unlock();
 
     // Send input events for the focused window
-    WindowsManager::WindowsLocker.Lock();
     for (const auto& e : InputEvents)
     {
         auto window = e.Target ? e.Target : defaultWindow;
-        if (!window || !WindowsManager::Windows.Contains(window))
+        if (!window || window->IsClosed())
             continue;
         switch (e.Type)
         {
@@ -965,7 +964,6 @@ void InputService::Update()
             break;
         }
     }
-    WindowsManager::WindowsLocker.Unlock();
 
     // Skip if game has no focus to handle the input
     if (!Engine::HasGameViewportFocus())

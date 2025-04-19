@@ -589,7 +589,7 @@ void SDLWindow::Restore()
 
 bool SDLWindow::IsClosed() const
 {
-    return _handle == nullptr;
+    return WindowBase::IsClosed() || _handle == nullptr;
 }
 
 bool SDLWindow::IsForegroundWindow() const
