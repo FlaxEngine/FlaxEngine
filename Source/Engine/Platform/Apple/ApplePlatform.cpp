@@ -58,6 +58,43 @@ int32 AutoreleasePoolInterval = 0;
 
 float ApplePlatform::ScreenScale = 1.0f;
 
+static void CrashHandler(int32 signal, siginfo_t* info, void* context)
+{
+    // Skip if engine already crashed
+    if (Engine::FatalError != FatalErrorType::None)
+        return;
+
+    // Get exception info
+    String errorMsg(TEXT("Unhandled exception: "));
+    switch (signal)
+    {
+#define CASE(x) case x: errorMsg += TEXT(#x); break
+    CASE(SIGABRT);
+    CASE(SIGILL);
+    CASE(SIGSEGV);
+    CASE(SIGQUIT);
+    CASE(SIGEMT);
+    CASE(SIGFPE);
+    CASE(SIGBUS);
+    CASE(SIGSYS);
+#undef CASE
+    default:
+        errorMsg += StringUtils::ToString(signal);
+    }
+
+    // Log exception and return to the crash location when using debugger
+    if (Platform::IsDebuggerPresent())
+    {
+        LOG_STR(Error, errorMsg);
+        const String stackTrace = Platform::GetStackTrace(3, 60, nullptr);
+        LOG_STR(Error, stackTrace);
+        return;
+    }
+
+    // Crash engine
+    Platform::Fatal(errorMsg.Get(), nullptr, FatalErrorType::Exception);
+}
+
 String AppleUtils::ToString(CFStringRef str)
 {
     if (!str)
@@ -90,40 +127,49 @@ NSString* AppleUtils::ToNSString(const char* string)
     return ret ? ret : @"";
 }
 
-
-NSArray* AppleUtils::ParseArguments(NSString* argsString) {
-    NSMutableArray *argsArray = [NSMutableArray array];
-    NSMutableString *currentArg = [NSMutableString string];
+NSArray* AppleUtils::ParseArguments(NSString* argsString)
+{
+    NSMutableArray* argsArray = [NSMutableArray array];
+    NSMutableString* currentArg = [NSMutableString string];
     BOOL insideQuotes = NO;
-    
-    for (NSInteger i = 0; i < argsString.length; ++i) {
+
+    for (NSInteger i = 0; i < argsString.length; i++)
+    {
         unichar c = [argsString characterAtIndex:i];
-        
-        if (c == '\"') {
-            if (insideQuotes) {
+        if (c == '\"')
+        {
+            if (insideQuotes)
+            {
                 [argsArray addObject:[currentArg copy]];
                 [currentArg setString:@""];
                 insideQuotes = NO;
-            } else {
+            }
+            else
+            {
                 insideQuotes = YES;
             }
-        } else if (c == ' ' && !insideQuotes) {
-            if (currentArg.length > 0) {
+        }
+        else if (c == ' ' && !insideQuotes)
+        {
+            if (currentArg.length > 0)
+            {
                 [argsArray addObject:[currentArg copy]];
                 [currentArg setString:@""];
             }
-        } else {
+        }
+        else
+        {
             [currentArg appendFormat:@"%C", c];
         }
     }
     
-    if (currentArg.length > 0) {
+    if (currentArg.length > 0)
+    {
         [argsArray addObject:[currentArg copy]];
     }
-    
+
     return [argsArray copy];
 }
-
 
 typedef uint16_t offset_t;
 #define align_mem_up(num, align) (((num) + ((align) - 1)) & ~((align) - 1))
@@ -375,6 +421,21 @@ bool ApplePlatform::Init()
         limit.rlim_max = RLIM_INFINITY;
         setrlimit(RLIMIT_NOFILE, &limit);
     }
+
+    // Register crash handler
+    struct sigaction action;
+    Platform::MemoryClear(&action, sizeof(action));
+    action.sa_sigaction = CrashHandler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    sigaction(SIGABRT, &action, nullptr);
+    sigaction(SIGILL, &action, nullptr);
+    sigaction(SIGSEGV, &action, nullptr);
+    sigaction(SIGQUIT, &action, nullptr);
+    sigaction(SIGEMT, &action, nullptr);
+    sigaction(SIGFPE, &action, nullptr);
+    sigaction(SIGBUS, &action, nullptr);
+    sigaction(SIGSYS, &action, nullptr);
 
     AutoreleasePool = [[NSAutoreleasePool alloc] init];
 
