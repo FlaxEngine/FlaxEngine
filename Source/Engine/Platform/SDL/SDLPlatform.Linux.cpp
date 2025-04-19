@@ -80,8 +80,8 @@ public:
 namespace WaylandImpl
 {
     wl_display* WaylandDisplay = nullptr;
-
-    uint32 GrabSerial = 0;
+    int64 DragOverFlag = 0;
+    int64 Serial = 0;
     wl_pointer_listener PointerListener =
     {
         [](void* data, wl_pointer* wl_pointer, uint32_t serial, wl_surface* surface, wl_fixed_t surface_x, wl_fixed_t surface_y) { }, // Enter event
@@ -91,7 +91,9 @@ namespace WaylandImpl
         {
             // Store the serial for upcoming drag-and-drop action
             if (state == 1)
-                GrabSerial = serial;
+                Platform::AtomicStore(&Serial, serial);
+            else
+                Platform::AtomicStore(&Serial, 0);
         },
         [](void* data, wl_pointer* wl_pointer, uint32_t time, uint32_t axis, wl_fixed_t value) { }, // Axis event
         [](void* data, wl_pointer* wl_pointer) { }, // Frame event
@@ -184,7 +186,6 @@ namespace WaylandImpl
         },
     };
 
-    int64 DragOverFlag = 0;
     wl_data_source_listener DataSourceListener =
     {
         [](void* data, wl_data_source* source, const char* mime_type) { }, // Target event
@@ -202,20 +203,20 @@ namespace WaylandImpl
         },
         [](void* data, wl_data_source* source) // Cancelled event
         {
-            // Clipboard: other application has replaced the content in clipboard
+            // Clipboard: other application has replaced the content in clipboad
+            wl_data_source_destroy(source);
+            
             IGuiData* inputData = static_cast<IGuiData*>(data);
             Platform::AtomicStore(&WaylandImpl::DragOverFlag, 1);
-
-            wl_data_source_destroy(source);
         },
         [](void* data, wl_data_source* source) { }, // DnD drop performed event
         [](void* data, wl_data_source* source) // DnD Finished event
         {
             // The destination has finally accepted the last given dnd_action
+            wl_data_source_destroy(source);
+
             IGuiData* inputData = static_cast<IGuiData*>(data);
             Platform::AtomicStore(&WaylandImpl::DragOverFlag, 1);
-
-            wl_data_source_destroy(source);
         },
         [](void* data, wl_data_source* source, uint32_t dnd_action) { }, // Action event
     };
@@ -236,12 +237,12 @@ namespace WaylandImpl
         SDLWindow* Window = nullptr;
         SDLWindow* DragSourceWindow = nullptr;
         Float2 DragOffset = Float2::Zero;
+        uint32 DragSerial = 0;
 
         // [ThreadPoolTask]
         bool Run() override
         {
             bool dragWindow = DraggingWindow;
-            uint32 grabSerial = GrabSerial;
 
             if (EventQueue == nullptr)
             {
@@ -294,27 +295,25 @@ namespace WaylandImpl
             auto dragStartWindow = DragSourceWindow != nullptr ? DragSourceWindow->GetSDLWindow() : draggedWindow;
             wl_surface* originSurface = static_cast<wl_surface*>(SDL_GetPointerProperty(SDL_GetWindowProperties(dragStartWindow), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr));
             wl_surface* iconSurface = nullptr;
-            wl_data_device_start_drag(WrappedDataDevice, dataSource, originSurface, iconSurface, grabSerial);
+            wl_data_device_start_drag(WrappedDataDevice, dataSource, originSurface, iconSurface, DragSerial);
 
             Platform::AtomicStore(&StartFlag, 1);
 
             xdg_toplevel_drag_v1* toplevelDrag = nullptr;
             xdg_toplevel* wrappedToplevel = nullptr;
-
-            while (Platform::AtomicRead(&ExitFlag) == 0)
+            
+            // Start dispatching events to keep data offers alive
+            while (Platform::AtomicRead(&ExitFlag) == 0 && Platform::AtomicRead(&Serial) == DragSerial && Platform::AtomicRead(&DragOverFlag) == 0)
             {
-                // Start dispatching events to keep data offers alive
-                if (wl_display_dispatch_queue(WaylandDisplay, EventQueue) == -1)
-                    LOG(Warning, "wl_display_dispatch_queue failed, errno: {}", errno);
-                if (wl_display_roundtrip_queue(WaylandDisplay, EventQueue) == -1)
-                    LOG(Warning, "wl_display_roundtrip_queue failed, errno: {}", errno);
-
-                // Wait until window has showed up
                 if (DragManager != nullptr && wrappedToplevel == nullptr && dragWindow && Platform::AtomicRead(&WaitFlag) != 0)
                 {
+                    // Wait until the dragged window has showed up
                     auto toplevel = static_cast<xdg_toplevel*>(SDL_GetPointerProperty(SDL_GetWindowProperties(draggedWindow), SDL_PROP_WINDOW_WAYLAND_XDG_TOPLEVEL_POINTER, nullptr));
                     if (toplevel != nullptr)
                     {
+                        if (Platform::AtomicRead(&DragOverFlag) == 1 || Platform::AtomicRead(&Serial) != DragSerial)
+                            break;
+
                         // Attach the window to the ongoing drag operation
                         wrappedToplevel = static_cast<xdg_toplevel*>(wl_proxy_create_wrapper(toplevel));
                         wl_proxy_set_queue(reinterpret_cast<wl_proxy*>(wrappedToplevel), EventQueue);
@@ -324,17 +323,27 @@ namespace WaylandImpl
                         xdg_toplevel_drag_v1_attach(toplevelDrag, wrappedToplevel, static_cast<int32>(scaledOffset.X), static_cast<int32>(scaledOffset.Y));
                     }
                 }
-            }
 
-            if (wl_display_roundtrip_queue(WaylandDisplay, EventQueue) == -1)
-                LOG(Warning, "wl_display_roundtrip_queue failed, errno: {}", errno);
+                if (wl_display_roundtrip_queue(WaylandDisplay, EventQueue) == -1)
+                    LOG(Warning, "wl_display_roundtrip_queue failed, errno: {}", errno);
+            }
 
             if (toplevelDrag != nullptr)
             {
+                // Wait for pending operations to finish
+                while (Platform::AtomicRead(&DragOverFlag) == 0 && Platform::AtomicRead(&Serial) == DragSerial)
+                {
+                    if (wl_display_dispatch_queue_pending(WaylandDisplay, EventQueue) == -1)
+                        LOG(Warning, "wl_display_dispatch_queue_pending failed, errno: {}", errno);
+                    Platform::Sleep(1);
+                }
+                
                 wl_proxy_wrapper_destroy(wrappedToplevel);
                 xdg_toplevel_drag_v1_destroy(toplevelDrag);
                 toplevelDrag = nullptr;
             }
+            
+            Platform::AtomicStore(&DragOverFlag, 1);
 
             if (wrappedDataSource != nullptr)
                 wl_proxy_wrapper_destroy(wrappedDataSource);
@@ -555,11 +564,28 @@ DragDropEffect Window::DoDragDrop(const StringView& data)
 
 DragDropEffect Window::DoDragDropWayland(const StringView& data, Window* dragSourceWindow, Float2 dragOffset)
 {
-    // For drag-and-drop, we need to run another event queue in a separate thread to avoid racing issues
+    // HACK: For drag-and-drop, we need to run another event queue in a separate thread to avoid racing issues
     // while SDL is dispatching the main Wayland event queue when receiving the data offer from us.
 
     Engine::OnDraw();
 
+    if (WaylandImpl::DraggingActive)
+        LOG(Fatal, "Previous drag and drop operation was not finished");
+
+    // Read the latest serial code from mouse event, and check if we are still holding the mouse before committing
+    auto dragSerial = Platform::AtomicRead(&WaylandImpl::Serial);
+    SDLPlatform::Tick(); // Handle events to check for serial changes
+
+    if (!Input::Mouse->GetButton(MouseButton::Left) ||
+        dragSerial == 0 ||
+        dragSerial != Platform::AtomicRead(&WaylandImpl::Serial))
+    {
+        // The mouse up event was ignored earlier, release the button now
+        Input::Mouse->OnMouseUp(Platform::GetMousePosition(), MouseButton::Left, this);
+        
+        return DragDropEffect::None;
+    }
+    
     WaylandImpl::DraggingActive = true;
     WaylandImpl::DraggingData = StringView(data.Get(), data.Length());
     WaylandImpl::DragOverFlag = 0;
@@ -568,22 +594,31 @@ DragDropEffect Window::DoDragDropWayland(const StringView& data, Window* dragSou
     task->Window = this;
     task->DragSourceWindow = dragSourceWindow; // Needs to be the parent window when dragging a tab to window
     task->DragOffset = dragOffset;
+    task->DragSerial = dragSerial;
     Task::StartNew(task);
-    while (task->GetState() == TaskState::Queued)
-        Platform::Sleep(1);
-
+    
     while (Platform::AtomicRead(&task->StartFlag) == 0)
+    {
+        SDLPlatform::Tick();
         Platform::Sleep(1);
+    }
 
     while (Platform::AtomicRead(&WaylandImpl::DragOverFlag) == 0)
     {
         SDLPlatform::Tick();
-        Engine::OnUpdate();//Scripting::Update(); // For docking updates
+        Engine::OnUpdate(); // For docking updates
         Engine::OnDraw();
 
         // The window needs to be finished showing up before we can start dragging it
         if (IsVisible() && Platform::AtomicRead(&task->WaitFlag) == 0)
             Platform::AtomicStore(&task->WaitFlag, 1);
+        
+        if (!WaylandImpl::DraggingWindow && !Input::Mouse->GetButton(MouseButton::Left))
+        {
+            // Abort in case the dragging was interrupted before receiving any data offers
+            Platform::AtomicStore(&task->ExitFlag, 1);
+            break;
+        }
 
         Platform::Sleep(1);
     }
@@ -592,7 +627,11 @@ DragDropEffect Window::DoDragDropWayland(const StringView& data, Window* dragSou
     Input::Mouse->OnMouseUp(Platform::GetMousePosition(), MouseButton::Left, this);
 
     Platform::AtomicStore(&task->ExitFlag, 1);
-    task->Wait();
+    while (task->GetState() != TaskState::Finished)
+    {
+        SDLPlatform::Tick();
+        Platform::Sleep(1);
+    }
 
     WaylandImpl::DraggingActive = false;
     WaylandImpl::DraggingData = nullptr;
@@ -1014,7 +1053,8 @@ bool SDLWindow::HandleEventInternal(SDL_Event& event)
             if (event.type == SDL_EVENT_DROP_BEGIN)
             {
                 // We don't know the type of dragged data at this point, so call the events for both types
-                OnDragEnter(&filesData, mousePos, effect);
+                if (!WaylandImpl::DraggingActive)
+                    OnDragEnter(&filesData, mousePos, effect);
                 if (effect == DragDropEffect::None)
                     OnDragEnter(&textData, mousePos, effect);
             }
@@ -1023,7 +1063,8 @@ bool SDLWindow::HandleEventInternal(SDL_Event& event)
                 Input::Mouse->OnMouseMove(ClientToScreen(mousePos), this);
 
                 // We don't know the type of dragged data at this point, so call the events for both types
-                OnDragOver(&filesData, mousePos, effect);
+                if (!WaylandImpl::DraggingActive)
+                    OnDragOver(&filesData, mousePos, effect);
                 if (effect == DragDropEffect::None)
                     OnDragOver(&textData, mousePos, effect);
             }

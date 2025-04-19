@@ -51,26 +51,26 @@ namespace FlaxEditor.GUI.Docking
             
             // Update rectangles
             UpdateRects(Platform.MousePosition);
+            
+            // Ensure the dragged window stays on top of every other window
+            window.IsAlwaysOnTop = true;
 
             _dragSourceWindow = dragSourceWindow;
             if (_dragSourceWindow != null) // Detaching a tab from existing window
             {
                 _dragOffset = new Float2(window.Size.X / 2, 10.0f);
+                
+                _dragSourceWindow.MouseUp += OnMouseUp; // The mouse up event is sent to the source window on Windows
 
                 // TODO: when detaching tab in floating window (not main window), the drag source window is still main window?
                 var dragSourceWindowWayland = toMove.MasterPanel?.RootWindow.Window ?? Editor.Instance.Windows.MainWindow;
                 window.DoDragDrop(window.Title, _dragOffset, dragSourceWindowWayland);
-
-                _dragSourceWindow.MouseUp += OnMouseUp; // The mouse up event is sent to the source window on Windows
             }
             else
             {
                 _dragOffset = window.MousePosition;
                 window.DoDragDrop(window.Title, _dragOffset, window);
             }
-
-            // Ensure the dragged window stays on top of every other window
-            window.IsAlwaysOnTop = true;
         }
 
         /// <summary>
