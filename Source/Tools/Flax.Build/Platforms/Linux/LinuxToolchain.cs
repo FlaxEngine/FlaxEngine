@@ -125,6 +125,8 @@ namespace Flax.Build.Platforms
             args.Add("-lX11");
             args.Add("-lXcursor");
             args.Add("-lXinerama");
+            args.Add("-lXfixes");
+            args.Add("-lwayland-client");
         }
 
         /// <inheritdoc />

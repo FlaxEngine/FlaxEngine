@@ -507,7 +507,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
 	Float2 mousePos = GetMousePosition(Window, event);
     mousePos = Window->ClientToScreen(mousePos);
     MouseButton mouseButton = MouseButton::Left;
-    if ([event clickCount] == 2)
+    if ([event clickCount] == 2 && !Input::Mouse->IsRelative())
         Input::Mouse->OnMouseDoubleClick(mousePos, mouseButton, Window);
     else
 	    Input::Mouse->OnMouseDown(mousePos, mouseButton, Window);
@@ -544,7 +544,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     if (IsWindowInvalid(Window)) return;
 	Float2 mousePos = GetMousePosition(Window, event);
     MouseButton mouseButton = MouseButton::Right;
-    if ([event clickCount] == 2)
+    if ([event clickCount] == 2 && !Input::Mouse->IsRelative())
         Input::Mouse->OnMouseDoubleClick(Window->ClientToScreen(mousePos), mouseButton, Window);
     else
 	    Input::Mouse->OnMouseDown(Window->ClientToScreen(mousePos), mouseButton, Window);
@@ -582,7 +582,7 @@ static void ConvertNSRect(NSScreen *screen, NSRect *r)
     default:
         return;
     }
-    if ([event clickCount] == 2)
+    if ([event clickCount] == 2 && !Input::Mouse->IsRelative())
         Input::Mouse->OnMouseDoubleClick(Window->ClientToScreen(mousePos), mouseButton, Window);
     else
 	    Input::Mouse->OnMouseDown(Window->ClientToScreen(mousePos), mouseButton, Window);

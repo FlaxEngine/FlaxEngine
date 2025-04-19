@@ -4,62 +4,62 @@
 
 #include "LinuxVulkanPlatform.h"
 #include "../RenderToolsVulkan.h"
+#include "Engine/Platform/Window.h"
 
-// Contents of vulkan\vulkan_xlib.h inlined here to prevent typename collisions with engine types due to X11 types
 #include "Engine/Platform/Linux/IncludeX11.h"
-#ifdef __cplusplus
-extern "C" {
-#endif
-#define VK_KHR_xlib_surface 1
-#define VK_KHR_XLIB_SURFACE_SPEC_VERSION  6
-#define VK_KHR_XLIB_SURFACE_EXTENSION_NAME "VK_KHR_xlib_surface"
-typedef VkFlags VkXlibSurfaceCreateFlagsKHR;
+#define Display X11::Display
+#define Window X11::Window
+#define VisualID X11::VisualID
+#include "vulkan/vulkan_xlib.h"
+#undef Display
+#undef Window
+#undef VisualID
 
-typedef struct VkXlibSurfaceCreateInfoKHR
-{
-	VkStructureType sType;
-	const void* pNext;
-	VkXlibSurfaceCreateFlagsKHR flags;
-	X11::Display* dpy;
-	X11::Window window;
-} VkXlibSurfaceCreateInfoKHR;
+#include "vulkan/vulkan_wayland.h"
 
-typedef VkResult (VKAPI_PTR *PFN_vkCreateXlibSurfaceKHR)(VkInstance instance, const VkXlibSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
-typedef VkBool32 (VKAPI_PTR *PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR)(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, X11::Display* dpy, X11::VisualID visualID);
-#ifndef VK_NO_PROTOTYPES
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateXlibSurfaceKHR(
-    VkInstance                                  instance,
-    const VkXlibSurfaceCreateInfoKHR*           pCreateInfo,
-    const VkAllocationCallbacks*                pAllocator,
-    VkSurfaceKHR*                               pSurface);
-VKAPI_ATTR VkBool32 VKAPI_CALL vkGetPhysicalDeviceXlibPresentationSupportKHR(
-    VkPhysicalDevice                            physicalDevice,
-    uint32_t                                    queueFamilyIndex,
-    Display*                                    dpy,
-    VisualID                                    visualID);
-#endif
-#ifdef __cplusplus
-}
-#endif
-//
-
-// Export X11 surface extension from volk
+// Export extension from volk
 extern PFN_vkCreateXlibSurfaceKHR vkCreateXlibSurfaceKHR;
 extern PFN_vkGetPhysicalDeviceXlibPresentationSupportKHR vkGetPhysicalDeviceXlibPresentationSupportKHR;
+extern PFN_vkCreateWaylandSurfaceKHR vkCreateWaylandSurfaceKHR;
+extern PFN_vkGetPhysicalDeviceWaylandPresentationSupportKHR vkGetPhysicalDeviceWaylandPresentationSupportKHR;
 
 void LinuxVulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions, Array<const char*>& layers)
 {
 	extensions.Add(VK_KHR_SURFACE_EXTENSION_NAME);
 	extensions.Add(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+    extensions.Add(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 }
 
-void LinuxVulkanPlatform::CreateSurface(void* windowHandle, VkInstance instance, VkSurfaceKHR* surface)
+void LinuxVulkanPlatform::CreateSurface(Window* window, VkInstance instance, VkSurfaceKHR* surface)
 {
+#if !PLATFORM_SDL
+    void* windowHandle = window->GetNativePtr();
 	VkXlibSurfaceCreateInfoKHR surfaceCreateInfo;
 	RenderToolsVulkan::ZeroStruct(surfaceCreateInfo, VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR);
-	surfaceCreateInfo.dpy = (X11::Display*)LinuxPlatform::GetXDisplay();
+	surfaceCreateInfo.dpy = (X11::Display*)Platform::GetXDisplay();
 	surfaceCreateInfo.window = (X11::Window)windowHandle;
 	VALIDATE_VULKAN_RESULT(vkCreateXlibSurfaceKHR(instance, &surfaceCreateInfo, nullptr, surface));
+#else
+    SDLWindow* sdlWindow = static_cast<Window*>(window);
+    X11::Window x11Window = (X11::Window)sdlWindow->GetX11WindowHandle();
+    wl_surface* waylandSurface = (wl_surface*)sdlWindow->GetWaylandSurfacePtr();
+    if (waylandSurface != nullptr)
+    {
+        VkWaylandSurfaceCreateInfoKHR surfaceCreateInfo;
+        RenderToolsVulkan::ZeroStruct(surfaceCreateInfo, VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR);
+        surfaceCreateInfo.display = (wl_display*)sdlWindow->GetWaylandDisplay();
+        surfaceCreateInfo.surface = waylandSurface;
+        VALIDATE_VULKAN_RESULT(vkCreateWaylandSurfaceKHR(instance, &surfaceCreateInfo, nullptr, surface));
+    }
+    else if (x11Window != 0)
+    {
+        VkXlibSurfaceCreateInfoKHR surfaceCreateInfo;
+        RenderToolsVulkan::ZeroStruct(surfaceCreateInfo, VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR);
+        surfaceCreateInfo.dpy = (X11::Display*)sdlWindow->GetX11Display();
+        surfaceCreateInfo.window = x11Window;
+        VALIDATE_VULKAN_RESULT(vkCreateXlibSurfaceKHR(instance, &surfaceCreateInfo, nullptr, surface));
+    }
+#endif
 }
 
 #endif
