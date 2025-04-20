@@ -30,7 +30,7 @@ void LinuxVulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions, 
     extensions.Add(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 }
 
-void LinuxVulkanPlatform::CreateSurface(Window* window, VkInstance instance, VkSurfaceKHR* surface)
+void LinuxVulkanPlatform::CreateSurface(Window* window, GPUDeviceVulkan* device, VkInstance instance, VkSurfaceKHR* surface)
 {
 #if !PLATFORM_SDL
     void* windowHandle = window->GetNativePtr();

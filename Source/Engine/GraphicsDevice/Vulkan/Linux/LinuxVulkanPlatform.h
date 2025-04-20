@@ -12,6 +12,8 @@
 // Prevent wierd error 'Invalid VkValidationCacheEXT Object'
 #define VULKAN_USE_VALIDATION_CACHE 0
 
+class GPUDeviceVulkan;
+
 /// <summary>
 /// The implementation for the Vulkan API support for Linux platform.
 /// </summary>
@@ -19,7 +21,7 @@ class LinuxVulkanPlatform : public VulkanPlatformBase
 {
 public:
 	static void GetInstanceExtensions(Array<const char*>& extensions, Array<const char*>& layers);
-	static void CreateSurface(Window* window, VkInstance instance, VkSurfaceKHR* outSurface);
+	static void CreateSurface(Window* window, GPUDeviceVulkan* device, VkInstance instance, VkSurfaceKHR* outSurface);
 };
 
 typedef LinuxVulkanPlatform VulkanPlatform;

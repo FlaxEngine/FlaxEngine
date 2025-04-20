@@ -10,6 +10,8 @@
 #define VULKAN_USE_PLATFORM_WIN32_KHX 1
 #define VULKAN_USE_CREATE_WIN32_SURFACE 1
 
+class GPUDeviceVulkan;
+
 /// <summary>
 /// The implementation for the Vulkan API support for Win32 platform.
 /// </summary>
@@ -17,7 +19,7 @@ class Win32VulkanPlatform : public VulkanPlatformBase
 {
 public:
     static void GetInstanceExtensions(Array<const char*>& extensions, Array<const char*>& layers);
-    static void CreateSurface(Window* window, VkInstance instance, VkSurfaceKHR* surface);
+    static void CreateSurface(Window* window, GPUDeviceVulkan* device, VkInstance instance, VkSurfaceKHR* surface);
 };
 
 typedef Win32VulkanPlatform VulkanPlatform;

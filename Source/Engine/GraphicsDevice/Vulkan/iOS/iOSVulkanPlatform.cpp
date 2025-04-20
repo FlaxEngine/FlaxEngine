@@ -14,7 +14,7 @@ void iOSVulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions, Ar
 	extensions.Add(VK_MVK_IOS_SURFACE_EXTENSION_NAME);
 }
 
-void iOSVulkanPlatform::CreateSurface(Window* window, VkInstance instance, VkSurfaceKHR* surface)
+void iOSVulkanPlatform::CreateSurface(Window* window, GPUDeviceVulkan* device, VkInstance instance, VkSurfaceKHR* surface)
 {
     void* windowHandle = window->GetNativePtr();
 	// Create surface on a main UI Thread

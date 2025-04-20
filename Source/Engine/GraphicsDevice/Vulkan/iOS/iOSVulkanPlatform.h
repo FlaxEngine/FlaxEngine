@@ -11,6 +11,8 @@
 // General/Validation Error:0 VK_ERROR_INITIALIZATION_FAILED: Could not create MTLCounterSampleBuffer for query pool of type VK_QUERY_TYPE_TIMESTAMP. Reverting to emulated behavior. (Error code 0): Cannot allocate sample buffer
 #define VULKAN_USE_QUERIES 0
 
+class GPUDeviceVulkan;
+
 /// <summary>
 /// The implementation for the Vulkan API support for iOS platform.
 /// </summary>
@@ -18,7 +20,7 @@ class iOSVulkanPlatform : public VulkanPlatformBase
 {
 public:
 	static void GetInstanceExtensions(Array<const char*>& extensions, Array<const char*>& layers);
-	static void CreateSurface(Window* window, VkInstance instance, VkSurfaceKHR* outSurface);
+	static void CreateSurface(Window* window, GPUDeviceVulkan* device, VkInstance instance, VkSurfaceKHR* outSurface);
 };
 
 typedef iOSVulkanPlatform VulkanPlatform;

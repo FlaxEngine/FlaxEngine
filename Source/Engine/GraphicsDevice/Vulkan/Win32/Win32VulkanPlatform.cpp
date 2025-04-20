@@ -14,7 +14,7 @@ void Win32VulkanPlatform::GetInstanceExtensions(Array<const char*>& extensions, 
     extensions.Add(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 }
 
-void Win32VulkanPlatform::CreateSurface(Window* window, VkInstance instance, VkSurfaceKHR* surface)
+void Win32VulkanPlatform::CreateSurface(Window* window, GPUDeviceVulkan* device, VkInstance instance, VkSurfaceKHR* surface)
 {
     void* windowHandle = window->GetNativePtr();
     VkWin32SurfaceCreateInfoKHR surfaceCreateInfo;

@@ -18,7 +18,7 @@ void AndroidVulkanPlatform::GetDeviceExtensions(Array<const char*>& extensions, 
 	extensions.Add(VK_KHR_ANDROID_SURFACE_EXTENSION_NAME);
 }
 
-void AndroidVulkanPlatform::CreateSurface(Window* window, VkInstance instance, VkSurfaceKHR* surface)
+void AndroidVulkanPlatform::CreateSurface(Window* window, GPUDeviceVulkan* device, VkInstance instance, VkSurfaceKHR* surface)
 {
     ASSERT(window);
     void* windowHandle = window->GetNativePtr();

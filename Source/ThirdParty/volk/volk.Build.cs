@@ -43,6 +43,7 @@ public class volk : ThirdPartyModule
             break;
         case TargetPlatform.Mac:
             options.PublicDefinitions.Add("VK_USE_PLATFORM_MACOS_MVK");
+            options.PublicDefinitions.Add("VK_USE_PLATFORM_METAL_EXT");
             break;
         case TargetPlatform.iOS:
             options.PublicDefinitions.Add("VK_USE_PLATFORM_IOS_MVK");
