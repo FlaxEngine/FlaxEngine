@@ -37,7 +37,6 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Mac,
-                        TargetPlatform.iOS,
                     };
                 default: return new TargetPlatform[0];
                 }
@@ -63,6 +62,7 @@ namespace Flax.Deps.Dependencies
                 "-DSDL_RENDER_VULKAN=OFF",
 
                 "-DSDL_DIRECTX=OFF",
+                "-DSDL_METAL=OFF",
                 "-DSDL_VULKAN=OFF",
                 "-DSDL_OPENGL=OFF",
                 "-DSDL_OPENGLES=OFF",
@@ -123,8 +123,9 @@ namespace Flax.Deps.Dependencies
                     break;
                 }
                 case TargetPlatform.Linux:
+                case TargetPlatform.Mac:
                 {
-                    foreach (var architecture in new TargetArchitecture[] { TargetArchitecture.x64 })
+                    foreach (var architecture in new [] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
                         var buildDir = Path.Combine(root, "build-" + architecture.ToString());
                         
@@ -145,11 +146,6 @@ namespace Flax.Deps.Dependencies
                         foreach (var file in binariesToCopy)
                             Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
                     }
-                    break;
-                }
-                case TargetPlatform.Mac:
-                {
-                    // TODO
                     break;
                 }
                 }

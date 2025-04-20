@@ -423,10 +423,14 @@ String MacPlatform::GetMainDirectory()
     return path;
 }
 
+#if !PLATFORM_SDL
+
 Window* MacPlatform::CreateWindow(const CreateWindowSettings& settings)
 {
     return New<MacWindow>(settings);
 }
+
+#endif
 
 int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
 {

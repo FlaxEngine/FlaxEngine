@@ -11,7 +11,10 @@ typedef struct tagMSG MSG;
 #elif PLATFORM_LINUX
 #include "Engine/Platform/Linux/LinuxPlatform.h"
 union _XEvent;
+#elif PLATFORM_MAC
+#include "Engine/Platform/Mac/MacPlatform.h"
 #else
+static_assert(false, "Unsupported Platform");
 #endif
 
 class SDLWindow;
@@ -29,8 +32,13 @@ class FLAXENGINE_API SDLPlatform
     : public LinuxPlatform
 {
     using base = LinuxPlatform;
+#elif PLATFORM_MAC
+: public MacPlatform
+{
+    using base = MacPlatform;
 #else
 {
+    static_assert(false, "Unsupported Platform");
 #endif
     friend SDLWindow;
 

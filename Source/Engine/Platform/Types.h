@@ -265,10 +265,12 @@ class AppleThread;
 typedef AppleThread Thread;
 class MacClipboard;
 typedef MacClipboard Clipboard;
+#if !PLATFORM_SDL
 class MacPlatform;
 typedef MacPlatform Platform;
 class MacWindow;
 typedef MacWindow Window;
+#endif
 class UnixNetwork;
 typedef UnixNetwork Network;
 class UserBase;

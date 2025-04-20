@@ -1,6 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-#if PLATFORM_MAC
+#if PLATFORM_MAC && !PLATFORM_SDL
 
 #include "../Window.h"
 #include "Engine/Platform/Apple/AppleUtils.h"

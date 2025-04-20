@@ -300,7 +300,9 @@ namespace Flax.Build
 
         public static bool WithSDL(NativeCpp.BuildOptions options)
         {
-            bool supportedPlatform = options.Platform.Target == TargetPlatform.Windows || options.Platform.Target == TargetPlatform.Linux;
+            bool supportedPlatform = options.Platform.Target == TargetPlatform.Windows ||
+                                     options.Platform.Target == TargetPlatform.Linux ||
+                                     options.Platform.Target == TargetPlatform.Mac;
             return UseSDL && supportedPlatform;
         }
     }

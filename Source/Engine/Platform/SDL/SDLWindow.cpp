@@ -30,6 +30,10 @@
 #endif
 #elif PLATFORM_LINUX
 #include "Engine/Platform/Linux/IncludeX11.h"
+#elif PLATFORM_MAC
+
+#else
+static_assert(false, "Unsupported Platform");
 #endif
 
 #define DefaultDPI 96
