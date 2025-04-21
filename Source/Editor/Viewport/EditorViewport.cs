@@ -1591,22 +1591,21 @@ namespace FlaxEditor.Viewport
                     else
                         EndMouseCapture();
                 }
+                
+                _prevInput = _input;
 #if PLATFORM_SDL
-                _prevInput = _input;
                 bool useMouse = IsControllingMouse || ContainsPoint(ref _viewMousePos) || _prevInput.IsControllingMouse;
-                if (canUseInput && ContainsFocus)
-                    _input.Gather(win.Window, useMouse, ref _prevInput);
-                else
-                    _input.Clear();
-#else
-                bool useMouse = IsControllingMouse || (Mathf.IsInRange(_viewMousePos.X, 0, Width) && Mathf.IsInRange(_viewMousePos.Y, 0, Height));
-                _prevInput = _input;
                 var hit = GetChildAt(_viewMousePos, c => c.Visible && !(c is CanvasRootControl) && !(c is UIEditorRoot));
+                if (_prevInput.IsControllingMouse)
+                    hit = null;
+#else
+                bool useMouse = IsControllingMouse || ContainsPoint(ref _viewMousePos);
+                var hit = GetChildAt(_viewMousePos, c => c.Visible && !(c is CanvasRootControl) && !(c is UIEditorRoot));
+#endif
                 if (canUseInput && ContainsFocus && hit == null)
                     _input.Gather(win.Window, useMouse, ref _prevInput);
                 else
                     _input.Clear();
-#endif
 
                 // Track controlling mouse state change
                 bool wasControllingMouse = _prevInput.IsControllingMouse;
