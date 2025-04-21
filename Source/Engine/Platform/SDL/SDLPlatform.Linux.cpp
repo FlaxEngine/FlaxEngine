@@ -22,6 +22,7 @@
 
 #include "Engine/Platform/Linux/IncludeX11.h"
 
+#include <SDL3/SDL_clipboard.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_messagebox.h>
@@ -1113,9 +1114,7 @@ void SDLClipboard::SetText(const StringView& text)
         //X11::XGetSelectionOwner(xDisplay, xAtomPrimary);
     }
     else
-    {
-        LOG(Warning, "Wayland clipboard support is not implemented yet."); // TODO: Wayland
-    }
+        SDL_SetClipboardText(StringAnsi(text).GetText());
 }
 
 void SDLClipboard::SetRawData(const Span<byte>& data)
@@ -1152,8 +1151,7 @@ String SDLClipboard::GetText()
     }
     else
     {
-        LOG(Warning, "Wayland clipboard is not implemented yet."); // TODO: Wayland
-        return String::Empty;
+        return String(SDL_GetClipboardText());
     }
 }
 
