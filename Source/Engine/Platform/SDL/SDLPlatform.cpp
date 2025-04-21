@@ -104,7 +104,8 @@ bool SDLPlatform::Init()
     if (InitInternal())
         return true;
 
-    if (UsesWindows() || UsesX11())
+#if !PLATFORM_MAC
+    if (!UsesWayland())
     {
         // Disable SDL clipboard support
         SDL_SetEventEnabled(SDL_EVENT_CLIPBOARD_UPDATE, false);
@@ -116,6 +117,7 @@ bool SDLPlatform::Init()
         SDL_SetEventEnabled(SDL_EVENT_DROP_COMPLETE, false);
         SDL_SetEventEnabled(SDL_EVENT_DROP_POSITION, false);
     }
+#endif
 
     SDLInput::Init();
     SDLWindow::Init();
@@ -225,20 +227,22 @@ void SDLPlatform::OpenUrl(const StringView& url)
 
 Float2 SDLPlatform::GetMousePosition()
 {
-    Float2 pos;
+#if PLATFORM_LINUX
     if (UsesWayland())
     {
         // Wayland doesn't support reporting global mouse position,
         // use the last known reported position we got from received window events.
-        pos = Input::GetMouseScreenPosition();
-        //if (!SDL_GetGlobalMouseState(&pos.X, &pos.Y))
-        //    LOG(Error, "SDL_GetGlobalMouseState() failed");
+        return Input::GetMouseScreenPosition();
     }
-    else if (UsesX11())
+    if (UsesX11())
+#elif PLATFORM_LINUX || PLATFORM_MAC
+    {
+        Float2 pos;
         SDL_GetGlobalMouseState(&pos.X, &pos.Y);
-    else
-        pos = Input::GetMouseScreenPosition();
-    return pos;
+        return pos;
+    }
+#endif
+    return Input::GetMouseScreenPosition();
 }
 
 void SDLPlatform::SetMousePosition(const Float2& pos)

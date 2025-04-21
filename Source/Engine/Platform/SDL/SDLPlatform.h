@@ -50,9 +50,11 @@ private:
     static bool HandleEvent(SDL_Event& event);
 #if PLATFORM_WINDOWS
     static bool EventMessageHook(void* userdata, MSG* msg);
-    static bool SDLPlatform::EventFilterCallback(void* userdata, SDL_Event* event);
+    static bool EventFilterCallback(void* userdata, SDL_Event* event);
 #elif PLATFORM_LINUX
     static bool X11EventHook(void* userdata, _XEvent* xevent);
+#elif PLATFORM_MAC
+    static bool EventFilterCallback(void* userdata, SDL_Event* event);
 #endif
     static void PreHandleEvents();
     static void PostHandleEvents();

@@ -273,6 +273,7 @@ bool MacPlatform::Init()
         CFRelease(computerName);
     }
 
+#if !PLATFORM_SDL
     // Find the maximum scale of the display to handle high-dpi displays scaling factor
     {
 	    NSArray* screenArray = [NSScreen screens];
@@ -297,6 +298,7 @@ bool MacPlatform::Init()
 
     Input::Mouse = New<MacMouse>();
     Input::Keyboard = New<MacKeyboard>();
+#endif
 
     return false;
 }

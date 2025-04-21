@@ -432,6 +432,12 @@ public:
         Mouse::SetRelativeMode(relativeMode, window);
         if (!SDL_SetWindowRelativeMouseMode(windowHandle, relativeMode))
             LOG(Error, "Failed to set mouse relative mode: {0}", String(SDL_GetError()));
+
+#if PLATFORM_MAC
+        // Warping right before entering relative mode seems to generate motion event for relative mode
+        SDL_PumpEvents();
+        SDL_FlushEvent(SDL_EVENT_MOUSE_MOTION);
+#endif
     }
 
     bool IsRelative(Window* window) const override

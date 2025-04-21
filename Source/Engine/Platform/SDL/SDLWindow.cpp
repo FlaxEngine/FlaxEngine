@@ -31,7 +31,7 @@
 #elif PLATFORM_LINUX
 #include "Engine/Platform/Linux/IncludeX11.h"
 #elif PLATFORM_MAC
-
+#include <Cocoa/Cocoa.h>
 #else
 static_assert(false, "Unsupported Platform");
 #endif
@@ -157,8 +157,18 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     _dpiScale = SDL_GetWindowDisplayScale(_window);
     _dpi = Math::TruncToInt(_dpiScale * DefaultDPI);
 
-    SDL_SetWindowMinimumSize(_window, Math::TruncToInt(_settings.MinimumSize.X), Math::TruncToInt(_settings.MinimumSize.Y));
-    SDL_SetWindowMaximumSize(_window, Math::TruncToInt(_settings.MaximumSize.X), Math::TruncToInt(_settings.MaximumSize.Y));
+    Int2 minimumSize(Math::TruncToInt(_settings.MinimumSize.X) , Math::TruncToInt(_settings.MinimumSize.Y));
+    Int2 maximumSize(Math::TruncToInt(_settings.MaximumSize.X) , Math::TruncToInt(_settings.MaximumSize.Y));
+
+    SDL_SetWindowMinimumSize(_window, minimumSize.X, minimumSize.Y);
+#if PLATFORM_MAC
+    // BUG: The maximum size is not enforced correctly, set it to real high value instead
+    if (maximumSize.X == 0)
+        maximumSize.X = 999999;
+    if (maximumSize.Y == 0)
+        maximumSize.Y = 999999;
+#endif
+    SDL_SetWindowMaximumSize(_window, maximumSize.X, maximumSize.Y);
     
     SDL_SetWindowHitTest(_window, &OnWindowHitTest, this);
     InitSwapChain();
@@ -182,6 +192,11 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
             if (xdndAware != 0)
                 X11::XChangeProperty(xDisplay, (X11::Window)_handle, xdndAware, (X11::Atom)4, 32, PropModeReplace, (unsigned char*)&xdndVersion, 1);
         }
+#elif PLATFORM_MAC
+        NSWindow* win = ((NSWindow*)_handle);
+        NSView* view = win.contentView;
+        [win unregisterDraggedTypes];
+        [win registerForDraggedTypes:@[NSPasteboardTypeFileURL, NSPasteboardTypeString, (NSString*)kUTTypeFileURL, (NSString*)kUTTypeUTF8PlainText]];
 #endif
     }
 #endif
