@@ -656,7 +656,7 @@ DragDropEffect Window::DoDragDropX11(const StringView& data)
 #if !PLATFORM_SDL
     X11::Window mainWindow = _window;
 #else
-    X11::Window mainWindow = static_cast<X11::Window>(GetX11WindowHandle());
+    X11::Window mainWindow = reinterpret_cast<X11::Window>(GetNativePtr());
 #endif
 
     // Make sure SDL hasn't grabbed the pointer, and force ungrab it
@@ -1105,7 +1105,7 @@ void SDLClipboard::SetText(const StringView& text)
 
     if (X11Impl::xDisplay)
     {
-        X11::Window window = (X11::Window)(mainWindow->GetX11WindowHandle());
+        X11::Window window = (X11::Window)(mainWindow->GetNativePtr());
         X11Impl::ClipboardText.Set(text.Get(), text.Length());
         X11::XSetSelectionOwner(X11Impl::xDisplay, X11Impl::xAtomClipboard, window, CurrentTime); // CLIPBOARD
         //X11::XSetSelectionOwner(xDisplay, xAtomPrimary, window, CurrentTime); // XA_PRIMARY
@@ -1135,7 +1135,7 @@ String SDLClipboard::GetText()
         return result;
     if (X11Impl::xDisplay)
     {
-        X11::Window window = static_cast<X11::Window>(mainWindow->GetX11WindowHandle());
+        X11::Window window = reinterpret_cast<X11::Window>(mainWindow->GetNativePtr());
 
         X11Impl::ClipboardGetText(result, X11Impl::xAtomClipboard, X11Impl::xAtomUTF8String, window);
         if (result.HasChars())

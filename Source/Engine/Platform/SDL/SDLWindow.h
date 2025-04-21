@@ -56,7 +56,6 @@ public:
     ~SDLWindow();
 
 private:
-
     static SDLWindow* GetWindowFromEvent(const SDL_Event& event);
     static SDLWindow* GetWindowWithSDLWindow(SDL_Window* window);
     void HandleEvent(SDL_Event& event);
@@ -64,18 +63,10 @@ private:
     void CheckForWindowResize();
     void UpdateCursor();
 
-#if PLATFORM_LINUX
-    DragDropEffect DoDragDropWayland(const StringView& data, Window* dragSourceWindow = nullptr, Float2 dragOffset = Float2::Zero);
-    DragDropEffect DoDragDropX11(const StringView& data);
-#endif
-
 public:
-
     SDL_Window* GetSDLWindow() const;
 #if PLATFORM_LINUX
-    void* GetWaylandSurfacePtr() const;
     void* GetWaylandDisplay() const;
-    uintptr GetX11WindowHandle() const;
     void* GetX11Display() const;
 #endif
 
@@ -127,6 +118,10 @@ public:
     Windows::HRESULT __stdcall DragOver(Windows::DWORD grfKeyState, Windows::POINTL pt, Windows::DWORD* pdwEffect) override;
     Windows::HRESULT __stdcall DragLeave() override;
     Windows::HRESULT __stdcall Drop(Windows::IDataObject* pDataObj, Windows::DWORD grfKeyState, Windows::POINTL pt, Windows::DWORD* pdwEffect) override;
+#endif
+#if PLATFORM_LINUX
+    DragDropEffect DoDragDropWayland(const StringView& data, Window* dragSourceWindow = nullptr, Float2 dragOffset = Float2::Zero);
+    DragDropEffect DoDragDropX11(const StringView& data);
 #endif
 };
 

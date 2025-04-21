@@ -221,19 +221,9 @@ SDL_Window* SDLWindow::GetSDLWindow() const
 
 #if PLATFORM_LINUX
 
-void* SDLWindow::GetWaylandSurfacePtr() const
-{
-    return SDL_GetPointerProperty(SDL_GetWindowProperties(_window), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr);
-}
-
 void* SDLWindow::GetWaylandDisplay() const
 {
     return SDL_GetPointerProperty(SDL_GetWindowProperties(_window), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr);
-}
-
-uintptr SDLWindow::GetX11WindowHandle() const
-{
-    return (uintptr)SDL_GetNumberProperty(SDL_GetWindowProperties(_window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
 }
 
 void* SDLWindow::GetX11Display() const

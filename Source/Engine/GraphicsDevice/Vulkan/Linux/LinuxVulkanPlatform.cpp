@@ -41,22 +41,21 @@ void LinuxVulkanPlatform::CreateSurface(Window* window, GPUDeviceVulkan* device,
 	VALIDATE_VULKAN_RESULT(vkCreateXlibSurfaceKHR(instance, &surfaceCreateInfo, nullptr, surface));
 #else
     SDLWindow* sdlWindow = static_cast<Window*>(window);
-    X11::Window x11Window = (X11::Window)sdlWindow->GetX11WindowHandle();
-    wl_surface* waylandSurface = (wl_surface*)sdlWindow->GetWaylandSurfacePtr();
-    if (waylandSurface != nullptr)
+    void* windowHandle = window->GetNativePtr();
+    if (SDLPlatform::UsesWayland())
     {
         VkWaylandSurfaceCreateInfoKHR surfaceCreateInfo;
         RenderToolsVulkan::ZeroStruct(surfaceCreateInfo, VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR);
         surfaceCreateInfo.display = (wl_display*)sdlWindow->GetWaylandDisplay();
-        surfaceCreateInfo.surface = waylandSurface;
+        surfaceCreateInfo.surface = (wl_surface*)windowHandle;
         VALIDATE_VULKAN_RESULT(vkCreateWaylandSurfaceKHR(instance, &surfaceCreateInfo, nullptr, surface));
     }
-    else if (x11Window != 0)
+    else if (SDLPlatform::UsesX11())
     {
         VkXlibSurfaceCreateInfoKHR surfaceCreateInfo;
         RenderToolsVulkan::ZeroStruct(surfaceCreateInfo, VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR);
         surfaceCreateInfo.dpy = (X11::Display*)sdlWindow->GetX11Display();
-        surfaceCreateInfo.window = x11Window;
+        surfaceCreateInfo.window = (X11::Window)windowHandle;
         VALIDATE_VULKAN_RESULT(vkCreateXlibSurfaceKHR(instance, &surfaceCreateInfo, nullptr, surface));
     }
 #endif
