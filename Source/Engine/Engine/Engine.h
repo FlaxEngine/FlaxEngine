@@ -125,6 +125,14 @@ public:
     /// <param name="error">The fatal error type (or None on graceful exit).</param>
     API_FUNCTION() static void RequestExit(int32 exitCode = 0, FatalErrorType error = FatalErrorType::None);
 
+#if !BUILD_SHIPPING
+    /// <summary>
+    /// Crashes the engine. Utility used to test crash reporting or game stability monitoring systems.
+    /// </summary>
+    /// <param name="error">The fatal error type.</param>
+    API_FUNCTION(Attributes="DebugCommand") static void Crash(FatalErrorType error = FatalErrorType::Exception);
+#endif
+
 public:
     /// <summary>
     /// Fixed update callback used by the physics simulation (fixed stepping).

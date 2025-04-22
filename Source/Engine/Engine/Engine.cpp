@@ -274,6 +274,24 @@ void Engine::RequestExit(int32 exitCode, FatalErrorType error)
     RequestingExit();
 }
 
+#if !BUILD_SHIPPING
+
+void Engine::Crash(FatalErrorType error)
+{
+    switch (error)
+    {
+    case FatalErrorType::None:
+    case FatalErrorType::Exception:
+        *((int32*)3) = 11;
+        break;
+    default:
+        Platform::Fatal(TEXT("Crash Test"), nullptr, error);
+        break;
+    }
+}
+
+#endif
+
 void Engine::OnFixedUpdate()
 {
     PROFILE_CPU_NAMED("Fixed Update");
