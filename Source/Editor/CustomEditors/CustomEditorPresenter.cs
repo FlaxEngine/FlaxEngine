@@ -132,6 +132,8 @@ namespace FlaxEditor.CustomEditors
                 get => _overrideEditor;
                 set
                 {
+                    if (_overrideEditor == value)
+                        return;
                     _overrideEditor = value;
                     RebuildLayout();
                 }
@@ -200,7 +202,6 @@ namespace FlaxEditor.CustomEditors
             protected override void Deinitialize()
             {
                 Editor = null;
-                _overrideEditor = null;
 
                 base.Deinitialize();
             }
