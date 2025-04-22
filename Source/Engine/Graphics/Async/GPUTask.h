@@ -68,6 +68,14 @@ public:
     }
 
     /// <summary>
+    /// Gets work synchronization start point
+    /// </summary>
+    FORCE_INLINE GPUSyncPoint GetSyncStart() const
+    {
+        return _syncPoint;
+    }
+
+    /// <summary>
     /// Gets work finish synchronization point
     /// </summary>
     FORCE_INLINE GPUSyncPoint GetSyncPoint() const
