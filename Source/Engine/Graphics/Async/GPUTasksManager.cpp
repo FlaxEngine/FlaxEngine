@@ -51,11 +51,12 @@ void GPUTask::Enqueue()
 void GPUTask::OnCancel()
 {
     // Check if task is waiting for sync (very likely situation)
-    if (IsSyncing() && _context)
+    if (IsSyncing())
     {
         // Task has been performed but is waiting for a CPU/GPU sync so we have to cancel that
         _context->OnCancelSync(this);
         _context = nullptr;
+        SetState(TaskState::Canceled);
     }
 
     // Base

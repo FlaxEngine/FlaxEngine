@@ -51,7 +51,7 @@ void GPUTasksContext::Run(GPUTask* task)
     ASSERT(task != nullptr);
 
     task->Execute(this);
-    if (task->GetSyncStart() != 0)
+    //if (task->GetSyncStart() != 0)
         _tasksSyncing.Add(task);
 }
 
