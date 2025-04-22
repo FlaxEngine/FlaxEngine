@@ -37,6 +37,21 @@ DEFINE_ENGINE_SERVICE_EVENT(LateFixedUpdate);
 DEFINE_ENGINE_SERVICE_EVENT(Draw);
 DEFINE_ENGINE_SERVICE_EVENT_INVERTED(BeforeExit);
 
+#if TRACY_ENABLE
+
+StringView FillEventNameBuffer(Char* buffer, StringView name, StringView postfix)
+{
+    int32 size = 0;
+    for (int32 j = 0; j < name.Length(); j++)
+        if (name[j] != ' ')
+            buffer[size++] = name[j];
+    Platform::MemoryCopy(buffer + size, postfix.Get(), (postfix.Length() + 1) * sizeof(Char));
+    size += postfix.Length();
+    return StringView(buffer, size);
+}
+
+#endif
+
 EngineService::EngineServicesArray& EngineService::GetServices()
 {
     static EngineServicesArray Services;
@@ -78,14 +93,9 @@ void EngineService::OnInit()
         const StringView name(service->Name);
 #if TRACY_ENABLE
         ZoneScoped;
-        int32 nameBufferLength = 0;
         Char nameBuffer[100];
-        for (int32 j = 0; j < name.Length(); j++)
-            if (name[j] != ' ')
-                nameBuffer[nameBufferLength++] = name[j];
-        Platform::MemoryCopy(nameBuffer + nameBufferLength, TEXT("::Init"), 7 * sizeof(Char));
-        nameBufferLength += 7;
-        ZoneName(nameBuffer, nameBufferLength);
+        StringView zoneName = FillEventNameBuffer(nameBuffer, name, StringView(TEXT("::Init"), 6));
+        ZoneName(zoneName.Get(), zoneName.Length());
 #endif
         LOG(Info, "Initialize {0}...", name);
         service->IsInitialized = true;
@@ -114,15 +124,10 @@ void EngineService::OnDispose()
         {
 #if TRACY_ENABLE
             ZoneScoped;
-            const StringView name(service->Name);
-            int32 nameBufferLength = 0;
             Char nameBuffer[100];
-            for (int32 j = 0; j < name.Length(); j++)
-                if (name[j] != ' ')
-                    nameBuffer[nameBufferLength++] = name[j];
-            Platform::MemoryCopy(nameBuffer + nameBufferLength, TEXT("::Dispose"), 10 * sizeof(Char));
-            nameBufferLength += 10;
-            ZoneName(nameBuffer, nameBufferLength);
+            const StringView name(service->Name);
+            StringView zoneName = FillEventNameBuffer(nameBuffer, name, StringView(TEXT("::Dispose"), 9));
+            ZoneName(zoneName.Get(), zoneName.Length());
 #endif
             service->IsInitialized = false;
             service->Dispose();
