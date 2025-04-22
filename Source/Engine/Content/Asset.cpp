@@ -467,11 +467,13 @@ void Asset::CancelStreaming()
 {
     // Cancel loading task but go over asset locker to prevent case if other load threads still loads asset while it's reimported on other thread
     Locker.Lock();
-    auto loadTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
+    auto loadingTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
     Locker.Unlock();
-    if (loadTask)
+    if (loadingTask)
     {
-        loadTask->Cancel();
+        Platform::AtomicStore(&_loadingTask, 0);
+        LOG(Warning, "Cancel loading task for \'{0}\'", ToString());
+        loadingTask->Cancel();
     }
 }
 
@@ -632,18 +634,11 @@ void Asset::onUnload_MainThread()
 
     ASSERT(IsInMainThread());
 
+    // Cancel any streaming before calling OnUnloaded event
+    CancelStreaming();
+
     // Send event
     OnUnloaded(this);
-
-    // Check if is during loading
-    auto loadingTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
-    if (loadingTask != nullptr)
-    {
-        // Cancel loading
-        Platform::AtomicStore(&_loadingTask, 0);
-        LOG(Warning, "Cancel loading task for \'{0}\'", ToString());
-        loadingTask->Cancel();
-    }
 }
 
 #if USE_EDITOR

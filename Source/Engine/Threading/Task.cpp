@@ -208,8 +208,8 @@ void Task::OnCancel()
     if (IsRunning())
     {
         // Wait for it a little bit
-        const double timeout = 2000.0;
-        LOG(Warning, "Cannot cancel \'{0}\' because it's still running, waiting for end with timeout: {1} ms", ToString(), timeout);
+        constexpr double timeout = 10000.0; // 10s
+        LOG(Warning, "Cannot cancel \'{0}\' because it's still running, waiting for end with timeout: {1}ms", ToString(), timeout);
         Wait(timeout);
     }
 
