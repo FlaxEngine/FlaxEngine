@@ -3,7 +3,7 @@
 
 #include "Engine/Core/ISerializable.h"
 
-API_CLASS() class FLAXENGINE_API InputAxis : public ScriptingObject, public ISerializable
+API_CLASS(Attributes="CustomEditorAlias(\"FlaxEditor.CustomEditors.Editors.InputAxisEditor\")") class FLAXENGINE_API InputAxis : public ScriptingObject, public ISerializable
 {
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE(InputAxis);

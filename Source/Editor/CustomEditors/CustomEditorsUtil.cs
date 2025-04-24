@@ -84,6 +84,14 @@ namespace FlaxEditor.CustomEditors
 
                 return new ArrayEditor();
             }
+            
+            // Use custom attribute alias editor
+            var attributes = targetType.GetAttributes(false);
+            var customEditorAliasAttribute = (CustomEditorAliasAttribute)attributes.FirstOrDefault(x => x is CustomEditorAliasAttribute);
+            if (customEditorAliasAttribute != null)
+                return (CustomEditor)Activator.CreateInstance(TypeUtils.GetType(customEditorAliasAttribute.TypeName).Type);
+            
+            // Use asset or object ref
             var targetTypeType = TypeUtils.GetType(targetType);
             if (canUseRefPicker)
             {
@@ -110,7 +118,6 @@ namespace FlaxEditor.CustomEditors
             }
 
             // Use attribute editor
-            var attributes = targetType.GetAttributes(false);
             var customEditorAttribute = (CustomEditorAttribute)attributes.FirstOrDefault(x => x is CustomEditorAttribute);
             if (customEditorAttribute != null)
                 return (CustomEditor)Activator.CreateInstance(customEditorAttribute.Type);
