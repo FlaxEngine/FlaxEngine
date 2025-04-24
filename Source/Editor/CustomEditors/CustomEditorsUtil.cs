@@ -89,7 +89,11 @@ namespace FlaxEditor.CustomEditors
             var attributes = targetType.GetAttributes(false);
             var customEditorAliasAttribute = (CustomEditorAliasAttribute)attributes.FirstOrDefault(x => x is CustomEditorAliasAttribute);
             if (customEditorAliasAttribute != null)
-                return (CustomEditor)Activator.CreateInstance(TypeUtils.GetType(customEditorAliasAttribute.TypeName).Type);
+            {
+                var scriptType = TypeUtils.GetType(customEditorAliasAttribute.TypeName);
+                if (scriptType != null)
+                    return (CustomEditor)Activator.CreateInstance(scriptType.Type);
+            }
             
             // Use asset or object ref
             var targetTypeType = TypeUtils.GetType(targetType);
