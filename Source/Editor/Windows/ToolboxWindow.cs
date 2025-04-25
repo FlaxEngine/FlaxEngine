@@ -204,7 +204,6 @@ namespace FlaxEditor.Windows
         private void OnScriptsReload()
         {
             // Prevent any references to actor types from the game assemblies that will be reloaded
-            _searchBox.Clear();
             _groupSearch.DisposeChildren();
             _groupSearch.PerformLayout();
 
@@ -228,6 +227,7 @@ namespace FlaxEditor.Windows
         private void OnScriptsReloadEnd()
         {
             RefreshActorTabs();
+            OnSearchBoxTextChanged();
         }
 
         private void RefreshActorTabs()
