@@ -456,7 +456,7 @@ class SDLGamepad : public Gamepad
 {
 private:
 
-    SDL_Gamepad* _gamepad;
+    SDL_Gamepad* _gamepad = nullptr;
     SDL_JoystickID _instanceId;
 
 public:
@@ -627,8 +627,6 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
         SDLGamepad* gamepad = SDLGamepad::GetGamepadById(event.gaxis.which);
         SDL_GamepadAxis axis = (SDL_GamepadAxis)event.gaxis.axis;
         gamepad->OnAxisMotion(axis, event.gaxis.value);
-
-        LOG(Info, "SDL_EVENT_GAMEPAD_AXIS_MOTION");
         break;
     }
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
@@ -637,16 +635,12 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
         SDLGamepad* gamepad = SDLGamepad::GetGamepadById(event.gbutton.which);
         SDL_GamepadButton button = (SDL_GamepadButton)event.gbutton.button;
         gamepad->OnButtonState(button, event.gbutton.down);
-
-        LOG(Info, "SDL_EVENT_GAMEPAD_BUTTON_");
         break;
     }
     case SDL_EVENT_GAMEPAD_ADDED:
     {
         Input::Gamepads.Add(New<SDLGamepad>(event.gdevice.which));
         Input::OnGamepadsChanged();
-
-        LOG(Info, "SDL_EVENT_GAMEPAD_ADDED");
         break;
     }
     case SDL_EVENT_GAMEPAD_REMOVED:
@@ -662,40 +656,38 @@ bool SDLInput::HandleEvent(SDLWindow* window, SDL_Event& event)
                 break;
             }
         }
-        
-        LOG(Info, "SDL_EVENT_GAMEPAD_REMOVED");
         break;
     }
     case SDL_EVENT_GAMEPAD_REMAPPED:
     {
         auto ev = event.gdevice;
-        LOG(Info, "SDL_EVENT_GAMEPAD_REMAPPED");
+        LOG(Info, "TODO: SDL_EVENT_GAMEPAD_REMAPPED");
         break;
     }
     case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
     {
-        LOG(Info, "SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN");
+        LOG(Info, "TODO: SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN");
         break;
     }
     case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
     {
-        LOG(Info, "SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION");
+        LOG(Info, "TODO: SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION");
         break;
     }
     case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
     {
-        LOG(Info, "SDL_EVENT_GAMEPAD_TOUCHPAD_UP");
+        LOG(Info, "TODO: SDL_EVENT_GAMEPAD_TOUCHPAD_UP");
         break;
     }
     case SDL_EVENT_GAMEPAD_SENSOR_UPDATE:
     {
-        LOG(Info, "SDL_EVENT_GAMEPAD_SENSOR_UPDATE");
+        LOG(Info, "TODO: SDL_EVENT_GAMEPAD_SENSOR_UPDATE");
         break;
     }
     case SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED:
     {
         auto ev = event.gdevice;
-        LOG(Info, "SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED");
+        LOG(Info, "TODO: SDL_EVENT_GAMEPAD_STEAM_HANDLE_UPDATED");
         break;
     }
     }
@@ -713,6 +705,7 @@ Guid GetGamepadGuid(SDL_JoystickID instanceId)
 SDLGamepad::SDLGamepad(SDL_JoystickID instanceId)
     : SDLGamepad(SDL_OpenGamepad(instanceId), instanceId)
 {
+    LOG(Info, "Gamepad connected: {}", String(SDL_GetGamepadName(_gamepad)));
 }
 
 SDLGamepad::SDLGamepad(SDL_Gamepad* gamepad, SDL_JoystickID instanceId)
@@ -732,6 +725,7 @@ SDLGamepad::~SDLGamepad()
 void SDLGamepad::SetVibration(const GamepadVibrationState& state)
 {
     Gamepad::SetVibration(state);
+    LOG(Info, "TODO: SDLGamepad::SetVibration");
 }
 
 bool SDLGamepad::UpdateState()
