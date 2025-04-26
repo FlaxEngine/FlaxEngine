@@ -573,7 +573,7 @@ namespace FlaxEditor.Surface.Archetypes
                 "Blend animation poses (with additive mode)" +
                 "\n" +
                 "\nNote: " +
-                "\nOrder of nodes matters, because Additive animation is applied on top of current frame." +
+                "\nThe order of the nodes is important, because additive animation is applied on top of current frame." +
                 "\n" +
                 "\nTip for blender users:" +
                 "\nInside NLA the the order is bottom (first node in flax) to the top (last node in flax)." +
