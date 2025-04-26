@@ -78,7 +78,7 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.PostSpawn();
 
-            if (Actor.HasPrefabLink)
+            if (Actor.HasPrefabLink || Input.GetKey(KeyboardKeys.Shift))
             {
                 return;
             }
