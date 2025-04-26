@@ -689,7 +689,7 @@ namespace FlaxEngine.GUI
                 }
 
                 viewOffset.Y = Mathf.Clamp(viewOffset.Y, VScrollBar.Minimum, VScrollBar.Maximum);
-                VScrollBar.Value = viewOffset.Y;
+                VScrollBar.TargetValue = viewOffset.Y;
             }
 
             if (HScrollBar != null && HScrollBar.Enabled && width > MinSize)
@@ -704,7 +704,7 @@ namespace FlaxEngine.GUI
                 }
 
                 viewOffset.X = Mathf.Clamp(viewOffset.X, HScrollBar.Minimum, HScrollBar.Maximum);
-                HScrollBar.Value = viewOffset.X;
+                HScrollBar.TargetValue = viewOffset.X;
             }
 
             viewOffset *= -1;
