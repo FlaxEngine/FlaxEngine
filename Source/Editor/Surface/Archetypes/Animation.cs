@@ -573,11 +573,11 @@ namespace FlaxEditor.Surface.Archetypes
                 "Blend animation poses (with additive mode)" +
                 "\n" +
                 "\nNote: " +
-                "\nOrder of nodes matters, because Additive animation is appplayed on top of curent frame." +
+                "\nOrder of nodes matters, because Additive animation is applied on top of current frame." +
                 "\n" +
                 "\nTip for blender users:" +
-                "\nInside NLA the the order is bottom (first node in flax) to the top (last node in flax)" +
-                "\n​u need to place it in this order to get correct resoults",
+                "\nInside NLA the the order is bottom (first node in flax) to the top (last node in flax)." +
+                "\nYou need to place animations in this order to get correct results.",
                 Flags = NodeFlags.AnimGraph,
                 Size = new Float2(170, 80),
                 DefaultValues = new object[]
