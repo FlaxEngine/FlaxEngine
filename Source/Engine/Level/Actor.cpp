@@ -342,6 +342,7 @@ void Actor::SetParent(Actor* value, bool worldPositionsStays, bool canBreakPrefa
 
     // Fire events
     OnParentChanged();
+    OnParentChangedInHierarchy();
     if (wasActiveInTree != IsActiveInHierarchy())
         OnActiveInTreeChanged();
     OnTransformChanged();
@@ -1250,6 +1251,14 @@ void Actor::OnDisable()
 
 void Actor::OnParentChanged()
 {
+}
+
+void Actor::OnParentChangedInHierarchy()
+{
+    for (auto i = 0; i < Children.Count(); i++)
+    {
+        Children[i]->OnParentChangedInHierarchy();
+    }
 }
 
 void Actor::OnTransformChanged()

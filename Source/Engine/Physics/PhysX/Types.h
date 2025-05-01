@@ -19,6 +19,7 @@
 #include <ThirdParty/PhysX/PxShape.h>
 #include <ThirdParty/PhysX/PxMaterial.h>
 #include <ThirdParty/PhysX/PxQueryReport.h>
+#include <Engine/Physics/PhysicsTransform.h>
 
 namespace physx
 {
@@ -207,6 +208,15 @@ inline PxQuat& C2P(const Quaternion& v)
 inline Quaternion& P2C(const PxQuat& v)
 {
     return *(Quaternion*)&v;
+}
+
+inline PxTransform C2P(const PhysicsTransform& v)
+{
+    return PxTransform(C2P(v.Translation), C2P(v.Orientation));
+}
+inline PhysicsTransform P2C(const PxTransform& v)
+{
+    return PhysicsTransform(P2C(v.p), P2C(v.q));
 }
 
 inline float M2ToCm2(float v)

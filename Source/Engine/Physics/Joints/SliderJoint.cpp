@@ -46,8 +46,9 @@ float SliderJoint::GetCurrentVelocity() const
 
 void SliderJoint::OnDebugDrawSelected()
 {
-    const Vector3 source = GetPosition();
-    const Vector3 normal = GetOrientation() * Vector3::Right;
+    auto p0 = GetPoseActor0();
+    const Vector3 source = p0.Translation;
+    const Vector3 normal = p0.Orientation * Vector3::Right;
     float min = -100.0f, max = 100.0f;
     if (EnumHasAnyFlags(_flags, SliderJointFlag::Limit))
     {

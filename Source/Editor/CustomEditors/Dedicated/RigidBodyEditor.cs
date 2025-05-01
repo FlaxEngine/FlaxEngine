@@ -91,10 +91,22 @@ namespace FlaxEditor.CustomEditors.Dedicated
             base.Initialize(layout);
 
             // Add info box
-            if (IsSingleObject && Values[0] is RigidBody && Editor.IsPlayMode)
+            if (IsSingleObject && Values[0] is RigidBody)
             {
-                _infoLabel = layout.Label(string.Empty).Label;
-                _infoLabel.AutoHeight = true;
+                if (Editor.IsPlayMode)
+                {
+                    _infoLabel = layout.Label(string.Empty).Label;
+                    _infoLabel.AutoHeight = true;
+                }
+                else
+                {
+                    var bt = layout.Button("Snap To Center Of Mass");
+                    RigidBody rb = (RigidBody)Values[0];
+                    bt.Button.Clicked += () =>
+                    {
+                        rb.SnapToCenterOfMass();
+                    };
+                }
             }
         }
     }

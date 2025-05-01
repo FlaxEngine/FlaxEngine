@@ -25,10 +25,19 @@
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/WriteStream.h"
+
+#if INDEVELOPMENT && EXPERIMENTAL
+#include <Engine/Physics/PhysX/PxCylinderGeometry.h>
+#else
+#include <PhysX/extensions/PxCustomGeometryExt.h>
+#endif
+
+
 #include <ThirdParty/PhysX/PxPhysicsAPI.h>
 #include <ThirdParty/PhysX/PxQueryFiltering.h>
 #include <ThirdParty/PhysX/extensions/PxFixedJoint.h>
 #include <ThirdParty/PhysX/extensions/PxSphericalJoint.h>
+#include <ThirdParty/PhysX/geometry/PxGeometry.h>
 #if WITH_VEHICLE
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Physics/Actors/WheeledVehicle.h"
@@ -626,6 +635,9 @@ void GetShapeGeometry(const CollisionShape& shape, PxGeometryHolder& geometry)
 {
     switch (shape.Type)
     {
+    case CollisionShape::Types::Plane:
+        geometry.storeAny(PxPlaneGeometry());
+        break;
     case CollisionShape::Types::Sphere:
         geometry.storeAny(PxSphereGeometry(shape.Sphere.Radius));
         break;
@@ -643,6 +655,12 @@ void GetShapeGeometry(const CollisionShape& shape, PxGeometryHolder& geometry)
         break;
     case CollisionShape::Types::HeightField:
         geometry.storeAny(PxHeightFieldGeometry((PxHeightField*)shape.HeightField.HeightField, PxMeshGeometryFlags(0), Math::Max(shape.HeightField.HeightScale, PX_MIN_HEIGHTFIELD_Y_SCALE), Math::Max(shape.HeightField.RowScale, PX_MIN_HEIGHTFIELD_XZ_SCALE), Math::Max(shape.HeightField.ColumnScale, PX_MIN_HEIGHTFIELD_XZ_SCALE)));
+        break;
+    case CollisionShape::Types::Cylinder:
+        geometry.storeAny(PxCustomGeometry(*new physx::PxCustomGeometryExt::CylinderCallbacks(shape.Cylinder.HalfHeight, shape.Cylinder.Radius, shape.Cylinder.Axis, shape.Cylinder.Margin)));
+        break;
+    case CollisionShape::Types::Cone:
+        geometry.storeAny(PxCustomGeometry(*new physx::PxCustomGeometryExt::ConeCallbacks(shape.Cone.HalfHeight, shape.Cone.Radius, shape.Cone.Axis, shape.Cone.Margin)));
         break;
     }
 }
@@ -1476,6 +1494,39 @@ void PhysicalMaterial::UpdatePhysicsMaterial()
 
 bool CollisionCooking::CookConvexMesh(CookingInput& input, BytesContainer& output)
 {
+#if 0 // data extractor
+
+    String out = String::Format(L"\n static Float3* points [{0}] = ", input.VertexCount);
+    out.Append('{');
+    auto data = Array<Float3>(input.VertexData, input.VertexCount);
+    for (size_t i = 0; i < data.Count(); i++)
+    {
+        auto d = data[i];
+        out.Append(String::Format(L"\tFloat3({0},{1},{2}),\n", d.X, d.Y, d.Z));
+    }
+    out.Append(L"};");
+    if (input.Is16bitIndexData)
+    {
+        auto data2 = Array<PxU16>((PxU16*)input.IndexData, input.IndexCount);
+        for (size_t i = 0; i < data2.Count(); i++)
+        {
+            auto d = data2[i];
+            out.Append(String::Format(L"{0},\n",d));
+        }
+    }
+    else
+    {
+        auto data2 = Array<PxU32>((PxU32*)input.IndexData, input.IndexCount);
+        for (size_t i = 0; i < data2.Count(); i++)
+        {
+            auto d = data2[i];
+            out.Append(String::Format(L"{0},\n", d));
+        }
+    }
+
+    LOG_STR(Info, out.ToString());
+#endif
+
     PROFILE_CPU();
     ENSURE_CAN_COOK;
     if (input.VertexCount == 0)
@@ -2482,12 +2533,10 @@ Vector3 PhysicsBackend::GetRigidDynamicActorCenterOfMass(void* actor)
     return P2C(actorPhysX->getCMassLocalPose().p);
 }
 
-void PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value)
+void PhysicsBackend::SetRigidDynamicActorCenterOfMass(void* actor, const Vector3& value)
 {
     auto actorPhysX = (PxRigidDynamic*)actor;
-    auto pose = actorPhysX->getCMassLocalPose();
-    pose.p += C2P(value);
-    actorPhysX->setCMassLocalPose(pose);
+    actorPhysX->setCMassLocalPose(PxTransform(C2P(value), actorPhysX->getCMassLocalPose().q));
 }
 
 bool PhysicsBackend::GetRigidDynamicActorIsSleeping(void* actor)
@@ -2656,8 +2705,13 @@ CollisionShape::Types PhysicsBackend::GetShapeType(void* shape)
 {
     auto shapePhysX = (PxShape*)shape;
     CollisionShape::Types type;
-    switch (shapePhysX->getGeometryType())
+    const PxGeometry& geom = shapePhysX->getGeometry();
+    const PxCustomGeometry& customGeom1 = static_cast<const PxCustomGeometry&>(geom);
+    switch (geom.getType())
     {
+    case PxGeometryType::ePLANE:
+        type = CollisionShape::Types::Plane;
+        break;
     case PxGeometryType::eSPHERE:
         type = CollisionShape::Types::Sphere;
         break;
@@ -2676,7 +2730,17 @@ CollisionShape::Types PhysicsBackend::GetShapeType(void* shape)
     case PxGeometryType::eHEIGHTFIELD:
         type = CollisionShape::Types::HeightField;
         break;
-    default: ;
+    case PxGeometryType::eCUSTOM:
+        if (customGeom1.getCustomType() == physx::PxCustomGeometryExt::CylinderCallbacks::TYPE())
+        {
+            type = CollisionShape::Types::Cylinder;
+        }
+        if (customGeom1.getCustomType() == physx::PxCustomGeometryExt::ConeCallbacks::TYPE())
+        {
+            type = CollisionShape::Types::Cone;
+        }
+    default:
+        break;
     }
     return type;
 }
@@ -2785,29 +2849,11 @@ bool PhysicsBackend::RayCastShape(void* shape, const Vector3& position, const Qu
     return true;
 }
 
-void PhysicsBackend::SetJointFlags(void* joint, JointFlags value)
-{
-    auto jointPhysX = (PxJoint*)joint;
-    jointPhysX->setConstraintFlag(PxConstraintFlag::eCOLLISION_ENABLED, EnumHasAnyFlags(value, JointFlags::Collision));
-}
-
 void PhysicsBackend::SetJointActors(void* joint, void* actors0, void* actor1)
 {
-    auto jointPhysX = (PxJoint*)joint;
-    jointPhysX->setActors((PxRigidActor*)actors0, (PxRigidActor*)actor1);
+    ((PxJoint*)joint)->setActors((PxRigidActor*)actors0, (PxRigidActor*)actor1);
 }
 
-void PhysicsBackend::SetJointActorPose(void* joint, const Vector3& position, const Quaternion& orientation, uint8 index)
-{
-    auto jointPhysX = (PxJoint*)joint;
-    jointPhysX->setLocalPose((PxJointActorIndex::Enum)index, PxTransform(C2P(position), C2P(orientation)));
-}
-
-void PhysicsBackend::SetJointBreakForce(void* joint, float force, float torque)
-{
-    auto jointPhysX = (PxJoint*)joint;
-    jointPhysX->setBreakForce(force, torque);
-}
 
 void PhysicsBackend::GetJointForce(void* joint, Vector3& linear, Vector3& angular)
 {
@@ -2826,11 +2872,66 @@ void PhysicsBackend::GetJointForce(void* joint, Vector3& linear, Vector3& angula
     }
 }
 
+void PhysicsBackend::SetJointLocalPose(void* joint, uint8 actor, const PhysicsTransform& LocalPose)
+{
+    ((PxJoint*)joint)->setLocalPose((PxJointActorIndex::Enum)actor, C2P(LocalPose));
+};
+void PhysicsBackend::GetJointLocalPose(void* joint, uint8 actor, PhysicsTransform& physicsTransform)
+{
+    physicsTransform = P2C(((PxJoint*)joint)->getLocalPose((PxJointActorIndex::Enum)actor));
+};
+void PhysicsBackend::GetJointRelativeTransform(void* joint, PhysicsTransform& physicsTransform)
+{
+    physicsTransform = P2C(((PxJoint*)joint)->getRelativeTransform());
+};
+void PhysicsBackend::GetJointRelativeLinearVelocity(void* joint, Vector3& linearVelocity)
+{
+    linearVelocity = P2C(((PxJoint*)joint)->getRelativeLinearVelocity());
+};
+void PhysicsBackend::GetJointRelativeAngularVelocity(void* joint, Vector3& angularVelocity)
+{
+    angularVelocity = P2C(((PxJoint*)joint)->getRelativeAngularVelocity());
+};
+
+void PhysicsBackend::SetJointBreakForce(void* joint, float force, float torque){
+       ((PxJoint*)joint)->setBreakForce(force, torque);
+}
+void PhysicsBackend::GetJointBreakForce(void* joint, float& force, float& torque){
+       ((PxJoint*)joint)->getBreakForce(force, torque);
+};
+void PhysicsBackend::SetJointInvMassScale0(void* joint, float invMassScale){
+       ((PxJoint*)joint)->setInvMassScale0(invMassScale);
+};
+float PhysicsBackend::GetJointInvMassScale0(void* joint){
+ return ((PxJoint*)joint)->getInvMassScale0();
+};
+void PhysicsBackend::SetJointInvInertiaScale0(void* joint, float invInertiaScale){
+       ((PxJoint*)joint)->setInvInertiaScale0(invInertiaScale);
+};
+float PhysicsBackend::GetJointInvInertiaScale0(void* joint){
+ return ((PxJoint*)joint)->getInvInertiaScale0();
+};
+void PhysicsBackend::SetJointInvMassScale1(void* joint, float invMassScale){
+    ((PxJoint*)joint)->setInvMassScale1(invMassScale);
+};
+float PhysicsBackend::GetJointInvMassScale1(void* joint){
+ return ((PxJoint*)joint)->getInvMassScale1();
+};
+void PhysicsBackend::SetJointInvInertiaScale1(void* joint, float invInertiaScale){
+    ((PxJoint*)joint)->setInvInertiaScale1(invInertiaScale);
+};
+float PhysicsBackend::GetJointInvInertiaScale1(void* joint){
+ return ((PxJoint*)joint)->getInvInertiaScale1();
+};
+
+void PhysicsBackend::SetJointFlags(void* joint, JointFlags value)
+{
+    ((PxJoint*)joint)->setConstraintFlag(PxConstraintFlag::eCOLLISION_ENABLED, EnumHasAnyFlags(value, JointFlags::Collision));
+}
+
 void* PhysicsBackend::CreateFixedJoint(const PhysicsJointDesc& desc)
 {
-    const PxTransform trans0(C2P(desc.Pos0), C2P(desc.Rot0));
-    const PxTransform trans1(C2P(desc.Pos1), C2P(desc.Rot1));
-    PxFixedJoint* joint = PxFixedJointCreate(*PhysX, (PxRigidActor*)desc.Actor0, trans0, (PxRigidActor*)desc.Actor1, trans1);
+    PxFixedJoint* joint = PxFixedJointCreate(*PhysX, (PxRigidActor*)desc.Actor0, C2P(desc.LocalPoseActor0), (PxRigidActor*)desc.Actor1, C2P(desc.LocalPoseActor1));
     joint->userData = desc.Joint;
 #if PHYSX_DEBUG_NAMING
     joint->setName("FixedJoint");
@@ -2840,9 +2941,7 @@ void* PhysicsBackend::CreateFixedJoint(const PhysicsJointDesc& desc)
 
 void* PhysicsBackend::CreateDistanceJoint(const PhysicsJointDesc& desc)
 {
-    const PxTransform trans0(C2P(desc.Pos0), C2P(desc.Rot0));
-    const PxTransform trans1(C2P(desc.Pos1), C2P(desc.Rot1));
-    PxDistanceJoint* joint = PxDistanceJointCreate(*PhysX, (PxRigidActor*)desc.Actor0, trans0, (PxRigidActor*)desc.Actor1, trans1);
+    PxDistanceJoint* joint = PxDistanceJointCreate(*PhysX, (PxRigidActor*)desc.Actor0, C2P(desc.LocalPoseActor0), (PxRigidActor*)desc.Actor1, C2P(desc.LocalPoseActor1));
     joint->userData = desc.Joint;
 #if PHYSX_DEBUG_NAMING
     joint->setName("DistanceJoint");
@@ -2852,9 +2951,7 @@ void* PhysicsBackend::CreateDistanceJoint(const PhysicsJointDesc& desc)
 
 void* PhysicsBackend::CreateHingeJoint(const PhysicsJointDesc& desc)
 {
-    const PxTransform trans0(C2P(desc.Pos0), C2P(desc.Rot0));
-    const PxTransform trans1(C2P(desc.Pos1), C2P(desc.Rot1));
-    PxRevoluteJoint* joint = PxRevoluteJointCreate(*PhysX, (PxRigidActor*)desc.Actor0, trans0, (PxRigidActor*)desc.Actor1, trans1);
+    PxRevoluteJoint* joint = PxRevoluteJointCreate(*PhysX, (PxRigidActor*)desc.Actor0, C2P(desc.LocalPoseActor0), (PxRigidActor*)desc.Actor1, C2P(desc.LocalPoseActor1));
     joint->userData = desc.Joint;
 #if PHYSX_DEBUG_NAMING
     joint->setName("HingeJoint");
@@ -2864,9 +2961,7 @@ void* PhysicsBackend::CreateHingeJoint(const PhysicsJointDesc& desc)
 
 void* PhysicsBackend::CreateSliderJoint(const PhysicsJointDesc& desc)
 {
-    const PxTransform trans0(C2P(desc.Pos0), C2P(desc.Rot0));
-    const PxTransform trans1(C2P(desc.Pos1), C2P(desc.Rot1));
-    PxPrismaticJoint* joint = PxPrismaticJointCreate(*PhysX, (PxRigidActor*)desc.Actor0, trans0, (PxRigidActor*)desc.Actor1, trans1);
+    PxPrismaticJoint* joint = PxPrismaticJointCreate(*PhysX, (PxRigidActor*)desc.Actor0, C2P(desc.LocalPoseActor0), (PxRigidActor*)desc.Actor1, C2P(desc.LocalPoseActor1));
     joint->userData = desc.Joint;
 #if PHYSX_DEBUG_NAMING
     joint->setName("SliderJoint");
@@ -2876,9 +2971,7 @@ void* PhysicsBackend::CreateSliderJoint(const PhysicsJointDesc& desc)
 
 void* PhysicsBackend::CreateSphericalJoint(const PhysicsJointDesc& desc)
 {
-    const PxTransform trans0(C2P(desc.Pos0), C2P(desc.Rot0));
-    const PxTransform trans1(C2P(desc.Pos1), C2P(desc.Rot1));
-    PxSphericalJoint* joint = PxSphericalJointCreate(*PhysX, (PxRigidActor*)desc.Actor0, trans0, (PxRigidActor*)desc.Actor1, trans1);
+    PxSphericalJoint* joint = PxSphericalJointCreate(*PhysX, (PxRigidActor*)desc.Actor0, C2P(desc.LocalPoseActor0), (PxRigidActor*)desc.Actor1, C2P(desc.LocalPoseActor1));
     joint->userData = desc.Joint;
 #if PHYSX_DEBUG_NAMING
     joint->setName("SphericalJoint");
@@ -2888,9 +2981,7 @@ void* PhysicsBackend::CreateSphericalJoint(const PhysicsJointDesc& desc)
 
 void* PhysicsBackend::CreateD6Joint(const PhysicsJointDesc& desc)
 {
-    const PxTransform trans0(C2P(desc.Pos0), C2P(desc.Rot0));
-    const PxTransform trans1(C2P(desc.Pos1), C2P(desc.Rot1));
-    PxD6Joint* joint = PxD6JointCreate(*PhysX, (PxRigidActor*)desc.Actor0, trans0, (PxRigidActor*)desc.Actor1, trans1);
+    PxD6Joint* joint = PxD6JointCreate(*PhysX, (PxRigidActor*)desc.Actor0, C2P(desc.LocalPoseActor0), (PxRigidActor*)desc.Actor1, C2P(desc.LocalPoseActor1));
     joint->userData = desc.Joint;
 #if PHYSX_DEBUG_NAMING
     joint->setName("D6Joint");

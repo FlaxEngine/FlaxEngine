@@ -1017,6 +1017,12 @@ public:
     API_FUNCTION() virtual void OnParentChanged();
 
     /// <summary>
+    /// Called when actor parent gets changed somhere in hierarchy.
+    /// override in delivered but always call base implementacion
+    /// </summary>
+    virtual void OnParentChangedInHierarchy();
+
+    /// <summary>
     /// Called when actor transform gets changed.
     /// </summary>
     API_FUNCTION() virtual void OnTransformChanged();

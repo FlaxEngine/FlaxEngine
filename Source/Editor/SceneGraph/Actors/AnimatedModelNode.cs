@@ -346,7 +346,8 @@ namespace FlaxEditor.SceneGraph.Actors
 #if true
                     // Child -> Parent
                     joint.Name = "Joint";
-                    joint.Target = parentBody;
+                    joint.Actor0 = parentBody;
+                    joint.Actor1 = body;
                     joint.Parent = body;
                     //joint.Orientation = Quaternion.FromDirection(Float3.Normalize(parentBody.Position - body.Position));
 #else
@@ -356,8 +357,9 @@ namespace FlaxEditor.SceneGraph.Actors
                     joint.Parent = parentBody;
                     //joint.Orientation = Quaternion.FromDirection(Float3.Normalize(body.Position - parentBody.Position));
 #endif
-                    joint.SetJointLocation(actor.Transform.LocalToWorld(jointPose.TranslationVector));
-                    joint.SetJointOrientation(actor.Transform.Orientation * Quaternion.RotationMatrix(jointPose));
+                    
+                    joint.Position = actor.Transform.LocalToWorld(jointPose.TranslationVector);
+                    joint.Orientation = actor.Transform.Orientation * Quaternion.RotationMatrix(jointPose);
                     joint.EnableAutoAnchor = true; // Use automatic target anchor to make it easier to setup joint in editor when working with ragdolls
                 }
             }

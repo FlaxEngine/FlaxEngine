@@ -5,6 +5,7 @@
 #include "Physics.h"
 #include "PhysicsSettings.h"
 #include "Engine/Core/Types/Span.h"
+#include "PhysicsTransform.h"
 
 struct HingeJointDrive;
 struct SpringParameters;
@@ -30,10 +31,8 @@ struct PhysicsJointDesc
     Joint* Joint;
     void* Actor0;
     void* Actor1;
-    Quaternion Rot0;
-    Quaternion Rot1;
-    Vector3 Pos0;
-    Vector3 Pos1;
+    PhysicsTransform LocalPoseActor0;
+    PhysicsTransform LocalPoseActor1;
 };
 
 struct PhysicsClothDesc
@@ -164,7 +163,7 @@ public:
     static Vector3 GetRigidDynamicActorAngularVelocity(void* actor);
     static void SetRigidDynamicActorAngularVelocity(void* actor, const Vector3& value, bool wakeUp);
     static Vector3 GetRigidDynamicActorCenterOfMass(void* actor);
-    static void SetRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value);
+    static void SetRigidDynamicActorCenterOfMass(void* actor, const Vector3& value);
     static bool GetRigidDynamicActorIsSleeping(void* actor);
     static void RigidDynamicActorSleep(void* actor);
     static void RigidDynamicActorWakeUp(void* actor);
@@ -199,10 +198,24 @@ public:
 
     // Joints
     static void SetJointFlags(void* joint, JointFlags value);
-    static void SetJointActors(void* joint, void* actors0, void* actor1);
-    static void SetJointActorPose(void* joint, const Vector3& position, const Quaternion& orientation, uint8 index);
-    static void SetJointBreakForce(void* joint, float force, float torque);
     static void GetJointForce(void* joint, Vector3& linear, Vector3& angular);
+    static void SetJointActors(void* joint, void* actors0, void* actor1);
+    static void SetJointBreakForce(void* joint, float force, float torque);
+    static void SetJointLocalPose(void* joint, uint8 actor, const PhysicsTransform& LocalPose);
+    static void GetJointLocalPose(void* joint, uint8 actor, PhysicsTransform& physicsTransform);
+    static void GetJointRelativeTransform(void* joint, PhysicsTransform& physicsTransform);
+    static void GetJointRelativeLinearVelocity(void* joint, Vector3& linearVelocity);
+    static void GetJointRelativeAngularVelocity(void* joint, Vector3& angularVelocity);
+    static void GetJointBreakForce(void* joint, float& force, float& torque);
+    static void SetJointInvMassScale0(void* joint, float invMassScale);
+    static float GetJointInvMassScale0(void* joint);
+    static void SetJointInvInertiaScale0(void* joint, float invInertiaScale);
+    static float GetJointInvInertiaScale0(void* joint);
+    static void SetJointInvMassScale1(void* joint, float invMassScale);
+    static float GetJointInvMassScale1(void* joint);
+    static void SetJointInvInertiaScale1(void* joint, float invInertiaScale);
+    static float GetJointInvInertiaScale1(void* joint);
+
     static void* CreateFixedJoint(const PhysicsJointDesc& desc);
     static void* CreateDistanceJoint(const PhysicsJointDesc& desc);
     static void* CreateHingeJoint(const PhysicsJointDesc& desc);

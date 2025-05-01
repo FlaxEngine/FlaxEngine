@@ -7,6 +7,12 @@
 #include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Serialization/Serialization.h"
 
+
+#if USE_EDITOR
+#include "Engine/Debug/DebugLog.h"
+#include "Engine/Level/Scene/SceneRendering.h"
+#endif
+
 RigidBody::RigidBody(const SpawnParams& params)
     : Actor(params)
     , _actor(nullptr)
@@ -26,6 +32,7 @@ RigidBody::RigidBody(const SpawnParams& params)
     , _updateMassWhenScaleChanges(false)
     , _overrideMass(false)
     , _isUpdatingTransform(false)
+    , _hasCenterOfMass(false)
 {
 }
 
@@ -159,9 +166,18 @@ void RigidBody::SetCenterOfMassOffset(const Float3& value)
 {
     if (Float3::NearEqual(value, _centerOfMassOffset))
         return;
+
+    if (!_hasCenterOfMass)
+    {
+        LOG(Warning, "Unanable to set center of mass offset yet,attached colliders are not initialized yet");
+        return;
+    }
+
     _centerOfMassOffset = value;
     if (_actor)
-        PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
+    {
+        PhysicsBackend::SetRigidDynamicActorCenterOfMass(_actor, _centerOfMass + _centerOfMassOffset);
+    }
 }
 
 void RigidBody::SetConstraints(const RigidbodyConstraints value)
@@ -217,9 +233,13 @@ void RigidBody::SetSleepThreshold(const float value) const
         PhysicsBackend::SetRigidDynamicActorSleepThreshold(_actor, value);
 }
 
-Vector3 RigidBody::GetCenterOfMass() const
+void RigidBody::SetCenterOfMass(const Vector3& value)
 {
-    return _actor ? PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor) : Vector3::Zero;
+    _centerOfMass = value;
+    if (_actor)
+    {
+        PhysicsBackend::SetRigidDynamicActorCenterOfMass(_actor, _centerOfMass + _centerOfMassOffset);
+    }
 }
 
 bool RigidBody::IsSleeping() const
@@ -277,6 +297,19 @@ void RigidBody::SetSolverIterationCounts(int32 minPositionIters, int32 minVeloci
 {
     if (_actor)
         PhysicsBackend::SetRigidDynamicActorSolverIterationCounts(_actor, minPositionIters, minVelocityIters);
+}
+
+void RigidBody::SnapToCenterOfMass()
+{
+    Vector3 delta = _centerOfMass;
+    if (Vector3::NearEqual(delta, Vector3::Zero))
+        return;
+    SetPosition(GetPosition() + delta);
+    for (auto i = 0; i < Children.Count(); i++)
+    {
+        Children[i]->SetPosition(Children[i]->GetPosition() - delta);
+    }
+    SetCenterOfMass(Float3::Zero);
 }
 
 void RigidBody::ClosestPoint(const Vector3& position, Vector3& result) const
@@ -361,7 +394,7 @@ void RigidBody::OnTriggerExit(PhysicsColliderActor* c)
 void RigidBody::OnColliderChanged(Collider* c)
 {
     UpdateMass();
-
+    _centerOfMass = PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor);
     // TODO: maybe wake up only if one ore more shapes attached is active?
     //if (GetStartAwake())
     //	WakeUp();
@@ -388,6 +421,61 @@ void RigidBody::UpdateScale()
     if (_updateMassWhenScaleChanges && !_overrideMass)
         UpdateMass();
 }
+
+#if USE_EDITOR
+#include "Engine/Debug/DebugDraw.h"
+#include "Engine/Graphics/RenderView.h"
+
+void RigidBody::OnDebugDrawSelected()
+{
+    if (DisplayAttachedColliders)
+    {
+        for (auto i = 0; i < AttachedColliders.Count(); i++)
+        {
+            if (auto c = AttachedColliders[i])
+            {
+                c->OnDebugDrawSelected();
+            }
+        }
+    }
+    //draw center of mass
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition() + (GetOrientation() * (GetCenterOfMass() - GetCenterOfMassOffset())), 5.0f), Color::Red, 0, false);
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition() + (GetOrientation() * GetCenterOfMass()), 2.5f), Color::Aqua, 0, false);
+    Actor::OnDebugDrawSelected();
+}
+
+void RigidBody::DrawPhysicsDebug(RenderView& view)
+{
+    if (view.Mode == ViewMode::PhysicsColliders)
+    {
+        if (_actor)
+        {
+            auto comback = PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor);
+            Vector3 position; Quaternion orientation;
+            PhysicsBackend::GetRigidActorPose(_actor, position, orientation);
+            if (comback != GetCenterOfMass())
+            {
+                //display it at the invalid position
+                auto falsepoint = position + (orientation * GetCenterOfMass());
+                bool d = Vector3::Distance(view.WorldPosition, falsepoint) > 100.0f;
+
+                if (d)
+                {
+                    String WarnMsg{ TEXT("Warning:\n Center Of Mass is not in sync with back end\n") };
+                    DEBUG_DRAW_TEXT(WarnMsg, falsepoint, Color::Yellow, 5, 0);
+                }
+                DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(position + (orientation * GetCenterOfMass()), 2.5f), Color::Red, 0, false);
+                DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(position + (orientation * comback), 2.0f), Color::Green, 0, false);
+            }
+            else
+            {
+                DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(position + (orientation * comback), 2.5f), Color::Green, 0, false);
+            }
+        }
+    }
+}
+
+#endif
 
 void RigidBody::Serialize(SerializeStream& stream, const void* otherObj)
 {
@@ -466,6 +554,26 @@ void RigidBody::OnActiveTransformChanged()
     _isUpdatingTransform = false;
 }
 
+void RigidBody::OnEnable()
+{
+#if USE_EDITOR
+    GetSceneRendering()->AddPhysicsDebug<RigidBody, &RigidBody::DrawPhysicsDebug>(this);
+#endif
+    // Base
+    Actor::OnEnable();
+}
+
+void RigidBody::OnDisable()
+{
+#if USE_EDITOR
+    GetSceneRendering()->RemovePhysicsDebug<RigidBody, &RigidBody::DrawPhysicsDebug>(this);
+#endif
+    // Base
+    Actor::OnDisable();
+}
+
+
+
 void RigidBody::BeginPlay(SceneBeginData* data)
 {
     // Create rigid body
@@ -491,22 +599,8 @@ void RigidBody::BeginPlay(SceneBeginData* data)
     PhysicsBackend::SetRigidDynamicActorMaxAngularVelocity(_actor, _maxAngularVelocity);
     PhysicsBackend::SetRigidDynamicActorConstraints(_actor, _constraints);
 
-    // Find colliders to attach
-    for (int32 i = 0; i < Children.Count(); i++)
-    {
-        auto collider = dynamic_cast<Collider*>(Children[i]);
-        if (collider && collider->CanAttach(this))
-        {
-            collider->Attach(this);
-        }
-    }
-
     // Setup mass (calculate or use overriden value)
     UpdateMass();
-
-    // Apply the Center Of Mass offset
-    if (!_centerOfMassOffset.IsZero())
-        PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
 
     // Register actor
     PhysicsBackend::AddSceneActor(scene, _actor);
@@ -519,6 +613,13 @@ void RigidBody::BeginPlay(SceneBeginData* data)
 
     // Base
     Actor::BeginPlay(data);
+
+    //pull the COM this is incorect place but o well will do the OnEnable needs the _centerOfMass
+    _centerOfMass = PhysicsBackend::GetRigidDynamicActorCenterOfMass(_actor);
+    _hasCenterOfMass = true;
+
+    //update COMO
+    PhysicsBackend::SetRigidDynamicActorCenterOfMass(_actor, _centerOfMass + _centerOfMassOffset);
 }
 
 void RigidBody::EndPlay()
@@ -546,6 +647,19 @@ void RigidBody::OnActiveInTreeChanged()
         const bool isActive = _enableSimulation && IsActiveInHierarchy();
         PhysicsBackend::SetActorFlag(_actor, PhysicsBackend::ActorFlags::NoSimulation, !isActive);
 
+        if (_hasCenterOfMass && IsActiveInHierarchy())
+        {
+            //update COM
+            if (_actor)
+            {
+                PhysicsBackend::SetRigidDynamicActorCenterOfMass(_actor, _centerOfMass + _centerOfMassOffset);
+            }
+            else
+            {
+                LOG(Error, "SetRigidDynamicActorCenterOfMass call faled _actor == null");
+            }
+        }
+
         // Auto wake up
         if (isActive && GetStartAwake())
             WakeUp();
@@ -563,8 +677,15 @@ void RigidBody::OnTransformChanged()
     // Update physics is not during physics state synchronization
     if (!_isUpdatingTransform && _actor)
     {
+        //[Note] the PhysicsBackend::SetRigidActorPose cant exist here
+        //leaving this note as a reminder
+        //it creates phantom forces on children RigidBody, clipping colliders thru the ground and more...
+        //but kinematic bodies need this so nothing is broken the set transform comps shall implement the flag for forcing a update
+        //insted of doing this always
+
         const bool kinematic = GetIsKinematic() && GetEnableSimulation();
-        PhysicsBackend::SetRigidActorPose(_actor, _transform.Translation, _transform.Orientation, kinematic, true);
+        if (kinematic)
+            PhysicsBackend::SetRigidActorPose(_actor, _transform.Translation, _transform.Orientation, kinematic, true);
         UpdateScale();
     }
 

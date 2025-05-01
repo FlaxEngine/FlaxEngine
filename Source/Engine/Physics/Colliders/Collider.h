@@ -6,9 +6,34 @@
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Content/JsonAssetReference.h"
 #include "Engine/Physics/Actors/PhysicsColliderActor.h"
+#include "Engine/Scripting/ScriptingObjectReference.h"
 
 struct RayCastHit;
 class RigidBody;
+
+/*note: DON'T REORDER ColliderAxis the CylinderCollider is casting enum to int*/
+
+/// <summary>
+/// Describes the orientation of collider
+/// </summary>
+API_ENUM() enum ColliderAxis
+{
+    /// <summary>
+    /// The x
+    /// </summary>
+    X = 0,
+
+    /// <summary>
+    /// The y
+    /// </summary>
+    Y = 1,
+
+    /// <summary>
+    /// The z
+    /// </summary>
+    Z = 2
+};
+
 
 /// <summary>
 /// A base class for all colliders.
@@ -29,7 +54,14 @@ protected:
     Vector3 _cachedLocalPosePos;
     Quaternion _cachedLocalPoseRot;
 
+    /// <summary>
+    /// The RigidBody this collider it attached to.
+    /// </summary>
+    API_FIELD(public,Attributes = "EditorOrder(0), EditorDisplay(\"Collider\"), ReadOnly, NoSerialize")
+    ScriptingObjectReference<RigidBody> AttachedTo;
+
 public:
+
     /// <summary>
     /// Gets the native physics backend object.
     /// </summary>
@@ -117,6 +149,10 @@ public:
     /// <param name="rigidBody">The rigid body.</param>
     void Attach(RigidBody* rigidBody);
 
+    /// <summary>
+    /// Detaches collider from rigid body.
+    /// </summary>
+    void Detach();
 protected:
     /// <summary>
     /// Updates the shape actor collisions/queries layer mask bits.
@@ -156,7 +192,13 @@ protected:
 
 private:
     void OnMaterialChanged();
+    RigidBody* GetAttachmentRigidBody();
 
+    /// <summary>
+    /// Calculates _cachedLocalPosePos and _cachedLocalPoseRot
+    /// </summary>
+    /// <returns>true if shape transform needs to change, false if is not attached to RigidBody or there was no change</returns>
+    bool CalculateShapeTransform();
 public:
     // [PhysicsColliderActor]
     RigidBody* GetAttachedRigidBody() const override;
@@ -167,6 +209,12 @@ public:
 
 #if USE_EDITOR
     virtual void DrawPhysicsDebug(RenderView& view);
+
+    /// <summary>
+    /// [Editor only] shows collider when it is deselected
+    /// </summary>
+    API_FIELD(public,Attributes = "EditorOrder(200), EditorDisplay(\"Collider\")")
+        bool DisplayCollider = false;
 #endif
 
 protected:
@@ -178,7 +226,10 @@ protected:
     void OnActiveInTreeChanged() override;
     void OnParentChanged() override;
     void OnTransformChanged() override;
+    void OnParentChangedInHierarchy() override;
     void OnLayerChanged() override;
     void OnStaticFlagsChanged() override;
     void OnPhysicsSceneChanged(PhysicsScene* previous) override;
+
+    virtual void Internal_SetContactOffset(float value);
 };
