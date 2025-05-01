@@ -196,13 +196,13 @@ void CharacterController::OnDebugDraw()
         const Vector3 position = _transform.LocalToWorld(_center);
         if (GetIsTrigger())
         {
-            DEBUG_DRAW_WIRE_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
-            DEBUG_DRAW_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
+            DEBUG_DRAW_WIRE_CAPSULE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+            DEBUG_DRAW_CAPSULE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
         }
         else
         {
-            DEBUG_DRAW_WIRE_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
-            DEBUG_DRAW_TUBE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::NormalCollider, 0, true);
+            DEBUG_DRAW_WIRE_CAPSULE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+            DEBUG_DRAW_CAPSULE(position, Quaternion::Euler(90, 0, 0), radius, height, FlaxEngine::ColliderColors::NormalCollider, 0, true);
         }
     }
 
