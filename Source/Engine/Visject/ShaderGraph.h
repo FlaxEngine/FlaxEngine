@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -93,22 +93,6 @@ public:
     ShaderGraphParameter()
         : GraphParameter(SpawnParams(Guid::New(), TypeInitializer))
     {
-    }
-
-    ShaderGraphParameter(const ShaderGraphParameter& other)
-        : ShaderGraphParameter()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    ShaderGraphParameter& operator=(const ShaderGraphParameter& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
     }
 };
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_ASSETS_IMPORTER
 
@@ -151,14 +151,7 @@ bool CreateAssetContext::AllocateChunk(int32 index)
     }
 
     // Create new chunk
-    const auto chunk = New<FlaxChunk>();
-    Data.Header.Chunks[index] = chunk;
-
-    if (chunk == nullptr)
-    {
-        OUT_OF_MEMORY;
-    }
-
+    Data.Header.Chunks[index] = New<FlaxChunk>();
     return false;
 }
 

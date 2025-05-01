@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -65,6 +65,7 @@ private:
     float _height;
     float _minMoveDistance;
     bool _isUpdatingTransform;
+    bool _autoGravity = false;
     Vector3 _upDirection;
     Vector3 _gravityDisplacement;
     NonWalkableModes _nonWalkableMode;
@@ -147,6 +148,20 @@ public:
     /// Sets the minimum move distance of the character controller.The minimum traveled distance to consider. If traveled distance is smaller, the character doesn't move. This is used to stop the recursive motion algorithm when remaining distance to travel is small.
     /// </summary>
     API_PROPERTY() void SetMinMoveDistance(float value);
+
+    /// <summary>
+    /// Gets the automatic gravity force applying mode. Can be toggled off if gameplay controls character movement velocity including gravity, or toggled on if gravity should be applied together with root motion from animation movement.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(250), DefaultValue(false), EditorDisplay(\"Character Controller\")")
+    bool GetAutoGravity() const
+    {
+        return _autoGravity;
+    }
+
+    /// <summary>
+    /// Sets the automatic gravity force applying mode. Can be toggled off if gameplay controls character movement velocity including gravity, or toggled on if gravity should be applied together with root motion from animation movement.
+    /// </summary>
+    API_PROPERTY() void SetAutoGravity(bool value);
 
 public:
     /// <summary>

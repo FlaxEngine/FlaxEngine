@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -21,8 +21,10 @@ namespace FlaxEditor.Windows
     {
         private readonly RenderOutputControl _viewport;
         private readonly GameRoot _guiRoot;
-        private bool _showGUI = true;
+        private bool _showGUI = true, _editGUI = true;
         private bool _showDebugDraw = false;
+        private bool _audioMuted = false;
+        private float _audioVolume = 1;
         private bool _isMaximized = false, _isUnlockingMouse = false;
         private bool _isFloating = false, _isBorderless = false;
         private bool _cursorVisible = true;
@@ -83,12 +85,56 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether allow editing game GUI in the view or keep it visible-only.
+        /// </summary>
+        public bool EditGUI
+        {
+            get => _editGUI;
+            set
+            {
+                if (value != _editGUI)
+                {
+                    _editGUI = value;
+                    _guiRoot.Editable = value;
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets or sets a value indicating whether show Debug Draw shapes in the view or keep it hidden.
         /// </summary>
         public bool ShowDebugDraw
         {
             get => _showDebugDraw;
             set => _showDebugDraw = value;
+        }
+
+
+        /// <summary>
+        /// Gets or set a value indicating whether Audio is muted.
+        /// </summary>
+        public bool AudioMuted
+        {
+            get => _audioMuted;
+            set
+            {
+                Audio.MasterVolume = value ? 0 : AudioVolume;
+                _audioMuted = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value that set the audio volume.
+        /// </summary>
+        public float AudioVolume
+        {
+            get => _audioVolume;
+            set
+            {
+                if (!AudioMuted)
+                    Audio.MasterVolume = value;
+                _audioVolume = value;
+            }
         }
 
         /// <summary>
@@ -245,8 +291,9 @@ namespace FlaxEditor.Windows
         /// </summary>
         private class GameRoot : UIEditorRoot
         {
+            internal bool Editable = true;
             public override bool EnableInputs => !Time.GamePaused && Editor.IsPlayMode;
-            public override bool EnableSelecting => !Editor.IsPlayMode || Time.GamePaused;
+            public override bool EnableSelecting => (!Editor.IsPlayMode || Time.GamePaused) && Editable;
             public override TransformGizmo TransformGizmo => Editor.Instance.MainTransformGizmo;
         }
 
@@ -294,6 +341,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor);
             InputActions.Add(options => options.Pause, Editor.Instance.Simulation.RequestResumeOrPause);
             InputActions.Add(options => options.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame);
+#if USE_PROFILER
             InputActions.Add(options => options.ProfilerStartStop, () =>
             {
                 bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
@@ -303,8 +351,9 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.ProfilerClear, () =>
             {
                 Editor.Instance.Windows.ProfilerWin.Clear();
-                Editor.Instance.UI.AddStatusMessage($"Profiling results cleared.");
+                Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
             });
+#endif
             InputActions.Add(options => options.Save, () =>
             {
                 if (Editor.IsPlayMode)
@@ -638,12 +687,45 @@ namespace FlaxEditor.Windows
                 checkbox.StateChanged += x => ShowGUI = x.Checked;
             }
 
+            // Edit GUI
+            {
+                var button = menu.AddButton("Edit GUI");
+                var checkbox = new CheckBox(140, 2, EditGUI) { Parent = button };
+                checkbox.StateChanged += x => EditGUI = x.Checked;
+            }
+
             // Show Debug Draw
             {
                 var button = menu.AddButton("Show Debug Draw");
                 button.CloseMenuOnClick = false;
                 var checkbox = new CheckBox(140, 2, ShowDebugDraw) { Parent = button };
                 checkbox.StateChanged += x => ShowDebugDraw = x.Checked;
+            }
+
+            // Clear Debug Draw
+            if (DebugDraw.CanClear())
+            {
+                var button = menu.AddButton("Clear Debug Draw");
+                button.CloseMenuOnClick = false;
+                button.Clicked += () => DebugDraw.Clear();
+            }
+
+            menu.AddSeparator();
+
+            // Mute Audio
+            {
+                var button = menu.AddButton("Mute Audio");
+                button.CloseMenuOnClick = false;
+                var checkbox = new CheckBox(140, 2, AudioMuted) { Parent = button };
+                checkbox.StateChanged += x => AudioMuted = x.Checked;
+            }
+
+            // Audio Volume
+            {
+                var button = menu.AddButton("Audio Volume");
+                button.CloseMenuOnClick = false;
+                var slider = new FloatValueBox(AudioVolume, 140, 2, 50, 0, 1) { Parent = button };
+                slider.ValueChanged += () => AudioVolume = slider.Value;
             }
 
             menu.MinimumWidth = 200;
@@ -1135,6 +1217,7 @@ namespace FlaxEditor.Windows
         public override void OnLayoutSerialize(XmlWriter writer)
         {
             writer.WriteAttributeString("ShowGUI", ShowGUI.ToString());
+            writer.WriteAttributeString("EditGUI", EditGUI.ToString());
             writer.WriteAttributeString("ShowDebugDraw", ShowDebugDraw.ToString());
             writer.WriteAttributeString("DefaultViewportScaling", JsonSerializer.Serialize(_defaultViewportScaling));
             writer.WriteAttributeString("CustomViewportScaling", JsonSerializer.Serialize(_customViewportScaling));
@@ -1145,6 +1228,8 @@ namespace FlaxEditor.Windows
         {
             if (bool.TryParse(node.GetAttribute("ShowGUI"), out bool value1))
                 ShowGUI = value1;
+            if (bool.TryParse(node.GetAttribute("EditGUI"), out value1))
+                EditGUI = value1;
             if (bool.TryParse(node.GetAttribute("ShowDebugDraw"), out value1))
                 ShowDebugDraw = value1;
             if (node.HasAttribute("CustomViewportScaling"))
@@ -1170,6 +1255,7 @@ namespace FlaxEditor.Windows
         public override void OnLayoutDeserialize()
         {
             ShowGUI = true;
+            EditGUI = true;
             ShowDebugDraw = false;
         }
     }

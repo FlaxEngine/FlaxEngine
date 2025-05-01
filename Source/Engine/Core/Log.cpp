@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Log.h"
 #include "Engine/Engine/CommandLine.h"
@@ -129,7 +129,7 @@ void Log::Logger::Write(const StringView& msg)
     IsDuringLog = true;
 
     // Send message to standard process output
-    if (CommandLine::Options.Std)
+    if (CommandLine::Options.Std.IsTrue())
     {
 #if PLATFORM_TEXT_IS_CHAR16
         StringAnsi ansi(msg);
@@ -146,8 +146,10 @@ void Log::Logger::Write(const StringView& msg)
 #endif
     }
 
+#if !BUILD_RELEASE
     // Send message to platform logging
     Platform::Log(msg);
+#endif
 
     // Write message to log file
     constexpr int32 LogMaxWriteSize = 1 * 1024 * 1024; // 1GB

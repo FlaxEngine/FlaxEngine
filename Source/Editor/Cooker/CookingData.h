@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,16 +12,20 @@
 class GameCooker;
 class PlatformTools;
 
+// Range of dotnet runtime versions
+#ifndef GAME_BUILD_DOTNET_RUNTIME_MIN_VER
+#define GAME_BUILD_DOTNET_RUNTIME_MIN_VER 8
+#endif
+#ifndef GAME_BUILD_DOTNET_RUNTIME_MAX_VER
+#define GAME_BUILD_DOTNET_RUNTIME_MAX_VER 9
+#endif
+
 #if OFFICIAL_BUILD
 // Use the fixed .NET SDK version in packaged builds for compatibility (FlaxGame is precompiled with it)
-#define GAME_BUILD_DOTNET_VER TEXT("-dotnet=8")
+#define GAME_BUILD_DOTNET_VER TEXT("-dotnet=" MACRO_TO_STR(GAME_BUILD_DOTNET_RUNTIME_MIN_VER))
 #else
 #define GAME_BUILD_DOTNET_VER TEXT("")
 #endif
-
-// Range of dotnet runtime versions
-#define GAME_BUILD_DOTNET_RUNTIME_MIN_VER 8
-#define GAME_BUILD_DOTNET_RUNTIME_MAX_VER 9
 
 /// <summary>
 /// Game building options. Used as flags.
@@ -142,7 +146,7 @@ API_ENUM() enum class BuildPlatform
     /// <summary>
     /// Windows (ARM64)
     /// </summary>
-    API_ENUM(Attributes = "EditorDisplay(null, \"Windows ARM64\")")
+    API_ENUM(Attributes="EditorDisplay(null, \"Windows ARM64\")")
     WindowsARM64 = 15,
 };
 

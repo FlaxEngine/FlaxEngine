@@ -1,11 +1,91 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX11 || GRAPHICS_API_DIRECTX12
 
 #include "RenderToolsDX.h"
+#include "GPUAdapterDX.h"
+#include "GPUDeviceDX.h"
+#include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "IncludeDirectXHeaders.h"
 #include <winerror.h>
+
+#define GPU_DRIVER_DETECTION_WIN32_REGISTRY (PLATFORM_WINDOWS)
+#define GPU_DRIVER_DETECTION_WIN32_SETUPAPI (PLATFORM_WINDOWS)
+
+#if GPU_DRIVER_DETECTION_WIN32_SETUPAPI
+#define _SETUPAPI_VER WINVER
+typedef void* LPCDLGTEMPLATE;
+#include <SetupAPI.h>
+#pragma comment(lib, "SetupAPI.lib")
+#endif
+
+namespace Windows
+{
+    typedef struct _devicemodeW
+    {
+        WCHAR dmDeviceName[32];
+        WORD dmSpecVersion;
+        WORD dmDriverVersion;
+        WORD dmSize;
+        WORD dmDriverExtra;
+        DWORD dmFields;
+
+        union
+        {
+            struct
+            {
+                short dmOrientation;
+                short dmPaperSize;
+                short dmPaperLength;
+                short dmPaperWidth;
+                short dmScale;
+                short dmCopies;
+                short dmDefaultSource;
+                short dmPrintQuality;
+            } DUMMYSTRUCTNAME;
+
+            POINTL dmPosition;
+
+            struct
+            {
+                POINTL dmPosition;
+                DWORD dmDisplayOrientation;
+                DWORD dmDisplayFixedOutput;
+            } DUMMYSTRUCTNAME2;
+        } DUMMYUNIONNAME;
+
+        short dmColor;
+        short dmDuplex;
+        short dmYResolution;
+        short dmTTOption;
+        short dmCollate;
+        WCHAR dmFormName[32];
+        WORD dmLogPixels;
+        DWORD dmBitsPerPel;
+        DWORD dmPelsWidth;
+        DWORD dmPelsHeight;
+
+        union
+        {
+            DWORD dmDisplayFlags;
+            DWORD dmNup;
+        } DUMMYUNIONNAME2;
+
+        DWORD dmDisplayFrequency;
+        DWORD dmICMMethod;
+        DWORD dmICMIntent;
+        DWORD dmMediaType;
+        DWORD dmDitherType;
+        DWORD dmReserved1;
+        DWORD dmReserved2;
+        DWORD dmPanningWidth;
+        DWORD dmPanningHeight;
+    } DEVMODEW, *PDEVMODEW, *NPDEVMODEW, *LPDEVMODEW;
+
+    WIN_API BOOL WIN_API_CALLCONV EnumDisplaySettingsW(LPCWSTR lpszDeviceName, DWORD iModeNum, DEVMODEW* lpDevMode);
+}
 
 // @formatter:off
 
@@ -130,7 +210,7 @@ DXGI_FORMAT RenderToolsDX::ToDxgiFormat(PixelFormat format)
     return PixelFormatToDXGIFormat[(int32)format];
 }
 
-const Char* RenderToolsDX::GetFeatureLevelString(const D3D_FEATURE_LEVEL featureLevel)
+const Char* RenderToolsDX::GetFeatureLevelString(D3D_FEATURE_LEVEL featureLevel)
 {
     switch (featureLevel)
     {
@@ -159,11 +239,24 @@ const Char* RenderToolsDX::GetFeatureLevelString(const D3D_FEATURE_LEVEL feature
     }
 }
 
-String RenderToolsDX::GetD3DErrorString(HRESULT errorCode)
+uint32 RenderToolsDX::CountAdapterOutputs(IDXGIAdapter* adapter)
 {
-    StringBuilder sb(256);
+    uint32 count = 0;
+    while (true)
+    {
+        IDXGIOutput* output;
+        HRESULT hr = adapter->EnumOutputs(count, &output);
+        if (FAILED(hr))
+        {
+            break;
+        }
+        count++;
+    }
+    return count;
+}
 
-    // Switch error code
+void FormatD3DErrorString(HRESULT errorCode, StringBuilder& sb, HRESULT& removedReason)
+{
 #define D3DERR(x) case x: sb.Append(TEXT(#x)); break
     switch (errorCode)
     {
@@ -184,6 +277,8 @@ String RenderToolsDX::GetD3DErrorString(HRESULT errorCode)
     // DirectX 11
     D3DERR(D3D11_ERROR_FILE_NOT_FOUND);
     D3DERR(D3D11_ERROR_TOO_MANY_UNIQUE_STATE_OBJECTS);
+    D3DERR(D3D11_ERROR_TOO_MANY_UNIQUE_VIEW_OBJECTS);
+    D3DERR(D3D11_ERROR_DEFERRED_CONTEXT_MAP_WITHOUT_INITIAL_DISCARD);
 
     // DirectX 12
     //D3DERR(D3D12_ERROR_FILE_NOT_FOUND);
@@ -221,22 +316,20 @@ String RenderToolsDX::GetD3DErrorString(HRESULT errorCode)
 #endif
 
     default:
-    {
         sb.AppendFormat(TEXT("0x{0:x}"), static_cast<unsigned int>(errorCode));
-    }
-    break;
+        break;
     }
 #undef D3DERR
 
     if (errorCode == DXGI_ERROR_DEVICE_REMOVED || errorCode == DXGI_ERROR_DEVICE_RESET || errorCode == DXGI_ERROR_DRIVER_INTERNAL_ERROR)
     {
-        HRESULT reason = S_OK;
-        const RendererType rendererType = GPUDevice::Instance ? GPUDevice::Instance->GetRendererType() : RendererType::Unknown;
-        void* nativePtr = GPUDevice::Instance ? GPUDevice::Instance->GetNativePtr() : nullptr;
+        GPUDevice* device = GPUDevice::Instance;
+        const RendererType rendererType = device ? device->GetRendererType() : RendererType::Unknown;
+        void* nativePtr = device ? device->GetNativePtr() : nullptr;
 #if GRAPHICS_API_DIRECTX12
         if (rendererType == RendererType::DirectX12 && nativePtr)
         {
-            reason = ((ID3D12Device*)nativePtr)->GetDeviceRemovedReason();
+            removedReason = ((ID3D12Device*)nativePtr)->GetDeviceRemovedReason();
         }
 #endif
 #if GRAPHICS_API_DIRECTX11
@@ -244,11 +337,11 @@ String RenderToolsDX::GetD3DErrorString(HRESULT errorCode)
             rendererType == RendererType::DirectX10_1 ||
             rendererType == RendererType::DirectX10) && nativePtr)
         {
-            reason = ((ID3D11Device*)nativePtr)->GetDeviceRemovedReason();
+            removedReason = ((ID3D11Device*)nativePtr)->GetDeviceRemovedReason();
         }
 #endif
         const Char* reasonStr = nullptr;
-        switch (reason)
+        switch (removedReason)
         {
         case DXGI_ERROR_DEVICE_HUNG:
             reasonStr = TEXT("HUNG");
@@ -269,8 +362,317 @@ String RenderToolsDX::GetD3DErrorString(HRESULT errorCode)
         if (reasonStr != nullptr)
             sb.AppendFormat(TEXT(", Device Removed Reason: {0}"), reasonStr);
     }
+}
 
-    return sb.ToString();
+void RenderToolsDX::LogD3DResult(HRESULT result, const char* file, uint32 line, bool fatal)
+{
+    ASSERT_LOW_LAYER(FAILED(result));
+
+    // Process error and format message
+    StringBuilder sb;
+    HRESULT removedReason = S_OK;
+    sb.Append(TEXT("DirectX error: "));
+    FormatD3DErrorString(result, sb, removedReason);
+    if (file)
+        sb.Append(TEXT(" at ")).Append(file).Append(':').Append(line);
+    const StringView msg(sb.ToStringView());
+
+    // Handle error
+    FatalErrorType errorType = FatalErrorType::None;
+    if (result == E_OUTOFMEMORY)
+        errorType = FatalErrorType::GPUOutOfMemory;
+    else if (removedReason != S_OK)
+    {
+        errorType = FatalErrorType::GPUCrash;
+        if (removedReason == DXGI_ERROR_DEVICE_HUNG)
+            errorType = FatalErrorType::GPUHang;
+    }
+    if (errorType != FatalErrorType::None)
+        Platform::Fatal(msg, nullptr, errorType);
+    else
+        Log::Logger::Write(fatal ? LogType::Fatal : LogType::Error, msg);
+}
+
+LPCSTR RenderToolsDX::GetVertexInputSemantic(VertexElement::Types type, UINT& semanticIndex)
+{
+    static_assert((int32)VertexElement::Types::MAX == 16, "Update code below.");
+    semanticIndex = 0;
+    switch (type)
+    {
+    case VertexElement::Types::Position:
+        return "POSITION";
+    case VertexElement::Types::Color:
+        return "COLOR";
+    case VertexElement::Types::Normal:
+        return "NORMAL";
+    case VertexElement::Types::Tangent:
+        return "TANGENT";
+    case VertexElement::Types::BlendIndices:
+        return "BLENDINDICES";
+    case VertexElement::Types::BlendWeights:
+        return "BLENDWEIGHTS";
+    case VertexElement::Types::TexCoord0:
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord1:
+        semanticIndex = 1;
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord2:
+        semanticIndex = 2;
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord3:
+        semanticIndex = 3;
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord4:
+        semanticIndex = 4;
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord5:
+        semanticIndex = 5;
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord6:
+        semanticIndex = 6;
+        return "TEXCOORD";
+    case VertexElement::Types::TexCoord7:
+        semanticIndex = 7;
+        return "TEXCOORD";
+    case VertexElement::Types::Attribute0:
+        return "ATTRIBUTE";
+    case VertexElement::Types::Attribute1:
+        semanticIndex = 1;
+        return "ATTRIBUTE";
+    case VertexElement::Types::Attribute2:
+        semanticIndex = 2;
+        return "ATTRIBUTE";
+    case VertexElement::Types::Attribute3:
+        semanticIndex = 3;
+        return "ATTRIBUTE";
+    case VertexElement::Types::Lightmap:
+        return "LIGHTMAP";
+    default:
+        LOG(Fatal, "Invalid vertex shader element semantic type");
+        return "";
+    }
+}
+
+void GPUAdapterDX::GetDriverVersion()
+{
+#if GPU_DRIVER_DETECTION_WIN32_REGISTRY
+    {
+        // Reference: https://github.com/GameTechDev/gpudetect/blob/master/GPUDetect.cpp
+
+        // Fetch registry data
+        HKEY dxKeyHandle = nullptr;
+        DWORD numOfAdapters = 0;
+        LSTATUS returnCode = RegOpenKeyExW(HKEY_LOCAL_MACHINE, TEXT("SOFTWARE\\Microsoft\\DirectX"), 0, KEY_READ, &dxKeyHandle);
+        if (returnCode == S_OK)
+        {
+            // Find all sub keys
+            DWORD subKeyMaxLength = 0;
+            returnCode = RegQueryInfoKeyW(dxKeyHandle, 0, 0, 0, &numOfAdapters, &subKeyMaxLength, 0, 0, 0, 0, 0, 0);
+            if (returnCode == S_OK && subKeyMaxLength < 100)
+            {
+                subKeyMaxLength += 1;
+                uint64_t driverVersionRaw = 0;
+                TCHAR subKeyName[100];
+                for (DWORD i = 0; i < numOfAdapters; i++)
+                {
+                    DWORD subKeyLength = subKeyMaxLength;
+                    returnCode = RegEnumKeyExW(dxKeyHandle, i, subKeyName, &subKeyLength, 0, 0, 0, 0);
+                    if (returnCode == S_OK)
+                    {
+                        LUID adapterLUID = {};
+                        DWORD qwordSize = sizeof(uint64_t);
+                        returnCode = RegGetValueW(dxKeyHandle, subKeyName, TEXT("AdapterLuid"), RRF_RT_QWORD, 0, &adapterLUID, &qwordSize);
+                        if (returnCode == S_OK && adapterLUID.HighPart == Description.AdapterLuid.HighPart && adapterLUID.LowPart == Description.AdapterLuid.LowPart)
+                        {
+                            // Get driver version
+                            returnCode = RegGetValueW(dxKeyHandle, subKeyName, TEXT("DriverVersion"), RRF_RT_QWORD, 0, &driverVersionRaw, &qwordSize);
+                            if (returnCode == S_OK)
+                            {
+                                Version driverVersion(
+                                    (int32)((driverVersionRaw & 0xFFFF000000000000) >> 16 * 3),
+                                    (int32)((driverVersionRaw & 0x0000FFFF00000000) >> 16 * 2),
+                                    (int32)((driverVersionRaw & 0x00000000FFFF0000) >> 16 * 1),
+                                    (int32)((driverVersionRaw & 0x000000000000FFFF)));
+                                SetDriverVersion(driverVersion);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+            RegCloseKey(dxKeyHandle);
+        }
+
+        if (DriverVersion != Version(0, 0))
+            return;
+    }
+#endif
+
+#if GPU_DRIVER_DETECTION_WIN32_SETUPAPI
+    {
+        // Reference: https://gist.github.com/LxLasso/eccee4d71c2e49492f2cbf01a966fa73
+
+        // Copied from devguid.h and devpkey.h
+#define MAKE_GUID(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8) const GUID name = { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
+#define MAKE_DEVPROPKEY(name, l, w1, w2, b1, b2, b3, b4, b5, b6, b7, b8, pid) const DEVPROPKEY name = { { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }, pid }
+        MAKE_GUID(GUID_DEVCLASS_DISPLAY, 0x4d36e968L, 0xe325, 0x11ce, 0xbf, 0xc1, 0x08, 0x00, 0x2b, 0xe1, 0x03, 0x18);
+        MAKE_DEVPROPKEY(DEVPKEY_Device_DriverDate, 0xa8b865dd, 0x2e3d, 0x4094, 0xad, 0x97, 0xe5, 0x93, 0xa7, 0xc, 0x75, 0xd6, 2);
+        MAKE_DEVPROPKEY(DEVPKEY_Device_DriverVersion, 0xa8b865dd, 0x2e3d, 0x4094, 0xad, 0x97, 0xe5, 0x93, 0xa7, 0xc, 0x75, 0xd6, 3);
+#undef MAKE_DEVPROPKEY
+#undef MAKE_GUID
+
+        HDEVINFO deviceInfoList = SetupDiGetClassDevs(&GUID_DEVCLASS_DISPLAY, NULL, NULL, DIGCF_PRESENT);
+        if (deviceInfoList != INVALID_HANDLE_VALUE)
+        {
+            SP_DEVINFO_DATA deviceInfo;
+            ZeroMemory(&deviceInfo, sizeof(deviceInfo));
+            deviceInfo.cbSize = sizeof(SP_DEVINFO_DATA);
+
+            wchar_t searchBuffer[128];
+            swprintf(searchBuffer, sizeof(searchBuffer) / 2, L"PCI\\VEN_%04X&DEV_%04X&SUBSYS_%04X", Description.VendorId, Description.DeviceId, Description.SubSysId);
+            size_t searchBufferLen = wcslen(searchBuffer);
+
+            DWORD deviceIndex = 0;
+            DEVPROPTYPE propertyType;
+            wchar_t buffer[300];
+            while (SetupDiEnumDeviceInfo(deviceInfoList, deviceIndex, &deviceInfo))
+            {
+                DWORD deviceIdSize;
+                if (SetupDiGetDeviceInstanceId(deviceInfoList, &deviceInfo, buffer, sizeof(buffer), &deviceIdSize) &&
+                    wcsncmp(buffer, searchBuffer, searchBufferLen) == 0)
+                {
+                    // Get driver version
+                    if (SetupDiGetDeviceProperty(deviceInfoList, &deviceInfo, &DEVPKEY_Device_DriverVersion, &propertyType, (PBYTE)buffer, sizeof(buffer), NULL, 0) &&
+                        propertyType == DEVPROP_TYPE_STRING)
+                    {
+                        //ParseDriverVersionBuffer(buffer);
+                        Version driverVersion;
+                        String bufferStr(buffer);
+                        if (!Version::Parse(bufferStr, &driverVersion))
+                            SetDriverVersion(driverVersion);
+                    }
+
+#if 0
+                    // Get driver date
+					DEVPROPTYPE propertyType;
+					if (SetupDiGetDeviceProperty(deviceInfoList, &deviceInfo, &DEVPKEY_Device_DriverDate, &propertyType, (PBYTE)buffer, sizeof(FILETIME), NULL, 0) &&
+                        propertyType == DEVPROP_TYPE_FILETIME)
+					{
+						SYSTEMTIME deviceDriverSystemTime;
+						FileTimeToSystemTime((FILETIME*)buffer, &deviceDriverSystemTime);
+						DriverDate = DateTime(deviceDriverSystemTime.wYear, deviceDriverSystemTime.wMonth, deviceDriverSystemTime.wDay, deviceDriverSystemTime.wHour, deviceDriverSystemTime.wMinute, deviceDriverSystemTime.wSecond, deviceDriverSystemTime.wMilliseconds);
+					}
+#endif
+                }
+                deviceIndex++;
+            }
+
+            SetupDiDestroyDeviceInfoList(deviceInfoList);
+        }
+
+        if (DriverVersion != Version(0, 0))
+            return;
+    }
+#endif
+}
+
+void GPUAdapterDX::SetDriverVersion(Version& ver)
+{
+    if (IsNVIDIA() && ver.Build() > 0 && ver.Revision() > 99)
+    {
+        // Convert NVIDIA version from 32.0.15.7247 into 572.47
+        ver = Version((ver.Build() % 10) * 100 + ver.Revision() / 100, ver.Revision() % 100);
+    }
+    DriverVersion = ver;
+}
+
+void GPUDeviceDX::UpdateOutputs(IDXGIAdapter* adapter)
+{
+#if PLATFORM_WINDOWS
+    // Collect output devices
+    uint32 outputIdx = 0;
+    ComPtr<IDXGIOutput> output;
+    DXGI_FORMAT defaultBackbufferFormat = RenderToolsDX::ToDxgiFormat(GPU_BACK_BUFFER_PIXEL_FORMAT);
+    Array<DXGI_MODE_DESC> modeDesc;
+    while (adapter->EnumOutputs(outputIdx, &output) != DXGI_ERROR_NOT_FOUND)
+    {
+        auto& outputDX11 = Outputs.AddOne();
+
+        outputDX11.Output = output;
+        output->GetDesc(&outputDX11.Desc);
+
+        uint32 numModes = 0;
+        HRESULT hr = output->GetDisplayModeList(defaultBackbufferFormat, 0, &numModes, nullptr);
+        if (FAILED(hr))
+        {
+            LOG(Warning, "Error while enumerating adapter output video modes.");
+            continue;
+        }
+
+        modeDesc.Resize(numModes, false);
+        hr = output->GetDisplayModeList(defaultBackbufferFormat, 0, &numModes, modeDesc.Get());
+        if (FAILED(hr))
+        {
+            LOG(Warning, "Error while enumerating adapter output video modes.");
+            continue;
+        }
+
+        for (auto& mode : modeDesc)
+        {
+            bool foundVideoMode = false;
+            for (auto& videoMode : outputDX11.VideoModes)
+            {
+                if (videoMode.Width == mode.Width &&
+                    videoMode.Height == mode.Height &&
+                    videoMode.RefreshRate.Numerator == mode.RefreshRate.Numerator &&
+                    videoMode.RefreshRate.Denominator == mode.RefreshRate.Denominator)
+                {
+                    foundVideoMode = true;
+                    break;
+                }
+            }
+
+            if (!foundVideoMode)
+            {
+                outputDX11.VideoModes.Add(mode);
+
+                // Collect only from the main monitor
+                if (Outputs.Count() == 1)
+                {
+                    VideoOutputModes.Add({ mode.Width, mode.Height, (uint32)(mode.RefreshRate.Numerator / (float)mode.RefreshRate.Denominator) });
+                }
+            }
+        }
+
+        // Get desktop display mode
+        HMONITOR hMonitor = outputDX11.Desc.Monitor;
+        MONITORINFOEX monitorInfo;
+        monitorInfo.cbSize = sizeof(MONITORINFOEX);
+        GetMonitorInfo(hMonitor, &monitorInfo);
+
+        Windows::DEVMODEW devMode;
+        devMode.dmSize = sizeof(Windows::DEVMODEW);
+        devMode.dmDriverExtra = 0;
+        Windows::EnumDisplaySettingsW(monitorInfo.szDevice, ((DWORD)-1), &devMode);
+
+        DXGI_MODE_DESC currentMode;
+        currentMode.Width = devMode.dmPelsWidth;
+        currentMode.Height = devMode.dmPelsHeight;
+        bool useDefaultRefreshRate = 1 == devMode.dmDisplayFrequency || 0 == devMode.dmDisplayFrequency;
+        currentMode.RefreshRate.Numerator = useDefaultRefreshRate ? 0 : devMode.dmDisplayFrequency;
+        currentMode.RefreshRate.Denominator = useDefaultRefreshRate ? 0 : 1;
+        currentMode.Format = defaultBackbufferFormat;
+        currentMode.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+        currentMode.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+
+        if (output->FindClosestMatchingMode(&currentMode, &outputDX11.DesktopViewMode, nullptr) != S_OK)
+            outputDX11.DesktopViewMode = currentMode;
+
+        float refreshRate = outputDX11.DesktopViewMode.RefreshRate.Numerator / (float)outputDX11.DesktopViewMode.RefreshRate.Denominator;
+        LOG(Info, "Video output '{0}' {1}x{2} {3} Hz", outputDX11.Desc.DeviceName, devMode.dmPelsWidth, devMode.dmPelsHeight, refreshRate);
+        outputIdx++;
+    }
+#endif
 }
 
 #endif

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -83,6 +83,8 @@ template<typename T, typename U>
 class Pair;
 template<typename KeyType, typename ValueType, typename AllocationType>
 class Dictionary;
+template<typename T, typename AllocationType>
+class HashSet;
 template<typename>
 class Function;
 template<typename... Params>
@@ -126,6 +128,7 @@ API_TYPEDEF(Alias) typedef Vector4Base<Real> Vector4;
 struct BoundingBox;
 struct Matrix;
 struct Matrix3x3;
+struct Double4x4;
 struct Ray;
 struct Plane;
 struct Rectangle;
@@ -136,6 +139,11 @@ struct OrientedBoundingBox;
 struct Transform;
 struct Color;
 struct Color32;
+#if USE_LARGE_WORLDS
+typedef Double4x4 Real4x4;
+#else
+typedef Matrix Real4x4;
+#endif
 
 // @formatter:on
 

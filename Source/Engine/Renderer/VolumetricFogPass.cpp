@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "VolumetricFogPass.h"
 #include "ShadowsPass.h"
@@ -9,6 +9,7 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Engine/Engine.h"
@@ -627,10 +628,11 @@ void VolumetricFogPass::InitCircleBuffer()
     }
 
     // Create buffers
-    ASSERT(_vbCircleRasterize == nullptr && _ibCircleRasterize == nullptr);
+    ASSERT_LOW_LAYER(_vbCircleRasterize == nullptr && _ibCircleRasterize == nullptr);
     _vbCircleRasterize = GPUDevice::Instance->CreateBuffer(TEXT("VolumetricFog.CircleRasterize.VB"));
     _ibCircleRasterize = GPUDevice::Instance->CreateBuffer(TEXT("VolumetricFog.CircleRasterize.IB"));
-    if (_vbCircleRasterize->Init(GPUBufferDescription::Vertex(sizeof(Float2), vertices, vbData))
+    auto layout = GPUVertexLayout::Get({{ VertexElement::Types::TexCoord, 0, 0, 0, PixelFormat::R32G32_Float }});
+    if (_vbCircleRasterize->Init(GPUBufferDescription::Vertex(layout, sizeof(Float2), vertices, vbData))
         || _ibCircleRasterize->Init(GPUBufferDescription::Index(sizeof(uint16), triangles * 3, ibData)))
     {
         LOG(Fatal, "Failed to setup volumetric fog buffers.");

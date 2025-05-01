@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -101,7 +101,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the far plane of the BoundingFrustum.
+    /// Gets the far plane of the frustum.
     /// </summary>
     FORCE_INLINE Plane GetFar() const
     {
@@ -109,7 +109,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the left plane of the BoundingFrustum.
+    /// Gets the left plane of the frustum.
     /// </summary>
     FORCE_INLINE Plane GetLeft() const
     {
@@ -117,7 +117,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the right plane of the BoundingFrustum.
+    /// Gets the right plane of the frustum.
     /// </summary>
     FORCE_INLINE Plane GetRight() const
     {
@@ -125,7 +125,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the top plane of the BoundingFrustum.
+    /// Gets the top plane of the frustum.
     /// </summary>
     FORCE_INLINE Plane GetTop() const
     {
@@ -133,7 +133,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the bottom plane of the BoundingFrustum.
+    /// Gets the bottom plane of the frustum.
     /// </summary>
     FORCE_INLINE Plane GetBottom() const
     {
@@ -230,17 +230,17 @@ public:
     ContainmentType Contains(const BoundingSphere& sphere) const;
 
     /// <summary>
-    /// Checks whether the current BoundingFrustum intersects a BoundingSphere.
+    /// Checks whether the current frustum intersects a sphere.
     /// </summary>
     /// <param name="sphere">The sphere.</param>
-    /// <returns>True if the current BoundingFrustum intersects a BoundingSphere, otherwise false.</returns>
+    /// <returns>True if the current frustum intersects a sphere, otherwise false.</returns>
     bool Intersects(const BoundingSphere& sphere) const;
 
     /// <summary>
-    /// Checks whether the current BoundingFrustum intersects a BoundingBox.
+    /// Checks whether the current frustum intersects a box.
     /// </summary>
     /// <param name="box">The box</param>
-    /// <returns>True if the current BoundingFrustum intersects a BoundingBox, otherwise false.</returns>
+    /// <returns>True if the current frustum intersects a box, otherwise false.</returns>
     FORCE_INLINE bool Intersects(const BoundingBox& box) const
     {
         return CollisionsHelper::FrustumContainsBox(*this, box) != ContainmentType::Disjoint;

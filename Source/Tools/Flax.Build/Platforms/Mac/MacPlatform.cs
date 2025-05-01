@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -50,13 +50,13 @@ namespace Flax.Build.Platforms
         /// Runs codesign tool on macOS to sign the code with a given identity from local keychain.
         /// </summary>
         /// <param name="file">Path to file to codesign.</param>
-        /// <param name="signIdenity">App code signing idenity name (from local Mac keychain). Use 'security find-identity -v -p codesigning' to list possible options.</param>
-        public static void CodeSign(string file, string signIdenity)
+        /// <param name="signIdentity">App code signing identity name (from local Mac keychain). Use 'security find-identity -v -p codesigning' to list possible options.</param>
+        public static void CodeSign(string file, string signIdentity)
         {
             var isDirectory = Directory.Exists(file);
             if (!isDirectory && !File.Exists(file))
                 throw new FileNotFoundException("Missing file to sign.", file);
-            string cmdLine = string.Format("--force --timestamp -s \"{0}\" \"{1}\"", signIdenity, file);
+            string cmdLine = string.Format("--force --timestamp -s \"{0}\" \"{1}\"", signIdentity, file);
             if (isDirectory)
             {
                 // Automatically sign contents

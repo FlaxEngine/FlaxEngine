@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 // Implementation based on:
 // "Volumetric fog: Unified, compute shader based solution to atmospheric scattering" - Bart Wronski at Siggraph 2014
@@ -112,7 +112,6 @@ float3 GetVolumeUV(float3 worldPosition, float4x4 worldToClip)
 // Vertex shader that writes to a range of slices of a volume texture
 META_VS(true, FEATURE_LEVEL_SM5)
 META_FLAG(VertexToGeometryShader)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 Quad_VS2GS VS_WriteToSlice(float2 TexCoord : TEXCOORD0, uint LayerIndex : SV_InstanceID)
 {
 	Quad_VS2GS output;

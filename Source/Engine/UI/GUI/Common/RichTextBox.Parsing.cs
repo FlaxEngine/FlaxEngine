@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -233,13 +233,7 @@ namespace FlaxEngine.GUI
             {
                 ref TextBlock textBlock = ref textBlocks[i];
                 var textBlockSize = textBlock.Bounds.BottomRight - lineOrigin;
-                var ascender = textBlock.Ascender;
-                //if (ascender <= 0)
-                {
-                    var textBlockFont = textBlock.Style.Font.GetFont();
-                    if (textBlockFont)
-                        ascender = textBlockFont.Ascender;
-                }
+                var ascender = textBlock.GetAscender();
                 lineAscender = Mathf.Max(lineAscender, ascender);
                 lineSize = Float2.Max(lineSize, textBlockSize);
             }
@@ -256,13 +250,7 @@ namespace FlaxEngine.GUI
                 case TextBlockStyle.Alignments.Baseline:
                 {
                     // Match the baseline of the line (use ascender)
-                    var ascender = textBlock.Ascender;
-                    if (ascender <= 0)
-                    {
-                        var textBlockFont = textBlock.Style.Font.GetFont();
-                        if (textBlockFont)
-                            ascender = textBlockFont.Ascender;
-                    }
+                    var ascender = textBlock.GetAscender();
                     vOffset = lineAscender - ascender;
                     textBlock.Bounds.Location.Y += vOffset;
                     break;

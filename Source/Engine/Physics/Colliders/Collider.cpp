@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Collider.h"
 #include "Engine/Core/Log.h"
@@ -286,7 +286,7 @@ void Collider::CreateStaticActor()
     _staticActor = PhysicsBackend::CreateRigidStaticActor(nullptr, _transform.Translation, _transform.Orientation, scene);
 
     // Reset local pos of the shape and link it to the actor
-    PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
+    PhysicsBackend::SetShapeLocalPose(_shape, _center * GetScale(), Quaternion::Identity);
     PhysicsBackend::AttachShape(_shape, _staticActor);
 
     PhysicsBackend::AddSceneActor(scene, _staticActor);

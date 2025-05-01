@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.ComponentModel;
@@ -157,7 +157,7 @@ namespace FlaxEditor.Options
             /// <summary>
             /// Focus the Game Window. On play mode end restore focus to the previous window.
             /// </summary>
-            GameWindowThenRestore,  
+            GameWindowThenRestore,
         }
 
         /// <summary>
@@ -345,13 +345,6 @@ namespace FlaxEditor.Options
                     _outputLogFont = value;
             }
         }
-
-        /// <summary>
-        /// Gets or sets the output log text color.
-        /// </summary>
-        [DefaultValue(typeof(Color), "1,1,1,1")]
-        [EditorDisplay("Output Log", "Text Color"), EditorOrder(430), Tooltip("The output log text color.")]
-        public Color OutputLogTextColor { get; set; } = Color.White;
 
         /// <summary>
         /// Gets or sets the output log text shadow color.

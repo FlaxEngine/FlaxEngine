@@ -299,24 +299,22 @@ half3x3 CalcTangentToLocal(ModelInput input)
 	float3 normal = input.Normal.xyz * 2.0 - 1.0;
 	float3 tangent = input.Tangent.xyz * 2.0 - 1.0;
 	float3 bitangent = cross(normal, tangent) * bitangentSign;
-	return float3x3(tangent, bitangent, normal);
+	return (half3x3)float3x3(tangent, bitangent, normal);
 }
 
 half3x3 CalcTangentToWorld(in float4x4 world, in half3x3 tangentToLocal)
 {
-	half3x3 localToWorld = RemoveScaleFromLocalToWorld((float3x3)world);
+	half3x3 localToWorld = (half3x3)RemoveScaleFromLocalToWorld((float3x3)world);
 	return mul(tangentToLocal, localToWorld); 
 }
 
-float3 GetParticlePosition(uint ParticleIndex)
+float3 GetParticlePosition(uint particleIndex)
 {
-	return TransformParticlePosition(GetParticleVec3(ParticleIndex, PositionOffset));
+	return TransformParticlePosition(GetParticleVec3(particleIndex, PositionOffset));
 }
 
 // Vertex Shader function for Sprite Rendering
 META_VS(true, FEATURE_LEVEL_ES2)
-META_VS_IN_ELEMENT(POSITION, 0, R32G32_FLOAT, 0, 0,     PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 VertexOutput VS_Sprite(SpriteInput input, uint particleIndex : SV_InstanceID)
 {
 	VertexOutput output;
@@ -407,7 +405,7 @@ VertexOutput VS_Sprite(SpriteInput input, uint particleIndex : SV_InstanceID)
 	output.InstanceParams = PerInstanceRandom;
 
 	// Calculate tanget space to world space transformation matrix for unit vectors
-	half3x3 tangentToLocal = float3x3(axisX, axisY, axisZ);
+	half3x3 tangentToLocal = half3x3(axisX, axisY, axisZ);
 	half3x3 tangentToWorld = CalcTangentToWorld(world, tangentToLocal);
 	output.TBN = tangentToWorld;
 
@@ -516,7 +514,7 @@ VertexOutput VS_Model(ModelInput input, uint particleIndex : SV_InstanceID)
 	output.Position = mul(float4(output.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
-	output.TexCoord = input.TexCoord;
+	output.TexCoord = input.TexCoord0;
 	output.ParticleIndex = particleIndex;
 #if USE_VERTEX_COLOR
 	output.VertexColor = input.Color;
@@ -612,7 +610,7 @@ VertexOutput VS_Ribbon(RibbonInput input, uint vertexIndex : SV_VertexID)
 	{
 		output.TexCoord.x = (float)input.Order / (float)RibbonSegmentCount;
 	}
-	output.TexCoord.y = (vertexIndex + 1) & 0x1;
+	output.TexCoord.y = (float)((vertexIndex + 1) & 0x1);
 	output.TexCoord = output.TexCoord * RibbonUVScale + RibbonUVOffset;
 
 	// Compute world space vertex position
@@ -631,7 +629,7 @@ VertexOutput VS_Ribbon(RibbonInput input, uint vertexIndex : SV_VertexID)
 	output.InstanceParams = PerInstanceRandom;
 
 	// Calculate tanget space to world space transformation matrix for unit vectors
-	half3x3 tangentToLocal = float3x3(tangentRight, tangentUp, cross(tangentRight, tangentUp));
+	half3x3 tangentToLocal = half3x3(tangentRight, tangentUp, cross(tangentRight, tangentUp));
 	half3x3 tangentToWorld = CalcTangentToWorld(world, tangentToLocal);
 	output.TBN = tangentToWorld;
 

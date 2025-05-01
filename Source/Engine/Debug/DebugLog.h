@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -19,7 +19,7 @@ public:
     static void Log(LogType type, const StringView& message);
 
     /// <summary>
-    /// A variant of Debug.Log that logs a warning message to the console.
+    /// A variant of Debug.Log that logs an info message to the console.
     /// </summary>
     /// <param name="message">The text message to display.</param>
     FORCE_INLINE static void Log(const StringView& message)

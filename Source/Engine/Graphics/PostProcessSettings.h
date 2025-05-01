@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -415,19 +415,29 @@ API_ENUM(Attributes="Flags") enum class BloomSettingsOverride : int32
     Threshold = 1 << 2,
 
     /// <summary>
-    /// Overrides <see cref="BloomSettings.BlurSigma"/> property.
+    /// Overrides <see cref="BloomSettings.ThresholdKnee"/> property.
     /// </summary>
-    BlurSigma = 1 << 3,
+    ThresholdKnee = 1 << 3,
 
     /// <summary>
-    /// Overrides <see cref="BloomSettings.Limit"/> property.
+    /// Overrides <see cref="BloomSettings.Clamp"/> property.
     /// </summary>
-    Limit = 1 << 4,
+    Clamp = 1 << 4,
+
+    /// <summary>
+    /// Overrides <see cref="BloomSettings.BaseMix"/> property.
+    /// </summary>
+    BaseMix = 1 << 5,
+
+    /// <summary>
+    /// Overrides <see cref="BloomSettings.HighMix"/> property.
+    /// </summary>
+    HighMix = 1 << 6,
 
     /// <summary>
     /// All properties.
     /// </summary>
-    All = Enabled | Intensity | Threshold | BlurSigma | Limit,
+    All = Enabled | Intensity | Threshold | ThresholdKnee | Clamp | BaseMix | HighMix,
 };
 
 /// <summary>
@@ -452,28 +462,40 @@ API_STRUCT() struct FLAXENGINE_API BloomSettings : ISerializable
     bool Enabled = true;
 
     /// <summary>
-    /// Bloom effect strength. Set a value of 0 to disabled it, while higher values increase the effect.
+    /// Overall bloom effect strength. Higher values create a stronger glow effect.
     /// </summary>
-    API_FIELD(Attributes="Limit(0, 20.0f, 0.01f), EditorOrder(1), PostProcessSetting((int)BloomSettingsOverride.Intensity)")
+    API_FIELD(Attributes="Limit(0, 100.0f, 0.001f), EditorOrder(1), PostProcessSetting((int)BloomSettingsOverride.Intensity)")
     float Intensity = 1.0f;
 
     /// <summary>
-    /// Minimum pixel brightness value to start blooming. Values below this threshold are skipped.
+    /// Luminance threshold where bloom begins.
     /// </summary>
-    API_FIELD(Attributes="Limit(0, 15.0f, 0.01f), EditorOrder(2), PostProcessSetting((int)BloomSettingsOverride.Threshold)")
-    float Threshold = 3.0f;
+    API_FIELD(Attributes="Limit(0, 100.0f, 0.1f), EditorOrder(2), PostProcessSetting((int)BloomSettingsOverride.Threshold)")
+    float Threshold = 1.0f;
 
     /// <summary>
-    /// This affects the fall-off of the bloom. It's the standard deviation (sigma) used in the Gaussian blur formula when calculating the kernel of the bloom.
+    /// Controls the threshold rolloff curve. Higher values create a softer transition.
     /// </summary>
-    API_FIELD(Attributes="Limit(0, 20.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)BloomSettingsOverride.BlurSigma)")
-    float BlurSigma = 4.0f;
+    API_FIELD(Attributes="Limit(0, 100.0f, 0.01f), EditorOrder(3), PostProcessSetting((int)BloomSettingsOverride.ThresholdKnee)")
+    float ThresholdKnee = 0.5f;
 
     /// <summary>
-    /// Bloom effect brightness limit. Pixels with higher luminance will be capped to this brightness level.
+    /// Maximum brightness limit for bloom highlights.
     /// </summary>
-    API_FIELD(Attributes="Limit(0, 100.0f, 0.01f), EditorOrder(4), PostProcessSetting((int)BloomSettingsOverride.Limit)")
-    float Limit = 10.0f;
+    API_FIELD(Attributes="Limit(0, 100.0f, 0.1f), EditorOrder(4), PostProcessSetting((int)BloomSettingsOverride.Clamp)")
+    float Clamp = 3.0f;
+
+    /// <summary>
+    /// Base mip contribution for wider, softer bloom.
+    /// </summary>
+    API_FIELD(Attributes="Limit(0, 1.0f, 0.01f), EditorOrder(5), PostProcessSetting((int)BloomSettingsOverride.BaseMix)")
+    float BaseMix = 0.6f;
+
+    /// <summary>
+    /// High mip contribution for tighter, core bloom.
+    /// </summary>
+    API_FIELD(Attributes="Limit(0, 1.0f, 0.01f), EditorOrder(6), PostProcessSetting((int)BloomSettingsOverride.HighMix)")
+    float HighMix = 1.0f;
 
 public:
     /// <summary>
@@ -487,7 +509,7 @@ public:
 /// <summary>
 /// The structure members override flags.
 /// </summary>
-API_ENUM(Attributes="Flags") enum class ToneMappingSettingsOverride : int32
+API_ENUM(Attributes ="Flags") enum class ToneMappingSettingsOverride : int32
 {
     /// <summary>
     /// None properties.
@@ -1937,25 +1959,25 @@ API_STRUCT() struct FLAXENGINE_API AntiAliasingSettings : ISerializable
     /// <summary>
     /// The sharpening strength for the Contrast Adaptive Sharpening (CAS) pass. Ignored when using TAA that contains own contrast filter.
     /// </summary>
-    API_FIELD(Attributes = "Limit(0, 10f, 0.001f), EditorOrder(10), PostProcessSetting((int)AntiAliasingSettingsOverride.CAS_SharpeningAmount), EditorDisplay(null, \"CAS Sharpening Amount\"), VisibleIf(nameof(ShowTAASettings), true)")
+    API_FIELD(Attributes="Limit(0, 10f, 0.001f), EditorOrder(10), PostProcessSetting((int)AntiAliasingSettingsOverride.CAS_SharpeningAmount), EditorDisplay(null, \"CAS Sharpening Amount\"), VisibleIf(nameof(ShowTAASettings), true)")
     float CAS_SharpeningAmount = 0.0f;
 
     /// <summary>
     /// The edge sharpening strength for the Contrast Adaptive Sharpening (CAS) pass. Ignored when using TAA that contains own contrast filter.
     /// </summary>
-    API_FIELD(Attributes = "Limit(0, 10f, 0.001f), EditorOrder(11), PostProcessSetting((int)AntiAliasingSettingsOverride.CAS_EdgeSharpening), EditorDisplay(null, \"CAS Edge Sharpening\"), VisibleIf(nameof(ShowTAASettings), true)")
+    API_FIELD(Attributes="Limit(0, 10f, 0.001f), EditorOrder(11), PostProcessSetting((int)AntiAliasingSettingsOverride.CAS_EdgeSharpening), EditorDisplay(null, \"CAS Edge Sharpening\"), VisibleIf(nameof(ShowTAASettings), true)")
     float CAS_EdgeSharpening = 0.5f;
 
     /// <summary>
     /// The minimum edge threshold for the Contrast Adaptive Sharpening (CAS) pass. Ignored when using TAA that contains own contrast filter.
     /// </summary>
-    API_FIELD(Attributes = "Limit(0, 10f, 0.001f), EditorOrder(12), PostProcessSetting((int)AntiAliasingSettingsOverride.CAS_MinEdgeThreshold), EditorDisplay(null, \"CAS Min Edge Threshold\"), VisibleIf(nameof(ShowTAASettings), true)")
+    API_FIELD(Attributes="Limit(0, 10f, 0.001f), EditorOrder(12), PostProcessSetting((int)AntiAliasingSettingsOverride.CAS_MinEdgeThreshold), EditorDisplay(null, \"CAS Min Edge Threshold\"), VisibleIf(nameof(ShowTAASettings), true)")
     float CAS_MinEdgeThreshold = 0.03f;
 
     /// <summary>
     /// The over-blur limit for the Contrast Adaptive Sharpening (CAS) pass. Ignored when using TAA that contains own contrast filter.
     /// </summary>
-    API_FIELD(Attributes = "Limit(0, 100f, 0.001f), EditorOrder(13), PostProcessSetting((int)AntiAliasingSettingsOverride.CAS_OverBlurLimit), EditorDisplay(null, \"CAS Over-blur Limit\"), VisibleIf(nameof(ShowTAASettings), true)")
+    API_FIELD(Attributes="Limit(0, 100f, 0.001f), EditorOrder(13), PostProcessSetting((int)AntiAliasingSettingsOverride.CAS_OverBlurLimit), EditorDisplay(null, \"CAS Over-blur Limit\"), VisibleIf(nameof(ShowTAASettings), true)")
     float CAS_OverBlurLimit = 1.0f;
 
 public:

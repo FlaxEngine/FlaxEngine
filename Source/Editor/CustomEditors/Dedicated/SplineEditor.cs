@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -92,7 +92,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 if (IsLinearTangentMode(spline, index) || IsSmoothInTangentMode(spline, index) || IsSmoothOutTangentMode(spline, index))
                 {
-                    SetPointSmooth(spline, index);
+                    SetPointSmooth(Editor, spline, index);
                 }
             }
         }
@@ -145,7 +145,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 if (!IsAlignedTangentMode(spline, index))
                 {
-                    SetPointSmooth(spline, index);
+                    SetPointSmooth(Editor, spline, index);
                 }
             }
 
@@ -176,7 +176,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             /// <inheritdoc/>
             public override void OnSetMode(Spline spline, int index)
             {
-                SetTangentSmoothIn(spline, index);
+                SetTangentSmoothIn(Editor, spline, index);
                 Editor.SetSelectTangentIn(spline, index);
             }
         }
@@ -190,7 +190,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             /// <inheritdoc/>
             public override void OnSetMode(Spline spline, int index)
             {
-                SetTangentSmoothOut(spline, index);
+                SetTangentSmoothOut(Editor, spline, index);
                 Editor.SetSelectTangentOut(spline, index);
             }
         }
@@ -756,14 +756,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
             spline.UpdateSpline();
         }
 
-        private static void SetTangentSmoothIn(Spline spline, int index)
+        private static void SetTangentSmoothIn(SplineEditor editor, Spline spline, int index)
         {
             var keyframe = spline.GetSplineKeyframe(index);
 
             // Auto smooth tangent if's linear
             if (keyframe.TangentIn.Translation.Length == 0)
             {
-                var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplineTangent(index, false).Translation, 10f);
+                var cameraTransform = editor.Presenter.Owner.PresenterViewport.ViewTransform.Translation;
+                var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplineTangent(index, false).Translation, 10f, cameraTransform);
                 var previousKeyframe = spline.GetSplineKeyframe(index - 1);
                 var tangentDirection = keyframe.Value.WorldToLocalVector(previousKeyframe.Value.Translation - keyframe.Value.Translation);
                 tangentDirection = tangentDirection.Normalized * smoothRange;
@@ -775,14 +776,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
             spline.UpdateSpline();
         }
 
-        private static void SetTangentSmoothOut(Spline spline, int index)
+        private static void SetTangentSmoothOut(SplineEditor editor, Spline spline, int index)
         {
             var keyframe = spline.GetSplineKeyframe(index);
 
             // Auto smooth tangent if's linear
             if (keyframe.TangentOut.Translation.Length == 0)
             {
-                var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplineTangent(index, false).Translation, 10f);
+                var cameraTransform = editor.Presenter.Owner.PresenterViewport.ViewTransform.Translation;
+                var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplineTangent(index, false).Translation, 10f, cameraTransform);
                 var nextKeyframe = spline.GetSplineKeyframe(index + 1);
                 var tangentDirection = keyframe.Value.WorldToLocalVector(nextKeyframe.Value.Translation - keyframe.Value.Translation);
                 tangentDirection = tangentDirection.Normalized * smoothRange;
@@ -795,7 +797,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             spline.UpdateSpline();
         }
 
-        private static void SetPointSmooth(Spline spline, int index)
+        private static void SetPointSmooth(SplineEditor editor, Spline spline, int index)
         {
             var keyframe = spline.GetSplineKeyframe(index);
             var tangentInSize = keyframe.TangentIn.Translation.Length;
@@ -803,7 +805,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             var isLastKeyframe = index >= spline.SplinePointsCount - 1;
             var isFirstKeyframe = index <= 0;
-            var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplinePoint(index), 10f);
+            var cameraTransform = editor.Presenter.Owner.PresenterViewport.ViewTransform.Translation;
+            var smoothRange = SplineNode.NodeSizeByDistance(spline.GetSplinePoint(index), 10f, cameraTransform);
 
             // Force smooth it's linear point
             if (tangentInSize == 0f)

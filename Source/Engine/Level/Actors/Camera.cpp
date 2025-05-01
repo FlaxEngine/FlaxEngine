@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Camera.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Double4x4.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Content.h"
@@ -208,7 +209,7 @@ Ray Camera::ConvertMouseToRay(const Float2& mousePosition) const
 Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewport) const
 {
     Vector3 position = GetPosition();
-    if (viewport.Width < ZeroTolerance || viewport.Height < ZeroTolerance)
+    if (viewport.Width < ZeroTolerance || viewport.Height < ZeroTolerance || mousePosition.IsNaN())
         return Ray(position, GetDirection());
 
     // Use different logic in orthographic projection
@@ -246,11 +247,16 @@ Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewp
 Viewport Camera::GetViewport() const
 {
     Viewport result = Viewport(Float2::Zero);
+    float dpiScale = Platform::GetDpiScale();
 
 #if USE_EDITOR
     // Editor
     if (Editor::Managed)
+    {
         result.Size = Editor::Managed->GetGameWindowSize();
+        if (auto* window = Editor::Managed->GetGameWindow())
+            dpiScale = window->GetDpiScale();
+    }
 #else
 	// Game
 	auto mainWin = Engine::MainWindow;
@@ -258,8 +264,12 @@ Viewport Camera::GetViewport() const
 	{
 		const auto size = mainWin->GetClientSize();
 		result.Size = size;
+        dpiScale = mainWin->GetDpiScale();
 	}
 #endif
+
+    // Remove DPI scale (game viewport coords are unscaled)
+    result.Size /= dpiScale;
 
     // Fallback to the default value
     if (result.Size.MinValue() <= ZeroTolerance)
@@ -293,12 +303,15 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
     }
 
     // Create view matrix
-    const Float3 direction = GetDirection();
-    const Float3 position = _transform.Translation - origin;
-    const Float3 target = position + direction;
-    Float3 up;
-    Float3::Transform(Float3::Up, GetOrientation(), up);
-    Matrix::LookAt(position, target, up, view);
+    const Vector3 direction = Vector3::Transform(Vector3::Forward, GetOrientation());
+    const Vector3 position = _transform.Translation - origin;
+    const Vector3 target = position + direction;
+
+    Vector3 up;
+    Vector3::Transform(Vector3::Up, GetOrientation(), up);
+    Real4x4 viewResult;
+    Real4x4::LookAt(position, target, up, viewResult);
+    view = Matrix(viewResult);
 }
 
 #if USE_EDITOR

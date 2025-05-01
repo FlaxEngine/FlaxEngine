@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -150,13 +150,13 @@ public:
     /// <summary>
     /// Frame rendering flags used to switch between graphics features for this camera.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(110), EditorDisplay(\"Camera\")")
+    API_FIELD(Attributes="EditorOrder(110), EditorDisplay(\"Camera\")")
     ViewFlags RenderFlags = ViewFlags::DefaultGame;
 
     /// <summary>
     /// Describes frame rendering modes for this camera.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(120), EditorDisplay(\"Camera\")")
+    API_FIELD(Attributes="EditorOrder(120), EditorDisplay(\"Camera\")")
     ViewMode RenderMode = ViewMode::Default;
 
 public:

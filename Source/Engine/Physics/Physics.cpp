@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Physics.h"
 #include "PhysicsScene.h"
@@ -6,6 +6,7 @@
 #include "PhysicalMaterial.h"
 #include "PhysicsSettings.h"
 #include "PhysicsStatistics.h"
+#include "Colliders/Collider.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -49,6 +50,36 @@ PhysicsSettings::PhysicsSettings()
         LayerMasks[i] = MAX_uint32;
 }
 
+#if USE_EDITOR
+
+void PhysicsSettings::Serialize(SerializeStream& stream, const void* otherObj)
+{
+    SERIALIZE_GET_OTHER_OBJ(PhysicsSettings);
+
+    SERIALIZE(DefaultGravity);
+    SERIALIZE(TriangleMeshTriangleMinAreaThreshold);
+    SERIALIZE(BounceThresholdVelocity);
+    SERIALIZE(FrictionCombineMode);
+    SERIALIZE(RestitutionCombineMode);
+    SERIALIZE(DisableCCD);
+    SERIALIZE(BroadPhaseType);
+    SERIALIZE(SolverType);
+    SERIALIZE(MaxDeltaTime);
+    SERIALIZE(EnableSubstepping);
+    SERIALIZE(SubstepDeltaTime);
+    SERIALIZE(MaxSubsteps);
+    SERIALIZE(QueriesHitTriggers);
+    SERIALIZE(SupportCookingAtRuntime);
+
+    stream.JKEY("LayerMasks");
+    stream.StartArray();
+    for (uint32 e : LayerMasks)
+        stream.Uint(e);
+    stream.EndArray();
+}
+
+#endif
+
 void PhysicsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     DESERIALIZE(DefaultGravity);
@@ -71,7 +102,7 @@ void PhysicsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier*
     {
         auto& layersArray = layers->value;
         ASSERT(layersArray.IsArray());
-        for (uint32 i = 0; i < layersArray.Size() && i < 32; i++)
+        for (uint32 i = 0; i < layersArray.Size() && i < ARRAY_COUNT(LayerMasks); i++)
         {
             LayerMasks[i] = layersArray[i].GetUint();
         }
@@ -630,22 +661,66 @@ bool PhysicsScene::CheckConvex(const Vector3& center, const CollisionData* conve
 
 bool PhysicsScene::OverlapBox(const Vector3& center, const Vector3& halfExtents, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    return PhysicsBackend::OverlapBox(_scene, center, halfExtents, results, rotation, layerMask, hitTriggers);
+    Array<PhysicsColliderActor*> tmp;
+    if (PhysicsBackend::OverlapBox(_scene, center, halfExtents, tmp, rotation, layerMask, hitTriggers))
+    {
+        results.EnsureCapacity(tmp.Count());
+        for (PhysicsColliderActor* e : tmp)
+        {
+            if (e && e->Is<Collider>())
+                results.Add((Collider*)e);
+        }
+        return true;
+    }
+    return false;
 }
 
 bool PhysicsScene::OverlapSphere(const Vector3& center, const float radius, Array<Collider*>& results, uint32 layerMask, bool hitTriggers)
 {
-    return PhysicsBackend::OverlapSphere(_scene, center, radius, results, layerMask, hitTriggers);
+    Array<PhysicsColliderActor*> tmp;
+    if (PhysicsBackend::OverlapSphere(_scene, center, radius, tmp, layerMask, hitTriggers))
+    {
+        results.EnsureCapacity(tmp.Count());
+        for (PhysicsColliderActor* e : tmp)
+        {
+            if (e && e->Is<Collider>())
+                results.Add((Collider*)e);
+        }
+        return true;
+    }
+    return false;
 }
 
 bool PhysicsScene::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    return PhysicsBackend::OverlapCapsule(_scene, center, radius, height, results, rotation, layerMask, hitTriggers);
+    Array<PhysicsColliderActor*> tmp;
+    if (PhysicsBackend::OverlapCapsule(_scene, center, radius, height, tmp, rotation, layerMask, hitTriggers))
+    {
+        results.EnsureCapacity(tmp.Count());
+        for (PhysicsColliderActor* e : tmp)
+        {
+            if (e && e->Is<Collider>())
+                results.Add((Collider*)e);
+        }
+        return true;
+    }
+    return false;
 }
 
 bool PhysicsScene::OverlapConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    return PhysicsBackend::OverlapConvex(_scene, center, convexMesh, scale, results, rotation, layerMask, hitTriggers);
+    Array<PhysicsColliderActor*> tmp;
+    if (PhysicsBackend::OverlapConvex(_scene, center, convexMesh, scale, tmp, rotation, layerMask, hitTriggers))
+    {
+        results.EnsureCapacity(tmp.Count());
+        for (PhysicsColliderActor* e : tmp)
+        {
+            if (e && e->Is<Collider>())
+                results.Add((Collider*)e);
+        }
+        return true;
+    }
+    return false;
 }
 
 bool PhysicsScene::OverlapBox(const Vector3& center, const Vector3& halfExtents, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)

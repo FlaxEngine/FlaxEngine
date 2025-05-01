@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -39,9 +39,9 @@ public:
     Array<Float3> Positions;
 
     /// <summary>
-    /// Texture coordinates
+    /// Texture coordinates (list of channels)
     /// </summary>
-    Array<Float2> UVs;
+    Array<Array<Float2>, FixedAllocation<MODEL_MAX_UV>> UVs;
 
     /// <summary>
     /// Normals vector
@@ -66,11 +66,6 @@ public:
     Array<uint32> Indices;
 
     /// <summary>
-    /// Lightmap UVs
-    /// </summary>
-    Array<Float2> LightmapUVs;
-
-    /// <summary>
     /// Vertex colors
     /// </summary>
     Array<Color> Colors;
@@ -91,12 +86,17 @@ public:
     Array<BlendShape> BlendShapes;
 
     /// <summary>
-    /// Global translation for this mesh to be at it's local origin.
+    /// Lightmap texture coordinates channel index. Value -1 indicates that channel is not available.
+    /// </summary>
+    int32 LightmapUVsIndex = -1;
+
+    /// <summary>
+    /// Local translation for this mesh to be at it's local origin.
     /// </summary>
     Vector3 OriginTranslation = Vector3::Zero;
 
     /// <summary>
-    /// Orientation for this mesh at it's local origin.
+    /// Orientation for this mesh at its local origin.
     /// </summary>
     Quaternion OriginOrientation = Quaternion::Identity;
 
@@ -104,15 +104,6 @@ public:
     /// Meshes scaling.
     /// </summary>
     Vector3 Scaling = Vector3::One;
-
-public:
-    /// <summary>
-    /// Determines whether this instance has any mesh data.
-    /// </summary>
-    FORCE_INLINE bool HasData() const
-    {
-        return Indices.HasItems();
-    }
 
 public:
     /// <summary>
@@ -128,7 +119,8 @@ public:
     /// <param name="preserveContents">Failed if clear data otherwise will try to preserve the buffers contents.</param>
     /// <param name="withColors">True if use vertex colors buffer.</param>
     /// <param name="withSkin">True if use vertex blend indices and weights buffer.</param>
-    void EnsureCapacity(int32 vertices, int32 indices, bool preserveContents = false, bool withColors = true, bool withSkin = true);
+    /// <param name="texcoords">Amount of texture coordinate channels to use.</param>
+    void EnsureCapacity(int32 vertices, int32 indices, bool preserveContents = false, bool withColors = true, bool withSkin = true, int32 texcoords = 1);
 
     /// <summary>
     /// Swaps the vertex and index buffers contents (without a data copy) with the other mesh.
@@ -142,26 +134,13 @@ public:
     void Release();
 
 public:
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
     /// <summary>
     /// Init from model vertices array
     /// </summary>
     /// <param name="vertices">Array of vertices</param>
     /// <param name="verticesCount">Amount of vertices</param>
     void InitFromModelVertices(ModelVertex19* vertices, uint32 verticesCount);
-
-    /// <summary>
-    /// Init from model vertices array
-    /// </summary>
-    /// <param name="vertices">Array of vertices</param>
-    /// <param name="verticesCount">Amount of vertices</param>
-    void InitFromModelVertices(ModelVertex18* vertices, uint32 verticesCount);
-
-    /// <summary>
-    /// Init from model vertices array
-    /// </summary>
-    /// <param name="vertices">Array of vertices</param>
-    /// <param name="verticesCount">Amount of vertices</param>
-    void InitFromModelVertices(ModelVertex15* vertices, uint32 verticesCount);
 
     /// <summary>
     /// Init from model vertices array
@@ -179,14 +158,7 @@ public:
     /// <param name="vb2">Array of data for vertex buffer 2</param>
     /// <param name="verticesCount">Amount of vertices</param>
     void InitFromModelVertices(VB0ElementType18* vb0, VB1ElementType18* vb1, VB2ElementType18* vb2, uint32 verticesCount);
-
-    /// <summary>
-    /// Init from model vertices array
-    /// </summary>
-    /// <param name="vb0">Array of data for vertex buffer 0</param>
-    /// <param name="vb1">Array of data for vertex buffer 1</param>
-    /// <param name="verticesCount">Amount of vertices</param>
-    void InitFromModelVertices(VB0ElementType15* vb0, VB1ElementType15* vb1, uint32 verticesCount);
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
     /// <summary>
     /// Sets the index buffer data.
@@ -196,20 +168,6 @@ public:
     void SetIndexBuffer(void* data, uint32 indicesCount);
 
 public:
-    /// <summary>
-    /// Pack mesh data to the stream
-    /// </summary>
-    /// <param name="stream">Output stream</param>
-    /// <returns>True if cannot save data, otherwise false</returns>
-    bool Pack2Model(WriteStream* stream) const;
-
-    /// <summary>
-    /// Pack skinned mesh data to the stream
-    /// </summary>
-    /// <param name="stream">Output stream</param>
-    /// <returns>True if cannot save data, otherwise false</returns>
-    bool Pack2SkinnedModel(WriteStream* stream) const;
-
     /// <summary>
     /// Calculate bounding box for the mesh
     /// </summary>
@@ -222,8 +180,18 @@ public:
     /// <param name="result">Output sphere</param>
     void CalculateSphere(BoundingSphere& result) const;
 
-public:
+    /// <summary>
+    /// Calculates bounding box and sphere for the mesh.
+    /// </summary>
+    /// <param name="box">Output box.</param>
+    /// <param name="sphere">Output sphere.</param>
+    void CalculateBounds(BoundingBox& box, BoundingSphere& sphere) const;
+
 #if COMPILE_WITH_MODEL_TOOL
+    /// <summary>
+    /// Setups Lightmap UVs based on the option.
+    /// </summary>
+    void SetLightmapUVsSource(ModelLightmapUVsSource source);
 
     /// <summary>
     /// Generate lightmap uvs for the mesh entry
@@ -268,7 +236,6 @@ public:
     /// </summary>
     /// <returns>The area sum of all mesh triangles.</returns>
     float CalculateTrianglesArea() const;
-
 #endif
 
     /// <summary>
@@ -463,23 +430,6 @@ public:
 
 public:
     /// <summary>
-    /// Gets the valid level of details count.
-    /// </summary>
-    FORCE_INLINE int32 GetLODsCount() const
-    {
-        return LODs.Count();
-    }
-
-    /// <summary>
-    /// Determines whether this instance has valid skeleton structure.
-    /// </summary>
-    FORCE_INLINE bool HasSkeleton() const
-    {
-        return Skeleton.Bones.HasItems();
-    }
-
-public:
-    /// <summary>
     /// Automatically calculates the screen size for every model LOD for a proper transitions.
     /// </summary>
     void CalculateLODsScreenSizes();
@@ -489,29 +439,4 @@ public:
     /// </summary>
     /// <param name="matrix">The matrix to use for the transformation.</param>
     void TransformBuffer(const Matrix& matrix);
-
-#if USE_EDITOR
-public:
-    /// <summary>
-    /// Pack mesh data to the header stream
-    /// </summary>
-    /// <param name="stream">Output stream</param>
-    /// <returns>True if cannot save data, otherwise false</returns>
-    bool Pack2ModelHeader(WriteStream* stream) const;
-
-    /// <summary>
-    /// Pack skinned mesh data to the header stream
-    /// </summary>
-    /// <param name="stream">Output stream</param>
-    /// <returns>True if cannot save data, otherwise false</returns>
-    bool Pack2SkinnedModelHeader(WriteStream* stream) const;
-
-    /// <summary>
-    /// Pack animation data to the header stream
-    /// </summary>
-    /// <param name="stream">Output stream</param>
-    /// <param name="animIndex">Index of animation.</param>
-    /// <returns>True if cannot save data, otherwise false</returns>
-    bool Pack2AnimationHeader(WriteStream* stream, int32 animIndex = 0) const;
-#endif
 };

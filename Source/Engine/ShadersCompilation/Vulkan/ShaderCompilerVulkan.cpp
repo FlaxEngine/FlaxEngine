@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_VK_SHADER_COMPILER
 
@@ -116,9 +116,9 @@ const TBuiltInResource DefaultTBuiltInResource =
     /* .MinProgramTexelOffset = */ -8,
     /* .MaxProgramTexelOffset = */ 7,
     /* .MaxClipDistances = */ 8,
-    /* .MaxComputeWorkGroupCountX = */ 65535,
-    /* .MaxComputeWorkGroupCountY = */ 65535,
-    /* .MaxComputeWorkGroupCountZ = */ 65535,
+    /* .MaxComputeWorkGroupCountX = */ GPU_MAX_CS_DISPATCH_THREAD_GROUPS,
+    /* .MaxComputeWorkGroupCountY = */ GPU_MAX_CS_DISPATCH_THREAD_GROUPS,
+    /* .MaxComputeWorkGroupCountZ = */ GPU_MAX_CS_DISPATCH_THREAD_GROUPS,
     /* .MaxComputeWorkGroupSizeX = */ 1024,
     /* .MaxComputeWorkGroupSizeY = */ 1024,
     /* .MaxComputeWorkGroupSizeZ = */ 64,
@@ -212,6 +212,7 @@ struct Descriptor
     SpirvShaderResourceBindingType BindingType;
     VkDescriptorType DescriptorType;
     SpirvShaderResourceType ResourceType;
+    PixelFormat ResourceFormat;
     std::string Name;
 };
 
@@ -231,6 +232,122 @@ SpirvShaderResourceType GetTextureType(const glslang::TSampler& sampler)
         CRASH;
         return SpirvShaderResourceType::Unknown;
     }
+}
+
+PixelFormat GetResourceFormat(glslang::TBasicType basicType, uint32 vectorSize)
+{
+    switch (basicType)
+    {
+    case glslang::EbtVoid:
+        return PixelFormat::Unknown;
+    case glslang::EbtFloat:
+        switch (vectorSize)
+        {
+        case 1:
+            return PixelFormat::R32_Float;
+        case 2:
+            return PixelFormat::R32G32_Float;
+        case 3:
+            return PixelFormat::R32G32B32_Float;
+        case 4:
+            return PixelFormat::R32G32B32A32_Float;
+        }
+        break;
+    case glslang::EbtFloat16:
+        switch (vectorSize)
+        {
+        case 1:
+            return PixelFormat::R16_Float;
+        case 2:
+            return PixelFormat::R16G16_Float;
+        case 4:
+            return PixelFormat::R16G16B16A16_Float;
+        }
+        break;
+    case glslang::EbtUint:
+        switch (vectorSize)
+        {
+        case 1:
+            return PixelFormat::R32_UInt;
+        case 2:
+            return PixelFormat::R32G32_UInt;
+        case 3:
+            return PixelFormat::R32G32B32_UInt;
+        case 4:
+            return PixelFormat::R32G32B32A32_UInt;
+        }
+        break;
+    case glslang::EbtInt:
+        switch (vectorSize)
+        {
+        case 1:
+            return PixelFormat::R32_SInt;
+        case 2:
+            return PixelFormat::R32G32_SInt;
+        case 3:
+            return PixelFormat::R32G32B32_SInt;
+        case 4:
+            return PixelFormat::R32G32B32A32_SInt;
+        }
+        break;
+    case glslang::EbtUint8:
+        switch (vectorSize)
+        {
+        case 1:
+            return PixelFormat::R8_UInt;
+        case 2:
+            return PixelFormat::R8G8_UInt;
+        case 4:
+            return PixelFormat::R8G8B8A8_UInt;
+        }
+        break;
+    case glslang::EbtInt8:
+        switch (vectorSize)
+        {
+        case 1:
+            return PixelFormat::R8_SInt;
+        case 2:
+            return PixelFormat::R8G8_SInt;
+        case 4:
+            return PixelFormat::R8G8B8A8_SInt;
+        }
+        break;
+    case glslang::EbtUint16:
+        switch (vectorSize)
+        {
+        case 1:
+            return PixelFormat::R16_UInt;
+        case 2:
+            return PixelFormat::R16G16_UInt;
+        case 4:
+            return PixelFormat::R16G16B16A16_UInt;
+        }
+        break;
+    case glslang::EbtInt16:
+        switch (vectorSize)
+        {
+        case 1:
+            return PixelFormat::R16_SInt;
+        case 2:
+            return PixelFormat::R16G16_SInt;
+        case 4:
+            return PixelFormat::R16G16B16A16_SInt;
+        }
+        break;
+    default:
+        break;
+    }
+    return PixelFormat::Unknown;
+}
+
+PixelFormat GetResourceFormat(const glslang::TSampler& sampler)
+{
+    return GetResourceFormat(sampler.type, sampler.vectorSize);
+}
+
+PixelFormat GetResourceFormat(const glslang::TType& type)
+{
+    return GetResourceFormat(type.getBasicType(), type.getVectorSize());
 }
 
 bool IsUavType(const glslang::TType& type)
@@ -371,6 +488,7 @@ public:
         descriptor.BindingType = resourceBindingType;
         descriptor.DescriptorType = descriptorType;
         descriptor.ResourceType = resourceType;
+        descriptor.ResourceFormat = GetResourceFormat(type.getSampler());
         descriptor.Name = name;
         descriptor.Count = type.isSizedArray() ? type.getCumulativeArraySize() : 1;
 
@@ -503,6 +621,7 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
     EShMessages messages = (EShMessages)(EShMsgReadHlsl | EShMsgSpvRules | EShMsgVulkanRules);
 
     // Compile all shader function permutations
+    AdditionalDataVS additionalDataVS;
     for (int32 permutationIndex = 0; permutationIndex < meta.Permutations.Count(); permutationIndex++)
     {
 #if PRINT_DESCRIPTORS
@@ -613,156 +732,167 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
         }
 
         // Process shader reflection data
+        void* additionalData = nullptr;
         SpirvShaderHeader header;
         Platform::MemoryClear(&header, sizeof(header));
         ShaderBindings bindings = { 0, 0, 0, 0 };
+        if (type == ShaderStage::Vertex)
         {
-            // Extract constant buffers usage information
-            for (int blockIndex = 0; blockIndex < program.getNumLiveUniformBlocks(); blockIndex++)
+            additionalData = &additionalDataVS;
+            additionalDataVS.Inputs.Clear();
+            for (int inputIndex = 0; inputIndex < program.getNumPipeInputs(); inputIndex++)
             {
-                auto size = program.getUniformBlockSize(blockIndex);
-                auto uniform = program.getUniformBlockTType(blockIndex);
-                auto& qualifier = uniform->getQualifier();
-                auto binding = (int32)qualifier.layoutBinding;
-
-                if (!qualifier.hasBinding())
-                {
-                    // Each uniform must have a valid binding
-                    //LOG(Warning, "Found a uniform block \'{0}\' without a binding qualifier. Each uniform block must have an explicitly defined binding number.", String(uniform->getTypeName().c_str()));
+                const glslang::TObjectReflection& input = program.getPipeInput(inputIndex);
+                if (!input.getType() || input.getType()->containsBuiltIn())
                     continue;
-                }
+                additionalDataVS.Inputs.Add({ ParseVertexElementType(input.getType()->getQualifier().semanticName), 0, 0, 0, GetResourceFormat(*input.getType()) });
+            }
+        }
+        for (int blockIndex = 0; blockIndex < program.getNumLiveUniformBlocks(); blockIndex++)
+        {
+            auto size = program.getUniformBlockSize(blockIndex);
+            auto uniform = program.getUniformBlockTType(blockIndex);
+            auto& qualifier = uniform->getQualifier();
+            auto binding = (int32)qualifier.layoutBinding;
 
-                // Shared storage buffer
-                if (qualifier.storage == glslang::EvqBuffer)
+            if (!qualifier.hasBinding())
+            {
+                // Each uniform must have a valid binding
+                //LOG(Warning, "Found a uniform block \'{0}\' without a binding qualifier. Each uniform block must have an explicitly defined binding number.", String(uniform->getTypeName().c_str()));
+                continue;
+            }
+
+            // Shared storage buffer
+            if (qualifier.storage == glslang::EvqBuffer)
+            {
+                // RWBuffer
+            }
+            else
+            {
+                // Uniform buffer
+                bool found = false;
+                for (int32 i = 0; i < descriptorsCollector.DescriptorsCount; i++)
                 {
-                    // RWBuffer
+                    auto& descriptor = descriptorsCollector.Descriptors[i];
+                    if (descriptor.BindingType == SpirvShaderResourceBindingType::CB && descriptor.Binding == binding)
+                    {
+                        found = true;
+                        descriptor.Size = size;
+                        break;
+                    }
                 }
-                else
+                if (!found)
                 {
-                    // Uniform buffer
-                    bool found = false;
-                    for (int32 i = 0; i < descriptorsCollector.DescriptorsCount; i++)
-                    {
-                        auto& descriptor = descriptorsCollector.Descriptors[i];
-                        if (descriptor.BindingType == SpirvShaderResourceBindingType::CB && descriptor.Binding == binding)
-                        {
-                            found = true;
-                            descriptor.Size = size;
-                            break;
-                        }
-                    }
-                    if (!found)
-                    {
-                        LOG(Warning, "Failed to find descriptor for the uniform block \'{0}\' of size {1} (bytes), binding: {2}.", String(uniform->getTypeName().c_str()), size, binding);
-                    }
+                    LOG(Warning, "Failed to find descriptor for the uniform block \'{0}\' of size {1} (bytes), binding: {2}.", String(uniform->getTypeName().c_str()), size, binding);
                 }
             }
+        }
 
 #if PRINT_UNIFORMS
-            // Debug printing all uniforms
-            for (int32 index = 0; index < program.getNumLiveUniformVariables(); index++)
-            {
-                auto uniform = program.getUniformTType(index);
-                auto qualifier = uniform->getQualifier();
-                if (!uniform->isArray())
-                    LOG(Warning, "Shader {0}:{1} - uniform: {2} {3} at binding {4}",
-                    _context->TargetNameAnsi,
-                    String(meta.Name),
-                    uniform->getCompleteString().c_str(),
-                    program.getUniformName(index),
-                    qualifier.layoutBinding
-                );
-            }
+        // Debug printing all uniforms
+        for (int32 index = 0; index < program.getNumLiveUniformVariables(); index++)
+        {
+            auto uniform = program.getUniformTType(index);
+            auto qualifier = uniform->getQualifier();
+            if (!uniform->isArray())
+                LOG(Warning, "Shader {0}:{1} - uniform: {2} {3} at binding {4}",
+                _context->TargetNameAnsi,
+                String(meta.Name),
+                uniform->getCompleteString().c_str(),
+                program.getUniformName(index),
+                qualifier.layoutBinding
+            );
+        }
 #endif
 
-            // Process all descriptors
-            header.DescriptorInfo.ImageInfosCount = descriptorsCollector.Images;
-            header.DescriptorInfo.BufferInfosCount = descriptorsCollector.Buffers;
-            header.DescriptorInfo.TexelBufferViewsCount = descriptorsCollector.TexelBuffers;
-            for (int32 i = 0; i < descriptorsCollector.DescriptorsCount; i++)
+        // Process all descriptors
+        header.DescriptorInfo.ImageInfosCount = descriptorsCollector.Images;
+        header.DescriptorInfo.BufferInfosCount = descriptorsCollector.Buffers;
+        header.DescriptorInfo.TexelBufferViewsCount = descriptorsCollector.TexelBuffers;
+        for (int32 i = 0; i < descriptorsCollector.DescriptorsCount; i++)
+        {
+            auto& descriptor = descriptorsCollector.Descriptors[i];
+
+            // Skip cases (eg. AppendStructuredBuffer counter buffer)
+            if (descriptor.Slot == MAX_uint16)
+                continue;
+
+            auto& d = header.DescriptorInfo.DescriptorTypes[header.DescriptorInfo.DescriptorTypesCount++];
+            d.Binding = descriptor.Binding;
+            d.Set = stageSet;
+            d.Slot = descriptor.Slot;
+            d.BindingType = descriptor.BindingType;
+            d.DescriptorType = descriptor.DescriptorType;
+            d.ResourceType = descriptor.ResourceType;
+            d.ResourceFormat = descriptor.ResourceFormat;
+            d.Count = descriptor.Count;
+
+            switch (descriptor.BindingType)
             {
-                auto& descriptor = descriptorsCollector.Descriptors[i];
+            case SpirvShaderResourceBindingType::CB:
+                ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_CB_BINDED);
+                bindings.UsedCBsMask |= 1 << descriptor.Slot;
+                break;
+            case SpirvShaderResourceBindingType::SRV:
+                ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_SR_BINDED);
+                bindings.UsedSRsMask |= 1 << descriptor.Slot;
+                break;
+            case SpirvShaderResourceBindingType::UAV:
+                ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_UA_BINDED);
+                bindings.UsedUAsMask |= 1 << descriptor.Slot;
+                break;
+            }
 
-                // Skip cases (eg. AppendStructuredBuffer counter buffer)
-                if (descriptor.Slot == MAX_uint16)
+            if (descriptor.BindingType == SpirvShaderResourceBindingType::CB)
+            {
+                if (descriptor.Size == -1)
+                {
+                    // Skip unused constant buffers
                     continue;
-
-                auto& d = header.DescriptorInfo.DescriptorTypes[header.DescriptorInfo.DescriptorTypesCount++];
-                d.Binding = descriptor.Binding;
-                d.Set = stageSet;
-                d.Slot = descriptor.Slot;
-                d.BindingType = descriptor.BindingType;
-                d.DescriptorType = descriptor.DescriptorType;
-                d.ResourceType = descriptor.ResourceType;
-                d.Count = descriptor.Count;
-
-                switch (descriptor.BindingType)
+                }
+                if (descriptor.Size == 0)
                 {
-                case SpirvShaderResourceBindingType::CB:
-                    ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_CB_BINDED);
-                    bindings.UsedCBsMask |= 1 << descriptor.Slot;
-                    break;
-                case SpirvShaderResourceBindingType::SRV:
-                    ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_SR_BINDED);
-                    bindings.UsedSRsMask |= 1 << descriptor.Slot;
-                    break;
-                case SpirvShaderResourceBindingType::UAV:
-                    ASSERT_LOW_LAYER(descriptor.Slot >= 0 && descriptor.Slot < GPU_MAX_UA_BINDED);
-                    bindings.UsedUAsMask |= 1 << descriptor.Slot;
-                    break;
+                    LOG(Warning, "Found constant buffer \'{1}\' at slot {0} but it's not used or has no valid size.", descriptor.Slot, String(descriptor.Name.c_str()));
+                    continue;
                 }
 
-                if (descriptor.BindingType == SpirvShaderResourceBindingType::CB)
+                for (int32 b = 0; b < _constantBuffers.Count(); b++)
                 {
-                    if (descriptor.Size == -1)
+                    auto& cc = _constantBuffers[b];
+                    if (cc.Slot == descriptor.Slot)
                     {
-                        // Skip unused constant buffers
-                        continue;
-                    }
-                    if (descriptor.Size == 0)
-                    {
-                        LOG(Warning, "Found constant buffer \'{1}\' at slot {0} but it's not used or has no valid size.", descriptor.Slot, String(descriptor.Name.c_str()));
-                        continue;
-                    }
-
-                    for (int32 b = 0; b < _constantBuffers.Count(); b++)
-                    {
-                        auto& cc = _constantBuffers[b];
-                        if (cc.Slot == descriptor.Slot)
-                        {
-                            // Mark as used and cache some data
-                            cc.IsUsed = true;
-                            cc.Size = descriptor.Size;
-                            break;
-                        }
+                        // Mark as used and cache some data
+                        cc.IsUsed = true;
+                        cc.Size = descriptor.Size;
+                        break;
                     }
                 }
+            }
 
 #if PRINT_DESCRIPTORS
-                String type;
-                switch (descriptor.BindingType)
-                {
-                case SpirvShaderResourceBindingType::INVALID:
-                    type = TEXT("INVALID");
-                    break;
-                case SpirvShaderResourceBindingType::CB:
-                    type = TEXT("CB");
-                    break;
-                case SpirvShaderResourceBindingType::SAMPLER:
-                    type = TEXT("SAMPLER");
-                    break;
-                case SpirvShaderResourceBindingType::SRV:
-                    type = TEXT("SRV");
-                    break;
-                case SpirvShaderResourceBindingType::UAV:
-                    type = TEXT("UAV");
-                    break;
-                default:
-                    type = TEXT("?");
-                }
-                LOG(Warning, "VULKAN SHADER RESOURCE: slot: {1}, binding: {2}, name: {0}, type: {3}", String(descriptor.Name.c_str()), descriptor.Slot, descriptor.Binding, type);
-#endif
+            String type;
+            switch (descriptor.BindingType)
+            {
+            case SpirvShaderResourceBindingType::INVALID:
+                type = TEXT("INVALID");
+                break;
+            case SpirvShaderResourceBindingType::CB:
+                type = TEXT("CB");
+                break;
+            case SpirvShaderResourceBindingType::SAMPLER:
+                type = TEXT("SAMPLER");
+                break;
+            case SpirvShaderResourceBindingType::SRV:
+                type = TEXT("SRV");
+                break;
+            case SpirvShaderResourceBindingType::UAV:
+                type = TEXT("UAV");
+                break;
+            default:
+                type = TEXT("?");
             }
+            LOG(Warning, "VULKAN SHADER RESOURCE: slot: {1}, binding: {2}, name: {0}, type: {3}", String(descriptor.Name.c_str()), descriptor.Slot, descriptor.Binding, type);
+#endif
         }
 
         // Generate SPIR-V (optimize it at the same time)
@@ -807,7 +937,7 @@ bool ShaderCompilerVulkan::CompileShader(ShaderFunctionMeta& meta, WritePermutat
         if (WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, &header, sizeof(header), &spirv[0], spirvBytesCount))
             return true;
 
-        if (customDataWrite && customDataWrite(_context, meta, permutationIndex, _macros))
+        if (customDataWrite && customDataWrite(_context, meta, permutationIndex, _macros, additionalData))
             return true;
     }
 

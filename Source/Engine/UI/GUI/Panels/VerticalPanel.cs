@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 namespace FlaxEngine.GUI
 {
@@ -78,7 +78,7 @@ namespace FlaxEngine.GUI
                 size.Y = top + bottom;
                 if (!ControlChildSize)
                     size.X = maxWidth;
-                Size = size;
+                Resize(ref size);
             }
             else if (_alignment != TextAlignment.Near && hasAnyTop)
             {

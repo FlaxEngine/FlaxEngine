@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -61,7 +61,7 @@ public:
     void Add(Model* model, int32 lodIndex);
 
     // Adds the model geometry for the build to the structure.
-    void Add(ModelData* modelData, int32 lodIndex, bool copy = false);
+    void Add(const ModelData* modelData, int32 lodIndex, bool copy = false);
 
     // Adds the triangles geometry for the build to the structure.
     void Add(Float3* vb, int32 vertices, void* ib, int32 indices, bool use16BitIndex, bool copy = false);

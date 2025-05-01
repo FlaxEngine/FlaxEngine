@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -399,7 +399,7 @@ public:
     /// </summary>
     /// <param name="text">The input text to test.</param>
     /// <param name="layout">The layout properties.</param>
-    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    /// <returns>The minimum size for that text and font to render properly.</returns>
     API_FUNCTION() Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout);
 
     /// <summary>
@@ -408,7 +408,7 @@ public:
     /// <param name="text">The input text to test.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
     /// <param name="layout">The layout properties.</param>
-    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    /// <returns>The minimum size for that text and font to render properly.</returns>
     API_FUNCTION() Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
         return MeasureText(textRange.Substring(text), layout);
@@ -418,7 +418,7 @@ public:
     /// Measures minimum size of the rectangle that will be needed to draw given text
     /// </summary>.
     /// <param name="text">The input text to test.</param>
-    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    /// <returns>The minimum size for that text and font to render properly.</returns>
     API_FUNCTION() FORCE_INLINE Float2 MeasureText(const StringView& text)
     {
         return MeasureText(text, TextLayoutOptions());
@@ -429,7 +429,7 @@ public:
     /// </summary>.
     /// <param name="text">The input text to test.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
-    /// <returns>The minimum size for that text and fot to render properly.</returns>
+    /// <returns>The minimum size for that text and font to render properly.</returns>
     API_FUNCTION() FORCE_INLINE Float2 MeasureText(const StringView& text, API_PARAM(Ref) const TextRange& textRange)
     {
         return MeasureText(textRange.Substring(text), TextLayoutOptions());

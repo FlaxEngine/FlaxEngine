@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -342,3 +342,9 @@ struct TIsPODType<GeometryDrawStateData>
 		drawState.PrevWorld = worldMatrix; \
 		drawState.PrevFrame = frame; \
 	}
+
+#if USE_LARGE_WORLDS
+#define ACTOR_GET_WORLD_MATRIX(actor, view, world) Real4x4 worldReal; actor->GetLocalToWorldMatrix(worldReal); renderContext.View.GetWorldMatrix(worldReal); Matrix world = (Matrix)worldReal;
+#else
+#define ACTOR_GET_WORLD_MATRIX(actor, view, world) Real4x4 world; actor->GetLocalToWorldMatrix(world); renderContext.View.GetWorldMatrix(world);
+#endif

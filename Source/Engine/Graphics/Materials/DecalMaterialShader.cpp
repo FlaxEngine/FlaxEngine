@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "DecalMaterialShader.h"
 #include "MaterialParams.h"
@@ -33,7 +33,7 @@ void DecalMaterialShader::Bind(BindParameters& params)
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(DecalMaterialShaderData));
     auto materialData = reinterpret_cast<DecalMaterialShaderData*>(cb.Get());
-    cb = Span<byte>(cb.Get() + sizeof(DecalMaterialShaderData), cb.Length() - sizeof(DecalMaterialShaderData));
+    cb = cb.Slice(sizeof(DecalMaterialShaderData));
     const bool isCameraInside = OrientedBoundingBox(Vector3::Half, drawCall.World).Contains(view.Position) == ContainmentType::Contains;
 
     // Setup parameters

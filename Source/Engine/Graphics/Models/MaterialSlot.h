@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -28,13 +28,4 @@ API_CLASS(NoSpawn) class FLAXENGINE_API MaterialSlot : public ScriptingObject
     /// The slot name.
     /// </summary>
     API_FIELD() String Name;
-
-public:
-    MaterialSlot(const MaterialSlot& other)
-        : MaterialSlot()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
 };

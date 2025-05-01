@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_SHADER_COMPILER
 
@@ -6,15 +6,15 @@
 #include "ShadersCompilation.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Collections/Dictionary.h"
-#include "Engine/Engine/Globals.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
+#include "Engine/Graphics/Shaders/VertexElement.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
-#include "Engine/Utilities/StringConverter.h"
+#include "FlaxEngine.Gen.h"
 
 namespace IncludedFiles
 {
@@ -67,26 +67,11 @@ bool ShaderCompiler::Compile(ShaderCompilationContext* context)
         return true;
 
     // [Output] Constant Buffers
+    output->Write((byte)_constantBuffers.Count());
+    for (const ShaderResourceBuffer& cb : _constantBuffers)
     {
-        const int32 cbsCount = _constantBuffers.Count();
-        ASSERT(cbsCount == meta->CB.Count());
-
-        // Find maximum used slot index
-        byte maxCbSlot = 0;
-        for (int32 i = 0; i < cbsCount; i++)
-        {
-            maxCbSlot = Math::Max(maxCbSlot, _constantBuffers[i].Slot);
-        }
-
-        output->WriteByte(static_cast<byte>(cbsCount));
-        output->WriteByte(maxCbSlot);
-        // TODO: do we still need to serialize max cb slot?
-
-        for (int32 i = 0; i < cbsCount; i++)
-        {
-            output->WriteByte(_constantBuffers[i].Slot);
-            output->WriteUint32(_constantBuffers[i].Size);
-        }
+        output->Write((byte)cb.Slot);
+        output->Write((uint32)cb.Size);
     }
 
     // Additional Data Start
@@ -97,7 +82,7 @@ bool ShaderCompiler::Compile(ShaderCompilationContext* context)
     for (auto& include : context->Includes)
     {
         String compactPath = ShadersCompilation::CompactShaderPath(include.Item);
-        output->WriteString(compactPath, 11);
+        output->Write(compactPath, 11);
         const auto date = FileSystem::GetFileLastEditTime(include.Item);
         output->Write(date);
     }
@@ -276,48 +261,29 @@ bool ShaderCompiler::OnCompileEnd()
 bool ShaderCompiler::WriteShaderFunctionBegin(ShaderCompilationContext* context, ShaderFunctionMeta& meta)
 {
     auto output = context->Output;
-
-    // [Output] Type
-    output->WriteByte(static_cast<byte>(meta.GetStage()));
-
-    // [Output] Permutations count
-    output->WriteByte(meta.Permutations.Count());
-
-    // [Output] Shader function name
-    output->WriteStringAnsi(meta.Name, 11);
-
-    // [Output] Shader flags
-    output->WriteUint32((uint32)meta.Flags);
-
+    output->Write((byte)meta.GetStage());
+    output->Write((byte)meta.Permutations.Count());
+    output->Write(meta.Name, 11);
+    output->Write((uint32)meta.Flags);
     return false;
 }
 
 bool ShaderCompiler::WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* header, int32 headerSize, const void* cache, int32 cacheSize)
 {
     auto output = context->Output;
-
-    // [Output] Write compiled shader cache
-    output->WriteUint32(cacheSize + headerSize);
+    output->Write((uint32)(cacheSize + headerSize));
     output->WriteBytes(header, headerSize);
     output->WriteBytes(cache, cacheSize);
-
-    // [Output] Shader bindings meta
     output->Write(bindings);
-
     return false;
 }
 
 bool ShaderCompiler::WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* cache, int32 cacheSize)
 {
     auto output = context->Output;
-
-    // [Output] Write compiled shader cache
-    output->WriteUint32(cacheSize);
+    output->Write((uint32)cacheSize);
     output->WriteBytes(cache, cacheSize);
-
-    // [Output] Shader bindings meta
     output->Write(bindings);
-
     return false;
 }
 
@@ -326,15 +292,27 @@ bool ShaderCompiler::WriteShaderFunctionEnd(ShaderCompilationContext* context, S
     return false;
 }
 
-bool ShaderCompiler::WriteCustomDataVS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros)
+bool ShaderCompiler::WriteCustomDataVS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros, void* additionalData)
 {
     auto output = context->Output;
+
+    // Write vertex shader inputs (based on compiled shader reflection) to bind any missing vertex buffer streaming at runtime (during drawing - see usage of GPUVertexLayout::Merge)
+    if (auto* additionalDataVS = (AdditionalDataVS*)additionalData)
+        output->Write(additionalDataVS->Inputs);
+    else
+        output->WriteInt32(0);
+
+    // [Deprecated in v1.10]
     auto& metaVS = *(VertexShaderMeta*)&meta;
     auto& layout = metaVS.InputLayout;
+#if FLAXENGINE_VERSION_MAJOR > 2 || (FLAXENGINE_VERSION_MAJOR == 2 && FLAXENGINE_VERSION_MINOR >= 1)
+    if (layout.HasItems())
+        LOG(Warning, "Vertex Shader '{}' (asset '{}') uses explicit vertex layout via 'META_VS_IN_ELEMENT' macros which has been deprecated. Remove this code and migrate to GPUVertexLayout with VertexElement array in code (assigned to vertex buffer).", String(meta.Name), context->Options->TargetName);
+#endif
 
     // Get visible entries (based on `visible` flag switch)
     int32 layoutSize = 0;
-    bool layoutVisible[VERTEX_SHADER_MAX_INPUT_ELEMENTS];
+    bool layoutVisible[GPU_MAX_VS_ELEMENTS];
     for (int32 i = 0; i < layout.Count(); i++)
     {
         auto& element = layout[i];
@@ -375,21 +353,100 @@ bool ShaderCompiler::WriteCustomDataVS(ShaderCompilationContext* context, Shader
         auto& element = layout[a];
         if (!layoutVisible[a])
             continue;
-        GPUShaderProgramVS::InputElement data;
-        data.Type = static_cast<byte>(element.Type);
-        data.Index = element.Index;
-        data.Format = static_cast<byte>(element.Format);
-        data.InputSlot = element.InputSlot;
-        data.AlignedByteOffset = element.AlignedByteOffset;
-        data.InputSlotClass = element.InputSlotClass;
-        data.InstanceDataStepRate = element.InstanceDataStepRate;
+        VertexElement data;
+        switch (element.Type)
+        {
+        case VertexShaderMeta::InputType::POSITION:
+            data.Type = VertexElement::Types::Position;
+            break;
+        case VertexShaderMeta::InputType::COLOR:
+            data.Type = VertexElement::Types::Color;
+            break;
+        case VertexShaderMeta::InputType::TEXCOORD:
+            switch (element.Index)
+            {
+            case 0:
+                data.Type = VertexElement::Types::TexCoord0;
+                break;
+            case 1:
+                data.Type = VertexElement::Types::TexCoord1;
+                break;
+            case 2:
+                data.Type = VertexElement::Types::TexCoord2;
+                break;
+            case 3:
+                data.Type = VertexElement::Types::TexCoord3;
+                break;
+            case 4:
+                data.Type = VertexElement::Types::TexCoord4;
+                break;
+            case 5:
+                data.Type = VertexElement::Types::TexCoord5;
+                break;
+            case 6:
+                data.Type = VertexElement::Types::TexCoord6;
+                break;
+            case 7:
+                data.Type = VertexElement::Types::TexCoord7;
+                break;
+            default:
+                LOG(Error, "Vertex Shader '{}' (asset '{}') uses deprecated texcoord attribute index. Valid range is 0-7.", String(meta.Name), context->Options->TargetName);
+                data.Type = VertexElement::Types::TexCoord;
+                break;
+            }
+            break;
+        case VertexShaderMeta::InputType::NORMAL:
+            data.Type = VertexElement::Types::Normal;
+            break;
+        case VertexShaderMeta::InputType::TANGENT:
+            data.Type = VertexElement::Types::Tangent;
+            break;
+        case VertexShaderMeta::InputType::BITANGENT:
+            LOG(Error, "Vertex Shader '{}' (asset '{}') uses deprecated attribute 'BITANGENT'. Remapping it to `ATTRIBUTE`.", String(meta.Name), context->Options->TargetName);
+            data.Type = VertexElement::Types::Attribute;
+            break;
+        case VertexShaderMeta::InputType::ATTRIBUTE:
+            switch (element.Index)
+            {
+            case 0:
+                data.Type = VertexElement::Types::Attribute0;
+                break;
+            case 1:
+                data.Type = VertexElement::Types::Attribute1;
+                break;
+            case 2:
+                data.Type = VertexElement::Types::Attribute2;
+                break;
+            case 3:
+                data.Type = VertexElement::Types::Attribute3;
+                break;
+            default:
+                LOG(Error, "Vertex Shader '{}' (asset '{}') uses deprecated attribute index. Valid range is 0-3.", String(meta.Name), context->Options->TargetName);
+                data.Type = VertexElement::Types::Attribute;
+                break;
+            }
+            break;
+        case VertexShaderMeta::InputType::BLENDINDICES:
+            data.Type = VertexElement::Types::BlendIndices;
+            break;
+        case VertexShaderMeta::InputType::BLENDWEIGHT:
+            data.Type = VertexElement::Types::BlendWeights;
+            break;
+        default:
+            data.Type = VertexElement::Types::Unknown;
+            break;
+        }
+        data.Slot = element.InputSlot;
+        data.Offset = element.AlignedByteOffset != INPUT_LAYOUT_ELEMENT_ALIGN && element.AlignedByteOffset <= MAX_uint8 ? element.AlignedByteOffset : 0;
+        data.PerInstance = element.InputSlotClass == INPUT_LAYOUT_ELEMENT_PER_INSTANCE_DATA;
+        data.Format = element.Format;
         output->Write(data);
     }
 
     return false;
 }
 
-bool ShaderCompiler::WriteCustomDataHS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros)
+bool ShaderCompiler::WriteCustomDataHS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros, void* additionalData)
 {
     auto output = context->Output;
     auto& metaHS = *(HullShaderMeta*)&meta;
@@ -403,13 +460,46 @@ bool ShaderCompiler::WriteCustomDataHS(ShaderCompilationContext* context, Shader
 void ShaderCompiler::GetDefineForFunction(ShaderFunctionMeta& meta, Array<ShaderMacro>& macros)
 {
     auto& functionName = meta.Name;
-    const int32 functionNameLength = static_cast<int32>(functionName.Length());
+    const int32 functionNameLength = functionName.Length();
     _funcNameDefineBuffer.Clear();
     _funcNameDefineBuffer.EnsureCapacity(functionNameLength + 2);
     _funcNameDefineBuffer.Add('_');
     _funcNameDefineBuffer.Add(functionName.Get(), functionNameLength);
     _funcNameDefineBuffer.Add('\0');
     macros.Add({ _funcNameDefineBuffer.Get(), "1" });
+}
+
+VertexElement::Types ShaderCompiler::ParseVertexElementType(StringAnsiView semantic, uint32 index)
+{
+    if (semantic.HasChars() && StringUtils::IsDigit(semantic[semantic.Length() - 1]))
+    {
+        // Get index from end of the name
+        index = semantic[semantic.Length() - 1] - '0';
+        semantic = StringAnsiView(semantic.Get(), semantic.Length() - 1);
+    }
+
+    if (semantic == "POSITION")
+        return VertexElement::Types::Position;
+    if (semantic == "COLOR")
+        return VertexElement::Types::Color;
+    if (semantic == "NORMAL")
+        return VertexElement::Types::Normal;
+    if (semantic == "TANGENT")
+        return VertexElement::Types::Tangent;
+    if (semantic == "BLENDINDICES")
+        return VertexElement::Types::BlendIndices;
+    if (semantic == "LIGHTMAP")
+        return VertexElement::Types::Lightmap;
+    if (semantic == "BLENDWEIGHTS" ||
+        semantic == "BLENDWEIGHT") // [Deprecated in v1.10]
+        return VertexElement::Types::BlendWeights;
+    if (semantic == "TEXCOORD" && index < 8)
+        return (VertexElement::Types)((int32)VertexElement::Types::TexCoord0 + index);
+    if (semantic == "ATTRIBUTE" && index < 4)
+        return (VertexElement::Types)((int32)VertexElement::Types::Attribute0 + index);
+
+    LOG(Warning, "Unsupported vertex shader input element semantic {}{}", semantic.ToString(), index);
+    return VertexElement::Types::Unknown;;
 }
 
 #endif

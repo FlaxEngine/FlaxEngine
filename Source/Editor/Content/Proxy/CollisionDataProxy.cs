@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -75,13 +75,34 @@ namespace FlaxEditor.Content
                 throw new Exception("Failed to create new asset.");
         }
 
+        private bool TryUseCollisionData(Model model, BinaryAssetItem assetItem, Action<CollisionData> created, bool alwaysDeferCallback, CollisionDataType type)
+        {
+            var collisionData = FlaxEngine.Content.Load<CollisionData>(assetItem.ID);
+            if (collisionData)
+            {
+                var options = collisionData.Options;
+                if ((options.Model == model.ID || options.Model == Guid.Empty) && options.Type == type)
+                {
+                    Editor.Instance.Windows.ContentWin.Select(assetItem);
+                    if (created != null && alwaysDeferCallback)
+                        FlaxEngine.Scripting.InvokeOnUpdate(() => created(collisionData));
+                    else if (created != null)
+                        created(collisionData);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>
         /// Create collision data from model.
         /// </summary>
         /// <param name="model">The associated model.</param>
         /// <param name="created">The action to call once the collision data gets created (or reused from existing).</param>
         /// <param name="withRenaming">True if start initial item renaming by user, or tru to skip it.</param>
-        public void CreateCollisionDataFromModel(Model model, Action<CollisionData> created = null, bool withRenaming = true)
+        /// <param name="alwaysDeferCallback">True if always call <paramref name="created"/> callback on the next engine update, otherwise callback might be called within this function if collision data already exists.</param>
+        /// <param name="type">Type of the collider to create.</param>
+        public void CreateCollisionDataFromModel(Model model, Action<CollisionData> created = null, bool withRenaming = true, bool alwaysDeferCallback = true, CollisionDataType type = CollisionDataType.ConvexMesh)
         {
             // Check if there already is collision data for that model to reuse
             var modelItem = (AssetItem)Editor.Instance.ContentDatabase.Find(model.ID);
@@ -92,31 +113,19 @@ namespace FlaxEditor.Content
                     // Check if there is collision that was made with this model
                     if (child is BinaryAssetItem b && b.IsOfType<CollisionData>())
                     {
-                        var collisionData = FlaxEngine.Content.Load<CollisionData>(b.ID);
-                        if (collisionData && collisionData.Options.Model == model.ID)
-                        {
-                            Editor.Instance.Windows.ContentWin.Select(b);
-                            if (created != null)
-                                FlaxEngine.Scripting.InvokeOnUpdate(() => created(collisionData));
+                        if (TryUseCollisionData(model, b, created, alwaysDeferCallback, type))
                             return;
-                        }
                     }
 
-                    // Check if there is a auto-imported collision
+                    // Check if there is an auto-imported collision
                     if (child is ContentFolder childFolder && childFolder.ShortName == modelItem.ShortName)
                     {
                         foreach (var childFolderChild in childFolder.Children)
                         {
                             if (childFolderChild is BinaryAssetItem c && c.IsOfType<CollisionData>())
                             {
-                                var collisionData = FlaxEngine.Content.Load<CollisionData>(c.ID);
-                                if (collisionData && (collisionData.Options.Model == model.ID || collisionData.Options.Model == Guid.Empty))
-                                {
-                                    Editor.Instance.Windows.ContentWin.Select(c);
-                                    if (created != null)
-                                        FlaxEngine.Scripting.InvokeOnUpdate(() => created(collisionData));
+                                if (TryUseCollisionData(model, c, created, alwaysDeferCallback, type))
                                     return;
-                                }
                             }
                         }
                     }
@@ -135,7 +144,7 @@ namespace FlaxEditor.Content
                 }
                 Task.Run(() =>
                 {
-                    Editor.CookMeshCollision(assetItem.Path, CollisionDataType.ConvexMesh, model);
+                    Editor.CookMeshCollision(assetItem.Path, type, model);
                     if (created != null)
                         FlaxEngine.Scripting.InvokeOnUpdate(() => created(collisionData));
                 });

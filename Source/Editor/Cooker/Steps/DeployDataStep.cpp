@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "DeployDataStep.h"
 #include "Engine/Platform/File.h"
@@ -129,6 +129,10 @@ bool DeployDataStep::Perform(CookingData& data)
                 if (version.IsEmpty())
                 {
                     data.Error(TEXT("Failed to find supported .NET hostfxr version for the current host platform."));
+                    if (GAME_BUILD_DOTNET_RUNTIME_MIN_VER == GAME_BUILD_DOTNET_RUNTIME_MAX_VER)
+                        data.Error(String::Format(TEXT("The only supported version is .NET {}. Ensure the version is installed."), GAME_BUILD_DOTNET_RUNTIME_MIN_VER));
+                    else
+                        data.Error(String::Format(TEXT("Minimum supported version is .NET {}, maximum is .NET {}. Ensure the version within that range is installed."), GAME_BUILD_DOTNET_RUNTIME_MIN_VER, GAME_BUILD_DOTNET_RUNTIME_MAX_VER));
                     return true;
                 }
 
@@ -213,38 +217,59 @@ bool DeployDataStep::Perform(CookingData& data)
                 }
                 FileSystem::NormalizePath(srcDotnet);
                 LOG(Info, "Using .NET Runtime {} at {}", TEXT("Host"), srcDotnet);
+                const bool srcDotnetFromEngine = srcDotnet.Contains(TEXT("Source/Platforms"));
+                String packFolder = srcDotnet / TEXT("../../../");
 
-                // Get major Version
-                Array<String> pathParts;
-                srcDotnet.Split('/', pathParts);
+                // Get .NET runtime version
                 String version;
-                for (int i = 0; i < pathParts.Count(); i++)
                 {
-                    if (pathParts[i] == TEXT("runtimes"))
+                    // Detect from path provided by build tool
+                    Array<String> pathParts;
+                    srcDotnet.Split('/', pathParts);
+                    for (int32 i = 1; i < pathParts.Count(); i++)
                     {
-                        Array<String> versionParts;
-                        pathParts[i - 1].Split('.', versionParts);
-                        if (!versionParts.IsEmpty())
+                        if (pathParts[i] == TEXT("runtimes"))
                         {
-                            const String majorVersion = versionParts[0].TrimTrailing();
-                            int32 versionNum;
-                            StringUtils::Parse(*majorVersion, majorVersion.Length(), &versionNum);
-                            if (Math::IsInRange(versionNum, GAME_BUILD_DOTNET_RUNTIME_MIN_VER, GAME_BUILD_DOTNET_RUNTIME_MAX_VER)) // Check for major part
-                                version = majorVersion;
+                            Array<String> versionParts;
+                            pathParts[i - 1].Split('.', versionParts);
+                            if (!versionParts.IsEmpty())
+                            {
+                                const String majorVersion = versionParts[0].TrimTrailing();
+                                int32 versionNum;
+                                StringUtils::Parse(*majorVersion, majorVersion.Length(), &versionNum);
+                                if (Math::IsInRange(versionNum, GAME_BUILD_DOTNET_RUNTIME_MIN_VER, GAME_BUILD_DOTNET_RUNTIME_MAX_VER)) // Check for major part
+                                    version = majorVersion;
+                            }
+                        }
+                    }
+                    if (version.IsEmpty())
+                    {
+                        if (srcDotnetFromEngine)
+                        {
+                            // Detect version from runtime files inside Engine Platform folder
+                            for (int32 i = GAME_BUILD_DOTNET_RUNTIME_MAX_VER; i >= GAME_BUILD_DOTNET_RUNTIME_MIN_VER; i--)
+                            {
+                                // Check runtime files inside Engine Platform folder
+                                String testPath1 = srcDotnet / String::Format(TEXT("lib/net{}.0"), i);
+                                String testPath2 = packFolder / String::Format(TEXT("Dotnet/lib/net{}.0"), i);
+                                if ((FileSystem::DirectoryExists(testPath1) && FileSystem::GetDirectorySize(testPath1) > 0) ||
+                                    (FileSystem::DirectoryExists(testPath2) && FileSystem::GetDirectorySize(testPath2) > 0))
+                                {
+                                    version = StringUtils::ToString(i);
+                                    break;
+                                }
+                            }
+                        }
+                        if (version.IsEmpty())
+                        {
+                            data.Error(String::Format(TEXT("Failed to find supported .NET {} version for the current host platform."), GAME_BUILD_DOTNET_RUNTIME_MIN_VER));
+                            return true;
                         }
                     }
                 }
 
-                if (version.IsEmpty())
-                {
-                    data.Error(TEXT("Failed to find supported .NET version for the current host platform."));
-                    return true;
-                }
-
                 // Deploy runtime files
                 const Char* corlibPrivateName = TEXT("System.Private.CoreLib.dll");
-                const bool srcDotnetFromEngine = srcDotnet.Contains(TEXT("Source/Platforms"));
-                String packFolder = srcDotnet / TEXT("../../../");
                 String dstDotnetLibs = dstDotnet, srcDotnetLibs = srcDotnet;
                 StringUtils::PathRemoveRelativeParts(packFolder);
                 if (usAOT)

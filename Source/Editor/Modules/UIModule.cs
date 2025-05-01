@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -160,7 +160,7 @@ namespace FlaxEditor.Modules
         internal UIModule(Editor editor)
         : base(editor)
         {
-            InitOrder = -90;
+            InitOrder = -70;
             VisjectSurfaceBackground = FlaxEngine.Content.LoadAsyncInternal<Texture>("Editor/VisjectSurface");
             ColorValueBox.ShowPickColorDialog += ShowPickColorDialog;
         }
@@ -447,6 +447,8 @@ namespace FlaxEditor.Modules
 
         private void StateMachineOnStateChanged()
         {
+            if (Editor.StateMachine.CurrentState is States.ClosingState)
+                return;
             UpdateToolstrip();
             UpdateStatusBar();
         }

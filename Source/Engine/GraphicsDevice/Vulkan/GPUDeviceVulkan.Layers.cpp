@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GPUDeviceVulkan.h"
 #include "RenderToolsVulkan.h"
@@ -483,10 +483,12 @@ void GPUDeviceVulkan::GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<c
     }
 
     // Add device layers for debugging
+#ifdef VK_EXT_tooling_info
     if (ListContains(foundUniqueExtensions, "VK_EXT_tooling_info"))
     {
         IsDebugToolAttached = true;
     }
+#endif
 #if VULKAN_USE_DEBUG_LAYER
     bool hasKhronosStandardValidationLayer = false, hasLunargStandardValidationLayer = false;
 #if VULKAN_USE_KHRONOS_STANDARD_VALIDATION

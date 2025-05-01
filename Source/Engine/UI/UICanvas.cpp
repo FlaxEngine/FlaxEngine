@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "UICanvas.h"
 #include "Engine/Scripting/ManagedCLR/MException.h"
@@ -23,11 +23,11 @@ MMethod* UICanvas_EndPlay = nullptr;
 MMethod* UICanvas_ParentChanged = nullptr;
 
 #define UICANVAS_INVOKE(event) \
-    auto instance = GetManagedInstance(); \
-    if (instance) \
+    auto* managed = GetManagedInstance(); \
+    if (managed) \
     { \
 	    MObject* exception = nullptr; \
-	    UICanvas_##event->Invoke(instance, nullptr, &exception); \
+	    UICanvas_##event->Invoke(managed, nullptr, &exception); \
 	    if (exception) \
 	    { \
 		    MException ex(exception); \

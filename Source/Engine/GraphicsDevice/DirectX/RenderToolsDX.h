@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,6 +7,7 @@
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Graphics//RenderTools.h"
 #include "Engine/Graphics/Enums.h"
+#include "Engine/Graphics/Shaders/VertexElement.h"
 #include "IncludeDirectXHeaders.h"
 #include "Engine/Core/Log.h"
 
@@ -16,12 +17,6 @@
 namespace RenderToolsDX
 {
 #if GRAPHICS_API_DIRECTX11
-
-    /// <summary>
-    /// Converts Flax GPUResourceUsage to DirectX 11 resource D3D11_USAGE enum type.
-    /// </summary>
-    /// <param name="usage">The Flax resource usage.</param>
-    /// <returns>The DirectX 11 resource usage.</returns>
     inline D3D11_USAGE ToD3D11Usage(const GPUResourceUsage usage)
     {
         switch (usage)
@@ -37,11 +32,6 @@ namespace RenderToolsDX
         }
     }
 
-    /// <summary>
-    /// Gets the cpu access flags from the resource usage.
-    /// </summary>
-    /// <param name="usage">The Flax resource usage.</param>
-    /// <returns>The DirectX 11 resource CPU usage.</returns>
     inline UINT GetDX11CpuAccessFlagsFromUsage(const GPUResourceUsage usage)
     {
         switch (usage)
@@ -58,25 +48,7 @@ namespace RenderToolsDX
             return 0;
         }
     }
-
 #endif
-
-    /// <summary>
-    /// Converts Flax Pixel Format to the DXGI Format.
-    /// </summary>
-    /// <param name="format">The Flax Pixel Format.</param>
-    /// <returns>The DXGI Format</returns>
-    extern DXGI_FORMAT ToDxgiFormat(PixelFormat format);
-
-    // Aligns location to the next multiple of align value.
-    template<typename T>
-    T Align(T location, T align)
-    {
-        ASSERT(!((0 == align) || (align & (align - 1))));
-        return ((location + (align - 1)) & ~(align - 1));
-    }
-
-    extern const Char* GetFeatureLevelString(const D3D_FEATURE_LEVEL featureLevel);
 
     // Calculate a subresource index for a texture
     FORCE_INLINE uint32 CalcSubresourceIndex(uint32 mipSlice, uint32 arraySlice, uint32 mipLevels)
@@ -84,53 +56,17 @@ namespace RenderToolsDX
         return mipSlice + arraySlice * mipLevels;
     }
 
-    inline uint32 CountAdapterOutputs(IDXGIAdapter* adapter)
-    {
-        uint32 count = 0;
-        while (true)
-        {
-            IDXGIOutput* output;
-            HRESULT hr = adapter->EnumOutputs(count, &output);
-            if (FAILED(hr))
-            {
-                break;
-            }
-            count++;
-        }
-        return count;
-    }
-
-    extern String GetD3DErrorString(HRESULT errorCode);
-
-    inline void ValidateD3DResult(HRESULT result, const char* file = "", uint32 line = 0)
-    {
-        ASSERT(FAILED(result));
-        const String& errorString = GetD3DErrorString(result);
-        LOG(Fatal, "DirectX error: {0} at {1}:{2}", errorString, String(file), line);
-    }
-
-    inline void LogD3DResult(HRESULT result, const char* file = "", uint32 line = 0)
-    {
-        ASSERT(FAILED(result));
-        const String& errorString = GetD3DErrorString(result);
-        LOG(Error, "DirectX error: {0} at {1}:{2}", errorString, String(file), line);
-    }
+    DXGI_FORMAT ToDxgiFormat(PixelFormat format);
+    const Char* GetFeatureLevelString(D3D_FEATURE_LEVEL featureLevel);
+    uint32 CountAdapterOutputs(IDXGIAdapter* adapter);
+    void LogD3DResult(HRESULT result, const char* file = nullptr, uint32 line = 0, bool fatal = false);
+    LPCSTR GetVertexInputSemantic(VertexElement::Types type, UINT& semanticIndex);
 };
 
-#if GPU_ENABLE_ASSERTION
-
 // DirectX results validation
-#define VALIDATE_DIRECTX_CALL(x) { HRESULT result = x; if (FAILED(result)) RenderToolsDX::ValidateD3DResult(result, __FILE__, __LINE__); }
+#define VALIDATE_DIRECTX_CALL(x) { HRESULT result = x; if (FAILED(result)) RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__, true); }
 #define LOG_DIRECTX_RESULT(result) if (FAILED(result)) RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__)
 #define LOG_DIRECTX_RESULT_WITH_RETURN(result, returnValue) if (FAILED(result)) { RenderToolsDX::LogD3DResult(result, __FILE__, __LINE__); return returnValue; }
-
-#else
-
-#define VALIDATE_DIRECTX_CALL(x) x
-#define LOG_DIRECTX_RESULT(result) if(FAILED(result)) RenderToolsDX::LogD3DResult(result)
-#define LOG_DIRECTX_RESULT_WITH_RETURN(result, returnValue) if(FAILED(result)) { RenderToolsDX::LogD3DResult(result); return returnValue; }
-
-#endif
 
 #if GPU_ENABLE_DIAGNOSTICS || COMPILE_WITH_SHADER_COMPILER || GPU_ENABLE_RESOURCE_NAMING
 
@@ -165,15 +101,15 @@ inline void SetDebugObjectName(IDXGIObject* resource, const char (&name)[NameLen
 #if GRAPHICS_API_DIRECTX11
 
 template<uint32 NameLength>
-inline void SetDebugObjectName(ID3D10DeviceChild* resource, const char(&name)[NameLength])
+inline void SetDebugObjectName(ID3D10DeviceChild* resource, const char (&name)[NameLength])
 {
-	SetDebugObjectName(resource, name, NameLength - 1);
+    SetDebugObjectName(resource, name, NameLength - 1);
 }
 
 template<uint32 NameLength>
-inline void SetDebugObjectName(ID3D11DeviceChild* resource, const char(&name)[NameLength])
+inline void SetDebugObjectName(ID3D11DeviceChild* resource, const char (&name)[NameLength])
 {
-	SetDebugObjectName(resource, name, NameLength - 1);
+    SetDebugObjectName(resource, name, NameLength - 1);
 }
 
 #endif
@@ -196,15 +132,15 @@ inline void SetDebugObjectName(ID3D12DeviceChild* resource, const char (&name)[N
 #if GRAPHICS_API_DIRECTX11
 
 template<uint32 NameLength>
-inline void SetDebugObjectName(ID3D10Resource* resource, const char(&name)[NameLength])
+inline void SetDebugObjectName(ID3D10Resource* resource, const char (&name)[NameLength])
 {
-	resource->SetPrivateData(WKPDID_D3DDebugObjectName, NameLength - 1, name);
+    resource->SetPrivateData(WKPDID_D3DDebugObjectName, NameLength - 1, name);
 }
 
 template<uint32 NameLength>
-inline void SetDebugObjectName(ID3D11Resource* resource, const char(&name)[NameLength])
+inline void SetDebugObjectName(ID3D11Resource* resource, const char (&name)[NameLength])
 {
-	resource->SetPrivateData(WKPDID_D3DDebugObjectName, NameLength - 1, name);
+    resource->SetPrivateData(WKPDID_D3DDebugObjectName, NameLength - 1, name);
 }
 
 #endif
@@ -241,7 +177,7 @@ inline void SetDebugObjectName(T* resource, const Char* data, UINT size)
 #else
     char* ansi = (char*)Allocator::Allocate(size + 1);
     StringUtils::ConvertUTF162ANSI(data, ansi, size);
-    ansi[size] ='\0';
+    ansi[size] = '\0';
     SetDebugObjectName(resource, ansi, size);
     Allocator::Free(ansi);
 #endif

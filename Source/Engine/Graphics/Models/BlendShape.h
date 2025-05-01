@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -68,4 +68,11 @@ public:
     /// The list of shape vertices.
     /// </summary>
     Array<BlendShapeVertex> Vertices;
+
+    void LoadHeader(class ReadStream& stream, byte headerVersion);
+    void Load(ReadStream& stream, byte meshVersion);
+#if USE_EDITOR
+    void SaveHeader(class WriteStream& stream) const;
+    void Save(WriteStream& stream) const;
+#endif
 };

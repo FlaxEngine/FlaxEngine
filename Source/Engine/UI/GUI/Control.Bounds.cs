@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.ComponentModel;
@@ -417,6 +417,19 @@ namespace FlaxEngine.GUI
                     SetRotationInternal(value);
                 }
             }
+        }
+
+        /// <summary>
+        /// Resizes the control based on where the pivot is rather than just the top-left.
+        /// </summary>
+        [NoAnimate]
+        public void Resize(ref Float2 value)
+        {
+            if (_bounds.Size.Equals(ref value))
+                return;
+            var bounds = new Rectangle(_bounds.Location, value);
+            bounds.Location += (_bounds.Size - value) * Pivot; // Pivot-relative resizing
+            SetBounds(ref bounds);
         }
 
         /// <summary>

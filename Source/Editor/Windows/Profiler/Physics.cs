@@ -1,5 +1,6 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
+#if USE_PROFILER
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -32,6 +33,7 @@ namespace FlaxEditor.Windows.Profiler
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = Margin.Zero,
+                Pivot = Float2.Zero,
                 IsScrollable = true,
                 Parent = panel,
             };
@@ -111,3 +113,4 @@ namespace FlaxEditor.Windows.Profiler
         }
     }
 }
+#endif

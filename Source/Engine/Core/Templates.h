@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -232,6 +232,14 @@ template<typename T>
 struct TIsCopyConstructible
 {
 	enum { Value = __is_constructible(T, typename TAddLValueReference<typename TAddConst<T>::Type>::Type) };
+};
+
+// Checks if a type has a move constructor.
+
+template<typename T>
+struct TIsMoveConstructible
+{
+    enum { Value = __is_constructible(T, typename TAddRValueReference<T>::Type) };
 };
 
 ////////////////////////////////////////////////////////////////////////////////////

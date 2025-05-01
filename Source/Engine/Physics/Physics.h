@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -41,7 +41,7 @@ public:
     /// <summary>
     /// Gets the current gravity force.
     /// </summary>
-    API_PROPERTY() static Vector3 GetGravity();
+    API_PROPERTY(Attributes="DebugCommand") static Vector3 GetGravity();
 
     /// <summary>
     /// Sets the current gravity force.

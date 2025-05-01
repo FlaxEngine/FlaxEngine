@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Engine/Scripting/Types.h"
 
@@ -715,9 +715,13 @@ void MCore::UnloadEngine()
 #endif
 }
 
+void MCore::CreateScriptingAssemblyLoadContext()
+{
+}
+
 #if USE_EDITOR
 
-void MCore::ReloadScriptingAssemblyLoadContext()
+void MCore::UnloadScriptingAssemblyLoadContext()
 {
 }
 

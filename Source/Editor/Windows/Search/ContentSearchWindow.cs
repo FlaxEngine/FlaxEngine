@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections;
@@ -13,7 +13,6 @@ using FlaxEditor.GUI.Docking;
 using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Options;
-using FlaxEditor.Scripting;
 using FlaxEditor.Surface;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
@@ -496,6 +495,7 @@ namespace FlaxEngine.Windows.Search
 
             // Iterate over all assets
             var tempFolder = StringUtils.NormalizePath(Path.GetDirectoryName(Globals.TemporaryFolder));
+            var nodePath = new List<uint>();
             for (var i = 0; i < assets.Length && !_token.IsCancellationRequested; i++)
             {
                 var id = assets[i];
@@ -512,20 +512,21 @@ namespace FlaxEngine.Windows.Search
                     continue;
 
                 // Search asset contents
+                nodePath.Clear();
                 if (asset is VisualScript visualScript)
-                    SearchAsyncInnerVisject(asset, visualScript.LoadSurface());
+                    SearchAsyncInnerVisject(asset, visualScript.LoadSurface(), nodePath);
                 else if (asset is Material material)
-                    SearchAsyncInnerVisject(asset, material.LoadSurface(false));
+                    SearchAsyncInnerVisject(asset, material.LoadSurface(false), nodePath);
                 else if (asset is MaterialFunction materialFunction)
-                    SearchAsyncInnerVisject(asset, materialFunction.LoadSurface());
+                    SearchAsyncInnerVisject(asset, materialFunction.LoadSurface(), nodePath);
                 else if (asset is AnimationGraph animationGraph)
-                    SearchAsyncInnerVisject(asset, animationGraph.LoadSurface());
+                    SearchAsyncInnerVisject(asset, animationGraph.LoadSurface(), nodePath);
                 else if (asset is AnimationGraphFunction animationGraphFunction)
-                    SearchAsyncInnerVisject(asset, animationGraphFunction.LoadSurface());
+                    SearchAsyncInnerVisject(asset, animationGraphFunction.LoadSurface(), nodePath);
                 else if (asset is ParticleEmitter particleEmitter)
-                    SearchAsyncInnerVisject(asset, particleEmitter.LoadSurface(false));
+                    SearchAsyncInnerVisject(asset, particleEmitter.LoadSurface(false), nodePath);
                 else if (asset is ParticleEmitterFunction particleEmitterFunction)
-                    SearchAsyncInnerVisject(asset, particleEmitterFunction.LoadSurface());
+                    SearchAsyncInnerVisject(asset, particleEmitterFunction.LoadSurface(), nodePath);
 
                 // Don't eat whole performance
                 Thread.Sleep(15);
@@ -551,7 +552,7 @@ namespace FlaxEngine.Windows.Search
             };
         }
 
-        private void SearchAsyncInnerVisject(Asset asset, byte[] surfaceData)
+        private void SearchAsyncInnerVisject(Asset asset, byte[] surfaceData, List<uint> nodePath)
         {
             // Load Visject surface from data
             if (surfaceData == null || surfaceData.Length == 0)
@@ -566,7 +567,6 @@ namespace FlaxEngine.Windows.Search
             if (_visjectSurfaceStyle == null)
                 _visjectSurfaceStyle = SurfaceStyle.CreateDefault(Editor);
             SearchResultTreeNode assetTreeNode = null;
-            // TODO: support nested surfaces (eg. in Anim Graph)
 
             // Search parameters
             foreach (var parameter in _visjectSurfaceContext.Parameters)
@@ -592,7 +592,8 @@ namespace FlaxEngine.Windows.Search
 
             // Search nodes
             var newTreeNodes = new List<SearchResultTreeNode>();
-            foreach (var node in _visjectSurfaceContext.Nodes)
+            var nodes = _visjectSurfaceContext.Nodes.ToArray();
+            foreach (var node in nodes)
             {
                 newTreeNodes.Clear();
                 if (node.Values != null)
@@ -602,22 +603,28 @@ namespace FlaxEngine.Windows.Search
                         SearchVisjectMatch(value, (matchedValue, matchedText) =>
                         {
                             var valueTreeNode = AddVisjectSearchResult(matchedValue, matchedText, node.Archetype.ConnectionsHints);
-                            valueTreeNode.Tag = node.ID;
+                            valueTreeNode.Tag = new VisjectNodeTag { NodeId = node.ID, NodePath = nodePath.ToArray() };
                             valueTreeNode.Navigate = OnNavigateVisjectNode;
                             newTreeNodes.Add(valueTreeNode);
                         });
                     }
                 }
+                if (node is ISurfaceContext context)
+                {
+                    nodePath.Add(node.ID);
+                    SearchAsyncInnerVisject(asset, context.SurfaceData, nodePath);
+                    nodePath.RemoveAt(nodePath.Count - 1);
+                }
                 var nodeSearchText = node.ContentSearchText;
 
-                if (newTreeNodes.Count != 0 || (nodeSearchText != null && IsSearchMatch(ref nodeSearchText)))
+                if (newTreeNodes.Count != 0 || (nodeSearchText != null && IsSearchMatch(ref nodeSearchText)) || node.Search(_searchText))
                 {
                     AddAssetSearchResult(ref assetTreeNode, asset);
                     var nodeTreeNode = new SearchResultTreeNode
                     {
                         Text = node.Title,
                         TooltipText = node.TooltipText,
-                        Tag = node.ID,
+                        Tag = new VisjectNodeTag { NodeId = node.ID, NodePath = nodePath.ToArray() },
                         Navigate = OnNavigateVisjectNode,
                         Parent = assetTreeNode,
                     };
@@ -723,9 +730,15 @@ namespace FlaxEngine.Windows.Search
             Editor.ContentEditing.Open(contentItem);
         }
 
+        private struct VisjectNodeTag
+        {
+            public uint NodeId;
+            public uint[] NodePath;
+        }
+
         private void OnNavigateVisjectNode(SearchResultTreeNode treeNode)
         {
-            var nodeId = (uint)treeNode.Tag;
+            var tag = (VisjectNodeTag)treeNode.Tag;
             var assetId = Guid.Empty;
             var assetTreeNode = treeNode.Parent;
             while (!(assetTreeNode.Tag is Guid))
@@ -734,7 +747,8 @@ namespace FlaxEngine.Windows.Search
             var contentItem = Editor.ContentDatabase.FindAsset(assetId);
             if (Editor.ContentEditing.Open(contentItem) is IVisjectSurfaceWindow window)
             {
-                var node = window.VisjectSurface.FindNode(nodeId);
+                var context = window.VisjectSurface.OpenContext(tag.NodePath) ?? window.VisjectSurface.Context;
+                var node = context.FindNode(tag.NodeId);
                 if (node != null)
                 {
                     // Focus this node

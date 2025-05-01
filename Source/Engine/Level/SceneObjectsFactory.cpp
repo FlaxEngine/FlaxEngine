@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SceneObjectsFactory.h"
 #include "Engine/Level/Actor.h"
@@ -19,6 +19,7 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Level/Scripts/MissingScript.h"
 #endif
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Level/Scripts/ModelPrefab.h"
 
 #if USE_EDITOR
@@ -199,6 +200,7 @@ SceneObject* SceneObjectsFactory::Spawn(Context& context, const ISerializable::D
         else
         {
             // [Deprecated: 18.07.2019 expires 18.07.2020]
+            MARK_CONTENT_DEPRECATED();
             const auto typeIdMember = stream.FindMember("TypeID");
             if (typeIdMember == stream.MemberEnd())
             {
@@ -244,9 +246,7 @@ SceneObject* SceneObjectsFactory::Spawn(Context& context, const ISerializable::D
 
 void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISerializable::DeserializeStream& stream)
 {
-#if ENABLE_ASSERTION
-    CHECK(obj);
-#endif
+    CHECK_DEBUG(obj);
     ISerializeModifier* modifier = context.GetModifier();
     LogContextScope logContext(obj->GetID());
 
@@ -286,7 +286,19 @@ void SceneObjectsFactory::Deserialize(Context& context, SceneObject* obj, ISeria
         // Deserialize prefab data (recursive prefab loading to support nested prefabs)
         const auto prevVersion = modifier->EngineBuild;
         modifier->EngineBuild = prefab->DataEngineBuild;
+#if USE_EDITOR
+        bool prevDeprecated = ContentDeprecated::Clear();
+#endif
         Deserialize(context, obj, *(ISerializable::DeserializeStream*)prefabData);
+#if USE_EDITOR
+        if (ContentDeprecated::Clear(prevDeprecated))
+        {
+            // Prefab contains deprecated data format
+            context.Locker.Lock();
+            context.DeprecatedPrefabs.Add(prefab);
+            context.Locker.Unlock();
+        }
+#endif
         modifier->EngineBuild = prevVersion;
     }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Script.h"
 #include "Engine/Core/Log.h"
@@ -61,6 +61,11 @@ void Script::SetEnabled(bool value)
             }
         }
     }
+}
+
+bool Script::IsEnabledInHierarchy() const
+{
+    return _enabled && (_parent == nullptr || _parent->IsActiveInHierarchy());
 }
 
 Actor* Script::GetActor() const

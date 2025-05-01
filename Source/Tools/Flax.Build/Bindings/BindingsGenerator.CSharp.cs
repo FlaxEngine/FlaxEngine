@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 //#define AUTO_DOC_TOOLTIPS
 //#define MARSHALLER_FULL_NAME
@@ -615,6 +615,8 @@ namespace Flax.Build.Bindings
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemTypeMarshaller))";
             else if (returnValueType == "CultureInfo")
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.CultureInfoMarshaller))";
+            else if (returnValueType == "Version")
+                returnMarshalType = "MarshalUsing(typeof(VersionMarshaller))";
             else if (functionInfo.ReturnType.Type == "Variant") // object
                 returnMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.ManagedHandleMarshaller))";
             else if (FindApiTypeInfo(buildData, functionInfo.ReturnType, caller)?.IsInterface ?? false)
@@ -676,6 +678,8 @@ namespace Flax.Build.Bindings
                     parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemTypeMarshaller))";
                 else if (parameterInfo.Type.Type == "CultureInfo")
                     parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.CultureInfoMarshaller))";
+                else if (parameterInfo.Type.Type == "Version")
+                    parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.VersionMarshaller))";
                 else if (parameterInfo.Type.Type == "Variant") // object
                     parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.ManagedHandleMarshaller))";
                 else if (parameterInfo.Type.Type == "MonoArray" || parameterInfo.Type.Type == "MArray")
@@ -731,10 +735,15 @@ namespace Flax.Build.Bindings
                 string parameterMarshalType = "";
                 if (parameterInfo.IsOut && parameterInfo.DefaultValue == "var __resultAsRef")
                 {
+                    // TODO: make this code shared with MarshalUsing selection from the above
                     if (parameterInfo.Type.Type == "Array" || parameterInfo.Type.Type == "Span" || parameterInfo.Type.Type == "DataContainer" || parameterInfo.Type.Type == "BytesContainer")
                         parameterMarshalType = $"MarshalUsing(typeof(FlaxEngine.Interop.ArrayMarshaller<,>), CountElementName = \"{parameterInfo.Name}Count\")";
                     else if (parameterInfo.Type.Type == "Dictionary")
                         parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.DictionaryMarshaller<,>), ConstantElementCount = 0)";
+                    else if (parameterInfo.Type.Type == "CultureInfo")
+                        parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.CultureInfoMarshaller))";
+                    else if (parameterInfo.Type.Type == "Version")
+                        parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.VersionMarshaller))";
                 }
                 if (nativeType == "System.Type")
                     parameterMarshalType = "MarshalUsing(typeof(FlaxEngine.Interop.SystemTypeMarshaller))";
@@ -1605,41 +1614,41 @@ namespace Flax.Build.Bindings
                         if (fieldInfo.IsStatic || fieldInfo.IsConstexpr)
                             continue;
 
+                        var marshalType = fieldInfo.Type;
+                        var apiType = FindApiTypeInfo(buildData, marshalType, structureInfo);
+                        if (apiType != null && apiType.MarshalAs != null)
+                            marshalType = apiType.MarshalAs;
+                        bool internalType = apiType is StructureInfo fieldStructureInfo && UseCustomMarshalling(buildData, fieldStructureInfo, structureInfo);
                         string type, originalType;
-                        if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
+                        if (marshalType.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
                         {
                             // Fixed-size array that needs to be inlined into structure instead of passing it as managed array
-                            fieldInfo.Type.IsArray = false;
-                            originalType = type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
-                            fieldInfo.Type.IsArray = true;
+                            marshalType.IsArray = false;
+                            originalType = type = GenerateCSharpNativeToManaged(buildData, marshalType, structureInfo);
+                            marshalType.IsArray = true;
                         }
                         else
-                            originalType = type = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type, structureInfo);
-
+                            originalType = type = GenerateCSharpNativeToManaged(buildData, marshalType, structureInfo);
                         structContents.Append(structIndent).Append("public ");
-
-                        var apiType = FindApiTypeInfo(buildData, fieldInfo.Type, structureInfo);
-                        bool internalType = apiType is StructureInfo fieldStructureInfo && UseCustomMarshalling(buildData, fieldStructureInfo, structureInfo);
                         string internalTypeMarshaller = "";
-
-                        if (fieldInfo.Type.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
+                        if (marshalType.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))
                         {
 #if USE_NETCORE
                             if (GenerateCSharpUseFixedBuffer(originalType))
                             {
                                 // Use fixed statement with primitive types of buffers
-                                structContents.Append($"fixed {originalType} {fieldInfo.Name}0[{fieldInfo.Type.ArraySize}];").AppendLine();
+                                structContents.Append($"fixed {originalType} {fieldInfo.Name}0[{marshalType.ArraySize}];").AppendLine();
 
                                 // Copy fixed-size array
-                                toManagedContent.AppendLine($"FlaxEngine.Utils.MemoryCopy(new IntPtr(managed.{fieldInfo.Name}0), new IntPtr(unmanaged.{fieldInfo.Name}0), sizeof({originalType}) * {fieldInfo.Type.ArraySize}ul);");
-                                toNativeContent.AppendLine($"FlaxEngine.Utils.MemoryCopy(new IntPtr(unmanaged.{fieldInfo.Name}0), new IntPtr(managed.{fieldInfo.Name}0), sizeof({originalType}) * {fieldInfo.Type.ArraySize}ul);");
+                                toManagedContent.AppendLine($"FlaxEngine.Utils.MemoryCopy(new IntPtr(managed.{fieldInfo.Name}0), new IntPtr(unmanaged.{fieldInfo.Name}0), sizeof({originalType}) * {marshalType.ArraySize}ul);");
+                                toNativeContent.AppendLine($"FlaxEngine.Utils.MemoryCopy(new IntPtr(unmanaged.{fieldInfo.Name}0), new IntPtr(managed.{fieldInfo.Name}0), sizeof({originalType}) * {marshalType.ArraySize}ul);");
                             }
                             else
 #endif
                             {
                                 // Padding in structs for fixed-size array
                                 structContents.Append(type).Append(' ').Append(fieldInfo.Name).Append("0;").AppendLine();
-                                for (int i = 1; i < fieldInfo.Type.ArraySize; i++)
+                                for (int i = 1; i < marshalType.ArraySize; i++)
                                 {
                                     GenerateCSharpAttributes(buildData, structContents, structIndent, structureInfo, fieldInfo, fieldInfo.IsStatic);
                                     structContents.Append(structIndent).Append("public ");
@@ -1649,7 +1658,7 @@ namespace Flax.Build.Bindings
                                 // Copy fixed-size array item one-by-one
                                 if (fieldInfo.Access == AccessLevel.Public || fieldInfo.Access == AccessLevel.Internal)
                                 {
-                                    for (int i = 0; i < fieldInfo.Type.ArraySize; i++)
+                                    for (int i = 0; i < marshalType.ArraySize; i++)
                                     {
                                         toManagedContent.AppendLine($"managed.{fieldInfo.Name}{i} = unmanaged.{fieldInfo.Name}{i};");
                                         toNativeContent.AppendLine($"unmanaged.{fieldInfo.Name}{i} = managed.{fieldInfo.Name}{i};");
@@ -1664,23 +1673,23 @@ namespace Flax.Build.Bindings
                         }
                         else
                         {
-                            if (fieldInfo.Type.IsObjectRef || fieldInfo.Type.Type == "Dictionary")
+                            if (marshalType.IsObjectRef || marshalType.Type == "Dictionary")
                                 type = "IntPtr";
-                            else if (fieldInfo.Type.IsPtr && !originalType.EndsWith("*"))
+                            else if (marshalType.IsPtr && !originalType.EndsWith("*"))
                                 type = "IntPtr";
-                            else if (fieldInfo.Type.Type == "Array" || fieldInfo.Type.Type == "Span" || fieldInfo.Type.Type == "DataContainer" || fieldInfo.Type.Type == "BytesContainer")
+                            else if (marshalType.Type == "Array" || marshalType.Type == "Span" || marshalType.Type == "DataContainer" || marshalType.Type == "BytesContainer")
                             {
                                 type = "IntPtr";
-                                apiType = FindApiTypeInfo(buildData, fieldInfo.Type.GenericArgs[0], structureInfo);
+                                apiType = FindApiTypeInfo(buildData, marshalType.GenericArgs[0], structureInfo);
                                 internalType = apiType is StructureInfo elementStructureInfo && UseCustomMarshalling(buildData, elementStructureInfo, structureInfo);
                             }
-                            else if (fieldInfo.Type.Type == "Version")
+                            else if (marshalType.Type == "Version")
                                 type = "IntPtr";
                             else if (type == "string")
                                 type = "IntPtr";
                             else if (type == "bool")
                                 type = "byte";
-                            else if (fieldInfo.Type.Type == "Variant")
+                            else if (marshalType.Type == "Variant")
                                 type = "IntPtr";
                             else if (internalType)
                             {
@@ -1695,9 +1704,9 @@ namespace Flax.Build.Bindings
                         // Generate struct constructor/getter and deconstructor/setter function
                         toManagedContent.Append("managed.").Append(fieldInfo.Name).Append(" = ");
                         toNativeContent.Append("unmanaged.").Append(fieldInfo.Name).Append(" = ");
-                        if (fieldInfo.Type.IsObjectRef)
+                        if (marshalType.IsObjectRef)
                         {
-                            var managedType = GenerateCSharpNativeToManaged(buildData, fieldInfo.Type.GenericArgs[0], structureInfo);
+                            var managedType = GenerateCSharpNativeToManaged(buildData, marshalType.GenericArgs[0], structureInfo);
                             toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{managedType}>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target) : null;");
                             toNativeContent.AppendLine($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero;");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
@@ -1705,7 +1714,7 @@ namespace Flax.Build.Bindings
                             // Permanent ScriptingObject handle is passed from native side, do not release it
                             //freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                         }
-                        else if (fieldInfo.Type.Type == "ScriptingObject")
+                        else if (marshalType.Type == "ScriptingObject")
                         {
                             toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<FlaxEngine.Object>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target) : null;");
                             toNativeContent.AppendLine($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero;");
@@ -1714,7 +1723,7 @@ namespace Flax.Build.Bindings
                             // Permanent ScriptingObject handle is passed from native side, do not release it
                             //freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                         }
-                        else if (fieldInfo.Type.IsPtr && originalType != "IntPtr" && !originalType.EndsWith("*"))
+                        else if (marshalType.IsPtr && originalType != "IntPtr" && !originalType.EndsWith("*"))
                         {
                             toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{originalType}>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target) : null;");
                             toNativeContent.AppendLine($"managed.{fieldInfo.Name} != null ? ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak) : IntPtr.Zero;");
@@ -1723,14 +1732,14 @@ namespace Flax.Build.Bindings
                             // Permanent ScriptingObject handle is passed from native side, do not release it
                             //freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                         }
-                        else if (fieldInfo.Type.Type == "Dictionary")
+                        else if (marshalType.Type == "Dictionary")
                         {
                             toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{originalType}>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target) : null;");
                             toNativeContent.AppendLine($"ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak);");
                             freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                             freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Free(); }}");
                         }
-                        else if (fieldInfo.Type.Type == "Array" || fieldInfo.Type.Type == "Span" || fieldInfo.Type.Type == "DataContainer" || fieldInfo.Type.Type == "BytesContainer")
+                        else if (marshalType.Type == "Array" || marshalType.Type == "Span" || marshalType.Type == "DataContainer" || marshalType.Type == "BytesContainer")
                         {
                             string originalElementType = originalType.Substring(0, originalType.Length - 2);
                             if (internalType)
@@ -1744,7 +1753,7 @@ namespace Flax.Build.Bindings
                                 freeContents.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                                 freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); Span<{internalElementType}> values = (Unsafe.As<ManagedArray>(handle.Target)).ToSpan<{internalElementType}>(); foreach (var value in values) {{ {originalElementTypeMarshaller}.NativeToManaged.Free(value); }} (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                             }
-                            else if (fieldInfo.Type.GenericArgs[0].IsObjectRef)
+                            else if (marshalType.GenericArgs[0].IsObjectRef)
                             {
                                 // Array elements passed as GCHandles
                                 toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? NativeInterop.GCHandleArrayToManagedArray<{originalElementType}>(Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target)) : null;");
@@ -1763,7 +1772,7 @@ namespace Flax.Build.Bindings
                                 freeContents2.AppendLine($"if (unmanaged.{fieldInfo.Name} != IntPtr.Zero) {{ ManagedHandle handle = ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}); (Unsafe.As<ManagedArray>(handle.Target)).Free(); handle.Free(); }}");
                             }
                         }
-                        else if (fieldInfo.Type.Type == "Version")
+                        else if (marshalType.Type == "Version")
                         {
                             toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != IntPtr.Zero ? Unsafe.As<{originalType}>(ManagedHandle.FromIntPtr(unmanaged.{fieldInfo.Name}).Target) : null;");
                             toNativeContent.AppendLine($"ManagedHandle.ToIntPtr(managed.{fieldInfo.Name}, GCHandleType.Weak);");
@@ -1782,7 +1791,7 @@ namespace Flax.Build.Bindings
                             toManagedContent.AppendLine($"unmanaged.{fieldInfo.Name} != 0;");
                             toNativeContent.AppendLine($"managed.{fieldInfo.Name} ? (byte)1 : (byte)0;");
                         }
-                        else if (fieldInfo.Type.Type == "Variant")
+                        else if (marshalType.Type == "Variant")
                         {
                             // Variant passed as boxed object handle
                             toManagedContent.AppendLine($"ManagedHandleMarshaller.NativeToManaged.ConvertToManaged(unmanaged.{fieldInfo.Name});");

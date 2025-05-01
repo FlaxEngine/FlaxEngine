@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,57 +12,7 @@ class GPUShaderProgram;
 /// <summary>
 /// The runtime version of the shaders cache supported by the all graphics back-ends. The same for all the shader cache formats (easier to sync and validate).
 /// </summary>
-#define GPU_SHADER_CACHE_VERSION 9
-
-/// <summary>
-/// Represents collection of shader programs with permutations and custom names.
-/// </summary>
-class GPUShaderProgramsContainer
-{
-private:
-    Dictionary<int32, GPUShaderProgram*> _shaders;
-
-public:
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUShaderProgramsContainer"/> class.
-    /// </summary>
-    GPUShaderProgramsContainer();
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="GPUShaderProgramsContainer"/> class.
-    /// </summary>
-    ~GPUShaderProgramsContainer();
-
-public:
-    /// <summary>
-    /// Adds a new shader program to the collection.
-    /// </summary>
-    /// <param name="shader">The shader to store.</param>
-    /// <param name="permutationIndex">The shader permutation index.</param>
-    void Add(GPUShaderProgram* shader, int32 permutationIndex);
-
-    /// <summary>
-    /// Gets a shader of given name and permutation index.
-    /// </summary>
-    /// <param name="name">The shader program name.</param>
-    /// <param name="permutationIndex">The shader permutation index.</param>
-    /// <returns>Stored shader program or null if cannot find it.</returns>
-    GPUShaderProgram* Get(const StringAnsiView& name, int32 permutationIndex) const;
-
-    /// <summary>
-    /// Clears collection (deletes all shaders).
-    /// </summary>
-    void Clear();
-
-public:
-    /// <summary>
-    /// Calculates unique hash for given shader program name and its permutation index.
-    /// </summary>
-    /// <param name="name">The shader program name.</param>
-    /// <param name="permutationIndex">The shader program permutation index.</param>
-    /// <returns>Calculated hash value.</returns>
-    static uint32 CalculateHash(const StringAnsiView& name, int32 permutationIndex);
-};
+#define GPU_SHADER_CACHE_VERSION 12
 
 /// <summary>
 /// The GPU resource with shader programs that can run on the GPU and are able to perform rendering calculation using textures, vertices and other resources.
@@ -70,9 +20,10 @@ public:
 API_CLASS(Sealed, NoSpawn) class FLAXENGINE_API GPUShader : public GPUResource
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(GPUShader);
+
 protected:
-    GPUShaderProgramsContainer _shaders;
-    GPUConstantBuffer* _constantBuffers[MAX_CONSTANT_BUFFER_SLOTS];
+    Dictionary<uint32, GPUShaderProgram*> _shaders;
+    GPUConstantBuffer* _constantBuffers[GPU_MAX_CB_BINDED];
 
     GPUShader();
 
@@ -173,21 +124,18 @@ public:
         return _constantBuffers[slot];
     }
 
-public:
     /// <summary>
     /// Determines whether the specified shader program is in the shader.
     /// </summary>
     /// <param name="name">The shader program name.</param>
     /// <param name="permutationIndex">The shader permutation index.</param>
     /// <returns><c>true</c> if the shader is valid; otherwise, <c>false</c>.</returns>
-    FORCE_INLINE bool HasShader(const StringAnsiView& name, int32 permutationIndex = 0) const
-    {
-        return _shaders.Get(name, permutationIndex) != nullptr;
-    }
+    bool HasShader(const StringAnsiView& name, int32 permutationIndex = 0) const;
 
 protected:
     GPUShaderProgram* GetShader(ShaderStage stage, const StringAnsiView& name, int32 permutationIndex) const;
-    virtual GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream) = 0;
+    virtual GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, Span<byte> bytecode, MemoryReadStream& stream) = 0;
+    static void ReadVertexLayout(MemoryReadStream& stream, GPUVertexLayout*& inputLayout, GPUVertexLayout*& vertexLayout);
 
 public:
     // [GPUResource]

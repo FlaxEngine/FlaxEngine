@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Terrain.h"
 #include "TerrainPatch.h"
@@ -7,13 +7,14 @@
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Physics.h"
+#include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Physics/PhysicalMaterial.h"
 #include "Engine/Physics/PhysicsBackend.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Level/Scene/Scene.h"
-#include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
@@ -810,16 +811,23 @@ void Terrain::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
 
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)
+    {
+        MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSDF;
+    }
     // [Deprecated on 27.04.2022, expires on 27.04.2024]
     if (modifier->EngineBuild <= 6331)
+    {
+        MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
+    }
 
     // [Deprecated on 15.02.2024, expires on 15.02.2026]
     JsonAssetReference<PhysicalMaterial> PhysicalMaterial;
     DESERIALIZE(PhysicalMaterial);
     if (PhysicalMaterial)
     {
+        MARK_CONTENT_DEPRECATED();
         for (auto& e : _physicalMaterials)
             e = PhysicalMaterial;
     }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -132,12 +132,12 @@ public:
     /// <summary>
     /// True if GPU profiling is enabled, otherwise false to disable events collecting and GPU timer queries usage. Can be changed during rendering.
     /// </summary>
-    API_FIELD() static bool Enabled;
+    API_FIELD(Attributes="DebugCommand") static bool Enabled;
 
     /// <summary>
     /// True if GPU events are enabled (see GPUContext::EventBegin), otherwise false. Cannot be changed during rendering.
     /// </summary>
-    API_FIELD() static bool EventsEnabled;
+    API_FIELD(Attributes="DebugCommand") static bool EventsEnabled;
 
     /// <summary>
     /// The current frame buffer to collect events.

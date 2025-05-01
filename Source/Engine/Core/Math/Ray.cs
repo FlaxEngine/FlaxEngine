@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -78,7 +78,7 @@ namespace FlaxEngine
         {
             Position = position;
             Direction = direction;
-            Assert.IsTrue(Direction.IsNormalized, "The Ray Direction was not normalized");
+            Assert.IsTrue(Direction.IsNormalized, $"The Ray Direction was not normalized (direction: {direction}, length: {direction.Length})");
         }
 
         /// <summary>

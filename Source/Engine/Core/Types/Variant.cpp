@@ -1,11 +1,10 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Variant.h"
 #include "CommonValue.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Content/Asset.h"
-#include "Engine/Content/AssetReference.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Mathd.h"
 #include "Engine/Core/Math/BoundingBox.h"
@@ -23,7 +22,6 @@
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
-#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Utilities/Crc.h"
 #include "Engine/Utilities/StringConverter.h"
@@ -33,6 +31,7 @@
 #else
 #define MANAGED_GC_HANDLE AsUint
 #endif
+#define AsEnum AsUint64
 
 namespace
 {
@@ -888,10 +887,13 @@ Variant::Variant(const Span<byte>& v)
     }
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+#include "Engine/Content/Deprecated.h"
 Variant::Variant(const CommonValue& value)
     : Variant()
 {
     // [Deprecated on 31.07.2020, expires on 31.07.2022]
+    MARK_CONTENT_DEPRECATED();
     switch (value.Type)
     {
     case CommonType::Bool:
@@ -955,6 +957,7 @@ Variant::Variant(const CommonValue& value)
         CRASH;
     }
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 Variant::~Variant()
 {
@@ -1155,8 +1158,9 @@ bool Variant::operator==(const Variant& other) const
         case VariantType::Int64:
             return AsInt64 == other.AsInt64;
         case VariantType::Uint64:
-        case VariantType::Enum:
             return AsUint64 == other.AsUint64;
+        case VariantType::Enum:
+            return AsEnum == other.AsEnum;
         case VariantType::Float:
             return Math::NearEqual(AsFloat, other.AsFloat);
         case VariantType::Double:
@@ -1285,8 +1289,9 @@ bool Variant::operator<(const Variant& other) const
         case VariantType::Int64:
             return AsInt64 < other.AsInt64;
         case VariantType::Uint64:
-        case VariantType::Enum:
             return AsUint64 < other.AsUint64;
+        case VariantType::Enum:
+            return AsEnum < other.AsEnum;
         case VariantType::Float:
             return AsFloat < other.AsFloat;
         case VariantType::Double:
@@ -3010,7 +3015,7 @@ Variant Variant::NewValue(const StringAnsiView& typeName)
             break;
         case ScriptingTypes::Enum:
             v.SetType(VariantType(VariantType::Enum, typeName));
-            v.AsUint64 = 0;
+            v.AsEnum = 0;
             break;
         default:
             LOG(Error, "Unsupported scripting type '{}' for Variant", typeName.ToString());
@@ -3024,7 +3029,7 @@ Variant Variant::NewValue(const StringAnsiView& typeName)
         if (mclass->IsEnum())
         {
             v.SetType(VariantType(VariantType::Enum, typeName));
-            v.AsUint64 = 0;
+            v.AsEnum = 0;
         }
         else if (mclass->IsValueType())
         {
@@ -3098,8 +3103,10 @@ Variant Variant::Parse(const StringView& text, const VariantType& type)
             StringUtils::Parse(text.Get(), text.Length(), &result.AsInt64);
             break;
         case VariantType::Uint64:
+            StringUtils::Parse(text.Get(), text.Length(), &result.AsInt64);
+            break;
         case VariantType::Enum:
-            if (!StringUtils::Parse(text.Get(), text.Length(), &result.AsUint64))
+            if (!StringUtils::Parse(text.Get(), text.Length(), &result.AsEnum))
             {
             }
             else if (type.TypeName)
@@ -3114,7 +3121,7 @@ Variant Variant::Parse(const StringView& text, const VariantType& type)
                     {
                         if (textAnsiView == items[i].Name)
                         {
-                            result.AsUint64 = items[i].Value;
+                            result.AsEnum = items[i].Value;
                             break;
                         }
                     }
@@ -3151,6 +3158,13 @@ Variant Variant::Parse(const StringView& text, const VariantType& type)
     return result;
 }
 
+Variant Variant::Typename(const StringAnsiView& value)
+{
+    Variant result;
+    result.SetTypename(value);
+    return result;
+}
+
 bool Variant::CanCast(const Variant& v, const VariantType& to)
 {
     if (v.Type == to)
@@ -3175,6 +3189,7 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         case VariantType::Double2:
         case VariantType::Double3:
         case VariantType::Double4:
+        case VariantType::Enum:
             return true;
         default:
             return false;
@@ -3197,6 +3212,7 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         case VariantType::Double2:
         case VariantType::Double3:
         case VariantType::Double4:
+        case VariantType::Enum:
             return true;
         default:
             return false;
@@ -3219,6 +3235,7 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         case VariantType::Double2:
         case VariantType::Double3:
         case VariantType::Double4:
+        case VariantType::Enum:
             return true;
         default:
             return false;
@@ -3241,6 +3258,7 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         case VariantType::Double2:
         case VariantType::Double3:
         case VariantType::Double4:
+        case VariantType::Enum:
             return true;
         default:
             return false;
@@ -3263,6 +3281,7 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         case VariantType::Double2:
         case VariantType::Double3:
         case VariantType::Double4:
+        case VariantType::Enum:
             return true;
         default:
             return false;
@@ -3285,6 +3304,7 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         case VariantType::Double2:
         case VariantType::Double3:
         case VariantType::Double4:
+        case VariantType::Enum:
             return true;
         default:
             return false;
@@ -3307,6 +3327,7 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         case VariantType::Double2:
         case VariantType::Double3:
         case VariantType::Double4:
+        case VariantType::Enum:
             return true;
         default:
             return false;
@@ -3329,6 +3350,7 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         case VariantType::Double2:
         case VariantType::Double3:
         case VariantType::Double4:
+        case VariantType::Enum:
             return true;
         default:
             return false;
@@ -3351,6 +3373,7 @@ bool Variant::CanCast(const Variant& v, const VariantType& to)
         case VariantType::Double2:
         case VariantType::Double3:
         case VariantType::Double4:
+        case VariantType::Enum:
             return true;
         default:
             return false;
@@ -3493,6 +3516,8 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
             return Variant(Double3(v.AsBool ? 1.0 : 0.0));
         case VariantType::Double4:
             return Variant(Double4(v.AsBool ? 1.0 : 0.0));
+    case VariantType::Enum:
+            return Enum(to, v.AsBool ? 1 : 0);
         default: ;
         }
         break;
@@ -3529,6 +3554,8 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
             return Variant(Double3((double)v.AsInt16));
         case VariantType::Double4:
             return Variant(Double4((double)v.AsInt16));
+        case VariantType::Enum:
+            return Enum(to, (int64)v.AsInt16);
         default: ;
         }
         break;
@@ -3559,6 +3586,8 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
             return Variant(Float4((float)v.AsInt));
         case VariantType::Color:
             return Variant(Color((float)v.AsInt));
+        case VariantType::Enum:
+            return Enum(to, (int64)v.AsInt);
         default: ;
         }
         break;
@@ -3595,6 +3624,8 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
             return Variant(Double3((double)v.AsUint16));
         case VariantType::Double4:
             return Variant(Double4((double)v.AsUint16));
+        case VariantType::Enum:
+            return Enum(to, (int64)v.AsUint16);
         default: ;
         }
         break;
@@ -3631,6 +3662,8 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
             return Variant(Double3((double)v.AsUint));
         case VariantType::Double4:
             return Variant(Double4((double)v.AsUint));
+        case VariantType::Enum:
+            return Enum(to, (int64)v.AsUint);
         default: ;
         }
         break;
@@ -3667,6 +3700,8 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
             return Variant(Double3((double)v.AsInt64));
         case VariantType::Double4:
             return Variant(Double4((double)v.AsInt64));
+        case VariantType::Enum:
+            return Enum(to, (int64)v.AsInt64);
         default: ;
         }
         break;
@@ -3703,6 +3738,8 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
             return Variant(Double3((double)v.AsInt));
         case VariantType::Double4:
             return Variant(Double4((double)v.AsInt));
+        case VariantType::Enum:
+            return Enum(to, (int64)v.AsInt);
         default: ;
         }
         break;
@@ -3739,6 +3776,8 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
             return Variant(Double3(v.AsFloat));
         case VariantType::Double4:
             return Variant(Double4(v.AsFloat));
+        case VariantType::Enum:
+            return Enum(to, (int64)v.AsFloat);
         default: ;
         }
         break;
@@ -3775,6 +3814,8 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
             return Variant(Double3(v.AsDouble));
         case VariantType::Double4:
             return Variant(Double4(v.AsDouble));
+        case VariantType::Enum:
+            return Enum(to, (int64)v.AsDouble);
         default: ;
         }
         break;
@@ -3886,6 +3927,114 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         default: ;
         }
         break;
+    case VariantType::Double2:
+        switch (to.Type)
+        {
+        case VariantType::Bool:
+            return Variant(Math::Abs(((Double2*)v.AsData)->X) > ZeroTolerance);
+        case VariantType::Int16:
+            return Variant((int16)((Double2*)v.AsData)->X);
+        case VariantType::Int:
+            return Variant((int32)((Double2*)v.AsData)->X);
+        case VariantType::Uint16:
+            return Variant((uint16)((Double2*)v.AsData)->X);
+        case VariantType::Uint:
+            return Variant((uint32)((Double2*)v.AsData)->X);
+        case VariantType::Int64:
+            return Variant((int64)((Double2*)v.AsData)->X);
+        case VariantType::Uint64:
+            return Variant((uint64)((Double2*)v.AsData)->X);
+        case VariantType::Float:
+            return Variant((float)((Double2*)v.AsData)->X);
+        case VariantType::Double:
+            return Variant((double)((Double2*)v.AsData)->X);
+        case VariantType::Float2:
+            return Variant(Float2(*(Double2*)v.AsData));
+        case VariantType::Float3:
+            return Variant(Float3(*(Double2*)v.AsData, 0.0f));
+        case VariantType::Float4:
+            return Variant(Float4(*(Double2*)v.AsData, 0.0f, 0.0f));
+        case VariantType::Color:
+            return Variant(Color((float)((Double2*)v.AsData)->X, (float)((Double2*)v.AsData)->Y, 0.0f, 0.0f));
+        case VariantType::Double3:
+            return Variant(Double3(*(Double2*)v.AsData, 0.0));
+        case VariantType::Double4:
+            return Variant(Double4(*(Double2*)v.AsData, 0.0, 0.0));
+        default: ;
+        }
+        break;
+    case VariantType::Double3:
+        switch (to.Type)
+        {
+        case VariantType::Bool:
+            return Variant(Math::Abs(((Double3*)v.AsData)->X) > ZeroTolerance);
+        case VariantType::Int16:
+            return Variant((int16)((Double3*)v.AsData)->X);
+        case VariantType::Int:
+            return Variant((int32)((Double3*)v.AsData)->X);
+        case VariantType::Uint16:
+            return Variant((uint16)((Double3*)v.AsData)->X);
+        case VariantType::Uint:
+            return Variant((uint32)((Double3*)v.AsData)->X);
+        case VariantType::Int64:
+            return Variant((int64)((Double3*)v.AsData)->X);
+        case VariantType::Uint64:
+            return Variant((uint64)((Double3*)v.AsData)->X);
+        case VariantType::Float:
+            return Variant((float)((Double3*)v.AsData)->X);
+        case VariantType::Double:
+            return Variant((double)((Double3*)v.AsData)->X);
+        case VariantType::Float2:
+            return Variant(Float2(*(Double3*)v.AsData));
+        case VariantType::Float3:
+            return Variant(Float3(*(Double3*)v.AsData));
+        case VariantType::Float4:
+            return Variant(Float4(*(Double3*)v.AsData, 0.0f));
+        case VariantType::Color:
+            return Variant(Color((float)((Double3*)v.AsData)->X, (float)((Double3*)v.AsData)->Y, (float)((Double3*)v.AsData)->Z, 0.0f));
+        case VariantType::Double2:
+            return Variant(Double2(*(Double3*)v.AsData));
+        case VariantType::Double4:
+            return Variant(Double4(*(Double3*)v.AsData, 0.0));
+        default: ;
+        }
+        break;
+    case VariantType::Double4:
+        switch (to.Type)
+        {
+        case VariantType::Bool:
+            return Variant(Math::Abs(((Double4*)v.AsData)->X) > ZeroTolerance);
+        case VariantType::Int16:
+            return Variant((int16)((Double4*)v.AsData)->X);
+        case VariantType::Int:
+            return Variant((int32)((Double4*)v.AsData)->X);
+        case VariantType::Uint16:
+            return Variant((uint16)((Double4*)v.AsData)->X);
+        case VariantType::Uint:
+            return Variant((uint32)((Double4*)v.AsData)->X);
+        case VariantType::Int64:
+            return Variant((int64)((Double4*)v.AsData)->X);
+        case VariantType::Uint64:
+            return Variant((uint64)((Double4*)v.AsData)->X);
+        case VariantType::Float:
+            return Variant((float)((Double4*)v.AsData)->X);
+        case VariantType::Double:
+            return Variant((double)((Double4*)v.AsData)->X);
+        case VariantType::Float2:
+            return Variant(Float2(*(Double4*)v.AsData));
+        case VariantType::Float3:
+            return Variant(Float3(*(Double4*)v.AsData));
+        case VariantType::Float4:
+            return Variant(Float4(*(Double4*)v.AsData));
+        case VariantType::Color:
+            return Variant(*(Double4*)v.AsData);
+        case VariantType::Double2:
+            return Variant(Double2(*(Double4*)v.AsData));
+        case VariantType::Double3:
+            return Variant(Double3(*(Double4*)v.AsData));
+        default: ;
+        }
+        break;
     case VariantType::Color:
         switch (to.Type)
         {
@@ -3920,6 +4069,25 @@ Variant Variant::Cast(const Variant& v, const VariantType& to)
         case VariantType::Double4:
             return Variant(Double4(*(Color*)v.AsData));
         default: ;
+        }
+        break;
+    case VariantType::Enum:
+        switch (to.Type)
+        {
+    case VariantType::Bool:
+            return Variant(v.AsEnum != 0);
+        case VariantType::Int:
+            return Variant((int32)v.AsEnum);
+        case VariantType::Uint:
+            return Variant((uint32)v.AsEnum);
+        case VariantType::Int64:
+            return Variant((int64)v.AsEnum);
+        case VariantType::Uint64:
+            return Variant((uint64)v.AsEnum);
+        case VariantType::Float:
+            return Variant((float)v.AsEnum);
+        case VariantType::Double:
+            return Variant((double)v.AsEnum);
         }
         break;
     case VariantType::Null:
@@ -4159,6 +4327,14 @@ void Variant::FreeStructure()
     Allocator::Free(AsBlob.Data);
 }
 
+Variant Variant::Enum(const VariantType& type, const uint64 value)
+{
+    Variant v;
+    v.SetType(type);
+    v.AsEnum = value;
+    return MoveTemp(v);
+}
+
 uint32 GetHash(const Variant& key)
 {
     switch (key.Type.Type)
@@ -4176,8 +4352,9 @@ uint32 GetHash(const Variant& key)
     case VariantType::Int64:
         return GetHash(key.AsInt64);
     case VariantType::Uint64:
-    case VariantType::Enum:
         return GetHash(key.AsUint64);
+    case VariantType::Enum:
+        return GetHash(key.AsEnum);
     case VariantType::Float:
         return GetHash(key.AsFloat);
     case VariantType::Double:

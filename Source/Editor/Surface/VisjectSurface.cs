@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -415,6 +415,15 @@ namespace FlaxEditor.Surface
             // Init drag handlers
             DragHandlers.Add(_dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem));
             DragHandlers.Add(_dragParameters = new DragNames<DragDropEventArgs>(SurfaceParameter.DragPrefix, ValidateDragParameter));
+
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+        }
+
+        private void OnScriptsReloadBegin()
+        {
+            _activeVisjectCM = null;
+            _cmPrimaryMenu?.Dispose();
+            _cmPrimaryMenu = null;
         }
 
         /// <summary>
@@ -1022,6 +1031,8 @@ namespace FlaxEditor.Surface
             // Cleanup
             _activeVisjectCM = null;
             _cmPrimaryMenu?.Dispose();
+
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
 
             base.OnDestroy();
         }

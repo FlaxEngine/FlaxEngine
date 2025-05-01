@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ScriptsBuilder.h"
 #include "CodeEditor.h"
@@ -582,7 +582,7 @@ bool ScriptsBuilderService::Init()
     auto project = Editor::Project;
     HashSet<ProjectInfo*> projects;
     project->GetAllProjects(projects);
-    for (auto e : projects)
+    for (const auto& e : projects)
     {
         ProjectInfo* project = e.Item;
         if (project->Name == TEXT("Flax"))

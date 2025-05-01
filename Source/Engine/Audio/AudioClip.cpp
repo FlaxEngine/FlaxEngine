@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "AudioClip.h"
 #include "Audio.h"
@@ -72,6 +72,7 @@ void AudioClip::StreamingTask::OnEnd()
     // Unlink
     if (_asset)
     {
+        ScopeLock lock(_asset->Locker);
         ASSERT(_asset->_streamingTask == this);
         _asset->_streamingTask = nullptr;
         _asset = nullptr;
@@ -292,6 +293,7 @@ Task* AudioClip::CreateStreamingTask(int32 residency)
 
 void AudioClip::CancelStreamingTasks()
 {
+    ScopeLock lock(Locker);
     if (_streamingTask)
     {
         _streamingTask->Cancel();
@@ -302,11 +304,6 @@ void AudioClip::CancelStreamingTasks()
 bool AudioClip::init(AssetInitData& initData)
 {
     // Validate
-    if (initData.SerializedVersion != SerializedVersion)
-    {
-        LOG(Warning, "Invalid audio clip serialized version.");
-        return true;
-    }
     if (initData.CustomData.Length() != sizeof(AudioHeader))
     {
         LOG(Warning, "Missing audio data.");

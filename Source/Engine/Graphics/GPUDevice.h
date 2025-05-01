@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -23,6 +23,7 @@ class GPUBuffer;
 class GPUSampler;
 class GPUPipelineState;
 class GPUConstantBuffer;
+class GPUVertexLayout;
 class GPUTasksContext;
 class GPUTasksExecutor;
 class GPUSwapChain;
@@ -95,6 +96,8 @@ protected:
     PrivateData* _res;
     Array<GPUResource*> _resources;
     CriticalSection _resourcesLock;
+
+    void OnRequestingExit();
 
 protected:
     /// <summary>
@@ -395,6 +398,13 @@ public:
     /// </summary>
     /// <returns>The sampler.</returns>
     API_FUNCTION() virtual GPUSampler* CreateSampler() = 0;
+
+    /// <summary>
+    /// Creates the vertex buffer layout.
+    /// </summary>
+    /// <returns>The vertex buffer layout.</returns>
+    API_FUNCTION() virtual GPUVertexLayout* CreateVertexLayout(const Array<struct VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>>& elements, bool explicitOffsets = false) = 0;
+    typedef Array<VertexElement, FixedAllocation<GPU_MAX_VS_ELEMENTS>> VertexElements;
 
     /// <summary>
     /// Creates the native window swap chain.

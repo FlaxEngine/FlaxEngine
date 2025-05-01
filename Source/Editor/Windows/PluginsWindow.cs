@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -110,7 +110,7 @@ namespace FlaxEditor.Windows
                     AnchorPreset = AnchorPresets.TopRight,
                     Text = versionString,
                     Parent = this,
-                    Bounds = new Rectangle(Width - 140 - margin - xOffset, margin, 140, 14),
+                    Bounds = new Rectangle(Width - 140 - margin, margin, 140, 14),
                 };
 
                 string url = null;
@@ -130,7 +130,7 @@ namespace FlaxEditor.Windows
                     AnchorPreset = AnchorPresets.TopRight,
                     Text = desc.Author,
                     Parent = this,
-                    Bounds = new Rectangle(Width - authorWidth - margin - xOffset, versionLabel.Bottom + margin, authorWidth, 14),
+                    Bounds = new Rectangle(Width - authorWidth - margin, versionLabel.Bottom + margin, authorWidth, 14),
                 };
                 if (url != null)
                 {
@@ -162,11 +162,13 @@ namespace FlaxEditor.Windows
                 {
                     AnchorPreset = AnchorPresets.StretchAll,
                     Offsets = Margin.Zero,
+                    Pivot = Float2.Zero,
                     Parent = this,
                 };
                 var panel = new VerticalPanel
                 {
                     AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                    Pivot = Float2.Zero,
                     Offsets = Margin.Zero,
                     IsScrollable = true,
                     Parent = scroll,
@@ -187,6 +189,7 @@ namespace FlaxEditor.Windows
             var vp = new Panel
             {
                 AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = Margin.Zero,
                 Parent = this,
             };
             _addPluginProjectButton = new Button
@@ -242,6 +245,7 @@ namespace FlaxEditor.Windows
                 Text = "Name",
                 HorizontalAlignment = TextAlignment.Near,
             };
+            nameLabel.LocalX -= 10;
             nameLabel.LocalY += 10;
 
             var nameTextBox = new TextBox
@@ -288,7 +292,7 @@ namespace FlaxEditor.Windows
                 Text = "Git Path",
                 HorizontalAlignment = TextAlignment.Near,
             };
-            gitPathLabel.LocalX += (300 - gitPathLabel.Width) * 0.5f;
+            gitPathLabel.LocalX += (250 - gitPathLabel.Width) * 0.5f;
             gitPathLabel.LocalY += 35;
 
             var gitPathTextBox = new TextBox

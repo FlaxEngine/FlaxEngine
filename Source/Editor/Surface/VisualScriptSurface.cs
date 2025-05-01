@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 //#define DEBUG_INVOKE_METHODS_SEARCHING
 //#define DEBUG_FIELDS_SEARCHING
@@ -62,6 +62,12 @@ namespace FlaxEditor.Surface
         {
             _supportsImplicitCastFromObjectToBoolean = true;
             DragHandlers.Add(_dragActors = new DragActors(ValidateDragActor));
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+        }
+
+        private void OnScriptsReloadBegin()
+        {
+            _nodesCache.Clear();
         }
 
         private bool ValidateDragActor(ActorNode actor)
@@ -631,6 +637,7 @@ namespace FlaxEditor.Surface
         {
             if (IsDisposing)
                 return;
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             _nodesCache.Wait();
 
             base.OnDestroy();

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX12
 
@@ -112,7 +112,7 @@ void DescriptorHeapWithSlotsDX12::ReleaseSlot(uint32 index)
 {
     uint32& value = _usage[index / 32];
     const uint32 mask = 1 << (index & 31);
-    ASSERT_LOW_LAYER((value & mask) == mask);
+    //ASSERT_LOW_LAYER((value & mask) == mask);
     value &= ~mask;
 }
 

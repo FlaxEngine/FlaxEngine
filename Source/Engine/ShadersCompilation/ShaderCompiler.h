@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,6 +7,7 @@
 #include "ShaderCompilationContext.h"
 #include "Parser/ShaderMeta.h"
 #include "Engine/Graphics/Shaders/GPUShaderProgram.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 
 /// <summary>
 /// Base class for the objects that can compile shaders source code.
@@ -14,7 +15,6 @@
 class ShaderCompiler
 {
 public:
-
     struct ShaderResourceBuffer
     {
         byte Slot;
@@ -23,11 +23,9 @@ public:
     };
 
 private:
-
     Array<char> _funcNameDefineBuffer;
 
 protected:
-
     ShaderProfile _profile;
     ShaderCompilationContext* _context = nullptr;
     Array<ShaderMacro> _globalMacros;
@@ -35,7 +33,6 @@ protected:
     Array<ShaderResourceBuffer> _constantBuffers;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ShaderCompiler"/> class.
     /// </summary>
@@ -51,7 +48,6 @@ public:
     virtual ~ShaderCompiler() = default;
 
 public:
-
     /// <summary>
     /// Gets shader profile supported by this compiler.
     /// </summary>
@@ -85,8 +81,13 @@ public:
     static void DisposeIncludedFilesCache();
 
 protected:
+    // Input elements read from reflection after shader compilation. Rough approx or attributes without exact format nor bind slot (only semantics and value dimensions match).
+    struct AdditionalDataVS
+    {
+        GPUVertexLayout::Elements Inputs;
+    };
 
-    typedef bool (*WritePermutationData)(ShaderCompilationContext*, ShaderFunctionMeta&, int32, const Array<ShaderMacro>&);
+    typedef bool (*WritePermutationData)(ShaderCompilationContext*, ShaderFunctionMeta&, int32, const Array<ShaderMacro>&, void*);
 
     virtual bool CompileShader(ShaderFunctionMeta& meta, WritePermutationData customDataWrite = nullptr) = 0;
 
@@ -99,9 +100,11 @@ protected:
     static bool WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* header, int32 headerSize, const void* cache, int32 cacheSize);
     static bool WriteShaderFunctionPermutation(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const ShaderBindings& bindings, const void* cache, int32 cacheSize);
     static bool WriteShaderFunctionEnd(ShaderCompilationContext* context, ShaderFunctionMeta& meta);
-    static bool WriteCustomDataVS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros);
-    static bool WriteCustomDataHS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros);
+    static bool WriteCustomDataVS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros, void* additionalData);
+    static bool WriteCustomDataHS(ShaderCompilationContext* context, ShaderFunctionMeta& meta, int32 permutationIndex, const Array<ShaderMacro>& macros, void* additionalData);
     void GetDefineForFunction(ShaderFunctionMeta& meta, Array<ShaderMacro>& macros);
+
+    static VertexElement::Types ParseVertexElementType(StringAnsiView semantic, uint32 index = 0);
 };
 
 #endif

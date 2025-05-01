@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -517,11 +517,11 @@ public:
     GPUTask* UploadMipMapAsync(const BytesContainer& data, int32 mipIndex, int32 rowPitch, int32 slicePitch, bool copyData = false);
 
     /// <summary>
-    /// Stops current thread execution to gather texture data from the GPU.
+    /// Downloads the texture data to be accessible from CPU. For frequent access, use staging textures, otherwise current thread will be stalled to wait for the GPU frame to copy data into staging buffer.
     /// </summary>
-    /// <param name="result">The result data.</param>
+    /// <param name="result">The destination texture data container.</param>
     /// <returns>True if cannot download data, otherwise false.</returns>
-    bool DownloadData(TextureData& result);
+    API_FUNCTION() bool DownloadData(TextureData& result);
 
     /// <summary>
     /// Creates GPU async task that will gather texture data from the GPU.

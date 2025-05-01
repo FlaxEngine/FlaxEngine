@@ -1,10 +1,24 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Runtime.InteropServices;
 
 namespace FlaxEngine
 {
+    partial class GPUTexture
+    {
+        /// <summary>
+        /// Downloads the texture data to be accessible from CPU. For frequent access, use staging textures, otherwise current thread will be stalled to wait for the GPU frame to copy data into staging buffer.
+        /// </summary>
+        /// <returns>Downloaded texture data container, or nul if failed.</returns>
+        [Unmanaged]
+        public TextureData DownloadData()
+        {
+            var result = new TextureData();
+            return DownloadData(result) ? null : result;
+        }
+    }
+
     partial class TextureBase
     {
         /// <summary>

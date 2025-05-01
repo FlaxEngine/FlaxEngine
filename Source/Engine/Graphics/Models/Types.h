@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -21,6 +21,7 @@ class Model;
 class SkinnedModel;
 class MeshDeformation;
 class GPUContext;
+class GPUVertexLayout;
 struct RenderView;
 
 /// <summary>
@@ -45,7 +46,7 @@ API_ENUM(Attributes="HideInEditor") enum class ModelLightmapUVsSource
 /// <summary>
 /// The mesh buffer types.
 /// </summary>
-enum class MeshBufferType
+API_ENUM(Attributes="HideInEditor") enum class MeshBufferType
 {
     /// <summary>
     /// The index buffer.
@@ -66,40 +67,29 @@ enum class MeshBufferType
     /// The vertex buffer (third).
     /// </summary>
     Vertex2 = 3,
+
+    MAX,
 };
 
 // Vertex structure for all models (versioned)
-PACK_STRUCT(struct ModelVertex15
+// [Deprecated in v1.10]
+PACK_STRUCT(struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.") ModelVertex19
     {
     Float3 Position;
     Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
-    });
-
-PACK_STRUCT(struct ModelVertex18
-    {
-    Float3 Position;
-    Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
-    Half2 LightmapUVs;
-    });
-
-PACK_STRUCT(struct ModelVertex19
-    {
-    Float3 Position;
-    Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
+    FloatR10G10B10A2 Normal;
+    FloatR10G10B10A2 Tangent;
     Half2 LightmapUVs;
     Color32 Color;
     });
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+// [Deprecated in v1.10]
 typedef ModelVertex19 ModelVertex;
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-//
-struct RawModelVertex
+// [Deprecated in v1.10]
+struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.") RawModelVertex
 {
     Float3 Position;
     Float2 TexCoord;
@@ -111,56 +101,61 @@ struct RawModelVertex
 };
 
 // For vertex data we use three buffers: one with positions, one with other attributes, and one with colors
-PACK_STRUCT(struct VB0ElementType15
+// [Deprecated in v1.10]
+PACK_STRUCT(struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.") VB0ElementType18
     {
     Float3 Position;
+
+    static GPUVertexLayout* GetLayout();
     });
 
-PACK_STRUCT(struct VB1ElementType15
+// [Deprecated in v1.10]
+PACK_STRUCT(struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.")  VB1ElementType18
     {
     Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
-    });
-
-PACK_STRUCT(struct VB0ElementType18
-    {
-    Float3 Position;
-    });
-
-PACK_STRUCT(struct VB1ElementType18
-    {
-    Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
+    FloatR10G10B10A2 Normal;
+    FloatR10G10B10A2 Tangent;
     Half2 LightmapUVs;
+
+    static GPUVertexLayout* GetLayout();
     });
 
-PACK_STRUCT(struct VB2ElementType18
+// [Deprecated in v1.10]
+PACK_STRUCT(struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.") VB2ElementType18
     {
     Color32 Color;
+
+    static GPUVertexLayout* GetLayout();
     });
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+// [Deprecated in v1.10]
 typedef VB0ElementType18 VB0ElementType;
+// [Deprecated in v1.10]
 typedef VB1ElementType18 VB1ElementType;
+// [Deprecated in v1.10]
 typedef VB2ElementType18 VB2ElementType;
-//
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 // Vertex structure for all skinned models (versioned)
-PACK_STRUCT(struct SkinnedModelVertex1
+// [Deprecated in v1.10]
+PACK_STRUCT(struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.") SkinnedModelVertex1
     {
     Float3 Position;
     Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
+    FloatR10G10B10A2 Normal;
+    FloatR10G10B10A2 Tangent;
     Color32 BlendIndices;
     Color32 BlendWeights;
     });
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+// [Deprecated in v1.10]
 typedef SkinnedModelVertex1 SkinnedModelVertex;
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
-//
-struct RawSkinnedModelVertex
+// [Deprecated in v1.10]
+struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.") RawSkinnedModelVertex
 {
     Float3 Position;
     Float2 TexCoord;
@@ -171,25 +166,31 @@ struct RawSkinnedModelVertex
     Float4 BlendWeights;
 };
 
-PACK_STRUCT(struct VB0SkinnedElementType1
+// [Deprecated on 28.04.2023, expires on 01.01.2024]
+PACK_STRUCT(struct DEPRECATED("Use newer format.") VB0SkinnedElementType1
     {
     Float3 Position;
     Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
+    FloatR10G10B10A2 Normal;
+    FloatR10G10B10A2 Tangent;
     Color32 BlendIndices;
     Color32 BlendWeights;
     });
 
-PACK_STRUCT(struct VB0SkinnedElementType2
+// [Deprecated in v1.10]
+PACK_STRUCT(struct DEPRECATED("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.") VB0SkinnedElementType2
     {
     Float3 Position;
     Half2 TexCoord;
-    Float1010102 Normal;
-    Float1010102 Tangent;
+    FloatR10G10B10A2 Normal;
+    FloatR10G10B10A2 Tangent;
     Color32 BlendIndices;
     Half4 BlendWeights;
+
+    static GPUVertexLayout* GetLayout();
     });
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+// [Deprecated in v1.10]
 typedef VB0SkinnedElementType2 VB0SkinnedElementType;
-//
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

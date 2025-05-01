@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -570,6 +570,7 @@ namespace FlaxEditor.Surface
             var interfaceOptions = editor.Options.Options.Interface;
             var inputOptions = editor.Options.Options.Input;
             var undo = surface.Undo;
+            var showSearch = () => editor.ContentFinding.ShowSearch(window);
 
             // Toolstrip
             saveButton = toolStrip.AddButton(editor.Icons.Save64, window.Save).LinkTooltip("Save", ref inputOptions.Save);
@@ -577,7 +578,7 @@ namespace FlaxEditor.Surface
             undoButton = toolStrip.AddButton(editor.Icons.Undo64, undo.PerformUndo).LinkTooltip("Undo", ref inputOptions.Undo);
             redoButton = toolStrip.AddButton(editor.Icons.Redo64, undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
             toolStrip.AddSeparator();
-            toolStrip.AddButton(editor.Icons.Search64, editor.ContentFinding.ShowSearch).LinkTooltip("Open content search tool",  ref inputOptions.Search);
+            toolStrip.AddButton(editor.Icons.Search64, showSearch).LinkTooltip("Open content search tool",  ref inputOptions.Search);
             toolStrip.AddButton(editor.Icons.CenterView64, surface.ShowWholeGraph).LinkTooltip("Show whole graph");
             var gridSnapButton = toolStrip.AddButton(editor.Icons.Grid32, surface.ToggleGridSnapping);
             gridSnapButton.LinkTooltip("Toggle grid snapping for nodes.");
@@ -588,7 +589,7 @@ namespace FlaxEditor.Surface
             // Setup input actions
             window.InputActions.Add(options => options.Undo, undo.PerformUndo);
             window.InputActions.Add(options => options.Redo, undo.PerformRedo);
-            window.InputActions.Add(options => options.Search, editor.ContentFinding.ShowSearch);
+            window.InputActions.Add(options => options.Search, showSearch);
         }
     }
 }

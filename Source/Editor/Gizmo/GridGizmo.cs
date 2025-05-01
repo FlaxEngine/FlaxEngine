@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -19,12 +19,11 @@ namespace FlaxEditor.Gizmo
             [StructLayout(LayoutKind.Sequential)]
             private struct Data
             {
-                public Matrix WorldMatrix;
                 public Matrix ViewProjectionMatrix;
                 public Float4 GridColor;
                 public Float3 ViewPos;
                 public float Far;
-                public Float3 Padding;
+                public Float3 ViewOrigin;
                 public float GridSize;
             }
 
@@ -44,6 +43,7 @@ namespace FlaxEditor.Gizmo
             {
                 UseSingleTarget = true;
                 Location = PostProcessEffectLocation.Default;
+                Order = -100000; // Draw before any other editor shapes
                 _shader = FlaxEngine.Content.LoadAsyncInternal<Shader>("Shaders/Editor/Grid");
             }
 
@@ -62,14 +62,14 @@ namespace FlaxEditor.Gizmo
                 Profiler.BeginEventGPU("Editor Grid");
 
                 var options = Editor.Instance.Options.Options;
-                Float3 camPos = renderContext.View.WorldPosition;
                 float gridSize = renderContext.View.Far + 20000;
 
                 // Lazy-init resources
                 if (_vertexBuffer == null)
                 {
                     _vertexBuffer = new GPUBuffer();
-                    var desc = GPUBufferDescription.Vertex(sizeof(Float3), 4);
+                    var layout = GPUVertexLayout.Get([new VertexElement(VertexElement.Types.Position, 0, 0, false, PixelFormat.R32G32B32_Float)]);
+                    var desc = GPUBufferDescription.Vertex(layout, sizeof(Float3), 4);
                     _vertexBuffer.Init(ref desc);
                 }
                 if (_indexBuffer == null)
@@ -89,6 +89,7 @@ namespace FlaxEditor.Gizmo
                     desc.CullMode = CullMode.TwoSided;
                     desc.VS = _shader.GPU.GetVS("VS_Grid");
                     desc.PS = _shader.GPU.GetPS("PS_Grid");
+                    desc.DepthWriteEnable = false;
                     _psGrid.Init(ref desc);
                 }
 
@@ -97,10 +98,10 @@ namespace FlaxEditor.Gizmo
                 float y = 1.5f; // Add small bias to reduce Z-fighting with geometry at scene origin
                 var vertices = new Float3[]
                 {
-                    new Float3(-gridSize + camPos.X, y, -gridSize + camPos.Z),
-                    new Float3(gridSize + camPos.X, y, gridSize + camPos.Z),
-                    new Float3(-gridSize + camPos.X, y, gridSize + camPos.Z),
-                    new Float3(gridSize + camPos.X, y, -gridSize + camPos.Z),
+                    new Float3(-gridSize, y, -gridSize),
+                    new Float3(gridSize, y, gridSize),
+                    new Float3(-gridSize, y, gridSize),
+                    new Float3(gridSize, y, -gridSize),
                 };
                 fixed (Float3* ptr = vertices)
                 {
@@ -113,12 +114,12 @@ namespace FlaxEditor.Gizmo
                 {
                     var data = new Data();
                     Matrix.Multiply(ref renderContext.View.View, ref renderContext.View.Projection, out var viewProjection);
-                    data.WorldMatrix = Matrix.Identity;
                     Matrix.Transpose(ref viewProjection, out data.ViewProjectionMatrix);
                     data.ViewPos = renderContext.View.WorldPosition;
                     data.GridColor = options.Viewport.ViewportGridColor;
                     data.Far = renderContext.View.Far;
                     data.GridSize = options.Viewport.ViewportGridViewDistance;
+                    data.ViewOrigin = renderContext.View.Origin;
                     context.UpdateCB(cb, new IntPtr(&data));
                 }
 

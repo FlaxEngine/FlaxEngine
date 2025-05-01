@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -496,7 +496,7 @@ namespace FlaxEditor.Content.Thumbnails
                     // Prepare requests
                     bool isAnyReady = false;
                     int checks = Mathf.Min(10, _requests.Count);
-                    for (int i = 0; i < checks; i++)
+                    for (int i = 0; i < checks && i < _requests.Count; i++)
                     {
                         var request = _requests[i];
                         try

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -1345,7 +1345,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Calculates the angle (in degrees) between <paramref name="from"/> and <paramref name="to"/>. This is always the smallest value.
+        /// Calculates the angle (in degrees) between <paramref name="from"/> and <paramref name="to"/> vectors. This is always the smallest value.
         /// </summary>
         /// <param name="from">The first vector.</param>
         /// <param name="to">The second vector.</param>
@@ -1356,6 +1356,21 @@ namespace FlaxEngine
             if (Mathr.Abs(dot) > (1.0f - Mathr.Epsilon))
                 return dot > 0.0f ? 0.0f : 180.0f;
             return (Real)Math.Acos(dot) * Mathr.RadiansToDegrees;
+        }
+
+        /// <summary>
+        /// Calculates the signed angle (in degrees) between <paramref name="from"/> and <paramref name="to"/> vectors. This is always the smallest value. The sign of the result depends on: the order of input vectors, and the direction of the <paramref name="axis"/> vector.
+        /// </summary>
+        /// <param name="from">The first vector.</param>
+        /// <param name="to">The second vector.</param>
+        /// <param name="axis">The axis around which the vectors are rotated.</param>
+        /// <returns>The angle (in degrees).</returns>
+        public static Real SignedAngle(Vector3 from, Vector3 to, Vector3 axis)
+        {
+            Real angle = Angle(from, to);
+            Vector3 cross = Cross(from, to);
+            Real sign = Mathr.Sign(axis.X * cross.X + axis.Y * cross.Y + axis.Z * cross.Z);
+            return angle * sign;
         }
 
         /// <summary>
@@ -2011,7 +2026,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Vector3" /> to <see cref="Float3" />.
+        /// Performs an implicit conversion from <see cref="Vector3" /> to <see cref="Float3" />.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
@@ -2021,13 +2036,23 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Vector3" /> to <see cref="Double3" />.
+        /// Performs an implicit conversion from <see cref="Vector3" /> to <see cref="Double3" />.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
         public static implicit operator Double3(Vector3 value)
         {
             return new Double3(value.X, value.Y, value.Z);
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Vector3" /> to <see cref="Int3" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static explicit operator Int3(Vector3 value)
+        {
+            return new Int3((int)value.X, (int)value.Y, (int)value.Z);
         }
 
         /// <summary>

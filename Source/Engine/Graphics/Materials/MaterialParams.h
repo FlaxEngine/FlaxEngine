@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -197,23 +197,6 @@ private:
     AssetReference<Asset> _asAsset;
     ScriptingObjectReference<GPUTexture> _asGPUTexture;
     String _name;
-
-public:
-    MaterialParameter(const MaterialParameter& other)
-        : MaterialParameter()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    MaterialParameter& operator=(const MaterialParameter& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
-    }
 
 public:
     /// <summary>

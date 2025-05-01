@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_D3D_SHADER_COMPILER
 
@@ -16,11 +16,9 @@
 class IncludeD3D : public ID3DInclude
 {
 private:
-
     ShaderCompilationContext* _context;
 
 public:
-
     IncludeD3D(ShaderCompilationContext* context)
     {
         _context = context;
@@ -84,14 +82,9 @@ namespace
         // Extract constant buffers usage information
         for (uint32 a = 0; a < desc.ConstantBuffers; a++)
         {
-            // Get CB
             auto cb = reflector->GetConstantBufferByIndex(a);
-
-            // Get CB description
             D3D11_SHADER_BUFFER_DESC cbDesc;
             cb->GetDesc(&cbDesc);
-
-            // Check buffer type
             if (cbDesc.Type == D3D_CT_CBUFFER)
             {
                 // Find CB slot index
@@ -132,22 +125,20 @@ namespace
         // Extract resources usage
         for (uint32 i = 0; i < desc.BoundResources; i++)
         {
-            // Get resource description
             D3D11_SHADER_INPUT_BIND_DESC resDesc;
             reflector->GetResourceBindingDesc(i, &resDesc);
-
             switch (resDesc.Type)
             {
-                // Sampler
+            // Sampler
             case D3D_SIT_SAMPLER:
                 break;
 
-                // Constant Buffer
+            // Constant Buffer
             case D3D_SIT_CBUFFER:
             case D3D_SIT_TBUFFER:
                 break;
 
-                // Shader Resource
+            // Shader Resource
             case D3D_SIT_TEXTURE:
             case D3D_SIT_STRUCTURED:
             case D3D_SIT_BYTEADDRESS:
@@ -155,7 +146,7 @@ namespace
                     bindings.UsedSRsMask |= 1 << (resDesc.BindPoint + shift);
                 break;
 
-                // Unordered Access
+            // Unordered Access
             case D3D_SIT_UAV_RWTYPED:
             case D3D_SIT_UAV_RWSTRUCTURED:
             case D3D_SIT_UAV_RWBYTEADDRESS:
@@ -212,7 +203,6 @@ bool ShaderCompilerD3D::CompileShader(ShaderFunctionMeta& meta, WritePermutation
     else
     {
         profileName += "_4_0";
-
         if (type == ShaderStage::Domain || type == ShaderStage::Hull)
         {
             _context->OnError("Tessellation is not supported on DirectX 10");
@@ -221,6 +211,7 @@ bool ShaderCompilerD3D::CompileShader(ShaderFunctionMeta& meta, WritePermutation
     }
 
     // Compile all shader function permutations
+    AdditionalDataVS additionalDataVS;
     for (int32 permutationIndex = 0; permutationIndex < meta.Permutations.Count(); permutationIndex++)
     {
         _macros.Clear();
@@ -253,8 +244,6 @@ bool ShaderCompilerD3D::CompileShader(ShaderFunctionMeta& meta, WritePermutation
             0,
             &shader,
             &errors);
-
-        // Check compilation result
         if (FAILED(result))
         {
             const auto msg = static_cast<const char*>(errors->GetBufferPointer());
@@ -279,24 +268,68 @@ bool ShaderCompilerD3D::CompileShader(ShaderFunctionMeta& meta, WritePermutation
         reflector->GetDesc(&desc);
 
         // Process shader reflection data
+        void* additionalData = nullptr;
+        if (type == ShaderStage::Vertex)
+        {
+            additionalData = &additionalDataVS;
+            additionalDataVS.Inputs.Clear();
+            for (UINT inputIdx = 0; inputIdx < desc.InputParameters; inputIdx++)
+            {
+                D3D11_SIGNATURE_PARAMETER_DESC inputDesc;
+                reflector->GetInputParameterDesc(inputIdx, &inputDesc);
+                if (inputDesc.SystemValueType != D3D10_NAME_UNDEFINED)
+                    continue;
+                auto format = PixelFormat::Unknown;
+                switch (inputDesc.ComponentType)
+                {
+                case D3D_REGISTER_COMPONENT_UINT32:
+                    if (inputDesc.Mask >= 0b1111)
+                        format = PixelFormat::R32G32B32A32_UInt;
+                    else if (inputDesc.Mask >= 0b111)
+                        format = PixelFormat::R32G32B32_UInt;
+                    else if (inputDesc.Mask >= 0b11)
+                        format = PixelFormat::R32G32_UInt;
+                    else
+                        format = PixelFormat::R32_UInt;
+                    break;
+                case D3D_REGISTER_COMPONENT_SINT32:
+                    if (inputDesc.Mask >= 0b1111)
+                        format = PixelFormat::R32G32B32A32_SInt;
+                    else if (inputDesc.Mask >= 0b111)
+                        format = PixelFormat::R32G32B32_SInt;
+                    else if (inputDesc.Mask >= 0b11)
+                        format = PixelFormat::R32G32_SInt;
+                    else
+                        format = PixelFormat::R32_SInt;
+                    break;
+                case D3D_REGISTER_COMPONENT_FLOAT32:
+                    if (inputDesc.Mask >= 0b1111)
+                        format = PixelFormat::R32G32B32A32_Float;
+                    else if (inputDesc.Mask >= 0b111)
+                        format = PixelFormat::R32G32B32_Float;
+                    else if (inputDesc.Mask >= 0b11)
+                        format = PixelFormat::R32G32_Float;
+                    else
+                        format = PixelFormat::R32_Float;
+                    break;
+                }
+                additionalDataVS.Inputs.Add({ ParseVertexElementType(inputDesc.SemanticName, inputDesc.SemanticIndex), 0, 0, 0, format });
+            }
+        }
         ShaderBindings bindings = { desc.InstructionCount, 0, 0, 0 };
         if (ProcessShader(_context, _constantBuffers, reflector.Get(), desc, bindings))
             return true;
 
 #ifdef GPU_USE_SHADERS_DEBUG_LAYER
-
         // Generate debug information
         if (ProcessDebugInfo(_context, meta, permutationIndex, shaderBuffer, shaderBufferSize))
             return true;
-
 #endif
 
         // Strip shader bytecode for an optimization
         ComPtr<ID3DBlob> shaderStripped;
         if (!options->GenerateDebugData)
         {
-            //auto prevShaderBufferSize = shaderBufferSize;
-
             // Strip shader bytes
             result = D3DStripShader(
                 shaderBuffer,
@@ -312,15 +345,12 @@ bool ShaderCompilerD3D::CompileShader(ShaderFunctionMeta& meta, WritePermutation
             // Set new buffer
             shaderBuffer = shaderStripped->GetBufferPointer();
             shaderBufferSize = static_cast<int32>(shaderStripped->GetBufferSize());
-
-            //auto strippedBytes = prevShaderBufferSize - shaderBufferSize;
-            //auto strippedBytesPercentage = Math::FloorToInt(strippedBytes * 100.0f / prevShaderBufferSize);
         }
 
         if (WriteShaderFunctionPermutation(_context, meta, permutationIndex, bindings, shaderBuffer, shaderBufferSize))
             return true;
 
-        if (customDataWrite && customDataWrite(_context, meta, permutationIndex, _macros))
+        if (customDataWrite && customDataWrite(_context, meta, permutationIndex, _macros, additionalData))
             return true;
     }
 

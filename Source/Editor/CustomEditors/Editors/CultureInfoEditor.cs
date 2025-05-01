@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -27,7 +27,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Initialize(LayoutElementsContainer layout)
         {
             _label = layout.ClickableLabel(GetName(Culture)).CustomControl;
-            _label.RightClick += ShowPicker;
+            _label.RightClick += () => CreatePicker(Culture, OnValueChanged).Show(_label, new Float2(0, _label.Height));
             var button = new Button
             {
                 Width = 16.0f,
@@ -36,7 +36,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 Parent = _label,
             };
             button.SetAnchorPreset(AnchorPresets.MiddleRight, false, true);
-            button.Clicked += ShowPicker;
+            button.ButtonClicked += b => CreatePicker(Culture, OnValueChanged).Show(b, new Float2(0, b.Height));
         }
 
         /// <inheritdoc />
@@ -74,18 +74,17 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
+        private void OnValueChanged(CultureInfo value)
+        {
+            Culture = value;
+        }
+
         private class CultureInfoComparer : IComparer<CultureInfo>
         {
             public int Compare(CultureInfo a, CultureInfo b)
             {
                 return string.Compare(a.Name, b.Name, StringComparison.Ordinal);
             }
-        }
-
-        private void ShowPicker()
-        {
-            var menu = CreatePicker(Culture, value => { Culture = value; });
-            menu.Show(_label, new Float2(0, _label.Height));
         }
 
         internal static ContextMenuBase CreatePicker(CultureInfo value, Action<CultureInfo> changed)

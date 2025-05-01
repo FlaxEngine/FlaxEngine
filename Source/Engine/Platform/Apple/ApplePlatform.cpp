@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_MAC || PLATFORM_IOS
 
@@ -7,6 +7,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
@@ -26,15 +27,18 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include <unistd.h>
 #include <cstdint>
 #include <stdlib.h>
 #include <sys/sysctl.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/utsname.h>
 #include <mach/mach_time.h>
 #include <mach-o/dyld.h>
 #include <uuid/uuid.h>
+#include <os/proc.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <Foundation/Foundation.h>
 #include <CoreGraphics/CoreGraphics.h>
@@ -53,6 +57,43 @@ NSAutoreleasePool* AutoreleasePool = nullptr;
 int32 AutoreleasePoolInterval = 0;
 
 float ApplePlatform::ScreenScale = 1.0f;
+
+static void CrashHandler(int32 signal, siginfo_t* info, void* context)
+{
+    // Skip if engine already crashed
+    if (Engine::FatalError != FatalErrorType::None)
+        return;
+
+    // Get exception info
+    String errorMsg(TEXT("Unhandled exception: "));
+    switch (signal)
+    {
+#define CASE(x) case x: errorMsg += TEXT(#x); break
+    CASE(SIGABRT);
+    CASE(SIGILL);
+    CASE(SIGSEGV);
+    CASE(SIGQUIT);
+    CASE(SIGEMT);
+    CASE(SIGFPE);
+    CASE(SIGBUS);
+    CASE(SIGSYS);
+#undef CASE
+    default:
+        errorMsg += StringUtils::ToString(signal);
+    }
+
+    // Log exception and return to the crash location when using debugger
+    if (Platform::IsDebuggerPresent())
+    {
+        LOG_STR(Error, errorMsg);
+        const String stackTrace = Platform::GetStackTrace(3, 60, nullptr);
+        LOG_STR(Error, stackTrace);
+        return;
+    }
+
+    // Crash engine
+    Platform::Fatal(errorMsg.Get(), nullptr, FatalErrorType::Exception);
+}
 
 String AppleUtils::ToString(CFStringRef str)
 {
@@ -86,40 +127,49 @@ NSString* AppleUtils::ToNSString(const char* string)
     return ret ? ret : @"";
 }
 
-
-NSArray* AppleUtils::ParseArguments(NSString* argsString) {
-    NSMutableArray *argsArray = [NSMutableArray array];
-    NSMutableString *currentArg = [NSMutableString string];
+NSArray* AppleUtils::ParseArguments(NSString* argsString)
+{
+    NSMutableArray* argsArray = [NSMutableArray array];
+    NSMutableString* currentArg = [NSMutableString string];
     BOOL insideQuotes = NO;
-    
-    for (NSInteger i = 0; i < argsString.length; ++i) {
+
+    for (NSInteger i = 0; i < argsString.length; i++)
+    {
         unichar c = [argsString characterAtIndex:i];
-        
-        if (c == '\"') {
-            if (insideQuotes) {
+        if (c == '\"')
+        {
+            if (insideQuotes)
+            {
                 [argsArray addObject:[currentArg copy]];
                 [currentArg setString:@""];
                 insideQuotes = NO;
-            } else {
+            }
+            else
+            {
                 insideQuotes = YES;
             }
-        } else if (c == ' ' && !insideQuotes) {
-            if (currentArg.length > 0) {
+        }
+        else if (c == ' ' && !insideQuotes)
+        {
+            if (currentArg.length > 0)
+            {
                 [argsArray addObject:[currentArg copy]];
                 [currentArg setString:@""];
             }
-        } else {
+        }
+        else
+        {
             [currentArg appendFormat:@"%C", c];
         }
     }
     
-    if (currentArg.length > 0) {
+    if (currentArg.length > 0)
+    {
         [argsArray addObject:[currentArg copy]];
     }
-    
+
     return [argsArray copy];
 }
-
 
 typedef uint16_t offset_t;
 #define align_mem_up(num, align) (((num) + ((align) - 1)) & ~((align) - 1))
@@ -129,14 +179,22 @@ bool ApplePlatform::Is64BitPlatform()
     return PLATFORM_64BITS;
 }
 
+String ApplePlatform::GetSystemName()
+{
+	struct utsname systemInfo;
+	uname(&systemInfo);
+    return String(systemInfo.machine);
+}
+
+Version ApplePlatform::GetSystemVersion()
+{
+    NSOperatingSystemVersion version = [[NSProcessInfo processInfo] operatingSystemVersion];
+    return Version(version.majorVersion, version.minorVersion, version.patchVersion);
+}
+
 CPUInfo ApplePlatform::GetCPUInfo()
 {
     return Cpu;
-}
-
-int32 ApplePlatform::GetCacheLineSize()
-{
-    return Cpu.CacheLineSize;
 }
 
 MemoryStats ApplePlatform::GetMemoryStats()
@@ -364,6 +422,21 @@ bool ApplePlatform::Init()
         setrlimit(RLIMIT_NOFILE, &limit);
     }
 
+    // Register crash handler
+    struct sigaction action;
+    Platform::MemoryClear(&action, sizeof(action));
+    action.sa_sigaction = CrashHandler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    sigaction(SIGABRT, &action, nullptr);
+    sigaction(SIGILL, &action, nullptr);
+    sigaction(SIGSEGV, &action, nullptr);
+    sigaction(SIGQUIT, &action, nullptr);
+    sigaction(SIGEMT, &action, nullptr);
+    sigaction(SIGFPE, &action, nullptr);
+    sigaction(SIGBUS, &action, nullptr);
+    sigaction(SIGSYS, &action, nullptr);
+
     AutoreleasePool = [[NSAutoreleasePool alloc] init];
 
     return false;
@@ -471,6 +544,8 @@ bool ApplePlatform::SetEnvironmentVariable(const String& name, const String& val
 
 void* ApplePlatform::LoadLibrary(const Char* filename)
 {
+    PROFILE_CPU();
+    ZoneText(filename, StringUtils::Length(filename));
     const StringAsANSI<> filenameANSI(filename);
     void* result = dlopen(filenameANSI.Get(), RTLD_LAZY | RTLD_LOCAL);
     if (!result)

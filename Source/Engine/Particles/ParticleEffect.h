@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -30,22 +30,6 @@ public:
     ParticleEffectParameter()
         : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
     {
-    }
-
-    ParticleEffectParameter(const ParticleEffectParameter& other)
-        : ParticleEffectParameter()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    ParticleEffectParameter& operator=(const ParticleEffectParameter& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX11
 
@@ -9,6 +9,7 @@
 #include "GPUTextureDX11.h"
 #include "GPUBufferDX11.h"
 #include "GPUSamplerDX11.h"
+#include "GPUVertexLayoutDX11.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Rectangle.h"
@@ -82,9 +83,11 @@ void GPUContextDX11::FrameBegin()
     _omDirtyFlag = false;
     _uaDirtyFlag = false;
     _cbDirtyFlag = false;
+    _iaInputLayoutDirtyFlag = false;
     _srMaskDirtyGraphics = 0;
     _srMaskDirtyCompute = 0;
     _rtCount = 0;
+    _vertexLayout = nullptr;
     _currentState = nullptr;
     _rtDepth = nullptr;
     Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
@@ -111,6 +114,12 @@ void GPUContextDX11::FrameBegin()
     CurrentPrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
     CurrentStencilRef = 0;
     CurrentBlendFactor = Float4::One;
+    
+    // Bind dummy vertex buffer (used by missing bindings)
+    auto dummyVB = (GPUBufferDX11*)_device->GetDummyVB();
+    ID3D11Buffer* dummyVBBuffer = dummyVB->GetBuffer();
+    UINT stride = dummyVB->GetStride(), offset = 0;
+    _context->IASetVertexBuffers(GPU_MAX_VB_BINDED, 1, &dummyVBBuffer, &stride, &offset);
 
     // Bind static samplers
     ID3D11SamplerState* samplers[] =
@@ -388,7 +397,7 @@ void GPUContextDX11::BindUA(int32 slot, GPUResourceView* view)
     }
 }
 
-void GPUContextDX11::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)
+void GPUContextDX11::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets, GPUVertexLayout* vertexLayout)
 {
     ASSERT(vertexBuffers.Length() >= 0 && vertexBuffers.Length() <= GPU_MAX_VB_BINDED);
 
@@ -409,6 +418,13 @@ void GPUContextDX11::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
     if (vbEdited)
     {
         _context->IASetVertexBuffers(0, vertexBuffers.Length(), _vbHandles, _vbStrides, _vbOffsets);
+    }
+    if (!vertexLayout)
+        vertexLayout = GPUVertexLayout::Get(vertexBuffers);
+    if (_vertexLayout != vertexLayout)
+    {
+        _vertexLayout = (GPUVertexLayoutDX11*)vertexLayout;
+        _iaInputLayoutDirtyFlag = true;
     }
 }
 
@@ -618,7 +634,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #endif
             CurrentVS = vs;
             _context->VSSetShader(vs ? vs->GetBufferHandleDX11() : nullptr, nullptr, 0);
-            _context->IASetInputLayout(vs ? vs->GetInputLayoutDX11() : nullptr);
+            _iaInputLayoutDirtyFlag = true;
         }
 #if GPU_ALLOW_TESSELLATION_SHADERS
         if (CurrentHS != hs)
@@ -728,6 +744,7 @@ void GPUContextDX11::FlushState()
     flushCBs();
     flushSRVs();
     flushUAVs();
+    flushIA();
     flushOM();
 }
 
@@ -940,11 +957,28 @@ void GPUContextDX11::flushOM()
     }
 }
 
+void GPUContextDX11::flushIA()
+{
+    if (_iaInputLayoutDirtyFlag)
+    {
+        _iaInputLayoutDirtyFlag = false;
+        ID3D11InputLayout* inputLayout = CurrentVS ? CurrentVS->GetInputLayout(_vertexLayout) : nullptr;
+#if GPU_ENABLE_ASSERTION_LOW_LAYERS
+        if (!inputLayout && CurrentVS && !_vertexLayout && _vbHandles[0])
+        {
+            LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
+        }
+#endif
+        _context->IASetInputLayout(inputLayout);
+    }
+}
+
 void GPUContextDX11::onDrawCall()
 {
     flushCBs();
     flushSRVs();
     flushUAVs();
+    flushIA();
     flushOM();
 }
 

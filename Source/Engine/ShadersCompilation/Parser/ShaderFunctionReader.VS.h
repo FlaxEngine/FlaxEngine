@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -84,6 +84,11 @@ namespace ShaderProcessing
                     parser->OnError(TEXT("Cannot parse token."));
                     return;
                 }
+                else if (element.AlignedByteOffset > MAX_uint8)
+                {
+                    parser->OnError(TEXT("Too big vertex element byte offset."));
+                    return;
+                }
 
                 // Input slot class
                 text.ReadToken(&token);
@@ -140,9 +145,9 @@ namespace ShaderProcessing
         void OnParseAfter(IShaderParser* parser, Reader& text) override
         {
             // Check if errors in specified input layout
-            if (_current.InputLayout.Count() > VERTEX_SHADER_MAX_INPUT_ELEMENTS)
+            if (_current.InputLayout.Count() > GPU_MAX_VS_ELEMENTS)
             {
-                parser->OnError(String::Format(TEXT("Vertex Shader \'{0}\' has too many input layout elements specified. Maximum allowed amount is {1}."), String(_current.Name), VERTEX_SHADER_MAX_INPUT_ELEMENTS));
+                parser->OnError(String::Format(TEXT("Vertex Shader \'{0}\' has too many input layout elements specified. Maximum allowed amount is {1}."), String(_current.Name), GPU_MAX_VS_ELEMENTS));
                 return;
             }
 

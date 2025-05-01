@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "ShaderFunctionReader.h"
+#include "Engine/Graphics/Config.h"
 
 #if COMPILE_WITH_SHADER_COMPILER
 
@@ -115,9 +116,9 @@ namespace ShaderProcessing
             for (int32 i = 0; i < _cache.Count(); i++)
             {
                 auto& f = _cache[i];
-                if (f.Slot >= MAX_CONSTANT_BUFFER_SLOTS)
+                if (f.Slot >= GPU_MAX_CB_BINDED)
                 {
-                    parser->OnError(String::Format(TEXT("Constant buffer {0} is using invalid slot {1}. Maximum supported slot is {2}."), String(f.Name), f.Slot, MAX_CONSTANT_BUFFER_SLOTS - 1));
+                    parser->OnError(String::Format(TEXT("Constant buffer {0} is using invalid slot {1}. Maximum supported slot is {2}."), String(f.Name), f.Slot, GPU_MAX_CB_BINDED - 1));
                     return;
                 }
             }

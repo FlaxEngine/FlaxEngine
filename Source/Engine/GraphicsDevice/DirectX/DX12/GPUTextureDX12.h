@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -21,25 +21,8 @@ private:
     DescriptorHeapWithSlotsDX12::Slot _rtv, _srv, _dsv, _uav;
 
 public:
-
     GPUTextureViewDX12()
     {
-    }
-
-    GPUTextureViewDX12(const GPUTextureViewDX12& other)
-        : GPUTextureViewDX12()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    GPUTextureViewDX12& operator=(const GPUTextureViewDX12& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
     }
 
     ~GPUTextureViewDX12()

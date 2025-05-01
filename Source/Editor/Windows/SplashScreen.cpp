@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SplashScreen.h"
 #include "Engine/Core/Log.h"
@@ -147,7 +147,7 @@ SplashScreen::~SplashScreen()
 void SplashScreen::Show()
 {
     // Skip if already shown or in headless mode
-    if (IsVisible() || CommandLine::Options.Headless)
+    if (IsVisible() || CommandLine::Options.Headless.IsTrue())
         return;
 
     LOG(Info, "Showing splash screen");

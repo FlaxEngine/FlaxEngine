@@ -1,9 +1,11 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
+using Mathr = FlaxEngine.Mathd;
 #else
 using Real = System.Single;
+using Mathr = FlaxEngine.Mathf;
 #endif
 
 using System;
@@ -42,6 +44,7 @@ namespace FlaxEditor.Gizmo
         private bool _isDuplicating;
 
         private bool _isTransforming;
+        private bool _isSelected;
         private Vector3 _lastIntersectionPosition;
 
         private Quaternion _rotationDelta = Quaternion.Identity;
@@ -269,7 +272,17 @@ namespace FlaxEditor.Gizmo
                     _intersectPosition = ray.GetPoint(intersection);
                     if (!_lastIntersectionPosition.IsZero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = new Vector3(0, _tDelta.Y, _tDelta.Z);
+                    if (isScaling)
+                    {
+                        var tDeltaAbs = Vector3.Abs(_tDelta);
+                        var maxDelta = Math.Max(tDeltaAbs.Y, tDeltaAbs.Z);
+                        var sign = Math.Sign(tDeltaAbs.Y > tDeltaAbs.Z ? _tDelta.Y : _tDelta.Z);
+                        delta = new Vector3(0, maxDelta * sign, maxDelta * sign);
+                    }
+                    else
+                    {
+                        delta = new Vector3(0, _tDelta.Y, _tDelta.Z);
+                    }
                 }
                 break;
             }
@@ -280,7 +293,17 @@ namespace FlaxEditor.Gizmo
                     _intersectPosition = ray.GetPoint(intersection);
                     if (!_lastIntersectionPosition.IsZero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = new Vector3(_tDelta.X, _tDelta.Y, 0);
+                    if (isScaling)
+                    {
+                        var tDeltaAbs = Vector3.Abs(_tDelta);
+                        var maxDelta = Math.Max(tDeltaAbs.X, tDeltaAbs.Y);
+                        var sign = Math.Sign(tDeltaAbs.X > tDeltaAbs.Y ? _tDelta.X : _tDelta.Y);
+                        delta = new Vector3(maxDelta * sign, maxDelta * sign, 0);
+                    }
+                    else
+                    {
+                        delta = new Vector3(_tDelta.X, _tDelta.Y, 0);
+                    }
                 }
                 break;
             }
@@ -291,7 +314,17 @@ namespace FlaxEditor.Gizmo
                     _intersectPosition = ray.GetPoint(intersection);
                     if (!_lastIntersectionPosition.IsZero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
-                    delta = new Vector3(_tDelta.X, 0, _tDelta.Z);
+                    if (isScaling)
+                    {
+                        var tDeltaAbs = Vector3.Abs(_tDelta);
+                        var maxDelta = Math.Max(tDeltaAbs.X, tDeltaAbs.Z);
+                        var sign = Math.Sign(tDeltaAbs.X > tDeltaAbs.Z ? _tDelta.X : _tDelta.Z);
+                        delta = new Vector3(maxDelta * sign, 0, maxDelta * sign);
+                    }
+                    else
+                    {
+                        delta = new Vector3(_tDelta.X, 0, _tDelta.Z);
+                    }
                 }
                 break;
             }
@@ -305,7 +338,24 @@ namespace FlaxEditor.Gizmo
                     if (!_lastIntersectionPosition.IsZero)
                         _tDelta = _intersectPosition - _lastIntersectionPosition;
                 }
-                delta = _tDelta;
+                if (isScaling)
+                {
+                    var tDeltaAbs = Vector3.Abs(_tDelta);
+                    var maxDelta = Math.Max(tDeltaAbs.X, tDeltaAbs.Y);
+                    maxDelta = Math.Max(maxDelta, tDeltaAbs.Z);
+                    Real sign = 0;
+                    if (Mathf.NearEqual(maxDelta, tDeltaAbs.X))
+                        sign = Math.Sign(_tDelta.X);
+                    else if (Mathf.NearEqual(maxDelta, tDeltaAbs.Y))
+                        sign = Math.Sign(_tDelta.Y);
+                    else if (Mathf.NearEqual(maxDelta, tDeltaAbs.Z))
+                        sign = Math.Sign(_tDelta.Z);
+                    delta = new Vector3(maxDelta * sign);
+                }
+                else
+                {
+                    delta = _tDelta;
+                }
                 break;
             }
             }
@@ -318,6 +368,7 @@ namespace FlaxEditor.Gizmo
             if ((isScaling ? ScaleSnapEnabled : TranslationSnapEnable) || Owner.UseSnapping)
             {
                 var snapValue = new Vector3(isScaling ? ScaleSnapValue : TranslationSnapValue);
+
                 _translationScaleSnapDelta += delta;
                 if (!isScaling && snapValue.X < 0.0f)
                 {
@@ -336,11 +387,24 @@ namespace FlaxEditor.Gizmo
                     else
                         snapValue.Z = (Real)b.Minimum.Z - b.Maximum.Z;
                 }
+
+                Vector3 absoluteDelta = Vector3.Zero;
+                if (AbsoluteSnapEnabled && ActiveTransformSpace == TransformSpace.World)
+                {
+                    // Remove delta to offset local-space grid into the world-space grid
+                    Vector3 currentTranslationScale = isScaling ? GetSelectedTransform(0).Scale : GetSelectedTransform(0).Translation; 
+                    absoluteDelta = currentTranslationScale - new Vector3(
+                        Mathr.Round(currentTranslationScale.X / snapValue.X) * snapValue.X,
+                        Mathr.Round(currentTranslationScale.Y / snapValue.Y) * snapValue.Y,
+                        Mathr.Round(currentTranslationScale.Z / snapValue.Z) * snapValue.Z);
+                }
+
                 delta = new Vector3(
                                     (int)(_translationScaleSnapDelta.X / snapValue.X) * snapValue.X,
                                     (int)(_translationScaleSnapDelta.Y / snapValue.Y) * snapValue.Y,
                                     (int)(_translationScaleSnapDelta.Z / snapValue.Z) * snapValue.Z);
                 _translationScaleSnapDelta -= delta;
+                delta -= absoluteDelta;
             }
 
             if (_activeMode == Mode.Translate)
@@ -370,12 +434,28 @@ namespace FlaxEditor.Gizmo
             if (RotationSnapEnabled || Owner.UseSnapping)
             {
                 float snapValue = RotationSnapValue * Mathf.DegreesToRadians;
+
+                float absoluteDelta = 0.0f;
+                if (AbsoluteSnapEnabled && ActiveTransformSpace == TransformSpace.World)
+                {
+                    // Remove delta to offset world-space grid into the local-space grid
+                    float currentAngle = 0.0f;
+                    switch (_activeAxis)
+                    {
+                        case Axis.X: currentAngle = GetSelectedTransform(0).Orientation.EulerAngles.X; break;
+                        case Axis.Y: currentAngle = GetSelectedTransform(0).Orientation.EulerAngles.Y; break;
+                        case Axis.Z: currentAngle = GetSelectedTransform(0).Orientation.EulerAngles.Z; break;
+                    }
+                    absoluteDelta = currentAngle - (Mathf.Round(currentAngle / RotationSnapValue) * RotationSnapValue);
+                }
+
                 _rotationSnapDelta += delta;
 
                 float snapped = Mathf.Round(_rotationSnapDelta / snapValue) * snapValue;
                 _rotationSnapDelta -= snapped;
 
                 delta = snapped;
+                delta -= absoluteDelta * Mathf.DegreesToRadians;
             }
 
             switch (_activeAxis)
@@ -408,7 +488,7 @@ namespace FlaxEditor.Gizmo
         }
 
         /// <inheritdoc />
-        public override bool IsControllingMouse => _isTransforming;
+        public override bool IsControllingMouse => _isTransforming || _isSelected;
 
         /// <inheritdoc />
         public override void Update(float dt)
@@ -433,6 +513,7 @@ namespace FlaxEditor.Gizmo
                 // Check if user is holding left mouse button and any axis is selected
                 if (isLeftBtnDown && _activeAxis != Axis.None)
                 {
+                    _isSelected = true; // setting later is too late, need to set here for rubber band selection in GizmoViewport
                     switch (_activeMode)
                     {
                     case Mode.Translate:
@@ -450,6 +531,7 @@ namespace FlaxEditor.Gizmo
                 }
                 else
                 {
+                    _isSelected = false;
                     // If nothing selected, try to select any axis
                     if (!isLeftBtnDown && !Owner.IsRightMouseButtonDown)
                     {
@@ -517,6 +599,7 @@ namespace FlaxEditor.Gizmo
                     // Clear cache
                     _accMoveDelta = Vector3.Zero;
                     _lastIntersectionPosition = _intersectPosition = Vector3.Zero;
+                    _isSelected = false;
                     EndTransforming();
                 }
             }

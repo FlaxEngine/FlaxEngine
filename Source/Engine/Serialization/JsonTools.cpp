@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "JsonTools.h"
 #include "ISerializable.h"
@@ -41,7 +41,7 @@ void ChangeIds(rapidjson_flax::Value& obj, rapidjson_flax::Document& document, c
                 '0','0','0','0','0','0','0','0','0','0',
                 '0','0','0','0','0','0','0','0','0','0',
                 '0','0'
-                // @formatter:on
+            // @formatter:on
             };
             static const char* digits = "0123456789abcdef";
             uint32 n = value.A;
@@ -185,7 +185,7 @@ Ray JsonTools::GetRay(const Value& value)
 {
     return Ray(
         GetVector3(value, "Position", Vector3::Zero),
-        GetVector3(value, "Direction", Vector3::One)
+        GetVector3(value, "Direction", Vector3::Forward)
     );
 }
 
@@ -284,8 +284,12 @@ DateTime JsonTools::GetDateTime(const Value& value)
     return DateTime(value.GetInt64());
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
+#include "Engine/Content/Deprecated.h"
 CommonValue JsonTools::GetCommonValue(const Value& value)
 {
+    // [Deprecated on 31.07.2020, expires on 31.07.2022]
+    MARK_CONTENT_DEPRECATED();
     CommonValue result;
     const auto typeMember = value.FindMember("Type");
     const auto valueMember = value.FindMember("Value");
@@ -362,3 +366,4 @@ CommonValue JsonTools::GetCommonValue(const Value& value)
     }
     return result;
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

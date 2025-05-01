@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -851,6 +851,11 @@ namespace FlaxEditor
         {
             LogWarning("Exception: " + ex.Message);
             LogWarning(ex.StackTrace);
+            if (ex.InnerException != null)
+            {
+                LogWarning("Inner exception:");
+                LogWarning(ex.InnerException);
+            }
         }
 
         /// <summary>
@@ -1509,7 +1514,8 @@ namespace FlaxEditor
             var win = Windows.GameWin?.Root;
             if (win?.RootWindow is WindowRootControl root)
             {
-                pos = Float2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
+                pos = Windows.GameWin.Viewport.PointFromScreen(pos);
+                pos = Float2.Round(pos);
             }
             else
             {
@@ -1522,7 +1528,8 @@ namespace FlaxEditor
             var win = Windows.GameWin?.Root;
             if (win?.RootWindow is WindowRootControl root)
             {
-                pos = Float2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
+                pos = Windows.GameWin.Viewport.PointToScreen(pos);
+                pos = Float2.Round(pos);
             }
             else
             {
@@ -1550,10 +1557,11 @@ namespace FlaxEditor
                 // Handle case when Game window is not selected in tab view
                 var dockedTo = gameWin.ParentDockPanel;
                 if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
-                    result = dockedTo.SelectedTab.Size * root.DpiScale;
+                    result = dockedTo.SelectedTab.Size;
                 else
-                    result = gameWin.Viewport.Size * root.DpiScale;
+                    result = gameWin.Viewport.Size;
 
+                result *= root.DpiScale;
                 result = Float2.Round(result);
             }
         }
@@ -1685,9 +1693,6 @@ namespace FlaxEditor
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CanSetToRoot", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CanSetToRoot(IntPtr prefab, IntPtr newRoot);
-
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetPrefabNestedObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        internal static partial void Internal_GetPrefabNestedObject(IntPtr prefabId, IntPtr prefabObjectId, IntPtr outPrefabId, IntPtr outPrefabObjectId);
 
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetAnimationTime", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         internal static partial float Internal_GetAnimationTime(IntPtr animatedModel);

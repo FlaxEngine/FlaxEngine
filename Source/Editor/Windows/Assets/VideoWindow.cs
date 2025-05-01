@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.Content;
 using FlaxEngine;
@@ -199,12 +199,12 @@ namespace FlaxEditor.Windows.Assets
         {
             if (IsDisposing)
                 return;
+            base.OnDestroy();
+
             _videoPlayer.Stop();
             Object.Destroy(ref _videoPlayer);
             _item.RemoveReference(this);
             _item = null;
-
-            base.OnDestroy();
         }
 
         /// <inheritdoc />

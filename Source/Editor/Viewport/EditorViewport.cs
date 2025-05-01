@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -966,6 +966,14 @@ namespace FlaxEditor.Viewport
                     }
                     debugView.ButtonClicked += WidgetViewModeShowHideClicked;
                     debugView.VisibleChanged += WidgetViewModeShowHide;
+                }
+
+                // Clear Debug Draw
+                {
+                    var button = ViewWidgetButtonMenu.AddButton("Clear Debug Draw");
+                    button.CloseMenuOnClick = false;
+                    button.Clicked += () => DebugDraw.Clear();
+                    ViewWidgetButtonMenu.VisibleChanged += (Control cm) => { button.Visible = DebugDraw.CanClear(); };
                 }
 
                 ViewWidgetButtonMenu.AddSeparator();

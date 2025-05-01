@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -61,21 +61,20 @@ public:
 
     /// <summary>
     /// Enables cascades splits blending for directional light shadows.
-    /// [Deprecated in v1.9]
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1320), DefaultValue(false), EditorDisplay(\"Quality\", \"Allow CSM Blending\")")
-    DEPRECATED() bool AllowCSMBlending = false;
+    bool AllowCSMBlending = false;
 
     /// <summary>
     /// Default probes cubemap resolution (use for Environment Probes, can be overriden per-actor).
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(1500), EditorDisplay(\"Quality\")")
+    API_FIELD(Attributes="EditorOrder(1500), EditorDisplay(\"Quality\")")
     ProbeCubemapResolution DefaultProbeResolution = ProbeCubemapResolution::_128;
 
     /// <summary>
     /// If checked, Environment Probes will use HDR texture format. Improves quality in very bright scenes at cost of higher memory usage.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(1502), EditorDisplay(\"Quality\")")
+    API_FIELD(Attributes="EditorOrder(1502), EditorDisplay(\"Quality\")")
     bool UseHDRProbes = false;
 
     /// <summary>
@@ -145,15 +144,12 @@ private:
     /// Renamed UeeHDRProbes into UseHDRProbes
     /// [Deprecated on 12.10.2022, expires on 12.10.2024]
     /// </summary>
-    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") bool GetUeeHDRProbes() const
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") bool GetUeeHDRProbes() const
     {
         return UseHDRProbes;
     }
 
-    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") void SetUeeHDRProbes(bool value)
-    {
-        UseHDRProbes = value;
-    }
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") void SetUeeHDRProbes(bool value);
 
 public:
     /// <summary>

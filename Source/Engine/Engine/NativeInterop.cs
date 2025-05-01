@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_NETCORE
 
@@ -73,19 +73,6 @@ namespace FlaxEngine.Interop
             return nativeLibrary;
         }
 
-        private static void InitScriptingAssemblyLoadContext()
-        {
-#if FLAX_EDITOR
-            var isCollectible = true;
-#else
-            var isCollectible = false;
-#endif
-            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible);
-#if FLAX_EDITOR
-            scriptingAssemblyLoadContext.Resolving += OnScriptingAssemblyLoadContextResolving;
-#endif
-        }
-
         [UnmanagedCallersOnly]
         internal static unsafe void Init()
         {
@@ -97,8 +84,6 @@ namespace FlaxEngine.Interop
             System.Threading.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
             System.Threading.Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 
-            InitScriptingAssemblyLoadContext();
-            DelegateHelpers.InitMethods();
         }
 
 #if FLAX_EDITOR
@@ -1475,11 +1460,11 @@ namespace FlaxEngine.Interop
 
         internal static class ArrayFactory
         {
-            private delegate Array CreateArrayDelegate(long size);
+            internal delegate Array CreateArrayDelegate(long size);
 
-            private static ConcurrentDictionary<Type, Type> marshalledTypes = new ConcurrentDictionary<Type, Type>(1, 3);
-            private static ConcurrentDictionary<Type, Type> arrayTypes = new ConcurrentDictionary<Type, Type>(1, 3);
-            private static ConcurrentDictionary<Type, CreateArrayDelegate> createArrayDelegates = new ConcurrentDictionary<Type, CreateArrayDelegate>(1, 3);
+            internal static ConcurrentDictionary<Type, Type> marshalledTypes = new ConcurrentDictionary<Type, Type>(1, 3);
+            internal static ConcurrentDictionary<Type, Type> arrayTypes = new ConcurrentDictionary<Type, Type>(1, 3);
+            internal static ConcurrentDictionary<Type, CreateArrayDelegate> createArrayDelegates = new ConcurrentDictionary<Type, CreateArrayDelegate>(1, 3);
 
             internal static Type GetMarshalledType(Type elementType)
             {
@@ -1645,17 +1630,6 @@ namespace FlaxEngine.Interop
             return RegisterType(type, true).typeHolder;
         }
 
-        internal static (TypeHolder typeHolder, ManagedHandle handle) GetTypeHolderAndManagedHandle(Type type)
-        {
-            if (managedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
-                return tuple;
-#if FLAX_EDITOR
-            if (managedTypesCollectible.TryGetValue(type, out tuple))
-                return tuple;
-#endif
-            return RegisterType(type, true);
-        }
-
         /// <summary>
         /// Returns a static ManagedHandle to TypeHolder for given Type, and caches it if needed.
         /// </summary>
@@ -1778,6 +1752,14 @@ namespace FlaxEngine.Interop
                     using var ctx = scriptingAssemblyLoadContext.EnterContextualReflection();
                     MakeNewCustomDelegateFuncCollectible(new[] { typeof(void) });
                 }
+#endif
+            }
+
+            internal static void Release()
+            {
+                MakeNewCustomDelegateFunc = null;
+#if FLAX_EDITOR
+                MakeNewCustomDelegateFuncCollectible = null;
 #endif
             }
 

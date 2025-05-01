@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -28,7 +28,10 @@ public:
     bool HasAsset(const Guid& id) const override;
     bool HasAsset(const AssetInfo& info) const override;
     int32 GetEntriesCount() const override;
-    void GetEntry(int32 index, Entry& output) const override;
+    void GetEntry(int32 index, Entry& value) const override;
+#if USE_EDITOR
+    void SetEntry(int32 index, const Entry& value) override;
+#endif
     void GetEntries(Array<Entry>& output) const override;
     void Dispose() override;
 

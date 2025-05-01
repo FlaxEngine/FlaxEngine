@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "JsonWriter.h"
 #include "Engine/Core/Log.h"
@@ -244,8 +244,10 @@ void JsonWriter::Matrix(const ::Matrix& value)
     EndObject();
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void JsonWriter::CommonValue(const ::CommonValue& value)
 {
+    // [Deprecated on 31.07.2020, expires on 31.07.2022]
     StartObject();
 
     JKEY("Type");
@@ -318,6 +320,7 @@ void JsonWriter::CommonValue(const ::CommonValue& value)
 
     EndObject();
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void JsonWriter::Transform(const ::Transform& value)
 {

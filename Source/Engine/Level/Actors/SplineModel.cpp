@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SplineModel.h"
 #include "Spline.h"
@@ -6,6 +6,7 @@
 #include "Engine/Core/Math/Matrix3x4.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/GPUBufferDescription.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUBuffer.h"
@@ -514,10 +515,16 @@ void SplineModel::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
 
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)
+    {
+        MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSDF;
+    }
     // [Deprecated on 27.04.2022, expires on 27.04.2024]
     if (modifier->EngineBuild <= 6331)
+    {
+        MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
+    }
 }
 
 void SplineModel::OnActiveInTreeChanged()

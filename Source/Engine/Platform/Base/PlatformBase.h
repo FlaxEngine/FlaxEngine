@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,6 +7,7 @@
 #include <string.h>
 
 struct Guid;
+struct Version;
 struct CPUInfo;
 struct MemoryStats;
 struct ProcessMemoryStats;
@@ -124,6 +125,29 @@ enum class ThreadPriority
 };
 
 extern FLAXENGINE_API const Char* ToString(ThreadPriority value);
+
+/// <summary>
+/// Possible fatal error types that cause engine exit.
+/// </summary>
+API_ENUM() enum class FatalErrorType
+{
+    // No fatal error set.
+    None,
+    // Not defined or custom error.
+    Unknown,
+    // Runtime exception caught by the handler (eg. stack overflow, invalid memory address access).
+    Exception,
+    // Data assertion failed (eg. invalid value or code usage).
+    Assertion,
+    // Program run out of memory to allocate.
+    OutOfMemory,
+    // The graphics device crashed, has been removed or restarted.
+    GPUCrash,
+    // The graphics device stopped responding (eg. incorrect rendering code or bug in driver).
+    GPUHang,
+    // The graphics device run out of video memory to allocate.
+    GPUOutOfMemory,
+};
 
 API_INJECT_CODE(cpp, "#include \"Engine/Platform/Platform.h\"");
 
@@ -350,6 +374,16 @@ public:
     API_PROPERTY() static bool Is64BitPlatform() = delete;
 
     /// <summary>
+    /// Gets the name of the operating system.
+    /// </summary>
+    API_PROPERTY() static String GetSystemName() = delete;
+
+    /// <summary>
+    /// Gets the version of the operating system version.
+    /// </summary>
+    API_PROPERTY() static Version GetSystemVersion() = delete;
+
+    /// <summary>
     /// Gets the CPU information.
     /// </summary>
     /// <returns>The CPU info.</returns>
@@ -357,9 +391,10 @@ public:
 
     /// <summary>
     /// Gets the CPU cache line size.
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <returns>The cache line size.</returns>
-    API_PROPERTY() static int32 GetCacheLineSize() = delete;
+    API_PROPERTY() DEPRECATED("Use CacheLineSize field from CPUInfo.") static int32 GetCacheLineSize();
 
     /// <summary>
     /// Gets the current memory stats.
@@ -457,32 +492,15 @@ public:
     /// </summary>
     /// <param name="msg">The message content.</param>
     /// <param name="context">The platform-dependent context for the stack trace collecting (eg. platform exception info).</param>
-    static void Fatal(const Char* msg, void* context = nullptr);
+    /// <param name="error">The fatal error type.</param>
+    API_FUNCTION() static void Fatal(const StringView& msg, void* context, FatalErrorType error = FatalErrorType::Unknown);
 
-    /// <summary>
-    /// Shows the error message to the user.
-    /// </summary>
-    /// <param name="msg">The message content.</param>
-    static void Error(const Char* msg);
-
-    /// <summary>
-    /// Shows the warning message to the user.
-    /// </summary>
-    /// <param name="msg">The message content.</param>
-    static void Warning(const Char* msg);
-
-    /// <summary>
-    /// Shows the information message to the user.
-    /// </summary>
-    /// <param name="msg">The message content.</param>
-    static void Info(const Char* msg);
-
-public:
     /// <summary>
     /// Shows the fatal error message to the user.
     /// </summary>
     /// <param name="msg">The message content.</param>
-    API_FUNCTION() static void Fatal(const StringView& msg);
+    /// <param name="error">The fatal error type.</param>
+    API_FUNCTION() static void Fatal(const StringView& msg, FatalErrorType error = FatalErrorType::Unknown);
 
     /// <summary>
     /// Shows the error message to the user.
@@ -527,7 +545,7 @@ public:
     /// </summary>
     /// <param name="line">The source line.</param>
     /// <param name="file">The source file.</param>
-    NO_RETURN static void OutOfMemory(int32 line, const char* file);
+    NO_RETURN static void OutOfMemory(int32 line = -1, const char* file = nullptr);
 
     /// <summary>
     /// Performs a fatal crash due to code not being implemented.

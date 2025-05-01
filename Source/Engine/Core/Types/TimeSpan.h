@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -53,31 +53,37 @@ public:
     {
     }
 
-    // Init
-    // @param Days Amount of days 
-    // @param Hours Amount of hours
-    // @param Minutes Amount of minutes
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TimeSpan"/> struct.
+    /// </summary>
+    /// <param name="days">Amount of days.</param>
+    /// <param name="hours">Amount of hours.</param>
+    /// <param name="minutes">Amount of minutes.</param>
     TimeSpan(int32 days, int32 hours, int32 minutes)
     {
         Set(days, hours, minutes, 0, 0);
     }
 
-    // Init
-    // @param Days Amount of days 
-    // @param Hours Amount of hours
-    // @param Minutes Amount of minutes
-    // @param Seconds Amount of seconds
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TimeSpan"/> struct.
+    /// </summary>
+    /// <param name="days">Amount of days.</param>
+    /// <param name="hours">Amount of hours.</param>
+    /// <param name="minutes">Amount of minutes.</param>
+    /// <param name="seconds">Amount of seconds.</param>
     TimeSpan(int32 days, int32 hours, int32 minutes, int32 seconds)
     {
         Set(days, hours, minutes, seconds, 0);
     }
 
-    // Init
-    // @param Days Amount of days 
-    // @param Hours Amount of hours
-    // @param Minutes Amount of minutes
-    // @param Seconds Amount of seconds
-    // @param Milliseconds Amount of milliseconds
+    /// <summary>
+    /// Initializes a new instance of the <see cref="TimeSpan"/> struct.
+    /// </summary>
+    /// <param name="days">Amount of days.</param>
+    /// <param name="hours">Amount of hours.</param>
+    /// <param name="minutes">Amount of minutes.</param>
+    /// <param name="seconds">Amount of seconds.</param>
+    /// <param name="milliseconds">Amount of milliseconds</param>
     TimeSpan(int32 days, int32 hours, int32 minutes, int32 seconds, int32 milliseconds)
     {
         Set(days, hours, minutes, seconds, milliseconds);
@@ -87,8 +93,7 @@ public:
     // Get string
     String ToString() const;
 
-    // Get string
-    // @param option Custom formatting. Possible values:
+    // Get string with custom formatting. Possible values:
     // a: 11:54:22.097
     // default: 11:54:22.0972244
     String ToString(const char option) const;

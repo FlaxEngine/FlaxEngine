@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -38,5 +38,5 @@ API_CLASS(Static) class FLAXENGINE_API Screenshot
     /// Remember that downloading data from the GPU may take a while so screenshot may be taken one or more frames later due to latency.
     /// </summary>
     /// <param name="path">The custom file location. Use null or empty to use default one.</param>
-    API_FUNCTION() static void Capture(const StringView& path = StringView::Empty);
+    API_FUNCTION(Attributes="DebugCommand") static void Capture(const StringView& path = StringView::Empty);
 };

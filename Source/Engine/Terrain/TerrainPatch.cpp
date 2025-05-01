@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "TerrainPatch.h"
 #include "Terrain.h"
@@ -74,13 +74,13 @@ void TerrainPatch::Init(Terrain* terrain, int16 x, int16 z)
     _physicsHeightField = nullptr;
     _x = x;
     _z = z;
-    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::Terrain::ChunksCountEdge;
+    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::ChunksCountEdge;
     _offset = Float3(_x * size, 0.0f, _z * size);
     _yOffset = 0.0f;
     _yHeight = 1.0f;
     for (int32 i = 0; i < Terrain::ChunksCount; i++)
     {
-        Chunks[i].Init(this, i % Terrain::Terrain::ChunksCountEdge, i / Terrain::Terrain::ChunksCountEdge);
+        Chunks[i].Init(this, i % Terrain::ChunksCountEdge, i / Terrain::ChunksCountEdge);
     }
     Heightmap = nullptr;
     for (int32 i = 0; i < TERRAIN_MAX_SPLATMAPS_COUNT; i++)
@@ -99,7 +99,7 @@ void TerrainPatch::Init(Terrain* terrain, int16 x, int16 z)
     }
 #endif
 #if TERRAIN_USE_PHYSICS_DEBUG
-    SAFE_DELETE(_debugLines);
+    SAFE_DELETE_GPU_RESOURCE(_debugLines);
     _debugLinesDirty = true;
 #endif
 #if USE_EDITOR
@@ -116,6 +116,9 @@ TerrainPatch::~TerrainPatch()
     {
         SAFE_DELETE(_dataSplatmap[i]);
     }
+#endif
+#if TERRAIN_USE_PHYSICS_DEBUG
+    SAFE_DELETE_GPU_RESOURCE(_debugLines);
 #endif
 }
 
@@ -2242,7 +2245,7 @@ void TerrainPatch::CacheDebugLines()
     typedef DebugDraw::Vertex Vertex;
     if (_debugLines->GetElementsCount() != count)
     {
-        if (_debugLines->Init(GPUBufferDescription::Vertex(sizeof(Vertex), count)))
+        if (_debugLines->Init(GPUBufferDescription::Vertex(Vertex::GetLayout(), sizeof(Vertex), count)))
             return;
     }
     Array<Vertex> debugLines;
@@ -2324,9 +2327,9 @@ void TerrainPatch::DrawPhysicsDebug(RenderView& view)
         {
             if (!_debugLines || _debugLinesDirty)
                 CacheDebugLines();
-            const Transform terrainTransform = _terrain->_transform;
-            const Transform localTransform(Vector3(0, _yOffset, 0), Quaternion::Identity, Vector3(_collisionScaleXZ, _yHeight, _collisionScaleXZ));
-            const Matrix world = localTransform.GetWorld() * terrainTransform.GetWorld();
+            const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::ChunksCountEdge;
+            const Transform localTransform(Vector3(_x * size, _yOffset, _z * size), Quaternion::Identity, Vector3(_collisionScaleXZ, _yHeight, _collisionScaleXZ));
+            const Matrix world = localTransform.GetWorld() * _terrain->_transform.GetWorld();
             DebugDraw::DrawLines(_debugLines, world);
         }
     }
@@ -2352,10 +2355,9 @@ const Array<Vector3>& TerrainPatch::GetCollisionTriangles()
 
 #define GET_VERTEX(x, y) Vector3 v##x##y((float)(row + (x)), PhysicsBackend::GetHeightFieldHeight(_physicsHeightField, row + (x), col + (y)) / TERRAIN_PATCH_COLLISION_QUANTIZATION, (float)(col + (y))); Vector3::Transform(v##x##y, world, v##x##y)
 
-    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::Terrain::ChunksCountEdge;
-    const Transform terrainTransform = _terrain->_transform;
+    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::ChunksCountEdge;
     Transform localTransform(Vector3(_x * size, _yOffset, _z * size), Quaternion::Identity, Vector3(_collisionScaleXZ, _yHeight, _collisionScaleXZ));
-    const Matrix world = localTransform.GetWorld() * terrainTransform.GetWorld();
+    const Matrix world = localTransform.GetWorld() * _terrain->_transform.GetWorld();
 
     for (int32 row = 0; row < rows - 1; row++)
     {
@@ -2401,7 +2403,7 @@ void TerrainPatch::GetCollisionTriangles(const BoundingSphere& bounds, Array<Vec
 
     // Prepare
     const auto& triangles = GetCollisionTriangles();
-    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::Terrain::ChunksCountEdge;
+    const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::ChunksCountEdge;
     Transform transform;
     transform.Translation = _offset + Vector3(0, _yOffset, 0);
     transform.Orientation = Quaternion::Identity;
@@ -2507,10 +2509,9 @@ void TerrainPatch::ExtractCollisionGeometry(Array<Float3>& vertexBuffer, Array<i
         ScopeLock sceneLock(Level::ScenesLock);
         if (_collisionVertices.IsEmpty())
         {
-            const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::Terrain::ChunksCountEdge;
-            const Transform terrainTransform = _terrain->_transform;
+            const float size = _terrain->_chunkSize * TERRAIN_UNITS_PER_VERTEX * Terrain::ChunksCountEdge;
             const Transform localTransform(Vector3(_x * size, _yOffset, _z * size), Quaternion::Identity, Float3(_collisionScaleXZ, _yHeight, _collisionScaleXZ));
-            const Matrix world = localTransform.GetWorld() * terrainTransform.GetWorld();
+            const Matrix world = localTransform.GetWorld() * _terrain->_transform.GetWorld();
 
             const int32 vertexCount = rows * cols;
             _collisionVertices.Resize(vertexCount);
@@ -2569,7 +2570,7 @@ void TerrainPatch::Serialize(SerializeStream& stream, const void* otherObj)
 
     stream.JKEY("Chunks");
     stream.StartArray();
-    for (int32 i = 0; i < Terrain::Terrain::ChunksCount; i++)
+    for (int32 i = 0; i < Terrain::ChunksCount; i++)
     {
         stream.StartObject();
         Chunks[i].Serialize(stream, other ? &other->Chunks[i] : nullptr);

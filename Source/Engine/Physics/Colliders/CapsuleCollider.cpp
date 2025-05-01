@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "CapsuleCollider.h"
 
@@ -55,9 +55,9 @@ void CapsuleCollider::DrawPhysicsDebug(RenderView& view)
     const float radius = Math::Max(Math::Abs(_radius) * scaling, minSize);
     const float height = Math::Max(Math::Abs(_height) * scaling, minSize);
     if (view.Mode == ViewMode::PhysicsColliders && !GetIsTrigger())
-        DEBUG_DRAW_TUBE(T.LocalToWorld(_center), rotation, radius, height, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
+        DEBUG_DRAW_CAPSULE(T.LocalToWorld(_center), rotation, radius, height, _staticActor ? Color::CornflowerBlue : Color::Orchid, 0, true);
     else
-        DEBUG_DRAW_WIRE_TUBE(T.LocalToWorld(_center), rotation, radius, height, Color::GreenYellow * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_CAPSULE(T.LocalToWorld(_center), rotation, radius, height, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void CapsuleCollider::OnDebugDraw()
@@ -73,13 +73,13 @@ void CapsuleCollider::OnDebugDraw()
         const Vector3 position = _transform.LocalToWorld(_center);
         if (GetIsTrigger())
         {
-            DEBUG_DRAW_WIRE_TUBE(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
-            DEBUG_DRAW_TUBE(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
+            DEBUG_DRAW_WIRE_CAPSULE(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+            DEBUG_DRAW_CAPSULE(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
         }
         else
         {
-            DEBUG_DRAW_WIRE_TUBE(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
-            DEBUG_DRAW_TUBE(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalCollider, 0, true);
+            DEBUG_DRAW_WIRE_CAPSULE(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+            DEBUG_DRAW_CAPSULE(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalCollider, 0, true);
         }
     }
 
@@ -101,18 +101,18 @@ void CapsuleCollider::OnDebugDrawSelected()
     {
         if (GetIsTrigger())
         {
-            DEBUG_DRAW_WIRE_TUBE(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
-            DEBUG_DRAW_TUBE(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
+            DEBUG_DRAW_WIRE_CAPSULE(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerColliderOutline, 0, false);
+            DEBUG_DRAW_CAPSULE(position, rotation, radius, height, FlaxEngine::ColliderColors::TriggerCollider, 0, true);
         }
         else
         {
-            DEBUG_DRAW_WIRE_TUBE(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
-            DEBUG_DRAW_TUBE(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalCollider, 0, true);
+            DEBUG_DRAW_WIRE_CAPSULE(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalColliderOutline, 0, false);
+            DEBUG_DRAW_CAPSULE(position, rotation, radius, height, FlaxEngine::ColliderColors::NormalCollider, 0, true);
         }
     }
     if (_contactOffset > 0)
     {
-        DEBUG_DRAW_WIRE_TUBE(position, rotation, radius + _contactOffset, height, Color::Blue.AlphaMultiplied(0.2f), 0, false);
+        DEBUG_DRAW_WIRE_CAPSULE(position, rotation, radius + _contactOffset, height, Color::Blue.AlphaMultiplied(0.2f), 0, false);
     }
 
     // Base

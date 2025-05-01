@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "MaterialFunction.h"
 #include "Engine/Threading/Threading.h"
@@ -6,6 +6,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Serialization/MemoryWriteStream.h"
 #endif
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 
@@ -24,7 +25,7 @@ Asset::LoadResult MaterialFunction::load()
     if (!surfaceChunk || !surfaceChunk->IsLoaded())
         return LoadResult::MissingDataChunk;
     MemoryReadStream stream(surfaceChunk->Get(), surfaceChunk->Size());
-    if (Graph.Load(&stream, false))
+    if (Graph.Load(&stream, USE_EDITOR))
         return LoadResult::Failed;
 
     // Cache input and output nodes
@@ -89,7 +90,7 @@ BytesContainer MaterialFunction::LoadSurface()
     return result;
 }
 
-bool MaterialFunction::LoadSurface(MaterialGraph& graph)
+bool MaterialFunction::LoadSurface(MaterialGraph& graph, bool loadMeta)
 {
     if (WaitForLoaded())
         return true;
@@ -100,7 +101,7 @@ bool MaterialFunction::LoadSurface(MaterialGraph& graph)
         {
             const auto surfaceChunk = GetChunk(0);
             MemoryReadStream stream(surfaceChunk->Get(), surfaceChunk->Size());
-            return graph.Load(&stream, false);
+            return graph.Load(&stream, loadMeta);
         }
     }
     return true;
@@ -128,19 +129,10 @@ void MaterialFunction::GetSignature(Array<StringView, FixedAllocation<32>>& type
 
 #if USE_EDITOR
 
-bool MaterialFunction::SaveSurface(BytesContainer& data)
+bool MaterialFunction::SaveSurface(const BytesContainer& data) const
 {
-    // Wait for asset to be loaded or don't if last load failed
-    if (LastLoadFailed())
-    {
-        LOG(Warning, "Saving asset that failed to load.");
-    }
-    else if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave())
         return true;
-    }
-
     ScopeLock lock(Locker);
 
     // Set Visject Surface data
@@ -158,6 +150,19 @@ bool MaterialFunction::SaveSurface(BytesContainer& data)
     }
 
     return false;
+}
+
+bool MaterialFunction::Save(const StringView& path)
+{
+    if (OnCheckSave(path))
+        return true;
+    ScopeLock lock(Locker);
+    MemoryWriteStream writeStream;
+    if (Graph.Save(&writeStream, true))
+        return true;
+    BytesContainer data;
+    data.Link(ToSpan(writeStream));
+    return SaveSurface(data);
 }
 
 #endif

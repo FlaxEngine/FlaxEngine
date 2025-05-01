@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -56,6 +56,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             var bottomLeftCell = new VerticalPanel
             {
+                Pivot = Float2.Zero,
                 Spacing = 0,
                 TopMargin = 0,
                 BottomMargin = 0,

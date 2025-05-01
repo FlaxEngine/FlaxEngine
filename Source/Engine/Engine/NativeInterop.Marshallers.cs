@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_NETCORE
 using System;
@@ -222,6 +222,17 @@ namespace FlaxEngine.Interop
     {
         public static CultureInfo ConvertToManaged(IntPtr unmanaged) => Unsafe.As<CultureInfo>(ManagedHandleMarshaller.ConvertToManaged(unmanaged));
         public static IntPtr ConvertToUnmanaged(CultureInfo managed) => ManagedHandleMarshaller.ConvertToUnmanaged(managed);
+        public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.Free(unmanaged);
+    }
+
+#if FLAX_EDITOR
+    [HideInEditor]
+#endif
+    [CustomMarshaller(typeof(Version), MarshalMode.Default, typeof(VersionMarshaller))]
+    public static class VersionMarshaller
+    {
+        public static Version ConvertToManaged(IntPtr unmanaged) => Unsafe.As<Version>(ManagedHandleMarshaller.ConvertToManaged(unmanaged));
+        public static IntPtr ConvertToUnmanaged(Version managed) => ManagedHandleMarshaller.ConvertToUnmanaged(managed);
         public static void Free(IntPtr unmanaged) => ManagedHandleMarshaller.Free(unmanaged);
     }
 
@@ -552,7 +563,7 @@ namespace FlaxEngine.Interop
         {
             T[] sourceArray;
             ManagedArray managedArray;
-            ManagedHandle handle;
+            ManagedHandle handle; // Valid only for pooled array
 
             public void FromManaged(T[] managed)
             {
@@ -577,7 +588,13 @@ namespace FlaxEngine.Interop
             {
                 ManagedArray arr = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(new IntPtr(unmanaged)).Target);
                 if (sourceArray == null || sourceArray.Length != arr.Length)
+                {
+                    // Array was resized when returned from native code (as ref parameter)
+                    managedArray.FreePooled();
                     sourceArray = new T[arr.Length];
+                    managedArray = arr;
+                    handle = new ManagedHandle(); // Invalidate as it's not pooled array anymore
+                }
             }
 
             public ReadOnlySpan<TUnmanagedElement> GetUnmanagedValuesSource(int numElements)
@@ -591,7 +608,11 @@ namespace FlaxEngine.Interop
 
             public T[] ToManaged() => sourceArray;
 
-            public void Free() => managedArray.FreePooled();
+            public void Free()
+            {
+                if (handle.IsAllocated)
+                    managedArray.FreePooled();
+            }
         }
 
         public static TUnmanagedElement* AllocateContainerForUnmanagedElements(T[] managed, out int numElements)

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MODEL_TOOL
 
@@ -81,7 +81,7 @@ class GPUModelSDFTask : public GPUTask
     ConditionVariable* _signal;
     AssetReference<Shader> _shader;
     Model* _inputModel;
-    ModelData* _modelData;
+    const ModelData* _modelData;
     int32 _lodIndex;
     Int3 _resolution;
     ModelBase::SDFData* _sdf;
@@ -104,7 +104,7 @@ class GPUModelSDFTask : public GPUTask
         });
 
 public:
-    GPUModelSDFTask(ConditionVariable& signal, Model* inputModel, ModelData* modelData, int32 lodIndex, const Int3& resolution, ModelBase::SDFData* sdf, GPUTexture* sdfResult, const Float3& xyzToLocalMul, const Float3& xyzToLocalAdd)
+    GPUModelSDFTask(ConditionVariable& signal, Model* inputModel, const ModelData* modelData, int32 lodIndex, const Int3& resolution, ModelBase::SDFData* sdf, GPUTexture* sdfResult, const Float3& xyzToLocalMul, const Float3& xyzToLocalAdd)
         : GPUTask(Type::Custom)
         , _signal(&signal)
         , _shader(Content::LoadAsyncInternal<Shader>(TEXT("Shaders/SDF")))
@@ -350,7 +350,7 @@ public:
     }
 };
 
-bool ModelTool::GenerateModelSDF(Model* inputModel, ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold, bool useGPU)
+bool ModelTool::GenerateModelSDF(Model* inputModel, const ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold, bool useGPU)
 {
     PROFILE_CPU();
     auto startTime = Platform::GetTimeSeconds();
@@ -1186,7 +1186,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
 
         // Special case if imported model has no bones but has valid skeleton and meshes.
         // We assume that every mesh uses a single bone. Copy nodes to bones.
-        if (data.Skeleton.Bones.IsEmpty() && Math::IsInRange(data.Skeleton.Nodes.Count(), 1, MAX_BONES_PER_MODEL))
+        if (data.Skeleton.Bones.IsEmpty() && Math::IsInRange(data.Skeleton.Nodes.Count(), 1, MODEL_MAX_BONES_PER_MODEL))
         {
             data.Skeleton.Bones.Resize(data.Skeleton.Nodes.Count());
             for (int32 i = 0; i < data.Skeleton.Nodes.Count(); i++)
@@ -1211,9 +1211,9 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         }
 
         // Check bones limit currently supported by the engine
-        if (data.Skeleton.Bones.Count() > MAX_BONES_PER_MODEL)
+        if (data.Skeleton.Bones.Count() > MODEL_MAX_BONES_PER_MODEL)
         {
-            errorMsg = String::Format(TEXT("Imported model skeleton has too many bones. Imported: {0}, maximum supported: {1}. Please optimize your asset."), data.Skeleton.Bones.Count(), MAX_BONES_PER_MODEL);
+            errorMsg = String::Format(TEXT("Imported model skeleton has too many bones. Imported: {0}, maximum supported: {1}. Please optimize your asset."), data.Skeleton.Bones.Count(), MODEL_MAX_BONES_PER_MODEL);
             return true;
         }
 
@@ -1319,7 +1319,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 // Check if use a single bone for skinning
                 auto nodeIndex = data.Skeleton.FindNode(mesh->Name);
                 auto boneIndex = data.Skeleton.FindBone(nodeIndex);
-                if (boneIndex == -1 && nodeIndex != -1 && data.Skeleton.Bones.Count() < MAX_BONES_PER_MODEL)
+                if (boneIndex == -1 && nodeIndex != -1 && data.Skeleton.Bones.Count() < MODEL_MAX_BONES_PER_MODEL)
                 {
                     // Add missing bone to be used by skinned model from animated nodes pose
                     boneIndex = data.Skeleton.Bones.Count();
@@ -1549,23 +1549,25 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
 
     // Prepare import transformation
     Transform importTransform(options.Translation, options.Rotation, Float3(options.Scale));
-    if (options.UseLocalOrigin && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
-    {
-        importTransform.Translation -= importTransform.Orientation * data.LODs[0].Meshes[0]->OriginTranslation * importTransform.Scale;
-    }
-    if (options.CenterGeometry && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
-    {
-        // Calculate the bounding box (use LOD0 as a reference)
-        BoundingBox box = data.LODs[0].GetBox();
-        auto center = data.LODs[0].Meshes[0]->OriginOrientation * importTransform.Orientation * box.GetCenter() * importTransform.Scale * data.LODs[0].Meshes[0]->Scaling;
-        importTransform.Translation -= center;
-    }
 
     // Apply the import transformation
-    if (!importTransform.IsIdentity() && data.Nodes.HasItems())
+    if ((!importTransform.IsIdentity() || options.UseLocalOrigin || options.CenterGeometry) && data.Nodes.HasItems())
     {
         if (options.Type == ModelType::SkinnedModel)
         {
+            // Setup other transform options
+            if (options.UseLocalOrigin && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
+            {
+                importTransform.Translation -= importTransform.Orientation * data.LODs[0].Meshes[0]->OriginTranslation * importTransform.Scale;
+            }
+            if (options.CenterGeometry && data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
+            {
+                // Calculate the bounding box (use LOD0 as a reference)
+                BoundingBox box = data.LODs[0].GetBox();
+                auto center = data.LODs[0].Meshes[0]->OriginOrientation * importTransform.Orientation * box.GetCenter() * importTransform.Scale * data.LODs[0].Meshes[0]->Scaling;
+                importTransform.Translation -= center;
+            }
+            
             // Transform the root node using the import transformation
             auto& root = data.Skeleton.RootNode();
             Transform meshTransform = root.LocalTransform.WorldToLocal(importTransform).LocalToWorld(root.LocalTransform);
@@ -1596,9 +1598,31 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         }
         else
         {
-            // Transform the root node using the import transformation
-            auto& root = data.Nodes[0];
-            root.LocalTransform = importTransform.LocalToWorld(root.LocalTransform);
+            // Transform the nodes using the import transformation
+            if (data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
+            {
+                for (int i = 0; i < data.LODs[0].Meshes.Count(); ++i)
+                {
+                    auto* meshData = data.LODs[0].Meshes[i];
+                    Transform transform = importTransform;
+                    if (options.UseLocalOrigin)
+                    {
+                        transform.Translation -= transform.Orientation * meshData->OriginTranslation * transform.Scale;
+                    }
+                    if (options.CenterGeometry)
+                    {
+                        // Calculate the bounding box (use LOD0 as a reference)
+                        BoundingBox box = data.LODs[0].GetBox();
+                        auto center = meshData->OriginOrientation * transform.Orientation * box.GetCenter() * transform.Scale * meshData->Scaling;
+                        transform.Translation -= center;
+                    }
+
+                    int32 nodeIndex = meshData->NodeIndex;
+                    
+                    auto& node = data.Nodes[nodeIndex];
+                    node.LocalTransform = transform.LocalToWorld(node.LocalTransform);
+                }
+            }
         }
     }
 
@@ -2029,11 +2053,14 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         meshopt_remapVertexBuffer(dstMesh->name.Get(), srcMesh->name.Get(), srcMeshVertexCount, sizeof(type), remap.Get()); \
     }
                 REMAP_VERTEX_BUFFER(Positions, Float3);
-                REMAP_VERTEX_BUFFER(UVs, Float2);
+                dstMesh->UVs.Resize(srcMesh->UVs.Count());
+                for (int32 channelIdx = 0; channelIdx < srcMesh->UVs.Count(); channelIdx++)
+                {
+                    REMAP_VERTEX_BUFFER(UVs[channelIdx], Float2);
+                }
                 REMAP_VERTEX_BUFFER(Normals, Float3);
                 REMAP_VERTEX_BUFFER(Tangents, Float3);
                 REMAP_VERTEX_BUFFER(Tangents, Float3);
-                REMAP_VERTEX_BUFFER(LightmapUVs, Float2);
                 REMAP_VERTEX_BUFFER(Colors, Color);
                 REMAP_VERTEX_BUFFER(BlendIndices, Int4);
                 REMAP_VERTEX_BUFFER(BlendWeights, Float4);

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Renderer.h"
 #include "Engine/Graphics/GPUContext.h"
@@ -422,6 +422,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         case ViewMode::GlobalSurfaceAtlas:
         case ViewMode::GlobalSDF:
         case ViewMode::MaterialComplexity:
+        case ViewMode::VertexColors:
             drawShadows = false;
             break;
         }
@@ -555,6 +556,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     else if (renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas)
         GlobalSurfaceAtlasPass::Instance()->RenderDebug(renderContext, context, lightBuffer);
     if (renderContext.View.Mode == ViewMode::Emissive ||
+        renderContext.View.Mode == ViewMode::VertexColors ||
         renderContext.View.Mode == ViewMode::LightmapUVsDensity ||
         renderContext.View.Mode == ViewMode::GlobalSurfaceAtlas ||
         renderContext.View.Mode == ViewMode::GlobalSDF)

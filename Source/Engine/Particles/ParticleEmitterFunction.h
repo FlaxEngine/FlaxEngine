@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -31,23 +31,21 @@ public:
     Array<int32, FixedAllocation<16>> Outputs;
 
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
-
     /// <summary>
     /// The loaded GPU particle function graph.
     /// </summary>
     ParticleEmitterGraphGPU GraphGPU;
-
 #endif
 
     /// <summary>
     /// Tries to load surface graph from the asset.
     /// </summary>
     /// <param name="graph">The graph to load.</param>
+    /// <param name="loadMeta">True if load metadata.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool LoadSurface(ParticleEmitterGraphCPU& graph);
+    bool LoadSurface(ParticleEmitterGraphCPU& graph, bool loadMeta = false);
 
 #if USE_EDITOR
-
     /// <summary>
     /// Tries to load surface graph from the asset.
     /// </summary>
@@ -55,14 +53,12 @@ public:
     API_FUNCTION() BytesContainer LoadSurface();
 
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
-
     /// <summary>
     /// Tries to load surface graph from the asset.
     /// </summary>
     /// <param name="graph">The graph to load.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool LoadSurface(ParticleEmitterGraphGPU& graph);
-
+    bool LoadSurface(ParticleEmitterGraphGPU& graph) const;
 #endif
 
     // Gets the function signature for Visject Surface editor.
@@ -73,8 +69,13 @@ public:
     /// </summary>
     /// <param name="data">The surface graph data.</param>
     /// <returns>True if cannot save it, otherwise false.</returns>
-    API_FUNCTION() bool SaveSurface(BytesContainer& data);
+    API_FUNCTION() bool SaveSurface(const BytesContainer& data) const;
+#endif
 
+public:
+    // [BinaryAsset]
+#if USE_EDITOR
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
 protected:

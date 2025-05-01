@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 namespace FlaxEngine.GUI
 {
@@ -31,5 +31,18 @@ namespace FlaxEngine.GUI
         /// The custom tag.
         /// </summary>
         public object Tag;
+
+        internal float GetAscender()
+        {
+            float ascender = Ascender;
+            if (Mathf.IsZero(ascender))
+            {
+                // Use ascender from the font
+                var textBlockFont = Style.Font.GetFont();
+                if (textBlockFont)
+                    ascender = textBlockFont.Ascender;
+            }
+            return ascender;
+        }
     }
 }

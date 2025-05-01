@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "CSGBuilder.h"
 #include "CSGMesh.h"
@@ -273,7 +273,7 @@ bool CSGBuilderImpl::buildInner(Scene* scene, BuildData& data)
 
         // Convert CSG meshes into raw triangles data
         RawData meshData;
-        Array<RawModelVertex> vertexBuffer;
+        Array<MeshVertex> vertexBuffer;
         combinedMesh->Triangulate(meshData, vertexBuffer);
         meshData.RemoveEmptySlots();
         if (meshData.Slots.HasItems())
@@ -433,7 +433,7 @@ bool CSGBuilderImpl::generateRawDataAsset(Scene* scene, RawData& meshData, Guid&
 
     // Serialize
     BytesContainer bytesContainer;
-    bytesContainer.Link(stream.GetHandle(), stream.GetPosition());
+    bytesContainer.Link(ToSpan(stream));
     return AssetsImportingManager::Create(AssetsImportingManager::CreateRawDataTag, assetPath, assetId, (void*)&bytesContainer);
 }
 

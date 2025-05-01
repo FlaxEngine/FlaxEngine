@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -234,7 +234,9 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             {
                 if (methodGenericMap.TryGetValue(type.Name, out var methodIndex))
                     return "``" + methodIndex;
-                return "`" + typeGenericMap[type.Name];
+                if (typeGenericMap.TryGetValue(type.Name, out var typeKey))
+                    return "`" + typeKey;
+                return "`";
             }
             if (type.HasElementType)
             {

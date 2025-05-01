@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Particles.h"
 #include "ParticleEffect.h"
@@ -14,6 +14,7 @@
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTools.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
@@ -49,17 +50,22 @@ public:
     {
         if (VB)
             return false;
-        VB = GPUDevice::Instance->CreateBuffer(TEXT("SpriteParticleRenderer,VB"));
+        VB = GPUDevice::Instance->CreateBuffer(TEXT("SpriteParticleRenderer.VB"));
         IB = GPUDevice::Instance->CreateBuffer(TEXT("SpriteParticleRenderer.IB"));
-        static SpriteParticleVertex vertexBuffer[] =
+        SpriteParticleVertex vertexBuffer[] =
         {
             { -0.5f, -0.5f, 0.0f, 0.0f },
             { +0.5f, -0.5f, 1.0f, 0.0f },
             { +0.5f, +0.5f, 1.0f, 1.0f },
             { -0.5f, +0.5f, 0.0f, 1.0f },
         };
-        static uint16 indexBuffer[] = { 0, 1, 2, 0, 2, 3, };
-        return VB->Init(GPUBufferDescription::Vertex(sizeof(SpriteParticleVertex), VertexCount, vertexBuffer)) || IB->Init(GPUBufferDescription::Index(sizeof(uint16), IndexCount, indexBuffer));
+        uint16 indexBuffer[] = { 0, 1, 2, 0, 2, 3, };
+        auto layout = GPUVertexLayout::Get({
+            { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
+            { VertexElement::Types::TexCoord, 0, 0, 0, PixelFormat::R32G32_Float },
+        });
+        return VB->Init(GPUBufferDescription::Vertex(layout, sizeof(SpriteParticleVertex), VertexCount, vertexBuffer)) ||
+               IB->Init(GPUBufferDescription::Index(sizeof(uint16), IndexCount, indexBuffer));
     }
 
     void Dispose()
@@ -88,6 +94,16 @@ PACK_STRUCT(struct RibbonParticleVertex {
     uint32 PrevParticleIndex;
     float Distance;
     // TODO: pack into half/uint16 data
+
+    static GPUVertexLayout* GetLayout()
+    {
+        return GPUVertexLayout::Get({
+            { VertexElement::Types::TexCoord0, 0, 0, 0, PixelFormat::R32_UInt },
+            { VertexElement::Types::TexCoord1, 0, 0, 0, PixelFormat::R32_UInt },
+            { VertexElement::Types::TexCoord2, 0, 0, 0, PixelFormat::R32_UInt },
+            { VertexElement::Types::TexCoord3, 0, 0, 0, PixelFormat::R32_Float },
+        });
+    }
     });
 
 struct EmitterCache
@@ -111,6 +127,7 @@ namespace ParticleManagerImpl
 using namespace ParticleManagerImpl;
 
 TaskGraphSystem* Particles::System = nullptr;
+ConcurrentSystemLocker Particles::SystemLocker;
 bool Particles::EnableParticleBufferPooling = true;
 float Particles::ParticleBufferRecycleTimeout = 10.0f;
 
@@ -139,6 +156,8 @@ class ParticlesSystem : public TaskGraphSystem
 {
 public:
     float DeltaTime, UnscaledDeltaTime, Time, UnscaledTime;
+    bool Active;
+
     void Job(int32 index);
     void Execute(TaskGraph* graph) override;
     void PostExecute(TaskGraph* graph) override;
@@ -300,7 +319,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         else
             buffer->GPU.RibbonIndexBufferDynamic->Clear();
         if (!buffer->GPU.RibbonVertexBufferDynamic)
-            buffer->GPU.RibbonVertexBufferDynamic = New<DynamicVertexBuffer>(0, (uint32)sizeof(RibbonParticleVertex), TEXT("RibbonVertexBufferDynamic"));
+            buffer->GPU.RibbonVertexBufferDynamic = New<DynamicVertexBuffer>(0, (uint32)sizeof(RibbonParticleVertex), TEXT("RibbonVertexBufferDynamic"), RibbonParticleVertex::GetLayout());
         else
             buffer->GPU.RibbonVertexBufferDynamic->Clear();
         auto& indexBuffer = buffer->GPU.RibbonIndexBufferDynamic->Data;
@@ -604,7 +623,7 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
     auto emitter = buffer->Emitter;
 
     // Check if need to perform any particles sorting
-    if (emitter->Graph.SortModules.HasItems() && renderContext.View.Pass != DrawPass::Depth)
+    if (emitter->Graph.SortModules.HasItems() && renderContext.View.Pass != DrawPass::Depth && buffer->GPU.ParticlesCountMax != 0)
     {
         PROFILE_GPU_CPU_NAMED("Sort Particles");
 
@@ -1053,7 +1072,6 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
     ScopeLock lock(GpuUpdateListLocker);
     if (GpuUpdateList.IsEmpty())
         return;
-
     PROFILE_GPU("GPU Particles");
 
     for (ParticleEffect* effect : GpuUpdateList)
@@ -1093,6 +1111,7 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
 
 ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
 {
+    PROFILE_CPU();
     ParticleBuffer* result = nullptr;
     ASSERT(emitter && emitter->IsLoaded());
 
@@ -1102,7 +1121,7 @@ ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
         const auto entries = Pool.TryGet(emitter);
         if (entries)
         {
-            while (entries->HasItems())
+            while (entries->HasItems() && !result)
             {
                 // Reuse buffer
                 result = entries->Last().Buffer;
@@ -1113,11 +1132,6 @@ ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
                 {
                     Delete(result);
                     result = nullptr;
-                    if (entries->IsEmpty())
-                    {
-                        Pool.Remove(emitter);
-                        break;
-                    }
                 }
             }
         }
@@ -1146,6 +1160,7 @@ ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
 
 void Particles::RecycleParticleBuffer(ParticleBuffer* buffer)
 {
+    PROFILE_CPU();
     if (buffer->Emitter->EnablePooling && EnableParticleBufferPooling)
     {
         // Return to pool
@@ -1166,6 +1181,7 @@ void Particles::RecycleParticleBuffer(ParticleBuffer* buffer)
 
 void Particles::OnEmitterUnload(ParticleEmitter* emitter)
 {
+    PROFILE_CPU();
     PoolLocker.Lock();
     const auto entries = Pool.TryGet(emitter);
     if (entries)
@@ -1393,6 +1409,10 @@ void ParticlesSystem::Execute(TaskGraph* graph)
 {
     if (UpdateList.Count() == 0)
         return;
+    Active = true;
+
+    // Ensure no particle assets can be reloaded/modified during async update
+    Particles::SystemLocker.Begin(false);
 
     // Setup data for async update
     const auto& tickData = Time::Update;
@@ -1409,8 +1429,13 @@ void ParticlesSystem::Execute(TaskGraph* graph)
 
 void ParticlesSystem::PostExecute(TaskGraph* graph)
 {
+    if (!Active)
+        return;
     PROFILE_CPU_NAMED("Particles.PostExecute");
 
+    // Cleanup
+    Particles::SystemLocker.End(false);
+    Active = false;
     UpdateList.Clear();
 
 #if COMPILE_WITH_GPU_PARTICLES

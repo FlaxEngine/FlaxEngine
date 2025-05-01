@@ -1,8 +1,28 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MATERIAL_GRAPH
 
 #include "MaterialGenerator.h"
+#include "Engine/Visject/ShaderStringBuilder.h"
+
+namespace
+{
+    enum CommonSamplerType
+    {
+        LinearClamp = 0,
+        PointClamp = 1,
+        LinearWrap = 2,
+        PointWrap = 3,
+        TextureGroup = 4,
+    };
+    const Char* SamplerNames[]
+    {
+        TEXT("SamplerLinearClamp"),
+        TEXT("SamplerPointClamp"),
+        TEXT("SamplerLinearWrap"),
+        TEXT("SamplerPointWrap"),
+    };
+};
 
 MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, Box* box, SerializedMaterialParam* texture)
 {
@@ -189,8 +209,20 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
     }
     // TexCoord
     case 2:
-        value = getUVs;
+    {
+        const auto layer = GetRootLayer();
+        if (layer && layer->Domain == MaterialDomain::Surface)
+        {
+            const uint32 channel = node->Values.HasItems() ? Math::Min((uint32)node->Values[0], 3u) : 0u;
+            value = Value(VariantType::Float2, String::Format(TEXT("input.TexCoords[{}]"), channel));
+        }
+        else
+        {
+            // TODO: migrate all material domain templates to TexCoords array (of size MATERIAL_TEXCOORDS=1)
+            value = getUVs;
+        }
         break;
+    }
     // Cube Texture
     case 3:
     {
@@ -479,22 +511,6 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
     // Procedural Texture Sample
     case 17:
     {
-        enum CommonSamplerType
-        {
-            LinearClamp = 0,
-            PointClamp = 1,
-            LinearWrap = 2,
-            PointWrap = 3,
-            TextureGroup = 4,
-        };
-        const Char* SamplerNames[]
-        {
-            TEXT("SamplerLinearClamp"),
-            TEXT("SamplerPointClamp"),
-            TEXT("SamplerLinearWrap"),
-            TEXT("SamplerPointWrap"),
-        };
-
         // Get input boxes
         auto textureBox = node->GetBox(0);
         auto uvsBox = node->GetBox(1);
@@ -633,9 +649,7 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         // Decode normal map vector
         if (isNormalMap)
         {
-            // TODO: maybe we could use helper function for UnpackNormalTexture() and unify unpacking?
-            _writer.Write(TEXT("\t{0}.xy = {0}.xy * 2.0 - 1.0;\n"), textureBox->Cache.Value);
-            _writer.Write(TEXT("\t{0}.z = sqrt(saturate(1.0 - dot({0}.xy, {0}.xy)));\n"), textureBox->Cache.Value);
+            _writer.Write(TEXT("\t{0}.xyz = UnpackNormalMap({0}.xy);\n"), textureBox->Cache.Value);
         }
 
         value = textureBox->Cache;
@@ -678,12 +692,10 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         value = box == gradientBox ? gradient : distance;
         break;
     }
-    // World Triplanar Texture
+    // Triplanar Texture
     case 16:
     {
         auto textureBox = node->GetBox(0);
-        auto scaleBox = node->GetBox(1);
-        auto blendBox = node->GetBox(2);
         if (!textureBox->HasConnection())
         {
             // No texture to sample
@@ -692,27 +704,62 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         }
         const bool canUseSample = CanUseSample(_treeType);
         const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
-        const auto scale = tryGetValue(scaleBox, node->Values[0]).AsFloat4();
-        const auto blend = tryGetValue(blendBox, node->Values[1]).AsFloat();
+        const auto scale = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat3();
+        const auto blend = tryGetValue(node->GetBox(2), node->Values[1]).AsFloat();
+        const auto offset = tryGetValue(node->TryGetBox(6), node->Values.Count() >= 3 ? node->Values[2] : Float2::Zero).AsFloat2();
+        const bool local = node->Values.Count() >= 5 ? node->Values[4].AsBool : false;
+
+        const Char* samplerName;
+        const int32 samplerIndex = node->Values.Count() >= 4 ? node->Values[3].AsInt : LinearWrap;
+        if (samplerIndex == TextureGroup)
+        {
+            auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[3].AsInt);
+            samplerName = *textureGroupSampler.ShaderName;
+        }
+        else if (samplerIndex >= 0 && samplerIndex < ARRAY_COUNT(SamplerNames))
+        {
+            samplerName = SamplerNames[samplerIndex];
+        }
+        else
+        {
+            OnError(node, box, TEXT("Invalid texture sampler."));
+            return;
+        }
+
         auto result = writeLocal(Value::InitForZero(ValueType::Float4), node);
-        const String triplanarTexture = String::Format(TEXT(
-            "	{{\n"
-            "   float3 worldPos = input.WorldPosition.xyz * ({1} * 0.001f);\n"
-            "   float3 normal = abs(input.TBN[2]);\n"
-            "   normal = pow(normal, {2});\n"
-            "   normal = normal / (normal.x + normal.y + normal.z);\n"
-            "   {3} += {0}.{4}(SamplerLinearWrap, worldPos.yz{5}) * normal.x;\n"
-            "   {3} += {0}.{4}(SamplerLinearWrap, worldPos.xz{5}) * normal.y;\n"
-            "   {3} += {0}.{4}(SamplerLinearWrap, worldPos.xy{5}) * normal.z;\n"
-            "	}}\n"
-        ),
-                                                       texture.Value, //  {0}
-                                                       scale.Value, //  {1}
-                                                       blend.Value, //  {2}
-                                                       result.Value, //  {3}
-                                                       canUseSample ? TEXT("Sample") : TEXT("SampleLevel"), //  {4}
-                                                       canUseSample ? TEXT("") : TEXT(", 0") //  {5}
-        );
+
+        const String triplanarTexture = ShaderStringBuilder()
+            .Code(TEXT(R"(
+        {
+            // Get world position and normal
+            float3 tiling = %SCALE% * 0.001f;
+            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / length(tiling))) * tiling;
+            float3 normal = normalize(%NORMAL%);
+
+            // Compute triplanar blend weights using power distribution
+            float3 blendWeights = pow(abs(normal), %BLEND%);
+            blendWeights /= dot(blendWeights, float3(1, 1, 1));
+
+            // Sample projections with proper scaling and offset
+            float4 xProjection = %TEXTURE%.%SAMPLE%(%SAMPLER%, position.yz + %OFFSET%%SAMPLE_ARGS%);
+            float4 yProjection = %TEXTURE%.%SAMPLE%(%SAMPLER%, position.xz + %OFFSET%%SAMPLE_ARGS%);
+            float4 zProjection = %TEXTURE%.%SAMPLE%(%SAMPLER%, position.xy + %OFFSET%%SAMPLE_ARGS%);
+
+            // Blend projections using computed weights
+            %RESULT% = xProjection * blendWeights.x + yProjection * blendWeights.y + zProjection * blendWeights.z;
+        }
+)"))
+    .Replace(TEXT("%TEXTURE%"), texture.Value)
+    .Replace(TEXT("%SCALE%"), scale.Value)
+    .Replace(TEXT("%BLEND%"), blend.Value)
+    .Replace(TEXT("%OFFSET%"), offset.Value)
+    .Replace(TEXT("%RESULT%"), result.Value)
+    .Replace(TEXT("%POSITION%"), local ? TEXT("TransformWorldVectorToLocal(input, input.WorldPosition - GetObjectPosition(input)) / GetObjectScale(input)") : TEXT("input.WorldPosition"))
+    .Replace(TEXT("%NORMAL%"), local ? TEXT("TransformWorldVectorToLocal(input, input.TBN[2])") : TEXT("input.TBN[2]"))
+    .Replace(TEXT("%SAMPLER%"), samplerName)
+    .Replace(TEXT("%SAMPLE%"), canUseSample ? TEXT("Sample") : TEXT("SampleLevel"))
+    .Replace(TEXT("%SAMPLE_ARGS%"), canUseSample ? TEXT("") : TEXT(", 0")) // Sample mip0 when cannot get auto ddx/ddy in Vertex Shader
+    .Build();
         _writer.Write(*triplanarTexture);
         value = result;
         break;
@@ -733,6 +780,96 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
         _writer.Write(*lightmapUV);
         value = output;
         break;
+    }
+    // Triplanar Normal Map
+    case 23:
+    {
+        auto textureBox = node->GetBox(0);
+        if (!textureBox->HasConnection())
+        {
+            // No texture to sample
+            value = Value::Zero;
+            break;
+        }
+        const bool canUseSample = CanUseSample(_treeType);
+        const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
+        const auto scale = tryGetValue(node->GetBox(1), node->Values[0]).AsFloat3();
+        const auto blend = tryGetValue(node->GetBox(2), node->Values[1]).AsFloat();
+        const auto offset = tryGetValue(node->GetBox(6), node->Values[2]).AsFloat2();
+        const bool local = node->Values.Count() >= 5 ? node->Values[4].AsBool : false;
+
+        const Char* samplerName;
+        const int32 samplerIndex = node->Values[3].AsInt;
+        if (samplerIndex == TextureGroup)
+        {
+            auto& textureGroupSampler = findOrAddTextureGroupSampler(node->Values[3].AsInt);
+            samplerName = *textureGroupSampler.ShaderName;
+        }
+        else if (samplerIndex >= 0 && samplerIndex < ARRAY_COUNT(SamplerNames))
+        {
+            samplerName = SamplerNames[samplerIndex];
+        }
+        else
+        {
+            OnError(node, box, TEXT("Invalid texture sampler."));
+            return;
+        }
+
+        auto result = writeLocal(Value::InitForZero(ValueType::Float3), node);
+
+        // Reference: https://bgolus.medium.com/normal-mapping-for-a-triplanar-shader-10bf39dca05a
+        const String triplanarNormalMap = ShaderStringBuilder()
+                .Code(TEXT(R"(
+        {
+            // Get world position and normal
+            float3 tiling = %SCALE% * 0.001f;
+            float3 position = ((%POSITION%) + GetLargeWorldsTileOffset(1.0f / length(tiling))) * tiling;
+            float3 normal = normalize(%NORMAL%);
+
+            // Compute triplanar blend weights using power distribution
+            float3 blendWeights = pow(abs(normal), %BLEND%);
+            blendWeights /= dot(blendWeights, float3(1, 1, 1));
+
+            // Unpack normal maps
+            float3 tnormalX = UnpackNormalMap(%TEXTURE%.%SAMPLE%(%SAMPLER%, position.yz + %OFFSET%%SAMPLE_ARGS%).rg);
+            float3 tnormalY = UnpackNormalMap(%TEXTURE%.%SAMPLE%(%SAMPLER%, position.xz + %OFFSET%%SAMPLE_ARGS%).rg);
+            float3 tnormalZ = UnpackNormalMap(%TEXTURE%.%SAMPLE%(%SAMPLER%, position.xy + %OFFSET%%SAMPLE_ARGS%).rg);
+
+            // Apply proper whiteout blend
+            normal = normalize(input.TBN[2]);
+            float3 axisSign = sign(normal);
+            float2 sumX = tnormalX.xy + normal.zy;
+            float2 sumY = tnormalY.xy + normal.xz;
+            float2 sumZ = tnormalZ.xy + normal.xy;
+            tnormalX = float3(sumX, sqrt(1.0 - saturate(dot(sumX, sumX))) * axisSign.x);
+            tnormalY = float3(sumY, sqrt(1.0 - saturate(dot(sumY, sumY))) * axisSign.y);
+            tnormalZ = float3(sumZ, sqrt(1.0 - saturate(dot(sumZ, sumZ))) * axisSign.z);
+
+            // Blend the normal maps using the blend weights
+            float3 blendedNormal = normalize(
+                tnormalX.zyx * blendWeights.x +
+                tnormalY.xzy * blendWeights.y +
+                tnormalZ.xyz * blendWeights.z
+            );
+
+            // Transform to tangent space
+            %RESULT% = normalize(TransformWorldVectorToTangent(input, blendedNormal));
+        }
+)"))
+    .Replace(TEXT("%TEXTURE%"), texture.Value)
+    .Replace(TEXT("%SCALE%"), scale.Value)
+    .Replace(TEXT("%BLEND%"), blend.Value)
+    .Replace(TEXT("%OFFSET%"), offset.Value)
+    .Replace(TEXT("%RESULT%"), result.Value)
+    .Replace(TEXT("%POSITION%"), local ? TEXT("TransformWorldVectorToLocal(input, input.WorldPosition - GetObjectPosition(input)) / GetObjectScale(input)") : TEXT("input.WorldPosition"))
+    .Replace(TEXT("%NORMAL%"), local ? TEXT("TransformWorldVectorToLocal(input, input.TBN[2])") : TEXT("input.TBN[2]"))
+    .Replace(TEXT("%SAMPLER%"), samplerName)
+    .Replace(TEXT("%SAMPLE%"), canUseSample ? TEXT("Sample") : TEXT("SampleLevel"))
+    .Replace(TEXT("%SAMPLE_ARGS%"), canUseSample ? TEXT("") : TEXT(", 0")) // Sample mip0 when cannot get auto ddx/ddy in Vertex Shader
+    .Build();
+            _writer.Write(*triplanarNormalMap);
+            value = result;
+            break;
     }
     default:
         break;

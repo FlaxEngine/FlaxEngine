@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -19,11 +19,11 @@ private:
     AssetReference<Model> _sphereModel;
     GPUPipelineState* _psDepthClear = nullptr;
     GPUPipelineState* _psDepthCopy = nullptr;
-    GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowDir;
-    GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowPoint;
-    GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowPointInside;
-    GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowSpot;
-    GPUPipelineStatePermutationsPs<static_cast<int32>(Quality::MAX) * 2> _psShadowSpotInside;
+    GPUPipelineStatePermutationsPs<int32(Quality::MAX) * 2 * 2> _psShadowDir;
+    GPUPipelineStatePermutationsPs<int32(Quality::MAX) * 2> _psShadowPoint;
+    GPUPipelineStatePermutationsPs<int32(Quality::MAX) * 2> _psShadowPointInside;
+    GPUPipelineStatePermutationsPs<int32(Quality::MAX) * 2> _psShadowSpot;
+    GPUPipelineStatePermutationsPs<int32(Quality::MAX) * 2> _psShadowSpotInside;
     PixelFormat _shadowMapFormat; // Cached on initialization
 
 public:

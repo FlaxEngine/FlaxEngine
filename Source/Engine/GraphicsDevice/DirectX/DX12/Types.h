@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -17,8 +17,6 @@ struct DxShaderHeader
 	/// The UAV dimensions per-slot.
 	/// </summary>
 	byte UaDimensions[4];
-
-	// .. rest is just a actual data array
 };
 
 #endif

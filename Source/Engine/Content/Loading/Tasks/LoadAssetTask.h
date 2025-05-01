@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -26,18 +26,7 @@ public:
 
     ~LoadAssetTask()
     {
-        auto asset = Asset.Get();
-        if (asset)
-        {
-            asset->Locker.Lock();
-            if (Platform::AtomicRead(&asset->_loadingTask) == (intptr)this)
-            {
-                Platform::AtomicStore(&asset->_loadState, (int64)Asset::LoadState::LoadFailed);
-                Platform::AtomicStore(&asset->_loadingTask, 0);
-                LOG(Error, "Loading asset \'{0}\' result: {1}.", ToString(), ToString(Result::TaskFailed));
-            }
-            asset->Locker.Unlock();
-        }
+        DereferenceAsset();
     }
 
 public:
@@ -69,15 +58,7 @@ protected:
 
     void OnFail() override
     {
-        auto asset = Asset.Get();
-        if (asset)
-        {
-            Asset = nullptr;
-            asset->Locker.Lock();
-            if (Platform::AtomicRead(&asset->_loadingTask) == (intptr)this)
-                Platform::AtomicStore(&asset->_loadingTask, 0);
-            asset->Locker.Unlock();
-        }
+        DereferenceAsset(true);
 
         // Base
         ContentLoadTask::OnFail();
@@ -85,18 +66,38 @@ protected:
 
     void OnEnd() override
     {
-        auto asset = Asset.Get();
-        if (asset)
-        {
-            Asset = nullptr;
-            asset->Locker.Lock();
-            if (Platform::AtomicRead(&asset->_loadingTask) == (intptr)this)
-                Platform::AtomicStore(&asset->_loadingTask, 0);
-            asset->Locker.Unlock();
-            asset = nullptr;
-        }
+        DereferenceAsset();
 
         // Base
         ContentLoadTask::OnEnd();
+    }
+
+private:
+    void DereferenceAsset(bool failed = false)
+    {
+        auto asset = Asset.Get();
+        if (asset)
+        {
+            asset->Locker.Lock();
+            Task* task = (Task*)Platform::AtomicRead(&asset->_loadingTask);
+            if (task)
+            {
+                do
+                {
+                    if (task == this)
+                    {
+                        Platform::AtomicStore(&asset->_loadingTask, 0);
+                        if (failed)
+                        {
+                            Platform::AtomicStore(&asset->_loadState, (int64)Asset::LoadState::LoadFailed);
+                            LOG(Error, "Loading asset \'{0}\' result: {1}.", ToString(), ToString(Result::TaskFailed));
+                        }
+                        break;
+                    }
+                    task = task->GetContinueWithTask();
+                } while (task);
+            }
+            asset->Locker.Unlock();
+        }
     }
 };

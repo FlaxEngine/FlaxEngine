@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.ComponentModel;
@@ -352,6 +352,7 @@ namespace FlaxEditor.Tools.Foliage
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = new Margin(4, 4, 4, 0),
+                Pivot = Float2.Zero,
                 IsScrollable = true,
                 Parent = splitPanel.Panel1
             };

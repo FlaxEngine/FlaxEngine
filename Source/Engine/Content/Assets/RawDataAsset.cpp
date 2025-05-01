@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RawDataAsset.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
@@ -18,18 +18,8 @@ RawDataAsset::RawDataAsset(const SpawnParams& params, const AssetInfo* info)
 
 bool RawDataAsset::Save(const StringView& path)
 {
-    // Validate state
-    if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave(path))
         return true;
-    }
-    if (IsVirtual() && path.IsEmpty())
-    {
-        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
-        return true;
-    }
-
     ScopeLock lock(Locker);
 
     bool result;
@@ -80,9 +70,8 @@ Asset::LoadResult RawDataAsset::load()
     if (chunk0 == nullptr || chunk0->IsMissing())
         return LoadResult::MissingDataChunk;
 
-    Data.Clear();
-    Data.EnsureCapacity(chunk0->Data.Length());
-    Data.Add(chunk0->Data.Get(), chunk0->Data.Length());
+    // TODO: swap memory alloc pointer to optimize this asset
+    Data.Set(chunk0->Data.Get(), chunk0->Data.Length());
 
     return LoadResult::Ok;
 }

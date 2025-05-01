@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -146,6 +146,7 @@ public:
     }
 
     explicit Matrix(const Matrix3x3& matrix);
+    explicit Matrix(const Double4x4& matrix);
 
 public:
     String ToString() const;

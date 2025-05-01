@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -9,7 +9,7 @@
 /// <summary>
 /// Graphics device manager that creates, manages and releases graphics device and related objects.
 /// </summary>
-API_CLASS(Static) class FLAXENGINE_API Graphics
+API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API Graphics
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(Graphics);
 public:
@@ -55,9 +55,8 @@ public:
 
     /// <summary>
     /// Enables cascades splits blending for directional light shadows.
-    /// [Deprecated in v1.9]
     /// </summary>
-    API_FIELD() DEPRECATED() static bool AllowCSMBlending;
+    API_FIELD() static bool AllowCSMBlending;
 
     /// <summary>
     /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.

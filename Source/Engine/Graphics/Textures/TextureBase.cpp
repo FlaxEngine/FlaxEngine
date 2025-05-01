@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "TextureBase.h"
 #include "TextureData.h"
@@ -11,6 +11,7 @@
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
+#include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Threading/Threading.h"
@@ -100,14 +101,14 @@ bool TextureMipData::GetPixels(Array<Color32>& pixels, int32 width, int32 height
     default:
     {
         // Try to use texture sampler utility
-        auto sampler = TextureTool::GetSampler(format);
+        auto sampler = PixelFormatSampler::Get(format);
         if (sampler)
         {
             for (int32 y = 0; y < height; y++)
             {
                 for (int32 x = 0; x < width; x++)
                 {
-                    Color c = TextureTool::SamplePoint(sampler, x, y, src, RowPitch);
+                    Color c = sampler->SamplePoint(src, x, y, RowPitch);
                     *(Color32*)(dst + dstRowSize * y + x * sizeof(Color32)) = Color32(c);
                 }
             }
@@ -149,14 +150,14 @@ bool TextureMipData::GetPixels(Array<Color>& pixels, int32 width, int32 height, 
     default:
     {
         // Try to use texture sampler utility
-        auto sampler = TextureTool::GetSampler(format);
+        auto sampler = PixelFormatSampler::Get(format);
         if (sampler)
         {
             for (int32 y = 0; y < height; y++)
             {
                 for (int32 x = 0; x < width; x++)
                 {
-                    Color c = TextureTool::SamplePoint(sampler, x, y, src, RowPitch);
+                    Color c = sampler->SamplePoint(src, x, y, RowPitch);
                     *(Color*)(dst + dstRowSize * y + x * sizeof(Color)) = c;
                 }
             }
@@ -199,6 +200,43 @@ void TextureMipData::Copy(void* data, uint32 dataRowPitch, uint32 dataDepthPitch
             }
         }
     }
+}
+
+int32 TextureData::GetArraySize() const
+{
+    return Items.Count();
+}
+
+int32 TextureData::GetMipLevels() const
+{
+    return Items.HasItems() ? Items[0].Mips.Count() : 0;
+}
+
+void TextureData::Clear()
+{
+    Items.Resize(0, false);
+}
+
+bool TextureData::GetPixels(Array<Color32>& pixels, int32 mipIndex, int32 arrayIndex)
+{
+    if (Items.IsValidIndex(arrayIndex) && Items.Get()[arrayIndex].Mips.IsValidIndex(mipIndex))
+    {
+        const int32 mipWidth = Math::Max(1, Width >> mipIndex);
+        const int32 mipHeight = Math::Max(1, Height >> mipIndex);
+        return Items.Get()[arrayIndex].Mips.Get()[mipIndex].GetPixels(pixels, mipWidth, mipHeight, Format);
+    }
+    return true;
+}
+
+bool TextureData::GetPixels(Array<Color>& pixels, int32 mipIndex, int32 arrayIndex)
+{
+    if (Items.IsValidIndex(arrayIndex) && Items.Get()[arrayIndex].Mips.IsValidIndex(mipIndex))
+    {
+        const int32 mipWidth = Math::Max(1, Width >> mipIndex);
+        const int32 mipHeight = Math::Max(1, Height >> mipIndex);
+        return Items.Get()[arrayIndex].Mips.Get()[mipIndex].GetPixels(pixels, mipWidth, mipHeight, Format);
+    }
+    return true;
 }
 
 REGISTER_BINARY_ASSET_ABSTRACT(TextureBase, "FlaxEngine.TextureBase");
@@ -475,7 +513,7 @@ bool TextureBase::SetPixels(const Span<Color32>& pixels, int32 mipIndex, int32 a
     if (error)
     {
         // Try to use texture sampler utility
-        auto sampler = TextureTool::GetSampler(format);
+        auto sampler = PixelFormatSampler::Get(format);
         if (sampler)
         {
             for (int32 y = 0; y < height; y++)
@@ -483,7 +521,7 @@ bool TextureBase::SetPixels(const Span<Color32>& pixels, int32 mipIndex, int32 a
                 for (int32 x = 0; x < width; x++)
                 {
                     Color c(pixels.Get()[x + y * width]);
-                    TextureTool::Store(sampler, x, y, dst, rowPitch, c);
+                    sampler->Store(dst, x, y, rowPitch, c);
                 }
             }
             error = false;
@@ -553,7 +591,7 @@ bool TextureBase::SetPixels(const Span<Color>& pixels, int32 mipIndex, int32 arr
     if (error)
     {
         // Try to use texture sampler utility
-        auto sampler = TextureTool::GetSampler(format);
+        auto sampler = PixelFormatSampler::Get(format);
         if (sampler)
         {
             for (int32 y = 0; y < height; y++)
@@ -561,7 +599,7 @@ bool TextureBase::SetPixels(const Span<Color>& pixels, int32 mipIndex, int32 arr
                 for (int32 x = 0; x < width; x++)
                 {
                     Color c(pixels.Get()[x + y * width]);
-                    TextureTool::Store(sampler, x, y, dst, rowPitch, c);
+                    sampler->Store(dst, x, y, rowPitch, c);
                 }
             }
             error = false;
@@ -777,11 +815,6 @@ bool TextureBase::init(AssetInitData& initData)
 {
     if (IsVirtual())
         return false;
-    if (initData.SerializedVersion != TexturesSerializedVersion)
-    {
-        LOG(Error, "Invalid serialized texture version.");
-        return true;
-    }
 
     // Get texture header for asset custom data (fast access)
     TextureHeader textureHeader;

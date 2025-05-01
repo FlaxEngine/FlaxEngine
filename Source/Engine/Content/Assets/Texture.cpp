@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Texture.h"
 #include "Engine/Content/Content.h"
@@ -29,24 +29,19 @@ bool Texture::IsNormalMap() const
 
 #if USE_EDITOR
 
+bool Texture::Save(const StringView& path)
+{
+    return Save(path, nullptr);
+}
+
 bool Texture::Save(const StringView& path, const InitData* customData)
 {
-    // Validate state
-    if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave())
         return true;
-    }
-    if (IsVirtual() && path.IsEmpty())
-    {
-        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
-        return true;
-    }
-
     ScopeLock lock(Locker);
 
     AssetInitData data;
-    const auto texture = StreamingTexture();
+    const class StreamingTexture* texture = StreamingTexture();
 
     // Use a temporary chunks for data storage for virtual assets
     FlaxChunk* tmpChunks[ASSET_FILE_DATA_CHUNKS];

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "DynamicBuffer.h"
 #include "GPUContext.h"
@@ -67,9 +67,20 @@ void DynamicBuffer::Dispose()
     Data.Resize(0);
 }
 
+GPUVertexLayout* DynamicVertexBuffer::GetLayout() const
+{
+    return _layout ? _layout : (GetBuffer() ? GetBuffer()->GetVertexLayout() : nullptr);
+}
+
+void DynamicVertexBuffer::SetLayout(GPUVertexLayout* layout)
+{
+    _layout = layout;
+    SAFE_DELETE_GPU_RESOURCE(_buffer);
+}
+
 void DynamicVertexBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
 {
-    desc = GPUBufferDescription::Vertex(_stride, numElements, GPUResourceUsage::Dynamic);
+    desc = GPUBufferDescription::Vertex(_layout, _stride, numElements, GPUResourceUsage::Dynamic);
 }
 
 void DynamicIndexBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)

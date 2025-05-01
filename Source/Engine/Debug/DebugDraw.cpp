@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_DEBUG_DRAW
 
@@ -19,6 +19,7 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Animations/AnimationUtils.h"
 #include "Engine/Profiler/Profiler.h"
@@ -347,6 +348,11 @@ struct DebugDrawContext
     DebugDrawData DebugDrawDepthTest;
     Float3 LastViewPos = Float3::Zero;
     Matrix LastViewProj = Matrix::Identity;
+
+    inline int32 Count() const
+    {
+        return DebugDrawDefault.Count() + DebugDrawDepthTest.Count();
+    }
 };
 
 namespace
@@ -689,7 +695,7 @@ void DebugDrawService::Update()
 
     // Vertex buffer
     if (DebugDrawVB == nullptr)
-        DebugDrawVB = New<DynamicVertexBuffer>((uint32)(DEBUG_DRAW_INITIAL_VB_CAPACITY * sizeof(Vertex)), (uint32)sizeof(Vertex), TEXT("DebugDraw.VB"));
+        DebugDrawVB = New<DynamicVertexBuffer>((uint32)(DEBUG_DRAW_INITIAL_VB_CAPACITY * sizeof(Vertex)), (uint32)sizeof(Vertex), TEXT("DebugDraw.VB"), Vertex::GetLayout());
 }
 
 void DebugDrawService::Dispose()
@@ -708,6 +714,14 @@ void DebugDrawService::Dispose()
     DebugDrawPsTrianglesDepthTest.Release();
     SAFE_DELETE(DebugDrawVB);
     DebugDrawShader = nullptr;
+}
+
+GPUVertexLayout* DebugDraw::Vertex::GetLayout()
+{
+    return GPUVertexLayout::Get({
+        { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32B32_Float },
+        { VertexElement::Types::Color, 0, 12, 0, PixelFormat::R8G8B8A8_UNorm },
+    });
 }
 
 #if USE_EDITOR
@@ -739,7 +753,19 @@ void DebugDraw::SetContext(void* context)
     Context = context ? (DebugDrawContext*)context : &GlobalContext;
 }
 
+bool DebugDraw::CanClear(void* context)
+{
+    if (!context)
+        context = &GlobalContext;
+    return ((DebugDrawContext*)context)->Count() != 0;
+}
+
 #endif
+
+Vector3 DebugDraw::GetViewPos()
+{
+    return Context->LastViewPos;
+}
 
 void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTextureView* depthBuffer, bool enableDepthTest)
 {
@@ -1726,6 +1752,11 @@ void DebugDraw::DrawWireTriangles(const Array<Double3>& vertices, const Array<in
 
 void DebugDraw::DrawTube(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color, float duration, bool depthTest)
 {
+    DrawCapsule(position, orientation, radius, length, color, duration, depthTest);
+}
+
+void DebugDraw::DrawCapsule(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color, float duration, bool depthTest)
+{
     // Check if has no length (just sphere)
     if (length < ZeroTolerance)
     {
@@ -1744,6 +1775,11 @@ void DebugDraw::DrawTube(const Vector3& position, const Quaternion& orientation,
 }
 
 void DebugDraw::DrawWireTube(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color, float duration, bool depthTest)
+{
+    DrawWireCapsule(position, orientation, radius, length, color, duration, depthTest);
+}
+
+void DebugDraw::DrawWireCapsule(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color, float duration, bool depthTest)
 {
     // Check if has no length (just sphere)
     if (length < ZeroTolerance)
@@ -2070,16 +2106,23 @@ void DebugDraw::DrawWireArc(const Vector3& position, const Quaternion& orientati
         prevPos = Float3(Math::Cos(TWO_PI - angleStep) * radius, Math::Sin(TWO_PI - angleStep) * radius, 0);
         Float3::Transform(prevPos, world, prevPos);
     }
+    const Color32 color32(color);
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+#define ADD_LINE(a, b) if (duration > 0) debugDrawData.DefaultLines.Add({ a, b, color32, duration }); else { debugDrawData.OneFrameLines.Add({ a, color32 }); debugDrawData.OneFrameLines.Add({ b, color32 }); }
     for (int32 i = 0; i <= resolution; i++)
     {
         Float3 pos(Math::Cos(currentAngle) * radius, Math::Sin(currentAngle) * radius, 0);
         Float3::Transform(pos, world, pos);
-        DrawLine(prevPos, pos, color, duration, depthTest);
+        ADD_LINE(prevPos, pos);
         currentAngle += angleStep;
         prevPos = pos;
     }
     if (angle < TWO_PI)
-        DrawLine(prevPos, world.GetTranslation(), color, duration, depthTest);
+    {
+        Float3 pos(world.GetTranslation());
+        ADD_LINE(prevPos, pos);
+    }
+#undef ADD_LINE
 }
 
 void DebugDraw::DrawWireArrow(const Vector3& position, const Quaternion& orientation, float scale, float capScale, const Color& color, float duration, bool depthTest)

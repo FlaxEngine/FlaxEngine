@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Screen.h"
 #include "Engine.h"
@@ -74,7 +74,7 @@ Float2 Screen::ScreenToGameViewport(const Float2& screenPos)
     return Editor::Managed->ScreenToGameViewport(screenPos);
 #else
     auto win = Engine::MainWindow;
-    return win ? win->ScreenToClient(screenPos) : Float2::Minimum;
+    return win ? win->ScreenToClient(screenPos) / win->GetDpiScale() : Float2::Minimum;
 #endif
 }
 
@@ -84,7 +84,7 @@ Float2 Screen::GameViewportToScreen(const Float2& viewportPos)
     return Editor::Managed->GameViewportToScreen(viewportPos);
 #else
     auto win = Engine::MainWindow;
-    return win ? win->ClientToScreen(viewportPos) : Float2::Minimum;
+    return win ? win->ClientToScreen(viewportPos * win->GetDpiScale()) : Float2::Minimum;
 #endif
 }
 

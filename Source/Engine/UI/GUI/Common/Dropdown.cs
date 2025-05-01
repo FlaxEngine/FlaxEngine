@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -473,6 +473,7 @@ namespace FlaxEngine.GUI
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 BackgroundColor = Color.Transparent,
+                Pivot = Float2.Zero,
                 IsScrollable = true,
                 AutoSize = true,
                 Parent = popup.MainPanel,

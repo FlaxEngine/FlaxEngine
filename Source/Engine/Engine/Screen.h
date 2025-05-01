@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,7 @@
 /// <summary>
 /// Helper class to access display information.
 /// </summary>
-API_CLASS(Static) class FLAXENGINE_API Screen
+API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API Screen
 {
 DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screen);
 
@@ -30,7 +30,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screen);
     API_PROPERTY() static void SetIsFullscreen(bool value);
 
     /// <summary>
-    /// Gets the window size.
+    /// Gets the window size (in screen-space, includes DPI scale).
     /// </summary>
     /// <returns>The value</returns>
     API_PROPERTY() static Float2 GetSize();
@@ -50,7 +50,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Screen);
     API_FUNCTION() static Float2 GameViewportToScreen(const Float2& viewportPos);
 
     /// <summary>
-    /// Sets the window size.
+    /// Sets the window size (in screen-space, includes DPI scale).
     /// </summary>
     /// <remarks>
     /// Resizing may not happen immediately. It will be performed before next frame rendering.

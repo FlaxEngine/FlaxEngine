@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -34,7 +34,7 @@ private:
 
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="BitArray"/> class.
+    /// Initializes an empty <see cref="BitArray"/> without reserving any space.
     /// </summary>
     FORCE_INLINE BitArray()
         : _count(0)
@@ -43,9 +43,9 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="BitArray"/> class.
+    /// Initializes <see cref="BitArray"/> by reserving space.
     /// </summary>
-    /// <param name="capacity">The initial capacity.</param>
+    /// <param name="capacity">The number of elements that can be added without a need to allocate more memory.</param>
     explicit BitArray(const int32 capacity)
         : _count(0)
         , _capacity(capacity)
@@ -55,7 +55,7 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="BitArray"/> class.
+    /// Initializes <see cref="BitArray"/> by copying the elements from the other collection.
     /// </summary>
     /// <param name="other">The other collection to copy.</param>
     BitArray(const BitArray& other) noexcept

@@ -1,12 +1,19 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #ifndef __SHADOWS_SAMPLING__
 #define __SHADOWS_SAMPLING__
 
+#ifndef SHADOWS_CSM_BLENDING
+#define SHADOWS_CSM_BLENDING 0
+#endif
+#ifndef SHADOWS_CSM_DITHERING
+#define SHADOWS_CSM_DITHERING 0
+#endif
+
 #include "./Flax/ShadowsCommon.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
 #include "./Flax/LightingCommon.hlsl"
-#ifdef SHADOWS_CSM_BLENDING
+#if SHADOWS_CSM_DITHERING
 #include "./Flax/Random.hlsl"
 #endif
 
@@ -16,6 +23,11 @@
 #else
 #define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) (sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0).r)
 #define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) (sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0, texelOffset).r)
+#endif
+#if VULKAN || FEATURE_LEVEL < FEATURE_LEVEL_SM5
+#define SAMPLE_SHADOW_MAP_SAMPLER SamplerPointClamp
+#else
+#define SAMPLE_SHADOW_MAP_SAMPLER SamplerLinearClamp
 #endif
 
 float4 GetShadowMask(ShadowSample shadow)
@@ -199,6 +211,43 @@ float SampleShadowMapOptimizedPCF(Texture2D<float> shadowMap, float2 shadowMapUV
 #endif
 }
 
+// Samples the shadow cascade for the given directional light on the material surface (supports subsurface shadowing)
+ShadowSample SampleDirectionalLightShadowCascade(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, GBufferSample gBuffer, ShadowData shadow, float3 samplePosition, uint cascadeIndex)
+{
+    ShadowSample result;
+    ShadowTileData shadowTile = LoadShadowsBufferTile(shadowsBuffer, light.ShadowsBufferAddress, cascadeIndex);
+
+    // Project position into shadow atlas UV
+    float4 shadowPosition;
+    float2 shadowMapUV = GetLightShadowAtlasUV(shadow, shadowTile, samplePosition, shadowPosition);
+
+    // Sample shadow map
+    result.SurfaceShadow = SampleShadowMapOptimizedPCF(shadowMap, shadowMapUV, shadowPosition.z);
+
+    // Increase the sharpness for higher cascades to match the filter radius
+    const float SharpnessScale[MaxNumCascades] = { 1.0f, 1.5f, 3.0f, 3.5f };
+    shadow.Sharpness *= SharpnessScale[cascadeIndex];
+    
+#if defined(USE_GBUFFER_CUSTOM_DATA)
+	// Subsurface shadowing
+	BRANCH
+	if (IsSubsurfaceMode(gBuffer.ShadingModel))
+	{
+		float opacity = gBuffer.CustomData.a;
+        shadowMapUV = GetLightShadowAtlasUV(shadow, shadowTile, gBuffer.WorldPos, shadowPosition);
+		float shadowMapDepth = shadowMap.SampleLevel(SAMPLE_SHADOW_MAP_SAMPLER, shadowMapUV, 0).r;
+		result.TransmissionShadow = CalculateSubsurfaceOcclusion(opacity, shadowPosition.z, shadowMapDepth);
+        result.TransmissionShadow = PostProcessShadow(shadow, result.TransmissionShadow);
+	}
+#else
+    result.TransmissionShadow = 1;
+#endif
+
+    result.SurfaceShadow = PostProcessShadow(shadow, result.SurfaceShadow);
+
+    return result;
+}
+
 // Samples the shadow for the given directional light on the material surface (supports subsurface shadowing)
 ShadowSample SampleDirectionalLightShadow(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, GBufferSample gBuffer, float dither = 0.0f)
 {
@@ -237,52 +286,41 @@ ShadowSample SampleDirectionalLightShadow(LightData light, Buffer<float4> shadow
         if (viewDepth > shadow.CascadeSplits[i])
             cascadeIndex = i + 1;
     }
-#ifdef SHADOWS_CSM_BLENDING
-	const float BlendThreshold = 0.05f;
+#if SHADOWS_CSM_DITHERING || SHADOWS_CSM_BLENDING
 	float nextSplit = shadow.CascadeSplits[cascadeIndex];
 	float splitSize = cascadeIndex == 0 ? nextSplit : nextSplit - shadow.CascadeSplits[cascadeIndex - 1];
 	float splitDist = (nextSplit - viewDepth) / splitSize;
+#endif
+#if SHADOWS_CSM_DITHERING && !SHADOWS_CSM_BLENDING
+	const float BlendThreshold = 0.05f;
     if (splitDist <= BlendThreshold && cascadeIndex != shadow.TilesCount - 1)
     {
-        // Blend with the next cascade but with screen-space dithering (gets cleaned out by TAA)
+        // Dither with the next cascade but with screen-space dithering (gets cleaned out by TAA)
         float lerpAmount = 1 - splitDist / BlendThreshold;
         if (step(RandN2(gBuffer.ViewPos.xy + dither).x, lerpAmount))
             cascadeIndex++;
     }
 #endif
-    ShadowTileData shadowTile = LoadShadowsBufferTile(shadowsBuffer, light.ShadowsBufferAddress, cascadeIndex);
 
+    // Sample cascade
     float3 samplePosition = gBuffer.WorldPos;
 #if !LIGHTING_NO_DIRECTIONAL
     // Apply normal offset bias
     samplePosition += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
 #endif
+    result = SampleDirectionalLightShadowCascade(light, shadowsBuffer, shadowMap, gBuffer, shadow, samplePosition, cascadeIndex);
 
-    // Project position into shadow atlas UV
-    float4 shadowPosition;
-    float2 shadowMapUV = GetLightShadowAtlasUV(shadow, shadowTile, samplePosition, shadowPosition);
-
-    // Sample shadow map
-    result.SurfaceShadow = SampleShadowMapOptimizedPCF(shadowMap, shadowMapUV, shadowPosition.z);
-
-    // Increase the sharpness for higher cascades to match the filter radius
-    const float SharpnessScale[MaxNumCascades] = { 1.0f, 1.5f, 3.0f, 3.5f };
-    shadow.Sharpness *= SharpnessScale[cascadeIndex];
-    
-#if defined(USE_GBUFFER_CUSTOM_DATA)
-	// Subsurface shadowing
-	BRANCH
-	if (IsSubsurfaceMode(gBuffer.ShadingModel))
-	{
-		float opacity = gBuffer.CustomData.a;
-        shadowMapUV = GetLightShadowAtlasUV(shadow, shadowTile, gBuffer.WorldPos, shadowPosition);
-		float shadowMapDepth = shadowMap.SampleLevel(SamplerLinearClamp, shadowMapUV, 0).r;
-		result.TransmissionShadow = CalculateSubsurfaceOcclusion(opacity, shadowPosition.z, shadowMapDepth);
-        result.TransmissionShadow = PostProcessShadow(shadow, result.TransmissionShadow);
-	}
+#if SHADOWS_CSM_BLENDING
+	const float BlendThreshold = 0.1f;
+    if (splitDist <= BlendThreshold && cascadeIndex != shadow.TilesCount - 1)
+    {
+	    // Sample the next cascade, and blend between the two results to smooth the transition
+        ShadowSample nextResult = SampleDirectionalLightShadowCascade(light, shadowsBuffer, shadowMap, gBuffer, shadow, samplePosition, cascadeIndex + 1);
+		float blendAmount = splitDist / BlendThreshold;
+		result.SurfaceShadow = lerp(nextResult.SurfaceShadow, result.SurfaceShadow, blendAmount);
+		result.TransmissionShadow = lerp(nextResult.TransmissionShadow, result.TransmissionShadow, blendAmount);
+    }
 #endif
-
-    result.SurfaceShadow = PostProcessShadow(shadow, result.SurfaceShadow);
 
     return result;
 }
@@ -337,7 +375,7 @@ ShadowSample SampleLocalLightShadow(LightData light, Buffer<float4> shadowsBuffe
 	{
 		float opacity = gBuffer.CustomData.a;
         shadowMapUV = GetLightShadowAtlasUV(shadow, shadowTile, gBuffer.WorldPos, shadowPosition);
-		float shadowMapDepth = shadowMap.SampleLevel(SamplerLinearClamp, shadowMapUV, 0).r;
+		float shadowMapDepth = shadowMap.SampleLevel(SAMPLE_SHADOW_MAP_SAMPLER, shadowMapUV, 0).r;
 		result.TransmissionShadow = CalculateSubsurfaceOcclusion(opacity, shadowPosition.z, shadowMapDepth);
         result.TransmissionShadow = PostProcessShadow(shadow, result.TransmissionShadow);
 	}

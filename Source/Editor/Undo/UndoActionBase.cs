@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.SceneGraph;
@@ -42,7 +42,7 @@ namespace FlaxEditor
     /// </summary>
     /// <typeparam name="TData">The type of the data. Must have <see cref="SerializableAttribute"/>.</typeparam>
     /// <seealso cref="FlaxEditor.IUndoAction" />
-    [Serializable]
+    [Serializable, HideInEditor]
     public abstract class UndoActionBase<TData> : IUndoAction where TData : struct
     {
         /// <summary>

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -76,6 +76,15 @@ namespace FlaxEditor.Windows
                     });
 
                 cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(item.Path)));
+                
+                if (!String.IsNullOrEmpty(Editor.Instance.Windows.ContentWin._itemsSearchBox.Text))
+                {
+                    cm.AddButton("Show in Content Panel", () =>
+                    {
+                        Editor.Instance.Windows.ContentWin.ClearItemsSearch();
+                        Editor.Instance.Windows.ContentWin.Select(item);
+                    });
+                }
 
                 if (item.HasDefaultThumbnail == false)
                 {

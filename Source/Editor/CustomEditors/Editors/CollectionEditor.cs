@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections;
@@ -81,7 +81,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 b.Enabled = Index + 1 < Editor.Count && !Editor._readOnly;
 
                 b = menu.AddButton("Remove", OnRemoveClicked);
-                b.Enabled = !Editor._readOnly;
+                b.Enabled = !Editor._readOnly && Editor._canResize;
             }
 
             /// <inheritdoc />
@@ -232,6 +232,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
             public void Setup(CollectionEditor editor, int index, bool canReorder = true)
             {
+                Pivot = Float2.Zero;
                 HeaderHeight = 18;
                 _canReorder = canReorder;
                 EnableDropDownIcon = true;
@@ -556,7 +557,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     MinValue = _minCount,
                     MaxValue = _maxCount,
                     AnchorPreset = AnchorPresets.TopRight,
-                    Bounds = new Rectangle(-40 - dropPanel.ItemsMargin.Right, y, 40, height),
+                    Bounds = new Rectangle(-55 - dropPanel.ItemsMargin.Right, y, 55, height),
                     Parent = dropPanel,
                 };
 
@@ -565,7 +566,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Text = "Size",
                     AnchorPreset = AnchorPresets.TopRight,
                     Bounds = new Rectangle(-_sizeBox.Width - 40 - dropPanel.ItemsMargin.Right - 2, y, 40, height),
-                    Parent = dropPanel
+                    Parent = dropPanel,
                 };
 
                 if (!_canResize || (NotNullItems && size == 0))
@@ -882,6 +883,11 @@ namespace FlaxEditor.CustomEditors.Editors
             public string FileExtension
             {
                 set => _pickerValidator.FileExtension = value;
+            }
+
+            public DragAreaControl()
+            {
+                Pivot = Float2.Zero;
             }
 
             /// <inheritdoc />

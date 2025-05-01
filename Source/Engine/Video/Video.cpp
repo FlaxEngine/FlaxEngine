@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Video.h"
 #include "VideoBackend.h"
@@ -328,11 +328,6 @@ void VideoBackendPlayer::UpdateVideoFrame(Span<byte> data, TimeSpan time, TimeSp
     if (VideoFrameMemory.Length() < (int32)slicePitch)
     {
         VideoFrameMemory.Allocate(slicePitch);
-        if (VideoFrameMemory.IsInvalid())
-        {
-            OUT_OF_MEMORY;
-            return;
-        }
     }
     Platform::MemoryCopy(VideoFrameMemory.Get(), data.Get(), slicePitch);
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Threading;
@@ -24,19 +24,26 @@ namespace FlaxEngine.Utilities
 
             /// <summary>
             /// The vertex buffer.
+            /// [Deprecated in v1.10]
             /// </summary>
+            [Obsolete("Use new VertexAccessor.")]
             public Mesh.Vertex[] VertexBuffer;
+
+            /// <summary>
+            /// The vertex buffer accessor (with all available vertex buffers loaded in).
+            /// </summary>
+            public MeshAccessor VertexAccessor;
         }
 
-        private Model _model;
+        private ModelBase _model;
         private MeshData[][] _meshDatas;
-        private bool _meshDatasInProgress;
-        private bool _meshDatasCancel;
+        private bool _inProgress;
+        private bool _cancel;
 
         /// <summary>
         /// Gets the mesh datas (null if during downloading).
         /// </summary>
-        public MeshData[][] MeshDatas => _meshDatasInProgress ? null : _meshDatas;
+        public MeshData[][] MeshDatas => _inProgress ? null : _meshDatas;
 
         /// <summary>
         /// Occurs when mesh data gets downloaded (called on async thread).
@@ -46,9 +53,9 @@ namespace FlaxEngine.Utilities
         /// <summary>
         /// Requests the mesh data.
         /// </summary>
-        /// <param name="model">The model to get it's data.</param>
+        /// <param name="model">The model to get its data.</param>
         /// <returns>True if has valid data to access, otherwise false if it's during downloading.</returns>
-        public bool RequestMeshData(Model model)
+        public bool RequestMeshData(ModelBase model)
         {
             if (model == null)
                 throw new ArgumentNullException();
@@ -57,7 +64,7 @@ namespace FlaxEngine.Utilities
                 // Mode changes so release previous cache
                 Dispose();
             }
-            if (_meshDatasInProgress)
+            if (_inProgress)
             {
                 // Still downloading
                 return false;
@@ -70,8 +77,8 @@ namespace FlaxEngine.Utilities
 
             // Start downloading
             _model = model;
-            _meshDatasInProgress = true;
-            _meshDatasCancel = false;
+            _inProgress = true;
+            _cancel = false;
             Task.Run(new Action(DownloadMeshData));
             return false;
         }
@@ -83,7 +90,7 @@ namespace FlaxEngine.Utilities
         {
             WaitForMeshDataRequestEnd();
             _meshDatas = null;
-            _meshDatasInProgress = false;
+            _inProgress = false;
         }
 
         /// <summary>
@@ -91,10 +98,10 @@ namespace FlaxEngine.Utilities
         /// </summary>
         public void WaitForMeshDataRequestEnd()
         {
-            if (_meshDatasInProgress)
+            if (_inProgress)
             {
-                _meshDatasCancel = true;
-                for (int i = 0; i < 500 && _meshDatasInProgress; i++)
+                _cancel = true;
+                for (int i = 0; i < 500 && _inProgress; i++)
                     Thread.Sleep(10);
             }
         }
@@ -110,23 +117,29 @@ namespace FlaxEngine.Utilities
                 if (_model.WaitForLoaded())
                     throw new Exception("WaitForLoaded failed");
 
-                var lods = _model.LODs;
-                _meshDatas = new MeshData[lods.Length][];
+                var lodsCount = _model.LODsCount;
+                _meshDatas = new MeshData[lodsCount][];
 
-                for (int lodIndex = 0; lodIndex < lods.Length && !_meshDatasCancel; lodIndex++)
+                Span<MeshBufferType> vertexBufferTypes = stackalloc MeshBufferType[3] { MeshBufferType.Vertex0, MeshBufferType.Vertex1, MeshBufferType.Vertex2 };
+                for (int lodIndex = 0; lodIndex < lodsCount && !_cancel; lodIndex++)
                 {
-                    var lod = lods[lodIndex];
-                    var meshes = lod.Meshes;
+                    _model.GetMeshes(out var meshes, lodIndex);
                     _meshDatas[lodIndex] = new MeshData[meshes.Length];
 
-                    for (int meshIndex = 0; meshIndex < meshes.Length && !_meshDatasCancel; meshIndex++)
+                    for (int meshIndex = 0; meshIndex < meshes.Length && !_cancel; meshIndex++)
                     {
                         var mesh = meshes[meshIndex];
-                        _meshDatas[lodIndex][meshIndex] = new MeshData
+                        var meshData = new MeshData
                         {
                             IndexBuffer = mesh.DownloadIndexBuffer(),
-                            VertexBuffer = mesh.DownloadVertexBuffer()
+#pragma warning disable 0618
+                            VertexBuffer = mesh is Mesh m ? m.DownloadVertexBuffer() : null,
+#pragma warning restore 0618
+                            VertexAccessor = new MeshAccessor(),
                         };
+                        if (meshData.VertexAccessor.LoadMesh(mesh, false, vertexBufferTypes))
+                            throw new Exception("MeshAccessor.LoadMesh failed");
+                        _meshDatas[lodIndex][meshIndex] = meshData;
                     }
                 }
                 success = true;
@@ -139,7 +152,7 @@ namespace FlaxEngine.Utilities
             }
             finally
             {
-                _meshDatasInProgress = false;
+                _inProgress = false;
 
                 if (success)
                 {

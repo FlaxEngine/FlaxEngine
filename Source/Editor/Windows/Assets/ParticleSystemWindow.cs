@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -569,6 +569,10 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
+            base.OnDestroy();
+
             if (_undo != null)
                 _undo.Enabled = false;
             _propertiesEditor?.Deselect();
@@ -579,8 +583,6 @@ namespace FlaxEditor.Windows.Assets
             _saveButton = null;
             _undoButton = null;
             _redoButton = null;
-
-            base.OnDestroy();
         }
     }
 }

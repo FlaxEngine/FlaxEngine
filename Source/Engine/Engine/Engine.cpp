@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Engine.h"
 #include "Game.h"
@@ -71,6 +71,10 @@ Action Engine::Draw;
 Action Engine::Pause;
 Action Engine::Unpause;
 Action Engine::RequestingExit;
+Delegate<StringView, void*> Engine::ReportCrash;
+FatalErrorType Engine::FatalError = FatalErrorType::None;
+bool Engine::IsRequestingExit = false;
+int32 Engine::ExitCode = 0;
 Window* Engine::MainWindow = nullptr;
 
 int32 Engine::Main(const Char* cmdLine)
@@ -201,7 +205,7 @@ int32 Engine::Main(const Char* cmdLine)
             PROFILE_CPU_NAMED("Platform.Tick");
             Platform::Tick();
         }
-        
+
         // Update game logic
         if (Time::OnBeginUpdate(time))
         {
@@ -236,12 +240,13 @@ int32 Engine::Main(const Char* cmdLine)
         FileSystem::DeleteDirectory(Globals::TemporaryFolder);
     }
 
-    return Globals::ExitCode;
+    return ExitCode;
 }
 
-void Engine::Exit(int32 exitCode)
+void Engine::Exit(int32 exitCode, FatalErrorType error)
 {
     ASSERT(IsInMainThread());
+    FatalError = error;
 
     // Call on exit event
     OnExit();
@@ -250,24 +255,42 @@ void Engine::Exit(int32 exitCode)
     exit(exitCode);
 }
 
-void Engine::RequestExit(int32 exitCode)
+void Engine::RequestExit(int32 exitCode, FatalErrorType error)
 {
-    if (Globals::IsRequestingExit)
+    if (IsRequestingExit)
         return;
 #if USE_EDITOR
     // Send to editor (will leave play mode if need to)
-    if (Editor::Managed->OnAppExit())
-    {
-        Globals::IsRequestingExit = true;
-        Globals::ExitCode = exitCode;
-        RequestingExit();
-    }
-#else
+    if (!Editor::Managed->OnAppExit())
+        return;
+#endif
+    IsRequestingExit = true;
+    ExitCode = exitCode;
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS;
     Globals::IsRequestingExit = true;
     Globals::ExitCode = exitCode;
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS;
+    FatalError = error;
     RequestingExit();
-#endif
 }
+
+#if !BUILD_SHIPPING
+
+void Engine::Crash(FatalErrorType error)
+{
+    switch (error)
+    {
+    case FatalErrorType::None:
+    case FatalErrorType::Exception:
+        *((int32*)3) = 11;
+        break;
+    default:
+        Platform::Fatal(TEXT("Crash Test"), nullptr, error);
+        break;
+    }
+}
+
+#endif
 
 void Engine::OnFixedUpdate()
 {
@@ -407,7 +430,7 @@ bool Engine::IsReady()
 
 bool Engine::ShouldExit()
 {
-    return Globals::IsRequestingExit;
+    return IsRequestingExit;
 }
 
 bool Engine::IsEditor()
@@ -631,9 +654,9 @@ void EngineImpl::InitPaths()
         FileSystem::CreateDirectory(Globals::ProjectContentFolder);
     if (!FileSystem::DirectoryExists(Globals::ProjectSourceFolder))
         FileSystem::CreateDirectory(Globals::ProjectSourceFolder);
-    if (CommandLine::Options.ClearCache)
+    if (CommandLine::Options.ClearCache.IsTrue())
         FileSystem::DeleteDirectory(Globals::ProjectCacheFolder, true);
-    else if (CommandLine::Options.ClearCookerCache)
+    else if (CommandLine::Options.ClearCookerCache.IsTrue())
         FileSystem::DeleteDirectory(Globals::ProjectCacheFolder / TEXT("Cooker"), true);
     if (!FileSystem::DirectoryExists(Globals::ProjectCacheFolder))
         FileSystem::CreateDirectory(Globals::ProjectCacheFolder);

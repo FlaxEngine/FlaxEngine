@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -9,7 +9,7 @@
 /// <summary>
 /// A special type of volume that blends custom set of post process settings into the rendering.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Post Fx Volume\"), ActorToolbox(\"Visuals\")")
+API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Lighting & PostFX/Post Fx Volume\"), ActorToolbox(\"Visuals\")")
 class FLAXENGINE_API PostFxVolume : public BoxVolume, public IPostFxSettingsProvider
 {
     DECLARE_SCENE_OBJECT(PostFxVolume);

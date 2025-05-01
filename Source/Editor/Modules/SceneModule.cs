@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -32,16 +32,16 @@ namespace FlaxEditor.Modules
             }
 
             /// <inheritdoc />
-            public override void Spawn(Actor actor, Actor parent)
+            public override void Spawn(Actor actor, Actor parent, int orderInParent = -1)
             {
-                _editor.SceneEditing.Spawn(actor, parent);
+                _editor.SceneEditing.Spawn(actor, parent, orderInParent);
             }
 
             /// <inheritdoc />
             public override Undo Undo => Editor.Instance.Undo;
 
             /// <inheritdoc />
-            public override List<SceneGraphNode> Selection => _editor.SceneEditing.Selection;
+            public override ISceneEditingContext SceneContext => _editor.Windows.EditWin;
         }
 
         /// <summary>
@@ -58,7 +58,7 @@ namespace FlaxEditor.Modules
         : base(editor)
         {
             // After editor cache but before the windows
-            InitOrder = -900;
+            InitOrder = -800;
         }
 
         /// <summary>

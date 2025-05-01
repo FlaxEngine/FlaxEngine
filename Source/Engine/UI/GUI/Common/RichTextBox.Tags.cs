@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEngine.Utilities;
 
@@ -176,7 +176,8 @@ namespace FlaxEngine.GUI
             var font = imageBlock.Style.Font.GetFont();
             if (font)
                 imageBlock.Bounds.Size = new Float2(font.Height);
-            imageBlock.Bounds.Size.X *= image.Size.X / image.Size.Y; // Keep original aspect ratio
+            var imageSize = image.Size;
+            imageBlock.Bounds.Size.X *= imageSize.X / imageSize.Y; // Keep original aspect ratio
             bool hasWidth = TryParseNumberTag(ref tag, "width", imageBlock.Bounds.Width, out var width);
             imageBlock.Bounds.Width = width;
             bool hasHeight = TryParseNumberTag(ref tag, "height", imageBlock.Bounds.Height, out var height);
@@ -185,9 +186,9 @@ namespace FlaxEngine.GUI
             {
                 // Maintain aspect ratio after scaling by just width or height
                 if (hasHeight)
-                    imageBlock.Bounds.Size.X = imageBlock.Bounds.Size.Y * image.Size.X / image.Size.Y;
+                    imageBlock.Bounds.Size.X = imageBlock.Bounds.Size.Y * imageSize.X / imageSize.Y;
                 else
-                    imageBlock.Bounds.Size.Y = imageBlock.Bounds.Size.X * image.Size.Y / image.Size.X;
+                    imageBlock.Bounds.Size.Y = imageBlock.Bounds.Size.X * imageSize.Y / imageSize.X;
             }
             TryParseNumberTag(ref tag, "scale", 1.0f, out var scale);
             imageBlock.Bounds.Size *= scale;

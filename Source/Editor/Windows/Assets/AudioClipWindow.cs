@@ -1,6 +1,5 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
-using System.IO;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Import;
@@ -289,6 +288,10 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
+            base.OnDestroy();
+
             if (_previewSource)
             {
                 _preview.Source = null;
@@ -297,8 +300,6 @@ namespace FlaxEditor.Windows.Assets
                 _previewSource = null;
             }
             FlaxEngine.Object.Destroy(ref _previewScene);
-
-            base.OnDestroy();
         }
 
         /// <inheritdoc />

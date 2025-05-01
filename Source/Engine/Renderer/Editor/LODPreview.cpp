@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_EDITOR
 
@@ -34,7 +34,7 @@ bool LODPreviewMaterialShader::IsReady() const
 
 bool LODPreviewMaterialShader::CanUseInstancing(InstancingHandler& handler) const
 {
-    return _material->CanUseInstancing(handler);
+    return false;
 }
 
 DrawPass LODPreviewMaterialShader::GetDrawModes() const

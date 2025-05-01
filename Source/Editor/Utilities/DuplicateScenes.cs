@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -144,8 +144,6 @@ namespace FlaxEditor.Utilities
                 Editor.LogError("Failed to unload scenes.");
                 return;
             }
-            FlaxEngine.Scripting.FlushRemovedObjects();
-            Editor.WipeOutLeftoverSceneObjects();
 
             Profiler.EndEvent();
         }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -862,6 +862,16 @@ namespace FlaxEditor.Surface
             }
         }
 
+        /// <summary>
+        /// Custom function to check if node matches a given search query.
+        /// </summary>
+        /// <param name="text">Text to check.</param>
+        /// <returns>True if node contains a given value.</returns>
+        public virtual bool Search(string text)
+        {
+            return false;
+        }
+
         private string GetTooltip()
         {
             StringBuilder sb = new StringBuilder();
@@ -999,6 +1009,15 @@ namespace FlaxEditor.Surface
         internal void SetIsDuringValuesEditing(bool value)
         {
             _isDuringValuesEditing = value;
+        }
+
+        /// <summary>
+        /// Sets teh node values from the given pasted source. Can be overriden to perform validation or custom values processing.
+        /// </summary>
+        /// <param name="values">The input values array.</param>
+        public virtual void SetValuesPaste(object[] values)
+        {
+            Values = values;
         }
 
         /// <summary>

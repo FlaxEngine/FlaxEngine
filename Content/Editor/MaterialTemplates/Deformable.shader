@@ -207,6 +207,20 @@ float3 GetObjectSize(MaterialInput input)
 	return GeometrySize * float3(world._m00, world._m11, world._m22);
 }
 
+// Gets the current object scale (supports instancing)
+float3 GetObjectScale(MaterialInput input)
+{
+    float4x4 world = WorldMatrix;
+
+    // Extract scale from the world matrix
+    float3 scale;
+    scale.x = length(float3(world._11, world._12, world._13));
+    scale.y = length(float3(world._21, world._22, world._23));
+    scale.z = length(float3(world._31, world._32, world._33));
+
+    return scale;
+}
+
 // Get the current object random value
 float GetPerInstanceRandom(MaterialInput input)
 {
@@ -297,7 +311,7 @@ VertexOutput VS_SplineModel(ModelInput input)
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
-	output.Geometry.TexCoord = input.TexCoord;
+	output.Geometry.TexCoord = input.TexCoord0;
 #if USE_VERTEX_COLOR
 	output.Geometry.VertexColor = input.Color;
 #endif
@@ -323,6 +337,7 @@ VertexOutput VS_SplineModel(ModelInput input)
 	// Apply world position offset per-vertex
 #if USE_POSITION_OFFSET
 	output.Geometry.WorldPosition += material.PositionOffset;
+	output.Geometry.PrevWorldPosition += material.PositionOffset;
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 #endif
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -61,6 +61,8 @@ public:
     static void Log(const StringView& msg);
     static bool IsDebuggerPresent();
 #endif
+    static String GetSystemName();
+    static Version GetSystemVersion();
     static BatteryInfo GetBatteryInfo();
     static int32 GetDpi();
     static String GetUserLocaleName();

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -22,6 +22,7 @@ namespace FlaxEditor.Windows
         private IEnumerable<object> undoRecordObjects;
 
         private readonly Dictionary<Guid, float> _actorScrollValues = new Dictionary<Guid, float>();
+        private bool _lockObjects = false;
 
         /// <inheritdoc />
         public override bool UseLayoutData => true;
@@ -44,7 +45,18 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// Indication of if the properties window is locked on specific objects.
         /// </summary>
-        public bool LockObjects = false;
+        public bool LockObjects
+        {
+            get => _lockObjects;
+            set
+            {
+                if (value == _lockObjects)
+                    return;
+                _lockObjects = value;
+                if (!value)
+                    OnSelectionChanged();
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PropertiesWindow"/> class.
@@ -74,6 +86,11 @@ namespace FlaxEditor.Windows
             if (Level.ScenesCount > 1)
                 return;
             _actorScrollValues.Clear();
+            if (LockObjects)
+            {
+                LockObjects = false;
+                Presenter.Deselect();
+            }
         }
 
         private void OnScrollValueChanged()

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using FlaxEditor.Content;
@@ -155,13 +155,14 @@ namespace FlaxEditor.Windows.Search
         }
 
         /// <inheritdoc />
-        public override void Show(Control parent, Float2 location)
+        public override void Show(Control parent, Float2 location, ContextMenuDirection? direction = null)
         {
-            base.Show(parent, location);
+            base.Show(parent, location, direction);
 
             // Setup
             _resultPanel.ScrollViewTo(Float2.Zero);
-            _searchBox.Text = string.Empty;
+            // Select the text in the search bar so that the user can just start typing
+            _searchBox.SelectAll();
             _searchBox.Focus();
         }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitterGraph.GPU.h"
 #include "Engine/Graphics/Materials/MaterialInfo.h"

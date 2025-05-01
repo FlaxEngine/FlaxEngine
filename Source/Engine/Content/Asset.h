@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -75,7 +75,7 @@ public:
     EventType OnUnloaded;
 
     /// <summary>
-    /// General purpose mutex for an asset object. Should guard most of asset functionalities to be secure.
+    /// General purpose mutex for an asset object. Should guard most of the asset functionalities to be secure.
     /// </summary>
     CriticalSection Locker;
 
@@ -209,6 +209,13 @@ public:
     /// </remarks>
     /// <returns>The collection of the asset ids referenced by this asset.</returns>
     API_FUNCTION() Array<Guid, HeapAllocation> GetReferences() const;
+
+    /// <summary>
+    /// Saves this asset to the file. Supported only in Editor.
+    /// </summary>
+    /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
+    /// <returns>True when cannot save data, otherwise false.</returns>
+    API_FUNCTION(Sealed) virtual bool Save(const StringView& path = StringView::Empty);
 #endif
 
     /// <summary>
@@ -253,6 +260,7 @@ protected:
     virtual void onLoaded_MainThread();
     virtual void onUnload_MainThread();
 #if USE_EDITOR
+    bool OnCheckSave(const StringView& path = StringView::Empty) const;
     virtual void onRename(const StringView& newPath) = 0;
 #endif
 

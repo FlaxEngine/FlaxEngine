@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -74,7 +74,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="knowledge">The knowledge container to access.</param>
         /// <param name="value">The value to set.</param>
-        /// <returns>True if set value value, otherwise false.</returns>
+        /// <returns>True if set value, otherwise false.</returns>
         public bool Set(BehaviorKnowledge knowledge, object value)
         {
             return knowledge != null && knowledge.Set(Path, value);

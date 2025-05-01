@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -53,7 +53,7 @@ namespace FlaxEditor.Windows
 
             // Basic editing options
             var firstSelection = hasSthSelected ? Editor.SceneEditing.Selection[0] as ActorNode : null;
-            b = contextMenu.AddButton("Rename", inputOptions.Rename, Rename);
+            b = contextMenu.AddButton("Rename", inputOptions.Rename, RenameSelection);
             b.Enabled = hasSthSelected;
             b = contextMenu.AddButton("Duplicate", inputOptions.Duplicate, Editor.SceneEditing.Duplicate);
             b.Enabled = hasSthSelected && (firstSelection != null ? firstSelection.CanDuplicate : true);
@@ -145,6 +145,7 @@ namespace FlaxEditor.Windows
             bool hasPrefabLink = canEditScene && isSingleActorSelected && (firstSelection != null ? firstSelection.HasPrefabLink : false);
             if (hasPrefabLink)
             {
+                contextMenu.AddButton("Open Prefab", () => Editor.Prefabs.OpenPrefab(firstSelection));
                 contextMenu.AddButton("Select Prefab", Editor.Prefabs.SelectPrefab);
                 contextMenu.AddButton("Break Prefab Link", Editor.Prefabs.BreakLinks);
             }

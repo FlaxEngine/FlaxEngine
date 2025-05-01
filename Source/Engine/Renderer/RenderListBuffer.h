@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -30,7 +30,7 @@ private:
 
 public:
     /// <summary>
-    /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
+    /// Initializes an empty <see cref="RenderListBuffer"/> without reserving any space.
     /// </summary>
     FORCE_INLINE RenderListBuffer()
         : _count(0)
@@ -39,19 +39,7 @@ public:
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
-    /// </summary>
-    /// <param name="capacity">The initial capacity.</param>
-    explicit RenderListBuffer(const int32 capacity)
-        : _count(0)
-        , _capacity(capacity)
-    {
-        if (capacity > 0)
-            _allocation.Allocate(capacity);
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="RenderListBuffer"/> class.
+    /// Initializes <see cref="Array"/> by copying elements.
     /// </summary>
     /// <param name="data">The initial data.</param>
     /// <param name="length">The amount of items.</param>
@@ -369,17 +357,6 @@ private:
     {
         // Ensure there is a slack for others threads to reduce resize counts in highly multi-threaded environment
         constexpr int32 slack = PLATFORM_THREADS_LIMIT * 8;
-        int32 capacity = count + slack;
-        {
-            // Round up to the next power of 2 and multiply by 2
-            capacity--;
-            capacity |= capacity >> 1;
-            capacity |= capacity >> 2;
-            capacity |= capacity >> 4;
-            capacity |= capacity >> 8;
-            capacity |= capacity >> 16;
-            capacity = (capacity + 1) * 2;
-        }
-        return capacity;
+        return AllocationUtils::RoundUpToPowerOf2(count + slack);
     }
 };

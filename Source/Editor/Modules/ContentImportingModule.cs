@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -391,6 +391,20 @@ namespace FlaxEditor.Modules
         public override void OnInit()
         {
             ImportFileEntry.RegisterDefaultTypes();
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+        }
+
+        private void OnScriptsReloadBegin()
+        {
+            // Remove import file types from scripting assemblies
+            List<string> removeFileTypes = new List<string>();
+            foreach (var pair in ImportFileEntry.FileTypes)
+            {
+                if (pair.Value.Method.IsCollectible || (pair.Value.Target != null && pair.Value.Target.GetType().IsCollectible))
+                    removeFileTypes.Add(pair.Key);
+            }
+            foreach (var fileType in removeFileTypes)
+                ImportFileEntry.FileTypes.Remove(fileType);
         }
 
         /// <inheritdoc />
@@ -451,6 +465,7 @@ namespace FlaxEditor.Modules
         /// <inheritdoc />
         public override void OnExit()
         {
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             EndWorker();
         }
     }

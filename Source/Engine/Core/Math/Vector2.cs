@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -1687,6 +1687,16 @@ namespace FlaxEngine
         public static implicit operator Double2(Vector2 value)
         {
             return new Double2(value.X, value.Y);
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Vector2" /> to <see cref="Int2" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static explicit operator Int2(Vector2 value)
+        {
+            return new Int2((int)value.X, (int)value.Y);
         }
 
         /// <summary>

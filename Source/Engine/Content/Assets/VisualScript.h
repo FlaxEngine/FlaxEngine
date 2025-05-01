@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -65,7 +65,7 @@ public:
     /// <summary>
     /// Visual Script flag types.
     /// </summary>
-    API_ENUM(Attributes="Flags") enum class Flags
+    API_ENUM(Attributes="Flags") enum class Flags : int32
     {
         /// <summary>
         /// No flags.
@@ -217,7 +217,7 @@ public:
     /// <param name="name">The parameter name.</param>
     /// <param name="instance">The object instance.</param>
     /// <param name="value">The property value to set.</param>
-    API_FUNCTION() void SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, const Variant& value) const;
+    API_FUNCTION() void SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, const Variant& value);
 
     /// <summary>
     /// Sets the value of the Visual Script parameter of the given instance.
@@ -225,7 +225,7 @@ public:
     /// <param name="name">The parameter name.</param>
     /// <param name="instance">The object instance.</param>
     /// <param name="value">The property value to set.</param>
-    void SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, Variant&& value) const;
+    void SetScriptInstanceParameterValue(const StringView& name, ScriptingObject* instance, Variant&& value);
 
     /// <summary>
     /// Tries to find the method matching the given properties. Doesn't check base classes but just this script.
@@ -246,7 +246,7 @@ public:
     /// Tries to load surface graph from the asset.
     /// </summary>
     /// <returns>The surface data or empty if failed to load it.</returns>
-    API_FUNCTION() BytesContainer LoadSurface();
+    API_FUNCTION() BytesContainer LoadSurface() const;
 
 #if USE_EDITOR
 
@@ -256,7 +256,7 @@ public:
     /// <param name="data">Stream with graph data.</param>
     /// <param name="meta">Script metadata.</param>
     /// <returns>True if cannot save it, otherwise false.</returns>
-    API_FUNCTION() bool SaveSurface(const BytesContainer& data, API_PARAM(Ref) const Metadata& meta);
+    API_FUNCTION() bool SaveSurface(const BytesContainer& data, API_PARAM(Ref) const Metadata& meta) const;
 
     // Returns the amount of methods in the script.
     API_FUNCTION() int32 GetMethodsCount() const
@@ -286,6 +286,7 @@ public:
         BinaryAsset::GetReferences(assets, files);
         Graph.GetReferences(assets);
     }
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
 protected:
@@ -406,7 +407,6 @@ public:
     static Variant Invoke(VisualScript::Method* method, ScriptingObject* instance, Span<Variant> parameters = Span<Variant>());
 
 #if VISUAL_SCRIPT_DEBUGGING
-
     // Custom event that is called every time the Visual Script signal flows over the graph (including the data connections). Can be used to read nad visualize the Visual Script execution logic.
     static Action DebugFlow;
 
@@ -420,6 +420,5 @@ public:
     /// <param name="result">The output value. Valid only if method returned true.</param>
     /// <returns>True if could fetch the value, otherwise false.</returns>
     static bool Evaluate(VisualScript* script, ScriptingObject* instance, uint32 nodeId, uint32 boxId, Variant& result);
-
 #endif
 };

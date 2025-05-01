@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -65,7 +65,7 @@ public:
 /// <summary>
 /// Performs CSG box brush operation that adds or removes geometry.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Other/Box Brush\"), ActorToolbox(\"Other\", \"CSG Box Brush\")")
+API_CLASS(Attributes="ActorContextMenu(\"New/Other/CSG Box Brush\"), ActorToolbox(\"Other\", \"CSG Box Brush\")")
 class FLAXENGINE_API BoxBrush : public Actor, public CSG::Brush
 {
     DECLARE_SCENE_OBJECT(BoxBrush);

@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #define MATERIAL 1
+#define MATERIAL_TEXCOORDS 4
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
@@ -19,20 +20,18 @@ Texture2D GridTexture : register(t0);
 
 struct VertexOutput
 {
-	float4 Position          : SV_Position;
-	float3 WorldPosition     : TEXCOORD0;
-	float2 TexCoord          : TEXCOORD1;
-	float2 LightmapUV        : TEXCOORD2;
-	float3 WorldNormal       : TEXCOORD3;
+	float4 Position : SV_Position;
+	float3 WorldPosition : TEXCOORD0;
+	float2 LightmapUV : TEXCOORD1;
+	float3 WorldNormal : TEXCOORD2;
 };
 
 struct PixelInput
 {
-	float4 Position          : SV_Position;
-	float3 WorldPosition     : TEXCOORD0;
-	float2 TexCoord          : TEXCOORD1;
-	float2 LightmapUV        : TEXCOORD2;
-	float3 WorldNormal       : TEXCOORD3;
+	float4 Position : SV_Position;
+	float3 WorldPosition : TEXCOORD0;
+	float2 LightmapUV : TEXCOORD1;
+	float3 WorldNormal : TEXCOORD2;
 };
 
 float3x3 RemoveScaleFromLocalToWorld(float3x3 localToWorld)
@@ -67,7 +66,6 @@ VertexOutput VS(ModelInput input)
 	VertexOutput output;
 	output.WorldPosition = mul(float4(input.Position.xyz, 1), WorldMatrix).xyz;
 	output.Position = mul(float4(output.WorldPosition.xyz, 1), ViewProjectionMatrix);
-	output.TexCoord = input.TexCoord;
 	output.LightmapUV = input.LightmapUV * LightmapArea.zw + LightmapArea.xy;
 	output.WorldNormal = tangentToWorld[2];
 	return output;

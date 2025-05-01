@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ModelInstanceActor.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
@@ -7,6 +7,11 @@
 ModelInstanceActor::ModelInstanceActor(const SpawnParams& params)
     : Actor(params)
 {
+}
+
+String ModelInstanceActor::MeshReference::ToString() const
+{
+    return String::Format(TEXT("Actor={},LOD={},Mesh={}"), Actor ? Actor->GetNamePath() : String::Empty, LODIndex, MeshIndex);
 }
 
 void ModelInstanceActor::SetEntries(const Array<ModelInstanceEntry>& value)

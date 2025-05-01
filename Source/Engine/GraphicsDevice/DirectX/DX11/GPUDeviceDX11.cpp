@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX11
 
@@ -10,11 +10,14 @@
 #include "GPUTimerQueryDX11.h"
 #include "GPUBufferDX11.h"
 #include "GPUSamplerDX11.h"
+#include "GPUVertexLayoutDX11.h"
 #include "GPUSwapChainDX11.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Engine/CommandLine.h"
 
 #if !USE_EDITOR && PLATFORM_WINDOWS
@@ -146,6 +149,24 @@ static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureL
     return false;
 }
 
+GPUVertexLayoutDX11::GPUVertexLayoutDX11(GPUDeviceDX11* device, const Elements& elements, bool explicitOffsets)
+    : GPUResourceBase<GPUDeviceDX11, GPUVertexLayout>(device, StringView::Empty)
+    , InputElementsCount(elements.Count())
+{
+    SetElements(elements, explicitOffsets);
+    for (int32 i = 0; i < elements.Count(); i++)
+    {
+        const VertexElement& src = GetElements().Get()[i];
+        D3D11_INPUT_ELEMENT_DESC& dst = InputElements[i];
+        dst.SemanticName = RenderToolsDX::GetVertexInputSemantic(src.Type, dst.SemanticIndex);
+        dst.Format = RenderToolsDX::ToDxgiFormat(src.Format);
+        dst.InputSlot = src.Slot;
+        dst.AlignedByteOffset = src.Offset;
+        dst.InputSlotClass = src.PerInstance ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
+        dst.InstanceDataStepRate = src.PerInstance ? 1 : 0;
+    }
+}
+
 GPUDevice* GPUDeviceDX11::Create()
 {
     // Configuration
@@ -156,9 +177,9 @@ GPUDevice* GPUDeviceDX11::Create()
 #else
     D3D_FEATURE_LEVEL maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 #endif
-    if (CommandLine::Options.D3D10)
+    if (CommandLine::Options.D3D10.IsTrue())
         maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_10_0;
-    else if (CommandLine::Options.D3D11)
+    else if (CommandLine::Options.D3D11.IsTrue())
         maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 #if !USE_EDITOR && PLATFORM_WINDOWS
 	auto winSettings = WindowsPlatformSettings::Get();
@@ -259,11 +280,11 @@ GPUDevice* GPUDeviceDX11::Create()
     }
     GPUAdapterDX selectedAdapter = adapters[selectedAdapterIndex];
     uint32 vendorId = 0;
-    if (CommandLine::Options.NVIDIA)
+    if (CommandLine::Options.NVIDIA.IsTrue())
         vendorId = GPU_VENDOR_ID_NVIDIA;
-    else if (CommandLine::Options.AMD)
+    else if (CommandLine::Options.AMD.IsTrue())
         vendorId = GPU_VENDOR_ID_AMD;
-    else if (CommandLine::Options.Intel)
+    else if (CommandLine::Options.Intel.IsTrue())
         vendorId = GPU_VENDOR_ID_INTEL;
     if (vendorId != 0)
     {
@@ -276,8 +297,6 @@ GPUDevice* GPUDeviceDX11::Create()
             }
         }
     }
-
-    // Validate adapter
     if (!selectedAdapter.IsValid())
     {
         LOG(Error, "Failed to choose valid DirectX adapter!");
@@ -385,6 +404,17 @@ ID3D11BlendState* GPUDeviceDX11::GetBlendState(const BlendingMode& blending)
     return state;
 }
 
+GPUBuffer* GPUDeviceDX11::GetDummyVB()
+{
+    if (!_dummyVB)
+    {
+        _dummyVB = CreateBuffer(TEXT("DummyVertexBuffer"));
+        auto* layout = GPUVertexLayout::Get({{ VertexElement::Types::Attribute3, 0, 0, 0, PixelFormat::R32G32B32A32_Float }});
+        _dummyVB->Init(GPUBufferDescription::Vertex(layout, sizeof(Color), 1, &Color::Transparent));
+    }
+    return _dummyVB;
+}
+
 bool GPUDeviceDX11::Init()
 {
     HRESULT result;
@@ -407,7 +437,7 @@ bool GPUDeviceDX11::Init()
 
     // Create DirectX device
     D3D_FEATURE_LEVEL createdFeatureLevel = static_cast<D3D_FEATURE_LEVEL>(0);
-    auto targetFeatureLevel = GetD3DFeatureLevel();
+    D3D_FEATURE_LEVEL targetFeatureLevel = _adapter->MaxFeatureLevel;
     VALIDATE_DIRECTX_CALL(D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext));
     ASSERT(_device);
     ASSERT(_imContext);
@@ -542,6 +572,7 @@ bool GPUDeviceDX11::Init()
             D3D11_MESSAGE_ID_DEVICE_DRAW_INDEX_BUFFER_TOO_SMALL,
             D3D11_MESSAGE_ID_DEVICE_DRAW_RENDERTARGETVIEW_NOT_SET,
             D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+            D3D11_MESSAGE_ID_DEVICE_DRAW_VERTEX_BUFFER_TOO_SMALL,
         };
 
         filter.DenyList.NumIDs = ARRAY_COUNT(disabledMessages);
@@ -805,6 +836,11 @@ GPUBuffer* GPUDeviceDX11::CreateBuffer(const StringView& name)
 GPUSampler* GPUDeviceDX11::CreateSampler()
 {
     return New<GPUSamplerDX11>(this);
+}
+
+GPUVertexLayout* GPUDeviceDX11::CreateVertexLayout(const VertexElements& elements, bool explicitOffsets)
+{
+    return New<GPUVertexLayoutDX11>(this, elements, explicitOffsets);
 }
 
 GPUSwapChain* GPUDeviceDX11::CreateSwapChain(Window* window)

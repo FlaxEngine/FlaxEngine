@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -17,22 +17,6 @@ class GPUTextureViewVulkan : public GPUTextureView, public DescriptorOwnerResour
 public:
     GPUTextureViewVulkan()
     {
-    }
-
-    GPUTextureViewVulkan(const GPUTextureViewVulkan& other)
-        : GPUTextureViewVulkan()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    GPUTextureViewVulkan& operator=(const GPUTextureViewVulkan& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
     }
 
 #if !BUILD_RELEASE

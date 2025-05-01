@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -180,7 +180,7 @@ void RenderToolsVulkan::SetObjectName(VkDevice device, uint64 objectHandle, VkOb
 
 String RenderToolsVulkan::GetVkErrorString(VkResult result)
 {
-    StringBuilder sb(256);
+    StringBuilder sb(64);
 
     // Switch error code
     switch (result)
@@ -228,33 +228,30 @@ String RenderToolsVulkan::GetVkErrorString(VkResult result)
     return sb.ToString();
 }
 
-void RenderToolsVulkan::ValidateVkResult(VkResult result, const char* file, uint32 line)
+void RenderToolsVulkan::LogVkResult(VkResult result, const char* file, uint32 line, bool fatal)
 {
-    // Ensure result if invalid
     ASSERT(result != VK_SUCCESS);
 
-    // Get error string
-    const String& errorString = GetVkErrorString(result);
+    // Process error and format message
+    StringBuilder sb;
+    sb.Append(TEXT("Vulkan error: "));
+    sb.Append(GetVkErrorString(result));
+    if (file)
+        sb.Append(TEXT(" at ")).Append(file).Append(':').Append(line);
+    const StringView msg(sb.ToStringView());
 
-    // Send error
-    LOG(Fatal, "Vulkan error: {0} at {1}:{2}", errorString, String(file), line);
-}
-
-void RenderToolsVulkan::LogVkResult(VkResult result, const char* file, uint32 line)
-{
-    // Ensure result if invalid
-    ASSERT(result != VK_SUCCESS);
-
-    // Get error string
-    const String& errorString = GetVkErrorString(result);
-
-    // Send error
-    LOG(Error, "Vulkan error: {0} at {1}:{2}", errorString, String(file), line);
-}
-
-void RenderToolsVulkan::LogVkResult(VkResult result)
-{
-    LogVkResult(result, "", 0);
+    // Handle error
+    FatalErrorType errorType = FatalErrorType::None;
+    if (result == VK_ERROR_OUT_OF_HOST_MEMORY || result == VK_ERROR_OUT_OF_DEVICE_MEMORY || result == VK_ERROR_OUT_OF_POOL_MEMORY)
+        errorType = FatalErrorType::GPUOutOfMemory;
+    else if (result == VK_TIMEOUT)
+        errorType = FatalErrorType::GPUHang;
+    else if (result == VK_ERROR_DEVICE_LOST || result == VK_ERROR_SURFACE_LOST_KHR || result == VK_ERROR_MEMORY_MAP_FAILED)
+        errorType = FatalErrorType::GPUCrash;
+    if (errorType != FatalErrorType::None)
+        Platform::Fatal(msg, nullptr, errorType);
+    else
+        Log::Logger::Write(fatal ? LogType::Fatal : LogType::Error, msg);
 }
 
 bool RenderToolsVulkan::HasExtension(const Array<const char*>& extensions, const char* name)

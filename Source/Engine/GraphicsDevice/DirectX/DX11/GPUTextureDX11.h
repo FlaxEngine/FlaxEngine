@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -24,33 +24,10 @@ private:
     ID3D11UnorderedAccessView* _uav = nullptr;
 
 public:
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="GPUTextureViewDX11"/> class.
-    /// </summary>
     GPUTextureViewDX11()
     {
     }
 
-    GPUTextureViewDX11(const GPUTextureViewDX11& other)
-        : GPUTextureViewDX11()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    GPUTextureViewDX11& operator=(const GPUTextureViewDX11& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
-    }
-
-    /// <summary>
-    /// Finalizes an instance of the <see cref="GPUTextureViewDX11"/> class.
-    /// </summary>
     ~GPUTextureViewDX11()
     {
         Release();

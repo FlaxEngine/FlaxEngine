@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ManagedEditor.h"
 #include "Editor/Editor.h"
@@ -12,11 +12,14 @@
 #include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/Internal/MainThreadManagedInvokeAction.h"
 #include "Engine/Content/Assets/VisualScript.h"
+#include "Engine/Content/Content.h"
 #include "Engine/CSG/CSGBuilder.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Renderer/ProbesRenderer.h"
 #include "Engine/Animations/Graph/AnimGraph.h"
 #include "Engine/Core/ObjectsRemovalService.h"
+#include "Engine/Level/Prefabs/Prefab.h"
+#include "Engine/Serialization/JsonTools.h"
 
 ManagedEditor::InternalOptions ManagedEditor::ManagedEditorOptions;
 
@@ -592,6 +595,7 @@ bool ManagedEditor::EvaluateVisualScriptLocal(VisualScript* script, VisualScript
 
 void ManagedEditor::WipeOutLeftoverSceneObjects()
 {
+    PROFILE_CPU();
     Array<ScriptingObject*> objects = Scripting::GetObjects();
     bool removedAny = false;
     for (ScriptingObject* object : objects)
@@ -602,6 +606,11 @@ void ManagedEditor::WipeOutLeftoverSceneObjects()
             {
                 if (sceneObject->HasParent())
                     continue; // Skip sub-objects
+                auto* actor = Cast<Actor>(sceneObject);
+                if (!actor)
+                    actor = sceneObject->GetParent();
+                if (actor && actor->HasTag(TEXT("__EditorInternal")))
+                    continue; // Skip internal objects used by Editor (eg. EditorScene)
 
                 LOG(Error, "Object '{}' (ID={}, Type={}) is still in memory after play end but should be destroyed (memory leak).", sceneObject->GetNamePath(), sceneObject->GetID(), sceneObject->GetType().ToString());
                 sceneObject->DeleteObject();

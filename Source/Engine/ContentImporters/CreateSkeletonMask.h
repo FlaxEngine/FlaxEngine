@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -22,7 +22,7 @@ public:
     static CreateAssetResult Create(CreateAssetContext& context)
     {
         // Base
-        IMPORT_SETUP(SkeletonMask, 1);
+        IMPORT_SETUP(SkeletonMask, 2);
 
         // Chunk 0
         if (context.AllocateChunk(0))

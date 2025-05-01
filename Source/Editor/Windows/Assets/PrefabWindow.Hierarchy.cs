@@ -1,8 +1,7 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Drag;
@@ -33,16 +32,16 @@ namespace FlaxEditor.Windows.Assets
             }
 
             /// <inheritdoc />
-            public override void Spawn(Actor actor, Actor parent)
+            public override void Spawn(Actor actor, Actor parent, int orderInParent = -1)
             {
-                _window.Spawn(actor, parent);
+                _window.Spawn(actor, parent, orderInParent);
             }
 
             /// <inheritdoc />
             public override Undo Undo => _window.Undo;
 
             /// <inheritdoc />
-            public override List<SceneGraphNode> Selection => _window.Selection;
+            public override ISceneEditingContext SceneContext => _window;
         }
 
         /// <summary>
@@ -86,7 +85,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 return Editor.Instance.CodeEditing.Actors.Get().Contains(actorType);
             }
-            
+
             private static bool ValidateDragControlType(ScriptType controlType)
             {
                 return Editor.Instance.CodeEditing.Controls.Get().Contains(controlType);
@@ -171,7 +170,8 @@ namespace FlaxEditor.Windows.Assets
                             var actor = item.OnEditorDrop(this);
                             actor.Name = item.ShortName;
                             _window.Spawn(actor);
-                            var graphNode = _window.Graph.Root.Find(actor);;
+                            var graphNode = _window.Graph.Root.Find(actor);
+                            ;
                             if (graphNode != null)
                                 graphNodes.Add(graphNode);
                         }
@@ -235,7 +235,8 @@ namespace FlaxEditor.Windows.Assets
                                 }
                                 actor.Name = actorType.Name;
                                 _window.Spawn(actor);
-                                var graphNode = _window.Graph.Root.Find(actor);;
+                                var graphNode = _window.Graph.Root.Find(actor);
+                                ;
                                 if (graphNode != null)
                                     graphNodes.Add(graphNode);
                             }
@@ -251,6 +252,10 @@ namespace FlaxEditor.Windows.Assets
 
             public override void OnDestroy()
             {
+                if (IsDisposing)
+                    return;
+                base.OnDestroy();
+
                 _window = null;
                 _dragAssets = null;
                 _dragActorType = null;
@@ -258,8 +263,6 @@ namespace FlaxEditor.Windows.Assets
                 _dragScriptItems = null;
                 _dragHandlers?.Clear();
                 _dragHandlers = null;
-
-                base.OnDestroy();
             }
         }
 
@@ -290,7 +293,7 @@ namespace FlaxEditor.Windows.Assets
 
             // Basic editing options
 
-            var b = contextMenu.AddButton("Rename", Rename);
+            var b = contextMenu.AddButton("Rename", RenameSelection);
             b.Enabled = isSingleActorSelected;
 
             b = contextMenu.AddButton("Duplicate", Duplicate);
@@ -414,7 +417,8 @@ namespace FlaxEditor.Windows.Assets
             contextMenu.Show(parent, location);
         }
 
-        private void Rename()
+        /// <inheritdoc />
+        public void RenameSelection()
         {
             var selection = Selection;
             if (selection.Count != 0 && selection[0] is ActorNode actor)
@@ -423,6 +427,12 @@ namespace FlaxEditor.Windows.Assets
                     Select(actor);
                 actor.TreeNode.StartRenaming(this, _treePanel);
             }
+        }
+
+        /// <inheritdoc />
+        public void FocusSelection()
+        {
+            _viewport.FocusSelection();
         }
 
         /// <summary>
@@ -468,7 +478,7 @@ namespace FlaxEditor.Windows.Assets
 
             // Spawn it
             Spawn(actor);
-            Rename();
+            RenameSelection();
         }
 
         /// <summary>
@@ -476,13 +486,18 @@ namespace FlaxEditor.Windows.Assets
         /// </summary>
         /// <param name="actor">The actor.</param>
         /// <param name="parent">The parent.</param>
-        public void Spawn(Actor actor, Actor parent)
+        /// <param name="orderInParent">The order of the actor under the parent.</param>
+        public void Spawn(Actor actor, Actor parent, int orderInParent = -1)
         {
             if (actor == null)
                 throw new ArgumentNullException(nameof(actor));
 
             // Link it
             actor.Parent = parent ?? throw new ArgumentNullException(nameof(parent));
+
+            // Set order in parent
+            if (orderInParent != -1)
+                actor.OrderInParent = orderInParent;
 
             // Peek spawned node
             var actorNode = SceneGraphFactory.FindNode(actor.ID) as ActorNode ?? SceneGraphFactory.BuildActorNode(actor);

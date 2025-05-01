@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "EditorUtilities.h"
 #include "Engine/Engine/Globals.h"
@@ -6,6 +6,7 @@
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Core/Log.h"
@@ -142,7 +143,7 @@ bool EditorUtilities::ExportApplicationImage(const Guid& iconId, int32 width, in
 bool EditorUtilities::ExportApplicationImage(const TextureData& icon, int32 width, int32 height, PixelFormat format, const String& path)
 {
     // Change format if need to
-    const TextureData* iconData = &icon;
+    TextureData* iconData = (TextureData*)&icon;
     TextureData tmpData1, tmpData2;
     if (icon.Format != format)
     {
@@ -150,7 +151,7 @@ bool EditorUtilities::ExportApplicationImage(const TextureData& icon, int32 widt
         if (PixelFormatExtensions::HasAlpha(iconData->Format) && !PixelFormatExtensions::HasAlpha(format))
         {
             // Pre-multiply alpha if can
-            auto sampler = TextureTool::GetSampler(iconData->Format);
+            auto sampler = PixelFormatSampler::Get(iconData->Format);
             if (!sampler)
             {
                 if (TextureTool::Convert(tmpData2, *iconData, PixelFormat::R16G16B16A16_Float))
@@ -159,7 +160,7 @@ bool EditorUtilities::ExportApplicationImage(const TextureData& icon, int32 widt
                     return true;
                 }
                 iconData = &tmpData2;
-                sampler = TextureTool::GetSampler(iconData->Format);
+                sampler = PixelFormatSampler::Get(iconData->Format);
             }
             if (sampler)
             {
@@ -168,10 +169,10 @@ bool EditorUtilities::ExportApplicationImage(const TextureData& icon, int32 widt
                 {
                     for (int32 x = 0; x < iconData->Width; x++)
                     {
-                        Color color = TextureTool::SamplePoint(sampler, x, y, mipData->Data.Get(), mipData->RowPitch);
+                        Color color = sampler->SamplePoint(mipData->Data.Get(), x, y, mipData->RowPitch);
                         color *= color.A;
                         color.A = 1.0f;
-                        TextureTool::Store(sampler, x, y, mipData->Data.Get(), mipData->RowPitch, color);
+                        sampler->Store(mipData->Data.Get(), x, y, mipData->RowPitch, color);
                     }
                 }
             }
@@ -191,7 +192,7 @@ bool EditorUtilities::ExportApplicationImage(const TextureData& icon, int32 widt
         if (PixelFormatExtensions::HasAlpha(icon.Format) && !PixelFormatExtensions::HasAlpha(format))
         {
             // Pre-multiply alpha if can
-            auto sampler = TextureTool::GetSampler(icon.Format);
+            auto sampler = PixelFormatSampler::Get(icon.Format);
             if (sampler)
             {
                 auto mipData = iconData->GetData(0, 0);
@@ -199,10 +200,10 @@ bool EditorUtilities::ExportApplicationImage(const TextureData& icon, int32 widt
                 {
                     for (int32 x = 0; x < iconData->Width; x++)
                     {
-                        Color color = TextureTool::SamplePoint(sampler, x, y, mipData->Data.Get(), mipData->RowPitch);
+                        Color color = sampler->SamplePoint(mipData->Data.Get(), x, y, mipData->RowPitch);
                         color *= color.A;
                         color.A = 1.0f;
-                        TextureTool::Store(sampler, x, y, mipData->Data.Get(), mipData->RowPitch, color);
+                        sampler->Store(mipData->Data.Get(), x, y, mipData->RowPitch, color);
                     }
                 }
             }

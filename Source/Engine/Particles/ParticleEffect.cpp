@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ParticleEffect.h"
 #include "Particles.h"
 #include "Engine/Core/Types/CommonValue.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
@@ -663,6 +664,8 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
         // [Deprecated on 25.11.2018, expires on 25.11.2022]
         if (modifier->EngineBuild < 6197)
         {
+            PRAGMA_DISABLE_DEPRECATION_WARNINGS
+            MARK_CONTENT_DEPRECATED();
             const auto& overrides = overridesMember->value;
             ASSERT(overrides.IsArray());
             _parametersOverrides.EnsureCapacity(_parametersOverrides.Count() + overrides.Size());
@@ -700,6 +703,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
                         p.Value = Variant(JsonTools::GetCommonValue(mValue->value));
                 }
             }
+            PRAGMA_ENABLE_DEPRECATION_WARNINGS
         }
         else
         {

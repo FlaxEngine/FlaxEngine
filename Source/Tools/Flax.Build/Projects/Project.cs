@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using Flax.Build.NativeCpp;
@@ -253,9 +253,9 @@ namespace Flax.Build.Projects
         /// <summary>
         /// Generates the project.
         /// </summary>
-        public virtual void Generate(string solutionPath)
+        public virtual void Generate(string solutionPath, bool isMainProject)
         {
-            Generator.GenerateProject(this, solutionPath);
+            Generator.GenerateProject(this, solutionPath, isMainProject);
         }
 
         /// <inheritdoc />

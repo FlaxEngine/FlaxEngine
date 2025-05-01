@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #ifndef __COMMON__
 #define __COMMON__
@@ -33,7 +33,7 @@
 
 // Meta macros used by shaders parser
 #define META_VS(isVisible, minFeatureLevel)
-#define META_VS_IN_ELEMENT(type, index, format, slot, offset, slotClass, stepRate, isVisible)
+#define META_VS_IN_ELEMENT(type, index, format, slot, offset, slotClass, stepRate, isVisible) // [Deprecated in v1.10]
 #define META_HS(isVisible, minFeatureLevel)
 #define META_HS_PATCH(inControlPoints)
 #define META_DS(isVisible, minFeatureLevel)

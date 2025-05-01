@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Foliage.h"
 #include "FoliageType.h"
@@ -7,6 +7,7 @@
 #include "Engine/Core/Random.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Content/Deprecated.h"
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
 #include "Engine/Threading/JobSystem.h"
 #if FOLIAGE_USE_DRAW_CALLS_BATCHING
@@ -1374,6 +1375,7 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
         if (modifier->EngineBuild <= 6189)
         {
             // [Deprecated on 30.11.2019, expires on 30.11.2021]
+            MARK_CONTENT_DEPRECATED();
             InstanceEncoded1 enc;
             for (int32 i = 0; i < foliageInstancesCount; i++)
             {

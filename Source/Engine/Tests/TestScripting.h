@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,6 +7,8 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/SerializableScriptingObject.h"
+#include "Engine/Scripting/SoftTypeReference.h"
+#include "Engine/Content/SceneReference.h"
 
 // Test default values init on fields.
 API_STRUCT(NoDefault) struct TestDefaultValues
@@ -124,10 +126,17 @@ API_STRUCT(NoDefault) struct TestStruct : public ISerializable
     API_FIELD() Float3 Vector = Float3::One;
     // Ref
     API_FIELD() ScriptingObject* Object = nullptr;
+    // Soft Type Ref
+    API_FIELD() SoftTypeReference<ScriptingObject> SoftTypeRef;
+    // Scene Ref
+    API_FIELD() SceneReference SceneRef;
 
     friend bool operator==(const TestStruct& lhs, const TestStruct& rhs)
     {
-        return lhs.Vector == rhs.Vector && lhs.Object == rhs.Object;
+        return lhs.Vector == rhs.Vector && 
+            lhs.Object == rhs.Object && 
+            lhs.SoftTypeRef == rhs.SoftTypeRef &&
+            lhs.SceneRef == rhs.SceneRef;
     }
 };
 
@@ -195,4 +204,25 @@ public:
     {
         return str.Length();
     }
+};
+
+// Test debug commands via static class.
+API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API TestDebugCommand1
+{
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(TestDebugCommand1);
+
+    // Static variable to test.
+    API_FIELD() static bool Var;
+};
+
+// Test debug commands inside a class.
+API_CLASS() class FLAXENGINE_API TestDebugCommand2 : public ScriptingObject
+{
+    DECLARE_SCRIPTING_TYPE(TestDebugCommand2);
+
+    // Static variable to test.
+    API_FIELD(Attributes="DebugCommand") static float Var;
+
+    // Static method to test.
+    API_FUNCTION(Attributes="DebugCommand") static void Exec();
 };

@@ -1,7 +1,7 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #define USE_GBUFFER_CUSTOM_DATA
-#define SHADOWS_CSM_BLENDING 1
+#define SHADOWS_CSM_DITHERING 1
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/GBuffer.hlsl"
@@ -30,7 +30,7 @@ float RayCastScreenSpaceShadow(GBufferData gBufferData, GBufferSample gBuffer, f
 {
 #if SHADOWS_QUALITY == 3
 	const uint maxSteps = 16;
-#elif SHADOWS_QUALITY == 3
+#elif SHADOWS_QUALITY == 2
 	const uint maxSteps = 12;
 #else
 	const uint maxSteps = 8;
@@ -92,7 +92,7 @@ float4 PS_PointLight(Model_VS2PS input) : SV_Target0
 	// Sample shadow
     ShadowSample shadow = SamplePointLightShadow(Light, ShadowsBuffer, ShadowMap, gBuffer);
 
-#if CONTACT_SHADOWS
+#if CONTACT_SHADOWS && SHADOWS_QUALITY > 0
 	// Calculate screen-space contact shadow
 	shadow.SurfaceShadow *= RayCastScreenSpaceShadow(gBufferData, gBuffer, gBuffer.WorldPos, normalize(Light.Position - gBuffer.WorldPos), ContactShadowsLength);
 #endif
@@ -102,14 +102,22 @@ float4 PS_PointLight(Model_VS2PS input) : SV_Target0
 
 // Pixel shader for directional light shadow rendering
 META_PS(true, FEATURE_LEVEL_ES2)
-META_PERMUTATION_2(SHADOWS_QUALITY=0,CONTACT_SHADOWS=0)
-META_PERMUTATION_2(SHADOWS_QUALITY=1,CONTACT_SHADOWS=0)
-META_PERMUTATION_2(SHADOWS_QUALITY=2,CONTACT_SHADOWS=0)
-META_PERMUTATION_2(SHADOWS_QUALITY=3,CONTACT_SHADOWS=0)
-META_PERMUTATION_2(SHADOWS_QUALITY=0,CONTACT_SHADOWS=1)
-META_PERMUTATION_2(SHADOWS_QUALITY=1,CONTACT_SHADOWS=1)
-META_PERMUTATION_2(SHADOWS_QUALITY=2,CONTACT_SHADOWS=1)
-META_PERMUTATION_2(SHADOWS_QUALITY=3,CONTACT_SHADOWS=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=0,CONTACT_SHADOWS=0,SHADOWS_CSM_BLENDING=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=1,CONTACT_SHADOWS=0,SHADOWS_CSM_BLENDING=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=2,CONTACT_SHADOWS=0,SHADOWS_CSM_BLENDING=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=3,CONTACT_SHADOWS=0,SHADOWS_CSM_BLENDING=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=0,CONTACT_SHADOWS=1,SHADOWS_CSM_BLENDING=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=1,CONTACT_SHADOWS=1,SHADOWS_CSM_BLENDING=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=2,CONTACT_SHADOWS=1,SHADOWS_CSM_BLENDING=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=3,CONTACT_SHADOWS=1,SHADOWS_CSM_BLENDING=0)
+META_PERMUTATION_3(SHADOWS_QUALITY=0,CONTACT_SHADOWS=0,SHADOWS_CSM_BLENDING=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=1,CONTACT_SHADOWS=0,SHADOWS_CSM_BLENDING=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=2,CONTACT_SHADOWS=0,SHADOWS_CSM_BLENDING=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=3,CONTACT_SHADOWS=0,SHADOWS_CSM_BLENDING=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=0,CONTACT_SHADOWS=1,SHADOWS_CSM_BLENDING=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=1,CONTACT_SHADOWS=1,SHADOWS_CSM_BLENDING=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=2,CONTACT_SHADOWS=1,SHADOWS_CSM_BLENDING=1)
+META_PERMUTATION_3(SHADOWS_QUALITY=3,CONTACT_SHADOWS=1,SHADOWS_CSM_BLENDING=1)
 float4 PS_DirLight(Quad_VS2PS input) : SV_Target0
 {
 	// Sample GBuffer
@@ -119,7 +127,7 @@ float4 PS_DirLight(Quad_VS2PS input) : SV_Target0
 	// Sample shadow
     ShadowSample shadow = SampleDirectionalLightShadow(Light, ShadowsBuffer, ShadowMap, gBuffer, TemporalTime);
 
-#if CONTACT_SHADOWS
+#if CONTACT_SHADOWS && SHADOWS_QUALITY > 0
 	// Calculate screen-space contact shadow
 	shadow.SurfaceShadow *= RayCastScreenSpaceShadow(gBufferData, gBuffer, gBuffer.WorldPos, Light.Direction, ContactShadowsLength);
 #endif
@@ -149,7 +157,7 @@ float4 PS_SpotLight(Model_VS2PS input) : SV_Target0
 	// Sample shadow
     ShadowSample shadow = SampleSpotLightShadow(Light, ShadowsBuffer, ShadowMap, gBuffer);
 
-#if CONTACT_SHADOWS
+#if CONTACT_SHADOWS && SHADOWS_QUALITY > 0
 	// Calculate screen-space contact shadow
 	shadow.SurfaceShadow *= RayCastScreenSpaceShadow(gBufferData, gBuffer, gBuffer.WorldPos, normalize(Light.Position - gBuffer.WorldPos), ContactShadowsLength);
 #endif

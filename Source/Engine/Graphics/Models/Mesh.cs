@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -9,7 +9,9 @@ namespace FlaxEngine
     {
         /// <summary>
         /// The Vertex Buffer 0 structure format.
+        /// [Deprecated in v1.10]
         /// </summary>
+        [Obsolete("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.")]
         public struct Vertex0
         {
             /// <summary>
@@ -20,7 +22,9 @@ namespace FlaxEngine
 
         /// <summary>
         /// The Vertex Buffer 1 structure format.
+        /// [Deprecated in v1.10]
         /// </summary>
+        [Obsolete("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.")]
         public struct Vertex1
         {
             /// <summary>
@@ -46,7 +50,9 @@ namespace FlaxEngine
 
         /// <summary>
         /// The Vertex Buffer 2 structure format.
+        /// [Deprecated in v1.10]
         /// </summary>
+        [Obsolete("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.")]
         public struct Vertex2
         {
             /// <summary>
@@ -57,7 +63,9 @@ namespace FlaxEngine
 
         /// <summary>
         /// The raw Vertex Buffer structure format.
+        /// [Deprecated in v1.10]
         /// </summary>
+        [Obsolete("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.")]
         public struct Vertex
         {
             /// <summary>
@@ -100,16 +108,6 @@ namespace FlaxEngine
         /// Gets the parent model asset.
         /// </summary>
         public Model ParentModel => (Model)Internal_GetParentModel(__unmanagedPtr);
-
-        /// <summary>
-        /// Gets the material slot used by this mesh during rendering.
-        /// </summary>
-        public MaterialSlot MaterialSlot => ParentModel.MaterialSlots[MaterialSlotIndex];
-
-        /// <summary>
-        /// Gets a format of the mesh index buffer.
-        /// </summary>
-        public PixelFormat IndexBufferFormat => Use16BitIndexBuffer ? PixelFormat.R16_UInt : PixelFormat.R32_UInt;
 
         /// <summary>
         /// Updates the model mesh vertex and index buffer data.
@@ -436,81 +434,9 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Updates the model mesh index buffer data.
-        /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
-        /// Mesh data will be cached and uploaded to the GPU with a delay.
+        /// [Deprecated in v1.10]
         /// </summary>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 32-bit stride buffer. Cannot be null.</param>
-        public void UpdateTriangles(int[] triangles)
-        {
-            if (!ParentModel.IsVirtual)
-                throw new InvalidOperationException("Only virtual models can be updated at runtime.");
-            if (triangles == null)
-                throw new ArgumentNullException(nameof(triangles));
-            if (triangles.Length == 0 || triangles.Length % 3 != 0)
-                throw new ArgumentOutOfRangeException(nameof(triangles));
-
-            if (Internal_UpdateTrianglesUInt(__unmanagedPtr, triangles.Length / 3, triangles))
-                throw new Exception("Failed to update mesh data.");
-        }
-
-        /// <summary>
-        /// Updates the model mesh index buffer data.
-        /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
-        /// Mesh data will be cached and uploaded to the GPU with a delay.
-        /// </summary>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 32-bit stride buffer. Cannot be null.</param>
-        public void UpdateTriangles(List<int> triangles)
-        {
-            if (!ParentModel.IsVirtual)
-                throw new InvalidOperationException("Only virtual models can be updated at runtime.");
-            if (triangles == null)
-                throw new ArgumentNullException(nameof(triangles));
-            if (triangles.Count == 0 || triangles.Count % 3 != 0)
-                throw new ArgumentOutOfRangeException(nameof(triangles));
-
-            if (Internal_UpdateTrianglesUInt(__unmanagedPtr, triangles.Count / 3, Utils.ExtractArrayFromList(triangles)))
-                throw new Exception("Failed to update mesh data.");
-        }
-
-        /// <summary>
-        /// Updates the model mesh index buffer data.
-        /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
-        /// Mesh data will be cached and uploaded to the GPU with a delay.
-        /// </summary>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 16-bit stride buffer. Cannot be null.</param>
-        public void UpdateTriangles(ushort[] triangles)
-        {
-            if (!ParentModel.IsVirtual)
-                throw new InvalidOperationException("Only virtual models can be updated at runtime.");
-            if (triangles == null)
-                throw new ArgumentNullException(nameof(triangles));
-            if (triangles.Length == 0 || triangles.Length % 3 != 0)
-                throw new ArgumentOutOfRangeException(nameof(triangles));
-
-            if (Internal_UpdateTrianglesUShort(__unmanagedPtr, triangles.Length / 3, triangles))
-                throw new Exception("Failed to update mesh data.");
-        }
-
-        /// <summary>
-        /// Updates the model mesh index buffer data.
-        /// Can be used only for virtual assets (see <see cref="Asset.IsVirtual"/> and <see cref="Content.CreateVirtualAsset{T}"/>).
-        /// Mesh data will be cached and uploaded to the GPU with a delay.
-        /// </summary>
-        /// <param name="triangles">The mesh index buffer (triangles). Uses 16-bit stride buffer. Cannot be null.</param>
-        public void UpdateTriangles(List<ushort> triangles)
-        {
-            if (!ParentModel.IsVirtual)
-                throw new InvalidOperationException("Only virtual models can be updated at runtime.");
-            if (triangles == null)
-                throw new ArgumentNullException(nameof(triangles));
-            if (triangles.Count == 0 || triangles.Count % 3 != 0)
-                throw new ArgumentOutOfRangeException(nameof(triangles));
-
-            if (Internal_UpdateTrianglesUShort(__unmanagedPtr, triangles.Count / 3, Utils.ExtractArrayFromList(triangles)))
-                throw new Exception("Failed to update mesh data.");
-        }
-
+        [Obsolete("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.")]
         internal enum InternalBufferType
         {
             VB0 = 0,
@@ -522,9 +448,11 @@ namespace FlaxEngine
 
         /// <summary>
         /// Downloads the first vertex buffer that contains mesh vertices data. To download data from GPU set <paramref name="forceGpu"/> to true and call this method from the thread other than main thread (see <see cref="Platform.IsInMainThread"/>).
+        /// [Deprecated in v1.10]
         /// </summary>
         /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
         /// <returns>The gathered data.</returns>
+        [Obsolete("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.")]
         public Vertex0[] DownloadVertexBuffer0(bool forceGpu = false)
         {
             var result = (Vertex0[])Internal_DownloadBuffer(__unmanagedPtr, forceGpu, typeof(Vertex0), (int)InternalBufferType.VB0);
@@ -535,9 +463,11 @@ namespace FlaxEngine
 
         /// <summary>
         /// Downloads the second vertex buffer that contains mesh vertices data. To download data from GPU set <paramref name="forceGpu"/> to true and call this method from the thread other than main thread (see <see cref="Platform.IsInMainThread"/>).
+        /// [Deprecated in v1.10]
         /// </summary>
         /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
         /// <returns>The gathered data.</returns>
+        [Obsolete("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.")]
         public Vertex1[] DownloadVertexBuffer1(bool forceGpu = false)
         {
             var result = (Vertex1[])Internal_DownloadBuffer(__unmanagedPtr, forceGpu, typeof(Vertex1), (int)InternalBufferType.VB1);
@@ -548,12 +478,14 @@ namespace FlaxEngine
 
         /// <summary>
         /// Downloads the third vertex buffer that contains mesh vertices data. To download data from GPU set <paramref name="forceGpu"/> to true and call this method from the thread other than main thread (see <see cref="Platform.IsInMainThread"/>).
+        /// [Deprecated in v1.10]
         /// </summary>
         /// <remarks>
         /// If mesh has no vertex colors (stored in vertex buffer 2) the returned value is null.
         /// </remarks>
         /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
         /// <returns>The gathered data or null if mesh has no vertex colors.</returns>
+        [Obsolete("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.")]
         public Vertex2[] DownloadVertexBuffer2(bool forceGpu = false)
         {
             if (!HasVertexColors)
@@ -566,14 +498,13 @@ namespace FlaxEngine
 
         /// <summary>
         /// Downloads the raw vertex buffer that contains mesh vertices data. To download data from GPU set <paramref name="forceGpu"/> to true and call this method from the thread other than main thread (see <see cref="Platform.IsInMainThread"/>).
+        /// [Deprecated in v1.10]
         /// </summary>
         /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
         /// <returns>The gathered data.</returns>
+        [Obsolete("Use new MeshAccessor and depend on GPUVertexLayout when accessing mesh data.")]
         public Vertex[] DownloadVertexBuffer(bool forceGpu = false)
         {
-            // TODO: perform data conversion on C++ side to make it faster
-            // TODO: implement batched data download (3 buffers at once) to reduce stall
-
             var vb0 = DownloadVertexBuffer0(forceGpu);
             var vb1 = DownloadVertexBuffer1(forceGpu);
             var vb2 = DownloadVertexBuffer2(forceGpu);
@@ -606,32 +537,15 @@ namespace FlaxEngine
             return result;
         }
 
+#if FLAX_EDITOR
         /// <summary>
-        /// Downloads the index buffer that contains mesh triangles data. To download data from GPU set <paramref name="forceGpu"/> to true and call this method from the thread other than main thread (see <see cref="Platform.IsInMainThread"/>).
+        /// Gets the collision proxy points for the mesh.
         /// </summary>
-        /// <remarks>If mesh index buffer format (see <see cref="IndexBufferFormat"/>) is <see cref="PixelFormat.R16_UInt"/> then it's faster to call .</remarks>
-        /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
-        /// <returns>The gathered data.</returns>
-        public uint[] DownloadIndexBuffer(bool forceGpu = false)
+        /// <returns>The triangle points in the collision proxy.</returns>
+        internal Vector3[] GetCollisionProxyPoints()
         {
-            var result = (uint[])Internal_DownloadBuffer(__unmanagedPtr, forceGpu, typeof(uint), (int)InternalBufferType.IB32);
-            if (result == null)
-                throw new Exception("Failed to download mesh data.");
-            return result;
+            return Internal_GetCollisionProxyPoints(__unmanagedPtr, out _);
         }
-
-        /// <summary>
-        /// Downloads the index buffer that contains mesh triangles data. To download data from GPU set <paramref name="forceGpu"/> to true and call this method from the thread other than main thread (see <see cref="Platform.IsInMainThread"/>).
-        /// </summary>
-        /// <remarks>If mesh index buffer format (see <see cref="IndexBufferFormat"/>) is <see cref="PixelFormat.R32_UInt"/> then data won't be downloaded.</remarks>
-        /// <param name="forceGpu">If set to <c>true</c> the data will be downloaded from the GPU, otherwise it can be loaded from the drive (source asset file) or from memory (if cached). Downloading mesh from GPU requires this call to be made from the other thread than main thread. Virtual assets are always downloaded from GPU memory due to lack of dedicated storage container for the asset data.</param>
-        /// <returns>The gathered data.</returns>
-        public ushort[] DownloadIndexBufferUShort(bool forceGpu = false)
-        {
-            var result = (ushort[])Internal_DownloadBuffer(__unmanagedPtr, forceGpu, typeof(ushort), (int)InternalBufferType.IB16);
-            if (result == null)
-                throw new Exception("Failed to download mesh data.");
-            return result;
-        }
+#endif
     }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,7 +7,7 @@
 /// <summary>
 /// Actor that links to the animated model skeleton node transformation.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Other/Bone Socket\"), ActorToolbox(\"Other\")")
+API_CLASS(Attributes="ActorContextMenu(\"New/Animation/Bone Socket\"), ActorToolbox(\"Other\")")
 class FLAXENGINE_API BoneSocket : public Actor
 {
     DECLARE_SCENE_OBJECT(BoneSocket);

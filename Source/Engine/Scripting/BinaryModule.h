@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -116,6 +116,15 @@ public:
     }
 
     /// <summary>
+    /// Gets handles of all method in a given scripting type.
+    /// </summary>
+    /// <param name="typeHandle">The type to find methods inside it.</param>
+    /// <param name="methods">The output list of method pointers.</param>
+    virtual void GetMethods(const ScriptingTypeHandle& typeHandle, Array<void*>& methods)
+    {
+    }
+
+    /// <summary>
     /// Tries to find a method in a given scripting type by the method name and parameters count.
     /// </summary>
     /// <remarks>If the type contains more than one method of the given name and parameters count the returned value can be non-deterministic (one of the matching methods).</remarks>
@@ -155,6 +164,15 @@ public:
     /// <param name="method">The method.</param>
     /// <param name="signature">The output method signature info.</param>
     virtual void GetMethodSignature(void* method, ScriptingTypeMethodSignature& signature)
+    {
+    }
+
+    /// <summary>
+    /// Gets handles of all fields in a given scripting type.
+    /// </summary>
+    /// <param name="typeHandle">The type to find fields inside it.</param>
+    /// <param name="fields">The output list of field pointers.</param>
+    virtual void GetFields(const ScriptingTypeHandle& typeHandle, Array<void*>& fields)
     {
     }
 
@@ -318,10 +336,12 @@ public:
     // [BinaryModule]
     const StringAnsi& GetName() const override;
     bool IsLoaded() const override;
+    void GetMethods(const ScriptingTypeHandle& typeHandle, Array<void*>& methods) override;
     void* FindMethod(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name, int32 numParams = 0) override;
     void* FindMethod(const ScriptingTypeHandle& typeHandle, const ScriptingTypeMethodSignature& signature) override;
     bool InvokeMethod(void* method, const Variant& instance, Span<Variant> paramValues, Variant& result) override;
     void GetMethodSignature(void* method, ScriptingTypeMethodSignature& signature) override;
+    void GetFields(const ScriptingTypeHandle& typeHandle, Array<void*>& fields) override;
     void* FindField(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name) override;
     void GetFieldSignature(void* field, ScriptingTypeFieldSignature& fieldSignature) override;
     bool GetFieldValue(void* field, const Variant& instance, Variant& result) override;

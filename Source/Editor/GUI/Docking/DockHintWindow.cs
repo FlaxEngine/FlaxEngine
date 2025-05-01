@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -446,7 +446,8 @@ namespace FlaxEditor.GUI.Docking
 
                     Window = Platform.CreateWindow(ref settings);
                     Window.Opacity = 0.6f;
-                    Window.GUI.BackgroundColor = Style.Current.DragWindow;
+                    Window.GUI.BackgroundColor = Style.Current.Selection;
+                    Window.GUI.AddChild<DragVisuals>();
                 }
                 else
                 {
@@ -455,6 +456,20 @@ namespace FlaxEditor.GUI.Docking
                 }
 
                 InitHitProxy();
+            }
+
+            private sealed class DragVisuals : Control
+            {
+                public DragVisuals()
+                {
+                    AnchorPreset = AnchorPresets.StretchAll;
+                    Offsets = Margin.Zero;
+                }
+
+                public override void Draw()
+                {
+                    Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Style.Current.SelectionBorder);
+                }
             }
 
             private static void CreateProxy(ref Window win, string name)
@@ -479,7 +494,8 @@ namespace FlaxEditor.GUI.Docking
 
                 win = Platform.CreateWindow(ref settings);
                 win.Opacity = 0.6f;
-                win.GUI.BackgroundColor = Style.Current.DragWindow;
+                win.GUI.BackgroundColor = Style.Current.Selection;
+                win.GUI.AddChild<DragVisuals>();
             }
 
             /// <summary>

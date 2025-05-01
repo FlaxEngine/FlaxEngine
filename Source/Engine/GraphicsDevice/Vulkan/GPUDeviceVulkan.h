@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -239,6 +239,7 @@ public:
     GPUDeviceVulkan* Device;
     VkRenderPass Handle;
     RenderTargetLayoutVulkan Layout;
+    bool CanDepthWrite;
 #if VULKAN_USE_DEBUG_DATA
     VkRenderPassCreateInfo DebugCreateInfo;
 #endif
@@ -308,8 +309,9 @@ class HelperResourcesVulkan
 private:
     GPUDeviceVulkan* _device;
     GPUTextureVulkan* _dummyTextures[6];
-    GPUBufferVulkan* _dummyBuffer;
-    GPUBufferVulkan* _dummyVB;
+    GPUBufferVulkan** _dummyBuffers = nullptr;
+    GPUBufferVulkan* _dummyVB = nullptr;
+    GPUConstantBuffer* _dummyCB = nullptr;
     VkSampler _staticSamplers[GPU_STATIC_SAMPLERS_COUNT];
 
 public:
@@ -318,8 +320,9 @@ public:
 public:
     VkSampler* GetStaticSamplers();
     GPUTextureVulkan* GetDummyTexture(SpirvShaderResourceType type);
-    GPUBufferVulkan* GetDummyBuffer();
+    GPUBufferVulkan* GetDummyBuffer(PixelFormat format);
     GPUBufferVulkan* GetDummyVertexBuffer();
+    GPUConstantBuffer* GetDummyConstantBuffer();
     void Dispose();
 };
 
@@ -610,6 +613,7 @@ public:
     GPUTimerQuery* CreateTimerQuery() override;
     GPUBuffer* CreateBuffer(const StringView& name) override;
     GPUSampler* CreateSampler() override;
+    GPUVertexLayout* CreateVertexLayout(const VertexElements& elements, bool explicitOffsets) override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
     GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name) override;
 };

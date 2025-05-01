@@ -1,7 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "CommonValue.h"
 #include "Engine/Scripting/ScriptingObject.h"
+
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 
 const CommonValue CommonValue::Zero(0.0f);
 const CommonValue CommonValue::One(1.0f);
@@ -176,3 +178,5 @@ void CommonValue::UnlinkObject()
 {
     AsObject->Deleted.Unbind<CommonValue, &CommonValue::OnObjectDeleted>(this);
 }
+
+PRAGMA_ENABLE_DEPRECATION_WARNINGS

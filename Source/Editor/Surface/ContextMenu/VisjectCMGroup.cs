@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -43,6 +43,7 @@ namespace FlaxEditor.Surface.ContextMenu
         /// <param name="archetype">The group archetype.</param>
         public VisjectCMGroup(VisjectCM cm, GroupArchetype archetype)
         {
+            Pivot = Float2.Zero;
             ContextMenu = cm;
             Archetypes.Add(archetype);
             Name = archetype.Name;

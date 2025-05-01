@@ -1,6 +1,6 @@
 // Tencent is pleased to support the open source community by making RapidJSON available.
 // 
-// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip. All rights reserved.
+// Copyright (C) 2015 THL A29 Limited, a Tencent company, and Milo Yip.
 //
 // Licensed under the MIT License (the "License"); you may not use this file except
 // in compliance with the License. You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 
 #include "../allocators.h"
 #include "swap.h"
+#include <cstddef>
 
 #if defined(__clang__)
 RAPIDJSON_DIAG_PUSH
@@ -37,10 +38,12 @@ class Stack {
 public:
     // Optimization note: Do not allocate memory for stack_ in constructor.
     // Do it lazily when first Push() -> Expand() -> Resize().
-    Stack(Allocator* allocator, size_t stackCapacity) : allocator_(allocator), ownAllocator_(0), stack_(0), stackTop_(0), stackEnd_(0), initialCapacity_(stackCapacity) {}
+    Stack(Allocator* allocator, size_t stackCapacity) : allocator_(allocator), ownAllocator_(0), stack_(0), stackTop_(0), stackEnd_(0), initialCapacity_(stackCapacity) {
+    }
 
+#if false
     Stack(const Stack& other)
-        : Stack(nullptr, other.initialCapacity_)
+            : Stack(nullptr, other.initialCapacity_)
     {
         if (other.Empty())
             return;
@@ -48,6 +51,7 @@ public:
         const char* src = other.Bottom<char>();
         memcpy(dst, src, other.GetSize());
     }
+#endif
 
 #if RAPIDJSON_HAS_CXX11_RVALUE_REFS
     Stack(Stack&& rhs)
@@ -109,7 +113,7 @@ public:
     void ShrinkToFit() { 
         if (Empty()) {
             // If the stack is empty, completely deallocate the memory.
-            Allocator::Free(stack_);
+            Allocator::Free(stack_); // NOLINT (+clang-analyzer-unix.Malloc)
             stack_ = 0;
             stackTop_ = 0;
             stackEnd_ = 0;
@@ -123,7 +127,7 @@ public:
     template<typename T>
     RAPIDJSON_FORCEINLINE void Reserve(size_t count = 1) {
          // Expand the stack if needed
-        if (RAPIDJSON_UNLIKELY(stackTop_ + sizeof(T) * count > stackEnd_))
+        if (RAPIDJSON_UNLIKELY(static_cast<std::ptrdiff_t>(sizeof(T) * count) > (stackEnd_ - stackTop_)))
             Expand<T>(count);
     }
 
@@ -135,7 +139,8 @@ public:
 
     template<typename T>
     RAPIDJSON_FORCEINLINE T* PushUnsafe(size_t count = 1) {
-        RAPIDJSON_ASSERT(stackTop_ + sizeof(T) * count <= stackEnd_);
+        RAPIDJSON_ASSERT(stackTop_);
+        RAPIDJSON_ASSERT(static_cast<std::ptrdiff_t>(sizeof(T) * count) <= (stackEnd_ - stackTop_));
         T* ret = reinterpret_cast<T*>(stackTop_);
         stackTop_ += sizeof(T) * count;
         return ret;
@@ -192,7 +197,7 @@ private:
         size_t newCapacity;
         if (stack_ == 0) {
             if (!allocator_)
-                ownAllocator_ = allocator_ = RAPIDJSON_NEW(Allocator);
+                ownAllocator_ = allocator_ = RAPIDJSON_NEW(Allocator)();
             newCapacity = initialCapacity_;
         } else {
             newCapacity = GetCapacity();
@@ -217,7 +222,10 @@ private:
         RAPIDJSON_DELETE(ownAllocator_); // Only delete if it is owned by the stack
     }
 
-    // Prohibit assignment operator.
+    // Prohibit copy constructor & assignment operator.
+#if false
+    Stack(const Stack&);
+#endif
     Stack& operator=(const Stack&);
 
     Allocator* allocator_;

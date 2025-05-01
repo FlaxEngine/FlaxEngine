@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -85,6 +85,7 @@ public:
     CommandSignatureDX12* DispatchIndirectCommandSignature = nullptr;
     CommandSignatureDX12* DrawIndexedIndirectCommandSignature = nullptr;
     CommandSignatureDX12* DrawIndirectCommandSignature = nullptr;
+    GPUBuffer* DummyVB = nullptr;
 
     D3D12_CPU_DESCRIPTOR_HANDLE NullSRV(D3D12_SRV_DIMENSION dimension) const;
     D3D12_CPU_DESCRIPTOR_HANDLE NullUAV() const;
@@ -196,6 +197,7 @@ public:
     GPUTimerQuery* CreateTimerQuery() override;
     GPUBuffer* CreateBuffer(const StringView& name) override;
     GPUSampler* CreateSampler() override;
+    GPUVertexLayout* CreateVertexLayout(const VertexElements& elements, bool explicitOffsets) override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
     GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name) override;
 };

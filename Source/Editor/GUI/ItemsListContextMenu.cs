@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -55,6 +55,11 @@ namespace FlaxEditor.GUI
             /// Occurs when items gets clicked by the user.
             /// </summary>
             public event Action<Item> Clicked;
+
+            /// <summary>
+            /// Occurs when items gets focused.
+            /// </summary>
+            public event Action<Item> Focused;
 
             /// <summary>
             /// The tint color of the text.
@@ -141,6 +146,10 @@ namespace FlaxEditor.GUI
             protected virtual void GetTextRect(out Rectangle rect)
             {
                 rect = new Rectangle(2, 0, Width - 4, Height);
+
+                // Indent for drop panel items is handled by drop panel margin
+                if (Parent is not DropPanel)
+                    rect.Location += new Float2(Editor.Instance.Icons.ArrowRight12.Size.X + 2, 0);
             }
 
             /// <inheritdoc />
@@ -154,10 +163,6 @@ namespace FlaxEditor.GUI
                 // Overlay
                 if (IsMouseOver || IsFocused)
                     Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundHighlighted);
-
-                // Indent for drop panel items is handled by drop panel margin
-                if (Parent is not DropPanel)
-                    textRect.Location += new Float2(Editor.Instance.Icons.ArrowRight12.Size.X + 2, 0);
 
                 // Draw all highlights
                 if (_highlights != null)
@@ -208,6 +213,14 @@ namespace FlaxEditor.GUI
             }
 
             /// <inheritdoc />
+            public override void OnGotFocus()
+            {
+                base.OnGotFocus();
+
+                Focused?.Invoke(this);
+            }
+
+            /// <inheritdoc />
             public override int Compare(Control other)
             {
                 if (other is Item otherItem)
@@ -227,6 +240,7 @@ namespace FlaxEditor.GUI
         private readonly Panel _scrollPanel;
         private List<DropPanel> _categoryPanels;
         private bool _waitingForInput;
+        private string _customSearch;
 
         /// <summary>
         /// Event fired when any item in this popup menu gets clicked.
@@ -248,26 +262,30 @@ namespace FlaxEditor.GUI
         /// </summary>
         /// <param name="width">The control width.</param>
         /// <param name="height">The control height.</param>
-        public ItemsListContextMenu(float width = 320, float height = 220)
+        /// <param name="withSearch">Enables search field.</param>
+        public ItemsListContextMenu(float width = 320, float height = 220, bool withSearch = true)
         {
             // Context menu dimensions
             Size = new Float2(width, height);
 
-            // Search box
-            _searchBox = new SearchBox(false, 1, 1)
+            if (withSearch)
             {
-                Parent = this,
-                Width = Width - 3,
-            };
-            _searchBox.TextChanged += OnSearchFilterChanged;
-            _searchBox.ClearSearchButton.Clicked += () => PerformLayout();
+                // Search box
+                _searchBox = new SearchBox(false, 1, 1)
+                {
+                    Parent = this,
+                    Width = Width - 3,
+                };
+                _searchBox.TextChanged += OnSearchFilterChanged;
+                _searchBox.ClearSearchButton.Clicked += () => PerformLayout();
+            }
 
             // Panel with scrollbar
             _scrollPanel = new Panel(ScrollBars.Vertical)
             {
                 Parent = this,
                 AnchorPreset = AnchorPresets.StretchAll,
-                Bounds = new Rectangle(0, _searchBox.Bottom + 1, Width, Height - _searchBox.Bottom - 2),
+                Bounds = withSearch ? new Rectangle(0, _searchBox.Bottom + 1, Width, Height - _searchBox.Bottom - 2) : new Rectangle(Float2.Zero, Size),
             };
 
             // Items list panel
@@ -276,6 +294,7 @@ namespace FlaxEditor.GUI
                 Parent = _scrollPanel,
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 IsScrollable = true,
+                Pivot = Float2.Zero,
             };
         }
 
@@ -286,12 +305,13 @@ namespace FlaxEditor.GUI
 
             LockChildrenRecursive();
 
+            var searchText = _searchBox?.Text ?? _customSearch;
             var items = ItemsPanel.Children;
             for (int i = 0; i < items.Count; i++)
             {
                 if (items[i] is Item item)
                 {
-                    item.UpdateFilter(_searchBox.Text);
+                    item.UpdateFilter(searchText);
                     item.UpdateScore();
                 }
             }
@@ -305,13 +325,13 @@ namespace FlaxEditor.GUI
                     {
                         if (category.Children[j] is Item item2)
                         {
-                            item2.UpdateFilter(_searchBox.Text);
+                            item2.UpdateFilter(searchText);
                             item2.UpdateScore();
                             anyVisible |= item2.Visible;
                         }
                     }
                     category.Visible = anyVisible;
-                    if (string.IsNullOrEmpty(_searchBox.Text))
+                    if (string.IsNullOrEmpty(searchText))
                         category.Close(false);
                     else
                         category.Open(false);
@@ -322,8 +342,8 @@ namespace FlaxEditor.GUI
 
             UnlockChildrenRecursive();
             PerformLayout(true);
-            _searchBox.Focus();
-            TextChanged?.Invoke(_searchBox.Text);
+            _searchBox?.Focus();
+            TextChanged?.Invoke(searchText);
         }
 
         /// <summary>
@@ -356,6 +376,14 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
+        /// Removes all added items.
+        /// </summary>
+        public void ClearItems()
+        {
+            ItemsPanel.DisposeChildren();
+        }
+
+        /// <summary>
         /// Sorts the items list (by item name by default).
         /// </summary>
         public void SortItems()
@@ -365,6 +393,34 @@ namespace FlaxEditor.GUI
             {
                 for (int i = 0; i < _categoryPanels.Count; i++)
                     _categoryPanels[i].SortChildren();
+            }
+        }
+
+        /// <summary>
+        /// Focuses and scroll to the given item to be selected.
+        /// </summary>
+        /// <param name="item">The item to select.</param>
+        public void SelectItem(Item item)
+        {
+            item.Focus();
+            ScrollViewTo(item);
+        }
+
+        /// <summary>
+        /// Applies custom search text query on the items list. Works even if search field is disabled
+        /// </summary>
+        /// <param name="text">The custom search text. Null to clear search.</param>
+        public void Search(string text)
+        {
+            if (_searchBox != null)
+            {
+                _searchBox.SetText(text);
+            }
+            else
+            {
+                _customSearch = text;
+                if (VisibleInHierarchy)
+                    OnSearchFilterChanged();
             }
         }
 
@@ -446,9 +502,11 @@ namespace FlaxEditor.GUI
                 }
             }
 
-            _searchBox.Clear();
+            _searchBox?.Clear();
             UnlockChildrenRecursive();
             PerformLayout(true);
+            if (_customSearch != null)
+                OnSearchFilterChanged();
         }
 
         private List<Item> GetVisibleItems()
@@ -510,7 +568,7 @@ namespace FlaxEditor.GUI
                 if (RootWindow.FocusedControl == null)
                 {
                     // Focus search box if nothing is focused
-                    _searchBox.Focus();
+                    _searchBox?.Focus();
                     return true;
                 }
 
@@ -536,7 +594,7 @@ namespace FlaxEditor.GUI
                     var focusedIndex = items.IndexOf(focusedItem);
                     if (focusedIndex == 0)
                     {
-                        _searchBox.Focus();
+                        _searchBox?.Focus();
                     }
                     else if (focusedIndex > 0)
                     {
@@ -556,7 +614,7 @@ namespace FlaxEditor.GUI
                 break;
             }
 
-            if (_waitingForInput)
+            if (_waitingForInput && _searchBox != null)
             {
                 _waitingForInput = false;
                 _searchBox.Focus();

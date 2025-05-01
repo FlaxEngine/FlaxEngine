@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #define DEBUG_HISTORY_REJECTION 0
 #define NO_GBUFFER_SAMPLING

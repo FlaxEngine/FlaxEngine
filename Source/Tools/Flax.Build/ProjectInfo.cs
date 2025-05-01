@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -260,7 +260,11 @@ namespace Flax.Build
                 return true;
             var rules = Builder.GenerateRulesAssembly();
             var target = rules.GetTarget(name);
-            return target == null || target.Modules.TrueForAll(x => !rules.GetModule(x).BuildNativeCode);
+            return target == null || target.Modules.TrueForAll(moduleName =>
+            {
+                var module = rules.GetModule(moduleName);
+                return module != null && !module.BuildNativeCode;
+            });
         }
 
         /// <summary>

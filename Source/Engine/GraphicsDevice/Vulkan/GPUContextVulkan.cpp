@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -10,6 +10,7 @@
 #include "GPUBufferVulkan.h"
 #include "GPUShaderVulkan.h"
 #include "GPUSamplerVulkan.h"
+#include "GPUVertexLayoutVulkan.h"
 #include "GPUPipelineStateVulkan.h"
 #include "Engine/Profiler/RenderStats.h"
 #include "GPUShaderProgramVulkan.h"
@@ -504,7 +505,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                 auto handle = handles[slot];
                 if (!handle)
                 {
-                    const auto dummy = _device->HelperResources.GetDummyBuffer();
+                    const auto dummy = _device->HelperResources.GetDummyBuffer(descriptor.ResourceFormat);
                     handle = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
                 }
                 VkBufferView bufferView;
@@ -528,7 +529,9 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                 auto handle = handles[slot];
                 if (!handle)
                 {
-                    const auto dummy = _device->HelperResources.GetDummyBuffer();
+                    if (descriptor.ResourceFormat == PixelFormat::Unknown)
+                        break;
+                    const auto dummy = _device->HelperResources.GetDummyBuffer(descriptor.ResourceFormat);
                     handle = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
                 }
                 VkBuffer buffer;
@@ -542,7 +545,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                 auto handle = handles[slot];
                 if (!handle)
                 {
-                    const auto dummy = _device->HelperResources.GetDummyBuffer();
+                    const auto dummy = _device->HelperResources.GetDummyBuffer(descriptor.ResourceFormat);
                     handle = (DescriptorOwnerResourceVulkan*)dummy->View()->GetNativePtr();
                 }
                 VkBufferView bufferView;
@@ -557,14 +560,9 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
                 VkBuffer buffer = VK_NULL_HANDLE;
                 VkDeviceSize offset = 0, range = 0;
                 uint32 dynamicOffset = 0;
-                if (handle)
-                    handle->DescriptorAsDynamicUniformBuffer(this, buffer, offset, range, dynamicOffset);
-                else
-                {
-                    const auto dummy = _device->HelperResources.GetDummyBuffer();
-                    buffer = dummy->GetHandle();
-                    range = dummy->GetSize();
-                }
+                if (!handle)
+                    handle = (GPUConstantBufferVulkan*)_device->HelperResources.GetDummyConstantBuffer();
+                handle->DescriptorAsDynamicUniformBuffer(this, buffer, offset, range, dynamicOffset);
                 needsWrite |= dsWriter.WriteDynamicUniformBuffer(descriptorIndex, buffer, offset, range, dynamicOffset, index);
                 break;
             }
@@ -649,17 +647,14 @@ void GPUContextVulkan::OnDrawCall()
         }
     }
 
-    // Bind any missing vertex buffers to null if required by the current state
-    const auto vertexInputState = pipelineState->GetVertexInputState();
-    const int32 missingVBs = vertexInputState->vertexBindingDescriptionCount - _vbCount;
-    if (missingVBs > 0)
+#if GPU_ENABLE_ASSERTION_LOW_LAYERS
+    // Check for missing vertex buffers layout
+    GPUVertexLayoutVulkan* vertexLayout = _vertexLayout ? _vertexLayout : pipelineState->VertexBufferLayout;
+    if (!vertexLayout && pipelineState && !pipelineState->VertexBufferLayout && (pipelineState->UsedStagesMask & (1 << (int32)DescriptorSet::Vertex)) != 0 && !_vertexLayout && _vbCount)
     {
-        VkBuffer buffers[GPU_MAX_VB_BINDED];
-        VkDeviceSize offsets[GPU_MAX_VB_BINDED] = {};
-        for (int32 i = 0; i < missingVBs; i++)
-            buffers[i] = _device->HelperResources.GetDummyVertexBuffer()->GetHandle();
-        vkCmdBindVertexBuffers(cmdBuffer->GetHandle(), _vbCount, missingVBs, buffers, offsets);
+        LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
     }
+#endif
 
     // Start render pass if not during one
     if (cmdBuffer->IsOutsideRenderPass())
@@ -676,7 +671,7 @@ void GPUContextVulkan::OnDrawCall()
     {
         _psDirtyFlag = false;
         const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-        const auto pipeline = pipelineState->GetState(_renderPass);
+        const auto pipeline = pipelineState->GetState(_renderPass, _vertexLayout);
         vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
         RENDER_STAT_PS_STATE_CHANGE();
     }
@@ -715,6 +710,7 @@ void GPUContextVulkan::FrameBegin()
     _stencilRef = 0;
     _renderPass = nullptr;
     _currentState = nullptr;
+    _vertexLayout = nullptr;
     _rtDepth = nullptr;
     Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
     Platform::MemoryClear(_cbHandles, sizeof(_cbHandles));
@@ -726,6 +722,9 @@ void GPUContextVulkan::FrameBegin()
     // Init command buffer
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
     vkCmdSetStencilReference(cmdBuffer->GetHandle(), VK_STENCIL_FRONT_AND_BACK, _stencilRef);
+    VkBuffer buffers[1] = { _device->HelperResources.GetDummyVertexBuffer()->GetHandle() };
+    VkDeviceSize offsets[1] = {};
+    vkCmdBindVertexBuffers(cmdBuffer->GetHandle(), GPU_MAX_VB_BINDED, 1, buffers, offsets);
 
 #if VULKAN_RESET_QUERY_POOLS
     // Reset pending queries
@@ -1031,9 +1030,16 @@ void GPUContextVulkan::BindUA(int32 slot, GPUResourceView* view)
     }
 }
 
-void GPUContextVulkan::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)
+void GPUContextVulkan::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets, GPUVertexLayout* vertexLayout)
 {
     _vbCount = vertexBuffers.Length();
+    if (!vertexLayout)
+         vertexLayout = GPUVertexLayout::Get(vertexBuffers);
+    if (_vertexLayout != vertexLayout)
+    {
+        _vertexLayout = (GPUVertexLayoutVulkan*)vertexLayout;
+        _psDirtyFlag = true;
+    }
     if (vertexBuffers.Length() == 0)
         return;
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();

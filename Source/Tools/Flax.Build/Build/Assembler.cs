@@ -106,7 +106,10 @@ namespace Flax.Build
                 if (File.Exists(cacheAssemblyPath) && File.Exists(cacheInfoPath))
                 {
                     var lines = File.ReadAllLines(cacheInfoPath);
-                    if (lines.Length == 2 && long.TryParse(lines[0], out var cacheTimeTicks) && string.Equals(buildInfo, lines[1], StringComparison.Ordinal))
+                    if (lines.Length == 3 &&
+                        long.TryParse(lines[0], out var cacheTimeTicks) &&
+                        string.Equals(buildInfo, lines[1], StringComparison.Ordinal) &&
+                        !lines[2].Split(';').Except(SourceFiles).Any())
                     {
                         // Cached time and
                         var cacheTime = DateTime.FromBinary(cacheTimeTicks);
@@ -199,7 +202,8 @@ namespace Flax.Build
                 File.WriteAllLines(cacheInfoPath, new[]
                 {
                     recentWriteTime.ToBinary().ToString(),
-                    buildInfo
+                    buildInfo,
+                    string.Join(';', SourceFiles)
                 });
             }
 

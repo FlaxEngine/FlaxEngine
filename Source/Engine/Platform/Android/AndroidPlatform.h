@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -21,7 +21,6 @@ public:
     static String GetDeviceManufacturer();
     static String GetDeviceModel();
     static String GetDeviceBuildNumber();
-    static String GetSystemVersion();
     static void PreInit(android_app* app);
 
 public:
@@ -80,8 +79,9 @@ public:
         __builtin_prefetch(static_cast<char const*>(ptr));
     }
     static bool Is64BitPlatform();
+    static String GetSystemName();
+    static Version GetSystemVersion();
     static CPUInfo GetCPUInfo();
-    static int32 GetCacheLineSize();
     static MemoryStats GetMemoryStats();
     static ProcessMemoryStats GetProcessMemoryStats();
     static uint64 GetCurrentThreadID()

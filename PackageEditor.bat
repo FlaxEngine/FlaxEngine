@@ -1,13 +1,13 @@
 @echo off
 
-rem Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+rem Copyright (c) Wojciech Figat. All rights reserved.
 
 setlocal
 pushd
 echo Building and packaging Flax Editor...
 
 rem Run the build tool.
-call "Development\Scripts\Windows\CallBuildTool.bat" -deploy -deployEditor -dotnet=8 -verbose -log -logFile="Cache\Intermediate\PackageLog.txt" %*
+call "Development\Scripts\Windows\CallBuildTool.bat" -deploy -deployEditor -verbose -log -logFile="Cache\Intermediate\PackageLog.txt" %*
 if errorlevel 1 goto BuildToolFailed
 
 popd

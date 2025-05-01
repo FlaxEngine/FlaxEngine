@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -95,7 +95,7 @@ namespace FlaxEditor.CustomEditors.Editors
             if (assetReference != null)
             {
                 if (assetReference.UseSmallPicker)
-                    height = 32;
+                    height = 36;
                 if (string.IsNullOrEmpty(assetReference.TypeName))
                 {
                 }
@@ -123,7 +123,9 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             base.Refresh();
 
-            if (!HasDifferentValues)
+            var differentValues = HasDifferentValues;
+            Picker.DifferentValues = differentValues;
+            if (!differentValues)
             {
                 _isRefreshing = true;
                 var value = Values[0];
@@ -375,12 +377,9 @@ namespace FlaxEditor.CustomEditors.Editors
         {
             base.Refresh();
 
-            if (!HasDifferentValues)
-            {
-                _isRefreshing = true;
-                _textBox.Text = GetPath();
-                _isRefreshing = false;
-            }
+            _isRefreshing = true;
+            _textBox.Text = HasDifferentValues ? "Multiple Values" : GetPath();
+            _isRefreshing = false;
         }
 
         /// <inheritdoc />

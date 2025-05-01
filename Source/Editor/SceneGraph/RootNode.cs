@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -159,7 +159,8 @@ namespace FlaxEditor.SceneGraph
         /// </summary>
         /// <param name="actor">The actor.</param>
         /// <param name="parent">The parent.</param>
-        public abstract void Spawn(Actor actor, Actor parent);
+        /// <param name="orderInParent">Custom index in parent to use. Value -1 means the default one (the last one).</param>
+        public abstract void Spawn(Actor actor, Actor parent, int orderInParent = -1);
 
         /// <summary>
         /// Gets the undo.
@@ -168,7 +169,14 @@ namespace FlaxEditor.SceneGraph
 
         /// <summary>
         /// Gets the list of selected scene graph nodes in the editor context.
+        /// [Deprecated in v1.10]
         /// </summary>
-        public abstract List<SceneGraphNode> Selection { get; }
+        [Obsolete("Use SceneContext.Selection instead.")]
+        public List<SceneGraphNode> Selection => SceneContext.Selection;
+
+        /// <summary>
+        /// Gets the list of selected scene graph nodes in the editor context.
+        /// </summary>
+        public abstract ISceneEditingContext SceneContext { get; }
     }
 }

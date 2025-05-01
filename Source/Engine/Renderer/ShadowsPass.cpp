@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ShadowsPass.h"
 #include "GBufferPass.h"
@@ -24,7 +24,7 @@
 #define SHADOWS_MAX_TILES 6
 #define SHADOWS_MIN_RESOLUTION 32
 #define SHADOWS_MAX_STATIC_ATLAS_CAPACITY_TO_DEFRAG 0.7f
-#define SHADOWS_BASE_LIGHT_RESOLUTION(atlasResolution) atlasResolution / MAX_CSM_CASCADES // Allow to store 4 CSM cascades in a single row in all cases
+#define SHADOWS_BASE_LIGHT_RESOLUTION(atlasResolution) (atlasResolution / MAX_CSM_CASCADES) // Allow to store 4 CSM cascades in a single row in all cases
 #define NormalOffsetScaleTweak METERS_TO_UNITS(1)
 #define LocalLightNearPlane METERS_TO_UNITS(0.1f)
 
@@ -72,7 +72,7 @@ struct ShadowAtlasLightTile
     Matrix WorldToShadow;
     float FramesToUpdate; // Amount of frames (with fraction) until the next shadow update can happen
     bool SkipUpdate;
-    bool HasStaticGeometry;
+    mutable bool HasStaticGeometry;
     Viewport CachedViewport; // The viewport used the last time to render shadow to the atlas
 
     void FreeDynamic(ShadowsCustomBuffer* buffer);
@@ -190,7 +190,8 @@ struct ShadowAtlasLight
     uint8 TilesNeeded;
     uint8 TilesCount;
     bool HasStaticShadowContext;
-    StaticStates StaticState;
+    bool BlendCSM;
+    mutable StaticStates StaticState;
     BoundingSphere Bounds;
     float Sharpness, Fade, NormalOffsetScale, Bias, FadeDistance, Distance, TileBorder;
     Float4 CascadeSplits;
@@ -348,7 +349,7 @@ public:
 
     void InitStaticAtlas()
     {
-        const int32 atlasResolution = Resolution * 2;
+        const int32 atlasResolution = Math::Min(Resolution * 2, GPUDevice::Instance->Limits.MaximumTexture2DSize);
         if (StaticAtlas.Width == atlasResolution)
             return;
         StaticAtlas.Init(atlasResolution, atlasResolution);
@@ -482,7 +483,6 @@ bool ShadowsPass::Init()
 
     // Select format for shadow maps
     _shadowMapFormat = PixelFormat::Unknown;
-#if !PLATFORM_SWITCH // TODO: fix shadows performance issue on Switch
     for (const PixelFormat format : { PixelFormat::D16_UNorm, PixelFormat::D24_UNorm_S8_UInt, PixelFormat::D32_Float })
     {
         const auto formatTexture = PixelFormatExtensions::FindShaderResourceFormat(format, false);
@@ -495,7 +495,6 @@ bool ShadowsPass::Init()
             break;
         }
     }
-#endif
     if (_shadowMapFormat == PixelFormat::Unknown)
         LOG(Warning, "GPU doesn't support shadows rendering");
 
@@ -771,6 +770,15 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     const RenderView& view = renderContext.View;
     const int32 csmCount = atlasLight.TilesCount;
     const auto shadowMapsSize = (float)atlasLight.Resolution;
+    atlasLight.BlendCSM = Graphics::AllowCSMBlending;
+#if USE_EDITOR
+    // Disable cascades blending when baking lightmaps
+    if (IsRunningRadiancePass)
+        atlasLight.BlendCSM = false;
+#elif PLATFORM_SWITCH || PLATFORM_IOS || PLATFORM_ANDROID
+    // Disable cascades blending on low-end platforms
+    atlasLight.BlendCSM = false;
+#endif
 
     // Calculate cascade splits
     const float minDistance = view.Near;
@@ -897,7 +905,8 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
         Float3 frustumCornersVs[8];
         for (int32 j = 0; j < 4; j++)
         {
-            float overlapWithPrevSplit = 0.1f * (splitMinRatio - oldSplitMinRatio); // CSM blending overlap
+            float csmOverlap = atlasLight.BlendCSM ? 0.2f : 0.1f;
+            float overlapWithPrevSplit = csmOverlap * (splitMinRatio - oldSplitMinRatio);
             const auto frustumRangeVS = frustumCorners[j + 4] - frustumCorners[j];
             frustumCornersVs[j] = frustumCorners[j] + frustumRangeVS * (splitMinRatio - overlapWithPrevSplit);
             frustumCornersVs[j + 4] = frustumCorners[j] + frustumRangeVS * splitMaxRatio;
@@ -1116,6 +1125,7 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     default:
         return;
     }
+    atlasResolution = Math::Min(atlasResolution, GPUDevice::Instance->Limits.MaximumTexture2DSize);
     if (shadows.Resolution != atlasResolution)
     {
         shadows.Reset();
@@ -1392,7 +1402,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
         bool renderedAny = false;
         for (auto& e : shadows.Lights)
         {
-            ShadowAtlasLight& atlasLight = e.Value;
+            const ShadowAtlasLight& atlasLight = e.Value;
             if (!atlasLight.HasStaticShadowContext || atlasLight.ContextCount == 0)
                 continue;
             int32 contextIndex = 0;
@@ -1402,7 +1412,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
                 // Check for any static geometry to use in static shadow map
                 for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
                 {
-                    ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
+                    const ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
                     contextIndex++; // Skip dynamic context
                     auto& shadowContextStatic = renderContextBatch.Contexts[atlasLight.ContextIndex + contextIndex++];
                     if (!shadowContextStatic.List->DrawCallsLists[(int32)DrawCallsListType::Depth].IsEmpty() || !shadowContextStatic.List->ShadowDepthDrawCallsList.IsEmpty())
@@ -1418,7 +1428,7 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
             contextIndex = 0;
             for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
             {
-                ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
+                const ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
                 if (!tile.RectTile)
                     break;
                 if (!tile.StaticRectTile)
@@ -1471,13 +1481,13 @@ void ShadowsPass::RenderShadowMaps(RenderContextBatch& renderContextBatch)
     context->SetRenderTarget(shadows.ShadowMapAtlas->View(), (GPUTextureView*)nullptr);
     for (auto& e : shadows.Lights)
     {
-        ShadowAtlasLight& atlasLight = e.Value;
+        const ShadowAtlasLight& atlasLight = e.Value;
         if (atlasLight.ContextCount == 0)
             continue;
         int32 contextIndex = 0;
         for (int32 tileIndex = 0; tileIndex < atlasLight.TilesCount; tileIndex++)
         {
-            ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
+            const ShadowAtlasLightTile& tile = atlasLight.Tiles[tileIndex];
             if (!tile.RectTile)
                 break;
             if (tile.SkipUpdate)
@@ -1603,7 +1613,9 @@ void ShadowsPass::RenderShadowMask(RenderContextBatch& renderContextBatch, Rende
     }
     else //if (light.IsDirectionalLight)
     {
-        context->SetState(_psShadowDir.Get(permutationIndex));
+        auto* atlasLight = shadows.Lights.TryGet(light.ID);
+        ASSERT_LOW_LAYER(atlasLight);
+        context->SetState(_psShadowDir.Get(permutationIndex + (atlasLight->BlendCSM ? 8 : 0)));
         context->DrawFullscreenTriangle();
     }
 

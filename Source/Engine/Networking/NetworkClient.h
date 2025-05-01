@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,7 @@
 /// <summary>
 /// High-level network client object (local or connected to the server).
 /// </summary>
-API_CLASS(sealed, NoSpawn, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkClient final : public ScriptingObject
+API_CLASS(sealed, NoSpawn, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkClient final : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(NetworkClient);
     friend class NetworkManager;

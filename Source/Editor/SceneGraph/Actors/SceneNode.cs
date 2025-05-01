@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.IO;
 using FlaxEditor.GUI.ContextMenu;
@@ -46,6 +46,9 @@ namespace FlaxEditor.SceneGraph.Actors
         : base(scene, new SceneTreeNode())
         {
         }
+
+        /// <inheritdoc />
+        public override bool CanSelectInViewport => false;
 
         /// <inheritdoc />
         public override bool CanCreatePrefab => false;

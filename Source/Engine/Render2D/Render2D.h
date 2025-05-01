@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -55,6 +55,7 @@ API_CLASS(Static) class FLAXENGINE_API Render2D
     {
         Matrix ViewProjection;
         Float2 ViewSize;
+        bool UseDepthBuffer;
     };
 
 public:

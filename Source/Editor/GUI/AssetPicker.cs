@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -47,6 +47,11 @@ namespace FlaxEditor.GUI
         /// False if changing selected item is disabled.
         /// </summary>
         public bool CanEdit = true;
+
+        /// <summary>
+        /// Utility flag used to indicate that there are different values assigned to this reference editor and user should be informed about it.
+        /// </summary>
+        public bool DifferentValues;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AssetPicker"/> class.
@@ -121,7 +126,13 @@ namespace FlaxEditor.GUI
             if (CanEdit)
                 Render2D.DrawSprite(style.ArrowDown, button1Rect, button1Rect.Contains(_mousePos) ? style.Foreground : style.ForegroundGrey);
 
-            if (Validator.SelectedItem != null)
+            if (DifferentValues)
+            {
+                // No element selected
+                Render2D.FillRectangle(iconRect, style.BackgroundNormal);
+                Render2D.DrawText(style.FontMedium, "Multiple\nValues", iconRect, style.Foreground, TextAlignment.Center, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, Height / DefaultIconSize);
+            }
+            else if (Validator.SelectedItem != null)
             {
                 // Draw item preview
                 Validator.SelectedItem.DrawThumbnail(ref iconRect);

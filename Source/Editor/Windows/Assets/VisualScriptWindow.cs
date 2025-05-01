@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -1373,13 +1373,15 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
+            base.OnDestroy();
+
             _undo.Enabled = false;
             _propertiesEditor.Deselect();
             _undo.Clear();
             _debugObjectPicker = null;
             _debugToolstripControls = null;
-
-            base.OnDestroy();
         }
 
         /// <inheritdoc />

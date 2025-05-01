@@ -1,3 +1,5 @@
+// Copyright (c) Wojciech Figat. All rights reserved.
+
 namespace FlaxEngine
 {
     public partial class DirectionalLight

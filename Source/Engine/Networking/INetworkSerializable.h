@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,7 @@ class NetworkStream;
 /// <summary>
 /// Interface for values and objects that can be serialized/deserialized for network replication.
 /// </summary>
-API_INTERFACE(Namespace = "FlaxEngine.Networking") class FLAXENGINE_API INetworkSerializable
+API_INTERFACE(Namespace="FlaxEngine.Networking") class FLAXENGINE_API INetworkSerializable
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(INetworkSerializable);
 public:

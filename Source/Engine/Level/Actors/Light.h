@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -61,7 +61,7 @@ protected:
         position = _transform.Translation - viewOrigin;
         if (ViewDistance > ZeroTolerance)
         {
-            const float dst2 = Vector3::DistanceSquared(viewPosition, position);
+            const float dst2 = (float)Vector3::DistanceSquared(viewPosition, position);
             const float dst = Math::Sqrt(dst2);
             brightness *= Math::Remap(dst, 0.9f * ViewDistance, ViewDistance, 1.0f, 0.0f);
             return dst < ViewDistance;

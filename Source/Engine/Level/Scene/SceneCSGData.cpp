@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SceneCSGData.h"
 #include "Engine/Core/Log.h"
@@ -88,7 +88,7 @@ bool SceneCSGData::TryGetSurfaceData(const Guid& brushId, int32 brushSurfaceInde
                 // Invalid data
                 return false;
             }
-            DataBrushLocations.EnsureCapacity((int32)(brushesCount * 4.0f));
+            DataBrushLocations.EnsureCapacity(brushesCount);
             for (int32 i = 0; i < brushesCount; i++)
             {
                 Guid id;

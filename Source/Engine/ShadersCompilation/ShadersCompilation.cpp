@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_SHADER_COMPILER
 
@@ -402,7 +402,7 @@ void ShadersCompilation::ExtractShaderIncludes(byte* shaderCache, int32 shaderCa
     for (int32 i = 0; i < includesCount; i++)
     {
         String& include = includes.AddOne();
-        stream.ReadString(&include, 11);
+        stream.Read(include, 11);
         include  = ShadersCompilation::ResolveShaderPath(include);
         DateTime lastEditTime;
         stream.Read(lastEditTime);

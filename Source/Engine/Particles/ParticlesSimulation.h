@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -20,22 +20,6 @@ public:
     ParticleSystemParameter()
         : GraphParameter(SpawnParams(Guid::New(), TypeInitializer))
     {
-    }
-
-    ParticleSystemParameter(const ParticleSystemParameter& other)
-        : ParticleSystemParameter()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    ParticleSystemParameter& operator=(const ParticleSystemParameter& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
     }
 };
 

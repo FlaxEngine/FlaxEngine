@@ -1,8 +1,10 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #if COMPILE_WITH_VK_SHADER_COMPILER || GRAPHICS_API_VULKAN
+
+#include "Engine/Graphics/PixelFormat.h"
 
 #if GRAPHICS_API_VULKAN
 #include "Engine/GraphicsDevice/Vulkan/IncludeVulkanHeaders.h"
@@ -96,6 +98,11 @@ struct SpirvShaderDescriptorInfo
         SpirvShaderResourceType ResourceType;
 
         /// <summary>
+        /// The resource format.
+        /// </summary>
+        PixelFormat ResourceFormat;
+
+        /// <summary>
         /// The amount of slots used by the descriptor (eg. array of textures size).
         /// </summary>
         uint32 Count;
@@ -127,8 +134,6 @@ struct SpirvShaderHeader
     /// The shader descriptors usage information.
     /// </summary>
     SpirvShaderDescriptorInfo DescriptorInfo;
-
-    // .. rest is just a actual data array
 };
 
 #endif

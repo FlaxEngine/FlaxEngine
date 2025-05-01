@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -121,8 +121,6 @@ namespace FlaxEngine.GUI
             {
                 if (_parent == value)
                     return;
-
-                Defocus();
 
                 Float2 oldParentSize;
                 if (_parent != null)
@@ -426,7 +424,7 @@ namespace FlaxEngine.GUI
 
         private void OnUpdateTooltip(float deltaTime)
         {
-            Tooltip.OnMouseOverControl(this, deltaTime);
+            Tooltip?.OnMouseOverControl(this, deltaTime);
         }
 
         /// <summary>
@@ -744,7 +742,7 @@ namespace FlaxEngine.GUI
             // Update tooltip
             if (ShowTooltip && OnTestTooltipOverControl(ref location))
             {
-                Tooltip.OnMouseEnterControl(this);
+                Tooltip?.OnMouseEnterControl(this);
                 SetUpdate(ref _tooltipUpdate, OnUpdateTooltip);
             }
         }
@@ -761,14 +759,14 @@ namespace FlaxEngine.GUI
             {
                 if (_tooltipUpdate == null)
                 {
-                    Tooltip.OnMouseEnterControl(this);
+                    Tooltip?.OnMouseEnterControl(this);
                     SetUpdate(ref _tooltipUpdate, OnUpdateTooltip);
                 }
             }
             else if (_tooltipUpdate != null)
             {
                 SetUpdate(ref _tooltipUpdate, null);
-                Tooltip.OnMouseLeaveControl(this);
+                Tooltip?.OnMouseLeaveControl(this);
             }
         }
 
@@ -785,7 +783,7 @@ namespace FlaxEngine.GUI
             if (_tooltipUpdate != null)
             {
                 SetUpdate(ref _tooltipUpdate, null);
-                Tooltip.OnMouseLeaveControl(this);
+                Tooltip?.OnMouseLeaveControl(this);
             }
         }
 
@@ -1084,6 +1082,11 @@ namespace FlaxEngine.GUI
         [NoAnimate]
         public void UnlinkTooltip()
         {
+            if (_tooltipUpdate != null)
+            {
+                SetUpdate(ref _tooltipUpdate, null);
+                Tooltip?.OnMouseLeaveControl(this);
+            }
             _tooltipText = null;
             _tooltip = null;
         }

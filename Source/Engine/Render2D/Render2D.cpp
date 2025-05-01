@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Render2D.h"
 #include "Font.h"
@@ -19,6 +19,7 @@
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Animations/AnimationUtils.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Half.h"
@@ -363,17 +364,17 @@ void Write9SlicingRect(const Rectangle& rect, const Color& color, const Float4& 
     const Float2 bottomLeftUV(borderUVs.X, 1.0f - borderUVs.W);
     const Float2 bottomRightUV(1.0f - borderUVs.Y, 1.0f - borderUVs.W);
 
-    WriteRect(upperLeft, color, Float2::Zero, upperLeftUV);
-    WriteRect(upperRight, color, Float2(upperRightUV.X, 0), Float2(1, upperLeftUV.Y));
-    WriteRect(bottomLeft, color, Float2(0, bottomLeftUV.Y), Float2(bottomLeftUV.X, 1));
-    WriteRect(bottomRight, color, bottomRightUV, Float2::One);
+    WriteRect(upperLeft, color, Float2::Zero, upperLeftUV); // Upper left corner
+    WriteRect(upperRight, color, Float2(upperRightUV.X, 0), Float2(1, upperLeftUV.Y)); // Upper right corner
+    WriteRect(bottomLeft, color, Float2(0, bottomLeftUV.Y), Float2(bottomLeftUV.X, 1)); // Bottom left corner
+    WriteRect(bottomRight, color, bottomRightUV, Float2::One); // Bottom right corner
 
-    WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Float2(upperLeftUV.X, 0), upperRightUV);
-    WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Float2(0, upperLeftUV.Y), bottomLeftUV);
-    WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Float2(bottomRightUV.X, 1));
-    WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Float2(1, bottomRightUV.Y));
+    WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Float2(upperLeftUV.X, 0), upperRightUV); // Top side
+    WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Float2(0, upperLeftUV.Y), bottomLeftUV); // Left side
+    WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Float2(bottomRightUV.X, 1)); // Bottom side
+    WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Float2(1, bottomRightUV.Y)); // Right Side
 
-    WriteRect(Rectangle(upperLeft.GetBottomRight(), bottomRight.GetUpperLeft() - upperLeft.GetBottomRight()), color, upperRightUV, bottomRightUV);
+    WriteRect(Rectangle(upperLeft.GetBottomRight(), bottomRight.GetUpperLeft() - upperLeft.GetBottomRight()), color, upperLeftUV, bottomRightUV); // Center
 }
 
 void Write9SlicingRect(const Rectangle& rect, const Color& color, const Float4& border, const Float4& borderUVs, const Float2& uvLocation, const Float2& uvSize)
@@ -604,6 +605,14 @@ bool Render2DService::Init()
     GUIShader.Get()->OnReloading.Bind<OnGUIShaderReloading>();
 #endif
 
+    VB.SetLayout(GPUVertexLayout::Get({
+        { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
+        { VertexElement::Types::TexCoord, 0, 0, 0, PixelFormat::R16G16_Float },
+        { VertexElement::Types::Color, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
+        { VertexElement::Types::TexCoord1, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
+        { VertexElement::Types::TexCoord2, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
+    }));
+
     DrawCalls.EnsureCapacity(RENDER2D_INITIAL_DRAW_CALL_CAPACITY);
 
     return false;
@@ -759,10 +768,7 @@ void Render2D::End()
     IsScissorsRectEmpty = false;
     for (int32 i = 0; i < DrawCalls.Count(); i++)
     {
-        // Peek draw call
         const auto& drawCall = DrawCalls[i];
-
-        // Check if cannot add element to the batching
         if (batchSize != 0 && !CanBatchDrawCalls(DrawCalls[batchStart], drawCall))
         {
             // Flush batched elements
@@ -990,6 +996,7 @@ void DrawBatch(int32 startIndex, int32 count)
         Render2D::CustomData customData;
         customData.ViewProjection = ViewProjection;
         customData.ViewSize = Float2::One;
+        customData.UseDepthBuffer = DepthBuffer != nullptr;
         bindParams.CustomData = &customData;
         material->Bind(bindParams);
 
@@ -1026,6 +1033,7 @@ void DrawBatch(int32 startIndex, int32 count)
         Render2D::CustomData customData;
         customData.ViewProjection = ViewProjection;
         customData.ViewSize = Float2(d.AsMaterial.Width, d.AsMaterial.Height);
+        customData.UseDepthBuffer = DepthBuffer != nullptr;
         bindParams.CustomData = &customData;
         material->Bind(bindParams);
 

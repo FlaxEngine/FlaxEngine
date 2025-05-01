@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.ComponentModel;
 
@@ -257,10 +257,12 @@ namespace FlaxEngine.GUI
         {
             base.DrawSelf();
 
-            if (ClipText)
-                Render2D.PushClip(new Rectangle(Float2.Zero, Size));
+            var margin = _margin;
+            var rect = new Rectangle(margin.Location, Size - margin.Size);
 
-            var rect = new Rectangle(new Float2(Margin.Left, Margin.Top), Size - Margin.Size);
+            if (ClipText)
+                Render2D.PushClip(ref rect);
+
             var color = IsMouseOver || IsNavFocused ? TextColorHighlighted : TextColor;
             if (!EnabledInHierarchy)
                 color *= 0.6f;
@@ -335,9 +337,7 @@ namespace FlaxEngine.GUI
                             size.X = _textSize.X + Margin.Width;
                         if (_autoHeight)
                             size.Y = _textSize.Y + Margin.Height;
-                        var pivotRelative = PivotRelative;
-                        Size = size;
-                        PivotRelative = pivotRelative;
+                        Resize(ref size);
                     }
                 }
             }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 // Parsing HTML Tags in C# by Jonathan Wood (4 Jul 2012)
 // https://www.codeproject.com/Articles/57176/Parsing-HTML-Tags-in-C

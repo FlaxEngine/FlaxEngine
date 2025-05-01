@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -21,10 +21,11 @@
 #define LOG_STR(messageType, str) Log::Logger::Write(LogType::messageType, str)
 
 #if LOG_ENABLE_AUTO_FLUSH
+// Noop as log is auto-flushed on write
+#define LOG_FLUSH()
+#else
 // Flushes the log file buffer
 #define LOG_FLUSH() Log::Logger::Flush()
-#else
-#define LOG_FLUSH()
 #endif
 
 /// <summary>

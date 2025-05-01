@@ -1,5 +1,6 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
+#if USE_PROFILER
 using System;
 using System.Collections.Generic;
 using FlaxEditor.GUI;
@@ -87,6 +88,7 @@ namespace FlaxEditor.Windows.Profiler
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = Margin.Zero,
+                Pivot = Float2.Zero,
                 IsScrollable = true,
                 Parent = panel,
             };
@@ -490,7 +492,7 @@ namespace FlaxEditor.Windows.Profiler
                         {
                             break;
                         }
-                        subEventsMemoryTotal += sub.ManagedMemoryAllocation + e.NativeMemoryAllocation;
+                        subEventsMemoryTotal += sub.ManagedMemoryAllocation + sub.NativeMemoryAllocation;
                     }
 
                     string name = e.Name.Replace("::", ".");
@@ -538,10 +540,11 @@ namespace FlaxEditor.Windows.Profiler
                     row.Depth = e.Depth;
                     row.Width = _table.Width;
                     row.Visible = e.Depth < 2;
-                    row.BackgroundColor = i % 2 == 0 ? rowColor2 : Color.Transparent;
+                    row.BackgroundColor = i % 2 == 1 ? rowColor2 : Color.Transparent;
                     row.Parent = _table;
                 }
             }
         }
     }
 }
+#endif

@@ -1,19 +1,36 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Asset.h"
 #include "Content.h"
+#include "Deprecated.h"
 #include "SoftAssetReference.h"
 #include "Cache/AssetsCache.h"
-#include "Loading/ContentLoadingManager.h"
 #include "Loading/Tasks/LoadAssetTask.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/LogContext.h"
-#include "Engine/Engine/Engine.h"
-#include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
-#include "Engine/Threading/MainThreadTask.h"
-#include "Engine/Threading/ConcurrentTaskQueue.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
+#include "Engine/Threading/MainThreadTask.h"
+#include "Engine/Threading/ThreadLocal.h"
+
+#if USE_EDITOR
+
+ThreadLocal<bool> ContentDeprecatedFlags;
+
+void ContentDeprecated::Mark()
+{
+    ContentDeprecatedFlags.Set(true);
+}
+
+bool ContentDeprecated::Clear(bool newValue)
+{
+    auto& flag = ContentDeprecatedFlags.Get();
+    bool result = flag;
+    flag = newValue;
+    return result;
+}
+
+#endif
 
 AssetReferenceBase::~AssetReferenceBase()
 {
@@ -344,6 +361,7 @@ void Asset::Reload()
     // Virtual assets are memory-only so reloading them makes no sense
     if (IsVirtual())
         return;
+    PROFILE_CPU_NAMED("Asset.Reload");
 
     // It's better to call it from the main thread
     if (IsInMainThread())
@@ -376,11 +394,6 @@ void Asset::Reload()
         Task::StartNew(New<MainThreadActionTask>(action, this));
     }
 }
-
-namespace ContentLoadingManagerImpl
-{
-    extern ConcurrentTaskQueue<ContentLoadTask> Tasks;
-};
 
 bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
 {
@@ -430,80 +443,7 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
 
     PROFILE_CPU();
 
-    // Check if call is made from the Loading Thread and task has not been taken yet
-    auto thread = ContentLoadingManager::GetCurrentLoadThread();
-    if (thread != nullptr)
-    {
-        // Note: to reproduce this case just include material into material (use layering).
-        // So during loading first material it will wait for child materials loaded calling this function
-
-        const double timeoutInSeconds = timeoutInMilliseconds * 0.001;
-        const double startTime = Platform::GetTimeSeconds();
-        Task* task = loadingTask;
-        Array<ContentLoadTask*, InlinedAllocation<64>> localQueue;
-#define CHECK_CONDITIONS() (!Engine::ShouldExit() && (timeoutInSeconds <= 0.0 || Platform::GetTimeSeconds() - startTime < timeoutInSeconds))
-        do
-        {
-            // Try to execute content tasks
-            while (task->IsQueued() && CHECK_CONDITIONS())
-            {
-                // Dequeue task from the loading queue
-                ContentLoadTask* tmp;
-                if (ContentLoadingManagerImpl::Tasks.try_dequeue(tmp))
-                {
-                    if (tmp == task)
-                    {
-                        if (localQueue.Count() != 0)
-                        {
-                            // Put back queued tasks
-                            ContentLoadingManagerImpl::Tasks.enqueue_bulk(localQueue.Get(), localQueue.Count());
-                            localQueue.Clear();
-                        }
-
-                        thread->Run(tmp);
-                    }
-                    else
-                    {
-                        localQueue.Add(tmp);
-                    }
-                }
-                else
-                {
-                    // No task in queue but it's queued so other thread could have stolen it into own local queue
-                    break;
-                }
-            }
-            if (localQueue.Count() != 0)
-            {
-                // Put back queued tasks
-                ContentLoadingManagerImpl::Tasks.enqueue_bulk(localQueue.Get(), localQueue.Count());
-                localQueue.Clear();
-            }
-
-            // Check if task is done
-            if (task->IsEnded())
-            {
-                // If was fine then wait for the next task
-                if (task->IsFinished())
-                {
-                    task = task->GetContinueWithTask();
-                    if (!task)
-                        break;
-                }
-                else
-                {
-                    // Failed or cancelled so this wait also fails
-                    break;
-                }
-            }
-        } while (CHECK_CONDITIONS());
-#undef CHECK_CONDITIONS
-    }
-    else
-    {
-        // Wait for task end
-        loadingTask->Wait(timeoutInMilliseconds);
-    }
+    Content::WaitForTask(loadingTask, timeoutInMilliseconds);
 
     // If running on a main thread we can flush asset `Loaded` event
     if (IsInMainThread() && IsLoaded())
@@ -527,11 +467,13 @@ void Asset::CancelStreaming()
 {
     // Cancel loading task but go over asset locker to prevent case if other load threads still loads asset while it's reimported on other thread
     Locker.Lock();
-    auto loadTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
+    auto loadingTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
     Locker.Unlock();
-    if (loadTask)
+    if (loadingTask)
     {
-        loadTask->Cancel();
+        Platform::AtomicStore(&_loadingTask, 0);
+        LOG(Warning, "Cancel loading task for \'{0}\'", ToString());
+        loadingTask->Cancel();
     }
 }
 
@@ -556,6 +498,12 @@ Array<Guid> Asset::GetReferences() const
     Array<String> files;
     GetReferences(result, files);
     return result;
+}
+
+bool Asset::Save(const StringView& path)
+{
+    LOG(Warning, "Asset type '{}' does not support saving.", GetTypeName());
+    return true;
 }
 
 #endif
@@ -606,12 +554,21 @@ bool Asset::onLoad(LoadAssetTask* task)
 
     // Load asset
     LoadResult result;
+#if USE_EDITOR
+    auto& deprecatedFlag = ContentDeprecatedFlags.Get();
+    bool prevDeprecated = deprecatedFlag;
+    deprecatedFlag = false;
+#endif
     {
         PROFILE_CPU_ASSET(this);
         result = loadAsset();
     }
     const bool isLoaded = result == LoadResult::Ok;
     const bool failed = !isLoaded;
+#if USE_EDITOR
+    const bool isDeprecated = deprecatedFlag;
+    deprecatedFlag = prevDeprecated;
+#endif
     Platform::AtomicStore(&_loadState, (int64)(isLoaded ? LoadState::Loaded : LoadState::LoadFailed));
     if (failed)
     {
@@ -632,6 +589,19 @@ bool Asset::onLoad(LoadAssetTask* task)
         // This allows to reduce mutexes and locks (max one frame delay isn't hurting but provides more safety)
         Content::onAssetLoaded(this);
     }
+    
+#if USE_EDITOR
+    // Auto-save deprecated assets to get rid of data in an old format
+    if (isDeprecated && isLoaded)
+    {
+        PROFILE_CPU_NAMED("Asset.Save");
+        LOG(Info, "Resaving asset '{}' that uses deprecated data format", ToString());
+        if (Save())
+        {
+            LOG(Error, "Failed to resave asset '{}'", ToString());
+        }
+    }
+#endif
 
     return failed;
 }
@@ -664,16 +634,34 @@ void Asset::onUnload_MainThread()
 
     ASSERT(IsInMainThread());
 
+    // Cancel any streaming before calling OnUnloaded event
+    CancelStreaming();
+
     // Send event
     OnUnloaded(this);
-
-    // Check if is during loading
-    auto loadingTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
-    if (loadingTask != nullptr)
-    {
-        // Cancel loading
-        Platform::AtomicStore(&_loadingTask, 0);
-        LOG(Warning, "Cancel loading task for \'{0}\'", ToString());
-        loadingTask->Cancel();
-    }
 }
+
+#if USE_EDITOR
+
+bool Asset::OnCheckSave(const StringView& path) const
+{
+    if (LastLoadFailed())
+    {
+        LOG(Warning, "Saving asset that failed to load.");
+        if (path.IsEmpty())
+            return false;
+    }
+    if (WaitForLoaded())
+    {
+        LOG(Error, "Asset loading failed. Cannot save it.");
+        return true;
+    }
+    if (IsVirtual() && path.IsEmpty())
+    {
+        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
+        return true;
+    }
+    return false;
+}
+
+#endif

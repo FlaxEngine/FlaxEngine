@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "MaterialShader.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Level/LargeWorlds.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -33,6 +34,8 @@ GPU_CB_STRUCT(MaterialShaderDataPerView {
     Float4 ViewInfo;
     Float4 ScreenSize;
     Float4 TemporalAAJitter;
+    Float3 LargeWorldsChunkIndex;
+    float LargeWorldsChunkSize;
     });
 
 IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext)
@@ -78,6 +81,8 @@ void IMaterial::BindParameters::BindViewData()
     cb.ViewInfo = view.ViewInfo;
     cb.ScreenSize = view.ScreenSize;
     cb.TemporalAAJitter = view.TemporalAAJitter;
+    cb.LargeWorldsChunkIndex = LargeWorlds::Enable ? (Float3)Int3(view.Origin / LargeWorlds::ChunkSize) : Float3::Zero;
+    cb.LargeWorldsChunkSize = LargeWorlds::ChunkSize;
 
     // Update constants
     GPUContext->UpdateCB(PerViewConstants, &cb);

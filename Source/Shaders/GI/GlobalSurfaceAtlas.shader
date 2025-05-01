@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 // Diffuse-only lighting
 #define LIGHTING_NO_SPECULAR 1
@@ -40,9 +40,6 @@ struct AtlasVertexOutput
 
 // Vertex shader for Global Surface Atlas rendering (custom vertex buffer to render per-tile)
 META_VS(true, FEATURE_LEVEL_SM5)
-META_VS_IN_ELEMENT(POSITION, 0, R16G16_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R16G16_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 1, R32_UINT,  0, ALIGN, PER_VERTEX, 0, true)
 AtlasVertexOutput VS_Atlas(AtlasVertexInput input)
 {
 	AtlasVertexOutput output;

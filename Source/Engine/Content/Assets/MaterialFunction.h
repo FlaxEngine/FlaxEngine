@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -11,9 +11,9 @@
 API_CLASS(NoSpawn) class FLAXENGINE_API MaterialFunction : public BinaryAsset
 {
     DECLARE_BINARY_ASSET_HEADER(MaterialFunction, 1);
+
 public:
 #if COMPILE_WITH_MATERIAL_GRAPH
-
     /// <summary>
     /// The loaded material function graph.
     /// </summary>
@@ -39,8 +39,9 @@ public:
     /// Tries to load surface graph from the asset.
     /// </summary>
     /// <param name="graph">The graph to load.</param>
+    /// <param name="loadMeta">True if load metadata.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool LoadSurface(MaterialGraph& graph);
+    bool LoadSurface(MaterialGraph& graph, bool loadMeta = false);
 
     // Gets the function signature for Visject Surface editor.
     API_FUNCTION() void GetSignature(API_PARAM(Out) Array<StringView, FixedAllocation<32>>& types, API_PARAM(Out) Array<StringView, FixedAllocation<32>>& names);
@@ -48,14 +49,18 @@ public:
 #endif
 
 #if USE_EDITOR
-
     /// <summary>
     /// Updates the material graph surface (save new one, discards cached data, reloads asset).
     /// </summary>
     /// <param name="data">The surface graph data.</param>
     /// <returns>True if cannot save it, otherwise false.</returns>
-    API_FUNCTION() bool SaveSurface(BytesContainer& data);
+    API_FUNCTION() bool SaveSurface(const BytesContainer& data) const;
+#endif
 
+public:
+    // [BinaryAsset]
+#if USE_EDITOR
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
 protected:

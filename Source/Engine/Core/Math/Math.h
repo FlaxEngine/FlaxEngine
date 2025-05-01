@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -604,7 +604,7 @@ namespace Math
     template<typename T>
     static T AlignUpWithMask(T value, T mask)
     {
-        return (T)(value + mask & ~mask);
+        return (T)((value + mask) & ~mask);
     }
 
     template<typename T>
@@ -623,7 +623,7 @@ namespace Math
     static T AlignUp(T value, T alignment)
     {
         T mask = alignment - 1;
-        return (T)(value + mask & ~mask);
+        return (T)((value + mask) & ~mask);
     }
 
     /// <summary>
@@ -648,7 +648,7 @@ namespace Math
     template<typename T>
     static bool IsAligned(T value, T alignment)
     {
-        return 0 == (value & alignment - 1);
+        return 0 == (value & (alignment - 1));
     }
 
     template<typename T>

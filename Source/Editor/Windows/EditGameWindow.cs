@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -130,7 +130,7 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// The viewport control.
         /// </summary>
-        public readonly MainEditorGizmoViewport Viewport;
+        public new readonly MainEditorGizmoViewport Viewport;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditGameWindow"/> class.

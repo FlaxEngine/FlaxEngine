@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MODEL_TOOL && USE_OPEN_FBX
 
@@ -14,6 +14,7 @@
 #include "Engine/Platform/File.h"
 
 #define OPEN_FBX_CONVERT_SPACE 1
+#define OPEN_FBX_NAME_SIZE 256
 #if BUILD_DEBUG
 #define OPEN_FBX_GET_CACHE_LIST(arrayName, varName, size) data.arrayName.Resize(size, false); auto& varName = data.arrayName
 #else
@@ -204,7 +205,7 @@ struct OpenFbxImporterData
             ofbx::DataView aFilename = tex->getRelativeFileName();
             if (aFilename == "")
                 aFilename = tex->getFileName();
-            char filenameData[256];
+            char filenameData[OPEN_FBX_NAME_SIZE];
             aFilename.toString(filenameData);
             const String filename(filenameData);
             String path;
@@ -498,7 +499,6 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
 
                 // Add bone
                 boneIndex = data.Bones.Count();
-                data.Bones.EnsureCapacity(256);
                 data.Bones.Resize(boneIndex + 1);
                 auto& bone = data.Bones[boneIndex];
 
@@ -669,16 +669,31 @@ int Triangulate(OpenFbxImporterData& data, const ofbx::GeometryData& geom, const
         earIndices.Add(indices[i1]);
         earIndices.Add(indices[i2]);
         earIndices.Add(indices[i3]);
+
+		// Remove midpoint of the ear from the loop
         indices.RemoveAtKeepOrder(i2);
     }
 
-    for (int i = 0; i < earIndices.Count(); i++)
-        triangulatedIndices[i] = polygon.from_vertex + (earIndices[i] % polygon.vertex_count);
-    triangulatedIndices[earIndices.Count() + 0] = polygon.from_vertex + (indices[0] % polygon.vertex_count);
-    triangulatedIndices[earIndices.Count() + 1] = polygon.from_vertex + (indices[1] % polygon.vertex_count);
-    triangulatedIndices[earIndices.Count() + 2] = polygon.from_vertex + (indices[2] % polygon.vertex_count);
+    // Last ear
+    earIndices.Add(indices[0]);
+    earIndices.Add(indices[1]);
+    earIndices.Add(indices[2]);
+    
+    // Write any degenerate triangles (eg. if points are duplicated within a list)
+    for (int32 i = 3; i < indices.Count(); i += 3)
+    {
+        earIndices.Add(indices[i + 0]);
+        earIndices.Add(indices[(i + 1) % indices.Count()]);
+        earIndices.Add(indices[(i + 2) % indices.Count()]);
+    }
 
-    return 3 * (polygon.vertex_count - 2);
+    // Copy ears into triangles
+    for (int32 i = 0; i < earIndices.Count(); i++)
+        triangulatedIndices[i] = polygon.from_vertex + (earIndices[i] % polygon.vertex_count);
+
+    // Ensure that we've written enough ears
+    ASSERT(earIndices.Count() == 3 * (polygon.vertex_count - 2));
+    return earIndices.Count();
 }
 
 bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& mesh, String& errorMsg, int partitionIndex)
@@ -690,7 +705,6 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     const ofbx::GeometryPartition& partition = geometryData.getPartition(partitionIndex);
     const int vertexCount = partition.triangles_count * 3;
     const ofbx::Vec3Attributes& positions = geometryData.getPositions();
-    const ofbx::Vec2Attributes& uvs = geometryData.getUVs();
     const ofbx::Vec3Attributes& normals = geometryData.getNormals();
     const ofbx::Vec3Attributes& tangents = geometryData.getTangents();
     const ofbx::Vec4Attributes& colors = geometryData.getColors();
@@ -715,6 +729,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
                 mesh.Positions.Get()[j] = ToFloat3(positions.get(triangulatedIndices[j]));
             numIndicesTotal += numIndices;
         }
+        ASSERT(numIndicesTotal == vertexCount);
     }
 
     // Indices (dummy index buffer)
@@ -723,15 +738,18 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         mesh.Indices.Get()[i] = i;
 
     // Texture coordinates
-    if (uvs.values)
+    for (int32 channelIndex = 0; channelIndex < MODEL_MAX_UV && geometryData.getUVs(channelIndex).values; channelIndex++)
     {
-        mesh.UVs.Resize(vertexCount, false);
+        const ofbx::Vec2Attributes& uvs = geometryData.getUVs(channelIndex);
+        mesh.UVs.Resize(channelIndex + 1);
+        auto& channel = mesh.UVs[channelIndex];
+        channel.Resize(vertexCount, false);
         for (int i = 0; i < vertexCount; i++)
-            mesh.UVs.Get()[i] = ToFloat2(uvs.get(triangulatedIndices[i]));
+            channel.Get()[i] = ToFloat2(uvs.get(triangulatedIndices[i]));
         if (data.ConvertRH)
         {
-            for (int32 v = 0; v < vertexCount; v++)
-                mesh.UVs[v].Y = 1.0f - mesh.UVs[v].Y;
+            for (int v = 0; v < vertexCount; v++)
+                channel.Get()[v].Y = 1.0f - channel.Get()[v].Y;
         }
     }
 
@@ -794,59 +812,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     }
 
     // Lightmap UVs
-    if (data.Options.LightmapUVsSource == ModelLightmapUVsSource::Disable)
-    {
-        // No lightmap UVs
-    }
-    else if (data.Options.LightmapUVsSource == ModelLightmapUVsSource::Generate)
-    {
-        // Generate lightmap UVs
-        if (mesh.GenerateLightmapUVs())
-        {
-            LOG(Error, "Failed to generate lightmap uvs");
-        }
-    }
-    else
-    {
-        // Select input channel index
-        int32 inputChannelIndex;
-        switch (data.Options.LightmapUVsSource)
-        {
-        case ModelLightmapUVsSource::Channel0:
-            inputChannelIndex = 0;
-            break;
-        case ModelLightmapUVsSource::Channel1:
-            inputChannelIndex = 1;
-            break;
-        case ModelLightmapUVsSource::Channel2:
-            inputChannelIndex = 2;
-            break;
-        case ModelLightmapUVsSource::Channel3:
-            inputChannelIndex = 3;
-            break;
-        default:
-            inputChannelIndex = INVALID_INDEX;
-            break;
-        }
-
-        // Check if has that channel texcoords
-        const auto lightmapUVs = geometryData.getUVs(inputChannelIndex);
-        if (lightmapUVs.values)
-        {
-            mesh.LightmapUVs.Resize(vertexCount, false);
-            for (int i = 0; i < vertexCount; i++)
-                mesh.LightmapUVs.Get()[i] = ToFloat2(lightmapUVs.get(triangulatedIndices[i]));
-            if (data.ConvertRH)
-            {
-                for (int32 v = 0; v < vertexCount; v++)
-                    mesh.LightmapUVs[v].Y = 1.0f - mesh.LightmapUVs[v].Y;
-            }
-        }
-        else
-        {
-            LOG(Warning, "Cannot import model lightmap uvs. Missing texcoords channel {0}.", inputChannelIndex);
-        }
-    }
+    mesh.SetLightmapUVsSource(data.Options.LightmapUVsSource);
 
     // Vertex Colors
     if (data.Options.ImportVertexColors && colors.values)
@@ -1026,7 +992,8 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     }*/
 
     // Get local transform for origin shifting translation
-    auto translation = ToMatrix(aMesh->getGlobalTransform()).GetTranslation();
+    
+    auto translation = Float3((float)aMesh->getLocalTranslation().x, (float)aMesh->getLocalTranslation().y, (float)aMesh->getLocalTranslation().z);
     auto scale = data.GlobalSettings.UnitScaleFactor;
     if (data.GlobalSettings.CoordAxis == ofbx::CoordSystem_RightHanded)
         mesh.OriginTranslation = scale * Vector3(translation.X, translation.Y, -translation.Z);
@@ -1122,7 +1089,6 @@ struct AnimInfo
     double TimeEnd;
     double Duration;
     int32 FramesCount;
-    float SamplingPeriod;
 };
 
 struct Frame
@@ -1155,7 +1121,7 @@ void ExtractKeyframeScale(const ofbx::Object* bone, ofbx::DVec3& trans, const Fr
 }
 
 template<typename T>
-void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curve, AnimInfo& info, void (*ExtractKeyframe)(const ofbx::Object*, ofbx::DVec3&, const Frame&, T&))
+void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curve, AnimInfo& info, void (*extractKeyframe)(const ofbx::Object*, ofbx::DVec3&, const Frame&, T&))
 {
     if (curveNode == nullptr)
         return;
@@ -1169,12 +1135,11 @@ void ImportCurve(const ofbx::AnimationCurveNode* curveNode, LinearCurve<T>& curv
     for (int32 i = 0; i < info.FramesCount; i++)
     {
         auto& key = keyframes[i];
-        const double t = info.TimeStart + ((double)i / info.FramesCount) * info.Duration;
-
+        const double alpha = (double)i / (info.FramesCount - 1);
+        const double t = Math::Lerp(info.TimeStart, info.TimeEnd, alpha);
         key.Time = (float)i;
-
         ofbx::DVec3 trans = curveNode->getNodeLocalTransform(t);
-        ExtractKeyframe(bone, trans, localFrame, key.Value);
+        extractKeyframe(bone, trans, localFrame, key.Value);
     }
 }
 
@@ -1212,7 +1177,7 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
     auto& animation = data.Animations.AddOne();
     animation.Duration = (double)(int32)(localDuration * frameRate + 0.5f);
     animation.FramesPerSecond = frameRate;
-    char nameData[256];
+    char nameData[OPEN_FBX_NAME_SIZE];
     takeInfo->name.toString(nameData);
     animation.Name = nameData;
     animation.Name = animation.Name.TrimTrailing();
@@ -1223,8 +1188,7 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
     info.TimeStart = takeInfo->local_time_from;
     info.TimeEnd = takeInfo->local_time_to;
     info.Duration = localDuration;
-    info.FramesCount = (int32)animation.Duration;
-    info.SamplingPeriod = 1.0f / frameRate;
+    info.FramesCount = (int32)animation.Duration + 1;
 
     // Import curves
     for (int32 i = 0; i < animatedNodes.Count(); i++)
@@ -1352,7 +1316,7 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
         {
             const ofbx::DataView aEmbedded = scene->getEmbeddedData(i);
             ofbx::DataView aFilename = scene->getEmbeddedFilename(i);
-            char filenameData[256];
+            char filenameData[OPEN_FBX_NAME_SIZE];
             aFilename.toString(filenameData);
             if (outputPath.IsEmpty())
             {

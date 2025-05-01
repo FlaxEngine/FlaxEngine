@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GlobalSurfaceAtlasPass.h"
 #include "DynamicDiffuseGlobalIllumination.h"
@@ -20,6 +20,7 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/Async/GPUSyncPoint.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Level/Actors/StaticModel.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Renderer/ColorGradingPass.h"
@@ -767,7 +768,14 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     for (SceneRendering* scene : renderContext.List->Scenes)
         surfaceAtlasData.ListenSceneRendering(scene);
     if (!_vertexBuffer)
-        _vertexBuffer = New<DynamicVertexBuffer>(0u, (uint32)sizeof(AtlasTileVertex), TEXT("GlobalSurfaceAtlas.VertexBuffer"));
+    {
+        auto layout = GPUVertexLayout::Get({
+            { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R16G16_Float },
+            { VertexElement::Types::TexCoord0, 0, 0, 0, PixelFormat::R16G16_Float },
+            { VertexElement::Types::TexCoord1, 0, 0, 0, PixelFormat::R32_UInt },
+        });
+        _vertexBuffer = New<DynamicVertexBuffer>(0u, (uint32)sizeof(AtlasTileVertex), TEXT("GlobalSurfaceAtlas.VertexBuffer"), layout);
+    }
 
     // Ensure that async objects drawing ended
     _surfaceAtlasData = &surfaceAtlasData;

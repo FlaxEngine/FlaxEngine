@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Prefab.h"
 #include "Engine/Serialization/JsonTools.h"
@@ -94,6 +94,24 @@ SceneObject* Prefab::GetDefaultInstance(const Guid& objectId)
     return result;
 }
 
+bool Prefab::GetNestedObject(const Guid& objectId, Guid& outPrefabId, Guid& outObjectId) const
+{
+    if (WaitForLoaded())
+        return false;
+    bool result = false;
+    Guid result1 = Guid::Empty, result2 = Guid::Empty;
+    const ISerializable::DeserializeStream** prefabObjectDataPtr = ObjectsDataCache.TryGet(objectId);
+    if (prefabObjectDataPtr)
+    {
+        const ISerializable::DeserializeStream& prefabObjectData = **prefabObjectDataPtr;
+        result = JsonTools::GetGuidIfValid(result1, prefabObjectData, "PrefabID") &&
+                JsonTools::GetGuidIfValid(result2, prefabObjectData, "PrefabObjectID");
+    }
+    outPrefabId = result1;
+    outObjectId = result2;
+    return result;
+}
+
 void Prefab::DeleteDefaultInstance()
 {
     ScopeLock lock(Locker);
@@ -128,8 +146,8 @@ Asset::LoadResult Prefab::loadAsset()
     }
 
     // Allocate memory for objects
-    ObjectsIds.EnsureCapacity(objectsCount * 2);
-    ObjectsDataCache.EnsureCapacity(objectsCount * 3);
+    ObjectsIds.EnsureCapacity(objectsCount);
+    ObjectsDataCache.EnsureCapacity(objectsCount);
 
     // Find serialized object ids (actors and scripts), they are used later for IDs mapping on prefab spawning via PrefabManager
     const auto& data = *Data;
@@ -157,7 +175,7 @@ Asset::LoadResult Prefab::loadAsset()
         {
             if (prefabId == _id)
             {
-                LOG(Error, "Circural reference in prefab.");
+                LOG(Error, "Circular reference in prefab.");
                 return LoadResult::InvalidData;
             }
 

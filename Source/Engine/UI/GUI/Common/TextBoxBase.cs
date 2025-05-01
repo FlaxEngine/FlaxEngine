@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 #if FLAX_EDITOR
@@ -126,6 +126,11 @@ namespace FlaxEngine.GUI
         /// If the cursor should change to an IBeam
         /// </summary>
         protected bool _changeCursor = true;
+
+        /// <summary>
+        /// True if always return true as default for key events, otherwise won't consume them.
+        /// </summary>
+        protected bool _consumeAllKeyDownEvents = true;
 
         /// <summary>
         /// Event fired when text gets changed
@@ -742,7 +747,7 @@ namespace FlaxEngine.GUI
             {
                 SetSelection(SelectionRight);
             }
-            else if (SelectionRight < TextLength)
+            else if (SelectionRight < TextLength || (_selectionEnd < _selectionStart && _selectionStart == TextLength))
             {
                 int position;
                 if (ctrl)
@@ -1542,7 +1547,7 @@ namespace FlaxEngine.GUI
                 return false;
             }
 
-            return true;
+            return _consumeAllKeyDownEvents;
         }
     }
 }

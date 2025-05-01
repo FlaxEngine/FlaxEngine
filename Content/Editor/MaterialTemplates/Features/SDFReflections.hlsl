@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 @0// SDF Reflections: Defines
 #define USE_GLOBAL_SURFACE_ATLAS 1

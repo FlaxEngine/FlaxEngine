@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -14,9 +14,9 @@ class JsonAsset;
 /// </summary>
 API_CLASS(Static) class FLAXENGINE_API Engine
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Engine);
-public:
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Engine);
 
+public:
     /// <summary>
     /// The engine start time (local time).
     /// </summary>
@@ -38,7 +38,6 @@ public:
     API_FIELD(ReadOnly) static uint64 FrameCount;
 
 public:
-
     /// <summary>
     /// Event called on engine fixed update.
     /// </summary>
@@ -84,8 +83,27 @@ public:
     /// </summary>
     API_EVENT() static Action RequestingExit;
 
-public:
+    /// <summary>
+    /// The custom handler for engine crash handling and reporting. Can be used to override default message box with a custom one or send crash report to telemetry service. Args are: error message and context pointer (for stack-trace access).
+    /// </summary>
+    API_EVENT() static Delegate<StringView, void*> ReportCrash;
 
+    /// <summary>
+    /// The current state of the fatal error. Set to None if no error occurred yet.
+    /// </summary>
+    API_FIELD(ReadOnly) static FatalErrorType FatalError;
+
+    /// <summary>
+    /// Flags set to true if engine needs to be closed (exit is pending). Use FatalError to determinate the exit reason (specific error or normal shutdown).
+    /// </summary>
+    API_FIELD(ReadOnly) static bool IsRequestingExit;
+    
+    /// <summary>
+    /// The current process exit code (pending to return).
+    /// </summary>
+    static int32 ExitCode;
+
+public:
     /// <summary>
     /// The main engine function (must be called from platform specific entry point).
     /// </summary>
@@ -97,16 +115,25 @@ public:
     /// Exits the engine.
     /// </summary>
     /// <param name="exitCode">The exit code.</param>
-    static void Exit(int32 exitCode = -1);
+    /// <param name="error">The fatal error type (or None on graceful exit).</param>
+    API_FUNCTION(Attributes="DebugCommand") static void Exit(int32 exitCode = -1, FatalErrorType error = FatalErrorType::None);
 
     /// <summary>
     /// Requests normal engine exit.
     /// </summary>
     /// <param name="exitCode">The exit code.</param>
-    API_FUNCTION() static void RequestExit(int32 exitCode = 0);
+    /// <param name="error">The fatal error type (or None on graceful exit).</param>
+    API_FUNCTION() static void RequestExit(int32 exitCode = 0, FatalErrorType error = FatalErrorType::None);
+
+#if !BUILD_SHIPPING
+    /// <summary>
+    /// Crashes the engine. Utility used to test crash reporting or game stability monitoring systems.
+    /// </summary>
+    /// <param name="error">The fatal error type.</param>
+    API_FUNCTION(Attributes="DebugCommand") static void Crash(FatalErrorType error = FatalErrorType::Exception);
+#endif
 
 public:
-
     /// <summary>
     /// Fixed update callback used by the physics simulation (fixed stepping).
     /// </summary>
@@ -138,7 +165,6 @@ public:
     static void OnExit();
 
 public:
-
     // Returns true if engine is running without main window (aka headless mode).
     API_PROPERTY() static bool IsHeadless();
 
@@ -184,7 +210,6 @@ public:
     API_PROPERTY() static bool HasGameViewportFocus();
 
 private:
-
     static void OnPause();
     static void OnUnpause();
 };

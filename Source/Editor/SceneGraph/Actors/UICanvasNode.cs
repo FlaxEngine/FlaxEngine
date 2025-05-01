@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -78,5 +78,8 @@ namespace FlaxEditor.SceneGraph.Actors
             if (Actor is UICanvas uiCanvas && uiCanvas.Is3D)
                 DebugDraw.DrawWireBox(uiCanvas.Bounds, Color.BlueViolet);
         }
+
+        /// <inheritdoc />
+        public override bool CanSelectInViewport => base.CanSelectInViewport && Actor is UICanvas uiCanvas && uiCanvas.Is3D;
     }
 }

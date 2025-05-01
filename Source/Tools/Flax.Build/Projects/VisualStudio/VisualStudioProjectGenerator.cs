@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -22,7 +22,7 @@ namespace Flax.Build.Projects.VisualStudio
             public override Guid ProjectTypeGuid => ProjectTypeGuids.Android;
 
             /// <inheritdoc />
-            public override void Generate(string solutionPath)
+            public override void Generate(string solutionPath, bool isMainProject)
             {
                 // Try to reuse the existing project guid from existing files
                 ProjectGuid = GetProjectGuid(Path, Name);
@@ -616,8 +616,8 @@ namespace Flax.Build.Projects.VisualStudio
                 var profiles = new Dictionary<string, string>();
                 var profile = new StringBuilder();
                 var configuration = "Development";
-                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), configuration, $"FlaxEditor{Utilities.GetPlatformExecutableExt()}"));
-                var workspacePath = Utilities.NormalizePath(solutionDirectory);
+                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), configuration, $"FlaxEditor{Utilities.GetPlatformExecutableExt()}")).Replace('\\', '/');
+                var workspacePath = Utilities.NormalizePath(solutionDirectory).Replace('\\', '/');
                 foreach (var project in projects)
                 {
                     if (project.Type == TargetType.DotNetCore)

@@ -36,15 +36,15 @@ namespace Flax.Build
         public static bool DeployPlatforms;
 
         /// <summary>
-        /// Certificate file path for binaries signing. Or sign identity for Apple platforms.
+        /// Certificate file path or signer identity for binaries code signing.
         /// </summary>
-        [CommandLine("deployCert", "Certificate file path for binaries signing. Or sign identity for Apple platforms.")]
+        [CommandLine("deployCert", "Certificate file path or signer identity for binaries code signing.")]
         public static string DeployCert;
 
         /// <summary>
-        /// Certificate file password for binaries signing.
+        /// Certificate password for binaries code signing.
         /// </summary>
-        [CommandLine("deployCertPass", "Certificate file password for binaries signing.")]
+        [CommandLine("deployCertPass", "Certificate password for binaries code signing.")]
         public static string DeployCertPass;
 
         /// <summary>

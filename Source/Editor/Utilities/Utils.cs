@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -1211,6 +1211,7 @@ namespace FlaxEditor.Utilities
             {
                 Parent = panel1,
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Pivot = Float2.Zero,
                 IsScrollable = true,
             };
             tree = new Tree(false)
@@ -1505,6 +1506,7 @@ namespace FlaxEditor.Utilities
             inputActions.Add(options => options.BuildSDF, Editor.Instance.BuildAllMeshesSDF);
             inputActions.Add(options => options.TakeScreenshot, Editor.Instance.Windows.TakeScreenshot);
             inputActions.Add(options => options.ProfilerWindow, () => Editor.Instance.Windows.ProfilerWin.FocusOrShow());
+#if USE_PROFILER
             inputActions.Add(options => options.ProfilerStartStop, () =>
             {
                 bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
@@ -1514,8 +1516,9 @@ namespace FlaxEditor.Utilities
             inputActions.Add(options => options.ProfilerClear, () =>
             {
                 Editor.Instance.Windows.ProfilerWin.Clear();
-                Editor.Instance.UI.AddStatusMessage($"Profiling results cleared.");
+                Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
             });
+#endif
             inputActions.Add(options => options.SaveScenes, () => Editor.Instance.Scene.SaveScenes());
             inputActions.Add(options => options.CloseScenes, () => Editor.Instance.Scene.CloseAllScenes());
             inputActions.Add(options => options.OpenScriptsProject, () => Editor.Instance.CodeEditing.OpenSolution());
@@ -1543,6 +1546,23 @@ namespace FlaxEditor.Utilities
                 path = StringUtils.IsRelative(path) ? Path.Combine(Globals.ProjectFolder, path) : path;
             }
             return path;
+        }
+
+        internal static bool OnAssetProperties(CustomEditors.LayoutElementsContainer layout, Asset asset)
+        {
+            if (asset == null || !asset.IsLoaded)
+            {
+                layout.Label(asset != null && asset.LastLoadFailed ? "Failed to load" : "Loading...", TextAlignment.Center);
+                return true;
+            }
+            return false;
+        }
+
+        internal static ISceneEditingContext GetSceneContext(this Control c)
+        {
+            while (c != null && !(c is ISceneEditingContext))
+                c = c.Parent;
+            return c as ISceneEditingContext;
         }
     }
 }

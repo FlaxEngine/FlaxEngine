@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -16,6 +16,7 @@
 
 /// <summary>
 /// Common values types.
+/// [Deprecated on 31.07.2020, expires on 31.07.2022]
 /// </summary>
 enum class CommonType
 {
@@ -48,7 +49,7 @@ class ScriptingObject;
 /// Container for value that can have different types
 /// [Deprecated on 31.07.2020, expires on 31.07.2022]
 /// </summary>
-struct FLAXENGINE_API CommonValue
+struct DEPRECATED("Use Variant.") FLAXENGINE_API CommonValue
 {
 public:
     /// <summary>

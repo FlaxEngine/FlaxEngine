@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -85,6 +85,8 @@ namespace FlaxEditor.Gizmo
         /// </summary>
         public SelectionOutline()
         {
+            Order = -90000; // Draw before any other editor shapes (except grid gizmo)
+
             _outlineMaterial = FlaxEngine.Content.LoadAsyncInternal<Material>("Editor/Gizmo/SelectionOutlineMaterial");
             if (_outlineMaterial)
             {

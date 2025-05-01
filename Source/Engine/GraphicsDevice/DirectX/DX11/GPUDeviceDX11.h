@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -59,6 +59,7 @@ private:
 
     GPUContextDX11* _mainContext = nullptr;
     bool _allowTearing = false;
+    GPUBuffer* _dummyVB = nullptr;
 
     // Static Samplers
     ID3D11SamplerState* _samplerLinearClamp = nullptr;
@@ -106,6 +107,7 @@ public:
 
     ID3D11DepthStencilState* GetDepthStencilState(const void* descriptionPtr);
     ID3D11BlendState* GetBlendState(const BlendingMode& blending);
+    GPUBuffer* GetDummyVB();
 
 public:
 
@@ -128,6 +130,7 @@ public:
     GPUTimerQuery* CreateTimerQuery() override;
     GPUBuffer* CreateBuffer(const StringView& name) override;
     GPUSampler* CreateSampler() override;
+    GPUVertexLayout* CreateVertexLayout(const VertexElements& elements, bool explicitOffsets) override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
     GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name) override;
 };

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -127,6 +127,9 @@ protected:
 /// </summary>
 class FLAXENGINE_API DynamicVertexBuffer : public DynamicBuffer
 {
+private:
+    GPUVertexLayout* _layout;
+
 public:
     /// <summary>
     /// Init
@@ -134,10 +137,17 @@ public:
     /// <param name="initialCapacity">Initial capacity of the buffer (in bytes)</param>
     /// <param name="stride">Stride in bytes</param>
     /// <param name="name">Buffer name</param>
-    DynamicVertexBuffer(uint32 initialCapacity, uint32 stride, const String& name = String::Empty)
+    /// <param name="layout">The vertex buffer layout.</param>
+    DynamicVertexBuffer(uint32 initialCapacity, uint32 stride, const String& name = String::Empty, GPUVertexLayout* layout = nullptr)
         : DynamicBuffer(initialCapacity, stride, name)
+        , _layout(layout)
     {
     }
+
+    // Gets the vertex buffer layout.
+    GPUVertexLayout* GetLayout() const;
+    // Sets the vertex buffer layout.
+    void SetLayout(GPUVertexLayout* layout);
 
 protected:
     // [DynamicBuffer]

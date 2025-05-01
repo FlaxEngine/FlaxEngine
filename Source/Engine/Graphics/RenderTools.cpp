@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RenderTools.h"
 #include "PixelFormatExtensions.h"
@@ -558,6 +558,26 @@ float RenderTools::ComputeTemporalTime()
 
 void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal)
 {
+    // [Deprecated in v1.10]
+    Float3 n;
+    Float4 t;
+    CalculateTangentFrame(n, t, normal);
+    resultNormal = FloatR10G10B10A2(n, 0);
+    resultTangent = FloatR10G10B10A2(t);
+}
+
+void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent)
+{
+    // [Deprecated in v1.10]
+    Float3 n;
+    Float4 t;
+    CalculateTangentFrame(n, t, normal, tangent);
+    resultNormal = FloatR10G10B10A2(n, 0);
+    resultTangent = FloatR10G10B10A2(t);
+}
+
+void RenderTools::CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal)
+{
     // Calculate tangent
     const Float3 c1 = Float3::Cross(normal, Float3::UnitZ);
     const Float3 c2 = Float3::Cross(normal, Float3::UnitY);
@@ -568,19 +588,19 @@ void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10
     const byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
 
     // Set tangent frame
-    resultNormal = Float1010102(normal * 0.5f + 0.5f, 0);
-    resultTangent = Float1010102(tangent * 0.5f + 0.5f, sign);
+    resultNormal = normal * 0.5f + 0.5f;
+    resultTangent = Float4(tangent * 0.5f + 0.5f, sign);
 }
 
-void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent)
+void RenderTools::CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal, const Float3& tangent)
 {
     // Calculate bitangent sign
     const Float3 bitangent = Float3::Normalize(Float3::Cross(normal, tangent));
     const byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
 
     // Set tangent frame
-    resultNormal = Float1010102(normal * 0.5f + 0.5f, 0);
-    resultTangent = Float1010102(tangent * 0.5f + 0.5f, sign);
+    resultNormal = normal * 0.5f + 0.5f;
+    resultTangent = Float4(tangent * 0.5f + 0.5f, sign);
 }
 
 void RenderTools::ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside)
@@ -639,21 +659,4 @@ int32 MipLevelsCount(int32 width, int32 height, int32 depth)
         result++;
     }
     return result;
-}
-
-void MeshBase::SetMaterialSlotIndex(int32 value)
-{
-    if (value < 0 || value >= _model->MaterialSlots.Count())
-    {
-        LOG(Warning, "Cannot set mesh material slot to {0} while model has {1} slots.", value, _model->MaterialSlots.Count());
-        return;
-    }
-
-    _materialSlotIndex = value;
-}
-
-void MeshBase::SetBounds(const BoundingBox& box)
-{
-    _box = box;
-    BoundingSphere::FromBox(box, _sphere);
 }

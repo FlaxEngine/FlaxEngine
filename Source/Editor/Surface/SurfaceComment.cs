@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.GUI.ContextMenu;
@@ -87,7 +87,7 @@ namespace FlaxEditor.Surface
             Title = TitleValue;
             Color = ColorValue;
             var size = SizeValue;
-            if (Surface.GridSnappingEnabled)
+            if (Surface != null && Surface.GridSnappingEnabled)
                 size = Surface.SnapToGrid(size, true);
             Size = size;
 

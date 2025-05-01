@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -120,6 +120,7 @@ namespace FlaxEngine.GUI
             // Unlink
             IsLayoutLocked = true;
             Parent = null;
+            _showTarget = null;
 
             // Close window
             if (_window)

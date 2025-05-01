@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "TerrainTools.h"
 #include "Engine/Core/Log.h"
@@ -8,6 +8,7 @@
 #include "Engine/Terrain/TerrainPatch.h"
 #include "Engine/Terrain/Terrain.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Graphics/Textures/TextureData.h"
@@ -103,7 +104,7 @@ bool GetTextureDataForSampling(Texture* texture, TextureDataResult& data, bool h
 
     // Decompress or convert data if need to
     data.Mip0DataPtr = &data.Mip0Data;
-    if (PixelFormatExtensions::IsCompressed(data.Format) || TextureTool::GetSampler(data.Format) == nullptr)
+    if (PixelFormatExtensions::IsCompressed(data.Format) || PixelFormatSampler::Get(data.Format) == nullptr)
     {
         PROFILE_CPU_NAMED("Decompress");
 
@@ -136,7 +137,7 @@ bool GetTextureDataForSampling(Texture* texture, TextureDataResult& data, bool h
     }
 
     // Check if can even sample the given format
-    const auto sampler = TextureTool::GetSampler(data.Format);
+    const auto sampler = PixelFormatSampler::Get(data.Format);
     if (sampler == nullptr)
     {
         LOG(Warning, "Texture format {0} cannot be sampled.", (int32)data.Format);
@@ -188,7 +189,7 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
         TextureDataResult dataHeightmap;
         if (GetTextureDataForSampling(heightmap, dataHeightmap, true))
             return true;
-        const auto sampler = TextureTool::GetSampler(dataHeightmap.Format);
+        const auto sampler = PixelFormatSampler::Get(dataHeightmap.Format);
 
         // Initialize with sub-range of the input heightmap
         const Vector2 uvPerPatch = Vector2::One / Vector2(numberOfPatches);
@@ -204,7 +205,7 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
                 for (int32 x = 0; x < heightmapSize; x++)
                 {
                     const Vector2 uv = uvStart + Vector2(x * heightmapSizeInv, z * heightmapSizeInv) * uvPerPatch;
-                    const Color color = TextureTool::SampleLinear(sampler, uv, dataHeightmap.Mip0DataPtr->Get(), dataHeightmap.Mip0Size, dataHeightmap.RowPitch);
+                    const Color color = sampler->SampleLinear(dataHeightmap.Mip0DataPtr->Get(), uv, dataHeightmap.Mip0Size, dataHeightmap.RowPitch);
                     heightmapData[z * heightmapSize + x] = color.R * heightmapScale;
                 }
             }
@@ -244,7 +245,7 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
         // Get splatmap data
         if (GetTextureDataForSampling(splatmap, data1))
             return true;
-        const auto sampler = TextureTool::GetSampler(data1.Format);
+        const auto sampler = PixelFormatSampler::Get(data1.Format);
 
         // Modify heightmap splatmaps with sub-range of the input splatmaps
         for (int32 patchIndex = 0; patchIndex < terrain->GetPatchesCount(); patchIndex++)
@@ -260,7 +261,7 @@ bool TerrainTools::GenerateTerrain(Terrain* terrain, const Int2& numberOfPatches
                 {
                     const Vector2 uv = uvStart + Vector2(x * heightmapSizeInv, z * heightmapSizeInv) * uvPerPatch;
 
-                    const Color color = TextureTool::SampleLinear(sampler, uv, data1.Mip0DataPtr->Get(), data1.Mip0Size, data1.RowPitch);
+                    const Color color = sampler->SampleLinear(data1.Mip0DataPtr->Get(), uv, data1.Mip0Size, data1.RowPitch);
 
                     Color32 layers;
                     layers.R = (byte)(Math::Min(1.0f, color.R) * 255.0f);

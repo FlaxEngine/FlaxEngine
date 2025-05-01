@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -19,7 +19,7 @@ API_STRUCT() struct FLAXENGINE_API Quaternion
     /// <summary>
     /// Equality tolerance factor used when comparing quaternions via dot operation.
     /// </summary>
-    API_FIELD() static constexpr Real Tolerance = 0.9999999f;
+    API_FIELD() static constexpr Real Tolerance = 0.999999f;
 
 public:
     union
@@ -358,7 +358,7 @@ public:
     /// <returns><c>true</c> if the specified <see cref="Quaternion" /> isn't equal to this instance; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool operator!=(const Quaternion& other) const
     {
-        return !(*this == other);
+        return Dot(*this, other) < Tolerance;
     }
 
 public:
@@ -393,8 +393,8 @@ public:
     /// <returns>The inverse of the specified quaternion.</returns>
     static Quaternion Invert(const Quaternion& value)
     {
-        Quaternion result;
-        Invert(value, result);
+        Quaternion result = value;
+        result.Invert();
         return result;
     }
 
@@ -562,6 +562,14 @@ public:
     {
         Quaternion result;
         RotationMatrix(matrix, result);
+        return result;
+    }
+
+    // Interpolates between two quaternions, using spherical linear interpolation.
+    static Quaternion Slerp(const Quaternion& start, const Quaternion& end, float amount)
+    {
+        Quaternion result;
+        Slerp(start, end, amount, result);
         return result;
     }
 

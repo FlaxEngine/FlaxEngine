@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "NavMeshRuntime.h"
 #include "NavigationSettings.h"
@@ -13,8 +13,7 @@
 
 #define MAX_NODES 2048
 #define USE_DATA_LINK 0
-#define USE_NAV_MESH_ALLOC 1
-// TODO: try not using USE_NAV_MESH_ALLOC
+#define USE_NAV_MESH_ALLOC 0
 
 namespace
 {
@@ -367,6 +366,9 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
         if (dtStatusFailed(result))
         {
             LOG(Warning, "Could not add tile ({2}x{3}, layer {4}) to navmesh {0} (error: {1})", Properties.Name, result & ~DT_FAILURE, tile.X, tile.Y, tile.Layer);
+#if USE_NAV_MESH_ALLOC
+            dtFree(data);
+#endif
         }
     }
 }
@@ -672,5 +674,8 @@ void NavMeshRuntime::AddTileInternal(NavMesh* navMesh, NavMeshTileData& tileData
     if (dtStatusFailed(result))
     {
         LOG(Warning, "Could not add tile ({2}x{3}, layer {4}) to navmesh {0} (error: {1})", Properties.Name, result & ~DT_FAILURE, tileData.PosX, tileData.PosY, tileData.Layer);
+#if USE_NAV_MESH_ALLOC
+        dtFree(data);
+#endif
     }
 }

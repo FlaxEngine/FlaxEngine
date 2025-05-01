@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content;
@@ -124,8 +124,10 @@ namespace FlaxEditor.Windows.Assets
             UpdateToolstrip();
         }
 
-        private void OnScriptsReloadBegin()
+        /// <inheritdoc />
+        protected override void OnScriptsReloadBegin()
         {
+            base.OnScriptsReloadBegin();
             Close();
         }
 
@@ -219,6 +221,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 Text = $"{Asset.DataTypeName}",
                 TooltipText = "Asset data type (full name)",
+                Pivot = Float2.Zero,
                 AnchorPreset = AnchorPresets.TopRight,
                 AutoWidth = true,
                 Parent = this,
@@ -308,6 +311,20 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            base.OnLostFocus();
+            _optionsCM?.Dispose();
+        }
+
+        /// <inheritdoc />
+        public override void OnExit()
+        {
+            base.OnExit();
+            _optionsCM?.Dispose();
+        }
+
+        /// <inheritdoc />
         public override void OnItemReimported(ContentItem item)
         {
             // Refresh the properties (will get new data in OnAssetLoaded)
@@ -320,14 +337,17 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
+            base.OnDestroy();
+
             if (_isRegisteredForScriptsReload)
             {
                 _isRegisteredForScriptsReload = false;
                 ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             }
+            _optionsCM?.Dispose();
             _typeText = null;
-
-            base.OnDestroy();
         }
     }
 }

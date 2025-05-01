@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -570,7 +570,7 @@ namespace FlaxEditor.Surface.Archetypes
                 var icon = Editor.Instance.Icons.VisjectBoxOpen32;
                 var size = BlendPoint.DefaultSize * _debugScale;
                 var debugPos = BlendSpacePosToBlendPointPos(_debugPos);
-                var debugRect = new Rectangle(debugPos + new Float2(size * -0.5f) + size * 0.5f, new Float2(size));
+                var debugRect = new Rectangle(debugPos + new Float2(size * -0.5f), new Float2(size));
                 var outline = Color.Black; // Shadow
                 Render2D.DrawSprite(icon, debugRect.MakeExpanded(2.0f), outline);
                 Render2D.DrawSprite(icon, debugRect, style.ProgressNormal);
@@ -920,11 +920,38 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
+            public override void SetValuesPaste(object[] values)
+            {
+                // Fix Guids pasted as string
+                // TODO: let copy/paste system in Visject handle value types to be strongly typed
+                for (int i = 5; i < values.Length; i += 2)
+                    values[i] = Guid.Parse((string)values[i]);
+
+                base.SetValuesPaste(values);
+            }
+
+            /// <inheritdoc />
             public override void OnValuesChanged()
             {
                 base.OnValuesChanged();
 
                 UpdateUI();
+            }
+
+            /// <inheritdoc />
+            public override bool Search(string text)
+            {
+                FlaxEngine.Json.JsonSerializer.ParseID(text, out var id);
+                if (id != Guid.Empty)
+                {
+                    for (int i = 5; i < Values.Length; i += 2)
+                    {
+                        if ((Guid)Values[i] == id)
+                            return true;
+                    }
+                }
+
+                return base.Search(text);
             }
         }
 
@@ -1182,9 +1209,9 @@ namespace FlaxEditor.Surface.Archetypes
             }
 
             /// <inheritdoc />
-            public override void DrawEditorBackground(ref Rectangle rect)
+            public override void DrawEditorGrid(ref Rectangle rect)
             {
-                base.DrawEditorBackground(ref rect);
+                base.DrawEditorGrid(ref rect);
 
                 // Draw triangulated multi blend space
                 var style = Style.Current;
@@ -1195,15 +1222,8 @@ namespace FlaxEditor.Surface.Archetypes
                 else
                     Render2D.FillTriangles(_triangles, style.TextBoxBackgroundSelected.AlphaMultiplied(0.6f));
                 Render2D.DrawTriangles(_triangles, style.Foreground);
-            }
-
-            /// <inheritdoc />
-            public override void DrawEditorGrid(ref Rectangle rect)
-            {
-                base.DrawEditorGrid(ref rect);
 
                 // Highlight selected blend point
-                var style = Style.Current;
                 var selectedIndex = _selectedAnimation.SelectedIndex;
                 if (selectedIndex != -1 && selectedIndex < _editor.BlendPoints.Count && (ContainsFocus || IsMouseOver))
                 {

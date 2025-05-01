@@ -1,17 +1,15 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GPUTasksContext.h"
 #include "GPUTask.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Threading/Threading.h"
-#include "Engine/Engine/Globals.h"
+#include "Engine/Engine/Engine.h"
 
 #define GPU_TASKS_USE_DEDICATED_CONTEXT 0
 
 GPUTasksContext::GPUTasksContext(GPUDevice* device)
-    : _tasksDone(64)
-    , _totalTasksDoneCount(0)
 {
     // Bump it up to prevent initial state problems with frame index comparison
     _currentSyncPoint = 10;
@@ -30,15 +28,15 @@ GPUTasksContext::~GPUTasksContext()
     ASSERT(IsInMainThread());
 
     // Cancel jobs to sync
-    auto tasks = _tasksDone;
-    _tasksDone.Clear();
+    auto tasks = _tasksSyncing;
+    _tasksSyncing.Clear();
     for (int32 i = 0; i < tasks.Count(); i++)
     {
         auto task = tasks[i];
         if (task->GetSyncPoint() <= _currentSyncPoint && task->GetState() != TaskState::Finished)
         {
-            if (!Globals::IsRequestingExit)
-                LOG(Warning, "{0} has been canceled before a sync", task->ToString());
+            if (!Engine::IsRequestingExit)
+                LOG(Warning, "'{0}' has been canceled before a sync", task->ToString());
             task->CancelSync();
         }
     }
@@ -52,18 +50,16 @@ void GPUTasksContext::Run(GPUTask* task)
 {
     ASSERT(task != nullptr);
 
-    _tasksDone.Add(task);
     task->Execute(this);
+    //if (task->GetSyncStart() != 0)
+        _tasksSyncing.Add(task);
 }
 
 void GPUTasksContext::OnCancelSync(GPUTask* task)
 {
-    ASSERT(task != nullptr);
-
-    _tasksDone.Remove(task);
-
-    if (!Globals::IsRequestingExit)
-        LOG(Warning, "{0} has been canceled before a sync", task->ToString());
+    _tasksSyncing.Remove(task);
+    if (!Engine::IsRequestingExit)
+        LOG(Warning, "'{0}' has been canceled before a sync", task->ToString());
 }
 
 void GPUTasksContext::OnFrameBegin()
@@ -76,9 +72,9 @@ void GPUTasksContext::OnFrameBegin()
     ++_currentSyncPoint;
 
     // Try to flush done jobs
-    for (int32 i = 0; i < _tasksDone.Count(); i++)
+    for (int32 i = 0; i < _tasksSyncing.Count(); i++)
     {
-        auto task = _tasksDone[i];
+        auto task = _tasksSyncing[i];
         auto state = task->GetState();
         if (task->GetSyncPoint() <= _currentSyncPoint && state != TaskState::Finished)
         {
@@ -87,12 +83,12 @@ void GPUTasksContext::OnFrameBegin()
         }
         if (state == TaskState::Failed || state == TaskState::Canceled)
         {
-            _tasksDone.RemoveAt(i);
+            _tasksSyncing.RemoveAt(i);
             i--;
         }
         if (state == TaskState::Finished)
         {
-            _tasksDone.RemoveAt(i);
+            _tasksSyncing.RemoveAt(i);
             i--;
             _totalTasksDoneCount++;
         }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 // Film Grain post-process shader v1.1	
 // Martins Upitis (martinsh) devlog-martinsh.blogspot.com
@@ -36,10 +36,15 @@
 
 META_CB_BEGIN(0, Data)
 
-float BloomLimit;
-float BloomThreshold;
-float BloomMagnitude;
-float BloomBlurSigma;
+float BloomIntensity;             
+float BloomClamp;                 
+float BloomThreshold;             
+float BloomThresholdKnee;         
+
+float BloomBaseMix;               
+float BloomHighMix;               
+float BloomMipCount;              
+float BloomLayer;               
 
 float3 VignetteColor;
 float VignetteShapeFactor;
@@ -91,12 +96,12 @@ static const float permTexUnit = 1.0 / 256.0;      // Perm texture texel-size
 static const float permTexUnitHalf = 0.5 / 256.0;  // Half perm texture texel-size
 
 // Input textures
-Texture2D Input0    : register(t0);
-Texture2D Input1    : register(t1);
-Texture2D Input2    : register(t2);
-Texture2D Input3    : register(t3);
-Texture2D LensDirt  : register(t4);
-Texture2D LensStar  : register(t5);
+Texture2D Input0 : register(t0);
+Texture2D Input1 : register(t1);
+Texture2D Input2 : register(t2);
+Texture2D Input3 : register(t3);
+Texture2D LensDirt : register(t4);
+Texture2D LensStar : register(t5);
 Texture2D LensColor : register(t6);
 #if USE_VOLUME_LUT
 Texture3D ColorGradingLUT : register(t7);
@@ -254,31 +259,230 @@ float2 coordRot(in float2 tc, in float angle)
 
 // Uses a lower exposure to produce a value suitable for a bloom pass
 META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_Threshold(Quad_VS2PS input) : SV_Target
+float4 PS_BloomBrightPass(Quad_VS2PS input) : SV_Target
 {
-	float4 color = Input0.SampleLevel(SamplerLinearClamp, input.TexCoord, 0);
-    return clamp(color - BloomThreshold, 0, BloomLimit);
+    // Get dimensions for precise texel calculations
+    uint width, height;
+    Input0.GetDimensions(width, height);
+    float2 texelSize = 1.0 / float2(width, height);
+    // Use fixed 13-tap sample pattern for initial bright pass
+    float3 color = 0;
+    float totalWeight = 0;
+
+    // Center sample with high weight for energy preservation
+    float3 center = Input0.Sample(SamplerLinearClamp, input.TexCoord).rgb;
+
+    // Apply Karis average to prevent bright pixels from dominating
+    float centerLuma = max(dot(center, float3(0.2126, 0.7152, 0.0722)), 0.0001);
+    center = center / (1.0 + centerLuma);
+
+    float centerWeight = 4.0;
+    color += center * centerWeight;
+    totalWeight += centerWeight;
+
+    // Inner ring - fixed offset at 1.0 texel distance
+    UNROLL
+    for (int i = 0; i < 4; i++)
+    {
+        float angle = i * (PI / 2.0);
+        float2 offset = float2(cos(angle), sin(angle)) * texelSize;
+        float3 sampleColor = Input0.Sample(SamplerLinearClamp, input.TexCoord).rgb;
+
+        // Apply Karis average
+        float sampleLuma = max(dot(sampleColor, float3(0.2126, 0.7152, 0.0722)), 0.0001);
+        sampleColor = sampleColor / (1.0 + sampleLuma);
+
+        float weight = 2.0;
+        color += sampleColor * weight;
+        totalWeight += weight;
+    }
+
+    // Outer ring - fixed offset at 1.4142 texel distance (diagonal)
+    UNROLL
+    for (int j = 0; j < 8; j++)
+    {
+        float angle = j * (PI / 4.0);
+        float2 offset = float2(cos(angle), sin(angle)) * texelSize * 1.4142;
+        float3 sampleColor = Input0.Sample(SamplerLinearClamp, input.TexCoord + offset).rgb;
+
+        // Apply Karis average
+        float sampleLuma = max(dot(sampleColor, float3(0.2126, 0.7152, 0.0722)), 0.0001);
+        sampleColor = sampleColor / (1.0 + sampleLuma);
+
+        float weight = 1.0;
+        color += sampleColor * weight;
+        totalWeight += weight;
+    }
+    color /= totalWeight;
+
+    // Un-apply Karis average to maintain energy
+    float finalLuma = max(dot(color, float3(0.2126, 0.7152, 0.0722)), 0.0001);
+    color = color * (1.0 + finalLuma);
+
+    // Apply threshold with quadratic rolloff for smoother transition
+    float luminance = dot(color, float3(0.2126, 0.7152, 0.0722));
+    float threshold = max(BloomThreshold, 0.2);
+    float knee = threshold * BloomThresholdKnee;
+    float softMax = threshold + knee;
+
+    float contribution = 0;
+    if (luminance > threshold)
+    {
+        if (luminance < softMax)
+        {
+            // Quadratic softening between threshold and (threshold + knee)
+            float x = (luminance - threshold) / knee;
+            contribution = x * x * 0.5;
+        }
+        else
+        {
+            // Full contribution above softMax
+            contribution = luminance - threshold;
+        }
+    }
+
+    float testc = BloomClamp;
+    float3 clamped = (color * contribution);
+    clamped.r = min(clamped.r, testc);
+    clamped.g = min(clamped.g, testc);
+    clamped.b = min(clamped.b, testc);
+
+    // Store threshold result in alpha for downsample chain
+    return float4(clamped, luminance);
 }
 
-// Uses hw bilinear filtering for upscaling or downscaling
 META_PS(true, FEATURE_LEVEL_ES2)
-float4 PS_Scale(Quad_VS2PS input) : SV_Target
+float4 PS_BloomDownsample(Quad_VS2PS input) : SV_Target
 {
-	// TODO: we could use quality switch for bloom effect
+    uint width, height;
+    Input0.GetDimensions(width, height);
+    float2 texelSize = 1.0 / float2(width, height);
 
-	return Input0.SampleLevel(SamplerLinearClamp, input.TexCoord, 0);
-	/*
-	float3 color;
-	// TODO: use gather for dx11 and dx12??
-	color  = Input0.SampleLevel(SamplerLinearClamp, input.TexCoord, 0, int2( 0, 0)).rgb;
-	color += Input0.SampleLevel(SamplerLinearClamp, input.TexCoord, 0, int2( 0, 1)).rgb;
-	color += Input0.SampleLevel(SamplerLinearClamp, input.TexCoord, 0, int2( 0,-1)).rgb;
-	color += Input0.SampleLevel(SamplerLinearClamp, input.TexCoord, 0, int2(-1, 0)).rgb;
-	color += Input0.SampleLevel(SamplerLinearClamp, input.TexCoord, 0, int2( 1, 0)).rgb;
-	color *= (1.0f / 5.0f);
+    // 9-tap tent filter with fixed weights
+    float3 color = 0;
+    float totalWeight = 0;
 
-	return float4(color, 1);
-	*/
+    // Sample offsets (fixed)
+    const float2 offsets[9] =
+    {
+        float2( 0,  0),    // Center
+        float2(-1, -1),    // Corners
+        float2( 1, -1),
+        float2(-1,  1),
+        float2( 1,  1),
+        float2( 0, -1),    // Cross
+        float2(-1,  0),
+        float2( 1,  0),
+        float2( 0,  1)
+    };
+
+    // Sample weights (fixed)
+    const float weights[9] =
+    {
+        4.0,    // Center
+        1.0,    // Corners
+        1.0,
+        1.0,
+        1.0,
+        2.0,    // Cross
+        2.0,
+        2.0,
+        2.0
+    };
+
+    UNROLL
+    for (int i = 0; i < 9; i++)
+    {
+        float2 offset = offsets[i] * texelSize * 2.0; // Fixed scale factor for stability
+        float4 sampleColor = Input0.Sample(SamplerLinearClamp, input.TexCoord + offset);
+        color += sampleColor.rgb * weights[i];
+        totalWeight += weights[i];
+    }
+
+    return float4(color / totalWeight, 1.0);
+}
+
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_BloomDualFilterUpsample(Quad_VS2PS input) : SV_Target
+{
+    float anisotropy = 1.0; 
+    uint width, height;
+    Input0.GetDimensions(width, height);
+    float2 texelSize = 1.0 / float2(width, height);
+
+    // Maintain fixed scale through mip chain
+    float baseOffset = 1.0;
+    float offsetScale =  (1.0)  * baseOffset;
+    float3 color = 0;
+    float totalWeight = 0;
+
+    // Center
+    float4 center = Input0.Sample(SamplerLinearClamp, input.TexCoord);
+    float centerWeight = 4.0;
+    color += center.rgb * centerWeight;
+    totalWeight += centerWeight;
+
+    // Cross - fixed distance samples
+    float2 crossOffsets[4] = {
+        float2(offsetScale * anisotropy, 0),  
+        float2(-offsetScale * anisotropy, 0), 
+        float2(0, offsetScale),
+        float2(0, -offsetScale)
+    };
+
+    UNROLL
+    for (int i = 0; i < 4; i++)
+    {
+        float4 sampleColor = Input0.Sample(SamplerLinearClamp, input.TexCoord + crossOffsets[i] * texelSize);
+        float weight = 2.0;
+        color += sampleColor.rgb * weight;
+        totalWeight += weight;
+    }
+
+    // Corners - fixed distance samples
+    float2 cornerOffsets[4] =
+    {
+        float2(offsetScale * anisotropy, offsetScale), 
+        float2(-offsetScale * anisotropy, offsetScale), 
+        float2(offsetScale * anisotropy, -offsetScale), 
+        float2(-offsetScale * anisotropy, -offsetScale) 
+    };
+
+    UNROLL
+    for (int j = 0; j < 4; j++)
+    {
+        float4 sampleColor = Input0.Sample(SamplerLinearClamp, input.TexCoord + cornerOffsets[j] * texelSize);
+        float weight = 1.0;
+        color += sampleColor.rgb * weight;
+        totalWeight += weight;
+    }
+
+    color /= totalWeight;
+
+    uint width1, height1;
+    Input1.GetDimensions(width1, height1);
+
+    // Calculate mip fade factor (0 = smallest mip, 1 = largest mip)
+    float mipFade = BloomLayer / (BloomMipCount - 1);
+
+    // Muzz says: 
+    // Lerp between your desired intensity values based on mip level
+    // setting both to 0.6 is a decent default, but playing with these numbers will let you dial in the blending between the lowest and highest mips. 
+    // you can make some really ugly bloom if you go too far. 
+    // note this does change the intensity of the bloom. 
+    // This was my own invention
+
+    float mipIntensity = lerp(BloomBaseMix, BloomHighMix, mipFade);
+    color *= mipIntensity;
+
+    BRANCH
+    if (width1 > 0)
+    {
+        float3 previousMip = Input1.Sample(SamplerLinearClamp, input.TexCoord).rgb;
+        color += previousMip;
+    }
+
+    return float4(color, 1.0);
 }
 
 // Horizontal gaussian blur
@@ -286,13 +490,11 @@ META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_GaussainBlurH(Quad_VS2PS input) : SV_Target
 {
 	float4 color = 0;
-
 	UNROLL
 	for (int i = 0; i < GB_KERNEL_SIZE; i++)
 	{
 		color += Input0.Sample(SamplerLinearClamp, input.TexCoord + float2(GaussianBlurCache[i].y, 0.0)) * GaussianBlurCache[i].x;
 	}
-
 	return color;
 }
 
@@ -301,13 +503,11 @@ META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_GaussainBlurV(Quad_VS2PS input) : SV_Target
 {
 	float4 color = 0;
-
 	UNROLL
 	for (int i = 0; i < GB_KERNEL_SIZE; i++)
 	{
 		color += Input0.Sample(SamplerLinearClamp, input.TexCoord + float2(0.0, GaussianBlurCache[i].y)) * GaussianBlurCache[i].x;
 	}
-
 	return color;
 }
 
@@ -471,18 +671,16 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 		color.rgb += lensFlares;
 	}
 
-	// Bloom
-	BRANCH
-	if (BloomMagnitude > 0)
-	{
-		// Sample the bloom
-		float3 bloom = Input2.SampleLevel(SamplerLinearClamp, uv, 0).rgb;
-		bloom = bloom * BloomMagnitude;
-
-		// Accumulate final bloom lght
-		lensLight += max(0, bloom * 3.0f + (- 1.0f * 3.0f));
-		color.rgb += bloom;
-	}
+    // Bloom
+    BRANCH
+    if (BloomIntensity > 0)
+    {
+        // Sample the final bloom result
+        float3 bloom = Input2.Sample(SamplerLinearClamp, input.TexCoord).rgb;
+        bloom = bloom * BloomIntensity;
+        lensLight += max(0, bloom * 3.0f + (-1.0f * 3.0f));
+        color.rgb += bloom;
+    }
 
 	// Lens Dirt
 	float3 lensDirt = LensDirt.SampleLevel(SamplerLinearClamp, uv, 0).rgb;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,7 +7,7 @@
 /// <summary>
 /// The off-mesh link objects used to define a custom point-to-point edge within the navigation graph. An off-mesh connection is a user defined traversable connection made up to two vertices, at least one of which resides within a navigation mesh polygon allowing movement outside the navigation mesh.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Other/Nav Link\"), ActorToolbox(\"Other\")")
+API_CLASS(Attributes="ActorContextMenu(\"New/Navigation/Nav Link\"), ActorToolbox(\"Other\")")
 class FLAXENGINE_API NavLink : public Actor
 {
     DECLARE_SCENE_OBJECT(NavLink);

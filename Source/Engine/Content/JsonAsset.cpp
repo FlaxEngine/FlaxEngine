@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "JsonAsset.h"
 #if USE_EDITOR
@@ -161,25 +161,19 @@ void JsonAssetBase::GetReferences(const StringAnsiView& json, Array<Guid>& asset
     FindIds(document, assets, files);
 }
 
-bool JsonAssetBase::Save(const StringView& path) const
+bool JsonAssetBase::Save(const StringView& path)
 {
-    // Validate state
-    if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave(path))
         return true;
-    }
-    if (IsVirtual() && path.IsEmpty())
-    {
-        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
-        return true;
-    }
+    PROFILE_CPU();
     ScopeLock lock(Locker);
 
     // Serialize to json to the buffer
     rapidjson_flax::StringBuffer buffer;
     PrettyJsonWriter writerObj(buffer);
-    Save(writerObj);
+    _isResaving = true;
+    saveInternal(writerObj);
+    _isResaving = false;
 
     // Save json to file
     if (File::WriteAllBytes(path.HasChars() ? path : StringView(GetPath()), (byte*)buffer.GetString(), (int32)buffer.GetSize()))
@@ -193,12 +187,14 @@ bool JsonAssetBase::Save(const StringView& path) const
 
 bool JsonAssetBase::Save(JsonWriter& writer) const
 {
-    // Validate state
-    if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave())
         return true;
-    }
+    
+    return saveInternal(writer);
+}
+
+bool JsonAssetBase::saveInternal(JsonWriter& writer) const
+{
     ScopeLock lock(Locker);
 
     writer.StartObject();
@@ -348,6 +344,61 @@ uint64 JsonAsset::GetMemoryUsage() const
     return result;
 }
 
+void JsonAsset::OnGetData(rapidjson_flax::StringBuffer& buffer) const
+{
+    if (Instance && InstanceType && _isResaving)
+    {
+        // Serialize instance object that was loaded (from potentially deprecated data, serialize method is always up to date)
+        const ScriptingType& type = InstanceType.GetType();
+        PrettyJsonWriter writer(buffer);
+        bool got = false;
+        switch (type.Type)
+        {
+        case ScriptingTypes::Class:
+        case ScriptingTypes::Structure:
+        {
+            const ScriptingType::InterfaceImplementation* interface = type.GetInterface(ISerializable::TypeInitializer);
+            writer.StartObject();
+            ((ISerializable*)((byte*)Instance + interface->VTableOffset))->Serialize(writer, nullptr);
+            got = true;
+            break;
+        }
+        case ScriptingTypes::Script:
+        {
+            writer.StartObject();
+            ToInterface<ISerializable>((ScriptingObject*)Instance)->Serialize(writer, nullptr);
+            got = true;
+            break;
+        }
+        }
+        if (got)
+        {
+            writer.EndObject();
+
+            // Parse json document (CreateInstance uses it to spawn object)
+            auto* self = const_cast<JsonAsset*>(this);
+            {
+                PROFILE_CPU_NAMED("Json.Parse");
+                self->Document.Parse(buffer.GetString(), buffer.GetSize());
+            }
+            if (self->Document.HasParseError())
+            {
+                self->Data = nullptr;
+                Log::JsonParseException(Document.GetParseError(), Document.GetErrorOffset());
+            }
+            else
+            {
+                self->Data = &self->Document;
+                self->DataEngineBuild = FLAXENGINE_VERSION_BUILD;
+            }
+
+            return;
+        }
+    }
+
+    JsonAssetBase::OnGetData(buffer);
+}
+
 Asset::LoadResult JsonAsset::loadAsset()
 {
     const auto result = JsonAssetBase::loadAsset();
@@ -387,6 +438,7 @@ void JsonAsset::onLoaded_MainThread()
     JsonAssetBase::onLoaded_MainThread();
 
     // Special case for Settings assets to flush them after edited and saved in Editor
+    // TODO: add interface for custom JsonAsset interaction of the instance class (eg. OnJsonLoaded, or similar to C# like OnDeserialized from Newtonsoft.Json)
     const StringAsANSI<> dataTypeNameAnsi(DataTypeName.Get(), DataTypeName.Length());
     const auto typeHandle = Scripting::FindScriptingType(StringAnsiView(dataTypeNameAnsi.Get(), DataTypeName.Length()));
     if (Instance && typeHandle && typeHandle.IsSubclassOf(SettingsBase::TypeInitializer) && _isAfterReload)

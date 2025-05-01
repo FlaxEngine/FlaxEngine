@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX12
 
@@ -15,9 +15,9 @@
 #include <d3d12.h>
 #include <ThirdParty/WinPixEventRuntime/pix3.h>
 #endif
-
 #include "GPUContextDX12.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Rectangle.h"
 #include "GPUShaderDX12.h"
@@ -26,6 +26,7 @@
 #include "GPUTextureDX12.h"
 #include "GPUBufferDX12.h"
 #include "GPUSamplerDX12.h"
+#include "GPUVertexLayoutDX12.h"
 #include "CommandQueueDX12.h"
 #include "DescriptorHeapDX12.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -244,10 +245,22 @@ void GPUContextDX12::Reset()
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));
     Platform::MemoryClear(_uaHandles, sizeof(_uaHandles));
     Platform::MemoryClear(_vbHandles, sizeof(_vbHandles));
+    _vertexLayout = nullptr;
     _ibHandle = nullptr;
     Platform::MemoryClear(&_cbHandles, sizeof(_cbHandles));
     Platform::MemoryClear(&_samplers, sizeof(_samplers));
     _swapChainsUsed = 0;
+    
+    // Bind dummy vertex buffer (used by missing bindings)
+    D3D12_VERTEX_BUFFER_VIEW dummyVBView;
+    if (!_device->DummyVB)
+    {
+        _device->DummyVB = _device->CreateBuffer(TEXT("DummyVertexBuffer"));
+        auto* layout = GPUVertexLayout::Get({ { VertexElement::Types::Attribute3, 0, 0, 0, PixelFormat::R32G32B32A32_Float } });
+        _device->DummyVB->Init(GPUBufferDescription::Vertex(layout, sizeof(Color), 1, &Color::Transparent));
+    }
+    ((GPUBufferDX12*)_device->DummyVB)->GetVBView(dummyVBView);
+    _commandList->IASetVertexBuffers(GPU_MAX_VB_BINDED, 1, &dummyVBView);
 
     ForceRebindDescriptors();
 }
@@ -560,7 +573,13 @@ void GPUContextDX12::flushPS()
 
         // Change state
         ASSERT(_currentState->IsValid());
-        _commandList->SetPipelineState(_currentState->GetState(_rtDepth, _rtCount, _rtHandles));
+#if GPU_ENABLE_ASSERTION_LOW_LAYERS
+        if (!_vertexLayout && _vbHandles[0] && !_currentState->VertexBufferLayout)
+        {
+            LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
+        }
+#endif
+        _commandList->SetPipelineState(_currentState->GetState(_rtDepth, _rtCount, _rtHandles, _vertexLayout));
         if (_primitiveTopology != _currentState->PrimitiveTopology)
         {
             _primitiveTopology = _currentState->PrimitiveTopology;
@@ -954,10 +973,9 @@ void GPUContextDX12::BindUA(int32 slot, GPUResourceView* view)
         *view->LastRenderTime = _lastRenderTime;
 }
 
-void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)
+void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets, GPUVertexLayout* vertexLayout)
 {
     ASSERT(vertexBuffers.Length() >= 0 && vertexBuffers.Length() <= GPU_MAX_VB_BINDED);
-
     bool vbEdited = _vbCount != vertexBuffers.Length();
     D3D12_VERTEX_BUFFER_VIEW views[GPU_MAX_VB_BINDED];
     for (int32 i = 0; i < vertexBuffers.Length(); i++)
@@ -989,6 +1007,13 @@ void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
             return;
 #endif
         _commandList->IASetVertexBuffers(0, vertexBuffers.Length(), views);
+    }
+    if (!vertexLayout)
+         vertexLayout = GPUVertexLayout::Get(vertexBuffers);
+    if (_vertexLayout != vertexLayout)
+    {
+        _vertexLayout = (GPUVertexLayoutDX12*)vertexLayout;
+        _psDirtyFlag = true;
     }
 }
 

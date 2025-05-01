@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -195,6 +195,8 @@ namespace FlaxEditor.States
             SceneRestoring?.Invoke();
             _duplicateScenes.UnloadScenes();
             PluginManager.Internal_DeinitializeGamePlugins();
+            FlaxEngine.Scripting.FlushRemovedObjects();
+            Editor.WipeOutLeftoverSceneObjects();
             Editor.Internal_SetPlayMode(false);
             _duplicateScenes.RestoreSceneData();
             SceneRestored?.Invoke();

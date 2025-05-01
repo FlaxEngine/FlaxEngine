@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MATERIAL_GRAPH
 
@@ -15,7 +15,6 @@ MaterialLayer::MaterialLayer(const Guid& id)
     , ShadingModel(MaterialShadingModel::Lit)
     , MaskThreshold(0.3f)
     , OpacityThreshold(0.12f)
-    , ParamIdsMappings(8)
 {
     ASSERT(ID.IsValid());
 }

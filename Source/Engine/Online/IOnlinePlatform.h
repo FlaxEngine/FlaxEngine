@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -97,6 +97,109 @@ API_STRUCT(Namespace="FlaxEngine.Online") struct FLAXENGINE_API OnlineAchievemen
     /// Date and time at which player unlocked the achievement.
     /// </summary>
     API_FIELD() DateTime UnlockTime = DateTime::MinValue();
+};
+
+/// <summary>
+/// Online platform leaderboards sorting modes.
+/// </summary>
+API_ENUM(Namespace="FlaxEngine.Online") enum class OnlineLeaderboardSortModes
+{
+    /// <summary>
+    /// Don't sort stats.
+    /// </summary>
+    None = 0,
+
+    /// <summary>
+    /// Sort ascending, top-score is the lowest number (lower value is better).
+    /// </summary>
+    Ascending,
+
+    /// <summary>
+    /// Sort descending, top-score is the highest number (higher value is better).
+    /// </summary>
+    Descending,
+};
+
+/// <summary>
+/// Online platform leaderboards display modes. Defines how leaderboard value should be used.
+/// </summary>
+API_ENUM(Namespace="FlaxEngine.Online") enum class OnlineLeaderboardValueFormats
+{
+    /// <summary>
+    /// Undefined format.
+    /// </summary>
+    Undefined = 0,
+
+    /// <summary>
+    /// Raw numerical score.
+    /// </summary>
+    Numeric,
+
+    /// <summary>
+    /// Time in seconds.
+    /// </summary>
+    Seconds,
+
+    /// <summary>
+    /// Time in milliseconds.
+    /// </summary>
+    Milliseconds,
+};
+
+/// <summary>
+/// Online platform leaderboard description.
+/// </summary>
+API_STRUCT(Namespace="FlaxEngine.Online") struct FLAXENGINE_API OnlineLeaderboard
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(OnlineLeaderboard);
+
+    /// <summary>
+    /// Unique leaderboard identifier. Specific for a certain online platform.
+    /// </summary>
+    API_FIELD() String Identifier;
+
+    /// <summary>
+    /// Leaderboard name. Specific for a game.
+    /// </summary>
+    API_FIELD() String Name;
+
+    /// <summary>
+    /// The leaderboard sorting method.
+    /// </summary>
+    API_FIELD() OnlineLeaderboardSortModes SortMode;
+
+    /// <summary>
+    /// The leaderboard values formatting.
+    /// </summary>
+    API_FIELD() OnlineLeaderboardValueFormats ValueFormat;
+
+    /// <summary>
+    /// The leaderboard rows count (amount of entries to access).
+    /// </summary>
+    API_FIELD() int32 EntriesCount;
+};
+
+/// <summary>
+/// Online platform leaderboard entry description.
+/// </summary>
+API_STRUCT(Namespace="FlaxEngine.Online") struct FLAXENGINE_API OnlineLeaderboardEntry
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(OnlineLeaderboardEntry);
+
+    /// <summary>
+    /// The player who holds the entry.
+    /// </summary>
+    API_FIELD() OnlineUser User;
+
+    /// <summary>
+    /// The entry rank. Placement of the entry in the leaderboard (starts at 1 for the top-score).
+    /// </summary>
+    API_FIELD() int32 Rank;
+
+    /// <summary>
+    /// The entry score set in the leaderboard.
+    /// </summary>
+    API_FIELD() int32 Score;
 };
 
 /// <summary>
@@ -215,6 +318,73 @@ public:
     /// <param name="localUser">The local user (null if use default one).</param>
     /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() virtual bool SetStat(const StringView& name, float value, User* localUser = nullptr) = 0;
+
+public:
+    /// <summary>
+    /// Gets the online leaderboard.
+    /// </summary>
+    /// <param name="name">The leaderboard name.</param>
+    /// <param name="value">The result value.</param>
+    /// <param name="localUser">The local user (null if use default one).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() virtual bool GetLeaderboard(const StringView& name, API_PARAM(Out) OnlineLeaderboard& value, User* localUser = nullptr) { return true; }
+
+    /// <summary>
+    /// Gets or creates the online leaderboard. It will not create it if already exists.
+    /// </summary>
+    /// <param name="name">The leaderboard name.</param>
+    /// <param name="sortMode">The leaderboard sorting mode.</param>
+    /// <param name="valueFormat">The leaderboard values formatting.</param>
+    /// <param name="value">The result value.</param>
+    /// <param name="localUser">The local user (null if use default one).</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() virtual bool GetOrCreateLeaderboard(const StringView& name, OnlineLeaderboardSortModes sortMode, OnlineLeaderboardValueFormats valueFormat, API_PARAM(Out) OnlineLeaderboard& value, User* localUser = nullptr) { return true; }
+
+    /// <summary>
+    /// Gets the online leaderboard entries. Allows to specify the range for ranks to gather.
+    /// </summary>
+    /// <param name="leaderboard">The leaderboard.</param>
+    /// <param name="entries">The list of result entries.</param>
+    /// <param name="start">The zero-based index to start downloading entries from. For example, to display the top 10 on a leaderboard pass value of 0.</param>
+    /// <param name="count">The amount of entries to read, starting from the first entry at <paramref name="start"/>.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() virtual bool GetLeaderboardEntries(const OnlineLeaderboard& leaderboard, API_PARAM(Out) Array<OnlineLeaderboardEntry, HeapAllocation>& entries, int32 start = 0, int32 count = 10) { return true; }
+
+    /// <summary>
+    /// Gets the online leaderboard entries around the player. Allows to specify the range for ranks to gather around the user rank. The current user's entry is always included.
+    /// </summary>
+    /// <param name="leaderboard">The leaderboard.</param>
+    /// <param name="entries">The list of result entries.</param>
+    /// <param name="start">The zero-based index to start downloading entries relative to the user. For example, to display the 4 higher scores on a leaderboard pass value of -4. Value 0 will return current user as the first one.</param>
+    /// <param name="count">The amount of entries to read, starting from the first entry at <paramref name="start"/>.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() virtual bool GetLeaderboardEntriesAroundUser(const OnlineLeaderboard& leaderboard, API_PARAM(Out) Array<OnlineLeaderboardEntry, HeapAllocation>& entries, int32 start = -4, int32 count = 10) { return true; }
+
+    /// <summary>
+    /// Gets the online leaderboard entries for player friends.
+    /// </summary>
+    /// <param name="leaderboard">The leaderboard.</param>
+    /// <param name="entries">The list of result entries.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() virtual bool GetLeaderboardEntriesForFriends(const OnlineLeaderboard& leaderboard, API_PARAM(Out) Array<OnlineLeaderboardEntry, HeapAllocation>& entries) { return true; }
+
+    /// <summary>
+    /// Gets the online leaderboard entries for an arbitrary set of users.
+    /// </summary>
+    /// <param name="leaderboard">The leaderboard.</param>
+    /// <param name="entries">The list of result entries.</param>
+    /// <param name="users">The list of users to read their ranks on the leaderboard.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() virtual bool GetLeaderboardEntriesForUsers(const OnlineLeaderboard& leaderboard, API_PARAM(Out) Array<OnlineLeaderboardEntry, HeapAllocation>& entries, const Array<OnlineUser, HeapAllocation>& users) { return true; }
+
+    /// <summary>
+    /// Sets the online leaderboard entry for the user.
+    /// </summary>
+    /// <param name="leaderboard">The leaderboard.</param>
+    /// <param name="score">The score value to set.</param>
+    /// <param name="keepBest">True if store value only if it's better than existing value (if any), otherwise will override any existing score for that user.</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() virtual bool SetLeaderboardEntry(const OnlineLeaderboard& leaderboard, int32 score, bool keepBest = false) { return true; }
 
 public:
     /// <summary>

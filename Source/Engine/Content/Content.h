@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -362,11 +362,10 @@ public:
     API_EVENT() static Delegate<Asset*> AssetReloading;
 
 private:
+    static void WaitForTask(ContentLoadTask* loadingTask, double timeoutInMilliseconds);
     static void tryCallOnLoaded(Asset* asset);
     static void onAssetLoaded(Asset* asset);
     static void onAssetUnload(Asset* asset);
     static void onAssetChangeId(Asset* asset, const Guid& oldId, const Guid& newId);
-
-private:
     static void deleteFileSafety(const StringView& path, const Guid& id);
 };

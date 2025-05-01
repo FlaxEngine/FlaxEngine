@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -310,8 +310,9 @@ namespace FlaxEditor.Modules
         /// </summary>
         /// <param name="actor">The actor.</param>
         /// <param name="parent">The parent actor. Set null as default.</param>
+        /// <param name="orderInParent">The order under the parent to put the spawned actor.</param>
         /// <param name="autoSelect">True if automatically select the spawned actor, otherwise false.</param>
-        public void Spawn(Actor actor, Actor parent = null, bool autoSelect = true)
+        public void Spawn(Actor actor, Actor parent = null, int orderInParent = -1, bool autoSelect = true)
         {
             bool isPlayMode = Editor.StateMachine.IsPlayMode;
 
@@ -320,17 +321,21 @@ namespace FlaxEditor.Modules
 
             SpawnBegin?.Invoke();
 
+            // During play in editor mode spawned actors should be dynamic (user can move them)
+            if (isPlayMode)
+                actor.StaticFlags = StaticFlags.None;
+
             // Add it
             Level.SpawnActor(actor, parent);
+
+            // Set order if given
+            if (orderInParent != -1)
+                actor.OrderInParent = orderInParent;
 
             // Peek spawned node
             var actorNode = Editor.Instance.Scene.GetActorNode(actor);
             if (actorNode == null)
                 throw new InvalidOperationException("Failed to create scene node for the spawned actor.");
-
-            // During play in editor mode spawned actors should be dynamic (user can move them)
-            if (isPlayMode)
-                actor.StaticFlags = StaticFlags.None;
 
             // Call post spawn action (can possibly setup custom default values)
             actorNode.PostSpawn();
@@ -568,7 +573,7 @@ namespace FlaxEditor.Modules
             {
                 Position = center,
             };
-            Editor.SceneEditing.Spawn(parent, null, false);
+            Editor.SceneEditing.Spawn(parent, null, -1, false);
             using (new UndoMultiBlock(Undo, actors, "Reparent actors"))
             {
                 for (int i = 0; i < selection.Count; i++)

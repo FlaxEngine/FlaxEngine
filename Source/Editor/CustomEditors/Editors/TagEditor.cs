@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
@@ -338,6 +338,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 IsClosed = true,
                 ItemsMargin = new Margin(2.0f),
                 CloseAnimationTime = 0,
+                Pivot = Float2.Zero
             };
             var tagNamePanel = new HorizontalPanel
             {
