@@ -54,7 +54,8 @@ public class ModelPrefabEditor : GenericEditor
         }
 
         // Creates the import path UI
-        Utilities.Utils.CreateImportPathUI(layout, modelPrefab.ImportPath, false);
+        var group = layout.Group("Import Path");
+        Utilities.Utils.CreateImportPathUI(group, modelPrefab.ImportPath, false);
 
         var button = layout.Button("Reimport", "Reimports the source asset as prefab.");
         _reimportButton = button.Button;
