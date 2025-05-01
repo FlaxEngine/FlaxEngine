@@ -98,7 +98,7 @@ namespace FlaxEditor.Content.Create
             /// The mode used to initialize the widget.
             /// </summary>
             [Tooltip("Whether to initialize the widget with a canvas or a control.")]
-            public WidgetMode WidgetInitializationMode = WidgetMode.Control;
+            public WidgetMode WidgetInitializationMode = WidgetMode.Canvas;
 
             bool ShowRoot => WidgetInitializationMode == WidgetMode.Control;
 
@@ -108,6 +108,12 @@ namespace FlaxEditor.Content.Create
             [TypeReference(typeof(Control), nameof(IsValid))]
             [Tooltip("The control type of the root of the new Widget's root control."), VisibleIf(nameof(ShowRoot))]
             public Type RootControlType = typeof(Button);
+
+            /// <summary>
+            /// If a <see cref="CanvasScaler"/> should be added to the widget.
+            /// </summary>
+            [Tooltip("If checked, a Canvas Scaler will be added to the widget."), VisibleIf(nameof(ShowRoot), true)]
+            public bool AddCanvasScaler = true;
 
             private static bool IsValid(Type type)
             {
@@ -158,6 +164,20 @@ namespace FlaxEditor.Content.Create
             else if (_options.WidgetInitializationMode == Options.WidgetMode.Canvas)
             {
                 actor = new UICanvas();
+                
+                if (_options.AddCanvasScaler)
+                {
+                    Actor canvasScaler;
+                    Control control = new CanvasScaler();
+
+                    canvasScaler = new UIControl
+                    {
+                        Control = control,
+                        Name = typeof(CanvasScaler).Name
+                    };
+
+                    canvasScaler.SetParent(actor, true);
+                }
             }
 
             if (actor == null)
