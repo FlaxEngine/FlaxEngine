@@ -144,12 +144,13 @@ namespace FlaxEditor.GUI.Dialogs
                 // Clamp mouse position to circle
                 const float distanceOffset = 15f;
 
-                float centerMouseDistance = Float2.Distance(Root.MousePosition, _wheelRect.Center);
+                Float2 mousePos = PointFromWindow(Root.MousePosition);
+                float centerMouseDistance = Float2.Distance(mousePos, _wheelRect.Center);
                 float wheelRadius = _wheelRect.Height * 0.5f + distanceOffset;
                 if (wheelRadius < centerMouseDistance)
                 {
-                    Float2 normalizedCenterMouseDirection = (Root.MousePosition - _wheelRect.Center).Normalized;
-                    Root.MousePosition = _wheelRect.Center + normalizedCenterMouseDirection * wheelRadius;
+                    Float2 normalizedCenterMouseDirection = (mousePos - _wheelRect.Center).Normalized;
+                    Root.MousePosition = PointToWindow(_wheelRect.Center + normalizedCenterMouseDirection * wheelRadius);
                 }
             }
         }
