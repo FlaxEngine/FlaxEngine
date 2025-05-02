@@ -691,6 +691,9 @@ namespace FlaxEditor.GUI.Dialogs
                 return;
             _disableEvents = true;
 
+            // Ensure the cursor is restored
+            Cursor = CursorType.Default;
+
             // Restore color if modified
             if (_useDynamicEditing && _initialValue != _value)
                 _onChanged?.Invoke(_initialValue, false);
