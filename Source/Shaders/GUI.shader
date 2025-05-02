@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "./Flax/GUICommon.hlsl"
 
@@ -23,11 +23,6 @@ META_CB_END
 Texture2D Image : register(t0);
 
 META_VS(true, FEATURE_LEVEL_ES2)
-META_VS_IN_ELEMENT(POSITION, 0, R32G32_FLOAT,       0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R16G16_FLOAT,       0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(COLOR,    0, R32G32B32A32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 1, R32G32B32A32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 2, R32G32B32A32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 VS2PS VS(Render2DVertex input)
 {
 	VS2PS output;

@@ -26,7 +26,7 @@ struct RibbonInput
 
 // Primary constant buffer (with additional material parameters)
 META_CB_BEGIN(0, Data)
-float4x4 WorldMatrix;
+float4x3 WorldMatrix;
 uint SortedIndicesOffset;
 float PerInstanceRandom;
 int ParticleStride;
@@ -45,7 +45,7 @@ int RibbonWidthOffset;
 int RibbonTwistOffset;
 int RibbonFacingVectorOffset;
 uint RibbonSegmentCount;
-float4x4 WorldMatrixInverseTransposed;
+float4x3 WorldMatrixInverseTransposed;
 @1META_CB_END
 
 // Particles attributes buffer
@@ -138,7 +138,7 @@ MaterialInput GetMaterialInput(PixelInput input)
 #if USE_INSTANCING
 #define GetInstanceTransform(input) float4x4(float4(input.InstanceTransform1.xyz, 0.0f), float4(input.InstanceTransform2.xyz, 0.0f), float4(input.InstanceTransform3.xyz, 0.0f), float4(input.InstanceOrigin.xyz, 1.0f))
 #else
-#define GetInstanceTransform(input) WorldMatrix;
+#define GetInstanceTransform(input) ToMatrix4x4(WorldMatrix);
 #endif
 
 // Removes the scale vector from the local to world transformation matrix (supports instancing)
@@ -264,12 +264,12 @@ float4 GetParticleVec4(uint particleIndex, int offset)
 
 float3 TransformParticlePosition(float3 input)
 {
-	return mul(float4(input, 1.0f), WorldMatrix).xyz;
+	return mul(float4(input, 1.0f), ToMatrix4x4(WorldMatrix)).xyz;
 }
 
 float3 TransformParticleVector(float3 input)
 {
-	return mul(float4(input, 0.0f), WorldMatrixInverseTransposed).xyz;
+	return mul(float4(input, 0.0f), ToMatrix4x4(WorldMatrixInverseTransposed)).xyz;
 }
 
 @8
@@ -299,24 +299,22 @@ half3x3 CalcTangentToLocal(ModelInput input)
 	float3 normal = input.Normal.xyz * 2.0 - 1.0;
 	float3 tangent = input.Tangent.xyz * 2.0 - 1.0;
 	float3 bitangent = cross(normal, tangent) * bitangentSign;
-	return float3x3(tangent, bitangent, normal);
+	return (half3x3)float3x3(tangent, bitangent, normal);
 }
 
 half3x3 CalcTangentToWorld(in float4x4 world, in half3x3 tangentToLocal)
 {
-	half3x3 localToWorld = RemoveScaleFromLocalToWorld((float3x3)world);
+	half3x3 localToWorld = (half3x3)RemoveScaleFromLocalToWorld((float3x3)world);
 	return mul(tangentToLocal, localToWorld); 
 }
 
-float3 GetParticlePosition(uint ParticleIndex)
+float3 GetParticlePosition(uint particleIndex)
 {
-	return TransformParticlePosition(GetParticleVec3(ParticleIndex, PositionOffset));
+	return TransformParticlePosition(GetParticleVec3(particleIndex, PositionOffset));
 }
 
 // Vertex Shader function for Sprite Rendering
 META_VS(true, FEATURE_LEVEL_ES2)
-META_VS_IN_ELEMENT(POSITION, 0, R32G32_FLOAT, 0, 0,     PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 VertexOutput VS_Sprite(SpriteInput input, uint particleIndex : SV_InstanceID)
 {
 	VertexOutput output;
@@ -333,7 +331,7 @@ VertexOutput VS_Sprite(SpriteInput input, uint particleIndex : SV_InstanceID)
 	float2 spriteSize = GetParticleVec2(particleIndex, SpriteSizeOffset);
 	int spriteFacingMode = SpriteFacingModeOffset != -1 ? GetParticleInt(particleIndex, SpriteFacingModeOffset) : -1;
 
-	float4x4 world = WorldMatrix;
+	float4x4 world = ToMatrix4x4(WorldMatrix);
 	float3x3 eulerMatrix = EulerMatrix(radians(particleRotation));
 	float3x3 viewRot = transpose((float3x3)ViewMatrix);
 	float3 position = mul(float4(particlePosition, 1), world).xyz;
@@ -407,7 +405,7 @@ VertexOutput VS_Sprite(SpriteInput input, uint particleIndex : SV_InstanceID)
 	output.InstanceParams = PerInstanceRandom;
 
 	// Calculate tanget space to world space transformation matrix for unit vectors
-	half3x3 tangentToLocal = float3x3(axisX, axisY, axisZ);
+	half3x3 tangentToLocal = half3x3(axisX, axisY, axisZ);
 	half3x3 tangentToWorld = CalcTangentToWorld(world, tangentToLocal);
 	output.TBN = tangentToWorld;
 
@@ -463,11 +461,12 @@ VertexOutput VS_Model(ModelInput input, uint particleIndex : SV_InstanceID)
 	}
 
 	// Read particle data
+	float4x4 worldMatrix = ToMatrix4x4(WorldMatrix);
 	float3 particlePosition = GetParticleVec3(particleIndex, PositionOffset);
 	float3 particleScale = GetParticleVec3(particleIndex, ScaleOffset);
 	float3 particleRotation = GetParticleVec3(particleIndex, RotationOffset);
 	int modelFacingMode = ModelFacingModeOffset != -1 ? GetParticleInt(particleIndex, ModelFacingModeOffset) : -1;
-	float3 position = mul(float4(particlePosition, 1), WorldMatrix).xyz;
+	float3 position = mul(float4(particlePosition, 1), worldMatrix).xyz;
 
 	// Compute final vertex position in the world
 	float3x3 eulerMatrix = EulerMatrix(radians(particleRotation));
@@ -506,7 +505,7 @@ VertexOutput VS_Model(ModelInput input, uint particleIndex : SV_InstanceID)
 		world =  mul(world, scaleMatrix);
 	}
 	world = transpose(world);
-	world =  mul(world, WorldMatrix);
+	world =  mul(world, worldMatrix);
 
 	// Calculate the vertex position in world space
 	output.WorldPosition = mul(float4(input.Position, 1), world).xyz;
@@ -515,17 +514,17 @@ VertexOutput VS_Model(ModelInput input, uint particleIndex : SV_InstanceID)
 	output.Position = mul(float4(output.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
-	output.TexCoord = input.TexCoord;
+	output.TexCoord = input.TexCoord0;
 	output.ParticleIndex = particleIndex;
 #if USE_VERTEX_COLOR
 	output.VertexColor = input.Color;
 #endif
-	output.InstanceOrigin = WorldMatrix[3].xyz;
+	output.InstanceOrigin = worldMatrix[3].xyz;
 	output.InstanceParams = PerInstanceRandom;
 
 	// Calculate tanget space to world space transformation matrix for unit vectors
 	half3x3 tangentToLocal = CalcTangentToLocal(input);
-	half3x3 tangentToWorld = CalcTangentToWorld(WorldMatrix, tangentToLocal);
+	half3x3 tangentToWorld = CalcTangentToWorld(worldMatrix, tangentToLocal);
 	output.TBN = tangentToWorld;
 
 	// Get material input params if need to evaluate any material property
@@ -611,7 +610,7 @@ VertexOutput VS_Ribbon(RibbonInput input, uint vertexIndex : SV_VertexID)
 	{
 		output.TexCoord.x = (float)input.Order / (float)RibbonSegmentCount;
 	}
-	output.TexCoord.y = (vertexIndex + 1) & 0x1;
+	output.TexCoord.y = (float)((vertexIndex + 1) & 0x1);
 	output.TexCoord = output.TexCoord * RibbonUVScale + RibbonUVOffset;
 
 	// Compute world space vertex position
@@ -625,12 +624,13 @@ VertexOutput VS_Ribbon(RibbonInput input, uint vertexIndex : SV_VertexID)
 #if USE_VERTEX_COLOR
 	output.VertexColor = 1;
 #endif
-	output.InstanceOrigin = WorldMatrix[3].xyz;
+	float4x4 world = ToMatrix4x4(WorldMatrix);
+	output.InstanceOrigin = world[3].xyz;
 	output.InstanceParams = PerInstanceRandom;
 
 	// Calculate tanget space to world space transformation matrix for unit vectors
-	half3x3 tangentToLocal = float3x3(tangentRight, tangentUp, cross(tangentRight, tangentUp));
-	half3x3 tangentToWorld = CalcTangentToWorld(WorldMatrix, tangentToLocal);
+	half3x3 tangentToLocal = half3x3(tangentRight, tangentUp, cross(tangentRight, tangentUp));
+	half3x3 tangentToWorld = CalcTangentToWorld(world, tangentToLocal);
 	output.TBN = tangentToWorld;
 
 	// Get material input params if need to evaluate any material property

@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Engine/Scripting/ScriptingType.h"
+#include "Engine/Threading/ConcurrentSystemLocker.h"
 
 class TaskGraphSystem;
 struct RenderContext;
@@ -26,6 +27,9 @@ API_CLASS(Static) class FLAXENGINE_API Particles
     /// The system for Particles update.
     /// </summary>
     API_FIELD(ReadOnly) static TaskGraphSystem* System;
+
+    // Data access locker for animations data.
+    static ConcurrentSystemLocker SystemLocker;
 
 public:
     /// <summary>

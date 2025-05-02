@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,6 +7,62 @@
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Scripting/ScriptingObject.h"
 #include "Engine/Scripting/SerializableScriptingObject.h"
+#include "Engine/Scripting/SoftTypeReference.h"
+#include "Engine/Content/SceneReference.h"
+
+// Test default values init on fields.
+API_STRUCT(NoDefault) struct TestDefaultValues
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(TestDefaultValues);
+
+    // Default value case 1
+    API_FIELD() float TestFloat1 = {};
+    // Default value case 2
+    API_FIELD() float TestFloat2 = { };
+    // Default value case 3
+    API_FIELD() float TestFloat3 = {1.0f};
+    // Default value case 4
+    API_FIELD() float TestFloat4 = float{};
+    // Default value case 5
+    API_FIELD() float TestFloat5 = float{ };
+    // Default value case 6
+    API_FIELD() float TestFloat6 = float{1.0f};
+    // Default value case 7
+    API_FIELD() float TestFloat7 {};
+    // Default value case 8
+    API_FIELD() float TestFloat8 {1.0f};
+    // Default value case 9
+    API_FIELD() float TestFloat9 = 1.0f;
+    // Default value case 10
+    API_FIELD() float TestFloat10 = 1.f;
+    // Default value case 11
+    API_FIELD() float TestFloat11 = 1;
+
+    // Test code injection parsing
+    API_INJECT_CODE(csharp, ""
+"namespace Test"
+"{"
+"\t/// <summary>\n\t/// Test code injection parsing\n\t/// </summary>"
+"    public static class TestClass"
+"    {"
+"    }"
+"}")
+};
+
+// Test interface (name conflict with namespace)
+API_INTERFACE(Namespace="Foo") class FLAXENGINE_API IFoo
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(IFoo);
+};
+
+// Test class (name conflict with namespace)
+API_CLASS(Namespace="Foo") class FLAXENGINE_API Foo : public ScriptingObject
+{
+    DECLARE_SCRIPTING_TYPE(Foo);
+
+    // Test field.
+    API_FIELD() IFoo* FooInterface;
+};
 
 // Test compilation with nested types.
 API_CLASS() class TestNesting : public SerializableScriptingObject
@@ -70,10 +126,17 @@ API_STRUCT(NoDefault) struct TestStruct : public ISerializable
     API_FIELD() Float3 Vector = Float3::One;
     // Ref
     API_FIELD() ScriptingObject* Object = nullptr;
+    // Soft Type Ref
+    API_FIELD() SoftTypeReference<ScriptingObject> SoftTypeRef;
+    // Scene Ref
+    API_FIELD() SceneReference SceneRef;
 
     friend bool operator==(const TestStruct& lhs, const TestStruct& rhs)
     {
-        return lhs.Vector == rhs.Vector && lhs.Object == rhs.Object;
+        return lhs.Vector == rhs.Vector && 
+            lhs.Object == rhs.Object && 
+            lhs.SoftTypeRef == rhs.SoftTypeRef &&
+            lhs.SceneRef == rhs.SceneRef;
     }
 };
 
@@ -128,8 +191,38 @@ public:
         return str.Length();
     }
 
+    // Test trailing return type
+    API_FUNCTION() auto TestTrailingReturn(int32 number) -> float
+    {
+        return static_cast<float>(number);
+    }
+
+    // Test nameless arguments
+    API_FUNCTION() void TestNamelessArguments(int32, float, bool){}
+
     int32 TestInterfaceMethod(const String& str) override
     {
         return str.Length();
     }
+};
+
+// Test debug commands via static class.
+API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API TestDebugCommand1
+{
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(TestDebugCommand1);
+
+    // Static variable to test.
+    API_FIELD() static bool Var;
+};
+
+// Test debug commands inside a class.
+API_CLASS() class FLAXENGINE_API TestDebugCommand2 : public ScriptingObject
+{
+    DECLARE_SCRIPTING_TYPE(TestDebugCommand2);
+
+    // Static variable to test.
+    API_FIELD(Attributes="DebugCommand") static float Var;
+
+    // Static method to test.
+    API_FUNCTION(Attributes="DebugCommand") static void Exec();
 };

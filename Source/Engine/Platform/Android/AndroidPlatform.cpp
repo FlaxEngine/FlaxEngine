@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_ANDROID
 
@@ -8,6 +8,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
@@ -24,6 +25,7 @@
 #include "Engine/Input/Gamepad.h"
 #include "Engine/Input/Keyboard.h"
 #include "Engine/Input/Mouse.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
 #include <sys/syscall.h>
@@ -283,6 +285,7 @@ namespace
     bool IsPaused = true;
     bool IsVibrating = false;
     int32 ScreenWidth = 0, ScreenHeight = 0;
+    uint64 ProgramSizeMemory = 0;
     Guid DeviceId;
     String AppPackageName, DeviceManufacturer, DeviceModel, DeviceBuildNumber;
     String SystemVersion, SystemLanguage, CacheDir, ExecutablePath;
@@ -680,11 +683,6 @@ String AndroidPlatform::GetDeviceBuildNumber()
     return DeviceBuildNumber;
 }
 
-String AndroidPlatform::GetSystemVersion()
-{
-    return SystemVersion;
-}
-
 void AndroidPlatform::PreInit(android_app* app)
 {
     App = app;
@@ -709,11 +707,6 @@ CPUInfo AndroidPlatform::GetCPUInfo()
     return AndroidCpu;
 }
 
-int32 AndroidPlatform::GetCacheLineSize()
-{
-    return AndroidCpu.CacheLineSize;
-}
-
 MemoryStats AndroidPlatform::GetMemoryStats()
 {
     const uint64 pageSize = getpagesize();
@@ -724,6 +717,7 @@ MemoryStats AndroidPlatform::GetMemoryStats()
     result.UsedPhysicalMemory = (totalPages - availablePages) * pageSize;
     result.TotalVirtualMemory = result.TotalPhysicalMemory;
     result.UsedVirtualMemory = result.UsedPhysicalMemory;
+    result.ProgramSizeMemory = ProgramSizeMemory;
     return result;
 }
 
@@ -826,6 +820,9 @@ bool AndroidPlatform::Init()
         ClockSource = CLOCK_MONOTONIC;
     }
 
+	// Estimate program size by checking physical memory usage on start
+	ProgramSizeMemory = Platform::GetProcessMemoryStats().UsedPhysicalMemory;
+
     // Set info about the CPU
     cpu_set_t cpus;
     CPU_ZERO(&cpus);
@@ -889,8 +886,8 @@ void AndroidPlatform::LogInfo()
 {
     UnixPlatform::LogInfo();
 
-    LOG(Info, "App Package Name: {0}", AppPackageName);
-    LOG(Info, "System Version: {0}", SystemVersion);
+    LOG(Info, "App Package: {0}", AppPackageName);
+    LOG(Info, "Android {0}", SystemVersion);
     LOG(Info, "Device: {0} {1}, {2}", DeviceManufacturer, DeviceModel, DeviceBuildNumber);
 }
 
@@ -944,6 +941,18 @@ void AndroidPlatform::Log(const StringView& msg)
 }
 
 #endif
+
+String AndroidPlatform::GetSystemName()
+{
+    return String::Format(TEXT("Android {}"), SystemVersion);
+}
+
+Version AndroidPlatform::GetSystemVersion()
+{
+    Version version(0, 0);
+    Version::Parse(SystemVersion, &version);
+    return version;
+}
 
 int32 AndroidPlatform::GetDpi()
 {
@@ -1074,6 +1083,8 @@ bool AndroidPlatform::SetEnvironmentVariable(const String& name, const String& v
 
 void* AndroidPlatform::LoadLibrary(const Char* filename)
 {
+    PROFILE_CPU();
+    ZoneText(filename, StringUtils::Length(filename));
     const StringAsANSI<> filenameANSI(filename);
     void* result = dlopen(filenameANSI.Get(), RTLD_LAZY);
     if (!result)

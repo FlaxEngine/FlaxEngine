@@ -1,10 +1,11 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SpotLight.h"
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Content/Assets/IESProfile.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 
@@ -114,7 +115,7 @@ void SpotLight::UpdateBounds()
     BoundingBox::FromSphere(_sphere, _box);
 
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
 void SpotLight::OnTransformChanged()
@@ -129,7 +130,7 @@ void SpotLight::Draw(RenderContext& renderContext)
 {
     float brightness = ComputeBrightness();
     AdjustBrightness(renderContext.View, brightness);
-    const Float3 position = GetPosition() - renderContext.View.Origin;
+    Float3 position;
     const float radius = GetScaledRadius();
     const float outerConeAngle = GetOuterConeAngle();
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::SpotLights)
@@ -137,9 +138,9 @@ void SpotLight::Draw(RenderContext& renderContext)
         && brightness > ZeroTolerance
         && radius > ZeroTolerance
         && outerConeAngle > ZeroTolerance
-        && (ViewDistance < ZeroTolerance || Vector3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
+        && CheckViewDistance(renderContext.View.Position, renderContext.View.Origin, position, brightness))
     {
-        RendererSpotLightData data;
+        RenderSpotLightData data;
         data.Position = position;
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;
@@ -152,7 +153,10 @@ void SpotLight::Draw(RenderContext& renderContext)
         data.ShadowsSharpness = ShadowsSharpness;
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;
-        data.RenderedVolumetricFog = 0;
+        data.ShadowsUpdateRate = ShadowsUpdateRate;
+        data.ShadowsUpdateRateAtDistance = ShadowsUpdateRateAtDistance;
+        data.ShadowFrame = _invalidateShadowFrame;
+        data.ShadowsResolution = (int32)ShadowsResolution;
         data.ShadowsMode = ShadowsMode;
         data.Radius = radius;
         data.FallOffExponent = FallOffExponent;
@@ -167,6 +171,7 @@ void SpotLight::Draw(RenderContext& renderContext)
         data.OuterConeAngle = outerConeAngle;
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();
+        data.ScreenSize = Math::Min(1.0f, Math::Sqrt(RenderTools::ComputeBoundsScreenRadiusSquared(position, (float)_sphere.Radius, renderContext.View)));
         renderContext.List->SpotLights.Add(data);
     }
 }

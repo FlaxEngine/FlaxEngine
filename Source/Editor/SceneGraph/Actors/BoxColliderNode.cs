@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -26,11 +26,13 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             base.Initialize(layout);
 
-            layout.Space(20f);
-            var checkbox = layout.Checkbox("Keep Local Orientation", "Keeps the local orientation when resizing.").CheckBox;
+            var group = layout.Group("Utility");
+            var checkbox = group.Checkbox("Keep Local Orientation", "Keeps the local orientation when resizing.").CheckBox;
             checkbox.Checked = _keepLocalOrientation;
             checkbox.StateChanged += box => _keepLocalOrientation = box.Checked;
-            layout.Button("Resize to Fit", Editor.Instance.CodeDocs.GetTooltip(new ScriptMemberInfo(typeof(BoxCollider).GetMethod("AutoResize")))).Button.Clicked += OnResizeClicked;
+            group.Button("Resize to Fit", Editor.Instance.CodeDocs.GetTooltip(new ScriptMemberInfo(typeof(BoxCollider).GetMethod("AutoResize")))).Button.Clicked += OnResizeClicked;
+            // This adds a bit of space between the button and the bottom of the group - even with a height of 0
+            group.Space(0);
         }
 
         private void OnResizeClicked()

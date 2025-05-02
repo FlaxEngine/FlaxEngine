@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_MAC
 
@@ -54,7 +54,7 @@ String ComputerName;
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
         return DialogResult::None;
 	NSAlert* alert = [[NSAlert alloc] init];
     ASSERT(alert);
@@ -305,15 +305,14 @@ void MacPlatform::LogInfo()
 {
     ApplePlatform::LogInfo();
 
-    char str[250];
-    size_t strSize = sizeof(str);
-    if (sysctlbyname("kern.osrelease", str, &strSize, nullptr, 0) != 0)
-        str[0] = 0;
-    String osRelease(str);
-    if (sysctlbyname("kern.osproductversion", str, &strSize, nullptr, 0) != 0)
-        str[0] = 0;
-    String osProductVer(str);
-    LOG(Info, "macOS {1} (kernel {0})", osRelease, osProductVer);
+    constexpr int32 BufferSize = 250;
+    char osRelease[BufferSize], osProductVer[BufferSize];
+    size_t strSize = BufferSize;
+    if (sysctlbyname("kern.osrelease", osRelease, &strSize, nullptr, 0) != 0)
+        osRelease[0] = 0;
+    if (sysctlbyname("kern.osproductversion", osProductVer, &strSize, nullptr, 0) != 0)
+        osProductVer[0] = 0;
+    LOG(Info, "macOS {1} (kernel {0})", StringAsUTF16<BufferSize>(osRelease).Get(), StringAsUTF16<BufferSize>(osProductVer).Get());
 }
 
 void MacPlatform::BeforeRun()
@@ -468,12 +467,12 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
     if (settings.WaitForEnd)
     {
         id<NSObject> outputObserver = nil;
+        id<NSObject> outputObserverError = nil;
         
         if (captureStdOut)
         {
-            NSPipe *stdoutPipe = [NSPipe pipe];
+            NSPipe* stdoutPipe = [NSPipe pipe];
             [task setStandardOutput:stdoutPipe];
-            
             outputObserver = [[NSNotificationCenter defaultCenter]
                                           addObserverForName: NSFileHandleDataAvailableNotification
                                           object: [stdoutPipe fileHandleForReading]
@@ -497,8 +496,34 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                 }
             }
                 ];
-            
             [[stdoutPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
+
+            NSPipe *stderrPipe = [NSPipe pipe];
+            [task setStandardError:stderrPipe];
+            outputObserverError = [[NSNotificationCenter defaultCenter]
+                                          addObserverForName: NSFileHandleDataAvailableNotification
+                                          object: [stderrPipe fileHandleForReading]
+                                          queue: nil
+                              usingBlock:^(NSNotification* notification)
+            {
+                NSData* data = [stderrPipe fileHandleForReading].availableData;
+                if (data.length)
+                {
+                      String line((const char*)data.bytes, data.length);
+                      if (settings.SaveOutput)
+                        settings.Output.Add(line.Get(), line.Length());
+                      if (settings.LogOutput)
+                      {
+                        StringView lineView(line);
+                        if (line[line.Length() - 1] == '\n')
+                            lineView = StringView(line.Get(), line.Length() - 1);
+                        Log::Logger::Write(LogType::Error, lineView);
+                      }
+                    [[stderrPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
+                }
+            }
+                ];
+            [[stderrPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
         }
 
         String exception;

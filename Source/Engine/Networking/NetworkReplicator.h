@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -28,7 +28,7 @@ API_ENUM(Namespace="FlaxEngine.Networking") enum class NetworkObjectRole : byte
 /// <summary>
 /// High-level networking replication system for game objects.
 /// </summary>
-API_CLASS(static, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicator
+API_CLASS(static, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicator
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkReplicator);
     friend class NetworkReplicatorInternal;
@@ -39,7 +39,7 @@ public:
     /// <summary>
     /// Enables verbose logging of the networking runtime. Can be used to debug problems of missing RPC invoke or object replication issues.
     /// </summary>
-    API_FIELD() static bool EnableLog;
+    API_FIELD(Attributes="DebugCommand") static bool EnableLog;
 #endif
 
     /// <summary>
@@ -116,6 +116,19 @@ public:
     /// <param name="obj">The network object.</param>
     /// <returns>True if object exists in networking, otherwise false.</returns>
     API_FUNCTION() static bool HasObject(const ScriptingObject* obj);
+
+    /// <summary>
+    /// Maps object ID into server or client ID (depending on the source ID). Leaves source value unchanged if that specific ID is unused.
+    /// </summary>
+    /// <param name="objectId">The network object identifier to map. Contains result ID once the method completes.</param>
+    API_FUNCTION() static void MapObjectId(API_PARAM(Ref) Guid& objectId);
+
+    /// <summary>
+    /// Adds a new mapping for object identifier. Can be used to link locally-spawned object with across different clients.
+    /// </summary>
+    /// <param name="obj">The network object.</param>
+    /// <param name="objectId">The network object identifier to use (eg. defined by server or global/static).</param>
+    API_FUNCTION() static void AddObjectIdMapping(const ScriptingObject* obj, API_PARAM(Ref) const Guid& objectId);
 	
     /// <summary>
     /// Resolves foreign Guid into a local ScriptingObject

@@ -75,7 +75,7 @@ public:
     };
     /// <summary>
     /// File header, version 19
-/// [Deprecated on 13.07.2022, expires on 13.07.2024]
+    /// [Deprecated on 13.07.2022, expires on 13.07.2024]
     /// </summary>
     struct Header19
     {

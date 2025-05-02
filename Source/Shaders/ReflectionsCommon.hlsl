@@ -1,9 +1,12 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #ifndef __REFLECTIONS_COMMON__
 #define __REFLECTIONS_COMMON__
 
 #include "./Flax/GBufferCommon.hlsl"
+
+// Hit depth (view space) threshold to detect if sky was hit (value above it where 1.0f is default)
+#define REFLECTIONS_HIT_THRESHOLD 0.9f
 
 float GetSpecularOcclusion(float NoV, float roughnessSq, float ao)
 {

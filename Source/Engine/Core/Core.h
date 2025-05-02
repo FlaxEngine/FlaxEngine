@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -23,3 +23,8 @@
 #define OUT_OF_MEMORY Platform::OutOfMemory(__LINE__, __FILE__)
 #define MISSING_CODE(info) Platform::MissingCode(__LINE__, __FILE__, info)
 #define NON_COPYABLE(type) type(type&&) = delete; type(const type&) = delete; type& operator=(const type&) = delete; type& operator=(type&&) = delete;
+#define POD_COPYABLE(type) \
+    type(const type& other) { Platform::MemoryCopy(this, &other, sizeof(type)); } \
+    type(type&& other) noexcept { Platform::MemoryCopy(this, &other, sizeof(type)); } \
+    type& operator=(const type& other) { Platform::MemoryCopy(this, &other, sizeof(type)); return *this; } \
+    type& operator=(type&& other) noexcept { Platform::MemoryCopy(this, &other, sizeof(type)); return *this; }

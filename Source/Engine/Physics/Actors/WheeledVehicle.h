@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -13,6 +13,7 @@
 API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorToolbox(\"Physics\")") class FLAXENGINE_API WheeledVehicle : public RigidBody
 {
     friend class PhysicsBackend;
+    friend struct ScenePhysX;
     DECLARE_SCENE_OBJECT(WheeledVehicle);
 
     /// <summary>
@@ -52,12 +53,12 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         /// <summary>
         /// The vehicle speed.
         /// </summary>
-        API_FIELD(Attributes = "Limit(0)") float Speed = 1000;
+        API_FIELD(Attributes="Limit(0)") float Speed = 1000;
 
         /// <summary>
         /// The target max steer of the speed.
         /// </summary>
-        API_FIELD(Attributes = "Limit(0, 1)") float Steer = 1;
+        API_FIELD(Attributes="Limit(0, 1)") float Steer = 1;
 
         SteerControl() = default;
 
@@ -241,7 +242,7 @@ API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Wheeled Vehicle\"), ActorTo
         /// <summary>
         /// Number of gears to move to forward
         /// </summary>
-        API_FIELD(Attributes = "Limit(1, 30)") int32 ForwardGearsRatios = 5;
+        API_FIELD(Attributes="Limit(1, 30)") int32 ForwardGearsRatios = 5;
 
         /// <summary>
         /// Time it takes to switch gear. Specified in seconds (s).
@@ -481,7 +482,7 @@ public:
     /// <summary>
     /// Gets the vehicle drive control settings.
     /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(5), EditorDisplay(\"Vehicle\")") DriveControlSettings GetDriveControl() const;
+    API_PROPERTY(Attributes="EditorOrder(5), EditorDisplay(\"Vehicle\")") DriveControlSettings GetDriveControl() const;
 
     /// <summary>
     /// Sets the vehicle drive control settings.
@@ -539,6 +540,12 @@ public:
     /// </summary>
     /// <param name="value">The value (-1,1 range). When using UseReverseAsBrake it can be negative and will be used as brake and backward driving.</param>
     API_FUNCTION() void SetThrottle(float value);
+
+    /// <summary>
+    /// Get the vehicle throttle. It is the analog accelerator pedal value in range (0,1) where 1 represents the pedal fully pressed and 0 represents the pedal in its rest state.
+    /// </summary>
+    /// <returns>The vehicle throttle.</returns>
+    API_FUNCTION() float GetThrottle();
 
     /// <summary>
     /// Sets the input for vehicle steering. Steer is the analog steer value in range (-1,1) where -1 represents the steering wheel at left lock and +1 represents the steering wheel at right lock.

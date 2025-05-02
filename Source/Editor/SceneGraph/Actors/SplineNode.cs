@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -39,7 +39,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
             public override bool CanBeSelectedDirectly => true;
 
-            public override bool CanDuplicate => !Root?.Selection.Contains(ParentNode) ?? true;
+            public override bool CanDuplicate => !Root?.SceneContext.Selection.Contains(ParentNode) ?? true;
 
             public override bool CanDelete => true;
 
@@ -176,7 +176,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 normal = -ray.Ray.Direction;
                 var actor = (Spline)_node.Actor;
                 var pos = actor.GetSplinePoint(Index);
-                var nodeSize = NodeSizeByDistance(Transform.Translation, PointNodeSize);
+                var nodeSize = NodeSizeByDistance(Transform.Translation, PointNodeSize, ray.View.Position);
                 return new BoundingSphere(pos, nodeSize).Intersects(ref ray.Ray, out distance);
             }
 
@@ -186,9 +186,10 @@ namespace FlaxEditor.SceneGraph.Actors
                 var pos = actor.GetSplinePoint(Index);
                 var tangentIn = actor.GetSplineTangent(Index, true).Translation;
                 var tangentOut = actor.GetSplineTangent(Index, false).Translation;
-                var pointSize = NodeSizeByDistance(pos, PointNodeSize);
-                var tangentInSize = NodeSizeByDistance(tangentIn, TangentNodeSize);
-                var tangentOutSize = NodeSizeByDistance(tangentOut, TangentNodeSize);
+                var cameraTransform = Root.SceneContext.Viewport.ViewTransform.Translation;
+                var pointSize = NodeSizeByDistance(pos, PointNodeSize, cameraTransform);
+                var tangentInSize = NodeSizeByDistance(tangentIn, TangentNodeSize, cameraTransform);
+                var tangentOutSize = NodeSizeByDistance(tangentOut, TangentNodeSize, cameraTransform);
 
                 // Draw spline path
                 ParentNode.OnDebugDraw(data);
@@ -262,7 +263,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 normal = -ray.Ray.Direction;
                 var actor = (Spline)_node.Actor;
                 var pos = actor.GetSplineTangent(_index, _isIn).Translation;
-                var tangentSize = NodeSizeByDistance(Transform.Translation, TangentNodeSize);
+                var tangentSize = NodeSizeByDistance(Transform.Translation, TangentNodeSize, ray.View.Position);
                 return new BoundingSphere(pos, tangentSize).Intersects(ref ray.Ray, out distance);
             }
 
@@ -274,7 +275,8 @@ namespace FlaxEditor.SceneGraph.Actors
                 // Draw selected tangent highlight
                 var actor = (Spline)_node.Actor;
                 var pos = actor.GetSplineTangent(_index, _isIn).Translation;
-                var tangentSize = NodeSizeByDistance(Transform.Translation, TangentNodeSize);
+                var cameraTransform = Root.SceneContext.Viewport.ViewTransform.Translation;
+                var tangentSize = NodeSizeByDistance(Transform.Translation, TangentNodeSize, cameraTransform);
                 DebugDraw.DrawSphere(new BoundingSphere(pos, tangentSize), Color.YellowGreen, 0, false);
             }
 
@@ -306,18 +308,25 @@ namespace FlaxEditor.SceneGraph.Actors
 
         private void OnUpdate()
         {
+            // Prevent update event called when actor got deleted (incorrect state)
+            if (!Actor)
+            {
+                FlaxEngine.Scripting.Update -= OnUpdate;
+                return;
+            }
+
             // If this node's point is selected
-            var selection = Editor.Instance.SceneEditing.Selection;
-            if (selection.Count == 1 && selection[0] is SplinePointNode selectedPoint && selectedPoint.ParentNode == this)
+            var selection = Root?.SceneContext.Selection;
+            if (selection != null && selection.Count == 1 && selection[0] is SplinePointNode selectedPoint && selectedPoint.ParentNode == this)
             {
                 var mouse = Input.Mouse;
                 var keyboard = Input.Keyboard;
 
-                if (keyboard.GetKey(KeyboardKeys.Shift))
+                if (keyboard.GetKey(KeyboardKeys.Shift) && !mouse.GetButton(MouseButton.Right))
                     EditSplineWithSnap(selectedPoint);
 
                 var canAddSplinePoint = mouse.PositionDelta == Float2.Zero && mouse.Position != Float2.Zero;
-                var requestAddSplinePoint = Input.Keyboard.GetKey(KeyboardKeys.Control) && mouse.GetButtonDown(MouseButton.Right);
+                var requestAddSplinePoint = keyboard.GetKey(KeyboardKeys.Control) && mouse.GetButtonDown(MouseButton.Right);
                 if (requestAddSplinePoint && canAddSplinePoint)
                     AddSplinePoint(selectedPoint);
             }
@@ -338,9 +347,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 while (srcCount > dstCount)
                 {
                     var node = ActorChildNodes[srcCount-- - 1];
-                    // TODO: support selection interface inside SceneGraph nodes (eg. on Root) so prefab editor can handle this too
-                    if (Editor.Instance.SceneEditing.Selection.Contains(node))
-                        Editor.Instance.SceneEditing.Deselect();
+                    Root?.SceneContext.Deselect(node);
                     node.Dispose();
                 }
 
@@ -356,22 +363,23 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
-        private unsafe void AddSplinePoint(SplinePointNode selectedPoint)
+        private void AddSplinePoint(SplinePointNode selectedPoint)
         {
             // Check mouse hit on scene
+            var root = Root;
             var spline = (Spline)Actor;
-            var viewport = Editor.Instance.Windows.EditWin.Viewport;
+            var viewport = root.SceneContext.Viewport;
             var mouseRay = viewport.MouseRay;
             var viewRay = viewport.ViewRay;
             var flags = RayCastData.FlagTypes.SkipColliders | RayCastData.FlagTypes.SkipEditorPrimitives;
-            var hit = Editor.Instance.Scene.Root.RayCast(ref mouseRay, ref viewRay, out var closest, out var normal, flags);
+            var hit = root.RayCast(ref mouseRay, ref viewRay, out var closest, out var normal, flags);
             if (hit == null)
                 return;
 
             // Undo data
             var oldSpline = spline.SplineKeyframes;
             var editAction = new EditSplineAction(spline, oldSpline);
-            Root.Undo.AddAction(editAction);
+            root.Undo.AddAction(editAction);
 
             // Get spline point to duplicate
             var hitPoint = mouseRay.Position + mouseRay.Direction * closest;
@@ -423,7 +431,7 @@ namespace FlaxEditor.SceneGraph.Actors
 
             // Select new point node
             SyncSplineKeyframeWithNodes();
-            Editor.Instance.SceneEditing.Select(ChildNodes[newPointIndex]);
+            root.SceneContext.Select(ChildNodes[newPointIndex]);
 
             spline.UpdateSpline();
         }
@@ -436,6 +444,7 @@ namespace FlaxEditor.SceneGraph.Actors
             allSplinesInView.Remove(spline);
             if (allSplinesInView.Count == 0)
                 return;
+            var cameraTransform = Root.SceneContext.Viewport.ViewTransform.Translation;
 
             var snappedOnSplinePoint = false;
             for (int i = 0; i < allSplinesInView.Count; i++)
@@ -443,7 +452,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 for (int x = 0; x < allSplinesInView[i].SplineKeyframes.Length; x++)
                 {
                     var keyframePosition = allSplinesInView[i].GetSplinePoint(x);
-                    var pointIndicatorSize = NodeSizeByDistance(keyframePosition, SnapPointIndicatorSize);
+                    var pointIndicatorSize = NodeSizeByDistance(keyframePosition, SnapPointIndicatorSize, cameraTransform);
                     var keyframeBounds = new BoundingSphere(keyframePosition, pointIndicatorSize);
                     DebugDraw.DrawSphere(keyframeBounds, Color.Red, 0, false);
 
@@ -459,7 +468,7 @@ namespace FlaxEditor.SceneGraph.Actors
             if (!snappedOnSplinePoint)
             {
                 var nearSplineSnapPoint = GetNearSplineSnapPosition(selectedPoint.Transform.Translation, allSplinesInView);
-                var snapIndicatorSize = NodeSizeByDistance(nearSplineSnapPoint, SnapIndicatorSize);
+                var snapIndicatorSize = NodeSizeByDistance(nearSplineSnapPoint, SnapIndicatorSize, cameraTransform);
                 var snapBounds = new BoundingSphere(nearSplineSnapPoint, snapIndicatorSize);
                 if (snapBounds.Intersects(selectedPointBounds))
                 {
@@ -551,11 +560,16 @@ namespace FlaxEditor.SceneGraph.Actors
             }
         }
 
-        private static List<Spline> GetSplinesInView()
+        private List<Spline> GetSplinesInView()
         {
-            var splines = Level.GetActors<Spline>(true);
+            Spline[] splines;
+            var sceneContext = Root.SceneContext;
+            if (sceneContext is Windows.Assets.PrefabWindow prefabWindow)
+                splines = new Spline[0]; // TODO: add GetActors or similar utility to SceneContext and use Level.GetActors<Spline>(..) with specific root actor
+            else
+                splines = Level.GetActors<Spline>(true);
             var result = new List<Spline>();
-            var viewBounds = Editor.Instance.Windows.EditWin.Viewport.ViewFrustum;
+            var viewBounds = sceneContext.Viewport.ViewFrustum;
             foreach (var s in splines)
             {
                 var contains = viewBounds.Contains(s.EditorBox);
@@ -569,7 +583,6 @@ namespace FlaxEditor.SceneGraph.Actors
         {
             var nearPoint = splines[0].GetSplinePointClosestToPoint(position);
             var nearDistance = Vector3.Distance(nearPoint, position);
-
             for (int i = 1; i < splines.Count; i++)
             {
                 var point = splines[i].GetSplinePointClosestToPoint(position);
@@ -580,14 +593,12 @@ namespace FlaxEditor.SceneGraph.Actors
                     nearDistance = distance;
                 }
             }
-
             return nearPoint;
         }
 
-        internal static Real NodeSizeByDistance(Vector3 nodePosition, Real nodeSize)
+        internal static Real NodeSizeByDistance(Vector3 nodePosition, Real nodeSize, Vector3 viewPosition)
         {
-            var cameraTransform = Editor.Instance.Windows.EditWin.Viewport.ViewportCamera.Viewport.ViewTransform;
-            var distance = Vector3.Distance(cameraTransform.Translation, nodePosition) / 100;
+            var distance = Vector3.Distance(viewPosition, nodePosition) / 100;
             return distance * nodeSize;
         }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -75,7 +75,7 @@ public:
     EventType OnUnloaded;
 
     /// <summary>
-    /// General purpose mutex for an asset object. Should guard most of asset functionalities to be secure.
+    /// General purpose mutex for an asset object. Should guard most of the asset functionalities to be secure.
     /// </summary>
     CriticalSection Locker;
 
@@ -179,10 +179,24 @@ public:
     /// For some asset types (e.g. scene or prefab) it may contain invalid asset ids due to not perfect gather method,
     /// which is optimized to perform scan very quickly. Before using those ids perform simple validation via Content cache API.
     /// The result collection contains only 1-level-deep references (only direct ones) and is invalid if asset is not loaded.
-    /// Also the output data may have duplicated asset ids or even invalid ids (Guid::Empty).
+    /// Also, the output data may have duplicated asset ids or even invalid ids (Guid::Empty).
+    /// </remarks>
+    /// <param name="assets">The output collection of the asset ids referenced by this asset.</param>
+    /// <param name="files">The output list of file paths referenced by this asset. Files might come from project Content folder (relative path is preserved in cooked game), or external location (copied into Content root folder of cooked game).</param>
+    virtual void GetReferences(Array<Guid, HeapAllocation>& assets, Array<String, HeapAllocation>& files) const;
+
+    /// <summary>
+    /// Gets the asset references. Supported only in Editor.
+    /// [Deprecated in v1.9]
+    /// </summary>
+    /// <remarks>
+    /// For some asset types (e.g. scene or prefab) it may contain invalid asset ids due to not perfect gather method,
+    /// which is optimized to perform scan very quickly. Before using those ids perform simple validation via Content cache API.
+    /// The result collection contains only 1-level-deep references (only direct ones) and is invalid if asset is not loaded.
+    /// Also, the output data may have duplicated asset ids or even invalid ids (Guid::Empty).
     /// </remarks>
     /// <param name="output">The output collection of the asset ids referenced by this asset.</param>
-    virtual void GetReferences(Array<Guid, HeapAllocation>& output) const;
+    DEPRECATED("Use GetReferences with assets and files parameter instead") virtual void GetReferences(Array<Guid, HeapAllocation>& output) const;
 
     /// <summary>
     /// Gets the asset references. Supported only in Editor.
@@ -191,10 +205,17 @@ public:
     /// For some asset types (e.g. scene or prefab) it may contain invalid asset ids due to not perfect gather method,
     /// which is optimized to perform scan very quickly. Before using those ids perform simple validation via Content cache API.
     /// The result collection contains only 1-level-deep references (only direct ones) and is invalid if asset is not loaded.
-    /// Also the output data may have duplicated asset ids or even invalid ids (Guid::Empty).
+    /// Also, the output data may have duplicated asset ids or even invalid ids (Guid::Empty).
     /// </remarks>
     /// <returns>The collection of the asset ids referenced by this asset.</returns>
     API_FUNCTION() Array<Guid, HeapAllocation> GetReferences() const;
+
+    /// <summary>
+    /// Saves this asset to the file. Supported only in Editor.
+    /// </summary>
+    /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
+    /// <returns>True when cannot save data, otherwise false.</returns>
+    API_FUNCTION(Sealed) virtual bool Save(const StringView& path = StringView::Empty);
 #endif
 
     /// <summary>
@@ -239,6 +260,7 @@ protected:
     virtual void onLoaded_MainThread();
     virtual void onUnload_MainThread();
 #if USE_EDITOR
+    bool OnCheckSave(const StringView& path = StringView::Empty) const;
     virtual void onRename(const StringView& newPath) = 0;
 #endif
 

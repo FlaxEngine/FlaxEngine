@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "JsonAsset.h"
 #if USE_EDITOR
 #include "Engine/Platform/File.h"
+#include "Engine/Platform/FileSystem.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Level/Level.h"
 #else
@@ -109,62 +110,70 @@ uint64 JsonAssetBase::GetMemoryUsage() const
 
 #if USE_EDITOR
 
-void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output)
+void FindIds(ISerializable::DeserializeStream& node, Array<Guid>& output, Array<String>& files, rapidjson_flax::Value* nodeName = nullptr)
 {
     if (node.IsObject())
     {
         for (auto i = node.MemberBegin(); i != node.MemberEnd(); ++i)
         {
-            FindIds(i->value, output);
+            FindIds(i->value, output, files, &i->name);
         }
     }
     else if (node.IsArray())
     {
         for (rapidjson::SizeType i = 0; i < node.Size(); i++)
         {
-            FindIds(node[i], output);
+            FindIds(node[i], output, files);
         }
     }
-    else if (node.IsString())
+    else if (node.IsString() && node.GetStringLength() != 0)
     {
         if (node.GetStringLength() == 32)
         {
             // Try parse as Guid in format `N` (32 hex chars)
             Guid id;
             if (!Guid::Parse(node.GetStringAnsiView(), id))
+            {
                 output.Add(id);
+                return;
+            }
+        }
+        if (node.GetStringLength() < 512 &&
+            (!nodeName || nodeName->GetStringAnsiView() != "ImportPath")) // Ignore path in ImportPath from ModelPrefab (TODO: resave prefabs/scenes before cooking to get rid of editor-only data)
+        {
+            // Try to detect file paths
+            String path = node.GetText();
+            if (FileSystem::FileExists(path))
+            {
+                files.Add(MoveTemp(path));
+            }
         }
     }
 }
 
-void JsonAssetBase::GetReferences(const StringAnsiView& json, Array<Guid>& output)
+void JsonAssetBase::GetReferences(const StringAnsiView& json, Array<Guid>& assets)
 {
     ISerializable::SerializeDocument document;
     document.Parse(json.Get(), json.Length());
     if (document.HasParseError())
         return;
-    FindIds(document, output);
+    Array<String> files;
+    FindIds(document, assets, files);
 }
 
-bool JsonAssetBase::Save(const StringView& path) const
+bool JsonAssetBase::Save(const StringView& path)
 {
-    // Validate state
-    if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave(path))
         return true;
-    }
-    if (IsVirtual() && path.IsEmpty())
-    {
-        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
-        return true;
-    }
+    PROFILE_CPU();
     ScopeLock lock(Locker);
 
     // Serialize to json to the buffer
     rapidjson_flax::StringBuffer buffer;
     PrettyJsonWriter writerObj(buffer);
-    Save(writerObj);
+    _isResaving = true;
+    saveInternal(writerObj);
+    _isResaving = false;
 
     // Save json to file
     if (File::WriteAllBytes(path.HasChars() ? path : StringView(GetPath()), (byte*)buffer.GetString(), (int32)buffer.GetSize()))
@@ -178,12 +187,14 @@ bool JsonAssetBase::Save(const StringView& path) const
 
 bool JsonAssetBase::Save(JsonWriter& writer) const
 {
-    // Validate state
-    if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave())
         return true;
-    }
+    
+    return saveInternal(writer);
+}
+
+bool JsonAssetBase::saveInternal(JsonWriter& writer) const
+{
     ScopeLock lock(Locker);
 
     writer.StartObject();
@@ -207,7 +218,7 @@ bool JsonAssetBase::Save(JsonWriter& writer) const
     return false;
 }
 
-void JsonAssetBase::GetReferences(Array<Guid>& output) const
+void JsonAssetBase::GetReferences(Array<Guid>& assets, Array<String>& files) const
 {
     if (Data == nullptr)
         return;
@@ -219,7 +230,7 @@ void JsonAssetBase::GetReferences(Array<Guid>& output) const
     // It produces many invalid ids (like refs to scene objects).
     // But it's super fast, super low-memory and doesn't involve any advanced systems integration.
 
-    FindIds(*Data, output);
+    FindIds(*Data, assets, files);
 }
 
 #endif
@@ -333,6 +344,61 @@ uint64 JsonAsset::GetMemoryUsage() const
     return result;
 }
 
+void JsonAsset::OnGetData(rapidjson_flax::StringBuffer& buffer) const
+{
+    if (Instance && InstanceType && _isResaving)
+    {
+        // Serialize instance object that was loaded (from potentially deprecated data, serialize method is always up to date)
+        const ScriptingType& type = InstanceType.GetType();
+        PrettyJsonWriter writer(buffer);
+        bool got = false;
+        switch (type.Type)
+        {
+        case ScriptingTypes::Class:
+        case ScriptingTypes::Structure:
+        {
+            const ScriptingType::InterfaceImplementation* interface = type.GetInterface(ISerializable::TypeInitializer);
+            writer.StartObject();
+            ((ISerializable*)((byte*)Instance + interface->VTableOffset))->Serialize(writer, nullptr);
+            got = true;
+            break;
+        }
+        case ScriptingTypes::Script:
+        {
+            writer.StartObject();
+            ToInterface<ISerializable>((ScriptingObject*)Instance)->Serialize(writer, nullptr);
+            got = true;
+            break;
+        }
+        }
+        if (got)
+        {
+            writer.EndObject();
+
+            // Parse json document (CreateInstance uses it to spawn object)
+            auto* self = const_cast<JsonAsset*>(this);
+            {
+                PROFILE_CPU_NAMED("Json.Parse");
+                self->Document.Parse(buffer.GetString(), buffer.GetSize());
+            }
+            if (self->Document.HasParseError())
+            {
+                self->Data = nullptr;
+                Log::JsonParseException(Document.GetParseError(), Document.GetErrorOffset());
+            }
+            else
+            {
+                self->Data = &self->Document;
+                self->DataEngineBuild = FLAXENGINE_VERSION_BUILD;
+            }
+
+            return;
+        }
+    }
+
+    JsonAssetBase::OnGetData(buffer);
+}
+
 Asset::LoadResult JsonAsset::loadAsset()
 {
     const auto result = JsonAssetBase::loadAsset();
@@ -372,6 +438,7 @@ void JsonAsset::onLoaded_MainThread()
     JsonAssetBase::onLoaded_MainThread();
 
     // Special case for Settings assets to flush them after edited and saved in Editor
+    // TODO: add interface for custom JsonAsset interaction of the instance class (eg. OnJsonLoaded, or similar to C# like OnDeserialized from Newtonsoft.Json)
     const StringAsANSI<> dataTypeNameAnsi(DataTypeName.Get(), DataTypeName.Length());
     const auto typeHandle = Scripting::FindScriptingType(StringAnsiView(dataTypeNameAnsi.Get(), DataTypeName.Length()));
     if (Instance && typeHandle && typeHandle.IsSubclassOf(SettingsBase::TypeInitializer) && _isAfterReload)

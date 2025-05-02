@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -45,7 +45,7 @@ API_STRUCT(Namespace="FlaxEngine.Networking", NoDefault) struct NetworkClientCon
 /// <summary>
 /// High-level networking manager for multiplayer games.
 /// </summary>
-API_CLASS(static, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkManager
+API_CLASS(static, Namespace="FlaxEngine.Networking", Attributes="DebugCommand") class FLAXENGINE_API NetworkManager
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkManager);
 public:

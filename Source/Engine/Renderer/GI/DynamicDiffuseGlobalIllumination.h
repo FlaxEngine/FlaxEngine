@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -13,8 +13,7 @@ class FLAXENGINE_API DynamicDiffuseGlobalIlluminationPass : public RendererPass<
 {
 public:
     // Constant buffer data for DDGI access on a GPU.
-    PACK_STRUCT(struct ConstantsData
-        {
+    GPU_CB_STRUCT(ConstantsData {
         Float4 ProbesOriginAndSpacing[4];
         Int4 ProbesScrollOffsets[4];
         uint32 ProbesCounts[3];
@@ -23,7 +22,6 @@ public:
         float ProbeHistoryWeight;
         float RayMaxDistance;
         float IndirectLightingIntensity;
-        Float4 RaysRotation;
         Float3 ViewPos;
         uint32 RaysCount;
         Float3 FallbackIrradiance;
@@ -49,11 +47,7 @@ private:
     GPUShaderProgramCS* _csTraceRays[4];
     GPUShaderProgramCS* _csUpdateProbesIrradiance;
     GPUShaderProgramCS* _csUpdateProbesDistance;
-    GPUShaderProgramCS* _csUpdateBordersIrradianceRow;
-    GPUShaderProgramCS* _csUpdateBordersIrradianceCollumn;
-    GPUShaderProgramCS* _csUpdateBordersDistanceRow;
-    GPUShaderProgramCS* _csUpdateBordersDistanceCollumn;
-    GPUPipelineState* _psIndirectLighting;
+    GPUPipelineState* _psIndirectLighting[2] = {};
 #if USE_EDITOR
     AssetReference<Model> _debugModel;
     AssetReference<MaterialBase> _debugMaterial;

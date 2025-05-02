@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -260,7 +260,7 @@ namespace Flax.Build
                 options.CompileEnv.DebugInformation = true;
                 options.CompileEnv.RuntimeChecks = true;
                 options.CompileEnv.StringPooling = false;
-                options.CompileEnv.IntrinsicFunctions = false;
+                options.CompileEnv.IntrinsicFunctions = true;
                 options.CompileEnv.BufferSecurityCheck = true;
                 options.CompileEnv.Inlining = false;
                 options.CompileEnv.WholeProgramOptimization = false;

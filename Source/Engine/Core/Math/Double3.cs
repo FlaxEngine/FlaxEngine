@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -234,7 +234,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a value indicting whether this instance is normalized.
         /// </summary>
-        public bool IsNormalized => Mathd.IsOne(X * X + Y * Y + Z * Z);
+        public bool IsNormalized => Mathd.Abs((X * X + Y * Y + Z * Z) - 1.0f) < 1e-4f;
 
         /// <summary>
         /// Gets the normalized vector. Returned vector has length equal 1.
@@ -1544,9 +1544,12 @@ namespace FlaxEngine
         /// <returns>The position snapped to the grid.</returns>
         public static Double3 SnapToGrid(Double3 pos, Double3 gridSize)
         {
-            pos.X = Mathd.Ceil((pos.X - (gridSize.X * 0.5)) / gridSize.X) * gridSize.X;
-            pos.Y = Mathd.Ceil((pos.Y - (gridSize.Y * 0.5)) / gridSize.Y) * gridSize.Y;
-            pos.Z = Mathd.Ceil((pos.Z - (gridSize.Z * 0.5)) / gridSize.Z) * gridSize.Z;
+            if (Mathd.Abs(gridSize.X) > Mathd.Epsilon)
+                pos.X = Mathd.Ceil((pos.X - (gridSize.X * 0.5)) / gridSize.X) * gridSize.X;
+            if (Mathd.Abs(gridSize.Y) > Mathd.Epsilon)
+                pos.Y = Mathd.Ceil((pos.Y - (gridSize.Y * 0.5)) / gridSize.Y) * gridSize.Y;
+            if (Mathd.Abs(gridSize.Z) > Mathd.Epsilon)
+                pos.Z = Mathd.Ceil((pos.Z - (gridSize.Z * 0.5)) / gridSize.Z) * gridSize.Z;
             return pos;
         }
 

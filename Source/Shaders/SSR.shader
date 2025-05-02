@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/LightingCommon.hlsl"
@@ -51,8 +51,8 @@ Texture2D Texture0 : register(t4);
 Texture2D Texture1 : register(t5);
 Texture2D Texture2 : register(t6);
 #if USE_GLOBAL_SURFACE_ATLAS
-Texture3D<float> GlobalSDFTex : register(t7);
-Texture3D<float> GlobalSDFMip : register(t8);
+Texture3D<snorm float> GlobalSDFTex : register(t7);
+Texture3D<snorm float> GlobalSDFMip : register(t8);
 ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t9);
 ByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(t10);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t11);
@@ -129,20 +129,19 @@ float4 PS_RayTracePass(Quad_VS2PS input) : SV_Target0
         float mip = clamp(log2(intersectionCircleRadius * TraceSizeMax), 0.0, MaxColorMiplevel);
         float3 sampleColor = Texture0.SampleLevel(SamplerLinearClamp, screenHit.xy, mip).rgb;
         result = float4(sampleColor, screenHit.z);
-        if (screenHit.z >= 0.9f)
+        if (screenHit.z >= REFLECTIONS_HIT_THRESHOLD)
             return result;
 	}
 
-    // Calculate reflection direction (the same TraceScreenSpaceReflection)
-    float3 reflectWS = ScreenSpaceReflectionDirection(input.TexCoord, gBuffer, gBufferData.ViewPos, TemporalEffect, TemporalTime, BRDFBias);
-
     // Fallback to Global SDF and Global Surface Atlas tracing
 #if USE_GLOBAL_SURFACE_ATLAS && CAN_USE_GLOBAL_SURFACE_ATLAS
+	// Calculate reflection direction (the same TraceScreenSpaceReflection)
+    float3 reflectWS = ScreenSpaceReflectionDirection(input.TexCoord, gBuffer, gBufferData.ViewPos, TemporalEffect, TemporalTime, BRDFBias);
+
     GlobalSDFTrace sdfTrace;
-    float maxDistance = 100000;
-    float selfOcclusionBias = GlobalSDF.CascadeVoxelSize[0];
-    sdfTrace.Init(gBuffer.WorldPos + gBuffer.Normal * selfOcclusionBias, reflectWS, 0.0f, maxDistance);
-    GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace);
+    float maxDistance = GLOBAL_SDF_WORLD_SIZE;
+    sdfTrace.Init(gBuffer.WorldPos, reflectWS, 0.0f, maxDistance);
+    GlobalSDFHit sdfHit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, sdfTrace, 2.0f);
     if (sdfHit.IsHit())
     {
         float3 hitPosition = sdfHit.GetHitPosition(sdfTrace);

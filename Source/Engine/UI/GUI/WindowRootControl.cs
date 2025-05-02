@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine.Assertions;
@@ -77,7 +77,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         public void Hide()
         {
-            _window.Show();
+            _window.Hide();
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -14,6 +14,7 @@
 #include "GPUTimerQueryVulkan.h"
 #include "GPUBufferVulkan.h"
 #include "GPUSamplerVulkan.h"
+#include "GPUVertexLayoutVulkan.h"
 #include "GPUSwapChainVulkan.h"
 #include "RenderToolsVulkan.h"
 #include "QueueVulkan.h"
@@ -231,6 +232,19 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
         LOG(Info, "[Vulkan] {0} {1}:{2}({3}) {4}", type, severity, callbackData->messageIdNumber, String(callbackData->pMessageIdName), message);
     else
         LOG(Info, "[Vulkan] {0} {1}:{2} {3}", type, severity, callbackData->messageIdNumber, message);
+
+#if BUILD_DEBUG
+    if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
+    {
+        if (auto* state = (GPUPipelineStateVulkan*)context->GetState())
+        {
+            const StringAnsi vsName = state->DebugDesc.VS ? state->DebugDesc.VS->GetName() : StringAnsi::Empty;
+            const StringAnsi psName = state->DebugDesc.PS ? state->DebugDesc.PS->GetName() : StringAnsi::Empty;
+            LOG(Warning, "[Vulkan] Error during rendering with VS={}, PS={}", String(vsName), String(psName));
+        }
+    }
+#endif
+
     return VK_FALSE;
 }
 
@@ -448,6 +462,18 @@ uint32 GetHash(const FramebufferVulkan::Key& key)
     return hash;
 }
 
+GPUVertexLayoutVulkan::GPUVertexLayoutVulkan(GPUDeviceVulkan* device, const Elements& elements, bool explicitOffsets)
+    : GPUResourceVulkan<GPUVertexLayout>(device, StringView::Empty)
+{
+    SetElements(elements, explicitOffsets);
+    MaxSlot = 0;
+    for (int32 i = 0; i < elements.Count(); i++)
+    {
+        const VertexElement& src = GetElements().Get()[i];
+        MaxSlot = Math::Max(MaxSlot, (int32)src.Slot);
+    }
+}
+
 FramebufferVulkan::FramebufferVulkan(GPUDeviceVulkan* device, const Key& key, const VkExtent2D& extent, uint32 layers)
     : Device(device)
     , Handle(VK_NULL_HANDLE)
@@ -486,6 +512,7 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
     : Device(device)
     , Handle(VK_NULL_HANDLE)
     , Layout(layout)
+    , CanDepthWrite(true)
 {
     const int32 colorAttachmentsCount = layout.RTsCount;
     const bool hasDepthStencilAttachment = layout.DepthFormat != PixelFormat::Unknown;
@@ -572,6 +599,8 @@ RenderPassVulkan::RenderPassVulkan(GPUDeviceVulkan* device, const RenderTargetLa
         depthStencilReference.attachment = colorAttachmentsCount;
         depthStencilReference.layout = depthStencilLayout;
         subpassDesc.pDepthStencilAttachment = &depthStencilReference;
+        if (!layout.WriteDepth && !layout.WriteStencil)
+            CanDepthWrite = false;
     }
 
     VkRenderPassCreateInfo createInfo;
@@ -594,8 +623,6 @@ RenderPassVulkan::~RenderPassVulkan()
 QueryPoolVulkan::QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type)
     : _device(device)
     , _handle(VK_NULL_HANDLE)
-    , _count(0)
-    , _capacity(capacity)
     , _type(type)
 {
     VkQueryPoolCreateInfo createInfo;
@@ -603,9 +630,11 @@ QueryPoolVulkan::QueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQuer
     createInfo.queryType = type;
     createInfo.queryCount = capacity;
     VALIDATE_VULKAN_RESULT(vkCreateQueryPool(device->Device, &createInfo, nullptr, &_handle));
+
 #if VULKAN_RESET_QUERY_POOLS
+    // New queries have to be reset before use
+    ResetBeforeUse = true;
     _resetRanges.Add(Range{ 0, static_cast<uint32>(capacity) });
-    device->QueriesToReset.Add(this);
 #endif
 }
 
@@ -626,6 +655,7 @@ void QueryPoolVulkan::Reset(CmdBufferVulkan* cmdBuffer)
         vkCmdResetQueryPool(cmdBuffer->GetHandle(), _handle, range.Start, range.Count);
     }
     _resetRanges.Clear();
+    ResetBeforeUse = false;
 }
 
 #endif
@@ -640,9 +670,9 @@ BufferedQueryPoolVulkan::BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 
     _readResultsBits.AddZeroed((capacity + 63) / 64);
 }
 
-bool BufferedQueryPoolVulkan::AcquireQuery(uint32& resultIndex)
+bool BufferedQueryPoolVulkan::AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& resultIndex)
 {
-    const uint64 allUsedMask = (uint64)-1;
+    const uint64 allUsedMask = MAX_uint64;
     for (int32 wordIndex = _lastBeginIndex / 64; wordIndex < _usedQueryBits.Count(); wordIndex++)
     {
         uint64 beginQueryWord = _usedQueryBits[wordIndex];
@@ -659,10 +689,11 @@ bool BufferedQueryPoolVulkan::AcquireQuery(uint32& resultIndex)
             _usedQueryBits[wordIndex] = _usedQueryBits[wordIndex] | bit;
             _readResultsBits[wordIndex] &= ~bit;
             _lastBeginIndex = resultIndex + 1;
+            if (ResetBeforeUse)
+                Reset(cmdBuffer);
             return true;
         }
     }
-
     return false;
 }
 
@@ -675,7 +706,7 @@ void BufferedQueryPoolVulkan::ReleaseQuery(uint32 queryIndex)
     if (queryIndex < (uint32)_lastBeginIndex)
     {
         // Use the lowest word available
-        const uint64 allUsedMask = (uint64)-1;
+        const uint64 allUsedMask = MAX_uint64;
         const int32 lastQueryWord = _lastBeginIndex / 64;
         if (lastQueryWord < _usedQueryBits.Count() && _usedQueryBits[lastQueryWord] == allUsedMask)
         {
@@ -736,7 +767,7 @@ bool BufferedQueryPoolVulkan::GetResults(GPUContextVulkan* context, uint32 index
 
 bool BufferedQueryPoolVulkan::HasRoom() const
 {
-    const uint64 allUsedMask = (uint64)-1;
+    const uint64 allUsedMask = MAX_uint64;
     if (_lastBeginIndex < _usedQueryBits.Count() * 64)
     {
         ASSERT((_usedQueryBits[_lastBeginIndex / 64] & allUsedMask) != allUsedMask);
@@ -747,8 +778,6 @@ bool BufferedQueryPoolVulkan::HasRoom() const
 
 HelperResourcesVulkan::HelperResourcesVulkan(GPUDeviceVulkan* device)
     : _device(device)
-    , _dummyBuffer(nullptr)
-    , _dummyVB(nullptr)
 {
     Platform::MemoryClear(_dummyTextures, sizeof(_dummyTextures));
     Platform::MemoryClear(_staticSamplers, sizeof(_staticSamplers));
@@ -874,15 +903,20 @@ GPUTextureVulkan* HelperResourcesVulkan::GetDummyTexture(SpirvShaderResourceType
     return texture;
 }
 
-GPUBufferVulkan* HelperResourcesVulkan::GetDummyBuffer()
+GPUBufferVulkan* HelperResourcesVulkan::GetDummyBuffer(PixelFormat format)
 {
-    if (!_dummyBuffer)
+    if (!_dummyBuffers)
     {
-        _dummyBuffer = (GPUBufferVulkan*)_device->CreateBuffer(TEXT("DummyBuffer"));
-        _dummyBuffer->Init(GPUBufferDescription::Buffer(sizeof(int32) * 256, GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_SInt));
+        _dummyBuffers = (GPUBufferVulkan**)Allocator::Allocate((int32)PixelFormat::MAX * sizeof(void*));
+        Platform::MemoryClear(_dummyBuffers, (int32)PixelFormat::MAX * sizeof(void*));
     }
-
-    return _dummyBuffer;
+    auto& dummyBuffer = _dummyBuffers[(int32)format];
+    if (!dummyBuffer)
+    {
+        dummyBuffer = (GPUBufferVulkan*)_device->CreateBuffer(TEXT("DummyBuffer"));
+        dummyBuffer->Init(GPUBufferDescription::Buffer(PixelFormatExtensions::SizeInBytes(format) * 256, GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, format));
+    }
+    return dummyBuffer;
 }
 
 GPUBufferVulkan* HelperResourcesVulkan::GetDummyVertexBuffer()
@@ -890,17 +924,36 @@ GPUBufferVulkan* HelperResourcesVulkan::GetDummyVertexBuffer()
     if (!_dummyVB)
     {
         _dummyVB = (GPUBufferVulkan*)_device->CreateBuffer(TEXT("DummyVertexBuffer"));
-        _dummyVB->Init(GPUBufferDescription::Vertex(sizeof(Color32), 1, &Color32::Transparent));
+        auto* layout = GPUVertexLayout::Get({{ VertexElement::Types::Attribute3, 0, 0, 0, PixelFormat::R8G8B8A8_UNorm }});
+        _dummyVB->Init(GPUBufferDescription::Vertex(layout, sizeof(Color32), 1, &Color32::Transparent));
     }
-
     return _dummyVB;
+}
+
+GPUConstantBuffer* HelperResourcesVulkan::GetDummyConstantBuffer()
+{
+    if (!_dummyCB)
+    {
+        _dummyCB = _device->CreateConstantBuffer(256, TEXT("DummyConstantBuffer"));
+    }
+    return _dummyCB;
 }
 
 void HelperResourcesVulkan::Dispose()
 {
     SAFE_DELETE_GPU_RESOURCES(_dummyTextures);
-    SAFE_DELETE_GPU_RESOURCE(_dummyBuffer);
     SAFE_DELETE_GPU_RESOURCE(_dummyVB);
+    SAFE_DELETE_GPU_RESOURCE(_dummyCB);
+    if (_dummyBuffers)
+    {
+        for (int32 i = 0; i < (int32)PixelFormat::MAX; i++)
+        {
+            if (GPUBufferVulkan* buffer = _dummyBuffers[i])
+                Delete(buffer);
+        }
+        Allocator::Free(_dummyBuffers);
+        _dummyBuffers = nullptr;
+    }
 
     for (int32 i = 0; i < ARRAY_COUNT(_staticSamplers); i++)
     {
@@ -1220,11 +1273,11 @@ GPUDevice* GPUDeviceVulkan::Create()
         return nullptr;
     }
     uint32 vendorId = 0;
-    if (CommandLine::Options.NVIDIA)
+    if (CommandLine::Options.NVIDIA.IsTrue())
         vendorId = GPU_VENDOR_ID_NVIDIA;
-    else if (CommandLine::Options.AMD)
+    else if (CommandLine::Options.AMD.IsTrue())
         vendorId = GPU_VENDOR_ID_AMD;
-    else if (CommandLine::Options.Intel)
+    else if (CommandLine::Options.Intel.IsTrue())
         vendorId = GPU_VENDOR_ID_INTEL;
     if (vendorId != 0)
     {
@@ -2068,6 +2121,11 @@ GPUBuffer* GPUDeviceVulkan::CreateBuffer(const StringView& name)
 GPUSampler* GPUDeviceVulkan::CreateSampler()
 {
     return New<GPUSamplerVulkan>(this);
+}
+
+GPUVertexLayout* GPUDeviceVulkan::CreateVertexLayout(const VertexElements& elements, bool explicitOffsets)
+{
+    return New<GPUVertexLayoutVulkan>(this, elements, explicitOffsets);
 }
 
 GPUSwapChain* GPUDeviceVulkan::CreateSwapChain(Window* window)

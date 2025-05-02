@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Runtime.InteropServices;
@@ -21,7 +21,7 @@ namespace FlaxEngine
     {
         // Reference: [https://github.com/Microsoft/DirectXMath/blob/master/Inc/DirectXPackedVector.h]
 
-        private uint value;
+        private uint rawValue;
 
         /// <summary>
         /// Initializes a new instance of the <see cref = "T:FlaxEngine.FloatR11G11B10" /> structure.
@@ -31,7 +31,7 @@ namespace FlaxEngine
         /// <param name="z">The floating point value that should be stored in B component (10 bits format).</param>
         public FloatR11G11B10(float x, float y, float z)
         {
-            value = Pack(x, y, z);
+            rawValue = Pack(x, y, z);
         }
 
         /// <summary>
@@ -40,17 +40,13 @@ namespace FlaxEngine
         /// <param name="value">The floating point value that should be stored in compressed format.</param>
         public FloatR11G11B10(Float3 value)
         {
-            this.value = Pack(value.X, value.Y, value.Z);
+            rawValue = Pack(value.X, value.Y, value.Z);
         }
 
         /// <summary>
         /// Gets or sets the raw 32 bit value used to back this vector.
         /// </summary>
-        public uint RawValue
-        {
-            get => value;
-            set => this.value = value;
-        }
+        public uint RawValue => rawValue;
 
         /// <summary>
         /// Performs an explicit conversion from <see cref = "T:FlaxEngine.Float3" /> to <see cref = "T:FlaxEngine.FloatR11G11B10" />.
@@ -80,7 +76,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
         public static bool operator ==(FloatR11G11B10 left, FloatR11G11B10 right)
         {
-            return left.value == right.value;
+            return left.rawValue == right.rawValue;
         }
 
         /// <summary>
@@ -91,7 +87,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
         public static bool operator !=(FloatR11G11B10 left, FloatR11G11B10 right)
         {
-            return left.value != right.value;
+            return left.rawValue != right.rawValue;
         }
 
         /// <summary>
@@ -109,7 +105,7 @@ namespace FlaxEngine
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            return value.GetHashCode();
+            return rawValue.GetHashCode();
         }
 
         /// <summary>
@@ -120,7 +116,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if <paramref name="value1" /> is the same instance as <paramref name="value2" /> or if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
         public static bool Equals(ref FloatR11G11B10 value1, ref FloatR11G11B10 value2)
         {
-            return value1.value == value2.value;
+            return value1.rawValue == value2.rawValue;
         }
 
         /// <summary>
@@ -130,7 +126,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
         public bool Equals(FloatR11G11B10 other)
         {
-            return other.value == value;
+            return other.rawValue == rawValue;
         }
 
         /// <summary>
@@ -140,7 +136,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
         public override bool Equals(object obj)
         {
-            return obj is FloatR11G11B10 other && value == other.value;
+            return obj is FloatR11G11B10 other && rawValue == other.rawValue;
         }
 
         private static unsafe uint Pack(float x, float y, float z)
@@ -288,7 +284,7 @@ namespace FlaxEngine
         {
             int zeroExponent = -112;
 
-            Packed packed = new Packed(value);
+            Packed packed = new Packed(rawValue);
             uint* result = stackalloc uint[4];
             uint exponent;
 

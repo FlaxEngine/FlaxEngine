@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -60,13 +60,18 @@ void GPUTimerQueryVulkan::WriteTimestamp(CmdBufferVulkan* cmdBuffer, Query& quer
 {
     auto pool = _device->FindAvailableTimestampQueryPool();
     uint32 index;
-    pool->AcquireQuery(index);
-
-    vkCmdWriteTimestamp(cmdBuffer->GetHandle(), stage, pool->GetHandle(), index);
-    pool->MarkQueryAsStarted(index);
-
-    query.Pool = pool;
-    query.Index = index;
+    if (pool->AcquireQuery(cmdBuffer, index))
+    {
+        vkCmdWriteTimestamp(cmdBuffer->GetHandle(), stage, pool->GetHandle(), index);
+        pool->MarkQueryAsStarted(index);
+        query.Pool = pool;
+        query.Index = index;
+    }
+    else
+    {
+        query.Pool = nullptr;
+        query.Index = 0;
+    }
 }
 
 bool GPUTimerQueryVulkan::TryGetResult()
@@ -104,16 +109,10 @@ bool GPUTimerQueryVulkan::TryGetResult()
     for (int32 i = 0; i < _queries.Count(); i++)
     {
         auto& e = _queries[i];
-
         if (e.Begin.Pool)
-        {
             e.Begin.Pool->ReleaseQuery(e.Begin.Index);
-        }
-
         if (e.End.Pool)
-        {
             e.End.Pool->ReleaseQuery(e.End.Index);
-        }
     }
     _queries.Clear();
 #else
@@ -141,16 +140,10 @@ void GPUTimerQueryVulkan::OnReleaseGPU()
     for (int32 i = 0; i < _queries.Count(); i++)
     {
         auto& e = _queries[i];
-
         if (e.Begin.Pool)
-        {
             e.Begin.Pool->ReleaseQuery(e.Begin.Index);
-        }
-
         if (e.End.Pool)
-        {
             e.End.Pool->ReleaseQuery(e.End.Index);
-        }
     }
     _queries.Clear();
 }
@@ -208,7 +201,6 @@ bool GPUTimerQueryVulkan::HasResult()
         return false;
     if (_hasResult)
         return true;
-
     return TryGetResult();
 }
 
@@ -216,7 +208,6 @@ float GPUTimerQueryVulkan::GetResult()
 {
     if (_hasResult)
         return _timeDelta;
-
     TryGetResult();
     return _timeDelta;
 }

@@ -1,10 +1,12 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GPUBuffer.h"
 #include "GPUDevice.h"
 #include "GPUResourceProperty.h"
 #include "GPUBufferDescription.h"
 #include "PixelFormatExtensions.h"
+#include "RenderTask.h"
+#include "Shaders/GPUVertexLayout.h"
 #include "Async/Tasks/GPUCopyResourceTask.h"
 #include "Engine/Core/Utilities.h"
 #include "Engine/Core/Types/String.h"
@@ -26,6 +28,7 @@ GPUBufferDescription GPUBufferDescription::Buffer(uint32 size, GPUBufferFlags fl
     desc.Format = format;
     desc.InitData = initData;
     desc.Usage = usage;
+    desc.VertexLayout = nullptr;
     return desc;
 }
 
@@ -45,6 +48,46 @@ GPUBufferDescription GPUBufferDescription::Typed(const void* data, int32 count, 
         bufferFlags |= GPUBufferFlags::UnorderedAccess;
     const auto stride = PixelFormatExtensions::SizeInBytes(viewFormat);
     return Buffer(count * stride, bufferFlags, viewFormat, data, stride, usage);
+}
+
+GPUBufferDescription GPUBufferDescription::Vertex(GPUVertexLayout* layout, uint32 elementStride, uint32 elementsCount, const void* data)
+{
+    GPUBufferDescription desc;
+    desc.Size = elementsCount * elementStride;
+    desc.Stride = elementStride;
+    desc.Flags = GPUBufferFlags::VertexBuffer;
+    desc.Format = PixelFormat::Unknown;
+    desc.InitData = data;
+    desc.Usage = GPUResourceUsage::Default;
+    desc.VertexLayout = layout;
+    return desc;
+}
+
+GPUBufferDescription GPUBufferDescription::Vertex(GPUVertexLayout* layout, uint32 elementStride, uint32 elementsCount, GPUResourceUsage usage)
+{
+    GPUBufferDescription desc;
+    desc.Size = elementsCount * elementStride;
+    desc.Stride = elementStride;
+    desc.Flags = GPUBufferFlags::VertexBuffer;
+    desc.Format = PixelFormat::Unknown;
+    desc.InitData = nullptr;
+    desc.Usage = GPUResourceUsage::Default;
+    desc.VertexLayout = layout;
+    return desc;
+}
+
+GPUBufferDescription GPUBufferDescription::Vertex(GPUVertexLayout* layout, uint32 elementsCount, const void* data)
+{
+    const uint32 stride = layout ? layout->GetStride() : 0;
+    CHECK_RETURN_DEBUG(stride, GPUBufferDescription());
+    return Vertex(layout, stride, elementsCount, data);
+}
+
+GPUBufferDescription GPUBufferDescription::Vertex(GPUVertexLayout* layout, uint32 elementsCount, GPUResourceUsage usage)
+{
+    const uint32 stride = layout ? layout->GetStride() : 0;
+    CHECK_RETURN_DEBUG(stride, GPUBufferDescription());
+    return Vertex(layout, stride, elementsCount, usage);
 }
 
 void GPUBufferDescription::Clear()
@@ -70,6 +113,15 @@ GPUBufferDescription GPUBufferDescription::ToStagingReadback() const
     return desc;
 }
 
+GPUBufferDescription GPUBufferDescription::ToStaging() const
+{
+    auto desc = *this;
+    desc.Usage = GPUResourceUsage::Staging;
+    desc.Flags = GPUBufferFlags::None;
+    desc.InitData = nullptr;
+    return desc;
+}
+
 bool GPUBufferDescription::Equals(const GPUBufferDescription& other) const
 {
     return Size == other.Size
@@ -77,7 +129,8 @@ bool GPUBufferDescription::Equals(const GPUBufferDescription& other) const
             && Flags == other.Flags
             && Format == other.Format
             && Usage == other.Usage
-            && InitData == other.InitData;
+            && InitData == other.InitData
+            && VertexLayout == other.VertexLayout;
 }
 
 String GPUBufferDescription::ToString() const
@@ -97,6 +150,7 @@ uint32 GetHash(const GPUBufferDescription& key)
     hashCode = (hashCode * 397) ^ (uint32)key.Flags;
     hashCode = (hashCode * 397) ^ (uint32)key.Format;
     hashCode = (hashCode * 397) ^ (uint32)key.Usage;
+    hashCode = (hashCode * 397) ^ GetHash(key.VertexLayout);
     return hashCode;
 }
 
@@ -122,17 +176,39 @@ GPUBuffer::GPUBuffer()
     _desc.Size = 0;
 }
 
+bool GPUBuffer::IsStaging() const
+{
+    return _desc.Usage == GPUResourceUsage::StagingReadback || _desc.Usage == GPUResourceUsage::StagingUpload || _desc.Usage == GPUResourceUsage::Staging;
+}
+
+bool GPUBuffer::IsDynamic() const
+{
+    return _desc.Usage == GPUResourceUsage::Dynamic;
+}
+
 bool GPUBuffer::Init(const GPUBufferDescription& desc)
 {
-    ASSERT(Math::IsInRange<uint32>(desc.Size, 1, MAX_int32)
-        && Math::IsInRange<uint32>(desc.Stride, 0, 1024));
-
     // Validate description
+#if !BUILD_RELEASE
+#define GET_NAME() GetName()
+#else
+#define GET_NAME() TEXT("")
+#endif
+    if (Math::IsNotInRange<uint32>(desc.Size, 1, MAX_int32))
+    {
+        LOG(Warning, "Cannot create buffer '{}'. Incorrect size {}.", GET_NAME(), desc.Size);
+        return true;
+    }
+    if (Math::IsNotInRange<uint32>(desc.Stride, 0, 1024))
+    {
+        LOG(Warning, "Cannot create buffer '{}'. Incorrect stride {}.", GET_NAME(), desc.Stride);
+        return true;
+    }
     if (EnumHasAnyFlags(desc.Flags, GPUBufferFlags::Structured))
     {
         if (desc.Stride <= 0)
         {
-            LOG(Warning, "Cannot create buffer. Element size cannot be less or equal 0 for structured buffer.");
+            LOG(Warning, "Cannot create buffer '{}'. Element size cannot be less or equal 0 for structured buffer.", GET_NAME());
             return true;
         }
     }
@@ -140,10 +216,19 @@ bool GPUBuffer::Init(const GPUBufferDescription& desc)
     {
         if (desc.Format != PixelFormat::R32_Typeless)
         {
-            LOG(Warning, "Cannot create buffer. Raw buffers must use format R32_Typeless.");
+            LOG(Warning, "Cannot create buffer '{}'. Raw buffers must use format R32_Typeless.", GET_NAME());
             return true;
         }
     }
+    if (EnumHasAnyFlags(desc.Flags, GPUBufferFlags::VertexBuffer))
+    {
+        if (desc.VertexLayout == nullptr)
+        {
+            // [Deprecated in v1.10] Change this into an error as VertexLayout becomes a requirement when layout is no longer set in a vertex shader
+            LOG(Warning, "Missing Vertex Layout in buffer '{}'. Vertex Buffers should provide layout information about contained vertex elements.", GET_NAME());
+        }
+    }
+#undef GET_NAME
 
     // Release previous data
     ReleaseGPU();
@@ -214,7 +299,7 @@ bool GPUBuffer::DownloadData(BytesContainer& result)
         LOG(Warning, "Cannot download GPU buffer data from an empty buffer.");
         return true;
     }
-    if (_desc.Usage == GPUResourceUsage::StagingReadback || _desc.Usage == GPUResourceUsage::Dynamic)
+    if (_desc.Usage == GPUResourceUsage::StagingReadback || _desc.Usage == GPUResourceUsage::Dynamic || _desc.Usage == GPUResourceUsage::Staging)
     {
         // Use faster path for staging resources
         return GetData(result);
@@ -358,6 +443,16 @@ void GPUBuffer::SetData(const void* data, uint32 size)
         Log::ArgumentOutOfRangeException(TEXT("Buffer.SetData"));
         return;
     }
+
+    if (_desc.Usage == GPUResourceUsage::Default && GPUDevice::Instance->IsRendering())
+    {
+        // Upload using the context (will use internal staging buffer inside command buffer)
+        RenderContext::GPULocker.Lock();
+        GPUDevice::Instance->GetMainContext()->UpdateBuffer(this, data, size);
+        RenderContext::GPULocker.Unlock();
+        return;
+    }
+
     void* mapped = Map(GPUResourceMapMode::Write);
     if (!mapped)
         return;

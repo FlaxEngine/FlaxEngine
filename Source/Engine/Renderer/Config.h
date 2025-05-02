@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,25 +6,24 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Vector4.h"
+#include "Engine/Graphics/Config.h"
 
 /// <summary>
 /// Structure that contains information about GBuffer for shaders.
 /// </summary>
-struct GBufferData
-{
+GPU_CB_STRUCT(ShaderGBufferData {
     Float4 ViewInfo;
     Float4 ScreenSize;
     Float3 ViewPos;
     float ViewFar;
     Matrix InvViewMatrix;
     Matrix InvProjectionMatrix;
-};
+    });
 
 /// <summary>
 /// Structure that contains information about exponential height fog for shaders.
 /// </summary>
-struct ExponentialHeightFogData
-{
+GPU_CB_STRUCT(ShaderExponentialHeightFogData {
     Float3 FogInscatteringColor;
     float FogMinOpacity;
 
@@ -43,13 +42,12 @@ struct ExponentialHeightFogData
     float VolumetricFogMaxDistance;
     float DirectionalInscatteringStartDistance;
     float StartDistance;
-};
+    });
 
 /// <summary>
 /// Structure that contains information about atmosphere fog for shaders.
 /// </summary>
-struct AtmosphericFogData
-{
+GPU_CB_STRUCT(ShaderAtmosphericFogData {
     float AtmosphericFogDensityScale;
     float AtmosphericFogSunDiscScale;
     float AtmosphericFogDistanceScale;
@@ -65,46 +63,31 @@ struct AtmosphericFogData
 
     Float3 AtmosphericFogSunColor;
     float AtmosphericFogDensityOffset;
-};
+    });
 
 /// <summary>
 /// Structure that contains information about light for shaders.
 /// </summary>
-PACK_STRUCT(struct LightData {
+GPU_CB_STRUCT(ShaderLightData {
     Float2 SpotAngles;
     float SourceRadius;
     float SourceLength;
     Float3 Color;
     float MinRoughness;
     Float3 Position;
-    float CastShadows;
+    uint32 ShadowsBufferAddress;
     Float3 Direction;
     float Radius;
     float FalloffExponent;
     float InverseSquared;
-    float Dummy0;
     float RadiusInv;
-    });
-
-/// <summary>
-/// Structure that contains information about light for shaders.
-/// </summary>
-PACK_STRUCT(struct LightShadowData {
-    Float2 ShadowMapSize;
-    float Sharpness;
-    float Fade;
-    float NormalOffsetScale;
-    float Bias;
-    float FadeDistance;
-    uint32 NumCascades;
-    Float4 CascadeSplits;
-    Matrix ShadowVP[6];
+    float Dummy0;
     });
 
 /// <summary>
 /// Packed env probe data
 /// </summary>
-PACK_STRUCT(struct ProbeData {
+GPU_CB_STRUCT(ShaderEnvProbeData {
     Float4 Data0; // x - Position.x,  y - Position.y,  z - Position.z,  w - unused
     Float4 Data1; // x - Radius    ,  y - 1 / Radius,  z - Brightness,  w - unused
     });

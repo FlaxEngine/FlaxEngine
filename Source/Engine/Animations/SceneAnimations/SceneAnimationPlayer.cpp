@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SceneAnimationPlayer.h"
 #include "Engine/Core/Random.h"
@@ -92,7 +92,7 @@ void SceneAnimationPlayer::Pause()
     if (_state != PlayState::Playing)
         return;
 
-    if (IsActiveInHierarchy() && _state == PlayState::Playing)
+    if (IsActiveInHierarchy())
     {
         UNREGISTER_TICK;
     }

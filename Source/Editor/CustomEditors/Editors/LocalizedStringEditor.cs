@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -33,10 +33,10 @@ namespace FlaxEditor.CustomEditors.Editors
             if (layout.Children.Count == 0)
                 return;
             var propList = layout.Children[layout.Children.Count - 1] as PropertiesListElement;
-            if (propList == null || propList.Children.Count != 2)
+            if (propList == null || propList.Children.Count < 2)
                 return;
-            var idElement = propList.Children[0] as TextBoxElement;
-            var valueElement = propList.Children[1] as TextBoxElement;
+            var idElement = propList.Children[propList.Children.Count - 2] as TextBoxElement;
+            var valueElement = propList.Children[propList.Children.Count - 1] as TextBoxElement;
             if (idElement == null || valueElement == null)
                 return;
             _idElement = idElement;

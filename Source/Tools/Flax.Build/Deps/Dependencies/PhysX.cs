@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -92,6 +92,14 @@ namespace Flax.Deps.Dependencies
             var cmakeParams = presetXml["preset"]["CMakeParams"];
             switch (targetPlatform)
             {
+            case TargetPlatform.Windows:
+                if (architecture == TargetArchitecture.ARM64)
+                {
+                    // Windows ARM64 doesn't have GPU support, so avoid copying those DLLs around
+                    ConfigureCmakeSwitch(cmakeSwitches, "PX_COPY_EXTERNAL_DLL", "OFF");
+                    ConfigureCmakeSwitch(cmakeParams, "PX_COPY_EXTERNAL_DLL", "OFF");
+                }
+                break;
             case TargetPlatform.Android:
                 ConfigureCmakeSwitch(cmakeParams, "CMAKE_INSTALL_PREFIX", $"install/android-{Configuration.AndroidPlatformApi}/PhysX");
                 ConfigureCmakeSwitch(cmakeParams, "ANDROID_NATIVE_API_LEVEL", $"android-{Configuration.AndroidPlatformApi}");
@@ -241,6 +249,12 @@ namespace Flax.Deps.Dependencies
                 envVars.Add("PM_ANDROIDNDK_PATH", AndroidNdk.Instance.RootPath);
             }
 
+            // Update packman for old PhysX version (https://github.com/NVIDIA-Omniverse/PhysX/issues/229)
+            if (BuildPlatform == TargetPlatform.Windows)
+                Utilities.Run(Path.Combine(projectGenDir, "buildtools", "packman", "packman.cmd"), "update -y");
+            else
+                Utilities.Run(Path.Combine(projectGenDir, "buildtools", "packman", "packman"), "update -y");
+
             // Print the PhysX version
             Log.Info("Building PhysX version " + File.ReadAllText(Path.Combine(root, "physx", "version.txt")) + " to " + binariesSubDir);
 
@@ -370,11 +384,13 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
                 {
                     Build(options, "vc17win64", platform, TargetArchitecture.x64);
+                    Build(options, "vc17win-arm64", platform, TargetArchitecture.ARM64);
                     break;
                 }
                 case TargetPlatform.Linux:

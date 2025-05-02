@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -629,7 +629,7 @@ namespace FlaxEditor.GUI.Docking
 
         internal void MoveTabRight(int index)
         {
-            if (index < _tabs.Count - 2)
+            if (index < _tabs.Count - 1)
             {
                 var tab = _tabs[index];
                 _tabs.RemoveAt(index);

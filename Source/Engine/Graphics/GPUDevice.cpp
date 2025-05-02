@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GPUDevice.h"
 #include "RenderTargetPool.h"
@@ -9,6 +9,7 @@
 #include "RenderTools.h"
 #include "Graphics.h"
 #include "Shaders/GPUShader.h"
+#include "Shaders/GPUVertexLayout.h"
 #include "Async/DefaultGPUTasksExecutor.h"
 #include "Async/GPUTasksManager.h"
 #include "Engine/Core/Log.h"
@@ -296,6 +297,8 @@ struct GPUDevice::PrivateData
     AssetReference<Shader> QuadShader;
     GPUPipelineState* PS_CopyLinear = nullptr;
     GPUPipelineState* PS_Clear = nullptr;
+    GPUPipelineState* PS_DecodeYUY2 = nullptr;
+    GPUPipelineState* PS_DecodeNV12 = nullptr;
     GPUBuffer* FullscreenTriangleVB = nullptr;
     AssetReference<Material> DefaultMaterial;
     SoftAssetReference<Material> DefaultDeformableMaterial;
@@ -306,6 +309,16 @@ struct GPUDevice::PrivateData
 };
 
 GPUDevice* GPUDevice::Instance = nullptr;
+
+void GPUDevice::OnRequestingExit()
+{
+    if (Engine::FatalError != FatalErrorType::GPUCrash && 
+        Engine::FatalError != FatalErrorType::GPUHang && 
+        Engine::FatalError != FatalErrorType::GPUOutOfMemory)
+        return;
+    // TODO: get and log actual GPU memory used by the engine (API-specific)
+    DumpResourcesToLog();
+}
 
 GPUDevice::GPUDevice(RendererType type, ShaderProfile profile)
     : ScriptingObject(SpawnParams(Guid::New(), TypeInitializer))
@@ -319,10 +332,11 @@ GPUDevice::GPUDevice(RendererType type, ShaderProfile profile)
     , _res(New<PrivateData>())
     , _resources(1024)
     , TotalGraphicsMemory(0)
+    , IsDebugToolAttached(false)
     , QuadShader(nullptr)
     , CurrentTask(nullptr)
 {
-    ASSERT(_rendererType != RendererType::Unknown);
+    ASSERT_LOW_LAYER(_rendererType != RendererType::Unknown);
 }
 
 GPUDevice::~GPUDevice()
@@ -349,6 +363,7 @@ bool GPUDevice::Init()
     LOG(Info, "Total graphics memory: {0}", Utilities::BytesToText(TotalGraphicsMemory));
     if (!Limits.HasCompute)
         LOG(Warning, "Compute Shaders are not supported");
+    Engine::RequestingExit.Bind<GPUDevice, &GPUDevice::OnRequestingExit>(this);
     return false;
 }
 
@@ -383,7 +398,11 @@ bool GPUDevice::LoadContent()
         };
         // @formatter:on
         _res->FullscreenTriangleVB = CreateBuffer(TEXT("QuadVB"));
-        if (_res->FullscreenTriangleVB->Init(GPUBufferDescription::Vertex(sizeof(float) * 4, 3, vb)))
+        auto layout = GPUVertexLayout::Get({
+            { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
+            { VertexElement::Types::TexCoord, 0, 8, 0, PixelFormat::R32G32_Float },
+        });
+        if (_res->FullscreenTriangleVB->Init(GPUBufferDescription::Vertex(layout, 16, 3, vb)))
             return true;
     }
 
@@ -441,9 +460,23 @@ void GPUDevice::DumpResourcesToLog() const
     output.AppendLine();
     output.AppendLine();
 
+    const bool printTypes[(int32)GPUResourceType::MAX] =
+    {
+        true, // RenderTarget
+        true, // Texture
+        true, // CubeTexture
+        true, // VolumeTexture
+        true, // Buffer
+        true, // Shader
+        false, // PipelineState
+        false, // Descriptor
+        false, // Query
+        false, // Sampler
+    };
     for (int32 typeIndex = 0; typeIndex < (int32)GPUResourceType::MAX; typeIndex++)
     {
         const auto type = static_cast<GPUResourceType>(typeIndex);
+        const auto printType = printTypes[typeIndex];
 
         output.AppendFormat(TEXT("Group: {0}s"), ScriptingEnum::ToString(type));
         output.AppendLine();
@@ -453,12 +486,12 @@ void GPUDevice::DumpResourcesToLog() const
         for (int32 i = 0; i < _resources.Count(); i++)
         {
             const GPUResource* resource = _resources[i];
-            if (resource->GetResourceType() == type)
+            if (resource->GetResourceType() == type && resource->GetMemoryUsage() != 0)
             {
                 count++;
                 memUsage += resource->GetMemoryUsage();
                 auto str = resource->ToString();
-                if (str.HasChars())
+                if (str.HasChars() && printType)
                 {
                     output.Append(TEXT('\t'));
                     output.Append(str);
@@ -476,6 +509,8 @@ void GPUDevice::DumpResourcesToLog() const
     LOG_STR(Info, output.ToStringView());
 }
 
+extern void ClearVertexLayoutCache();
+
 void GPUDevice::preDispose()
 {
     Locker.Lock();
@@ -489,7 +524,9 @@ void GPUDevice::preDispose()
     _res->DefaultBlackTexture = nullptr;
     SAFE_DELETE_GPU_RESOURCE(_res->PS_CopyLinear);
     SAFE_DELETE_GPU_RESOURCE(_res->PS_Clear);
+    SAFE_DELETE_GPU_RESOURCE(_res->PS_DecodeYUY2);
     SAFE_DELETE_GPU_RESOURCE(_res->FullscreenTriangleVB);
+    ClearVertexLayoutCache();
 
     Locker.Unlock();
 
@@ -699,6 +736,30 @@ GPUPipelineState* GPUDevice::GetCopyLinearPS() const
 GPUPipelineState* GPUDevice::GetClearPS() const
 {
     return _res->PS_Clear;
+}
+
+GPUPipelineState* GPUDevice::GetDecodeYUY2PS() const
+{
+    if (_res->PS_DecodeYUY2 == nullptr)
+    {
+        auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+        psDesc.PS = QuadShader->GetPS("PS_DecodeYUY2");
+        _res->PS_DecodeYUY2 = const_cast<GPUDevice*>(this)->CreatePipelineState();
+        _res->PS_DecodeYUY2->Init(psDesc);
+    }
+    return _res->PS_DecodeYUY2;
+}
+
+GPUPipelineState* GPUDevice::GetDecodeNV12PS() const
+{
+    if (_res->PS_DecodeNV12 == nullptr)
+    {
+        auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+        psDesc.PS = QuadShader->GetPS("PS_DecodeNV12");
+        _res->PS_DecodeNV12 = const_cast<GPUDevice*>(this)->CreatePipelineState();
+        _res->PS_DecodeNV12->Init(psDesc);
+    }
+    return _res->PS_DecodeNV12;
 }
 
 GPUBuffer* GPUDevice::GetFullscreenTriangleVB() const

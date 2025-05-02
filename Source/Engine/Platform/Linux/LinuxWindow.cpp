@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX
 
@@ -8,16 +8,15 @@
 #include "Engine/Input/Keyboard.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Graphics/Textures/TextureData.h"
-// hack using TextureTool in Platform module -> TODO: move texture data sampling to texture data itself
-#define COMPILE_WITH_TEXTURE_TOOL 1
-#include "Engine/Tools/TextureTool/TextureTool.h"
 #include "IncludeX11.h"
 
 // ICCCM
@@ -888,13 +887,13 @@ void LinuxWindow::SetIcon(TextureData& icon)
 			const auto mipData = mip.Data.Get<Color32>();
 			const auto iconData = icon.GetData(0, 0);
 			const Int2 iconSize(icon.Width, icon.Height);
-			const auto sampler = TextureTool::GetSampler(icon.Format);
+			const auto sampler = PixelFormatSampler::Get(icon.Format);
 			for (int32 y = 0; y < icon.Height; y++)
 			{
 				for (int32 x = 0; x < icon.Width; x++)
 				{
 					const Float2 uv((float)x / icon.Width, (float)y / icon.Height);
-					Color color = TextureTool::SampleLinear(sampler, uv, iconData->Data.Get(), iconSize, iconData->RowPitch);
+					Color color = sampler->SampleLinear(iconData->Data.Get(), uv, iconSize, iconData->RowPitch);
 					*(mipData + y * icon.Width + x) = Color32(color);
 				}
 			}
@@ -932,13 +931,13 @@ void LinuxWindow::SetIcon(TextureData& icon)
 				const auto mipData = mip.Data.Get<Color32>();
 				const auto iconData = icon.GetData(0, 0);
 				const Int2 iconSize(icon.Width, icon.Height);
-				const auto sampler = TextureTool::GetSampler(img.Format);
+				const auto sampler = PixelFormatSampler::Get(img.Format);
 				for (int32 y = 0; y < newHeight; y++)
 				{
 					for (int32 x = 0; x < newWidth; x++)
 					{
 						const Float2 uv((float)x / newWidth, (float)y / newHeight);
-						Color color = TextureTool::SampleLinear(sampler, uv, iconData->Data.Get(), iconSize, iconData->RowPitch);
+						Color color = sampler->SampleLinear(iconData->Data.Get(), uv, iconSize, iconData->RowPitch);
 						*(mipData + y * newWidth + x) = Color32(color);
 					}
 				}

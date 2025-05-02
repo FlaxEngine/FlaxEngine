@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -13,6 +13,7 @@
 #define PLATFORM_ARCH ArchitectureType::ARM64
 #define PLATFORM_CACHE_LINE_SIZE 128
 #define PLATFORM_DEBUG_BREAK __builtin_trap()
+#define PLATFORM_OUT_OF_MEMORY_BUFFER_SIZE (64ull * 1024) // 64 kB
 
 // Use AOT for Mono
 #define USE_MONO_AOT 1

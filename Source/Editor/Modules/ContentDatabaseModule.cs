@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -21,6 +21,7 @@ namespace FlaxEditor.Modules
         private bool _enableEvents;
         private bool _isDuringFastSetup;
         private bool _rebuildFlag;
+        private bool _rebuildInitFlag;
         private int _itemsCreated;
         private int _itemsDeleted;
         private readonly HashSet<MainContentTreeNode> _dirtyNodes = new HashSet<MainContentTreeNode>();
@@ -61,7 +62,7 @@ namespace FlaxEditor.Modules
         public event Action WorkspaceModified;
 
         /// <summary>
-        /// Occurs when workspace has will be rebuilt.
+        /// Occurs when workspace will be rebuilt.
         /// </summary>
         public event Action WorkspaceRebuilding;
 
@@ -88,6 +89,9 @@ namespace FlaxEditor.Modules
 
             // Register AssetItems serialization helper (serialize ref ID only)
             FlaxEngine.Json.JsonSerializer.Settings.Converters.Add(new AssetItemConverter());
+
+            ScriptsBuilder.ScriptsReload += OnScriptsReload;
+            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
         }
 
         private void OnContentAssetDisposing(Asset asset)
@@ -129,12 +133,9 @@ namespace FlaxEditor.Modules
                 for (int i = 0; i < Proxy.Count; i++)
                 {
                     if (Proxy[i].IsProxyFor(item))
-                    {
                         return Proxy[i];
-                    }
                 }
             }
-
             return null;
         }
 
@@ -147,11 +148,8 @@ namespace FlaxEditor.Modules
             for (int i = 0; i < Proxy.Count; i++)
             {
                 if (Proxy[i].IsProxyFor<T>())
-                {
                     return Proxy[i];
-                }
             }
-
             return null;
         }
 
@@ -164,17 +162,12 @@ namespace FlaxEditor.Modules
         {
             if (string.IsNullOrEmpty(extension))
                 throw new ArgumentNullException();
-
             extension = StringUtils.NormalizeExtension(extension);
-
             for (int i = 0; i < Proxy.Count; i++)
             {
-                if (Proxy[i].FileExtension == extension)
-                {
+                if (string.Equals(Proxy[i].FileExtension, extension, StringComparison.Ordinal))
                     return Proxy[i];
-                }
             }
-
             return null;
         }
 
@@ -189,30 +182,23 @@ namespace FlaxEditor.Modules
             for (int i = 0; i < Proxy.Count; i++)
             {
                 if (Proxy[i] is AssetProxy proxy && proxy.AcceptsAsset(typeName, path))
-                {
                     return proxy;
-                }
             }
-
             return null;
         }
+
         /// <summary>
         /// Gets the virtual proxy object from given path.
-        /// <br></br>use case if the asset u trying to display is not a flax asset but u like to add custom functionality
-        /// <br></br>to context menu,or display it the asset
         /// </summary>
         /// <param name="path">The asset path.</param>
         /// <returns>Asset proxy or null if cannot find.</returns>
-        public AssetProxy GetAssetVirtuallProxy(string path)
+        public AssetProxy GetAssetVirtualProxy(string path)
         {
             for (int i = 0; i < Proxy.Count; i++)
             {
                 if (Proxy[i] is AssetProxy proxy && proxy.IsVirtualProxy() && path.EndsWith(proxy.FileExtension, StringComparison.OrdinalIgnoreCase))
-                {
                     return proxy;
-                }
             }
-
             return null;
         }
 
@@ -508,6 +494,60 @@ namespace FlaxEditor.Modules
                 return;
             }
 
+            var projects = Editor.ContentDatabase.Projects;
+            var contentPaths = new List<string>();
+            var sourcePaths = new List<string>();
+            foreach (var project in projects)
+            {
+                if (project.Content != null)
+                    contentPaths.Add(project.Content.Path);
+                if (project.Source != null)
+                    sourcePaths.Add(project.Source.Path);
+            }
+
+            // Check if moving from content to source folder. Item may lose reference in Asset Database. Warn user.
+            foreach (var contentPath in contentPaths)
+            {
+                if (item.Path.Contains(contentPath, StringComparison.Ordinal))
+                {
+                    bool isFound = false;
+                    foreach (var sourcePath in sourcePaths)
+                    {
+                        if (newParent.Path.Contains(sourcePath, StringComparison.Ordinal))
+                        {
+                            isFound = true;
+                            var result = MessageBox.Show(Editor.Windows.MainWindow, "Moving item from \"Content\" to \"Source\" folder may lose asset database reference.\nDo you want to continue?", "Moving item", MessageBoxButtons.OKCancel);
+                            if (result == DialogResult.Cancel)
+                                return;
+                            break;
+                        }
+                    }
+                    if (isFound)
+                        break;
+                }
+            }
+            // Check if moving from source to content folder. Item may lose reference in Asset Database. Warn user.
+            foreach (var sourcePath in sourcePaths)
+            {
+                if (item.Path.Contains(sourcePath, StringComparison.Ordinal))
+                {
+                    bool isFound = false;
+                    foreach (var contentPath in contentPaths)
+                    {
+                        if (newParent.Path.Contains(contentPath, StringComparison.Ordinal))
+                        {
+                            isFound = true;
+                            var result = MessageBox.Show(Editor.Windows.MainWindow, "Moving item from \"Source\" to \"Content\" folder may lose asset database reference.\nDo you want to continue?", "Moving item", MessageBoxButtons.OKCancel);
+                            if (result == DialogResult.Cancel)
+                                return;
+                            break;
+                        }
+                    }
+                    if (isFound)
+                        break;
+                }
+            }
+
             // Perform renaming
             {
                 string oldPath = item.Path;
@@ -704,6 +744,10 @@ namespace FlaxEditor.Modules
             }
             else
             {
+                // Try to remove module if build.cs file is being deleted
+                if (item.Path.Contains(".Build.cs", StringComparison.Ordinal) && item.ItemType == ContentItemType.Script)
+                    Editor.Instance.CodeEditing.RemoveModule(item.Path);
+
                 // Check if it's an asset
                 if (item.IsAsset)
                 {
@@ -735,9 +779,12 @@ namespace FlaxEditor.Modules
         /// <param name="rebuild">Should rebuild entire database after addition.</param>
         public void AddProxy(ContentProxy proxy, bool rebuild = false)
         {
+            var oldProxy = Proxy.Find(x => x.GetType().ToString().Equals(proxy.GetType().ToString(), StringComparison.Ordinal));
+            if (oldProxy != null)
+                RemoveProxy(oldProxy);
             Proxy.Insert(0, proxy);
             if (rebuild)
-                Rebuild();
+                Rebuild(true);
         }
 
         /// <summary>
@@ -749,7 +796,7 @@ namespace FlaxEditor.Modules
         {
             Proxy.Remove(proxy);
             if (rebuild)
-                Rebuild();
+                Rebuild(true);
         }
 
         /// <summary>
@@ -774,6 +821,7 @@ namespace FlaxEditor.Modules
             Profiler.BeginEvent("ContentDatabase.Rebuild");
             var startTime = Platform.TimeSeconds;
             _rebuildFlag = false;
+            _rebuildInitFlag = false;
             _enableEvents = false;
 
             // Load all folders
@@ -1016,11 +1064,13 @@ namespace FlaxEditor.Modules
                     }
                     if (item == null)
                     {
-                        var proxy = GetAssetVirtuallProxy(path);
+                        var proxy = GetAssetVirtualProxy(path);
                         item = proxy?.ConstructItem(path, assetInfo.TypeName, ref assetInfo.ID);
                         if (item == null)
                         {
-                            item = new FileItem(path);
+                            item = GetProxy(Path.GetExtension(path))?.ConstructItem(path);
+                            if (item == null)
+                                item = new FileItem(path);
                         }
                     }
 
@@ -1090,9 +1140,16 @@ namespace FlaxEditor.Modules
             Proxy.Add(new ParticleSystemProxy());
             Proxy.Add(new SceneAnimationProxy());
             Proxy.Add(new CSharpScriptProxy());
+            Proxy.Add(new CSharpEmptyProxy());
+            Proxy.Add(new CSharpEmptyClassProxy());
+            Proxy.Add(new CSharpEmptyStructProxy());
+            Proxy.Add(new CSharpEmptyInterfaceProxy());
+            Proxy.Add(new CSharpActorProxy());
+            Proxy.Add(new CSharpGamePluginProxy());
             Proxy.Add(new CppAssetProxy());
             Proxy.Add(new CppStaticClassProxy());
             Proxy.Add(new CppScriptProxy());
+            Proxy.Add(new CppActorProxy());
             Proxy.Add(new SceneProxy());
             Proxy.Add(new PrefabProxy());
             Proxy.Add(new IESProfileProxy());
@@ -1106,6 +1163,7 @@ namespace FlaxEditor.Modules
             Proxy.Add(new VisualScriptProxy());
             Proxy.Add(new BehaviorTreeProxy());
             Proxy.Add(new LocalizedStringTableProxy());
+            Proxy.Add(new VideoProxy("mp4"));
             Proxy.Add(new WidgetProxy());
             Proxy.Add(new FileProxy());
             Proxy.Add(new SpawnableJsonAssetProxy<PhysicalMaterial>());
@@ -1177,8 +1235,6 @@ namespace FlaxEditor.Modules
                 LoadProjects(Game.Project);
             }
 
-            RebuildInternal();
-
             Editor.ContentImporting.ImportFileEnd += (obj, failed) =>
             {
                 var path = obj.ResultUrl;
@@ -1186,6 +1242,15 @@ namespace FlaxEditor.Modules
                     FlaxEngine.Scripting.InvokeOnUpdate(() => OnImportFileDone(path));
             };
             _enableEvents = true;
+            _rebuildInitFlag = true;
+        }
+
+        /// <inheritdoc />
+        public override void OnEndInit()
+        {
+            // Handle init when project was loaded without scripts loading ()
+            if (_rebuildInitFlag)
+                RebuildInternal();
         }
 
         private void OnImportFileDone(string path)
@@ -1260,6 +1325,52 @@ namespace FlaxEditor.Modules
             }
         }
 
+        private void OnScriptsReload()
+        {
+            var enabledEvents = _enableEvents;
+            _enableEvents = false;
+            _isDuringFastSetup = true;
+            var startItems = _itemsCreated;
+            foreach (var project in Projects)
+            {
+                if (project.Content != null)
+                {
+                    //Dispose(project.Content.Folder);
+                    for (int i = 0; i < project.Content.Folder.Children.Count; i++)
+                    {
+                        Dispose(project.Content.Folder.Children[i]);
+                        i--;
+                    }
+                }
+                if (project.Source != null)
+                {
+                    //Dispose(project.Source.Folder);
+                    for (int i = 0; i < project.Source.Folder.Children.Count; i++)
+                    {
+                        Dispose(project.Source.Folder.Children[i]);
+                        i--;
+                    }
+                }
+            }
+
+            List<ContentProxy> removeProxies = new List<ContentProxy>();
+            foreach (var proxy in Editor.Instance.ContentDatabase.Proxy)
+            {
+                if (proxy.GetType().IsCollectible)
+                    removeProxies.Add(proxy);
+            }
+            foreach (var proxy in removeProxies)
+                RemoveProxy(proxy, false);
+
+            _isDuringFastSetup = false;
+            _enableEvents = enabledEvents;
+        }
+
+        private void OnScriptsReloadEnd()
+        {
+            RebuildInternal();
+        }
+
         /// <inheritdoc />
         public override void OnUpdate()
         {
@@ -1278,13 +1389,17 @@ namespace FlaxEditor.Modules
 
             // Lazy-rebuilds
             if (_rebuildFlag)
+            {
                 RebuildInternal();
+            }
         }
 
         /// <inheritdoc />
         public override void OnExit()
         {
             FlaxEngine.Content.AssetDisposing -= OnContentAssetDisposing;
+            ScriptsBuilder.ScriptsReload -= OnScriptsReload;
+            ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
 
             // Disable events
             _enableEvents = false;

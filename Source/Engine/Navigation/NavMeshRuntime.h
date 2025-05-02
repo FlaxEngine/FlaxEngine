@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -160,7 +160,7 @@ public:
     /// <param name="point">The source point.</param>
     /// <param name="result">The result position on the navmesh (valid only if method returns true).</param>
     /// <returns>True if found valid location on the navmesh, otherwise false.</returns>
-    API_FUNCTION() DEPRECATED bool ProjectPoint(const Vector3& point, API_PARAM(Out) Vector3& result) const
+    API_FUNCTION() DEPRECATED("Use FindClosestPoint instead") bool ProjectPoint(const Vector3& point, API_PARAM(Out) Vector3& result) const
     {
         return FindClosestPoint(point, result);
     }

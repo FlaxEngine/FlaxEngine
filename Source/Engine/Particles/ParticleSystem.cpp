@@ -1,9 +1,10 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ParticleSystem.h"
 #include "ParticleEffect.h"
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Level/Level.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
@@ -46,7 +47,7 @@ void ParticleSystem::Init(ParticleEmitter* emitter, float duration, float fps)
     }
 }
 
-BytesContainer ParticleSystem::LoadTimeline()
+BytesContainer ParticleSystem::LoadTimeline() const
 {
     BytesContainer result;
     ScopeLock lock(Locker);
@@ -74,7 +75,7 @@ BytesContainer ParticleSystem::LoadTimeline()
             stream.WriteByte((byte)track.Flag);
             stream.WriteInt32(track.ParentIndex);
             stream.WriteInt32(track.ChildrenCount);
-            stream.WriteString(track.Name, -13);
+            stream.Write(track.Name, -13);
             stream.Write(track.Color);
 
             Guid id;
@@ -102,31 +103,22 @@ BytesContainer ParticleSystem::LoadTimeline()
             {
                 stream.WriteInt32(i->Key.First);
                 stream.Write(i->Key.Second);
-                stream.WriteVariant(i->Value);
+                stream.Write(i->Value);
             }
         }
     }
 
     // Set output data
-    result.Copy(stream.GetHandle(), stream.GetPosition());
+    result.Copy(ToSpan(stream));
     return result;
 }
 
 #if USE_EDITOR
 
-bool ParticleSystem::SaveTimeline(BytesContainer& data)
+bool ParticleSystem::SaveTimeline(const BytesContainer& data) const
 {
-    // Wait for asset to be loaded or don't if last load failed (eg. by shader source compilation error)
-    if (LastLoadFailed())
-    {
-        LOG(Warning, "Saving asset that failed to load.");
-    }
-    else if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave())
         return true;
-    }
-
     ScopeLock lock(Locker);
 
     // Release all chunks
@@ -181,20 +173,29 @@ void ParticleSystem::InitAsVirtual()
 
 #if USE_EDITOR
 
-void ParticleSystem::GetReferences(Array<Guid>& output) const
+void ParticleSystem::GetReferences(Array<Guid>& assets, Array<String>& files) const
 {
     // Base
-    BinaryAsset::GetReferences(output);
+    BinaryAsset::GetReferences(assets, files);
 
     for (int32 i = 0; i < Emitters.Count(); i++)
-        output.Add(Emitters[i].GetID());
+        assets.Add(Emitters[i].GetID());
 
     for (auto i = EmittersParametersOverrides.Begin(); i.IsNotEnd(); ++i)
     {
         const auto id = (Guid)i->Value;
         if (id.IsValid())
-            output.Add(id);
+            assets.Add(id);
     }
+}
+
+bool ParticleSystem::Save(const StringView& path)
+{
+    if (OnCheckSave(path))
+        return true;
+    ScopeLock lock(Locker);
+    BytesContainer data = LoadTimeline();
+    return SaveTimeline(data);
 }
 
 #endif
@@ -212,7 +213,7 @@ Asset::LoadResult ParticleSystem::load()
     MemoryReadStream stream(chunk0->Data.Get(), chunk0->Data.Length());
 
     int32 version;
-    stream.ReadInt32(&version);
+    stream.Read(version);
 #if USE_EDITOR
     // Skip unused parameters
 #define SKIP_UNUSED_PARAM_OVERRIDE() if (key.First < 0 || key.First >= Emitters.Count() || Emitters[key.First] == nullptr || Emitters[key.First]->Graph.GetParameter(key.Second) == nullptr) continue
@@ -221,9 +222,11 @@ Asset::LoadResult ParticleSystem::load()
 #endif
     switch (version)
     {
+    PRAGMA_DISABLE_DEPRECATION_WARNINGS
     case 1:
     {
         // [Deprecated on 23.07.2019, expires on 27.04.2021]
+        MARK_CONTENT_DEPRECATED();
 
         // Load properties
         stream.ReadFloat(&FramesPerSecond);
@@ -298,6 +301,7 @@ Asset::LoadResult ParticleSystem::load()
     case 2:
     {
         // [Deprecated on 31.07.2020, expires on 31.07.2022]
+        MARK_CONTENT_DEPRECATED();
 
         // Load properties
         stream.ReadFloat(&FramesPerSecond);
@@ -369,7 +373,9 @@ Asset::LoadResult ParticleSystem::load()
 
         break;
     }
+    PRAGMA_ENABLE_DEPRECATION_WARNINGS
     case 3: // [Deprecated on 03.09.2021 expires on 03.09.2023]
+        MARK_CONTENT_DEPRECATED();
     case 4:
     {
         // Load properties
@@ -394,7 +400,7 @@ Asset::LoadResult ParticleSystem::load()
             track.Flag = (Track::Flags)stream.ReadByte();
             stream.ReadInt32(&track.ParentIndex);
             stream.ReadInt32(&track.ChildrenCount);
-            stream.ReadString(&track.Name, -13);
+            stream.Read(track.Name, -13);
             track.Disabled = (int32)track.Flag & (int32)Track::Flags::Mute || (track.ParentIndex != -1 && Tracks[track.ParentIndex].Disabled);
             stream.Read(track.Color);
 
@@ -434,7 +440,7 @@ Asset::LoadResult ParticleSystem::load()
             {
                 stream.ReadInt32(&key.First);
                 stream.Read(key.Second);
-                stream.ReadVariant(&value);
+                stream.Read(value);
                 SKIP_UNUSED_PARAM_OVERRIDE();
                 EmittersParametersOverrides[key] = value;
             }

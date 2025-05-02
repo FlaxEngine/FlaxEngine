@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -337,14 +337,12 @@ namespace FlaxEditor.GUI.ContextMenu
         /// <summary>
         /// Adds the separator.
         /// </summary>
-        /// <returns>Created context menu item control.</returns>
-        public ContextMenuSeparator AddSeparator()
+        public void AddSeparator()
         {
             var item = new ContextMenuSeparator(this)
             {
                 Parent = _panel
             };
-            return item;
         }
 
         /// <summary>
@@ -357,14 +355,14 @@ namespace FlaxEditor.GUI.ContextMenu
         }
 
         /// <inheritdoc />
-        public override void Show(Control parent, Float2 location)
+        public override void Show(Control parent, Float2 location, ContextMenuDirection? direction = null)
         {
             // Remove last separator to make context menu look better
             int lastIndex = _panel.Children.Count - 1;
             if (lastIndex >= 0 && _panel.Children[lastIndex] is ContextMenuSeparator separator)
                 separator.Dispose();
 
-            base.Show(parent, location);
+            base.Show(parent, location, direction);
         }
 
         /// <inheritdoc />

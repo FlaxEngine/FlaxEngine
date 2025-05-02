@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -15,7 +15,6 @@ class AudioBackend
     friend class AudioService;
 
 public:
-
     enum class FeatureFlags
     {
         None = 0,
@@ -26,41 +25,37 @@ public:
     static AudioBackend* Instance;
 
 private:
-
     // Listener
-    virtual void Listener_OnAdd(AudioListener* listener) = 0;
-    virtual void Listener_OnRemove(AudioListener* listener) = 0;
-    virtual void Listener_VelocityChanged(AudioListener* listener) = 0;
-    virtual void Listener_TransformChanged(AudioListener* listener) = 0;
+    virtual void Listener_Reset() = 0;
+    virtual void Listener_VelocityChanged(const Vector3& velocity) = 0;
+    virtual void Listener_TransformChanged(const Vector3& position, const Quaternion& orientation) = 0;
     virtual void Listener_ReinitializeAll() = 0;
 
     // Source
-    virtual void Source_OnAdd(AudioSource* source) = 0;
-    virtual void Source_OnRemove(AudioSource* source) = 0;
-    virtual void Source_VelocityChanged(AudioSource* source) = 0;
-    virtual void Source_TransformChanged(AudioSource* source) = 0;
-    virtual void Source_VolumeChanged(AudioSource* source) = 0;
-    virtual void Source_PitchChanged(AudioSource* source) = 0;
-    virtual void Source_PanChanged(AudioSource* source) = 0;
-    virtual void Source_IsLoopingChanged(AudioSource* source) = 0;
-    virtual void Source_SpatialSetupChanged(AudioSource* source) = 0;
-    virtual void Source_ClipLoaded(AudioSource* source) = 0;
-    virtual void Source_Cleanup(AudioSource* source) = 0;
-    virtual void Source_Play(AudioSource* source) = 0;
-    virtual void Source_Pause(AudioSource* source) = 0;
-    virtual void Source_Stop(AudioSource* source) = 0;
-    virtual void Source_SetCurrentBufferTime(AudioSource* source, float value) = 0;
-    virtual float Source_GetCurrentBufferTime(const AudioSource* source) = 0;
-    virtual void Source_SetNonStreamingBuffer(AudioSource* source) = 0;
-    virtual void Source_GetProcessedBuffersCount(AudioSource* source, int32& processedBuffersCount) = 0;
-    virtual void Source_GetQueuedBuffersCount(AudioSource* source, int32& queuedBuffersCount) = 0;
-    virtual void Source_QueueBuffer(AudioSource* source, uint32 bufferId) = 0;
-    virtual void Source_DequeueProcessedBuffers(AudioSource* source) = 0;
+    virtual uint32 Source_Add(const AudioDataInfo& format, const Vector3& position, const Quaternion& orientation, float volume, float pitch, float pan, bool loop, bool spatial, float attenuation, float minDistance, float doppler) = 0;
+    virtual void Source_Remove(uint32 sourceID) = 0;
+    virtual void Source_VelocityChanged(uint32 sourceID, const Vector3& velocity) = 0;
+    virtual void Source_TransformChanged(uint32 sourceID, const Vector3& position, const Quaternion& orientation) = 0;
+    virtual void Source_VolumeChanged(uint32 sourceID, float volume) = 0;
+    virtual void Source_PitchChanged(uint32 sourceID, float pitch) = 0;
+    virtual void Source_PanChanged(uint32 sourceID, float pan) = 0;
+    virtual void Source_IsLoopingChanged(uint32 sourceID, bool loop) = 0;
+    virtual void Source_SpatialSetupChanged(uint32 sourceID, bool spatial, float attenuation, float minDistance, float doppler) = 0;
+    virtual void Source_Play(uint32 sourceID) = 0;
+    virtual void Source_Pause(uint32 sourceID) = 0;
+    virtual void Source_Stop(uint32 sourceID) = 0;
+    virtual void Source_SetCurrentBufferTime(uint32 sourceID, float value) = 0;
+    virtual float Source_GetCurrentBufferTime(uint32 id) = 0;
+    virtual void Source_SetNonStreamingBuffer(uint32 sourceID, uint32 bufferID) = 0;
+    virtual void Source_GetProcessedBuffersCount(uint32 sourceID, int32& processedBuffersCount) = 0;
+    virtual void Source_GetQueuedBuffersCount(uint32 sourceID, int32& queuedBuffersCount) = 0;
+    virtual void Source_QueueBuffer(uint32 sourceID, uint32 bufferID) = 0;
+    virtual void Source_DequeueProcessedBuffers(uint32 sourceID) = 0;
 
     // Buffer
     virtual uint32 Buffer_Create() = 0;
-    virtual void Buffer_Delete(uint32 bufferId) = 0;
-    virtual void Buffer_Write(uint32 bufferId, byte* samples, const AudioDataInfo& info) = 0;
+    virtual void Buffer_Delete(uint32 bufferID) = 0;
+    virtual void Buffer_Write(uint32 bufferID, byte* samples, const AudioDataInfo& info) = 0;
 
     // Base
     virtual const Char* Base_Name() = 0;
@@ -73,35 +68,27 @@ private:
     virtual void Base_Dispose() = 0;
 
 public:
-
     virtual ~AudioBackend()
     {
     }
 
 public:
-
     class Listener
     {
     public:
-
-        FORCE_INLINE static void OnAdd(AudioListener* listener)
+        FORCE_INLINE static void Reset()
         {
-            Instance->Listener_OnAdd(listener);
+            Instance->Listener_Reset();
         }
 
-        FORCE_INLINE static void OnRemove(AudioListener* listener)
+        FORCE_INLINE static void VelocityChanged(const Vector3& velocity)
         {
-            Instance->Listener_OnRemove(listener);
+            Instance->Listener_VelocityChanged(velocity);
         }
 
-        FORCE_INLINE static void VelocityChanged(AudioListener* listener)
+        FORCE_INLINE static void TransformChanged(const Vector3& position, const Quaternion& orientation)
         {
-            Instance->Listener_VelocityChanged(listener);
-        }
-
-        FORCE_INLINE static void TransformChanged(AudioListener* listener)
-        {
-            Instance->Listener_TransformChanged(listener);
+            Instance->Listener_TransformChanged(position, orientation);
         }
 
         FORCE_INLINE static void ReinitializeAll()
@@ -113,130 +100,118 @@ public:
     class Source
     {
     public:
-
-        FORCE_INLINE static void OnAdd(AudioSource* source)
+        FORCE_INLINE static uint32 Add(const AudioDataInfo& format, const Vector3& position, const Quaternion& orientation, float volume, float pitch, float pan, bool loop, bool spatial, float attenuation, float minDistance, float doppler)
         {
-            Instance->Source_OnAdd(source);
+            return Instance->Source_Add(format, position, orientation, volume, pitch, pan, loop, spatial, attenuation, minDistance, doppler);
         }
 
-        FORCE_INLINE static void OnRemove(AudioSource* source)
+        FORCE_INLINE static void Remove(uint32 sourceID)
         {
-            Instance->Source_OnRemove(source);
+            Instance->Source_Remove(sourceID);
         }
 
-        FORCE_INLINE static void VelocityChanged(AudioSource* source)
+        FORCE_INLINE static void VelocityChanged(uint32 sourceID, const Vector3& velocity)
         {
-            Instance->Source_VelocityChanged(source);
+            Instance->Source_VelocityChanged(sourceID, velocity);
         }
 
-        FORCE_INLINE static void TransformChanged(AudioSource* source)
+        FORCE_INLINE static void TransformChanged(uint32 sourceID, const Vector3& position, const Quaternion& orientation)
         {
-            Instance->Source_TransformChanged(source);
+            Instance->Source_TransformChanged(sourceID, position, orientation);
         }
 
-        FORCE_INLINE static void VolumeChanged(AudioSource* source)
+        FORCE_INLINE static void VolumeChanged(uint32 sourceID, float volume)
         {
-            Instance->Source_VolumeChanged(source);
+            Instance->Source_VolumeChanged(sourceID, volume);
         }
 
-        FORCE_INLINE static void PitchChanged(AudioSource* source)
+        FORCE_INLINE static void PitchChanged(uint32 sourceID, float pitch)
         {
-            Instance->Source_PitchChanged(source);
+            Instance->Source_PitchChanged(sourceID, pitch);
         }
 
-        FORCE_INLINE static void PanChanged(AudioSource* source)
+        FORCE_INLINE static void PanChanged(uint32 sourceID, float pan)
         {
-            Instance->Source_PanChanged(source);
+            Instance->Source_PanChanged(sourceID, pan);
         }
 
-        FORCE_INLINE static void IsLoopingChanged(AudioSource* source)
+        FORCE_INLINE static void IsLoopingChanged(uint32 sourceID, bool loop)
         {
-            Instance->Source_IsLoopingChanged(source);
+            Instance->Source_IsLoopingChanged(sourceID, loop);
         }
 
-        FORCE_INLINE static void SpatialSetupChanged(AudioSource* source)
+        FORCE_INLINE static void SpatialSetupChanged(uint32 sourceID, bool spatial, float attenuation, float minDistance, float doppler)
         {
-            Instance->Source_SpatialSetupChanged(source);
+            Instance->Source_SpatialSetupChanged(sourceID, spatial, attenuation, minDistance, doppler);
         }
 
-        FORCE_INLINE static void ClipLoaded(AudioSource* source)
+        FORCE_INLINE static void Play(uint32 sourceID)
         {
-            Instance->Source_ClipLoaded(source);
+            Instance->Source_Play(sourceID);
         }
 
-        FORCE_INLINE static void Cleanup(AudioSource* source)
+        FORCE_INLINE static void Pause(uint32 sourceID)
         {
-            Instance->Source_Cleanup(source);
+            Instance->Source_Pause(sourceID);
         }
 
-        FORCE_INLINE static void Play(AudioSource* source)
+        FORCE_INLINE static void Stop(uint32 sourceID)
         {
-            Instance->Source_Play(source);
+            Instance->Source_Stop(sourceID);
         }
 
-        FORCE_INLINE static void Pause(AudioSource* source)
+        FORCE_INLINE static void SetCurrentBufferTime(uint32 sourceID, float value)
         {
-            Instance->Source_Pause(source);
+            Instance->Source_SetCurrentBufferTime(sourceID, value);
         }
 
-        FORCE_INLINE static void Stop(AudioSource* source)
+        FORCE_INLINE static float GetCurrentBufferTime(uint32 sourceID)
         {
-            Instance->Source_Stop(source);
+            return Instance->Source_GetCurrentBufferTime(sourceID);
         }
 
-        FORCE_INLINE static void SetCurrentBufferTime(AudioSource* source, float value)
+        FORCE_INLINE static void SetNonStreamingBuffer(uint32 sourceID, uint32 bufferID)
         {
-            Instance->Source_SetCurrentBufferTime(source, value);
+            Instance->Source_SetNonStreamingBuffer(sourceID, bufferID);
         }
 
-        FORCE_INLINE static float GetCurrentBufferTime(const AudioSource* source)
+        FORCE_INLINE static void GetProcessedBuffersCount(uint32 sourceID, int32& processedBuffersCount)
         {
-            return Instance->Source_GetCurrentBufferTime(source);
+            Instance->Source_GetProcessedBuffersCount(sourceID, processedBuffersCount);
         }
 
-        FORCE_INLINE static void SetNonStreamingBuffer(AudioSource* source)
+        FORCE_INLINE static void GetQueuedBuffersCount(uint32 sourceID, int32& queuedBuffersCount)
         {
-            Instance->Source_SetNonStreamingBuffer(source);
+            Instance->Source_GetQueuedBuffersCount(sourceID, queuedBuffersCount);
         }
 
-        FORCE_INLINE static void GetProcessedBuffersCount(AudioSource* source, int32& processedBuffersCount)
+        FORCE_INLINE static void QueueBuffer(uint32 sourceID, uint32 bufferID)
         {
-            Instance->Source_GetProcessedBuffersCount(source, processedBuffersCount);
+            Instance->Source_QueueBuffer(sourceID, bufferID);
         }
 
-        FORCE_INLINE static void GetQueuedBuffersCount(AudioSource* source, int32& queuedBuffersCount)
+        FORCE_INLINE static void DequeueProcessedBuffers(uint32 sourceID)
         {
-            Instance->Source_GetQueuedBuffersCount(source, queuedBuffersCount);
-        }
-
-        FORCE_INLINE static void QueueBuffer(AudioSource* source, uint32 bufferId)
-        {
-            Instance->Source_QueueBuffer(source, bufferId);
-        }
-
-        FORCE_INLINE static void DequeueProcessedBuffers(AudioSource* source)
-        {
-            Instance->Source_DequeueProcessedBuffers(source);
+            Instance->Source_DequeueProcessedBuffers(sourceID);
         }
     };
 
     class Buffer
     {
     public:
-
         FORCE_INLINE static uint32 Create()
         {
             return Instance->Buffer_Create();
         }
 
-        FORCE_INLINE static void Delete(uint32 bufferId)
+        FORCE_INLINE static void Delete(uint32 bufferID)
         {
-            Instance->Buffer_Delete(bufferId);
+            Instance->Buffer_Delete(bufferID);
         }
 
-        FORCE_INLINE static void Write(uint32 bufferId, byte* samples, const AudioDataInfo& info)
+        FORCE_INLINE static void Write(uint32 bufferID, byte* samples, const AudioDataInfo& info)
         {
-            Instance->Buffer_Write(bufferId, samples, info);
+            Instance->Buffer_Write(bufferID, samples, info);
         }
     };
 

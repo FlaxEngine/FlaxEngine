@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -181,6 +181,11 @@ namespace FlaxEditor.Content
         /// The default height.
         /// </summary>
         public const int DefaultHeight = (DefaultThumbnailSize + 2 * DefaultMarginSize + DefaultTextHeight);
+
+        /// <summary>
+        /// Whether the item is being but.
+        /// </summary>
+        public bool IsBeingCut;
 
         private ContentFolder _parentFolder;
 
@@ -383,7 +388,7 @@ namespace FlaxEditor.Content
         {
             sb.Append("Type: ").Append(TypeDescription).AppendLine();
             if (File.Exists(Path))
-                sb.Append("Size: ").Append(Utilities.Utils.FormatBytesCount((int)new FileInfo(Path).Length)).AppendLine();
+                sb.Append("Size: ").Append(Utilities.Utils.FormatBytesCount((ulong)new FileInfo(Path).Length)).AppendLine();
             sb.Append("Path: ").Append(Utilities.Utils.GetAssetNamePathWithExt(Path)).AppendLine();
         }
 
@@ -745,8 +750,15 @@ namespace FlaxEditor.Content
 
             // Draw short name
             Render2D.PushClip(ref textRect);
-            Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 1f, 0.95f);
+            var scale = 0.95f * view.ViewScale;
+            Render2D.DrawText(style.FontMedium, ShowFileExtension || view.ShowFileExtensions ? FileName : ShortName, textRect, style.Foreground, nameAlignment, TextAlignment.Center, TextWrapping.WrapWords, 1f, scale);
             Render2D.PopClip();
+
+            if (IsBeingCut)
+            {
+                var color = style.LightBackground.AlphaMultiplied(0.5f);
+                Render2D.FillRectangle(clientRect, color);
+            }
         }
 
         /// <inheritdoc />

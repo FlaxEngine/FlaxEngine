@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -26,7 +26,7 @@ public:
     }
 
     /// <summary>
-    /// Create string builder with initial capacity
+    /// Create string builder with initial capacity.
     /// </summary>
     /// <param name="capacity">Initial capacity for chars count</param>
     StringBuilder(int32 capacity)
@@ -36,16 +36,15 @@ public:
 
 public:
     /// <summary>
-    /// Gets capacity
+    /// Gets the buffer capacity.
     /// </summary>
-    /// <returns>Capacity of the string builder</returns>
     FORCE_INLINE int32 Capacity() const
     {
         return _data.Capacity();
     }
 
     /// <summary>
-    /// Sets capacity.
+    /// Sets the buffer capacity.
     /// </summary>
     /// <param name="capacity">Capacity to set</param>
     FORCE_INLINE void SetCapacity(const int32 capacity)
@@ -71,7 +70,7 @@ public:
     }
 
     /// <summary>
-    /// Gets string
+    /// Gets the string.
     /// </summary>
     /// <param name="result">String</param>
     void ToString(String& result) const
@@ -80,27 +79,18 @@ public:
     }
 
 public:
-    // Append single character to the string
-    // @param c Character to append
-    // @return Current String Builder instance
     StringBuilder& Append(const Char c)
     {
         _data.Add(c);
         return *this;
     }
 
-    // Append single character to the string
-    // @param c Character to append
-    // @return Current String Builder instance
     StringBuilder& Append(const char c)
     {
         _data.Add(c);
         return *this;
     }
 
-    // Append characters sequence to the string
-    // @param str String to append
-    // @return Current String Builder instance
     StringBuilder& Append(const Char* str)
     {
         const int32 length = StringUtils::Length(str);
@@ -108,19 +98,12 @@ public:
         return *this;
     }
 
-    // Append characters sequence to the string
-    // @param str String to append
-    // @param length String length
-    // @return Current String Builder instance
     StringBuilder& Append(const Char* str, int32 length)
     {
         _data.Add(str, length);
         return *this;
     }
 
-    // Append characters sequence to the string
-    // @param str String to append
-    // @return Current String Builder instance
     StringBuilder& Append(const char* str)
     {
         const int32 length = str && *str ? StringUtils::Length(str) : 0;
@@ -131,23 +114,18 @@ public:
         return *this;
     }
 
-    // Append String to the string
-    // @param str String to append
-    // @return Current String Builder instance
     StringBuilder& Append(const String& str)
     {
         _data.Add(*str, str.Length());
         return *this;
     }
+
     StringBuilder& Append(const StringView& str)
     {
         _data.Add(*str, str.Length());
         return *this;
     }
 
-    // Append int to the string
-    // @param val Value to append
-    // @return Current String Builder instance
     StringBuilder& Append(int32 val)
     {
         auto str = StringUtils::ToString(val);
@@ -155,9 +133,6 @@ public:
         return *this;
     }
 
-    // Append int to the string
-    // @param val Value to append
-    // @return Current String Builder instance
     StringBuilder& Append(uint32 val)
     {
         auto str = StringUtils::ToString(val);
@@ -165,11 +140,8 @@ public:
         return *this;
     }
 
-    // Append formatted message to the string
-    // @param format Format string
-    // @param args Array with custom arguments for the message
     template<typename... Args>
-    StringBuilder& AppendFormat(const Char* format, const Args& ... args)
+    StringBuilder& AppendFormat(const Char* format, const Args&... args)
     {
         fmt_flax::allocator allocator;
         fmt_flax::memory_buffer buffer(allocator);
@@ -177,16 +149,12 @@ public:
         return Append(buffer.data(), (int32)buffer.size());
     }
 
-public:
     StringBuilder& AppendLine()
     {
         Append(TEXT(PLATFORM_LINE_TERMINATOR));
         return *this;
     }
 
-    // Append int to the string
-    // @param val Value to append
-    // @return Current String Builder instance
     StringBuilder& AppendLine(int32 val)
     {
         Append(val);
@@ -194,9 +162,6 @@ public:
         return *this;
     }
 
-    // Append int to the string
-    // @param val Value to append
-    // @return Current String Builder instance
     StringBuilder& AppendLine(uint32 val)
     {
         Append(val);
@@ -204,9 +169,6 @@ public:
         return *this;
     }
 
-    // Append String to the string
-    // @param str String to append
-    // @return Current String Builder instance
     StringBuilder& AppendLine(const Char* str)
     {
         const int32 length = StringUtils::Length(str);
@@ -215,9 +177,6 @@ public:
         return *this;
     }
 
-    // Append String to the string
-    // @param str String to append
-    // @return Current String Builder instance
     StringBuilder& AppendLine(const String& str)
     {
         _data.Add(*str, str.Length());
@@ -226,38 +185,25 @@ public:
     }
 
 public:
-    // Retrieves substring created from characters starting from startIndex
-    // @param startIndex Index of the first character to subtract
-    // @param count Amount of characters to retrieve
-    // @return Substring created from StringBuilder data
-    String Substring(int32 startIndex, int32 count) const
-    {
-        ASSERT(startIndex >= 0 && startIndex + count <= _data.Count() && count > 0);
-        return String(_data.Get() + startIndex, count);
-    }
-
-public:
-    // Get pointer to the string
-    // @returns Pointer to Array of Chars if Num, otherwise the empty string
+    // Gets pointer to the string.
     FORCE_INLINE const Char* operator*() const
     {
         return _data.Count() > 0 ? _data.Get() : TEXT("");
     }
 
-    // Get pointer to the string
-    // @returns Pointer to Array of Chars if Num, otherwise the empty string
+    // Gets pointer to the string.
     FORCE_INLINE Char* operator*()
     {
         return _data.Count() > 0 ? _data.Get() : (Char*)TEXT("");
     }
 
-    // Get string as array of Chars
+    // Gets string buffer as array of Chars.
     FORCE_INLINE Array<Char>& GetCharArray()
     {
         return _data;
     }
 
-    // Get string as const array of Chars
+    // Gets string buffer as const array of Chars.
     FORCE_INLINE const Array<Char>& GetCharArray() const
     {
         return _data;

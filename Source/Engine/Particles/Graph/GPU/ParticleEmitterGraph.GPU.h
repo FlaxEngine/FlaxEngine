@@ -1,11 +1,11 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
 /// <summary>
 /// Current GPU particles emitter shader version.
 /// </summary>
-#define PARTICLE_GPU_GRAPH_VERSION 10
+#define PARTICLE_GPU_GRAPH_VERSION 11
 
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
 

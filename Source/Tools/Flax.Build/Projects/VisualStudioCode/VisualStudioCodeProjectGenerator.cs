@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -38,7 +38,7 @@ namespace Flax.Build.Projects.VisualStudioCode
         }
 
         /// <inheritdoc />
-        public override void GenerateProject(Project project, string solutionPath)
+        public override void GenerateProject(Project project, string solutionPath, bool isMainProject)
         {
             // Not used, solution contains all projects definitions
         }
@@ -143,6 +143,7 @@ namespace Flax.Build.Projects.VisualStudioCode
             var buildToolWorkspace = Environment.CurrentDirectory;
             var buildToolPath = Path.ChangeExtension(Utilities.MakePathRelativeTo(typeof(Builder).Assembly.Location, solution.WorkspaceRootPath), null);
             var rules = Builder.GenerateRulesAssembly();
+            var mainProject = solution.MainProject ?? solution.Projects.FirstOrDefault(x => x.Name == Globals.Project.Name);
 
             // Create tasks file
             using (var json = new JsonWriter())
@@ -159,10 +160,10 @@ namespace Flax.Build.Projects.VisualStudioCode
                                 continue;
 
                             // Skip duplicate build tasks
-                            if (project.Name == "FlaxEngine" || (solution.MainProject.Name != "Flax" && solution.MainProject != project))
+                            if (project.Name == "FlaxEngine" || (mainProject != null && mainProject.Name != "Flax" && mainProject != project))
                                 continue;
 
-                            bool defaultTask = project == solution.MainProject;
+                            bool defaultTask = project == mainProject;
                             foreach (var configuration in project.Configurations)
                             {
                                 var target = configuration.Target;
@@ -301,7 +302,8 @@ namespace Flax.Build.Projects.VisualStudioCode
                     json.BeginArray("configurations");
                     {
                         var cppProject = solution.Projects.FirstOrDefault(x => x.BaseName == solution.Name || x.Name == solution.Name);
-                        var csharpProject = solution.Projects.FirstOrDefault(x => x.BaseName == solution.MainProject.Targets[0].Modules[0] || x.Name == solution.MainProject.Targets[0].Modules[0]);
+                        var mainProjectModule = mainProject != null && mainProject.Targets?.Length != 0 ? mainProject.Targets[0]?.Modules[0] : null;
+                        var csharpProject = mainProjectModule != null ? solution.Projects.FirstOrDefault(x => x.BaseName == mainProjectModule || x.Name == mainProjectModule) : null;
 
                         if (cppProject != null)
                         {
@@ -532,27 +534,29 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.BeginRootObject();
                 json.BeginArray("configurations");
                 json.BeginObject();
-                var project = solution.MainProject ?? solution.Projects.FirstOrDefault(x => x.Name == Globals.Project.Name);
-                if (project != null)
+                if (mainProject != null)
                 {
-                    json.AddField("name", project.Name);
+                    json.AddField("name", mainProject.Name);
 
                     var targetPlatform = Platform.BuildPlatform.Target;
                     var configuration = TargetConfiguration.Development;
                     var architecture = TargetArchitecture.x64;
 
+                    var compilerPath = string.Empty;
+                    var cppVersion = NativeCpp.CppVersion.Cpp14;
                     var includePaths = new HashSet<string>();
                     var preprocessorDefinitions = new HashSet<string>();
-                    foreach (var e in project.Defines)
+                    foreach (var e in mainProject.Defines)
                         preprocessorDefinitions.Add(e);
 
-                    foreach (var target in project.Targets)
+                    foreach (var target in mainProject.Targets)
                     {
                         var platform = Platform.GetPlatform(targetPlatform);
                         if (platform.HasRequiredSDKsInstalled && target.Platforms.Contains(targetPlatform))
                         {
                             var toolchain = platform.GetToolchain(architecture);
                             var targetBuildOptions = Builder.GetBuildOptions(target, platform, toolchain, architecture, configuration, Globals.Root);
+                            targetBuildOptions.Flags |= NativeCpp.BuildFlags.GenerateProject;
                             var modules = Builder.CollectModules(rules, platform, target, targetBuildOptions, toolchain, architecture, configuration);
                             foreach (var module in modules)
                             {
@@ -561,11 +565,35 @@ namespace Flax.Build.Projects.VisualStudioCode
                                 module.Key.SetupEnvironment(targetBuildOptions);
                             }
 
+                            cppVersion = targetBuildOptions.CompileEnv.CppVersion;
+                            compilerPath = toolchain.NativeCompilerPath;
                             foreach (var e in targetBuildOptions.CompileEnv.PreprocessorDefinitions)
                                 preprocessorDefinitions.Add(e);
                             foreach (var e in targetBuildOptions.CompileEnv.IncludePaths)
                                 includePaths.Add(e);
                         }
+                    }
+
+                    if (compilerPath.Length != 0)
+                        json.AddField("compilerPath", compilerPath);
+
+                    switch (cppVersion)
+                    {
+                    case NativeCpp.CppVersion.Cpp14:
+                        json.AddField("cStandard", "c11");
+                        json.AddField("cppStandard", "c++14");
+                        break;
+                    case NativeCpp.CppVersion.Cpp17:
+                    case NativeCpp.CppVersion.Latest:
+                        json.AddField("cStandard", "c17");
+                        json.AddField("cppStandard", "c++17");
+                        break;
+                    case NativeCpp.CppVersion.Cpp20:
+                        json.AddField("cStandard", "c17");
+                        json.AddField("cppStandard", "c++20");
+                        break;
+                    default:
+                        throw new Exception($"Visual Code project generator does not support C++ standard {cppVersion}.");
                     }
 
                     json.BeginArray("includePath");

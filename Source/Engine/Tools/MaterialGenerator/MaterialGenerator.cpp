@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MATERIAL_GRAPH
 
@@ -188,40 +188,46 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
     {
     case MaterialDomain::Surface:
         if (materialInfo.TessellationMode != TessellationMethod::None)
-        ADD_FEATURE(TessellationFeature);
+            ADD_FEATURE(TessellationFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
-        ADD_FEATURE(MotionVectorsFeature);
+            ADD_FEATURE(MotionVectorsFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
-        ADD_FEATURE(LightmapFeature);
+            ADD_FEATURE(LightmapFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
-        ADD_FEATURE(DeferredShadingFeature);
+            ADD_FEATURE(DeferredShadingFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == MaterialFeaturesFlags::None)
-        ADD_FEATURE(DistortionFeature);
+            ADD_FEATURE(DistortionFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::GlobalIllumination))
-        ADD_FEATURE(GlobalIlluminationFeature);
+        {
+            ADD_FEATURE(GlobalIlluminationFeature);
+
+            // SDF Reflections is only valid when both GI and SSR is enabled
+            if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::ScreenSpaceReflections))
+                ADD_FEATURE(SDFReflectionsFeature);
+        }
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
-        ADD_FEATURE(ForwardShadingFeature);
+            ADD_FEATURE(ForwardShadingFeature);
         break;
     case MaterialDomain::Terrain:
         if (materialInfo.TessellationMode != TessellationMethod::None)
-        ADD_FEATURE(TessellationFeature);
+            ADD_FEATURE(TessellationFeature);
         ADD_FEATURE(LightmapFeature);
         ADD_FEATURE(DeferredShadingFeature);
         break;
     case MaterialDomain::Particle:
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && (materialInfo.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == MaterialFeaturesFlags::None)
-        ADD_FEATURE(DistortionFeature);
+            ADD_FEATURE(DistortionFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque && EnumHasAnyFlags(materialInfo.FeaturesFlags, MaterialFeaturesFlags::GlobalIllumination))
-        ADD_FEATURE(GlobalIlluminationFeature);
+            ADD_FEATURE(GlobalIlluminationFeature);
         ADD_FEATURE(ForwardShadingFeature);
         break;
     case MaterialDomain::Deformable:
         if (materialInfo.TessellationMode != TessellationMethod::None)
-        ADD_FEATURE(TessellationFeature);
+            ADD_FEATURE(TessellationFeature);
         if (materialInfo.BlendMode == MaterialBlendMode::Opaque)
-        ADD_FEATURE(DeferredShadingFeature);
+            ADD_FEATURE(DeferredShadingFeature);
         if (materialInfo.BlendMode != MaterialBlendMode::Opaque)
-        ADD_FEATURE(ForwardShadingFeature);
+            ADD_FEATURE(ForwardShadingFeature);
         break;
     default:
         break;
@@ -461,7 +467,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
         switch (baseLayer->Domain)
         {
         case MaterialDomain::Surface:
-            srv = 2; // Skinning Bones + Prev Bones
+            srv = 3; // Objects + Skinning Bones + Prev Bones
             break;
         case MaterialDomain::Decal:
             srv = 1; // Depth buffer
@@ -708,7 +714,7 @@ void MaterialGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
-        // Vector Transform
+    // Vector Transform
     case 30:
     {
         // Get input vector
@@ -824,6 +830,34 @@ void MaterialGenerator::WriteCustomGlobalCode(const Array<const MaterialGraph::N
             _writer.Write(TEXT("\n"));
         }
     }
+}
+
+ShaderGenerator::Value MaterialGenerator::VsToPs(Node* node, Box* input)
+{
+    // If used in VS then pass the value from the input box
+    if (_treeType == MaterialTreeType::VertexShader)
+    {
+        return tryGetValue(input, Value::Zero).AsFloat4();
+    }
+
+    // Check if can use more interpolants
+    if (_vsToPsInterpolants.Count() == 16)
+    {
+        OnError(node, input, TEXT("Too many VS to PS interpolants used."));
+        return Value::Zero;
+    }
+
+    // Check if can use interpolants
+    const auto layer = GetRootLayer();
+    if (!layer || layer->Domain == MaterialDomain::Decal || layer->Domain == MaterialDomain::PostProcess)
+    {
+        OnError(node, input, TEXT("VS to PS interpolants are not supported in Decal or Post Process materials."));
+        return Value::Zero;
+    }
+
+    // Indicate the interpolator slot usage
+    _vsToPsInterpolants.Add(input);
+    return Value(VariantType::Float4, String::Format(TEXT("input.CustomVSToPS[{0}]"), _vsToPsInterpolants.Count() - 1));
 }
 
 #endif

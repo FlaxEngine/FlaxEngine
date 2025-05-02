@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Task.h"
 #include "ThreadPoolTask.h"
@@ -7,6 +7,7 @@
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Core/Types/Span.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
 void Task::Start()
@@ -70,6 +71,17 @@ bool Task::Wait(double timeoutMilliseconds) const
     // Timeout reached!
     LOG(Warning, "\'{0}\' has timed out. Wait time: {1} ms", ToString(), timeoutMilliseconds);
     return true;
+}
+
+bool Task::WaitAll(const Span<Task*>& tasks, double timeoutMilliseconds)
+{
+    PROFILE_CPU();
+    for (int32 i = 0; i < tasks.Length(); i++)
+    {
+        if (tasks[i]->Wait())
+            return true;
+    }
+    return false;
 }
 
 Task* Task::ContinueWith(Task* task)
@@ -196,8 +208,8 @@ void Task::OnCancel()
     if (IsRunning())
     {
         // Wait for it a little bit
-        const double timeout = 2000.0;
-        LOG(Warning, "Cannot cancel \'{0}\' because it's still running, waiting for end with timeout: {1} ms", ToString(), timeout);
+        constexpr double timeout = 10000.0; // 10s
+        LOG(Warning, "Cannot cancel \'{0}\' because it's still running, waiting for end with timeout: {1}ms", ToString(), timeout);
         Wait(timeout);
     }
 

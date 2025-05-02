@@ -1,26 +1,28 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "WriteStream.h"
+#include "Engine/Core/Types/Span.h"
 
 /// <summary>
-/// Implementation of of the stream that can be used for fast data writing to the memory.
+/// Direct memory writing stream  that uses a single allocation buffer.
 /// </summary>
 class FLAXENGINE_API MemoryWriteStream : public WriteStream
 {
 private:
-
     byte* _buffer;
     byte* _position;
     uint32 _capacity;
 
 public:
-
-    MemoryWriteStream();
-
     /// <summary>
-    /// Init
+    /// Initializes a new instance of the <see cref="MemoryWriteStream"/> class.
+    /// </summary>
+    MemoryWriteStream();
+    
+    /// <summary>
+    /// Initializes a new instance of the <see cref="MemoryWriteStream"/> class.
     /// </summary>
     /// <param name="capacity">Initial write buffer capacity (in bytes).</param>
     MemoryWriteStream(uint32 capacity);
@@ -31,38 +33,33 @@ public:
     ~MemoryWriteStream();
 
 public:
-
     /// <summary>
-    /// Gets buffer handle
+    /// Gets the pointer to the buffer in memory.
     /// </summary>
-    /// <returns>Pointer to the buffer in memory</returns>
     FORCE_INLINE byte* GetHandle() const
     {
         return _buffer;
     }
 
     /// <summary>
-    /// Gets current capacity of the memory stream
+    /// Gets the current capacity of the stream.
     /// </summary>
-    /// <returns>Stream capacity in bytes</returns>
     FORCE_INLINE uint32 GetCapacity() const
     {
         return _capacity;
     }
 
     /// <summary>
-    /// Gets current stream length (capacity in bytes)
+    /// Gets current stream length (capacity in bytes).
     /// </summary>
-    /// <returns>Stream length in bytes</returns>
     FORCE_INLINE uint32 GetLength() const
     {
         return _capacity;
     }
 
     /// <summary>
-    /// Gets current position in the stream (in bytes)
+    /// Gets current position in the stream (in bytes).
     /// </summary>
-    /// <returns>Stream position in bytes</returns>
     FORCE_INLINE uint32 GetPosition() const
     {
         return static_cast<uint32>(_position - _buffer);
@@ -97,7 +94,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Cleanups the buffers, resets the position and allocated the new memory chunk.
     /// </summary>
@@ -105,14 +101,13 @@ public:
     void Reset(uint32 capacity);
 
     /// <summary>
-    /// Saves current buffer contents to the file
+    /// Saves current buffer contents to the file.
     /// </summary>
-    /// <param name="path">Filepath</param>
-    /// <returns>True if cannot save data, otherwise false</returns>
+    /// <param name="path">The file path.</param>
+    /// <returns>True if cannot save data, otherwise false.</returns>
     bool SaveToFile(const StringView& path) const;
 
 public:
-
     // [WriteStream]
     void Flush() override;
     void Close() override;
@@ -121,3 +116,8 @@ public:
     void SetPosition(uint32 seek) override;
     void WriteBytes(const void* data, uint32 bytes) override;
 };
+
+inline Span<byte> ToSpan(MemoryWriteStream& stream)
+{
+    return Span<byte>(stream.GetHandle(), (int32)stream.GetPosition());
+}

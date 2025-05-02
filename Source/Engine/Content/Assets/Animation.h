@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -138,21 +138,24 @@ public:
     /// <summary>
     /// Saves the serialized timeline data to the asset as animation.
     /// </summary>
-    /// <remarks>The cannot be used by virtual assets.</remarks>
+    /// <remarks>This cannot be used by virtual assets.</remarks>
     /// <param name="data">The timeline data container.</param>
     /// <returns><c>true</c> failed to save data; otherwise, <c>false</c>.</returns>
     API_FUNCTION() bool SaveTimeline(BytesContainer& data);
+#endif
 
-    /// <summary>
-    /// Saves the animation data to the asset. Supported only in Editor.
-    /// </summary>
-    /// <remarks>The cannot be used by virtual assets.</remarks>
-    /// <returns><c>true</c> failed to save data; otherwise, <c>false</c>.</returns>
-    bool Save(const StringView& path = StringView::Empty);
+private:
+#if USE_EDITOR
+    friend class ImportModel;
+    static bool SaveHeader(const class ModelData& modelData, WriteStream& stream, int32 animIndex);
 #endif
 
 public:
     // [BinaryAsset]
+#if USE_EDITOR
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
+    bool Save(const StringView& path = StringView::Empty) override;
+#endif
     uint64 GetMemoryUsage() const override;
     void OnScriptingDispose() override;
 

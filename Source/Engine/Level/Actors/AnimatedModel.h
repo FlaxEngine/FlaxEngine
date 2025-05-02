@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,7 +12,7 @@
 /// <summary>
 /// Performs an animation and renders a skinned model.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Other/Animated Model\"), ActorToolbox(\"Visuals\")")
+API_CLASS(Attributes="ActorContextMenu(\"New/Animation/Animated Model\"), ActorToolbox(\"Visuals\")")
 class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
 {
     DECLARE_SCENE_OBJECT(AnimatedModel);
@@ -96,7 +96,7 @@ public:
     bool PerBoneMotionBlur = true;
 
     /// <summary>
-    /// If true, animation speed will be affected by the global time scale parameter.
+    /// If true, animation speed will be affected by the global timescale parameter.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(30), DefaultValue(true), EditorDisplay(\"Skinned Model\")")
     bool UseTimeScale = true;
@@ -108,7 +108,7 @@ public:
     bool UpdateWhenOffscreen = false;
 
     /// <summary>
-    /// The animation update delta time scale. Can be used to speed up animation playback or create slow motion effect.
+    /// The animation update delta timescale. Can be used to speed up animation playback or create slow motion effect.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(45), EditorDisplay(\"Skinned Model\")")
     float UpdateSpeed = 1.0f;
@@ -120,7 +120,7 @@ public:
     AnimationUpdateMode UpdateMode = AnimationUpdateMode::Auto;
 
     /// <summary>
-    /// The master scale parameter for the actor bounding box. Helps reducing mesh flickering effect on screen edges.
+    /// The master scale parameter for the actor bounding box. Helps to reduce mesh flickering effect on screen edges.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(60), DefaultValue(1.5f), Limit(0), EditorDisplay(\"Skinned Model\")")
     float BoundsScale = 1.5f;
@@ -150,17 +150,17 @@ public:
     DrawPass DrawModes = DrawPass::Default;
 
     /// <summary>
-    /// The object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
+    /// The object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be used to control transparency drawing.
     /// </summary>
     API_FIELD(Attributes="EditorDisplay(\"Skinned Model\"), EditorOrder(110), DefaultValue(0)")
-    int16 SortOrder = 0;
+    int8 SortOrder = 0;
 
     /// <summary>
     /// The shadows casting mode.
     /// [Deprecated on 26.10.2022, expires on 26.10.2024]
     /// </summary>
     API_FIELD(Attributes="EditorOrder(110), DefaultValue(ShadowsCastingMode.All), EditorDisplay(\"Skinned Model\")")
-    DEPRECATED ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
+    DEPRECATED() ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
 
     /// <summary>
     /// The animation root motion apply target. If not specified the animated model will apply it itself.
@@ -388,7 +388,7 @@ public:
     API_FUNCTION() void PauseSlotAnimation(const StringView& slotName, Animation* anim);
 
     /// <summary>
-    /// Checks if the any animation playback is active on the any slot in Anim Graph (not paused).
+    /// Checks if any  animation playback is active on any  slot in Anim Graph (not paused).
     /// </summary>
     API_FUNCTION() bool IsPlayingSlotAnimation();
 
@@ -433,7 +433,7 @@ public:
     MaterialBase* GetMaterial(int32 entryIndex) override;
     bool IntersectsEntry(int32 entryIndex, const Ray& ray, Real& distance, Vector3& normal) override;
     bool IntersectsEntry(const Ray& ray, Real& distance, Vector3& normal, int32& entryIndex) override;
-    bool GetMeshData(const MeshReference& mesh, MeshBufferType type, BytesContainer& result, int32& count) const override;
+    bool GetMeshData(const MeshReference& ref, MeshBufferType type, BytesContainer& result, int32& count, GPUVertexLayout** layout) const override;
     void UpdateBounds() override;
     MeshDeformation* GetMeshDeformation() const override;
     void OnDeleteObject() override;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -188,6 +188,13 @@ namespace Flax.Build.Bindings
                         token = context.Tokenizer.NextToken();
                         if (token.Type == TokenType.Multiply)
                             tag.Value += token.Value;
+                        else if (token.Type == TokenType.LeftAngleBracket)
+                        {
+                            context.Tokenizer.SkipUntil(TokenType.RightAngleBracket, out var s);
+                            tag.Value += '<';
+                            tag.Value += s;
+                            tag.Value += '>';
+                        }
                         else
                             context.Tokenizer.PreviousToken();
                         parameters.Add(tag);
@@ -242,6 +249,11 @@ namespace Flax.Build.Bindings
             }
 
             // Forward type
+            if (token.Value == "enum")
+            {
+                context.Tokenizer.SkipUntil(TokenType.Identifier);
+                token = context.Tokenizer.CurrentToken;
+            }
             if (token.Value == "class")
             {
                 context.Tokenizer.SkipUntil(TokenType.Identifier);
@@ -268,7 +280,6 @@ namespace Flax.Build.Bindings
                         type.GenericArgs.Add(argType);
                     token = context.Tokenizer.NextToken();
                 } while (token.Type != TokenType.RightAngleBracket);
-
                 token = context.Tokenizer.NextToken();
             }
 
@@ -385,7 +396,22 @@ namespace Flax.Build.Bindings
 
                 // Read parameter type and name
                 currentParam.Type = ParseType(ref context);
-                currentParam.Name = context.Tokenizer.ExpectToken(TokenType.Identifier).Value;
+                token = context.Tokenizer.NextToken();
+                if (token.Type == TokenType.Identifier)
+                {
+                    currentParam.Name = token.Value;
+                }
+                // Support nameless arguments. assume optional usage
+                else
+                {
+                    context.Tokenizer.PreviousToken();
+                    if (string.IsNullOrEmpty(currentParam.Attributes))
+                        currentParam.Attributes = "Optional";
+                    else
+                        currentParam.Attributes += ", Optional";
+                    currentParam.Name = $"namelessArg{parameters.Count}";
+                }
+
                 if (currentParam.IsOut && (currentParam.Type.IsPtr || currentParam.Type.IsRef) && currentParam.Type.Type.EndsWith("*"))
                 {
                     // Pointer to value passed as output pointer
@@ -525,15 +551,39 @@ namespace Flax.Build.Bindings
                     }
                     if (token.Type == TokenType.LeftAngleBracket)
                     {
-                        var genericType = context.Tokenizer.ExpectToken(TokenType.Identifier);
-                        token = context.Tokenizer.ExpectToken(TokenType.RightAngleBracket);
-                        inheritType.GenericArgs = new List<TypeInfo>
+                        inheritType.GenericArgs = new List<TypeInfo>();
+                        var argStack = new Stack<TypeInfo>();
+                        argStack.Push(inheritType);
+                        TypeInfo lastArg = null;
+                        while (argStack.Count > 0)
                         {
-                            new TypeInfo
+                            token = context.Tokenizer.NextToken();
+                            if (token.Type == TokenType.RightAngleBracket)
                             {
-                                Type = genericType.Value,
+                                // Go up
+                                argStack.Pop();
+                                lastArg = argStack.Count != 0 ? argStack.Peek() : null;
+                                continue;
                             }
-                        };
+                            if (token.Type == TokenType.Comma)
+                                continue;
+                            if (token.Type == TokenType.Identifier)
+                            {
+                                var arg = new TypeInfo { Type = token.Value };
+                                var parent = argStack.Peek();
+                                if (parent.GenericArgs == null)
+                                    parent.GenericArgs = new List<TypeInfo>();
+                                parent.GenericArgs.Add(arg);
+                                lastArg = arg;
+                            }
+                            else if (token.Type == TokenType.LeftAngleBracket)
+                            {
+                                // Go down
+                                argStack.Push(lastArg);
+                            }
+                            else
+                                throw new ParseException(ref context, "Incorrect inheritance");
+                        }
 
                         // TODO: find better way to resolve this (custom base type attribute?)
                         if (inheritType.Type == "ShaderAssetTypeBase")
@@ -589,7 +639,13 @@ namespace Flax.Build.Bindings
                 token = context.Tokenizer.NextToken();
                 if (!desc.IsDeprecated && token.Value == "DEPRECATED")
                 {
-                    desc.IsDeprecated = true;
+                    token = context.Tokenizer.NextToken();
+                    string message = "";
+                    if (token.Type == TokenType.LeftParent)
+                        context.Tokenizer.SkipUntil(TokenType.RightParent, out message);
+                    else
+                        context.Tokenizer.PreviousToken();
+                    desc.DeprecatedMessage = message.Trim('"');
                 }
                 else
                 {
@@ -698,7 +754,13 @@ namespace Flax.Build.Bindings
                 token = context.Tokenizer.NextToken();
                 if (!desc.IsDeprecated && token.Value == "DEPRECATED")
                 {
-                    desc.IsDeprecated = true;
+                    token = context.Tokenizer.NextToken();
+                    string message = "";
+                    if (token.Type == TokenType.LeftParent)
+                        context.Tokenizer.SkipUntil(TokenType.RightParent, out message);
+                    else
+                        context.Tokenizer.PreviousToken();
+                    desc.DeprecatedMessage = message.Trim('"');
                 }
                 else
                 {
@@ -797,8 +859,14 @@ namespace Flax.Build.Bindings
                 }
                 else if (!desc.IsDeprecated && token.Value == "DEPRECATED")
                 {
-                    desc.IsDeprecated = true;
-                    context.Tokenizer.NextToken();
+                    token = context.Tokenizer.NextToken();
+                    string message = "";
+                    if (token.Type == TokenType.LeftParent)
+                    {
+                        context.Tokenizer.SkipUntil(TokenType.RightParent, out message);
+                        context.Tokenizer.NextToken();
+                    }
+                    desc.DeprecatedMessage = message.Trim('"');
                 }
                 else
                 {
@@ -808,6 +876,7 @@ namespace Flax.Build.Bindings
             }
 
             // Read return type
+            // Handle if "auto" later
             desc.ReturnType = ParseType(ref context);
 
             // Read name
@@ -818,14 +887,20 @@ namespace Flax.Build.Bindings
             // Read parameters
             desc.Parameters.AddRange(ParseFunctionParameters(ref context));
 
-            // Read ';' or 'const' or 'override' or '= 0' or '{'
+            // Read ';' or 'const' or 'override' or '= 0' or '{' or '-'
             while (true)
             {
-                var token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.LeftCurlyBrace, TokenType.Equal, TokenType.Identifier });
+                var token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.LeftCurlyBrace, TokenType.Equal, TokenType.Sub, TokenType.Identifier });
                 if (token.Type == TokenType.Equal)
                 {
                     context.Tokenizer.SkipUntil(TokenType.SemiColon);
                     break;
+                }
+                // Support auto FunctionName() -> Type
+                else if (token.Type == TokenType.Sub && desc.ReturnType.ToString() == "auto")
+                {
+                    context.Tokenizer.SkipUntil(TokenType.GreaterThan);
+                    desc.ReturnType = ParseType(ref context);
                 }
                 else if (token.Type == TokenType.Identifier)
                 {
@@ -960,7 +1035,7 @@ namespace Flax.Build.Bindings
                 propertyInfo.Getter = functionInfo;
             else
                 propertyInfo.Setter = functionInfo;
-            propertyInfo.IsDeprecated |= functionInfo.IsDeprecated;
+            propertyInfo.DeprecatedMessage = functionInfo.DeprecatedMessage;
             propertyInfo.IsHidden |= functionInfo.IsHidden;
 
             if (propertyInfo.Getter != null && propertyInfo.Setter != null)
@@ -1025,7 +1100,13 @@ namespace Flax.Build.Bindings
                 token = context.Tokenizer.NextToken();
                 if (!desc.IsDeprecated && token.Value == "DEPRECATED")
                 {
-                    desc.IsDeprecated = true;
+                    token = context.Tokenizer.NextToken();
+                    string message = "";
+                    if (token.Type == TokenType.LeftParent)
+                        context.Tokenizer.SkipUntil(TokenType.RightParent, out message);
+                    else
+                        context.Tokenizer.PreviousToken();
+                    desc.DeprecatedMessage = message.Trim('"');
                 }
                 else
                 {
@@ -1193,6 +1274,11 @@ namespace Flax.Build.Bindings
 
             // Read 'struct' keyword
             var token = context.Tokenizer.NextToken();
+            if (token.Value == "PACK_BEGIN")
+            {
+                context.Tokenizer.SkipUntil(TokenType.RightParent);
+                token = context.Tokenizer.NextToken();
+            }
             if (token.Value != "struct")
                 throw new ParseException(ref context, $"Invalid {ApiTokens.Struct} usage (expected 'struct' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
@@ -1300,8 +1386,14 @@ namespace Flax.Build.Bindings
                 }
                 else if (!desc.IsDeprecated && token.Value == "DEPRECATED")
                 {
-                    desc.IsDeprecated = true;
-                    context.Tokenizer.NextToken();
+                    token = context.Tokenizer.NextToken();
+                    string message = "";
+                    if (token.Type == TokenType.LeftParent)
+                    {
+                        context.Tokenizer.SkipUntil(TokenType.RightParent, out message);
+                        context.Tokenizer.NextToken();
+                    }
+                    desc.DeprecatedMessage = message.Trim('"');
                 }
                 else
                 {
@@ -1317,10 +1409,16 @@ namespace Flax.Build.Bindings
             desc.Name = ParseName(ref context);
 
             // Read ';' or default value or array size or bit-field size
-            token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.Equal, TokenType.LeftBracket, TokenType.Colon });
+            token = context.Tokenizer.ExpectAnyTokens(new[] { TokenType.SemiColon, TokenType.Equal, TokenType.LeftBracket, TokenType.LeftCurlyBrace, TokenType.Colon });
             if (token.Type == TokenType.Equal)
             {
                 context.Tokenizer.SkipUntil(TokenType.SemiColon, out desc.DefaultValue, false);
+            }
+            // Handle ex: API_FIELD() Type FieldName {DefaultValue};
+            else if (token.Type == TokenType.LeftCurlyBrace)
+            {
+                context.Tokenizer.SkipUntil(TokenType.SemiColon, out desc.DefaultValue, false);
+                desc.DefaultValue = '{' + desc.DefaultValue;
             }
             else if (token.Type == TokenType.LeftBracket)
             {
@@ -1463,16 +1561,54 @@ namespace Flax.Build.Bindings
             return desc;
         }
 
+        private static string ParseString(ref ParsingContext context)
+        {
+            // Read string (support multi-line string literals)
+            string str = string.Empty;
+            int startLine = -1;
+            while (true)
+            {
+                var token = context.Tokenizer.NextToken();
+                if (token.Type == TokenType.String)
+                {
+                    if (startLine == -1)
+                        startLine = context.Tokenizer.CurrentLine;
+                    else if (startLine != context.Tokenizer.CurrentLine)
+                        str += "\n";
+                    var tokenStr = token.Value;
+                    if (tokenStr.Length >= 2 && tokenStr[0] == '\"' && tokenStr[^1] == '\"')
+                        tokenStr = tokenStr.Substring(1, tokenStr.Length - 2);
+                    str += tokenStr;
+                }
+                else if (token.Type == TokenType.EndOfFile)
+                {
+                    break;
+                }
+                else
+                {
+                    if (str == string.Empty)
+                        throw new Exception($"Expected {TokenType.String}, but got {token} at line {context.Tokenizer.CurrentLine}.");
+                    context.Tokenizer.PreviousToken();
+                    break;
+                }
+            }
+
+            // Apply automatic formatting for special characters
+            str = str.Replace("\\\"", "\"");
+            str = str.Replace("\\n", "\n");
+            str = str.Replace("\\\n", "\n");
+            str = str.Replace("\\\r\n", "\n");
+            str = str.Replace("\t", "    ");
+            str = str.Replace("\\t", "    ");
+            return str;
+        }
+
         private static InjectCodeInfo ParseInjectCode(ref ParsingContext context)
         {
             context.Tokenizer.ExpectToken(TokenType.LeftParent);
             var desc = new InjectCodeInfo();
             context.Tokenizer.SkipUntil(TokenType.Comma, out desc.Lang);
-            desc.Code = context.Tokenizer.ExpectToken(TokenType.String).Value.Replace("\\\"", "\"");
-            desc.Code = desc.Code.Substring(1, desc.Code.Length - 2);
-            desc.Code = desc.Code.Replace("\\\n", "\n");
-            desc.Code = desc.Code.Replace("\\\r\n", "\n");
-            desc.Code = desc.Code.Replace("\t", "    ");
+            desc.Code = ParseString(ref context);
             context.Tokenizer.ExpectToken(TokenType.RightParent);
             return desc;
         }
@@ -1489,16 +1625,30 @@ namespace Flax.Build.Bindings
             // Read parameters from the tag
             var tagParams = ParseTagParameters(ref context);
 
-            // Read 'typedef' keyword
+            // Read 'typedef' or 'using' keyword
             var token = context.Tokenizer.NextToken();
-            if (token.Value != "typedef")
-                throw new ParseException(ref context, $"Invalid {ApiTokens.Typedef} usage (expected 'typedef' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
+            var isUsing = token.Value == "using";
+            if (token.Value != "typedef" && !isUsing)
+                throw new ParseException(ref context, $"Invalid {ApiTokens.Typedef} usage (expected 'typedef' or 'using' keyword but got '{token.Value} {context.Tokenizer.NextToken().Value}').");
 
-            // Read type definition
-            desc.Type = ParseType(ref context);
+            if (isUsing)
+            {
+                // Read name
+                desc.Name = ParseName(ref context);
 
-            // Read name
-            desc.Name = ParseName(ref context);
+                context.Tokenizer.ExpectToken(TokenType.Equal);
+
+                // Read type definition
+                desc.Type = ParseType(ref context);
+            }
+            else
+            {
+                // Read type definition
+                desc.Type = ParseType(ref context);
+
+                // Read name
+                desc.Name = ParseName(ref context);
+            }
 
             // Read ';'
             context.Tokenizer.ExpectToken(TokenType.SemiColon);

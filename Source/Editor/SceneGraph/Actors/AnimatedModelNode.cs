@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -80,19 +80,23 @@ namespace FlaxEditor.SceneGraph.Actors
 
             // Get vertex data for each mesh
             var meshes = model.LODs[0].Meshes;
-            var meshesData = new SkinnedMesh.Vertex0[meshes.Length][];
-            var bonesVertices = new List<SkinnedMesh.Vertex0>[bones.Length];
+            var bonesVertices = new List<Float3>[bones.Length];
             var indicesLimit = new Int4(bones.Length - 1);
             for (int i = 0; i < meshes.Length; i++)
             {
-                meshesData[i] = meshes[i].DownloadVertexBuffer0();
-
-                var meshData = meshes[i].DownloadVertexBuffer0();
-                for (int j = 0; j < meshData.Length; j++)
+                var assessor = new MeshAccessor();
+                if (assessor.LoadMesh(meshes[i]))
+                    return;
+                var positionStream = assessor.Position();
+                var blendIndicesStream = assessor.BlendIndices();
+                var blendWeightsStream = assessor.BlendWeights();
+                if (!positionStream.IsValid || !blendIndicesStream.IsValid || !blendWeightsStream.IsValid)
+                    continue;
+                var count = positionStream.Count;
+                for (int j = 0; j < count; j++)
                 {
-                    ref var v = ref meshData[j];
-                    var weights = (Float4)v.BlendWeights;
-                    var indices = Int4.Min((Int4)v.BlendIndices, indicesLimit);
+                    var weights = blendWeightsStream.GetFloat4(j);
+                    var indices = Int4.Min((Int4)blendIndicesStream.GetFloat4(j), indicesLimit);
 
                     // Find the bone with the highest influence on the vertex
                     var maxWeightIndex = 0;
@@ -104,17 +108,18 @@ namespace FlaxEditor.SceneGraph.Actors
                     var maxWeightBone = indices[maxWeightIndex];
 
                     // Skin vertex position with the current pose
-                    Float3.Transform(ref v.Position, ref skinningMatrices[indices[0]], out Float3 pos0);
-                    Float3.Transform(ref v.Position, ref skinningMatrices[indices[1]], out Float3 pos1);
-                    Float3.Transform(ref v.Position, ref skinningMatrices[indices[2]], out Float3 pos2);
-                    Float3.Transform(ref v.Position, ref skinningMatrices[indices[3]], out Float3 pos3);
-                    v.Position = pos0 * weights[0] + pos1 * weights[1] + pos2 * weights[2] + pos3 * weights[3];
+                    var position = positionStream.GetFloat3(j);
+                    Float3.Transform(ref position, ref skinningMatrices[indices[0]], out Float3 pos0);
+                    Float3.Transform(ref position, ref skinningMatrices[indices[1]], out Float3 pos1);
+                    Float3.Transform(ref position, ref skinningMatrices[indices[2]], out Float3 pos2);
+                    Float3.Transform(ref position, ref skinningMatrices[indices[3]], out Float3 pos3);
+                    position = pos0 * weights[0] + pos1 * weights[1] + pos2 * weights[2] + pos3 * weights[3];
 
                     // Add vertex to the bone list
                     ref var boneVertices = ref bonesVertices[maxWeightBone];
                     if (boneVertices == null)
-                        boneVertices = new List<SkinnedMesh.Vertex0>();
-                    boneVertices.Add(v);
+                        boneVertices = new List<Float3>();
+                    boneVertices.Add(position);
                 }
             }
 
@@ -128,10 +133,10 @@ namespace FlaxEditor.SceneGraph.Actors
                     continue; // Skip not used bones
 
                 // Compute bounds of the vertices using this bone (in local space of the actor)
-                Float3 boneBoundsMin = boneVertices[0].Position, boneBoundsMax = boneVertices[0].Position;
+                Float3 boneBoundsMin = boneVertices[0], boneBoundsMax = boneVertices[0];
                 for (int i = 1; i < boneVertices.Count; i++)
                 {
-                    var pos = boneVertices[i].Position;
+                    var pos = boneVertices[i];
                     boneBoundsMin = Float3.Min(boneBoundsMin, pos);
                     boneBoundsMax = Float3.Max(boneBoundsMax, pos);
                 }
@@ -165,10 +170,10 @@ namespace FlaxEditor.SceneGraph.Actors
                 var boneBounds = BoundingBox.Zero;
                 if (boneVertices != null)
                 {
-                    boneBounds = new BoundingBox(boneVertices[0].Position, boneVertices[0].Position);
+                    boneBounds = new BoundingBox(boneVertices[0], boneVertices[0]);
                     for (int i = 1; i < boneVertices.Count; i++)
                     {
-                        var pos = boneVertices[i].Position;
+                        var pos = boneVertices[i];
                         boneBounds.Minimum = Float3.Min(boneBounds.Minimum, pos);
                         boneBounds.Minimum = Float3.Max(boneBounds.Maximum, pos);
                     }
@@ -263,7 +268,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 var boneLocalBounds = BoundingBox.Zero;
                 for (int i = 0; i < boneVertices.Count; i++)
                 {
-                    var pos = boneTransform.WorldToLocal(boneVertices[i].Position);
+                    var pos = boneTransform.WorldToLocal(boneVertices[i]);
                     Vector3.Min(ref boneLocalBounds.Minimum, ref pos, out boneLocalBounds.Minimum);
                     Vector3.Max(ref boneLocalBounds.Maximum, ref pos, out boneLocalBounds.Maximum);
                 }
@@ -360,20 +365,20 @@ namespace FlaxEditor.SceneGraph.Actors
             Editor.Instance.Scene.MarkSceneEdited(actor.Scene);
         }
 
-        private static unsafe Matrix CalculateCovarianceMatrix(List<SkinnedMesh.Vertex0> vertices)
+        private static unsafe Matrix CalculateCovarianceMatrix(List<Float3> vertices)
         {
             // [Reference: https://en.wikipedia.org/wiki/Covariance_matrix]
 
             // Calculate average point
             var avg = Float3.Zero;
             for (int i = 0; i < vertices.Count; i++)
-                avg += vertices[i].Position;
+                avg += vertices[i];
             avg /= vertices.Count;
 
             // Calculate distance to average for every point
             var errors = new Float3[vertices.Count];
             for (int i = 0; i < vertices.Count; i++)
-                errors[i] = vertices[i].Position - avg;
+                errors[i] = vertices[i] - avg;
 
             var covariance = Matrix.Identity;
             var cj = stackalloc float[3];
@@ -393,15 +398,9 @@ namespace FlaxEditor.SceneGraph.Actors
                 var row = new Float4(cj[0], cj[1], cj[2], 0.0f);
                 switch (j)
                 {
-                case 0:
-                    covariance.Row1 = row;
-                    break;
-                case 1:
-                    covariance.Row2 = row;
-                    break;
-                case 2:
-                    covariance.Row3 = row;
-                    break;
+                case 0: covariance.Row1 = row; break;
+                case 1: covariance.Row2 = row; break;
+                case 2: covariance.Row3 = row; break;
                 }
             }
             return covariance;

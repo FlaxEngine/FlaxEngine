@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Engine/Scripting/Types.h"
 #if !USE_CSHARP
@@ -58,9 +58,13 @@ void MCore::UnloadEngine()
     MRootDomain = nullptr;
 }
 
+void MCore::CreateScriptingAssemblyLoadContext()
+{
+}
+
 #if USE_EDITOR
 
-void MCore::ReloadScriptingAssemblyLoadContext()
+void MCore::UnloadScriptingAssemblyLoadContext()
 {
 }
 
@@ -253,6 +257,41 @@ MObject* MCore::Exception::GetNotSupported(const char* msg)
     return nullptr;
 }
 
+::String MCore::Type::ToString(MType* type)
+{
+    return ::String::Empty;
+}
+
+MClass* MCore::Type::GetClass(MType* type)
+{
+    return nullptr;
+}
+
+MType* MCore::Type::GetElementType(MType* type)
+{
+    return nullptr;
+}
+
+int32 MCore::Type::GetSize(MType* type)
+{
+    return 0;
+}
+
+MTypes MCore::Type::GetType(MType* type)
+{
+    return MTypes::End;
+}
+
+bool MCore::Type::IsPointer(MType* type)
+{
+    return false;
+}
+
+bool MCore::Type::IsReference(MType* type)
+{
+    return false;
+}
+
 const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
 {
     _hasCachedClasses = true;
@@ -353,7 +392,7 @@ const Array<MProperty*>& MClass::GetProperties() const
     return _properties;
 }
 
-bool MClass::HasAttribute(const MClass* monoClass) const
+bool MClass::HasAttribute(const MClass* klass) const
 {
     return false;
 }
@@ -363,7 +402,7 @@ bool MClass::HasAttribute() const
     return false;
 }
 
-MObject* MClass::GetAttribute(const MClass* monoClass) const
+MObject* MClass::GetAttribute(const MClass* klass) const
 {
     return nullptr;
 }
@@ -395,7 +434,7 @@ MMethod* MEvent::GetRemoveMethod() const
     return _removeMethod;
 }
 
-bool MEvent::HasAttribute(MClass* monoClass) const
+bool MEvent::HasAttribute(const MClass* klass) const
 {
     return false;
 }
@@ -405,7 +444,7 @@ bool MEvent::HasAttribute() const
     return false;
 }
 
-MObject* MEvent::GetAttribute(MClass* monoClass) const
+MObject* MEvent::GetAttribute(const MClass* klass) const
 {
     return nullptr;
 }
@@ -447,7 +486,7 @@ void MField::SetValue(MObject* instance, void* value) const
 {
 }
 
-bool MField::HasAttribute(MClass* monoClass) const
+bool MField::HasAttribute(const MClass* klass) const
 {
     return false;
 }
@@ -457,7 +496,7 @@ bool MField::HasAttribute() const
     return false;
 }
 
-MObject* MField::GetAttribute(MClass* monoClass) const
+MObject* MField::GetAttribute(const MClass* klass) const
 {
     return nullptr;
 }
@@ -502,7 +541,7 @@ bool MMethod::GetParameterIsOut(int32 paramIdx) const
     return false;
 }
 
-bool MMethod::HasAttribute(MClass* monoClass) const
+bool MMethod::HasAttribute(const MClass* klass) const
 {
     return false;
 }
@@ -512,7 +551,7 @@ bool MMethod::HasAttribute() const
     return false;
 }
 
-MObject* MMethod::GetAttribute(MClass* monoClass) const
+MObject* MMethod::GetAttribute(const MClass* klass) const
 {
     return nullptr;
 }
@@ -549,7 +588,7 @@ void MProperty::SetValue(MObject* instance, void* value, MObject** exception) co
 {
 }
 
-bool MProperty::HasAttribute(MClass* monoClass) const
+bool MProperty::HasAttribute(const MClass* klass) const
 {
     return false;
 }
@@ -559,7 +598,7 @@ bool MProperty::HasAttribute() const
     return false;
 }
 
-MObject* MProperty::GetAttribute(MClass* monoClass) const
+MObject* MProperty::GetAttribute(const MClass* klass) const
 {
     return nullptr;
 }

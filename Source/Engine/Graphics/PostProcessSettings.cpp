@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "PostProcessSettings.h"
 #include "Engine/Serialization/JsonTools.h"
@@ -42,8 +42,10 @@ void BloomSettings::BlendWith(BloomSettings& other, float weight)
     BLEND_BOOL(Enabled);
     BLEND_FLOAT(Intensity);
     BLEND_FLOAT(Threshold);
-    BLEND_FLOAT(BlurSigma);
-    BLEND_FLOAT(Limit);
+    BLEND_FLOAT(ThresholdKnee);
+    BLEND_FLOAT(Clamp);
+    BLEND_FLOAT(BaseMix);
+    BLEND_FLOAT(HighMix);
 }
 
 void ToneMappingSettings::BlendWith(ToneMappingSettings& other, float weight)
@@ -198,6 +200,10 @@ void AntiAliasingSettings::BlendWith(AntiAliasingSettings& other, float weight)
     BLEND_FLOAT(TAA_Sharpness);
     BLEND_FLOAT(TAA_StationaryBlending);
     BLEND_FLOAT(TAA_MotionBlending);
+    BLEND_FLOAT(CAS_SharpeningAmount);
+    BLEND_FLOAT(CAS_EdgeSharpening);
+    BLEND_FLOAT(CAS_MinEdgeThreshold);
+    BLEND_FLOAT(CAS_OverBlurLimit);
 }
 
 void PostFxMaterialsSettings::BlendWith(PostFxMaterialsSettings& other, float weight)

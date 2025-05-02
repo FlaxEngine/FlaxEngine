@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,7 @@ class Actor;
 class SceneObject;
 
 /// <summary>
-/// Json asset that stores the collection of scene objects including actors and scripts. In general it can serve as any grouping of scene objects (for example a level) or be used as a form of a template instantiated and reused throughout the scene.
+/// Json asset that stores the collection of scene objects including actors and scripts. In general, it can serve as any grouping of scene objects (for example a level) or be used as a form of a template instantiated and reused throughout the scene.
 /// </summary>
 /// <seealso cref="JsonAssetBase" />
 API_CLASS(NoSpawn) class FLAXENGINE_API Prefab : public JsonAssetBase
@@ -42,6 +42,11 @@ public:
     Dictionary<Guid, const ISerializable::DeserializeStream*> ObjectsDataCache;
 
     /// <summary>
+    /// The object hierarchy cache that maps the PrefabObjectID into the list of children (identified also by PrefabObjectID). Objects without any children are not included for sake of optimization. Used for quick validation of the structure of loaded prefab instances. Valid only if asset is loaded.
+    /// </summary>
+    Dictionary<Guid, Array<Guid>> ObjectsHierarchyCache;
+
+    /// <summary>
     /// The objects cache maps the id of the object contained in the prefab asset (actor or script) to the default instance deserialized from prefab data. Valid only if asset is loaded and GetDefaultInstance was called.
     /// </summary>
     Dictionary<Guid, SceneObject*> ObjectsCache;
@@ -65,15 +70,29 @@ public:
     /// <returns>The object of the prefab loaded from the prefab. Contains the default values. It's not added to gameplay but deserialized with postLoad and init event fired.</returns>
     API_FUNCTION() SceneObject* GetDefaultInstance(API_PARAM(Ref) const Guid& objectId);
 
+    /// <summary>
+    /// Gets the reference to the other nested prefab for a specific prefab object.
+    /// </summary>
+    /// <param name="objectId">The ID of the object in this prefab.</param>
+    /// <param name="outPrefabId">Result ID of the prefab asset referenced by the given object.</param>
+    /// <param name="outObjectId">Result ID of the prefab object referenced by the given object.</param>
+    /// <returns>True if got valid reference, otherwise false.</returns>
+    API_FUNCTION() bool GetNestedObject(API_PARAM(Ref) const Guid& objectId, API_PARAM(Out) Guid& outPrefabId, API_PARAM(Out) Guid& outObjectId) const;
+
 #if USE_EDITOR
     /// <summary>
     /// Applies the difference from the prefab object instance, saves the changes and synchronizes them with the active instances of the prefab asset.
     /// </summary>
-    /// <remarks>
-    /// Applies all the changes from not only the given actor instance but all actors created within that prefab instance.
-    /// </remarks>
+    /// <remarks>Applies all the changes from not only the given actor instance but all actors created within that prefab instance.</remarks>
     /// <param name="targetActor">The root actor of spawned prefab instance to use as modified changes sources.</param>
+    /// <returns>True if failed, otherwise false.</returns>
     bool ApplyAll(Actor* targetActor);
+
+    /// <summary>
+    /// Resaves the prefab asset to the file by serializing default instance in the latest format and defaults.
+    /// </summary>
+    /// <returns>True if failed, otherwise false.</returns>
+    API_FUNCTION() bool Resave();
 #endif
 
 private:

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "BinaryModule.h"
 #include "ScriptingObject.h"
@@ -796,6 +796,13 @@ ScriptingObject* ManagedBinaryModule::ManagedObjectSpawn(const ScriptingObjectSp
     // Mark as managed type
     object->Flags |= ObjectFlags::IsManagedType;
 
+    // Initialize managed instance (ScriptingObject ctor copies managed object handle)
+    if (!params.Managed)
+    {
+        // Invoke managed ctor (to match C++ logic)
+        object->CreateManaged();
+    }
+
     return object;
 }
 
@@ -846,12 +853,12 @@ namespace
 
 MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMethodSignature& signature)
 {
+#if USE_CSHARP
     if (!mclass)
         return nullptr;
     const auto& methods = mclass->GetMethods();
     for (MMethod* method : methods)
     {
-#if USE_CSHARP
         if (method->IsStatic() != signature.IsStatic)
             continue;
         if (method->GetName() != signature.Name)
@@ -872,8 +879,8 @@ MMethod* ManagedBinaryModule::FindMethod(MClass* mclass, const ScriptingTypeMeth
         }
         if (isValid && VariantTypeEquals(signature.ReturnType, method->GetReturnType()))
             return method;
-#endif
     }
+#endif
     return nullptr;
 }
 
@@ -931,7 +938,7 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
     const auto& classes = assembly->GetClasses();
 
     // Cache managed types information
-    ClassToTypeIndex.EnsureCapacity(Types.Count() * 4);
+    ClassToTypeIndex.EnsureCapacity(Types.Count());
     for (int32 typeIndex = 0; typeIndex < Types.Count(); typeIndex++)
     {
         ScriptingType& type = Types[typeIndex];
@@ -1212,6 +1219,16 @@ bool ManagedBinaryModule::IsLoaded() const
 #endif
 }
 
+void ManagedBinaryModule::GetMethods(const ScriptingTypeHandle& typeHandle, Array<void*>& methods)
+{
+    const ScriptingType& type = typeHandle.GetType();
+    if (type.ManagedClass)
+    {
+        const auto& mMethods = type.ManagedClass->GetMethods();
+        methods.Add((void* const*)mMethods.Get(), mMethods.Count());
+    }
+}
+
 void* ManagedBinaryModule::FindMethod(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name, int32 numParams)
 {
     const ScriptingType& type = typeHandle.GetType();
@@ -1264,6 +1281,7 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
 
     // Marshal parameters
     void** params = (void**)alloca(parametersCount * sizeof(void*));
+    void** outParams = nullptr;
     bool failed = false;
     bool hasOutParams = false;
     for (int32 paramIdx = 0; paramIdx < parametersCount; paramIdx++)
@@ -1279,6 +1297,14 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
         {
             LOG(Error, "Failed to marshal parameter {5}:{4} of method '{0}.{1}' (args count: {2}), value type: {6}, value: {3}", String(mMethod->GetParentClass()->GetFullName()), String(mMethod->GetName()), parametersCount, paramValue, MCore::Type::ToString(paramType), paramIdx, paramValue.Type);
             return true;
+        }
+        if (isOut && MCore::Type::IsReference(paramType) && MCore::Type::GetType(paramType) == MTypes::Object)
+        {
+            // Object passed as out param so pass pointer to the value storage for proper marshalling
+            if (!outParams)
+                outParams = (void**)alloca(parametersCount * sizeof(void*));
+            outParams[paramIdx] = params[paramIdx];
+            params[paramIdx] = &outParams[paramIdx];
         }
     }
 
@@ -1344,6 +1370,13 @@ bool ManagedBinaryModule::InvokeMethod(void* method, const Variant& instance, Sp
                     }
                     break;
                 }
+                default:
+                {
+                    MType* paramType = mMethod->GetParameterType(paramIdx);
+                    if (MCore::Type::IsReference(paramType) && MCore::Type::GetType(paramType) == MTypes::Object)
+                        paramValue = MUtils::UnboxVariant((MObject*)outParams[paramIdx]);
+                    break;
+                }
                 }
             }
         }
@@ -1379,6 +1412,23 @@ void ManagedBinaryModule::GetMethodSignature(void* method, ScriptingTypeMethodSi
 #else
 #define ManagedBinaryModuleFieldIsPropertyBit (uintptr)(1ul << 31)
 #endif
+#define GetManagedBinaryModulePropertyHandle(ptr) ((uintptr)ptr & ~ManagedBinaryModuleFieldIsPropertyBit)
+#define SetManagedBinaryModulePropertyHandle(ptr) (void*)((uintptr)ptr | ManagedBinaryModuleFieldIsPropertyBit)
+
+void ManagedBinaryModule::GetFields(const ScriptingTypeHandle& typeHandle, Array<void*>& fields)
+{
+    const ScriptingType& type = typeHandle.GetType();
+    if (type.ManagedClass)
+    {
+        const auto& mFields = type.ManagedClass->GetFields();
+        const auto& mProperties = type.ManagedClass->GetProperties();
+        fields.EnsureCapacity(fields.Count() + mFields.Count() + mProperties.Count());
+        for (MField* field : mFields)
+            fields.Add(field);
+        for (MProperty* property : mProperties)
+            fields.Add(SetManagedBinaryModulePropertyHandle(property));
+    }
+}
 
 void* ManagedBinaryModule::FindField(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name)
 {
@@ -1388,7 +1438,7 @@ void* ManagedBinaryModule::FindField(const ScriptingTypeHandle& typeHandle, cons
     {
         result = type.ManagedClass->GetProperty(name.Get());
         if (result)
-            result = (void*)((uintptr)result | ManagedBinaryModuleFieldIsPropertyBit);
+            result = SetManagedBinaryModulePropertyHandle(result);
     }
     return result;
 }
@@ -1398,7 +1448,7 @@ void ManagedBinaryModule::GetFieldSignature(void* field, ScriptingTypeFieldSigna
 #if USE_CSHARP
     if ((uintptr)field & ManagedBinaryModuleFieldIsPropertyBit)
     {
-        const auto mProperty = (MProperty*)((uintptr)field & ~ManagedBinaryModuleFieldIsPropertyBit);
+        const auto mProperty = (MProperty*)GetManagedBinaryModulePropertyHandle(field);
         fieldSignature.Name = mProperty->GetName();
         fieldSignature.ValueType = MoveTemp(MUtils::UnboxVariantType(mProperty->GetType()));
         fieldSignature.IsStatic = mProperty->IsStatic();
@@ -1515,7 +1565,7 @@ bool ManagedBinaryModule::SetFieldValue(void* field, const Variant& instance, Va
     if ((uintptr)field & ManagedBinaryModuleFieldIsPropertyBit)
     {
         const auto mProperty = (MProperty*)((uintptr)field & ~ManagedBinaryModuleFieldIsPropertyBit);
-        mProperty->SetValue(instanceObject, MUtils::BoxVariant(value), nullptr);
+        mProperty->SetValue(instanceObject, MUtils::VariantToManagedArgPtr(value, mProperty->GetType(), failed), nullptr);
     }
     else
     {

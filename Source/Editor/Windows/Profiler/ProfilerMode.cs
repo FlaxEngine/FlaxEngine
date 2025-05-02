@@ -1,5 +1,6 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
+#if USE_PROFILER
 using System;
 using System.Collections.Generic;
 using FlaxEditor.GUI;
@@ -121,6 +122,13 @@ namespace FlaxEditor.Windows.Profiler
         }
 
         /// <summary>
+        /// Tick called before updating any modes display. Can be used to update per-frame statistics data.
+        /// </summary>
+        public virtual void UpdateStats()
+        {
+        }
+
+        /// <summary>
         /// Updates the mode view. Called after init and on selected frame changed.
         /// </summary>
         /// <param name="selectedFrame">The selected frame index.</param>
@@ -162,3 +170,4 @@ namespace FlaxEditor.Windows.Profiler
         }
     }
 }
+#endif

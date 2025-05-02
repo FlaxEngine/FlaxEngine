@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -53,13 +53,33 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="EditorOrder(60)")
         bool GenerateMipMaps = true;
 
-        // True if flip Y coordinate of the texture.
+        // True if flip Y coordinate of the texture (Flips over X axis).
         API_FIELD(Attributes="EditorOrder(70)")
         bool FlipY = false;
 
-        // True if to invert the green channel on a normal map. Good for OpenGL to DirectX conversion.
-        API_FIELD(Attributes = "EditorOrder(71)")
+        // True if flip X coordinate of the texture (Flips over Y axis).
+        API_FIELD(Attributes="EditorOrder(71)")
+        bool FlipX = false;
+
+        // Invert the red channel.
+        API_FIELD(Attributes="EditorOrder(72), EditorDisplay(\"Invert Channels\")")
+        bool InvertRedChannel = false;
+
+        // Invert the green channel. Good for OpenGL to DirectX conversion.
+        API_FIELD(Attributes="EditorOrder(73), EditorDisplay(\"Invert Channels\")")
         bool InvertGreenChannel = false;
+
+        // Invert the blue channel.
+        API_FIELD(Attributes="EditorOrder(74), EditorDisplay(\"Invert Channels\")")
+        bool InvertBlueChannel = false;
+
+        // Invert the alpha channel.
+        API_FIELD(Attributes="EditorOrder(75), EditorDisplay(\"Invert Channels\")")
+        bool InvertAlphaChannel = false;
+
+        // Rebuild Z (blue) channel assuming X/Y are normals.
+        API_FIELD(Attributes="EditorOrder(76)")
+        bool ReconstructZChannel = false;
 
         // Texture size scale. Allows increasing or decreasing the imported texture resolution. Default is 1.
         API_FIELD(Attributes="EditorOrder(80), Limit(0.0001f, 1000.0f, 0.01f)")
@@ -72,6 +92,10 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         // True if resize texture on import. Use SizeX/SizeY properties to define texture width and height. Texture scale property will be ignored.
         API_FIELD(Attributes="EditorOrder(100)")
         bool Resize = false;
+
+        // Keeps the aspect ratio when resizing.
+        API_FIELD(Attributes="EditorOrder(101), VisibleIf(nameof(Resize))")
+        bool KeepAspectRatio = false;
 
         // The width of the imported texture. If Resize property is set to true then texture will be resized during the import to this value during the import, otherwise it will be ignored.
         API_FIELD(Attributes="HideInEditor")
@@ -164,80 +188,6 @@ public:
     static bool Resize(TextureData& dst, const TextureData& src, int32 dstWidth, int32 dstHeight);
 
 public:
-    typedef Color (*ReadPixel)(const void*);
-    typedef void (*WritePixel)(const void*, const Color&);
-
-    struct PixelFormatSampler
-    {
-        PixelFormat Format;
-        int32 PixelSize;
-        ReadPixel Sample;
-        WritePixel Store;
-    };
-
-    /// <summary>
-    /// Determines whether this tool can sample the specified format to read texture samples and returns the sampler object.
-    /// </summary>
-    /// <param name="format">The format.</param>
-    /// <returns>The pointer to the sampler object or null if cannot sample the given format.</returns>
-    static const PixelFormatSampler* GetSampler(PixelFormat format);
-
-    /// <summary>
-    /// Stores the color into the specified texture data (uses no interpolation).
-    /// </summary>
-    /// <remarks>
-    /// Use GetSampler for the texture sampler.
-    /// </remarks>
-    /// <param name="sampler">The texture data sampler.</param>
-    /// <param name="x">The X texture coordinates (normalized to range 0-width).</param>
-    /// <param name="y">The Y texture coordinates (normalized to range 0-height).</param>
-    /// <param name="data">The data pointer for the texture slice (1D or 2D image).</param>
-    /// <param name="rowPitch">The row pitch (in bytes). The offset between each image rows.</param>
-    /// <param name="color">The color to store (linear).</param>
-    static void Store(const PixelFormatSampler* sampler, int32 x, int32 y, const void* data, int32 rowPitch, const Color& color);
-
-    /// <summary>
-    /// Samples the specified texture data (uses no interpolation).
-    /// </summary>
-    /// <remarks>
-    /// Use GetSampler for the texture sampler.
-    /// </remarks>
-    /// <param name="sampler">The texture data sampler.</param>
-    /// <param name="uv">The texture coordinates (normalized to range 0-1).</param>
-    /// <param name="data">The data pointer for the texture slice (1D or 2D image).</param>
-    /// <param name="size">The size of the input texture (in pixels).</param>
-    /// <param name="rowPitch">The row pitch (in bytes). The offset between each image rows.</param>
-    /// <returns>The sampled color (linear).</returns>
-    static Color SamplePoint(const PixelFormatSampler* sampler, const Float2& uv, const void* data, const Int2& size, int32 rowPitch);
-
-    /// <summary>
-    /// Samples the specified texture data (uses no interpolation).
-    /// </summary>
-    /// <remarks>
-    /// Use GetSampler for the texture sampler.
-    /// </remarks>
-    /// <param name="sampler">The texture data sampler.</param>
-    /// <param name="x">The X texture coordinates (normalized to range 0-width).</param>
-    /// <param name="y">The Y texture coordinates (normalized to range 0-height).</param>
-    /// <param name="data">The data pointer for the texture slice (1D or 2D image).</param>
-    /// <param name="rowPitch">The row pitch (in bytes). The offset between each image rows.</param>
-    /// <returns>The sampled color (linear).</returns>
-    static Color SamplePoint(const PixelFormatSampler* sampler, int32 x, int32 y, const void* data, int32 rowPitch);
-
-    /// <summary>
-    /// Samples the specified texture data (uses linear interpolation).
-    /// </summary>
-    /// <remarks>
-    /// Use GetSampler for the texture sampler.
-    /// </remarks>
-    /// <param name="sampler">The texture data sampler.</param>
-    /// <param name="uv">The texture coordinates (normalized to range 0-1).</param>
-    /// <param name="data">The data pointer for the texture slice (1D or 2D image).</param>
-    /// <param name="size">The size of the input texture (in pixels).</param>
-    /// <param name="rowPitch">The row pitch (in bytes). The offset between each image rows.</param>
-    /// <returns>The sampled color (linear).</returns>
-    static Color SampleLinear(const PixelFormatSampler* sampler, const Float2& uv, const void* data, const Int2& size, int32 rowPitch);
-
     static PixelFormat ToPixelFormat(TextureFormatType format, int32 width, int32 height, bool canCompress);
 
 private:

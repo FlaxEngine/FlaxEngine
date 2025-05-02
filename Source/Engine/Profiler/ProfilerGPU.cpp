@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_PROFILER
 
@@ -15,6 +15,7 @@ int32 ProfilerGPU::_depth = 0;
 Array<GPUTimerQuery*> ProfilerGPU::_timerQueriesPool;
 Array<GPUTimerQuery*> ProfilerGPU::_timerQueriesFree;
 bool ProfilerGPU::Enabled = false;
+bool ProfilerGPU::EventsEnabled = false;
 int32 ProfilerGPU::CurrentBuffer = 0;
 ProfilerGPU::EventBuffer ProfilerGPU::Buffers[PROFILER_GPU_EVENTS_FRAMES];
 
@@ -95,11 +96,12 @@ GPUTimerQuery* ProfilerGPU::GetTimerQuery()
 
 int32 ProfilerGPU::BeginEvent(const Char* name)
 {
+#if GPU_ALLOW_PROFILE_EVENTS
+    if (EventsEnabled)
+        GPUDevice::Instance->GetMainContext()->EventBegin(name);
+#endif
     if (!Enabled)
         return -1;
-#if GPU_ALLOW_PROFILE_EVENTS
-    GPUDevice::Instance->GetMainContext()->EventBegin(name);
-#endif
 
     Event e;
     e.Name = name;
@@ -115,6 +117,10 @@ int32 ProfilerGPU::BeginEvent(const Char* name)
 
 void ProfilerGPU::EndEvent(int32 index)
 {
+#if GPU_ALLOW_PROFILE_EVENTS
+    if (EventsEnabled)
+        GPUDevice::Instance->GetMainContext()->EventEnd();
+#endif
     if (index == -1)
         return;
     _depth--;
@@ -123,10 +129,6 @@ void ProfilerGPU::EndEvent(int32 index)
     auto e = buffer.Get(index);
     e->Stats.Mix(RenderStatsData::Counter);
     e->Timer->End();
-
-#if GPU_ALLOW_PROFILE_EVENTS
-    GPUDevice::Instance->GetMainContext()->EventEnd();
-#endif
 }
 
 void ProfilerGPU::BeginFrame()

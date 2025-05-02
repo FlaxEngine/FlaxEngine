@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "../Game.h"
 
@@ -73,7 +73,7 @@ int32 GameBase::LoadProduct()
             goto LOAD_GAME_HEAD_FAILED;
 
         // Load game primary data
-        stream->ReadArray(&data);
+        stream->Read(data);
         if (data.Count() != 808 + sizeof(Guid))
             goto LOAD_GAME_HEAD_FAILED;
         Encryption::DecryptBytes(data.Get(), data.Count());
@@ -198,7 +198,7 @@ void GameBaseImpl::OnMainWindowClosed()
     Engine::MainWindow = nullptr;
 
     // Request engine exit
-    Globals::IsRequestingExit = true;
+    Engine::RequestExit(0);
 }
 
 void GameBaseImpl::OnPostRender(GPUContext* context, RenderContext& renderContext)
@@ -267,8 +267,8 @@ void GameBaseImpl::OnSplashScreenEnd()
     MainRenderTask::Instance->PostRender.Unbind(&OnPostRender);
 
     // Load the first scene
-    LOG(Info, "Loading the first scene");
     const auto sceneId = FirstScene ? FirstScene.GetID() : Guid::Empty;
+    LOG(Info, "Loading the first scene ({})", sceneId);
     FirstScene = nullptr;
     if (Level::LoadSceneAsync(sceneId))
     {

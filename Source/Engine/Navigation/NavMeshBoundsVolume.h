@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 /// <summary>
 /// A special type of volume that defines the area of the scene in which navigation meshes are generated.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Other/Nav Mesh Bounds Volume\"), ActorToolbox(\"Other\")")
+API_CLASS(Attributes="ActorContextMenu(\"New/Navigation/Nav Mesh Bounds Volume\"), ActorToolbox(\"Other\")")
 class FLAXENGINE_API NavMeshBoundsVolume : public BoxVolume
 {
     DECLARE_SCENE_OBJECT(NavMeshBoundsVolume);

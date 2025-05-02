@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 //#define DEBUG_SEARCH_TIME
 
@@ -140,12 +140,12 @@ namespace FlaxEditor.Surface
                 var searchStartTime = DateTime.Now;
 #endif
 
-                foreach (var scriptType in Editor.Instance.CodeEditing.All.Get())
+                foreach (var scriptType in Editor.Instance.CodeEditing.AllWithStd.Get())
                 {
-                    if (!SurfaceUtils.IsValidVisualScriptType(scriptType))
-                        continue;
-
-                    _iterator(scriptType, _cache, _version);
+                    if (SurfaceUtils.IsValidVisualScriptType(scriptType))
+                    {
+                        _iterator(scriptType, _cache, _version);
+                    }
                 }
 
                 // Add group to context menu (on a main thread)
@@ -237,11 +237,13 @@ namespace FlaxEditor.Surface
             return new VisjectCM(new VisjectCM.InitInfo
             {
                 CanSetParameters = CanSetParameters,
+                UseDescriptionPanel = UseContextMenuDescriptionPanel,
                 Groups = NodeArchetypes,
                 CanSpawnNode = CanUseNodeType,
                 ParametersGetter = () => Parameters,
                 CustomNodesGroup = GetCustomNodes(),
                 ParameterGetNodeArchetype = GetParameterGetterNodeArchetype(out _),
+                Style = Style,
             });
         }
 
@@ -324,7 +326,7 @@ namespace FlaxEditor.Surface
             _cmCopyButton = menu.AddButton("Copy", Copy);
             menu.AddButton("Paste", Paste).Enabled = CanEdit && CanPaste();
             _cmDuplicateButton = menu.AddButton("Duplicate", Duplicate);
-            _cmDuplicateButton.Enabled = CanEdit;
+            _cmDuplicateButton.Enabled = CanEdit && selection.Any(node => (node.Archetype.Flags & NodeFlags.NoSpawnViaPaste) == 0);
             var canRemove = CanEdit && selection.All(node => (node.Archetype.Flags & NodeFlags.NoRemove) == 0);
             menu.AddButton("Cut", Cut).Enabled = canRemove;
             menu.AddButton("Delete", Delete).Enabled = canRemove;

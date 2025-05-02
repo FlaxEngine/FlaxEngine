@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -14,7 +14,7 @@ class Actor;
 /// <summary>
 /// Network replication hierarchy object data.
 /// </summary>
-API_STRUCT(NoDefault, Namespace = "FlaxEngine.Networking") struct FLAXENGINE_API NetworkReplicationHierarchyObject
+API_STRUCT(NoDefault, Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkReplicationHierarchyObject
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkReplicationObjectInfo);
 
@@ -59,7 +59,7 @@ inline uint32 GetHash(const NetworkReplicationHierarchyObject& key)
 /// <summary>
 /// Bit mask for NetworkClient list (eg. to selectively send object replication).
 /// </summary>
-API_STRUCT(NoDefault, Namespace = "FlaxEngine.Networking") struct FLAXENGINE_API NetworkClientsMask
+API_STRUCT(NoDefault, Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkClientsMask
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(NetworkClientsMask);
 
@@ -109,7 +109,7 @@ API_STRUCT(NoDefault, Namespace = "FlaxEngine.Networking") struct FLAXENGINE_API
 /// <summary>
 /// Network replication hierarchy output data to send.
 /// </summary>
-API_CLASS(Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicationHierarchyUpdateResult : public ScriptingObject
+API_CLASS(Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicationHierarchyUpdateResult : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(NetworkReplicationHierarchyUpdateResult, ScriptingObject);
     friend class NetworkInternal;
@@ -178,7 +178,7 @@ public:
 /// <summary>
 /// Base class for the network objects replication hierarchy nodes. Contains a list of objects.
 /// </summary>
-API_CLASS(Abstract, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicationNode : public ScriptingObject
+API_CLASS(Abstract, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicationNode : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(NetworkReplicationNode, ScriptingObject);
 
@@ -206,7 +206,14 @@ API_CLASS(Abstract, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API Ne
     /// <param name="obj">The object to get.</param>
     /// <param name="result">The hierarchy object to retrieve.</param>
     /// <returns>True on successful retrieval, otherwise false.</returns>
-    API_FUNCTION() virtual bool GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result);
+    API_FUNCTION() virtual bool GetObject(ScriptingObject* obj, API_PARAM(Out) NetworkReplicationHierarchyObject& result);
+
+    /// <summary>
+    /// Sets object properties in the hierarchy. Can be used to modify replication settings at runtime.
+    /// </summary>
+    /// <param name="value">The object data to update.</param>
+    /// <returns>True on successful update, otherwise false (eg, if specific object has not been added to this node).</returns>
+    API_FUNCTION() virtual bool SetObject(const NetworkReplicationHierarchyObject& value);
 
     /// <summary>
     /// Force replicates the object during the next update. Resets any internal tracking state to force the synchronization.
@@ -233,7 +240,7 @@ inline uint32 GetHash(const Int3& key)
 /// <summary>
 /// Network replication hierarchy node with 3D grid spatialization. Organizes static objects into chunks to improve performance in large worlds.
 /// </summary>
-API_CLASS(Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicationGridNode : public NetworkReplicationNode
+API_CLASS(Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicationGridNode : public NetworkReplicationNode
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(NetworkReplicationGridNode, NetworkReplicationNode);
     ~NetworkReplicationGridNode();
@@ -257,6 +264,7 @@ public:
     void AddObject(NetworkReplicationHierarchyObject obj) override;
     bool RemoveObject(ScriptingObject* obj) override;
     bool GetObject(ScriptingObject* obj, NetworkReplicationHierarchyObject& result) override;
+    bool SetObject(const NetworkReplicationHierarchyObject& value) override;
     bool DirtyObject(ScriptingObject* obj) override;
     void Update(NetworkReplicationHierarchyUpdateResult* result) override;
 };
@@ -265,7 +273,7 @@ public:
 /// Defines the network objects replication hierarchy (tree structure) that controls chunking and configuration of the game objects replication.
 /// Contains only 'owned' objects. It's used by the networking system only on a main thread.
 /// </summary>
-API_CLASS(Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicationHierarchy : public NetworkReplicationNode
+API_CLASS(Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkReplicationHierarchy : public NetworkReplicationNode
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(NetworkReplicationHierarchy, NetworkReplicationNode);
 };

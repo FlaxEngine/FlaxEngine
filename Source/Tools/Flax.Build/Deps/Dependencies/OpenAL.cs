@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -54,17 +54,45 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
                 {
+                    var binariesToCopy = new[]
+                    {
+                        "OpenAL32.lib",
+                        "OpenAL32.dll",
+                    };
+
+                    string configuration = "Release";
+
+                    // Get the source
+                    CloneGitRepo(root, "https://github.com/kcat/openal-soft.git");
+                    GitCheckout(root, "master", "d3875f333fb6abe2f39d82caca329414871ae53b"); // 1.23.1
+
+                    // Build for Win64 and ARM64
+                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    {
+                        var buildDir = Path.Combine(root, "build-" + architecture.ToString());
+                        var solutionPath = Path.Combine(buildDir, "OpenAL.sln");
+
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=\"/D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR /EHsc\" -DCMAKE_CXX_FLAGS=\"/D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR /EHsc\"");
+                        Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        foreach (var file in binariesToCopy)
+                            Utilities.FileCopy(Path.Combine(buildDir, configuration, file), Path.Combine(depsFolder, Path.GetFileName(file)));
+                    }
+                    
+#if false
                     // Get the binaries
                     var packagePath = Path.Combine(root, "package.zip");
-                    File.Delete(packagePath);
-                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-binaries/openal-soft-" + version + "-bin.zip", packagePath);
+                    if (!File.Exists(packagePath))
+                        Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-binaries/openal-soft-" + version + "-bin.zip", packagePath);
                     using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
                     {
-                        archive.ExtractToDirectory(root);
+                        if (!Directory.Exists(root))
+                            archive.ExtractToDirectory(root);
                         root = Path.Combine(root, archive.Entries.First().FullName);
                     }
 
@@ -74,7 +102,7 @@ namespace Flax.Deps.Dependencies
                     Utilities.FileCopy(Path.Combine(root, "libs", "Win64", "OpenAL32.lib"), Path.Combine(depsFolder, "OpenAL32.lib"));
 
                     // Deploy license
-                    Utilities.FileCopy(Path.Combine(root, "COPYING"), Path.Combine(dstIncludePath, "COPYING"));
+                    Utilities.FileCopy(Path.Combine(root, "COPYING"), Path.Combine(dstIncludePath, "COPYING"), true);
 
                     // Deploy header files
                     var files = Directory.GetFiles(Path.Combine(root, "include", "AL"));
@@ -82,7 +110,7 @@ namespace Flax.Deps.Dependencies
                     {
                         Utilities.FileCopy(file, Path.Combine(dstIncludePath, Path.GetFileName(file)));
                     }
-
+#endif
                     break;
                 }
                 case TargetPlatform.Linux:

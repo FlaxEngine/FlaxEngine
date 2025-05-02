@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Xml;
 using FlaxEditor.Content;
@@ -100,7 +100,10 @@ namespace FlaxEditor.Windows.Assets
 
                     base.Initialize(layout);
 
-                    layout.Space(10);
+                    // Creates the import path UI
+                    Utilities.Utils.CreateImportPathUI(layout, window.Item as BinaryAssetItem);
+
+                    layout.Space(5);
                     var reimportButton = layout.Button("Reimport");
                     reimportButton.Button.Clicked += () => ((PropertiesProxy)Values[0]).Reimport();
                 }
@@ -285,6 +288,10 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
+            base.OnDestroy();
+
             if (_previewSource)
             {
                 _preview.Source = null;
@@ -293,8 +300,6 @@ namespace FlaxEditor.Windows.Assets
                 _previewSource = null;
             }
             FlaxEngine.Object.Destroy(ref _previewScene);
-
-            base.OnDestroy();
         }
 
         /// <inheritdoc />

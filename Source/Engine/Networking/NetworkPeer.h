@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -11,7 +11,7 @@
 /// <summary>
 /// Low-level network peer class. Provides server-client communication functions, message processing and sending.
 /// </summary>
-API_CLASS(sealed, NoSpawn, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkPeer final : public ScriptingObject
+API_CLASS(sealed, NoSpawn, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkPeer final : public ScriptingObject
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(NetworkPeer, ScriptingObject);
 

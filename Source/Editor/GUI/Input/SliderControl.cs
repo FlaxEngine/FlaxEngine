@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -71,19 +71,24 @@ namespace FlaxEditor.GUI.Input
             public Action ValueChanged;
 
             /// <summary>
-            /// The color of the slider track line
+            /// The color of the slider track line.
             /// </summary>
             public Color TrackLineColor { get; set; }
 
             /// <summary>
-            /// The color of the slider thumb when it's not selected
+            /// The color of the slider thumb when it's not selected.
             /// </summary>
             public Color ThumbColor { get; set; }
 
             /// <summary>
-            /// The color of the slider thumb when it's selected
+            /// The color of the slider thumb when it's selected.
             /// </summary>
             public Color ThumbColorSelected { get; set; }
+
+            /// <summary>
+            /// The color of the slider thumb when it's hovered.
+            /// </summary>
+            public Color ThumbColorHovered { get; set; }
 
             /// <summary>
             /// Gets a value indicating whether user is using a slider.
@@ -112,6 +117,7 @@ namespace FlaxEditor.GUI.Input
                 TrackLineColor = style.BackgroundHighlighted;
                 ThumbColor = style.BackgroundNormal;
                 ThumbColorSelected = style.BackgroundSelected;
+                ThumbColorHovered = style.BackgroundHighlighted;
             }
 
             private void UpdateThumb()
@@ -151,7 +157,8 @@ namespace FlaxEditor.GUI.Input
                 Render2D.FillRectangle(lineRect, TrackLineColor);
 
                 // Draw thumb
-                Render2D.FillRectangle(_thumbRect, _isSliding ? ThumbColorSelected : ThumbColor);
+                bool mouseOverThumb = _thumbRect.Contains(PointFromWindow(Root.MousePosition));
+                Render2D.FillRectangle(_thumbRect, _isSliding ? ThumbColorSelected : mouseOverThumb ? ThumbColorHovered : ThumbColor);
             }
 
             /// <inheritdoc />

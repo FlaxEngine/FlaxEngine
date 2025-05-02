@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -179,7 +179,7 @@ void GPUTextureViewVulkan::DescriptorAsStorageImage(GPUContextVulkan* context, V
     context->AddImageBarrier(this, VK_IMAGE_LAYOUT_GENERAL);
 }
 
-bool GPUTextureVulkan::GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch)
+bool GPUTextureVulkan::GetData(int32 arrayIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch)
 {
     if (!IsStaging())
     {
@@ -189,12 +189,12 @@ bool GPUTextureVulkan::GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, 
     GPUDeviceLock lock(_device);
 
     // Internally it's a buffer, so adapt resource index and offset
-    const uint32 subresource = mipMapIndex + arrayOrDepthSliceIndex * MipLevels();
+    const uint32 subresource = mipMapIndex + arrayIndex * MipLevels();
     // TODO: rowAlign/sliceAlign on Vulkan texture ???
     int32 offsetInBytes = ComputeBufferOffset(subresource, 1, 1);
     int32 lengthInBytes = ComputeSubresourceSize(subresource, 1, 1);
     int32 rowPitch = ComputeRowPitch(mipMapIndex, 1);
-    int32 depthPicth = ComputeSlicePitch(mipMapIndex, 1);
+    int32 depthPitch = ComputeSlicePitch(mipMapIndex, 1);
 
     // Map the staging resource mip map for reading
     auto allocation = StagingBuffer->GetAllocation();
@@ -205,31 +205,7 @@ bool GPUTextureVulkan::GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, 
     // Shift mapped buffer to the beginning of the mip data start
     mapped = (void*)((byte*)mapped + offsetInBytes);
 
-    // Check if target row pitch is the same
-    if (mipRowPitch == rowPitch || mipRowPitch == 0)
-    {
-        // Init mip info
-        data.Lines = depthPicth / rowPitch;
-        data.DepthPitch = depthPicth;
-        data.RowPitch = rowPitch;
-
-        // Copy data
-        data.Data.Copy((byte*)mapped, depthPicth);
-    }
-    else
-    {
-        // Init mip info
-        data.Lines = depthPicth / rowPitch;
-        data.DepthPitch = mipRowPitch * data.Lines;
-        data.RowPitch = mipRowPitch;
-
-        // Copy data
-        data.Data.Allocate(data.DepthPitch);
-        for (uint32 i = 0; i < data.Lines; i++)
-        {
-            Platform::MemoryCopy(data.Data.Get() + data.RowPitch * i, ((byte*)mapped) + rowPitch * i, data.RowPitch);
-        }
-    }
+    data.Copy(mapped, rowPitch, depthPitch, Depth(), mipRowPitch);
 
     // Unmap resource
     vmaUnmapMemory(_device->Allocator, allocation);
@@ -259,6 +235,7 @@ bool GPUTextureVulkan::OnInit()
             return true;
         }
         _memoryUsage = 1;
+        initResource(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, _desc.MipLevels, _desc.ArraySize, false);
         return false;
     }
 

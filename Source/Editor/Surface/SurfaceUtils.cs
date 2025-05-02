@@ -1,17 +1,17 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
+using FlaxEditor.Options;
 using FlaxEditor.Scripting;
-using FlaxEditor.Utilities;
 using FlaxEngine.Utilities;
 using FlaxEngine;
+using FlaxEditor.GUI;
 
 namespace FlaxEditor.Surface
 {
@@ -71,7 +71,11 @@ namespace FlaxEditor.Surface
                 }
 
                 // By name
-                return string.Compare(x.DisplayName, y.DisplayName, StringComparison.InvariantCulture);
+                if (Editor.Instance.Options.Options.General.ScriptMembersOrder == GeneralOptions.MembersOrder.Alphabetical)
+                    return string.Compare(x.DisplayName, y.DisplayName, StringComparison.InvariantCulture);
+
+                // Keep same order
+                return 0;
             }
         }
 
@@ -100,6 +104,84 @@ namespace FlaxEditor.Surface
             }
         }
 
+        internal static GroupElement InitGraphParametersGroup(LayoutElementsContainer layout)
+        {
+            return CustomEditors.Editors.GenericEditor.OnGroup(layout, "Parameters");
+        }
+
+        private sealed class DummyMaterialSurfaceOwner : IVisjectSurfaceOwner
+        {
+            public Asset SurfaceAsset => null;
+            public string SurfaceName => null;
+            public FlaxEditor.Undo Undo => null;
+            public byte[] SurfaceData { get; set; }
+            public VisjectSurfaceContext ParentContext => null;
+
+            public void OnContextCreated(VisjectSurfaceContext context)
+            {
+            }
+
+            public void OnSurfaceEditedChanged()
+            {
+            }
+
+            public void OnSurfaceGraphEdited()
+            {
+            }
+
+            public void OnSurfaceClose()
+            {
+            }
+        }
+
+        private static void FindGraphParameters(Material material, List<SurfaceParameter> surfaceParameters)
+        {
+            if (material == null || material.WaitForLoaded())
+                return;
+            var surfaceData = material.LoadSurface(false);
+            if (surfaceData != null && surfaceData.Length > 0)
+            {
+                var surfaceOwner = new DummyMaterialSurfaceOwner { SurfaceData = surfaceData };
+                var surface = new MaterialSurface(surfaceOwner);
+                if (!surface.Load())
+                {
+                    surfaceParameters.AddRange(surface.Parameters);
+
+                    // Search for any nested parameters (eg. via Sample Layer)
+                    foreach (var node in surface.Nodes)
+                    {
+                        if (node.GroupArchetype.GroupID == 8 && node.Archetype.TypeID == 1) // Sample Layer
+                        {
+                            if (node.Values != null && node.Values.Length > 0 && node.Values[0] is Guid layerId)
+                            {
+                                var layer = FlaxEngine.Content.Load<MaterialBase>(layerId);
+                                if (layer)
+                                {
+                                    FindGraphParameters(layer, surfaceParameters);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private static void FindGraphParameters(MaterialBase materialBase, List<SurfaceParameter> surfaceParameters)
+        {
+            while (materialBase != null && !materialBase.WaitForLoaded())
+            {
+                if (materialBase is MaterialInstance materialInstance)
+                {
+                    materialBase = materialInstance.BaseMaterial;
+                }
+                else if (materialBase is Material material)
+                {
+                    FindGraphParameters(material, surfaceParameters);
+                    break;
+                }
+            }
+        }
+
         internal static GraphParameterData[] InitGraphParameters(IEnumerable<MaterialParameter> parameters, Material material)
         {
             int count = parameters.Count();
@@ -107,128 +189,11 @@ namespace FlaxEditor.Surface
             int i = 0;
 
             // Load material surface parameters meta to use it for material instance parameters editing
-            SurfaceParameter[] surfaceParameters = null;
+            var surfaceParameters = new List<SurfaceParameter>();
             try
             {
                 Profiler.BeginEvent("Init Material Parameters UI Data");
-
-                if (material != null && !material.WaitForLoaded())
-                {
-                    var surfaceData = material.LoadSurface(false);
-                    if (surfaceData != null && surfaceData.Length > 0)
-                    {
-                        using (var memoryStream = new MemoryStream(surfaceData))
-                        using (var stream = new BinaryReader(memoryStream))
-                        {
-                            // IMPORTANT! This must match C++ Graph format
-
-                            // Magic Code
-                            int tmp = stream.ReadInt32();
-                            if (tmp != 1963542358)
-                            {
-                                // Error
-                                throw new Exception("Invalid Graph format version");
-                            }
-
-                            // Version
-                            var version = stream.ReadUInt32();
-                            var guidBytes = new byte[16];
-                            if (version < 7000)
-                            {
-                                // Time saved (not used anymore to prevent binary diffs after saving unmodified surface)
-                                stream.ReadInt64();
-
-                                // Nodes count
-                                int nodesCount = stream.ReadInt32();
-
-                                // Parameters count
-                                int parametersCount = stream.ReadInt32();
-
-                                // For each node
-                                for (int j = 0; j < nodesCount; j++)
-                                {
-                                    // ID
-                                    stream.ReadUInt32();
-
-                                    // Type
-                                    stream.ReadUInt16();
-                                    stream.ReadUInt16();
-                                }
-
-                                // For each param
-                                surfaceParameters = new SurfaceParameter[parametersCount];
-                                for (int j = 0; j < parametersCount; j++)
-                                {
-                                    // Create param
-                                    var param = new SurfaceParameter();
-                                    surfaceParameters[j] = param;
-
-                                    // Properties
-                                    param.Type = new ScriptType(VisjectSurfaceContext.GetGraphParameterValueType((VisjectSurfaceContext.GraphParamType_Deprecated)stream.ReadByte()));
-                                    stream.Read(guidBytes, 0, 16);
-                                    param.ID = new Guid(guidBytes);
-                                    param.Name = stream.ReadStr(97);
-                                    param.IsPublic = stream.ReadByte() != 0;
-                                    var isStatic = stream.ReadByte() != 0;
-                                    var isUIVisible = stream.ReadByte() != 0;
-                                    var isUIEditable = stream.ReadByte() != 0;
-
-                                    // References [Deprecated]
-                                    int refsCount = stream.ReadInt32();
-                                    for (int k = 0; k < refsCount; k++)
-                                        stream.ReadUInt32();
-
-                                    // Value
-                                    stream.ReadCommonValue(ref param.Value);
-
-                                    // Meta
-                                    param.Meta.Load(stream);
-                                }
-                            }
-                            else if (version == 7000)
-                            {
-                                // Nodes count
-                                int nodesCount = stream.ReadInt32();
-
-                                // Parameters count
-                                int parametersCount = stream.ReadInt32();
-
-                                // For each node
-                                for (int j = 0; j < nodesCount; j++)
-                                {
-                                    // ID
-                                    stream.ReadUInt32();
-
-                                    // Type
-                                    stream.ReadUInt16();
-                                    stream.ReadUInt16();
-                                }
-
-                                // For each param
-                                surfaceParameters = new SurfaceParameter[parametersCount];
-                                for (int j = 0; j < parametersCount; j++)
-                                {
-                                    // Create param
-                                    var param = new SurfaceParameter();
-                                    surfaceParameters[j] = param;
-
-                                    // Properties
-                                    param.Type = stream.ReadVariantScriptType();
-                                    stream.Read(guidBytes, 0, 16);
-                                    param.ID = new Guid(guidBytes);
-                                    param.Name = stream.ReadStr(97);
-                                    param.IsPublic = stream.ReadByte() != 0;
-
-                                    // Value
-                                    param.Value = stream.ReadVariant();
-
-                                    // Meta
-                                    param.Meta.Load(stream);
-                                }
-                            }
-                        }
-                    }
-                }
+                FindGraphParameters(material, surfaceParameters);
             }
             catch (Exception ex)
             {
@@ -242,7 +207,26 @@ namespace FlaxEditor.Surface
 
             foreach (var parameter in parameters)
             {
-                var surfaceParameter = surfaceParameters?.FirstOrDefault(x => x.ID == parameter.ParameterID);
+                var parameterId = parameter.ParameterID;
+                var surfaceParameter = surfaceParameters.FirstOrDefault(x => x.ID == parameterId);
+                if (surfaceParameter == null)
+                {
+                    // Permutate original parameter ID to reflect logic in MaterialGenerator::prepareLayer used for nested layers
+                    unsafe
+                    {
+                        var raw = parameterId;
+                        var interop = *(FlaxEngine.Json.JsonSerializer.GuidInterop*)&raw;
+                        interop.A -= (uint)(i * 17 + 13);
+                        parameterId = *(Guid*)&interop;
+                    }
+                    surfaceParameter = surfaceParameters.FirstOrDefault(x => x.ID == parameterId);
+                }
+                if (surfaceParameter != null)
+                {
+                    // Reorder so it won't be picked by other parameter that uses the same ID (eg. params from duplicated materials used as layers in other material)
+                    surfaceParameters.Remove(surfaceParameter);
+                    surfaceParameters.Add(surfaceParameter);
+                }
                 var attributes = surfaceParameter?.Meta.GetAttributes() ?? FlaxEngine.Utils.GetEmptyArray<Attribute>();
                 data[i] = new GraphParameterData(null, parameter.Name, parameter.IsPublic, ToType(parameter.ParameterType), attributes, parameter);
                 i++;
@@ -440,11 +424,22 @@ namespace FlaxEditor.Surface
             return sb.ToString();
         }
 
-        internal static string GetVisualScriptMemberInfoDescription(ScriptMemberInfo member)
+        internal static string GetVisualScriptMemberInfoSignature(ScriptMemberInfo member)
         {
             var name = member.Name;
             var declaringType = member.DeclaringType;
             var valueType = member.ValueType;
+
+            // Getter/setter method of the property - we can return early here
+            if (member.IsMethod && (name.StartsWith("get_") || name.StartsWith("set_")))
+            {
+                var flags = member.IsStatic ? BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly : BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+                var property = declaringType.GetMembers(name.Substring(4), MemberTypes.Property, flags);
+                if (property != null && property.Length != 0)
+                {
+                    return GetVisualScriptMemberInfoSignature(property[0]);
+                }
+            }
 
             var sb = new StringBuilder();
             if (member.IsStatic)
@@ -453,35 +448,24 @@ namespace FlaxEditor.Surface
                 sb.Append("virtual ");
             sb.Append(valueType.Name);
             sb.Append(' ');
+            if (member.IsMethod)
+                sb.Append(member.DeclaringType.Namespace).Append('.');
             sb.Append(declaringType.Name);
             sb.Append('.');
             sb.Append(name);
+
             if (member.IsMethod)
             {
-                // Getter/setter method of the property
-                if (name.StartsWith("get_") || name.StartsWith("set_"))
+                sb.Append('(');
+                var parameters = member.GetParameters();
+                for (int i = 0; i < parameters.Length; i++)
                 {
-                    var flags = member.IsStatic ? BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly : BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-                    var property = declaringType.GetMembers(name.Substring(4), MemberTypes.Property, flags);
-                    if (property != null && property.Length != 0)
-                    {
-                        return GetVisualScriptMemberInfoDescription(property[0]);
-                    }
+                    if (i != 0)
+                        sb.Append(", ");
+                    ref var param = ref parameters[i];
+                    param.ToString(sb);
                 }
-                // Method
-                else
-                {
-                    sb.Append('(');
-                    var parameters = member.GetParameters();
-                    for (int i = 0; i < parameters.Length; i++)
-                    {
-                        if (i != 0)
-                            sb.Append(", ");
-                        ref var param = ref parameters[i];
-                        param.ToString(sb);
-                    }
-                    sb.Append(')');
-                }
+                sb.Append(')');
             }
             else if (member.IsProperty)
             {
@@ -495,8 +479,35 @@ namespace FlaxEditor.Surface
                 sb.Append('}');
             }
 
+            return sb.ToString();
+        }
+
+        internal static string GetVisualScriptMemberShortDescription(ScriptMemberInfo member)
+        {
+            var name = member.Name;
+            var declaringType = member.DeclaringType;
+
+            // Getter/setter method of the property - we can return early here
+            if (member.IsMethod && (name.StartsWith("get_") || name.StartsWith("set_")))
+            {
+                var flags = member.IsStatic ? BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly : BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
+                var property = declaringType.GetMembers(name.Substring(4), MemberTypes.Property, flags);
+                if (property != null && property.Length != 0)
+                {
+                    return GetVisualScriptMemberShortDescription(property[0]);
+                }
+            }
+
+            return Editor.Instance.CodeDocs.GetTooltip(member);
+        }
+
+        internal static string GetVisualScriptMemberInfoDescription(ScriptMemberInfo member)
+        {
+            var signature = GetVisualScriptMemberInfoSignature(member);
+            var sb = new StringBuilder(signature);
+
             // Tooltip
-            var tooltip = Editor.Instance.CodeDocs.GetTooltip(member);
+            var tooltip = GetVisualScriptMemberShortDescription(member);
             if (!string.IsNullOrEmpty(tooltip))
                 sb.Append("\n").Append(tooltip);
 
@@ -550,6 +561,35 @@ namespace FlaxEditor.Surface
             if (left == right)
                 return true;
             return AreScriptTypesEqualInner(left, right) || AreScriptTypesEqualInner(right, left);
+        }
+
+        internal static void PerformCommonSetup(Windows.Assets.AssetEditorWindow window, ToolStrip toolStrip, VisjectSurface surface,
+                                                out ToolStripButton saveButton, out ToolStripButton undoButton, out ToolStripButton redoButton)
+        {
+            var editor = window.Editor;
+            var interfaceOptions = editor.Options.Options.Interface;
+            var inputOptions = editor.Options.Options.Input;
+            var undo = surface.Undo;
+            var showSearch = () => editor.ContentFinding.ShowSearch(window);
+
+            // Toolstrip
+            saveButton = toolStrip.AddButton(editor.Icons.Save64, window.Save).LinkTooltip("Save", ref inputOptions.Save);
+            toolStrip.AddSeparator();
+            undoButton = toolStrip.AddButton(editor.Icons.Undo64, undo.PerformUndo).LinkTooltip("Undo", ref inputOptions.Undo);
+            redoButton = toolStrip.AddButton(editor.Icons.Redo64, undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
+            toolStrip.AddSeparator();
+            toolStrip.AddButton(editor.Icons.Search64, showSearch).LinkTooltip("Open content search tool",  ref inputOptions.Search);
+            toolStrip.AddButton(editor.Icons.CenterView64, surface.ShowWholeGraph).LinkTooltip("Show whole graph");
+            var gridSnapButton = toolStrip.AddButton(editor.Icons.Grid32, surface.ToggleGridSnapping);
+            gridSnapButton.LinkTooltip("Toggle grid snapping for nodes.");
+            gridSnapButton.AutoCheck = true;
+            gridSnapButton.Checked = surface.GridSnappingEnabled = interfaceOptions.SurfaceGridSnapping;
+            surface.GridSnappingSize = interfaceOptions.SurfaceGridSnappingSize;
+
+            // Setup input actions
+            window.InputActions.Add(options => options.Undo, undo.PerformUndo);
+            window.InputActions.Add(options => options.Redo, undo.PerformRedo);
+            window.InputActions.Add(options => options.Search, showSearch);
         }
     }
 }

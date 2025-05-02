@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 // Copyright (c) 2010-2014 SharpDX - Alexandre Mutel
 
 #pragma once
@@ -62,7 +62,6 @@ public:
     Vector3 GetSize() const;
 
     // Returns the square size of the OBB taking into consideration the scaling applied to the transformation matrix.
-    // @returns The size of the consideration.
     Vector3 GetSizeSquared() const;
 
     // Gets the center of the OBB.
@@ -85,13 +84,11 @@ public:
 
 public:
     // Transforms this box using a transformation matrix.
-    // @param mat The transformation matrix.
     void Transform(const Matrix& matrix);
     void Transform(const ::Transform& transform);
 
     // Scales the OBB by scaling its Extents without affecting the Transformation matrix.
     // By keeping Transformation matrix scaling-free, the collision detection methods will be more accurate.
-    // @param scaling Scale to apply to the box.
     void Scale(const Vector3& scaling)
     {
         Extents *= scaling;
@@ -99,14 +96,12 @@ public:
 
     // Scales the OBB by scaling its Extents without affecting the Transformation matrix.
     // By keeping Transformation matrix scaling-free, the collision detection methods will be more accurate.
-    // @param scaling Scale to apply to the box.
     void Scale(Real scaling)
     {
         Extents *= scaling;
     }
 
     // Translates the OBB to a new position using a translation vector.
-    // @param translation the translation vector.
     void Translate(const Vector3& translation)
     {
         Transformation.Translation += translation;
@@ -165,38 +160,26 @@ public:
 
 public:
     // Determines whether a OBB contains a point.
-    // @param point The point to test.
-    // @returns The type of containment the two objects have.
     ContainmentType Contains(const Vector3& point, Real* distance = nullptr) const;
 
-    // Determines whether a OBB contains a BoundingSphere.
-    // @param sphere The sphere to test.
-    // @param ignoreScale Optimize the check operation by assuming that OBB has no scaling applied.
-    // @returns The type of containment the two objects have.
+    /// <summary>
+    /// Determines whether a OBB contains a sphere.
+    /// </summary>
+    /// <param name="sphere">The sphere to test.</param>
+    /// <param name="ignoreScale">Optimize the check operation by assuming that OBB has no scaling applied.</param>
+    /// <returns>The type of containment the two objects have.</returns>
     ContainmentType Contains(const BoundingSphere& sphere, bool ignoreScale = false) const;
 
-    // Determines whether there is an intersection between a Ray and a OBB.
-    // @param ray The ray to test.
-    // @param point When the method completes, contains the point of intersection, or Vector3.Zero if there was no intersection.
-    // @returns Whether the two objects intersected.
+    // Determines whether there is an intersection between oriented box and a ray. Returns point of the intersection.
     bool Intersects(const Ray& ray, Vector3& point) const;
 
-    // Determines if there is an intersection between the current object and a Ray.
-    // @param ray The ray to test.
-    // @param distance When the method completes, contains the distance of the intersection, or 0 if there was no intersection.
-    // @returns Whether the two objects intersected.
+    // Determines if there is an intersection between oriented box and a ray. Returns distance to the intersection.
     bool Intersects(const Ray& ray, Real& distance) const;
 
-    // Determines if there is an intersection between the current object and a Ray.
-    // @param ray The ray to test.
-    // @param distance When the method completes, contains the distance of the intersection, or 0 if there was no intersection.
-    // @param normal When the method completes, contains the intersection surface normal vector, or Vector3::Up if there was no intersection.
-    // @returns Whether the two objects intersected.
+    // Determines if there is an intersection between oriented box and a ray. Returns distance to the intersection and surface normal.
     bool Intersects(const Ray& ray, Real& distance, Vector3& normal) const;
 
     // Determines whether there is an intersection between a Ray and a OBB.
-    // @param ray The ray to test.
-    // @returns Whether the two objects intersected.
     bool Intersects(const Ray& ray) const
     {
         Vector3 point;

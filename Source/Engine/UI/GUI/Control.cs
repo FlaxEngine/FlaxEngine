@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -81,6 +81,7 @@ namespace FlaxEngine.GUI
         // Style
 
         private Color _backgroundColor = Color.Transparent;
+        private IBrush _backgroundBrush = null;
 
         // Tooltip
 
@@ -120,8 +121,6 @@ namespace FlaxEngine.GUI
             {
                 if (_parent == value)
                     return;
-
-                Defocus();
 
                 Float2 oldParentSize;
                 if (_parent != null)
@@ -172,6 +171,25 @@ namespace FlaxEngine.GUI
         {
             get => _backgroundColor;
             set => _backgroundColor = value;
+        }
+
+        /// <summary>
+        /// Gets or sets control background brush used to fill the contents. Uses Background Color property as tint color.
+        /// </summary>
+        [EditorDisplay("Background Style"), EditorOrder(2001)]
+        public IBrush BackgroundBrush
+        {
+            get => _backgroundBrush;
+            set
+            {
+                _backgroundBrush = value;
+
+#if FLAX_EDITOR
+                // Auto-reset background color so brush is visible as it uses it for tint
+                if (value != null && _backgroundColor == Color.Transparent && FlaxEditor.CustomEditors.CustomEditor.IsSettingValue)
+                    _backgroundColor = Color.White;
+#endif
+            }
         }
 
         /// <summary>
@@ -406,7 +424,7 @@ namespace FlaxEngine.GUI
 
         private void OnUpdateTooltip(float deltaTime)
         {
-            Tooltip.OnMouseOverControl(this, deltaTime);
+            Tooltip?.OnMouseOverControl(this, deltaTime);
         }
 
         /// <summary>
@@ -416,9 +434,14 @@ namespace FlaxEngine.GUI
         public virtual void Draw()
         {
             // Paint Background
-            if (_backgroundColor.A > 0.0f)
+            var rect = new Rectangle(Float2.Zero, _bounds.Size);
+            if (BackgroundBrush != null)
             {
-                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), _backgroundColor);
+                BackgroundBrush.Draw(rect, _backgroundColor);
+            }
+            else if (_backgroundColor.A > 0.0f)
+            {
+                Render2D.FillRectangle(rect, _backgroundColor);
             }
         }
 
@@ -614,6 +637,18 @@ namespace FlaxEngine.GUI
             case NavDirection.Down: return NavTargetDown;
             case NavDirection.Left: return NavTargetLeft;
             case NavDirection.Right: return NavTargetRight;
+            case NavDirection.Next:
+                if (NavTargetRight != null)
+                    return NavTargetRight;
+                if (NavTargetDown != null)
+                    return NavTargetDown;
+                return null;
+            case NavDirection.Previous:
+                if (NavTargetLeft != null)
+                    return NavTargetLeft;
+                if (NavTargetUp != null)
+                    return NavTargetUp;
+                return null;
             default: return null;
             }
         }
@@ -707,7 +742,7 @@ namespace FlaxEngine.GUI
             // Update tooltip
             if (ShowTooltip && OnTestTooltipOverControl(ref location))
             {
-                Tooltip.OnMouseEnterControl(this);
+                Tooltip?.OnMouseEnterControl(this);
                 SetUpdate(ref _tooltipUpdate, OnUpdateTooltip);
             }
         }
@@ -724,14 +759,14 @@ namespace FlaxEngine.GUI
             {
                 if (_tooltipUpdate == null)
                 {
-                    Tooltip.OnMouseEnterControl(this);
+                    Tooltip?.OnMouseEnterControl(this);
                     SetUpdate(ref _tooltipUpdate, OnUpdateTooltip);
                 }
             }
             else if (_tooltipUpdate != null)
             {
                 SetUpdate(ref _tooltipUpdate, null);
-                Tooltip.OnMouseLeaveControl(this);
+                Tooltip?.OnMouseLeaveControl(this);
             }
         }
 
@@ -748,7 +783,7 @@ namespace FlaxEngine.GUI
             if (_tooltipUpdate != null)
             {
                 SetUpdate(ref _tooltipUpdate, null);
-                Tooltip.OnMouseLeaveControl(this);
+                Tooltip?.OnMouseLeaveControl(this);
             }
         }
 
@@ -1047,6 +1082,11 @@ namespace FlaxEngine.GUI
         [NoAnimate]
         public void UnlinkTooltip()
         {
+            if (_tooltipUpdate != null)
+            {
+                SetUpdate(ref _tooltipUpdate, null);
+                Tooltip?.OnMouseLeaveControl(this);
+            }
             _tooltipText = null;
             _tooltip = null;
         }

@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
@@ -19,7 +20,7 @@ namespace FlaxEditor.Windows.Assets
     /// </summary>
     /// <seealso cref="Prefab" />
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
-    public sealed partial class PrefabWindow : AssetEditorWindowBase<Prefab>, IPresenterOwner
+    public sealed partial class PrefabWindow : AssetEditorWindowBase<Prefab>, IPresenterOwner, ISceneEditingContext
     {
         private readonly SplitPanel _split1;
         private readonly SplitPanel _split2;
@@ -42,6 +43,9 @@ namespace FlaxEditor.Windows.Assets
         private bool _liveReload = false;
         private bool _isUpdatingSelection, _isScriptsReloading;
         private DateTime _modifiedTime = DateTime.MinValue;
+        private bool _isDropping = false;
+
+        private bool _lockSelection = false;
 
         /// <summary>
         /// Gets the prefab hierarchy tree control.
@@ -52,6 +56,9 @@ namespace FlaxEditor.Windows.Assets
         /// Gets the viewport.
         /// </summary>
         public PrefabWindowViewport Viewport => _viewport;
+
+        /// <inheritdoc />
+        public List<SceneGraphNode> Selection => _selection;
 
         /// <summary>
         /// Gets the prefab objects properties editor.
@@ -71,7 +78,18 @@ namespace FlaxEditor.Windows.Assets
         /// <summary>
         /// Indication of if the prefab window selection is locked on specific objects.
         /// </summary>
-        public bool LockSelectedObjects = false;
+        public bool LockSelectedObjects
+        {
+            get => _lockSelection;
+            set
+            {
+                if (_lockSelection == value)
+                    return;
+                _lockSelection = value;
+                if (!value)
+                    OnSelectionChanged(Graph.Root.SceneContext.Selection.ToArray());
+            }
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether use live reloading for the prefab changes (applies prefab changes on modification by auto).
@@ -142,6 +160,7 @@ namespace FlaxEditor.Windows.Assets
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
                 Parent = headerPanel,
                 Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
+                TooltipText = "Search the prefab.\n\nYou can prefix your search with different search operators:\ns: -> Actor with script of type\na: -> Actor type\nc: -> Control type",
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 
@@ -180,20 +199,19 @@ namespace FlaxEditor.Windows.Assets
             _propertiesEditor.Modified += MarkAsEdited;
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save");
+            _saveButton = _toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
             _toolstrip.AddSeparator();
-            _toolStripUndo = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
-            _toolStripRedo = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
+            _toolStripUndo = _toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo", ref inputOptions.Undo);
+            _toolStripRedo = _toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
             _toolstrip.AddSeparator();
-            _toolStripTranslate = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Translate32, () => _viewport.TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate).LinkTooltip($"Change Gizmo tool mode to Translate ({inputOptions.TranslateMode})");
-            _toolStripRotate = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Rotate32, () => _viewport.TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate).LinkTooltip($"Change Gizmo tool mode to Rotate ({inputOptions.RotateMode})");
-            _toolStripScale = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Scale32, () => _viewport.TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale).LinkTooltip($"Change Gizmo tool mode to Scale ({inputOptions.ScaleMode})");
+            _toolStripTranslate = _toolstrip.AddButton(Editor.Icons.Translate32, () => _viewport.TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate).LinkTooltip("Change Gizmo tool mode to Translate", ref inputOptions.TranslateMode);
+            _toolStripRotate = _toolstrip.AddButton(Editor.Icons.Rotate32, () => _viewport.TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate).LinkTooltip("Change Gizmo tool mode to Rotate", ref inputOptions.RotateMode);
+            _toolStripScale = _toolstrip.AddButton(Editor.Icons.Scale32, () => _viewport.TransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale).LinkTooltip("Change Gizmo tool mode to Scale", ref inputOptions.ScaleMode);
             _toolstrip.AddSeparator();
             _toolStripLiveReload = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Refresh64, () => LiveReload = !LiveReload).SetChecked(true).SetAutoCheck(true).LinkTooltip("Live changes preview (applies prefab changes on modification by auto)");
 
             Editor.Prefabs.PrefabApplied += OnPrefabApplied;
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
-            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
 
             // Setup input actions
             InputActions.Add(options => options.Undo, () =>
@@ -211,8 +229,8 @@ namespace FlaxEditor.Windows.Assets
             InputActions.Add(options => options.Paste, Paste);
             InputActions.Add(options => options.Duplicate, Duplicate);
             InputActions.Add(options => options.Delete, Delete);
-            InputActions.Add(options => options.Rename, Rename);
-            InputActions.Add(options => options.FocusSelection, _viewport.FocusSelection);
+            InputActions.Add(options => options.Rename, RenameSelection);
+            InputActions.Add(options => options.FocusSelection, FocusSelection);
         }
 
         /// <summary>
@@ -273,16 +291,23 @@ namespace FlaxEditor.Windows.Assets
                 return true;
             }
 
-            if (button == MouseButton.Left && _treePanel.ContainsPoint(ref location))
+            if (button == MouseButton.Left && _treePanel.ContainsPoint(ref location) && !_isDropping)
             {
                 _tree.Deselect();
+                return true;
+            }
+            if (_isDropping)
+            {
+                _isDropping = false;
                 return true;
             }
             return false;
         }
 
-        private void OnScriptsReloadBegin()
+        /// <inheritdoc />
+        protected override void OnScriptsReloadBegin()
         {
+            base.OnScriptsReloadBegin();
             _isScriptsReloading = true;
 
             if (_asset == null || !_asset.IsLoaded)
@@ -310,19 +335,8 @@ namespace FlaxEditor.Windows.Assets
             Graph.MainActor = null;
             _viewport.Prefab = null;
             _undo?.Clear(); // TODO: maybe don't clear undo?
-        }
 
-        private void OnScriptsReloadEnd()
-        {
-            _isScriptsReloading = false;
-
-            if (_asset == null || !_asset.IsLoaded)
-                return;
-
-            // Restore
-            OnPrefabOpened();
-            _undo.Clear();
-            ClearEditedFlag();
+            Close();
         }
 
         private void OnUndoEvent(IUndoAction action)
@@ -349,11 +363,20 @@ namespace FlaxEditor.Windows.Assets
         private void OnPrefabOpened()
         {
             _viewport.Prefab = _asset;
-            _viewport.UpdateGizmoMode();
+            if (Editor.ProjectCache.TryGetCustomData($"UIMode:{_asset.ID}", out bool value))
+                _viewport.SetInitialUIMode(value);
+            else
+                _viewport.SetInitialUIMode(_viewport._hasUILinked);
+            _viewport.UIModeToggled += OnUIModeToggled;
             Graph.MainActor = _viewport.Instance;
             Selection.Clear();
             Select(Graph.Main);
             Graph.Root.TreeNode.Expand(true);
+        }
+
+        private void OnUIModeToggled(bool value)
+        {
+            Editor.ProjectCache.SetCustomData($"UIMode:{_asset.ID}", value);
         }
 
         /// <inheritdoc />
@@ -530,17 +553,21 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
+            base.OnDestroy();
+
             Editor.Prefabs.PrefabApplied -= OnPrefabApplied;
             ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
-            ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
 
             _undo.Dispose();
             Graph.Dispose();
-
-            base.OnDestroy();
         }
 
         /// <inheritdoc />
         public EditorViewport PresenterViewport => _viewport;
+
+        /// <inheritdoc />
+        EditorViewport ISceneEditingContext.Viewport => Viewport;
     }
 }

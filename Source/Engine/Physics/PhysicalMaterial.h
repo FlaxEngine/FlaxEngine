@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,7 @@
 /// <summary>
 /// Physical materials are used to define the response of a physical object when interacting dynamically with the world.
 /// </summary>
-API_CLASS(Attributes = "ContentContextMenu(\"New/Physics/Physical Material\")")
+API_CLASS(Attributes="ContentContextMenu(\"New/Physics/Physical Material\")")
 class FLAXENGINE_API PhysicalMaterial final : public ScriptingObject, public ISerializable
 {
     API_AUTO_SERIALIZATION();

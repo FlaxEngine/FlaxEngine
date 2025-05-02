@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 @0// Forward Shading: Defines
 #define MAX_LOCAL_LIGHTS 4
@@ -16,7 +16,6 @@
 #include "./Flax/ExponentialHeightFog.hlsl"
 @2// Forward Shading: Constants
 LightData DirectionalLight;
-LightShadowData DirectionalLightShadow;
 LightData SkyLight;
 ProbeData EnvironmentProbe;
 ExponentialHeightFogData ExponentialHeightFog;
@@ -26,9 +25,9 @@ LightData LocalLights[MAX_LOCAL_LIGHTS];
 @3// Forward Shading: Resources
 TextureCube EnvProbe : register(t__SRV__);
 TextureCube SkyLightTexture : register(t__SRV__);
-Texture2DArray DirectionalLightShadowMap : register(t__SRV__);
+Buffer<float4> ShadowsBuffer : register(t__SRV__);
+Texture2D<float> ShadowMap : register(t__SRV__);
 @4// Forward Shading: Utilities
-DECLARE_LIGHTSHADOWDATA_ACCESS(DirectionalLightShadow);
 @5// Forward Shading: Shaders
 
 // Pixel Shader function for Forward Pass
@@ -39,14 +38,12 @@ void PS_Forward(
 	)
 {
 	output = 0;
-
+	MaterialInput materialInput = GetMaterialInput(input);
 #if USE_DITHERED_LOD_TRANSITION
-	// LOD masking
-	ClipLODTransition(input);
+	ClipLODTransition(materialInput);
 #endif
 
 	// Get material parameters
-	MaterialInput materialInput = GetMaterialInput(input);
 	Material material = GetMaterialPS(materialInput);
 
 	// Masking
@@ -80,11 +77,8 @@ void PS_Forward(
 
 	// Calculate lighting from a single directional light
 	float4 shadowMask = 1.0f;
-	if (DirectionalLight.CastShadows > 0)
-	{
-		LightShadowData directionalLightShadowData = GetDirectionalLightShadowData();
-		shadowMask.r = SampleShadow(DirectionalLight, directionalLightShadowData, DirectionalLightShadowMap, gBuffer, shadowMask.g);
-	}
+	ShadowSample shadow = SampleDirectionalLightShadow(DirectionalLight, ShadowsBuffer, ShadowMap, gBuffer);
+	shadowMask = GetShadowMask(shadow);
 	float4 light = GetLighting(ViewPos, DirectionalLight, gBuffer, shadowMask, false, false);
 
 	// Calculate lighting from sky light
@@ -125,6 +119,20 @@ void PS_Forward(
 		float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
 		reflections = lerp(reflections, screenColor, hit.z);
 	}
+
+	// Fallback to software tracing if possible
+#if USE_GLOBAL_SURFACE_ATLAS && CAN_USE_GLOBAL_SURFACE_ATLAS
+	if (hit.z < REFLECTIONS_HIT_THRESHOLD)
+	{
+		float3 reflectWS = ScreenSpaceReflectionDirection(screenUV, gBuffer, ViewPos);
+		float4 surfaceAtlas;
+		if (TraceSDFSoftwareReflections(gBuffer, reflectWS, surfaceAtlas))
+		{
+			float3 screenColor = sceneColorTexture.SampleLevel(SamplerPointClamp, hit.xy, 0).rgb;
+        	reflections = lerp(surfaceAtlas, float4(screenColor, 1), hit.z);
+		}
+	}
+#endif
 #endif
 
 	light.rgb += reflections * GetReflectionSpecularLighting(ViewPos, gBuffer) * light.a;	

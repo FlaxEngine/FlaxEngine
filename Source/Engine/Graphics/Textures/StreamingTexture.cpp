@@ -1,10 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "StreamingTexture.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Streaming/StreamingGroup.h"
-#include "Engine/Content/Loading/ContentLoadingManager.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTools.h"
@@ -213,13 +212,13 @@ protected:
         const int32 dstMips = dstTexture->MipLevels();
         GPUTexture* srcTexture = _streamingTexture->GetTexture();
         const int32 srcMips = srcTexture->MipLevels();
+        const int32 srcMissingMips = srcMips - srcTexture->ResidentMipLevels();
         const int32 mipCount = Math::Min(dstMips, srcMips);
-        ASSERT(mipCount > 0);
-        for (int32 mipIndex = 0; mipIndex < mipCount; mipIndex++)
+        for (int32 mipIndex = srcMissingMips; mipIndex < mipCount; mipIndex++)
         {
             context->GPU->CopySubresource(dstTexture, dstMips - mipIndex - 1, srcTexture, srcMips - mipIndex - 1);
         }
-        _uploadedMipCount = mipCount;
+        _uploadedMipCount = mipCount - srcMissingMips;
 
         return Result::Ok;
     }
@@ -238,10 +237,10 @@ protected:
 
     void OnSync() override
     {
+        _newTexture->SetResidentMipLevels(_uploadedMipCount);
         Swap(_streamingTexture->_texture, _newTexture);
-        _streamingTexture->GetTexture()->SetResidentMipLevels(_uploadedMipCount);
-        _streamingTexture->ResidencyChanged();
         SAFE_DELETE_GPU_RESOURCE(_newTexture);
+        _streamingTexture->ResidencyChanged();
 
         // Base
         GPUTask::OnSync();
@@ -323,15 +322,17 @@ class StreamTextureMipTask : public GPUUploadTextureMipTask
 {
 private:
     StreamingTexture* _streamingTexture;
+    Task* _rootTask;
     FlaxStorage::LockData _dataLock;
 
 public:
-    StreamTextureMipTask(StreamingTexture* texture, int32 mipIndex)
+    StreamTextureMipTask(StreamingTexture* texture, int32 mipIndex, Task* rootTask)
         : GPUUploadTextureMipTask(texture->GetTexture(), mipIndex, Span<byte>(nullptr, 0), 0, 0, false)
         , _streamingTexture(texture)
+        , _rootTask(rootTask ? rootTask : this)
         , _dataLock(_streamingTexture->GetOwner()->LockData())
     {
-        _streamingTexture->_streamingTasks.Add(this);
+        _streamingTexture->_streamingTasks.Add(_rootTask);
         _texture.Released.Bind<StreamTextureMipTask, &StreamTextureMipTask::OnResourceReleased2>(this);
     }
 
@@ -342,7 +343,7 @@ private:
         if (_streamingTexture)
         {
             ScopeLock lock(_streamingTexture->GetOwner()->GetOwnerLocker());
-            _streamingTexture->_streamingTasks.Remove(this);
+            _streamingTexture->_streamingTasks.Remove(_rootTask);
             _streamingTexture = nullptr;
         }
     }
@@ -394,7 +395,7 @@ protected:
         if (_streamingTexture)
         {
             ScopeLock lock(_streamingTexture->GetOwner()->GetOwnerLocker());
-            _streamingTexture->_streamingTasks.Remove(this);
+            _streamingTexture->_streamingTasks.Remove(_rootTask);
             _streamingTexture = nullptr;
         }
 
@@ -444,7 +445,7 @@ Task* StreamingTexture::CreateStreamingTask(int32 residency)
 
             // Add upload data task
             const int32 allocatedMipIndex = TotalIndexToTextureMipIndex(mipIndex);
-            task = New<StreamTextureMipTask>(this, allocatedMipIndex);
+            task = New<StreamTextureMipTask>(this, allocatedMipIndex, result);
             if (result)
                 result->ContinueWith(task);
             else

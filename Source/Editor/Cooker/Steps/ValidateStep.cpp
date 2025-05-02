@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ValidateStep.h"
 #include "Engine/Core/Config/GameSettings.h"
@@ -51,6 +51,11 @@ bool ValidateStep::Perform(CookingData& data)
 
     // Validate game settings
     auto gameSettings = GameSettings::Get();
+    if (gameSettings == nullptr)
+    {
+        data.Error(TEXT("Missing game settings."));
+        return true;
+    }
     {
         if (gameSettings->ProductName.IsEmpty())
         {

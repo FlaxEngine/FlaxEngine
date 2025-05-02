@@ -1,14 +1,13 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
-using System.IO;
+using FlaxEditor.Content.Create;
 using FlaxEditor.Content.Thumbnails;
 using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.Content
 {
@@ -74,20 +73,24 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
+        public override bool CanReimport(ContentItem item)
+        {
+            if (item is not PrefabItem prefabItem)
+                return base.CanReimport(item);
+
+            var prefab = FlaxEngine.Content.Load<Prefab>(prefabItem.ID);
+            return prefab.GetDefaultInstance().GetScript<ModelPrefab>() != null;
+        }
+
+        /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
             bool resetTransform = false;
             var transform = Transform.Identity;
             if (!(arg is Actor actor))
             {
-                // Create default prefab root object
-                actor = new EmptyActor
-                {
-                    Name = "Root"
-                };
-
-                // Cleanup it after usage
-                Object.Destroy(actor, 20.0f);
+                Editor.Instance.ContentImporting.Create(new PrefabCreateEntry(outputPath));
+                return;
             }
             else if (actor.HasScene)
             {
@@ -241,18 +244,8 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
-            // Create prefab with UI Control
-            var actor = new UIControl
-            {
-                Name = Path.GetFileNameWithoutExtension(outputPath),
-                StaticFlags = StaticFlags.None,
-            };
-            actor.Control = new Button
-            {
-                Text = "Button",
-            };
-            PrefabManager.CreatePrefab(actor, outputPath, false);
-            Object.Destroy(actor, 20.0f);
+            Editor.Instance.ContentImporting.Create(new WidgetCreateEntry(outputPath));
+            return;
         }
     }
 }

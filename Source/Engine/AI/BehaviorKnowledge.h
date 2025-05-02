@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -83,13 +83,13 @@ public:
     /// Checks if knowledge has a given goal (exact type match without base class check).
     /// </summary>
     /// <param name="type">The goal type.</param>
-    /// <returns>True if has a given goal, otherwise false.</returns>
+    /// <returns>True if knowledge has a given goal, otherwise false.</returns>
     API_FUNCTION() bool HasGoal(ScriptingTypeHandle type) const;
 
     /// <summary>
     /// Checks if knowledge has a given goal (exact type match without base class check).
     /// </summary>
-    /// <returns>True if has a given goal, otherwise false.</returns>
+    /// <returns>True if knowledge has a given goal, otherwise false.</returns>
     template<typename T>
     FORCE_INLINE bool HasGoal()
     {

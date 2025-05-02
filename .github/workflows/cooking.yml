@@ -1,0 +1,48 @@
+name: Cooker
+on: [push, pull_request]
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: false
+
+jobs:
+  # Cook on Mac
+  cook-mac:
+    name: Cook (Mac)
+    runs-on: "macos-14"
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+    - name: Setup Vulkan
+      uses: ./.github/actions/vulkan
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 8.0.x
+    - name: Setup .NET Workload
+      run: |
+        dotnet workload install ios
+    - name: Print .NET info
+      run: |
+        dotnet --info
+        dotnet workload --info
+    - name: Checkout LFS
+      run: |
+        git lfs version
+        git lfs pull
+    - name: Get Flax Samples
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 1
+        repository: FlaxEngine/FlaxSamples
+        path: FlaxSamples
+    - name: Patch Files
+      run: |
+        cp .github/data/ExitOnEsc.cs FlaxSamples/MaterialsFeaturesTour/Source/Game
+        cp ".github/data/Build Settings.json" "FlaxSamples/MaterialsFeaturesTour/Content/Settings"
+    - name: Build Editor
+      run: |
+        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -printSDKs -dotnet=8 -arch=ARM64 -platform=Mac -configuration=Development -buildtargets=FlaxEditor
+    - name: Cook Game (iOS)
+      run: |
+        ./Binaries/Editor/Mac/Development/FlaxEditor -std -headless -mute -null -project "FlaxSamples/MaterialsFeaturesTour" -build "Development.iOS"

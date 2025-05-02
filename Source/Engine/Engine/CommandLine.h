@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -128,7 +128,6 @@ public:
         Nullable<bool> LowDPI;
 
 #if USE_EDITOR
-
         /// <summary>
         /// -project !path! (Startup project path)
         /// </summary>
@@ -170,10 +169,21 @@ public:
         Nullable<bool> ShaderDebug;
 
         /// <summary>
+        /// -exit (exits the editor after startup and performing all queued actions). Usefull when invoking editor from CL/CD.
+        /// </summary>
+        Nullable<bool> Exit;
+
+        /// <summary>
         /// -play !guid! ( Scene to play, can be empty to use default )
         /// </summary>
         Nullable<String> Play;
+#endif
 
+#if USE_EDITOR || !BUILD_RELEASE
+        /// <summary>
+        /// -shaderprofile (enables debugging data generation for shaders but leaves shader compiler optimizations active for performance profiling)
+        /// </summary>
+        Nullable<bool> ShaderProfile;
 #endif
     };
 

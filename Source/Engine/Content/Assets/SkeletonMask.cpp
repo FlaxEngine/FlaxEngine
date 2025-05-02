@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SkeletonMask.h"
 #include "Engine/Core/Log.h"
@@ -29,7 +29,7 @@ Asset::LoadResult SkeletonMask::load()
     _maskedNodes.Resize(maskedNodesCount);
     for (auto& e : _maskedNodes)
     {
-        stream.ReadString(&e, -13);
+        stream.Read(e, -13);
     }
     Skeleton = skeletonId;
 
@@ -66,18 +66,8 @@ const BitArray<>& SkeletonMask::GetNodesMask()
 
 bool SkeletonMask::Save(const StringView& path)
 {
-    // Validate state
-    if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave(path))
         return true;
-    }
-    if (IsVirtual() && path.IsEmpty())
-    {
-        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
-        return true;
-    }
-
     ScopeLock lock(Locker);
 
     // Write data
@@ -87,7 +77,7 @@ bool SkeletonMask::Save(const StringView& path)
     stream.WriteInt32(_maskedNodes.Count());
     for (auto& e : _maskedNodes)
     {
-        stream.WriteString(e, -13);
+        stream.Write(e, -13);
     }
 
     // Save
@@ -98,7 +88,7 @@ bool SkeletonMask::Save(const StringView& path)
         Platform::MemoryClear(tmpChunks, sizeof(tmpChunks));
         FlaxChunk chunk;
         tmpChunks[0] = &chunk;
-        tmpChunks[0]->Data.Link(stream.GetHandle(), stream.GetPosition());
+        tmpChunks[0]->Data.Link(ToSpan(stream));
 
         AssetInitData initData;
         initData.SerializedVersion = SerializedVersion;
@@ -109,7 +99,7 @@ bool SkeletonMask::Save(const StringView& path)
     else
     {
         auto chunk0 = GetChunk(0);
-        chunk0->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        chunk0->Data.Copy(ToSpan(stream));
 
         AssetInitData initData;
         initData.SerializedVersion = SerializedVersion;

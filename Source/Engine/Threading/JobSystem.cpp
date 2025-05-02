@@ -1,37 +1,32 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "JobSystem.h"
 #include "IRunnable.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/Thread.h"
 #include "Engine/Platform/ConditionVariable.h"
+#include "Engine/Core/Types/Span.h"
+#include "Engine/Core/Types/Pair.h"
+#include "Engine/Core/Memory/SimpleHeapAllocation.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Collections/RingBuffer.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #if USE_CSHARP
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #endif
 
-// Jobs storage perf info:
-// (500 jobs, i7 9th gen)
-// JOB_SYSTEM_USE_MUTEX=1, enqueue=130-280 cycles, dequeue=2-6 cycles
-// JOB_SYSTEM_USE_MUTEX=0, enqueue=300-700 cycles, dequeue=10-16 cycles
-// So using RingBuffer+Mutex+Signals is better than moodycamel::ConcurrentQueue
-
 #define JOB_SYSTEM_ENABLED 1
-#define JOB_SYSTEM_USE_MUTEX 1
-#define JOB_SYSTEM_USE_STATS 0
-
-#if JOB_SYSTEM_USE_STATS
-#include "Engine/Core/Log.h"
-#endif
-#if JOB_SYSTEM_USE_MUTEX
-#include "Engine/Core/Collections/RingBuffer.h"
-#else
-#include "ConcurrentQueue.h"
-#endif
 
 #if JOB_SYSTEM_ENABLED
+
+// Local allocator for job system memory that uses internal pooling and assumes that JobsLocker is taken (write access owned by the calling thread).
+class JobSystemAllocation : public SimpleHeapAllocation<JobSystemAllocation>
+{
+public:
+    static void* Allocate(uintptr size);
+    static void Free(void* ptr, uintptr size);
+};
 
 class JobSystemService : public EngineService
 {
@@ -48,13 +43,26 @@ public:
 
 struct JobData
 {
-    Function<void(int32)> Job;
     int32 Index;
     int64 JobKey;
 };
 
 template<>
 struct TIsPODType<JobData>
+{
+    enum { Value = true };
+};
+
+struct JobContext
+{
+    volatile int64 JobsLeft;
+    int32 DependenciesLeft;
+    Function<void(int32)> Job;
+    Array<int64, JobSystemAllocation> Dependants;
+};
+
+template<>
+struct TIsPODType<JobContext>
 {
     enum { Value = false };
 };
@@ -79,40 +87,44 @@ public:
     }
 };
 
-struct JobContext
-{
-    volatile int64 JobsLeft;
-};
-
-template<>
-struct TIsPODType<JobContext>
-{
-    enum { Value = true };
-};
-
 namespace
 {
     JobSystemService JobSystemInstance;
+    Array<Pair<void*, uintptr>> MemPool;
     Thread* Threads[PLATFORM_THREADS_LIMIT / 2] = {};
     int32 ThreadsCount = 0;
     bool JobStartingOnDispatch = true;
     volatile int64 ExitFlag = 0;
     volatile int64 JobLabel = 0;
-    Dictionary<int64, JobContext> JobContexts;
+    Dictionary<int64, JobContext, JobSystemAllocation> JobContexts;
     ConditionVariable JobsSignal;
     CriticalSection JobsMutex;
     ConditionVariable WaitSignal;
     CriticalSection WaitMutex;
     CriticalSection JobsLocker;
-#if JOB_SYSTEM_USE_MUTEX
     RingBuffer<JobData> Jobs;
-#else
-    ConcurrentQueue<JobData> Jobs;
-#endif
-#if JOB_SYSTEM_USE_STATS
-    int64 DequeueCount = 0;
-    int64 DequeueSum = 0;
-#endif
+}
+
+void* JobSystemAllocation::Allocate(uintptr size)
+{
+    void* result = nullptr;
+    for (int32 i = 0; i < MemPool.Count(); i++)
+    {
+        if (MemPool.Get()[i].Second == size)
+        {
+            result = MemPool.Get()[i].First;
+            MemPool.RemoveAt(i);
+            break;
+        }
+    }
+    if (!result)
+        result = Platform::Allocate(size, 16);
+    return result;
+}
+
+void JobSystemAllocation::Free(void* ptr, uintptr size)
+{
+    MemPool.Add({ ptr, size });
 }
 
 bool JobSystemService::Init()
@@ -151,6 +163,12 @@ void JobSystemService::Dispose()
             Threads[i] = nullptr;
         }
     }
+
+    JobContexts.SetCapacity(0);
+    Jobs.Release();
+    for (auto& e : MemPool)
+        Platform::Free(e.First);
+    MemPool.Clear();
 }
 
 int32 JobSystemThread::Run()
@@ -158,34 +176,22 @@ int32 JobSystemThread::Run()
     Platform::SetThreadAffinityMask(1ull << Index);
 
     JobData data;
+    Function<void(int32)> job;
     bool attachCSharpThread = true;
-#if !JOB_SYSTEM_USE_MUTEX
-    moodycamel::ConsumerToken consumerToken(Jobs);
-#endif
     while (Platform::AtomicRead(&ExitFlag) == 0)
     {
         // Try to get a job
-#if JOB_SYSTEM_USE_STATS
-        const auto start = Platform::GetTimeCycles();
-#endif
-#if JOB_SYSTEM_USE_MUTEX
         JobsLocker.Lock();
         if (Jobs.Count() != 0)
         {
             data = Jobs.PeekFront();
             Jobs.PopFront();
+            const JobContext& context = ((const Dictionary<int64, JobContext>&)JobContexts).At(data.JobKey);
+            job = context.Job;
         }
         JobsLocker.Unlock();
-#else
-        if (!Jobs.try_dequeue(consumerToken, data))
-            data.Job.Unbind();
-#endif
-#if JOB_SYSTEM_USE_STATS
-        Platform::InterlockedIncrement(&DequeueCount);
-        Platform::InterlockedAdd(&DequeueSum, Platform::GetTimeCycles() - start);
-#endif
 
-        if (data.Job.IsBinded())
+        if (job.IsBinded())
         {
 #if USE_CSHARP
             // Ensure to have C# thread attached to this thead (late init due to MCore being initialized after Job System)
@@ -197,21 +203,37 @@ int32 JobSystemThread::Run()
 #endif
 
             // Run job
-            data.Job(data.Index);
+            job(data.Index);
 
             // Move forward with the job queue
+            bool notifyWaiting = false;
             JobsLocker.Lock();
             JobContext& context = JobContexts.At(data.JobKey);
             if (Platform::InterlockedDecrement(&context.JobsLeft) <= 0)
             {
-                ASSERT_LOW_LAYER(context.JobsLeft <= 0);
+                // Update any dependant jobs
+                for (int64 dependant : context.Dependants)
+                {
+                    JobContext& dependantContext = JobContexts.At(dependant);
+                    if (--dependantContext.DependenciesLeft <= 0)
+                    {
+                        // Dispatch dependency when it's ready
+                        JobData dependantData;
+                        dependantData.JobKey = dependant;
+                        for (dependantData.Index = 0; dependantData.Index < dependantContext.JobsLeft; dependantData.Index++)
+                            Jobs.PushBack(dependantData);
+                    }
+                }
+
+                // Remove completed context
                 JobContexts.Remove(data.JobKey);
+                notifyWaiting = true;
             }
             JobsLocker.Unlock();
+            if (notifyWaiting)
+                WaitSignal.NotifyAll();
 
-            WaitSignal.NotifyAll();
-
-            data.Job.Unbind();
+            job.Unbind();
         }
         else
         {
@@ -247,41 +269,77 @@ void JobSystem::Execute(const Function<void(int32)>& job, int32 jobCount)
 
 int64 JobSystem::Dispatch(const Function<void(int32)>& job, int32 jobCount)
 {
-    PROFILE_CPU();
     if (jobCount <= 0)
         return 0;
+    PROFILE_CPU();
 #if JOB_SYSTEM_ENABLED
-#if JOB_SYSTEM_USE_STATS
-    const auto start = Platform::GetTimeCycles();
-#endif
     const auto label = Platform::InterlockedAdd(&JobLabel, (int64)jobCount) + jobCount;
 
     JobData data;
-    data.Job = job;
     data.JobKey = label;
 
     JobContext context;
+    context.Job = job;
     context.JobsLeft = jobCount;
+    context.DependenciesLeft = 0;
 
-#if JOB_SYSTEM_USE_MUTEX
     JobsLocker.Lock();
-    JobContexts.Add(label, context);
+    JobContexts.Add(label, MoveTemp(context));
     for (data.Index = 0; data.Index < jobCount; data.Index++)
         Jobs.PushBack(data);
     JobsLocker.Unlock();
-#else
-    JobsLocker.Lock();
-    JobContexts.Add(label, context);
-    JobsLocker.Unlock();
-    for (data.Index = 0; data.Index < jobCount; data.Index++)
-        Jobs.enqueue(data);
-#endif
-
-#if JOB_SYSTEM_USE_STATS
-    LOG(Info, "Job enqueue time: {0} cycles", (int64)(Platform::GetTimeCycles() - start));
-#endif
 
     if (JobStartingOnDispatch)
+    {
+        if (jobCount == 1)
+            JobsSignal.NotifyOne();
+        else
+            JobsSignal.NotifyAll();
+    }
+
+    return label;
+#else
+    for (int32 i = 0; i < jobCount; i++)
+        job(i);
+    return 0;
+#endif
+}
+
+int64 JobSystem::Dispatch(const Function<void(int32)>& job, Span<int64> dependencies, int32 jobCount)
+{
+    if (jobCount <= 0)
+        return 0;
+    PROFILE_CPU();
+#if JOB_SYSTEM_ENABLED
+    const auto label = Platform::InterlockedAdd(&JobLabel, (int64)jobCount) + jobCount;
+
+    JobData data;
+    data.JobKey = label;
+
+    JobContext context;
+    context.Job = job;
+    context.JobsLeft = jobCount;
+    context.DependenciesLeft = 0;
+
+    JobsLocker.Lock();
+    for (int64 dependency : dependencies)
+    {
+        if (JobContext* dependencyContext = JobContexts.TryGet(dependency))
+        {
+            context.DependenciesLeft++;
+            dependencyContext->Dependants.Add(label);
+        }
+    }
+    JobContexts.Add(label, MoveTemp(context));
+    if (context.DependenciesLeft == 0)
+    {
+        // No dependencies left to complete so dispatch now
+        for (data.Index = 0; data.Index < jobCount; data.Index++)
+            Jobs.PushBack(data);
+    }
+    JobsLocker.Unlock();
+
+    if (context.DependenciesLeft == 0 && JobStartingOnDispatch)
     {
         if (jobCount == 1)
             JobsSignal.NotifyOne();
@@ -340,11 +398,6 @@ void JobSystem::Wait(int64 label)
         // Wake up any thread to prevent stalling in highly multi-threaded environment
         JobsSignal.NotifyOne();
     }
-
-#if JOB_SYSTEM_USE_STATS
-    LOG(Info, "Job average dequeue time: {0} cycles", DequeueSum / DequeueCount);
-    DequeueSum = DequeueCount = 0;
-#endif
 #endif
 }
 
@@ -352,16 +405,11 @@ void JobSystem::SetJobStartingOnDispatch(bool value)
 {
 #if JOB_SYSTEM_ENABLED
     JobStartingOnDispatch = value;
-
     if (value)
     {
-#if JOB_SYSTEM_USE_MUTEX
         JobsLocker.Lock();
         const int32 count = Jobs.Count();
         JobsLocker.Unlock();
-#else
-        const int32 count = Jobs.Count();
-#endif
         if (count == 1)
             JobsSignal.NotifyOne();
         else if (count != 0)

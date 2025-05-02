@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -28,21 +28,9 @@ public:
 
     struct Entry
     {
-        EntryType Type;
+        EntryType Type = EntryType::Invalid;
         ScriptingObjectReference<Actor> Actor;
-        float Timeout;
-
-        Entry()
-        {
-            Type = EntryType::Invalid;
-        }
-
-        Entry(const Entry& other)
-        {
-            Type = other.Type;
-            Actor = other.Actor;
-            Timeout = other.Timeout;
-        }
+        float Timeout = 0.0f;
 
         bool UseTextureData() const;
         int32 GetResolution() const;

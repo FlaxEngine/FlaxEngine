@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -24,26 +24,26 @@ public:
         MemoryWriteStream stream(256);
         {
             // Info
-            stream.WriteInt32(102);
-            stream.WriteDouble(5 * 60.0);
-            stream.WriteDouble(60.0);
-            stream.WriteBool(false);
-            stream.WriteString(StringView::Empty, 13);
+            stream.Write(102);
+            stream.Write(5 * 60.0);
+            stream.Write(60.0);
+            stream.Write(false);
+            stream.Write(StringView::Empty, 13);
 
             // Animation channels
-            stream.WriteInt32(0);
+            stream.Write(0);
 
             // Animation events
-            stream.WriteInt32(0);
+            stream.Write(0);
 
             // Nested animations
-            stream.WriteInt32(0);
+            stream.Write(0);
         }
 
         // Copy to asset chunk
         if (context.AllocateChunk(0))
             return CreateAssetResult::CannotAllocateChunk;
-        context.Data.Header.Chunks[0]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        context.Data.Header.Chunks[0]->Data.Copy(ToSpan(stream));
 
         return CreateAssetResult::Ok;
     }

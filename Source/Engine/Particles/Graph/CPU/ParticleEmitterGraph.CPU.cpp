@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitterGraph.CPU.h"
 #include "Engine/Core/Collections/Sorting.h"
@@ -388,10 +388,12 @@ void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEff
         const auto module = emitter->Graph.LightModules[moduleIndex];
         ASSERT(module->TypeID == 401);
 
-        RendererPointLightData lightData;
+        RenderPointLightData lightData;
         lightData.MinRoughness = 0.04f;
         lightData.ShadowsDistance = 2000.0f;
-        lightData.ShadowsStrength = 1.0f;
+        lightData.ShadowsStrength = 0.0f;
+        lightData.ShadowsUpdateRate = 1.0f;
+        lightData.ShadowsUpdateRateAtDistance = 0.5f;
         lightData.Direction = Float3::Forward;
         lightData.ShadowsFadeDistance = 50.0f;
         lightData.ShadowsNormalOffsetScale = 10.0f;
@@ -399,12 +401,6 @@ void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEff
         lightData.ShadowsSharpness = 1.0f;
         lightData.UseInverseSquaredFalloff = false;
         lightData.VolumetricScatteringIntensity = 1.0f;
-        lightData.CastVolumetricShadow = false;
-        lightData.RenderedVolumetricFog = 0;
-        lightData.ShadowsMode = ShadowsCastingMode::None;
-        lightData.SourceRadius = 0.0f;
-        lightData.SourceLength = 0.0f;
-        lightData.IESTexture = nullptr;
 
         for (int32 particleIndex = 0; particleIndex < count; particleIndex++)
         {
@@ -509,7 +505,8 @@ void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleE
     }
 
     // Spawn particles
-    int32 spawnCount = 0;
+    int32 spawnCount = data.CustomSpawnCount;
+    data.CustomSpawnCount = 0;
     if (canSpawn)
     {
         PROFILE_CPU_NAMED("Spawn");
@@ -577,7 +574,8 @@ int32 ParticleEmitterGraphCPUExecutor::UpdateSpawn(ParticleEmitter* emitter, Par
     Init(emitter, effect, data, dt);
 
     // Spawn particles
-    int32 spawnCount = 0;
+    int32 spawnCount = data.CustomSpawnCount;
+    data.CustomSpawnCount = 0;
     for (int32 i = 0; i < _graph.SpawnModules.Count(); i++)
     {
         spawnCount += ProcessSpawnModule(i);

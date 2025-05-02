@@ -4,10 +4,14 @@
 #include "ShaderStorage.h"
 #include "ShaderCacheManager.h"
 #include "Engine/Core/Log.h"
-#include "Engine/Engine/CommandLine.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
+#if COMPILE_WITH_SHADER_COMPILER
+#include "Engine/Engine/CommandLine.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#endif
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/ShadowsOfMordor/AtlasChartsPacker.h"
 
 ShaderStorage::CachingMode ShaderStorage::CurrentCachingMode =
@@ -76,14 +80,12 @@ int32 ShaderAssetBase::GetCacheChunkIndex(ShaderProfile profile)
 
 bool ShaderAssetBase::initBase(AssetInitData& initData)
 {
-    // Validate version
+    // Validate
     if (initData.SerializedVersion != ShaderStorage::Header::Version)
     {
         LOG(Warning, "Invalid shader serialized version.");
         return true;
     }
-
-    // Validate data
     if (initData.CustomData.Length() != sizeof(_shaderHeader))
     {
         LOG(Warning, "Invalid shader header.");
@@ -98,8 +100,11 @@ bool ShaderAssetBase::initBase(AssetInitData& initData)
 
 #if USE_EDITOR
 
-bool ShaderAssetBase::Save()
+bool ShaderAssetBase::SaveShaderAsset() const
 {
+    // Asset is being saved so no longer need to resave deprecated data in it
+    ContentDeprecated::Clear();
+
     auto parent = GetShaderAsset();
     AssetInitData data;
     data.SerializedVersion = ShaderStorage::Header::Version;
@@ -136,7 +141,7 @@ bool IsValidShaderCache(DataContainer<byte>& shaderCache, Array<String>& include
     for (int32 i = 0; i < includesCount; i++)
     {
         String& include = includes.AddOne();
-        stream.ReadString(&include, 11);
+        stream.Read(include, 11);
         include  = ShadersCompilation::ResolveShaderPath(include);
         DateTime lastEditTime;
         stream.Read(lastEditTime);
@@ -153,7 +158,7 @@ bool IsValidShaderCache(DataContainer<byte>& shaderCache, Array<String>& include
 
 bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
 {
-    // Prepare
+    PROFILE_CPU();
     auto parent = GetShaderAsset();
     const ShaderProfile shaderProfile = GPUDevice::Instance->GetShaderProfile();
     const int32 cacheChunkIndex = GetCacheChunkIndex(shaderProfile);
@@ -247,10 +252,14 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         options.SourceLength = sourceLength;
         options.Profile = shaderProfile;
         options.Output = &cacheStream;
-        if (CommandLine::Options.ShaderDebug)
+        if (CommandLine::Options.ShaderDebug.IsTrue())
         {
             options.GenerateDebugData = true;
             options.NoOptimize = true;
+        }
+        else if (CommandLine::Options.ShaderProfile.IsTrue())
+        {
+            options.GenerateDebugData = true;
         }
         auto& platformDefine = options.Macros.AddOne();
 #if PLATFORM_WINDOWS
@@ -288,11 +297,11 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
             auto cacheChunk = parent->GetOrCreateChunk(cacheChunkIndex);
             if (cacheChunk == nullptr)
                 return true;
-            cacheChunk->Data.Copy(cacheStream.GetHandle(), cacheStream.GetPosition());
+            cacheChunk->Data.Copy(ToSpan(cacheStream));
 
 #if USE_EDITOR
             // Save chunks to the asset file
-            if (Save())
+            if (SaveShaderAsset())
             {
                 LOG(Warning, "Cannot save '{0}'.", parent->ToString());
                 return true;
@@ -313,7 +322,7 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         else
         {
             // Use temporary generated data without caching (but read the includes from cache)
-            result.Data.Copy(cacheStream.GetHandle(), cacheStream.GetLength());
+            result.Data.Copy(ToSpan(cacheStream));
             IsValidShaderCache(result.Data, result.Includes);
             return false;
         }

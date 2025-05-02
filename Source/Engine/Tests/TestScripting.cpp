@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "TestScripting.h"
 #include "Engine/Scripting/Scripting.h"
@@ -6,6 +6,12 @@
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include <ThirdParty/catch2/catch.hpp>
+
+Foo::Foo(const SpawnParams& params)
+    : ScriptingObject(params)
+    , FooInterface(nullptr)
+{
+}
 
 TestNesting::TestNesting(const SpawnParams& params)
     : SerializableScriptingObject(params)

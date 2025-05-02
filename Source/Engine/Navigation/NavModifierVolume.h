@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 /// <summary>
 /// A special type of volume that defines the area of the scene in which navigation is restricted (eg. higher traversal cost or dynamic obstacle block).
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Other/Nav Modifier Volume\"), ActorToolbox(\"Other\")") class FLAXENGINE_API NavModifierVolume : public BoxVolume
+API_CLASS(Attributes="ActorContextMenu(\"New/Navigation/Nav Modifier Volume\"), ActorToolbox(\"Other\")") class FLAXENGINE_API NavModifierVolume : public BoxVolume
 {
     DECLARE_SCENE_OBJECT(NavModifierVolume);
 public:

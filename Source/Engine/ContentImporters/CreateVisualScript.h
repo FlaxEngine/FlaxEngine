@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -33,7 +33,7 @@ public:
             const VisualScriptGraph graph;
             MemoryWriteStream stream(64);
             graph.Save(&stream, true);
-            context.Data.Header.Chunks[0]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+            context.Data.Header.Chunks[0]->Data.Copy(ToSpan(stream));
         }
 
         // Chunk 1 - Visual Script Metadata
@@ -41,10 +41,10 @@ public:
             return CreateAssetResult::CannotAllocateChunk;
         {
             MemoryWriteStream stream(256);
-            stream.WriteInt32(1);
-            stream.WriteString(*baseTypename, 31);
-            stream.WriteInt32((int32)VisualScript::Flags::None);
-            context.Data.Header.Chunks[1]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+            stream.Write(1);
+            stream.Write(*baseTypename, 31);
+            stream.Write((int32)VisualScript::Flags::None);
+            context.Data.Header.Chunks[1]->Data.Copy(ToSpan(stream));
         }
 
         return CreateAssetResult::Ok;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "BoneSocket.h"
 #include "Engine/Level/SceneObjectsFactory.h"
@@ -89,6 +89,8 @@ void BoneSocket::Deserialize(DeserializeStream& stream, ISerializeModifier* modi
     _index = -1;
     DESERIALIZE_MEMBER(Node, _node);
     DESERIALIZE_MEMBER(UseScale, _useScale);
+    if (IsDuringPlay())
+        UpdateTransformation();
 }
 
 void BoneSocket::OnTransformChanged()

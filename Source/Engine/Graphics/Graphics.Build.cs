@@ -1,5 +1,6 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
+using System.IO;
 using System.Collections.Generic;
 using Flax.Build;
 using Flax.Build.NativeCpp;
@@ -106,6 +107,13 @@ public class Graphics : EngineModule
         if (Particles.UseGPU(options))
         {
             options.PrivateDefinitions.Add("COMPILE_WITH_GPU_PARTICLES");
+        }
+
+        // Manually include file with shared DirectX code
+        if (options.PrivateDependencies.Contains("GraphicsDeviceDX11") ||
+            options.PrivateDependencies.Contains("GraphicsDeviceDX12"))
+        {
+            options.SourceFiles.Add(Path.Combine(FolderPath, "../GraphicsDevice/DirectX/RenderToolsDX.cpp"));
         }
     }
 }

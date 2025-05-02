@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -304,7 +304,7 @@ public:
 
 public:
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Ray.
+    /// Determines if there is an intersection between box and a ray.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <returns>Whether the two objects intersected.</returns>
@@ -315,7 +315,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Ray.
+    /// Determines if there is an intersection between box and a ray.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
@@ -326,7 +326,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Ray.
+    /// Determines if there is an intersection between box and a ray.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
@@ -338,7 +338,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Ray.
+    /// Determines if there is an intersection between box and a ray.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero"/> if there was no intersection.</param>
@@ -349,7 +349,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Plane.
+    /// Determines if there is an intersection between box and a plane.
     /// </summary>
     /// <param name="plane">The plane to test.</param>
     /// <returns>Whether the two objects intersected.</returns>
@@ -359,7 +359,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Bounding Box.
+    /// Determines if there is an intersection between two boxes.
     /// </summary>
     /// <param name="box">The box to test.</param>
     /// <returns>Whether the two objects intersected.</returns>
@@ -369,7 +369,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Bounding Sphere.
+    /// Determines if there is an intersection between box and a sphere.
     /// </summary>
     /// <param name="sphere">The sphere to test.</param>
     /// <returns>Whether the two objects intersected.</returns>
@@ -379,7 +379,7 @@ public:
     }
 
     /// <summary>
-    /// Determines whether the current objects contains a point.
+    /// Determines whether box contains a point.
     /// </summary>
     /// <param name="point">The point to test.</param>
     /// <returns>The type of containment the two objects have.</returns>
@@ -389,7 +389,7 @@ public:
     }
 
     /// <summary>
-    /// Determines whether the current objects contains a Bounding Box.
+    /// Determines whether box contains a Bounding Box.
     /// </summary>
     /// <param name="box">The box to test.</param>
     /// <returns>The type of containment the two objects have.</returns>
@@ -399,7 +399,7 @@ public:
     }
 
     /// <summary>
-    /// Determines whether the current objects contains a Bounding Sphere.
+    /// Determines whether box contains a Bounding Sphere.
     /// </summary>
     /// <param name="sphere">The sphere to test.</param>
     /// <returns>The type of containment the two objects have.</returns>
@@ -409,7 +409,7 @@ public:
     }
 
     /// <summary>
-    /// Determines the distance between a Bounding Box and a point.
+    /// Determines the distance between box and a point.
     /// </summary>
     /// <param name="point">The point to test.</param>
     /// <returns>The distance between bounding box and a point.</returns>
@@ -419,7 +419,7 @@ public:
     }
 
     /// <summary>
-    /// Determines the distance between two Bounding Boxed.
+    /// Determines the distance between two boxes.
     /// </summary>
     /// <param name="box">The bounding box to test.</param>
     /// <returns>The distance between bounding boxes.</returns>

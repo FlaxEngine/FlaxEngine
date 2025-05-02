@@ -1,7 +1,8 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -11,15 +12,35 @@ namespace FlaxEditor.CustomEditors.Dedicated
     class BezierCurveObjectEditor<T> : CustomEditor where T : struct
     {
         private bool _isSetting;
+        private int _firstTimeShow;
         private BezierCurveEditor<T> _curve;
+        private Splitter _splitter;
+        private string _heightCachedPath;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
             var item = layout.CustomContainer<BezierCurveEditor<T>>();
             _curve = item.CustomControl;
-            _curve.Height = 120.0f;
+            var height = 120.0f;
+            var presenter = Presenter;
+            if (presenter != null && (presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
+            {
+                // Try to restore curve height
+                _heightCachedPath = layout.GetLayoutCachePath("Height");
+                if (Editor.Instance.ProjectCache.TryGetCustomData(_heightCachedPath, out float cachedHeight) && cachedHeight > 10.0f)
+                    height = cachedHeight;
+            }
+            _curve.Height = height;
             _curve.Edited += OnCurveEdited;
+            _firstTimeShow = 4; // For some weird reason it needs several frames of warmup (probably due to sliders smoothing)
+            _splitter = new Splitter
+            {
+                Moved = OnSplitterMoved,
+                Parent = _curve,
+                AnchorPreset = AnchorPresets.HorizontalStretchBottom,
+                Bounds = new Rectangle(0, _curve.Height - Splitter.DefaultHeight, _curve.Width, Splitter.DefaultHeight),
+            };
         }
 
         private void OnCurveEdited()
@@ -30,6 +51,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _isSetting = true;
             SetValue(new BezierCurve<T>(_curve.Keyframes));
             _isSetting = false;
+        }
+
+        private void OnSplitterMoved(Float2 location)
+        {
+            _curve.Height = Mathf.Clamp(_splitter.PointToParent(location).Y, 50.0f, 1000.0f);
+
+            // Cache curve height
+            if (_heightCachedPath != null)
+                Editor.Instance.ProjectCache.SetCustomData(_heightCachedPath, _curve.Height);
         }
 
         /// <inheritdoc />
@@ -44,12 +74,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 _curve.SetKeyframes(value.Keyframes);
                 _isSetting = false;
             }
+            if (_firstTimeShow-- > 0)
+                _curve.ShowWholeCurve();
         }
 
         /// <inheritdoc />
         protected override void Deinitialize()
         {
             _curve = null;
+            _splitter = null;
 
             base.Deinitialize();
         }
@@ -111,15 +144,35 @@ namespace FlaxEditor.CustomEditors.Dedicated
     class LinearCurveObjectEditor<T> : CustomEditor where T : struct
     {
         private bool _isSetting;
+        private int _firstTimeShow;
         private LinearCurveEditor<T> _curve;
+        private Splitter _splitter;
+        private string _heightCachedPath;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
             var item = layout.CustomContainer<LinearCurveEditor<T>>();
             _curve = item.CustomControl;
-            _curve.Height = 120.0f;
+            var height = 120.0f;
+            var presenter = Presenter;
+            if (presenter != null && (presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
+            {
+                // Try to restore curve height
+                _heightCachedPath = layout.GetLayoutCachePath("Height");
+                if (Editor.Instance.ProjectCache.TryGetCustomData(_heightCachedPath, out float cachedHeight) && cachedHeight > 10.0f)
+                    height = cachedHeight;
+            }
+            _curve.Height = height;
             _curve.Edited += OnCurveEdited;
+            _firstTimeShow = 4; // For some weird reason it needs several frames of warmup (probably due to sliders smoothing)
+            _splitter = new Splitter
+            {
+                Moved = OnSplitterMoved,
+                Parent = _curve,
+                AnchorPreset = AnchorPresets.HorizontalStretchBottom,
+                Bounds = new Rectangle(0, _curve.Height - Splitter.DefaultHeight, _curve.Width, Splitter.DefaultHeight),
+            };
         }
 
         private void OnCurveEdited()
@@ -130,6 +183,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
             _isSetting = true;
             SetValue(new LinearCurve<T>(_curve.Keyframes));
             _isSetting = false;
+        }
+
+        private void OnSplitterMoved(Float2 location)
+        {
+            _curve.Height  = Mathf.Clamp(_splitter.PointToParent(location).Y, 50.0f, 1000.0f);
+
+            // Cache curve height
+            if (_heightCachedPath != null)
+                Editor.Instance.ProjectCache.SetCustomData(_heightCachedPath, _curve.Height);
         }
 
         /// <inheritdoc />
@@ -144,12 +206,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 _curve.SetKeyframes(value.Keyframes);
                 _isSetting = false;
             }
+            if (_firstTimeShow-- > 0)
+                _curve.ShowWholeCurve();
         }
 
         /// <inheritdoc />
         protected override void Deinitialize()
         {
             _curve = null;
+            _splitter = null;
 
             base.Deinitialize();
         }

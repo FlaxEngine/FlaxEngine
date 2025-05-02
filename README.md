@@ -31,7 +31,7 @@ Follow the instructions below to compile and run the engine from source.
 * Install Visual Studio 2022 or newer
 * Install Windows 8.1 SDK or newer (via Visual Studio Installer)
 * Install Microsoft Visual C++ 2015 v140 toolset or newer (via Visual Studio Installer)
-* Install .NET 8 SDK for **Windows x64** (via Visual Studio Installer or [from web](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
+* Install .NET 8 or 9 SDK for **Windows x64** (via Visual Studio Installer or [from web](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
 * Install Git with LFS
 * Clone repo (with LFS)
 * Run **GenerateProjectFiles.bat**
@@ -44,8 +44,9 @@ Follow the instructions below to compile and run the engine from source.
 ## Linux
 
 * Install Visual Studio Code
-* Install .NET 8 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
+* Install .NET 8 or 9 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
   * Ubuntu: `sudo apt install dotnet-sdk-8.0`
+  * Arch: `sudo pacman -S dotnet-sdk-8.0 dotnet-runtime-8.0 dotnet-targeting-pack-8.0 dotnet-host`
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
   * Ubuntu: `sudo apt install vulkan-sdk`
   * Arch: `sudo pacman -S spirv-tools vulkan-headers vulkan-tools vulkan-validation-layers`
@@ -67,12 +68,12 @@ Follow the instructions below to compile and run the engine from source.
 ## Mac
 
 * Install XCode
-* Install .NET 8 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
+* Install .NET 8 or 9 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
 * Clone repo (with LFS)
 * Run `GenerateProjectFiles.command`
 * Open workspace with XCode or Visual Studio Code
-* Build and run (configuration  `Editor.Mac.Development`)
+* Build and run (configuration `Editor.Mac.Development`)
 
 #### Troubleshooting
 
@@ -124,3 +125,7 @@ Install `.NET SDK`, `NuGet package manager` and `NuGet targets and build tasks` 
 Using Flax source code is strictly governed by the Flax Engine End User License Agreement. If you don't agree to those terms, as amended from time to time, you are not permitted to access or use Flax Engine.
 
 We welcome any contributions to Flax Engine development through pull requests on GitHub. Most of our active development is in the master branch, so we prefer to take pull requests there (particularly for new features). We try to make sure that all new code adheres to the Flax coding standards. All contributions are governed by the terms of the [EULA](https://flaxengine.com/licensing/).
+
+## SAST Tools
+
+[PVS-Studio](https://pvs-studio.com/en/pvs-studio/?utm_source=website&utm_medium=github&utm_campaign=open_source) - static analyzer for C, C++, C#, and Java code.

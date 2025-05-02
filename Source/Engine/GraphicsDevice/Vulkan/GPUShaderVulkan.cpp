@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -98,17 +98,16 @@ void UniformBufferUploaderVulkan::OnReleaseGPU()
     }
 }
 
-GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream)
+GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, Span<byte> bytecode, MemoryReadStream& stream)
 {
     // Extract the SPIR-V shader header from the cache
-    SpirvShaderHeader* header = (SpirvShaderHeader*)cacheBytes;
-    cacheBytes += sizeof(SpirvShaderHeader);
-    cacheSize -= sizeof(SpirvShaderHeader);
+    SpirvShaderHeader* header = (SpirvShaderHeader*)bytecode.Get();
+    bytecode = bytecode.Slice(sizeof(SpirvShaderHeader));
 
     // Extract the SPIR-V bytecode
     BytesContainer spirv;
     ASSERT(header->Type == SpirvShaderHeader::Types::Raw);
-    spirv.Link(cacheBytes, cacheSize);
+    spirv.Link(bytecode);
 
     // Create shader module from SPIR-V bytecode
     VkShaderModule shaderModule = VK_NULL_HANDLE;
@@ -139,59 +138,9 @@ GPUShaderProgram* GPUShaderVulkan::CreateGPUShaderProgram(ShaderStage type, cons
     {
     case ShaderStage::Vertex:
     {
-        // Create object
-        auto vsShader = New<GPUShaderProgramVSVulkan>(_device, initializer, header->DescriptorInfo, shaderModule);
-        shader = vsShader;
-        VkPipelineVertexInputStateCreateInfo& inputState = vsShader->VertexInputState;
-        VkVertexInputBindingDescription* vertexBindingDescriptions = vsShader->VertexBindingDescriptions;
-        VkVertexInputAttributeDescription* vertexAttributeDescriptions = vsShader->VertexAttributeDescriptions;
-        RenderToolsVulkan::ZeroStruct(inputState, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
-        for (int32 i = 0; i < VERTEX_SHADER_MAX_INPUT_ELEMENTS; i++)
-        {
-            vertexBindingDescriptions[i].binding = i;
-            vertexBindingDescriptions[i].stride = 0;
-            vertexBindingDescriptions[i].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-        }
-
-        // Load Input Layout (it may be empty)
-        byte inputLayoutSize;
-        stream.ReadByte(&inputLayoutSize);
-        ASSERT(inputLayoutSize <= VERTEX_SHADER_MAX_INPUT_ELEMENTS);
-        uint32 attributesCount = inputLayoutSize;
-        uint32 bindingsCount = 0;
-        int32 offset = 0;
-        for (int32 a = 0; a < inputLayoutSize; a++)
-        {
-            // Read description
-            GPUShaderProgramVS::InputElement inputElement;
-            stream.Read(inputElement);
-
-            const auto size = PixelFormatExtensions::SizeInBytes((PixelFormat)inputElement.Format);
-            if (inputElement.AlignedByteOffset != INPUT_LAYOUT_ELEMENT_ALIGN)
-                offset = inputElement.AlignedByteOffset;
-
-            auto& vertexBindingDescription = vertexBindingDescriptions[inputElement.InputSlot];
-            vertexBindingDescription.binding = inputElement.InputSlot;
-            vertexBindingDescription.stride = Math::Max(vertexBindingDescription.stride, (uint32_t)(offset + size));
-            vertexBindingDescription.inputRate = inputElement.InputSlotClass == INPUT_LAYOUT_ELEMENT_PER_VERTEX_DATA ? VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
-            ASSERT(inputElement.InstanceDataStepRate == 0 || inputElement.InstanceDataStepRate == 1);
-
-            auto& vertexAttributeDescription = vertexAttributeDescriptions[a];
-            vertexAttributeDescription.location = a;
-            vertexAttributeDescription.binding = inputElement.InputSlot;
-            vertexAttributeDescription.format = RenderToolsVulkan::ToVulkanFormat((PixelFormat)inputElement.Format);
-            vertexAttributeDescription.offset = offset;
-
-            bindingsCount = Math::Max(bindingsCount, (uint32)inputElement.InputSlot + 1);
-            offset += size;
-        }
-
-        inputState.vertexBindingDescriptionCount = bindingsCount;
-        inputState.pVertexBindingDescriptions = vertexBindingDescriptions;
-
-        inputState.vertexAttributeDescriptionCount = attributesCount;
-        inputState.pVertexAttributeDescriptions = vertexAttributeDescriptions;
-
+        GPUVertexLayout* inputLayout, *vertexLayout;
+        ReadVertexLayout(stream, inputLayout, vertexLayout);
+        shader = New<GPUShaderProgramVSVulkan>(_device, initializer, header->DescriptorInfo, shaderModule, inputLayout, vertexLayout);
         break;
     }
 #if GPU_ALLOW_TESSELLATION_SHADERS

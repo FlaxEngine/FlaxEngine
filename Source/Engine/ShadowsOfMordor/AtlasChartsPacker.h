@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -13,12 +13,12 @@ namespace ShadowsOfMordor
     {
     public:
 
-        struct Node : RectPack<Node>
+        struct Node : RectPackNode<int32>
         {
             Builder::LightmapUVsChart* Chart = nullptr;
 
-            Node(uint32 x, uint32 y, uint32 width, uint32 height)
-                : RectPack<Node>(x, y, width, height)
+            Node(Size x, Size y, Size width, Size height)
+                : RectPackNode(x, y, width, height)
             {
             }
 
@@ -32,7 +32,7 @@ namespace ShadowsOfMordor
 
     private:
 
-        Node _root;
+        RectPackAtlas<Node> _root;
         const LightmapSettings* _settings;
 
     public:
@@ -42,9 +42,9 @@ namespace ShadowsOfMordor
         /// </summary>
         /// <param name="settings">The settings.</param>
         AtlasChartsPacker(const LightmapSettings* settings)
-            : _root(settings->ChartsPadding, settings->ChartsPadding, (int32)settings->AtlasSize - settings->ChartsPadding, (int32)settings->AtlasSize - settings->ChartsPadding)
-            , _settings(settings)
+            : _settings(settings)
         {
+            _root.Init((int32)settings->AtlasSize, (int32)settings->AtlasSize, settings->ChartsPadding);
         }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace ShadowsOfMordor
         /// <returns></returns>
         Node* Insert(Builder::LightmapUVsChart* chart)
         {
-            return _root.Insert(chart->Width, chart->Height, _settings->ChartsPadding, chart, _settings);
+            return _root.Insert(chart->Width, chart->Height, chart, _settings);
         }
     };
 };

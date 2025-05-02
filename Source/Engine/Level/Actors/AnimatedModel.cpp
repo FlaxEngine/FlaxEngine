@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "AnimatedModel.h"
 #include "BoneSocket.h"
@@ -11,9 +11,11 @@
 #include "Engine/Core/Math/Matrix3x3.h"
 #include "Editor/Editor.h"
 #endif
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Models/MeshAccessor.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
@@ -292,7 +294,12 @@ void AnimatedModel::SetParameterValue(const StringView& name, const Variant& val
     {
         if (param.Name == name)
         {
-            param.Value = value;
+            if (param.Value.Type == value.Type)
+                param.Value = value;
+            else if (Variant::CanCast(value, param.Value.Type))
+                param.Value = Variant::Cast(value, param.Value.Type);
+            else
+                LOG(Warning, "Animation Graph parameter '{0}' in AnimatedModel {1} is type '{2}' and not type '{3}'.", name, ToString(), param.Value.Type, value.Type);
             return;
         }
     }
@@ -506,7 +513,7 @@ void AnimatedModel::StopSlotAnimation(const StringView& slotName, Animation* ani
     {
         if (slot.Animation == anim && slot.Name == slotName)
         {
-            slot.Animation = nullptr;
+            //slot.Animation = nullptr; // TODO: make an immediate version of this method and set the animation to nullptr.
             slot.Reset = true;
             break;
         }
@@ -628,30 +635,35 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
 
     // Blend all blend shapes
     auto vertexCount = (uint32)mesh->GetVertexCount();
-    auto data = (VB0SkinnedElementType*)deformation.VertexBuffer.Data.Get();
+    MeshAccessor accessor;
+    if (deformation.LoadMeshAccessor(accessor))
+        return;
+    auto positionStream = accessor.Position();
+    auto normalStream = accessor.Normal();
+    CHECK(positionStream.IsValid());
+    useNormals &= normalStream.IsValid();
     for (const auto& q : blendShapes)
     {
-        // TODO: use SIMD
+        for (int32 i = 0; i < q.First.Vertices.Count(); i++)
+        {
+            const BlendShapeVertex& blendShapeVertex = q.First.Vertices[i];
+            ASSERT_LOW_LAYER(blendShapeVertex.VertexIndex < vertexCount);
+
+            Float3 position = positionStream.GetFloat3(blendShapeVertex.VertexIndex);
+            position = position + blendShapeVertex.PositionDelta * q.Second;
+            positionStream.SetFloat3(blendShapeVertex.VertexIndex, position);
+        }
         if (useNormals)
         {
             for (int32 i = 0; i < q.First.Vertices.Count(); i++)
             {
                 const BlendShapeVertex& blendShapeVertex = q.First.Vertices[i];
-                ASSERT_LOW_LAYER(blendShapeVertex.VertexIndex < vertexCount);
-                VB0SkinnedElementType& vertex = *(data + blendShapeVertex.VertexIndex);
-                vertex.Position = vertex.Position + blendShapeVertex.PositionDelta * q.Second;
-                Float3 normal = (vertex.Normal.ToFloat3() * 2.0f - 1.0f) + blendShapeVertex.NormalDelta * q.Second;
-                vertex.Normal = normal * 0.5f + 0.5f;
-            }
-        }
-        else
-        {
-            for (int32 i = 0; i < q.First.Vertices.Count(); i++)
-            {
-                const BlendShapeVertex& blendShapeVertex = q.First.Vertices[i];
-                ASSERT_LOW_LAYER(blendShapeVertex.VertexIndex < vertexCount);
-                VB0SkinnedElementType& vertex = *(data + blendShapeVertex.VertexIndex);
-                vertex.Position = vertex.Position + blendShapeVertex.PositionDelta * q.Second;
+
+                Float3 normal = normalStream.GetFloat3(blendShapeVertex.VertexIndex);
+                MeshAccessor::UnpackNormal(normal);
+                normal = normal + blendShapeVertex.NormalDelta * q.Second;
+                MeshAccessor::PackNormal(normal); // TODO: optimize unpacking and packing to just apply it to the normal delta
+                normalStream.SetFloat3(blendShapeVertex.VertexIndex, normal);
             }
         }
     }
@@ -659,21 +671,26 @@ void AnimatedModel::RunBlendShapeDeformer(const MeshBase* mesh, MeshDeformationD
     if (useNormals)
     {
         // Normalize normal vectors and rebuild tangent frames (tangent frame is in range [-1;1] but packed to [0;1] range)
-        // TODO: use SIMD
+        auto tangentStream = accessor.Tangent();
         for (uint32 vertexIndex = minVertexIndex; vertexIndex <= maxVertexIndex; vertexIndex++)
         {
-            VB0SkinnedElementType& vertex = *(data + vertexIndex);
-
-            Float3 normal = vertex.Normal.ToFloat3() * 2.0f - 1.0f;
+            Float3 normal = normalStream.GetFloat3(vertexIndex);
+            MeshAccessor::UnpackNormal(normal);
             normal.Normalize();
-            vertex.Normal = normal * 0.5f + 0.5f;
+            MeshAccessor::PackNormal(normal);
+            normalStream.SetFloat3(vertexIndex, normal);
 
-            Float3 tangent = vertex.Tangent.ToFloat3() * 2.0f - 1.0f;
-            tangent = tangent - ((tangent | normal) * normal);
-            tangent.Normalize();
-            const auto tangentSign = vertex.Tangent.W;
-            vertex.Tangent = tangent * 0.5f + 0.5f;
-            vertex.Tangent.W = tangentSign;
+            if (tangentStream.IsValid())
+            {
+                Float4 tangentRaw = normalStream.GetFloat4(vertexIndex);
+                Float3 tangent = Float3(tangentRaw);
+                MeshAccessor::UnpackNormal(tangent);
+                tangent = tangent - ((tangent | normal) * normal);
+                tangent.Normalize();
+                MeshAccessor::PackNormal(tangent);
+                tangentRaw = Float4(tangent, tangentRaw.W);
+                tangentStream.SetFloat4(vertexIndex, tangentRaw);
+            }
         }
     }
 
@@ -749,7 +766,7 @@ void AnimatedModel::UpdateBounds()
         // Apply margin based on model dimensions
         const Vector3 modelBoxSize = modelBox.GetSize();
         const Vector3 center = box.GetCenter();
-        const Vector3 sizeHalf = Vector3::Max(box.GetSize() + modelBoxSize * 0.2f, modelBoxSize) * 0.5f;
+        const Vector3 sizeHalf = Vector3::Max(box.GetSize() + modelBoxSize * 0.2f, modelBoxSize) * (0.5f * BoundsScale);
         _box = BoundingBox(center - sizeHalf, center + sizeHalf);
     }
     else
@@ -758,7 +775,7 @@ void AnimatedModel::UpdateBounds()
     }
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
 }
 
 void AnimatedModel::UpdateSockets()
@@ -914,9 +931,7 @@ void AnimatedModel::Draw(RenderContext& renderContext)
         return;
     if (renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return; // No supported
-    Matrix world;
-    GetLocalToWorldMatrix(world);
-    renderContext.View.GetWorldMatrix(world);
+    ACTOR_GET_WORLD_MATRIX(this, view, world);
     GEOMETRY_DRAW_STATE_EVENT_BEGIN(_drawState, world);
 
     _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(_transform.Translation, renderContext.View.WorldPosition));
@@ -1137,10 +1152,16 @@ void AnimatedModel::Deserialize(DeserializeStream& stream, ISerializeModifier* m
 
     // [Deprecated on 07.02.2022, expires on 07.02.2024]
     if (modifier->EngineBuild <= 6330)
+    {
+        MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSDF;
+    }
     // [Deprecated on 27.04.2022, expires on 27.04.2024]
     if (modifier->EngineBuild <= 6331)
+    {
+        MARK_CONTENT_DEPRECATED();
         DrawModes |= DrawPass::GlobalSurfaceAtlas;
+    }
 }
 
 const Span<MaterialSlot> AnimatedModel::GetMaterialSlots() const
@@ -1221,16 +1242,17 @@ bool AnimatedModel::IntersectsEntry(const Ray& ray, Real& distance, Vector3& nor
     return result;
 }
 
-bool AnimatedModel::GetMeshData(const MeshReference& mesh, MeshBufferType type, BytesContainer& result, int32& count) const
+bool AnimatedModel::GetMeshData(const MeshReference& ref, MeshBufferType type, BytesContainer& result, int32& count, GPUVertexLayout** layout) const
 {
     count = 0;
-    if (mesh.LODIndex < 0 || mesh.MeshIndex < 0)
+    if (ref.LODIndex < 0 || ref.MeshIndex < 0)
         return true;
     const auto model = SkinnedModel.Get();
     if (!model || model->WaitForLoaded())
         return true;
-    auto& lod = model->LODs[Math::Min(mesh.LODIndex, model->LODs.Count() - 1)];
-    return lod.Meshes[Math::Min(mesh.MeshIndex, lod.Meshes.Count() - 1)].DownloadDataCPU(type, result, count);
+    auto& lod = model->LODs[Math::Min(ref.LODIndex, model->LODs.Count() - 1)];
+    auto& mesh = lod.Meshes[Math::Min(ref.MeshIndex, lod.Meshes.Count() - 1)];
+    return mesh.DownloadDataCPU(type, result, count, layout);
 }
 
 MeshDeformation* AnimatedModel::GetMeshDeformation() const

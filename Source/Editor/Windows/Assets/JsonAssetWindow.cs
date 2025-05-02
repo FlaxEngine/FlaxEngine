@@ -1,11 +1,14 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -16,6 +19,53 @@ namespace FlaxEditor.Windows.Assets
     /// <seealso cref="FlaxEditor.Windows.Assets.AssetEditorWindow" />
     public sealed class JsonAssetWindow : AssetEditorWindowBase<JsonAsset>
     {
+        private class ObjectPasteUndo : IUndoAction
+        {
+            /// <inheritdoc />
+            public string ActionString => "Object Paste Undo";
+
+            private JsonAssetWindow _window;
+            private string _oldObject;
+            private string _newObject;
+
+            public ObjectPasteUndo(object oldObject, object newObject, JsonAssetWindow window)
+            {
+                _oldObject = JsonSerializer.Serialize(oldObject);
+                _newObject = JsonSerializer.Serialize(newObject);
+                _window = window;
+            }
+
+            /// <inheritdoc />
+            public void Dispose()
+            {
+                _oldObject = null;
+                _newObject = null;
+                _window = null;
+            }
+
+            /// <inheritdoc />
+            public void Do()
+            {
+                if (!string.IsNullOrEmpty(_newObject))
+                {
+                    _window._object = JsonSerializer.Deserialize(_newObject, TypeUtils.GetType(_window.Asset.DataTypeName).Type);
+                    _window.MarkAsEdited();
+                    _window._presenter.Select(_window._object);
+                }
+            }
+
+            /// <inheritdoc />
+            public void Undo()
+            {
+                if (!string.IsNullOrEmpty(_oldObject))
+                {
+                    _window._object = JsonSerializer.Deserialize(_oldObject, TypeUtils.GetType(_window.Asset.DataTypeName).Type);
+                    _window.MarkAsEdited();
+                    _window._presenter.Select(_window._object);
+                }
+            }
+        }
+        
         private readonly CustomEditorPresenter _presenter;
         private readonly ToolStripButton _saveButton;
         private readonly ToolStripButton _undoButton;
@@ -24,6 +74,8 @@ namespace FlaxEditor.Windows.Assets
         private object _object;
         private bool _isRegisteredForScriptsReload;
         private Label _typeText;
+        private ToolStripButton _optionsButton;
+        private ContextMenu _optionsCM;
 
         /// <summary>
         /// Gets the instance of the Json asset object that is being edited.
@@ -43,10 +95,10 @@ namespace FlaxEditor.Windows.Assets
             _undo.ActionDone += OnUndoRedo;
 
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save");
+            _saveButton = _toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
             _toolstrip.AddSeparator();
-            _undoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip($"Undo ({inputOptions.Undo})");
-            _redoButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip($"Redo ({inputOptions.Redo})");
+            _undoButton = _toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo", ref inputOptions.Undo);
+            _redoButton = _toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
 
             // Panel
             var panel = new Panel(ScrollBars.Vertical)
@@ -72,8 +124,10 @@ namespace FlaxEditor.Windows.Assets
             UpdateToolstrip();
         }
 
-        private void OnScriptsReloadBegin()
+        /// <inheritdoc />
+        protected override void OnScriptsReloadBegin()
         {
+            base.OnScriptsReloadBegin();
             Close();
         }
 
@@ -139,17 +193,41 @@ namespace FlaxEditor.Windows.Assets
 
             if (_typeText != null)
                 _typeText.Dispose();
+
+            // Get content item for options button
+            object buttonTag = null;
+            var allTypes = Editor.CodeEditing.All.Get();
+            foreach (var type in allTypes)
+            {
+                if (type.TypeName.Equals(Asset.DataTypeName, StringComparison.Ordinal))
+                {
+                    buttonTag = type.ContentItem;
+                    break;
+                }
+            }
+
+            _optionsButton = new ToolStripButton(_toolstrip.ItemsHeight, ref Editor.Icons.Settings12)
+            {
+                AnchorPreset = AnchorPresets.TopRight,
+                Tag = buttonTag,
+                Size = new Float2(18),
+                Parent = this,
+            };
+            _optionsButton.LocalX -= (_optionsButton.Width + 4);
+            _optionsButton.LocalY += (_toolstrip.Height - _optionsButton.Height) * 0.5f;
+            _optionsButton.Clicked += OpenOptionsContextMenu;
+
             var typeText = new ClickableLabel
             {
                 Text = $"{Asset.DataTypeName}",
                 TooltipText = "Asset data type (full name)",
+                Pivot = Float2.Zero,
                 AnchorPreset = AnchorPresets.TopRight,
                 AutoWidth = true,
                 Parent = this,
             };
-            typeText.LocalX += -(typeText.Width + 4);
+            typeText.LocalX += -(typeText.Width + _optionsButton.Width + 8);
             typeText.LocalY += (_toolstrip.Height - typeText.Height) * 0.5f;
-            typeText.RightClick = () => Clipboard.Text = Asset.DataTypeName;
             _typeText = typeText;
 
             _undo.Clear();
@@ -165,12 +243,85 @@ namespace FlaxEditor.Windows.Assets
             base.OnAssetLoaded();
         }
 
+        private void OpenOptionsContextMenu()
+        {
+            if (_optionsCM != null)
+            {
+                _optionsCM.Hide();
+                _optionsCM.Dispose();
+            }
+            
+            _optionsCM = new ContextMenu();
+            _optionsCM.AddButton("Copy type name", () => Clipboard.Text = Asset.DataTypeName);
+            _optionsCM.AddButton("Copy asset data", () => Clipboard.Text = Asset.Data);
+            _optionsCM.AddButton("Paste asset data", () =>
+            {
+                if (!string.IsNullOrEmpty(Clipboard.Text))
+                {
+                    var dataTypeName = Asset.DataTypeName;
+                    var type = TypeUtils.GetType(dataTypeName);
+                    if (type != null)
+                    {
+                        try
+                        {
+                            var obj = Activator.CreateInstance(type.Type);
+                            var data = Clipboard.Text;
+                            JsonSerializer.Deserialize(obj, data);
+                            if (obj != null)
+                            {
+                                var undoAction = new ObjectPasteUndo(_object, obj, this);
+                                undoAction.Do();
+                                _undo.AddAction(undoAction);
+                            }
+                            else
+                            {
+                                Editor.LogWarning("Pasted data is not the correct data type or has incomplete data");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Editor.LogWarning($"Pasted data is not the correct data type or has incomplete data. Exception: {ex}");
+                        }
+                    }
+                }
+            });
+            _optionsCM.Enabled = !string.IsNullOrEmpty(Clipboard.Text);
+            _optionsCM.AddSeparator();
+            if (_optionsButton.Tag is ContentItem item)
+            {
+                _optionsCM.AddButton("Edit asset code", () =>
+                {
+                    Editor.Instance.ContentEditing.Open(item);
+                });
+                _optionsCM.AddButton("Show asset code item in content window", () =>
+                {
+                    Editor.Instance.Windows.ContentWin.Select(item);
+                });
+            }
+            
+            _optionsCM.Show(_optionsButton, _optionsButton.PointFromScreen(Input.MouseScreenPosition));
+        }
+
         /// <inheritdoc />
         protected override void OnAssetLoadFailed()
         {
             _presenter.NoSelectionText = "Failed to load the asset.";
 
             base.OnAssetLoadFailed();
+        }
+
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            base.OnLostFocus();
+            _optionsCM?.Dispose();
+        }
+
+        /// <inheritdoc />
+        public override void OnExit()
+        {
+            base.OnExit();
+            _optionsCM?.Dispose();
         }
 
         /// <inheritdoc />
@@ -186,14 +337,17 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (IsDisposing)
+                return;
+            base.OnDestroy();
+
             if (_isRegisteredForScriptsReload)
             {
                 _isRegisteredForScriptsReload = false;
                 ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             }
+            _optionsCM?.Dispose();
             _typeText = null;
-
-            base.OnDestroy();
         }
     }
 }

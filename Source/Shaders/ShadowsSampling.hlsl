@@ -1,52 +1,45 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #ifndef __SHADOWS_SAMPLING__
 #define __SHADOWS_SAMPLING__
 
+#ifndef SHADOWS_CSM_BLENDING
+#define SHADOWS_CSM_BLENDING 0
+#endif
+#ifndef SHADOWS_CSM_DITHERING
+#define SHADOWS_CSM_DITHERING 0
+#endif
+
 #include "./Flax/ShadowsCommon.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
 #include "./Flax/LightingCommon.hlsl"
-
-// Select shadows filter based on quality
-// Supported sampling kernel sizes fo each shadowing technique:
-// CSM: 2, 3, 5, 7, 9
-// Cube: 2, 5, 12, 29
-// Spot: 2, 5, 12, 29
-#if SHADOWS_QUALITY == 0
-
-#define FilterSizeCSM 2
-#define FilterSizeCube 2
-#define FilterSizeSpot 2
-
-#elif SHADOWS_QUALITY == 1
-
-	#define FilterSizeCSM 3
-	#define FilterSizeCube 5
-	#define FilterSizeSpot 5
-	
-#elif SHADOWS_QUALITY == 2
-
-	#define FilterSizeCSM 5
-	#define FilterSizeCube 12
-	#define FilterSizeSpot 12
-	
-#else // SHADOWS_QUALITY == 3
-
-	#define FilterSizeCSM 7
-	#define FilterSizeCube 12
-	#define FilterSizeSpot 12
-	
+#if SHADOWS_CSM_DITHERING
+#include "./Flax/Random.hlsl"
 #endif
 
-#if SHADOWS_QUALITY != 0
-#include "./Flax/PCFKernels.hlsl"
+#if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
+#define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth)
+#define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) shadowMap.SampleCmpLevelZero(ShadowSamplerLinear, shadowUV, sceneDepth, texelOffset)
+#else
+#define SAMPLE_SHADOW_MAP(shadowMap, shadowUV, sceneDepth) (sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0).r)
+#define SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowUV, texelOffset, sceneDepth) (sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, shadowUV, 0, texelOffset).r)
 #endif
+#if VULKAN || FEATURE_LEVEL < FEATURE_LEVEL_SM5
+#define SAMPLE_SHADOW_MAP_SAMPLER SamplerPointClamp
+#else
+#define SAMPLE_SHADOW_MAP_SAMPLER SamplerLinearClamp
+#endif
+
+float4 GetShadowMask(ShadowSample shadow)
+{
+    return float4(shadow.SurfaceShadow, shadow.TransmissionShadow, 1, 1);
+}
 
 // Gets the cube texture face index to use for shadow map sampling for the given view-to-light direction vector
 // Where: direction = normalize(worldPosition - lightPosition)
-int GetCubeFaceIndex(float3 direction)
+uint GetCubeFaceIndex(float3 direction)
 {
-    int cubeFaceIndex;
+    uint cubeFaceIndex;
     float3 absDirection = abs(direction);
     float maxDirection = max(absDirection.x, max(absDirection.y, absDirection.z));
     if (maxDirection == absDirection.x)
@@ -58,194 +51,71 @@ int GetCubeFaceIndex(float3 direction)
     return cubeFaceIndex;
 }
 
-// Samples the shadow map with a fixed-size PCF kernel optimized with GatherCmpRed.
-// Uses code from "Fast Conventional Shadow Filtering" by Holger Gruen, in GPU Pro.
-float SampleShadowMapFixedSizePCF(Texture2DArray shadowMap, float2 shadowMapSize, float sceneDepth, float2 shadowPos, uint cascadeIndex)
+float2 GetLightShadowAtlasUV(ShadowData shadow, ShadowTileData shadowTile, float3 samplePosition, out float4 shadowPosition)
 {
-#if FilterSizeCSM == 2
+    // Project into shadow space (WorldToShadow is pre-multiplied to convert Clip Space to UV Space)
+    shadowPosition = mul(float4(samplePosition, 1.0f), shadowTile.WorldToShadow);
+    shadowPosition.z -= shadow.Bias;
+    shadowPosition.xyz /= shadowPosition.w;
 
-#if FEATURE_LEVEL >= FEATURE_LEVEL_SM5
-
-    return shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, float3(shadowPos.xy, cascadeIndex), sceneDepth);
-
-#else
-
-		return sceneDepth < shadowMap.SampleLevel(SamplerLinearClamp, float3(shadowPos.xy, cascadeIndex), 0).r;
-
-#endif
-
-#else
-
-	const int FS_2 = FilterSizeCSM / 2;
-	float2 tc = shadowPos.xy;
-	float4 s = 0.0f;
-	float2 stc = (shadowMapSize * tc.xy) + float2(0.5f, 0.5f);
-	float2 tcs = floor(stc);
-	float2 fc;
-	int row;
-	int col;
-	float4 v1[FS_2 + 1];
-	float2 v0[FS_2 + 1];
-	float3 baseUV = float3(tc.xy, cascadeIndex);
-    float2 shadowMapSizeInv = 1.0f / shadowMapSize;
-
-	fc.xy = stc - tcs;
-	tc.xy = tcs * shadowMapSizeInv;
-	
-	// Loop over the rows
-	UNROLL
-	for (row = -FS_2; row <= FS_2; row += 2)
-	{
-		UNROLL
-		for (col = -FS_2; col <= FS_2; col += 2)
-		{
-			float value = CSMFilterWeights[row + FS_2][col + FS_2];
-
-			if (col > -FS_2)
-				value += CSMFilterWeights[row + FS_2][col + FS_2 - 1];
-
-			if (col < FS_2)
-				value += CSMFilterWeights[row + FS_2][col + FS_2 + 1];
-
-			if (row > -FS_2) {
-				value += CSMFilterWeights[row + FS_2 - 1][col + FS_2];
-
-				if (col < FS_2)
-					value += CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 1];
-
-				if (col > -FS_2)
-					value += CSMFilterWeights[row + FS_2 - 1][col + FS_2 - 1];
-			}
-
-			if (value != 0.0f)
-			{
-				// Gather returns xyzw which is counter clockwise order starting with the sample to the lower left of the queried location
-#if CAN_USE_GATHER
-				
-					v1[(col + FS_2) / 2] = shadowMap.GatherCmp(ShadowSampler, baseUV, sceneDepth, int2(col, row));
-				
-#else
-				
-					float4 gather;
-					
-					gather.x = sceneDepth < shadowMap.SampleLevel(SamplerPointClamp, float3(tc.xy + float2(0, 1) * shadowMapSizeInv, cascadeIndex), 0, int2(col, row)).r;
-					gather.y = sceneDepth < shadowMap.SampleLevel(SamplerPointClamp, float3(tc.xy + float2(1, 1) * shadowMapSizeInv, cascadeIndex), 0, int2(col, row)).r;
-					gather.z = sceneDepth < shadowMap.SampleLevel(SamplerPointClamp, float3(tc.xy + float2(1, 0) * shadowMapSizeInv, cascadeIndex), 0, int2(col, row)).r;
-					gather.w = sceneDepth < shadowMap.SampleLevel(SamplerPointClamp, float3(tc.xy + float2(0, 0) * shadowMapSizeInv, cascadeIndex), 0, int2(col, row)).r;
-					
-					v1[(col + FS_2) / 2] = gather;
-				
-#endif
-			}
-			else
-				v1[(col + FS_2) / 2] = 0.0f;
-
-			if (col == -FS_2)
-			{
-				s.x += (1.0f - fc.y) * (v1[0].w * (CSMFilterWeights[row + FS_2][col + FS_2]
-									 - CSMFilterWeights[row + FS_2][col + FS_2] * fc.x)
-									 + v1[0].z * (fc.x * (CSMFilterWeights[row + FS_2][col + FS_2]
-									 - CSMFilterWeights[row + FS_2][col + FS_2 + 1])
-									 + CSMFilterWeights[row + FS_2][col + FS_2 + 1]));
-				s.y += fc.y * (v1[0].x * (CSMFilterWeights[row + FS_2][col + FS_2]
-									 - CSMFilterWeights[row + FS_2][col + FS_2] * fc.x)
-									 + v1[0].y * (fc.x * (CSMFilterWeights[row + FS_2][col + FS_2]
-									 - CSMFilterWeights[row + FS_2][col + FS_2 + 1])
-									 +  CSMFilterWeights[row + FS_2][col + FS_2 + 1]));
-				if(row > -FS_2)
-				{
-					s.z += (1.0f - fc.y) * (v0[0].x * (CSMFilterWeights[row + FS_2 - 1][col + FS_2]
-										   - CSMFilterWeights[row + FS_2 - 1][col + FS_2] * fc.x)
-										   + v0[0].y * (fc.x * (CSMFilterWeights[row + FS_2 - 1][col + FS_2]
-										   - CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 1])
-										   + CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 1]));
-					s.w += fc.y * (v1[0].w * (CSMFilterWeights[row + FS_2 - 1][col + FS_2]
-										- CSMFilterWeights[row + FS_2 - 1][col + FS_2] * fc.x)
-										+ v1[0].z * (fc.x * (CSMFilterWeights[row + FS_2 - 1][col + FS_2]
-										- CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 1])
-										+ CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 1]));
-				}
-			}
-			else if (col == FS_2)
-			{
-				s.x += (1 - fc.y) * (v1[FS_2].w * (fc.x * (CSMFilterWeights[row + FS_2][col + FS_2 - 1]
-									 - CSMFilterWeights[row + FS_2][col + FS_2]) + CSMFilterWeights[row + FS_2][col + FS_2])
-									 + v1[FS_2].z * fc.x * CSMFilterWeights[row + FS_2][col + FS_2]);
-				s.y += fc.y * (v1[FS_2].x * (fc.x * (CSMFilterWeights[row + FS_2][col + FS_2 - 1]
-									 - CSMFilterWeights[row + FS_2][col + FS_2] ) + CSMFilterWeights[row + FS_2][col + FS_2])
-									 + v1[FS_2].y * fc.x * CSMFilterWeights[row + FS_2][col + FS_2]);
-				if(row > -FS_2) {
-					s.z += (1 - fc.y) * (v0[FS_2].x * (fc.x * (CSMFilterWeights[row + FS_2 - 1][col + FS_2 - 1]
-										- CSMFilterWeights[row + FS_2 - 1][col + FS_2])
-										+ CSMFilterWeights[row + FS_2 - 1][col + FS_2])
-										+ v0[FS_2].y * fc.x * CSMFilterWeights[row + FS_2 - 1][col + FS_2]);
-					s.w += fc.y * (v1[FS_2].w * (fc.x * (CSMFilterWeights[row + FS_2 - 1][col + FS_2 - 1]
-										- CSMFilterWeights[row + FS_2 - 1][col + FS_2])
-										+ CSMFilterWeights[row + FS_2 - 1][col + FS_2])
-										+ v1[FS_2].z * fc.x * CSMFilterWeights[row + FS_2 - 1][col + FS_2]);
-				}
-			}
-			else
-			{
-				s.x += (1 - fc.y) * (v1[(col + FS_2) / 2].w * (fc.x * (CSMFilterWeights[row + FS_2][col + FS_2 - 1]
-									- CSMFilterWeights[row + FS_2][col + FS_2 + 0] ) + CSMFilterWeights[row + FS_2][col + FS_2 + 0])
-									+ v1[(col + FS_2) / 2].z * (fc.x * (CSMFilterWeights[row + FS_2][col + FS_2 - 0]
-									- CSMFilterWeights[row + FS_2][col + FS_2 + 1]) + CSMFilterWeights[row + FS_2][col + FS_2 + 1]));
-				s.y += fc.y * (v1[(col + FS_2) / 2].x * (fc.x * (CSMFilterWeights[row + FS_2][col + FS_2-1]
-									- CSMFilterWeights[row + FS_2][col + FS_2 + 0]) + CSMFilterWeights[row + FS_2][col + FS_2 + 0])
-									+ v1[(col + FS_2) / 2].y * (fc.x * (CSMFilterWeights[row + FS_2][col + FS_2 - 0]
-									- CSMFilterWeights[row + FS_2][col + FS_2 + 1]) + CSMFilterWeights[row + FS_2][col + FS_2 + 1]));
-				if(row > -FS_2) {
-					s.z += (1 - fc.y) * (v0[(col + FS_2) / 2].x * (fc.x * (CSMFilterWeights[row + FS_2 - 1][col + FS_2 - 1]
-											- CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 0]) + CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 0])
-											+ v0[(col + FS_2) / 2].y * (fc.x * (CSMFilterWeights[row + FS_2 - 1][col + FS_2 - 0]
-											- CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 1]) + CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 1]));
-					s.w += fc.y * (v1[(col + FS_2) / 2].w * (fc.x * (CSMFilterWeights[row + FS_2 - 1][col + FS_2 - 1]
-											- CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 0]) + CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 0])
-											+ v1[(col + FS_2) / 2].z * (fc.x * (CSMFilterWeights[row + FS_2 - 1][col + FS_2 - 0]
-											- CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 1]) + CSMFilterWeights[row + FS_2 - 1][col + FS_2 + 1]));
-				}
-			}
-
-			if (row != FS_2)
-				v0[(col + FS_2) / 2] = v1[(col + FS_2) / 2].xy;
-		}
-	}
-
-	return dot(s, 1.0f) / CSMFilterWeightsSum;
-	
-#endif
+    // UV Space -> Atlas Tile UV Space
+    float2 shadowMapUV = saturate(shadowPosition.xy);
+    shadowMapUV = shadowMapUV * shadowTile.ShadowToAtlas.xy + shadowTile.ShadowToAtlas.zw;
+    return shadowMapUV;
 }
 
-// Helper function for SampleShadowMapOptimizedPCF
-float SampleShadowMap(Texture2DArray shadowMap, float2 baseUv, float u, float v, float2 shadowMapSizeInv, uint cascadeIndex, float depth)
+float SampleShadowMap(Texture2D<float> shadowMap, float2 shadowMapUV, float sceneDepth)
 {
-    float2 uv = baseUv + float2(u, v) * shadowMapSizeInv;
-    return shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, float3(uv, cascadeIndex), depth);
+    float result = SAMPLE_SHADOW_MAP(shadowMap, shadowMapUV, sceneDepth);
+#if SHADOWS_QUALITY == 1
+	result += SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowMapUV, int2(-1, 0), sceneDepth);
+	result += SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowMapUV, int2(0, -1), sceneDepth);
+	result += SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowMapUV, int2(0, 1), sceneDepth);
+	result += SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowMapUV, int2(1, 0), sceneDepth);
+	result = result * (1.0f / 4.0);
+#elif SHADOWS_QUALITY == 2 || SHADOWS_QUALITY == 3
+	result += SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowMapUV, int2(-1, -1), sceneDepth);
+	result += SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowMapUV, int2(-1, 0), sceneDepth);
+	result += SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowMapUV, int2(-1, 1), sceneDepth);
+	result += SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowMapUV, int2(0, -1), sceneDepth);
+	result += SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowMapUV, int2(0, 1), sceneDepth);
+	result += SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowMapUV, int2(1, -1), sceneDepth);
+	result += SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowMapUV, int2(1, 0), sceneDepth);
+	result += SAMPLE_SHADOW_MAP_OFFSET(shadowMap, shadowMapUV, int2(1, 1), sceneDepth);
+	result = result * (1.0f / 9.0);
+#endif
+    return result;
 }
 
-// The method used in The Witness
-float SampleShadowMapOptimizedPCF(Texture2DArray shadowMap, float2 shadowMapSize, float sceneDepth, float2 shadowPos, uint cascadeIndex)
+float SampleShadowMapOptimizedPCFHelper(Texture2D<float> shadowMap, float2 baseUV, float u, float v, float2 shadowMapSizeInv, float sceneDepth)
 {
-    float2 uv = shadowPos.xy * shadowMapSize; // 1 unit - 1 texel
+    float2 uv = baseUV + float2(u, v) * shadowMapSizeInv;
+    return SAMPLE_SHADOW_MAP(shadowMap, uv, sceneDepth);
+}
+
+// [Shadow map sampling method used in The Witness, https://github.com/TheRealMJP/Shadows]
+float SampleShadowMapOptimizedPCF(Texture2D<float> shadowMap, float2 shadowMapUV, float sceneDepth)
+{
+#if SHADOWS_QUALITY != 0
+    float2 shadowMapSize;
+    shadowMap.GetDimensions(shadowMapSize.x, shadowMapSize.y);
+
+    float2 uv = shadowMapUV.xy * shadowMapSize; // 1 unit - 1 texel
     float2 shadowMapSizeInv = 1.0f / shadowMapSize;
 
-    float2 baseUv;
-    baseUv.x = floor(uv.x + 0.5);
-    baseUv.y = floor(uv.y + 0.5);
-    float s = (uv.x + 0.5 - baseUv.x);
-    float t = (uv.y + 0.5 - baseUv.y);
-    baseUv -= float2(0.5, 0.5);
-    baseUv *= shadowMapSizeInv;
+    float2 baseUV;
+    baseUV.x = floor(uv.x + 0.5);
+    baseUV.y = floor(uv.y + 0.5);
+    float s = (uv.x + 0.5 - baseUV.x);
+    float t = (uv.y + 0.5 - baseUV.y);
+    baseUV -= float2(0.5, 0.5);
+    baseUV *= shadowMapSizeInv;
 
     float sum = 0;
-
-#if FilterSizeCSM == 2
-
-    return shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, float3(shadowPos.xy, cascadeIndex), sceneDepth);
-
-#elif FilterSizeCSM == 3
-
+#endif
+#if SHADOWS_QUALITY == 0
+    return SAMPLE_SHADOW_MAP(shadowMap, shadowMapUV, sceneDepth);
+#elif SHADOWS_QUALITY == 1
 	float uw0 = (3 - 2 * s);
 	float uw1 = (1 + 2 * s);
 
@@ -258,15 +128,13 @@ float SampleShadowMapOptimizedPCF(Texture2DArray shadowMap, float2 shadowMapSize
 	float v0 = (2 - t) / vw0 - 1;
 	float v1 = t / vw1 + 1;
 
-	sum += uw0 * vw0 * SampleShadowMap(shadowMap, baseUv, u0, v0, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw1 * vw0 * SampleShadowMap(shadowMap, baseUv, u1, v0, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw0 * vw1 * SampleShadowMap(shadowMap, baseUv, u0, v1, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw1 * vw1 * SampleShadowMap(shadowMap, baseUv, u1, v1, shadowMapSizeInv, cascadeIndex, sceneDepth);
+	sum += uw0 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v0, shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v0, shadowMapSizeInv, sceneDepth);
+	sum += uw0 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v1, shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v1, shadowMapSizeInv, sceneDepth);
 
 	return sum * 1.0f / 16;
-
-#elif FilterSizeCSM == 5
-
+#elif SHADOWS_QUALITY == 2
 	float uw0 = (4 - 3 * s);
 	float uw1 = 7;
 	float uw2 = (1 + 3 * s);
@@ -283,22 +151,20 @@ float SampleShadowMapOptimizedPCF(Texture2DArray shadowMap, float2 shadowMapSize
 	float v1 = (3 + t) / vw1;
 	float v2 = t / vw2 + 2;
 
-	sum += uw0 * vw0 * SampleShadowMap(shadowMap, baseUv, u0, v0, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw1 * vw0 * SampleShadowMap(shadowMap, baseUv, u1, v0, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw2 * vw0 * SampleShadowMap(shadowMap, baseUv, u2, v0, shadowMapSizeInv, cascadeIndex, sceneDepth);
+	sum += uw0 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v0, shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v0, shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v0, shadowMapSizeInv, sceneDepth);
 
-	sum += uw0 * vw1 * SampleShadowMap(shadowMap, baseUv, u0, v1, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw1 * vw1 * SampleShadowMap(shadowMap, baseUv, u1, v1, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw2 * vw1 * SampleShadowMap(shadowMap, baseUv, u2, v1, shadowMapSizeInv, cascadeIndex, sceneDepth);
+	sum += uw0 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v1, shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v1, shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v1, shadowMapSizeInv, sceneDepth);
 
-	sum += uw0 * vw2 * SampleShadowMap(shadowMap, baseUv, u0, v2, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw1 * vw2 * SampleShadowMap(shadowMap, baseUv, u1, v2, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw2 * vw2 * SampleShadowMap(shadowMap, baseUv, u2, v2, shadowMapSizeInv, cascadeIndex, sceneDepth);
+	sum += uw0 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v2, shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v2, shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v2, shadowMapSizeInv, sceneDepth);
 
 	return sum * 1.0f / 144;
-
-#else // FilterSizeCSM == 7
-
+#elif SHADOWS_QUALITY == 3
 	float uw0 = (5 * s - 6);
 	float uw1 = (11 * s - 28);
 	float uw2 = -(11 * s + 17);
@@ -319,405 +185,256 @@ float SampleShadowMapOptimizedPCF(Texture2DArray shadowMap, float2 shadowMapSize
 	float v2 = -(7 * t + 5) / vw2 + 1;
 	float v3 = -t / vw3 + 3;
 
-	sum += uw0 * vw0 * SampleShadowMap(shadowMap, baseUv, u0, v0, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw1 * vw0 * SampleShadowMap(shadowMap, baseUv, u1, v0, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw2 * vw0 * SampleShadowMap(shadowMap, baseUv, u2, v0, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw3 * vw0 * SampleShadowMap(shadowMap, baseUv, u3, v0, shadowMapSizeInv, cascadeIndex, sceneDepth);
+	sum += uw0 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v0, shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v0, shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v0, shadowMapSizeInv, sceneDepth);
+	sum += uw3 * vw0 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u3, v0, shadowMapSizeInv, sceneDepth);
 
-	sum += uw0 * vw1 * SampleShadowMap(shadowMap, baseUv, u0, v1, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw1 * vw1 * SampleShadowMap(shadowMap, baseUv, u1, v1, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw2 * vw1 * SampleShadowMap(shadowMap, baseUv, u2, v1, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw3 * vw1 * SampleShadowMap(shadowMap, baseUv, u3, v1, shadowMapSizeInv, cascadeIndex, sceneDepth);
+	sum += uw0 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v1, shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v1, shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v1, shadowMapSizeInv, sceneDepth);
+	sum += uw3 * vw1 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u3, v1, shadowMapSizeInv, sceneDepth);
 
-	sum += uw0 * vw2 * SampleShadowMap(shadowMap, baseUv, u0, v2, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw1 * vw2 * SampleShadowMap(shadowMap, baseUv, u1, v2, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw2 * vw2 * SampleShadowMap(shadowMap, baseUv, u2, v2, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw3 * vw2 * SampleShadowMap(shadowMap, baseUv, u3, v2, shadowMapSizeInv, cascadeIndex, sceneDepth);
+	sum += uw0 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v2, shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v2, shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v2, shadowMapSizeInv, sceneDepth);
+	sum += uw3 * vw2 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u3, v2, shadowMapSizeInv, sceneDepth);
 
-	sum += uw0 * vw3 * SampleShadowMap(shadowMap, baseUv, u0, v3, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw1 * vw3 * SampleShadowMap(shadowMap, baseUv, u1, v3, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw2 * vw3 * SampleShadowMap(shadowMap, baseUv, u2, v3, shadowMapSizeInv, cascadeIndex, sceneDepth);
-	sum += uw3 * vw3 * SampleShadowMap(shadowMap, baseUv, u3, v3, shadowMapSizeInv, cascadeIndex, sceneDepth);
+	sum += uw0 * vw3 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u0, v3, shadowMapSizeInv, sceneDepth);
+	sum += uw1 * vw3 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u1, v3, shadowMapSizeInv, sceneDepth);
+	sum += uw2 * vw3 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u2, v3, shadowMapSizeInv, sceneDepth);
+	sum += uw3 * vw3 * SampleShadowMapOptimizedPCFHelper(shadowMap, baseUV, u3, v3, shadowMapSizeInv, sceneDepth);
 
 	return sum * (1.0f / 2704);
-
+#else
+    return 0.0f;
 #endif
 }
 
-// Samples the shadow from the shadow map cascade
-float SampleShadowCascade(Texture2DArray shadowMap, float2 shadowMapSize, float sceneDepth, float2 shadowPosition, uint cascadeIndex)
+// Samples the shadow cascade for the given directional light on the material surface (supports subsurface shadowing)
+ShadowSample SampleDirectionalLightShadowCascade(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, GBufferSample gBuffer, ShadowData shadow, float3 samplePosition, uint cascadeIndex)
 {
-    float shadow = SampleShadowMapFixedSizePCF(shadowMap, shadowMapSize, sceneDepth, shadowPosition, cascadeIndex);
-    //float shadow = SampleShadowMapOptimizedPCF(shadowMap, shadowMapSize, sceneDepth, shadowPosition, cascadeIndex);
-    return shadow;
-}
+    ShadowSample result;
+    ShadowTileData shadowTile = LoadShadowsBufferTile(shadowsBuffer, light.ShadowsBufferAddress, cascadeIndex);
 
-// Samples the shadow for the given directional light (cascaded shadow map sampling)
-float SampleShadow(LightData light, LightShadowData shadow, Texture2DArray shadowMap, float3 worldPosition, float viewDepth)
-{
-    // Create a blend factor which is one before and at the fade plane
-    float fade = saturate((viewDepth - shadow.CascadeSplits[shadow.NumCascades - 1] + shadow.FadeDistance) / shadow.FadeDistance);
-    BRANCH
-    if (fade >= 1.0)
-    {
-        return 1;
-    }
+    // Project position into shadow atlas UV
+    float4 shadowPosition;
+    float2 shadowMapUV = GetLightShadowAtlasUV(shadow, shadowTile, samplePosition, shadowPosition);
 
-    // Figure out which cascade to sample from
-    uint cascadeIndex = 0;
-    for (uint i = 0; i < shadow.NumCascades - 1; i++)
-    {
-        if (viewDepth > shadow.CascadeSplits[i])
-            cascadeIndex = i + 1;
-    }
-
-    // Project into shadow space
-    float4 shadowPosition = mul(float4(worldPosition, 1.0f), shadow.ShadowVP[cascadeIndex]);
-    shadowPosition.xy /= shadowPosition.w;
-    shadowPosition.z -= shadow.Bias;
-
-    // Sample shadow
-    float result = SampleShadowCascade(shadowMap, shadow.ShadowMapSize, shadowPosition.z, shadowPosition.xy, cascadeIndex);
+    // Sample shadow map
+    result.SurfaceShadow = SampleShadowMapOptimizedPCF(shadowMap, shadowMapUV, shadowPosition.z);
 
     // Increase the sharpness for higher cascades to match the filter radius
     const float SharpnessScale[MaxNumCascades] = { 1.0f, 1.5f, 3.0f, 3.5f };
-    float sharpness = shadow.Sharpness * SharpnessScale[cascadeIndex];
-
-#if CSM_BLENDING
-	// Sample the next cascade, and blend between the two results to smooth the transition
-	const float BlendThreshold = 0.1f;
-	float nextSplit = shadow.CascadeSplits[cascadeIndex];
-	float splitSize = cascadeIndex == 0 ? nextSplit : nextSplit - shadow.CascadeSplits[cascadeIndex - 1];
-	float splitDist = (nextSplit - viewDepth) / splitSize;
-	BRANCH
-	if (splitDist <= BlendThreshold && cascadeIndex != shadow.NumCascades - 1)
-	{
-		// Find the position of this pixel in light space of next cascade
-		shadowPosition = mul(float4(worldPosition, 1.0f), shadow.ShadowVP[cascadeIndex + 1]);
-		shadowPosition.xy /= shadowPosition.w;
-		shadowPosition.z -= shadow.Bias;
-
-		// Sample next cascade and blur result
-		float nextSplitShadow = SampleShadowCascade(shadowMap, shadow.ShadowMapSize, shadowPosition.z, shadowPosition.xy, cascadeIndex + 1);
-		float lerpAmount = smoothstep(0.0f, BlendThreshold, splitDist);
-		lerpAmount = splitDist / BlendThreshold;
-		result = lerp(nextSplitShadow, result, lerpAmount);
-
-		// Blur sharpness as well
-		sharpness = lerp(shadow.Sharpness * SharpnessScale[cascadeIndex + 1], sharpness, lerpAmount);
-	}
-#endif
-
-    // Apply shadow fade and sharpness
-    result = saturate((result - 0.5) * sharpness + 0.5);
-    result = lerp(1.0f, result, (1 - fade) * shadow.Fade);
-    return result;
-}
-
-// Samples the shadow for the given directional light (cascaded shadow map sampling) for the material surface (supports subsurface shadowing)
-float SampleShadow(LightData light, LightShadowData shadow, Texture2DArray shadowMap, GBufferSample gBuffer, out float subsurfaceShadow)
-{
-    subsurfaceShadow = 1;
-
-    // Create a blend factor which is one before and at the fade plane
-    float viewDepth = gBuffer.ViewPos.z;
-    float fade = saturate((viewDepth - shadow.CascadeSplits[shadow.NumCascades - 1] + shadow.FadeDistance) / shadow.FadeDistance);
-    BRANCH
-    if (fade >= 1.0)
-    {
-        return 1;
-    }
-
-    // Figure out which cascade to sample from
-    uint cascadeIndex = 0;
-    for (uint i = 0; i < shadow.NumCascades - 1; i++)
-    {
-        if (viewDepth > shadow.CascadeSplits[i])
-            cascadeIndex = i + 1;
-    }
-
+    shadow.Sharpness *= SharpnessScale[cascadeIndex];
+    
 #if defined(USE_GBUFFER_CUSTOM_DATA)
 	// Subsurface shadowing
 	BRANCH
 	if (IsSubsurfaceMode(gBuffer.ShadingModel))
 	{
-		// Get subsurface material info
 		float opacity = gBuffer.CustomData.a;
-
-		// Project into shadow space
-		float4 shadowPosition = mul(float4(gBuffer.WorldPos, 1.0f), shadow.ShadowVP[cascadeIndex]);
-		shadowPosition.xy /= shadowPosition.w;
-		shadowPosition.z -= shadow.Bias;
-
-		// Sample shadow map (single hardware sample with hardware filtering)
-		float shadowMapDepth = shadowMap.SampleLevel(SamplerLinearClamp, float3(shadowPosition.xy, cascadeIndex), 0).r;
-		subsurfaceShadow = CalculateSubsurfaceOcclusion(opacity, shadowPosition.z, shadowMapDepth);
-
-		// Apply shadow fade
-		subsurfaceShadow = lerp(1.0f, subsurfaceShadow, (1 - fade) * shadow.Fade);
+        shadowMapUV = GetLightShadowAtlasUV(shadow, shadowTile, gBuffer.WorldPos, shadowPosition);
+		float shadowMapDepth = shadowMap.SampleLevel(SAMPLE_SHADOW_MAP_SAMPLER, shadowMapUV, 0).r;
+		result.TransmissionShadow = CalculateSubsurfaceOcclusion(opacity, shadowPosition.z, shadowMapDepth);
+        result.TransmissionShadow = PostProcessShadow(shadow, result.TransmissionShadow);
 	}
+#else
+    result.TransmissionShadow = 1;
 #endif
 
-    float3 samplePosWS = gBuffer.WorldPos;
+    result.SurfaceShadow = PostProcessShadow(shadow, result.SurfaceShadow);
 
+    return result;
+}
+
+// Samples the shadow for the given directional light on the material surface (supports subsurface shadowing)
+ShadowSample SampleDirectionalLightShadow(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, GBufferSample gBuffer, float dither = 0.0f)
+{
 #if !LIGHTING_NO_DIRECTIONAL
     // Skip if surface is in a full shadow
     float NoL = dot(gBuffer.Normal, light.Direction);
     BRANCH
-    if (NoL <= 0)
-    {
-        return 0;
-    }
-
-    // Apply normal offset bias
-    samplePosWS += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
+    if (NoL <= 0
+#if defined(USE_GBUFFER_CUSTOM_DATA)
+        && !IsSubsurfaceMode(gBuffer.ShadingModel)
+#endif
+        )
+        return (ShadowSample)0;
 #endif
 
-    // Sample shadow
-    return SampleShadow(light, shadow, shadowMap, samplePosWS, viewDepth);
-}
+    ShadowSample result;
+    result.SurfaceShadow = 1;
+    result.TransmissionShadow = 1;
+    
+    // Load shadow data
+    if (light.ShadowsBufferAddress == 0)
+        return result; // No shadow assigned
+    ShadowData shadow = LoadShadowsBuffer(shadowsBuffer, light.ShadowsBufferAddress);
 
-// Samples the shadow for the given spot light (PCF shadow map sampling)
-float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap, float3 worldPosition)
-{
-    float3 toLight = light.Position - worldPosition;
-    float toLightLength = length(toLight);
-    float3 L = toLight / toLightLength;
-#if LIGHTING_NO_DIRECTIONAL
-    float dirCheck = 1.0f;
-#else
-    float dirCheck = dot(-light.Direction, L);
-#endif
-
-    // Skip pixels outside of the light influence
+    // Create a blend factor which is one before and at the fade plane
+    float viewDepth = gBuffer.ViewPos.z;
+    float fade = saturate((viewDepth - shadow.CascadeSplits[shadow.TilesCount - 1] + shadow.FadeDistance) / shadow.FadeDistance);
     BRANCH
-    if (toLightLength > light.Radius || dirCheck < 0)
+    if (fade >= 1.0)
+        return result;
+
+    // Figure out which cascade to sample from
+    uint cascadeIndex = 0;
+    for (uint i = 0; i < shadow.TilesCount - 1; i++)
     {
-        return 1;
+        if (viewDepth > shadow.CascadeSplits[i])
+            cascadeIndex = i + 1;
     }
-
-    // Negate direction and use normalized value
-    toLight = -L;
-
-    // Project into shadow space
-    float4 shadowPosition = mul(float4(worldPosition, 1.0f), shadow.ShadowVP[0]);
-    shadowPosition.z -= shadow.Bias;
-    shadowPosition.xyz /= shadowPosition.w;
-
-    float2 shadowMapUVs = shadowPosition.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f);
-
-#if FilterSizeSpot == 2
-
-    // Use single hardware sample with filtering
-    float result = shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, shadowMapUVs, shadowPosition.z);
-
-#else
-
-	float3 sideVector = normalize(cross(toLight, float3(0, 0, 1)));
-	float3 upVector = cross(sideVector, toLight);
-
-    float shadowMapSizeInv = 1.0f / shadow.ShadowMapSize.x;
-	sideVector *= shadowMapSizeInv;
-	upVector *= shadowMapSizeInv;
-
-	// Use PCF filter
-	float result = 0;
-	UNROLL
-	for(int i = 0; i < FilterSizeCube; i++)
-	{
-		float2 samplePos = shadowMapUVs + sideVector.xy * PCFDiscSamples[i].x + upVector.xy * PCFDiscSamples[i].y;
-		result += shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, samplePos, shadowPosition.z);
-	}
-	result *= (1.0f / FilterSizeCube);
-
+#if SHADOWS_CSM_DITHERING || SHADOWS_CSM_BLENDING
+	float nextSplit = shadow.CascadeSplits[cascadeIndex];
+	float splitSize = cascadeIndex == 0 ? nextSplit : nextSplit - shadow.CascadeSplits[cascadeIndex - 1];
+	float splitDist = (nextSplit - viewDepth) / splitSize;
+#endif
+#if SHADOWS_CSM_DITHERING && !SHADOWS_CSM_BLENDING
+	const float BlendThreshold = 0.05f;
+    if (splitDist <= BlendThreshold && cascadeIndex != shadow.TilesCount - 1)
+    {
+        // Dither with the next cascade but with screen-space dithering (gets cleaned out by TAA)
+        float lerpAmount = 1 - splitDist / BlendThreshold;
+        if (step(RandN2(gBuffer.ViewPos.xy + dither).x, lerpAmount))
+            cascadeIndex++;
+    }
 #endif
 
-    // Apply shadow fade and sharpness
-    result = saturate((result - 0.5) * shadow.Sharpness + 0.5);
-    result = lerp(1.0f, result, shadow.Fade);
+    // Sample cascade
+    float3 samplePosition = gBuffer.WorldPos;
+#if !LIGHTING_NO_DIRECTIONAL
+    // Apply normal offset bias
+    samplePosition += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
+#endif
+    result = SampleDirectionalLightShadowCascade(light, shadowsBuffer, shadowMap, gBuffer, shadow, samplePosition, cascadeIndex);
+
+#if SHADOWS_CSM_BLENDING
+	const float BlendThreshold = 0.1f;
+    if (splitDist <= BlendThreshold && cascadeIndex != shadow.TilesCount - 1)
+    {
+	    // Sample the next cascade, and blend between the two results to smooth the transition
+        ShadowSample nextResult = SampleDirectionalLightShadowCascade(light, shadowsBuffer, shadowMap, gBuffer, shadow, samplePosition, cascadeIndex + 1);
+		float blendAmount = splitDist / BlendThreshold;
+		result.SurfaceShadow = lerp(nextResult.SurfaceShadow, result.SurfaceShadow, blendAmount);
+		result.TransmissionShadow = lerp(nextResult.TransmissionShadow, result.TransmissionShadow, blendAmount);
+    }
+#endif
 
     return result;
 }
 
-// Samples the shadow for the given spot light (PCF shadow map sampling) for the material surface (supports subsurface shadowing)
-float SampleShadow(LightData light, LightShadowData shadow, Texture2D shadowMap, GBufferSample gBuffer, out float subsurfaceShadow)
+// Samples the shadow for the given local light on the material surface (supports subsurface shadowing)
+ShadowSample SampleLocalLightShadow(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, GBufferSample gBuffer, float3 L, float toLightLength, uint tileIndex)
 {
-    subsurfaceShadow = 1;
-    float3 toLight = light.Position - gBuffer.WorldPos;
-    float toLightLength = length(toLight);
-    float3 L = toLight / toLightLength;
-#if LIGHTING_NO_DIRECTIONAL
-    float dirCheck = 1.0f;
-#else
-    float dirCheck = dot(-light.Direction, L);
+#if !LIGHTING_NO_DIRECTIONAL
+    // Skip if surface is in a full shadow
+    float NoL = dot(gBuffer.Normal, L);
+    BRANCH
+    if (NoL <= 0
+#if defined(USE_GBUFFER_CUSTOM_DATA)
+        && !IsSubsurfaceMode(gBuffer.ShadingModel)
 #endif
+        )
+        return (ShadowSample)0;
+#endif
+
+    ShadowSample result;
+    result.SurfaceShadow = 1;
+    result.TransmissionShadow = 1;
 
     // Skip pixels outside of the light influence
     BRANCH
-    if (toLightLength > light.Radius || dirCheck < 0)
-    {
-        return 1;
-    }
+    if (toLightLength > light.Radius)
+        return result;
+
+    // Load shadow data
+    if (light.ShadowsBufferAddress == 0)
+        return result; // No shadow assigned
+    ShadowData shadow = LoadShadowsBuffer(shadowsBuffer, light.ShadowsBufferAddress);
+    ShadowTileData shadowTile = LoadShadowsBufferTile(shadowsBuffer, light.ShadowsBufferAddress, tileIndex);
+
+    float3 samplePosition = gBuffer.WorldPos;
+#if !LIGHTING_NO_DIRECTIONAL
+    // Apply normal offset bias
+    samplePosition += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
+#endif
+
+    // Project position into shadow atlas UV
+    float4 shadowPosition;
+    float2 shadowMapUV = GetLightShadowAtlasUV(shadow, shadowTile, samplePosition, shadowPosition);
+
+    // Sample shadow map
+    result.SurfaceShadow = SampleShadowMapOptimizedPCF(shadowMap, shadowMapUV, shadowPosition.z);
 
 #if defined(USE_GBUFFER_CUSTOM_DATA)
 	// Subsurface shadowing
 	BRANCH
 	if (IsSubsurfaceMode(gBuffer.ShadingModel))
 	{
-		// Get subsurface material info
 		float opacity = gBuffer.CustomData.a;
-
-		// Project into shadow space
-		float4 shadowPosition = mul(float4(gBuffer.WorldPos, 1.0f), shadow.ShadowVP[0]);
-		shadowPosition.z -= shadow.Bias;
-		shadowPosition.xyz /= shadowPosition.w;
-
-		// Sample shadow map (use single hardware sample with filtering)
-		float shadowMapDepth = shadowMap.SampleLevel(SamplerLinearClamp, shadowPosition.xy * float2(0.5f, -0.5f) + float2(0.5f, 0.5f), 0).r;
-		subsurfaceShadow = CalculateSubsurfaceOcclusion(opacity, shadowPosition.z, shadowMapDepth);
-
-		// Apply shadow fade
-		subsurfaceShadow = lerp(1.0f, subsurfaceShadow, shadow.Fade);
+        shadowMapUV = GetLightShadowAtlasUV(shadow, shadowTile, gBuffer.WorldPos, shadowPosition);
+		float shadowMapDepth = shadowMap.SampleLevel(SAMPLE_SHADOW_MAP_SAMPLER, shadowMapUV, 0).r;
+		result.TransmissionShadow = CalculateSubsurfaceOcclusion(opacity, shadowPosition.z, shadowMapDepth);
+        result.TransmissionShadow = PostProcessShadow(shadow, result.TransmissionShadow);
 	}
 #endif
-    
-    float3 samplePosWS = gBuffer.WorldPos;
 
-#if !LIGHTING_NO_DIRECTIONAL
-    // Skip if surface is in a full shadow
-    float NoL = dot(gBuffer.Normal, L);
-    BRANCH
-    if (NoL <= 0)
-    {
-        return 0;
-    }
-
-    // Apply normal offset bias
-    samplePosWS += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
-#endif
-
-    // Sample shadow
-    return SampleShadow(light, shadow, shadowMap, samplePosWS);
-}
-
-// Samples the shadow for the given point light (PCF shadow map sampling)
-float SampleShadow(LightData light, LightShadowData shadow, TextureCube<float> shadowMap, float3 worldPosition)
-{
-    float3 toLight = light.Position - worldPosition;
-    float toLightLength = length(toLight);
-    float3 L = toLight / toLightLength;
-
-    // Skip pixels outside of the light influence
-    BRANCH
-    if (toLightLength > light.Radius)
-    {
-        return 1;
-    }
-
-    // Negate direction and use normalized value
-    toLight = -L;
-
-    // Figure out which cube face we're sampling from
-    int cubeFaceIndex = GetCubeFaceIndex(toLight);
-
-    // Project into shadow space
-    float4 shadowPosition = mul(float4(worldPosition, 1.0f), shadow.ShadowVP[cubeFaceIndex]);
-    shadowPosition.z -= shadow.Bias;
-    shadowPosition.xyz /= shadowPosition.w;
-
-#if FilterSizeCube == 2
-
-    // Use single hardware sample with filtering
-    float result = shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, toLight, shadowPosition.z);
-
-#else
-
-	float3 sideVector = normalize(cross(toLight, float3(0, 0, 1)));
-	float3 upVector = cross(sideVector, toLight);
-
-    float shadowMapSizeInv = 1.0f / shadow.ShadowMapSize.x;
-	sideVector *= shadowMapSizeInv;
-	upVector *= shadowMapSizeInv;
-
-	// Use PCF filter
-	float result = 0;
-	UNROLL
-	for (int i = 0; i < FilterSizeCube; i++)
-	{
-		float3 cubeSamplePos = toLight + sideVector * PCFDiscSamples[i].x + upVector * PCFDiscSamples[i].y;
-		result += shadowMap.SampleCmpLevelZero(ShadowSamplerPCF, cubeSamplePos, shadowPosition.z);
-	}
-	result *= (1.0f / FilterSizeCube);
-
-#endif
-
-    // Apply shadow fade and sharpness
-    result = saturate((result - 0.5) * shadow.Sharpness + 0.5);
-    result = lerp(1.0f, result, shadow.Fade);
-
+    result.SurfaceShadow = PostProcessShadow(shadow, result.SurfaceShadow);
     return result;
 }
 
-// Samples the shadow for the given point light (PCF shadow map sampling) for the material surface (supports subsurface shadowing)
-float SampleShadow(LightData light, LightShadowData shadow, TextureCube<float> shadowMap, GBufferSample gBuffer, out float subsurfaceShadow)
+// Samples the shadow for the given spot light on the material surface (supports subsurface shadowing)
+ShadowSample SampleSpotLightShadow(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, GBufferSample gBuffer)
 {
-    subsurfaceShadow = 1;
+    float3 toLight = light.Position - gBuffer.WorldPos;
+    float toLightLength = length(toLight);
+    float3 L = toLight / toLightLength;
+    return SampleLocalLightShadow(light, shadowsBuffer, shadowMap, gBuffer, L, toLightLength, 0);
+}
+
+// Samples the shadow for the given point light on the material surface (supports subsurface shadowing)
+ShadowSample SamplePointLightShadow(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, GBufferSample gBuffer)
+{
     float3 toLight = light.Position - gBuffer.WorldPos;
     float toLightLength = length(toLight);
     float3 L = toLight / toLightLength;
 
-    // Skip pixels outside of the light influence
-    BRANCH
-    if (toLightLength > light.Radius)
-    {
-        return 1;
-    }
-
-    // Negate direction and use normalized value
-    toLight = -L;
-
     // Figure out which cube face we're sampling from
-    int cubeFaceIndex = GetCubeFaceIndex(toLight);
+    uint cubeFaceIndex = GetCubeFaceIndex(-L);
 
-#if defined(USE_GBUFFER_CUSTOM_DATA)
-	// Subsurface shadowing
-	BRANCH
-	if (IsSubsurfaceMode(gBuffer.ShadingModel))
-	{
-		// Get subsurface material info
-		float opacity = gBuffer.CustomData.a;
+    return SampleLocalLightShadow(light, shadowsBuffer, shadowMap, gBuffer, L, toLightLength, cubeFaceIndex);
+}
 
-		// Project into shadow space
-		float4 shadowPosition = mul(float4(gBuffer.WorldPos, 1.0f), shadow.ShadowVP[cubeFaceIndex]);
-		shadowPosition.z -= shadow.Bias;
-		shadowPosition.xyz /= shadowPosition.w;
+GBufferSample GetDummyGBufferSample(float3 worldPosition)
+{
+    GBufferSample gBuffer = (GBufferSample)0;
+    gBuffer.ShadingModel = SHADING_MODEL_LIT;
+    gBuffer.WorldPos = worldPosition;
+    return gBuffer;
+}
 
-		// Sample shadow map (use single hardware sample with filtering)
-		float shadowMapDepth = shadowMap.SampleLevel(SamplerLinearClamp, toLight, 0).r;
-		subsurfaceShadow = CalculateSubsurfaceOcclusion(opacity, shadowPosition.z, shadowMapDepth);
+// Samples the shadow for the given directional light at custom location
+ShadowSample SampleDirectionalLightShadow(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, float3 worldPosition, float viewDepth, float dither = 0.0f)
+{
+    GBufferSample gBuffer = GetDummyGBufferSample(worldPosition);
+    gBuffer.ViewPos.z = viewDepth;
+    return SampleDirectionalLightShadow(light, shadowsBuffer, shadowMap, gBuffer, dither);
+}
 
-		// Apply shadow fade
-		subsurfaceShadow = lerp(1.0f, subsurfaceShadow, shadow.Fade);
-	}
-#endif
-    
-    float3 samplePosWS = gBuffer.WorldPos;
+// Samples the shadow for the given spot light at custom location
+ShadowSample SampleSpotLightShadow(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, float3 worldPosition)
+{
+    GBufferSample gBuffer = GetDummyGBufferSample(worldPosition);
+    return SampleSpotLightShadow(light, shadowsBuffer, shadowMap, gBuffer);
+}
 
-#if !LIGHTING_NO_DIRECTIONAL
-    // Skip if surface is in a full shadow
-    float NoL = dot(gBuffer.Normal, L);
-    BRANCH
-    if (NoL <= 0)
-    {
-        return 0;
-    }
-
-    // Apply normal offset bias
-    samplePosWS += GetShadowPositionOffset(shadow.NormalOffsetScale, NoL, gBuffer.Normal);
-#endif
-
-    // Sample shadow
-    return SampleShadow(light, shadow, shadowMap, samplePosWS);
+// Samples the shadow for the given point light at custom location
+ShadowSample SamplePointLightShadow(LightData light, Buffer<float4> shadowsBuffer, Texture2D<float> shadowMap, float3 worldPosition)
+{
+    GBufferSample gBuffer = GetDummyGBufferSample(worldPosition);
+    return SamplePointLightShadow(light, shadowsBuffer, shadowMap, gBuffer);
 }
 
 #endif

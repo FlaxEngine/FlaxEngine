@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -274,11 +274,7 @@ namespace FlaxEditor.Modules
         private void Load()
         {
             if (!File.Exists(_cachePath))
-            {
-                Editor.LogWarning("Missing editor cache file.");
                 return;
-            }
-
             _lastSaveTime = DateTime.UtcNow;
 
             try

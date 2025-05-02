@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -55,6 +55,9 @@ public class FlaxEditor : EngineTarget
                 break;
             case TargetArchitecture.x86:
                 options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "Win32", options.Configuration.ToString());
+                break;
+            case TargetArchitecture.ARM64:
+                options.OutputFolder = Path.Combine(options.WorkingDirectory, "Binaries", "Editor", "ARM64", options.Configuration.ToString());
                 break;
             default: throw new InvalidArchitectureException(options.Architecture, "Not supported Editor architecture.");
             }

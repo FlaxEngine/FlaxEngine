@@ -1,13 +1,16 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
 #include "GPUPipelineStateVulkan.h"
+#include "GPUVertexLayoutVulkan.h"
 #include "RenderToolsVulkan.h"
 #include "DescriptorSetVulkan.h"
 #include "GPUShaderProgramVulkan.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/Pair.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 
 static VkStencilOp ToVulkanStencilOp(const StencilOperation value)
 {
@@ -31,6 +34,49 @@ static VkStencilOp ToVulkanStencilOp(const StencilOperation value)
         return VK_STENCIL_OP_DECREMENT_AND_WRAP;
     default:
         return VK_STENCIL_OP_KEEP;
+    }
+}
+
+static VkBlendFactor ToVulkanBlendFactor(const BlendingMode::Blend value)
+{
+    switch (value)
+    {
+    case BlendingMode::Blend::Zero:
+        return VK_BLEND_FACTOR_ZERO;
+    case BlendingMode::Blend::One:
+        return VK_BLEND_FACTOR_ONE;
+    case BlendingMode::Blend::SrcColor:
+        return VK_BLEND_FACTOR_SRC_COLOR;
+    case BlendingMode::Blend::InvSrcColor:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
+    case BlendingMode::Blend::SrcAlpha:
+        return VK_BLEND_FACTOR_SRC_ALPHA;
+    case BlendingMode::Blend::InvSrcAlpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    case BlendingMode::Blend::DestAlpha:
+        return VK_BLEND_FACTOR_DST_ALPHA;
+    case BlendingMode::Blend::InvDestAlpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
+    case BlendingMode::Blend::DestColor:
+        return VK_BLEND_FACTOR_DST_COLOR;
+    case BlendingMode::Blend::InvDestColor:
+        return VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
+    case BlendingMode::Blend::SrcAlphaSat:
+        return VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
+    case BlendingMode::Blend::BlendFactor:
+        return VK_BLEND_FACTOR_CONSTANT_COLOR;
+    case BlendingMode::Blend::BlendInvFactor:
+        return VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+    case BlendingMode::Blend::Src1Color:
+        return VK_BLEND_FACTOR_SRC1_COLOR;
+    case BlendingMode::Blend::InvSrc1Color:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
+    case BlendingMode::Blend::Src1Alpha:
+        return VK_BLEND_FACTOR_SRC1_ALPHA;
+    case BlendingMode::Blend::InvSrc1Alpha:
+        return VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
+    default:
+        return VK_BLEND_FACTOR_ZERO;
     }
 }
 
@@ -126,7 +172,6 @@ ComputePipelineStateVulkan::~ComputePipelineStateVulkan()
 
 GPUPipelineStateVulkan::GPUPipelineStateVulkan(GPUDeviceVulkan* device)
     : GPUResourceVulkan<GPUPipelineState>(device, StringView::Empty)
-    , _pipelines(16)
     , _layout(nullptr)
 {
 }
@@ -158,38 +203,110 @@ PipelineLayoutVulkan* GPUPipelineStateVulkan::GetLayout()
     return _layout;
 }
 
-VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass)
+VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVertexLayoutVulkan* vertexLayout)
 {
     ASSERT(renderPass);
 
     // Try reuse cached version
     VkPipeline pipeline = VK_NULL_HANDLE;
-    if (_pipelines.TryGet(renderPass, pipeline))
+    const Pair<RenderPassVulkan*, GPUVertexLayoutVulkan*> key(renderPass, vertexLayout);
+    if (_pipelines.TryGet(key, pipeline))
     {
 #if BUILD_DEBUG
         // Verify
-        RenderPassVulkan* refKey = nullptr;
+        Pair<RenderPassVulkan*, GPUVertexLayoutVulkan*> refKey(nullptr, nullptr);
         _pipelines.KeyOf(pipeline, &refKey);
-        ASSERT(refKey == renderPass);
+        ASSERT(refKey == key);
 #endif
         return pipeline;
     }
-
     PROFILE_CPU_NAMED("Create Pipeline");
+
+    // Bind vertex input
+	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo;
+	VkVertexInputBindingDescription vertexInputBindings[GPU_MAX_VB_BINDED + 1];
+	VkVertexInputAttributeDescription vertexInputAttributes[GPU_MAX_VS_ELEMENTS];
+    _desc.pVertexInputState = nullptr;
+    if (!vertexLayout)
+        vertexLayout = VertexBufferLayout; // Fallback to shader-specified layout (if using old APIs)
+    if (vertexLayout)
+    {
+        // Vertex bindings based on vertex buffers assigned
+        for (int32 i = 0; i < GPU_MAX_VB_BINDED; i++)
+        {
+            VkVertexInputBindingDescription& binding = vertexInputBindings[i];
+            binding.binding = i;
+            binding.stride = 0;
+            binding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        }
+        uint32 bindingsCount = 0;
+        for (int32 i = 0; i < vertexLayout->GetElements().Count(); i++)
+        {
+            const VertexElement& src = vertexLayout->GetElements().Get()[i];
+            const int32 size = PixelFormatExtensions::SizeInBytes(src.Format);
+            ASSERT_LOW_LAYER(src.Slot < GPU_MAX_VB_BINDED);
+            VkVertexInputBindingDescription& binding = vertexInputBindings[src.Slot];
+            binding.binding = src.Slot;
+            binding.stride = Math::Max(binding.stride, (uint32_t)(src.Offset + size));
+            binding.inputRate = src.PerInstance ? VK_VERTEX_INPUT_RATE_INSTANCE : VK_VERTEX_INPUT_RATE_VERTEX;
+            bindingsCount = Math::Max(bindingsCount, (uint32)src.Slot + 1);
+        }
+
+        // Vertex elements (including any merged elements from reference layout from shader reflection)
+        uint32 missingSlotBinding = bindingsCount;
+        int32 missingSlotOverride = GPU_MAX_VB_BINDED; // Use additional slot with empty VB
+        vertexLayout = (GPUVertexLayoutVulkan*)GPUVertexLayout::Merge(vertexLayout, VertexInputLayout, true, true, missingSlotOverride);
+        for (int32 i = 0; i < vertexLayout->GetElements().Count(); i++)
+        {
+            const VertexElement& src = vertexLayout->GetElements().Get()[i];
+            VkVertexInputAttributeDescription& attribute = vertexInputAttributes[i];
+            attribute.location = i;
+            if (VertexInputLayout)
+            {
+                // Sync locations with vertex shader inputs to ensure that shader will load correct attributes
+                const auto& vertexInputLayoutElements = VertexInputLayout->GetElements();
+                for (int32 j = 0; j < vertexInputLayoutElements.Count(); j++)
+                {
+                    if (vertexInputLayoutElements.Get()[j].Type == src.Type)
+                    {
+                        attribute.location = j;
+                        break;
+                    }
+                }
+            }
+            if (src.Slot == missingSlotOverride)
+            {
+                // Element is missing and uses special empty VB
+                vertexInputBindings[missingSlotBinding] = { GPU_MAX_VB_BINDED, sizeof(byte[4]), VK_VERTEX_INPUT_RATE_INSTANCE };
+                bindingsCount = missingSlotBinding + 1;
+            }
+            attribute.binding = src.Slot;
+            attribute.format = RenderToolsVulkan::ToVulkanFormat(src.Format);
+            attribute.offset = src.Offset;
+        }
+
+        RenderToolsVulkan::ZeroStruct(vertexInputCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO);
+        vertexInputCreateInfo.vertexBindingDescriptionCount = bindingsCount;
+        vertexInputCreateInfo.pVertexBindingDescriptions = vertexInputBindings;
+        vertexInputCreateInfo.vertexAttributeDescriptionCount = vertexLayout->GetElements().Count();
+        vertexInputCreateInfo.pVertexAttributeDescriptions = vertexInputAttributes;
+        _desc.pVertexInputState = &vertexInputCreateInfo;
+    }
 
     // Update description to match the pipeline
     _descColorBlend.attachmentCount = renderPass->Layout.RTsCount;
     _descMultisample.rasterizationSamples = (VkSampleCountFlagBits)renderPass->Layout.MSAA;
     _desc.renderPass = renderPass->Handle;
 
-    // Check if has missing layout
+    // Ensure to have valid layout set
     if (_desc.layout == VK_NULL_HANDLE)
-    {
         _desc.layout = GetLayout()->Handle;
-    }
 
     // Create object
+    auto depthWrite = _descDepthStencil.depthWriteEnable;
+    _descDepthStencil.depthWriteEnable &= renderPass->CanDepthWrite ? 1 : 0;
     const VkResult result = vkCreateGraphicsPipelines(_device->Device, _device->PipelineCache, 1, &_desc, nullptr, &pipeline);
+    _descDepthStencil.depthWriteEnable = depthWrite;
     LOG_VULKAN_RESULT(result);
     if (result != VK_SUCCESS)
     {
@@ -202,7 +319,7 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass)
     }
 
     // Cache it
-    _pipelines.Add(renderPass, pipeline);
+    _pipelines.Add(key, pipeline);
 
     return pipeline;
 }
@@ -235,11 +352,8 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
 {
     ASSERT(!IsValid());
 
-    // Create description
+    // Reset description
     RenderToolsVulkan::ZeroStruct(_desc, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
-
-    // Vertex Input
-    _desc.pVertexInputState = (VkPipelineVertexInputStateCreateInfo*)desc.VS->GetInputLayout();
 
     // Stages
     UsedStagesMask = 0;
@@ -275,6 +389,11 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _desc.pStages = _shaderStages;
 
     // Input Assembly
+    if (desc.VS)
+    {
+        VertexInputLayout = (GPUVertexLayoutVulkan*)desc.VS->InputLayout;
+        VertexBufferLayout = (GPUVertexLayoutVulkan*)desc.VS->Layout;
+    }
     RenderToolsVulkan::ZeroStruct(_descInputAssembly, VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO);;
     switch (desc.PrimitiveTopology)
     {
@@ -316,7 +435,13 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_VIEWPORT;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_SCISSOR;
     _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_STENCIL_REFERENCE;
-    static_assert(ARRAY_COUNT(_dynamicStates) <= 3, "Invalid dynamic states array.");
+#define IsBlendUsingBlendFactor(blend) blend == BlendingMode::Blend::BlendFactor || blend == BlendingMode::Blend::BlendInvFactor
+    if (desc.BlendMode.BlendEnable && (
+        IsBlendUsingBlendFactor(desc.BlendMode.SrcBlend) || IsBlendUsingBlendFactor(desc.BlendMode.SrcBlendAlpha) ||
+        IsBlendUsingBlendFactor(desc.BlendMode.DestBlend) || IsBlendUsingBlendFactor(desc.BlendMode.DestBlendAlpha)))
+        _dynamicStates[_descDynamic.dynamicStateCount++] = VK_DYNAMIC_STATE_BLEND_CONSTANTS;
+#undef IsBlendUsingBlendFactor
+    static_assert(ARRAY_COUNT(_dynamicStates) <= 4, "Invalid dynamic states array.");
     _desc.pDynamicState = &_descDynamic;
 
     // Multisample
@@ -337,7 +462,7 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     _descDepthStencil.front.failOp = ToVulkanStencilOp(desc.StencilFailOp);
     _descDepthStencil.front.depthFailOp = ToVulkanStencilOp(desc.StencilDepthFailOp);
     _descDepthStencil.front.passOp = ToVulkanStencilOp(desc.StencilPassOp);
-    _descDepthStencil.front = _descDepthStencil.back;
+    _descDepthStencil.back = _descDepthStencil.front;
     _desc.pDepthStencilState = &_descDepthStencil;
     DepthReadEnable = desc.DepthEnable && desc.DepthFunc != ComparisonFunc::Always;
     DepthWriteEnable = _descDepthStencil.depthWriteEnable;
@@ -370,21 +495,21 @@ bool GPUPipelineStateVulkan::Init(const Description& desc)
     {
         auto& blend = _descColorBlendAttachments[0];
         blend.blendEnable = desc.BlendMode.BlendEnable;
-        blend.srcColorBlendFactor = RenderToolsVulkan::ToVulkanBlendFactor(desc.BlendMode.SrcBlend);
-        blend.dstColorBlendFactor = RenderToolsVulkan::ToVulkanBlendFactor(desc.BlendMode.DestBlend);
+        blend.srcColorBlendFactor = ToVulkanBlendFactor(desc.BlendMode.SrcBlend);
+        blend.dstColorBlendFactor = ToVulkanBlendFactor(desc.BlendMode.DestBlend);
         blend.colorBlendOp = RenderToolsVulkan::ToVulkanBlendOp(desc.BlendMode.BlendOp);
-        blend.srcAlphaBlendFactor = RenderToolsVulkan::ToVulkanBlendFactor(desc.BlendMode.SrcBlendAlpha);
-        blend.dstAlphaBlendFactor = RenderToolsVulkan::ToVulkanBlendFactor(desc.BlendMode.DestBlendAlpha);
+        blend.srcAlphaBlendFactor = ToVulkanBlendFactor(desc.BlendMode.SrcBlendAlpha);
+        blend.dstAlphaBlendFactor = ToVulkanBlendFactor(desc.BlendMode.DestBlendAlpha);
         blend.alphaBlendOp = RenderToolsVulkan::ToVulkanBlendOp(desc.BlendMode.BlendOpAlpha);
         blend.colorWriteMask = (VkColorComponentFlags)desc.BlendMode.RenderTargetWriteMask;
     }
     for (int32 i = 1; i < GPU_MAX_RT_BINDED; i++)
         _descColorBlendAttachments[i] = _descColorBlendAttachments[i - 1];
     _descColorBlend.pAttachments = _descColorBlendAttachments;
-    _descColorBlend.blendConstants[0] = 0.0f;
-    _descColorBlend.blendConstants[1] = 0.0f;
-    _descColorBlend.blendConstants[2] = 0.0f;
-    _descColorBlend.blendConstants[3] = 0.0f;
+    _descColorBlend.blendConstants[0] = 1.0f;
+    _descColorBlend.blendConstants[1] = 1.0f;
+    _descColorBlend.blendConstants[2] = 1.0f;
+    _descColorBlend.blendConstants[3] = 1.0f;
     _desc.pColorBlendState = &_descColorBlend;
 
     ASSERT(DSWriteContainer.DescriptorWrites.IsEmpty());

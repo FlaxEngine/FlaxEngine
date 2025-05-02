@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content;
@@ -58,6 +58,8 @@ namespace FlaxEditor.Windows.Assets
             InputActions.Add(options => options.Save, Save);
 
             UpdateTitle();
+
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
         }
 
         /// <summary>
@@ -139,6 +141,8 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         protected override void OnClose()
         {
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+
             if (_item != null)
             {
                 // Ensure to remove linkage to the item
@@ -151,6 +155,8 @@ namespace FlaxEditor.Windows.Assets
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+
             if (_item != null)
             {
                 // Ensure to remove linkage to the item
@@ -158,6 +164,21 @@ namespace FlaxEditor.Windows.Assets
             }
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        protected virtual void OnScriptsReloadBegin()
+        {
+            if (!IsHidden)
+            {
+                if (IsEdited && _item != null)
+                {
+                    Editor.Log($"Auto-saving local changes to asset '{_item.Path}' before reloading code");
+                    Save();
+                }
+                Editor.Instance.Windows.AddToRestore(this);
+                Close();
+            }
         }
 
         #region IEditable Implementation

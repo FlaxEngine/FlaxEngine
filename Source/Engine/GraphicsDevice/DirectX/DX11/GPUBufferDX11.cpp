@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX11
 
@@ -10,6 +10,7 @@
 GPUBufferDX11::GPUBufferDX11(GPUDeviceDX11* device, const StringView& name)
     : GPUResourceDX11(device, name)
 {
+    _view.SetParnet(this);
 }
 
 GPUBufferView* GPUBufferDX11::View() const

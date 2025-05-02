@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -397,6 +397,7 @@ public:
     void Clear();
     GPUTextureDescription ToStagingUpload() const;
     GPUTextureDescription ToStagingReadback() const;
+    GPUTextureDescription ToStaging() const;
     bool Equals(const GPUTextureDescription& other) const;
     String ToString() const;
 

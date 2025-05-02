@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Scripting;
@@ -79,7 +79,7 @@ namespace FlaxEditor.Utilities
                     value = Convert.ToInt32(value);
                 else if (type.Type == typeof(long))
                     value = Convert.ToInt64(value);
-                else if (type.Type == typeof(int))
+                else if (type.Type == typeof(ushort))
                     value = Convert.ToUInt16(value);
                 else if (type.Type == typeof(uint))
                     value = Convert.ToUInt32(value);

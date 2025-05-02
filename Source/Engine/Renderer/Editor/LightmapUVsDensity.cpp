@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_EDITOR
 
@@ -15,11 +15,10 @@
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Foliage/Foliage.h"
 #include "Engine/ShadowsOfMordor/Builder.Config.h"
-#include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Actors/StaticModel.h"
 
-PACK_STRUCT(struct LightmapUVsDensityMaterialShaderData {
+GPU_CB_STRUCT(LightmapUVsDensityMaterialShaderData {
     Matrix ViewProjectionMatrix;
     Matrix WorldMatrix;
     Rectangle LightmapArea;
@@ -70,45 +69,11 @@ DrawPass LightmapUVsDensityMaterialShader::GetDrawModes() const
     return DrawPass::GBuffer;
 }
 
-namespace
-{
-    Actor* FindActorByDrawCall(Actor* actor, const DrawCall& drawCall, float& scaleInLightmap)
-    {
-        // TODO: large-worlds
-        const auto asStaticModel = ScriptingObject::Cast<StaticModel>(actor);
-        if (asStaticModel && asStaticModel->GetPerInstanceRandom() == drawCall.PerInstanceRandom && asStaticModel->GetPosition() == drawCall.ObjectPosition)
-        {
-            scaleInLightmap = asStaticModel->GetScaleInLightmap();
-            return asStaticModel;
-        }
-        const auto asFoliage = ScriptingObject::Cast<Foliage>(actor);
-        if (asFoliage)
-        {
-            for (auto i = asFoliage->Instances.Begin(); i.IsNotEnd(); ++i)
-            {
-                auto& instance = *i;
-                if (instance.Random == drawCall.PerInstanceRandom && instance.Transform.Translation == drawCall.ObjectPosition)
-                {
-                    scaleInLightmap = asFoliage->FoliageTypes[instance.Type].ScaleInLightmap;
-                    return asFoliage;
-                }
-            }
-        }
-        for (Actor* child : actor->Children)
-        {
-            const auto other = FindActorByDrawCall(child, drawCall, scaleInLightmap);
-            if (other)
-                return other;
-        }
-        return nullptr;
-    }
-}
-
 void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
 {
     // Prepare
     auto context = params.GPUContext;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
 
     // Setup
     auto shader = _shader->GetShader();
@@ -119,33 +84,6 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
         psDesc.VS = shader->GetVS("VS");
         psDesc.PS = shader->GetPS("PS");
         _ps->Init(psDesc);
-    }
-
-    // Find the static model that produced this draw call
-    const Actor* drawCallActor = nullptr;
-    float scaleInLightmap = 1.0f;
-    if (params.RenderContext.Task)
-    {
-        // Skip this lookup as it's too slow
-
-        /*if (params.RenderContext.Task->ActorsSource & ActorsSources::CustomActors)
-        {
-            for (auto actor : params.RenderContext.Task->CustomActors)
-            {
-                drawCallActor = FindActorByDrawCall(actor, drawCall, scaleInLightmap);
-                if (drawCallActor)
-                    break;
-            }
-        }
-        if (!drawCallActor && params.RenderContext.Task->ActorsSource & ActorsSources::Scenes)
-        {
-            for (auto& scene : Level::Scenes)
-            {
-                drawCallActor = FindActorByDrawCall(scene, drawCall, scaleInLightmap);
-                if (drawCallActor)
-                    break;
-            }
-        }*/
     }
 
     // Bind constants
@@ -166,19 +104,15 @@ void LightmapUVsDensityMaterialShader::Bind(BindParameters& params)
         data.LightmapSize = 1024.0f;
         data.LightmapArea = drawCall.Surface.LightmapUVsArea;
         const ModelLOD* drawCallModelLod;
-        if (GBufferPass::IndexBufferToModelLOD.TryGet(drawCall.Geometry.IndexBuffer, drawCallModelLod))
+        float scaleInLightmap = drawCall.Surface.LODDitherFactor; // Reuse field
+        if (scaleInLightmap < 0.0f)
+            data.LightmapSize = -1.0f; // Not using lightmap
+        else if (GBufferPass::IndexBufferToModelLOD.TryGet(drawCall.Geometry.IndexBuffer, drawCallModelLod))
         {
             // Calculate current lightmap slot size for the object (matches the ShadowsOfMordor calculations when baking the lighting)
             float globalObjectsScale = 1.0f;
             int32 atlasSize = 1024;
             int32 chartsPadding = 3;
-            const Scene* drawCallScene = drawCallActor ? drawCallActor->GetScene() : (Level::Scenes.Count() != 0 ? Level::Scenes[0] : nullptr);
-            if (drawCallScene)
-            {
-                globalObjectsScale = drawCallScene->Info.LightmapSettings.GlobalObjectsScale;
-                atlasSize = (int32)drawCallScene->Info.LightmapSettings.AtlasSize;
-                chartsPadding = drawCallScene->Info.LightmapSettings.ChartsPadding;
-            }
             BoundingBox box = drawCallModelLod->GetBox(drawCall.World);
             Float3 size = box.GetSize();
             float dimensionsCoeff = size.AverageArithmetic();

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -39,6 +39,11 @@ public:
     }
 
 public:
+
+    void SetParnet(GPUBuffer* parent)
+    {
+        _parent = parent;
+    }
 
     /// <summary>
     /// Release the view.

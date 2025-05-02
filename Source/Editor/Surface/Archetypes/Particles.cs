@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -122,7 +122,7 @@ namespace FlaxEditor.Surface.Archetypes
                         {
                             Name = module.Title,
                             Tag = module.TypeID,
-                            TooltipText = module.Description,
+                            TooltipText = $"{(string.IsNullOrEmpty(module.Signature) ? module.Title : module.Signature)}\n{module.Description}",
                         });
                     }
                     cm.ItemClicked += item => AddModule((ushort)item.Tag);

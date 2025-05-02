@@ -1,7 +1,8 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
+#include "Config.h"
 #include "PixelFormat.h"
 #include "RenderView.h"
 #include "Engine/Scripting/ScriptingType.h"
@@ -11,8 +12,7 @@ class SkinnedModel;
 struct RenderContext;
 struct FloatR10G10B10A2;
 
-PACK_STRUCT(struct QuadShaderData
-    {
+GPU_CB_STRUCT(QuadShaderData {
     Float4 Color;
     });
 
@@ -27,6 +27,11 @@ public:
     FORCE_INLINE static int32 CalcSubresourceIndex(uint32 mipSlice, int32 arraySlice, int32 mipLevels)
     {
         return mipSlice + arraySlice * mipLevels;
+    }
+
+    FORCE_INLINE static float GetWorldDeterminantSign(const Matrix& worldMatrix)
+    {
+        return Math::FloatSelect(worldMatrix.RotDeterminant(), 1, -1);
     }
 
     /// <summary>
@@ -121,36 +126,27 @@ public:
         return (frameIndex % updateFrequency == updatePhrase) || updateForce;
     }
 
-    static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal);
-    static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent);
+    // Calculates temporal offset in the dithering factor that gets cleaned out by TAA.
+    // Returns 0-1 value based on unscaled draw time for temporal effects to reduce artifacts from screen-space dithering when using Temporal Anti-Aliasing.
+    static float ComputeTemporalTime();
+
+    // [Deprecated in v1.10]
+    DEPRECATED("Use CalculateTangentFrame with unpacked Float3/Float4.") static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal);
+    // [Deprecated in v1.10]
+    DEPRECATED("Use CalculateTangentFrame with unpacked Float3/Float4.") static void CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent);
+
+    // Result normal/tangent are already packed into [0;1] range.
+    static void CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal);
+    static void CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal, const Float3& tangent);
+
+    static void ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside);
 };
 
-// Calculate mip levels count for a texture 1D
-// @param width Most detailed mip width
-// @param useMipLevels True if use mip levels, otherwise false (use only 1 mip)
-// @returns Mip levels count
-extern int32 MipLevelsCount(int32 width, bool useMipLevels = true);
+// Calculates mip levels count for a texture 1D.
+extern int32 MipLevelsCount(int32 width);
 
-// Calculate mip levels count for a texture 2D
-// @param width Most detailed mip width
-// @param height Most detailed mip height
-// @param useMipLevels True if use mip levels, otherwise false (use only 1 mip)
-// @returns Mip levels count
-extern int32 MipLevelsCount(int32 width, int32 height, bool useMipLevels = true);
+// Calculates mip levels count for a texture 2D.
+extern int32 MipLevelsCount(int32 width, int32 height);
 
-// Calculate mip levels count for a texture 3D
-// @param width Most detailed mip width
-// @param height Most detailed mip height
-// @param depth Most detailed mip depths
-// @param useMipLevels True if use mip levels, otherwise false (use only 1 mip)
-// @returns Mip levels count
-extern int32 MipLevelsCount(int32 width, int32 height, int32 depth, bool useMipLevels = true);
-
-/// <summary>
-/// Calculate distance from view center to the sphere center less sphere radius, clamped to fit view far plane
-/// </summary>
-/// <param name="view">Render View</param>
-/// <param name="center">Sphere center</param>
-/// <param name="radius">Sphere radius</param>
-/// <returns>Distance from view center to the sphere center less sphere radius</returns>
-extern float ViewToCenterLessRadius(const RenderView& view, const Float3& center, float radius);
+// Calculates mip levels count for a texture 3D.
+extern int32 MipLevelsCount(int32 width, int32 height, int32 depth);

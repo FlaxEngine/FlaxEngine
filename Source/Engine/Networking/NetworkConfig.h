@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,7 @@ class ScriptingObject;
 /// Network driver implementations enum.
 /// [Deprecated in v1.3]
 /// </summary>
-API_ENUM(Namespace="FlaxEngine.Networking") enum class DEPRECATED NetworkDriverType
+API_ENUM(Namespace="FlaxEngine.Networking") enum class DEPRECATED() NetworkDriverType
 {
     /// <summary>
     /// Invalid network driver implementation.
@@ -36,7 +36,7 @@ API_STRUCT(Namespace="FlaxEngine.Networking") struct FLAXENGINE_API NetworkConfi
     /// [Deprecated in v1.3]
     /// </summary>
     API_FIELD()
-    DEPRECATED NetworkDriverType NetworkDriverType;
+    DEPRECATED("Use NetworkDriver field instead") NetworkDriverType NetworkDriverType;
 
     /// <summary>
     /// The network driver instance (implements INetworkDriver) that will be used to create and manage the peer, send and receive messages.

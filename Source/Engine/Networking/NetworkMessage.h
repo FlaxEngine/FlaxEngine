@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -67,7 +67,7 @@ public:
     /// </summary>
     /// <param name="bytes">The bytes that will be written.</param>
     /// <param name="numBytes">The amount of bytes to write from the bytes pointer.</param>
-    FORCE_INLINE void WriteBytes(uint8* bytes, const int numBytes)
+    FORCE_INLINE void WriteBytes(const uint8* bytes, const int32 numBytes)
     {
         ASSERT(Position + numBytes <= BufferSize);
         Platform::MemoryCopy(Buffer + Position, bytes, numBytes);
@@ -106,7 +106,7 @@ public:
     template<typename T>
     FORCE_INLINE void WriteStructure(const T& data)
     {
-        WriteBytes((uint8*)&data, sizeof(data));
+        WriteBytes((const uint8*)&data, sizeof(data));
     }
 
     template<typename T>
@@ -116,7 +116,7 @@ public:
     }
 
 #define DECL_READWRITE(type, name) \
-    FORCE_INLINE void Write##name(type value) { WriteBytes(reinterpret_cast<uint8*>(&value), sizeof(type)); } \
+    FORCE_INLINE void Write##name(type value) { WriteBytes(reinterpret_cast<const uint8*>(&value), sizeof(type)); } \
     FORCE_INLINE type Read##name() { type value = 0; ReadBytes(reinterpret_cast<uint8*>(&value), sizeof(type)); return value; }
     DECL_READWRITE(int8, Int8)
     DECL_READWRITE(uint8, UInt8)
@@ -207,22 +207,37 @@ public:
     /// <summary>
     /// Writes data of type String into the message. UTF-16 encoded.
     /// </summary>
-    FORCE_INLINE void WriteString(const String& value)
+    FORCE_INLINE void WriteString(const StringView& value)
     {
         WriteUInt16(value.Length()); // TODO: Use 1-byte length when possible
-        WriteBytes((uint8*)value.Get(), value.Length() * sizeof(Char));
+        WriteBytes((const uint8*)value.Get(), value.Length() * sizeof(Char));
     }
 
     /// <summary>
-    /// Reads and returns data of type String from the message. UTF-16 encoded.
+    /// Writes data of type String into the message.
     /// </summary>
-    FORCE_INLINE String ReadString()
+    FORCE_INLINE void WriteStringAnsi(const StringAnsiView& value)
     {
-        uint16 length = ReadUInt16();
-        String value;
-        value.Resize(length);
-        ReadBytes((uint8*)value.Get(), length * sizeof(Char));
-        return value;
+        WriteUInt16(value.Length()); // TODO: Use 1-byte length when possible
+        WriteBytes((const uint8*)value.Get(), value.Length());
+    }
+
+    /// <summary>
+    /// Reads and returns data of type String from the message. UTF-16 encoded. Data valid within message lifetime.
+    /// </summary>
+    FORCE_INLINE StringView ReadString()
+    {
+        const uint16 length = ReadUInt16();
+        return StringView(length ? (const Char*)SkipBytes(length * 2) : nullptr, length);
+    }
+
+    /// <summary>
+    /// Reads and returns data of type String from the message. ANSI encoded. Data valid within message lifetime.
+    /// </summary>
+    FORCE_INLINE StringAnsiView ReadStringAnsi()
+    {
+        const uint16 length = ReadUInt16();
+        return StringAnsiView(length ? (const char*)SkipBytes(length) : nullptr, length);
     }
 
     /// <summary>
@@ -230,7 +245,7 @@ public:
     /// </summary>
     FORCE_INLINE void WriteGuid(const Guid& value)
     {
-        WriteBytes((uint8*)&value, sizeof(Guid));
+        WriteBytes((const uint8*)&value, sizeof(Guid));
     }
 
     /// <summary>
@@ -242,6 +257,30 @@ public:
         ReadBytes((uint8*)&value, sizeof(Guid));
         return value;
     }
+
+    /// <summary>
+    /// Writes identifier into the stream that is networked-synced (by a server). If both peers acknowledge a specific id then the data transfer is optimized to 32 bits.
+    /// </summary>
+    /// <param name="id">Network-synced identifier.</param>
+    void WriteNetworkId(const Guid& id);
+
+    /// <summary>
+    /// Reads identifier from the stream that is networked-synced (by a server). If both peers acknowledge a specific id then the data transfer is optimized to 32 bits.
+    /// </summary>
+    /// <param name="id">Network-synced identifier.</param>
+    void ReadNetworkId(Guid& id);
+
+    /// <summary>
+    /// Writes name into the stream that is networked-synced (by a server). If both peers acknowledge a specific name then the data transfer is optimized to 32 bits.
+    /// </summary>
+    /// <param name="name">Network-synced name.</param>
+    void WriteNetworkName(const StringAnsiView& name);
+
+    /// <summary>
+    /// Reads name from the stream that is networked-synced (by a server). If both peers acknowledge a specific name then the data transfer is optimized to 32 bits.
+    /// </summary>
+    /// <param name="name">Network-synced name.</param>
+    void ReadNetworkName(StringAnsiView& name);
 
 public:
     /// <summary>

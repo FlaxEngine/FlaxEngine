@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -37,7 +37,6 @@ public class assimp : DepsModule
         case TargetPlatform.Linux:
         case TargetPlatform.Mac:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libassimp.a"));
-            options.OutputFiles.Add(Path.Combine(depsRoot, "libIrrXML.a"));
             break;
         default: throw new InvalidPlatformException(options.Platform.Target);
         }

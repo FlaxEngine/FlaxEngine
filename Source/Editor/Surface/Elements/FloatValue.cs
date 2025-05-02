@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
@@ -75,6 +75,7 @@ namespace FlaxEditor.Surface.Elements
 
             float result;
             var value = customValue ?? parentNode.Values[arch.ValueIndex];
+            var component = arch.BoxID; // Reuse existing field
 
             // Note: this value box may edit on component of the vector like Vector3.Y, BoxID from Archetype tells which component pick
 
@@ -92,27 +93,39 @@ namespace FlaxEditor.Surface.Elements
             }
             else if (value is Vector2 asVector2)
             {
-                result = (float)(arch.BoxID == 0 ? asVector2.X : asVector2.Y);
+                result = (float)(component == 0 ? asVector2.X : asVector2.Y);
             }
             else if (value is Vector3 asVector3)
             {
-                result = (float)(arch.BoxID == 0 ? asVector3.X : arch.BoxID == 1 ? asVector3.Y : asVector3.Z);
+                result = (float)(component == 0 ? asVector3.X : component == 1 ? asVector3.Y : asVector3.Z);
             }
             else if (value is Vector4 asVector4)
             {
-                result = (float)(arch.BoxID == 0 ? asVector4.X : arch.BoxID == 1 ? asVector4.Y : arch.BoxID == 2 ? asVector4.Z : asVector4.W);
+                result = (float)(component == 0 ? asVector4.X : component == 1 ? asVector4.Y : component == 2 ? asVector4.Z : asVector4.W);
             }
             else if (value is Float2 asFloat2)
             {
-                result = (arch.BoxID == 0 ? asFloat2.X : asFloat2.Y);
+                result = (component == 0 ? asFloat2.X : asFloat2.Y);
             }
             else if (value is Float3 asFloat3)
             {
-                result = (arch.BoxID == 0 ? asFloat3.X : arch.BoxID == 1 ? asFloat3.Y : asFloat3.Z);
+                result = (component == 0 ? asFloat3.X : component == 1 ? asFloat3.Y : asFloat3.Z);
             }
             else if (value is Float4 asFloat4)
             {
-                result = (arch.BoxID == 0 ? asFloat4.X : arch.BoxID == 1 ? asFloat4.Y : arch.BoxID == 2 ? asFloat4.Z : asFloat4.W);
+                result = (component == 0 ? asFloat4.X : component == 1 ? asFloat4.Y : component == 2 ? asFloat4.Z : asFloat4.W);
+            }
+            else if (value is Double2 asDouble2)
+            {
+                result = (float)(component == 0 ? asDouble2.X : asDouble2.Y);
+            }
+            else if (value is Double3 asDouble3)
+            {
+                result = (float)(component == 0 ? asDouble3.X : component == 1 ? asDouble3.Y : asDouble3.Z);
+            }
+            else if (value is Double4 asDouble4)
+            {
+                result = (float)(component == 0 ? asDouble4.X : component == 1 ? asDouble4.Y : component == 2 ? asDouble4.Z : asDouble4.W);
             }
             else
             {
@@ -134,6 +147,7 @@ namespace FlaxEditor.Surface.Elements
                 return;
 
             var value = parentNode.Values[arch.ValueIndex];
+            var component = arch.BoxID; // Reuse existing field
 
             if (value is int)
             {
@@ -147,9 +161,14 @@ namespace FlaxEditor.Surface.Elements
             {
                 value = (double)toSet;
             }
+            else if (component == -1)
+            {
+                // Per-component editing is used only by nodes from Constant group, otherwise use float
+                value = toSet;
+            }
             else if (value is Vector2 asVector2)
             {
-                if (arch.BoxID == 0)
+                if (component == 0)
                     asVector2.X = toSet;
                 else
                     asVector2.Y = toSet;
@@ -157,9 +176,9 @@ namespace FlaxEditor.Surface.Elements
             }
             else if (value is Vector3 asVector3)
             {
-                if (arch.BoxID == 0)
+                if (component == 0)
                     asVector3.X = toSet;
-                else if (arch.BoxID == 1)
+                else if (component == 1)
                     asVector3.Y = toSet;
                 else
                     asVector3.Z = toSet;
@@ -167,11 +186,11 @@ namespace FlaxEditor.Surface.Elements
             }
             else if (value is Vector4 asVector4)
             {
-                if (arch.BoxID == 0)
+                if (component == 0)
                     asVector4.X = toSet;
-                else if (arch.BoxID == 1)
+                else if (component == 1)
                     asVector4.Y = toSet;
-                else if (arch.BoxID == 2)
+                else if (component == 2)
                     asVector4.Z = toSet;
                 else
                     asVector4.W = toSet;
@@ -179,7 +198,7 @@ namespace FlaxEditor.Surface.Elements
             }
             else if (value is Float2 asFloat2)
             {
-                if (arch.BoxID == 0)
+                if (component == 0)
                     asFloat2.X = toSet;
                 else
                     asFloat2.Y = toSet;
@@ -187,9 +206,9 @@ namespace FlaxEditor.Surface.Elements
             }
             else if (value is Float3 asFloat3)
             {
-                if (arch.BoxID == 0)
+                if (component == 0)
                     asFloat3.X = toSet;
-                else if (arch.BoxID == 1)
+                else if (component == 1)
                     asFloat3.Y = toSet;
                 else
                     asFloat3.Z = toSet;
@@ -197,15 +216,45 @@ namespace FlaxEditor.Surface.Elements
             }
             else if (value is Float4 asFloat4)
             {
-                if (arch.BoxID == 0)
+                if (component == 0)
                     asFloat4.X = toSet;
-                else if (arch.BoxID == 1)
+                else if (component == 1)
                     asFloat4.Y = toSet;
-                else if (arch.BoxID == 2)
+                else if (component == 2)
                     asFloat4.Z = toSet;
                 else
                     asFloat4.W = toSet;
                 value = asFloat4;
+            }
+            else if (value is Double2 asDouble2)
+            {
+                if (component == 0)
+                    asDouble2.X = toSet;
+                else
+                    asDouble2.Y = toSet;
+                value = asDouble2;
+            }
+            else if (value is Double3 asDouble3)
+            {
+                if (component == 0)
+                    asDouble3.X = toSet;
+                else if (component == 1)
+                    asDouble3.Y = toSet;
+                else
+                    asDouble3.Z = toSet;
+                value = asDouble3;
+            }
+            else if (value is Double4 asDouble4)
+            {
+                if (component == 0)
+                    asDouble4.X = toSet;
+                else if (component == 1)
+                    asDouble4.Y = toSet;
+                else if (component == 2)
+                    asDouble4.Z = toSet;
+                else
+                    asDouble4.W = toSet;
+                value = asDouble4;
             }
             else
             {
@@ -263,6 +312,18 @@ namespace FlaxEditor.Surface.Elements
             else if (value is Float4)
             {
                 value = new Float4(toSet);
+            }
+            else if (value is Double2)
+            {
+                value = new Double2(toSet);
+            }
+            else if (value is Double3)
+            {
+                value = new Double3(toSet);
+            }
+            else if (value is Double4)
+            {
+                value = new Double4(toSet);
             }
             else
             {

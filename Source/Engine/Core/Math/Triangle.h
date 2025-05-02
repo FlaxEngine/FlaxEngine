@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #include "CollisionsHelper.h"
 
 /// <summary>
-/// Represents a three dimensional triangle.
+/// Represents a three-dimensional triangle.
 /// </summary>
 struct FLAXENGINE_API Triangle
 {
@@ -52,38 +52,26 @@ public:
     }
 
 public:
-    // Determines if there is an intersection between the current object and a Ray
-    // @param ray The ray to test
-    // @returns Whether the two objects intersected
+    // Determines if there is an intersection between triangle and a ray.
     bool Intersects(const Ray& ray) const
     {
         Real distance;
         return CollisionsHelper::RayIntersectsTriangle(ray, V0, V1, V2, distance);
     }
 
-    // Determines if there is an intersection between the current object and a Ray
-    // @param ray The ray to test
-    // @param distance When the method completes, contains the distance of the intersection, or 0 if there was no intersection
-    // @returns Whether the two objects intersected
+    /// Determines if there is an intersection between triangle and a ray. Returns distance to the intersection.
     bool Intersects(const Ray& ray, Real& distance) const
     {
         return CollisionsHelper::RayIntersectsTriangle(ray, V0, V1, V2, distance);
     }
 
-    // Determines if there is an intersection between the current object and a Ray
-    // @param ray The ray to test
-    // @param distance When the method completes, contains the distance of the intersection, or 0 if there was no intersection
-    // @param normal When the method completes, contains the intersection surface normal vector, or Vector3::Up if there was no intersection
-    // @returns Whether the two objects intersected
+    // Determines if there is an intersection between triangle and a ray. Returns distance to the intersection and surface normal vector.
     bool Intersects(const Ray& ray, Real& distance, Vector3& normal) const
     {
         return CollisionsHelper::RayIntersectsTriangle(ray, V0, V1, V2, distance, normal);
     }
 
-    // Determines if there is an intersection between the current object and a Ray
-    // @param ray The ray to test
-    // @param point When the method completes, contains the point of intersection, or <see cref="Vector3.Zero"/> if there was no intersection
-    // @returns Whether the two objects intersected
+    // Determines if there is an intersection between triangle and a ray. Returns point of intersection.
     bool Intersects(const Ray& ray, Vector3& point) const
     {
         return CollisionsHelper::RayIntersectsTriangle(ray, V0, V1, V2, point);

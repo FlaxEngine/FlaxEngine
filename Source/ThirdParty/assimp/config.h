@@ -3,8 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2018, assimp team
-
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -60,7 +59,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_CONFIG_H_INC
 #define AI_CONFIG_H_INC
 
-
 // ###########################################################################
 // LIBRARY SETTINGS
 // General, global settings
@@ -79,7 +77,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define AI_CONFIG_GLOB_MEASURE_TIME  \
     "GLOB_MEASURE_TIME"
 
-
 // ---------------------------------------------------------------------------
 /** @brief Global setting to disable generation of skeleton dummy meshes
  *
@@ -91,33 +88,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define AI_CONFIG_IMPORT_NO_SKELETON_MESHES \
     "IMPORT_NO_SKELETON_MESHES"
 
-
-
-# if 0 // not implemented yet
-// ---------------------------------------------------------------------------
-/** @brief Set Assimp's multithreading policy.
- *
- * This setting is ignored if Assimp was built without boost.thread
- * support (ASSIMP_BUILD_NO_THREADING, which is implied by ASSIMP_BUILD_BOOST_WORKAROUND).
- * Possible values are: -1 to let Assimp decide what to do, 0 to disable
- * multithreading entirely and any number larger than 0 to force a specific
- * number of threads. Assimp is always free to ignore this settings, which is
- * merely a hint. Usually, the default value (-1) will be fine. However, if
- * Assimp is used concurrently from multiple user threads, it might be useful
- * to limit each Importer instance to a specific number of cores.
- *
- * For more information, see the @link threading Threading page@endlink.
- * Property type: int, default value: -1.
- */
-#define AI_CONFIG_GLOB_MULTITHREADING  \
-    "GLOB_MULTITHREADING"
-#endif
-
 // ###########################################################################
 // POST PROCESSING SETTINGS
 // Various stuff to fine-tune the behavior of a specific post processing step.
 // ###########################################################################
-
 
 // ---------------------------------------------------------------------------
 /** @brief Maximum bone count per mesh for the SplitbyBoneCount step.
@@ -131,12 +105,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define AI_CONFIG_PP_SBBC_MAX_BONES \
     "PP_SBBC_MAX_BONES"
 
-
 // default limit for bone count
 #if (!defined AI_SBBC_DEFAULT_MAX_BONES)
 #   define AI_SBBC_DEFAULT_MAX_BONES        60
 #endif
-
 
 // ---------------------------------------------------------------------------
 /** @brief  Specifies the maximum angle that may be between two vertex tangents
@@ -173,7 +145,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #define AI_CONFIG_PP_GSN_MAX_SMOOTHING_ANGLE \
     "PP_GSN_MAX_SMOOTHING_ANGLE"
-
 
 // ---------------------------------------------------------------------------
 /** @brief Sets the colormap (= palette) to be used to decode embedded
@@ -255,6 +226,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     "PP_PTV_ROOT_TRANSFORMATION"
 
 // ---------------------------------------------------------------------------
+/** @brief Set epsilon to check the identity of the matrix 4x4.
+ *
+ * This is used by aiMatrix4x4t<TReal>::IsIdentity(const TReal epsilon).
+ * @note The default value is 10e-3f for backward compatibility of legacy code.
+ * Property type: Float.
+ */
+#define AI_CONFIG_CHECK_IDENTITY_MATRIX_EPSILON \
+    "CHECK_IDENTITY_MATRIX_EPSILON"
+
+// default value for AI_CONFIG_CHECK_IDENTITY_MATRIX_EPSILON
+#if (!defined AI_CONFIG_CHECK_IDENTITY_MATRIX_EPSILON_DEFAULT)
+#   define AI_CONFIG_CHECK_IDENTITY_MATRIX_EPSILON_DEFAULT 10e-3f
+#endif
+
+// ---------------------------------------------------------------------------
 /** @brief Configures the #aiProcess_FindDegenerates step to
  *  remove degenerated primitives from the import - immediately.
  *
@@ -270,7 +256,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 // ---------------------------------------------------------------------------
 /**
  *  @brief  Configures the #aiProcess_FindDegenerates to check the area of a
- *  trinagle to be greates than e-6. If this is not the case the triangle will
+ *  triangle to be greater than e-6. If this is not the case the triangle will
  *  be removed if #AI_CONFIG_PP_FD_REMOVE is set to true.
  */
 #define AI_CONFIG_PP_FD_CHECKAREA \
@@ -541,12 +527,20 @@ enum aiComponent
 #define AI_CONFIG_FAVOUR_SPEED              \
  "FAVOUR_SPEED"
 
-
 // ###########################################################################
 // IMPORTER SETTINGS
 // Various stuff to fine-tune the behaviour of specific importer plugins.
 // ###########################################################################
 
+// ---------------------------------------------------------------------------
+/** @brief Importers which parse JSON may use this to obtain a pointer to a
+ * rapidjson::IRemoteSchemaDocumentProvider.
+ *
+ * The default value is nullptr
+ * Property type: void*
+ */
+#define AI_CONFIG_IMPORT_SCHEMA_DOCUMENT_PROVIDER \
+    "IMPORT_SCHEMA_DOCUMENT_PROVIDER"
 
 // ---------------------------------------------------------------------------
 /** @brief Set whether the fbx importer will merge all geometry layers present
@@ -616,6 +610,15 @@ enum aiComponent
     "IMPORT_FBX_READ_ANIMATIONS"
 
 // ---------------------------------------------------------------------------
+/** @brief Set whether the fbx importer will read weights.
+ *
+ * The default value is true (1)
+ * Property type: bool
+ */
+#define AI_CONFIG_IMPORT_FBX_READ_WEIGHTS \
+    "IMPORT_FBX_READ_WEIGHTS"
+
+// ---------------------------------------------------------------------------
 /** @brief Set whether the fbx importer will act in strict mode in which only
  *    FBX 2013 is supported and any other sub formats are rejected. FBX 2013
  *    is the primary target for the importer, so this format is best
@@ -651,13 +654,37 @@ enum aiComponent
 
 // ---------------------------------------------------------------------------
 /** @brief Set whether the fbx importer will use the legacy embedded texture naming.
-*
-* The default value is false (0)
-* Property type: bool
-*/
+ *
+ * The default value is false (0)
+ * Property type: bool
+ */
 #define AI_CONFIG_IMPORT_FBX_EMBEDDED_TEXTURES_LEGACY_NAMING \
 	"AI_CONFIG_IMPORT_FBX_EMBEDDED_TEXTURES_LEGACY_NAMING"
-	
+
+// ---------------------------------------------------------------------------
+/** @brief  Set wether the importer shall not remove empty bones.
+ *
+ *  Empty bone are often used to define connections for other models.
+ */
+#define AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES \
+    "AI_CONFIG_IMPORT_REMOVE_EMPTY_BONES"
+
+
+// ---------------------------------------------------------------------------
+/** @brief  Set wether the FBX importer shall convert the unit from cm to m.
+ */
+#define AI_CONFIG_FBX_CONVERT_TO_M \
+    "AI_CONFIG_FBX_CONVERT_TO_M"
+
+// ---------------------------------------------------------------------------
+/** @brief  Will enable the skeleton struct to store bone data.
+ *
+ *  This will decouple the bone coupling to the mesh. This feature is
+ *  experimental.
+ */
+#define AI_CONFIG_FBX_USE_SKELETON_BONE_CONTAINER \
+    "AI_CONFIG_FBX_USE_SKELETON_BONE_CONTAINER"
+
 // ---------------------------------------------------------------------------
 /** @brief  Set the vertex animation keyframe to be imported
  *
@@ -679,6 +706,73 @@ enum aiComponent
 #define AI_CONFIG_IMPORT_MDC_KEYFRAME       "IMPORT_MDC_KEYFRAME"
 #define AI_CONFIG_IMPORT_SMD_KEYFRAME       "IMPORT_SMD_KEYFRAME"
 #define AI_CONFIG_IMPORT_UNREAL_KEYFRAME    "IMPORT_UNREAL_KEYFRAME"
+
+// ---------------------------------------------------------------------------
+/** @brief Set whether the MDL (HL1) importer will read animations.
+ *
+ * The default value is true (1)
+ * Property type: bool
+ */
+#define AI_CONFIG_IMPORT_MDL_HL1_READ_ANIMATIONS "IMPORT_MDL_HL1_READ_ANIMATIONS"
+
+// ---------------------------------------------------------------------------
+/** @brief Set whether the MDL (HL1) importer will read animation events.
+ * \note This property requires AI_CONFIG_IMPORT_MDL_HL1_READ_ANIMATIONS to be set to true.
+ *
+ * The default value is true (1)
+ * Property type: bool
+ */
+#define AI_CONFIG_IMPORT_MDL_HL1_READ_ANIMATION_EVENTS "IMPORT_MDL_HL1_READ_ANIMATION_EVENTS"
+
+// ---------------------------------------------------------------------------
+/** @brief Set whether the MDL (HL1) importer will read blend controllers.
+ * \note This property requires AI_CONFIG_IMPORT_MDL_HL1_READ_ANIMATIONS to be set to true.
+ *
+ * The default value is true (1)
+ * Property type: bool
+ */
+#define AI_CONFIG_IMPORT_MDL_HL1_READ_BLEND_CONTROLLERS "IMPORT_MDL_HL1_READ_BLEND_CONTROLLERS"
+
+// ---------------------------------------------------------------------------
+/** @brief Set whether the MDL (HL1) importer will read sequence transition graph.
+ * \note This property requires AI_CONFIG_IMPORT_MDL_HL1_READ_ANIMATIONS to be set to true.
+ *
+ * The default value is true (1)
+ * Property type: bool
+ */
+#define AI_CONFIG_IMPORT_MDL_HL1_READ_SEQUENCE_TRANSITIONS "IMPORT_MDL_HL1_READ_SEQUENCE_TRANSITIONS"
+
+// ---------------------------------------------------------------------------
+/** @brief Set whether the MDL (HL1) importer will read attachments info.
+ *
+ * The default value is true (1)
+ * Property type: bool
+ */
+#define AI_CONFIG_IMPORT_MDL_HL1_READ_ATTACHMENTS "IMPORT_MDL_HL1_READ_ATTACHMENTS"
+
+// ---------------------------------------------------------------------------
+/** @brief Set whether the MDL (HL1) importer will read bone controllers info.
+ *
+ * The default value is true (1)
+ * Property type: bool
+ */
+#define AI_CONFIG_IMPORT_MDL_HL1_READ_BONE_CONTROLLERS "IMPORT_MDL_HL1_READ_BONE_CONTROLLERS"
+
+// ---------------------------------------------------------------------------
+/** @brief Set whether the MDL (HL1) importer will read hitboxes info.
+ *
+ * The default value is true (1)
+ * Property type: bool
+ */
+#define AI_CONFIG_IMPORT_MDL_HL1_READ_HITBOXES "IMPORT_MDL_HL1_READ_HITBOXES"
+
+// ---------------------------------------------------------------------------
+/** @brief Set whether the MDL (HL1) importer will read miscellaneous global model info.
+ *
+ * The default value is true (1)
+ * Property type: bool
+ */
+#define AI_CONFIG_IMPORT_MDL_HL1_READ_MISC_GLOBAL_INFO "IMPORT_MDL_HL1_READ_MISC_GLOBAL_INFO"
 
 // ---------------------------------------------------------------------------
 /** Smd load multiple animations
@@ -762,6 +856,15 @@ enum aiComponent
  */
 #define AI_CONFIG_IMPORT_MD3_SKIN_NAME \
     "IMPORT_MD3_SKIN_NAME"
+
+// ---------------------------------------------------------------------------
+/** @brief  Specify if to try load Quake 3 shader files. This also controls
+ *  original surface name handling: when disabled it will be used unchanged.
+ *
+ * Property type: bool. Default value: true.
+ */
+#define AI_CONFIG_IMPORT_MD3_LOAD_SHADERS \
+    "IMPORT_MD3_LOAD_SHADERS"
 
 // ---------------------------------------------------------------------------
 /** @brief  Specify the Quake 3 shader file to be used for a particular
@@ -948,10 +1051,19 @@ enum aiComponent
 #define AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION "IMPORT_COLLADA_IGNORE_UP_DIRECTION"
 
 // ---------------------------------------------------------------------------
-/** @brief Specifies whether the Collada loader should use Collada names as node names.
+/** @brief Specifies whether the Collada loader will ignore the provided unit size.
  *
- * If this property is set to true, the Collada names will be used as the
- * node name. The default is to use the id tag (resp. sid tag, if no id tag is present)
+ * If this property is set to true, the unit size provided in the file header will
+ * be ignored and the file will be loaded without scaling the assets.
+ * Property type: Bool. Default value: false.
+ */
+#define AI_CONFIG_IMPORT_COLLADA_IGNORE_UNIT_SIZE "IMPORT_COLLADA_IGNORE_UNIT_SIZE"
+
+// ---------------------------------------------------------------------------
+/** @brief Specifies whether the Collada loader should use Collada names.
+ *
+ * If this property is set to true, the Collada names will be used as the node and
+ * mesh names. The default is to use the id tag (resp. sid tag, if no id tag is present)
  * instead.
  * Property type: Bool. Default value: false.
  */
@@ -966,19 +1078,83 @@ enum aiComponent
 
 #define AI_CONFIG_EXPORT_XFILE_64BIT "EXPORT_XFILE_64BIT"
 
-/**
+/** @brief Specifies whether the assimp export shall be able to export point clouds
  *
+ *  When this flag is not defined the render data has to contain valid faces.
+ *  Point clouds are only a collection of vertices which have nor spatial organization
+ *  by a face and the validation process will remove them. Enabling this feature will
+ *  switch off the flag and enable the functionality to export pure point clouds.
+ *
+ * Property type: Bool. Default value: false.
  */
 #define AI_CONFIG_EXPORT_POINT_CLOUDS "EXPORT_POINT_CLOUDS"
 
+/** @brief Specifies whether to use the deprecated KHR_materials_pbrSpecularGlossiness extension
+ * 
+ * When this flag is undefined any material with specularity will use the new KHR_materials_specular
+ * extension. Enabling this flag will revert to the deprecated extension. Note that exporting
+ * KHR_materials_pbrSpecularGlossiness with extensions other than KHR_materials_unlit is unsupported,
+ * including the basic pbrMetallicRoughness spec.
+ *
+ * Property type: Bool. Default value: false.
+ */
+#define AI_CONFIG_USE_GLTF_PBR_SPECULAR_GLOSSINESS "USE_GLTF_PBR_SPECULAR_GLOSSINESS"
+
+/** @brief Specifies whether to apply a limit on the number of four bones per vertex in skinning
+ *
+ * When this flag is not defined, all bone weights and indices are limited to a
+ * maximum of four bones for each vertex (attributes JOINT_0 and WEIGHT_0 only).
+ * By enabling this flag, the number of bones per vertex is unlimited.
+ * In both cases, indices and bone weights are sorted by weight in descending order.
+ * In the case of the limit of up to four bones, a maximum of the four largest values are exported.
+ * Weights are not normalized.
+ * Property type: Bool. Default value: false.
+ */
+#define AI_CONFIG_EXPORT_GLTF_UNLIMITED_SKINNING_BONES_PER_VERTEX \
+        "USE_UNLIMITED_BONES_PER VERTEX"
+
+/** @brief Specifies whether to write the value referenced to opacity in TransparencyFactor of each material. 
+ *
+ * When this flag is not defined, the TransparencyFactor value of each meterial is 1.0.
+ * By enabling this flag, the value is 1.0 - opacity;
+
+ * Property type: Bool. Default value: false.
+ */
+#define AI_CONFIG_EXPORT_FBX_TRANSPARENCY_FACTOR_REFER_TO_OPACITY \
+        "EXPORT_FBX_TRANSPARENCY_FACTOR_REFER_TO_OPACITY"
+
 /**
- *  @brief  Specifies a gobal key factor for scale, float value
+ * @brief Specifies the blob name, assimp uses for exporting.
+ * 
+ * Some formats require auxiliary files to be written, that need to be linked back into 
+ * the original file. For example, OBJ files export materials to a separate MTL file and
+ * use the `mtllib` keyword to reference this file.
+ * 
+ * When exporting blobs using #ExportToBlob, assimp does not know the name of the blob
+ * file and thus outputs `mtllib $blobfile.mtl`, which might not be desired, since the 
+ * MTL file might be called differently. 
+ * 
+ * This property can be used to give the exporter a hint on how to use the magic 
+ * `$blobfile` keyword. If the exporter detects the keyword and is provided with a name
+ * for the blob, it instead uses this name.
+ */
+#define AI_CONFIG_EXPORT_BLOB_NAME "EXPORT_BLOB_NAME"
+
+/**
+ *  @brief  Specifies a global key factor for scale, float value
  */
 #define AI_CONFIG_GLOBAL_SCALE_FACTOR_KEY "GLOBAL_SCALE_FACTOR"
 
 #if (!defined AI_CONFIG_GLOBAL_SCALE_FACTOR_DEFAULT)
 #   define AI_CONFIG_GLOBAL_SCALE_FACTOR_DEFAULT  1.0f
 #endif // !! AI_DEBONE_THRESHOLD
+
+#define AI_CONFIG_APP_SCALE_KEY "APP_SCALE_FACTOR"
+
+#if (!defined AI_CONFIG_APP_SCALE_KEY)
+#   define AI_CONFIG_APP_SCALE_KEY 1.0
+#endif // AI_CONFIG_APP_SCALE_KEY
+
 
 // ---------- All the Build/Compile-time defines ------------
 

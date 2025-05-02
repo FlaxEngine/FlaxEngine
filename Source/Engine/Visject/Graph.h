@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,6 +7,7 @@
 #include "VisjectMeta.h"
 #include "GraphNode.h"
 #include "GraphParameter.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/ReadStream.h"
 #include "Engine/Serialization/WriteStream.h"
 
@@ -101,11 +102,11 @@ public:
         for (int32 i = 0; i < Parameters.Count(); i++)
         {
             const Parameter* param = &Parameters[i];
-            stream->WriteVariantType(param->Type);
+            stream->Write(param->Type);
             stream->Write(param->Identifier);
-            stream->WriteString(param->Name, 97);
+            stream->Write(param->Name, 97);
             stream->WriteBool(param->IsPublic);
-            stream->WriteVariant(param->Value);
+            stream->Write(param->Value);
             if (param->Meta.Save(stream, saveMeta))
                 return true;
         }
@@ -119,7 +120,7 @@ public:
             // Values
             stream->WriteInt32(node->Values.Count());
             for (int32 j = 0; j < node->Values.Count(); j++)
-                stream->WriteVariant(node->Values[j]);
+                stream->Write(node->Values[j]);
 
             // Boxes
             node->GetBoxes(boxes);
@@ -128,7 +129,7 @@ public:
             {
                 const Box* box = boxes[j];
                 stream->WriteByte(box->ID);
-                stream->WriteVariantType(box->Type);
+                stream->Write(box->Type);
                 stream->WriteUint16(box->Connections.Count());
                 for (int32 k = 0; k < box->Connections.Count(); k++)
                 {
@@ -183,6 +184,7 @@ public:
         if (version < 7000)
         {
             // [Deprecated on 31.07.2020, expires on 31.07.2022]
+            MARK_CONTENT_DEPRECATED();
 
             // Time saved
             int64 timeSaved;
@@ -222,7 +224,7 @@ public:
                 // Properties
                 auto type = stream->ReadByte();
                 stream->Read(param->Identifier);
-                stream->ReadString(&param->Name, 97);
+                stream->Read(param->Name, 97);
                 param->IsPublic = stream->ReadBool();
                 bool isStatic = stream->ReadBool();
                 bool isUIVisible = stream->ReadBool();
@@ -358,11 +360,11 @@ public:
             for (int32 i = 0; i < parametersCount; i++)
             {
                 auto param = &Parameters[i];
-                stream->ReadVariantType(&param->Type);
+                stream->Read(param->Type);
                 stream->Read(param->Identifier);
-                stream->ReadString(&param->Name, 97);
+                stream->Read(param->Name, 97);
                 param->IsPublic = stream->ReadBool();
-                stream->ReadVariant(&param->Value);
+                stream->Read(param->Value);
                 if (param->Meta.Load(stream, loadMeta))
                     return true;
                 if (onParamCreated(param))
@@ -379,7 +381,7 @@ public:
                 stream->ReadInt32(&valuesCnt);
                 node->Values.Resize(valuesCnt);
                 for (int32 j = 0; j < valuesCnt; j++)
-                    stream->ReadVariant(&node->Values[j]);
+                    stream->Read(node->Values[j]);
 
                 // Boxes
                 uint16 boxesCount;
@@ -392,7 +394,7 @@ public:
                     Box* box = &node->Boxes[boxID];
                     box->Parent = node;
                     box->ID = boxID;
-                    stream->ReadVariantType(&box->Type);
+                    stream->Read(box->Type);
                     uint16 connectionsCount;
                     stream->ReadUint16(&connectionsCount);
                     box->Connections.Resize(connectionsCount);
@@ -529,15 +531,15 @@ public:
     /// Gets the asset references.
     /// </summary>
     /// </remarks>
-    /// <param name="output">The output collection of the asset ids referenced by this object.</param>
-    virtual void GetReferences(Array<Guid>& output) const
+    /// <param name="assets">The output collection of the asset ids referenced by this object.</param>
+    virtual void GetReferences(Array<Guid>& assets) const
     {
         for (int32 i = 0; i < Parameters.Count(); i++)
         {
             const auto& p = Parameters[i];
             const Guid id = (Guid)p.Value;
             if (id.IsValid())
-                output.Add(id);
+                assets.Add(id);
         }
 
         for (int32 i = 0; i < Nodes.Count(); i++)
@@ -547,7 +549,7 @@ public:
             {
                 const Guid id = (Guid)n.Values[j];
                 if (id.IsValid())
-                    output.Add(id);
+                    assets.Add(id);
             }
         }
     }

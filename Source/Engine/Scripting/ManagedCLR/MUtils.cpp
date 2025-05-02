@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "MUtils.h"
 #include "MClass.h"
@@ -878,7 +878,7 @@ MClass* MUtils::GetClass(const VariantType& value)
     case VariantType::Blob:
         return MCore::Array::GetClass(MCore::TypeCache::Byte);
     case VariantType::Float2:
-        return Double2::TypeInitializer.GetClass();
+        return Float2::TypeInitializer.GetClass();
     case VariantType::Float3:
         return Float3::TypeInitializer.GetClass();
     case VariantType::Float4:

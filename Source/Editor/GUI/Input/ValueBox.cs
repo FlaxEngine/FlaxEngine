@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -195,7 +195,7 @@ namespace FlaxEditor.GUI.Input
                 var style = Style.Current;
 
                 // Draw sliding UI
-                Render2D.DrawSprite(style.Scalar, SlideRect, style.Foreground);
+                Render2D.DrawSprite(style.Scalar, SlideRect, EnabledInHierarchy ? style.Foreground : style.ForegroundDisabled);
 
                 // Check if is sliding
                 if (_isSliding)

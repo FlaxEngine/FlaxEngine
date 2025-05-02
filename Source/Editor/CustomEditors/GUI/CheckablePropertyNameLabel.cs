@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -58,6 +58,8 @@ namespace FlaxEditor.CustomEditors.GUI
             // Update child controls enabled state
             if (FirstChildControlIndex >= 0 && Parent is PropertiesList propertiesList)
             {
+                if (FirstChildControlContainer != null)
+                    propertiesList = FirstChildControlContainer;
                 var controls = propertiesList.Children;
                 var labels = propertiesList.Element.Labels;
                 var thisIndex = labels.IndexOf(this);

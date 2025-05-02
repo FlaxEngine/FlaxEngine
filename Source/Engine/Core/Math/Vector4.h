@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -455,11 +455,7 @@ public:
     }
 
 public:
-    // Restricts a value to be within a specified range
-    // @param v The value to clamp
-    // @param min The minimum value,
-    // @param max The maximum value
-    // @returns Clamped value
+    // Restricts a value to be within a specified range (inclusive min/max).
     static Vector4Base Clamp(const Vector4Base& v, const Vector4Base& min, const Vector4Base& max)
     {
         Vector4Base result;
@@ -467,21 +463,13 @@ public:
         return result;
     }
 
-    // Restricts a value to be within a specified range
-    // @param v The value to clamp
-    // @param min The minimum value,
-    // @param max The maximum value
-    // @param result When the method completes, contains the clamped value
+    // Restricts a value to be within a specified range (inclusive min/max).
     static void Clamp(const Vector4Base& v, const Vector4Base& min, const Vector4Base& max, Vector4Base& result)
     {
         result = Vector4Base(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y), Math::Clamp(v.Z, min.Z, max.Z), Math::Clamp(v.W, min.W, max.W));
     }
 
-    // Performs a linear interpolation between two vectors
-    // @param start Start vector
-    // @param end End vector
-    // @param amount Value between 0 and 1 indicating the weight of end
-    // @param result When the method completes, contains the linear interpolation of the two vectors
+    // Performs a linear interpolation between two vectors.
     static void Lerp(const Vector4Base& start, const Vector4Base& end, T amount, Vector4Base& result)
     {
         result.X = Math::Lerp(start.X, end.X, amount);
@@ -490,13 +478,7 @@ public:
         result.W = Math::Lerp(start.W, end.W, amount);
     }
 
-    // <summary>
     // Performs a linear interpolation between two vectors.
-    // </summary>
-    // @param start Start vector,
-    // @param end End vector,
-    // @param amount Value between 0 and 1 indicating the weight of @paramref end"/>,
-    // @returns The linear interpolation of the two vectors
     static Vector4Base Lerp(const Vector4Base& start, const Vector4Base& end, T amount)
     {
         Vector4Base result;
@@ -558,7 +540,7 @@ inline Vector4Base<T> operator/(typename TOtherFloat<T>::Type a, const Vector4Ba
 template<typename T>
 inline uint32 GetHash(const Vector4Base<T>& key)
 {
-    return (((((*(uint32*)&key.X * 397) ^ *(uint32*)&key.Y) * 397) ^ *(uint32*)&key.Z) * 397) ^*(uint32*)&key.W;
+    return (((((*(uint32*)&key.X * 397) ^ *(uint32*)&key.Y) * 397) ^ *(uint32*)&key.Z) * 397) ^ *(uint32*)&key.W;
 }
 
 namespace Math

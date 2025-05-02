@@ -1,5 +1,6 @@
-﻿// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using System.IO;
 using Flax.Build;
 
@@ -32,32 +33,35 @@ namespace Flax.Deps.Dependencies
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
-            var solutionPath = Path.Combine(root, "UVAtlas", "UVAtlas_2015.sln");
+            var solutionPath = Path.Combine(root, "UVAtlas_2022_Win10.sln");
             var configuration = "Release";
             var outputFileNames = new[]
             {
                 "UVAtlas.lib",
                 "UVAtlas.pdb",
             };
-            var binFolder = Path.Combine(root, "UVAtlas", "Bin", "Desktop_2015");
+            var binFolder = Path.Combine(root, "UVAtlas", "Bin", "Desktop_2022_Win10");
 
             // Get the source
             CloneGitRepoFast(root, "https://github.com/Microsoft/UVAtlas.git");
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
                 {
                     // Build for Win64
-                    Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Windows, TargetArchitecture.x64);
-                    foreach (var file in outputFileNames)
+                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
-                        Utilities.FileCopy(Path.Combine(binFolder, "x64", "Release", file), Path.Combine(depsFolder, file));
+                        Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString(), new Dictionary<string, string>() { { "RestorePackagesConfig", "true" } });
+                        var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Windows, architecture);
+                        foreach (var file in outputFileNames)
+                        {
+                            Utilities.FileCopy(Path.Combine(binFolder, architecture.ToString(), "Release", file), Path.Combine(depsFolder, file));
+                        }
                     }
-
                     break;
                 }
                 }

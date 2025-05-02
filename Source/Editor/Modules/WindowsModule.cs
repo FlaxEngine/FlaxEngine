@@ -1,14 +1,16 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Xml;
 using FlaxEditor.Content;
 using FlaxEditor.GUI.Dialogs;
+using FlaxEditor.GUI.Docking;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
 using FlaxEditor.Windows.Profiler;
@@ -36,9 +38,10 @@ namespace FlaxEditor.Modules
         {
             public string AssemblyName;
             public string TypeName;
-            
+
             public DockState DockState;
             public DockPanel DockedTo;
+            public int DockedTabIndex;
             public float? SplitterValue = null;
 
             public bool SelectOnShow = false;
@@ -47,6 +50,8 @@ namespace FlaxEditor.Modules
             public bool Minimize;
             public Float2 FloatSize;
             public Float2 FloatPosition;
+
+            public Guid AssetItemID;
 
             // Constructor, to allow for default values
             public WindowRestoreData()
@@ -154,7 +159,7 @@ namespace FlaxEditor.Modules
         internal WindowsModule(Editor editor)
         : base(editor)
         {
-            InitOrder = -100;
+            InitOrder = -75;
         }
 
         /// <summary>
@@ -803,43 +808,64 @@ namespace FlaxEditor.Modules
             Level.SceneSaving += OnSceneSaving;
             Level.SceneUnloaded += OnSceneUnloaded;
             Level.SceneUnloading += OnSceneUnloading;
-            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
+            Editor.ContentDatabase.WorkspaceRebuilt += OnWorkspaceRebuilt;
             Editor.StateMachine.StateChanged += OnEditorStateChanged;
+        }
+
+        internal void AddToRestore(AssetEditorWindow win)
+        {
+            AddToRestore(win, win.GetType(), new WindowRestoreData
+            {
+                AssetItemID = win.Item.ID,
+            });
         }
 
         internal void AddToRestore(CustomEditorWindow win)
         {
-            var type = win.GetType();
-
             // Validate if can restore type
+            var type = win.GetType();
             var constructor = type.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, Type.EmptyTypes, null);
             if (constructor == null || type.IsGenericType)
                 return;
 
-            var winData = new WindowRestoreData();
-            var panel = win.Window.ParentDockPanel;
+            AddToRestore(win.Window, type, new WindowRestoreData());
+        }
 
+        private void AddToRestore(EditorWindow win, Type type, WindowRestoreData winData)
+        {
             // Ensure that this window is only selected following recompilation
             // if it was the active tab in its dock panel. Otherwise, there is a
             // risk of interrupting the user's workflow by potentially selecting
             // background tabs.
-            winData.SelectOnShow = panel.SelectedTab == win.Window;
-            if (panel is FloatWindowDockPanel)
+            var window = win.RootWindow?.Window;
+            var panel = win.ParentDockPanel;
+            winData.SelectOnShow = panel.SelectedTab == win;
+            winData.DockedTabIndex = 0;
+            if (panel is FloatWindowDockPanel && window != null && panel.TabsCount == 1)
             {
                 winData.DockState = DockState.Float;
-                var window = win.Window.RootWindow.Window;
                 winData.FloatPosition = window.Position;
                 winData.FloatSize = window.ClientSize;
                 winData.Maximize = window.IsMaximized;
                 winData.Minimize = window.IsMinimized;
+                winData.DockedTo = panel;
             }
             else
             {
+                for (int i = 0; i < panel.Tabs.Count; i++)
+                {
+                    if (panel.Tabs[i] == win)
+                    {
+                        winData.DockedTabIndex = i;
+                        break;
+                    }
+                }
                 if (panel.TabsCount > 1)
                 {
                     winData.DockState = DockState.DockFill;
                     winData.DockedTo = panel;
-                }else
+                }
+                else
                 {
                     winData.DockState = panel.TryGetDockState(out var splitterValue);
                     winData.DockedTo = panel.ParentDockPanel;
@@ -851,38 +877,94 @@ namespace FlaxEditor.Modules
             _restoreWindows.Add(winData);
         }
 
-        private void OnScriptsReloadEnd()
+        private void OnWorkspaceRebuilt()
         {
-            for (int i = 0; i < _restoreWindows.Count; i++)
+            // Go in reverse order to create floating Prefab windows first before docked windows
+            for (int i = _restoreWindows.Count - 1; i >= 0; i--)
             {
                 var winData = _restoreWindows[i];
 
                 try
                 {
                     var assembly = Utils.GetAssemblyByName(winData.AssemblyName);
-                    if (assembly != null)
+                    if (assembly == null)
+                        continue;
+
+                    var type = assembly.GetType(winData.TypeName);
+                    if (type == null)
+                        continue;
+
+                    if (type.IsAssignableTo(typeof(AssetEditorWindow)))
                     {
-                        var type = assembly.GetType(winData.TypeName);
-                        if (type != null)
+                        var ctor = type.GetConstructor(new Type[] { typeof(Editor), typeof(AssetItem) });
+                        var assetItem = Editor.ContentDatabase.FindAsset(winData.AssetItemID);
+                        var win = (AssetEditorWindow)ctor.Invoke(new object[] { Editor.Instance, assetItem });
+                        win.Show(winData.DockState, winData.DockState != DockState.Float ? winData.DockedTo : null, winData.SelectOnShow, winData.SplitterValue);
+                        if (winData.DockState == DockState.Float)
                         {
-                            var win = (CustomEditorWindow)Activator.CreateInstance(type);
-                            win.Show(winData.DockState, winData.DockedTo, winData.SelectOnShow, winData.SplitterValue);
-                            if (winData.DockState == DockState.Float)
+                            var window = win.RootWindow.Window;
+                            window.Position = winData.FloatPosition;
+                            if (winData.Maximize)
                             {
-                                var window = win.Window.RootWindow.Window;
-                                window.Position = winData.FloatPosition;
-                                if (winData.Maximize)
-                                {
-                                    window.Maximize();
-                                }
-                                else if (winData.Minimize)
-                                {
-                                    window.Minimize();
-                                }
-                                else 
-                                {
-                                    window.ClientSize = winData.FloatSize;
-                                }
+                                window.Maximize();
+                            }
+                            else if (winData.Minimize)
+                            {
+                                window.Minimize();
+                            }
+                            else
+                            {
+                                window.ClientSize = winData.FloatSize;
+                            }
+
+                            // Update panel reference in other windows docked to this panel
+                            foreach (ref var otherData in CollectionsMarshal.AsSpan(_restoreWindows))
+                            {
+                                if (otherData.DockedTo == winData.DockedTo)
+                                    otherData.DockedTo = win.ParentDockPanel;
+                            }
+                        }
+                        var panel = win.ParentDockPanel;
+                        int currentTabIndex = 0;
+                        for (int pi = 0; pi < panel.TabsCount; pi++)
+                        {
+                            if (panel.Tabs[pi] == win)
+                            {
+                                currentTabIndex = pi;
+                                break;
+                            }
+                        }
+                        while (currentTabIndex > winData.DockedTabIndex)
+                        {
+                            win.ParentDockPanel.MoveTabLeft(currentTabIndex);
+                            currentTabIndex--;
+                        }
+                        while (currentTabIndex < winData.DockedTabIndex)
+                        {
+                            win.ParentDockPanel.MoveTabRight(currentTabIndex);
+                            currentTabIndex++;
+                        }
+                        panel.PerformLayout(true);
+                    }
+                    else
+                    {
+                        var win = (CustomEditorWindow)Activator.CreateInstance(type);
+                        win.Show(winData.DockState, winData.DockedTo, winData.SelectOnShow, winData.SplitterValue);
+                        if (winData.DockState == DockState.Float)
+                        {
+                            var window = win.Window.RootWindow.Window;
+                            window.Position = winData.FloatPosition;
+                            if (winData.Maximize)
+                            {
+                                window.Maximize();
+                            }
+                            else if (winData.Minimize)
+                            {
+                                window.Minimize();
+                            }
+                            else
+                            {
+                                window.ClientSize = winData.FloatSize;
                             }
                         }
                     }
@@ -893,6 +975,11 @@ namespace FlaxEditor.Modules
                     Editor.LogWarning(string.Format("Failed to restore window {0} (assembly: {1})", winData.TypeName, winData.AssemblyName));
                 }
             }
+
+            // Restored windows stole the focus from Editor
+            if (_restoreWindows.Count > 0)
+                Editor.Instance.Windows.MainWindow.Focus();
+
             _restoreWindows.Clear();
         }
 
@@ -950,7 +1037,12 @@ namespace FlaxEditor.Modules
             MainWindow = null;
 
             // Capture project icon screenshot (not in play mode and if editor was used for some time)
-            if (!Editor.StateMachine.IsPlayMode && Time.TimeSinceStartup >= 5.0f)
+            if (!Editor.StateMachine.IsPlayMode &&
+                Time.TimeSinceStartup >= 5.0f &&
+                !Editor.IsHeadlessMode &&
+                EditWin.Viewport.Task != null &&
+                EditWin.Viewport.Task.LastUsedFrame > 100 &&
+                GPUDevice.Instance?.RendererType != RendererType.Null)
             {
                 Editor.Log("Capture project icon screenshot");
                 _projectIconScreenshotTimeout = Time.TimeSinceStartup + 0.8f; // wait 800ms for a screenshot task
@@ -1045,7 +1137,7 @@ namespace FlaxEditor.Modules
             Level.SceneSaving -= OnSceneSaving;
             Level.SceneUnloaded -= OnSceneUnloaded;
             Level.SceneUnloading -= OnSceneUnloading;
-            ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
+            Editor.ContentDatabase.WorkspaceRebuilt -= OnWorkspaceRebuilt;
             Editor.StateMachine.StateChanged -= OnEditorStateChanged;
 
             // Close main window

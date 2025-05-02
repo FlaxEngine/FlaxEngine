@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -11,6 +11,8 @@ namespace FlaxEditor.Content
     /// <seealso cref="FlaxEditor.Content.JsonAssetItem" />
     public sealed class PrefabItem : JsonAssetItem
     {
+        private string _cachedTypeDescription = null;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PrefabItem"/> class.
         /// </summary>
@@ -41,6 +43,26 @@ namespace FlaxEditor.Content
 
         /// <inheritdoc />
         public override SpriteHandle DefaultThumbnail => SpriteHandle.Invalid;
+
+        /// <inheritdoc />
+        public override string TypeDescription
+        {
+            get
+            {
+                if (_cachedTypeDescription == null)
+                {
+                    _cachedTypeDescription = "Prefab";
+                    var prefab = FlaxEngine.Content.Load<Prefab>(ID);
+                    if (prefab)
+                    {
+                        Actor root = prefab.GetDefaultInstance();
+                        if (root is UIControl or UICanvas)
+                            _cachedTypeDescription = "Widget";
+                    }
+                }
+                return _cachedTypeDescription;
+            }
+        }
 
         /// <inheritdoc />
         public override bool IsOfType(Type type)

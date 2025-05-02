@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -78,6 +78,26 @@ namespace FlaxEngine
         /// Gets position of the upper right corner of the rectangle
         /// </summary>
         public Float2 UpperRight => new Float2(Location.X + Size.X, Location.Y);
+
+        /// <summary>
+        /// Gets position of the bottom right corner of the rectangle
+        /// </summary>
+        public Float2 LowerRight => Location + Size;
+
+        /// <summary>
+        /// Gets position of the bottom left corner of the rectangle
+        /// </summary>
+        public Float2 LowerLeft => new Float2(Location.X, Location.Y + Size.Y);
+
+        /// <summary>
+        /// Gets position of the upper left corner of the rectangle
+        /// </summary>
+        public Float2 TopLeft => Location;
+
+        /// <summary>
+        /// Gets position of the upper right corner of the rectangle
+        /// </summary>
+        public Float2 TopRight => new Float2(Location.X + Size.X, Location.Y);
 
         /// <summary>
         /// Gets position of the bottom right corner of the rectangle

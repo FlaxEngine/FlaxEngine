@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -8,10 +8,11 @@
 /// <summary>
 /// Global engine variables container.
 /// </summary>
-API_CLASS(Static) class FLAXENGINE_API Globals
+API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API Globals
 {
-DECLARE_SCRIPTING_TYPE_NO_SPAWN(Globals);
+    DECLARE_SCRIPTING_TYPE_NO_SPAWN(Globals);
 
+public:
     // Paths
 
     // Main engine directory path.
@@ -34,7 +35,6 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Globals);
     API_FIELD(ReadOnly) static String BinariesFolder;
 
 #if USE_EDITOR
-
     // Project specific cache folder path (editor-only).
     API_FIELD(ReadOnly) static String ProjectCacheFolder;
 
@@ -43,33 +43,60 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Globals);
 
     // Game source code directory path (editor-only).
     API_FIELD(ReadOnly) static String ProjectSourceFolder;
-
 #endif
 
-    // Project content directory path
+    // Project content directory path.
     API_FIELD(ReadOnly) static String ProjectContentFolder;
 
 #if USE_MONO
-    // Mono library folder path
+    // Mono library folder path.
     API_FIELD(ReadOnly) static String MonoPath;
 #endif
 
+public:
     // State
 
-    // True if fatal error occurred (engine is exiting)
-    static bool FatalErrorOccurred;
+    // True if fatal error occurred (engine is exiting).
+    // [Deprecated in v1.10]
+    DEPRECATED("Use Engine::FatalError instead.") static bool FatalErrorOccurred;
 
-    // True if engine need to be closed
-    static bool IsRequestingExit;
+    // True if engine needs to be closed.
+    // [Deprecated in v1.10]
+    DEPRECATED("Use Engine::IsRequestingExit instead.") static bool IsRequestingExit;
 
-    // Exit code
-    static int32 ExitCode;
+    /// <summary>
+    /// Flags set to true if engine needs to be closed (exit is pending).
+    /// [Deprecated in v1.10]
+    /// </summary>
+    API_PROPERTY() DEPRECATED("Use Engine::IsRequestingExit instead.") static bool GetIsRequestingExit()
+    {
+        PRAGMA_DISABLE_DEPRECATION_WARNINGS;
+        return IsRequestingExit;
+        PRAGMA_ENABLE_DEPRECATION_WARNINGS;
+    }
 
+    /// <summary>
+    /// Flags set to true if fatal error occurred (engine is exiting).
+    /// [Deprecated in v1.10]
+    /// </summary>
+    API_PROPERTY() DEPRECATED("Use Engine::FatalError instead.") static bool GetFatalErrorOccurred()
+    {
+        PRAGMA_DISABLE_DEPRECATION_WARNINGS;
+        return FatalErrorOccurred;
+        PRAGMA_ENABLE_DEPRECATION_WARNINGS;
+    }
+
+    // Process exit code (pending to return).
+    // [Deprecated in v1.10]
+    DEPRECATED("Use Engine::ExitCode instead.") static int32 ExitCode;
+
+public:
     // Threading
 
-    // Main Engine thread id
+    // Main Engine thread id.
     API_FIELD(ReadOnly) static uint64 MainThreadID;
 
+public:
     // Config
 
     /// <summary>

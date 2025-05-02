@@ -1,10 +1,11 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Scene.h"
 #include "SceneAsset.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Content/AssetInfo.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
 #include "Engine/Physics/Colliders/MeshCollider.h"
 #include "Engine/Level/Actors/StaticModel.h"
@@ -133,7 +134,8 @@ Array<Guid> Scene::GetAssetReferences() const
     const auto asset = Content::Load<SceneAsset>(GetID());
     if (asset)
     {
-        asset->GetReferences(result);
+        Array<String> files;
+        asset->GetReferences(result, files);
     }
     else
     {
@@ -179,7 +181,7 @@ void Scene::CreateCsgCollider()
     // Create collider
     auto result = New<MeshCollider>();
     result->SetStaticFlags(StaticFlags::FullyStatic);
-    result->SetName(CSG_COLLIDER_NAME);
+    result->SetName(String(CSG_COLLIDER_NAME));
     result->CollisionData = CSGData.CollisionData;
     result->HideFlags |= HideFlags::DontSelect;
 
@@ -202,7 +204,7 @@ void Scene::CreateCsgModel()
     // Create model
     auto result = New<StaticModel>();
     result->SetStaticFlags(StaticFlags::FullyStatic);
-    result->SetName(CSG_MODEL_NAME);
+    result->SetName(String(CSG_MODEL_NAME));
     result->Model = CSGData.Model;
     result->HideFlags |= HideFlags::DontSelect;
 
@@ -305,6 +307,7 @@ void Scene::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
         if (e != stream.MemberEnd())
         {
             // Upgrade from old single hidden navmesh data into NavMesh actors on a scene
+            MARK_CONTENT_DEPRECATED();
             AssetReference<RawDataAsset> dataAsset;
             Serialization::Deserialize(e->value, dataAsset, modifier);
             const auto settings = NavigationSettings::Get();

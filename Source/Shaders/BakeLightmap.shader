@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #define USE_VERTEX_COLOR 0
 
@@ -126,8 +126,7 @@ RenderCacheVSOutput VS_RenderCacheTerrain(TerrainVertexInput input)
 	output.WorldNormal = tangentToWorld[2];
 
 	// Transform lightmap UV to clip-space
-	float2 texCoord = input.TexCoord;
-	float2 lightmapUV = texCoord * LightmapArea.zw + LightmapArea.xy;
+	float2 lightmapUV = input.TexCoord * LightmapArea.zw + LightmapArea.xy;
 	lightmapUV.y = 1.0 - lightmapUV.y;
 	lightmapUV.xy = lightmapUV.xy * 2.0 - 1.0;
 	output.Position = float4(lightmapUV, 0, 1);

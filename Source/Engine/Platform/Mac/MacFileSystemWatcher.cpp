@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_MAC
 #include "MacFileSystemWatcher.h"
@@ -35,15 +35,17 @@ void DirectoryWatchCallback( ConstFSEventStreamRef StreamRef, void* FileWatcherP
             {
                 action = FileSystemAction::Create;
             }
-            
-            if (renamed || modified)
+            if (renamed)
             {
-                action = FileSystemAction::Delete;
+                action = FileSystemAction::Rename;
             }
-            
-            if (removed)
+            if (modified)
             {
                 action = FileSystemAction::Modify;
+            }
+            if (removed)
+            {
+                action = FileSystemAction::Delete;
             }
             
             const String resolvedPath = AppleUtils::ToString((CFStringRef)CFArrayGetValueAtIndex(EventPathArray,EventIndex));

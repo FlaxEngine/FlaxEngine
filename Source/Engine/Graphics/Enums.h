@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -252,7 +252,7 @@ API_ENUM() enum class PartitionMode
     Logarithmic = 1,
 
     /// <summary>
-    /// PSSM cascade splits.
+    /// Parallel-Split Shadow Maps cascade splits.
     /// </summary>
     PSSM = 2,
 };
@@ -308,6 +308,17 @@ API_ENUM() enum class GPUResourceUsage
     /// - Any resources read or accessed randomly on host, e.g. CPU-side copy of vertex buffer used as source of transfer, but also used for collision detection.
     /// </remarks>
     StagingReadback = 3,
+
+    /// <summary>
+    /// A resource that supports both read and write from the CPU. 
+    /// This is likely to be the common choice for read-write buffers to transfer data between GPU compute buffers and CPU memory. 
+    /// It usually means CPU (system) memory.
+    /// </summary>
+    /// <remarks>
+    /// Usage:
+    /// - Staging memory to upload to GPU for compute and gather results back after processing.
+    /// </remarks>
+    Staging = 4,
 };
 
 /// <summary>

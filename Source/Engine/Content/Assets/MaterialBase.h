@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -25,7 +25,7 @@ public:
     Action ParamsChanged;
 
     /// <summary>
-    /// Returns true if material is an material instance.
+    /// Returns true if material is a material instance.
     /// </summary>
     virtual bool IsMaterialInstance() const = 0;
 
@@ -65,7 +65,7 @@ public:
     /// </summary>
     /// <param name="name">The parameter name.</param>
     /// <param name="value">The value to set.</param>
-    /// <param name="warnIfMissing">True if warn if parameter is missing, otherwise will do nothing.</param>
+    /// <param name="warnIfMissing">True to warn if parameter is missing, otherwise will do nothing.</param>
     API_FUNCTION() void SetParameterValue(const StringView& name, const Variant& value, bool warnIfMissing = true);
 
     /// <summary>
@@ -77,12 +77,6 @@ public:
 public:
     // [BinaryAsset]
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override
-    {
-        // Base
-        BinaryAsset::GetReferences(output);
-
-        Params.GetReferences(output);
-    }
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
 #endif
 };

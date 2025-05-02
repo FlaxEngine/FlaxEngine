@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -146,7 +146,7 @@ DEFINE_DEFAULT_FORMATTING_VIA_TO_STRING(VariantType);
 API_STRUCT(InBuild) struct FLAXENGINE_API Variant
 {
     /// <summary>
-    /// Thee value type.
+    /// The value type.
     /// </summary>
     VariantType Type;
 
@@ -381,6 +381,9 @@ public:
     // Frees the object or data owned by this Variant container (eg. structure or object).
     void DeleteValue();
 
+    // Parses the text into the Variant value. Allows to specify explicit value type.
+    static Variant Parse(const StringView& text, const VariantType& type = VariantType());
+
     FORCE_INLINE Variant Cast(const VariantType& to) const
     {
         return Cast(*this, to);
@@ -407,6 +410,8 @@ public:
         return MoveTemp(v);
     }
 
+    static Variant Typename(const StringAnsiView& value);
+
     static bool CanCast(const Variant& v, const VariantType& to);
     static Variant Cast(const Variant& v, const VariantType& to);
     static bool NearEqual(const Variant& a, const Variant& b, float epsilon = 1e-6f);
@@ -418,6 +423,7 @@ private:
     void AllocStructure();
     void CopyStructure(void* src);
     void FreeStructure();
+    static Variant Enum(const VariantType& type, const uint64 value);
 };
 
 namespace Math

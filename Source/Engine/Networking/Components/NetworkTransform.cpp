@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 // Interpolation and prediction logic based on https://www.gabrielgambetta.com/client-server-game-architecture.html
 
@@ -157,6 +157,7 @@ void NetworkTransform::Serialize(NetworkStream* stream)
 
     // Encode data
     Data data;
+    Platform::MemoryClear(&data, sizeof(data));
     data.LocalSpace = LocalSpace;
     data.HasSequenceIndex = Mode == ReplicationModes::Prediction;
     data.Components = Components;
@@ -195,8 +196,7 @@ void NetworkTransform::Serialize(NetworkStream* stream)
         }
         if (EnumHasAllFlags(data.Components, ReplicationComponents::Rotation))
         {
-            const Float3 rotation = transform.Orientation.GetEuler();
-            stream->Write(rotation);
+            stream->Write(transform.Orientation);
         }
         else if (EnumHasAnyFlags(data.Components, ReplicationComponents::Rotation))
         {
@@ -260,9 +260,7 @@ void NetworkTransform::Deserialize(NetworkStream* stream)
         }
         if (EnumHasAllFlags(data.Components, ReplicationComponents::Rotation))
         {
-            Float3 rotation;
-            stream->Read(rotation);
-            transform.Orientation = Quaternion::Euler(rotation);
+            stream->Read(transform.Orientation);
         }
         else if (EnumHasAnyFlags(data.Components, ReplicationComponents::Rotation))
         {

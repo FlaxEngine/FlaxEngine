@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -64,55 +64,27 @@ public:
     }
 
 public:
-    // Returns true if character is uppercase
     static bool IsUpper(char c);
-
-    // Returns true if character is lowercase
     static bool IsLower(char c);
-
     static bool IsAlpha(char c);
-
     static bool IsPunct(char c);
-
     static bool IsAlnum(char c);
-
     static bool IsDigit(char c);
-
     static bool IsHexDigit(char c);
-
-    // Returns true if character is a whitespace
     static bool IsWhitespace(char c);
-
-    // Convert wide character to upper case
     static char ToUpper(char c);
-
-    // Convert wide character to lower case
     static char ToLower(char c);
 
 public:
-    // Returns true if character is uppercase
     static bool IsUpper(Char c);
-
-    // Returns true if character is lowercase
     static bool IsLower(Char c);
-
     static bool IsAlpha(Char c);
-
     static bool IsPunct(Char c);
-
     static bool IsAlnum(Char c);
-
     static bool IsDigit(Char c);
-
     static bool IsHexDigit(Char c);
-
-    // Returns true if character is a whitespace
     static bool IsWhitespace(Char c);
-
-    // Convert wide character to upper case
     static Char ToUpper(Char c);
-
-    // Convert wide character to lower case
     static Char ToLower(Char c);
 
 public:
@@ -141,40 +113,28 @@ public:
     static int32 CompareIgnoreCase(const char* str1, const char* str2, int32 maxCount);
 
 public:
-    // Get string length. Returns 0 if str is null.
+    // Gets the string length. Returns 0 if str is null.
     static int32 Length(const Char* str);
 
-    // Get string length. Returns 0 if str is null.
+    // Gets the string length. Returns 0 if str is null.
     static int32 Length(const char* str);
 
-    // Copy string
+    // Copies the string.
     static Char* Copy(Char* dst, const Char* src);
 
-    // Copy string (count is maximum amount of characters to copy)
+    // Copies the string (count is maximum amount of characters to copy).
     static Char* Copy(Char* dst, const Char* src, int32 count);
 
-    // Finds string in string, case sensitive
-    // @param str The string to look through
-    // @param toFind The string to find inside str
-    // @return Position in str if Find was found, otherwise null
+    // Finds specific sub-string in the input string. Returns the first found position in the input string or nulll if failed.
     static const Char* Find(const Char* str, const Char* toFind);
 
-    // Finds string in string, case sensitive
-    // @param str The string to look through
-    // @param toFind The string to find inside str
-    // @return Position in str if Find was found, otherwise null
+    // Finds specific sub-string in the input string, case sensitive. Returns the first found position in the input string or nulll if failed.
     static const char* Find(const char* str, const char* toFind);
 
-    // Finds string in string, case insensitive
-    // @param str The string to look through
-    // @param toFind The string to find inside str
-    // @return Position in str if toFind was found, otherwise null
+    // Finds specific sub-string in the input string, case insensitive. Returns the first found position in the input string or nulll if failed.
     static const Char* FindIgnoreCase(const Char* str, const Char* toFind);
 
-    // Finds string in string, case insensitive
-    // @param str The string to look through
-    // @param toFind The string to find inside str
-    // @return Position in str if toFind was found, otherwise null
+    // Finds specific sub-string in the input string, case insensitive. Returns the first found position in the input string or nulll if failed.
     static const char* FindIgnoreCase(const char* str, const char* toFind);
 
 public:
@@ -197,126 +157,81 @@ public:
     static char* ConvertUTF162UTF8(const Char* from, int32 fromLength, int32& toLength);
 
 public:
-    // Returns the directory name of the specified path string
-    // @param path The path string from which to obtain the directory name
-    // @returns Directory name
+    /// <summary>
+    /// Gets the directory name of the specified path string.
+    /// </summary>
+    /// <param name="path">The path string from which to obtain the directory name.</param>
+    /// <returns>Directory name.</returns>
     static StringView GetDirectoryName(const StringView& path);
 
-    // Returns the file name and extension of the specified path string
-    // @param path The path string from which to obtain the file name and extension
-    // @returns File name with extension
+    /// <summary>
+    /// Gets the file name and extension of the specified path string
+    /// </summary>
+    /// <param name="path">The path string from which to obtain the file name and extension.</param>
+    /// <returns>File name with extension.</returns>
     static StringView GetFileName(const StringView& path);
 
-    // Returns the file name without extension of the specified path string
-    // @param path The path string from which to obtain the file name
-    // @returns File name without extension
+    /// <summary>
+    /// Gets the file name without extension of the specified path string.
+    /// </summary>
+    /// <param name="path">The path string from which to obtain the file name.</param>
+    /// <returns>File name without extension.</returns>
     static StringView GetFileNameWithoutExtension(const StringView& path);
 
+    /// <summary>
+    /// Gets the path without extension.
+    /// </summary>
+    /// <param name="path">The path string.</param>
+    /// <returns>The path string without extension.</returns>
     static StringView GetPathWithoutExtension(const StringView& path);
 
+    /// <summary>
+    /// Normalizes path string and removes any relative parts such as `/../` and `/./`.
+    /// </summary>
+    /// <param name="path">The input and output string with path to process.</param>
     static void PathRemoveRelativeParts(String& path);
 
 public:
     // Converts hexadecimal character into the value.
     static int32 HexDigit(Char c);
 
-    // Parse text to unsigned integer value
-    // @param str String to parse
-    // @return Result value
-    // @returns True if cannot convert data, otherwise false
-    template<typename CharType>
-    static bool ParseHex(const CharType* str, uint32* result)
+    // Parses text to unsigned integer value. Returns true if failed to convert the value.
+    template<typename T>
+    static bool ParseHex(const T* str, int32 length, uint32* result)
     {
         uint32 sum = 0;
-        const CharType* p = str;
-
+        const T* p = str;
+        const T* end = str + length;
         if (*p == '0' && *(p + 1) == 'x')
             p += 2;
-
-        while (*p)
-        {
-            int32 c = *p - '0';
-
-            if (c < 0 || c > 9)
-            {
-                c = ToLower(*p) - 'a' + 10;
-                if (c < 10 || c > 15)
-                    return true;
-            }
-
-            sum = 16 * sum + c;
-
-            p++;
-        }
-
-        *result = sum;
-        return false;
-    }
-
-    // Parse text to unsigned integer value
-    // @param str String to parse
-    // @param length Text length
-    // @return Result value
-    // @returns True if cannot convert data, otherwise false
-    template<typename CharType>
-    static bool ParseHex(const CharType* str, int32 length, uint32* result)
-    {
-        uint32 sum = 0;
-        const CharType* p = str;
-        const CharType* end = str + length;
-
-        if (*p == '0' && *(p + 1) == 'x')
-            p += 2;
-
         while (*p && p < end)
         {
             int32 c = *p - '0';
-
             if (c < 0 || c > 9)
             {
                 c = ToLower(*p) - 'a' + 10;
                 if (c < 10 || c > 15)
                     return true;
             }
-
             sum = 16 * sum + c;
-
             p++;
         }
-
         *result = sum;
         return false;
     }
 
-    // Parse text to scalar value
-    // @param str String to parse
-    // @return Result value
-    // @returns True if cannot convert data, otherwise false
-    template<typename T, typename U>
-    static bool Parse(const T* str, U* result)
+    // Parses text to unsigned integer value. Returns true if failed to convert the value.
+    template<typename T>
+    static bool ParseHex(const T* str, uint32* result)
     {
-        U sum = 0;
-        const T* p = str;
-        while (*p)
-        {
-            int32 c = *p++ - 48;
-            if (c < 0 || c > 9)
-                return true;
-            sum = 10 * sum + c;
-        }
-        *result = sum;
-        return false;
+        return StringUtils::ParseHex(str, StringUtils::Length(str), result);
     }
 
-    // Parse text to scalar value
-    // @param str String to parse
-    // @param length Text length to read
-    // @return Result value
-    // @returns True if cannot convert data, otherwise false
-    template<typename T, typename U>
-    static bool Parse(const T* str, uint32 length, U* result)
+    // Parses text to the unsigned integer value. Returns true if failed to convert the value.
+    template<typename T>
+    static bool Parse(const T* str, int32 length, uint64* result)
     {
-        U sum = 0;
+        int64 sum = 0;
         const T* p = str;
         while (length--)
         {
@@ -328,12 +243,91 @@ public:
         *result = sum;
         return false;
     }
+    template<typename T>
+    static bool Parse(const T* str, uint32 length, uint32* result)
+    {
+        uint64 tmp;
+        const bool b = StringUtils::Parse(str, length, &tmp);
+        *result = (uint32)tmp;
+        return b;
+    }
+    template<typename T>
+    static bool Parse(const T* str, uint32 length, uint16* result)
+    {
+        uint64 tmp;
+        const bool b = StringUtils::Parse(str, length, &tmp);
+        *result = (uint16)tmp;
+        return b;
+    }
+    template<typename T>
+    static bool Parse(const T* str, uint32 length, uint8* result)
+    {
+        uint64 tmp;
+        const bool b = StringUtils::Parse(str, length, &tmp);
+        *result = (uint8)tmp;
+        return b;
+    }
+    
+    // Parses text to the integer value. Returns true if failed to convert the value.
+    template<typename T>
+    static bool Parse(const T* str, int32 length, int64* result)
+    {
+        int64 sum = 0;
+        const T* p = str;
+        bool negate = false;
+        while (length--)
+        {
+            int32 c = *p++ - 48;
+            if (c == -3)
+            {
+                negate = true;
+                continue;
+            }
+            if (c < 0 || c > 9)
+                return true;
+            sum = 10 * sum + c;
+        }
+        if (negate)
+            sum = -sum;
+        *result = sum;
+        return false;
+    }
+    template<typename T>
+    static bool Parse(const T* str, uint32 length, int32* result)
+    {
+        int64 tmp;
+        const bool b = StringUtils::Parse(str, length, &tmp);
+        *result = (int32)tmp;
+        return b;
+    }
+    template<typename T>
+    static bool Parse(const T* str, uint32 length, int16* result)
+    {
+        int64 tmp;
+        const bool b = StringUtils::Parse(str, length, &tmp);
+        *result = (int16)tmp;
+        return b;
+    }
+    template<typename T>
+    static bool Parse(const T* str, uint32 length, int8* result)
+    {
+        int64 tmp;
+        const bool b = StringUtils::Parse(str, length, &tmp);
+        *result = (int8)tmp;
+        return b;
+    }
 
-    // Parse Unicode text to float value
-    // @param str String to parse
-    // @return Result value
-    // @returns True if cannot convert data, otherwise false
+    // Parses text to scalar integer value. Returns true if failed to convert the value.
+    template<typename T, typename U>
+    static bool Parse(const T* str, U* result)
+    {
+        return StringUtils::Parse(str, StringUtils::Length(str), result);
+    }
+
+    // Parses text to the scalar value. Returns true if failed to convert the value.
     static bool Parse(const Char* str, float* result);
+
+    // Parses text to the scalar value. Returns true if failed to convert the value.
     static bool Parse(const char* str, float* result);
 
 public:
@@ -345,9 +339,7 @@ public:
     static String ToString(double value);
 
 public:
-    // Returns the String to double null-terminated string
-    // @param str Double null-terminated string
-    // @return Double null-terminated String
+    // Converts the string to double null-terminated string.
     static String GetZZString(const Char* str);
 };
 

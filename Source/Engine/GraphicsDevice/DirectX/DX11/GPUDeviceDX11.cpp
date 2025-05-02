@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX11
 
@@ -10,11 +10,14 @@
 #include "GPUTimerQueryDX11.h"
 #include "GPUBufferDX11.h"
 #include "GPUSamplerDX11.h"
+#include "GPUVertexLayoutDX11.h"
 #include "GPUSwapChainDX11.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Utilities.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Engine/CommandLine.h"
 
 #if !USE_EDITOR && PLATFORM_WINDOWS
@@ -23,6 +26,56 @@
 
 #define DX11_FORCE_USE_DX10 0
 #define DX11_FORCE_USE_DX10_1 0
+
+static D3D11_COMPARISON_FUNC ToDX11(ComparisonFunc value)
+{
+    switch (value)
+    {
+    case ComparisonFunc::Never:
+        return D3D11_COMPARISON_NEVER;
+    case ComparisonFunc::Less:
+        return D3D11_COMPARISON_LESS;
+    case ComparisonFunc::Equal:
+        return D3D11_COMPARISON_EQUAL;
+    case ComparisonFunc::LessEqual:
+        return D3D11_COMPARISON_LESS_EQUAL;
+    case ComparisonFunc::Greater:
+        return D3D11_COMPARISON_GREATER;
+    case ComparisonFunc::NotEqual:
+        return D3D11_COMPARISON_NOT_EQUAL;
+    case ComparisonFunc::GreaterEqual:
+        return D3D11_COMPARISON_GREATER_EQUAL;
+    case ComparisonFunc::Always:
+        return D3D11_COMPARISON_ALWAYS;
+    default:
+        return (D3D11_COMPARISON_FUNC)-1;
+    }
+}
+
+static D3D11_STENCIL_OP ToDX11(StencilOperation value)
+{
+    switch (value)
+    {
+    case StencilOperation::Keep:
+        return D3D11_STENCIL_OP_KEEP;
+    case StencilOperation::Zero:
+        return D3D11_STENCIL_OP_ZERO;
+    case StencilOperation::Replace:
+        return D3D11_STENCIL_OP_REPLACE;
+    case StencilOperation::IncrementSaturated:
+        return D3D11_STENCIL_OP_INCR_SAT;
+    case StencilOperation::DecrementSaturated:
+        return D3D11_STENCIL_OP_DECR_SAT;
+    case StencilOperation::Invert:
+        return D3D11_STENCIL_OP_INVERT;
+    case StencilOperation::Increment:
+        return D3D11_STENCIL_OP_INCR;
+    case StencilOperation::Decrement:
+        return D3D11_STENCIL_OP_DECR;
+    default:
+        return (D3D11_STENCIL_OP)-1;
+    }
+}
 
 static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureLevel, D3D_FEATURE_LEVEL* featureLevel)
 {
@@ -71,8 +124,47 @@ static bool TryCreateDevice(IDXGIAdapter* adapter, D3D_FEATURE_LEVEL maxFeatureL
         context->Release();
         return true;
     }
+#if GPU_ENABLE_DIAGNOSTICS
+    deviceFlags &= ~D3D11_CREATE_DEVICE_DEBUG;
+    if (SUCCEEDED(D3D11CreateDevice(
+        adapter,
+        D3D_DRIVER_TYPE_UNKNOWN,
+        NULL,
+        deviceFlags,
+        &featureLevels[levelIndex],
+        ARRAY_COUNT(featureLevels) - levelIndex,
+        D3D11_SDK_VERSION,
+        &device,
+        featureLevel,
+        &context
+    )))
+    {
+        LOG(Warning, "Direct3D SDK debug layers were requested, but not available.");
+        device->Release();
+        context->Release();
+        return true;
+    }
+#endif
 
     return false;
+}
+
+GPUVertexLayoutDX11::GPUVertexLayoutDX11(GPUDeviceDX11* device, const Elements& elements, bool explicitOffsets)
+    : GPUResourceBase<GPUDeviceDX11, GPUVertexLayout>(device, StringView::Empty)
+    , InputElementsCount(elements.Count())
+{
+    SetElements(elements, explicitOffsets);
+    for (int32 i = 0; i < elements.Count(); i++)
+    {
+        const VertexElement& src = GetElements().Get()[i];
+        D3D11_INPUT_ELEMENT_DESC& dst = InputElements[i];
+        dst.SemanticName = RenderToolsDX::GetVertexInputSemantic(src.Type, dst.SemanticIndex);
+        dst.Format = RenderToolsDX::ToDxgiFormat(src.Format);
+        dst.InputSlot = src.Slot;
+        dst.AlignedByteOffset = src.Offset;
+        dst.InputSlotClass = src.PerInstance ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
+        dst.InstanceDataStepRate = src.PerInstance ? 1 : 0;
+    }
 }
 
 GPUDevice* GPUDeviceDX11::Create()
@@ -85,9 +177,9 @@ GPUDevice* GPUDeviceDX11::Create()
 #else
     D3D_FEATURE_LEVEL maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 #endif
-    if (CommandLine::Options.D3D10)
+    if (CommandLine::Options.D3D10.IsTrue())
         maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_10_0;
-    else if (CommandLine::Options.D3D11)
+    else if (CommandLine::Options.D3D11.IsTrue())
         maxAllowedFeatureLevel = D3D_FEATURE_LEVEL_11_0;
 #if !USE_EDITOR && PLATFORM_WINDOWS
 	auto winSettings = WindowsPlatformSettings::Get();
@@ -188,11 +280,11 @@ GPUDevice* GPUDeviceDX11::Create()
     }
     GPUAdapterDX selectedAdapter = adapters[selectedAdapterIndex];
     uint32 vendorId = 0;
-    if (CommandLine::Options.NVIDIA)
+    if (CommandLine::Options.NVIDIA.IsTrue())
         vendorId = GPU_VENDOR_ID_NVIDIA;
-    else if (CommandLine::Options.AMD)
+    else if (CommandLine::Options.AMD.IsTrue())
         vendorId = GPU_VENDOR_ID_AMD;
-    else if (CommandLine::Options.Intel)
+    else if (CommandLine::Options.Intel.IsTrue())
         vendorId = GPU_VENDOR_ID_INTEL;
     if (vendorId != 0)
     {
@@ -205,8 +297,6 @@ GPUDevice* GPUDeviceDX11::Create()
             }
         }
     }
-
-    // Validate adapter
     if (!selectedAdapter.IsValid())
     {
         LOG(Error, "Failed to choose valid DirectX adapter!");
@@ -227,34 +317,69 @@ GPUDevice* GPUDeviceDX11::Create()
 
 GPUDeviceDX11::GPUDeviceDX11(IDXGIFactory* dxgiFactory, GPUAdapterDX* adapter)
     : GPUDeviceDX(getRendererType(adapter), getShaderProfile(adapter), adapter)
-    , _device(nullptr)
-    , _imContext(nullptr)
     , _factoryDXGI(dxgiFactory)
-    , _mainContext(nullptr)
-    , _samplerLinearClamp(nullptr)
-    , _samplerPointClamp(nullptr)
-    , _samplerLinearWrap(nullptr)
-    , _samplerPointWrap(nullptr)
-    , _samplerShadow(nullptr)
-    , _samplerShadowPCF(nullptr)
 {
     Platform::MemoryClear(RasterizerStates, sizeof(RasterizerStates));
-    Platform::MemoryClear(DepthStencilStates, sizeof(DepthStencilStates));
+}
+
+ID3D11DepthStencilState* GPUDeviceDX11::GetDepthStencilState(const void* descriptionPtr)
+{
+    const GPUPipelineState::Description& description = *(const GPUPipelineState::Description*)descriptionPtr;
+    DepthStencilMode key;
+    Platform::MemoryClear(&key, sizeof(key)); // Ensure to clear any padding bytes for raw memory compare/hashing
+    key.DepthEnable = description.DepthEnable ? 1 : 0;
+    key.DepthWriteEnable = description.DepthWriteEnable ? 1 : 0;
+    key.DepthClipEnable = description.DepthClipEnable ? 1 : 0;
+    key.StencilEnable = description.StencilEnable ? 1 : 0;
+    key.StencilReadMask = description.StencilReadMask;
+    key.StencilWriteMask = description.StencilWriteMask;
+    key.DepthFunc = description.DepthFunc;
+    key.StencilFunc = description.StencilFunc;
+    key.StencilFailOp = description.StencilFailOp;
+    key.StencilDepthFailOp = description.StencilDepthFailOp;
+    key.StencilPassOp = description.StencilPassOp;
+
+    // Use lookup
+    ID3D11DepthStencilState* state = nullptr;
+    if (DepthStencilStates.TryGet(key, state))
+        return state;
+    
+    // Try again but with lock to prevent race condition with double-adding the same thing
+    ScopeLock lock(StatesWriteLocker);
+    if (DepthStencilStates.TryGet(key, state))
+        return state;
+
+    // Prepare description
+    D3D11_DEPTH_STENCIL_DESC desc;
+    desc.DepthEnable = !!description.DepthEnable;
+    desc.DepthWriteMask = description.DepthWriteEnable ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO;
+    desc.DepthFunc = ToDX11(description.DepthFunc);
+    desc.StencilEnable = !!description.StencilEnable;
+    desc.StencilReadMask = description.StencilReadMask;
+    desc.StencilWriteMask = description.StencilWriteMask;
+    desc.FrontFace.StencilFailOp = ToDX11(description.StencilFailOp);
+    desc.FrontFace.StencilDepthFailOp = ToDX11(description.StencilDepthFailOp);
+    desc.FrontFace.StencilPassOp = ToDX11(description.StencilPassOp);
+    desc.FrontFace.StencilFunc = ToDX11(description.StencilFunc);
+    desc.BackFace = desc.FrontFace;
+
+    // Create object and cache it
+    VALIDATE_DIRECTX_CALL(_device->CreateDepthStencilState(&desc, &state));
+    DepthStencilStates.Add(key, state);
+    return state;
 }
 
 ID3D11BlendState* GPUDeviceDX11::GetBlendState(const BlendingMode& blending)
 {
     // Use lookup
-    ID3D11BlendState* blendState = nullptr;
-    if (BlendStates.TryGet(blending, blendState))
-        return blendState;
-
-    // Make it safe
-    ScopeLock lock(BlendStatesWriteLocker);
-
-    // Try again to prevent race condition with double-adding the same thing
-    if (BlendStates.TryGet(blending, blendState))
-        return blendState;
+    ID3D11BlendState* state = nullptr;
+    if (BlendStates.TryGet(blending, state))
+        return state;
+    
+    // Try again but with lock to prevent race condition with double-adding the same thing
+    ScopeLock lock(StatesWriteLocker);
+    if (BlendStates.TryGet(blending, state))
+        return state;
 
     // Prepare description
     D3D11_BLEND_DESC desc;
@@ -273,25 +398,21 @@ ID3D11BlendState* GPUDeviceDX11::GetBlendState(const BlendingMode& blending)
         desc.RenderTarget[i] = desc.RenderTarget[0];
 #endif
 
-    // Create object
-    VALIDATE_DIRECTX_CALL(_device->CreateBlendState(&desc, &blendState));
-
-    // Cache blend state
-    BlendStates.Add(blending, blendState);
-
-    return blendState;
+    // Create object and cache it
+    VALIDATE_DIRECTX_CALL(_device->CreateBlendState(&desc, &state));
+    BlendStates.Add(blending, state);
+    return state;
 }
 
-static MSAALevel GetMaximumMultisampleCount(ID3D11Device* device, DXGI_FORMAT dxgiFormat)
+GPUBuffer* GPUDeviceDX11::GetDummyVB()
 {
-    int32 maxCount = 1;
-    UINT numQualityLevels;
-    for (int32 i = 2; i <= 8; i *= 2)
+    if (!_dummyVB)
     {
-        if (SUCCEEDED(device->CheckMultisampleQualityLevels(dxgiFormat, i, &numQualityLevels)) && numQualityLevels > 0)
-            maxCount = i;
+        _dummyVB = CreateBuffer(TEXT("DummyVertexBuffer"));
+        auto* layout = GPUVertexLayout::Get({{ VertexElement::Types::Attribute3, 0, 0, 0, PixelFormat::R32G32B32A32_Float }});
+        _dummyVB->Init(GPUBufferDescription::Vertex(layout, sizeof(Color), 1, &Color::Transparent));
     }
-    return static_cast<MSAALevel>(maxCount);
+    return _dummyVB;
 }
 
 bool GPUDeviceDX11::Init()
@@ -307,22 +428,6 @@ bool GPUDeviceDX11::Init()
     }
     UpdateOutputs(adapter);
 
-    ComPtr<IDXGIFactory5> factory5;
-    _factoryDXGI->QueryInterface(IID_PPV_ARGS(&factory5));
-    if (factory5)
-    {
-        BOOL allowTearing;
-        if (SUCCEEDED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing)))
-            && allowTearing
-#if PLATFORM_WINDOWS
-            && GetModuleHandleA("renderdoc.dll") == nullptr // Disable tearing with RenderDoc (prevents crashing)
-#endif
-        )
-        {
-            _allowTearing = true;
-        }
-    }
-
     // Get flags and device type base on current configuration
     uint32 flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #if GPU_ENABLE_DIAGNOSTICS
@@ -332,14 +437,45 @@ bool GPUDeviceDX11::Init()
 
     // Create DirectX device
     D3D_FEATURE_LEVEL createdFeatureLevel = static_cast<D3D_FEATURE_LEVEL>(0);
-    auto targetFeatureLevel = GetD3DFeatureLevel();
+    D3D_FEATURE_LEVEL targetFeatureLevel = _adapter->MaxFeatureLevel;
     VALIDATE_DIRECTX_CALL(D3D11CreateDevice(adapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, flags, &targetFeatureLevel, 1, D3D11_SDK_VERSION, &_device, &createdFeatureLevel, &_imContext));
-
-    // Validate result
     ASSERT(_device);
     ASSERT(_imContext);
     ASSERT(createdFeatureLevel == targetFeatureLevel);
     _state = DeviceState::Created;
+
+#if PLATFORM_WINDOWS
+    // Detect RenderDoc usage (UUID {A7AA6116-9C8D-4BBA-9083-B4D816B71B78})
+    IUnknown* unknown = nullptr;
+    const GUID uuidRenderDoc = { 0xa7aa6116, 0x9c8d, 0x4bba, { 0x90, 0x83, 0xb4, 0xd8, 0x16, 0xb7, 0x1b, 0x78 } };
+    HRESULT hr = _device->QueryInterface(uuidRenderDoc, (void**)&unknown);
+    if (SUCCEEDED(hr) && unknown)
+    {
+        IsDebugToolAttached = true;
+        unknown->Release();
+    }
+    if (!IsDebugToolAttached && GetModuleHandleA("renderdoc.dll") != nullptr)
+    {
+        IsDebugToolAttached = true;
+    }
+#endif
+
+    // Check if can use screen tearing on a swapchain
+    ComPtr<IDXGIFactory5> factory5;
+    _factoryDXGI->QueryInterface(IID_PPV_ARGS(&factory5));
+    if (factory5)
+    {
+        BOOL allowTearing;
+        if (SUCCEEDED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing)))
+            && allowTearing
+#if PLATFORM_WINDOWS
+            && !IsDebugToolAttached // Disable tearing with RenderDoc (prevents crashing)
+#endif
+        )
+        {
+            _allowTearing = true;
+        }
+    }
 
     // Init device limits
     {
@@ -401,10 +537,16 @@ bool GPUDeviceDX11::Init()
         {
             auto format = static_cast<PixelFormat>(i);
             auto dxgiFormat = RenderToolsDX::ToDxgiFormat(format);
-            auto maximumMultisampleCount = GetMaximumMultisampleCount(_device, dxgiFormat);
+            int32 maxCount = 1;
+            UINT numQualityLevels;
+            for (int32 c = 2; c <= 8; c *= 2)
+            {
+                if (SUCCEEDED(_device->CheckMultisampleQualityLevels(dxgiFormat, c, &numQualityLevels)) && numQualityLevels > 0)
+                    maxCount = c;
+            }
             UINT formatSupport = 0;
             _device->CheckFormatSupport(dxgiFormat, &formatSupport);
-            FeaturesPerFormat[i] = FormatFeatures(format, maximumMultisampleCount, (FormatSupport)formatSupport);
+            FeaturesPerFormat[i] = FormatFeatures(format, static_cast<MSAALevel>(maxCount), (FormatSupport)formatSupport);
         }
     }
 
@@ -430,6 +572,7 @@ bool GPUDeviceDX11::Init()
             D3D11_MESSAGE_ID_DEVICE_DRAW_INDEX_BUFFER_TOO_SMALL,
             D3D11_MESSAGE_ID_DEVICE_DRAW_RENDERTARGETVIEW_NOT_SET,
             D3D11_MESSAGE_ID_SETPRIVATEDATA_CHANGINGPARAMS,
+            D3D11_MESSAGE_ID_DEVICE_DRAW_VERTEX_BUFFER_TOO_SMALL,
         };
 
         filter.DenyList.NumIDs = ARRAY_COUNT(disabledMessages);
@@ -450,14 +593,17 @@ bool GPUDeviceDX11::Init()
     {
         D3D11_SAMPLER_DESC samplerDesc;
         Platform::MemoryClear(&samplerDesc, sizeof(samplerDesc));
+        samplerDesc.MinLOD = 0;
+        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+        samplerDesc.MipLODBias = 0.0f;
+        samplerDesc.MaxAnisotropy = 1;
+        samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
 
         // Linear Clamp
         samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerLinearClamp);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
@@ -466,8 +612,6 @@ bool GPUDeviceDX11::Init()
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerPointClamp);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
@@ -476,8 +620,6 @@ bool GPUDeviceDX11::Init()
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerLinearWrap);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
@@ -486,8 +628,6 @@ bool GPUDeviceDX11::Init()
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerPointWrap);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
@@ -496,26 +636,15 @@ bool GPUDeviceDX11::Init()
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.MipLODBias = 0.0f;
-        samplerDesc.MaxAnisotropy = 1;
-        samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
         result = _device->CreateSamplerState(&samplerDesc, &_samplerShadow);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
-        // Shadow PCF
+        // Shadow Linear
         samplerDesc.Filter = D3D11_FILTER_COMPARISON_MIN_MAG_MIP_LINEAR;
         samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
         samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
-        samplerDesc.MipLODBias = 0.0f;
-        samplerDesc.MaxAnisotropy = 1;
-        samplerDesc.ComparisonFunc = D3D11_COMPARISON_LESS_EQUAL;
-        samplerDesc.BorderColor[0] = samplerDesc.BorderColor[1] = samplerDesc.BorderColor[2] = samplerDesc.BorderColor[3] = 0;
-        samplerDesc.MinLOD = 0;
-        samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
-        result = _device->CreateSamplerState(&samplerDesc, &_samplerShadowPCF);
+        result = _device->CreateSamplerState(&samplerDesc, &_samplerShadowLinear);
         LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
     }
 
@@ -551,31 +680,6 @@ bool GPUDeviceDX11::Init()
         CREATE_RASTERIZER_STATE(CullMode::Inverted, D3D11_CULL_FRONT, true, true);
         CREATE_RASTERIZER_STATE(CullMode::TwoSided, D3D11_CULL_NONE, true, true);
 #undef CREATE_RASTERIZER_STATE
-    }
-
-    // Depth Stencil States
-    {
-        D3D11_DEPTH_STENCIL_DESC dsDesc;
-        dsDesc.StencilEnable = FALSE;
-        dsDesc.StencilReadMask = D3D11_DEFAULT_STENCIL_READ_MASK;
-        dsDesc.StencilWriteMask = D3D11_DEFAULT_STENCIL_WRITE_MASK;
-        const D3D11_DEPTH_STENCILOP_DESC defaultStencilOp = { D3D11_STENCIL_OP_KEEP, D3D11_STENCIL_OP_KEEP, D3D11_STENCIL_OP_KEEP, D3D11_COMPARISON_ALWAYS };
-        dsDesc.FrontFace = defaultStencilOp;
-        dsDesc.BackFace = defaultStencilOp;
-        int32 index;
-#define CREATE_DEPTH_STENCIL_STATE(depthEnable, depthWrite) \
-			dsDesc.DepthEnable = depthEnable; \
-			dsDesc.DepthWriteMask = depthWrite ? D3D11_DEPTH_WRITE_MASK_ALL : D3D11_DEPTH_WRITE_MASK_ZERO; \
-			for(int32 depthFunc = 1; depthFunc <= 8; depthFunc++) { \
-			dsDesc.DepthFunc = (D3D11_COMPARISON_FUNC)depthFunc; \
-			index = (int32)depthFunc + (depthEnable ? 0 : 9) + (depthWrite ? 0 : 18); \
-			HRESULT result = _device->CreateDepthStencilState(&dsDesc, &DepthStencilStates[index]); \
-			LOG_DIRECTX_RESULT_WITH_RETURN(result, true); }
-        CREATE_DEPTH_STENCIL_STATE(false, false);
-        CREATE_DEPTH_STENCIL_STATE(false, true);
-        CREATE_DEPTH_STENCIL_STATE(true, true);
-        CREATE_DEPTH_STENCIL_STATE(true, false);
-#undef CREATE_DEPTH_STENCIL_STATE
     }
 
     _state = DeviceState::Ready;
@@ -616,20 +720,15 @@ void GPUDeviceDX11::Dispose()
     SAFE_RELEASE(_samplerLinearWrap);
     SAFE_RELEASE(_samplerPointWrap);
     SAFE_RELEASE(_samplerShadow);
-    SAFE_RELEASE(_samplerShadowPCF);
-    //
+    SAFE_RELEASE(_samplerShadowLinear);
     for (auto i = BlendStates.Begin(); i.IsNotEnd(); ++i)
-    {
         i->Value->Release();
-    }
+    for (auto i = DepthStencilStates.Begin(); i.IsNotEnd(); ++i)
+        i->Value->Release();
     BlendStates.Clear();
     for (uint32 i = 0; i < ARRAY_COUNT(RasterizerStates); i++)
     {
         SAFE_RELEASE(RasterizerStates[i]);
-    }
-    for (uint32 i = 0; i < ARRAY_COUNT(DepthStencilStates); i++)
-    {
-        SAFE_RELEASE(DepthStencilStates[i]);
     }
 
     // Clear DirectX stuff
@@ -737,6 +836,11 @@ GPUBuffer* GPUDeviceDX11::CreateBuffer(const StringView& name)
 GPUSampler* GPUDeviceDX11::CreateSampler()
 {
     return New<GPUSamplerDX11>(this);
+}
+
+GPUVertexLayout* GPUDeviceDX11::CreateVertexLayout(const VertexElements& elements, bool explicitOffsets)
+{
+    return New<GPUVertexLayoutDX11>(this, elements, explicitOffsets);
 }
 
 GPUSwapChain* GPUDeviceDX11::CreateSwapChain(Window* window)

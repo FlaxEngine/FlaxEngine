@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "TAA.h"
 #include "Engine/Content/Assets/Shader.h"
@@ -11,15 +11,14 @@
 #include "Engine/Renderer/GBufferPass.h"
 #include "Engine/Engine/Engine.h"
 
-PACK_STRUCT(struct Data
-    {
+GPU_CB_STRUCT(Data {
     Float2 ScreenSizeInv;
     Float2 JitterInv;
     float Sharpness;
     float StationaryBlending;
     float MotionBlending;
     float Dummy0;
-    GBufferData GBuffer;
+    ShaderGBufferData GBuffer;
     });
 
 bool TAA::Init()

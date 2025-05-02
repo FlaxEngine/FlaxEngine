@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_TOOLS_GDK
 
@@ -146,7 +146,7 @@ bool GDKPlatformTools::OnPostProcess(CookingData& data, GDKPlatformSettings* pla
         sb.Append(TEXT("  </ExecutableList>\n"));
         sb.AppendFormat(TEXT("  <ShellVisuals DefaultDisplayName=\"{0}\"\n"), gameSettings->ProductName);
         sb.AppendFormat(TEXT("                PublisherDisplayName=\"{0}\"\n"), platformSettings->PublisherDisplayName.HasChars() ? platformSettings->PublisherDisplayName : gameSettings->CompanyName);
-        sb.AppendFormat(TEXT("                BackgroundColor=\"#{0}\"\n"), platformSettings->BackgroundColor.ToHexString());
+        sb.AppendFormat(TEXT("                BackgroundColor=\"#{0}\"\n"), platformSettings->BackgroundColor.ToHexString().Left(6));
         sb.AppendFormat(TEXT("                ForegroundText=\"{0}\"\n"), platformSettings->ForegroundText);
         sb.Append(TEXT("                Square150x150Logo=\"Assets\\Square150x150Logo.png\"\n"));
         sb.Append(TEXT("                Square480x480Logo=\"Assets\\Square480x480Logo.png\"\n"));

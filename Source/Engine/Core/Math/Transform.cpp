@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Transform.h"
+#include "Double4x4.h"
 #include "Matrix.h"
 #include "Matrix3x3.h"
 #include "../Types/String.h"
@@ -55,6 +56,11 @@ Matrix Transform::GetWorld() const
 void Transform::GetWorld(Matrix& result) const
 {
     Matrix::Transformation(Scale, Orientation, Translation, result);
+}
+
+void Transform::GetWorld(Double4x4& result) const
+{
+    Double4x4::Transformation(Scale, Orientation, Translation, result);
 }
 
 Transform Transform::Add(const Vector3& translation) const
@@ -251,4 +257,10 @@ void Transform::Lerp(const Transform& t1, const Transform& t2, float amount, Tra
     Vector3::Lerp(t1.Translation, t2.Translation, amount, result.Translation);
     Quaternion::Slerp(t1.Orientation, t2.Orientation, amount, result.Orientation);
     Float3::Lerp(t1.Scale, t2.Scale, amount, result.Scale);
+}
+
+Transform Transform::AlignRotationToNormalAndSnapToGrid(const Vector3& point, const Vector3& normal, const Vector3& normalOffset, const Transform& relativeTo, const Vector3& gridSize, const Float3& scale)
+{
+    Quaternion rot = Quaternion::GetRotationFromNormal(normal, relativeTo);
+    return Transform(Vector3::SnapToGrid(point, gridSize, rot, relativeTo.Translation, normalOffset), rot, scale);
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -11,9 +11,9 @@
 API_STRUCT() struct FLAXENGINE_API Plane
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(Plane);
-public:
-    static const Real DistanceEpsilon;
-    static const Real NormalEpsilon;
+
+    static constexpr Real DistanceEpsilon = 0.0001f;
+    static constexpr Real NormalEpsilon = 1.0f / 65535.0f;
 
 public:
     /// <summary>
@@ -132,170 +132,102 @@ public:
 public:
     static Vector3 Intersection(const Plane& inPlane1, const Plane& inPlane2, const Plane& inPlane3);
 
-    // Determines if there is an intersection between the current object and a point
-    // @param point The point to test
-    // @returns Whether the two objects intersected
+    // Determines if there is an intersection between plane and a point.
     PlaneIntersectionType Intersects(const Vector3& point) const
     {
         return CollisionsHelper::PlaneIntersectsPoint(*this, point);
     }
 
-    // summary>
-    // Determines if there is an intersection between the current object and a Ray
-    // @param ray The ray to test
-    // @returns Whether the two objects intersected
+    // Determines if there is an intersection between plane and a ray.
     bool Intersects(const Ray& ray) const
     {
         Real distance;
         return CollisionsHelper::RayIntersectsPlane(ray, *this, distance);
     }
 
-    // summary>
-    // Determines if there is an intersection between the current object and a Ray.
-    // /summary>
-    // @param ray The ray to test
-    // @param distance When the method completes, contains the distance of the intersection, or 0 if there was no intersection
-    // @returns Whether the two objects intersected
+    // Determines if there is an intersection between plane and a ray. Returns distance to the intersection.
     bool Intersects(const Ray& ray, Real& distance) const
     {
         return CollisionsHelper::RayIntersectsPlane(ray, *this, distance);
     }
 
-    // summary>
-    // Determines if there is an intersection between the current object and a Ray.
-    // /summary>
-    // @param ray The ray to test
-    // @param point When the method completes, contains the point of intersection, or <see const="Vector3.Zero"/> if there was no intersection
-    // @returns Whether the two objects intersected
+    // Determines if there is an intersection between plane and a ray.
     bool Intersects(const Ray& ray, Vector3& point) const
     {
         return CollisionsHelper::RayIntersectsPlane(ray, *this, point);
     }
 
-    // Determines if there is an intersection between the current object and a Plane
-    // @param plane The plane to test
-    // @returns Whether the two objects intersected
+    // Determines if there is an intersection between two planes.
     bool Intersects(const Plane& plane) const
     {
         return CollisionsHelper::PlaneIntersectsPlane(*this, plane);
     }
 
-    // Determines if there is an intersection between the current object and a Plane
-    // @param plane The plane to test
-    // @param line When the method completes, contains the line of intersection as a Ray, or a zero ray if there was no intersection
-    // @returns Whether the two objects intersected
+    // Determines if there is an intersection between two planes. Returns ray that defines a line of intersection.
     bool Intersects(const Plane& plane, Ray& line) const
     {
         return CollisionsHelper::PlaneIntersectsPlane(*this, plane, line);
     }
 
-    // Determines if there is an intersection between the current object and a triangle
-    // @param vertex1 The first vertex of the triangle to test
-    // @param vertex2 The second vertex of the triangle to test
-    // @param vertex3 The third vertex of the triangle to test
-    // @returns Whether the two objects intersected
+    // Determines if there is an intersection between plane and a triangle.
     PlaneIntersectionType Intersects(const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3) const
     {
         return CollisionsHelper::PlaneIntersectsTriangle(*this, vertex1, vertex2, vertex3);
     }
 
-    // Determines if there is an intersection between the current object and a Bounding Box
-    // @param box The box to test
-    // @returns Whether the two objects intersected
+    // Determines if there is an intersection between plane and a box.
     PlaneIntersectionType Intersects(const BoundingBox& box) const
     {
         return CollisionsHelper::PlaneIntersectsBox(*this, box);
     }
 
-    // Determines if there is an intersection between the current object and a Bounding Sphere
-    // @param sphere The sphere to test
-    // @returns Whether the two objects intersected
+    // Determines if there is an intersection between plane and a sphere.
     PlaneIntersectionType Intersects(const BoundingSphere& sphere) const
     {
         return CollisionsHelper::PlaneIntersectsSphere(*this, sphere);
     }
 
 public:
-    // Scales the plane by the given scaling factor
-    // @param value The plane to scale
-    // @param scale The amount by which to scale the plane
-    // @param result When the method completes, contains the scaled plane
+    // Scales the plane by the given factor.
     static void Multiply(const Plane& value, Real scale, Plane& result);
 
-    // Scales the plane by the given scaling factor
-    // @param value The plane to scale
-    // @param scale The amount by which to scale the plane
-    // @returns The scaled plane
+    // Scales the plane by the given factor.
     static Plane Multiply(const Plane& value, Real scale);
 
-    // Calculates the dot product of the specified vector and plane
-    // @param left The source plane
-    // @param right The source vector
-    // @param result When the method completes, contains the dot product of the specified plane and vector
+    // Calculates the dot product of the specified vector and plane.
     static void Dot(const Plane& left, const Vector4& right, Real& result);
 
-    // Calculates the dot product of the specified vector and plane
-    // @param left The source plane
-    // @param right The source vector
-    // @returns The dot product of the specified plane and vector
+    // Calculates the dot product of the specified vector and plane.
     static Real Dot(const Plane& left, const Vector4& right);
 
-    // Calculates the dot product of a specified vector and the normal of the plane plus the distance value of the plane
-    // @param left The source plane
-    // @param right The source vector
-    // @param result When the method completes, contains the dot product of a specified vector and the normal of the Plane plus the distance value of the plane
+    // Calculates the dot product of a specified vector and the normal of the plane plus the distance value of the plane.
     static void DotCoordinate(const Plane& left, const Vector3& right, Real& result);
 
-    // Calculates the dot product of a specified vector and the normal of the plane plus the distance value of the plane
-    // @param left The source plane
-    // @param right The source vector
-    // @returns The dot product of a specified vector and the normal of the Plane plus the distance value of the plane
+    // Calculates the dot product of a specified vector and the normal of the plane plus the distance value of the plane.
     static Real DotCoordinate(const Plane& left, const Vector3& right);
 
-    // Calculates the dot product of the specified vector and the normal of the plane
-    // @param left The source plane
-    // @param right The source vector
-    // @param result When the method completes, contains the dot product of the specified vector and the normal of the plane
+    // Calculates the dot product of the specified vector and the normal of the plane.
     static void DotNormal(const Plane& left, const Vector3& right, Real& result);
 
-    // Calculates the dot product of the specified vector and the normal of the plane
-    // @param left The source plane
-    // @param right The source vector
-    // @returns The dot product of the specified vector and the normal of the plane
+    // Calculates the dot product of the specified vector and the normal of the plane.
     static Real DotNormal(const Plane& left, const Vector3& right);
 
-    // Changes the coefficients of the normal vector of the plane to make it of unit length
-    // @param plane The source plane
-    // @param result When the method completes, contains the normalized plane
+    // Changes the coefficients of the normal vector of the plane to make it of unit length.
     static void Normalize(const Plane& plane, Plane& result);
 
-    // Changes the coefficients of the normal vector of the plane to make it of unit length
-    // @param plane The source plane
-    // @returns The normalized plane
+    // Changes the coefficients of the normal vector of the plane to make it of unit length.
     static Plane Normalize(const Plane& plane);
 
-    // Transforms a normalized plane by a quaternion rotation
-    // @param plane The normalized source plane
-    // @param rotation The quaternion rotation
-    // @param result When the method completes, contains the transformed plane
+    // Transforms a normalized plane by a quaternion rotation.
     static void Transform(const Plane& plane, const Quaternion& rotation, Plane& result);
 
-    // Transforms a normalized plane by a quaternion rotation
-    // @param plane The normalized source plane
-    // @param rotation The quaternion rotation
-    // @returns The transformed plane
+    // Transforms a normalized plane by a quaternion rotation.
     static Plane Transform(const Plane& plane, const Quaternion& rotation);
 
-    // Transforms a normalized plane by a matrix
-    // @param plane The normalized source plane
-    // @param transformation The transformation matrix
-    // @param result When the method completes, contains the transformed plane
+    // Transforms a normalized plane by a matrix.
     static void Transform(const Plane& plane, const Matrix& transformation, Plane& result);
 
-    // Transforms a normalized plane by a matrix
-    // @param plane The normalized source plane
-    // @param transformation The transformation matrix
-    // @returns When the method completes, contains the transformed plane
+    // Transforms a normalized plane by a matrix.
     static Plane Transform(const Plane& plane, const Matrix& transformation);
 };
 

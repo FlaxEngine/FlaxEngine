@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RenderBuffers.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -34,7 +34,7 @@ RenderBuffers::~RenderBuffers()
     _resources.ClearDelete();
 }
 
-void RenderBuffers::Prepare()
+void RenderBuffers::ReleaseUnusedMemory()
 {
     // Auto release temporal buffer if not used for some time
     const uint64 frameIndex = Engine::FrameCount;
@@ -126,10 +126,10 @@ void RenderBuffers::SetUseAlpha(bool value)
     _useAlpha = value;
 }
 
-const RenderBuffers::CustomBuffer* RenderBuffers::FindCustomBuffer(const StringView& name) const
+const RenderBuffers::CustomBuffer* RenderBuffers::FindCustomBuffer(const StringView& name, bool withLinked) const
 {
-    if (LinkedCustomBuffers)
-        return LinkedCustomBuffers->FindCustomBuffer(name);
+    if (LinkedCustomBuffers && withLinked)
+        return LinkedCustomBuffers->FindCustomBuffer(name, withLinked);
     for (const CustomBuffer* e : CustomBuffers)
     {
         if (e->Name == name)

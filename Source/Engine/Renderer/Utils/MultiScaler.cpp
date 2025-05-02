@@ -1,11 +1,11 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "MultiScaler.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 
-PACK_STRUCT(struct Data {
+GPU_CB_STRUCT(Data {
     Float2 TexelSize;
     Float2 Padding;
     });

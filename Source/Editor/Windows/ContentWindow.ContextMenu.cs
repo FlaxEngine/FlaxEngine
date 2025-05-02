@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -76,6 +76,15 @@ namespace FlaxEditor.Windows
                     });
 
                 cm.AddButton(Utilities.Constants.ShowInExplorer, () => FileSystem.ShowFileExplorer(System.IO.Path.GetDirectoryName(item.Path)));
+                
+                if (!String.IsNullOrEmpty(Editor.Instance.Windows.ContentWin._itemsSearchBox.Text))
+                {
+                    cm.AddButton("Show in Content Panel", () =>
+                    {
+                        Editor.Instance.Windows.ContentWin.ClearItemsSearch();
+                        Editor.Instance.Windows.ContentWin.Select(item);
+                    });
+                }
 
                 if (item.HasDefaultThumbnail == false)
                 {
@@ -128,11 +137,9 @@ namespace FlaxEditor.Windows
                 else
                 {
                     cm.AddButton("Delete", () => Delete(item));
-
                     cm.AddSeparator();
-
                     cm.AddButton("Duplicate", _view.Duplicate);
-
+                    cm.AddButton("Cut", _view.Cut);
                     cm.AddButton("Copy", _view.Copy);
                 }
 
@@ -311,6 +318,23 @@ namespace FlaxEditor.Windows
             {
                 if (selection[i] is BinaryAssetItem binaryAssetItem)
                     Editor.ContentImporting.Reimport(binaryAssetItem);
+                else if (selection[i] is PrefabItem prefabItem)
+                {
+                    var prefab = FlaxEngine.Content.Load<Prefab>(prefabItem.ID);
+                    var modelPrefab = prefab.GetDefaultInstance().GetScript<ModelPrefab>();
+                    if (!modelPrefab)
+                        continue;
+                    var importPath = modelPrefab.ImportPath;
+                    var editor = Editor.Instance;
+                    if (editor.ContentImporting.GetReimportPath("Model Prefab", ref importPath))
+                        continue;
+                    var folder = editor.ContentDatabase.Find(Path.GetDirectoryName(prefab.Path)) as ContentFolder;
+                    if (folder == null)
+                        continue;
+                    var importOptions = modelPrefab.ImportOptions;
+                    importOptions.Type = FlaxEngine.Tools.ModelTool.ModelType.Prefab;
+                    editor.ContentImporting.Import(importPath, folder, true, importOptions);
+                }
             }
         }
 

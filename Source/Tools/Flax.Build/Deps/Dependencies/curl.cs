@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -46,12 +46,10 @@ namespace Flax.Deps.Dependencies
         {
             var root = options.IntermediateFolder;
             var packagePath = Path.Combine(root, "package.zip");
-            var vcVersion = "VC14";
-            var configuration = "LIB Release - DLL Windows SSPI";
+            var configuration = "Release";
             var binariesToCopyWin = new[]
             {
                 "libcurl.lib",
-                "lib/libcurl.pdb",
             };
             var filesToKeep = new[]
             {
@@ -60,7 +58,7 @@ namespace Flax.Deps.Dependencies
 
             // Get the source
             if (!File.Exists(packagePath))
-                Downloader.DownloadFileFromUrlToPath("https://curl.haxx.se/download/curl-7.64.1.zip", packagePath);
+                Downloader.DownloadFileFromUrlToPath("https://curl.haxx.se/download/curl-7.88.1.zip", packagePath);
             using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
             {
                 var newRoot = Path.Combine(root, archive.Entries.First().FullName);
@@ -71,24 +69,22 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
                 {
-                    var vsSolutionPath = Path.Combine(root, "projects", "Windows", vcVersion, "curl-all.sln");
-                    var vcxprojPath = Path.Combine(root, "projects", "Windows", vcVersion, "lib", "libcurl.vcxproj");
-                    var vcxprojContents = File.ReadAllText(vcxprojPath);
-                    vcxprojContents = vcxprojContents.Replace("<RuntimeLibrary>MultiThreaded</RuntimeLibrary>", "<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>");
-                    vcxprojContents = vcxprojContents.Replace("<RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>", "<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>");
-                    vcxprojContents = vcxprojContents.Replace("<WholeProgramOptimization>true</WholeProgramOptimization>", "<WholeProgramOptimization>false</WholeProgramOptimization>");
-                    vcxprojContents = vcxprojContents.Replace("<DebugInformationFormat>ProgramDatabase</DebugInformationFormat>", "<DebugInformationFormat></DebugInformationFormat>");
-                    File.WriteAllText(vcxprojPath, vcxprojContents);
+                    // Build for Win64 and ARM64
+                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
-                        // Build for Win64
-                        Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configuration, "x64");
-                        var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                        foreach (var filename in binariesToCopyWin)
-                            Utilities.FileCopy(Path.Combine(root, "build", "Win64", vcVersion, configuration, filename), Path.Combine(depsFolder, Path.GetFileName(filename)));
+                        var buildDir = Path.Combine(root, "build-" + architecture.ToString());
+                        var solutionPath = Path.Combine(buildDir, "CURL.sln");
+
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DBUILD_CURL_EXE=OFF -DBUILD_SHARED_LIBS=OFF -DCURL_STATIC_CRT=OFF");
+                        Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        foreach (var file in binariesToCopyWin)
+                            Utilities.FileCopy(Path.Combine(buildDir, "lib", configuration, file), Path.Combine(depsFolder, Path.GetFileName(file)));
                     }
                     break;
                 }

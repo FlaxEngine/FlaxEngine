@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -178,6 +178,8 @@ namespace FlaxEditor.CustomEditors.Editors
                             return 1;
                         if (Info.MetadataToken < other.Info.MetadataToken)
                             return -1;
+                        // Keep declaration order if same metadata token.
+                        return 0;
                     }
 
                     // By name
@@ -474,32 +476,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             if (layout.Editors.Count != 0)
             {
-                var sb = Clipboard.Text;
-                if (!string.IsNullOrEmpty(sb))
-                {
-                    try
-                    {
-                        var data = JsonSerializer.Deserialize<string[]>(sb);
-                        if (data == null || data.Length != layout.Editors.Count)
-                            return false;
-                        for (var i = 0; i < layout.Editors.Count; i++)
-                        {
-                            Clipboard.Text = data[i];
-                            if (!layout.Editors[i].CanPaste)
-                                return false;
-                        }
-                        return true;
-                    }
-                    catch
-                    {
-                        return false;
-                    }
-                    finally
-                    {
-                        Clipboard.Text = sb;
-                    }
-                }
-                return false;
+                return !string.IsNullOrEmpty(Clipboard.Text);
             }
             if (layout.Children.Any(x => x is LayoutElementsContainer))
             {
@@ -558,6 +535,15 @@ namespace FlaxEditor.CustomEditors.Editors
             _groupsPool.Add(groups);
         }
 
+        internal static GroupElement OnGroup(LayoutElementsContainer layout, string name)
+        {
+            // Add new group
+            var group = layout.Group(name);
+            group.Panel.Tag = group;
+            group.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
+            return group;
+        }
+
         internal static LayoutElementsContainer OnGroup(LayoutElementsContainer layout, EditorDisplayAttribute display)
         {
             if (display?.Group != null)
@@ -583,19 +569,19 @@ namespace FlaxEditor.CustomEditors.Editors
 
         internal static void OnReadOnlyProperty(LayoutElementsContainer itemLayout, int labelIndex = -1)
         {
-            PropertiesListElement list = null;
+            PropertiesList list = null;
             int firstChildControlIndex = 0;
             bool disableSingle = true;
             var control = itemLayout.Children[itemLayout.Children.Count - 1];
             if (control is GroupElement group && group.Children.Count > 0)
             {
-                list = group.Children[0] as PropertiesListElement;
+                list = (group.Children[0] as PropertiesListElement)?.Properties;
                 disableSingle = false; // Disable all nested editors
             }
             else if (control is PropertiesListElement list1 && labelIndex != -1)
             {
-                list = list1;
-                firstChildControlIndex = list.Labels[labelIndex].FirstChildControlIndex;
+                list = list1.Labels[labelIndex].FirstChildControlContainer ?? list1.Properties;
+                firstChildControlIndex = list1.Labels[labelIndex].FirstChildControlIndex;
             }
             else if (control?.Control != null)
             {
@@ -605,10 +591,10 @@ namespace FlaxEditor.CustomEditors.Editors
             if (list != null)
             {
                 // Disable controls added to the editor
-                var count = list.Properties.Children.Count;
+                var count = list.Children.Count;
                 for (int j = firstChildControlIndex; j < count; j++)
                 {
-                    var child = list.Properties.Children[j];
+                    var child = list.Children[j];
                     if (disableSingle && child is PropertyNameLabel)
                         break;
 
@@ -831,6 +817,15 @@ namespace FlaxEditor.CustomEditors.Editors
                 }
             }
             OnGroupsEnd();
+        }
+
+        /// <inheritdoc />
+        protected override void Deinitialize()
+        {
+            _visibleIfCaches = null;
+            _visibleIfPropertiesListsCache = null;
+
+            base.Deinitialize();
         }
 
         /// <inheritdoc />

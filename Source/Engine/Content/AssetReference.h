@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -93,7 +93,7 @@ public:
     /// <param name="asset">The asset to set.</param>
     AssetReference(T* asset)
     {
-        OnSet(asset);
+        OnSet((Asset*)asset);
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ public:
         OnSet(other._asset);
     }
 
-    AssetReference(AssetReference&& other)
+    AssetReference(AssetReference&& other) noexcept
     {
         OnSet(other._asset);
         other.OnSet(nullptr);
@@ -215,7 +215,7 @@ public:
     /// <param name="asset">The asset.</param>
     void Set(T* asset)
     {
-        OnSet(asset);
+        OnSet((Asset*)asset);
     }
 };
 

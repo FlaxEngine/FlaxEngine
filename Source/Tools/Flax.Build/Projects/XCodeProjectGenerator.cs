@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -42,7 +42,7 @@ namespace Flax.Build.Projects
         }
 
         /// <inheritdoc />
-        public override void GenerateProject(Project project, string solutionPath)
+        public override void GenerateProject(Project project, string solutionPath, bool isMainProject)
         {
         }
 

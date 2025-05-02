@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -240,6 +240,15 @@ namespace FlaxEditor.GUI
         /// <param name="index">The keyframe index.</param>
         /// <param name="value">The keyframe value.</param>
         public abstract void SetKeyframeValue(int index, object value);
+
+        /// <summary>
+        /// Sets the existing keyframe value (as boxed object).
+        /// </summary>
+        /// <param name="index">The keyframe index.</param>
+        /// <param name="value">The keyframe value.</param>
+        /// <param name="tangentIn">The keyframe 'In' tangent value (boxed).</param>
+        /// <param name="tangentOut">The keyframe 'Out' tangent value (boxed).</param>
+        public abstract void SetKeyframeValue(int index, object value, object tangentIn, object tangentOut);
 
         /// <summary>
         /// Gets the keyframe point (in keyframes space).

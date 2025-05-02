@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -52,14 +52,13 @@ namespace FlaxEditor.Windows
             contextMenu.AddSeparator();
 
             // Basic editing options
-
-            b = contextMenu.AddButton("Rename", inputOptions.Rename, Rename);
-            b.Enabled = isSingleActorSelected;
-
-            b = contextMenu.AddButton("Duplicate", inputOptions.Duplicate, Editor.SceneEditing.Duplicate);
+            var firstSelection = hasSthSelected ? Editor.SceneEditing.Selection[0] as ActorNode : null;
+            b = contextMenu.AddButton("Rename", inputOptions.Rename, RenameSelection);
             b.Enabled = hasSthSelected;
+            b = contextMenu.AddButton("Duplicate", inputOptions.Duplicate, Editor.SceneEditing.Duplicate);
+            b.Enabled = hasSthSelected && (firstSelection != null ? firstSelection.CanDuplicate : true);
 
-            if (isSingleActorSelected)
+            if (isSingleActorSelected && firstSelection?.Actor is not Scene)
             {
                 var convertMenu = contextMenu.AddChildMenu("Convert");
                 convertMenu.ContextMenu.AutoSort = true;
@@ -119,33 +118,34 @@ namespace FlaxEditor.Windows
                 }
             }
             b = contextMenu.AddButton("Delete", inputOptions.Delete, Editor.SceneEditing.Delete);
-            b.Enabled = hasSthSelected;
+            b.Enabled = hasSthSelected && (firstSelection != null ? firstSelection.CanDelete : true);
 
             contextMenu.AddSeparator();
 
             b = contextMenu.AddButton("Copy", inputOptions.Copy, Editor.SceneEditing.Copy);
+            b.Enabled = hasSthSelected && (firstSelection != null ? firstSelection.CanCopyPaste : true);
 
-            b.Enabled = hasSthSelected;
             contextMenu.AddButton("Paste", inputOptions.Paste, Editor.SceneEditing.Paste);
 
             b = contextMenu.AddButton("Cut", inputOptions.Cut, Editor.SceneEditing.Cut);
-            b.Enabled = canEditScene;
+            b.Enabled = canEditScene && hasSthSelected && (firstSelection != null ? firstSelection.CanCopyPaste : true);
 
             // Create option
 
             contextMenu.AddSeparator();
 
-            b = contextMenu.AddButton("Create parent for selected actors", Editor.SceneEditing.CreateParentForSelectedActors);
-            b.Enabled = canEditScene && hasSthSelected;
+            b = contextMenu.AddButton("Parent to new Actor", inputOptions.GroupSelectedActors, Editor.SceneEditing.CreateParentForSelectedActors);
+            b.Enabled = canEditScene && hasSthSelected && firstSelection?.Actor is not Scene;
 
             b = contextMenu.AddButton("Create Prefab", Editor.Prefabs.CreatePrefab);
             b.Enabled = isSingleActorSelected &&
-                        ((ActorNode)Editor.SceneEditing.Selection[0]).CanCreatePrefab &&
+                        (firstSelection != null ? firstSelection.CanCreatePrefab : false) &&
                         Editor.Windows.ContentWin.CurrentViewFolder.CanHaveAssets;
 
-            bool hasPrefabLink = canEditScene && isSingleActorSelected && (Editor.SceneEditing.Selection[0] as ActorNode).HasPrefabLink;
+            bool hasPrefabLink = canEditScene && isSingleActorSelected && (firstSelection != null ? firstSelection.HasPrefabLink : false);
             if (hasPrefabLink)
             {
+                contextMenu.AddButton("Open Prefab", () => Editor.Prefabs.OpenPrefab(firstSelection));
                 contextMenu.AddButton("Select Prefab", Editor.Prefabs.SelectPrefab);
                 contextMenu.AddButton("Break Prefab Link", Editor.Prefabs.BreakLinks);
             }

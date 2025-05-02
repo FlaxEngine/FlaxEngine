@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ManagedEditor.h"
 #include "Editor/Editor.h"
@@ -272,11 +272,13 @@ DEFINE_INTERNAL_CALL(MString*) EditorInternal_GetShaderAssetSourceCode(BinaryAss
     obj->GetChunkData(SHADER_FILE_CHUNK_SOURCE, data);
     auto source = data.Get<char>();
     auto sourceLength = data.Length();
+    if (sourceLength <= 0)
+        return MCore::String::GetEmpty();
     Encryption::DecryptBytes(data.Get(), data.Length());
     source[sourceLength - 1] = 0;
 
     // Get source and encrypt it back
-    const StringAnsiView srcData((const char*)data.Get(), data.Length());
+    const StringAnsiView srcData(source, sourceLength);
     const auto str = MUtils::ToString(srcData);
     Encryption::EncryptBytes(data.Get(), data.Length());
 
@@ -499,7 +501,8 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_CanSetToRoot(Prefab* prefab, Actor* ta
             return false;
         const ISerializable::DeserializeStream& newRootData = **newRootDataPtr;
         Guid prefabId, prefabObjectID;
-        if (JsonTools::GetGuidIfValid(prefabId, newRootData, "PrefabID") && JsonTools::GetGuidIfValid(prefabObjectID, newRootData, "PrefabObjectID"))
+        if (JsonTools::GetGuidIfValid(prefabId, newRootData, "PrefabID") && 
+            JsonTools::GetGuidIfValid(prefabObjectID, newRootData, "PrefabObjectID"))
         {
             const auto nestedPrefab = Content::Load<Prefab>(prefabId);
             if (nestedPrefab && nestedPrefab->GetRootObjectId() != prefabObjectID)
@@ -507,21 +510,6 @@ DEFINE_INTERNAL_CALL(bool) EditorInternal_CanSetToRoot(Prefab* prefab, Actor* ta
         }
     }
     return true;
-}
-
-DEFINE_INTERNAL_CALL(void) EditorInternal_GetPrefabNestedObject(Guid* prefabId, Guid* prefabObjectId, Guid* outPrefabId, Guid* outPrefabObjectId)
-{
-    *outPrefabId = Guid::Empty;
-    *outPrefabObjectId = Guid::Empty;
-    const auto prefab = Content::Load<Prefab>(*prefabId);
-    if (!prefab)
-        return;
-    const ISerializable::DeserializeStream** prefabObjectDataPtr = prefab->ObjectsDataCache.TryGet(*prefabObjectId);
-    if (!prefabObjectDataPtr)
-        return;
-    const ISerializable::DeserializeStream& prefabObjectData = **prefabObjectDataPtr;
-    JsonTools::GetGuidIfValid(*outPrefabId, prefabObjectData, "PrefabID");
-    JsonTools::GetGuidIfValid(*outPrefabObjectId, prefabObjectData, "PrefabObjectID");
 }
 
 DEFINE_INTERNAL_CALL(float) EditorInternal_GetAnimationTime(AnimatedModel* animatedModel)
@@ -601,4 +589,15 @@ bool ManagedEditor::CreateAsset(const String& tag, String outputPath)
 {
     FileSystem::NormalizePath(outputPath);
     return AssetsImportingManager::Create(tag, outputPath);
+}
+
+Array<Guid> ManagedEditor::GetAssetReferences(const Guid& assetId)
+{
+    Array<Guid> result;
+    if (auto* asset = Content::Load<Asset>(assetId))
+    {
+        Array<String> files;
+        asset->GetReferences(result, files);
+    }
+    return result;
 }

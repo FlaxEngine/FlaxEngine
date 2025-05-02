@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "MaterialBase.h"
 #include "MaterialInstance.h"
@@ -16,6 +16,8 @@ MaterialBase::MaterialBase(const SpawnParams& params, const AssetInfo* info)
 
 Variant MaterialBase::GetParameterValue(const StringView& name)
 {
+    if (!IsLoaded() && WaitForLoaded())
+        return Variant::Null;
     const auto param = Params.Get(name);
     if (param)
     {
@@ -27,6 +29,8 @@ Variant MaterialBase::GetParameterValue(const StringView& name)
 
 void MaterialBase::SetParameterValue(const StringView& name, const Variant& value, bool warnIfMissing)
 {
+    if (!IsLoaded() && WaitForLoaded())
+        return;
     const auto param = Params.Get(name);
     if (param)
     {
@@ -35,7 +39,7 @@ void MaterialBase::SetParameterValue(const StringView& name, const Variant& valu
     }
     else if (warnIfMissing)
     {
-        LOG(Warning, "Missing material parameter '{0}' in material {1}", String(name), ToString());
+        LOG(Warning, "Missing material parameter '{0}' in material {1}", name, ToString());
     }
 }
 
@@ -45,3 +49,13 @@ MaterialInstance* MaterialBase::CreateVirtualInstance()
     instance->SetBaseMaterial(this);
     return instance;
 }
+
+#if USE_EDITOR
+
+void MaterialBase::GetReferences(Array<Guid>& assets, Array<String>& files) const
+{
+    BinaryAsset::GetReferences(assets, files);
+    Params.GetReferences(assets);
+}
+
+#endif

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -31,11 +31,29 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected SurfaceRootControl _rootControl;
 
+        /// <summary>
+        /// Is grid snapping enabled for this surface?
+        /// </summary>
+        public bool GridSnappingEnabled
+        {
+            get => _gridSnappingEnabled;
+            set
+            {
+                _gridSnappingEnabled = value;
+                _gridRoundingDelta = Float2.Zero;
+            }
+        }
+
+        /// <summary>
+        /// The size of the snapping grid.
+        /// </summary>
+        public float GridSnappingSize = 20f;
+
         private float _targetScale = 1.0f;
         private float _moveViewWithMouseDragSpeed = 1.0f;
         private bool _canEdit = true;
         private readonly bool _supportsDebugging;
-        private bool _isReleasing;
+        private bool _isReleasing, _gridSnappingEnabled;
         private VisjectCM _activeVisjectCM;
         private GroupArchetype _customNodesGroup;
         private List<NodeArchetype> _customNodes;
@@ -397,6 +415,15 @@ namespace FlaxEditor.Surface
             // Init drag handlers
             DragHandlers.Add(_dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem));
             DragHandlers.Add(_dragParameters = new DragNames<DragDropEventArgs>(SurfaceParameter.DragPrefix, ValidateDragParameter));
+
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+        }
+
+        private void OnScriptsReloadBegin()
+        {
+            _activeVisjectCM = null;
+            _cmPrimaryMenu?.Dispose();
+            _cmPrimaryMenu = null;
         }
 
         /// <summary>
@@ -536,6 +563,11 @@ namespace FlaxEditor.Surface
         public virtual bool CanSetParameters => false;
 
         /// <summary>
+        /// True of the context menu should make use of a description panel drawn at the bottom of the menu
+        /// </summary>
+        public virtual bool UseContextMenuDescriptionPanel => false;
+
+        /// <summary>
         /// Gets a value indicating whether surface supports/allows live previewing graph modifications due to value sliders and color pickers. True by default but disabled for shader surfaces that generate and compile shader source at flight.
         /// </summary>
         public virtual bool CanLivePreviewValueChanges => true;
@@ -625,6 +657,11 @@ namespace FlaxEditor.Surface
             }
             if (selectionChanged)
                 SelectionChanged?.Invoke();
+        }
+
+        internal void ToggleGridSnapping()
+        {
+            GridSnappingEnabled = !GridSnappingEnabled;
         }
 
         /// <summary>
@@ -994,6 +1031,8 @@ namespace FlaxEditor.Surface
             // Cleanup
             _activeVisjectCM = null;
             _cmPrimaryMenu?.Dispose();
+
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
 
             base.OnDestroy();
         }

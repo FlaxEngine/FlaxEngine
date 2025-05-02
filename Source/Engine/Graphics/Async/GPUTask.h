@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -19,7 +19,7 @@ public:
     /// <summary>
     /// Describes GPU work type
     /// </summary>
-    DECLARE_ENUM_4(Type, Custom, CopyResource, UploadTexture, UploadBuffer);
+    DECLARE_ENUM_EX_4(Type, byte, 0, Custom, CopyResource, UploadTexture, UploadBuffer);
 
     /// <summary>
     /// Describes GPU work result value
@@ -32,13 +32,15 @@ private:
     /// </summary>
     Type _type;
 
+    byte _syncLatency;
+
     /// <summary>
     /// Synchronization point when async task has been done
     /// </summary>
     GPUSyncPoint _syncPoint;
 
     /// <summary>
-    /// The context that performed this task, it's should synchronize it.
+    /// The context that performed this task, it should synchronize it.
     /// </summary>
     GPUTasksContext* _context;
 
@@ -47,8 +49,10 @@ protected:
     /// Initializes a new instance of the <see cref="GPUTask"/> class.
     /// </summary>
     /// <param name="type">The type.</param>
-    GPUTask(const Type type)
+    /// <param name="syncLatency">Amount of frames until async operation is synced with GPU.</param>
+    GPUTask(const Type type, byte syncLatency = GPU_ASYNC_LATENCY)
         : _type(type)
+        , _syncLatency(syncLatency)
         , _syncPoint(0)
         , _context(nullptr)
     {
@@ -58,26 +62,31 @@ public:
     /// <summary>
     /// Gets a task type.
     /// </summary>
-    /// <returns>The type.</returns>
     FORCE_INLINE Type GetType() const
     {
         return _type;
     }
 
     /// <summary>
-    /// Gets work finish synchronization point
+    /// Gets work synchronization start point
     /// </summary>
-    /// <returns>Finish task sync point</returns>
-    FORCE_INLINE GPUSyncPoint GetSyncPoint() const
+    FORCE_INLINE GPUSyncPoint GetSyncStart() const
     {
         return _syncPoint;
+    }
+
+    /// <summary>
+    /// Gets work finish synchronization point
+    /// </summary>
+    FORCE_INLINE GPUSyncPoint GetSyncPoint() const
+    {
+        return _syncPoint + _syncLatency;
     }
 
 public:
     /// <summary>
     /// Checks if operation is syncing
     /// </summary>
-    /// <returns>True if operation is syncing, otherwise false</returns>
     FORCE_INLINE bool IsSyncing() const
     {
         return IsRunning() && _syncPoint != 0;
@@ -139,24 +148,5 @@ protected:
         return true;
     }
 
-    void OnCancel() override
-    {
-        // Check if task is waiting for sync (very likely situation)
-        if (IsSyncing())
-        {
-            // Task has been performed but is waiting for a CPU/GPU sync so we have to cancel that
-            ASSERT(_context != nullptr);
-            _context->OnCancelSync(this);
-            _context = nullptr;
-            SetState(TaskState::Canceled);
-        }
-        else
-        {
-            // Maybe we could also handle cancel event during running but not yet syncing
-            ASSERT(!IsRunning());
-        }
-
-        // Base
-        Task::OnCancel();
-    }
+    void OnCancel() override;
 };

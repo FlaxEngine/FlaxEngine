@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -26,7 +26,7 @@ namespace Flax.Build.Projects.VisualStudio
         public override TargetType? Type => TargetType.DotNet;
 
         /// <inheritdoc />
-        public override void GenerateProject(Project project, string solutionPath)
+        public override void GenerateProject(Project project, string solutionPath, bool isMainProject)
         {
             var csProjectFileContent = new StringBuilder();
 
@@ -125,6 +125,13 @@ namespace Flax.Build.Projects.VisualStudio
                 csProjectFileContent.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
                 if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                     csProjectFileContent.AppendLine("    <NoWarn>1591</NoWarn>");
+                if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreSpecificWarnings.Any())
+                {
+                    foreach (var warningString in configuration.TargetBuildOptions.ScriptingAPI.IgnoreSpecificWarnings)
+                    {
+                        csProjectFileContent.AppendLine($"    <NoWarn>{warningString}</NoWarn>");
+                    }
+                }
                 csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.BaseName));
                 csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
                 csProjectFileContent.AppendLine("  </PropertyGroup>");
@@ -156,6 +163,13 @@ namespace Flax.Build.Projects.VisualStudio
                 csProjectFileContent.AppendLine("    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>");
                 if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreMissingDocumentationWarnings)
                     csProjectFileContent.AppendLine("    <NoWarn>1591</NoWarn>");
+                if (configuration.TargetBuildOptions.ScriptingAPI.IgnoreSpecificWarnings.Any())
+                {
+                    foreach (var warningString in configuration.TargetBuildOptions.ScriptingAPI.IgnoreSpecificWarnings)
+                    {
+                        csProjectFileContent.AppendLine($"    <NoWarn>{warningString}</NoWarn>");
+                    }
+                }
                 csProjectFileContent.AppendLine(string.Format("    <DocumentationFile>{0}\\{1}.CSharp.xml</DocumentationFile>", outputPath, project.BaseName));
                 csProjectFileContent.AppendLine("    <UseVSHostingProcess>true</UseVSHostingProcess>");
                 csProjectFileContent.AppendLine("  </PropertyGroup>");

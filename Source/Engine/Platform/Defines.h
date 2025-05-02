@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -186,8 +186,8 @@ API_ENUM() enum class ArchitectureType
 #ifndef PLATFORM_ARCH_ARM64
 #define PLATFORM_ARCH_ARM64 0
 #endif
-#ifndef PLATFORM_WCHAR_IS_CHAR16
-#define PLATFORM_WCHAR_IS_CHAR16 0
+#ifndef PLATFORM_TEXT_IS_CHAR16
+#define PLATFORM_TEXT_IS_CHAR16 0
 #endif
 #ifndef PLATFORM_DEBUG_BREAK
 #define PLATFORM_DEBUG_BREAK
@@ -228,6 +228,7 @@ API_ENUM() enum class ArchitectureType
 #if defined(_M_PPC) || defined(__CELLOS_LV2__)
 #define PLATFORM_SIMD_VMX 1
 #endif
+#define PLATFORM_SIMD (PLATFORM_SIMD_SSE2 || PLATFORM_SIMD_SSE3 || PLATFORM_SIMD_SSE4 || PLATFORM_SIMD_NEON || PLATFORM_SIMD_VMX)
 
 // Unicode text macro
 #if !defined(TEXT)

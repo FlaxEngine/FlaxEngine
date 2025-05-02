@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -44,6 +44,36 @@ public:
     /// </summary>
     static Delegate<> ScriptsReloaded;
 
+public:
+    /// <summary>
+    /// Occurs on scripting update.
+    /// </summary>
+    static Delegate<> Update;
+
+    /// <summary>
+    /// Occurs on scripting late update.
+    /// </summary>
+    static Delegate<> LateUpdate;
+
+    /// <summary>
+    /// Occurs on scripting fixed update.
+    /// </summary>
+    static Delegate<> FixedUpdate;
+
+    /// <summary>
+    /// Occurs on scripting late fixed update.
+    /// </summary>
+    static Delegate<> LateFixedUpdate;
+
+    /// <summary>
+    /// Occurs on scripting draw update. Called during frame rendering and can be used to invoke custom rendering with GPUDevice.
+    /// </summary>
+    static Delegate<> Draw;
+
+    /// <summary>
+    /// Occurs when scripting engine is disposing. Engine is during closing and some services may be unavailable (eg. loading scenes). This may be called after the engine fatal error event.
+    /// </summary>
+    static Delegate<> Exit;
 public:
 
     /// <summary>

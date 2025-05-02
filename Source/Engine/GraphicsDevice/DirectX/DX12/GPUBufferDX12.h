@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -46,10 +46,12 @@ public:
     /// </summary>
     /// <param name="device">The graphics device.</param>
     /// <param name="owner">The resource owner.</param>
-    void Init(GPUDeviceDX12* device, ResourceOwnerDX12* owner)
+    /// <param name="parent">The parent resource.</param>
+    void Init(GPUDeviceDX12* device, ResourceOwnerDX12* owner, GPUResource* parent)
     {
         _device = device;
         _owner = owner;
+        _parent = parent;
     }
 
     /// <summary>

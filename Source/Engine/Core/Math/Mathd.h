@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -165,38 +165,31 @@ namespace Math
         return TruncToInt(ceil(value));
     }
 
-    // Performs smooth (cubic Hermite) interpolation between 0 and 1
-    // @param amount Value between 0 and 1 indicating interpolation amount
+    // Performs smooth (cubic Hermite) interpolation between 0 and 1.
     static double SmoothStep(double amount)
     {
         return amount <= 0. ? 0. : amount >= 1. ? 1. : amount * amount * (3. - 2. * amount);
     }
 
-    // Performs a smooth(er) interpolation between 0 and 1 with 1st and 2nd order derivatives of zero at endpoints
-    // @param amount Value between 0 and 1 indicating interpolation amount
+    // Performs a smooth(er) interpolation between 0 and 1 with 1st and 2nd order derivatives of zero at endpoints.
     static double SmootherStep(double amount)
     {
         return amount <= 0. ? 0. : amount >= 1. ? 1. : amount * amount * amount * (amount * (amount * 6. - 15.) + 10.);
     }
 
-    // Determines whether the specified value is close to zero (0.0)
-    // @param a The floating value
-    // @returns True if the specified value is close to zero (0.0). otherwise false
+    // Determines whether the specified value is close to zero (0.0).
     inline bool IsZero(double a)
     {
         return Abs(a) < ZeroTolerance;
     }
 
-    // Determines whether the specified value is close to one (1.0f)
-    // @param a The floating value
-    // @returns True if the specified value is close to one (1.0f). otherwise false
+    // Determines whether the specified value is close to one (1.0f).
     inline bool IsOne(double a)
     {
         return IsZero(a - 1.);
     }
 
-    // Returns a value indicating the sign of a number
-    // @returns A number that indicates the sign of value
+    // Returns a value indicating the sign of a number.
     inline double Sign(double v)
     {
         return v > 0. ? 1. : v < 0. ? -1. : 0.;

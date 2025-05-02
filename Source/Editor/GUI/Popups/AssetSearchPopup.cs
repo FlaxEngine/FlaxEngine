@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content;
@@ -38,7 +38,7 @@ namespace FlaxEditor.GUI
                 ContentItem = item;
                 ContentItem.AddReference(this);
 
-                Name = item.ShortName;
+                OnItemRenamed(item);
                 TooltipText = item.Path;
 
                 Height = IconSize + 4;
@@ -82,7 +82,9 @@ namespace FlaxEditor.GUI
             /// <inheritdoc />
             public void OnItemRenamed(ContentItem item)
             {
-                Name = ContentItem.ShortName;
+                Name = item.ShortName;
+                if (item is ScriptItem)
+                    Name = item.FileName; // Show extension for scripts (esp. for .h and .cpp files of the same name)
             }
 
             /// <inheritdoc />

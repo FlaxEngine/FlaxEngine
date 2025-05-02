@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -92,3 +92,11 @@ extern "C" FLAXENGINE_API void mono_add_internal_call(const char* name, const vo
 #define INTERNAL_CALL_CHECK_EXP_RETURN(expression, defaultValue)
 
 #endif
+
+template<typename T>
+T& InternalGetReference(T* obj)
+{
+    if (!obj)
+        DebugLog::ThrowNullReference();
+    return *obj;
+}

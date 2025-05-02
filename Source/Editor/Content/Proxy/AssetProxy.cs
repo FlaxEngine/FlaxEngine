@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content.Thumbnails;
@@ -30,9 +30,7 @@ namespace FlaxEditor.Content
         /// <summary>
         /// Determines whether [is virtual proxy].
         /// </summary>
-        /// <returns>
-        ///   <c>true</c> if [is virtual proxy]; otherwise, <c>false</c>.
-        /// </returns>
+        /// <returns><c>true</c> if [is virtual proxy]; otherwise, <c>false</c>.</returns>
         public bool IsVirtualProxy()
         {
             return IsVirtual && CanExport == false;

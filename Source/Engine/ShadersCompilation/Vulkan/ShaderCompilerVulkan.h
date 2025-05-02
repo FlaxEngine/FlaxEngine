@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,11 +12,9 @@
 class ShaderCompilerVulkan : public ShaderCompiler
 {
 private:
-
     Array<char> _funcNameDefineBuffer;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="ShaderCompilerVulkan"/> class.
     /// </summary>
@@ -29,7 +27,6 @@ public:
     ~ShaderCompilerVulkan();
 
 protected:
-
     // [ShaderCompiler]
     bool CompileShader(ShaderFunctionMeta& meta, WritePermutationData customDataWrite = nullptr) override;
     bool OnCompileBegin() override;

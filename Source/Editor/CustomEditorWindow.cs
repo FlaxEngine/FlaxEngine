@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI.Docking;
@@ -33,8 +33,8 @@ namespace FlaxEditor
             private void Set(CustomEditorWindow value)
             {
                 _customEditor = value;
-                _presenter.Select(value);
                 _presenter.OverrideEditor = value;
+                _presenter.Select(value);
             }
 
             /// <inheritdoc />

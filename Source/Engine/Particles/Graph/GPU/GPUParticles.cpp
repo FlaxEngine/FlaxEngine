@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_GPU_PARTICLES
 
@@ -13,7 +13,7 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 
-PACK_STRUCT(struct GPUParticlesData {
+GPU_CB_STRUCT(GPUParticlesData {
     Matrix ViewProjectionMatrix;
     Matrix InvViewProjectionMatrix;
     Matrix InvViewMatrix;
@@ -66,12 +66,14 @@ bool GPUParticles::Init(ParticleEmitter* owner, MemoryReadStream& shaderCacheStr
         LOG(Warning, "Missing valid GPU particles constant buffer.");
         return true;
     }
-    if (cb0->GetSize() < sizeof(GPUParticlesData))
+    const int32 cbSize = cb0->GetSize();
+    if (cbSize < sizeof(GPUParticlesData))
     {
-        LOG(Warning, "Invalid size GPU particles constant buffer. required {0} bytes but got {1}", sizeof(GPUParticlesData), cb0->GetSize());
+        LOG(Warning, "Invalid size GPU particles constant buffer. required {0} bytes but got {1}", sizeof(GPUParticlesData), cbSize);
         return true;
     }
-    _cbData.Resize(cb0->GetSize());
+    _cbData.Resize(cbSize);
+    Platform::MemoryClear(_cbData.Get(), cbSize);
 
     // Load material parameters
     if (_params.Load(materialParamsStream))
@@ -164,7 +166,7 @@ void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, Partic
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
     bindMeta.Context = context;
-    bindMeta.Constants = hasCB ? Span<byte>(_cbData.Get() + sizeof(GPUParticlesData), _cbData.Count() - sizeof(GPUParticlesData)) : Span<byte>(nullptr, 0);
+    bindMeta.Constants = hasCB ? ToSpan(_cbData).Slice(sizeof(GPUParticlesData)) : Span<byte>(nullptr, 0);
     bindMeta.Input = nullptr;
     if (viewTask)
     {

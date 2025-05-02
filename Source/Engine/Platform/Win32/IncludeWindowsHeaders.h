@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -9,20 +9,13 @@
 #define WINVER 0x0601
 #endif
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0601
+#define _WIN32_WINNT WINVER
 #endif
 #ifndef _WIN32_WINDOWS
-#define _WIN32_WINDOWS 0x0601
+#define _WIN32_WINDOWS WINVER
 #endif
 
-// Override Win API for UWP
-#if PLATFORM_UWP
-#define WINVER 0x0A00
-#define _WIN32_WINNT 0x0A00
-#define _WIN32_WINDOWS 0x0A00
-#endif
-
-// Override for Xbox Scarlett
+// Override for Xbox
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
 #define NOBITMAP
 #define NOMCX

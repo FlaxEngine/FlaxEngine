@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -256,7 +256,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a value indicting whether this instance is normalized.
         /// </summary>
-        public bool IsNormalized => Mathr.IsOne(X * X + Y * Y + Z * Z);
+        public bool IsNormalized => Mathr.Abs((X * X + Y * Y + Z * Z) - 1.0f) < 1e-4f;
 
         /// <summary>
         /// Gets the normalized vector. Returned vector has length equal 1.
@@ -1345,7 +1345,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Calculates the angle (in degrees) between <paramref name="from"/> and <paramref name="to"/>. This is always the smallest value.
+        /// Calculates the angle (in degrees) between <paramref name="from"/> and <paramref name="to"/> vectors. This is always the smallest value.
         /// </summary>
         /// <param name="from">The first vector.</param>
         /// <param name="to">The second vector.</param>
@@ -1356,6 +1356,21 @@ namespace FlaxEngine
             if (Mathr.Abs(dot) > (1.0f - Mathr.Epsilon))
                 return dot > 0.0f ? 0.0f : 180.0f;
             return (Real)Math.Acos(dot) * Mathr.RadiansToDegrees;
+        }
+
+        /// <summary>
+        /// Calculates the signed angle (in degrees) between <paramref name="from"/> and <paramref name="to"/> vectors. This is always the smallest value. The sign of the result depends on: the order of input vectors, and the direction of the <paramref name="axis"/> vector.
+        /// </summary>
+        /// <param name="from">The first vector.</param>
+        /// <param name="to">The second vector.</param>
+        /// <param name="axis">The axis around which the vectors are rotated.</param>
+        /// <returns>The angle (in degrees).</returns>
+        public static Real SignedAngle(Vector3 from, Vector3 to, Vector3 axis)
+        {
+            Real angle = Angle(from, to);
+            Vector3 cross = Cross(from, to);
+            Real sign = Mathr.Sign(axis.X * cross.X + axis.Y * cross.Y + axis.Z * cross.Z);
+            return angle * sign;
         }
 
         /// <summary>
@@ -1672,7 +1687,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Snaps the input position into the grid.
+        /// Snaps the input position onto the grid.
         /// </summary>
         /// <param name="pos">The position to snap.</param>
         /// <param name="gridSize">The size of the grid.</param>
@@ -1683,6 +1698,44 @@ namespace FlaxEngine
             pos.Y = Mathr.Ceil((pos.Y - (gridSize.Y * 0.5f)) / gridSize.Y) * gridSize.Y;
             pos.Z = Mathr.Ceil((pos.Z - (gridSize.Z * 0.5f)) / gridSize.Z) * gridSize.Z;
             return pos;
+        }
+
+        /// <summary>
+        /// Snaps the <paramref name="point"/> onto the rotated grid.<br/>
+        /// For world aligned grid snapping use <b><see cref="SnapToGrid(FlaxEngine.Vector3,FlaxEngine.Vector3)"/></b> instead.
+        /// <example><para><b>Example code:</b></para>
+        /// <code>
+        /// <see langword="public" /> <see langword="class" /> SnapToGridExample : <see cref="Script"/><br/>
+        ///     <see langword="public" /> <see cref="Vector3"/> GridSize = <see cref="Vector3.One"/> * 20.0f;<br/>
+        ///     <see langword="public" /> <see cref="Actor"/> RayOrigin;<br/>
+        ///     <see langword="public" /> <see cref="Actor"/> SomeObject;<br/>
+        ///     <see langword="public" /> <see langword="override" /> <see langword="void" /> <see cref="Script.OnFixedUpdate"/><br/>
+        ///     {<br/>
+        ///         <see langword="if" /> (<see cref="Physics"/>.RayCast(RayOrigin.Position, RayOrigin.Transform.Forward, out <see cref="RayCastHit"/> hit)
+        ///         {<br/>
+        ///             <see cref="Vector3"/> position = hit.Collider.Position;
+        ///             <see cref="FlaxEngine.Transform"/> transform = hit.Collider.Transform;
+        ///             <see cref="Vector3"/> point = hit.Point;
+        ///             <see cref="Vector3"/> normal = hit.Normal;
+        ///             //Get rotation from normal relative to collider transform
+        ///             <see cref="Quaternion"/> rot = <see cref="Quaternion"/>.GetRotationFromNormal(normal, transform);
+        ///             point = <see cref="Vector3"/>.SnapToGrid(point, GridSize, rot, position);
+        ///             SomeObject.Position = point;
+        ///         }
+        ///     }
+        /// }
+        /// </code>
+        /// </example>
+        /// </summary>
+        /// <param name="point">The position to snap.</param>
+        /// <param name="gridSize">The size of the grid.</param>
+        /// <param name="gridOrientation">The rotation of the grid.</param>
+        /// <param name="gridOrigin">The center point of the grid.</param>
+        /// <param name="offset">The local position offset applied to the snapped position before grid rotation.</param>
+        /// <returns>The position snapped to the grid.</returns>
+        public static Vector3 SnapToGrid(Vector3 point, Vector3 gridSize, Quaternion gridOrientation, Vector3 gridOrigin, Vector3 offset)
+        {
+            return ((SnapToGrid(point - gridOrigin, gridSize) * gridOrientation.Conjugated() + offset) * gridOrientation) + gridOrigin;
         }
 
         /// <summary>
@@ -1973,7 +2026,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Vector3" /> to <see cref="Float3" />.
+        /// Performs an implicit conversion from <see cref="Vector3" /> to <see cref="Float3" />.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
@@ -1983,13 +2036,23 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs an explicit conversion from <see cref="Vector3" /> to <see cref="Double3" />.
+        /// Performs an implicit conversion from <see cref="Vector3" /> to <see cref="Double3" />.
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The result of the conversion.</returns>
         public static implicit operator Double3(Vector3 value)
         {
             return new Double3(value.X, value.Y, value.Z);
+        }
+
+        /// <summary>
+        /// Performs an explicit conversion from <see cref="Vector3" /> to <see cref="Int3" />.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The result of the conversion.</returns>
+        public static explicit operator Int3(Vector3 value)
+        {
+            return new Int3((int)value.X, (int)value.Y, (int)value.Z);
         }
 
         /// <summary>

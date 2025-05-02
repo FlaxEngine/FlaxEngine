@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -306,7 +306,7 @@ API_CLASS(Sealed) class FLAXENGINE_API BehaviorTreeLoopDecorator : public Behavi
     API_AUTO_SERIALIZATION();
 
     // Is the loop infinite (until failed)?
-    API_FIELD(Attributes = "EditorOrder(10)")
+    API_FIELD(Attributes="EditorOrder(10)")
     bool InfiniteLoop = false;
 
     // Amount of times to execute the node. Unused if LoopCountSelector is used or if InfiniteLoop is used.

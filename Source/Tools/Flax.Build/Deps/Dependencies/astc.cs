@@ -1,5 +1,6 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using System.IO;
 using Flax.Build;
 
@@ -37,7 +38,6 @@ namespace Flax.Deps.Dependencies
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
-            var buildDir = Path.Combine(root, "build");
 
             // Get the source
             var commit = "aeece2f609db959d1c5e43e4f00bd177ea130575"; // 4.6.1
@@ -45,13 +45,16 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
-                    foreach (var architecture in new []{ TargetArchitecture.x64 })
+
+                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
-                        var isa = "-DASTCENC_ISA_SSE2=ON";
-                        var lib = "astcenc-sse2-static.lib";
+                        string buildDir = Path.Combine(root, "build-" + architecture.ToString());
+                        var isa = architecture == TargetArchitecture.ARM64 ? "-DASTCENC_ISA_NEON=ON" : "-DASTCENC_ISA_SSE2=ON";
+                        var lib = architecture == TargetArchitecture.ARM64 ? "astcenc-neon-static.lib" : "astcenc-sse2-static.lib";
                         SetupDirectory(buildDir, true);
                         RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release -DASTCENC_CLI=OFF -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDLL " + isa);
                         BuildCmake(buildDir);
@@ -62,6 +65,7 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.Mac:
                     foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
+                        string buildDir = Path.Combine(root, "build-" + architecture.ToString());
                         var isa = architecture == TargetArchitecture.ARM64 ? "-DASTCENC_ISA_NEON=ON" : "-DASTCENC_ISA_SSE2=ON";
                         var lib = architecture == TargetArchitecture.ARM64 ? "libastcenc-neon-static.a" : "libastcenc-sse2-static.a";
                         SetupDirectory(buildDir, true);

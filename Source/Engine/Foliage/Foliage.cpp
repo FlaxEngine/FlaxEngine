@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Foliage.h"
 #include "FoliageType.h"
@@ -7,6 +7,7 @@
 #include "Engine/Core/Random.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Content/Deprecated.h"
 #if !FOLIAGE_USE_SINGLE_QUAD_TREE
 #include "Engine/Threading/JobSystem.h"
 #if FOLIAGE_USE_DRAW_CALLS_BATCHING
@@ -116,6 +117,7 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
             ASSERT_LOW_LAYER(key.Mat);
             e->DrawCall.Material = key.Mat;
             e->DrawCall.Surface.Lightmap = EnumHasAnyFlags(_staticFlags, StaticFlags::Lightmap) && _scene ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
+            e->DrawCall.Surface.GeometrySize = key.Geo->GetBox().GetSize();
         }
 
         // Add instance to the draw batch
@@ -124,22 +126,18 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
         const Transform transform = _transform.LocalToWorld(instance.Transform);
         const Float3 translation = transform.Translation - renderContext.View.Origin;
         Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
-        instanceData.InstanceOrigin = Float3(world.M41, world.M42, world.M43);
-        instanceData.PerInstanceRandom = instance.Random;
-        instanceData.InstanceTransform1 = Float3(world.M11, world.M12, world.M13);
-        instanceData.LODDitherFactor = lodDitherFactor;
-        instanceData.InstanceTransform2 = Float3(world.M21, world.M22, world.M23);
-        instanceData.InstanceTransform3 = Float3(world.M31, world.M32, world.M33);
-        instanceData.InstanceLightmapArea = Half4(instance.Lightmap.UVsArea);
+        constexpr float worldDeterminantSign = 1.0f;
+        instanceData.Store(world, world, instance.Lightmap.UVsArea, drawCall.DrawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
     }
 }
 
 void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, const FoliageType& type, DrawCallsList* drawCallsLists, BatchedDrawCalls& result) const
 {
     // Skip clusters that around too far from view
-    const Vector3 viewOrigin = renderContext.View.Origin;
-    if (Float3::Distance(renderContext.View.Position, cluster->TotalBoundsSphere.Center - viewOrigin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
+    const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
+    if (Float3::Distance(lodView->Position, cluster->TotalBoundsSphere.Center - lodView->Origin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
         return;
+    const Vector3 viewOrigin = renderContext.View.Origin;
 
     //DebugDraw::DrawBox(cluster->Bounds, Color::Red);
 
@@ -172,7 +170,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
             auto& instance = *cluster->Instances.Get()[i];
             BoundingSphere sphere = instance.Bounds;
             sphere.Center -= viewOrigin;
-            if (Float3::Distance(renderContext.View.Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
+            if (Float3::Distance(lodView->Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
                 renderContext.View.CullingFrustum.Intersects(sphere))
             {
                 const auto modelFrame = instance.DrawState.PrevFrame + 1;
@@ -266,9 +264,10 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
 void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster, Mesh::DrawInfo& draw)
 {
     // Skip clusters that around too far from view
-    const Vector3 viewOrigin = renderContext.View.Origin;
-    if (Float3::Distance(renderContext.View.Position, cluster->TotalBoundsSphere.Center - viewOrigin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
+    const auto lodView = (renderContext.LodProxyView ? renderContext.LodProxyView : &renderContext.View);
+    if (Float3::Distance(lodView->Position, cluster->TotalBoundsSphere.Center - lodView->Origin) - (float)cluster->TotalBoundsSphere.Radius > cluster->MaxCullDistance)
         return;
+    const Vector3 viewOrigin = renderContext.View.Origin;
 
     //DebugDraw::DrawBox(cluster->Bounds, Color::Red);
 
@@ -304,7 +303,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
 
             // Check if can draw this instance
             if (type._canDraw &&
-                Float3::Distance(renderContext.View.Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
+                Float3::Distance(lodView->Position, sphere.Center) - (float)sphere.Radius < instance.CullDistance &&
                 renderContext.View.CullingFrustum.Intersects(sphere))
             {
                 Matrix world;
@@ -456,6 +455,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
                 continue;
 
             drawCall.DrawCall.Material = material;
+            drawCall.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
         }
     }
 
@@ -479,19 +479,11 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
         mesh.GetDrawCallGeometry(batch.DrawCall);
         batch.DrawCall.InstanceCount = 1;
         auto& firstInstance = batch.Instances[0];
-        batch.DrawCall.ObjectPosition = firstInstance.InstanceOrigin;
-        batch.DrawCall.PerInstanceRandom = firstInstance.PerInstanceRandom;
-        auto lightmapArea = firstInstance.InstanceLightmapArea.ToFloat4();
-        batch.DrawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
-        batch.DrawCall.Surface.LODDitherFactor = firstInstance.LODDitherFactor;
-        batch.DrawCall.World.SetRow1(Float4(firstInstance.InstanceTransform1, 0.0f));
-        batch.DrawCall.World.SetRow2(Float4(firstInstance.InstanceTransform2, 0.0f));
-        batch.DrawCall.World.SetRow3(Float4(firstInstance.InstanceTransform3, 0.0f));
-        batch.DrawCall.World.SetRow4(Float4(firstInstance.InstanceOrigin, 1.0f));
-        batch.DrawCall.Surface.PrevWorld = batch.DrawCall.World;
-        batch.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
-        batch.DrawCall.Surface.Skinning = nullptr;
-        batch.DrawCall.WorldDeterminantSign = 1;
+        firstInstance.Load(batch.DrawCall);
+#if USE_EDITOR
+        if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
+            batch.DrawCall.Surface.LODDitherFactor = type.ScaleInLightmap; // See LightmapUVsDensityMaterialShader
+#endif
 
         if (EnumHasAnyFlags(drawModes, DrawPass::Forward))
         {
@@ -500,15 +492,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
             for (int32 j = 0; j < batch.Instances.Count(); j++)
             {
                 auto& instance = batch.Instances[j];
-                drawCall.ObjectPosition = instance.InstanceOrigin;
-                drawCall.PerInstanceRandom = instance.PerInstanceRandom;
-                lightmapArea = instance.InstanceLightmapArea.ToFloat4();
-                drawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
-                drawCall.Surface.LODDitherFactor = instance.LODDitherFactor;
-                drawCall.World.SetRow1(Float4(instance.InstanceTransform1, 0.0f));
-                drawCall.World.SetRow2(Float4(instance.InstanceTransform2, 0.0f));
-                drawCall.World.SetRow3(Float4(instance.InstanceTransform3, 0.0f));
-                drawCall.World.SetRow4(Float4(instance.InstanceOrigin, 1.0f));
+                instance.Load(drawCall);
                 const int32 drawCallIndex = renderContext.List->DrawCalls.Add(drawCall);
                 renderContext.List->DrawCallsLists[(int32)DrawCallsListType::Forward].Indices.Add(drawCallIndex);
             }
@@ -792,7 +776,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
         }
         BoundingSphere::FromBox(_box, _sphere);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
     }
     {
         PROFILE_CPU_NAMED("Create Clusters");
@@ -929,7 +913,7 @@ void Foliage::RebuildClusters()
         _box = totalBounds;
         BoundingSphere::FromBox(_box, _sphere);
         if (_sceneRenderingKey != -1)
-            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+            GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Bounds);
     }
 
     // Insert all instances to the clusters
@@ -1001,6 +985,12 @@ void Foliage::UpdateCullDistance()
         }
     }
 #endif
+}
+
+void Foliage::RemoveAllInstances()
+{
+    Instances.Clear();
+    RebuildClusters();
 }
 
 static float GlobalDensityScale = 1.0f;
@@ -1385,6 +1375,7 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
         if (modifier->EngineBuild <= 6189)
         {
             // [Deprecated on 30.11.2019, expires on 30.11.2021]
+            MARK_CONTENT_DEPRECATED();
             InstanceEncoded1 enc;
             for (int32 i = 0; i < foliageInstancesCount; i++)
             {
@@ -1458,7 +1449,7 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
 void Foliage::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Layer);
 }
 
 void Foliage::OnEnable()

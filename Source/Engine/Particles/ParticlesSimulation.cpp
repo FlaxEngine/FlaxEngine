@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ParticlesSimulation.h"
 #include "ParticleSystem.h"
@@ -26,6 +26,7 @@ void ParticleEmitterInstance::ClearState()
     Time = 0;
     SpawnModulesData.Clear();
     CustomData.Clear();
+    CustomSpawnCount = 0;
 #if COMPILE_WITH_GPU_PARTICLES
     GPU.DeltaTime = 0.0f;
     GPU.SpawnCount = 0;

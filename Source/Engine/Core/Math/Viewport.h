@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 // Copyright (c) 2010-2014 SharpDX - Alexandre Mutel
 
 #pragma once
@@ -8,7 +8,9 @@
 struct Matrix;
 struct Rectangle;
 
-// Describes the viewport dimensions.
+/// <summary>
+/// Describes the viewport dimensions.
+/// </summary>
 API_STRUCT(InBuild) struct FLAXENGINE_API Viewport
 {
 public:
@@ -54,29 +56,16 @@ public:
     /// </summary>
     Viewport() = default;
 
-    // Init
-    // @param x The x coordinate of the upper-left corner of the viewport in pixels
-    // @param y The y coordinate of the upper-left corner of the viewport in pixels
-    // @param width The width of the viewport in pixels
-    // @param height The height of the viewport in pixels
-    Viewport(float x, float y, float width, float height)
-        : X(x)
-        , Y(y)
-        , Width(width)
-        , Height(height)
-        , MinDepth(0.0f)
-        , MaxDepth(1.0f)
-    {
-    }
-
-    // Init
-    // @param x The x coordinate of the upper-left corner of the viewport in pixels
-    // @param y The y coordinate of the upper-left corner of the viewport in pixels
-    // @param width The width of the viewport in pixels
-    // @param height The height of the viewport in pixels
-    // @param minDepth The minimum depth of the clip volume
-    // @param maxDepth The maximum depth of the clip volume
-    Viewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Viewport"/> struct.
+    /// </summary>
+    /// <param name="x">The x coordinate of the upper-left corner of the viewport in pixels.</param>
+    /// <param name="y">The y coordinate of the upper-left corner of the viewport in pixels.</param>
+    /// <param name="width">The width of the viewport in pixels.</param>
+    /// <param name="height">The height of the viewport in pixels.</param>
+    /// <param name="minDepth">The minimum depth of the clip volume.</param>
+    /// <param name="maxDepth">The maximum depth of the clip volumes.</param>
+    Viewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f)
         : X(x)
         , Y(y)
         , Width(width)
@@ -100,31 +89,26 @@ public:
     {
     }
 
-    // Init
-    // @param bounds A bounding box that defines the location and size of the viewport in a render target
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Viewport"/> struct.
+    /// </summary>
+    /// <param name="bounds">A bounding rectangle that defines the location and size of the viewport in a render target.</param>
     Viewport(const Rectangle& bounds);
 
 public:
     String ToString() const;
 
 public:
-    // Gets the aspect ratio used by the viewport
-    // @returns The aspect ratio
+    // Gets the aspect ratio used by the viewport.
     float GetAspectRatio() const
     {
-        if (Height != 0.0f)
-        {
-            return Width / Height;
-        }
-        return 0.0f;
+        return Height != 0.0f ? Width / Height : 0.0f;
     }
 
-    // Gets the size of the viewport
-    // @eturns The bounds
+    // Gets the size of the viewport.
     Rectangle GetBounds() const;
 
-    // Sets the size of the viewport
-    // @param bounds The bounds
+    // Sets the size of the viewport.
     void SetBounds(const Rectangle& bounds);
 
 public:
@@ -139,16 +123,20 @@ public:
     }
 
 public:
-    // Projects a 3D vector from object space into screen space
-    // @param source The vector to project
-    // @param vp A combined WorldViewProjection matrix
-    // @param vector The projected vector
+    /// <summary>
+    /// Projects a 3D vector from object space into screen space.
+    /// </summary>
+    /// <param name="source">The vector to project.</param>
+    /// <param name="vp">A combined World*View*Projection matrix.</param>
+    /// <param name="result">The projected vector.</param>
     void Project(const Vector3& source, const Matrix& vp, Vector3& result) const;
 
-    // Converts a screen space point into a corresponding point in world space
-    // @param source The vector to project
-    // @param vp An inverted combined WorldViewProjection matrix
-    // @param vector The unprojected vector
+    /// <summary>
+    /// Converts a screen space point into a corresponding point in world space.
+    /// </summary>
+    /// <param name="source">The vector to un-project.</param>
+    /// <param name="ivp">An inverted combined World*View*Projection matrix.</param>
+    /// <param name="result">The un-projected vector</param>
     void Unproject(const Vector3& source, const Matrix& ivp, Vector3& result) const;
 };
 

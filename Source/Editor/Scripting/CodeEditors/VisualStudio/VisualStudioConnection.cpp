@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_VISUAL_STUDIO_DTE
 
@@ -183,12 +183,6 @@ namespace VisualStudio
 		}
 	};
 
-	// Scans the running processes to find a running Visual Studio instance with the specified version and open solution.
-	//
-	// @param[in]	clsID			Class ID of the specific Visual Studio version we are looking for.
-	// @param[in]	solutionPath	Path to the solution the instance needs to have open.
-	// @return						DTE object that may be used to interact with the Visual Studio instance, or null if
-	//								not found.
 	static Result FindRunningInstance(ConnectionHandle connection)
 	{
 		HRESULT result;

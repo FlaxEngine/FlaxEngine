@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ColorGradingPass.h"
 #include "RenderList.h"
@@ -8,7 +8,7 @@
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTask.h"
 
-PACK_STRUCT(struct Data {
+GPU_CB_STRUCT(Data {
     Float4 ColorSaturationShadows;
     Float4 ColorContrastShadows;
     Float4 ColorGammaShadows;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -137,7 +137,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                                 table.Entries = entries;
                                 if (!table.Save(path))
                                 {
-                                    Object.Destroy(table);
+                                    Object.DestroyNow(table);
                                     newTables.Add(FlaxEngine.Content.LoadAsync<LocalizedStringTable>(path));
                                 }
                             }
@@ -153,7 +153,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                             table.Locale = culture.Name;
                             if (!table.Save(path))
                             {
-                                Object.Destroy(table);
+                                Object.DestroyNow(table);
                                 newTables.Add(FlaxEngine.Content.LoadAsync<LocalizedStringTable>(path));
                             }
                         }

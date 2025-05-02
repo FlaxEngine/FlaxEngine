@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -15,8 +15,7 @@ class SMAA : public RendererPass<SMAA>
 {
 private:
 
-    PACK_STRUCT(struct Data
-        {
+    GPU_CB_STRUCT(Data {
         Float4 RtSize;
         });
 

@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -140,6 +141,11 @@ namespace FlaxEditor.CustomEditors
         public bool IsArray => Type != ScriptType.Null && Type.IsArray;
 
         /// <summary>
+        /// True if member or type has <see cref="System.ObsoleteAttribute"/> that marks it as obsolete.
+        /// </summary>
+        public bool IsObsolete { get; }
+
+        /// <summary>
         /// Gets the values types array (without duplicates).
         /// </summary>
         public ScriptType[] ValuesTypes
@@ -160,6 +166,7 @@ namespace FlaxEditor.CustomEditors
         {
             Info = info;
             Type = Info.ValueType;
+            IsObsolete = Info.HasAttribute(typeof(ObsoleteAttribute), true);
         }
 
         /// <summary>
@@ -243,7 +250,7 @@ namespace FlaxEditor.CustomEditors
             if (objA == null && objB is string objBStr && objBStr.Length == 0)
                 return true;
 
-            return Newtonsoft.Json.Utilities.MiscellaneousUtils.ValueEquals(objA, objB);
+            return FlaxEngine.Json.JsonSerializer.ValueEquals(objA, objB);
         }
 
         /// <summary>
@@ -379,10 +386,21 @@ namespace FlaxEditor.CustomEditors
             if (instanceValues.Count != Count)
                 throw new ArgumentException();
 
-            for (int i = 0; i < Count; i++)
+            if (value is IList l && l.Count == Count && Count > 1)
             {
-                Info.SetValue(instanceValues[i], value);
-                this[i] = Info.GetValue(instanceValues[i]);
+                for (int i = 0; i < Count; i++)
+                {
+                    Info.SetValue(instanceValues[i], l[i]);
+                    this[i] = Info.GetValue(instanceValues[i]);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < Count; i++)
+                {
+                    Info.SetValue(instanceValues[i], value);
+                    this[i] = Info.GetValue(instanceValues[i]);
+                }
             }
         }
 

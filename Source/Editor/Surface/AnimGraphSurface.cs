@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -89,6 +89,9 @@ namespace FlaxEditor.Surface
 
         private static NodesCache _nodesCache = new NodesCache(IterateNodesCache);
 
+        /// <inheritdoc />
+        public override bool UseContextMenuDescriptionPanel => true;
+
         /// <summary>
         /// The state machine editing context menu.
         /// </summary>
@@ -158,11 +161,13 @@ namespace FlaxEditor.Surface
 
         private void OnScriptsReloadBegin()
         {
+            _nodesCache.Clear();
+
             // Check if any of the nodes comes from the game scripts - those can be reloaded at runtime so prevent crashes
             bool hasTypeFromGameScripts = Editor.Instance.CodeEditing.AnimGraphNodes.HasTypeFromGameScripts;
 
             // Check any surface parameter comes from Game scripts module to handle scripts reloads in Editor
-            if (!hasTypeFromGameScripts)
+            if (!hasTypeFromGameScripts && RootContext != null)
             {
                 foreach (var param in Parameters)
                 {

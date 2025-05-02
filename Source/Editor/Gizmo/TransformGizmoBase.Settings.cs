@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -20,7 +20,7 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// Offset to move axis away from center
         /// </summary>
-        private const float AxisOffset = 0.8f;
+        private const float AxisOffset = 1.2f;
 
         /// <summary>
         /// How thick the axis should be
@@ -35,12 +35,12 @@ namespace FlaxEditor.Gizmo
         /// <summary>
         /// The inner minimum of the multiscale
         /// </summary>
-        private const float InnerExtend = AxisOffset + 0.5f;
+        private const float InnerExtend = AxisOffset;
 
         /// <summary>
         /// The outer maximum of the multiscale
         /// </summary>
-        private const float OuterExtend = AxisOffset * 3.5f;
+        private const float OuterExtend = AxisOffset + 1.25f;
 
         // Cube with the size AxisThickness, then moves it along the axis (AxisThickness) and finally makes it really long (AxisLength)
         private BoundingBox XAxisBox = new BoundingBox(new Vector3(-AxisThickness), new Vector3(AxisThickness)).MakeOffsetted(AxisOffset * Vector3.UnitX).Merge(AxisLength * Vector3.UnitX);
@@ -74,6 +74,11 @@ namespace FlaxEditor.Gizmo
         /// True if enable grid snapping when scaling objects
         /// </summary>
         public bool ScaleSnapEnabled = false;
+
+        /// <summary>
+        /// True if enable absolute grid snapping (snaps objects to world-space grid, not the one relative to gizmo location)
+        /// </summary>
+        public bool AbsoluteSnapEnabled = false;
 
         /// <summary>
         /// Translation snap value

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -14,7 +14,7 @@ namespace FlaxEditor.GUI.Timeline.GUI
     class Background : ContainerControl
     {
         private readonly Timeline _timeline;
-        private float[] _tickSteps;
+        private double[] _tickSteps;
         private float[] _tickStrengths;
         private bool _isSelecting;
         private Float2 _selectingStartPos = Float2.Minimum;
@@ -176,9 +176,9 @@ namespace FlaxEditor.GUI.Timeline.GUI
             // Draw vertical lines for time axis
             var pixelsInRange = _timeline.Zoom;
             var pixelRange = pixelsInRange * (max - min);
-            var tickRange = Utilities.Utils.DrawCurveTicks((float tick, float strength) =>
+            var tickRange = Utilities.Utils.DrawCurveTicks((decimal tick, double step, float strength) =>
             {
-                var time = tick / _timeline.FramesPerSecond;
+                var time = (float)tick / _timeline.FramesPerSecond;
                 var x = time * zoom + Timeline.StartOffset;
                 var lineColor = style.ForegroundDisabled.RGBMultiplied(0.7f).AlphaMultiplied(strength);
                 Render2D.FillRectangle(new Rectangle(x - 0.5f, 0, 1.0f, height), lineColor);
@@ -230,23 +230,23 @@ namespace FlaxEditor.GUI.Timeline.GUI
                     continue;
 
                 // Draw all ticks
-                int l = Mathf.Clamp(smallestTick + level, 0, _tickSteps.Length - 1);
+                int l = Mathf.Clamp(smallestTick + level, 0, _tickSteps.Length - 2);
                 var lStep = _tickSteps[l];
                 var lNextStep = _tickSteps[l + 1];
-                int startTick = Mathf.FloorToInt(min / lStep);
-                int endTick = Mathf.CeilToInt(max / lStep);
+                var startTick = Mathd.FloorToInt(min / lStep);
+                var endTick = Mathd.CeilToInt(max / lStep);
                 Color lineColor = style.Foreground.RGBMultiplied(0.8f).AlphaMultiplied(strength);
                 Color labelColor = style.ForegroundDisabled.AlphaMultiplied(strength);
-                for (int i = startTick; i <= endTick; i++)
+                for (var i = startTick; i <= endTick; i++)
                 {
-                    if (l < biggestTick && (i % Mathf.RoundToInt(lNextStep / lStep) == 0))
+                    if (l < biggestTick && (i % Mathd.RoundToInt(lNextStep / lStep) == 0))
                         continue;
-                    var tick = i * lStep;
-                    var time = tick / _timeline.FramesPerSecond;
-                    var x = time * zoom + Timeline.StartOffset;
+                    var tick = (decimal)lStep * i;
+                    var time = (double)tick / _timeline.FramesPerSecond;
+                    var x = (float)time * zoom + Timeline.StartOffset;
 
                     // Header line
-                    var lineRect = new Rectangle(x - 0.5f, -verticalLinesHeaderExtend * 0.6f + timeAxisHeaderOffset, 1.0f, verticalLinesHeaderExtend * 0.6f);
+                    var lineRect = new Rectangle((float)x - 0.5f, -verticalLinesHeaderExtend * 0.6f + timeAxisHeaderOffset, 1.0f, verticalLinesHeaderExtend * 0.6f);
                     Render2D.FillRectangle(lineRect, lineColor);
 
                     // Time label

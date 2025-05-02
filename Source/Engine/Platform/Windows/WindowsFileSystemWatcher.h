@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -13,7 +13,6 @@
 class FLAXENGINE_API WindowsFileSystemWatcher : public FileSystemWatcherBase
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="WindowsFileSystemWatcher"/> class.
     /// </summary>
@@ -27,13 +26,16 @@ public:
     ~WindowsFileSystemWatcher();
 
 public:
-
     Windows::OVERLAPPED Overlapped;
     Windows::HANDLE DirectoryHandle;
-    bool StopNow;
-    int32 CurrentBuffer;
+    Win32Thread* Thread = nullptr;
+    Win32CriticalSection Locker;
+    bool StopNow = false;
     static const int32 BufferSize = 32 * 1024;
-    byte Buffer[2][BufferSize];
+    alignas(Windows::DWORD) byte Buffer[BufferSize];
+    
+    void ReadDirectoryChanges();
+    void NotificationCompletion();
 };
 
 #endif

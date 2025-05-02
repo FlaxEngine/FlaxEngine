@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -61,10 +61,12 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
                     Build(options, platform, TargetArchitecture.x64);
+                    Build(options, platform, TargetArchitecture.ARM64);
                     break;
                 case TargetPlatform.XboxOne:
                 case TargetPlatform.XboxScarlett:
@@ -193,7 +195,7 @@ namespace Flax.Deps.Dependencies
             RunCmake(cmakeFolder, platform, architecture, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + cmakeArgs, envVars);
 
             // Run build
-            Utilities.Run("cmake", "--build . --config Release", null, cmakeFolder, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+            BuildCmake(cmakeFolder, envVars);
 
             // Deploy binaries
             var libs = new[]

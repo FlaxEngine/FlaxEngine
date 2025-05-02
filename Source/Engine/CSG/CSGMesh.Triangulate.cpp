@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "CSGMesh.h"
 
@@ -9,7 +9,7 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #include "CSGData.h"
 
-bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
+bool CSG::Mesh::Triangulate(RawData& data, Array<MeshVertex>& cacheVB) const
 {
     // Reject empty meshes
     int32 verticesCount = _vertices.Count();
@@ -19,7 +19,7 @@ bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
     // Mesh triangles data
     cacheVB.Clear();
     cacheVB.EnsureCapacity(_polygons.Count() * 3);
-    Array<RawModelVertex> surfaceCacheVB(32);
+    Array<MeshVertex> surfaceCacheVB(32);
 
     // Cache submeshes by material to lay them down
     // key- brush index, value- direcotry for surfaces (key: surface index, value: list with start vertex per triangle)
@@ -29,7 +29,7 @@ bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
     int32 firstI, secondI, thirdI;
     int32 triangleIndices[3];
     Vector2 uvs[3];
-    RawModelVertex rawVertex;
+    MeshVertex rawVertex;
     for (int32 i = 0; i < _polygons.Count(); i++)
     {
         const Polygon& polygon = _polygons[i];
@@ -142,7 +142,6 @@ bool CSG::Mesh::Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const
                     rawVertex.Tangent = tangent;
                     rawVertex.Bitangent = bitangent;
                     rawVertex.LightmapUVs = Vector2::Zero;
-                    rawVertex.Color = Color::Black;
 
                     cacheVB.Add(rawVertex);
                 }

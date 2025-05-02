@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ManagedEditor.h"
 #include "Editor/Editor.h"
@@ -12,11 +12,14 @@
 #include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/Internal/MainThreadManagedInvokeAction.h"
 #include "Engine/Content/Assets/VisualScript.h"
+#include "Engine/Content/Content.h"
 #include "Engine/CSG/CSGBuilder.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Renderer/ProbesRenderer.h"
 #include "Engine/Animations/Graph/AnimGraph.h"
 #include "Engine/Core/ObjectsRemovalService.h"
+#include "Engine/Level/Prefabs/Prefab.h"
+#include "Engine/Serialization/JsonTools.h"
 
 ManagedEditor::InternalOptions ManagedEditor::ManagedEditorOptions;
 
@@ -176,7 +179,7 @@ ManagedEditor::~ManagedEditor()
 void ManagedEditor::Init()
 {
     // Note: editor modules should perform quite fast init, any longer things should be done in async during 'editor splash screen time
-    void* args[4];
+    void* args[2];
     MClass* mclass = GetClass();
     if (mclass == nullptr)
     {
@@ -193,18 +196,22 @@ void ManagedEditor::Init()
         LOG(Fatal, "Failed to create editor instance.");
     }
     MObject* exception = nullptr;
-    bool isHeadless = CommandLine::Options.Headless.IsTrue();
-    bool skipCompile = CommandLine::Options.SkipCompile.IsTrue();
-    bool newProject = CommandLine::Options.NewProject.IsTrue();
-    args[0] = &isHeadless;
-    args[1] = &skipCompile;
-    args[2] = &newProject;
+    StartupFlags flags = StartupFlags::None;
+    if (CommandLine::Options.Headless.IsTrue())
+        flags |= StartupFlags::Headless;
+    if (CommandLine::Options.SkipCompile.IsTrue())
+        flags |= StartupFlags::SkipCompile;
+    if (CommandLine::Options.NewProject.IsTrue())
+        flags |= StartupFlags::NewProject;
+    if (CommandLine::Options.Exit.IsTrue())
+        flags |= StartupFlags::Exit;
+    args[0] = &flags;
     Guid sceneId;
     if (!CommandLine::Options.Play.HasValue() || (CommandLine::Options.Play.HasValue() && Guid::Parse(CommandLine::Options.Play.GetValue(), sceneId)))
     {
         sceneId = Guid::Empty;
     }
-    args[3] = &sceneId;
+    args[1] = &sceneId;
     initMethod->Invoke(instance, args, &exception);
     if (exception)
     {
@@ -219,7 +226,7 @@ void ManagedEditor::Init()
     WasExitCalled = false;
 
     // Load scripts if auto-load on startup is disabled
-    if (!ManagedEditorOptions.ForceScriptCompilationOnStartup || skipCompile)
+    if (!ManagedEditorOptions.ForceScriptCompilationOnStartup || EnumHasAllFlags(flags, StartupFlags::SkipCompile))
     {
         LOG(Info, "Loading managed assemblies (due to disabled compilation on startup)");
         Scripting::Load();
@@ -588,6 +595,7 @@ bool ManagedEditor::EvaluateVisualScriptLocal(VisualScript* script, VisualScript
 
 void ManagedEditor::WipeOutLeftoverSceneObjects()
 {
+    PROFILE_CPU();
     Array<ScriptingObject*> objects = Scripting::GetObjects();
     bool removedAny = false;
     for (ScriptingObject* object : objects)
@@ -598,6 +606,11 @@ void ManagedEditor::WipeOutLeftoverSceneObjects()
             {
                 if (sceneObject->HasParent())
                     continue; // Skip sub-objects
+                auto* actor = Cast<Actor>(sceneObject);
+                if (!actor)
+                    actor = sceneObject->GetParent();
+                if (actor && actor->HasTag(TEXT("__EditorInternal")))
+                    continue; // Skip internal objects used by Editor (eg. EditorScene)
 
                 LOG(Error, "Object '{}' (ID={}, Type={}) is still in memory after play end but should be destroyed (memory leak).", sceneObject->GetNamePath(), sceneObject->GetID(), sceneObject->GetType().ToString());
                 sceneObject->DeleteObject();

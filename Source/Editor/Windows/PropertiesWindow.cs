@@ -1,11 +1,13 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Viewport;
+using FlaxEngine;
 using FlaxEngine.GUI;
 
 namespace FlaxEditor.Windows
@@ -18,6 +20,9 @@ namespace FlaxEditor.Windows
     public class PropertiesWindow : SceneEditorWindow, IPresenterOwner
     {
         private IEnumerable<object> undoRecordObjects;
+
+        private readonly Dictionary<Guid, float> _actorScrollValues = new Dictionary<Guid, float>();
+        private bool _lockObjects = false;
 
         /// <inheritdoc />
         public override bool UseLayoutData => true;
@@ -40,7 +45,18 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// Indication of if the properties window is locked on specific objects.
         /// </summary>
-        public bool LockObjects = false;
+        public bool LockObjects
+        {
+            get => _lockObjects;
+            set
+            {
+                if (value == _lockObjects)
+                    return;
+                _lockObjects = value;
+                if (!value)
+                    OnSelectionChanged();
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PropertiesWindow"/> class.
@@ -57,7 +73,45 @@ namespace FlaxEditor.Windows
             Presenter.GetUndoObjects += GetUndoObjects;
             Presenter.Features |= FeatureFlags.CacheExpandedGroups;
 
+            VScrollBar.ValueChanged += OnScrollValueChanged;
             Editor.SceneEditing.SelectionChanged += OnSelectionChanged;
+        }
+
+        /// <inheritdoc />
+        public override void OnSceneLoaded(Scene scene, Guid sceneId)
+        {
+            base.OnSceneLoaded(scene, sceneId);
+
+            // Clear scroll values if new scene is loaded non additively
+            if (Level.ScenesCount > 1)
+                return;
+            _actorScrollValues.Clear();
+            if (LockObjects)
+            {
+                LockObjects = false;
+                Presenter.Deselect();
+            }
+        }
+
+        private void OnScrollValueChanged()
+        {
+            if (Editor.SceneEditing.SelectionCount > 1)
+                return;
+
+            // Clear first 10 scroll values to keep the memory down. Dont need to cache very single value in a scene. We could expose this as a editor setting in the future.
+            if (_actorScrollValues.Count >= 20)
+            {
+                int i = 0;
+                foreach (var e in _actorScrollValues)
+                {
+                    if (i >= 10)
+                        break;
+                    _actorScrollValues.Remove(e.Key);
+                    i += 1;
+                }
+            }
+            
+            _actorScrollValues[Editor.SceneEditing.Selection[0].ID] = VScrollBar.TargetValue;
         }
 
         private IEnumerable<object> GetUndoObjects(CustomEditorPresenter customEditorPresenter)
@@ -75,6 +129,10 @@ namespace FlaxEditor.Windows
             undoRecordObjects = Editor.SceneEditing.Selection.ConvertAll(x => x.UndoRecordObject).Distinct();
             var objects = Editor.SceneEditing.Selection.ConvertAll(x => x.EditableObject).Distinct();
             Presenter.Select(objects);
+
+            // Set scroll value of window if it exists
+            if (Editor.SceneEditing.SelectionCount == 1)
+                VScrollBar.TargetValue = _actorScrollValues.GetValueOrDefault(Editor.SceneEditing.Selection[0].ID, 0);
         }
 
         /// <inheritdoc />

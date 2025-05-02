@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "BehaviorKnowledge.h"
 #include "BehaviorTree.h"
@@ -64,22 +64,22 @@ bool AccessVariant(Variant& instance, const StringAnsiView& member, Variant& val
     if (const auto mClass = Scripting::FindClass(typeName))
     {
         MObject* instanceObject = MUtils::BoxVariant(instance);
+        bool failed = false;
         if (const auto mField = mClass->GetField(member.Get()))
         {
-            bool failed;
             if (set)
                 mField->SetValue(instanceObject, MUtils::VariantToManagedArgPtr(value, mField->GetType(), failed));
             else
                 value = MUtils::UnboxVariant(mField->GetValueBoxed(instanceObject));
-            return true;
+            return !failed;
         }
         else if (const auto mProperty = mClass->GetProperty(member.Get()))
         {
             if (set)
-                mProperty->SetValue(instanceObject, MUtils::BoxVariant(value), nullptr);
+                mProperty->SetValue(instanceObject, MUtils::VariantToManagedArgPtr(value, mProperty->GetType(), failed), nullptr);
             else
                 value = MUtils::UnboxVariant(mProperty->GetValue(instanceObject, nullptr));
-            return true;
+            return !failed;
         }
     }
 #endif

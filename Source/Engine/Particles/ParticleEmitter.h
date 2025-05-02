@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -20,6 +20,7 @@ class ParticleEmitterInstance;
 API_CLASS(NoSpawn) class FLAXENGINE_API ParticleEmitter : public ShaderAssetTypeBase<BinaryAsset>
 {
     DECLARE_BINARY_ASSET_HEADER(ParticleEmitter, ShadersSerializedVersion);
+
 public:
     /// <summary>
     /// The loaded particle graph.
@@ -84,14 +85,12 @@ public:
     API_FUNCTION() BytesContainer LoadSurface(bool createDefaultIfMissing);
 
 #if USE_EDITOR
-
     /// <summary>
     /// Updates surface (saves new one, discard cached data, reloads asset).
     /// </summary>
     /// <param name="data">The surface graph data.</param>
     /// <returns>True if cannot save it, otherwise false.</returns>
-    API_FUNCTION() bool SaveSurface(BytesContainer& data);
-
+    API_FUNCTION() bool SaveSurface(const BytesContainer& data);
 #endif
 
 public:
@@ -100,7 +99,7 @@ public:
     /// </summary>
     /// <param name="position">The spawn position.</param>
     /// <param name="duration">The effect playback duration (in seconds).</param>
-    /// <param name="autoDestroy">If set to <c>true</c> effect be be auto-destroyed after duration.</param>
+    /// <param name="autoDestroy">If set to <c>true</c> effect will be auto-destroyed after duration.</param>
     /// <returns>The spawned effect.</returns>
     API_FUNCTION() ParticleEffect* Spawn(const Vector3& position, float duration = MAX_float, bool autoDestroy = false)
     {
@@ -113,7 +112,7 @@ public:
     /// <param name="position">The spawn position.</param>
     /// <param name="rotation">The spawn rotation.</param>
     /// <param name="duration">The effect playback duration (in seconds).</param>
-    /// <param name="autoDestroy">If set to <c>true</c> effect be be auto-destroyed after duration.</param>
+    /// <param name="autoDestroy">If set to <c>true</c> effect will be auto-destroyed after duration.</param>
     /// <returns>The spawned effect.</returns>
     API_FUNCTION() ParticleEffect* Spawn(const Vector3& position, const Quaternion& rotation, float duration = MAX_float, bool autoDestroy = false)
     {
@@ -125,7 +124,7 @@ public:
     /// </summary>
     /// <param name="transform">The spawn transform.</param>
     /// <param name="duration">The effect playback duration (in seconds).</param>
-    /// <param name="autoDestroy">If set to <c>true</c> effect be be auto-destroyed after duration.</param>
+    /// <param name="autoDestroy">If set to <c>true</c> effect will be auto-destroyed after duration.</param>
     /// <returns>The spawned effect.</returns>
     API_FUNCTION() ParticleEffect* Spawn(const Transform& transform, float duration = MAX_float, bool autoDestroy = false)
     {
@@ -138,7 +137,7 @@ public:
     /// <param name="parent">The parent actor (can be null to link it to the first loaded scene).</param>
     /// <param name="position">The spawn position.</param>
     /// <param name="duration">The effect playback duration (in seconds).</param>
-    /// <param name="autoDestroy">If set to <c>true</c> effect be be auto-destroyed after duration.</param>
+    /// <param name="autoDestroy">If set to <c>true</c> effect will be auto-destroyed after duration.</param>
     /// <returns>The spawned effect.</returns>
     API_FUNCTION() ParticleEffect* Spawn(Actor* parent, const Vector3& position, float duration = MAX_float, bool autoDestroy = false)
     {
@@ -152,7 +151,7 @@ public:
     /// <param name="position">The spawn position.</param>
     /// <param name="rotation">The spawn rotation.</param>
     /// <param name="duration">The effect playback duration (in seconds).</param>
-    /// <param name="autoDestroy">If set to <c>true</c> effect be be auto-destroyed after duration.</param>
+    /// <param name="autoDestroy">If set to <c>true</c> effect will be auto-destroyed after duration.</param>
     /// <returns>The spawned effect.</returns>
     API_FUNCTION() ParticleEffect* Spawn(Actor* parent, const Vector3& position, const Quaternion& rotation, float duration = MAX_float, bool autoDestroy = false)
     {
@@ -165,20 +164,15 @@ public:
     /// <param name="parent">The parent actor (can be null to link it to the first loaded scene).</param>
     /// <param name="transform">The spawn transform.</param>
     /// <param name="duration">The effect playback duration (in seconds).</param>
-    /// <param name="autoDestroy">If set to <c>true</c> effect be be auto-destroyed after duration.</param>
+    /// <param name="autoDestroy">If set to <c>true</c> effect will be auto-destroyed after duration.</param>
     /// <returns>The spawned effect.</returns>
     API_FUNCTION() ParticleEffect* Spawn(Actor* parent, const Transform& transform, float duration = MAX_float, bool autoDestroy = false);
 
 public:
     // [BinaryAsset]
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override
-    {
-        // Base
-        BinaryAsset::GetReferences(output);
-
-        Graph.GetReferences(output);
-    }
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
 protected:
@@ -188,8 +182,6 @@ protected:
     AssetChunksFlag getChunksToPreload() const override;
 #if USE_EDITOR
     void OnDependencyModified(BinaryAsset* asset) override;
-#endif
-#if USE_EDITOR
     void InitCompilationOptions(ShaderCompilationOptions& options) override;
 #endif
 };

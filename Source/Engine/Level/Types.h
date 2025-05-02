@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -98,9 +98,14 @@ API_ENUM(Attributes="Flags") enum class StaticFlags
     Navigation = 1 << 3,
 
     /// <summary>
+    /// Object is considered to have static shadowing (casting and receiving).
+    /// </summary>
+    Shadow = 1 << 4,
+
+    /// <summary>
     /// Object is fully static in the scene.
     /// </summary>
-    FullyStatic = Transform | ReflectionProbe | Lightmap | Navigation,
+    FullyStatic = ReflectionProbe | Lightmap | Transform | Navigation | Shadow,
 
     /// <summary>
     /// Maximum value of the enum (force to int).

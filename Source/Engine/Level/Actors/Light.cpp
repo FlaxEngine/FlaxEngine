@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Light.h"
 #include "../Scene/Scene.h"
@@ -84,6 +84,11 @@ LightWithShadow::LightWithShadow(const SpawnParams& params)
 {
 }
 
+void LightWithShadow::InvalidateShadow()
+{
+    _invalidateShadowFrame++;
+}
+
 void LightWithShadow::Serialize(SerializeStream& stream, const void* otherObj)
 {
     // Base
@@ -100,6 +105,8 @@ void LightWithShadow::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(ShadowsDepthBias);
     SERIALIZE(ShadowsNormalOffsetScale);
     SERIALIZE(ContactShadowsLength);
+    SERIALIZE(ShadowsUpdateRate);
+    SERIALIZE(ShadowsUpdateRateAtDistance);
 }
 
 void LightWithShadow::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -116,4 +123,6 @@ void LightWithShadow::Deserialize(DeserializeStream& stream, ISerializeModifier*
     DESERIALIZE(ShadowsDepthBias);
     DESERIALIZE(ShadowsNormalOffsetScale);
     DESERIALIZE(ContactShadowsLength);
+    DESERIALIZE(ShadowsUpdateRate);
+    DESERIALIZE(ShadowsUpdateRateAtDistance);
 }

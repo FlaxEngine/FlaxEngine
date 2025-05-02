@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -324,14 +324,13 @@ public:
     {
         if (length <= 0)
             return;
-        if (Base::Length() == 0)
+        auto prev = Base::_data;
+        const auto prevLength = Base::_length;
+        if (prevLength == 0 || prev == nullptr)
         {
             Copy(data, length);
             return;
         }
-
-        auto prev = Base::_data;
-        const auto prevLength = Base::_length;
 
         Base::_length = prevLength + length;
         Base::_data = (T*)Allocator::Allocate(Base::_length * sizeof(T));
@@ -339,7 +338,7 @@ public:
         Platform::MemoryCopy(Base::_data, prev, prevLength * sizeof(T));
         Platform::MemoryCopy(Base::_data + prevLength * sizeof(T), data, length * sizeof(T));
 
-        if (_isAllocated && prev)
+        if (_isAllocated)
             Allocator::Free(prev);
         _isAllocated = true;
     }

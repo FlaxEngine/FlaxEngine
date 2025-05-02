@@ -1,21 +1,29 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Content.h"
 #include "JsonAsset.h"
 #include "SceneReference.h"
-#include "Engine/Serialization/Serialization.h"
 #include "Cache/AssetsCache.h"
 #include "Storage/ContentStorageManager.h"
 #include "Storage/JsonStorageProxy.h"
 #include "Factories/IAssetFactory.h"
+#include "Loading/LoadingThread.h"
+#include "Loading/ContentLoadTask.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/LogContext.h"
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/ObjectsRemovalService.h"
-#include "Engine/Engine/EngineService.h"
+#include "Engine/Serialization/Serialization.h"
 #include "Engine/Platform/FileSystem.h"
+#include "Engine/Platform/ConditionVariable.h"
+#include "Engine/Platform/Thread.h"
+#include "Engine/Platform/CPUInfo.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Threading/MainThreadTask.h"
+#include "Engine/Threading/ConcurrentTaskQueue.h"
 #include "Engine/Graphics/Graphics.h"
+#include "Engine/Engine/Engine.h"
+#include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Level/Types.h"
@@ -28,6 +36,10 @@
 #endif
 #if ENABLE_ASSETS_DISCOVERY
 #include "Engine/Core/Collections/HashSet.h"
+#endif
+#if USE_EDITOR && PLATFORM_WINDOWS
+#include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
+#include <propidlbase.h>
 #endif
 
 TimeSpan Content::AssetsUpdateInterval = TimeSpan::FromMilliseconds(500);
@@ -63,6 +75,14 @@ namespace
     // Assets Registry Stuff
     AssetsCache Cache;
 
+    // Loading assets
+    THREADLOCAL LoadingThread* ThisLoadThread = nullptr;
+    LoadingThread* MainLoadThread = nullptr;
+    Array<LoadingThread*> LoadThreads;
+    ConcurrentTaskQueue<ContentLoadTask> LoadTasks;
+    ConditionVariable LoadTasksSignal;
+    CriticalSection LoadTasksMutex;
+
     // Unloading assets
     Dictionary<Asset*, TimeSpan> UnloadQueue;
     TimeSpan LastUnloadCheckTime(0);
@@ -89,6 +109,7 @@ public:
     bool Init() override;
     void Update() override;
     void LateUpdate() override;
+    void BeforeExit() override;
     void Dispose() override;
 };
 
@@ -98,6 +119,25 @@ bool ContentService::Init()
 {
     // Load assets registry
     Cache.Init();
+
+    // Create loading threads
+    const CPUInfo cpuInfo = Platform::GetCPUInfo();
+    const int32 count = Math::Clamp(Math::CeilToInt(LOADING_THREAD_PER_LOGICAL_CORE * (float)cpuInfo.LogicalProcessorCount), 1, 12);
+    LOG(Info, "Creating {0} content loading threads...", count);
+    MainLoadThread = New<LoadingThread>();
+    ThisLoadThread = MainLoadThread;
+    LoadThreads.EnsureCapacity(count);
+    for (int32 i = 0; i < count; i++)
+    {
+        auto thread = New<LoadingThread>();
+        if (thread->Start(String::Format(TEXT("Load Thread {0}"), i)))
+        {
+            LOG(Fatal, "Cannot spawn content thread {0}/{1}", i, count);
+            Delete(thread);
+            return true;
+        }
+        LoadThreads.Add(thread);
+    }
 
     return false;
 }
@@ -172,6 +212,14 @@ void ContentService::LateUpdate()
     Cache.Save();
 }
 
+void ContentService::BeforeExit()
+{
+    // Signal threads to end work soon
+    for (auto thread : LoadThreads)
+        thread->NotifyExit();
+    LoadTasksSignal.NotifyAll();
+}
+
 void ContentService::Dispose()
 {
     IsExiting = true;
@@ -197,12 +245,142 @@ void ContentService::Dispose()
 
     // NOW dispose graphics device - where there is no loaded assets at all
     Graphics::DisposeDevice();
+
+    // Exit all load threads
+    for (auto thread : LoadThreads)
+        thread->NotifyExit();
+    LoadTasksSignal.NotifyAll();
+    for (auto thread : LoadThreads)
+        thread->Join();
+    LoadThreads.ClearDelete();
+    Delete(MainLoadThread);
+    MainLoadThread = nullptr;
+    ThisLoadThread = nullptr;
+
+    // Cancel all remaining tasks (no chance to execute them)
+    LoadTasks.CancelAll();
 }
 
 IAssetFactory::Collection& IAssetFactory::Get()
 {
     static Collection Factories(1024);
     return Factories;
+}
+
+LoadingThread::LoadingThread()
+    : _exitFlag(false)
+    , _thread(nullptr)
+    , _totalTasksDoneCount(0)
+{
+}
+
+LoadingThread::~LoadingThread()
+{
+    if (_thread != nullptr)
+    {
+        _thread->Kill(true);
+        Delete(_thread);
+    }
+}
+
+void LoadingThread::NotifyExit()
+{
+    Platform::InterlockedIncrement(&_exitFlag);
+}
+
+void LoadingThread::Join()
+{
+    auto thread = _thread;
+    if (thread)
+        thread->Join();
+}
+
+bool LoadingThread::Start(const String& name)
+{
+    ASSERT(_thread == nullptr && name.HasChars());
+
+    // Create new thread
+    auto thread = Thread::Create(this, name, ThreadPriority::Normal);
+    if (thread == nullptr)
+        return true;
+
+    _thread = thread;
+
+    return false;
+}
+
+void LoadingThread::Run(ContentLoadTask* job)
+{
+    ASSERT(job);
+
+    job->Execute();
+    _totalTasksDoneCount++;
+}
+
+String LoadingThread::ToString() const
+{
+    return String::Format(TEXT("Loading Thread {0}"), _thread ? _thread->GetID() : 0);
+}
+
+int32 LoadingThread::Run()
+{
+#if USE_EDITOR && PLATFORM_WINDOWS
+    // Initialize COM
+    // TODO: maybe add sth to Thread::Create to indicate that thread will use COM stuff
+    const auto result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
+    if (FAILED(result))
+    {
+        LOG(Error, "Failed to init COM for WIC texture importing! Result: {0:x}", static_cast<uint32>(result));
+        return -1;
+    }
+#endif
+
+    ContentLoadTask* task;
+    ThisLoadThread = this;
+
+    while (Platform::AtomicRead(&_exitFlag) == 0)
+    {
+        if (LoadTasks.try_dequeue(task))
+        {
+            Run(task);
+        }
+        else
+        {
+            LoadTasksMutex.Lock();
+            LoadTasksSignal.Wait(LoadTasksMutex);
+            LoadTasksMutex.Unlock();
+        }
+    }
+
+    ThisLoadThread = nullptr;
+    return 0;
+}
+
+void LoadingThread::Exit()
+{
+    LOG(Info, "Content thread '{0}' exited. Load calls: {1}", _thread->GetName(), _totalTasksDoneCount);
+}
+
+String ContentLoadTask::ToString() const
+{
+    return String::Format(TEXT("Content Load Task ({})"), (int32)GetState());
+}
+
+void ContentLoadTask::Enqueue()
+{
+    LoadTasks.Add(this);
+    LoadTasksSignal.NotifyOne();
+}
+
+bool ContentLoadTask::Run()
+{
+    const auto result = run();
+    const bool failed = result != Result::Ok;
+    if (failed)
+    {
+        LOG(Warning, "\'{0}\' failed with result: {1}", ToString(), ToString(result));
+    }
+    return failed;
 }
 
 AssetsCache* Content::GetRegistry()
@@ -873,6 +1051,7 @@ Asset* Content::CreateVirtualAsset(const ScriptingTypeHandle& type)
         LOG(Error, "Cannot create virtual asset object.");
         return nullptr;
     }
+    asset->RegisterObject();
 
     // Call initializer function
     asset->InitAsVirtual();
@@ -884,6 +1063,84 @@ Asset* Content::CreateVirtualAsset(const ScriptingTypeHandle& type)
     AssetsLocker.Unlock();
 
     return asset;
+}
+
+void Content::WaitForTask(ContentLoadTask* loadingTask, double timeoutInMilliseconds)
+{
+    // Check if call is made from the Loading Thread and task has not been taken yet
+    auto thread = ThisLoadThread;
+    if (thread != nullptr)
+    {
+        // Note: to reproduce this case just include material into material (use layering).
+        // So during loading first material it will wait for child materials loaded calling this function
+
+        const double timeoutInSeconds = timeoutInMilliseconds * 0.001;
+        const double startTime = Platform::GetTimeSeconds();
+        Task* task = loadingTask;
+        Array<ContentLoadTask*, InlinedAllocation<64>> localQueue;
+#define CHECK_CONDITIONS() (!Engine::ShouldExit() && (timeoutInSeconds <= 0.0 || Platform::GetTimeSeconds() - startTime < timeoutInSeconds))
+        do
+        {
+            // Try to execute content tasks
+            while (task->IsQueued() && CHECK_CONDITIONS())
+            {
+                // Dequeue task from the loading queue
+                ContentLoadTask* tmp;
+                if (LoadTasks.try_dequeue(tmp))
+                {
+                    if (tmp == task)
+                    {
+                        if (localQueue.Count() != 0)
+                        {
+                            // Put back queued tasks
+                            LoadTasks.enqueue_bulk(localQueue.Get(), localQueue.Count());
+                            localQueue.Clear();
+                        }
+
+                        thread->Run(tmp);
+                    }
+                    else
+                    {
+                        localQueue.Add(tmp);
+                    }
+                }
+                else
+                {
+                    // No task in queue but it's queued so other thread could have stolen it into own local queue
+                    break;
+                }
+            }
+            if (localQueue.Count() != 0)
+            {
+                // Put back queued tasks
+                LoadTasks.enqueue_bulk(localQueue.Get(), localQueue.Count());
+                localQueue.Clear();
+            }
+
+            // Check if task is done
+            if (task->IsEnded())
+            {
+                // If was fine then wait for the next task
+                if (task->IsFinished())
+                {
+                    task = task->GetContinueWithTask();
+                    if (!task)
+                        break;
+                }
+                else
+                {
+                    // Failed or cancelled so this wait also fails
+                    break;
+                }
+            }
+        } while (CHECK_CONDITIONS());
+#undef CHECK_CONDITIONS
+    }
+    else
+    {
+        // Wait for task end
+        loadingTask->Wait(timeoutInMilliseconds);
+    }
 }
 
 void Content::tryCallOnLoaded(Asset* asset)
@@ -900,19 +1157,14 @@ void Content::tryCallOnLoaded(Asset* asset)
 void Content::onAssetLoaded(Asset* asset)
 {
     // This is called by the asset on loading end
-    ASSERT(asset && asset->IsLoaded());
-
     ScopeLock locker(LoadedAssetsToInvokeLocker);
-
     LoadedAssetsToInvoke.Add(asset);
 }
 
 void Content::onAssetUnload(Asset* asset)
 {
     // This is called by the asset on unloading
-
     ScopeLock locker(AssetsLocker);
-
     Assets.Remove(asset->GetID());
     UnloadQueue.Remove(asset);
     LoadedAssetsToInvoke.Remove(asset);
@@ -970,6 +1222,7 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
         if (IsAssetTypeIdInvalid(type, result->GetTypeHandle()) && !result->Is(type))
         {
             LOG(Warning, "Different loaded asset type! Asset: \'{0}\'. Expected type: {1}", result->ToString(), type.ToString());
+            LogContext::Print(LogType::Warning);
             return nullptr;
         }
         return result;
@@ -1004,6 +1257,7 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     if (!GetAssetInfo(id, assetInfo))
     {
         LOG(Warning, "Invalid or missing asset ({0}, {1}).", id, type.ToString());
+        LogContext::Print(LogType::Warning);
         LOAD_FAILED();
     }
 #if ASSETS_LOADING_EXTRA_VERIFICATION
@@ -1038,6 +1292,8 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
         LOAD_FAILED();
     }
 #endif
+    if (!result->IsInternalType())
+        result->RegisterObject();
 
     // Register asset
     AssetsLocker.Lock();
@@ -1064,7 +1320,7 @@ bool findAsset(const Guid& id, const String& directory, Array<String>& tmpCache,
 {
     // Get all asset files
     tmpCache.Clear();
-    if (FileSystem::DirectoryGetFiles(tmpCache, directory, TEXT("*"), DirectorySearchOption::AllDirectories))
+    if (FileSystem::DirectoryGetFiles(tmpCache, directory))
     {
         if (FileSystem::DirectoryExists(directory))
             LOG(Error, "Cannot query files in folder '{0}'.", directory);

@@ -2,7 +2,9 @@
 // Version: @0
 
 #define MATERIAL 1
+#define MATERIAL_TEXCOORDS 4
 #define USE_PER_VIEW_CONSTANTS 1
+#define USE_PER_DRAW_CONSTANTS 1
 @3
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
@@ -10,35 +12,41 @@
 @7
 // Primary constant buffer (with additional material parameters)
 META_CB_BEGIN(0, Data)
-float4x4 WorldMatrix;
-float4x4 PrevWorldMatrix;
-float2 Dummy0;
-float LODDitherFactor;
-float PerInstanceRandom;
-float3 GeometrySize;
-float WorldDeterminantSign;
 @1META_CB_END
 
 // Shader resources
 @2
+Buffer<float4> ObjectsBuffer : register(t0);
+#if USE_SKINNING
+// The skeletal bones matrix buffer (stored as 4x3, 3 float4 behind each other)
+Buffer<float4> BoneMatrices : register(t1);
+#if PER_BONE_MOTION_BLUR
+// The skeletal bones matrix buffer from the previous frame
+Buffer<float4> PrevBoneMatrices : register(t2);
+#endif
+#endif
+
 // Geometry data passed though the graphics rendering stages up to the pixel shader
 struct GeometryData
 {
 	float3 WorldPosition : TEXCOORD0;
-	float2 TexCoord : TEXCOORD1;
-	float2 LightmapUV : TEXCOORD2;
+	float4 TexCoords01 : TEXCOORD1;
+	float4 TexCoords23 : TEXCOORD2;
+	float2 LightmapUV : TEXCOORD3;
 #if USE_VERTEX_COLOR
 	half4 VertexColor : COLOR;
 #endif
-	float3 WorldNormal : TEXCOORD3;
-	float4 WorldTangent : TEXCOORD4;
-	nointerpolation float3 InstanceOrigin : TEXCOORD5;
-	nointerpolation float2 InstanceParams : TEXCOORD6; // x-PerInstanceRandom, y-LODDitherFactor
+	float3 WorldNormal : TEXCOORD4;
+	float4 WorldTangent : TEXCOORD5;
 	float3 PrevWorldPosition : TEXCOORD7;
-	nointerpolation float3 InstanceTransform1 : TEXCOORD8;
-	nointerpolation float3 InstanceTransform2 : TEXCOORD9;
-	nointerpolation float3 InstanceTransform3 : TEXCOORD10;
+	nointerpolation uint ObjectIndex : TEXCOORD8;
 };
+
+float3 DecodeNormal(float4 normalMap)
+{
+    float2 xy = normalMap.rg * 2.0 - 1.0;
+    return float3(xy, sqrt(1.0 - saturate(dot(xy, xy))));
+}
 
 // Interpolants passed from the vertex shader
 struct VertexOutput
@@ -69,7 +77,7 @@ struct MaterialInput
 {
 	float3 WorldPosition;
 	float TwoSidedSign;
-	float2 TexCoord;
+	float2 TexCoords[MATERIAL_TEXCOORDS];
 #if USE_LIGHTMAP
 	float2 LightmapUV;
 #endif
@@ -80,22 +88,25 @@ struct MaterialInput
 	float4 SvPosition;
 	float3 PreSkinnedPosition;
 	float3 PreSkinnedNormal;
-	float3 InstanceOrigin;
-	float2 InstanceParams;
-	float3 InstanceTransform1;
-	float3 InstanceTransform2;
-	float3 InstanceTransform3;
+	uint ObjectIndex;
+	ObjectData Object;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	float4 CustomVSToPS[CUSTOM_VERTEX_INTERPOLATORS_COUNT];
 #endif
 };
+
+// Map access to the main texure coordinate channel as UV0
+#define TexCoord TexCoords[0]
 
 // Extracts geometry data to the material input
 MaterialInput GetGeometryMaterialInput(GeometryData geometry)
 {
 	MaterialInput output = (MaterialInput)0;
 	output.WorldPosition = geometry.WorldPosition;
-	output.TexCoord = geometry.TexCoord;
+	output.TexCoords[0] = geometry.TexCoords01.xy;
+	output.TexCoords[1] = geometry.TexCoords01.zw;
+	output.TexCoords[2] = geometry.TexCoords23.xy;
+	output.TexCoords[3] = geometry.TexCoords23.zw;
 #if USE_LIGHTMAP
 	output.LightmapUV = geometry.LightmapUV;
 #endif
@@ -103,11 +114,7 @@ MaterialInput GetGeometryMaterialInput(GeometryData geometry)
 	output.VertexColor = geometry.VertexColor;
 #endif
 	output.TBN = CalcTangentBasis(geometry.WorldNormal, geometry.WorldTangent);
-	output.InstanceOrigin = geometry.InstanceOrigin;
-	output.InstanceParams = geometry.InstanceParams;
-	output.InstanceTransform1 = geometry.InstanceTransform1;
-	output.InstanceTransform2 = geometry.InstanceTransform2;
-	output.InstanceTransform3 = geometry.InstanceTransform3;
+	output.ObjectIndex = geometry.ObjectIndex;
 	return output;
 }
 
@@ -134,8 +141,8 @@ MaterialInput GetGeometryMaterialInput(GeometryData geometry)
 GeometryData InterpolateGeometry(GeometryData p0, float w0, GeometryData p1, float w1, GeometryData p2, float w2)
 {
 	GeometryData output = (GeometryData)0;
-	output.TexCoord = p0.TexCoord * w0 + p1.TexCoord * w1 + p2.TexCoord * w2;
-	output.LightmapUV = p0.LightmapUV * w0 + p1.LightmapUV * w1 + p2.LightmapUV * w2;
+	output.TexCoords01 = p0.TexCoords01 * w0 + p1.TexCoords01 * w1 + p2.TexCoords01 * w2;
+	output.TexCoords23 = p0.TexCoords23 * w0 + p1.TexCoords23 * w1 + p2.TexCoords23 * w2;
 #if USE_VERTEX_COLOR
 	output.VertexColor = p0.VertexColor * w0 + p1.VertexColor * w1 + p2.VertexColor * w2;
 #endif
@@ -143,11 +150,7 @@ GeometryData InterpolateGeometry(GeometryData p0, float w0, GeometryData p1, flo
 	output.WorldNormal = normalize(output.WorldNormal);
 	output.WorldTangent = p0.WorldTangent * w0 + p1.WorldTangent * w1 + p2.WorldTangent * w2;
 	output.WorldTangent.xyz = normalize(output.WorldTangent.xyz);
-	output.InstanceOrigin = p0.InstanceOrigin;
-	output.InstanceParams = p0.InstanceParams;
-	output.InstanceTransform1 = p0.InstanceTransform1;
-	output.InstanceTransform2 = p0.InstanceTransform2;
-	output.InstanceTransform3 = p0.InstanceTransform3;
+	output.ObjectIndex = p0.ObjectIndex;
 	return output;
 }
 
@@ -156,23 +159,14 @@ GeometryData InterpolateGeometry(GeometryData p0, float w0, GeometryData p1, flo
 MaterialInput GetMaterialInput(PixelInput input)
 {
 	MaterialInput output = GetGeometryMaterialInput(input.Geometry);
-	output.TwoSidedSign = WorldDeterminantSign * (input.IsFrontFace ? 1.0 : -1.0);
+	output.Object = LoadObject(ObjectsBuffer, input.Geometry.ObjectIndex);
+	output.TwoSidedSign = output.Object.WorldDeterminantSign * (input.IsFrontFace ? 1.0 : -1.0);
 	output.SvPosition = input.Position;
 #if USE_CUSTOM_VERTEX_INTERPOLATORS
 	output.CustomVSToPS = input.CustomVSToPS;
 #endif
 	return output;
 }
-
-// Gets the local to world transform matrix
-#define GetInstanceTransform(input) float4x4(float4(input.InstanceTransform1.xyz, 0.0f), float4(input.InstanceTransform2.xyz, 0.0f), float4(input.InstanceTransform3.xyz, 0.0f), float4(input.InstanceOrigin.xyz, 1.0f))
-
-// Extarcts the world matrix and instancce transform vector
-#if USE_INSTANCING
-#define CalculateInstanceTransform(input) float4x4 world = GetInstanceTransform(input); output.Geometry.InstanceTransform1 = input.InstanceTransform1.xyz; output.Geometry.InstanceTransform2 = input.InstanceTransform2.xyz; output.Geometry.InstanceTransform3 = input.InstanceTransform3.xyz;
-#else
-#define CalculateInstanceTransform(input) float4x4 world = WorldMatrix; output.Geometry.InstanceTransform1 = world[0].xyz; output.Geometry.InstanceTransform2 = world[1].xyz; output.Geometry.InstanceTransform3 = world[2].xyz;
-#endif
 
 // Removes the scale vector from the local to world transformation matrix (supports instancing)
 float3x3 RemoveScaleFromLocalToWorld(float3x3 localToWorld)
@@ -218,7 +212,7 @@ float3 TransformViewVectorToWorld(MaterialInput input, float3 viewVector)
 // Transforms a vector from local space to world space
 float3 TransformLocalVectorToWorld(MaterialInput input, float3 localVector)
 {
-	float3x3 localToWorld = (float3x3)GetInstanceTransform(input);
+	float3x3 localToWorld = (float3x3)input.Object.WorldMatrix;
 	//localToWorld = RemoveScaleFromLocalToWorld(localToWorld);
 	return mul(localVector, localToWorld);
 }
@@ -226,7 +220,7 @@ float3 TransformLocalVectorToWorld(MaterialInput input, float3 localVector)
 // Transforms a vector from local space to world space
 float3 TransformWorldVectorToLocal(MaterialInput input, float3 worldVector)
 {
-	float3x3 localToWorld = (float3x3)GetInstanceTransform(input);
+	float3x3 localToWorld = (float3x3)input.Object.WorldMatrix;
 	//localToWorld = RemoveScaleFromLocalToWorld(localToWorld);
 	return mul(localToWorld, worldVector);
 }
@@ -234,30 +228,44 @@ float3 TransformWorldVectorToLocal(MaterialInput input, float3 worldVector)
 // Gets the current object position (supports instancing)
 float3 GetObjectPosition(MaterialInput input)
 {
-	return input.InstanceOrigin.xyz;
+	return input.Object.WorldMatrix[3].xyz;
 }
 
 // Gets the current object size (supports instancing)
 float3 GetObjectSize(MaterialInput input)
 {
-	float4x4 world = GetInstanceTransform(input);
-	return GeometrySize * float3(world._m00, world._m11, world._m22);
+	float4x4 world = input.Object.WorldMatrix;
+	return input.Object.GeometrySize * float3(world._m00, world._m11, world._m22);
+}
+
+// Gets the current object scale (supports instancing)
+float3 GetObjectScale(MaterialInput input)
+{
+    float4x4 world = input.Object.WorldMatrix;
+
+    // Get the squares of the scale factors
+    float scaleXSquared = dot(world[0].xyz, world[0].xyz);
+    float scaleYSquared = dot(world[1].xyz, world[1].xyz);
+    float scaleZSquared = dot(world[2].xyz, world[2].xyz);
+
+    // Take square root to get actual scales
+    return float3(
+        sqrt(scaleXSquared),
+        sqrt(scaleYSquared),
+        sqrt(scaleZSquared)
+    );
 }
 
 // Get the current object random value (supports instancing)
 float GetPerInstanceRandom(MaterialInput input)
 {
-	return input.InstanceParams.x;
+	return input.Object.PerInstanceRandom;
 }
 
 // Get the current object LOD transition dither factor (supports instancing)
 float GetLODDitherFactor(MaterialInput input)
 {
-#if USE_DITHERED_LOD_TRANSITION
-	return input.InstanceParams.y;
-#else
-	return 0;
-#endif
+	return input.Object.LODDitherFactor;
 }
 
 // Gets the interpolated vertex color (in linear space)
@@ -316,44 +324,41 @@ META_VS_IN_ELEMENT(NORMAL,   0, R10G10B10A2_UNORM, 1, ALIGN, PER_VERTEX, 0, true
 META_VS_IN_ELEMENT(TANGENT,  0, R10G10B10A2_UNORM, 1, ALIGN, PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(TEXCOORD, 1, R16G16_FLOAT,      1, ALIGN, PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(COLOR,    0, R8G8B8A8_UNORM,    2, 0,     PER_VERTEX, 0, USE_VERTEX_COLOR)
-META_VS_IN_ELEMENT(ATTRIBUTE,0, R32G32B32A32_FLOAT,3, 0,     PER_INSTANCE, 1, USE_INSTANCING)
-META_VS_IN_ELEMENT(ATTRIBUTE,1, R32G32B32A32_FLOAT,3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
-META_VS_IN_ELEMENT(ATTRIBUTE,2, R32G32B32_FLOAT,   3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
-META_VS_IN_ELEMENT(ATTRIBUTE,3, R32G32B32_FLOAT,   3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
-META_VS_IN_ELEMENT(ATTRIBUTE,4, R16G16B16A16_FLOAT,3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
+META_VS_IN_ELEMENT(ATTRIBUTE,0, R32_UINT,          3, 0,     PER_INSTANCE, 1, USE_INSTANCING)
 VertexOutput VS(ModelInput input)
 {
 	VertexOutput output;
 
+	// Load object data
+#if USE_INSTANCING
+	output.Geometry.ObjectIndex = input.ObjectIndex;
+#else
+	output.Geometry.ObjectIndex = DrawObjectIndex;
+#endif
+	ObjectData object = LoadObject(ObjectsBuffer, output.Geometry.ObjectIndex);
+
 	// Compute world space vertex position
-	CalculateInstanceTransform(input);
-	output.Geometry.WorldPosition = mul(float4(input.Position.xyz, 1), world).xyz;
-	output.Geometry.PrevWorldPosition = mul(float4(input.Position.xyz, 1), PrevWorldMatrix).xyz;
+	output.Geometry.WorldPosition = mul(float4(input.Position.xyz, 1), object.WorldMatrix).xyz;
+	output.Geometry.PrevWorldPosition = mul(float4(input.Position.xyz, 1), object.PrevWorldMatrix).xyz;
 
 	// Compute clip space position
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
-	output.Geometry.TexCoord = input.TexCoord;
+	output.Geometry.TexCoords01 = float4(input.TexCoord0, input.TexCoord1);
+	output.Geometry.TexCoords23 = float4(input.TexCoord2, input.TexCoord3);
 #if USE_VERTEX_COLOR
 	output.Geometry.VertexColor = input.Color;
 #endif
-	output.Geometry.InstanceOrigin = world[3].xyz;
-#if USE_INSTANCING
-	output.Geometry.LightmapUV = input.LightmapUV * input.InstanceLightmapArea.zw + input.InstanceLightmapArea.xy;
-	output.Geometry.InstanceParams = float2(input.InstanceOrigin.w, input.InstanceTransform1.w);
-#else
 #if CAN_USE_LIGHTMAP
-	output.Geometry.LightmapUV = input.LightmapUV * LightmapArea.zw + LightmapArea.xy;
+	output.Geometry.LightmapUV = input.LightmapUV * object.LightmapArea.zw + object.LightmapArea.xy;
 #else
-	output.Geometry.LightmapUV = input.LightmapUV;
-#endif
-	output.Geometry.InstanceParams = float2(PerInstanceRandom, LODDitherFactor);
+	output.Geometry.LightmapUV = float2(0, 0);
 #endif
 
 	// Calculate tanget space to world space transformation matrix for unit vectors
 	float3x3 tangentToLocal = CalcTangentToLocal(input);
-	float3x3 tangentToWorld = CalcTangentToWorld(world, tangentToLocal);
+	float3x3 tangentToWorld = CalcTangentToWorld(object.WorldMatrix, tangentToLocal);
 	output.Geometry.WorldNormal = tangentToWorld[2];
 	output.Geometry.WorldTangent.xyz = tangentToWorld[0];
 	output.Geometry.WorldTangent.w = input.Tangent.w ? -1.0f : +1.0f;
@@ -361,16 +366,18 @@ VertexOutput VS(ModelInput input)
 	// Get material input params if need to evaluate any material property
 #if USE_POSITION_OFFSET || USE_TESSELLATION || USE_CUSTOM_VERTEX_INTERPOLATORS
 	MaterialInput materialInput = GetGeometryMaterialInput(output.Geometry);
-	materialInput.TwoSidedSign = WorldDeterminantSign;
+	materialInput.TwoSidedSign = object.WorldDeterminantSign;
 	materialInput.SvPosition = output.Position;
 	materialInput.PreSkinnedPosition = input.Position.xyz;
 	materialInput.PreSkinnedNormal = tangentToLocal[2].xyz;
+	materialInput.Object = object;
 	Material material = GetMaterialVS(materialInput);
 #endif
 
 	// Apply world position offset per-vertex
 #if USE_POSITION_OFFSET
 	output.Geometry.WorldPosition += material.PositionOffset;
+	output.Geometry.PrevWorldPosition += material.PositionOffset;
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 #endif
 
@@ -392,32 +399,26 @@ META_VS(true, FEATURE_LEVEL_ES2)
 META_PERMUTATION_1(USE_INSTANCING=0)
 META_PERMUTATION_1(USE_INSTANCING=1)
 META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT,   0, 0,     PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(ATTRIBUTE,0, R32G32B32A32_FLOAT,3, 0,     PER_INSTANCE, 1, USE_INSTANCING)
-META_VS_IN_ELEMENT(ATTRIBUTE,1, R32G32B32A32_FLOAT,3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
-META_VS_IN_ELEMENT(ATTRIBUTE,2, R32G32B32_FLOAT,   3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
-META_VS_IN_ELEMENT(ATTRIBUTE,3, R32G32B32_FLOAT,   3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
-META_VS_IN_ELEMENT(ATTRIBUTE,4, R16G16B16A16_FLOAT,3, ALIGN, PER_INSTANCE, 1, USE_INSTANCING)
+META_VS_IN_ELEMENT(ATTRIBUTE,0, R32_UINT,          3, 0,     PER_INSTANCE, 1, USE_INSTANCING)
 float4 VS_Depth(ModelInput_PosOnly input) : SV_Position
 {
+	// Load object data
 #if USE_INSTANCING
-	float4x4 world = GetInstanceTransform(input);
+	uint objectIndex = input.ObjectIndex;
 #else
-	float4x4 world = WorldMatrix;
+	uint objectIndex = DrawObjectIndex;
 #endif
-	float3 worldPosition = mul(float4(input.Position.xyz, 1), world).xyz;
+	ObjectData object = LoadObject(ObjectsBuffer, objectIndex);
+
+	// Transform vertex position into the screen
+	float3 worldPosition = mul(float4(input.Position.xyz, 1), object.WorldMatrix).xyz;
 	float4 position = mul(float4(worldPosition, 1), ViewProjectionMatrix);
 	return position;
 }
 
 #if USE_SKINNING
 
-// The skeletal bones matrix buffer (stored as 4x3, 3 float4 behind each other)
-Buffer<float4> BoneMatrices : register(t0);
-
 #if PER_BONE_MOTION_BLUR
-
-// The skeletal bones matrix buffer from the previous frame
-Buffer<float4> PrevBoneMatrices : register(t1);
 
 float3x4 GetPrevBoneMatrix(int index)
 {
@@ -493,10 +494,14 @@ META_VS_IN_ELEMENT(TEXCOORD,     0, R16G16_FLOAT,      0, ALIGN, PER_VERTEX, 0, 
 META_VS_IN_ELEMENT(NORMAL,       0, R10G10B10A2_UNORM, 0, ALIGN, PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(TANGENT,      0, R10G10B10A2_UNORM, 0, ALIGN, PER_VERTEX, 0, true)
 META_VS_IN_ELEMENT(BLENDINDICES, 0, R8G8B8A8_UINT,     0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(BLENDWEIGHT,  0, R16G16B16A16_FLOAT,0, ALIGN, PER_VERTEX, 0, true)
+META_VS_IN_ELEMENT(BLENDWEIGHTS, 0, R16G16B16A16_FLOAT,0, ALIGN, PER_VERTEX, 0, true)
 VertexOutput VS_Skinned(ModelInput_Skinned input)
 {
 	VertexOutput output;
+
+	// Load object data
+	output.Geometry.ObjectIndex = DrawObjectIndex;
+	ObjectData object = LoadObject(ObjectsBuffer, output.Geometry.ObjectIndex);
 	
 	// Perform skinning
 	float3x4 boneMatrix = GetBoneMatrix(input);
@@ -504,33 +509,27 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 	float3x3 tangentToLocal = SkinTangents(input, boneMatrix);
 	
 	// Compute world space vertex position
-	CalculateInstanceTransform(input);
-	output.Geometry.WorldPosition = mul(float4(position, 1), world).xyz;
+	output.Geometry.WorldPosition = mul(float4(position, 1), object.WorldMatrix).xyz;
 #if PER_BONE_MOTION_BLUR
 	float3 prevPosition = SkinPrevPosition(input);
-	output.Geometry.PrevWorldPosition = mul(float4(prevPosition, 1), PrevWorldMatrix).xyz;
+	output.Geometry.PrevWorldPosition = mul(float4(prevPosition, 1), object.PrevWorldMatrix).xyz;
 #else
-	output.Geometry.PrevWorldPosition = mul(float4(position, 1), PrevWorldMatrix).xyz;
+	output.Geometry.PrevWorldPosition = mul(float4(position, 1), object.PrevWorldMatrix).xyz;
 #endif
 
 	// Compute clip space position
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 
 	// Pass vertex attributes
-	output.Geometry.TexCoord = input.TexCoord;
+	output.Geometry.TexCoords01 = float4(input.TexCoord0, input.TexCoord1);
+	output.Geometry.TexCoords23 = float4(input.TexCoord2, input.TexCoord3);
 #if USE_VERTEX_COLOR
-	output.Geometry.VertexColor = float4(0, 0, 0, 1);
+	output.Geometry.VertexColor = input.Color;
 #endif
 	output.Geometry.LightmapUV = float2(0, 0);
-	output.Geometry.InstanceOrigin = world[3].xyz;
-#if USE_INSTANCING
-	output.Geometry.InstanceParams = float2(input.InstanceOrigin.w, input.InstanceTransform1.w);
-#else
-	output.Geometry.InstanceParams = float2(PerInstanceRandom, LODDitherFactor);
-#endif
 
 	// Calculate tanget space to world space transformation matrix for unit vectors
-	float3x3 tangentToWorld = CalcTangentToWorld(world, tangentToLocal);
+	float3x3 tangentToWorld = CalcTangentToWorld(object.WorldMatrix, tangentToLocal);
 	output.Geometry.WorldNormal = tangentToWorld[2];
 	output.Geometry.WorldTangent.xyz = tangentToWorld[0];
 	output.Geometry.WorldTangent.w = input.Tangent.w ? -1.0f : +1.0f;
@@ -538,16 +537,18 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 	// Get material input params if need to evaluate any material property
 #if USE_POSITION_OFFSET || USE_TESSELLATION || USE_CUSTOM_VERTEX_INTERPOLATORS
 	MaterialInput materialInput = GetGeometryMaterialInput(output.Geometry);
-	materialInput.TwoSidedSign = WorldDeterminantSign;
+	materialInput.TwoSidedSign = object.WorldDeterminantSign;
 	materialInput.SvPosition = output.Position;
 	materialInput.PreSkinnedPosition = input.Position.xyz;
 	materialInput.PreSkinnedNormal = tangentToLocal[2].xyz;
+	materialInput.Object = object;
 	Material material = GetMaterialVS(materialInput);
 #endif
 
 	// Apply world position offset per-vertex
 #if USE_POSITION_OFFSET
 	output.Geometry.WorldPosition += material.PositionOffset;
+	output.Geometry.PrevWorldPosition += material.PositionOffset;
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 #endif
 
@@ -568,12 +569,12 @@ VertexOutput VS_Skinned(ModelInput_Skinned input)
 
 #if USE_DITHERED_LOD_TRANSITION
 
-void ClipLODTransition(PixelInput input)
+void ClipLODTransition(MaterialInput input)
 {
-	float ditherFactor = input.Geometry.InstanceParams.y;
+	float ditherFactor = input.Object.LODDitherFactor;
 	if (abs(ditherFactor) > 0.001)
 	{
-		float randGrid = cos(dot(floor(input.Position.xy), float2(347.83452793, 3343.28371863)));
+		float randGrid = cos(dot(floor(input.SvPosition.xy), float2(347.83452793, 3343.28371863)));
 		float randGridFrac = frac(randGrid * 1000.0);
 		half mask = (ditherFactor < 0.0) ? (ditherFactor + 1.0 > randGridFrac) : (ditherFactor < randGridFrac);
 		clip(mask - 0.001);
@@ -586,14 +587,13 @@ void ClipLODTransition(PixelInput input)
 META_PS(true, FEATURE_LEVEL_ES2)
 void PS_Depth(PixelInput input)
 {
+	MaterialInput materialInput = GetMaterialInput(input);
 #if USE_DITHERED_LOD_TRANSITION
-	// LOD masking
-	ClipLODTransition(input);
+	ClipLODTransition(materialInput);
 #endif
 
 #if MATERIAL_MASKED || MATERIAL_BLEND != MATERIAL_BLEND_OPAQUE
 	// Get material parameters
-	MaterialInput materialInput = GetMaterialInput(input);
 	Material material = GetMaterialPS(materialInput);
 
 	// Perform per pixel clipping

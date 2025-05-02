@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX
 
@@ -291,17 +291,17 @@ bool LinuxFileSystem::DirectoryGetFiles(Array<String>& results, const String& pa
     return getFilesFromDirectoryAll(results, pathANSI.Get(), searchPatternANSI.Get());
 }
 
-bool LinuxFileSystem::GetChildDirectories(Array<String>& results, const String& directory)
+bool LinuxFileSystem::GetChildDirectories(Array<String>& results, const String& path)
 {
     size_t pathLength;
     DIR* dir;
     struct stat statPath, statEntry;
     struct dirent* entry;
-    const StringAsUTF8<> pathANSI(*directory, directory.Length());
-    const char* path = pathANSI.Get();
+    const StringAsUTF8<> pathANSI(*path, path.Length());
+    const char* pathStr = pathANSI.Get();
 
     // Stat for the path
-    stat(path, &statPath);
+    stat(pathStr, &statPath);
 
     // If path does not exists or is not dir - exit with status -1
     if (S_ISDIR(statPath.st_mode) == 0)
@@ -311,14 +311,14 @@ bool LinuxFileSystem::GetChildDirectories(Array<String>& results, const String& 
     }
 
     // If not possible to read the directory for this user
-    if ((dir = opendir(path)) == NULL)
+    if ((dir = opendir(pathStr)) == NULL)
     {
         // Cannot open directory
         return true;
     }
 
     // The length of the path
-    pathLength = strlen(path);
+    pathLength = strlen(pathStr);
 
     // Iteration through entries in the directory
     while ((entry = readdir(dir)) != NULL)
@@ -328,20 +328,20 @@ bool LinuxFileSystem::GetChildDirectories(Array<String>& results, const String& 
             continue;
 
         // Determinate a full path of an entry
-        char full_path[256];
-        ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(full_path));
-        strcpy(full_path, path);
-        strcat(full_path, "/");
-        strcat(full_path, entry->d_name);
+        char fullPath[256];
+        ASSERT(pathLength + strlen(entry->d_name) < ARRAY_COUNT(fullPath));
+        strcpy(fullPath, pathStr);
+        strcat(fullPath, "/");
+        strcat(fullPath, entry->d_name);
 
         // Stat for the entry
-        stat(full_path, &statEntry);
+        stat(fullPath, &statEntry);
 
         // Check for directory
         if (S_ISDIR(statEntry.st_mode) != 0)
         {
             // Add directory
-            results.Add(String(full_path));
+            results.Add(String(fullPath));
         }
     }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -22,7 +22,6 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Windows,
-                        TargetPlatform.UWP,
                         TargetPlatform.Linux,
                         TargetPlatform.XboxOne,
                         TargetPlatform.XboxScarlett,
@@ -58,21 +57,11 @@ namespace Flax.Deps.Dependencies
             // Default build
             GitCheckout(root, "flax-net80");
             Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, buildPlatform);
-            foreach (var platform in options.Platforms)
             {
-                switch (platform)
-                {
-                case TargetPlatform.Windows:
-                case TargetPlatform.Linux:
-                case TargetPlatform.Mac:
-                {
-                    foreach (var file in outputFileNames)
-                    {
-                        Utilities.FileCopy(Path.Combine(binFolder, file), Path.Combine(options.PlatformsFolder, "DotNet", file));
-                    }
-                    break;
-                }
-                }
+                var platform = "JIT";
+                Log.Info($"Building {GetType().Name} for {platform}");
+                foreach (var file in outputFileNames)
+                    Utilities.FileCopy(Path.Combine(binFolder, file), Path.Combine(options.PlatformsFolder, "DotNet", file));
             }
 
             // AOT build (disabled codegen)
@@ -82,23 +71,11 @@ namespace Flax.Deps.Dependencies
             Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_REGEX;", ";");
             Utilities.ReplaceInFile(Path.Combine(root, "Src", "Newtonsoft.Json", "Newtonsoft.Json.csproj"), "HAVE_TYPE_DESCRIPTOR;", ";");
             Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, buildPlatform);
-            foreach (var platform in options.Platforms)
             {
-                switch (platform)
-                {
-                case TargetPlatform.UWP:
-                case TargetPlatform.XboxOne:
-                case TargetPlatform.XboxScarlett:
-                case TargetPlatform.PS4:
-                case TargetPlatform.PS5:
-                case TargetPlatform.Switch:
-                case TargetPlatform.iOS:
-                {
-                    var file = "Newtonsoft.Json.dll";
-                    Utilities.FileCopy(Path.Combine(binFolder, file), Path.Combine(options.PlatformsFolder, "DotNet/AOT", file));
-                    break;
-                }
-                }
+                var platform = "AOT";
+                Log.Info($"Building {GetType().Name} for {platform}");
+                var file = "Newtonsoft.Json.dll";
+                Utilities.FileCopy(Path.Combine(binFolder, file), Path.Combine(options.PlatformsFolder, "DotNet/AOT", file));
             }
         }
     }

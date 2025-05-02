@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 // Implementation based on:
 // "Volumetric fog: Unified, compute shader based solution to atmospheric scattering" - Bart Wronski at Siggraph 2014
@@ -6,6 +6,9 @@
 // "Physically Based and Unified Volumetric Rendering in Frostbite" - Sebastien Hillaire at Siggraph 2015
 
 #define NO_GBUFFER_SAMPLING
+#define LIGHTING_NO_DIRECTIONAL 1
+#define LIGHTING_NO_SPECULAR 0
+#define SHADOWS_QUALITY 0
 
 // Debug voxels world space positions
 #define DEBUG_VOXEL_WS_POS 0
@@ -24,11 +27,10 @@ struct SkyLightData
 	float3 MultiplyColor;
 	float VolumetricScatteringIntensity;
 	float3 AdditiveColor;
-	float Dummt0;	
+	float Dummy0;	
 };
 
 META_CB_BEGIN(0, Data)
-
 GBufferData GBuffer;
 
 float3 GlobalAlbedo;
@@ -54,14 +56,11 @@ float4x4 PrevWorldToClip;
 float4 FrameJitterOffsets[8];
 
 LightData DirectionalLight;
-LightShadowData DirectionalLightShadow;
 SkyLightData SkyLight;
 DDGIData DDGI;
-
 META_CB_END
 
-META_CB_BEGIN(1, PerLight)
-
+META_CB_BEGIN(2, PerLight)
 float2 SliceToDepth;
 int MinZ;
 float LocalLightScatteringIntensity;
@@ -70,8 +69,6 @@ float4 ViewSpaceBoundingSphere;
 float4x4 ViewToVolumeClip;
 
 LightData LocalLight;
-LightShadowData LocalLightShadow;
-
 META_CB_END
 
 // The Henyey-Greenstein phase function
@@ -115,7 +112,6 @@ float3 GetVolumeUV(float3 worldPosition, float4x4 worldToClip)
 // Vertex shader that writes to a range of slices of a volume texture
 META_VS(true, FEATURE_LEVEL_SM5)
 META_FLAG(VertexToGeometryShader)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R32G32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
 Quad_VS2GS VS_WriteToSlice(float2 TexCoord : TEXCOORD0, uint LayerIndex : SV_InstanceID)
 {
 	Quad_VS2GS output;
@@ -162,28 +158,8 @@ void GS_WriteToSlice(triangle Quad_VS2GS input[3], inout TriangleStream<Quad_GS2
 }
 
 #if USE_SHADOW
-
-// Shadow Maps
-TextureCube<float> ShadowMapCube : register(t5);
-Texture2D ShadowMapSpot : register(t6);
-
-float ComputeVolumeShadowing(float3 worldPosition, bool isSpotLight)
-{
-	float shadow = 1;
-
-	// TODO: use single shadowmaps atlas for whole scene (with slots) - same code path for spot and point lights
-	if (isSpotLight)
-	{
-		shadow = SampleShadow(LocalLight, LocalLightShadow, ShadowMapSpot, worldPosition);
-	}
-	else
-	{
-		shadow = SampleShadow(LocalLight, LocalLightShadow, ShadowMapCube, worldPosition);
-	}
-
-	return shadow;
-}
-
+Texture2D<float> ShadowMap : register(t0);
+Buffer<float4> ShadowsBuffer : register(t1);
 #endif
 
 META_PS(true, FEATURE_LEVEL_SM5)
@@ -225,15 +201,22 @@ float4 PS_InjectLight(Quad_GS2PS input) : SV_Target0
 		GetRadialLightAttenuation(LocalLight, isSpotLight, float3(0, 0, 1), distanceSqr, distanceBias * distanceBias, toLight, L, NoL, attenuation);
 
 		// Peek the shadow
-		float shadowFactor = 1.0f;
+		float shadow = 1.0f;
 #if USE_SHADOW
 		if (attenuation > 0)
 		{
-			shadowFactor = ComputeVolumeShadowing(positionWS, isSpotLight);
+            if (isSpotLight)
+	        {
+                shadow = SampleSpotLightShadow(LocalLight, ShadowsBuffer, ShadowMap, positionWS).SurfaceShadow;
+	        }
+	        else
+	        {
+                shadow = SamplePointLightShadow(LocalLight, ShadowsBuffer, ShadowMap, positionWS).SurfaceShadow;
+	        }
 		}
 #endif
 
-		scattering.rgb += LocalLight.Color * (GetPhase(PhaseG, dot(L, -cameraVector)) * attenuation * shadowFactor * LocalLightScatteringIntensity);
+		scattering.rgb += LocalLight.Color * (GetPhase(PhaseG, dot(L, -cameraVector)) * attenuation * shadow * LocalLightScatteringIntensity);
 	}
 
 	scattering.rgb /= (float)samplesCount;
@@ -281,13 +264,14 @@ Texture3D<float4> VBufferA : register(t0);
 Texture3D<float4> VBufferB : register(t1);
 Texture3D<float4> LightScatteringHistory : register(t2);
 Texture3D<float4> LocalShadowedLightScattering : register(t3);
-Texture2DArray ShadowMapCSM : register(t4);
+Texture2D<float> ShadowMap : register(t4);
+Buffer<float4> ShadowsBuffer : register(t5);
 #if USE_DDGI
-Texture2D<snorm float4> ProbesData : register(t5);
-Texture2D<float4> ProbesDistance : register(t6);
-Texture2D<float4> ProbesIrradiance : register(t7);
+Texture2D<snorm float4> ProbesData : register(t6);
+Texture2D<float4> ProbesDistance : register(t7);
+Texture2D<float4> ProbesIrradiance : register(t8);
 #else
-TextureCube SkyLightImage : register(t5);
+TextureCube SkyLightImage : register(t6);
 #endif
 
 META_CS(true, FEATURE_LEVEL_SM5)
@@ -319,16 +303,8 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 		float3 cameraVectorNormalized = cameraVector / cameraVectorLength;
 
 		// Directional light
-		BRANCH
-		if (DirectionalLightShadow.NumCascades < 10) // NumCascades==10 if no dir light
-		{
-			// Try to sample CSM shadow at the voxel position
-			float shadow = 1;
-			if (DirectionalLightShadow.NumCascades > 0)
-			{
-				shadow = SampleShadow(DirectionalLight, DirectionalLightShadow, ShadowMapCSM, positionWS, cameraVectorLength);
-			}
-
+        {
+            float shadow = SampleDirectionalLightShadow(DirectionalLight, ShadowsBuffer, ShadowMap, positionWS, cameraVectorLength).SurfaceShadow;
 			lightScattering += DirectionalLight.Color * (8 * shadow * GetPhase(PhaseG, dot(DirectionalLight.Direction, cameraVectorNormalized)));
 		}
 

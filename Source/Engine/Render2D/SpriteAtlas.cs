@@ -1,10 +1,11 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Runtime.CompilerServices;
 
 namespace FlaxEngine
 {
-    partial struct SpriteHandle
+    partial struct SpriteHandle : IEquatable<SpriteHandle>
     {
         /// <summary>
         /// Invalid sprite handle.
@@ -106,6 +107,54 @@ namespace FlaxEngine
                 sprite.Area = value;
                 Atlas.SetSprite(Index, ref sprite);
             }
+        }
+
+        /// <summary>
+        /// Tests for equality between two objects.
+        /// </summary>
+        /// <param name="left">The first value to compare.</param>
+        /// <param name="right">The second value to compare.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> has the same value as <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator ==(SpriteHandle left, SpriteHandle right)
+        {
+            return left.Index == right.Index && left.Atlas == right.Atlas;
+        }
+
+        /// <summary>
+        /// Tests for inequality between two objects.
+        /// </summary>
+        /// <param name="left">The first value to compare.</param>
+        /// <param name="right">The second value to compare.</param>
+        /// <returns><c>true</c> if <paramref name="left" /> has a different value than <paramref name="right" />; otherwise, <c>false</c>.</returns>
+        public static bool operator !=(SpriteHandle left, SpriteHandle right)
+        {
+            return left.Index != right.Index || left.Atlas != right.Atlas;
+        }
+
+        /// <inheritdoc />
+        public bool Equals(SpriteHandle other)
+        {
+            return Index == other.Index && Atlas == other.Atlas;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is SpriteHandle other && Equals(other);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Atlas, Index);
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            if (Atlas)
+                return $"{System.IO.Path.GetFileNameWithoutExtension(Atlas.Path)}[{Index}]";
+            return "Invalid";
         }
     }
 }

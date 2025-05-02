@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Engine/Platform/Platform.h"
 #include "Engine/Platform/File.h"
@@ -14,18 +14,7 @@ MemoryWriteStream::MemoryWriteStream()
 MemoryWriteStream::MemoryWriteStream(uint32 capacity)
     : _capacity(capacity)
 {
-    if (capacity > 0)
-    {
-        _buffer = (byte*)Allocator::Allocate(capacity);
-        if (_buffer == nullptr)
-        {
-            OUT_OF_MEMORY;
-        }
-    }
-    else
-    {
-        _buffer = nullptr;
-    }
+    _buffer = capacity > 0 ? (byte*)Allocator::Allocate(capacity) : nullptr;
     _position = _buffer;
 }
 
@@ -46,10 +35,6 @@ void* MemoryWriteStream::Move(uint32 bytes)
         while (newCapacity < position + bytes)
             newCapacity *= 2;
         byte* newBuf = (byte*)Allocator::Allocate(newCapacity);
-        if (newBuf == nullptr)
-        {
-            OUT_OF_MEMORY;
-        }
         Platform::MemoryCopy(newBuf, _buffer, _capacity);
         Allocator::Free(_buffer);
 
@@ -73,10 +58,6 @@ void MemoryWriteStream::Reset(uint32 capacity)
     {
         Allocator::Free(_buffer);
         _buffer = (byte*)Allocator::Allocate(capacity);
-        if (_buffer == nullptr)
-        {
-            OUT_OF_MEMORY;
-        }
         _capacity = capacity;
     }
 
@@ -142,10 +123,6 @@ void MemoryWriteStream::WriteBytes(const void* data, uint32 bytes)
         while (newCapacity < position + bytes)
             newCapacity *= 2;
         byte* newBuf = (byte*)Allocator::Allocate(newCapacity);
-        if (newBuf == nullptr)
-        {
-            OUT_OF_MEMORY;
-        }
         Platform::MemoryCopy(newBuf, _buffer, _capacity);
         Allocator::Free(_buffer);
 

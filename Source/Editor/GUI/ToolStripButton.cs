@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -104,6 +104,21 @@ namespace FlaxEditor.GUI
         public ToolStripButton SetChecked(bool value)
         {
             Checked = value;
+            return this;
+        }
+
+        /// <summary>
+        /// Links the tooltip with input binding info.
+        /// </summary>
+        /// <param name="text">The text.</param>
+        /// <param name="inputBinding">The input key binding.</param>
+        /// <returns>This tooltip.</returns>
+        public ToolStripButton LinkTooltip(string text, ref Options.InputBinding inputBinding)
+        {
+            var input = inputBinding.ToString();
+            if (input.Length != 0)
+                text = $"{text} ({input})";
+            LinkTooltip(text);
             return this;
         }
 

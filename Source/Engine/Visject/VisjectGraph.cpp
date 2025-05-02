@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "VisjectGraph.h"
 #include "GraphUtilities.h"
@@ -79,6 +79,7 @@ void VisjectExecutor::ProcessGroupConstants(Box* box, Node* node, Value& value)
             value = cv.W;
         break;
     }
+    // Rotation
     case 8:
     {
         const float pitch = (float)node->Values[0];
@@ -229,7 +230,8 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
             case VariantType::Double4:
                 value = Double3(v1.AsDouble4()).Length();
                 break;
-            default: CRASH;
+            default:
+                value = 0.0f;
                 break;
             }
             break;
@@ -264,7 +266,8 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
             case VariantType::Double4:
                 value = Double4(Double3::Normalize(Double3(v1.AsDouble3())), 0.0f);
                 break;
-            default: CRASH;
+            default:
+                value = 0.0f;
                 break;
             }
             break;
@@ -289,13 +292,25 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
             case VariantType::Double3:
                 value = Double3::Cross(v1.AsDouble3(), v2.AsDouble3());
                 break;
-            default: CRASH;
+            default:
+                value = 0.0f;
                 break;
             }
             break;
         case 19:
             switch (v1.Type.Type)
             {
+            case VariantType::Bool:
+            case VariantType::Int16:
+            case VariantType::Uint16:
+            case VariantType::Int:
+            case VariantType::Uint:
+            case VariantType::Int64:
+            case VariantType::Uint64:
+            case VariantType::Float:
+            case VariantType::Double:
+                value = Math::Abs((float)v1 - (float)v2);
+                break;
             case VariantType::Float2:
                 value = Float2::Distance(v1.AsFloat2(), v2.AsFloat2());
                 break;
@@ -315,7 +330,8 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
             case VariantType::Double4:
                 value = Double3::Distance((Double3)v1, (Double3)v2);
                 break;
-            default: CRASH;
+            default:
+                value = 0.0f;
                 break;
             }
             break;
@@ -341,7 +357,8 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
             case VariantType::Double4:
                 value = Double3::Dot((Double3)v1, (Double3)v2);
                 break;
-            default: CRASH;
+            default:
+                value = 0.0f;
                 break;
             }
             break;
@@ -385,7 +402,8 @@ void VisjectExecutor::ProcessGroupMath(Box* box, Node* node, Value& value)
         case VariantType::Float4:
             value = Float4(v1.AsFloat4() - 2.0f * v2.AsFloat4() * Float3::Dot((Float3)v1, (Float3)v2));
             break;
-        default: CRASH;
+        default:
+            value = 0.0f;
             break;
         }
         break;
@@ -624,9 +642,9 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
                     {
                         box = &node->Boxes[boxId];
                         String fieldName;
-                        stream.ReadString(&fieldName, 11);
+                        stream.Read(fieldName, 11);
                         VariantType fieldType;
-                        stream.ReadVariantType(&fieldType);
+                        stream.Read(fieldType);
                         if (box && box->HasConnection())
                         {
                             StringAsANSI<40> fieldNameAnsi(*fieldName, fieldName.Length());
@@ -665,9 +683,9 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
             {
                 box = &node->Boxes[boxId];
                 String fieldName;
-                stream.ReadString(&fieldName, 11);
+                stream.Read(fieldName, 11);
                 VariantType fieldType;
-                stream.ReadVariantType(&fieldType);
+                stream.Read(fieldType);
                 if (box && box->HasConnection())
                 {
                     const Variant fieldValue = eatBox(node, box->FirstConnection());
@@ -719,9 +737,9 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
                     for (int32 boxId = 1; boxId < node->Boxes.Count(); boxId++)
                     {
                         String fieldName;
-                        stream.ReadString(&fieldName, 11);
+                        stream.Read(fieldName, 11);
                         VariantType fieldType;
-                        stream.ReadVariantType(&fieldType);
+                        stream.Read(fieldType);
                         if (box->ID == boxId)
                         {
                             StringAsANSI<40> fieldNameAnsi(*fieldName, fieldName.Length());
@@ -767,9 +785,9 @@ void VisjectExecutor::ProcessGroupPacking(Box* box, Node* node, Value& value)
             for (int32 boxId = 1; boxId < node->Boxes.Count(); boxId++)
             {
                 String fieldName;
-                stream.ReadString(&fieldName, 11);
+                stream.Read(fieldName, 11);
                 VariantType fieldType;
-                stream.ReadVariantType(&fieldType);
+                stream.Read(fieldType);
                 if (box->ID == boxId)
                 {
                     type.Struct.GetField(structureValue.AsBlob.Data, fieldName, value);

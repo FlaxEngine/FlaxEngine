@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -10,6 +10,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Modes;
 using FlaxEditor.Windows;
 using FlaxEngine;
+using FlaxEngine.Gizmo;
 using FlaxEngine.GUI;
 using Object = FlaxEngine.Object;
 
@@ -22,10 +23,8 @@ namespace FlaxEditor.Viewport
     public class MainEditorGizmoViewport : EditorGizmoViewport, IEditorPrimitivesOwner
     {
         private readonly Editor _editor;
-
         private readonly ContextMenuButton _showGridButton;
         private readonly ContextMenuButton _showNavigationButton;
-
         private SelectionOutline _customSelectionOutline;
 
         /// <summary>
@@ -43,7 +42,7 @@ namespace FlaxEditor.Viewport
             /// <inheritdoc />
             public EditorSpritesRenderer()
             {
-                Order = -10000000;
+                Order = -100000 + 1; // Draw after grid
                 UseSingleTarget = true;
             }
 
@@ -107,6 +106,7 @@ namespace FlaxEditor.Viewport
         private double _lockedFocusOffset;
         private readonly ViewportDebugDrawData _debugDrawData = new ViewportDebugDrawData(32);
         private EditorSpritesRenderer _editorSpritesRenderer;
+        private ViewportRubberBandSelector _rubberBandSelector;
 
         /// <summary>
         /// Drag and drop handlers
@@ -214,6 +214,9 @@ namespace FlaxEditor.Viewport
             TransformGizmo.Duplicate += _editor.SceneEditing.Duplicate;
             Gizmos.Active = TransformGizmo;
 
+            // Add rubber band selector
+            _rubberBandSelector = new ViewportRubberBandSelector(this);
+
             // Add grid
             Grid = new GridGizmo(this);
             Grid.EnabledChanged += gizmo => _showGridButton.Icon = gizmo.Enabled ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
@@ -221,7 +224,7 @@ namespace FlaxEditor.Viewport
             editor.SceneEditing.SelectionChanged += OnSelectionChanged;
 
             // Gizmo widgets
-            AddGizmoViewportWidgets(this, TransformGizmo);
+            AddGizmoViewportWidgets(this, TransformGizmo, true);
 
             // Show grid widget
             _showGridButton = ViewWidgetShowMenu.AddButton("Grid", () => Grid.Enabled = !Grid.Enabled);
@@ -478,6 +481,22 @@ namespace FlaxEditor.Viewport
             TransformGizmo.EndTransforming();
         }
 
+        /// <inheritdoc />
+        public override void OnLostFocus()
+        {
+            base.OnLostFocus();
+
+            _rubberBandSelector.StopRubberBand();
+        }
+
+        /// <inheritdoc />
+        public override void OnMouseLeave()
+        {
+            base.OnMouseLeave();
+
+            _rubberBandSelector.StopRubberBand();
+        }
+
         /// <summary>
         /// Focuses the viewport on the current selection of the gizmo.
         /// </summary>
@@ -568,6 +587,15 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
+        public override void Draw()
+        {
+            base.Draw();
+
+            // Draw rubber band for rectangle selection
+            _rubberBandSelector.Draw();
+        }
+
+        /// <inheritdoc />
         protected override void OrientViewport(ref Quaternion orientation)
         {
             if (TransformGizmo.SelectedParents.Count != 0)
@@ -577,19 +605,58 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
+        public override void OnMouseMove(Float2 location)
+        {
+            base.OnMouseMove(location);
+
+            // Don't allow rubber band selection when gizmo is controlling mouse, vertex painting mode, or cloth painting is enabled
+            bool canStart = !(IsControllingMouse || IsRightMouseButtonDown || IsAltKeyDown) &&
+                            Gizmos?.Active is TransformGizmo && !Gizmos.Active.IsControllingMouse;
+            _rubberBandSelector.TryCreateRubberBand(canStart, _viewMousePos);
+        }
+
+        /// <inheritdoc />
+        protected override void OnLeftMouseButtonDown()
+        {
+            base.OnLeftMouseButtonDown();
+
+            _rubberBandSelector.TryStartingRubberBandSelection();
+        }
+
+        /// <inheritdoc />
         protected override void OnLeftMouseButtonUp()
         {
             // Skip if was controlling mouse or mouse is not over the area
             if (_prevInput.IsControllingMouse || !Bounds.Contains(ref _viewMousePos))
                 return;
 
-            // Try to pick something with the current gizmo
-            Gizmos.Active?.Pick();
+            // Select rubberbanded rect actor nodes or pick with gizmo
+            if (!_rubberBandSelector.ReleaseRubberBandSelection())
+            {
+                // Try to pick something with the current gizmo
+                Gizmos.Active?.Pick();
+            }
 
             // Keep focus
             Focus();
 
             base.OnLeftMouseButtonUp();
+        }
+
+        /// <inheritdoc />
+        public override bool OnMouseUp(Float2 location, MouseButton button)
+        {
+            if (base.OnMouseUp(location, button))
+                return true;
+
+            // Handle mouse going up when using rubber band with mouse capture that click up outside the view
+            if (button == MouseButton.Left && !new Rectangle(Float2.Zero, Size).Contains(ref location))
+            {
+                _rubberBandSelector.ReleaseRubberBandSelection();
+                return true;
+            }
+
+            return false;
         }
 
         /// <inheritdoc />

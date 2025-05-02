@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -245,6 +245,29 @@ namespace FlaxEditor.Surface.Archetypes
                 }
                 return false;
             }
+
+            internal static void GetInputOutputDescription(NodeArchetype nodeArch, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs)
+            {
+                var typeName = (string)nodeArch.DefaultValues[0];
+                var type = TypeUtils.GetType(typeName);
+                if (type)
+                {
+                    var fields = type.GetMembers(BindingFlags.Public | BindingFlags.Instance).Where(x => x.IsField).ToArray();
+                    var fieldsLength = fields.Length;
+                    inputs = new (string, ScriptType)[fieldsLength];
+                    for (var i = 0; i < fieldsLength; i++)
+                    {
+                        var field = fields[i];
+                        inputs[i] = (field.Name, field.ValueType);
+                    }
+
+                    outputs = [(type.Name, type)];
+                    return;
+                }
+
+                inputs = null;
+                outputs = null;
+            }
         }
 
         private sealed class UnpackStructureNode : StructureNode
@@ -282,6 +305,29 @@ namespace FlaxEditor.Surface.Archetypes
                     }
                 }
                 return false;
+            }
+            
+            internal static void GetInputOutputDescription(NodeArchetype nodeArch, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs)
+            {
+                var typeName = (string)nodeArch.DefaultValues[0];
+                var type = TypeUtils.GetType(typeName);
+                if (type)
+                {
+                    inputs = [(type.Name, type)];
+
+                    var fields = type.GetMembers(BindingFlags.Public | BindingFlags.Instance).Where(x => x.IsField).ToArray();
+                    var fieldsLength = fields.Length;
+                    outputs = new (string, ScriptType)[fieldsLength];
+                    for (var i = 0; i < fieldsLength; i++)
+                    {
+                        var field = fields[i];
+                        outputs[i] = (field.Name, field.ValueType);
+                    }
+                    return;
+                }
+
+                inputs = null;
+                outputs = null;
             }
         }
 
@@ -411,6 +457,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new PackStructureNode(id, context, arch, groupArch),
                 IsInputCompatible = PackStructureNode.IsInputCompatible,
                 IsOutputCompatible = PackStructureNode.IsOutputCompatible,
+                GetInputOutputDescription = PackStructureNode.GetInputOutputDescription,
                 Description = "Makes the structure data to from the components.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(180, 20),
@@ -523,6 +570,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new UnpackStructureNode(id, context, arch, groupArch),
                 IsInputCompatible = UnpackStructureNode.IsInputCompatible,
                 IsOutputCompatible = UnpackStructureNode.IsOutputCompatible,
+                GetInputOutputDescription = UnpackStructureNode.GetInputOutputDescription,
                 Description = "Breaks the structure data to allow extracting components from it.",
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(180, 20),

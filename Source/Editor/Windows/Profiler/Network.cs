@@ -1,5 +1,6 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
+#if USE_PROFILER
 using System;
 using System.Collections.Generic;
 using FlaxEditor.GUI;
@@ -44,7 +45,8 @@ namespace FlaxEditor.Windows.Profiler
         private readonly Table _tableRep;
         private List<Row> _tableRowsCache;
         private SamplesBuffer<ProfilingTools.NetworkEventStat[]> _events;
-        private NetworkDriverStats _prevStats;
+        private NetworkDriverStats _frameStats;
+        private NetworkDriverStats _prevTotalStats;
         private List<NetworkDriverStats> _stats;
 
         public Network()
@@ -61,6 +63,7 @@ namespace FlaxEditor.Windows.Profiler
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = Margin.Zero,
+                Pivot = Float2.Zero,
                 IsScrollable = true,
                 Parent = panel,
             };
@@ -109,34 +112,41 @@ namespace FlaxEditor.Windows.Profiler
             _dataReceivedRateChart.Clear();
             _events?.Clear();
             _stats?.Clear();
-            _prevStats = new NetworkDriverStats();
+            _frameStats = _prevTotalStats = new NetworkDriverStats();
+        }
+
+        /// <inheritdoc />
+        public override void UpdateStats()
+        {
+            // Gather peer stats
+            var peers = NetworkPeer.Peers;
+            var totalStats = new NetworkDriverStats();
+            totalStats.RTT = Time.UnscaledGameTime; // Store sample time in RTT
+            foreach (var peer in peers)
+            {
+                var peerStats = peer.NetworkDriver.GetStats();
+                totalStats.TotalDataSent += peerStats.TotalDataSent;
+                totalStats.TotalDataReceived += peerStats.TotalDataReceived;
+            }
+            var stats = totalStats;
+            stats.TotalDataSent = (uint)Mathf.Max((long)totalStats.TotalDataSent - (long)_prevTotalStats.TotalDataSent, 0);
+            stats.TotalDataReceived = (uint)Mathf.Max((long)totalStats.TotalDataReceived - (long)_prevTotalStats.TotalDataReceived, 0);
+            _frameStats = stats;
+            _prevTotalStats = totalStats;
         }
 
         /// <inheritdoc />
         public override void Update(ref SharedUpdateData sharedData)
         {
-            // Gather peer stats
-            var peers = NetworkPeer.Peers;
-            var thisStats = new NetworkDriverStats();
-            thisStats.RTT = Time.UnscaledGameTime; // Store sample time in RTT
-            foreach (var peer in peers)
-            {
-                var peerStats = peer.NetworkDriver.GetStats();
-                thisStats.TotalDataSent += peerStats.TotalDataSent;
-                thisStats.TotalDataReceived += peerStats.TotalDataReceived;
-            }
-            var stats = thisStats;
-            stats.TotalDataSent = (uint)Mathf.Max((long)thisStats.TotalDataSent - (long)_prevStats.TotalDataSent, 0);
-            stats.TotalDataReceived = (uint)Mathf.Max((long)thisStats.TotalDataReceived - (long)_prevStats.TotalDataReceived, 0);
-            _dataSentChart.AddSample(stats.TotalDataSent);
-            _dataReceivedChart.AddSample(stats.TotalDataReceived);
-            _prevStats = thisStats;
+            // Add this-frame stats
+            _dataSentChart.AddSample(_frameStats.TotalDataSent);
+            _dataReceivedChart.AddSample(_frameStats.TotalDataReceived);
             if (_stats == null)
                 _stats = new List<NetworkDriverStats>();
-            _stats.Add(stats);
+            _stats.Add(_frameStats);
 
             // Remove all stats older than 1 second
-            while (_stats.Count > 0 && thisStats.RTT - _stats[0].RTT >= 1.0f)
+            while (_stats.Count > 0 && _frameStats.RTT - _stats[0].RTT >= 1.0f)
                 _stats.RemoveAt(0);
 
             // Calculate average data rates (from last second)
@@ -146,11 +156,10 @@ namespace FlaxEditor.Windows.Profiler
                 avgStats.TotalDataSent += e.TotalDataSent;
                 avgStats.TotalDataReceived += e.TotalDataReceived;
             }
-            avgStats.TotalDataSent /= (uint)_stats.Count;
-            avgStats.TotalDataReceived /= (uint)_stats.Count;
+            //avgStats.TotalDataSent /= (uint)_stats.Count;
+            //avgStats.TotalDataReceived /= (uint)_stats.Count;
             _dataSentRateChart.AddSample(avgStats.TotalDataSent);
             _dataReceivedRateChart.AddSample(avgStats.TotalDataReceived);
-
 
             // Gather network events
             var events = ProfilingTools.EventsNetwork;
@@ -221,7 +230,7 @@ namespace FlaxEditor.Windows.Profiler
 
                         var table = isRpc ? _tableRpc : _tableRep;
                         row.Width = table.Width;
-                        row.BackgroundColor = rowCount[isRpc ? 0 : 1] % 2 == 0 ? rowColor2 : Color.Transparent;
+                        row.BackgroundColor = rowCount[isRpc ? 0 : 1] % 2 == 1 ? rowColor2 : Color.Transparent;
                         row.Parent = table;
                         if (isRpc)
                             rowCount.X++;
@@ -319,7 +328,7 @@ namespace FlaxEditor.Windows.Profiler
 
         private static string FormatCellBytes(object x)
         {
-            return Utilities.Utils.FormatBytesCount((int)x);
+            return Utilities.Utils.FormatBytesCount((ulong)(int)x);
         }
 
         private static int SortRows(Control x, Control y)
@@ -334,3 +343,4 @@ namespace FlaxEditor.Windows.Profiler
         }
     }
 }
+#endif

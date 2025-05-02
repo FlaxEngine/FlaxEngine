@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -73,7 +73,7 @@ public:
     /// </summary>
     /// <param name="view">The rendering view.</param>
     /// <param name="gBuffer">GBuffer input to setup</param>
-    static void SetInputs(const RenderView& view, GBufferData& gBuffer);
+    static void SetInputs(const RenderView& view, ShaderGBufferData& gBuffer);
 
 private:
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -98,7 +98,7 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API ModelTool
 
     // Optional: inputModel or modelData
     // Optional: outputSDF or null, outputStream or null
-    static bool GenerateModelSDF(class Model* inputModel, class ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, class MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold = 0.6f);
+    static bool GenerateModelSDF(class Model* inputModel, const class ModelData* modelData, float resolutionScale, int32 lodIndex, ModelBase::SDFData* outputSDF, class MemoryWriteStream* outputStream, const StringView& assetName, float backfacesThreshold = 0.6f, bool useGPU = true);
 
 #if USE_EDITOR
 
@@ -170,6 +170,9 @@ public:
         // Specifies the maximum angle (in degrees) that may be between two vertex tangents before their tangents and bi-tangents are smoothed. The default value is 45.
         API_FIELD(Attributes="EditorOrder(45), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowSmoothingTangentsAngle)), Limit(0, 45, 0.1f)")
         float SmoothingTangentsAngle = 45.0f;
+        // If checked, the winding order of the vertices will be reversed.
+        API_FIELD(Attributes="EditorOrder(47), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
+        bool ReverseWindingOrder = false;
         // Enable/disable meshes geometry optimization.
         API_FIELD(Attributes="EditorOrder(50), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         bool OptimizeMeshes = true;
@@ -180,7 +183,7 @@ public:
         API_FIELD(Attributes="EditorOrder(70), EditorDisplay(\"Geometry\", \"Import LODs\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportLODs = true;
         // Enable/disable importing vertex colors (channel 0 only).
-        API_FIELD(Attributes="EditorOrder(80), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowModel))")
+        API_FIELD(Attributes="EditorOrder(80), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportVertexColors = true;
         // Enable/disable importing blend shapes (morph targets).
         API_FIELD(Attributes="EditorOrder(85), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowSkinnedModel))")
@@ -195,7 +198,7 @@ public:
         API_FIELD(Attributes="EditorOrder(100), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         String CollisionMeshesPrefix = TEXT("");
         // The type of collision that should be generated if the mesh has a collision prefix specified.
-        API_FIELD(Attributes = "EditorOrder(105), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
+        API_FIELD(Attributes="EditorOrder(105), EditorDisplay(\"Geometry\"), VisibleIf(nameof(ShowGeometry))")
         CollisionDataType CollisionType = CollisionDataType::ConvexMesh;
 
     public: // Transform
@@ -255,10 +258,10 @@ public:
         API_FIELD(Attributes="EditorOrder(1100), EditorDisplay(\"Level Of Detail\", \"Generate LODs\"), VisibleIf(nameof(ShowGeometry))")
         bool GenerateLODs = false;
         // The index of the LOD from the source model data to use as a reference for following LODs generation.
-        API_FIELD(Attributes="EditorOrder(1110), EditorDisplay(\"Level Of Detail\", \"Base LOD\"), VisibleIf(nameof(ShowGeometry)), Limit(0, 5)")
+        API_FIELD(Attributes="EditorOrder(1110), EditorDisplay(\"Level Of Detail\", \"Base LOD\"), VisibleIf(nameof(ShowGeometry)), Limit(0, 5, 0.065f)")
         int32 BaseLOD = 0;
         // The amount of LODs to include in the model (all remaining ones starting from Base LOD will be generated).
-        API_FIELD(Attributes="EditorOrder(1120), EditorDisplay(\"Level Of Detail\", \"LOD Count\"), VisibleIf(nameof(ShowGeometry)), Limit(1, 6)")
+        API_FIELD(Attributes="EditorOrder(1120), EditorDisplay(\"Level Of Detail\", \"LOD Count\"), VisibleIf(nameof(ShowGeometry)), Limit(1, 6, 0.065f)")
         int32 LODCount = 4;
         // The target amount of triangles for the generated LOD (based on the higher LOD). Normalized to range 0-1. For instance 0.4 cuts the triangle count to 40%.
         API_FIELD(Attributes="EditorOrder(1130), EditorDisplay(\"Level Of Detail\"), VisibleIf(nameof(ShowGeometry)), Limit(0, 1, 0.001f)")
@@ -276,10 +279,10 @@ public:
         API_FIELD(Attributes="EditorOrder(400), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool ImportMaterials = true;
         // If checked, the importer will create the model's materials as instances of a base material.
-        API_FIELD(Attributes = "EditorOrder(401), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterials)), VisibleIf(nameof(ShowGeometry))")
+        API_FIELD(Attributes="EditorOrder(401), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterials)), VisibleIf(nameof(ShowGeometry))")
         bool ImportMaterialsAsInstances = false;
         // The material used as the base material that will be instanced as the imported model's material.
-        API_FIELD(Attributes = "EditorOrder(402), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterialsAsInstances)), VisibleIf(nameof(ShowGeometry))")
+        API_FIELD(Attributes="EditorOrder(402), EditorDisplay(\"Materials\"), VisibleIf(nameof(ImportMaterialsAsInstances)), VisibleIf(nameof(ShowGeometry))")
         AssetReference<MaterialBase> InstanceToImportAs;
         // If checked, the importer will import texture files used by the model and any embedded texture resources.
         API_FIELD(Attributes="EditorOrder(410), EditorDisplay(\"Materials\"), VisibleIf(nameof(ShowGeometry))")
@@ -288,7 +291,7 @@ public:
         API_FIELD(Attributes="EditorOrder(420), EditorDisplay(\"Materials\", \"Keep Overridden Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool RestoreMaterialsOnReimport = true;
         // If checked, the importer will not reimport any material from this model which already exist in the sub-asset folder.
-        API_FIELD(Attributes = "EditorOrder(421), EditorDisplay(\"Materials\", \"Skip Existing Materials\"), VisibleIf(nameof(ShowGeometry))")
+        API_FIELD(Attributes="EditorOrder(421), EditorDisplay(\"Materials\", \"Skip Existing Materials\"), VisibleIf(nameof(ShowGeometry))")
         bool SkipExistingMaterialsOnReimport = true;
 
     public: // SDF
@@ -306,7 +309,7 @@ public:
         API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Splitting\"), VisibleIf(nameof(ShowSplitting))")
         bool SplitObjects = false;
         // The zero-based index for the mesh/animation clip to import. If the source file has more than one mesh/animation it can be used to pick a desired object. Default -1 imports all objects.
-        API_FIELD(Attributes="EditorOrder(2010), EditorDisplay(\"Splitting\"), VisibleIf(nameof(ShowSplitting))")
+        API_FIELD(Attributes="EditorOrder(2010), EditorDisplay(\"Splitting\"), VisibleIf(nameof(ShowSplitting)), Limit(int.MinValue, int.MaxValue, 0.065f)")
         int32 ObjectIndex = -1;
 
     public: // Other

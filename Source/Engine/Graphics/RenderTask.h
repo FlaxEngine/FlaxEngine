@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -112,9 +112,14 @@ public:
     API_PROPERTY() virtual bool CanDraw() const;
 
     /// <summary>
-    /// Called by graphics device to draw this task. Can be used to invoke task rendering nested inside another task - use on own risk!
+    /// Called by graphics device to draw this task.
     /// </summary>
     API_FUNCTION() virtual void OnDraw();
+
+    /// <summary>
+    /// Called by graphics device to idle task that has not been selected for drawing this frame (CanDraw returned false). Can be used to recycle cached memory if task is idle for many frames in a row.
+    /// </summary>
+    virtual void OnIdle();
 
     /// <summary>
     /// Called on task rendering begin.
@@ -407,6 +412,7 @@ public:
     // [RenderTask]
     bool Resize(int32 width, int32 height) override;
     bool CanDraw() const override;
+    void OnIdle() override;
     void OnBegin(GPUContext* context) override;
     void OnRender(GPUContext* context) override;
     void OnEnd(GPUContext* context) override;

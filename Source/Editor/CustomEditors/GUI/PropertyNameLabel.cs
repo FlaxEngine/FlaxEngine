@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEngine;
@@ -29,6 +29,11 @@ namespace FlaxEditor.CustomEditors.GUI
         /// Helper value used by the <see cref="PropertiesList"/> to draw property names in a proper area.
         /// </summary>
         internal int FirstChildControlIndex;
+
+        /// <summary>
+        /// Helper value used by the <see cref="PropertiesList"/> to draw property names in a proper area.
+        /// </summary>
+        internal PropertiesList FirstChildControlContainer;
 
         /// <summary>
         /// The linked custom editor (shows the label property).
@@ -154,8 +159,16 @@ namespace FlaxEditor.CustomEditors.GUI
         public override void OnDestroy()
         {
             SetupContextMenu = null;
+            LinkedEditor = null;
+            FirstChildControlContainer = null;
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return Text.ToString();
         }
     }
 }

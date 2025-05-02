@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -37,6 +37,8 @@
 #define VMA_MIN(v1, v2) (Math::Min((v1), (v2)))
 #define VMA_MAX(v1, v2) (Math::Max((v1), (v2)))
 #define VMA_SWAP(v1, v2) (::Swap((v1), (v2)))
+#define VMA_SYSTEM_ALIGNED_MALLOC(size, alignment) Platform::Allocate(uint64(size), uint64(alignment))
+#define VMA_SYSTEM_ALIGNED_FREE(ptr) Platform::Free(ptr)
 #define VMA_NULLABLE
 #define VMA_NOT_NULL
 #include <ThirdParty/VulkanMemoryAllocator/vk_mem_alloc.h>

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_WINDOWS
 
@@ -11,117 +11,45 @@
 #include "Engine/Core/Collections/Array.h"
 #include "../Win32/IncludeWindowsHeaders.h"
 
-BOOL RefreshWatch(WindowsFileSystemWatcher* watcher);
-
 namespace FileSystemWatchers
 {
     CriticalSection Locker;
     Array<WindowsFileSystemWatcher*, InlinedAllocation<16>> Watchers;
     Win32Thread* Thread = nullptr;
+    Windows::HANDLE IoHandle = INVALID_HANDLE_VALUE;
     bool ThreadActive;
 
     int32 Run()
     {
+        DWORD numBytes = 0;
+        LPOVERLAPPED overlapped;
+        ULONG_PTR compKey = 0;
         while (ThreadActive)
         {
-            SleepEx(INFINITE, true);
+            if (GetQueuedCompletionStatus(IoHandle, &numBytes, &compKey, &overlapped, INFINITE) && overlapped && numBytes != 0)
+            {
+                // Send further to the specific watcher
+                Locker.Lock();
+                for (auto watcher : Watchers)
+                {
+                    if ((OVERLAPPED*)&watcher->Overlapped == overlapped)
+                    {
+                        watcher->NotificationCompletion();
+                        break;
+                    }
+                }
+                Locker.Unlock();
+            }
         }
         return 0;
     }
-
-    static void CALLBACK StopProc(ULONG_PTR arg)
-    {
-        ThreadActive = false;
-    }
-
-    static void CALLBACK AddDirectoryProc(ULONG_PTR arg)
-    {
-        const auto watcher = (FileSystemWatcher*)arg;
-        RefreshWatch(watcher);
-    }
 };
-
-VOID CALLBACK NotificationCompletion(DWORD dwErrorCode, DWORD dwNumberOfBytesTransfered, LPOVERLAPPED lpOverlapped)
-{
-    auto watcher = (FileSystemWatcher*)lpOverlapped->hEvent;
-    if (dwErrorCode == ERROR_OPERATION_ABORTED ||
-        dwNumberOfBytesTransfered <= 0 ||
-        !watcher)
-    {
-        return;
-    }
-
-    // Swap buffers
-    watcher->CurrentBuffer = (watcher->CurrentBuffer + 1) % 2;
-
-    // Get the new read issued as fast as possible
-    if (!watcher->StopNow)
-    {
-        RefreshWatch(watcher);
-    }
-
-    // Process notifications
-    auto notify = (FILE_NOTIFY_INFORMATION*)watcher->Buffer[(watcher->CurrentBuffer + 1) % 2];
-    do
-    {
-        // Convert action type
-        auto action = FileSystemAction::Unknown;
-        switch (notify->Action)
-        {
-        case FILE_ACTION_RENAMED_NEW_NAME:
-        case FILE_ACTION_ADDED:
-            action = FileSystemAction::Create;
-            break;
-        case FILE_ACTION_RENAMED_OLD_NAME:
-        case FILE_ACTION_REMOVED:
-            action = FileSystemAction::Delete;
-            break;
-        case FILE_ACTION_MODIFIED:
-            action = FileSystemAction::Modify;
-            break;
-        default:
-            action = FileSystemAction::Unknown;
-            break;
-        }
-        if (action != FileSystemAction::Unknown)
-        {
-            // Build path
-            String path(notify->FileName, notify->FileNameLength / sizeof(WCHAR));
-            path = watcher->Directory / path;
-
-            // Send event
-            watcher->OnEvent(path, action);
-        }
-
-        // Move to the next notify
-        notify = (FILE_NOTIFY_INFORMATION*)((byte*)notify + notify->NextEntryOffset);
-    } while (notify->NextEntryOffset != 0);
-}
-
-// Refreshes the directory monitoring
-BOOL RefreshWatch(WindowsFileSystemWatcher* watcher)
-{
-    DWORD dwBytesReturned = 0;
-    return ReadDirectoryChangesW(
-        watcher->DirectoryHandle,
-        watcher->Buffer[watcher->CurrentBuffer],
-        FileSystemWatcher::BufferSize,
-        watcher->WithSubDirs ? TRUE : FALSE,
-        FILE_NOTIFY_CHANGE_CREATION | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_FILE_NAME,
-        &dwBytesReturned,
-        (OVERLAPPED*)&watcher->Overlapped,
-        NotificationCompletion
-    );
-}
 
 WindowsFileSystemWatcher::WindowsFileSystemWatcher(const String& directory, bool withSubDirs)
     : FileSystemWatcherBase(directory, withSubDirs)
-    , StopNow(false)
-    , CurrentBuffer(0)
 {
     // Setup
     Platform::MemoryClear(&Overlapped, sizeof(Overlapped));
-    ((OVERLAPPED&)Overlapped).hEvent = this;
 
     // Create directory handle for events handling
     DirectoryHandle = CreateFileW(
@@ -144,25 +72,26 @@ WindowsFileSystemWatcher::WindowsFileSystemWatcher(const String& directory, bool
     FileSystemWatchers::Watchers.Add(this);
     if (!FileSystemWatchers::Thread)
     {
+        FileSystemWatchers::IoHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1);
         FileSystemWatchers::ThreadActive = true;
         FileSystemWatchers::Thread = ThreadSpawner::Start(FileSystemWatchers::Run, TEXT("File System Watchers"), ThreadPriority::BelowNormal);
     }
+    CreateIoCompletionPort(DirectoryHandle, FileSystemWatchers::IoHandle, 0, 1);
     FileSystemWatchers::Locker.Unlock();
 
-    // Issue the first read
-    QueueUserAPC(FileSystemWatchers::AddDirectoryProc, FileSystemWatchers::Thread->GetHandle(), (ULONG_PTR)this);
+    // Initialize filesystem events tracking
+    ReadDirectoryChanges();
 }
 
 WindowsFileSystemWatcher::~WindowsFileSystemWatcher()
 {
     FileSystemWatchers::Locker.Lock();
     FileSystemWatchers::Watchers.Remove(this);
+    StopNow = true;
     FileSystemWatchers::Locker.Unlock();
 
     if (DirectoryHandle != INVALID_HANDLE_VALUE)
     {
-        StopNow = true;
-
 #if WINVER >= 0x600
         CancelIoEx(DirectoryHandle, (OVERLAPPED*)&Overlapped);
 #else
@@ -180,12 +109,85 @@ WindowsFileSystemWatcher::~WindowsFileSystemWatcher()
     if (FileSystemWatchers::Watchers.IsEmpty() && FileSystemWatchers::Thread)
     {
         FileSystemWatchers::ThreadActive = false;
-        QueueUserAPC(FileSystemWatchers::StopProc, FileSystemWatchers::Thread->GetHandle(), 0);
+        FileSystemWatchers::Locker.Unlock();
+        PostQueuedCompletionStatus(FileSystemWatchers::IoHandle, 0, 0, nullptr);
         FileSystemWatchers::Thread->Join();
+        FileSystemWatchers::Locker.Lock();
         Delete(FileSystemWatchers::Thread);
         FileSystemWatchers::Thread = nullptr;
+        CloseHandle(FileSystemWatchers::IoHandle);
+        FileSystemWatchers::IoHandle = INVALID_HANDLE_VALUE;
     }
     FileSystemWatchers::Locker.Unlock();
+}
+
+void WindowsFileSystemWatcher::ReadDirectoryChanges()
+{
+    BOOL result = ReadDirectoryChangesW(
+        DirectoryHandle,
+        Buffer,
+        BufferSize,
+        WithSubDirs ? TRUE : FALSE,
+        FILE_NOTIFY_CHANGE_CREATION | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_FILE_NAME,
+        nullptr,
+        (OVERLAPPED*)&Overlapped,
+        nullptr
+    );
+    if (!result)
+    {
+        LOG_WIN32_LAST_ERROR;
+        Sleep(1);
+    }
+}
+
+void WindowsFileSystemWatcher::NotificationCompletion()
+{
+    ScopeLock lock(Locker);
+
+    // Process notifications
+    auto notify = (FILE_NOTIFY_INFORMATION*)Buffer;
+    do
+    {
+        // Convert action type
+        FileSystemAction action;
+        switch (notify->Action)
+        {
+        case FILE_ACTION_RENAMED_NEW_NAME:
+        case FILE_ACTION_RENAMED_OLD_NAME:
+            action = FileSystemAction::Rename;
+            break;
+        case FILE_ACTION_ADDED:
+            action = FileSystemAction::Create;
+            break;
+        case FILE_ACTION_REMOVED:
+            action = FileSystemAction::Delete;
+            break;
+        case FILE_ACTION_MODIFIED:
+            action = FileSystemAction::Modify;
+            break;
+        default:
+            action = FileSystemAction::Unknown;
+            break;
+        }
+        if (action != FileSystemAction::Unknown)
+        {
+            // Build path
+            String path(notify->FileName, notify->FileNameLength / sizeof(WCHAR));
+            path = Directory / path;
+
+            // Send event
+            OnEvent(path, action);
+        }
+
+        // Move to the next notify
+        notify = (FILE_NOTIFY_INFORMATION*)((byte*)notify + notify->NextEntryOffset);
+    } while (notify->NextEntryOffset != 0);
+
+    // Get the new read issued as fast as possible
+    if (!StopNow)
+    {
+        ReadDirectoryChanges();
+    }
 }
 
 #endif

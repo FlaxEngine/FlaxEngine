@@ -1,14 +1,13 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Engine/Level/Actor.h"
 #include "Engine/Content/AssetReference.h"
 #include "AudioClip.h"
-#include "Config.h"
 
 /// <summary>
-/// Represents a source for emitting audio. Audio can be played spatially (gun shot), or normally (music). Each audio source must have an AudioClip to play - back, and it can also have a position in the case of spatial(3D) audio.
+/// Represents a source for emitting audio. Audio can be played spatially (gun shot), or normally (music). Each audio source must have an AudioClip to play - back, and it can also have a position in the case of spatial (3D) audio.
 /// </summary>
 /// <remarks>
 /// Whether or not an audio source is spatial is controlled by the assigned AudioClip.The volume and the pitch of a spatial audio source is controlled by its position and the AudioListener's position/direction/velocity.
@@ -19,6 +18,7 @@ class FLAXENGINE_API AudioSource : public Actor
     DECLARE_SCENE_OBJECT(AudioSource);
     friend class AudioStreamingHandler;
     friend class AudioClip;
+
 public:
     /// <summary>
     /// Valid states in which AudioSource can be in.
@@ -54,9 +54,9 @@ private:
     bool _playOnStart;
     float _startTime;
     bool _allowSpatialization;
-    bool _clipChanged = false;
 
     bool _isActuallyPlayingSth = false;
+    bool _startingToPlay = false;
     bool _needToUpdateStreamingBuffers = false;
     States _state = States::Stopped;
 
@@ -66,9 +66,9 @@ private:
 
 public:
     /// <summary>
-    /// The internal IDs of this audio source used by the audio backend (unique ID per context/listener).
+    /// The internal ID of this audio source used by the audio backend. Empty if 0.
     /// </summary>
-    Array<AUDIO_SOURCE_ID_TYPE, FixedAllocation<AUDIO_MAX_LISTENERS>> SourceIDs;
+    uint32 SourceID = 0;
 
     /// <summary>
     /// The audio clip asset used as a source of the sound.
@@ -141,7 +141,7 @@ public:
     API_PROPERTY() void SetIsLooping(bool value);
 
     /// <summary>
-    /// Determines whether the audio clip should auto play on level start.
+    /// Determines whether the audio clip should autoplay on level start.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(false), EditorDisplay(\"Audio Source\", \"Play On Start\")")
     FORCE_INLINE bool GetPlayOnStart() const
@@ -152,14 +152,14 @@ public:
     /// <summary>
     /// Determines the time (in seconds) at which the audio clip starts playing if Play On Start is enabled.
     /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(51), DefaultValue(0.0f), Limit(0, float.MaxValue, 0.01f), EditorDisplay(\"Audio Source\", \"Start Time\"), VisibleIf(nameof(PlayOnStart))")
+    API_PROPERTY(Attributes="EditorOrder(51), DefaultValue(0.0f), Limit(0, float.MaxValue, 0.01f), EditorDisplay(\"Audio Source\", \"Start Time\"), VisibleIf(nameof(PlayOnStart))")
     FORCE_INLINE float GetStartTime() const
     {
         return _startTime;
     }
 
     /// <summary>
-    /// Determines whether the audio clip should auto play on game start.
+    /// Determines whether the audio clip should autoplay on game start.
     /// </summary>
     API_PROPERTY() void SetPlayOnStart(bool value);
 
@@ -211,7 +211,7 @@ public:
     API_PROPERTY() void SetDopplerFactor(float value);
 
     /// <summary>
-    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound. At 0, no distance attenuation ever occurs.
+    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(80), DefaultValue(true), EditorDisplay(\"Audio Source\")")
     FORCE_INLINE bool GetAllowSpatialization() const
@@ -260,7 +260,7 @@ public:
     API_PROPERTY() void SetTime(float time);
 
     /// <summary>
-    /// Returns true if the sound source is three dimensional (volume and pitch varies based on listener distance and velocity).
+    /// Returns true if the sound source is three-dimensional (volume and pitch varies based on listener distance and velocity).
     /// </summary>
     API_PROPERTY() bool Is3D() const;
 
@@ -269,16 +269,20 @@ public:
     /// </summary>
     API_PROPERTY() bool UseStreaming() const;
 
-    /// <summary>
-    /// Restores the saved time position and resumes/pauses the playback based on the state before. Used to restore audio source state after data rebuild (eg. by audio backend).
-    /// </summary>
-    void Restore();
-
 public:
     /// <summary>
     /// Determines whether this audio source started playing audio via audio backend. After audio play it may wait for audio clip data to be loaded or streamed.
+    /// [Deprecated in v1.9]
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool IsActuallyPlayingSth() const
+    API_PROPERTY() DEPRECATED("Use IsActuallyPlaying instead.") FORCE_INLINE bool IsActuallyPlayingSth() const
+    {
+        return _isActuallyPlayingSth;
+    }
+
+    /// <summary>
+    /// Determines whether this audio source started playing audio via audio backend. After audio play it may wait for audio clip data to be loaded or streamed.
+    /// </summary>
+    API_PROPERTY() FORCE_INLINE bool IsActuallyPlaying() const
     {
         return _isActuallyPlayingSth;
     }
@@ -288,19 +292,9 @@ public:
     /// </summary>
     void RequestStreamingBuffersUpdate();
 
-    /// <summary>
-    /// Cleanups the cached data. Called by the Audio manager.
-    /// </summary>
-    void Cleanup();
-
 private:
     void OnClipChanged();
     void OnClipLoaded();
-
-    /// <summary>
-    /// Sets the single buffer from the audio clip that is not using dynamic streaming
-    /// </summary>
-    void SetNonStreamingBuffer();
 
     /// <summary>
     /// Plays the audio source. Should have buffer(s) binded before.

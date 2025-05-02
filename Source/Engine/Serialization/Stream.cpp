@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ReadStream.h"
 #include "WriteStream.h"
@@ -105,8 +105,10 @@ void ReadStream::Read(String& data, int16 lock)
     }
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void ReadStream::Read(CommonValue& data)
 {
+    // [Deprecated on 31.07.2020, expires on 31.07.2022]
     byte type;
     ReadByte(&type);
     switch (static_cast<CommonType>(type))
@@ -166,14 +168,14 @@ void ReadStream::Read(CommonValue& data)
     case CommonType::String:
     {
         String v;
-        ReadString(&v, 953);
+        Read(v, 953);
         data.Set(v);
     }
     break;
     case CommonType::Box:
     {
         BoundingBox v;
-        ReadBoundingBox(&v);
+        Read(v);
         data.Set(v);
     }
     break;
@@ -187,14 +189,14 @@ void ReadStream::Read(CommonValue& data)
     case CommonType::Transform:
     {
         Transform v;
-        ReadTransform(&v);
+        Read(v);
         data.Set(v);
     }
     break;
     case CommonType::Sphere:
     {
         BoundingSphere v;
-        ReadBoundingSphere(&v);
+        Read(v);
         data.Set(v);
     }
     break;
@@ -207,7 +209,7 @@ void ReadStream::Read(CommonValue& data)
     case CommonType::Ray:
     {
         Ray v;
-        ReadRay(&v);
+        Read(v);
         data.Set(v);
     }
     break;
@@ -232,6 +234,7 @@ void ReadStream::Read(CommonValue& data)
     default: CRASH;
     }
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void ReadStream::Read(VariantType& data)
 {
@@ -276,7 +279,7 @@ void ReadStream::Read(VariantType& data)
 void ReadStream::Read(Variant& data)
 {
     VariantType type;
-    ReadVariantType(&type);
+    Read(type);
     data.SetType(MoveTemp(type));
     switch (data.Type.Type)
     {
@@ -359,7 +362,7 @@ void ReadStream::Read(Variant& data)
         {
             // Json
             StringAnsi json;
-            ReadStringAnsi(&json, -71);
+            Read(json, -71);
 #if USE_CSHARP
             MCore::Thread::Attach();
             MClass* klass = MUtils::GetClass(data.Type);
@@ -429,22 +432,22 @@ void ReadStream::Read(Variant& data)
         ReadBytes(&data.AsData, sizeof(Guid));
         break;
     case VariantType::BoundingBox:
-        ReadBoundingBox(&data.AsBoundingBox());
+        Read(data.AsBoundingBox());
         break;
     case VariantType::BoundingSphere:
-        ReadBoundingSphere(&data.AsBoundingSphere());
+        Read(data.AsBoundingSphere());
         break;
     case VariantType::Quaternion:
         ReadBytes(&data.AsData, sizeof(Quaternion));
         break;
     case VariantType::Transform:
-        ReadTransform(&data.AsTransform());
+        Read(data.AsTransform());
         break;
     case VariantType::Rectangle:
         ReadBytes(&data.AsData, sizeof(Rectangle));
         break;
     case VariantType::Ray:
-        ReadRay(&data.AsRay());
+        Read(data.AsRay());
         break;
     case VariantType::Matrix:
         ReadBytes(data.AsBlob.Data, sizeof(Matrix));
@@ -452,25 +455,25 @@ void ReadStream::Read(Variant& data)
     case VariantType::Array:
     {
         int32 count;
-        ReadInt32(&count);
+        Read(count);
         auto& array = *(Array<Variant>*)data.AsData;
         array.Resize(count);
         for (int32 i = 0; i < count; i++)
-            ReadVariant(&array[i]);
+            Read(array[i]);
         break;
     }
     case VariantType::Dictionary:
     {
         int32 count;
-        ReadInt32(&count);
+        Read(count);
         auto& dictionary = *data.AsDictionary;
         dictionary.Clear();
         dictionary.EnsureCapacity(count);
         for (int32 i = 0; i < count; i++)
         {
             Variant key;
-            ReadVariant(&key);
-            ReadVariant(&dictionary[MoveTemp(key)]);
+            Read(key);
+            Read(dictionary[MoveTemp(key)]);
         }
         break;
     }
@@ -546,10 +549,12 @@ void ReadStream::ReadString(String* data, int16 lock)
     Read(*data, lock);
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void ReadStream::ReadCommonValue(CommonValue* data)
 {
     Read(*data);
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void ReadStream::ReadVariantType(VariantType* data)
 {
@@ -561,18 +566,18 @@ void ReadStream::ReadVariant(Variant* data)
     Read(*data);
 }
 
-void ReadStream::ReadBoundingBox(BoundingBox* box, bool useDouble)
+void ReadStream::Read(BoundingBox& box, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Read(box);
+        ReadBytes(&box, sizeof(BoundingBox));
     else
     {
         Float3 min, max;
         Read(min);
         Read(max);
-        box->Minimum = min;
-        box->Maximum = max;
+        box.Minimum = min;
+        box.Maximum = max;
     }
 #else
     if (useDouble)
@@ -580,27 +585,27 @@ void ReadStream::ReadBoundingBox(BoundingBox* box, bool useDouble)
         Double3 min, max;
         Read(min);
         Read(max);
-        box->Minimum = min;
-        box->Maximum = max;
+        box.Minimum = min;
+        box.Maximum = max;
     }
     else
-        Read(*box);
+        ReadBytes(&box, sizeof(BoundingBox));
 #endif
 }
 
-void ReadStream::ReadBoundingSphere(BoundingSphere* sphere, bool useDouble)
+void ReadStream::Read(BoundingSphere& sphere, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Read(*sphere);
+        ReadBytes(&sphere, sizeof(BoundingSphere));
     else
     {
         Float3 center;
         float radius;
         Read(center);
         Read(radius);
-        sphere->Center = center;
-        sphere->Radius = radius;
+        sphere.Center = center;
+        sphere.Radius = radius;
     }
 #else
     if (useDouble)
@@ -609,53 +614,53 @@ void ReadStream::ReadBoundingSphere(BoundingSphere* sphere, bool useDouble)
         double radius;
         Read(center);
         Read(radius);
-        sphere->Center = center;
-        sphere->Radius = (float)radius;
+        sphere.Center = center;
+        sphere.Radius = (float)radius;
     }
     else
-        Read(*sphere);
+        ReadBytes(&sphere, sizeof(BoundingSphere));
 #endif
 }
 
-void ReadStream::ReadTransform(Transform* transform, bool useDouble)
+void ReadStream::Read(Transform& transform, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Read(*transform);
+        ReadBytes(&transform, sizeof(Transform));
     else
     {
         Float3 translation;
         Read(translation);
-        Read(transform->Orientation);
-        Read(transform->Scale);
-        transform->Translation = translation;
+        Read(transform.Orientation);
+        Read(transform.Scale);
+        transform.Translation = translation;
     }
 #else
     if (useDouble)
     {
         Double3 translation;
         Read(translation);
-        Read(transform->Orientation);
-        Read(transform->Scale);
-        transform->Translation = translation;
+        Read(transform.Orientation);
+        Read(transform.Scale);
+        transform.Translation = translation;
     }
     else
-        Read(*transform);
+        ReadBytes(&transform, sizeof(Transform));
 #endif
 }
 
-void ReadStream::ReadRay(Ray* ray, bool useDouble)
+void ReadStream::Read(Ray& ray, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Read(*ray);
+        ReadBytes(&ray, sizeof(Ray));
     else
     {
         Float3 position, direction;
         Read(position);
         Read(direction);
-        ray->Position = position;
-        ray->Direction = direction;
+        ray.Position = position;
+        ray.Direction = direction;
     }
 #else
     if (useDouble)
@@ -663,12 +668,32 @@ void ReadStream::ReadRay(Ray* ray, bool useDouble)
         Double3 position, direction;
         Read(position);
         Read(direction);
-        ray->Position = position;
-        ray->Direction = direction;
+        ray.Position = position;
+        ray.Direction = direction;
     }
     else
-        Read(*ray);
+        ReadBytes(&ray, sizeof(Ray));
 #endif
+}
+
+void ReadStream::ReadBoundingBox(BoundingBox* box, bool useDouble)
+{
+    Read(*box);
+}
+
+void ReadStream::ReadBoundingSphere(BoundingSphere* sphere, bool useDouble)
+{
+    Read(*sphere);
+}
+
+void ReadStream::ReadTransform(Transform* transform, bool useDouble)
+{
+    Read(*transform);
+}
+
+void ReadStream::ReadRay(Ray* ray, bool useDouble)
+{
+    Read(*ray);
 }
 
 void WriteStream::WriteText(const StringView& text)
@@ -714,19 +739,21 @@ void WriteStream::Write(const StringAnsiView& data, int8 lock)
         WriteUint8((uint8)((uint8)data[i] ^ lock));
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void WriteStream::Write(const CommonValue& data)
 {
+    // [Deprecated on 31.07.2020, expires on 31.07.2022]
     WriteByte(static_cast<byte>(data.Type));
     switch (data.Type)
     {
     case CommonType::Bool:
-        WriteBool(data.AsBool);
+        Write(data.AsBool);
         break;
     case CommonType::Integer:
-        WriteInt32(data.AsInteger);
+        Write(data.AsInteger);
         break;
     case CommonType::Float:
-        WriteFloat(data.AsFloat);
+        Write(data.AsFloat);
         break;
     case CommonType::Vector2:
         Write(data.AsVector2);
@@ -744,25 +771,25 @@ void WriteStream::Write(const CommonValue& data)
         Write(data.AsGuid);
         break;
     case CommonType::String:
-        WriteString(data.AsString, 953);
+        Write(data.AsString, 953);
         break;
     case CommonType::Box:
-        WriteBoundingBox(data.AsBox);
+        Write(data.AsBox);
         break;
     case CommonType::Rotation:
         Write(data.AsRotation);
         break;
     case CommonType::Transform:
-        WriteTransform(data.AsTransform);
+        Write(data.AsTransform);
         break;
     case CommonType::Sphere:
-        WriteBoundingSphere(data.AsSphere);
+        Write(data.AsSphere);
         break;
     case CommonType::Rectangle:
         Write(data.AsRectangle);
         break;
     case CommonType::Ray:
-        WriteRay(data.AsRay);
+        Write(data.AsRay);
         break;
     case CommonType::Matrix:
         Write(data.AsMatrix);
@@ -775,17 +802,18 @@ void WriteStream::Write(const CommonValue& data)
     default: CRASH;
     }
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void WriteStream::Write(const VariantType& data)
 {
     WriteByte((byte)data.Type);
     WriteInt32(MAX_int32);
-    WriteStringAnsi(StringAnsiView(data.TypeName), 77);
+    Write(StringAnsiView(data.TypeName), 77);
 }
 
 void WriteStream::Write(const Variant& data)
 {
-    WriteVariantType(data.Type);
+    Write(data.Type);
     Guid id;
     switch (data.Type.Type)
     {
@@ -824,7 +852,7 @@ void WriteStream::Write(const Variant& data)
         WriteUint64((uint64)(uintptr)data.AsPointer);
         break;
     case VariantType::String:
-        WriteString((StringView)data, -14);
+        Write((StringView)data, -14);
         break;
     case VariantType::Object:
         id = data.AsObject ? data.AsObject->GetID() : Guid::Empty;
@@ -835,13 +863,13 @@ void WriteStream::Write(const Variant& data)
         WriteBytes(data.AsBlob.Data, data.AsBlob.Length);
         break;
     case VariantType::BoundingBox:
-        WriteBoundingBox(data.AsBoundingBox());
+        Write(data.AsBoundingBox());
         break;
     case VariantType::Transform:
-        WriteTransform(data.AsTransform());
+        Write(data.AsTransform());
         break;
     case VariantType::Ray:
-        WriteRay(data.AsRay());
+        Write(data.AsRay());
         break;
     case VariantType::Matrix:
         WriteBytes(data.AsBlob.Data, sizeof(Matrix));
@@ -881,24 +909,24 @@ void WriteStream::Write(const Variant& data)
         WriteBytes(data.AsData, sizeof(Rectangle));
         break;
     case VariantType::BoundingSphere:
-        WriteBoundingSphere(data.AsBoundingSphere());
+        Write(data.AsBoundingSphere());
         break;
     case VariantType::Array:
         id.A = ((Array<Variant>*)data.AsData)->Count();
         WriteInt32(id.A);
         for (uint32 i = 0; i < id.A; i++)
-            WriteVariant(((Array<Variant>*)data.AsData)->At(i));
+            Write(((Array<Variant>*)data.AsData)->At(i));
         break;
     case VariantType::Dictionary:
         WriteInt32(data.AsDictionary->Count());
         for (auto i = data.AsDictionary->Begin(); i.IsNotEnd(); ++i)
         {
-            WriteVariant(i->Key);
-            WriteVariant(i->Value);
+            Write(i->Key);
+            Write(i->Value);
         }
         break;
     case VariantType::Typename:
-        WriteStringAnsi((StringAnsiView)data, -14);
+        Write((StringAnsiView)data, -14);
         break;
     case VariantType::ManagedObject:
     case VariantType::Structure:
@@ -916,7 +944,7 @@ void WriteStream::Write(const Variant& data)
             CompactJsonWriter writerObj(json);
             MCore::Thread::Attach();
             ManagedSerialization::Serialize(writerObj, obj);
-            WriteStringAnsi(StringAnsiView(json.GetString(), (int32)json.GetSize()), -71);
+            Write(StringAnsiView(json.GetString(), (int32)json.GetSize()), -71);
         }
         else
 #endif
@@ -975,10 +1003,12 @@ void WriteStream::WriteStringAnsi(const StringAnsiView& data, int8 lock)
     Write(data, lock);
 }
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 void WriteStream::WriteCommonValue(const CommonValue& data)
 {
     Write(data);
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void WriteStream::WriteVariantType(const VariantType& data)
 {
@@ -990,11 +1020,11 @@ void WriteStream::WriteVariant(const Variant& data)
     Write(data);
 }
 
-void WriteStream::WriteBoundingBox(const BoundingBox& box, bool useDouble)
+void WriteStream::Write(const BoundingBox& box, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Write(box);
+        WriteBytes(&box, sizeof(BoundingBox));
     else
     {
         Float3 min = box.Minimum, max = box.Maximum;
@@ -1009,15 +1039,15 @@ void WriteStream::WriteBoundingBox(const BoundingBox& box, bool useDouble)
         Write(max);
     }
     else
-        Write(box);
+        WriteBytes(&box, sizeof(BoundingBox));
 #endif
 }
 
-void WriteStream::WriteBoundingSphere(const BoundingSphere& sphere, bool useDouble)
+void WriteStream::Write(const BoundingSphere& sphere, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Write(sphere);
+        WriteBytes(&sphere, sizeof(BoundingSphere));
     else
     {
         Float3 center = sphere.Center;
@@ -1034,15 +1064,15 @@ void WriteStream::WriteBoundingSphere(const BoundingSphere& sphere, bool useDoub
         Write(radius);
     }
     else
-        Write(sphere);
+        WriteBytes(&sphere, sizeof(BoundingSphere));
 #endif
 }
 
-void WriteStream::WriteTransform(const Transform& transform, bool useDouble)
+void WriteStream::Write(const Transform& transform, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Write(transform);
+        WriteBytes(&transform, sizeof(Transform));
     else
     {
         Float3 translation = transform.Translation;
@@ -1059,15 +1089,15 @@ void WriteStream::WriteTransform(const Transform& transform, bool useDouble)
         Write(transform.Scale);
     }
     else
-        Write(transform);
+        WriteBytes(&transform, sizeof(Transform));
 #endif
 }
 
-void WriteStream::WriteRay(const Ray& ray, bool useDouble)
+void WriteStream::Write(const Ray& ray, bool useDouble)
 {
 #if USE_LARGE_WORLDS
     if (useDouble)
-        Write(ray);
+        WriteBytes(&ray, sizeof(Ray));
     else
     {
         Float3 position = ray.Position, direction = ray.Direction;
@@ -1082,8 +1112,28 @@ void WriteStream::WriteRay(const Ray& ray, bool useDouble)
         Write(direction);
     }
     else
-        Write(ray);
+        WriteBytes(&ray, sizeof(Ray));
 #endif
+}
+
+void WriteStream::WriteBoundingBox(const BoundingBox& box, bool useDouble)
+{
+    Write(box, useDouble);
+}
+
+void WriteStream::WriteBoundingSphere(const BoundingSphere& sphere, bool useDouble)
+{
+    Write(sphere, useDouble);
+}
+
+void WriteStream::WriteTransform(const Transform& transform, bool useDouble)
+{
+    Write(transform, useDouble);
+}
+
+void WriteStream::WriteRay(const Ray& ray, bool useDouble)
+{
+    Write(ray, useDouble);
 }
 
 Array<byte> JsonSerializer::SaveToBytes(ISerializable* obj)

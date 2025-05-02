@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -19,7 +19,7 @@ namespace FlaxEngine
         /// <param name="convexFlags">The convex mesh generation flags.</param>
         /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
         /// <returns>True if failed, otherwise false.</returns>
-        [Obsolete("Deprecated in 1.4, use overload with Float3 and Float2 parameters")]
+        [Obsolete("Use CookCollision with Float3 and Float2 parameters instead")]
         public bool CookCollision(CollisionDataType type, Vector3[] vertices, uint[] triangles, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags.None, int convexVertexLimit = 255)
         {
             if (vertices == null)
@@ -43,7 +43,7 @@ namespace FlaxEngine
         /// <param name="convexFlags">The convex mesh generation flags.</param>
         /// <param name="convexVertexLimit">The convex mesh vertex limit. Use values in range [8;255]</param>
         /// <returns>True if failed, otherwise false.</returns>
-        [Obsolete("Deprecated in 1.4, use overload with Float3 and Float2 parameters")]
+        [Obsolete("Use CookCollision with Float3 and Float2 parameters instead")]
         public bool CookCollision(CollisionDataType type, Vector3[] vertices, int[] triangles, ConvexMeshGenerationFlags convexFlags = ConvexMeshGenerationFlags.None, int convexVertexLimit = 255)
         {
             if (vertices == null)
@@ -60,7 +60,7 @@ namespace FlaxEngine
         /// </summary>
         /// <param name="vertexBuffer">The output vertex buffer.</param>
         /// <param name="indexBuffer">The output index buffer.</param>
-        [Obsolete("Deprecated in 1.4, use overload with Float3 and Float2 parameters")]
+        [Obsolete("Use ExtractGeometry with Float3 and Float2 parameters instead")]
         public void ExtractGeometry(out Vector3[] vertexBuffer, out int[] indexBuffer)
         {
             ExtractGeometry(out Float3[] tmp, out indexBuffer);

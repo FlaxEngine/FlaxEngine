@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -11,10 +11,11 @@
 /// </summary>
 enum class FileSystemAction
 {
-    Unknown,
-    Create,
-    Delete,
-    Modify,
+    Unknown = 0,
+    Create = 1,
+    Delete = 2,
+    Modify = 4,
+    Rename = 8,
 };
 
 /// <summary>

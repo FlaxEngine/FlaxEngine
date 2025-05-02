@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -35,6 +35,12 @@ struct FLAXENGINE_API ScriptingTypeHandle
     }
 
     FORCE_INLINE ScriptingTypeHandle(const ScriptingTypeHandle& other)
+        : Module(other.Module)
+        , TypeIndex(other.TypeIndex)
+    {
+    }
+
+    FORCE_INLINE ScriptingTypeHandle(ScriptingTypeHandle&& other)
         : Module(other.Module)
         , TypeIndex(other.TypeIndex)
     {
@@ -349,9 +355,15 @@ struct ScriptingObjectSpawnParams
     /// </summary>
     const ScriptingTypeHandle Type;
 
+    /// <summary>
+    /// Optional C# object instance to use for unmanaged object.
+    /// </summary>
+    void* Managed;
+
     FORCE_INLINE ScriptingObjectSpawnParams(const Guid& id, const ScriptingTypeHandle& typeHandle)
         : ID(id)
         , Type(typeHandle)
+        , Managed(nullptr)
     {
     }
 };
@@ -493,6 +505,66 @@ FORCE_INLINE int32 GetVTableIndex(void** vtable, int32 entriesCount, void* func)
     if (op == 0x20)
         return 0;
     return *(byte*)funcJmp / sizeof(void*);
+#elif defined(_MSC_VER) && PLATFORM_ARCH_ARM64
+    // For MSVC ARM64, the following thunk takes a relative jump from the function pointer to the next thunk:
+    // adrp xip0, offset_high
+    // add xip0, xip0, offset_low
+    // br xip0
+    // The last thunk contains the offset to the vtable:
+    // ldr xip0, [x0]
+    // ldr xip0, [xip0, XXX]
+    uint32_t* op = (uint32_t*)func;
+
+    uint32_t def = *op;
+    if ((*op & 0x9F000000) == 0x90000000)
+    {
+        // adrp
+        uint32_t imm20 = (((*op & 0x60000000) >> 29) + ((*op & 0xFFFFE0) >> 3)) << 12;
+        op++;
+
+        // add
+        def = *op;
+        uint32_t imm12 = (*op & 0x3FFC00) >> 10;
+        imm12 = (*op & 0x400000) != 0 ? (imm12 << 12) : imm12;
+
+        // br
+        op = (uint32_t*)(((uintptr)func & ((uintptr)-1 << 12)) + imm20 + imm12) + 1;
+
+        // ldr + offset
+        def = *op;
+        uint32_t offset = ((*op & 0x3FFC00) >> 10) * ((*op & 0x40000000) != 0 ? 8 : 4);
+        return offset / sizeof(void*);
+    }
+    else if ((*op & 0xBFC00000) == 0xB9400000)
+    {
+        // ldr + offset
+        uint32_t offset = ((*op & 0x3FFC00) >> 10) * ((*op & 0x40000000) != 0 ? 8 : 4);
+        op++;
+
+        // ldr + offset
+        def = *op;
+        if ((*op & 0xBFE00C00) == 0xB8400400)
+        {
+            // offset is stored in the register as is
+            uint32_t postindex = (*op & 0x1FF000) >> 12;
+            offset = postindex;
+            return offset / sizeof(void*);
+        }
+        else if ((*op & 0xBFE00C00) == 0xB8400C00)
+        {
+            // offset is added to the value in base register... updated to the same register
+            uint32_t preindex = (*op & 0x1FF000) >> 12;
+            offset += preindex;
+            return offset / sizeof(void*);
+        }
+        else if ((*op & 0xBFC00000) == 0xB9400000)
+        {
+            // 20-bit offset
+            offset = ((*op & 0x3FFC00) >> 10) * ((*op & 0x40000000) != 0 ? 8 : 4);
+            return offset / sizeof(void*);
+        }
+        CRASH;
+    }
 #elif defined(__clang__)
     // On Clang member function pointer represents the offset from the vtable begin.
     return (int32)(intptr)func / sizeof(void*);

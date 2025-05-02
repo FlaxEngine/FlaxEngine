@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,7 +7,7 @@
 /// <summary>
 /// Contains information about power supply (battery).
 /// </summary>
-API_STRUCT() struct BatteryInfo
+API_STRUCT(NoDefault) struct BatteryInfo
 {
 DECLARE_SCRIPTING_TYPE_MINIMAL(BatteryInfo);
 

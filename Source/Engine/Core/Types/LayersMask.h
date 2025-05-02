@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -77,6 +77,29 @@ public:
     LayersMask operator-() const
     {
         return ~Mask;
+    }
+
+    LayersMask operator~() const
+    {
+        return ~Mask;
+    }
+
+    LayersMask& operator|=(const LayersMask& other)
+    {
+        Mask |= other.Mask;
+        return *this;
+    }
+
+    LayersMask& operator&=(const LayersMask& other)
+    {
+        Mask &= other.Mask;
+        return *this;
+    }
+
+    LayersMask& operator^=(const LayersMask& other)
+    {
+        Mask ^= other.Mask;
+        return *this;
     }
 };
 

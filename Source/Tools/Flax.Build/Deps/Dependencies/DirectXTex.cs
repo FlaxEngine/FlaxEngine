@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.IO;
 using Flax.Build;
@@ -22,7 +22,6 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Windows,
-                        TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
                         TargetPlatform.XboxScarlett,
                     };
@@ -48,16 +47,20 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
                 {
-                    var solutionPath = Path.Combine(root, "DirectXTex_Desktop_2022.sln");
-                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "Desktop_2022");
-                    Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var file in outputFileNames)
-                        Utilities.FileCopy(Path.Combine(binFolder, "x64", configuration, file), Path.Combine(depsFolder, file));
+                    var solutionPath = Path.Combine(root, "DirectXTex_Desktop_2022_Win10.sln");
+                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "Desktop_2022_Win10");
+                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    {
+                        Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        foreach (var file in outputFileNames)
+                            Utilities.FileCopy(Path.Combine(binFolder, architecture.ToString(), configuration, file), Path.Combine(depsFolder, file));
+                    }
                     break;
                 }
                 case TargetPlatform.UWP:
@@ -73,13 +76,8 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.XboxOne:
                 case TargetPlatform.XboxScarlett:
                 {
-                    var solutionPath = Path.Combine(root, "DirectXTex_GXDK_2019.sln");
-                    File.Copy(Path.Combine(GetBinariesFolder(options, platform), "DirectXTex_GXDK_2019.sln"), solutionPath, true);
-                    var projectFileContents = File.ReadAllText(Path.Combine(GetBinariesFolder(options, platform), "DirectXTex_GXDK_2019.vcxproj"));
-                    projectFileContents = projectFileContents.Replace("___VS_TOOLSET___", "v142");
-                    var projectPath = Path.Combine(root, "DirectXTex", "DirectXTex_GXDK_2019.vcxproj");
-                    File.WriteAllText(projectPath, projectFileContents);
-                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "GXDK_2019");
+                    var solutionPath = Path.Combine(root, "DirectXTex_GDK_2022.sln");
+                    var binFolder = Path.Combine(root, "DirectXTex", "Bin", "GDK_2022");
                     var xboxName = platform == TargetPlatform.XboxOne ? "Gaming.Xbox.XboxOne.x64" : "Gaming.Xbox.Scarlett.x64";
                     Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, xboxName);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);

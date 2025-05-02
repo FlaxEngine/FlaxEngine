@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -234,8 +234,10 @@ public:
         return index;
     }
 
-    // Add collection of items to the collection
-    // @param collection Array with the items to add
+    /// <summary>
+    /// Adds a collection of items to the collection.
+    /// </summary>
+    /// <param name="collection">The collection of items to add.</param>
     FORCE_INLINE void Add(ConcurrentBuffer<T>& collection)
     {
         Add(collection.Get(), collection.Count());

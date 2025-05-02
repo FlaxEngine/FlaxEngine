@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -29,6 +29,8 @@ namespace FlaxEditor.Surface
         private bool _isModified;
         private VisjectSurface _surface;
         private SurfaceMeta _meta = new SurfaceMeta();
+        internal Float2 _cachedViewCenterPosition;
+        internal float _cachedViewScale = -1; // Negative scale to indicate missing data (will show whole surface on start)
 
         /// <summary>
         /// The parent context. Defines the higher key surface graph context. May be null for the top-level context.

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Collider.h"
 #include "Engine/Core/Log.h"
@@ -21,6 +21,8 @@ Collider::Collider(const SpawnParams& params)
     , _cachedScale(1.0f)
     , _contactOffset(2.0f)
 {
+    Material.Loaded.Bind<Collider, &Collider::OnMaterialChanged>(this);
+    Material.Unload.Bind<Collider, &Collider::OnMaterialChanged>(this);
     Material.Changed.Bind<Collider, &Collider::OnMaterialChanged>(this);
 }
 
@@ -51,7 +53,7 @@ void Collider::SetCenter(const Vector3& value)
         return;
     _center = value;
     if (_staticActor)
-        PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
+        PhysicsBackend::SetShapeLocalPose(_shape, _center * GetScale(), Quaternion::Identity);
     else if (const RigidBody* rigidBody = GetAttachedRigidBody())
         PhysicsBackend::SetShapeLocalPose(_shape, (_localTransform.Translation + _localTransform.Orientation * _center) * rigidBody->GetScale(), _localTransform.Orientation);
     UpdateBounds();
@@ -69,6 +71,7 @@ void Collider::SetContactOffset(float value)
 
 bool Collider::RayCast(const Vector3& origin, const Vector3& direction, float& resultHitDistance, float maxDistance) const
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     resultHitDistance = MAX_float;
     if (_shape == nullptr)
         return false;
@@ -77,6 +80,7 @@ bool Collider::RayCast(const Vector3& origin, const Vector3& direction, float& r
 
 bool Collider::RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, float maxDistance) const
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     if (_shape == nullptr)
         return false;
     return PhysicsBackend::RayCastShape(_shape, _transform.Translation, _transform.Orientation, origin, direction, hitInfo, maxDistance);
@@ -267,7 +271,7 @@ void Collider::CreateStaticActor()
     _staticActor = PhysicsBackend::CreateRigidStaticActor(nullptr, _transform.Translation, _transform.Orientation, scene);
 
     // Reset local pos of the shape and link it to the actor
-    PhysicsBackend::SetShapeLocalPose(_shape, _center, Quaternion::Identity);
+    PhysicsBackend::SetShapeLocalPose(_shape, _center * GetScale(), Quaternion::Identity);
     PhysicsBackend::AttachShape(_shape, _staticActor);
 
     PhysicsBackend::AddSceneActor(scene, _staticActor);

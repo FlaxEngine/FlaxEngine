@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -11,10 +11,10 @@
 /// <summary>
 /// Contains information about single texture atlas slot.
 /// </summary>
-struct FontTextureAtlasSlot : RectPack<FontTextureAtlasSlot>
+struct FontTextureAtlasSlot : RectPackNode<>
 {
-    FontTextureAtlasSlot(uint32 x, uint32 y, uint32 width, uint32 height)
-        : RectPack<FontTextureAtlasSlot>(x, y, width, height)
+    FontTextureAtlasSlot(Size x, Size y, Size width, Size height)
+        : RectPackNode(x, y, width, height)
     {
     }
 
@@ -35,11 +35,11 @@ private:
     {
         const byte* SrcData;
         uint8* DstData;
-        uint32 SrcRow;
-        uint32 DstRow;
-        uint32 RowWidth;
-        uint32 SrcTextureWidth;
-        uint32 DstTextureWidth;
+        int32 SrcRow;
+        int32 DstRow;
+        int32 SrcWidth;
+        int32 DstWidth;
+        uint32 Padding;
     };
 
 public:
@@ -74,7 +74,7 @@ private:
     uint32 _bytesPerPixel;
     PaddingStyle _paddingStyle;
     bool _isDirty;
-    FontTextureAtlasSlot* _root;
+    RectPackAtlas<FontTextureAtlasSlot> _atlas;
     Array<FontTextureAtlasSlot*> _freeSlots;
 
 public:
@@ -153,11 +153,18 @@ public:
     /// <summary>
     /// Adds the new entry to the atlas
     /// </summary>
-    /// <param name="targetWidth">Width of the entry.</param>
-    /// <param name="targetHeight">Height of the entry.</param>
+    /// <param name="width">Width of the entry.</param>
+    /// <param name="height">Height of the entry.</param>
     /// <param name="data">The data.</param>
     /// <returns>The atlas slot occupied by the new entry.</returns>
-    FontTextureAtlasSlot* AddEntry(uint32 targetWidth, uint32 targetHeight, const Array<byte>& data);
+    FontTextureAtlasSlot* AddEntry(uint32 width, uint32 height, const Array<byte>& data);
+
+    /// <summary>
+    /// Invalidates the cached dynamic entry from the atlas.
+    /// </summary>
+    /// <param name="slot">The slot to invalidate.</param>
+    /// <returns>True if slot has been freed, otherwise false.</returns>
+    bool Invalidate(const FontTextureAtlasSlot* slot);
 
     /// <summary>
     /// Invalidates the cached dynamic entry from the atlas.
@@ -192,11 +199,6 @@ public:
     void Clear();
 
     /// <summary>
-    /// Disposed whole atlas data (texture, nodes etc.).
-    /// </summary>
-    void Dispose();
-
-    /// <summary>
     /// Flushes this atlas data to the GPU
     /// </summary>
     void Flush();
@@ -214,7 +216,6 @@ public:
 
 private:
 
-    FontTextureAtlasSlot* invalidate(FontTextureAtlasSlot* parent, uint32 x, uint32 y, uint32 width, uint32 height);
     void markAsDirty();
     void copyRow(const RowData& copyRowData) const;
     void zeroRow(const RowData& copyRowData) const;

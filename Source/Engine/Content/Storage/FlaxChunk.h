@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -11,7 +11,7 @@
 enum class FlaxChunkFlags
 {
     /// <summary>
-    /// The none.
+    /// Nothing.
     /// </summary>
     None = 0,
 
@@ -19,6 +19,11 @@ enum class FlaxChunkFlags
     /// Compress chunk data using LZ4 algorithm.
     /// </summary>
     CompressedLZ4 = 1,
+
+    /// <summary>
+    /// Prevents chunk file data from being unloaded if unused for a certain amount of time. Runtime-only flag, not saved with the asset.
+    /// </summary>
+    KeepInMemory = 2,
 };
 
 DECLARE_ENUM_OPERATORS(FlaxChunkFlags);

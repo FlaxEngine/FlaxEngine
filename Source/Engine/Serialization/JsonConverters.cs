@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine.GUI;
@@ -426,6 +426,98 @@ namespace FlaxEngine.Json
         public override bool CanConvert(Type objectType)
         {
             return objectType == typeof(Tag);
+        }
+    }
+
+    internal sealed class JsonAssetReferenceConverter : JsonConverter
+    {
+        /// <inheritdoc />
+        public override unsafe void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var asset = (JsonAsset)value.GetType().GetField("Asset").GetValue(value);
+            var id = asset?.ID ?? Guid.Empty;
+            writer.WriteValue(JsonSerializer.GetStringID(&id));
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var result = existingValue ?? Activator.CreateInstance(objectType);
+            if (reader.TokenType == JsonToken.String)
+            {
+                JsonSerializer.ParseID((string)reader.Value, out var id);
+                var asset = Content.LoadAsync<JsonAsset>(id);
+                objectType.GetField("Asset").SetValue(result, asset);
+            }
+            else if (reader.TokenType == JsonToken.StartObject)
+            {
+                // [Deprecated on 26.07.2024, expires on 26.07.2026]
+                while (reader.Read() && reader.TokenType != JsonToken.EndObject)
+                {
+                    switch (reader.TokenType)
+                    {
+                    case JsonToken.PropertyName:
+                    {
+                        var propertyName = (string)reader.Value;
+                        reader.Read();
+                        if (propertyName == "Asset" && reader.TokenType == JsonToken.String)
+                        {
+                            JsonSerializer.ParseID((string)reader.Value, out var id);
+                            var asset = Content.LoadAsync<JsonAsset>(id);
+                            objectType.GetField("Asset").SetValue(result, asset);
+                        }
+
+                        break;
+                    }
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType.Name.StartsWith("JsonAssetReference", StringComparison.Ordinal);
+        }
+    }
+
+    internal class ControlReferenceConverter : JsonConverter
+    {
+        /// <inheritdoc />
+        public override unsafe void WriteJson(JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var id = (value as IControlReference)?.UIControl?.ID ?? Guid.Empty;
+            writer.WriteValue(JsonSerializer.GetStringID(&id));
+        }
+
+        /// <inheritdoc />
+        public override void WriteJsonDiff(JsonWriter writer, object value, object other, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            if (value is IControlReference valueRef &&
+                other is IControlReference otherRef &&
+                JsonSerializer.SceneObjectEquals(valueRef.UIControl, otherRef.UIControl))
+                return;
+            base.WriteJsonDiff(writer, value, other, serializer);
+        }
+
+        /// <inheritdoc />
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            var result = existingValue ?? Activator.CreateInstance(objectType);
+            if (reader.TokenType == JsonToken.String && result is IControlReference controlReference)
+            {
+                JsonSerializer.ParseID((string)reader.Value, out var id);
+                controlReference.Load(Object.Find<UIControl>(ref id));
+            }
+            return result;
+        }
+
+        /// <inheritdoc />
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType.Name.StartsWith("ControlReference", StringComparison.Ordinal);
         }
     }
 

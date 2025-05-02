@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -33,6 +33,7 @@ namespace FlaxEditor.Windows
         private DragControlType _dragControlType;
         private DragScriptItems _dragScriptItems;
         private DragHandlers _dragHandlers;
+        private bool _isDropping = false;
 
         /// <summary>
         /// Scene tree panel.
@@ -61,6 +62,7 @@ namespace FlaxEditor.Windows
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
                 Parent = headerPanel,
                 Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
+                TooltipText = "Search the scene tree.\n\nYou can prefix your search with different search operators:\ns: -> Actor with script of type\na: -> Actor type\nc: -> Control type",
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 
@@ -95,7 +97,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.ScaleMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
             InputActions.Add(options => options.FocusSelection, () => Editor.Windows.EditWin.Viewport.FocusSelection());
             InputActions.Add(options => options.LockFocusSelection, () => Editor.Windows.EditWin.Viewport.LockFocusSelection());
-            InputActions.Add(options => options.Rename, Rename);
+            InputActions.Add(options => options.Rename, RenameSelection);
         }
 
         /// <summary>
@@ -142,17 +144,6 @@ namespace FlaxEditor.Windows
             PerformLayout();
         }
 
-        private void Rename()
-        {
-            var selection = Editor.SceneEditing.Selection;
-            if (selection.Count != 0 && selection[0] is ActorNode actor)
-            {
-                if (selection.Count != 0)
-                    Editor.SceneEditing.Select(actor);
-                actor.TreeNode.StartRenaming(this, _sceneTreePanel);
-            }
-        }
-
         private void Spawn(Type type)
         {
             // Create actor
@@ -182,7 +173,7 @@ namespace FlaxEditor.Windows
             Editor.SceneEditing.Spawn(actor, parentActor);
 
             Editor.SceneEditing.Select(actor);
-            Rename();
+            RenameSelection();
         }
 
         /// <summary>
@@ -278,7 +269,7 @@ namespace FlaxEditor.Windows
         {
             return Editor.Instance.CodeEditing.Actors.Get().Contains(actorType);
         }
-        
+
         private static bool ValidateDragControlType(ScriptType controlType)
         {
             return Editor.Instance.CodeEditing.Controls.Get().Contains(controlType);
@@ -356,10 +347,12 @@ namespace FlaxEditor.Windows
 
             if (buttons == MouseButton.Left)
             {
-                if (Editor.StateMachine.CurrentState.CanEditScene)
+                if (Editor.StateMachine.CurrentState.CanEditScene && !_isDropping)
                 {
                     Editor.SceneEditing.Deselect();
                 }
+                if (_isDropping)
+                    _isDropping = false;
                 return true;
             }
 
@@ -439,9 +432,11 @@ namespace FlaxEditor.Windows
             var result = base.OnDragDrop(ref location, data);
             if (result == DragDropEffect.None)
             {
+                _isDropping = true;
                 // Drag assets
                 if (_dragAssets != null && _dragAssets.HasValidDrag)
                 {
+                    List<SceneGraphNode> graphNodes = new List<SceneGraphNode>();
                     for (int i = 0; i < _dragAssets.Objects.Count; i++)
                     {
                         var item = _dragAssets.Objects[i];
@@ -453,8 +448,13 @@ namespace FlaxEditor.Windows
                         var actor = item.OnEditorDrop(this);
                         actor.Name = item.ShortName;
                         Level.SpawnActor(actor);
+                        var graphNode = Editor.Scene.GetActorNode(actor.ID);
+                        if (graphNode != null)
+                            graphNodes.Add(graphNode);
                         Editor.Scene.MarkSceneEdited(actor.Scene);
                     }
+                    if (graphNodes.Count > 0)
+                        Editor.SceneEditing.Select(graphNodes);
                     result = DragDropEffect.Move;
                 }
                 // Drag actor type
@@ -500,6 +500,7 @@ namespace FlaxEditor.Windows
                 // Drag script item
                 else if (_dragScriptItems != null && _dragScriptItems.HasValidDrag)
                 {
+                    List<SceneGraphNode> graphNodes = new List<SceneGraphNode>();
                     for (int i = 0; i < _dragScriptItems.Objects.Count; i++)
                     {
                         var item = _dragScriptItems.Objects[i];
@@ -514,9 +515,14 @@ namespace FlaxEditor.Windows
                             }
                             actor.Name = actorType.Name;
                             Level.SpawnActor(actor);
+                            var graphNode = Editor.Scene.GetActorNode(actor.ID);
+                            if (graphNode != null)
+                                graphNodes.Add(graphNode);
                             Editor.Scene.MarkSceneEdited(actor.Scene);
                         }
                     }
+                    if (graphNodes.Count > 0)
+                        Editor.SceneEditing.Select(graphNodes);
                     result = DragDropEffect.Move;
                 }
 

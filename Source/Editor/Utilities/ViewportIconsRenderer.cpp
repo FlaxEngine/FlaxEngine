@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ViewportIconsRenderer.h"
 #include "Engine/Core/Types/Variant.h"
@@ -21,6 +21,7 @@
 #include "Engine/Level/Actors/Sky.h"
 #include "Engine/Level/Actors/SkyLight.h"
 #include "Engine/Level/Actors/SpotLight.h"
+#include "Engine/Video/VideoPlayer.h"
 
 #define ICON_RADIUS 7.0f
 
@@ -283,6 +284,7 @@ bool ViewportIconsRendererService::Init()
     MAP_TYPE(Sky, Skybox);
     MAP_TYPE(SkyLight, SkyLight);
     MAP_TYPE(SpotLight, PointLight);
+    MAP_TYPE(VideoPlayer, SceneAnimationPlayer);
 #undef MAP_TYPE
 
     return false;

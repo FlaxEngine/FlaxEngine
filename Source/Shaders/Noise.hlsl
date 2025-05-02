@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 // Copyright (c) 2011 Stefan Gustavson. All rights reserved.
 // Distributed under the MIT license.
@@ -71,11 +71,26 @@ float2 rand2dTo2d(float2 value)
     );
 }
 
-// Classic Perlin noise
-float PerlinNoise(float2 p)
+float rand3dTo1d(float3 value, float3 dotDir = float3(12.9898, 78.233, 37.719))
 {
-    float4 Pi = floor(p.xyxy) + float4(0.0, 0.0, 1.0, 1.0);
-    float4 Pf = frac(p.xyxy) - float4(0.0, 0.0, 1.0, 1.0);
+    // https://www.ronja-tutorials.com/post/024-white-noise/
+    float3 smallValue = sin(value);
+    float random = dot(smallValue, dotDir);
+    return frac(sin(random) * 143758.5453);
+}
+
+float3 rand3dTo3d(float3 value)
+{
+    // https://www.ronja-tutorials.com/post/024-white-noise/
+    return float3(
+        rand3dTo1d(value, float3(12.989, 78.233, 37.719)),
+        rand3dTo1d(value, float3(39.346, 11.135, 83.155)),
+        rand3dTo1d(value, float3(73.156, 52.235,  9.151))
+    );
+}
+
+float PerlinNoiseImpl(float4 Pi, float4 Pf)
+{
     Pi = Mod289(Pi);
     float4 ix = Pi.xzxz;
     float4 iy = Pi.yyww;
@@ -108,7 +123,15 @@ float PerlinNoise(float2 p)
     float2 fade_xy = PerlinNoiseFade(Pf.xy);
     float2 n_x = lerp(float2(n00, n01), float2(n10, n11), fade_xy.x);
     float n_xy = lerp(n_x.x, n_x.y, fade_xy.y);
-    return saturate(2.3 * n_xy);
+    return saturate(n_xy * 2.136f + 0.5f); // Rescale to [0;1]
+}
+
+// Classic Perlin noise
+float PerlinNoise(float2 p)
+{
+    float4 Pi = floor(p.xyxy) + float4(0.0, 0.0, 1.0, 1.0);
+    float4 Pf = frac(p.xyxy) - float4(0.0, 0.0, 1.0, 1.0);
+    return PerlinNoiseImpl(Pi, Pf);
 }
 
 // Classic Perlin noise with periodic variant
@@ -117,39 +140,7 @@ float PerlinNoise(float2 p, float2 rep)
     float4 Pi = floor(p.xyxy) + float4(0.0, 0.0, 1.0, 1.0);
     float4 Pf = frac(p.xyxy) - float4(0.0, 0.0, 1.0, 1.0);
     Pi = fmod(Pi, rep.xyxy);
-    Pi = Mod289(Pi);
-    float4 ix = Pi.xzxz;
-    float4 iy = Pi.yyww;
-    float4 fx = Pf.xzxz;
-    float4 fy = Pf.yyww;
-
-    float4 i = Permute(Permute(ix) + iy);
-
-    float4 gx = frac(i * (1.0 / 41.0)) * 2.0 - 1.0;
-    float4 gy = abs(gx) - 0.5;
-    float4 tx = floor(gx + 0.5);
-    gx = gx - tx;
-
-    float2 g00 = float2(gx.x, gy.x);
-    float2 g10 = float2(gx.y, gy.y);
-    float2 g01 = float2(gx.z, gy.z);
-    float2 g11 = float2(gx.w, gy.w);
-
-    float4 norm = TaylorInvSqrt(float4(dot(g00, g00), dot(g01, g01), dot(g10, g10), dot(g11, g11)));
-    g00 *= norm.x;
-    g01 *= norm.y;
-    g10 *= norm.z;
-    g11 *= norm.w;
-
-    float n00 = dot(g00, float2(fx.x, fy.x));
-    float n10 = dot(g10, float2(fx.y, fy.y));
-    float n01 = dot(g01, float2(fx.z, fy.z));
-    float n11 = dot(g11, float2(fx.w, fy.w));
-
-    float2 fade_xy = PerlinNoiseFade(Pf.xy);
-    float2 n_x = lerp(float2(n00, n01), float2(n10, n11), fade_xy.x);
-    float n_xy = lerp(n_x.x, n_x.y, fade_xy.y);
-    return saturate(2.3 * n_xy);
+    return PerlinNoiseImpl(Pi, Pf);
 }
 
 // Simplex noise
@@ -191,7 +182,7 @@ float SimplexNoise(float2 p)
     float gx = a0.x * x0.x + h.x * x0.y;
     float2 gyz = a0.yz * x12.xz + h.yz * x12.yw;
     float3 g = float3(gx, gyz);
-    return saturate(130.0f * dot(m, g));
+    return saturate(dot(m, g) * 71.428f + 0.5f); // Rescale to [0;1]
 }
 
 // Worley noise (cellar noise with standard 3x3 search window for F1 and F2 values)
@@ -321,23 +312,25 @@ float3 CustomNoise3D(float3 p)
     float c = CustomNoise(p + float3(0.0f, 0.0f, 0.0001f));
 
     float3 grad = float3(o - a, o - b, o - c);
-    float3 other = abs(grad.zxy);
-    return normalize(cross(grad,other));
+    float3 ret = cross(grad, abs(grad.zxy));
+    if (length(ret) <= 0.0001f) return float3(0.0f, 0.0f, 0.0f);
+    return normalize(ret);
 }
 
 float3 CustomNoise3D(float3 position, int octaves, float roughness)
 {
 	float weight = 0.0f;
-	float3 noise = float3(0.0, 0.0, 0.0);
+	float3 noise = float3(0.0f, 0.0f, 0.0f);
 	float scale = 1.0f;
+    roughness = lerp(2.0f, 0.2f, roughness);
 	for (int i = 0; i < octaves; i++)
 	{
-		float curWeight = pow((1.0 - ((float)i / octaves)), lerp(2.0, 0.2, roughness));
+		float curWeight = pow((1.0f - ((float)i / (float)octaves)), roughness);
 		noise += CustomNoise3D(position * scale) * curWeight;
 		weight += curWeight;
-		scale *= 1.72531;
+		scale *= 1.72531f;
 	}
-	return noise / weight;
+	return noise / max(weight, 0.0001f);
 }
 
 #endif

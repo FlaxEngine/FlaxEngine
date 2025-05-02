@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -573,11 +573,11 @@ namespace FlaxEditor.Surface.Archetypes
                 "Blend animation poses (with additive mode)" +
                 "\n" +
                 "\nNote: " +
-                "\nOrder of nodes matters, because Additive animation is appplayed on top of curent frame." +
+                "\nThe order of the nodes is important, because additive animation is applied on top of current frame." +
                 "\n" +
                 "\nTip for blender users:" +
-                "\nInside NLA the the order is bottom (first node in flax) to the top (last node in flax)" +
-                "\n​u need to place it in this order to get correct resoults",
+                "\nInside NLA the the order is bottom (first node in flax) to the top (last node in flax)." +
+                "\nYou need to place animations in this order to get correct results.",
                 Flags = NodeFlags.AnimGraph,
                 Size = new Float2(170, 80),
                 DefaultValues = new object[]
@@ -647,8 +647,8 @@ namespace FlaxEditor.Surface.Archetypes
                     // Axis X
                     NodeElementArchetype.Factory.Input(3, "X", true, typeof(float), 4),
                     NodeElementArchetype.Factory.Text(30, 3 * Surface.Constants.LayoutOffsetY + 2, "(min:                   max:                   )"),
-                    NodeElementArchetype.Factory.Float(60, 3 * Surface.Constants.LayoutOffsetY + 2, 0, 0),
-                    NodeElementArchetype.Factory.Float(145, 3 * Surface.Constants.LayoutOffsetY + 2, 0, 1),
+                    NodeElementArchetype.Factory.Vector_X(60, 3 * Surface.Constants.LayoutOffsetY + 2, 0),
+                    NodeElementArchetype.Factory.Vector_Y(145, 3 * Surface.Constants.LayoutOffsetY + 2, 0),
                 }
             },
             new NodeArchetype
@@ -683,14 +683,14 @@ namespace FlaxEditor.Surface.Archetypes
                     // Axis X
                     NodeElementArchetype.Factory.Input(3, "X", true, typeof(float), 4),
                     NodeElementArchetype.Factory.Text(30, 3 * Surface.Constants.LayoutOffsetY + 2, "(min:                   max:                   )"),
-                    NodeElementArchetype.Factory.Float(60, 3 * Surface.Constants.LayoutOffsetY + 2, 0, 0),
-                    NodeElementArchetype.Factory.Float(145, 3 * Surface.Constants.LayoutOffsetY + 2, 0, 1),
+                    NodeElementArchetype.Factory.Vector_X(60, 3 * Surface.Constants.LayoutOffsetY + 2, 0),
+                    NodeElementArchetype.Factory.Vector_Y(145, 3 * Surface.Constants.LayoutOffsetY + 2, 0),
 
                     // Axis Y
                     NodeElementArchetype.Factory.Input(4, "Y", true, typeof(float), 5),
                     NodeElementArchetype.Factory.Text(30, 4 * Surface.Constants.LayoutOffsetY + 2, "(min:                   max:                   )"),
-                    NodeElementArchetype.Factory.Float(60, 4 * Surface.Constants.LayoutOffsetY + 2, 0, 2),
-                    NodeElementArchetype.Factory.Float(145, 4 * Surface.Constants.LayoutOffsetY + 2, 0, 3),
+                    NodeElementArchetype.Factory.Vector_Z(60, 4 * Surface.Constants.LayoutOffsetY + 2, 0),
+                    NodeElementArchetype.Factory.Vector_W(145, 4 * Surface.Constants.LayoutOffsetY + 2, 0),
                 }
             },
             new NodeArchetype

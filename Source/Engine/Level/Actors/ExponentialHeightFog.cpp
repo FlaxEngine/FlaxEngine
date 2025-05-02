@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ExponentialHeightFog.h"
 #include "DirectionalLight.h"
@@ -144,7 +144,7 @@ void ExponentialHeightFog::GetVolumetricFogOptions(VolumetricFogOptions& result)
     result.FogParameters = Float4(density, height, heightFalloff, 0.0f);
 }
 
-void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, ExponentialHeightFogData& result) const
+void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, ShaderExponentialHeightFogData& result) const
 {
     const float height = (float)GetPosition().Y;
     const float density = FogDensity / 1000.0f;
@@ -179,9 +179,9 @@ void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, E
     result.VolumetricFogMaxDistance = VolumetricFogDistance;
 }
 
-PACK_STRUCT(struct Data {
-    GBufferData GBuffer;
-    ExponentialHeightFogData ExponentialHeightFog;
+GPU_CB_STRUCT(Data {
+    ShaderGBufferData GBuffer;
+    ShaderExponentialHeightFogData ExponentialHeightFog;
     });
 
 void ExponentialHeightFog::DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output)

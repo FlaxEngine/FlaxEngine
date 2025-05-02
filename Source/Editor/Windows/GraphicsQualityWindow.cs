@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.ComponentModel;
 using FlaxEditor.CustomEditors;
@@ -93,14 +93,6 @@ namespace FlaxEditor.Windows
             {
                 get => Graphics.ShadowMapsQuality;
                 set => Graphics.ShadowMapsQuality = value;
-            }
-
-            [DefaultValue(false)]
-            [EditorOrder(1320), EditorDisplay("Quality", "Allow CSM Blending"), Tooltip("Enables cascades splits blending for directional light shadows.")]
-            public bool AllowCSMBlending
-            {
-                get => Graphics.AllowCSMBlending;
-                set => Graphics.AllowCSMBlending = value;
             }
 
             [NoSerialize, DefaultValue(1.0f), Limit(0.05f, 5, 0)]

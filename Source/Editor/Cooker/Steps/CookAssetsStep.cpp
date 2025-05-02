@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "CookAssetsStep.h"
 #include "Editor/Cooker/PlatformTools.h"
@@ -137,10 +137,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
     if (!FileSystem::DirectoryExists(CacheFolder))
         FileSystem::CreateDirectory(CacheFolder);
     if (!FileSystem::FileExists(HeaderFilePath))
-    {
-        LOG(Warning, "Missing incremental build cooking assets cache.");
         return;
-    }
 
     auto file = FileReadStream::Open(HeaderFilePath);
     if (file == nullptr)
@@ -158,7 +155,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
 
     LOG(Info, "Loading incremental build cooking cache (entries count: {0})", entriesCount);
     file->ReadBytes(&Settings, sizeof(Settings));
-    Entries.EnsureCapacity(Math::RoundUpToPowerOf2(static_cast<int32>(entriesCount * 3.0f)));
+    Entries.EnsureCapacity(entriesCount);
 
     Array<Pair<String, DateTime>> fileDependencies;
     for (int32 i = 0; i < entriesCount; i++)
@@ -166,7 +163,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
         Guid id;
         file->Read(id);
         String typeName;
-        file->ReadString(&typeName);
+        file->Read(typeName);
         DateTime fileModified;
         file->Read(fileModified);
         int32 fileDependenciesCount;
@@ -176,7 +173,7 @@ void CookAssetsStep::CacheData::Load(CookingData& data)
         for (int32 j = 0; j < fileDependenciesCount; j++)
         {
             Pair<String, DateTime>& f = fileDependencies[j];
-            file->ReadString(&f.First, 10);
+            file->Read(f.First, 10);
             file->Read(f.Second);
         }
 
@@ -311,9 +308,9 @@ void CookAssetsStep::CacheData::Save(CookingData& data)
     {
         auto& e = i->Value;
         file->Write(e.ID);
-        file->WriteString(e.TypeName);
+        file->Write(e.TypeName);
         file->Write(e.FileModified);
-        file->WriteInt32(e.FileDependencies.Count());
+        file->Write(e.FileDependencies.Count());
         for (auto& f : e.FileDependencies)
         {
             file->Write(f.First, 10);
@@ -365,17 +362,27 @@ bool CookAssetsStep::ProcessDefaultAsset(AssetCookData& options)
 
 bool CookAssetsStep::Process(CookingData& data, CacheData& cache, Asset* asset)
 {
-    // Validate asset
+    PROFILE_CPU_ASSET(asset);
     if (asset->IsVirtual())
     {
         // Virtual assets are not included into the build
         return false;
     }
+    const bool wasLoaded = asset->IsLoaded();
     if (asset->WaitForLoaded())
     {
         LOG(Error, "Failed to load asset \'{0}\'", asset->ToString());
         return true;
     }
+    if (!wasLoaded)
+    {
+        // HACK: give some time to resave any old assets in Asset::onLoad after it's loaded
+        // This assumes that if Load Thread enters Asset::Save then it will get asset lock and hold it until asset is saved
+        // So we can take the same lock to wait for save end but first we need to wait for it to get that lock
+        // (in future try to handle it in a better way)
+        Platform::Sleep(5);
+    }
+    ScopeLock lock(asset->Locker);
 
     // Switch based on an asset type
     const auto asBinaryAsset = dynamic_cast<BinaryAsset*>(asset);
@@ -447,6 +454,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
 #if PLATFORM_TOOLS_WINDOWS
     case BuildPlatform::Windows32:
     case BuildPlatform::Windows64:
+    case BuildPlatform::WindowsARM64:
     {
         const char* platformDefineName = "PLATFORM_WINDOWS";
         const auto settings = WindowsPlatformSettings::Get();
@@ -792,7 +800,10 @@ bool CookAssetsStep::Process(CookingData& data, CacheData& cache, BinaryAsset* a
     // Prepare asset data
     AssetInitData initData;
     if (asset->Storage->LoadAssetHeader(asset->GetID(), initData))
+    {
+        LOG(Warning, "Failed to load asset {} header from storage '{}'", asset->GetID(), asset->Storage->GetPath());
         return true;
+    }
     initData.Header.UnlinkChunks();
     initData.Metadata.Release();
     for (auto& e : initData.Dependencies)
@@ -891,7 +902,6 @@ bool CookAssetsStep::Process(CookingData& data, CacheData& cache, JsonAssetBase*
 class PackageBuilder : public NonCopyable
 {
 private:
-
     int32 _packageIndex;
     int32 MaxAssetsPerPackage;
     int32 MaxPackageSize;
@@ -904,7 +914,6 @@ private:
     uint64 packagesSizeTotal;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="PackageBuilder" /> class.
     /// </summary>
@@ -933,7 +942,6 @@ public:
     }
 
 public:
-
     uint64 GetPackagesSizeTotal() const
     {
         return packagesSizeTotal;
@@ -1042,8 +1050,11 @@ bool CookAssetsStep::Perform(CookingData& data)
     float Step1ProgressEnd = 0.6f;
     String Step1Info = TEXT("Cooking assets");
     float Step2ProgressStart = Step1ProgressEnd;
-    float Step2ProgressEnd = 0.9f;
-    String Step2Info = TEXT("Packaging assets");
+    float Step2ProgressEnd = 0.8f;
+    String Step2Info = TEXT("Cooking files");
+    float Step3ProgressStart = Step2ProgressStart;
+    float Step3ProgressEnd = 0.9f;
+    String Step3Info = TEXT("Packaging assets");
 
     data.StepProgress(TEXT("Loading build cache"), 0);
 
@@ -1100,11 +1111,14 @@ bool CookAssetsStep::Perform(CookingData& data)
 #endif
     int32 subStepIndex = 0;
     AssetReference<Asset> assetRef;
-    assetRef.Unload.Bind([]() { LOG(Error, "Asset gets unloaded while cooking it!"); Platform::Sleep(100); });
+    assetRef.Unload.Bind([]
+    {
+        LOG(Error, "Asset got unloaded while cooking it!");
+        Platform::Sleep(100);
+    });
     for (auto i = data.Assets.Begin(); i.IsNotEnd(); ++i)
     {
         BUILD_STEP_CANCEL_CHECK;
-
         data.StepProgress(Step1Info, Math::Lerp(Step1ProgressStart, Step1ProgressEnd, static_cast<float>(subStepIndex++) / data.Assets.Count()));
         const Guid assetId = i->Item;
 
@@ -1161,7 +1175,7 @@ bool CookAssetsStep::Perform(CookingData& data)
         assetRef = Content::LoadAsync<Asset>(assetId);
         if (assetRef == nullptr)
         {
-            data.Error(TEXT("Failed to load asset included in build."));
+            LOG(Error, "Failed to load asset {} included in build", assetId);
             return true;
         }
         e.Info.TypeName = assetRef->GetTypeName();
@@ -1169,6 +1183,7 @@ bool CookAssetsStep::Perform(CookingData& data)
         // Cook asset
         if (Process(data, cache, assetRef.Get()))
         {
+            LOG(Error, "Failed to process asset {}", assetRef->ToString());
             cache.Save(data);
             return true;
         }
@@ -1183,6 +1198,42 @@ bool CookAssetsStep::Perform(CookingData& data)
 
     // Save build cache header
     cache.Save(data);
+
+    // Process all files
+    for (auto i = data.Files.Begin(); i.IsNotEnd(); ++i)
+    {
+        BUILD_STEP_CANCEL_CHECK;
+        data.StepProgress(Step2Info, Math::Lerp(Step2ProgressStart, Step2ProgressEnd, (float)subStepIndex++ / data.Files.Count()));
+        const String& filePath = i->Item;
+
+        // Calculate destination path
+        String cookedPath = data.DataOutputPath;
+        if (FileSystem::IsRelative(filePath))
+            cookedPath /= filePath;
+        else
+            cookedPath /= String(TEXT("Content")) / StringUtils::GetFileName(filePath);
+
+        // Copy file
+        if (!FileSystem::FileExists(cookedPath) || FileSystem::GetFileLastEditTime(cookedPath) >= FileSystem::GetFileLastEditTime(filePath))
+        {
+            const String cookedFolder = StringUtils::GetDirectoryName(cookedPath);
+            if (FileSystem::CreateDirectory(cookedFolder))
+            {
+                LOG(Error, "Failed to create directory '{}'", cookedFolder);
+                return true;
+            }
+            if (FileSystem::CopyFile(cookedPath, filePath))
+            {
+                LOG(Error, "Failed to copy file from '{}' to '{}'", filePath, cookedPath);
+                return true;
+            }
+        }
+
+        // Count stats of file extension
+        auto& assetStats = data.Stats.AssetStats[FileSystem::GetExtension(cookedPath)];
+        assetStats.Count++;
+        assetStats.ContentSize += FileSystem::GetFileSize(cookedPath);
+    }
 
     // Create build game header
     {
@@ -1216,7 +1267,7 @@ bool CookAssetsStep::Perform(CookingData& data)
         *(int32*)(bytes.Get() + 804) = contentKey;
         *(Guid*)(bytes.Get() + 808) = gameSettings->SplashScreen;
         Encryption::EncryptBytes(bytes.Get(), bytes.Count());
-        stream->WriteArray(bytes);
+        stream->Write(bytes);
 
         Delete(stream);
     }
@@ -1229,13 +1280,11 @@ bool CookAssetsStep::Perform(CookingData& data)
         for (auto i = AssetsRegistry.Begin(); i.IsNotEnd(); ++i)
         {
             BUILD_STEP_CANCEL_CHECK;
-
-            data.StepProgress(Step2Info, Math::Lerp(Step2ProgressStart, Step2ProgressEnd, static_cast<float>(subStepIndex++) / AssetsRegistry.Count()));
+            data.StepProgress(Step3Info, Math::Lerp(Step3ProgressStart, Step3ProgressEnd, (float)subStepIndex++ / AssetsRegistry.Count()));
             const auto assetId = i->Key;
 
             String cookedFilePath;
             cache.GetFilePath(assetId, cookedFilePath);
-
             if (!FileSystem::FileExists(cookedFilePath))
             {
                 LOG(Warning, "Missing cooked file for asset \'{0}\'", assetId);
@@ -1253,12 +1302,12 @@ bool CookAssetsStep::Perform(CookingData& data)
             return true;
         for (auto& e : data.Stats.AssetStats)
             e.Value.TypeName = e.Key;
-        data.Stats.ContentSizeMB = static_cast<int32>(packageBuilder.GetPackagesSizeTotal() / (1024 * 1024));
+        data.Stats.ContentSize += packageBuilder.GetPackagesSizeTotal();
     }
 
     BUILD_STEP_CANCEL_CHECK;
 
-    data.StepProgress(TEXT("Creating assets cache"), Step2ProgressEnd);
+    data.StepProgress(TEXT("Creating assets cache"), Step3ProgressEnd);
 
     // Create asset paths mapping for the assets.
     // Assets mapping is use to convert paths used in Content::Load(path) into the asset id.
@@ -1291,7 +1340,7 @@ bool CookAssetsStep::Perform(CookingData& data)
     }
 
     // Print stats
-    LOG(Info, "Cooked {0} assets, total assets: {1}, total content packages size: {2} MB", data.Stats.CookedAssets, AssetsRegistry.Count(), data.Stats.ContentSizeMB);
+    LOG(Info, "Cooked {0} assets, total assets: {1}, total content packages size: {2} MB", data.Stats.CookedAssets, AssetsRegistry.Count(), (int32)(data.Stats.ContentSize / (1024 * 1024)));
     {
         Array<CookingData::AssetTypeStatistics> assetTypes;
         data.Stats.AssetStats.GetValues(assetTypes);

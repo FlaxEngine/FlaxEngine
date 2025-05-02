@@ -1,9 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_PHYSX
 
 #include "PhysicsStepperPhysX.h"
-#include "Engine/Physics/Physics.h"
+#include "PhysicsBackendPhysX.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include <ThirdParty/PhysX/foundation/PxMath.h>
 #include <ThirdParty/PhysX/PxSceneLock.h>
@@ -66,7 +66,7 @@ void MultiThreadStepper::substepDone(StepperTask* ownerTask)
     }
 
     // -> OnSubstep
-    //Physics::OnSubstep();
+    PhysicsBackendPhysX::SimulationStepDone(mScene, mSubStepSize);
 
     if (mCurrentSubStep >= mNbSubSteps)
     {

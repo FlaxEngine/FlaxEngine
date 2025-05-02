@@ -1,9 +1,11 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Enums.h"
 #include "PixelFormat.h"
+
+class GPUVertexLayout;
 
 /// <summary>
 /// The GPU buffer usage flags.
@@ -110,6 +112,11 @@ API_STRUCT() struct FLAXENGINE_API GPUBufferDescription
     /// </summary>
     API_FIELD() GPUResourceUsage Usage;
 
+    /// <summary>	
+    /// The vertex elements layout used by vertex buffers only.
+    /// </summary>
+    API_FIELD() GPUVertexLayout* VertexLayout;
+
 public:
     /// <summary>
     /// Gets the number elements in the buffer.
@@ -178,34 +185,75 @@ public:
     /// <summary>
     /// Creates vertex buffer description.
     /// </summary>
+    /// <param name="layout">The vertex buffer layout.</param>
     /// <param name="elementStride">The element stride.</param>
     /// <param name="elementsCount">The elements count.</param>
     /// <param name="data">The data.</param>
     /// <returns>The buffer description.</returns>
-    static GPUBufferDescription Vertex(int32 elementStride, int32 elementsCount, const void* data)
+    static GPUBufferDescription Vertex(GPUVertexLayout* layout, uint32 elementStride, uint32 elementsCount, const void* data);
+
+    /// <summary>
+    /// Creates vertex buffer description.
+    /// </summary>
+    /// <param name="layout">The vertex buffer layout.</param>
+    /// <param name="elementStride">The element stride.</param>
+    /// <param name="elementsCount">The elements count.</param>
+    /// <param name="usage">The usage mode.</param>
+    /// <returns>The buffer description.</returns>
+    static GPUBufferDescription Vertex(GPUVertexLayout* layout, uint32 elementStride, uint32 elementsCount, GPUResourceUsage usage = GPUResourceUsage::Default);
+
+    /// <summary>
+    /// Creates vertex buffer description.
+    /// </summary>
+    /// <param name="layout">The vertex buffer layout.</param>
+    /// <param name="elementsCount">The elements count.</param>
+    /// <param name="data">The data.</param>
+    /// <returns>The buffer description.</returns>
+    static GPUBufferDescription Vertex(GPUVertexLayout* layout, uint32 elementsCount, const void* data);
+
+    /// <summary>
+    /// Creates vertex buffer description.
+    /// </summary>
+    /// <param name="layout">The vertex buffer layout.</param>
+    /// <param name="elementsCount">The elements count.</param>
+    /// <param name="usage">The usage mode.</param>
+    /// <returns>The buffer description.</returns>
+    static GPUBufferDescription Vertex(GPUVertexLayout* layout, uint32 elementsCount, GPUResourceUsage usage = GPUResourceUsage::Default);
+
+    /// <summary>
+    /// Creates vertex buffer description.
+    /// [Deprecated in v1.10]
+    /// </summary>
+    /// <param name="elementStride">The element stride.</param>
+    /// <param name="elementsCount">The elements count.</param>
+    /// <param name="data">The data.</param>
+    /// <returns>The buffer description.</returns>
+    DEPRECATED("Use Vertex with vertex layout parameter instead") static GPUBufferDescription Vertex(int32 elementStride, int32 elementsCount, const void* data)
     {
         return Buffer(elementsCount * elementStride, GPUBufferFlags::VertexBuffer, PixelFormat::Unknown, data, elementStride, GPUResourceUsage::Default);
     }
 
     /// <summary>
     /// Creates vertex buffer description.
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="elementStride">The element stride.</param>
     /// <param name="elementsCount">The elements count.</param>
     /// <param name="usage">The usage mode.</param>
     /// <returns>The buffer description.</returns>
-    static GPUBufferDescription Vertex(int32 elementStride, int32 elementsCount, GPUResourceUsage usage = GPUResourceUsage::Default)
+    DEPRECATED("Use Vertex with vertex layout parameter instead") static GPUBufferDescription Vertex(int32 elementStride, int32 elementsCount, GPUResourceUsage usage = GPUResourceUsage::Default)
     {
         return Buffer(elementsCount * elementStride, GPUBufferFlags::VertexBuffer, PixelFormat::Unknown, nullptr, elementStride, usage);
     }
 
     /// <summary>
     /// Creates vertex buffer description.
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="size">The size (in bytes).</param>
     /// <param name="usage">The usage mode.</param>
     /// <returns>The buffer description.</returns>
-    static GPUBufferDescription Vertex(int32 size, GPUResourceUsage usage = GPUResourceUsage::Default)
+    DEPRECATED("Use Vertex with separate vertex stride and count instead") static GPUBufferDescription Vertex(int32 size, GPUResourceUsage usage = GPUResourceUsage::Default)
     {
         return Buffer(size, GPUBufferFlags::VertexBuffer, PixelFormat::Unknown, nullptr, 0, usage);
     }
@@ -251,7 +299,6 @@ public:
         auto bufferFlags = GPUBufferFlags::Structured | GPUBufferFlags::ShaderResource;
         if (isUnorderedAccess)
             bufferFlags |= GPUBufferFlags::UnorderedAccess;
-
         return Buffer(elementCount * elementSize, bufferFlags, PixelFormat::Unknown, nullptr, elementSize);
     }
 
@@ -335,6 +382,7 @@ public:
     void Clear();
     GPUBufferDescription ToStagingUpload() const;
     GPUBufferDescription ToStagingReadback() const;
+    GPUBufferDescription ToStaging() const;
     bool Equals(const GPUBufferDescription& other) const;
     String ToString() const;
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.ComponentModel;
 using FlaxEngine;
@@ -7,6 +7,32 @@ using FlaxEngine;
 
 namespace FlaxEditor.Options
 {
+    /// <summary>
+    /// Action to perform when a Scene Node receive a double mouse left click.
+    /// </summary>
+    public enum SceneNodeDoubleClick
+    {
+        /// <summary>
+        /// Toggles expand/state of the node.
+        /// </summary>
+        Expand,
+
+        /// <summary>
+        /// Rename the node.
+        /// </summary>
+        RenameActor,
+
+        /// <summary>
+        /// Focus the object in the viewport.
+        /// </summary>
+        FocusActor,
+
+        /// <summary>
+        /// If possible, open the scene node in an associated Editor (eg. Prefab Editor).
+        /// </summary>
+        OpenPrefab,
+    }
+
     /// <summary>
     /// Input editor options data container.
     /// </summary>
@@ -159,6 +185,10 @@ namespace FlaxEditor.Options
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("Scene"), EditorOrder(573)]
         public InputBinding PilotActor = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+G")]
+        [EditorDisplay("Scene"), EditorOrder(574)]
+        public InputBinding GroupSelectedActors = new InputBinding(KeyboardKeys.G, KeyboardKeys.Control);
 
         #endregion
 
@@ -339,6 +369,10 @@ namespace FlaxEditor.Options
         [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Tab")]
         [EditorDisplay("Interface"), EditorOrder(2020)]
         public InputBinding PreviousTab = new InputBinding(KeyboardKeys.Tab, KeyboardKeys.Control, KeyboardKeys.Shift);
+
+        [DefaultValue(SceneNodeDoubleClick.Expand)]
+        [EditorDisplay("Interface"), EditorOrder(2030)]
+        public SceneNodeDoubleClick DoubleClickSceneNode = SceneNodeDoubleClick.Expand;
 
         #endregion
     }

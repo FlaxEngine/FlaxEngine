@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.IO;
 using System.Collections.Generic;
@@ -47,10 +47,13 @@ namespace Flax.Build.Platforms
             options.LinkEnv.InputLibraries.Add("Foundation.framework");
             options.LinkEnv.InputLibraries.Add("CoreFoundation.framework");
             options.LinkEnv.InputLibraries.Add("CoreGraphics.framework");
+            options.LinkEnv.InputLibraries.Add("CoreMedia.framework");
+            options.LinkEnv.InputLibraries.Add("CoreVideo.framework");
             options.LinkEnv.InputLibraries.Add("SystemConfiguration.framework");
             options.LinkEnv.InputLibraries.Add("IOKit.framework");
             options.LinkEnv.InputLibraries.Add("UIKit.framework");
             options.LinkEnv.InputLibraries.Add("QuartzCore.framework");
+            options.LinkEnv.InputLibraries.Add("AVFoundation.framework");
         }
 
         protected override void AddArgsCommon(BuildOptions options, List<string> args)

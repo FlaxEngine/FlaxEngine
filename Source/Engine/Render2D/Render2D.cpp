@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Render2D.h"
 #include "Font.h"
@@ -19,6 +19,7 @@
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Animations/AnimationUtils.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Half.h"
@@ -52,11 +53,11 @@
 // True if enable downscaling when rendering blur
 const bool DownsampleForBlur = false;
 
-PACK_STRUCT(struct Data {
+GPU_CB_STRUCT(Data {
     Matrix ViewProjection;
     });
 
-PACK_STRUCT(struct BlurData {
+GPU_CB_STRUCT(BlurData {
     Float2 InvBufferSize;
     uint32 SampleCount;
     float Dummy0;
@@ -265,7 +266,7 @@ FORCE_INLINE Render2DVertex MakeVertex(const Float2& point, const Float2& uv, co
     {
         point,
         Half2(uv),
-        color,
+        color * TintLayersStack.Peek(),
         customData,
         mask,
     };
@@ -301,12 +302,12 @@ void WriteTri(const Float2& p0, const Float2& p1, const Float2& p2, const Float2
     IBIndex += 3;
 }
 
-void WriteTri(const Float2& p0, const Float2& p1, const Float2& p2, const Color& color0, const Color& color1, const Color& color2)
+FORCE_INLINE void WriteTri(const Float2& p0, const Float2& p1, const Float2& p2, const Color& color0, const Color& color1, const Color& color2)
 {
     WriteTri(p0, p1, p2, Float2::Zero, Float2::Zero, Float2::Zero, color0, color1, color2);
 }
 
-void WriteTri(const Float2& p0, const Float2& p1, const Float2& p2, const Float2& uv0, const Float2& uv1, const Float2& uv2)
+FORCE_INLINE void WriteTri(const Float2& p0, const Float2& p1, const Float2& p2, const Float2& uv0, const Float2& uv1, const Float2& uv2)
 {
     WriteTri(p0, p1, p2, uv0, uv1, uv2, Color::Black, Color::Black, Color::Black);
 }
@@ -363,17 +364,17 @@ void Write9SlicingRect(const Rectangle& rect, const Color& color, const Float4& 
     const Float2 bottomLeftUV(borderUVs.X, 1.0f - borderUVs.W);
     const Float2 bottomRightUV(1.0f - borderUVs.Y, 1.0f - borderUVs.W);
 
-    WriteRect(upperLeft, color, Float2::Zero, upperLeftUV);
-    WriteRect(upperRight, color, Float2(upperRightUV.X, 0), Float2(1, upperLeftUV.Y));
-    WriteRect(bottomLeft, color, Float2(0, bottomLeftUV.Y), Float2(bottomLeftUV.X, 1));
-    WriteRect(bottomRight, color, bottomRightUV, Float2::One);
+    WriteRect(upperLeft, color, Float2::Zero, upperLeftUV); // Upper left corner
+    WriteRect(upperRight, color, Float2(upperRightUV.X, 0), Float2(1, upperLeftUV.Y)); // Upper right corner
+    WriteRect(bottomLeft, color, Float2(0, bottomLeftUV.Y), Float2(bottomLeftUV.X, 1)); // Bottom left corner
+    WriteRect(bottomRight, color, bottomRightUV, Float2::One); // Bottom right corner
 
-    WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Float2(upperLeftUV.X, 0), upperRightUV);
-    WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Float2(0, upperLeftUV.Y), bottomLeftUV);
-    WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Float2(bottomRightUV.X, 1));
-    WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Float2(1, bottomRightUV.Y));
+    WriteRect(Rectangle(upperLeft.GetUpperRight(), upperRight.GetBottomLeft() - upperLeft.GetUpperRight()), color, Float2(upperLeftUV.X, 0), upperRightUV); // Top side
+    WriteRect(Rectangle(upperLeft.GetBottomLeft(), bottomLeft.GetUpperRight() - upperLeft.GetBottomLeft()), color, Float2(0, upperLeftUV.Y), bottomLeftUV); // Left side
+    WriteRect(Rectangle(bottomLeft.GetUpperRight(), bottomRight.GetBottomLeft() - bottomLeft.GetUpperRight()), color, bottomLeftUV, Float2(bottomRightUV.X, 1)); // Bottom side
+    WriteRect(Rectangle(upperRight.GetBottomLeft(), bottomRight.GetUpperRight() - upperRight.GetBottomLeft()), color, upperRightUV, Float2(1, bottomRightUV.Y)); // Right Side
 
-    WriteRect(Rectangle(upperLeft.GetBottomRight(), bottomRight.GetUpperLeft() - upperLeft.GetBottomRight()), color, upperRightUV, bottomRightUV);
+    WriteRect(Rectangle(upperLeft.GetBottomRight(), bottomRight.GetUpperLeft() - upperLeft.GetBottomRight()), color, upperLeftUV, bottomRightUV); // Center
 }
 
 void Write9SlicingRect(const Rectangle& rect, const Color& color, const Float4& border, const Float4& borderUVs, const Float2& uvLocation, const Float2& uvSize)
@@ -481,7 +482,7 @@ bool CachedPSO::Init(GPUShader* shader, bool useDepth)
 
     // Create pipeline states
     GPUPipelineState::Description desc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    desc.DepthEnable = desc.DepthWriteEnable = useDepth;
+    desc.DepthEnable = useDepth;
     desc.DepthWriteEnable = false;
     desc.DepthClipEnable = false;
     desc.VS = shader->GetVS("VS");
@@ -603,6 +604,14 @@ bool Render2DService::Init()
 #if COMPILE_WITH_DEV_ENV
     GUIShader.Get()->OnReloading.Bind<OnGUIShaderReloading>();
 #endif
+
+    VB.SetLayout(GPUVertexLayout::Get({
+        { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
+        { VertexElement::Types::TexCoord, 0, 0, 0, PixelFormat::R16G16_Float },
+        { VertexElement::Types::Color, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
+        { VertexElement::Types::TexCoord1, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
+        { VertexElement::Types::TexCoord2, 0, 0, 0, PixelFormat::R32G32B32A32_Float },
+    }));
 
     DrawCalls.EnsureCapacity(RENDER2D_INITIAL_DRAW_CALL_CAPACITY);
 
@@ -759,10 +768,7 @@ void Render2D::End()
     IsScissorsRectEmpty = false;
     for (int32 i = 0; i < DrawCalls.Count(); i++)
     {
-        // Peek draw call
         const auto& drawCall = DrawCalls[i];
-
-        // Check if cannot add element to the batching
         if (batchSize != 0 && !CanBatchDrawCalls(DrawCalls[batchStart], drawCall))
         {
             // Flush batched elements
@@ -841,10 +847,11 @@ void Render2D::PushClip(const Rectangle& clipRect)
 {
     RENDER2D_CHECK_RENDERING_STATE;
 
+    const auto& mask = ClipLayersStack.Peek();
     RotatedRectangle clipRectTransformed;
     ApplyTransform(clipRect, clipRectTransformed);
-    const Rectangle bounds = Rectangle::Shared(clipRectTransformed.ToBoundingRect(), ClipLayersStack.Peek().Bounds);
-    ClipLayersStack.Push({ clipRectTransformed, bounds });
+    const Rectangle bounds = Rectangle::Shared(clipRectTransformed.ToBoundingRect(), mask.Bounds);
+    ClipLayersStack.Push({ RotatedRectangle::Shared(clipRectTransformed, mask.Bounds), bounds });
 
     OnClipScissors();
 }
@@ -989,6 +996,7 @@ void DrawBatch(int32 startIndex, int32 count)
         Render2D::CustomData customData;
         customData.ViewProjection = ViewProjection;
         customData.ViewSize = Float2::One;
+        customData.UseDepthBuffer = DepthBuffer != nullptr;
         bindParams.CustomData = &customData;
         material->Bind(bindParams);
 
@@ -1025,6 +1033,7 @@ void DrawBatch(int32 startIndex, int32 count)
         Render2D::CustomData customData;
         customData.ViewProjection = ViewProjection;
         customData.ViewSize = Float2(d.AsMaterial.Width, d.AsMaterial.Height);
+        customData.UseDepthBuffer = DepthBuffer != nullptr;
         bindParams.CustomData = &customData;
         material->Bind(bindParams);
 
@@ -1376,22 +1385,26 @@ void Render2D::DrawText(Font* font, const StringView& text, const TextRange& tex
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color)
 {
-    return (color.A * TintLayersStack.Peek().A) < 1.0f;
+    const float tint = TintLayersStack.Peek().A;
+    return color.A * tint < 1.0f;
 }
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color1, const Color& color2)
 {
-    return (color1.A * TintLayersStack.Peek().A) < 1.0f || (color2.A * TintLayersStack.Peek().A) < 1.0f;
+    const float tint = TintLayersStack.Peek().A;
+    return color1.A * tint < 1.0f || color2.A * tint < 1.0f;
 }
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color1, const Color& color2, const Color& color3)
 {
-    return (color1.A * TintLayersStack.Peek().A) < 1.0f || (color2.A * TintLayersStack.Peek().A) < 1.0f || (color3.A * TintLayersStack.Peek().A) < 1.0f;
+    const float tint = TintLayersStack.Peek().A;
+    return color1.A * tint < 1.0f || color2.A * tint < 1.0f || color3.A * tint < 1.0f;
 }
 
 FORCE_INLINE bool NeedAlphaWithTint(const Color& color1, const Color& color2, const Color& color3, const Color& color4)
 {
-    return (color1.A * TintLayersStack.Peek().A) < 1.0f || (color2.A * TintLayersStack.Peek().A) < 1.0f || (color3.A * TintLayersStack.Peek().A) < 1.0f || (color4.A * TintLayersStack.Peek().A) < 1.0f;
+    const float tint = TintLayersStack.Peek().A;
+    return color1.A * tint < 1.0f || color2.A * tint < 1.0f || color3.A * tint < 1.0f || color4.A * tint < 1.0f;
 }
 
 void Render2D::FillRectangle(const Rectangle& rect, const Color& color)
@@ -1815,8 +1828,8 @@ void DrawLines(const Float2* points, int32 pointsCount, const Color& color1, con
 
     // Ending cap
     {
-        ApplyTransform(points[0], p1t);
-        ApplyTransform(points[1], p2t);
+        ApplyTransform(points[pointsCount - 2], p1t);
+        //ApplyTransform(points[pointsCount - 1], p2t);
 
         const Float2 capDirection = thicknessHalf * Float2::Normalize(p2t - p1t);
 
@@ -1881,19 +1894,46 @@ void Render2D::DrawBezier(const Float2& p1, const Float2& p2, const Float2& p3, 
     const Float2 d3 = p4 - p3;
     const float len = d1.Length() + d2.Length() + d3.Length();
     const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
-    const float segmentCountInv = 1.0f / segmentCount;
+    const float segmentCountInv = 1.0f / (float)segmentCount;
 
     // Draw segmented curve
-    Float2 p;
-    AnimationUtils::Bezier(p1, p2, p3, p4, 0, p);
     Lines2.Clear();
-    Lines2.Add(p);
-    for (int32 i = 1; i <= segmentCount; i++)
+    Lines2.Add(p1);
+    for (int32 i = 1; i < segmentCount; i++)
     {
-        const float t = i * segmentCountInv;
+        const float t = (float)i * segmentCountInv;
+        Float2 p;
         AnimationUtils::Bezier(p1, p2, p3, p4, t, p);
         Lines2.Add(p);
     }
+    Lines2.Add(p4);
+    DrawLines(Lines2.Get(), Lines2.Count(), color, color, thickness);
+}
+
+void Render2D::DrawSpline(const Float2& p1, const Float2& p2, const Float2& p3, const Float2& p4, const Color& color, float thickness)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    // Find amount of segments to use
+    const Float2 d1 = p2 - p1;
+    const Float2 d2 = p3 - p2;
+    const Float2 d3 = p4 - p3;
+    const float len = d1.Length() + d2.Length() + d3.Length();
+    const int32 segmentCount = Math::Clamp(Math::CeilToInt(len * 0.05f), 1, 100);
+    const float segmentCountInv = 1.0f / (float)segmentCount;
+
+    // Draw segmented curve
+    Lines2.Clear();
+    Lines2.Add(p1);
+    for (int32 i = 1; i < segmentCount; i++)
+    {
+        const float t = (float)i * segmentCountInv;
+        Float2 p;
+        p.X = Math::Lerp(p1.X, p4.X, t);
+        AnimationUtils::Bezier(p1.Y, p2.Y, p3.Y, p4.Y, t, p.Y);
+        Lines2.Add(p);
+    }
+    Lines2.Add(p4);
     DrawLines(Lines2.Get(), Lines2.Count(), color, color, thickness);
 }
 
@@ -1934,9 +1974,56 @@ void Render2D::DrawBlur(const Rectangle& rect, float blurStrength)
     WriteRect(rect, Color::White);
 }
 
+void Render2D::DrawTriangles(const Span<Float2>& vertices, const Color& color, float thickness)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+    CHECK(vertices.Length() % 3 == 0);
+
+    Float2 points[2];
+    for (int32 i = 0; i < vertices.Length(); i += 3)
+    {
+#if 0
+        // TODO: fix this
+        DrawLines(&vertices.Get()[i], 3, color, color, thickness);
+#else
+        points[0] = vertices.Get()[i + 0];
+        points[1] = vertices.Get()[i + 1];
+        DrawLines(points, 2, color, color, thickness);
+        points[0] = vertices.Get()[i + 2];
+        DrawLines(points, 2, color, color, thickness);
+        points[1] = vertices.Get()[i + 0];
+        DrawLines(points, 2, color, color, thickness);
+#endif
+    }
+}
+
+void Render2D::DrawTriangles(const Span<Float2>& vertices, const Span<Color>& colors, float thickness)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+    CHECK(vertices.Length() % 3 == 0);
+
+    Float2 points[2];
+    Color cols[2];
+    for (int32 i = 0; i < vertices.Length(); i += 3)
+    {
+        points[0] = vertices.Get()[i + 0];
+        points[1] = vertices.Get()[i + 1];
+        cols[0] = colors.Get()[i + 0];
+        cols[1] = colors.Get()[i + 1];
+        DrawLines(points, 2, cols[0], cols[1], thickness);
+        points[0] = vertices.Get()[i + 2];
+        cols[0] = colors.Get()[i + 2];
+        DrawLines(points, 2, cols[0], cols[1], thickness);
+        points[1] = vertices.Get()[i + 0];
+        cols[1] = colors.Get()[i + 0];
+        DrawLines(points, 2, cols[0], cols[1], thickness);
+    }
+}
+
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs)
 {
     RENDER2D_CHECK_RENDERING_STATE;
+    CHECK(vertices.Length() % 3 == 0);
     CHECK(vertices.Length() == uvs.Length());
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
@@ -1951,14 +2038,24 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices
 
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs, const Color& color)
 {
-    Color colors[3] = { (Color)color, (Color)color, (Color)color };
-    Span<Color> spancolor(colors, 3);
-    DrawTexturedTriangles(t, vertices, uvs, spancolor);
+    RENDER2D_CHECK_RENDERING_STATE;
+    CHECK(vertices.Length() % 3 == 0);
+    CHECK(vertices.Length() == uvs.Length());
+
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = DrawCallType::FillTexture;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = vertices.Length();
+    drawCall.AsTexture.Ptr = t;
+
+    for (int32 i = 0; i < vertices.Length(); i += 3)
+        WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], uvs[i], uvs[i + 1], uvs[i + 2], color, color, color);
 }
 
 void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<Float2>& vertices, const Span<Float2>& uvs, const Span<Color>& colors)
 {
     RENDER2D_CHECK_RENDERING_STATE;
+    CHECK(vertices.Length() % 3 == 0);
     CHECK(vertices.Length() == uvs.Length());
     CHECK(vertices.Length() == colors.Length());
 
@@ -1991,6 +2088,19 @@ void Render2D::DrawTexturedTriangles(GPUTexture* t, const Span<uint16>& indices,
         const uint16 i2 = indices.Get()[i++];
         WriteTri(vertices[i0], vertices[i1], vertices[i2], uvs[i0], uvs[i1], uvs[i2], colors[i0], colors[i1], colors[i2]);
     }
+}
+
+void Render2D::FillTriangles(const Span<Float2>& vertices, const Color& color)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = NeedAlphaWithTint(color) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+    drawCall.StartIB = IBIndex;
+    drawCall.CountIB = vertices.Length();
+
+    for (int32 i = 0; i < vertices.Length(); i += 3)
+        WriteTri(vertices[i], vertices[i + 1], vertices[i + 2], color, color, color);
 }
 
 void Render2D::FillTriangles(const Span<Float2>& vertices, const Span<Color>& colors, bool useAlpha)

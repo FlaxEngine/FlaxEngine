@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -17,13 +17,16 @@ namespace FlaxEditor.Surface
     public class MaterialSurface : VisjectSurface
     {
         /// <inheritdoc />
-        public MaterialSurface(IVisjectSurfaceOwner owner, Action onSave, FlaxEditor.Undo undo)
+        public MaterialSurface(IVisjectSurfaceOwner owner, Action onSave = null, FlaxEditor.Undo undo = null)
         : base(owner, onSave, undo)
         {
         }
 
         /// <inheritdoc />
         public override bool CanLivePreviewValueChanges => false;
+
+        /// <inheritdoc />
+        public override bool UseContextMenuDescriptionPanel => true;
 
         /// <inheritdoc />
         public override string GetTypeName(ScriptType type)

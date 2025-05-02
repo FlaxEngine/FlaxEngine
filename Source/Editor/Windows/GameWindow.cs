@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -21,8 +21,10 @@ namespace FlaxEditor.Windows
     {
         private readonly RenderOutputControl _viewport;
         private readonly GameRoot _guiRoot;
-        private bool _showGUI = true;
+        private bool _showGUI = true, _editGUI = true;
         private bool _showDebugDraw = false;
+        private bool _audioMuted = false;
+        private float _audioVolume = 1;
         private bool _isMaximized = false, _isUnlockingMouse = false;
         private bool _isFloating = false, _isBorderless = false;
         private bool _cursorVisible = true;
@@ -38,6 +40,28 @@ namespace FlaxEditor.Windows
         private float _windowAspectRatio = 1;
         private bool _useAspect = false;
         private bool _freeAspect = true;
+
+        private List<PlayModeFocusOptions> _focusOptions = new List<PlayModeFocusOptions>()
+        {
+            new PlayModeFocusOptions
+            {
+                Name = "None",
+                Tooltip = "Don't change focus.",
+                FocusOption = InterfaceOptions.PlayModeFocus.None,
+            },
+            new PlayModeFocusOptions
+            {
+                Name = "Game Window",
+                Tooltip = "Focus the Game Window.",
+                FocusOption = InterfaceOptions.PlayModeFocus.GameWindow,
+            },
+            new PlayModeFocusOptions
+            {
+                Name = "Game Window Then Restore",
+                Tooltip = "Focus the Game Window. On play mode end restore focus to the previous window.",
+                FocusOption = InterfaceOptions.PlayModeFocus.GameWindowThenRestore,
+            },
+        };
 
         /// <summary>
         /// Gets the viewport.
@@ -61,12 +85,56 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether allow editing game GUI in the view or keep it visible-only.
+        /// </summary>
+        public bool EditGUI
+        {
+            get => _editGUI;
+            set
+            {
+                if (value != _editGUI)
+                {
+                    _editGUI = value;
+                    _guiRoot.Editable = value;
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets or sets a value indicating whether show Debug Draw shapes in the view or keep it hidden.
         /// </summary>
         public bool ShowDebugDraw
         {
             get => _showDebugDraw;
             set => _showDebugDraw = value;
+        }
+
+
+        /// <summary>
+        /// Gets or set a value indicating whether Audio is muted.
+        /// </summary>
+        public bool AudioMuted
+        {
+            get => _audioMuted;
+            set
+            {
+                Audio.MasterVolume = value ? 0 : AudioVolume;
+                _audioMuted = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a value that set the audio volume.
+        /// </summary>
+        public float AudioVolume
+        {
+            get => _audioVolume;
+            set
+            {
+                if (!AudioMuted)
+                    Audio.MasterVolume = value;
+                _audioVolume = value;
+            }
         }
 
         /// <summary>
@@ -162,9 +230,9 @@ namespace FlaxEditor.Windows
         public bool CenterMouseOnFocus { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether auto-focus game window on play mode start.
+        /// Gets or sets a value indicating what panel should be focused when play mode start.
         /// </summary>
-        public bool FocusOnPlay { get; set; }
+        public InterfaceOptions.PlayModeFocus FocusOnPlayOption { get; set; }
 
         private enum ViewportScaleType
         {
@@ -195,13 +263,37 @@ namespace FlaxEditor.Windows
             public bool Active;
         }
 
+        private class PlayModeFocusOptions
+        {
+            /// <summary>
+            /// The name.
+            /// </summary>
+            public string Name;
+
+            /// <summary>
+            /// The tooltip.
+            /// </summary>
+            public string Tooltip;
+
+            /// <summary>
+            /// The type of focus.
+            /// </summary>
+            public InterfaceOptions.PlayModeFocus FocusOption;
+
+            /// <summary>
+            /// If the option is active.
+            /// </summary>
+            public bool Active;
+        }
+
         /// <summary>
         /// Root control for game UI preview in Editor. Supports basic UI editing via <see cref="UIEditorRoot"/>.
         /// </summary>
         private class GameRoot : UIEditorRoot
         {
+            internal bool Editable = true;
             public override bool EnableInputs => !Time.GamePaused && Editor.IsPlayMode;
-            public override bool EnableSelecting => !Editor.IsPlayMode || Time.GamePaused;
+            public override bool EnableSelecting => (!Editor.IsPlayMode || Time.GamePaused) && Editable;
             public override TransformGizmo TransformGizmo => Editor.Instance.MainTransformGizmo;
         }
 
@@ -249,6 +341,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor);
             InputActions.Add(options => options.Pause, Editor.Instance.Simulation.RequestResumeOrPause);
             InputActions.Add(options => options.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame);
+#if USE_PROFILER
             InputActions.Add(options => options.ProfilerStartStop, () =>
             {
                 bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
@@ -258,8 +351,9 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.ProfilerClear, () =>
             {
                 Editor.Instance.Windows.ProfilerWin.Clear();
-                Editor.Instance.UI.AddStatusMessage($"Profiling results cleared.");
+                Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
             });
+#endif
             InputActions.Add(options => options.Save, () =>
             {
                 if (Editor.IsPlayMode)
@@ -430,7 +524,7 @@ namespace FlaxEditor.Windows
         private void OnOptionsChanged(EditorOptions options)
         {
             CenterMouseOnFocus = options.Interface.CenterMouseOnGameWinFocus;
-            FocusOnPlay = options.Interface.FocusGameWinOnPlay;
+            FocusOnPlayOption = options.Interface.FocusOnPlayMode;
         }
 
         private void PlayingStateOnSceneDuplicating()
@@ -495,10 +589,15 @@ namespace FlaxEditor.Windows
 
             // Focus on play
             {
-                var focus = menu.AddButton("Start Focused");
-                focus.CloseMenuOnClick = false;
-                var checkbox = new CheckBox(140, 2, FocusOnPlay) { Parent = focus };
-                checkbox.StateChanged += state => FocusOnPlay = state.Checked;
+                var pfMenu = menu.AddChildMenu("Focus On Play Override").ContextMenu;
+
+                GenerateFocusOptionsContextMenu(pfMenu);
+
+                pfMenu.AddSeparator();
+
+                var button = pfMenu.AddButton("Remove override");
+                button.TooltipText = "Reset the override to the value set in the editor options.";
+                button.Clicked += () => FocusOnPlayOption = Editor.Instance.Options.Options.Interface.FocusOnPlayMode;
             }
 
             menu.AddSeparator();
@@ -553,14 +652,14 @@ namespace FlaxEditor.Windows
                     });
                     _defaultViewportScaling.Add(new ViewportScaleOptions
                     {
-                        Label = "1920x1080 Resolution",
+                        Label = "1920x1080 Resolution (Full HD)",
                         ScaleType = ViewportScaleType.Resolution,
                         Size = new Int2(1920, 1080),
                         Active = false,
                     });
                     _defaultViewportScaling.Add(new ViewportScaleOptions
                     {
-                        Label = "2560x1440 Resolution",
+                        Label = "2560x1440 Resolution (2K)",
                         ScaleType = ViewportScaleType.Resolution,
                         Size = new Int2(2560, 1440),
                         Active = false,
@@ -588,6 +687,13 @@ namespace FlaxEditor.Windows
                 checkbox.StateChanged += x => ShowGUI = x.Checked;
             }
 
+            // Edit GUI
+            {
+                var button = menu.AddButton("Edit GUI");
+                var checkbox = new CheckBox(140, 2, EditGUI) { Parent = button };
+                checkbox.StateChanged += x => EditGUI = x.Checked;
+            }
+
             // Show Debug Draw
             {
                 var button = menu.AddButton("Show Debug Draw");
@@ -596,8 +702,68 @@ namespace FlaxEditor.Windows
                 checkbox.StateChanged += x => ShowDebugDraw = x.Checked;
             }
 
+            // Clear Debug Draw
+            if (DebugDraw.CanClear())
+            {
+                var button = menu.AddButton("Clear Debug Draw");
+                button.CloseMenuOnClick = false;
+                button.Clicked += () => DebugDraw.Clear();
+            }
+
+            menu.AddSeparator();
+
+            // Mute Audio
+            {
+                var button = menu.AddButton("Mute Audio");
+                button.CloseMenuOnClick = false;
+                var checkbox = new CheckBox(140, 2, AudioMuted) { Parent = button };
+                checkbox.StateChanged += x => AudioMuted = x.Checked;
+            }
+
+            // Audio Volume
+            {
+                var button = menu.AddButton("Audio Volume");
+                button.CloseMenuOnClick = false;
+                var slider = new FloatValueBox(AudioVolume, 140, 2, 50, 0, 1) { Parent = button };
+                slider.ValueChanged += () => AudioVolume = slider.Value;
+            }
+
             menu.MinimumWidth = 200;
             menu.AddSeparator();
+        }
+
+        private void GenerateFocusOptionsContextMenu(ContextMenu pfMenu)
+        {
+            foreach (PlayModeFocusOptions f in _focusOptions)
+            {
+                f.Active = f.FocusOption == FocusOnPlayOption;
+
+                var button = pfMenu.AddButton(f.Name);
+                button.CloseMenuOnClick = false;
+                button.Tag = f;
+                button.TooltipText = f.Tooltip;
+                button.Icon = f.Active ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
+                button.Clicked += () =>
+                {
+                    foreach (var child in pfMenu.Items)
+                    {
+                        if (child is ContextMenuButton cmb && cmb.Tag is PlayModeFocusOptions p)
+                        {
+                            if (cmb == button)
+                            {
+                                p.Active = true;
+                                button.Icon = Style.Current.CheckBoxTick;
+                                FocusOnPlayOption = p.FocusOption;
+                            }
+                            else if (p.Active)
+                            {
+                                cmb.Icon = SpriteHandle.Invalid;
+                                p.Active = false;
+                            }
+                        }
+                    }
+                };
+            }
         }
 
         private void CreateViewportSizingContextMenu(ContextMenu vsMenu)
@@ -1051,6 +1217,7 @@ namespace FlaxEditor.Windows
         public override void OnLayoutSerialize(XmlWriter writer)
         {
             writer.WriteAttributeString("ShowGUI", ShowGUI.ToString());
+            writer.WriteAttributeString("EditGUI", EditGUI.ToString());
             writer.WriteAttributeString("ShowDebugDraw", ShowDebugDraw.ToString());
             writer.WriteAttributeString("DefaultViewportScaling", JsonSerializer.Serialize(_defaultViewportScaling));
             writer.WriteAttributeString("CustomViewportScaling", JsonSerializer.Serialize(_customViewportScaling));
@@ -1061,6 +1228,8 @@ namespace FlaxEditor.Windows
         {
             if (bool.TryParse(node.GetAttribute("ShowGUI"), out bool value1))
                 ShowGUI = value1;
+            if (bool.TryParse(node.GetAttribute("EditGUI"), out value1))
+                EditGUI = value1;
             if (bool.TryParse(node.GetAttribute("ShowDebugDraw"), out value1))
                 ShowDebugDraw = value1;
             if (node.HasAttribute("CustomViewportScaling"))
@@ -1086,6 +1255,7 @@ namespace FlaxEditor.Windows
         public override void OnLayoutDeserialize()
         {
             ShowGUI = true;
+            EditGUI = true;
             ShowDebugDraw = false;
         }
     }

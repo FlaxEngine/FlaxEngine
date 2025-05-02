@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "DirectionalLight.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -18,13 +18,13 @@ void DirectionalLight::Draw(RenderContext& renderContext)
 {
     float brightness = Brightness;
     AdjustBrightness(renderContext.View, brightness);
-    const Float3 position = GetPosition() - renderContext.View.Origin;
+    Float3 position;
     if (Brightness > ZeroTolerance
         && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::DirectionalLights)
         && EnumHasAnyFlags(renderContext.View.Pass, DrawPass::GBuffer)
-        && (ViewDistance < ZeroTolerance || Float3::DistanceSquared(renderContext.View.Position, position) < ViewDistance * ViewDistance))
+        && CheckViewDistance(renderContext.View.Position, renderContext.View.Origin, position, brightness))
     {
-        RendererDirectionalLightData data;
+        RenderDirectionalLightData data;
         data.Position = position;
         data.MinRoughness = MinRoughness;
         data.ShadowsDistance = ShadowsDistance;
@@ -38,18 +38,21 @@ void DirectionalLight::Draw(RenderContext& renderContext)
         data.VolumetricScatteringIntensity = VolumetricScatteringIntensity;
         data.IndirectLightingIntensity = IndirectLightingIntensity;
         data.CastVolumetricShadow = CastVolumetricShadow;
-        data.RenderedVolumetricFog = 0;
+        data.ShadowsUpdateRate = ShadowsUpdateRate;
+        data.ShadowFrame = _invalidateShadowFrame;
+        data.ShadowsResolution = (int32)ShadowsResolution;
+        data.ShadowsUpdateRateAtDistance = ShadowsUpdateRateAtDistance;
         data.ShadowsMode = ShadowsMode;
         data.CascadeCount = CascadeCount;
         data.Cascade1Spacing = Cascade1Spacing;
         data.Cascade2Spacing = Cascade2Spacing;
         data.Cascade3Spacing = Cascade3Spacing;
         data.Cascade4Spacing = Cascade4Spacing;
-
         data.PartitionMode = PartitionMode;
         data.ContactShadowsLength = ContactShadowsLength;
         data.StaticFlags = GetStaticFlags();
         data.ID = GetID();
+        data.ScreenSize = 1.0f;
         renderContext.List->DirectionalLights.Add(data);
     }
 }
@@ -66,7 +69,6 @@ void DirectionalLight::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE(Cascade2Spacing);
     SERIALIZE(Cascade3Spacing);
     SERIALIZE(Cascade4Spacing);
-
     SERIALIZE(PartitionMode);
 }
 
@@ -80,7 +82,6 @@ void DirectionalLight::Deserialize(DeserializeStream& stream, ISerializeModifier
     DESERIALIZE(Cascade2Spacing);
     DESERIALIZE(Cascade3Spacing);
     DESERIALIZE(Cascade4Spacing);
-
     DESERIALIZE(PartitionMode);
 }
 

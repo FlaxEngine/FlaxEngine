@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Runtime.InteropServices;
 using FlaxEngine;
@@ -62,7 +62,8 @@ namespace FlaxEditor.Surface
         /// <remarks>
         /// The method calls the <see cref="ISurfaceContext.SurfaceData"/> setter to assign the result bytes. Sets null value if failed.
         /// </remarks>
-        public virtual void Save()
+        /// <returns>True if failed, otherwise false.</returns>
+        public virtual bool Save()
         {
             var wasEdited = IsEdited;
 
@@ -71,19 +72,16 @@ namespace FlaxEditor.Surface
             _context.CachedSurfaceMeta.Scale = ViewScale;
 
             // Save context (and every modified child context)
-            bool failed = RootContext.Save();
-
-            if (failed)
-            {
-                // Error
-                return;
-            }
+            if (RootContext.Save())
+                return true;
 
             // Clear flag
             if (wasEdited)
             {
                 Owner.OnSurfaceEditedChanged();
             }
+
+            return false;
         }
     }
 }

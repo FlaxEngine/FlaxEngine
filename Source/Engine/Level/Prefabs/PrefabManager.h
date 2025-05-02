@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -101,6 +101,30 @@ API_CLASS(Static) class FLAXENGINE_API PrefabManager
     /// <param name="withSynchronization">True if perform prefab changes synchronization for the spawned objects. It will check if need to add new objects due to nested prefab modifications.</param>
     /// <returns>The created actor (root) or null if failed.</returns>
     static Actor* SpawnPrefab(Prefab* prefab, const Transform& transform, Actor* parent, Dictionary<Guid, SceneObject*, HeapAllocation>* objectsCache, bool withSynchronization = true);
+
+    struct FLAXENGINE_API SpawnOptions
+    {
+        // Spawn transformation.
+        const Transform* Transform = nullptr;
+        // The parent actor to add spawned object instance. Can be null to just deserialize contents of the prefab.
+        Actor* Parent = nullptr;
+        // Custom objects mapping (maps prefab objects into spawned objects).
+        const Dictionary<Guid, Guid, HeapAllocation>* IDs = nullptr;
+        // Output objects cache that can be filled with prefab object id mapping to deserialized object (actor or script).
+        Dictionary<Guid, SceneObject*, HeapAllocation>* ObjectsCache = nullptr;
+        //  if perform prefab changes synchronization for the spawned objects. It will check if need to add new objects due to nested prefab modifications.
+        bool WithSync = true;
+        // True if linked spawned prefab objects with the source prefab, otherwise links will be valid only for nested prefab objects.
+        bool WithLink = true;
+    };
+
+    /// <summary>
+    /// Spawns the instance of the prefab objects. If parent actor is specified then created actors are fully initialized (OnLoad event and BeginPlay is called if parent actor is already during gameplay).
+    /// </summary>
+    /// <param name="prefab">The prefab asset.</param>
+    /// <param name="options">The spawn options container.</param>
+    /// <returns>The created actor (root) or null if failed.</returns>
+    static Actor* SpawnPrefab(Prefab* prefab, const SpawnOptions& options);
 
 #if USE_EDITOR
 

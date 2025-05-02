@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -116,9 +116,18 @@ public:
     }
 
     /// <summary>
+    /// Gets handles of all method in a given scripting type.
+    /// </summary>
+    /// <param name="typeHandle">The type to find methods inside it.</param>
+    /// <param name="methods">The output list of method pointers.</param>
+    virtual void GetMethods(const ScriptingTypeHandle& typeHandle, Array<void*>& methods)
+    {
+    }
+
+    /// <summary>
     /// Tries to find a method in a given scripting type by the method name and parameters count.
     /// </summary>
-    /// <remarks>If the the type contains more than one method of the given name and parameters count the returned value can be non-deterministic (one of the matching methods).</remarks>
+    /// <remarks>If the type contains more than one method of the given name and parameters count the returned value can be non-deterministic (one of the matching methods).</remarks>
     /// <param name="typeHandle">The type to find method inside it.</param>
     /// <param name="name">The method name.</param>
     /// <param name="numParams">The method parameters count.</param>
@@ -159,6 +168,15 @@ public:
     }
 
     /// <summary>
+    /// Gets handles of all fields in a given scripting type.
+    /// </summary>
+    /// <param name="typeHandle">The type to find fields inside it.</param>
+    /// <param name="fields">The output list of field pointers.</param>
+    virtual void GetFields(const ScriptingTypeHandle& typeHandle, Array<void*>& fields)
+    {
+    }
+
+    /// <summary>
     /// Tries to find a field in a given scripting type by the field name.
     /// </summary>
     /// <param name="typeHandle">The type to find field inside it.</param>
@@ -182,7 +200,7 @@ public:
     /// Gets the value of a given scripting field.
     /// </summary>
     /// <param name="field">The field.</param>
-    /// <param name="instance">The object instance to get it's member field. Unused for static fields.</param>
+    /// <param name="instance">The object instance to get its member field. Unused for static fields.</param>
     /// <param name="result">The output field value.</param>
     /// <returns>True if failed, otherwise false.</returns>
     virtual bool GetFieldValue(void* field, const Variant& instance, Variant& result)
@@ -194,7 +212,7 @@ public:
     /// Sets the value of a given scripting field.
     /// </summary>
     /// <param name="field">The field.</param>
-    /// <param name="instance">The object instance to set it's member field. Unused for static fields.</param>
+    /// <param name="instance">The object instance to set its member field. Unused for static fields.</param>
     /// <param name="value">The field value to assign.</param>
     /// <returns>True if failed, otherwise false.</returns>
     virtual bool SetFieldValue(void* field, const Variant& instance, Variant& value)
@@ -242,7 +260,7 @@ public:
     /// <summary>
     /// Unloads the module (native library and C# assembly and any other scripting data). Unregisters the module.
     /// </summary>
-    /// <param name="isReloading">If true module is during reloading and should force release the runtime data. Used for C# assembly to cleanup it's runtime data in Mono (or other scripting runtime).</param>
+    /// <param name="isReloading">If true module is during reloading and should force release the runtime data. Used for C# assembly to clean up it's runtime data in Mono (or other scripting runtime).</param>
     virtual void Destroy(bool isReloading);
 };
 
@@ -318,10 +336,12 @@ public:
     // [BinaryModule]
     const StringAnsi& GetName() const override;
     bool IsLoaded() const override;
+    void GetMethods(const ScriptingTypeHandle& typeHandle, Array<void*>& methods) override;
     void* FindMethod(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name, int32 numParams = 0) override;
     void* FindMethod(const ScriptingTypeHandle& typeHandle, const ScriptingTypeMethodSignature& signature) override;
     bool InvokeMethod(void* method, const Variant& instance, Span<Variant> paramValues, Variant& result) override;
     void GetMethodSignature(void* method, ScriptingTypeMethodSignature& signature) override;
+    void GetFields(const ScriptingTypeHandle& typeHandle, Array<void*>& fields) override;
     void* FindField(const ScriptingTypeHandle& typeHandle, const StringAnsiView& name) override;
     void GetFieldSignature(void* field, ScriptingTypeFieldSignature& fieldSignature) override;
     bool GetFieldValue(void* field, const Variant& instance, Variant& result) override;

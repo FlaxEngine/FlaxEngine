@@ -1,11 +1,11 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 
 namespace FlaxEditor.Content
 {
     /// <summary>
-    /// Content item that contains C# script file with source code.
+    /// Content item that contains C# file with source code.
     /// </summary>
     /// <seealso cref="FlaxEditor.Content.ScriptItem" />
     public class CSharpScriptItem : ScriptItem

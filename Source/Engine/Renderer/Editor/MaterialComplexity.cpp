@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_EDITOR
 
@@ -48,7 +48,7 @@ DrawPass MaterialComplexityMaterialShader::WrapperShader::GetDrawModes() const
 
 void MaterialComplexityMaterialShader::WrapperShader::Bind(BindParameters& params)
 {
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
 
     // Get original material from the draw call
     IMaterial* material = nullptr;
@@ -130,17 +130,14 @@ void MaterialComplexityMaterialShader::Draw(RenderContext& renderContext, GPUCon
         MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
         bindParams.BindViewData();
         drawCall.WorldDeterminantSign = 1.0f;
+        drawCall.PerInstanceRandom = 0.0f;
         context->SetRenderTarget(lightBuffer);
         for (int32 i = 0; i < decals.Count(); i++)
         {
-            const auto decal = decals[i];
-            ASSERT(decal && decal->Material);
-            Transform transform = decal->GetTransform();
-            transform.Scale *= decal->GetSize();
-            renderContext.View.GetWorldMatrix(transform, drawCall.World);
+            const RenderDecalData& decal = decals.Get()[i];
+            drawCall.World = decal.World;
             drawCall.ObjectPosition = drawCall.World.GetTranslation();
-            drawCall.Material = decal->Material;
-            drawCall.PerInstanceRandom = decal->GetPerInstanceRandom();
+            drawCall.Material = decal.Material;
             decalsWrapper.Bind(bindParams);
             boxModel->Render(context);
         }

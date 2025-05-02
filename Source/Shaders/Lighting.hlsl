@@ -1,19 +1,19 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #ifndef __LIGHTING__
 #define __LIGHTING__
 
 #include "./Flax/LightingCommon.hlsl"
 
-ShadowData GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask)
+ShadowSample GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask)
 {
-    ShadowData shadow;
+    ShadowSample shadow;
     shadow.SurfaceShadow = gBuffer.AO * shadowMask.r;
     shadow.TransmissionShadow = shadowMask.g;
     return shadow;
 }
 
-LightingData StandardShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
+LightSample StandardShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
 {
     float3 diffuseColor = GetDiffuseColor(gBuffer);
     float3 H = normalize(V + L);
@@ -22,7 +22,7 @@ LightingData StandardShading(GBufferSample gBuffer, float energy, float3 L, floa
     float NoH = saturate(dot(N, H));
     float VoH = saturate(dot(V, H));
 
-    LightingData lighting;
+    LightSample lighting;
     lighting.Diffuse = Diffuse_Lambert(diffuseColor);
 #if LIGHTING_NO_SPECULAR
     lighting.Specular = 0;
@@ -37,9 +37,9 @@ LightingData StandardShading(GBufferSample gBuffer, float energy, float3 L, floa
     return lighting;
 }
 
-LightingData SubsurfaceShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
+LightSample SubsurfaceShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
 {
-    LightingData lighting = StandardShading(gBuffer, energy, L, V, N);
+    LightSample lighting = StandardShading(gBuffer, energy, L, V, N);
 #if defined(USE_GBUFFER_CUSTOM_DATA)
     // Fake effect of the light going through the material
     float3 subsurfaceColor = gBuffer.CustomData.rgb;
@@ -53,9 +53,9 @@ LightingData SubsurfaceShading(GBufferSample gBuffer, float energy, float3 L, fl
     return lighting;
 }
 
-LightingData FoliageShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
+LightSample FoliageShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
 {
-    LightingData lighting = StandardShading(gBuffer, energy, L, V, N);
+    LightSample lighting = StandardShading(gBuffer, energy, L, V, N);
 #if defined(USE_GBUFFER_CUSTOM_DATA)
     // Fake effect of the light going through the thin foliage
     float3 subsurfaceColor = gBuffer.CustomData.rgb;
@@ -67,7 +67,7 @@ LightingData FoliageShading(GBufferSample gBuffer, float energy, float3 L, float
     return lighting;
 }
 
-LightingData SurfaceShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
+LightSample SurfaceShading(GBufferSample gBuffer, float energy, float3 L, float3 V, half3 N)
 {
     switch (gBuffer.ShadingModel)
     {
@@ -79,7 +79,7 @@ LightingData SurfaceShading(GBufferSample gBuffer, float energy, float3 L, float
     case SHADING_MODEL_FOLIAGE:
         return FoliageShading(gBuffer, energy, L, V, N);
     default:
-        return (LightingData)0;
+        return (LightSample)0;
     }
 }
 
@@ -121,7 +121,7 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
     float3 toLight = lightData.Direction;
 
     // Calculate shadow
-    ShadowData shadow = GetShadow(lightData, gBuffer, shadowMask);
+    ShadowSample shadow = GetShadow(lightData, gBuffer, shadowMask);
 
     // Calculate attenuation
     if (isRadial)
@@ -147,7 +147,7 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
         float energy = AreaLightSpecular(lightData, gBuffer.Roughness, toLight, L, V, N);
 
         // Calculate direct lighting
-        LightingData lighting = SurfaceShading(gBuffer, energy, L, V, N);
+        LightSample lighting = SurfaceShading(gBuffer, energy, L, V, N);
 
         // Calculate final light color
         float3 surfaceLight = (lighting.Diffuse + lighting.Specular) * shadow.SurfaceShadow;

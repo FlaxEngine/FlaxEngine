@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -29,6 +29,7 @@ namespace FlaxEditor.Windows
         private const string ProjectDataLastViewedFolder = "LastViewedFolder";
         private bool _isWorkspaceDirty;
         private string _workspaceRebuildLocation;
+        private string _lastViewedFolderBeforeReload;
         private SplitPanel _split;
         private Panel _contentViewPanel;
         private Panel _contentTreePanel;
@@ -143,26 +144,6 @@ namespace FlaxEditor.Windows
             Icon = editor.Icons.Folder32;
 
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
-
-            // Content database events
-            editor.ContentDatabase.WorkspaceModified += () => _isWorkspaceDirty = true;
-            editor.ContentDatabase.ItemRemoved += OnContentDatabaseItemRemoved;
-            editor.ContentDatabase.WorkspaceRebuilding += () => { _workspaceRebuildLocation = SelectedNode?.Path; };
-            editor.ContentDatabase.WorkspaceRebuilt += () =>
-            {
-                var selected = Editor.ContentDatabase.Find(_workspaceRebuildLocation);
-                if (selected is ContentFolder selectedFolder)
-                {
-                    _navigationUnlocked = false;
-                    RefreshView(selectedFolder.Node);
-                    _tree.Select(selectedFolder.Node);
-                    UpdateItemsSearch();
-                    _navigationUnlocked = true;
-                    UpdateUI();
-                }
-                else
-                    ShowRoot();
-            };
 
             var options = Editor.Options;
             options.OptionsChanged += OnOptionsChanged;
@@ -638,12 +619,14 @@ namespace FlaxEditor.Windows
             var toDelete = new List<ContentItem>(items);
             toDelete.Sort((a, b) => a.IsFolder ? 1 : b.IsFolder ? -1 : a.Compare(b));
 
+            string singularPlural = toDelete.Count > 1 ? "s" : "";
+
             string msg = toDelete.Count == 1
-                         ? string.Format("Are you sure to delete \'{0}\'?\nThis action cannot be undone. Files will be deleted permanently.", items[0].Path)
-                         : string.Format("Are you sure to delete {0} selected items?\nThis action cannot be undone. Files will be deleted permanently.", items.Count);
+                         ? string.Format("Delete \'{0}\'?\n\nThis action cannot be undone.\nFile will be deleted permanently.", items[0].Path)
+                         : string.Format("Delete {0} selected items?\n\nThis action cannot be undone.\nFiles will be deleted permanently.", items.Count);
 
             // Ask user
-            if (MessageBox.Show(msg, "Delete asset(s)", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
+            if (MessageBox.Show(msg, "Delete asset" + singularPlural, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK)
                 return;
 
             // Clear navigation
@@ -741,7 +724,8 @@ namespace FlaxEditor.Windows
         /// Pastes the specified files.
         /// </summary>
         /// <param name="files">The files paths to import.</param>
-        public void Paste(string[] files)
+        /// <param name="isCutting">Whether a cutting action is occuring.</param>
+        public void Paste(string[] files, bool isCutting)
         {
             var importFiles = new List<string>();
             foreach (var sourcePath in files)
@@ -752,7 +736,10 @@ namespace FlaxEditor.Windows
                     var newPath = StringUtils.NormalizePath(Path.Combine(CurrentViewFolder.Path, item.FileName));
                     if (sourcePath.Equals(newPath))
                         newPath = GetClonedAssetPath(item);
-                    Editor.ContentDatabase.Copy(item, newPath);
+                    if (isCutting)
+                        Editor.ContentDatabase.Move(item, newPath);
+                    else
+                        Editor.ContentDatabase.Copy(item, newPath);
                 }
                 else
                     importFiles.Add(sourcePath);
@@ -1031,6 +1018,61 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override void OnInit()
         {
+            // Content database events
+            Editor.ContentDatabase.WorkspaceModified += () => _isWorkspaceDirty = true;
+            Editor.ContentDatabase.ItemRemoved += OnContentDatabaseItemRemoved;
+            Editor.ContentDatabase.WorkspaceRebuilding += () => { _workspaceRebuildLocation = SelectedNode?.Path; };
+            Editor.ContentDatabase.WorkspaceRebuilt += () =>
+            {
+                var selected = Editor.ContentDatabase.Find(_workspaceRebuildLocation);
+                if (selected is ContentFolder selectedFolder)
+                {
+                    _navigationUnlocked = false;
+                    RefreshView(selectedFolder.Node);
+                    _tree.Select(selectedFolder.Node);
+                    UpdateItemsSearch();
+                    _navigationUnlocked = true;
+                    UpdateUI();
+                }
+                else if (_root != null)
+                    ShowRoot();
+            };
+
+            Refresh();
+
+            // Load last viewed folder
+            if (Editor.ProjectCache.TryGetCustomData(ProjectDataLastViewedFolder, out string lastViewedFolder))
+            {
+                if (Editor.ContentDatabase.Find(lastViewedFolder) is ContentFolder folder)
+                    _tree.Select(folder.Node);
+            }
+
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
+            ScriptsBuilder.ScriptsReloadEnd += OnScriptsReloadEnd;
+        }
+
+        private void OnScriptsReloadBegin()
+        {
+            var lastViewedFolder = _tree.Selection.Count == 1 ? _tree.SelectedNode as ContentTreeNode : null;
+            _lastViewedFolderBeforeReload = lastViewedFolder?.Path ?? string.Empty;
+
+            _tree.RemoveChild(_root);
+            _root = null;
+        }
+
+        private void OnScriptsReloadEnd()
+        {
+            Refresh();
+
+            if (!string.IsNullOrEmpty(_lastViewedFolderBeforeReload))
+            {
+                if (Editor.ContentDatabase.Find(_lastViewedFolderBeforeReload) is ContentFolder folder)
+                    _tree.Select(folder.Node);
+            }
+        }
+
+        private void Refresh()
+        {
             // Setup content root node
             _root = new RootContentTreeNode
             {
@@ -1066,13 +1108,6 @@ namespace FlaxEditor.Windows
             // Update UI layout
             _isLayoutLocked = false;
             PerformLayout();
-
-            // Load last viewed folder
-            if (Editor.ProjectCache.TryGetCustomData(ProjectDataLastViewedFolder, out string lastViewedFolder))
-            {
-                if (Editor.ContentDatabase.Find(lastViewedFolder) is ContentFolder folder)
-                    _tree.Select(folder.Node);
-            }
         }
 
         /// <inheritdoc />
@@ -1220,6 +1255,8 @@ namespace FlaxEditor.Windows
             _viewDropdown = null;
 
             Editor.Options.OptionsChanged -= OnOptionsChanged;
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+            ScriptsBuilder.ScriptsReloadEnd -= OnScriptsReloadEnd;
 
             base.OnDestroy();
         }

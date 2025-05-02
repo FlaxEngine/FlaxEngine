@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.ComponentModel;
@@ -645,6 +645,7 @@ namespace FlaxEngine
 
         /// <summary>
         /// Maps the specified value from the given range into another.
+        /// [Deprecated on 17.04.2023, expires on 17.04.2024]
         /// </summary>
         /// <param name="value">The value to map from range [fromMin; fromMax].</param>
         /// <param name="fromMin">The source range minimum value.</param>
@@ -652,8 +653,7 @@ namespace FlaxEngine
         /// <param name="toMin">The destination range minimum value.</param>
         /// <param name="toMax">The destination range maximum value.</param>
         /// <returns>The mapped value in range [toMin; toMax].</returns>
-        // [Deprecated on 17.04.2023, expires on 17.04.2024]
-        [Obsolete("Please use Remap to upkeep the API consistency")]
+        [Obsolete("Use Remap instead")]
         public static double Map(double value, double fromMin, double fromMax, double toMin, double toMax)
         {
             double t = (value - fromMin) / (fromMax - fromMin);

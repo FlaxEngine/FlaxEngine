@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "CustomEditorsUtil.h"
 #include "Engine/Core/Log.h"
@@ -39,14 +39,9 @@ CustomEditorsUtilService CustomEditorsUtilServiceInstance;
 
 struct Entry
 {
-    MClass* DefaultEditor;
-    MClass* CustomEditor;
-
-    Entry()
-    {
-        DefaultEditor = nullptr;
-        CustomEditor = nullptr;
-    }
+    MClass* DefaultEditor = nullptr;
+    MClass* CustomEditor = nullptr;
+    MType* CustomEditorType = nullptr;
 };
 
 Dictionary<MType*, Entry> Cache(512);
@@ -63,11 +58,11 @@ MTypeObject* CustomEditorsUtil::GetCustomEditor(MTypeObject* refType)
     Entry result;
     if (Cache.TryGet(type, result))
     {
+        if (result.CustomEditorType)
+            return INTERNAL_TYPE_GET_OBJECT(result.CustomEditorType);
         MClass* editor = result.CustomEditor ? result.CustomEditor : result.DefaultEditor;
         if (editor)
-        {
             return MUtils::GetType(editor);
-        }
     }
     return nullptr;
 }
@@ -157,7 +152,7 @@ void OnAssemblyLoaded(MAssembly* assembly)
         else if (typeClass)
         {
             auto& entry = Cache[mclass->GetType()];
-            entry.CustomEditor = typeClass;
+            entry.CustomEditorType = type;
 
             //LOG(Info, "Custom Editor {0} for type {1}", String(typeClass->GetFullName()), String(mclass->GetFullName()));
         }

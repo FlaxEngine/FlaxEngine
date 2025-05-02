@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -123,6 +123,7 @@ public:
     /// <returns>The scene object (loaded).</returns>
     API_FUNCTION() static Scene* GetScene(int32 index)
     {
+        CHECK_RETURN(index < GetScenesCount(), nullptr);
         return Scenes[index];
     }
 
@@ -359,7 +360,7 @@ public:
     /// <summary>
     /// Tries to find the actor of the given type in all the loaded scenes.
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <param name="activeOnly">Finds only an active actor.</param>
     /// <returns>Found actor or null.</returns>
     API_FUNCTION() static Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false);
@@ -367,7 +368,7 @@ public:
     /// <summary>
     /// Tries to find the actor of the given type and name in all the loaded scenes.
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <param name="name">The name of the actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
     API_FUNCTION() static Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const StringView& name);
@@ -384,7 +385,7 @@ public:
     /// <summary>
     /// Tries to find the actor of the given type and tag in all the loaded scenes.
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <param name="tag">The tag of the actor to search for.</param>
     /// <param name="activeOnly">Finds only an active actor.</param>
     /// <param name="root">The custom root actor to start searching from (hierarchical), otherwise null to search all loaded scenes.</param>
@@ -445,7 +446,7 @@ public:
     /// <summary>
     /// Tries to find the script of the given type in all the loaded scenes.
     /// </summary>
-    /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
+    /// <param name="type">Type of the script to search for. Includes any scripts derived from the type. Supports interface types.</param>
     /// <returns>Found script or null.</returns>
     API_FUNCTION() static Script* FindScript(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type);
 
@@ -468,11 +469,12 @@ public:
     API_FUNCTION() static Array<Actor*> GetActors(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false);
 
     /// <summary>
-    /// Finds all the scripts of the given type in all the loaded scenes.
+    /// Finds all the scripts of the given type in an actor or all the loaded scenes.
     /// </summary>
     /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
+    /// <param name="root">The root to find scripts. If null, will search in all scenes.</param>
     /// <returns>Found scripts list.</returns>
-    API_FUNCTION() static Array<Script*> GetScripts(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type);
+    API_FUNCTION() static Array<Script*> GetScripts(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type, Actor* root = nullptr);
 
     /// <summary>
     /// Tries to find scene with given ID.
@@ -550,5 +552,5 @@ private:
     static bool loadScene(JsonAsset* sceneAsset);
     static bool loadScene(const BytesContainer& sceneData, Scene** outScene = nullptr);
     static bool loadScene(rapidjson_flax::Document& document, Scene** outScene = nullptr);
-    static bool loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene = nullptr);
+    static bool loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene = nullptr, const String* assetPath = nullptr);
 };

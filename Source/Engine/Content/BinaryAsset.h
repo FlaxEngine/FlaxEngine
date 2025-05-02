@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -166,7 +166,7 @@ public:
     /// </summary>
     /// <param name="index">The chunk index.</param>
     /// <returns>Flax Chunk object (may be null if asset storage doesn't allow to add new chunks).</returns>
-    FlaxChunk* GetOrCreateChunk(int32 index);
+    FlaxChunk* GetOrCreateChunk(int32 index) const;
 
     /// <summary>
     /// Determines whether the specified chunk exists.
@@ -238,14 +238,14 @@ public:
     /// </summary>
     /// <param name="chunkIndex">The chunk index to load.</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool LoadChunk(int32 chunkIndex);
+    bool LoadChunk(int32 chunkIndex) const;
 
     /// <summary>
     /// Loads the chunks (synchronous, blocks current thread).
     /// </summary>
     /// <param name="chunks">The chunks to load (packed in a flag).</param>
     /// <returns>True if failed, otherwise false.</returns>
-    bool LoadChunks(AssetChunksFlag chunks);
+    bool LoadChunks(AssetChunksFlag chunks) const;
 
 #if USE_EDITOR
     /// <summary>

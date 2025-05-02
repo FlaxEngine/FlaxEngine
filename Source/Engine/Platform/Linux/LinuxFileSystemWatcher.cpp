@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX
 
@@ -217,7 +217,7 @@ LinuxFileSystemWatcher::~LinuxFileSystemWatcher()
         FileSystemWatchers::Thread = nullptr;
         close(FileSystemWatchers::WacherFileDescriptor);
         FileSystemWatchers::WacherFileDescriptor = 0;
-        for (auto e : FileSystemWatchers::Watchers)
+        for (auto& e : FileSystemWatchers::Watchers)
             Delete(e.Value.Second.Second);
         FileSystemWatchers::Watchers.Clear();
     }

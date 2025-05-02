@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -57,8 +57,9 @@ namespace FlaxEditor.States
             {
                 // Generate project files when Cache is missing or was cleared previously
                 var projectFolderPath = Editor.GameProject?.ProjectFolderPath;
-                if (!Directory.Exists(Path.Combine(projectFolderPath, "Cache", "Intermediate")) ||
-                    !Directory.Exists(Path.Combine(projectFolderPath, "Cache", "Projects")))
+                if (!string.IsNullOrEmpty(projectFolderPath) &&
+                    (!Directory.Exists(Path.Combine(projectFolderPath, "Cache", "Intermediate")) ||
+                     !Directory.Exists(Path.Combine(projectFolderPath, "Cache", "Projects"))))
                 {
                     var customArgs = Editor.CodeEditing.SelectedEditor?.GenerateProjectCustomArgs;
                     ScriptsBuilder.GenerateProject(customArgs);

@@ -10,7 +10,7 @@ jobs:
   # Tests on Linux
   tests-linux:
     name: Tests (Linux)
-    runs-on: "ubuntu-20.04"
+    runs-on: "ubuntu-24.04"
     steps:
     - name: Checkout repo
       uses: actions/checkout@v3
@@ -28,9 +28,6 @@ jobs:
         git lfs pull
     - name: Install dependencies
       run: |
-        sudo rm -f /etc/apt/sources.list.d/*
-        sudo cp -f .github/workflows/build_linux_sources.list /etc/apt/sources.list
-        sudo apt-get update
         sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev build-essential gettext libtool libtool-bin libpulse-dev libasound2-dev libjack-dev portaudio19-dev
     - name: Build
       run: |
@@ -76,8 +73,11 @@ jobs:
         .\Development\Scripts\Windows\CallBuildTool.bat -build -log -dotnet=8 -arch=x64 -platform=Windows -configuration=Development -buildtargets=FlaxTestsTarget
         dotnet msbuild Source\Tools\Flax.Build.Tests\Flax.Build.Tests.csproj /m /t:Restore,Build /p:Configuration=Debug /p:Platform=AnyCPU /nologo
     - name: Test
+      shell: pwsh
       run: |
+        $ErrorActionPreference = "Stop"
         .\Binaries\Editor\Win64\Development\FlaxTests.exe
+        if(!$?) { Write-Host "Tests failed with exit code $LastExitCode" -ForegroundColor Red; Exit $LastExitCode }
         dotnet test -f net8.0 Binaries\Tests\Flax.Build.Tests.dll
         xcopy /y Binaries\Editor\Win64\Development\FlaxEngine.CSharp.dll Binaries\Tests
         xcopy /y Binaries\Editor\Win64\Development\FlaxEngine.CSharp.runtimeconfig.json Binaries\Tests

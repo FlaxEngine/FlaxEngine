@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -659,7 +659,7 @@ namespace FlaxEngine
         /// <param name="plane">The plane to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersect.</returns>
-        [Obsolete("Deprecated in 1.4")]
+        [Obsolete("Use RayIntersectsPlane with 'out Real distance' parameter instead")]
         public static bool RayIntersectsPlane(ref Ray ray, ref Plane plane, out float distance)
         {
             //Source: Real-Time Collision Detection by Christer Ericson

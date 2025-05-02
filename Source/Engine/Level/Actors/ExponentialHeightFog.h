@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,7 +12,7 @@
 /// <summary>
 /// Used to create fogging effects such as clouds but with a density that is related to the height of the fog.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Exponential Height Fog\"), ActorToolbox(\"Visuals\")")
+API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Lighting & PostFX/Exponential Height Fog\"), ActorToolbox(\"Visuals\")")
 class FLAXENGINE_API ExponentialHeightFog : public Actor, public IFogRenderer
 {
     DECLARE_SCENE_OBJECT(ExponentialHeightFog);
@@ -155,7 +155,7 @@ public:
 
     // [IFogRenderer]
     void GetVolumetricFogOptions(VolumetricFogOptions& result) const override;
-    void GetExponentialHeightFogData(const RenderView& view, ExponentialHeightFogData& result) const override;
+    void GetExponentialHeightFogData(const RenderView& view, ShaderExponentialHeightFogData& result) const override;
     void DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output) override;
 
 protected:

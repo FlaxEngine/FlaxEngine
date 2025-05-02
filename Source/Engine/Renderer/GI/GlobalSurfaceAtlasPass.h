@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -11,8 +11,7 @@ class FLAXENGINE_API GlobalSurfaceAtlasPass : public RendererPass<GlobalSurfaceA
 {
 public:
     // Constant buffer data for Global Surface Atlas access on a GPU.
-    PACK_STRUCT(struct ConstantsData
-        {
+    GPU_CB_STRUCT(ConstantsData {
         Float3 ViewPos;
         float Padding0;
         float Padding1;
@@ -31,10 +30,9 @@ public:
                 GPUTexture* AtlasDepth;
                 GPUTexture* AtlasGBuffer0;
                 GPUTexture* AtlasGBuffer1;
-                GPUTexture* AtlasGBuffer2;
                 GPUTexture* AtlasLighting;
             };
-            GPUTexture* Atlas[5];
+            GPUTexture* Atlas[4];
         };
         GPUBuffer* Chunks;
         GPUBuffer* CulledObjects;
@@ -59,12 +57,24 @@ private:
     class GPUBuffer* _culledObjectsSizeBuffer = nullptr;
     class DynamicVertexBuffer* _vertexBuffer = nullptr;
     class GlobalSurfaceAtlasCustomBuffer* _surfaceAtlasData;
-    Array<void*> _dirtyObjectsBuffer;
     uint64 _culledObjectsSizeFrames[8];
-    Vector4 _cullingPosDistance;
     void* _currentActorObject;
 
 public:
+    /// <summary>
+    /// Gets the Global Surface Atlas (only if enabled in Graphics Settings).
+    /// </summary>
+    /// <param name="buffers">The rendering context buffers.</param>
+    /// <param name="result">The result Global Surface Atlas data for binding to the shaders.</param>
+    /// <returns>True if there is no valid Global Surface Atlas rendered during this frame, otherwise false.</returns>
+    bool Get(const RenderBuffers* buffers, BindingData& result);
+
+    /// <summary>
+    /// Calls drawing scene objects in async early in the frame.
+    /// </summary>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
+    void OnCollectDrawCalls(RenderContextBatch& renderContextBatch);
+
     /// <summary>
     /// Renders the Global Surface Atlas.
     /// </summary>
@@ -83,11 +93,8 @@ public:
     void RenderDebug(RenderContext& renderContext, GPUContext* context, GPUTexture* output);
 
     // Gets the culling view position (xyz) and view distance (w)
-    void GetCullingData(Vector4& cullingPosDistance) const
-    {
-        cullingPosDistance = _cullingPosDistance;
-    }
-    
+    void GetCullingData(Vector4& cullingPosDistance) const;
+
     // Gets the current object of the actor that is drawn into atlas.
     void* GetCurrentActorObject() const
     {

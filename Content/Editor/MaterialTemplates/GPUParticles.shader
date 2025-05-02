@@ -140,7 +140,7 @@ void SetParticleVec4(uint particleIndex, int offset, float4 value)
 bool AddParticle(out uint dstIndex)
 {
 	// Acquire the particle index in the destination buffer
-	DstParticlesData.InterlockedAdd(ParticleCounterOffset, 1, dstIndex);
+	DstParticlesData.InterlockedAdd(ParticleCounterOffset, 1u, dstIndex);
 	
 	// Prevent overflow
 	return dstIndex >= PARTICLE_CAPACITY;

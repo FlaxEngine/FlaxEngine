@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -15,6 +15,7 @@ private:
     File* _file;
     uint32 _virtualPosInBuffer; // Current position in the buffer (index)
     uint32 _bufferSize; // Amount of loaded bytes from the file to the buffer
+    uint32 _filePosition; // Cached position in the file (native)
     byte _buffer[FILESTREAM_BUFFER_SIZE];
 
 public:

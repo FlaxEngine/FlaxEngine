@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -48,7 +48,7 @@ public:
     {
     }
 
-    void ClearDepth(GPUTextureView* depthBuffer, float depthValue) override
+    void ClearDepth(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue) override
     {
     }
 
@@ -116,7 +116,7 @@ public:
     {
     }
 
-    void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr) override
+    void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr, GPUVertexLayout* vertexLayout = nullptr) override
     {
     }
 

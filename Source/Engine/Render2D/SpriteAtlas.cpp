@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SpriteAtlas.h"
 #include "Engine/Core/Log.h"
@@ -108,12 +108,12 @@ bool SpriteAtlas::SaveSprites()
 
     // Write sprites data
     MemoryWriteStream stream(1024);
-    stream.WriteInt32(1); // Version
-    stream.WriteInt32(Sprites.Count()); // Sprites Count
+    stream.Write(1); // Version
+    stream.Write(Sprites.Count()); // Sprites Count
     for (Sprite& t : Sprites)
     {
         stream.Write(t.Area);
-        stream.WriteString(t.Name, 49);
+        stream.Write(t.Name, 49);
     }
 
     // Link sprites data (unlink after safe)
@@ -148,7 +148,7 @@ bool SpriteAtlas::LoadSprites(ReadStream& stream)
     Sprites.Clear();
 
     int32 tilesVersion, tilesCount;
-    stream.ReadInt32(&tilesVersion);
+    stream.Read(tilesVersion);
     if (tilesVersion != 1)
     {
 #if USE_EDITOR
@@ -158,12 +158,12 @@ bool SpriteAtlas::LoadSprites(ReadStream& stream)
         LOG(Warning, "Invalid tiles version.");
         return true;
     }
-    stream.ReadInt32(&tilesCount);
+    stream.Read(tilesCount);
     Sprites.Resize(tilesCount);
     for (Sprite& t : Sprites)
     {
         stream.Read(t.Area);
-        stream.ReadString(&t.Name, 49);
+        stream.Read(t.Name, 49);
     }
 
 #if USE_EDITOR

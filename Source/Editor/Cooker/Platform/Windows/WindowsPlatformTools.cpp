@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_TOOLS_WINDOWS
 
@@ -8,6 +8,7 @@
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Config/GameSettings.h"
 #include "Editor/Utilities/EditorUtilities.h"
+#include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Content/Content.h"
@@ -240,7 +241,7 @@ void UpdateIconData(uint8* iconData, const TextureData* icon)
     const TextureMipData* srcPixels = icon->GetData(0, srcPixelsMip);
     const Color32* srcPixelsData = (Color32*)srcPixels->Data.Get();
     const Int2 srcPixelsSize(Math::Max(1, icon->Width >> srcPixelsMip), Math::Max(1, icon->Height >> srcPixelsMip));
-    const auto sampler = TextureTool::GetSampler(icon->Format);
+    const auto sampler = PixelFormatSampler::Get(icon->Format);
     ASSERT_LOW_LAYER(sampler);
 
     // Write colors
@@ -252,7 +253,7 @@ void UpdateIconData(uint8* iconData, const TextureData* icon)
         for (uint32 x = 0; x < width; x++)
         {
             float u = (float)x / width;
-            const Color c = TextureTool::SampleLinear(sampler, Float2(u, v), srcPixelsData, srcPixelsSize, srcPixels->RowPitch);
+            const Color c = sampler->SampleLinear(srcPixelsData, Float2(u, v), srcPixelsSize, srcPixels->RowPitch);
             colorData[idx++] = Color32(c).GetAsBGRA();
         }
     }
@@ -271,7 +272,7 @@ void UpdateIconData(uint8* iconData, const TextureData* icon)
             {
                 uint32 x = packedX * 8 + pixelIdx;
                 float u = (float)x / width;
-                const Color c = TextureTool::SampleLinear(sampler, Float2(u, v), srcPixelsData, srcPixelsSize, srcPixels->RowPitch);
+                const Color c = sampler->SampleLinear(srcPixelsData, Float2(u, v), srcPixelsSize, srcPixels->RowPitch);
                 if (c.A < 0.25f)
                     mask |= 1 << (7 - pixelIdx);
             }
@@ -322,7 +323,7 @@ bool UpdateExeIcon(const String& path, const TextureData& icon)
     const TextureData* iconRGBA8 = &icon;
     TextureData tmpData1;
     //if (icon.Format != PixelFormat::R8G8B8A8_UNorm)
-    if (TextureTool::GetSampler(icon.Format) == nullptr)
+    if (PixelFormatSampler::Get(icon.Format) == nullptr)
     {
         if (TextureTool::Convert(tmpData1, *iconRGBA8, PixelFormat::R8G8B8A8_UNorm))
         {
@@ -511,11 +512,12 @@ bool WindowsPlatformTools::OnDeployBinaries(CookingData& data)
 
         // Rename app
         const String newName = EditorUtilities::GetOutputName();
-        if (newName != StringUtils::GetFileNameWithoutExtension(files[0]))
+        const StringView oldName = StringUtils::GetFileNameWithoutExtension(files[0]);
+        if (newName != oldName)
         {
             if (FileSystem::MoveFile(data.NativeCodeOutputPath / newName + TEXT(".exe"), files[0], true))
             {
-                data.Error(TEXT("Failed to change output executable name."));
+                data.Error(String::Format(TEXT("Failed to change output executable name from '{}' to '{}'."), oldName, newName));
                 return true;
             }
         }

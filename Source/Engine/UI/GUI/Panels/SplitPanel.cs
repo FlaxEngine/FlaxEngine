@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 namespace FlaxEngine.GUI
 {
@@ -130,6 +130,7 @@ namespace FlaxEngine.GUI
             {
                 // Clear flag
                 _splitterClicked = false;
+                PerformLayout();
 
                 // End capturing mouse
                 EndMouseCapture();

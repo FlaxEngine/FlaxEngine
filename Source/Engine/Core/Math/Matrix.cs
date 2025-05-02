@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
@@ -215,23 +215,9 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets or sets the forward <see cref="Float3" /> of the matrix; that is -M31, -M32, and -M33.
+        /// Gets or sets the forward <see cref="Float3" /> of the matrix; that is M31, M32, and M33.
         /// </summary>
         public Float3 Forward
-        {
-            get => new Float3(-M31, -M32, -M33);
-            set
-            {
-                M31 = -value.X;
-                M32 = -value.Y;
-                M33 = -value.Z;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the backward <see cref="Float3" /> of the matrix; that is M31, M32, and M33.
-        /// </summary>
-        public Float3 Backward
         {
             get => new Float3(M31, M32, M33);
             set
@@ -239,6 +225,20 @@ namespace FlaxEngine
                 M31 = value.X;
                 M32 = value.Y;
                 M33 = value.Z;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the backward <see cref="Float3" /> of the matrix; that is -M31, -M32, and -M33.
+        /// </summary>
+        public Float3 Backward
+        {
+            get => new Float3(-M31, -M32, -M33);
+            set
+            {
+                M31 = -value.X;
+                M32 = -value.Y;
+                M33 = -value.Z;
             }
         }
 
@@ -825,7 +825,7 @@ namespace FlaxEngine
         /// <param name="rotation">When the method completes, contains the rotation component of the decomposed matrix.</param>
         /// <param name="translation">When the method completes, contains the translation component of the decomposed matrix.</param>
         /// <remarks>This method is designed to decompose an SRT transformation matrix only.</remarks>
-        [Obsolete("Deprecated in v1.8")]
+        [Obsolete("Use Decompose with 'out Matrix3x3 rotation' parameter instead")]
         public void Decompose(out Float3 scale, out Matrix rotation, out Float3 translation)
         {
             Decompose(out scale, out Matrix3x3 r, out translation);

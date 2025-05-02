@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -88,7 +88,7 @@ public:
     /// <summary>
     /// The audio backend buffers (internal ids) collection used by this audio clip.
     /// </summary>
-    Array<AUDIO_BUFFER_ID_TYPE, FixedAllocation<ASSET_FILE_DATA_CHUNKS>> Buffers;
+    Array<uint32, FixedAllocation<ASSET_FILE_DATA_CHUNKS>> Buffers;
 
     /// <summary>
     /// The streaming cache. Contains indices of chunks to stream. If empty no streaming required. Managed by AudioStreamingHandler and used by the Audio streaming tasks.

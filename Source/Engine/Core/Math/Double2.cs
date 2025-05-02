@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -179,7 +179,7 @@ namespace FlaxEngine
         /// <summary>
         /// Gets a value indicting whether this instance is normalized.
         /// </summary>
-        public bool IsNormalized => Mathd.IsOne(X * X + Y * Y);
+        public bool IsNormalized => Mathd.Abs((X * X + Y * Y) - 1.0f) < 1e-4f;
 
         /// <summary>
         /// Gets a value indicting whether this vector is zero
@@ -1263,8 +1263,10 @@ namespace FlaxEngine
         /// <returns>The position snapped to the grid.</returns>
         public static Double2 SnapToGrid(Double2 pos, Double2 gridSize)
         {
-            pos.X = Mathd.Ceil((pos.X - (gridSize.X * 0.5)) / gridSize.Y) * gridSize.X;
-            pos.Y = Mathd.Ceil((pos.Y - (gridSize.Y * 0.5)) / gridSize.X) * gridSize.Y;
+            if (Mathd.Abs(gridSize.X) > Mathd.Epsilon)
+                pos.X = Mathd.Ceil((pos.X - (gridSize.X * 0.5)) / gridSize.Y) * gridSize.X;
+            if (Mathd.Abs(gridSize.Y) > Mathd.Epsilon)
+                pos.Y = Mathd.Ceil((pos.Y - (gridSize.Y * 0.5)) / gridSize.X) * gridSize.Y;
             return pos;
         }
 

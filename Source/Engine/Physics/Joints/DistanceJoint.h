@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -52,7 +52,7 @@ public:
     /// <summary>
     /// Gets the joint mode flags. Controls joint behaviour.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(DistanceJointFlag.MinDistance | DistanceJointFlag.MaxDistance)")
+    API_PROPERTY(Attributes="EditorOrder(100), EditorDisplay(\"Joint\"), DefaultValue(DistanceJointFlag.MinDistance | DistanceJointFlag.MaxDistance)")
     FORCE_INLINE DistanceJointFlag GetFlags() const
     {
         return _flags;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_NETCORE
 using System;
@@ -176,6 +176,7 @@ namespace FlaxEngine.Interop
                 _managedHandle.Free();
                 _unmanagedData = IntPtr.Zero;
             }
+            _arrayType = _elementType = null;
             ManagedArrayPool.Put(this);
         }
 
@@ -442,22 +443,25 @@ namespace FlaxEngine.Interop
             /// <summary>
             /// Tries to free all references to old weak handles so GC can collect them.
             /// </summary>
-            internal static void TryCollectWeakHandles()
+            internal static void TryCollectWeakHandles(bool force = false)
             {
-                if (weakHandleAccumulator < nextWeakPoolCollection)
-                    return;
+                if (!force)
+                {
+                    if (weakHandleAccumulator < nextWeakPoolCollection)
+                        return;
 
-                nextWeakPoolCollection = weakHandleAccumulator + 1000;
+                    nextWeakPoolCollection = weakHandleAccumulator + 1000;
 
-                // Try to swap pools after garbage collection or whenever the pool gets too large
-                var gc0CollectionCount = GC.CollectionCount(0);
-                if (gc0CollectionCount < nextWeakPoolGCCollection && weakPool.Count < WeakPoolCollectionSizeThreshold)
-                    return;
-                nextWeakPoolGCCollection = gc0CollectionCount + 1;
+                    // Try to swap pools after garbage collection or whenever the pool gets too large
+                    var gc0CollectionCount = GC.CollectionCount(0);
+                    if (gc0CollectionCount < nextWeakPoolGCCollection && weakPool.Count < WeakPoolCollectionSizeThreshold)
+                        return;
+                    nextWeakPoolGCCollection = gc0CollectionCount + 1;
 
-                // Prevent huge allocations from swapping the pools in the middle of the operation
-                if (System.Diagnostics.Stopwatch.GetElapsedTime(lastWeakPoolCollectionTime).TotalMilliseconds < WeakPoolCollectionTimeThreshold)
-                    return;
+                    // Prevent huge allocations from swapping the pools in the middle of the operation
+                    if (System.Diagnostics.Stopwatch.GetElapsedTime(lastWeakPoolCollectionTime).TotalMilliseconds < WeakPoolCollectionTimeThreshold)
+                        return;
+                }
                 lastWeakPoolCollectionTime = System.Diagnostics.Stopwatch.GetTimestamp();
 
                 // Swap the pools and release the oldest pool for GC

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Globalization;
@@ -72,6 +72,7 @@ namespace FlaxEngine
             bounds.Transformation.Translation -= renderContext.View.Origin;
             if (renderContext.View.Frustum.Contains(bounds.GetBoundingBox()) == ContainmentType.Disjoint)
                 return;
+            var worldSpace = Canvas.RenderMode == CanvasRenderMode.WorldSpace || Canvas.RenderMode == CanvasRenderMode.WorldSpaceFaceCamera; 
 
             Profiler.BeginEvent("UI Canvas");
             Profiler.BeginEventGPU("UI Canvas");
@@ -79,14 +80,17 @@ namespace FlaxEngine
             // Calculate rendering matrix (world*view*projection)
             Canvas.GetWorldMatrix(renderContext.View.Origin, out Matrix worldMatrix);
             Matrix.Multiply(ref worldMatrix, ref renderContext.View.View, out Matrix viewMatrix);
-            Matrix.Multiply(ref viewMatrix, ref renderContext.View.Projection, out Matrix viewProjectionMatrix);
+            Matrix projectionMatrix = renderContext.View.Projection;
+            if (worldSpace && (Canvas.RenderLocation == PostProcessEffectLocation.Default || Canvas.RenderLocation == PostProcessEffectLocation.AfterAntiAliasingPass))
+                projectionMatrix = renderContext.View.NonJitteredProjection; // Fix TAA jittering when rendering UI in world after TAA resolve
+            Matrix.Multiply(ref viewMatrix, ref projectionMatrix, out Matrix viewProjectionMatrix);
 
             // Pick a depth buffer
             GPUTexture depthBuffer = Canvas.IgnoreDepth ? null : renderContext.Buffers.DepthBuffer;
 
             // Render GUI in 3D
             var features = Render2D.Features;
-            if (Canvas.RenderMode == CanvasRenderMode.WorldSpace || Canvas.RenderMode == CanvasRenderMode.WorldSpaceFaceCamera)
+            if (worldSpace)
                 Render2D.Features &= ~Render2D.RenderingFeatures.VertexSnapping;
             Render2D.CallDrawing(Canvas.GUI, context, input, depthBuffer, ref viewProjectionMatrix);
             Render2D.Features = features;
@@ -310,7 +314,8 @@ namespace FlaxEngine
         {
             _guiRoot = new CanvasRootControl(this)
             {
-                IsLayoutLocked = false
+                IsLayoutLocked = false,
+                Pivot = Float2.Zero,
             };
         }
 
@@ -773,7 +778,7 @@ namespace FlaxEngine
         }
 
 #if FLAX_EDITOR
-        internal void OnActiveInTreeChanged()
+        internal void ActiveInTreeChanged()
         {
             if (RenderMode == CanvasRenderMode.ScreenSpace && _editorRoot != null && _guiRoot != null)
             {

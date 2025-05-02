@@ -1,7 +1,8 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -51,12 +52,12 @@ namespace FlaxEditor.Scripting
                 int standardToken = _managed?.MetadataToken ?? _custom?.MetadataToken ?? 0;
                 if (_managed is PropertyInfo && _managed.DeclaringType != null)
                 {
-                    var field = _managed.DeclaringType.GetField(string.Format("<{0}>k__BackingField", Name), BindingFlags.Instance | BindingFlags.NonPublic);
-                    if (field == null || field.MetadataToken == 0)
+                    var backingField = _managed.DeclaringType.GetField(string.Format("<{0}>k__BackingField", Name), BindingFlags.Instance | BindingFlags.NonPublic);
+                    if (backingField == null || backingField.MetadataToken == 0)
                     {
                         return standardToken;
                     }
-                    return field.MetadataToken;
+                    return backingField.MetadataToken;
                 }
                 return standardToken;
             }
@@ -671,12 +672,41 @@ namespace FlaxEditor.Scripting
         /// <param name="value">The new member value.</param>
         public void SetValue(object obj, object value)
         {
+            // Perform automatic conversion if type supports it
+            var type = ValueType.Type;
+            var valueType = value?.GetType();
+            if (valueType != null && type != null && valueType != type)
+            {
+                var converter = TypeDescriptor.GetConverter(type);
+                if (converter.CanConvertTo(type))
+                    value = converter.ConvertTo(value, type);
+                else if (converter.CanConvertFrom(valueType))
+                    value = converter.ConvertFrom(null, null, value);
+            }
+
             if (_managed is PropertyInfo propertyInfo)
                 propertyInfo.SetValue(obj, value);
             else if (_managed is FieldInfo fieldInfo)
                 fieldInfo.SetValue(obj, value);
             else
                 _custom.SetValue(obj, value);
+        }
+
+        /// <summary>
+        /// Invokes the method on a specific object (null if static) using the provided parameters.
+        /// </summary>
+        /// <param name="obj">The instance of the object to invoke its method. Use null for static methods.</param>
+        /// <param name="parameters">List of parameters to provide.</param>
+        /// <returns>The value returned by the method.</returns>
+        public object Invoke(object obj = null, object[] parameters = null)
+        {
+            if (parameters == null)
+                parameters = Array.Empty<object>();
+            if (_managed is MethodInfo methodInfo)
+                return methodInfo.Invoke(obj, parameters);
+            if (_managed != null)
+                throw new NotSupportedException();
+            return _custom.Invoke(obj, parameters);
         }
     }
 

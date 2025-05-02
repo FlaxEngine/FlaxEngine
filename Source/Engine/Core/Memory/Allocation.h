@@ -1,9 +1,42 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Memory.h"
 #include "Engine/Core/Core.h"
+
+namespace AllocationUtils
+{
+    // Rounds up the input value to the next power of 2 to be used as bigger memory allocation block. Handles overflow.
+    inline int32 RoundUpToPowerOf2(int32 capacity)
+    {
+        // Reference: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+        capacity--;
+        capacity |= capacity >> 1;
+        capacity |= capacity >> 2;
+        capacity |= capacity >> 4;
+        capacity |= capacity >> 8;
+        capacity |= capacity >> 16;
+        uint64 capacity64 = (uint64)(capacity + 1) * 2;
+        if (capacity64 > MAX_int32)
+            capacity64 = MAX_int32;
+        return (int32)capacity64;
+    }
+
+    // Aligns the input value to the next power of 2 to be used as bigger memory allocation block.
+    inline int32 AlignToPowerOf2(int32 capacity)
+    {
+        // Reference: http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+        capacity--;
+        capacity |= capacity >> 1;
+        capacity |= capacity >> 2;
+        capacity |= capacity >> 4;
+        capacity |= capacity >> 8;
+        capacity |= capacity >> 16;
+        capacity++;
+        return capacity;
+    }
+}
 
 /// <summary>
 /// The memory allocation policy that uses inlined memory of the fixed size (no resize support, does not use heap allocations at all).
@@ -15,7 +48,7 @@ public:
     enum { HasSwap = false };
 
     template<typename T>
-    class Data
+    class alignas(sizeof(void*)) Data
     {
     private:
         byte _data[Capacity * sizeof(T)];
@@ -31,32 +64,28 @@ public:
 
         FORCE_INLINE T* Get()
         {
-            return (T*)_data;
+            return reinterpret_cast<T*>(_data);
         }
 
         FORCE_INLINE const T* Get() const
         {
-            return (T*)_data;
+            return reinterpret_cast<const T*>(_data);
         }
 
-        FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, int32 minCapacity) const
+        FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, const int32 minCapacity) const
         {
             ASSERT(minCapacity <= Capacity);
             return Capacity;
         }
 
-        FORCE_INLINE void Allocate(int32 capacity)
+        FORCE_INLINE void Allocate(const int32 capacity)
         {
-#if ENABLE_ASSERTION_LOW_LAYERS
-            ASSERT(capacity <= Capacity);
-#endif
+            ASSERT_LOW_LAYER(capacity <= Capacity);
         }
 
-        FORCE_INLINE void Relocate(int32 capacity, int32 oldCount, int32 newCount)
+        FORCE_INLINE void Relocate(const int32 capacity, int32 oldCount, int32 newCount)
         {
-#if ENABLE_ASSERTION_LOW_LAYERS
-            ASSERT(capacity <= Capacity);
-#endif
+            ASSERT_LOW_LAYER(capacity <= Capacity);
         }
 
         FORCE_INLINE void Free()
@@ -71,7 +100,7 @@ public:
 };
 
 /// <summary>
-/// The memory allocation policy that uses default heap allocator.
+/// The memory allocation policy that uses default heap allocation.
 /// </summary>
 class HeapAllocation
 {
@@ -104,58 +133,32 @@ public:
             return _data;
         }
 
-        FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, int32 minCapacity) const
+        FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, const int32 minCapacity) const
         {
             if (capacity < minCapacity)
                 capacity = minCapacity;
             if (capacity < 8)
-            {
                 capacity = 8;
-            }
             else
-            {
-                // Round up to the next power of 2 and multiply by 2 (http://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2)
-                capacity--;
-                capacity |= capacity >> 1;
-                capacity |= capacity >> 2;
-                capacity |= capacity >> 4;
-                capacity |= capacity >> 8;
-                capacity |= capacity >> 16;
-                uint64 capacity64 = (uint64)(capacity + 1) * 2;
-                if (capacity64 > MAX_int32)
-                    capacity64 = MAX_int32;
-                capacity = (int32)capacity64;
-            }
+                capacity = AllocationUtils::RoundUpToPowerOf2(capacity);
             return capacity;
         }
 
-        FORCE_INLINE void Allocate(int32 capacity)
+        FORCE_INLINE void Allocate(const int32 capacity)
         {
-#if  ENABLE_ASSERTION_LOW_LAYERS
-            ASSERT(!_data);
-#endif
-            _data = (T*)Allocator::Allocate(capacity * sizeof(T));
-#if !BUILD_RELEASE
-            if (!_data)
-                OUT_OF_MEMORY;
-#endif
+            ASSERT_LOW_LAYER(!_data);
+            _data = static_cast<T*>(Allocator::Allocate(capacity * sizeof(T)));
         }
 
-        FORCE_INLINE void Relocate(int32 capacity, int32 oldCount, int32 newCount)
+        FORCE_INLINE void Relocate(const int32 capacity, int32 oldCount, int32 newCount)
         {
-            T* newData = capacity != 0 ? (T*)Allocator::Allocate(capacity * sizeof(T)) : nullptr;
-#if !BUILD_RELEASE
-            if (!newData && capacity != 0)
-                OUT_OF_MEMORY;
-#endif
-
+            T* newData = capacity != 0 ? static_cast<T*>(Allocator::Allocate(capacity * sizeof(T))) : nullptr;
             if (oldCount)
             {
                 if (newCount > 0)
                     Memory::MoveItems(newData, _data, newCount);
                 Memory::DestructItems(_data, oldCount);
             }
-
             Allocator::Free(_data);
             _data = newData;
         }
@@ -176,21 +179,21 @@ public:
 /// <summary>
 /// The memory allocation policy that uses inlined memory of the fixed size and supports using additional allocation to increase its capacity (eg. via heap allocation).
 /// </summary>
-template<int Capacity, typename OtherAllocator = HeapAllocation>
+template<int Capacity, typename FallbackAllocation = HeapAllocation>
 class InlinedAllocation
 {
 public:
     enum { HasSwap = false };
 
     template<typename T>
-    class Data
+    class alignas(sizeof(void*)) Data
     {
     private:
-        typedef typename OtherAllocator::template Data<T> OtherData;
+        typedef typename FallbackAllocation::template Data<T> FallbackData;
 
-        bool _useOther = false;
+        bool _useFallback = false;
         byte _data[Capacity * sizeof(T)];
-        OtherData _other;
+        FallbackData _fallback;
 
     public:
         FORCE_INLINE Data()
@@ -203,70 +206,72 @@ public:
 
         FORCE_INLINE T* Get()
         {
-            return _useOther ? _other.Get() : (T*)_data;
+            return _useFallback ? _fallback.Get() : reinterpret_cast<T*>(_data);
         }
 
         FORCE_INLINE const T* Get() const
         {
-            return _useOther ? _other.Get() : (T*)_data;
+            return _useFallback ? _fallback.Get() : reinterpret_cast<const T*>(_data);
         }
 
         FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, int32 minCapacity) const
         {
-            return minCapacity <= Capacity ? Capacity : _other.CalculateCapacityGrow(capacity, minCapacity);
+            return minCapacity <= Capacity ? Capacity : _fallback.CalculateCapacityGrow(capacity, minCapacity);
         }
 
         FORCE_INLINE void Allocate(int32 capacity)
         {
             if (capacity > Capacity)
             {
-                _useOther = true;
-                _other.Allocate(capacity);
+                _useFallback = true;
+                _fallback.Allocate(capacity);
             }
         }
 
         FORCE_INLINE void Relocate(int32 capacity, int32 oldCount, int32 newCount)
         {
+            T* data = reinterpret_cast<T*>(_data);
+
             // Check if the new allocation will fit into inlined storage
             if (capacity <= Capacity)
             {
-                if (_useOther)
+                if (_useFallback)
                 {
                     // Move the items from other allocation to the inlined storage
-                    Memory::MoveItems((T*)_data, _other.Get(), newCount);
+                    Memory::MoveItems(data, _fallback.Get(), newCount);
 
                     // Free the other allocation
-                    Memory::DestructItems(_other.Get(), oldCount);
-                    _other.Free();
-                    _useOther = false;
+                    Memory::DestructItems(_fallback.Get(), oldCount);
+                    _fallback.Free();
+                    _useFallback = false;
                 }
             }
             else
             {
-                if (_useOther)
+                if (_useFallback)
                 {
                     // Resize other allocation
-                    _other.Relocate(capacity, oldCount, newCount);
+                    _fallback.Relocate(capacity, oldCount, newCount);
                 }
                 else
                 {
                     // Allocate other allocation
-                    _other.Allocate(capacity);
-                    _useOther = true;
+                    _fallback.Allocate(capacity);
+                    _useFallback = true;
 
                     // Move the items from the inlined storage to the other allocation
-                    Memory::MoveItems(_other.Get(), (T*)_data, newCount);
-                    Memory::DestructItems((T*)_data, oldCount);
+                    Memory::MoveItems(_fallback.Get(), data, newCount);
+                    Memory::DestructItems(data, oldCount);
                 }
             }
         }
 
         FORCE_INLINE void Free()
         {
-            if (_useOther)
+            if (_useFallback)
             {
-                _useOther = false;
-                _other.Free();
+                _useFallback = false;
+                _fallback.Free();
             }
         }
 
@@ -277,4 +282,4 @@ public:
     };
 };
 
-typedef HeapAllocation DefaultAllocation;
+using DefaultAllocation = HeapAllocation;

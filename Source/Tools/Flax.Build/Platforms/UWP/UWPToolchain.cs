@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -77,6 +77,7 @@ namespace Flax.Build.Platforms
             options.CompileEnv.PreprocessorDefinitions.Add("_WINRT_DLL");
             options.CompileEnv.PreprocessorDefinitions.Add("_WINDLL");
             options.CompileEnv.PreprocessorDefinitions.Add("__WRL_NO_DEFAULT_LIB__");
+            options.CompileEnv.PreprocessorDefinitions.Add("WINVER=0x0A00");
 
             options.LinkEnv.InputLibraries.Add("WindowsApp.lib");
         }

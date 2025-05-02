@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -169,6 +169,8 @@ namespace Flax.Build.Bindings
                 return $"Variant(StringAnsiView({value}))";
             if (typeInfo.IsObjectRef)
                 return $"Variant({value}.Get())";
+            if (typeInfo.Type == "SoftTypeReference")
+                return $"Variant::Typename(StringAnsiView({value}))";
             if (typeInfo.IsArray)
             {
                 var wrapperName = GenerateCppWrapperNativeToVariantMethodName(typeInfo);
@@ -227,6 +229,8 @@ namespace Flax.Build.Bindings
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((ScriptingObject*){value})";
             if (typeInfo.IsObjectRef)
                 return $"ScriptingObject::Cast<{typeInfo.GenericArgs[0].Type}>((Asset*){value})";
+            if (typeInfo.Type == "SoftTypeReference")
+                return $"(StringAnsiView){value}";
             if (typeInfo.IsArray)
                 throw new Exception($"Not supported type to convert from the Variant to fixed-size array '{typeInfo}[{typeInfo.ArraySize}]'.");
             if (typeInfo.Type == "Array" && typeInfo.GenericArgs != null)
@@ -258,10 +262,24 @@ namespace Flax.Build.Bindings
                 if (apiType.IsScriptingObject)
                     return $"ScriptingObject::Cast<{typeInfo.Type}>((ScriptingObject*){value})";
                 if (apiType.IsStruct && !CppInBuildVariantStructures.Contains(apiType.Name))
+                {
+                    var name = apiType.FullNameNative;
+                    if (typeInfo.GenericArgs != null)
+                    {
+                        name += '<';
+                        for (var i = 0; i < typeInfo.GenericArgs.Count; i++)
+                        {
+                            if (i != 0)
+                                name += ", ";
+                            name += typeInfo.GenericArgs[i];
+                        }
+                        name += '>';
+                    }
                     if (typeInfo.IsPtr)
-                        return $"({apiType.FullNameNative}*){value}.AsBlob.Data";
+                        return $"({name}*){value}.AsBlob.Data";
                     else
-                        return $"*({apiType.FullNameNative}*){value}.AsBlob.Data";
+                        return $"*({name}*){value}.AsBlob.Data";
+                }
             }
 
             if (typeInfo.IsPtr)
@@ -857,6 +875,12 @@ namespace Flax.Build.Bindings
                         type = "MObject*";
                         return "(" + typeInfo.Type + "*)ScriptingObject::ToNative({0})";
                     }
+                    else if (apiType.IsScriptingObject && typeInfo.IsRef && !typeInfo.IsPtr)
+                    {
+                        // Scripting Object is passed as pointer from C# but C++ uses reference
+                        type = typeInfo.ToString(false) + '*';
+                        return $"InternalGetReference({{0}})";
+                    }
 
                     // Nested type (namespace prefix is required)
                     if (!(apiType.Parent is FileInfo))
@@ -980,6 +1004,10 @@ namespace Flax.Build.Bindings
                 UseReferenceForResult = UsePassByReference(buildData, functionInfo.ReturnType, caller),
                 CustomParameters = new List<FunctionInfo.ParameterInfo>(),
             };
+            var returnType = functionInfo.ReturnType;
+            var returnApiType = FindApiTypeInfo(buildData, returnType, caller);
+            if (returnApiType != null && returnApiType.MarshalAs != null)
+                returnType = returnApiType.MarshalAs;
 
             bool returnTypeIsContainer = false;
             var returnValueConvert = GenerateCppWrapperNativeToManaged(buildData, functionInfo.ReturnType, caller, out var returnValueType, functionInfo);
@@ -999,7 +1027,7 @@ namespace Flax.Build.Bindings
                 });
             }
 #if USE_NETCORE
-            else if (functionInfo.ReturnType.Type == "Array" || functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "DataContainer" || functionInfo.ReturnType.Type == "BitArray" || functionInfo.ReturnType.Type == "BytesContainer")
+            else if (returnType.Type == "Array" || returnType.Type == "Span" || returnType.Type == "DataContainer" || returnType.Type == "BitArray" || returnType.Type == "BytesContainer")
             {
                 returnTypeIsContainer = true;
                 functionInfo.Glue.CustomParameters.Add(new FunctionInfo.ParameterInfo
@@ -1173,7 +1201,7 @@ namespace Flax.Build.Bindings
             {
                 callBegin += "*__resultAsRef = ";
             }
-            else if (!functionInfo.ReturnType.IsVoid)
+            else if (!returnType.IsVoid)
             {
                 if (useInlinedReturn)
                     callBegin += "return ";
@@ -1185,8 +1213,9 @@ namespace Flax.Build.Bindings
             string callReturnCount = "";
             if (returnTypeIsContainer)
             {
+                // Array marshallers need to know amount of items written in the buffer
                 callReturnCount = indent;
-                if (functionInfo.ReturnType.Type == "Span" || functionInfo.ReturnType.Type == "BytesContainer")
+                if (returnType.Type == "Span" || returnType.Type == "BytesContainer")
                     callReturnCount += "*__returnCount = {0}.Length();";
                 else
                     callReturnCount += "*__returnCount = {0}.Count();";
@@ -1278,7 +1307,8 @@ namespace Flax.Build.Bindings
 #if USE_NETCORE
             if (!string.IsNullOrEmpty(callReturnCount))
             {
-                contents.Append(indent).Append("const auto& __callTemp = ").Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
+                var tempVar = returnTypeIsContainer && returnType != functionInfo.ReturnType ? $"{returnType} __callTemp = " : "const auto& __callTemp = ";
+                contents.Append(indent).Append(tempVar).Append(string.Format(callFormat, call, callParams)).Append(";").AppendLine();
                 call = "__callTemp";
                 contents.Append(string.Format(callReturnCount, call));
                 contents.AppendLine();
@@ -1326,6 +1356,7 @@ namespace Flax.Build.Bindings
 #if USE_NETCORE
                                     if (parameterInfo.Type.Type == "Array")
                                     {
+                                        // Array marshallers need to know amount of items written in the buffer
                                         contents.Append(indent).AppendFormat("*__{0}Count = {1}.Count();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
                                     }
 #endif
@@ -1345,6 +1376,8 @@ namespace Flax.Build.Bindings
                                 if (parameterInfo.Type.Type == "BytesContainer" && parameterInfo.Type.GenericArgs == null)
                                 {
                                     contents.Append(indent).AppendFormat("MCore::GC::WriteRef({0}, (MObject*){1});", parameterInfo.Name, value).AppendLine();
+
+                                    // Array marshallers need to know amount of items written in the buffer
                                     contents.Append(indent).AppendFormat("*__{0}Count = {1}.Length();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
                                     continue;
                                 }
@@ -1353,11 +1386,18 @@ namespace Flax.Build.Bindings
                             }
                         }
                         contents.Append(indent).AppendFormat("*{0} = {1};", parameterInfo.Name, value).AppendLine();
+#if USE_NETCORE
+                        if (parameterInfo.Type.Type == "Array")
+                        {
+                            // Array marshallers need to know amount of items written in the buffer
+                            contents.Append(indent).AppendFormat("*__{0}Count = {1}.Count();", parameterInfo.Name, parameterInfo.Name + "Temp").AppendLine();
+                        }
+#endif
                     }
                 }
             }
 
-            if (!useInlinedReturn && !functionInfo.Glue.UseReferenceForResult && !functionInfo.ReturnType.IsVoid)
+            if (!useInlinedReturn && !functionInfo.Glue.UseReferenceForResult && !returnType.IsVoid)
             {
                 contents.Append(indent).Append("return __result;").AppendLine();
             }
@@ -1799,6 +1839,12 @@ namespace Flax.Build.Bindings
         {
             if (memberType.IsBitField)
                 return "_BIT";
+            if (memberType.IsPtr)
+            {
+                var t = FindApiTypeInfo(buildData, memberType, caller);
+                if (t.IsScriptingObject)
+                    return "_OBJ";
+            }
             return string.Empty;
         }
 
@@ -1816,6 +1862,10 @@ namespace Flax.Build.Bindings
 
             // Add includes to properly compile bindings (eg. SoftObjectReference<class Texture>)
             GenerateCppAddFileReference(buildData, caller, typeInfo, apiTypeInfo);
+
+            // TODO: find a better way to reference other include files for types that have separate serialization header
+            if (typeInfo.Type.EndsWith("Curve") && typeInfo.GenericArgs != null)
+                CppIncludeFilesList.Add("Engine/Animations/CurveSerialization.h");
 
             return false;
         }
@@ -1923,19 +1973,20 @@ namespace Flax.Build.Bindings
             contents.Append('}').AppendLine();
         }
 
-        private static string GenerateCppInterfaceInheritanceTable(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, VirtualClassInfo typeInfo, string typeNameNative)
+        private static string GenerateCppInterfaceInheritanceTable(BuildData buildData, StringBuilder contents, ModuleInfo moduleInfo, ClassStructInfo typeInfo, string typeNameNative, string typeNameInternal)
         {
             var interfacesPtr = "nullptr";
             var interfaces = typeInfo.Interfaces;
             if (interfaces != null)
             {
-                interfacesPtr = typeNameNative + "_Interfaces";
+                var virtualTypeInfo = typeInfo as VirtualClassInfo;
+                interfacesPtr = typeNameInternal + "_Interfaces";
                 contents.Append("static const ScriptingType::InterfaceImplementation ").Append(interfacesPtr).AppendLine("[] = {");
                 for (int i = 0; i < interfaces.Count; i++)
                 {
                     var interfaceInfo = interfaces[i];
-                    var scriptVTableOffset = typeInfo.GetScriptVTableOffset(interfaceInfo);
-                    contents.AppendLine($"    {{ &{interfaceInfo.NativeName}::TypeInitializer, (int16)VTABLE_OFFSET({typeInfo.NativeName}, {interfaceInfo.NativeName}), {scriptVTableOffset}, true }},");
+                    var scriptVTableOffset = virtualTypeInfo?.GetScriptVTableOffset(interfaceInfo) ?? 0;
+                    contents.AppendLine($"    {{ &{interfaceInfo.NativeName}::TypeInitializer, (int16)VTABLE_OFFSET({typeNameNative}, {interfaceInfo.NativeName}), {scriptVTableOffset}, true }},");
                 }
                 contents.AppendLine("    { nullptr, 0 },");
                 contents.AppendLine("};");
@@ -2239,7 +2290,7 @@ namespace Flax.Build.Bindings
             contents.AppendLine();
 
             // Interfaces
-            var interfacesTable = GenerateCppInterfaceInheritanceTable(buildData, contents, moduleInfo, classInfo, classTypeNameNative);
+            var interfacesTable = GenerateCppInterfaceInheritanceTable(buildData, contents, moduleInfo, classInfo, classTypeNameNative, classTypeNameInternal);
 
             // Type initializer
             if (GenerateCppIsTemplateInstantiationType(classInfo))
@@ -2254,7 +2305,7 @@ namespace Flax.Build.Bindings
                     contents.Append("&ScriptingType::DefaultSpawn, ");
                 else
                     contents.Append($"(ScriptingType::SpawnHandler)&{classTypeNameNative}::Spawn, ");
-                if (classInfo.BaseType != null && useScripting)
+                if (classInfo.BaseType != null)
                     contents.Append($"&{classInfo.BaseType.FullNameNative}::TypeInitializer, ");
                 else
                     contents.Append("nullptr, ");
@@ -2271,9 +2322,7 @@ namespace Flax.Build.Bindings
                 else
                     contents.Append("nullptr");
             }
-            contents.Append(", ").Append(interfacesTable);
-            contents.Append(");");
-            contents.AppendLine();
+            contents.Append(", ").Append(interfacesTable).Append(");").AppendLine();
 
             // Nested types
             foreach (var apiTypeInfo in classInfo.Children)
@@ -2480,13 +2529,22 @@ namespace Flax.Build.Bindings
             contents.Append('}').Append(';').AppendLine();
             contents.AppendLine();
 
+            // Interfaces
+            var interfacesTable = GenerateCppInterfaceInheritanceTable(buildData, contents, moduleInfo, structureInfo, structureTypeNameNative, structureTypeNameInternal);
+
+            // Type initializer
             if (GenerateCppIsTemplateInstantiationType(structureInfo))
                 contents.Append("template<> ");
             contents.Append($"ScriptingTypeInitializer {structureTypeNameNative}::TypeInitializer((BinaryModule*)GetBinaryModule{moduleInfo.Name}(), ");
             contents.Append($"StringAnsiView(\"{structureTypeNameManaged}\", {structureTypeNameManaged.Length}), ");
             contents.Append($"sizeof({structureTypeNameNative}), ");
             contents.Append($"&{structureTypeNameInternal}Internal::InitRuntime, ");
-            contents.Append($"&{structureTypeNameInternal}Internal::Ctor, &{structureTypeNameInternal}Internal::Dtor, &{structureTypeNameInternal}Internal::Copy, &{structureTypeNameInternal}Internal::Box, &{structureTypeNameInternal}Internal::Unbox, &{structureTypeNameInternal}Internal::GetField, &{structureTypeNameInternal}Internal::SetField);").AppendLine();
+            contents.Append($"&{structureTypeNameInternal}Internal::Ctor, &{structureTypeNameInternal}Internal::Dtor, &{structureTypeNameInternal}Internal::Copy, &{structureTypeNameInternal}Internal::Box, &{structureTypeNameInternal}Internal::Unbox, &{structureTypeNameInternal}Internal::GetField, &{structureTypeNameInternal}Internal::SetField, ");
+            if (structureInfo.BaseType != null)
+                contents.Append($"&{structureInfo.BaseType.FullNameNative}::TypeInitializer");
+            else
+                contents.Append("nullptr");
+            contents.Append(", ").Append(interfacesTable).Append(");").AppendLine();
 
             // Nested types
             foreach (var apiTypeInfo in structureInfo.Children)
@@ -3126,13 +3184,12 @@ namespace Flax.Build.Bindings
                 // Includes
                 header.Clear();
                 CppReferencesFiles.Remove(null);
-                CppIncludeFilesList.Clear();
                 foreach (var fileInfo in CppReferencesFiles)
                     CppIncludeFilesList.Add(fileInfo.Name);
                 CppIncludeFilesList.AddRange(CppIncludeFiles);
                 CppIncludeFilesList.Sort();
                 if (CppIncludeFilesList.Remove("Engine/Serialization/Serialization.h"))
-                    CppIncludeFilesList.Add("Engine/Serialization/Serialization.h");
+                    CppIncludeFilesList.Add("Engine/Serialization/Serialization.h"); // Include serialization header as the last one to properly handle specialization of custom types serialization
                 foreach (var path in CppIncludeFilesList)
                     header.AppendFormat("#include \"{0}\"", path).AppendLine();
                 contents.Insert(headerPos, header.ToString());

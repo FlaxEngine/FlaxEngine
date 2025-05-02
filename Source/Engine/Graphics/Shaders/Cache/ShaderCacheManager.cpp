@@ -7,6 +7,9 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Globals.h"
+#if USE_EDITOR
+#include "Engine/Engine/CommandLine.h"
+#endif
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Materials/MaterialShader.h"
 #include "Engine/Particles/Graph/GPU/ParticleEmitterGraph.GPU.h"
@@ -184,9 +187,17 @@ bool ShaderCacheManagerService::Init()
         int32 ShaderCacheVersion = -1;
         int32 MaterialGraphVersion = -1;
         int32 ParticleGraphVersion = -1;
+        bool ShaderDebug;
+        bool ShaderProfile;
     };
     CacheVersion cacheVersion;
     const String cacheVerFile = rootDir / TEXT("CacheVersion");
+#if USE_EDITOR
+    const bool shaderDebug = CommandLine::Options.ShaderDebug.IsTrue();
+    const bool shaderProfile = CommandLine::Options.ShaderProfile.IsTrue();
+#else
+    const bool shaderDebug = false;
+#endif
     if (FileSystem::FileExists(cacheVerFile))
     {
         if (File::ReadAllBytes(cacheVerFile, (byte*)&cacheVersion, sizeof(cacheVersion)))
@@ -199,6 +210,8 @@ bool ShaderCacheManagerService::Init()
         || cacheVersion.ShaderCacheVersion != GPU_SHADER_CACHE_VERSION
         || cacheVersion.MaterialGraphVersion != MATERIAL_GRAPH_VERSION
         || cacheVersion.ParticleGraphVersion != PARTICLE_GPU_GRAPH_VERSION
+        || cacheVersion.ShaderDebug != shaderDebug
+        || cacheVersion.ShaderProfile != shaderProfile
     )
     {
         LOG(Warning, "Shaders cache database is invalid. Performing reset.");
@@ -216,6 +229,8 @@ bool ShaderCacheManagerService::Init()
         cacheVersion.ShaderCacheVersion = GPU_SHADER_CACHE_VERSION;
         cacheVersion.MaterialGraphVersion = MATERIAL_GRAPH_VERSION;
         cacheVersion.ParticleGraphVersion = PARTICLE_GPU_GRAPH_VERSION;
+        cacheVersion.ShaderDebug = shaderDebug;
+        cacheVersion.ShaderProfile = shaderProfile;
         if (File::WriteAllBytes(cacheVerFile, (byte*)&cacheVersion, sizeof(cacheVersion)))
         {
             LOG(Error, "Failed to create the shaders cache database version file.");

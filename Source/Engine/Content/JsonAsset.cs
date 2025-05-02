@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine.Json;
@@ -13,6 +13,17 @@ namespace FlaxEngine
         /// Gets the instance of the serialized object from the json asset data. Cached internally.
         /// </summary>
         public object Instance => _instance ?? (_instance = CreateInstance());
+
+        /// <summary>
+        /// Gets the instance of the serialized object from the json data. Cached internally.
+        /// </summary>
+        /// <returns>The asset instance object or null.</returns>
+        public T GetInstance<T>()
+        {
+            if (Instance is T instance)
+                return instance;
+            return default;
+        }
 
         /// <summary>
         /// Creates a new instance of the serialized object from the json asset data.

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -121,7 +121,7 @@ namespace CSG
         /// <param name="data">Result data</param>
         /// <param name="cacheVB">Cache data</param>
         /// <returns>True if cannot generate valid mesh data (due to missing triangles etc.)</returns>
-        bool Triangulate(RawData& data, Array<RawModelVertex>& cacheVB) const;
+        bool Triangulate(RawData& data, Array<MeshVertex>& cacheVB) const;
 
         /// <summary>
         /// Perform CSG operation with another mesh

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -100,9 +100,9 @@ public:
 
 public:
     /// <summary>
-    /// Prepares buffers for rendering a scene. Called before rendering so other parts can reuse calculated value.
+    /// Frees unused buffers to reduce memory usage for certain drawing effects that are state-dependant but unused for multiple frames.
     /// </summary>
-    void Prepare();
+    void ReleaseUnusedMemory();
 
     /// <summary>
     /// Requests the half-resolution depth to be prepared for the current frame.
@@ -167,20 +167,20 @@ public:
     /// </summary>
     API_PROPERTY() void SetUseAlpha(bool value);
 
-    const CustomBuffer* FindCustomBuffer(const StringView& name) const;
+    const CustomBuffer* FindCustomBuffer(const StringView& name, bool withLinked = true) const;
 
     template<class T>
-    const T* FindCustomBuffer(const StringView& name) const
+    const T* FindCustomBuffer(const StringView& name, bool withLinked = true) const
     {
-        return (const T*)FindCustomBuffer(name);
+        return (const T*)FindCustomBuffer(name, withLinked);
     }
 
     template<class T>
-    T* GetCustomBuffer(const StringView& name)
+    T* GetCustomBuffer(const StringView& name, bool withLinked = true)
     {
-        if (LinkedCustomBuffers)
-            return LinkedCustomBuffers->GetCustomBuffer<T>(name);
-        CustomBuffer* result = (CustomBuffer*)FindCustomBuffer(name);
+        if (LinkedCustomBuffers && withLinked)
+            return LinkedCustomBuffers->GetCustomBuffer<T>(name, withLinked);
+        CustomBuffer* result = (CustomBuffer*)FindCustomBuffer(name, withLinked);
         if (!result)
         {
             result = New<T>();

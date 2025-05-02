@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -53,7 +53,7 @@ namespace Flax.Build.Platforms
                     var versionText = contents.Substring(start, end - start);
                     Version = new Version(int.Parse(versionText), 0);
 
-                    var minEdition = 200500;
+                    var minEdition = 230305;
                     if (Version.Major < minEdition)
                     {
                         Log.Error(string.Format("Unsupported GDK version {0}. Minimum supported is edition {1}.", Version.Major, minEdition));

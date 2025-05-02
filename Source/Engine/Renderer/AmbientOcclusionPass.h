@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,6 +6,7 @@
 
 // Config
 #define SSAO_DEPTH_MIP_LEVELS 4 // <- must match shader define
+#define SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET (99) // <- must match shader define
 #define SSAO_DEPTH_FORMAT PixelFormat::R16_Float
 #define SSAO_AO_RESULT_FORMAT PixelFormat::R8G8_UNorm
 #define SSAO_MAX_BLUR_PASS_COUNT 6
@@ -19,8 +20,8 @@ class AmbientOcclusionPass : public RendererPass<AmbientOcclusionPass>
 private:
 
     // Packed shader constant buffer structure (this MUST match shader code)
-    PACK_STRUCT(struct ASSAOConstants {
-        GBufferData GBuffer;
+    GPU_CB_STRUCT(ASSAOConstants {
+        ShaderGBufferData GBuffer;
 
         Float2 ViewportPixelSize;
         Float2 HalfViewportPixelSize;

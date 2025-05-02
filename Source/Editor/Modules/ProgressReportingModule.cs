@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -57,6 +57,11 @@ namespace FlaxEditor.Modules
         public readonly GenerateScriptsProjectFilesProgress GenerateScriptsProjectFiles = new GenerateScriptsProjectFilesProgress();
 
         /// <summary>
+        /// The assets loading progress handler.
+        /// </summary>
+        public readonly LoadAssetsProgress LoadAssets = new LoadAssetsProgress();
+
+        /// <summary>
         /// Gets the first active handler.
         /// </summary>
         public ProgressHandler FirstActiveHandler => _handlers.FirstOrDefault(x => x.IsActive);
@@ -80,6 +85,7 @@ namespace FlaxEditor.Modules
             RegisterHandler(CodeEditorOpen);
             RegisterHandler(NavMeshBuilding);
             RegisterHandler(GenerateScriptsProjectFiles);
+            RegisterHandler(LoadAssets);
         }
 
         /// <summary>

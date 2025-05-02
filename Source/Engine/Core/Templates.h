@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -234,6 +234,14 @@ struct TIsCopyConstructible
 	enum { Value = __is_constructible(T, typename TAddLValueReference<typename TAddConst<T>::Type>::Type) };
 };
 
+// Checks if a type has a move constructor.
+
+template<typename T>
+struct TIsMoveConstructible
+{
+    enum { Value = __is_constructible(T, typename TAddRValueReference<T>::Type) };
+};
+
 ////////////////////////////////////////////////////////////////////////////////////
 
 // Checks if a type has a trivial copy constructor.
@@ -319,7 +327,6 @@ inline T&& Forward(typename TRemoveReference<T>::Type& t) noexcept
 template<typename T>
 inline T&& Forward(typename TRemoveReference<T>::Type&& t) noexcept
 {
-    static_assert(!TIsLValueReference<T>::Value, "Can not forward an rvalue as an lvalue.");
     return static_cast<T&&>(t);
 }
 

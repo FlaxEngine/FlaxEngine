@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -13,7 +13,7 @@
 
 #if PLATFORM_SIMD_SSE2
 
-// Vector of four floating point values stored in vector register.
+// Vector of four floating point values stored in a vector register.
 typedef __m128 SimdVector4;
 
 namespace SIMD
@@ -28,9 +28,15 @@ namespace SIMD
         return _mm_set_ps(w, z, y, x);
     }
 
-    FORCE_INLINE SimdVector4 Load(const void* src)
+    FORCE_INLINE SimdVector4 Load(const float* __restrict src)
     {
-        return _mm_load_ps((const float*)(src));
+        return _mm_loadu_ps(src);
+    }
+
+    FORCE_INLINE SimdVector4 LoadAligned(const float* __restrict src)
+    {
+        ASSERT_LOW_LAYER(((uintptr)src & 15) == 0);
+        return _mm_load_ps(src);
     }
 
     FORCE_INLINE SimdVector4 Splat(float value)
@@ -38,9 +44,15 @@ namespace SIMD
         return _mm_set_ps1(value);
     }
 
-    FORCE_INLINE void Store(void* dst, SimdVector4 src)
+    FORCE_INLINE void Store(float* __restrict dst, SimdVector4 src)
     {
-        _mm_store_ps((float*)dst, src);
+        _mm_storeu_ps(dst, src);
+    }
+
+    FORCE_INLINE void StoreAligned(float* __restrict dst, SimdVector4 src)
+    {
+        ASSERT_LOW_LAYER(((uintptr)dst & 15) == 0);
+        _mm_store_ps(dst, src);
     }
 
     FORCE_INLINE int MoveMask(SimdVector4 a)
@@ -113,7 +125,12 @@ namespace SIMD
 		return { x, y, z, w };
     }
 
-	FORCE_INLINE SimdVector4 Load(const void* src)
+	FORCE_INLINE SimdVector4 Load(const float* __restrict src)
+	{
+		return *(const SimdVector4*)src;
+	}
+
+	FORCE_INLINE SimdVector4 LoadAligned(const float* __restrict src)
 	{
 		return *(const SimdVector4*)src;
 	}
@@ -123,10 +140,15 @@ namespace SIMD
 		return { value, value, value, value };
 	}
 
-	FORCE_INLINE void Store(void* dst, SimdVector4 src)
-	{
+    FORCE_INLINE void Store(float* __restrict dst, SimdVector4 src)
+    {
 		(*(SimdVector4*)dst) = src;
-	}
+    }
+
+    FORCE_INLINE void StoreAligned(float* __restrict dst, SimdVector4 src)
+    {
+		(*(SimdVector4*)dst) = src;
+    }
 
 	FORCE_INLINE int MoveMask(SimdVector4 a)
 	{

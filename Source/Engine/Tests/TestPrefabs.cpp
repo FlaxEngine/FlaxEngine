@@ -1,10 +1,12 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Engine/Content/Content.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Actors/EmptyActor.h"
+#include "Engine/Level/Actors/DirectionalLight.h"
+#include "Engine/Level/Actors/ExponentialHeightFog.h"
 #include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
@@ -189,7 +191,7 @@ TEST_CASE("Prefabs")
         Guid newChildId;
         Guid::Parse(TEXT("123456a04cc60d56a2f024bfeef57723"), newChildId);
         auto newChild = EmptyActor::Spawn(ScriptingObject::SpawnParams(newChildId, EmptyActor::TypeInitializer));
-        newChild->SetName(TEXT("Prefab B.Child"));
+        newChild->SetName(String(TEXT("Prefab B.Child")));
         newChild->SetParent(instanceB);
 
         // Apply nested prefab changes
@@ -213,7 +215,7 @@ TEST_CASE("Prefabs")
         // Add another child 
         Guid::Parse(TEXT("678906a04cc60d56a2f024bfeef57723"), newChildId);
         newChild = EmptyActor::Spawn(ScriptingObject::SpawnParams(newChildId, EmptyActor::TypeInitializer));
-        newChild->SetName(TEXT("Prefab B.Child 2"));
+        newChild->SetName(String(TEXT("Prefab B.Child 2")));
         newChild->SetParent(instanceB);
 
         // Apply nested prefab changes
@@ -556,5 +558,134 @@ TEST_CASE("Prefabs")
         Content::DeleteAsset(prefabNested2);
         Content::DeleteAsset(prefabNested1);
         Content::DeleteAsset(prefabBase);
+    }
+    SECTION("Test Applying Prefab Change To Object References")
+    {
+        // https://github.com/FlaxEngine/FlaxEngine/issues/3136
+
+        // Create Prefab
+        AssetReference<Prefab> prefab = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(prefab);
+        Guid id;
+        Guid::Parse("690e55514cd6fdc2a269429a2bf84133", id);
+        prefab->ChangeID(id);
+        auto prefabInit = prefab->Init(Prefab::TypeName,
+                                         "["
+                                         "{"
+                                         "\"ID\": \"fc3f88cf413c2e668039a0bb7429900d\","
+                                         "\"TypeName\": \"FlaxEngine.ExponentialHeightFog\","
+                                         "\"Name\": \"Fog\","
+                                         "\"DirectionalInscatteringLight\": \"44873cc44e950c754f0c7bb59dd432d6\""
+                                         "},"
+                                         "{"
+                                         "\"ID\": \"44873cc44e950c754f0c7bb59dd432d6\","
+                                         "\"TypeName\": \"FlaxEngine.DirectionalLight\","
+                                         "\"ParentID\": \"fc3f88cf413c2e668039a0bb7429900d\","
+                                         "\"Name\": \"Sun 1\""
+                                         "},"
+                                         "{"
+                                         "\"ID\": \"583f91604b622e3b7aa698b51c9966d6\","
+                                         "\"TypeName\": \"FlaxEngine.DirectionalLight\","
+                                         "\"ParentID\": \"fc3f88cf413c2e668039a0bb7429900d\","
+                                         "\"Name\": \"Sun 2\""
+                                         "}"
+                                         "]");
+        REQUIRE(!prefabInit);
+        
+        // Spawn test instances
+        ScriptingObjectReference<Actor> instanceA = PrefabManager::SpawnPrefab(prefab);
+        ScriptingObjectReference<Actor> instanceB = PrefabManager::SpawnPrefab(prefab);
+
+        // Swap reference from Sun 1 to Sun 2 on a Fog
+        REQUIRE(instanceA);
+        REQUIRE(instanceA->Children.Count() == 2);
+        CHECK(instanceA.As<ExponentialHeightFog>()->DirectionalInscatteringLight == instanceA->Children[0]);
+        instanceA.As<ExponentialHeightFog>()->DirectionalInscatteringLight = (DirectionalLight*)instanceA->Children[1];
+
+        // Apply change on instance A and verify it's applied on instance B
+        bool applyResult = PrefabManager::ApplyAll(instanceA);
+        REQUIRE(!applyResult);
+        REQUIRE(instanceB);
+        REQUIRE(instanceB->Children.Count() == 2);
+        CHECK(instanceB.As<ExponentialHeightFog>()->DirectionalInscatteringLight == instanceB->Children[1]);
+
+        // Cleanup
+        instanceA->DeleteObject();
+        instanceB->DeleteObject();
+        Content::DeleteAsset(prefab);
+    }
+    SECTION("Test Applying Prefab With Missing Nested Prefab")
+    {
+        // https://github.com/FlaxEngine/FlaxEngine/issues/3244
+
+        // Create Prefab B with just root object
+        AssetReference<Prefab> prefabB = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(prefabB);
+        Guid id;
+        Guid::Parse("25dbe4b0416be0777a6ce59e8788b10f", id);
+        prefabB->ChangeID(id);
+        auto prefabBInit = prefabB->Init(Prefab::TypeName,
+                                         "["
+                                         "{"
+                                         "\"ID\": \"aac6b9644492fbca1a6ab0a7904a557e\","
+                                         "\"TypeName\": \"FlaxEngine.ExponentialHeightFog\","
+                                         "\"Name\": \"Prefab B.Root\""
+                                         "}"
+                                         "]");
+        REQUIRE(!prefabBInit);
+
+        // Create Prefab A with nested Prefab B attached to the root
+        AssetReference<Prefab> prefabA = Content::CreateVirtualAsset<Prefab>();
+        REQUIRE(prefabA);
+        Guid::Parse("4cb744714f746e31855f41815612d14b", id);
+        prefabA->ChangeID(id);
+        auto prefabAInit = prefabA->Init(Prefab::TypeName,
+                                         "["
+                                         "{"
+                                         "\"ID\": \"244274a04cc60d56a2f024bfeef5772d\","
+                                         "\"TypeName\": \"FlaxEngine.SpotLight\","
+                                         "\"Name\": \"Prefab A.Root\""
+                                         "},"
+                                         "{"
+                                         "\"ID\": \"1e51f1094f430733333f8280e78dfcc3\","
+                                         "\"PrefabID\": \"25dbe4b0416be0777a6ce59e8788b10f\","
+                                         "\"PrefabObjectID\": \"aac6b9644492fbca1a6ab0a7904a557e\","
+                                         "\"ParentID\": \"244274a04cc60d56a2f024bfeef5772d\""
+                                         "}"
+                                         "]");
+        REQUIRE(!prefabAInit);
+
+        // Spawn test instances of both prefabs
+        ScriptingObjectReference<Actor> instanceA = PrefabManager::SpawnPrefab(prefabA);
+        ScriptingObjectReference<Actor> instanceB = PrefabManager::SpawnPrefab(prefabB);
+
+        // Delete nested prefab
+        Content::DeleteAsset(prefabB);
+        
+        // Apply instance A and verify it's fine even tho prefab B doesn't exist anymore
+        bool applyResult = PrefabManager::ApplyAll(instanceA);
+        REQUIRE(!applyResult);
+
+        // Check state of objects
+        REQUIRE(instanceA);
+        REQUIRE(instanceA->Children.Count() == 1);
+        REQUIRE(instanceA->Children[0] != nullptr);
+        REQUIRE(instanceA->Children[0]->Is<ExponentialHeightFog>());
+        REQUIRE(instanceB);
+        REQUIRE(instanceB->Is<ExponentialHeightFog>());
+
+        // Verify if prefab has new data to properly spawn another prefab
+        ScriptingObjectReference<Actor> instanceC = PrefabManager::SpawnPrefab(prefabA);
+        REQUIRE(instanceC);
+        REQUIRE(instanceC->Children.Count() == 1);
+        REQUIRE(instanceC->Children[0] != nullptr);
+        REQUIRE(instanceC->Children[0]->Is<ExponentialHeightFog>());
+
+        // Cleanup
+        instanceA->DeleteObject();
+        instanceB->DeleteObject();
+        instanceC->DeleteObject();
+        Content::DeleteAsset(prefabA);
+
     }
 }

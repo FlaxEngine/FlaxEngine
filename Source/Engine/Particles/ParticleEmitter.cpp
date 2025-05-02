@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitter.h"
 #include "ParticleSystem.h"
@@ -72,6 +72,8 @@ namespace
 
 Asset::LoadResult ParticleEmitter::load()
 {
+    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
+
     // Load the graph
     const auto surfaceChunk = GetChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE);
     if (!surfaceChunk)
@@ -154,6 +156,16 @@ Asset::LoadResult ParticleEmitter::load()
             LOG(Warning, "Cannot load Particle Emitter GPU graph '{0}'.", GetPath());
             return LoadResult::CannotLoadData;
         }
+        if (ContentDeprecated::Clear())
+        {
+            // If encountered any deprecated data when loading graph then serialize it
+            MemoryWriteStream writeStream(1024);
+            if (!Graph.Save(&writeStream, true))
+            {
+                surfaceChunk->Data.Copy(ToSpan(writeStream));
+                ContentDeprecated::Clear();
+            }
+        }
         generator.AddGraph(graph);
 
         // Get chunk with material parameters
@@ -199,7 +211,7 @@ Asset::LoadResult ParticleEmitter::load()
 
         // Save to file
 #if USE_EDITOR
-        if (Save())
+        if (SaveShaderAsset())
         {
             LOG(Error, "Cannot save \'{0}\'", ToString());
             return LoadResult::Failed;
@@ -219,7 +231,7 @@ Asset::LoadResult ParticleEmitter::load()
         ClearDependencies();
         for (const auto& node : Graph.Nodes)
         {
-            if (node.Type == GRAPH_NODE_MAKE_TYPE(14, 300))
+            if (node.Type == GRAPH_NODE_MAKE_TYPE(14, 300) && node.Assets.Count() > 0)
             {
                 const auto function = node.Assets[0].As<ParticleEmitterFunction>();
                 if (function)
@@ -287,6 +299,7 @@ Asset::LoadResult ParticleEmitter::load()
 
 void ParticleEmitter::unload(bool isReloading)
 {
+    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
 #if COMPILE_WITH_SHADER_COMPILER
     UnregisterForShaderReloads(this);
 #endif
@@ -317,10 +330,6 @@ void ParticleEmitter::OnDependencyModified(BinaryAsset* asset)
 
     Reload();
 }
-
-#endif
-
-#if USE_EDITOR
 
 void ParticleEmitter::InitCompilationOptions(ShaderCompilationOptions& options)
 {
@@ -369,7 +378,7 @@ BytesContainer ParticleEmitter::LoadSurface(bool createDefaultIfMissing)
         graph.Save(&stream, false);
 
         // Set output data
-        result.Copy(stream.GetHandle(), stream.GetPosition());
+        result.Copy(ToSpan(stream));
     }
 
     return result;
@@ -377,19 +386,11 @@ BytesContainer ParticleEmitter::LoadSurface(bool createDefaultIfMissing)
 
 #if USE_EDITOR
 
-bool ParticleEmitter::SaveSurface(BytesContainer& data)
+bool ParticleEmitter::SaveSurface(const BytesContainer& data)
 {
-    // Wait for asset to be loaded or don't if last load failed (eg. by shader source compilation error)
-    if (LastLoadFailed())
-    {
-        LOG(Warning, "Saving asset that failed to load.");
-    }
-    else if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave())
         return true;
-    }
-
+    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
     ScopeLock lock(Locker);
 
     // Release all chunks
@@ -406,7 +407,7 @@ bool ParticleEmitter::SaveSurface(BytesContainer& data)
     ASSERT(visjectSurfaceChunk != nullptr);
     visjectSurfaceChunk->Data.Copy(data);
 
-    if (Save())
+    if (SaveShaderAsset())
     {
         LOG(Error, "Cannot save \'{0}\'", ToString());
         return true;
@@ -418,6 +419,25 @@ bool ParticleEmitter::SaveSurface(BytesContainer& data)
 #endif
 
     return false;
+}
+
+void ParticleEmitter::GetReferences(Array<Guid>& assets, Array<String>& files) const
+{
+    BinaryAsset::GetReferences(assets, files);
+    Graph.GetReferences(assets);
+}
+
+bool ParticleEmitter::Save(const StringView& path)
+{
+    if (OnCheckSave(path))
+        return true;
+    ScopeLock lock(Locker);
+    MemoryWriteStream writeStream;
+    if (Graph.Save(&writeStream, true))
+        return true;
+    BytesContainer data;
+    data.Link(ToSpan(writeStream));
+    return SaveSurface(data);
 }
 
 #endif

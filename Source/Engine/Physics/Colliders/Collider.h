@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -154,10 +154,6 @@ protected:
     /// </summary>
     void RemoveStaticActor();
 
-#if USE_EDITOR
-    virtual void DrawPhysicsDebug(RenderView& view);
-#endif
-
 private:
     void OnMaterialChanged();
 
@@ -168,6 +164,10 @@ public:
     bool RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, float maxDistance = MAX_float) const final;
     void ClosestPoint(const Vector3& point, Vector3& result) const final;
     bool ContainsPoint(const Vector3& point) const final;
+
+#if USE_EDITOR
+    virtual void DrawPhysicsDebug(RenderView& view);
+#endif
 
 protected:
     // [PhysicsColliderActor]

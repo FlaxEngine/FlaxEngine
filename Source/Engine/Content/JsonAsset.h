@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -16,6 +16,7 @@ API_CLASS(Abstract, NoSpawn) class FLAXENGINE_API JsonAssetBase : public Asset
 protected:
     String _path;
     bool _isVirtualDocument = false;
+    bool _isResaving = false;
 
 protected:
     /// <summary>
@@ -70,15 +71,8 @@ public:
     /// Parses Json string to find any object references inside it. It can produce list of references to assets and/or scene objects. Supported only in Editor.
     /// </summary>
     /// <param name="json">The Json string.</param>
-    /// <param name="output">The output list of object IDs references by the asset (appended, not cleared).</param>
-    API_FUNCTION() static void GetReferences(const StringAnsiView& json, API_PARAM(Out) Array<Guid, HeapAllocation>& output);
-
-    /// <summary>
-    /// Saves this asset to the file. Supported only in Editor.
-    /// </summary>
-    /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
-    /// <returns>True if cannot save data, otherwise false.</returns>
-    API_FUNCTION() bool Save(const StringView& path = StringView::Empty) const;
+    /// <param name="assets">The output list of object IDs references by the asset (appended, not cleared).</param>
+    API_FUNCTION() static void GetReferences(const StringAnsiView& json, API_PARAM(Out) Array<Guid, HeapAllocation>& assets);
 
     /// <summary>
     /// Saves this asset to the Json Writer buffer (both ID, Typename header and Data contents). Supported only in Editor.
@@ -97,7 +91,8 @@ public:
     const String& GetPath() const override;
     uint64 GetMemoryUsage() const override;
 #if USE_EDITOR
-    void GetReferences(Array<Guid, HeapAllocation>& output) const override;
+    void GetReferences(Array<Guid, HeapAllocation>& assets, Array<String, HeapAllocation>& files) const override;
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
 protected:
@@ -106,6 +101,7 @@ protected:
     void unload(bool isReloading) override;
 #if USE_EDITOR
     void onRename(const StringView& newPath) override;
+    bool saveInternal(JsonWriter& writer) const;
 #endif
 };
 
@@ -149,6 +145,7 @@ public:
 
 protected:
     // [JsonAssetBase]
+    void OnGetData(rapidjson_flax::StringBuffer& buffer) const override;
     LoadResult loadAsset() override;
     void unload(bool isReloading) override;
     void onLoaded_MainThread() override;

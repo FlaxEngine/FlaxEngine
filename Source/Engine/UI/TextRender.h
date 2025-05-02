@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -11,7 +11,7 @@
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/Models/Config.h"
 #include "Engine/Localization/LocalizedString.h"
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
 #include "Engine/Graphics/Models/CollisionProxy.h"
 #endif
 
@@ -44,10 +44,8 @@ private:
     BoundingBox _localBox;
     GeometryDrawStateData _drawState;
     DynamicIndexBuffer _ib;
-    DynamicVertexBuffer _vb0;
-    DynamicVertexBuffer _vb1;
-    DynamicVertexBuffer _vb2;
-#if USE_PRECISE_MESH_INTERSECTS
+    DynamicVertexBuffer _vb;
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     CollisionProxy _collisionProxy;
 #endif
     Array<DrawChunk, InlinedAllocation<8>> _drawChunks;
@@ -111,10 +109,10 @@ public:
     ShadowsCastingMode ShadowsMode = ShadowsCastingMode::All;
 
     /// <summary>
-    /// The object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
+    /// The object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be used to control transparency drawing.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(85), DefaultValue(0), EditorDisplay(\"Text\")")
-    int16 SortOrder = 0;
+    int8 SortOrder = 0;
 
     /// <summary>
     /// Gets the layout options. Layout is defined in local space of the object (on XY plane).
@@ -143,7 +141,7 @@ public:
     /// </summary>
     API_FUNCTION() void UpdateLayout();
 
-#if USE_PRECISE_MESH_INTERSECTS
+#if MODEL_USE_PRECISE_MESH_INTERSECTS
     /// <summary>
     /// Gets the collision proxy used by the text geometry.
     /// </summary>

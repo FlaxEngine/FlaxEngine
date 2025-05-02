@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -324,6 +324,7 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 var platformData = Path.Combine(GetBinariesFolder(options, platform), "Data", "nethost");
                 if (Directory.Exists(platformData))
                     Utilities.DirectoryCopy(platformData, root, true, true);

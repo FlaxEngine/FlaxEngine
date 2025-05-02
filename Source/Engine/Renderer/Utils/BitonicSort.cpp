@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "BitonicSort.h"
 #include "Engine/Content/Content.h"
@@ -15,7 +15,7 @@ struct Item
     uint32 Value;
 };
 
-PACK_STRUCT(struct Data {
+GPU_CB_STRUCT(Data {
     Item NullItem;
     uint32 CounterOffset;
     uint32 MaxIterations;

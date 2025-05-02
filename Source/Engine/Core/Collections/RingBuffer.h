@@ -1,10 +1,11 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Memory/Memory.h"
 #include "Engine/Core/Memory/Allocation.h"
+#include "Engine/Core/Math/Math.h"
 
 /// <summary>
 /// Template for ring buffer with variable capacity.
@@ -13,8 +14,8 @@ template<typename T, typename AllocationType = HeapAllocation>
 class RingBuffer
 {
 public:
-    typedef T ItemType;
-    typedef typename AllocationType::template Data<T> AllocationData;
+    using ItemType = T;
+    using AllocationData = typename AllocationType::template Data<T>;
 
 private:
     int32 _front = 0, _back = 0, _count = 0, _capacity = 0;
@@ -61,7 +62,7 @@ public:
         }
         Memory::ConstructItems(_allocation.Get() + _back, &data, 1);
         _back = (_back + 1) % _capacity;
-        _count++;
+        ++_count;
     }
 
     FORCE_INLINE T& PeekFront()
@@ -74,13 +75,13 @@ public:
         return _allocation.Get()[_front];
     }
 
-    FORCE_INLINE T& operator[](int32 index)
+    FORCE_INLINE T& operator[](const int32 index)
     {
         ASSERT(index >= 0 && index < _count);
         return _allocation.Get()[(_front + index) % _capacity];
     }
 
-    FORCE_INLINE const T& operator[](int32 index) const
+    FORCE_INLINE const T& operator[](const int32 index) const
     {
         ASSERT(index >= 0 && index < _count);
         return _allocation.Get()[(_front + index) % _capacity];
@@ -90,12 +91,18 @@ public:
     {
         Memory::DestructItems(_allocation.Get() + _front, 1);
         _front = (_front + 1) % _capacity;
-        _count--;
+        --_count;
     }
 
     void Clear()
     {
         Memory::DestructItems(Get() + Math::Min(_front, _back), _count);
         _front = _back = _count = 0;
+    }
+
+    void Release()
+    {
+        Clear();
+        _allocation.Free();
     }
 };

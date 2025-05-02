@@ -19,7 +19,7 @@ class FlaxStorage;
 /// <summary>
 /// Assets cache flags.
 /// </summary>
-enum class AssetsCacheFlags
+enum class AssetsCacheFlags : int32
 {
     /// <summary>
     /// The none.

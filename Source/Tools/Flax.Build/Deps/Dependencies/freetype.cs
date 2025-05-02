@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -26,7 +26,6 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Windows,
-                        TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
                         TargetPlatform.PS4,
                         TargetPlatform.PS5,
@@ -50,14 +49,6 @@ namespace Flax.Deps.Dependencies
             }
         }
 
-        private void PatchWindowsTargetPlatformVersion(string vcxprojPath, string vcxprojContents, string windowsTargetPlatformVersion, string platformToolset)
-        {
-            // Fix the MSVC project settings for Windows
-            var contents = vcxprojContents.Replace("$(DefaultPlatformToolset)", string.Format("{0}", platformToolset));
-            contents = contents.Replace("</TargetName>", string.Format("</TargetName><WindowsTargetPlatformVersion>{0}</WindowsTargetPlatformVersion>", windowsTargetPlatformVersion));
-            File.WriteAllText(vcxprojPath, contents);
-        }
-
         /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
@@ -70,7 +61,7 @@ namespace Flax.Deps.Dependencies
 
             // Get the source
             if (!File.Exists(packagePath))
-                Downloader.DownloadFileFromUrlToPath("https://sourceforge.net/projects/freetype/files/freetype2/2.10.0/ft2100.zip/download", packagePath);
+                Downloader.DownloadFileFromUrlToPath("https://sourceforge.net/projects/freetype/files/freetype2/2.13.2/ft2132.zip/download", packagePath);
             using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
             {
                 var newRoot = Path.Combine(root, archive.Entries.First().FullName);
@@ -92,35 +83,33 @@ namespace Flax.Deps.Dependencies
             var libraryFileName = "libfreetype.a";
             vcxprojContents = vcxprojContents.Replace("<RuntimeLibrary>MultiThreaded</RuntimeLibrary>", "<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>");
             vcxprojContents = vcxprojContents.Replace("<RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>", "<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>");
+            vcxprojContents = vcxprojContents.Replace("<<PlatformToolset>v142</PlatformToolset>", "<PlatformToolset>v143</PlatformToolset>");
+            Utilities.ReplaceInFile(Path.Combine(root, "include", "freetype", "config", "ftoption.h"), "#define FT_CONFIG_OPTION_ENVIRONMENT_PROPERTIES", "");
+            var msvcProps = new Dictionary<string, string>
+            {
+                { "WindowsTargetPlatformVersion", "10.0" },
+                { "PlatformToolset", "v143" },
+                //{ "RuntimeLibrary", "MultiThreadedDLL" }
+            };
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
                 {
-                    // Fix the MSVC project settings for Windows
-                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "8.1", "140");
+                    // Patch the RuntimeLibrary value
+                    File.WriteAllText(vcxprojPath, vcxprojContents);
 
-                    // Build for Win64
-                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var filename in binariesToCopyMsvc)
-                        Utilities.FileCopy(Path.Combine(root, "objs", "x64", configurationMsvc, filename), Path.Combine(depsFolder, filename));
-
-                    break;
-                }
-                case TargetPlatform.UWP:
-                {
-                    // Fix the MSVC project settings for UWP
-                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "10.0.17763.0", "v141");
-
-                    // Build for UWP x64
-                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64");
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var filename in binariesToCopyMsvc)
-                        Utilities.FileCopy(Path.Combine(root, "objs", "x64", configurationMsvc, filename), Path.Combine(depsFolder, filename));
-
+                    // Build for Windows
+                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    {
+                        Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, architecture.ToString(), msvcProps);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        foreach (var filename in binariesToCopyMsvc)
+                            Utilities.FileCopy(Path.Combine(root, "objs", architecture.ToString(), configurationMsvc, filename), Path.Combine(depsFolder, filename));
+                    }
                     break;
                 }
                 case TargetPlatform.Linux:
@@ -191,11 +180,8 @@ namespace Flax.Deps.Dependencies
                 }
                 case TargetPlatform.XboxOne:
                 {
-                    // Fix the MSVC project settings for Xbox One
-                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "10.0.19041.0", "v142");
-
                     // Build for Xbox One x64
-                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64");
+                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64", msvcProps);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var filename in binariesToCopyMsvc)
                         Utilities.FileCopy(Path.Combine(root, "objs", "x64", configurationMsvc, filename), Path.Combine(depsFolder, filename));
@@ -204,11 +190,8 @@ namespace Flax.Deps.Dependencies
                 }
                 case TargetPlatform.XboxScarlett:
                 {
-                    // Fix the MSVC project settings for Xbox Scarlett
-                    PatchWindowsTargetPlatformVersion(vcxprojPath, vcxprojContents, "10.0.19041.0", "v142");
-
                     // Build for Xbox Scarlett
-                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64");
+                    Deploy.VCEnvironment.BuildSolution(vsSolutionPath, configurationMsvc, "x64", msvcProps);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var filename in binariesToCopyMsvc)
                         Utilities.FileCopy(Path.Combine(root, "objs", "x64", configurationMsvc, filename), Path.Combine(depsFolder, filename));
@@ -286,18 +269,25 @@ namespace Flax.Deps.Dependencies
                 Utilities.FileCopy(src, dst);
             }
 
-            // Setup headers directory
-            SetupDirectory(dstIncludePath, true);
-
-            // Deploy header files and restore files
-            Utilities.DirectoryCopy(srcIncludePath, dstIncludePath, true, true);
-            Utilities.FileCopy(Path.Combine(root, "include", "ft2build.h"), Path.Combine(dstIncludePath, "ft2build.h"));
-            Utilities.FileCopy(Path.Combine(root, "docs", "LICENSE.TXT"), Path.Combine(dstIncludePath, "LICENSE.TXT"));
-            foreach (var filename in filesToKeep)
+            try
             {
-                var src = Path.Combine(options.IntermediateFolder, filename + ".tmp");
-                var dst = Path.Combine(dstIncludePath, filename);
-                Utilities.FileCopy(src, dst);
+                // Setup headers directory
+                SetupDirectory(dstIncludePath, true);
+
+                // Deploy header files and restore files
+                Utilities.DirectoryCopy(srcIncludePath, dstIncludePath, true, true);
+                Utilities.FileCopy(Path.Combine(root, "include", "ft2build.h"), Path.Combine(dstIncludePath, "ft2build.h"));
+                Utilities.FileCopy(Path.Combine(root, "LICENSE.TXT"), Path.Combine(dstIncludePath, "LICENSE.TXT"));
+                Utilities.FileCopy(Path.Combine(root, "docs", "FTL.TXT"), Path.Combine(dstIncludePath, "FTL.TXT"));
+            }
+            finally
+            {
+                foreach (var filename in filesToKeep)
+                {
+                    var src = Path.Combine(options.IntermediateFolder, filename + ".tmp");
+                    var dst = Path.Combine(dstIncludePath, filename);
+                    Utilities.FileCopy(src, dst);
+                }
             }
         }
     }

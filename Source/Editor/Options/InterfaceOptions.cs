@@ -1,9 +1,10 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using System.ComponentModel;
 using FlaxEditor.GUI.Docking;
-using FlaxEditor.Utilities;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.Options
 {
@@ -139,6 +140,27 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
+        /// Options focus Game Window behaviour when play mode is entered.
+        /// </summary>
+        public enum PlayModeFocus
+        {
+            /// <summary>
+            /// Don't change focus.
+            /// </summary>
+            None,
+
+            /// <summary>
+            /// Focus the Game Window.
+            /// </summary>
+            GameWindow,
+
+            /// <summary>
+            /// Focus the Game Window. On play mode end restore focus to the previous window.
+            /// </summary>
+            GameWindowThenRestore,
+        }
+
+        /// <summary>
         /// Gets or sets the Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.
         /// </summary>
         [DefaultValue(1.0f), Limit(0.1f, 10.0f)]
@@ -190,6 +212,13 @@ namespace FlaxEditor.Options
         public FlaxEngine.GUI.Orientation ContentWindowOrientation { get; set; } = FlaxEngine.GUI.Orientation.Horizontal;
 
         /// <summary>
+        /// If checked, color pickers will always modify the color unless 'Cancel' if pressed, otherwise color won't change unless 'Ok' is pressed.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Interface"), EditorOrder(290)]
+        public bool AutoAcceptColorPickerChange { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the formatting option for numeric values in the editor.
         /// </summary>
         [DefaultValue(ValueFormattingType.None)]
@@ -204,11 +233,37 @@ namespace FlaxEditor.Options
         public bool SeparateValueAndUnit { get; set; }
 
         /// <summary>
-        /// Gets or sets the option to put a space between numbers and units for unit formatting.
+        /// Gets or sets tree line visibility.
         /// </summary>
         [DefaultValue(true)]
-        [EditorDisplay("Interface"), EditorOrder(320)]
+        [EditorDisplay("Interface"), EditorOrder(320), Tooltip("Toggles tree line visibility in places like the Scene or Content Panel.")]
         public bool ShowTreeLines { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets tooltip text alignment.
+        /// </summary>
+        [DefaultValue(TextAlignment.Center)]
+        [EditorDisplay("Interface"), EditorOrder(321)]
+        public TextAlignment TooltipTextAlignment
+        {
+            get => _tooltipTextAlignment;
+            set
+            {
+                _tooltipTextAlignment = value;
+                var tooltip = Style.Current?.SharedTooltip;
+                if (tooltip != null)
+                    tooltip.HorizontalTextAlignment = value;
+            }
+        }
+
+        private TextAlignment _tooltipTextAlignment = TextAlignment.Center;
+
+        /// <summary>
+        /// Whether to scroll to the script when a script is added to an actor.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Interface"), EditorOrder(322)]
+        public bool ScrollToScriptOnAdd { get; set; } = true;
 
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.
@@ -292,13 +347,6 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
-        /// Gets or sets the output log text color.
-        /// </summary>
-        [DefaultValue(typeof(Color), "1,1,1,1")]
-        [EditorDisplay("Output Log", "Text Color"), EditorOrder(430), Tooltip("The output log text color.")]
-        public Color OutputLogTextColor { get; set; } = Color.White;
-
-        /// <summary>
         /// Gets or sets the output log text shadow color.
         /// </summary>
         [DefaultValue(typeof(Color), "0,0,0,0.5")]
@@ -311,6 +359,18 @@ namespace FlaxEditor.Options
         [DefaultValue(typeof(Float2), "1,1")]
         [EditorDisplay("Output Log", "Text Shadow Offset"), EditorOrder(445), Tooltip("The output log text shadow offset. Set to 0 to disable this feature.")]
         public Float2 OutputLogTextShadowOffset { get; set; } = new Float2(1);
+
+        // [Deprecated in v1.10]
+        [Serialize, Obsolete, NoUndo]
+        private bool FocusGameWinOnPlay
+        {
+            get => throw new Exception();
+            set
+            {
+                // Upgrade value
+                FocusOnPlayMode = value ? PlayModeFocus.GameWindow : PlayModeFocus.None;
+            }
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether auto-focus output log window on code compilation error.
@@ -334,11 +394,11 @@ namespace FlaxEditor.Options
         public bool OutputLogScrollToBottom { get; set; } = true;
 
         /// <summary>
-        /// Gets or sets a value indicating whether auto-focus game window on play mode start.
+        /// Gets or sets a value indicating what panel should be focused when play mode start.
         /// </summary>
-        [DefaultValue(true)]
-        [EditorDisplay("Play In-Editor", "Focus Game Window On Play"), EditorOrder(500), Tooltip("Determines whether auto-focus game window on play mode start.")]
-        public bool FocusGameWinOnPlay { get; set; } = true;
+        [DefaultValue(PlayModeFocus.GameWindow)]
+        [EditorDisplay("Play In-Editor", "Focus On Play"), EditorOrder(500), Tooltip("Set what panel to focus on play mode start.")]
+        public PlayModeFocus FocusOnPlayMode { get; set; } = PlayModeFocus.GameWindow;
 
         /// <summary>
         /// Gets or sets a value indicating what action should be taken upon pressing the play button.
@@ -362,11 +422,39 @@ namespace FlaxEditor.Options
         public int NumberOfGameClientsToLaunch = 1;
 
         /// <summary>
-        /// Gets or sets the visject connection curvature.
+        /// Gets or sets the curvature of the line connecting to connected visject nodes.
         /// </summary>
         [DefaultValue(1.0f), Range(0.0f, 2.0f)]
         [EditorDisplay("Visject"), EditorOrder(550)]
         public float ConnectionCurvature { get; set; } = 1.0f;
+
+        /// <summary>
+        /// Gets or sets a value that indicates wether the context menu description panel is shown or not.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Visject"), EditorOrder(550), Tooltip("Shows/hides the description panel in visual scripting context menu.")]
+        public bool NodeDescriptionPanel { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the surface grid snapping option.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Visject", "Grid Snapping"), EditorOrder(551), Tooltip("Toggles grid snapping when moving nodes.")]
+        public bool SurfaceGridSnapping { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the surface grid snapping option.
+        /// </summary>
+        [DefaultValue(20.0f)]
+        [EditorDisplay("Visject", "Grid Snapping Size"), EditorOrder(551), Tooltip("Defines the size of the grid for nodes snapping."), VisibleIf(nameof(SurfaceGridSnapping))]
+        public float SurfaceGridSnappingSize { get; set; } = 20.0f;
+
+        /// <summary>
+        /// Gets or sets a value that indicates if a warning should be displayed when deleting a Visject parameter that is used in a graph.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Visject", "Warn when deleting used parameter"), EditorOrder(552)]
+        public bool WarnOnDeletingUsedVisjectParameter { get; set; } = true;
 
         private static FontAsset DefaultFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.PrimaryFont);
         private static FontAsset ConsoleFont => FlaxEngine.Content.LoadAsyncInternal<FontAsset>(EditorAssets.InconsolataRegularFont);

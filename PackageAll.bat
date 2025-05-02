@@ -1,13 +1,13 @@
 @echo off
 
-rem Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+rem Copyright (c) Wojciech Figat. All rights reserved.
 
 setlocal
 pushd
 echo Performing the full package...
 
 rem Run the build tool.
-call "Development\Scripts\Windows\CallBuildTool.bat" -deploy -deployEditor -deployPlatforms -dotnet=8 -verbose -log -logFile="Cache\Intermediate\PackageLog.txt" %*
+call "Development\Scripts\Windows\CallBuildTool.bat" -deploy -deployEditor -deployPlatforms -verbose -log -logFile="Cache\Intermediate\PackageLog.txt" %*
 if errorlevel 1 goto BuildToolFailed
 
 popd

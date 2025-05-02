@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -86,7 +86,7 @@ public:
 
     void String(const StringAnsi& value)
     {
-        String(value.Get(), static_cast<unsigned>(value.Length()));
+        String(value.Get(), value.Length());
     }
 
     FORCE_INLINE void RawValue(const StringAnsi& str)

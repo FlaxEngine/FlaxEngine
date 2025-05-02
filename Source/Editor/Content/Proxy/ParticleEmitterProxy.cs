@@ -1,8 +1,11 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content.Create;
 using FlaxEditor.Content.Thumbnails;
+using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Timeline;
+using FlaxEditor.GUI.Timeline.Tracks;
 using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
@@ -46,6 +49,63 @@ namespace FlaxEditor.Content
         public override void Create(string outputPath, object arg)
         {
             Editor.Instance.ContentImporting.Create(new ParticleEmitterCreateEntry(outputPath));
+        }
+
+        /// <inheritdoc />
+        public override void OnContentWindowContextMenu(ContextMenu menu, ContentItem item)
+        {
+            base.OnContentWindowContextMenu(menu, item);
+
+            if (item is BinaryAssetItem binaryAssetItem)
+            {
+                var button = menu.AddButton("Create Particle System", CreateParticleSystemClicked);
+                button.Tag = binaryAssetItem;
+            }
+        }
+
+        private void CreateParticleSystemClicked(ContextMenuButton obj)
+        {
+            var binaryAssetItem = (BinaryAssetItem)obj.Tag;
+            CreateParticleSystem(binaryAssetItem);
+        }
+
+        /// <summary>
+        /// Creates the particle system from the given particle emitter.
+        /// </summary>
+        /// <param name="emitterItem">The particle emitter item to use as a base for the particle system.</param>
+        public static void CreateParticleSystem(BinaryAssetItem emitterItem)
+        {
+            var particleSystemName = emitterItem.ShortName + " Particle System";
+            var particleSystemProxy = Editor.Instance.ContentDatabase.GetProxy<ParticleSystem>();
+            Editor.Instance.Windows.ContentWin.NewItem(particleSystemProxy, null, item => OnParticleSystemCreated(item, emitterItem), particleSystemName);
+        }
+
+        private static void OnParticleSystemCreated(ContentItem item, BinaryAssetItem particleItem)
+        {
+            var assetItem = (AssetItem)item;
+            var particleSystem = FlaxEngine.Content.LoadAsync<ParticleSystem>(assetItem.ID);
+            if (particleSystem == null || particleSystem.WaitForLoaded())
+            {
+                Editor.LogError("Failed to load created particle system.");
+                return;
+            }
+
+            ParticleEmitter emitter = FlaxEngine.Content.LoadAsync<ParticleEmitter>(particleItem.ID);
+            if (emitter == null || emitter.WaitForLoaded())
+            {
+                Editor.LogError("Failed to load base particle emitter.");
+            }
+
+            ParticleSystemPreview tempPreview = new ParticleSystemPreview(false);
+            ParticleSystemTimeline timeline = new ParticleSystemTimeline(tempPreview);
+            timeline.Load(particleSystem);
+
+            var track = (ParticleEmitterTrack)timeline.NewTrack(ParticleEmitterTrack.GetArchetype());
+            track.Asset = emitter;
+            track.TrackMedia.DurationFrames = timeline.DurationFrames;
+            track.Rename(particleItem.ShortName);
+            timeline.AddTrack(track);
+            timeline.Save(particleSystem);
         }
 
         /// <inheritdoc />

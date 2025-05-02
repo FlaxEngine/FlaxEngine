@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -8,7 +8,7 @@ namespace FlaxEngine.GUI
     /// Button control
     /// </summary>
     [ActorToolbox("GUI")]
-    public class Button : ContainerControl
+    public class Button : Label
     {
         /// <summary>
         /// The default height for the buttons.
@@ -21,52 +21,15 @@ namespace FlaxEngine.GUI
         protected bool _isPressed;
 
         /// <summary>
-        /// The font.
-        /// </summary>
-        protected FontReference _font;
-
-        /// <summary>
-        /// The text.
-        /// </summary>
-        protected LocalizedString _text = new LocalizedString();
-
-        /// <summary>
-        /// Button text property.
-        /// </summary>
-        [EditorOrder(10), Tooltip("The button label text.")]
-        public LocalizedString Text
-        {
-            get => _text;
-            set => _text = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the font used to draw button text.
-        /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2022), ExpandGroups]
-        public FontReference Font
-        {
-            get => _font;
-            set => _font = value;
-        }
-
-        /// <summary>
         /// Gets or sets the custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.
+        /// [Deprecated on 18.09.2024, expires on 18.09.2026]
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2021), Tooltip("Custom material used to render the text. It must has domain set to GUI and have a public texture parameter named Font used to sample font atlas texture with font characters data.")]
-        public MaterialBase TextMaterial { get; set; }
-
-        /// <summary>
-        /// Gets or sets the color used to draw button text.
-        /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2020)]
-        public Color TextColor;
-
-        /// <summary>
-        /// Gets or sets the brush used for background drawing.
-        /// </summary>
-        [EditorDisplay("Background Style"), EditorOrder(1999), Tooltip("The brush used for background drawing."), ExpandGroups]
-        public IBrush BackgroundBrush { get; set; }
+        [Serialize, Obsolete("Use Material property instead."), NoUndo]
+        public MaterialBase TextMaterial
+        {
+            get => Material;
+            set => Material = value;
+        }
 
         /// <summary>
         /// Gets or sets the background color when button is highlighted.
@@ -85,7 +48,7 @@ namespace FlaxEngine.GUI
         /// </summary>
         [EditorDisplay("Border Style"), EditorOrder(2010), ExpandGroups]
         public bool HasBorder { get; set; } = true;
-        
+
         /// <summary>
         /// Gets or sets the border thickness.
         /// </summary>
@@ -153,6 +116,7 @@ namespace FlaxEngine.GUI
         public Button(float x, float y, float width = 120, float height = DefaultHeight)
         : base(x, y, width, height)
         {
+            AutoFocus = true;
             var style = Style.Current;
             if (style != null)
             {
@@ -230,17 +194,14 @@ namespace FlaxEngine.GUI
         /// <inheritdoc />
         public override void DrawSelf()
         {
-            // Cache data
             Rectangle clientRect = new Rectangle(Float2.Zero, Size);
             bool enabled = EnabledInHierarchy;
             Color backgroundColor = BackgroundColor;
             Color borderColor = BorderColor;
-            Color textColor = TextColor;
             if (!enabled)
             {
                 backgroundColor *= 0.5f;
                 borderColor *= 0.5f;
-                textColor *= 0.6f;
             }
             else if (_isPressed)
             {
@@ -262,7 +223,10 @@ namespace FlaxEngine.GUI
                 Render2D.DrawRectangle(clientRect, borderColor, BorderThickness);
 
             // Draw text
-            Render2D.DrawText(_font?.GetFont(), TextMaterial, _text, clientRect, textColor, TextAlignment.Center, TextAlignment.Center);
+            backgroundColor = BackgroundColor;
+            BackgroundColor = Color.Transparent; // Skip background drawing in Control
+            base.DrawSelf();
+            BackgroundColor = backgroundColor;
         }
 
         /// <inheritdoc />
@@ -327,7 +291,7 @@ namespace FlaxEngine.GUI
                 OnClick();
                 return true;
             }
-            
+
             if (button == MouseButton.Left && !_isPressed)
             {
                 OnPressBegin();

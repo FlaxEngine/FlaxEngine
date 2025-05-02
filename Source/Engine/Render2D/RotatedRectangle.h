@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,6 @@
 struct RotatedRectangle
 {
 public:
-
     /// <summary>
     /// The transformed top left corner.
     /// </summary>
@@ -27,7 +26,6 @@ public:
     Float2 ExtentY;
 
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="RotatedRectangle"/> struct.
     /// </summary>
@@ -60,7 +58,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Convert rotated rectangle to the axis-aligned rectangle that builds rotated rectangle bounding box.
     /// </summary>
@@ -95,8 +92,24 @@ public:
         return false;
     }
 
-public:
+    /// <summary>
+    /// Calculates a rectangle that contains the shared part of both rectangles.
+    /// </summary>
+    /// <param name="a">The first rectangle.</param>
+    /// <param name="b">The second rectangle.</param>
+    /// <returns>Rectangle that contains shared part of a and b rectangles.</returns>
+    static RotatedRectangle Shared(const RotatedRectangle& a, const Rectangle& b)
+    {
+        // Clip the rotated rectangle bounds within the given AABB
+        RotatedRectangle result = a;
+        result.TopLeft = Float2::Max(a.TopLeft, b.GetTopLeft());
+        // TODO: do a little better math below (in case of actually rotated rectangle)
+        result.ExtentX.X = Math::Min(result.TopLeft.X + result.ExtentX.X, b.GetRight()) - result.TopLeft.X;
+        result.ExtentY.Y = Math::Min(result.TopLeft.Y + result.ExtentY.Y, b.GetBottom()) - result.TopLeft.Y;
+        return result;
+    }
 
+public:
     bool operator ==(const RotatedRectangle& other) const
     {
         return

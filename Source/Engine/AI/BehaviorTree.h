@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -77,7 +77,7 @@ public:
     /// Tries to load surface graph from the asset.
     /// </summary>
     /// <returns>The surface data or empty if failed to load it.</returns>
-    API_FUNCTION() BytesContainer LoadSurface();
+    API_FUNCTION() BytesContainer LoadSurface() const;
 
 #if USE_EDITOR
     /// <summary>
@@ -85,7 +85,7 @@ public:
     /// </summary>
     /// <param name="data">Stream with graph data.</param>
     /// <returns>True if cannot save it, otherwise false.</returns>
-    API_FUNCTION() bool SaveSurface(const BytesContainer& data);
+    API_FUNCTION() bool SaveSurface(const BytesContainer& data) const;
 #endif
 
 private:
@@ -98,7 +98,8 @@ public:
     // [BinaryAsset]
     void OnScriptingDispose() override;
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override;
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
 protected:

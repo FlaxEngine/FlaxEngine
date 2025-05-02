@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -38,11 +38,14 @@ namespace Utilities
         return (T)round((double)value * 1000.0) / (T)1000;
     }
 
-    // Converts units to the best fitting human-readable denominator
-    // @param units Units count
-    // @param divider Amount of units required for the next size
-    // @param sizes Array with human-readable sizes to convert from
-    // @return The best fitting string of the units
+    /// <summary>
+    /// Converts units to the best fitting human-readable denominator.
+    /// </summary>
+    /// <typeparam name="T">Value type.</typeparam>
+    /// <param name="units">Units count</param>
+    /// <param name="divider">Amount of units required for the next size.</param>
+    /// <param name="sizes">Array with human-readable sizes to convert from.</param>
+    /// <returns>The best fitting string of the units.</returns>
     template<typename T>
     String UnitsToText(T units, int32 divider, const Span<const Char*> sizes)
     {
@@ -61,18 +64,24 @@ namespace Utilities
         return String::Format(TEXT("{0} {1}"), text, sizes[i]);
     }
 
-    // Converts size of the file (in bytes) to the best fitting string
-    // @param bytes Size of the file in bytes
-    // @return The best fitting string of the file size
+    /// <summary>
+    /// Converts size of the data (in bytes) to the best fitting string.
+    /// </summary>
+    /// <typeparam name="T">Value type.</typeparam>
+    /// <param name="bytes">Size of the data in bytes.</param>
+    /// <returns>The best fitting string of the data size.</returns>
     template<typename T>
     String BytesToText(T bytes)
     {
         return UnitsToText(bytes, 1024, Private::BytesSizes);
     }
 
-    // Converts hertz to the best fitting string
-    // @param hertz Hertz for convertion
-    // @return The best fitting string
+    /// <summary>
+    /// Converts hertz to the best fitting string.
+    /// </summary>
+    /// <typeparam name="T">Value type.</typeparam>
+    /// <param name="hertz">Value in hertz for conversion.</param>
+    /// <returns>The best fitting string.</returns>
     template<typename T>
     String HertzToText(T hertz)
     {
@@ -82,17 +91,63 @@ namespace Utilities
     // Returns the amount of set bits in 32-bit integer.
     inline int32 CountBits(uint32 x)
     {
-        // [Reference: https://stackoverflow.com/questions/109023/how-to-count-the-number-of-set-bits-in-a-32-bit-integer]
 #ifdef __GNUC_
         return __builtin_popcount(x);
 #elif _MSC_VER && PLATFORM_SIMD_SSE4_2
         return __popcnt(x);
 #else
+        // [Reference: https://stackoverflow.com/questions/109023/how-to-count-the-number-of-set-bits-in-a-32-bit-integer]
         x = x - ((x >> 1) & 0x55555555);
         x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
         x = (x + (x >> 4)) & 0x0F0F0F0F;
         return (x * 0x01010101) >> 24;
 #endif  
+    }
+
+    // Returns the index of the highest set bit. Assumes input is non-zero.
+    inline uint32 HighestSetBit(uint32 x)
+    {
+#if _MSC_VER
+        unsigned long result;
+        _BitScanReverse(&result, x);
+        return result;
+#elif __clang__
+        return 31 - __builtin_clz(x);
+#else
+        // [Reference: http://graphics.stanford.edu/~seander/bithacks.html]
+        static const uint32 MultiplyDeBruijnBitPosition[32] =
+        {
+            0, 9, 1, 10, 13, 21, 2, 29, 11, 14, 16, 18, 22, 25, 3, 30,
+            8, 12, 20, 28, 15, 17, 24, 7, 19, 27, 23, 6, 26, 5, 4, 31
+        };
+        v |= v >> 1;
+        v |= v >> 2;
+        v |= v >> 4;
+        v |= v >> 8;
+        v |= v >> 16;
+        return MultiplyDeBruijnBitPosition[(uint32)(v * 0x07C4ACDDU) >> 27];
+#endif
+    }
+
+    // Returns the index of the lowest set bit. Assumes input is non-zero.
+    inline uint32 LowestSetBit(uint32 v)
+    {
+#if _MSC_VER
+        unsigned long result;
+        _BitScanForward(&result, v);
+        return result;
+#elif __clang__
+        return __builtin_ctz(v);
+#else
+        // [Reference: http://graphics.stanford.edu/~seander/bithacks.html]
+        static const uint32 MultiplyDeBruijnBitPosition[32] =
+        {
+            0, 1, 28, 2, 29, 14, 24, 3, 30, 22, 20, 15, 25, 17, 4, 8,
+            31, 27, 13, 23, 21, 19, 16, 7, 26, 12, 18, 6, 11, 5, 10, 9
+        };
+        int32 w = v;
+        return MultiplyDeBruijnBitPosition[(uint32)((w & -w) * 0x077CB531U) >> 27];
+#endif
     }
 
     // Copy memory region but ignoring address sanatizer checks for memory regions.

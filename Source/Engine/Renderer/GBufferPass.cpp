@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GBufferPass.h"
 #include "RenderList.h"
@@ -21,8 +21,8 @@
 #include "Engine/Level/Actors/Decal.h"
 #include "Engine/Engine/Engine.h"
 
-PACK_STRUCT(struct GBufferPassData{
-    GBufferData GBuffer;
+GPU_CB_STRUCT(GBufferPassData {
+    ShaderGBufferData GBuffer;
     Float3 Dummy0;
     int32 ViewMode;
     });
@@ -59,13 +59,8 @@ bool GBufferPass::Init()
 
 bool GBufferPass::setupResources()
 {
-    ASSERT(_gBufferShader);
-
-    // Check if shader has not been loaded
-    if (!_gBufferShader->IsLoaded())
-    {
+    if (!_gBufferShader || !_gBufferShader->IsLoaded())
         return true;
-    }
     auto gbuffer = _gBufferShader->GetShader();
 
     // Validate shader constant buffers sizes
@@ -228,9 +223,13 @@ void GBufferPass::Fill(RenderContext& renderContext, GPUTexture* lightBuffer)
     context->ResetRenderTarget();
 }
 
-bool SortDecal(Decal* const& a, Decal* const& b)
+bool SortDecal(RenderDecalData const& a, RenderDecalData const& b)
 {
-    return a->SortOrder < b->SortOrder;
+    if (a.SortOrder == b.SortOrder)
+    {
+        return (uintptr)a.Material < (uintptr)b.Material;
+    }
+    return a.SortOrder < b.SortOrder;
 }
 
 void GBufferPass::RenderDebug(RenderContext& renderContext)
@@ -393,7 +392,7 @@ bool GBufferPass::IsDebugView(ViewMode mode)
     }
 }
 
-void GBufferPass::SetInputs(const RenderView& view, GBufferData& gBuffer)
+void GBufferPass::SetInputs(const RenderView& view, ShaderGBufferData& gBuffer)
 {
     // GBuffer params:
     // ViewInfo             :  x-1/Projection[0,0]   y-1/Projection[1,1]   z-(Far / (Far - Near)   w-(-Far * Near) / (Far - Near) / Far)
@@ -428,96 +427,89 @@ void GBufferPass::DrawSky(RenderContext& renderContext, GPUContext* context)
 
 void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* lightBuffer)
 {
-    // Skip if no decals to render
     auto& decals = renderContext.List->Decals;
-    if (decals.IsEmpty() || _boxModel == nullptr || !_boxModel->CanBeRendered() || EnumHasNoneFlags(renderContext.View.Flags, ViewFlags::Decals))
+    const auto boxModel = _boxModel.Get();
+    if (decals.IsEmpty() || boxModel == nullptr || !boxModel->CanBeRendered() || EnumHasNoneFlags(renderContext.View.Flags, ViewFlags::Decals))
         return;
-
     PROFILE_GPU_CPU("Decals");
-
-    // Cache data
-    auto device = GPUDevice::Instance;
-    auto context = device->GetMainContext();
-    auto model = _boxModel.Get();
+    auto context = GPUDevice::Instance->GetMainContext();
     auto buffers = renderContext.Buffers;
 
     // Sort decals from the lowest order to the highest order
-    Sorting::QuickSort(decals.Get(), (int32)decals.Count(), &SortDecal);
-
-    // TODO: batch decals using the same material
-
-    // TODO: sort decals by the blending mode within the same order
+    Sorting::QuickSort(decals.Get(), decals.Count(), &SortDecal);
 
     // Prepare
     DrawCall drawCall;
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
     bindParams.BindViewData();
-    drawCall.Material = nullptr;
-    drawCall.WorldDeterminantSign = 1.0f;
+    MaterialDecalBlendingMode decalBlendingMode = (MaterialDecalBlendingMode)-1;
+    MaterialUsageFlags usageFlags = (MaterialUsageFlags)-1;
+    boxModel->LODs.Get()->Meshes.Get()->GetDrawCallGeometry(drawCall);
+    context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 3));
+    context->BindIB(drawCall.Geometry.IndexBuffer);
+    context->ResetRenderTarget();
 
     // Draw all decals
     for (int32 i = 0; i < decals.Count(); i++)
     {
-        const auto decal = decals[i];
-        ASSERT(decal && decal->Material);
-        Transform transform = decal->GetTransform();
-        transform.Scale *= decal->GetSize();
-        renderContext.View.GetWorldMatrix(transform, drawCall.World);
-        drawCall.ObjectPosition = drawCall.World.GetTranslation();
-        drawCall.ObjectRadius = (float)decal->GetSphere().Radius;
+        const RenderDecalData& decal = decals.Get()[i];
 
-        context->ResetRenderTarget();
-
-        // Bind output
-        const MaterialInfo& info = decal->Material->GetInfo();
-        switch (info.DecalBlendingMode)
+        // Bind output (skip if won't change in-between decals)
+        const MaterialInfo& info = decal.Material->GetInfo();
+        const MaterialUsageFlags infoUsageFlags = info.UsageFlags & (MaterialUsageFlags::UseEmissive | MaterialUsageFlags::UseNormal);
+        if (decalBlendingMode != info.DecalBlendingMode || usageFlags != infoUsageFlags)
         {
-        case MaterialDecalBlendingMode::Translucent:
-        {
-            GPUTextureView* targetBuffers[4];
-            int32 count = 2;
-            targetBuffers[0] = buffers->GBuffer0->View();
-            targetBuffers[1] = buffers->GBuffer2->View();
-            if (EnumHasAnyFlags(info.UsageFlags, MaterialUsageFlags::UseEmissive))
+            decalBlendingMode = info.DecalBlendingMode;
+            usageFlags = infoUsageFlags;
+            switch (decalBlendingMode)
             {
-                count++;
-                targetBuffers[2] = lightBuffer;
-
-                if (EnumHasAnyFlags(info.UsageFlags, MaterialUsageFlags::UseNormal))
+            case MaterialDecalBlendingMode::Translucent:
+            {
+                GPUTextureView* targetBuffers[4];
+                int32 count = 2;
+                targetBuffers[0] = buffers->GBuffer0->View();
+                targetBuffers[1] = buffers->GBuffer2->View();
+                if (EnumHasAnyFlags(usageFlags, MaterialUsageFlags::UseEmissive))
                 {
                     count++;
-                    targetBuffers[3] = buffers->GBuffer1->View();
+                    targetBuffers[2] = lightBuffer;
+                    if (EnumHasAnyFlags(usageFlags, MaterialUsageFlags::UseNormal))
+                    {
+                        count++;
+                        targetBuffers[3] = buffers->GBuffer1->View();
+                    }
                 }
+                else if (EnumHasAnyFlags(usageFlags, MaterialUsageFlags::UseNormal))
+                {
+                    count++;
+                    targetBuffers[2] = buffers->GBuffer1->View();
+                }
+                context->SetRenderTarget(nullptr, ToSpan(targetBuffers, count));
+                break;
             }
-            else if (EnumHasAnyFlags(info.UsageFlags, MaterialUsageFlags::UseNormal))
+            case MaterialDecalBlendingMode::Stain:
             {
-                count++;
-                targetBuffers[2] = buffers->GBuffer1->View();
+                context->SetRenderTarget(buffers->GBuffer0->View());
+                break;
             }
-            context->SetRenderTarget(nullptr, ToSpan(targetBuffers, count));
-            break;
-        }
-        case MaterialDecalBlendingMode::Stain:
-        {
-            context->SetRenderTarget(buffers->GBuffer0->View());
-            break;
-        }
-        case MaterialDecalBlendingMode::Normal:
-        {
-            context->SetRenderTarget(buffers->GBuffer1->View());
-            break;
-        }
-        case MaterialDecalBlendingMode::Emissive:
-        {
-            context->SetRenderTarget(lightBuffer);
-            break;
-        }
+            case MaterialDecalBlendingMode::Normal:
+            {
+                context->SetRenderTarget(buffers->GBuffer1->View());
+                break;
+            }
+            case MaterialDecalBlendingMode::Emissive:
+            {
+                context->SetRenderTarget(lightBuffer);
+                break;
+            }
+            }
         }
 
         // Draw decal
-        drawCall.PerInstanceRandom = decal->GetPerInstanceRandom();
-        decal->Material->Bind(bindParams);
-        model->Render(context);
+        drawCall.World = decal.World;
+        decal.Material->Bind(bindParams);
+        // TODO: use hardware instancing
+        context->DrawIndexed(drawCall.Draw.IndicesCount);
     }
 
     context->ResetSR();

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -28,17 +28,10 @@ public:
     /// <param name="baseMaterial">The base material.</param>
     API_PROPERTY() void SetBaseMaterial(MaterialBase* baseMaterial);
 
-#if USE_EDITOR
-
     /// <summary>
-    /// Saves this asset to the file. Supported only in Editor.
+    /// Resets all parameters back to the base material (including disabling parameter overrides).
     /// </summary>
-    /// <remarks>If you use saving with the GPU mesh data then the call has to be provided from the thread other than the main game thread.</remarks>
-    /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
-    /// <returns>True if cannot save data, otherwise false.</returns>
-    API_FUNCTION() bool Save(const StringView& path = StringView::Empty);
-
-#endif
+    API_FUNCTION() void ResetParameters();
 
 private:
     void OnBaseSet();
@@ -50,7 +43,8 @@ public:
     // [MaterialBase]
     bool IsMaterialInstance() const override;
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override;
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
     // [IMaterial]

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "HistogramPass.h"
 #include "RenderList.h"
@@ -16,7 +16,7 @@
 #define THREADGROUP_SIZE_Y 16
 #define HISTOGRAM_SIZE 64
 
-PACK_STRUCT(struct HistogramData {
+GPU_CB_STRUCT(HistogramData {
     uint32 InputSizeX;
     uint32 InputSizeY;
     float HistogramMul;

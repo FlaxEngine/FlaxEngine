@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,16 +7,14 @@
 #include "Engine/Core/Formatting.h"
 #include "Engine/Core/Templates.h"
 
-class String;
-
 /// <summary>
-/// Globally Unique Identifier
+/// Globally Unique Identifier (GUID) represented by 128-bit integer (16 bytes) that can be used across all computers and networks wherever a unique identifier is required. Such an identifier has a very low probability of being duplicated.
 /// </summary>
 API_STRUCT(InBuild, Namespace="System") struct FLAXENGINE_API Guid
 {
 public:
     /// <summary>
-    /// Accepted format specifiers for the format parameter
+    /// Accepted format specifiers for the format parameter.
     /// </summary>
     enum class FormatType
     {
@@ -42,28 +40,28 @@ public:
     {
         struct
         {
-            // The first component
+            // The first component.
             uint32 A;
 
-            // The second component
+            // The second component.
             uint32 B;
 
-            // The third component
+            // The third component.
             uint32 C;
 
-            // The fourth component
+            // The fourth component.
             uint32 D;
         };
 
-        // Raw bytes with the GUID
+        // Raw bytes with the Guid.
         byte Raw[16];
 
-        // Raw values with the GUID
+        // Raw values with the Guid.
         uint32 Values[4];
     };
 
 public:
-    // Empty Guid (considered as invalid ID)
+    // Empty Guid (considered as invalid ID).
     static Guid Empty;
 
 public:
@@ -74,11 +72,13 @@ public:
     {
     }
 
-    // Creates and initializes a new Guid from the specified components
-    // @param a The first component
-    // @param b The second component
-    // @param c The third component
-    // @param d The fourth component
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Guid"/> struct.
+    /// </summary>
+    /// <param name="a">The first component.</param>
+    /// <param name="b">The second component.</param>
+    /// <param name="c">The third component.</param>
+    /// <param name="d">The fourth component.</param>
     Guid(uint32 a, uint32 b, uint32 c, uint32 d)
         : A(a)
         , B(b)
@@ -98,41 +98,27 @@ public:
         return ((A ^ other.A) | (B ^ other.B) | (C ^ other.C) | (D ^ other.D)) != 0;
     }
 
-    // Provides access to the GUIDs components
-    // @param index The index of the component to return (0...3)
-    // @returns The component value
+    // Provides access to the Guid components (0...3).
     uint32& operator[](int32 index)
     {
         ASSERT(index >= 0 && index < 4);
         return Values[index];
     }
 
-    // Provides read-only access to the GUIDs components.
-    // @param index The index of the component to return (0...3).
-    // @return The component
+    // Provides read-only access to the Guid components (0...3).
     const uint32& operator[](int index) const
     {
         ASSERT(index >= 0 && index < 4);
         return Values[index];
     }
 
-    // Invalidates the Guid
-    FORCE_INLINE void Invalidate()
-    {
-        A = B = C = D = 0;
-    }
-
     // Checks whether this Guid is valid or not. A Guid that has all its components set to zero is considered invalid.
-    // @return true if valid, otherwise false
     FORCE_INLINE bool IsValid() const
     {
         return (A | B | C | D) != 0;
     }
 
-    /// <summary>
-    /// Checks if Guid is valid
-    /// </summary>
-    /// <returns>True if Guid isn't empty</returns>
+    /// Checks if Guid is valid.
     explicit operator bool() const
     {
         return (A | B | C | D) != 0;

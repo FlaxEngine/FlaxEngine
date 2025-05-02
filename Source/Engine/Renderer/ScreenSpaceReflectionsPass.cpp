@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ScreenSpaceReflectionsPass.h"
 #include "ReflectionsPass.h"
@@ -11,23 +11,19 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
-#include "Engine/Engine/Time.h"
 #include "Engine/Platform/Window.h"
 #include "Utils/MultiScaler.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/RenderTask.h"
 
-#define RESOLVE_PASS_OUTPUT_FORMAT PixelFormat::R16G16B16A16_Float
-
 // Shader input texture slots mapping
 #define TEXTURE0 4
 #define TEXTURE1 5
 #define TEXTURE2 6
 
-PACK_STRUCT(struct Data
-    {
-    GBufferData GBuffer;
+GPU_CB_STRUCT(Data {
+    ShaderGBufferData GBuffer;
 
     float MaxColorMiplevel;
     float TraceSizeMax;
@@ -198,7 +194,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     tempDesc = GPUTextureDescription::New2D(traceWidth, traceHeight, PixelFormat::R16G16B16A16_Float);
     auto traceBuffer = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(traceBuffer, "SSR.TraceBuffer");
-    tempDesc = GPUTextureDescription::New2D(resolveWidth, resolveHeight, RESOLVE_PASS_OUTPUT_FORMAT);
+    tempDesc = GPUTextureDescription::New2D(resolveWidth, resolveHeight, PixelFormat::R16G16B16A16_Float);
     auto resolveBuffer = RenderTargetPool::Get(tempDesc);
     RENDER_TARGET_POOL_SET_NAME(resolveBuffer, "SSR.ResolveBuffer");
 
@@ -247,20 +243,14 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     data.TemporalEffect = useTemporal ? 1.0f : 0.0f;
     if (useTemporal)
     {
-        const float time = Time::Draw.UnscaledTime.GetTotalSeconds();
-
-        // Keep time in smaller range to prevent temporal noise errors
-        const double scale = 10;
-        const double integral = round(time / scale) * scale;
-        data.TemporalTime = static_cast<float>(time - integral);
-
+        data.TemporalTime = RenderTools::ComputeTemporalTime();
         buffers->LastFrameTemporalSSR = Engine::FrameCount;
         if (!buffers->TemporalSSR || buffers->TemporalSSR->Width() != temporalWidth || buffers->TemporalSSR->Height() != temporalHeight)
         {
             // Wrong size temporal buffer
             if (buffers->TemporalSSR)
                 RenderTargetPool::Release(buffers->TemporalSSR);
-            tempDesc = GPUTextureDescription::New2D(temporalWidth, temporalHeight, RESOLVE_PASS_OUTPUT_FORMAT);
+            tempDesc = GPUTextureDescription::New2D(temporalWidth, temporalHeight, PixelFormat::R16G16B16A16_Float);
             buffers->TemporalSSR = RenderTargetPool::Get(tempDesc);
             RENDER_TARGET_POOL_SET_NAME(buffers->TemporalSSR, "SSR.TemporalSSR");
         }
@@ -385,7 +375,7 @@ void ScreenSpaceReflectionsPass::Render(RenderContext& renderContext, GPUTexture
     GPUTexture* reflectionsBuffer = resolveBuffer;
     if (useTemporal)
     {
-        tempDesc = GPUTextureDescription::New2D(temporalWidth, temporalHeight, RESOLVE_PASS_OUTPUT_FORMAT);
+        tempDesc = GPUTextureDescription::New2D(temporalWidth, temporalHeight, PixelFormat::R16G16B16A16_Float);
         auto newTemporal = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(newTemporal, "SSR.TemporalSSR");
         const auto oldTemporal = buffers->TemporalSSR;

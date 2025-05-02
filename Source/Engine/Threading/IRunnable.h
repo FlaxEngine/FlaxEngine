@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -13,35 +13,44 @@
 class IRunnable : public Object
 {
 public:
-
     // Virtual destructor
     virtual ~IRunnable()
     {
     }
 
-    // Initializes the runnable object
-    // @return True if initialization was successful, otherwise false
+    /// <summary>
+    /// Initializes the runnable object.
+    /// </summary>
+    /// <returns>True if initialization was successful, otherwise false.</returns>
     virtual bool Init()
     {
         return true;
     }
 
-    // Runs the runnable object.
-    // @return The exit code
+    /// <summary>
+    /// Executes the runnable object.
+    /// </summary>
+    /// <returns>The exit code. Non-zero on error.</returns>
     virtual int32 Run() = 0;
 
-    // Stops the runnable object. Called when thread is being terminated
+    /// <summary>
+    /// Stops the runnable object. Called when thread is being terminated
+    /// </summary>
     virtual void Stop()
     {
     }
 
-    // Exits the runnable object
+    /// <summary>
+    /// Exits the runnable object
+    /// </summary>
     virtual void Exit()
     {
     }
 
-    // Called when thread ends work (via Kill or normally)
-    // @param wasKilled True if thread has been killed
+    /// <summary>
+    /// Called when thread ends work (via Kill or normally).
+    /// </summary>
+    /// <param name="wasKilled">True if thread has been killed.</param>
     virtual void AfterWork(bool wasKilled)
     {
     }
@@ -53,18 +62,15 @@ public:
 class SimpleRunnable : public IRunnable
 {
 private:
-
     bool _autoDelete;
 
 public:
-
     /// <summary>
     /// Working function
     /// </summary>
     Function<int32()> OnWork;
 
 public:
-
     /// <summary>
     /// Init
     /// </summary>
@@ -75,7 +81,6 @@ public:
     }
 
 public:
-
     // [IRunnable]
     String ToString() const override
     {

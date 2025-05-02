@@ -1,5 +1,6 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
+#if USE_PROFILER
 using System;
 using System.Collections.Generic;
 using FlaxEditor.GUI;
@@ -57,29 +58,41 @@ namespace FlaxEditor.Windows.Profiler
         : base("CPU")
         {
             // Layout
-            var panel = new Panel(ScrollBars.Vertical)
+            var mainPanel = new Panel(ScrollBars.None)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
                 Offsets = Margin.Zero,
                 Parent = this,
             };
-            var layout = new VerticalPanel
-            {
-                AnchorPreset = AnchorPresets.HorizontalStretchTop,
-                Offsets = Margin.Zero,
-                IsScrollable = true,
-                Parent = panel,
-            };
-
+            
             // Chart
             _mainChart = new SingleChart
             {
                 Title = "Update",
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Offsets = Margin.Zero,
+                Height = SingleChart.DefaultHeight,
                 FormatSample = v => (Mathf.RoundToInt(v * 10.0f) / 10.0f) + " ms",
-                Parent = layout,
+                Parent = mainPanel,
             };
             _mainChart.SelectedSampleChanged += OnSelectedSampleChanged;
-
+            
+            var panel = new Panel(ScrollBars.Vertical)
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, _mainChart.Height + 2, 0),
+                Parent = mainPanel,
+            };
+            //panel.Y = _mainChart.Height + 2;
+            var layout = new VerticalPanel
+            {
+                AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Offsets = Margin.Zero,
+                Pivot = Float2.Zero,
+                IsScrollable = true,
+                Parent = panel,
+            };
+            
             // Timeline
             _timeline = new Timeline
             {
@@ -164,7 +177,7 @@ namespace FlaxEditor.Windows.Profiler
 
         private string FormatCellBytes(object x)
         {
-            return Utilities.Utils.FormatBytesCount((int)x);
+            return Utilities.Utils.FormatBytesCount(Convert.ToUInt64(x));
         }
 
         /// <inheritdoc />
@@ -479,7 +492,7 @@ namespace FlaxEditor.Windows.Profiler
                         {
                             break;
                         }
-                        subEventsMemoryTotal += sub.ManagedMemoryAllocation + e.NativeMemoryAllocation;
+                        subEventsMemoryTotal += sub.ManagedMemoryAllocation + sub.NativeMemoryAllocation;
                     }
 
                     string name = e.Name.Replace("::", ".");
@@ -527,10 +540,11 @@ namespace FlaxEditor.Windows.Profiler
                     row.Depth = e.Depth;
                     row.Width = _table.Width;
                     row.Visible = e.Depth < 2;
-                    row.BackgroundColor = i % 2 == 0 ? rowColor2 : Color.Transparent;
+                    row.BackgroundColor = i % 2 == 1 ? rowColor2 : Color.Transparent;
                     row.Parent = _table;
                 }
             }
         }
     }
 }
+#endif

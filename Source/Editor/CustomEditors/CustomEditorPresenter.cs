@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -79,6 +79,7 @@ namespace FlaxEditor.CustomEditors
                 _presenter = presenter;
                 AnchorPreset = AnchorPresets.StretchAll;
                 Offsets = Margin.Zero;
+                Pivot = Float2.Zero;
                 IsScrollable = true;
             }
 
@@ -93,6 +94,9 @@ namespace FlaxEditor.CustomEditors
                 catch (Exception ex)
                 {
                     FlaxEditor.Editor.LogWarning(ex);
+
+                    // Refresh layout on errors to reduce lgo spam
+                    _presenter.BuildLayout();
                 }
 
                 base.Update(deltaTime);
@@ -128,6 +132,8 @@ namespace FlaxEditor.CustomEditors
                 get => _overrideEditor;
                 set
                 {
+                    if (_overrideEditor == value)
+                        return;
                     _overrideEditor = value;
                     RebuildLayout();
                 }
@@ -190,6 +196,14 @@ namespace FlaxEditor.CustomEditors
                 base.Initialize(layout);
 
                 Presenter.AfterLayout?.Invoke(layout);
+            }
+
+            /// <inheritdoc />
+            protected override void Deinitialize()
+            {
+                Editor = null;
+
+                base.Deinitialize();
             }
 
             /// <inheritdoc />
@@ -397,6 +411,7 @@ namespace FlaxEditor.CustomEditors
             Panel.DisposeChildren();
 
             ClearLayout();
+            _buildOnUpdate = false;
             Editor.Setup(this);
 
             Panel.IsLayoutLocked = false;
@@ -484,7 +499,6 @@ namespace FlaxEditor.CustomEditors
         {
             if (_buildOnUpdate)
             {
-                _buildOnUpdate = false;
                 BuildLayout();
             }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -33,7 +33,7 @@ DECLARE_SCRIPTING_TYPE_NO_SPAWN(Streaming);
     /// <summary>
     /// Gets streaming statistics.
     /// </summary>
-    API_PROPERTY() static StreamingStats GetStats();
+    API_PROPERTY(Attributes="DebugCommand") static StreamingStats GetStats();
 
     /// <summary>
     /// Requests the streaming update for all the loaded resources. Use it to refresh content streaming after changing configuration.

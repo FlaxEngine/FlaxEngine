@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GameplayGlobals.h"
 #include "Engine/Core/Log.h"
@@ -14,22 +14,21 @@
 class GameplayGlobalsUpgrader : public BinaryAssetUpgrader
 {
 public:
-
     GameplayGlobalsUpgrader()
     {
-        static const Upgrader upgraders[] =
+        const Upgrader upgraders[] =
         {
-            { 1, 2, &Upgrade_1_To_2 },
+            { 1, 2, &Upgrade_1_To_2 }, // [Deprecated on 31.07.2020, expires on 31.07.2022]
         };
         setup(upgraders, ARRAY_COUNT(upgraders));
     }
 
 private:
-
     static bool Upgrade_1_To_2(AssetMigrationContext& context)
     {
+        // [Deprecated on 31.07.2020, expires on 31.07.2022]
+        PRAGMA_DISABLE_DEPRECATION_WARNINGS
         ASSERT(context.Input.SerializedVersion == 1 && context.Output.SerializedVersion == 2);
-
         if (context.AllocateChunk(0))
             return true;
         auto& data = context.Input.Header.Chunks[0]->Data;
@@ -41,13 +40,14 @@ private:
         String name;
         for (int32 i = 0; i < count; i++)
         {
-            stream.ReadString(&name, 71);
+            stream.Read(name, 71);
             CommonValue commonValue;
             stream.ReadCommonValue(&commonValue);
             Variant variant(commonValue);
             output.WriteVariant(variant);
         }
         context.Output.Header.Chunks[0]->Data.Copy(output.GetHandle(), output.GetPosition());
+        PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
         return false;
     }
@@ -154,27 +154,17 @@ void GameplayGlobals::ResetValues()
 
 bool GameplayGlobals::Save(const StringView& path)
 {
-    // Validate state
-    if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave(path))
         return true;
-    }
-    if (IsVirtual() && path.IsEmpty())
-    {
-        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
-        return true;
-    }
-
     ScopeLock lock(Locker);
 
     // Save to bytes
     MemoryWriteStream stream(1024);
-    stream.WriteInt32(Variables.Count());
+    stream.Write(Variables.Count());
     for (auto& e : Variables)
     {
-        stream.WriteString(e.Key, 71);
-        stream.WriteVariant(e.Value.DefaultValue);
+        stream.Write(e.Key, 71);
+        stream.Write(e.Value.DefaultValue);
     }
 
     // Set chunk data
@@ -187,7 +177,7 @@ bool GameplayGlobals::Save(const StringView& path)
     {
         chunk = GetOrCreateChunk(0);
     }
-    chunk->Data.Copy(stream.GetHandle(), stream.GetPosition());
+    chunk->Data.Copy(ToSpan(stream));
 
     // Save
     AssetInitData data;
@@ -226,14 +216,14 @@ Asset::LoadResult GameplayGlobals::load()
 
     // Load all variables
     int32 count;
-    stream.ReadInt32(&count);
+    stream.Read(count);
     Variables.EnsureCapacity(count);
     String name;
     for (int32 i = 0; i < count; i++)
     {
-        stream.ReadString(&name, 71);
+        stream.Read(name, 71);
         auto& e = Variables[name];
-        stream.ReadVariant(&e.DefaultValue);
+        stream.Read(e.DefaultValue);
         e.Value = e.DefaultValue;
     }
     if (stream.HasError())

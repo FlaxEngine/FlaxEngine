@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,4 +12,6 @@ struct FLAXENGINE_API RenderSetup
     RenderingUpscaleLocation UpscaleLocation = RenderingUpscaleLocation::AfterAntiAliasingPass;
     bool UseMotionVectors = false;
     bool UseTemporalAAJitter = false;
+    bool UseGlobalSDF = false;
+    bool UseGlobalSurfaceAtlas = false;
 };

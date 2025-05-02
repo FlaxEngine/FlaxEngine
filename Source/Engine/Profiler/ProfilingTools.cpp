@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_PROFILER
 
@@ -224,6 +224,7 @@ void ProfilingTools::SetEnabled(bool enabled)
 {
     ProfilerCPU::Enabled = enabled;
     ProfilerGPU::Enabled = enabled;
+    ProfilerGPU::EventsEnabled = enabled;
     NetworkInternal::EnableProfiling = enabled;
 }
 

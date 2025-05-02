@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -9,7 +9,7 @@
 /// <summary>
 /// Graphics device manager that creates, manages and releases graphics device and related objects.
 /// </summary>
-API_CLASS(Static) class FLAXENGINE_API Graphics
+API_CLASS(Static, Attributes="DebugCommand") class FLAXENGINE_API Graphics
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(Graphics);
 public:
@@ -49,6 +49,11 @@ public:
     API_FIELD() static Quality ShadowMapsQuality;
 
     /// <summary>
+    /// The global scale for all shadow maps update rate. Can be used to slow down shadows rendering frequency on lower quality settings or low-end platforms. Default 1.
+    /// </summary>
+    API_FIELD() static float ShadowUpdateRate;
+
+    /// <summary>
     /// Enables cascades splits blending for directional light shadows.
     /// </summary>
     API_FIELD() static bool AllowCSMBlending;
@@ -64,9 +69,20 @@ public:
     API_FIELD() static Quality GIQuality;
 
     /// <summary>
+    /// Enables cascades splits blending for Global Illumination.
+    /// </summary>
+    API_FIELD() static bool GICascadesBlending;
+
+    /// <summary>
     /// The default Post Process settings. Can be overriden by PostFxVolume on a level locally, per camera or for a whole map.
     /// </summary>
     API_FIELD() static PostProcessSettings PostProcessSettings;
+
+public:
+    /// <summary>
+    /// Debug utility to toggle graphics workloads amortization over several frames by systems such as shadows mapping, global illumination or surface atlas. Can be used to test performance in the worst-case scenario (eg. camera-cut).
+    /// </summary>
+    API_FIELD() static bool SpreadWorkload;
 
 public:
     /// <summary>
@@ -74,3 +90,10 @@ public:
     /// </summary>
     static void DisposeDevice();
 };
+
+// Skip disabling workload spreading in Release builds
+#if BUILD_RELEASE
+#define GPU_SPREAD_WORKLOAD true
+#else
+#define GPU_SPREAD_WORKLOAD Graphics::SpreadWorkload
+#endif

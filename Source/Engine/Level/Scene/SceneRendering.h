@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -48,12 +48,22 @@ private:
 public:
     ~ISceneRenderingListener();
 
+    // Actor properties that were modified.
+    enum UpdateFlags
+    {
+        Visual = 1,
+        Bounds = 2,
+        Layer = 4,
+        StaticFlags = 8,
+        Auto = Visual | Bounds | Layer,
+    };
+
     // Starts listening to the scene rendering events.
     void ListenSceneRendering(SceneRendering* scene);
 
     // Events called by Scene Rendering
     virtual void OnSceneRenderingAddActor(Actor* a) = 0;
-    virtual void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds) = 0;
+    virtual void OnSceneRenderingUpdateActor(Actor* a, const BoundingSphere& prevBounds, UpdateFlags flags = Auto) = 0;
     virtual void OnSceneRenderingRemoveActor(Actor* a) = 0;
     virtual void OnSceneRenderingClear(SceneRendering* scene) = 0;
 };
@@ -125,7 +135,7 @@ public:
 
 public:
     void AddActor(Actor* a, int32& key);
-    void UpdateActor(Actor* a, int32& key);
+    void UpdateActor(Actor* a, int32& key, ISceneRenderingListener::UpdateFlags flags = ISceneRenderingListener::Auto);
     void RemoveActor(Actor* a, int32& key);
 
     FORCE_INLINE void AddPostFxProvider(IPostFxSettingsProvider* obj)

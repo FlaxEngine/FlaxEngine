@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ProbesRenderer.h"
 #include "Renderer.h"
@@ -69,8 +69,7 @@ public:
     }
 };
 
-PACK_STRUCT(struct Data
-    {
+GPU_CB_STRUCT(Data {
     Float2 Dummy0;
     int32 CubeFace;
     float SourceMipIndex;
@@ -273,7 +272,7 @@ bool ProbesRenderer::Init()
     view.Mode = ViewMode::NoPostFx;
     view.IsOfflinePass = true;
     view.IsSingleFrame = true;
-    view.StaticFlagsMask = StaticFlags::ReflectionProbe;
+    view.StaticFlagsMask = view.StaticFlagsCompare = StaticFlags::ReflectionProbe;
     view.MaxShadowsQuality = Quality::Low;
     task->IsCameraCut = true;
     task->Resize(probeResolution, probeResolution);
@@ -319,6 +318,11 @@ void ProbesRendererService::Update()
     // Calculate time delta since last update
     auto timeNow = Time::Update.UnscaledTime;
     auto timeSinceUpdate = timeNow - _lastProbeUpdate;
+    if (timeSinceUpdate < 0)
+    {
+        _lastProbeUpdate = timeNow;
+        timeSinceUpdate = 0;
+    }
 
     // Check if render job is done
     if (isUpdateSynced())
@@ -352,8 +356,9 @@ void ProbesRendererService::Update()
         auto dt = (float)Time::Update.UnscaledDeltaTime.GetTotalSeconds();
         for (int32 i = 0; i < _probesToBake.Count(); i++)
         {
-            _probesToBake[i].Timeout -= dt;
-            if (_probesToBake[i].Timeout <= 0)
+            auto& e = _probesToBake[i];
+            e.Timeout -= dt;
+            if (e.Timeout <= 0)
             {
                 firstValidEntryIndex = i;
                 break;
@@ -418,6 +423,9 @@ void ProbesRenderer::OnRender(RenderTask* task, GPUContext* context)
         if (_current.Actor == nullptr)
         {
             // Probe has been unlinked (or deleted)
+            _task->Enabled = false;
+            _updateFrameNumber = 0;
+            _current.Type = EntryType::Invalid;
             return;
         }
         break;
@@ -493,6 +501,7 @@ void ProbesRenderer::OnRender(RenderTask* task, GPUContext* context)
         // Render frame
         Renderer::Render(_task);
         context->ClearState();
+        _task->CameraCut();
 
         // Copy frame to cube face
         {

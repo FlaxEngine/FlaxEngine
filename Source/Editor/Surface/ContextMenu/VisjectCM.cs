@@ -1,10 +1,12 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
+using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -39,6 +41,9 @@ namespace FlaxEditor.Surface.ContextMenu
         /// <returns>TThe list of surface parameters or null if failed (readonly).</returns>
         public delegate List<SurfaceParameter> ParameterGetterDelegate();
 
+        private const float DefaultWidth = 300;
+        private const float DefaultHeight = 400;
+
         private readonly List<VisjectCMGroup> _groups = new List<VisjectCMGroup>(16);
         private CheckBox _contextSensitiveToggle;
         private bool _contextSensitiveSearchEnabled = true;
@@ -52,10 +57,31 @@ namespace FlaxEditor.Surface.ContextMenu
         private NodeArchetype _parameterGetNodeArchetype;
         private NodeArchetype _parameterSetNodeArchetype;
 
+        // Description panel elements
+        private readonly bool _useDescriptionPanel;
+        private bool _descriptionPanelVisible;
+        private readonly Panel _descriptionPanel;
+        private readonly Panel _descriptionPanelSeparator;
+        private readonly Image _descriptionDeclaringClassImage;
+        private readonly Label _descriptionSignatureLabel;
+        private readonly Label _descriptionLabel;
+        private readonly VerticalPanel _descriptionInputPanel;
+        private readonly VerticalPanel _descriptionOutputPanel;
+        private readonly SurfaceStyle _surfaceStyle;
+        private VisjectCMItem _selectedItem;
+
         /// <summary>
         /// The selected item
         /// </summary>
-        public VisjectCMItem SelectedItem;
+        public VisjectCMItem SelectedItem
+        {
+            get => _selectedItem;
+            private set
+            {
+                _selectedItem = value;
+                _selectedItem?.OnSelect();
+            }
+        }
 
         /// <summary>
         /// Event fired when any item in this popup menu gets clicked.
@@ -81,6 +107,11 @@ namespace FlaxEditor.Surface.ContextMenu
             /// True if surface parameters are not read-only and can be modified via setter node.
             /// </summary>
             public bool CanSetParameters;
+
+            /// <summary>
+            /// True if the surface should make use of a description panel drawn at the bottom of the context menu
+            /// </summary>
+            public bool UseDescriptionPanel;
 
             /// <summary>
             /// The groups archetypes. Cannot be null.
@@ -111,6 +142,11 @@ namespace FlaxEditor.Surface.ContextMenu
             /// The parameter setter node archetype to spawn when adding the parameter getter. Can be null.
             /// </summary>
             public NodeArchetype ParameterSetNodeArchetype;
+
+            /// <summary>
+            /// The surface style to use to draw images in the description panel
+            /// </summary>
+            public SurfaceStyle Style;
         }
 
         /// <summary>
@@ -127,9 +163,11 @@ namespace FlaxEditor.Surface.ContextMenu
             _parameterGetNodeArchetype = info.ParameterGetNodeArchetype ?? Archetypes.Parameters.Nodes[0];
             if (info.CanSetParameters)
                 _parameterSetNodeArchetype = info.ParameterSetNodeArchetype ?? Archetypes.Parameters.Nodes[3];
+            _useDescriptionPanel = info.UseDescriptionPanel;
+            _surfaceStyle = info.Style;
 
             // Context menu dimensions
-            Size = new Float2(300, 400);
+            Size = new Float2(_useDescriptionPanel ? DefaultWidth + 50f : DefaultWidth, DefaultHeight);
 
             var headerPanel = new Panel(ScrollBars.None)
             {
@@ -190,7 +228,6 @@ namespace FlaxEditor.Surface.ContextMenu
                 Bounds = new Rectangle(0, _searchBox.Bottom + 1, Width, Height - _searchBox.Bottom - 2),
                 Parent = this
             };
-
             _panel1 = panel1;
 
             // Create second panel (for groups arrangement)
@@ -198,9 +235,76 @@ namespace FlaxEditor.Surface.ContextMenu
             {
                 Parent = panel1,
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Pivot = Float2.Zero,
                 IsScrollable = true,
             };
             _groupsPanel = panel2;
+
+            // Create description panel elements only when description panel is about to be used
+            if (_useDescriptionPanel)
+            {
+                _descriptionPanel = new Panel(ScrollBars.None)
+                {
+                    Parent = this,
+                    Bounds = new Rectangle(0, Height, Width, 0),
+                    BackgroundColor = Style.Current.BackgroundNormal,
+                };
+
+                _descriptionDeclaringClassImage = new Image(8, 12, 20, 20)
+                {
+                    Parent = _descriptionPanel,
+                    Brush = new SpriteBrush(info.Style.Icons.BoxClose),
+                };
+
+                var descriptionFontReference = new FontReference(Style.Current.FontMedium.Asset, 9f);
+                _descriptionSignatureLabel = new Label(32, 8, Width - 40, 0)
+                {
+                    Parent = _descriptionPanel,
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Near,
+                    Wrapping = TextWrapping.WrapWords,
+                    Font = descriptionFontReference,
+                    Bold = true,
+                    AutoHeight = true,
+                };
+                _descriptionSignatureLabel.SetAnchorPreset(AnchorPresets.TopLeft, true);
+
+                _descriptionLabel = new Label(32, 0, Width - 40, 0)
+                {
+                    Parent = _descriptionPanel,
+                    HorizontalAlignment = TextAlignment.Near,
+                    VerticalAlignment = TextAlignment.Near,
+                    Wrapping = TextWrapping.WrapWords,
+                    Font = descriptionFontReference,
+                    AutoHeight = true,
+                };
+                _descriptionLabel.SetAnchorPreset(AnchorPresets.TopLeft, true);
+
+                _descriptionPanelSeparator = new Panel(ScrollBars.None)
+                {
+                    Parent = _descriptionPanel,
+                    Bounds = new Rectangle(8, Height, Width - 16, 2),
+                    BackgroundColor = Style.Current.BackgroundHighlighted,
+                };
+
+                _descriptionInputPanel = new VerticalPanel()
+                {
+                    Parent = _descriptionPanel,
+                    X = 8,
+                    Width = Width * 0.5f - 16,
+                    AutoSize = true,
+                    Pivot = Float2.Zero,
+                };
+
+                _descriptionOutputPanel = new VerticalPanel()
+                {
+                    Parent = _descriptionPanel,
+                    X = Width * 0.5f + 8,
+                    Width = Width * 0.5f - 16,
+                    AutoSize = true,
+                    Pivot = Float2.Zero,
+                };
+            }
 
             // Init groups
             var nodes = new List<NodeArchetype>();
@@ -658,7 +762,7 @@ namespace FlaxEditor.Surface.ContextMenu
         }
 
         /// <inheritdoc />
-        public override void Show(Control parent, Float2 location)
+        public override void Show(Control parent, Float2 location, ContextMenuDirection? direction = null)
         {
             Show(parent, location, null);
         }
@@ -693,7 +797,187 @@ namespace FlaxEditor.Surface.ContextMenu
         {
             Focus(null);
 
+            if (_useDescriptionPanel)
+                HideDescriptionPanel();
+
             base.Hide();
+        }
+
+        /// <summary>
+        /// Updates the description panel and shows information about the set archetype
+        /// </summary>
+        /// <param name="archetype">The node archetype</param>
+        public void SetDescriptionPanelArchetype(NodeArchetype archetype)
+        {
+            if (!_useDescriptionPanel)
+                return;
+
+            if (archetype == null || !Editor.Instance.Options.Options.Interface.NodeDescriptionPanel)
+            {
+                HideDescriptionPanel();
+                return;
+            }
+
+            Profiler.BeginEvent("VisjectCM.SetDescriptionPanelArchetype");
+
+            _descriptionInputPanel.RemoveChildren();
+            _descriptionOutputPanel.RemoveChildren();
+
+            // Fetch description and information from the memberInfo - mainly from nodes that got fetched asynchronously by the visual scripting editor
+            ScriptType declaringType;
+            if (archetype.Tag is ScriptMemberInfo memberInfo)
+            {
+                var name = memberInfo.Name;
+                if (memberInfo.IsMethod && memberInfo.Name.StartsWith("get_") || memberInfo.Name.StartsWith("set_"))
+                {
+                    name = memberInfo.Name.Substring(4);
+                }
+
+                declaringType = memberInfo.DeclaringType;
+                _descriptionSignatureLabel.Text = memberInfo.DeclaringType + "." + name;
+
+                // We have to add the Instance information manually for members that aren't static
+                if (!memberInfo.IsStatic)
+                    AddInputOutputElement(archetype, declaringType, false, $"Instance ({memberInfo.DeclaringType.Name})");
+
+                // We also have to manually add the Return information as well.
+                if (memberInfo.ValueType != ScriptType.Null && memberInfo.ValueType != ScriptType.Void)
+                {
+                    // When a field has a setter we don't want it to show the input as a return output.
+                    if (memberInfo.IsField && archetype.Title.StartsWith("Set "))
+                        AddInputOutputElement(archetype, memberInfo.ValueType, false, $"({memberInfo.ValueType.Name})");
+                    else
+                        AddInputOutputElement(archetype, memberInfo.ValueType, true, $"Return ({memberInfo.ValueType.Name})");
+                }
+
+                for (int i = 0; i < memberInfo.ParametersCount; i++)
+                {
+                    var param = memberInfo.GetParameters()[i];
+                    AddInputOutputElement(archetype, param.Type, param.IsOut, $"{param.Name} ({param.Type.Name})");
+                }
+            }
+            else
+            {
+                // Try to fetch as many informations as possible from the predefined hardcoded nodes
+                _descriptionSignatureLabel.Text = string.IsNullOrEmpty(archetype.Signature) ? archetype.Title : archetype.Signature;
+                declaringType = archetype.DefaultType;
+
+                // Some nodes are more delicate. Like Arrays or Dictionaries. In this case we let them fetch the inputs/outputs for us.
+                // Otherwise, it is not possible to show a proper return type on some nodes.
+                if (archetype.GetInputOutputDescription != null)
+                {
+                    archetype.GetInputOutputDescription.Invoke(archetype, out var inputs, out var outputs);
+
+                    foreach (var input in inputs ?? [])
+                    {
+                        AddInputOutputElement(archetype, input.Type, false, $"{input.Name} ({input.Type.Name})");
+                    }
+
+                    foreach (var output in outputs ?? [])
+                    {
+                        AddInputOutputElement(archetype, output.Type, true, $"{output.Name} ({output.Type.Name})");
+                    }
+                }
+                else if (archetype.Elements != null) // Skip if no Elements (ex: Comment node)
+                {
+                    foreach (var element in archetype.Elements)
+                    {
+                        if (element.Type is not (NodeElementType.Input or NodeElementType.Output))
+                            continue;
+
+                        var typeText = element.ConnectionsType ? element.ConnectionsType.Name : archetype.ConnectionsHints.ToString();
+                        AddInputOutputElement(archetype, element.ConnectionsType, element.Type == NodeElementType.Output, $"{element.Text} ({typeText})");
+                    }
+                }
+            }
+
+            // Set declaring type icon color
+            _surfaceStyle.GetConnectionColor(declaringType, archetype.ConnectionsHints, out var declaringTypeColor);
+            _descriptionDeclaringClassImage.Color = declaringTypeColor;
+            _descriptionDeclaringClassImage.MouseOverColor = declaringTypeColor;
+
+            // Calculate the description panel height. (I am doing this manually since working with autoSize on horizontal/vertical panels didn't work, especially with nesting - Nils)
+            float panelHeight = _descriptionSignatureLabel.Height;
+
+            // If thee is no description we move the signature label down a bit to align it with the icon. Just a cosmetic check
+            if (string.IsNullOrEmpty(archetype.Description))
+            {
+                _descriptionSignatureLabel.Y = 15;
+                _descriptionLabel.Text = "";
+            }
+            else
+            {
+                _descriptionSignatureLabel.Y = 8;
+                _descriptionLabel.Y = _descriptionSignatureLabel.Bounds.Bottom + 6f;
+                // Replacing multiple whitespaces with a linebreak for better readability. (Mainly doing this because the ToolTip fetching system replaces linebreaks with whitespaces - Nils)
+                _descriptionLabel.Text = Regex.Replace(archetype.Description, @"\s{2,}", "\n");
+            }
+
+            // Some padding and moving elements around
+            _descriptionPanelSeparator.Y = _descriptionLabel.Bounds.Bottom + 8f;
+            panelHeight += _descriptionLabel.Height + 32f;
+            _descriptionInputPanel.Y = panelHeight;
+            _descriptionOutputPanel.Y = panelHeight;
+            panelHeight += Mathf.Max(_descriptionInputPanel.Height, _descriptionOutputPanel.Height);
+
+            // Forcing the description panel to at least have a minimum height to not make the window size change too much in order to reduce jittering
+            // TODO: Remove the Mathf.Max and just set the height to panelHeight once the window jitter issue is fixed - Nils
+            _descriptionPanel.Height = Mathf.Max(140f, panelHeight);
+            Height = DefaultHeight + _descriptionPanel.Height;
+            UpdateWindowSize();
+            _descriptionPanelVisible = true;
+
+            Profiler.EndEvent();
+        }
+
+        private void AddInputOutputElement(NodeArchetype nodeArchetype, ScriptType type, bool isOutput, string text)
+        {
+            // Using a panel instead of a vertical panel because auto sizing is unreliable - so we are doing this manually here as well
+            var elementPanel = new Panel()
+            {
+                Parent = isOutput ? _descriptionOutputPanel : _descriptionInputPanel,
+                Width = Width * 0.5f,
+                Height = 16,
+                AnchorPreset = AnchorPresets.TopLeft
+            };
+
+            _surfaceStyle.GetConnectionColor(type, nodeArchetype.ConnectionsHints, out var typeColor);
+            elementPanel.AddChild(new Image(2, 0, 12, 12)
+            {
+                Brush = new SpriteBrush(_surfaceStyle.Icons.BoxOpen),
+                Color = typeColor,
+                MouseOverColor = typeColor,
+                AutoFocus = false,
+            }).SetAnchorPreset(AnchorPresets.TopLeft, true);
+
+            // Forcing the first letter to be capital and removing the '&' char from pointer-references
+            text = (char.ToUpper(text[0]) + text.Substring(1)).Replace("&", "");
+            var elementText = new Label(16, 0, Width * 0.5f - 32, 16)
+            {
+                Text = text,
+                HorizontalAlignment = TextAlignment.Near,
+                VerticalAlignment = TextAlignment.Near,
+                Wrapping = TextWrapping.WrapWords,
+                AutoHeight = true,
+            };
+            elementText.SetAnchorPreset(AnchorPresets.TopLeft, true);
+            elementPanel.AddChild(elementText);
+            elementPanel.Height = elementText.Height;
+        }
+
+        /// <summary>
+        /// Hides the description panel and resets the context menu to its original size
+        /// </summary>
+        private void HideDescriptionPanel()
+        {
+            if (!_descriptionPanelVisible)
+                return;
+
+            _descriptionInputPanel.RemoveChildren();
+            _descriptionOutputPanel.RemoveChildren();
+            Height = DefaultHeight;
+            UpdateWindowSize();
+            _descriptionPanelVisible = false;
         }
 
         /// <inheritdoc />

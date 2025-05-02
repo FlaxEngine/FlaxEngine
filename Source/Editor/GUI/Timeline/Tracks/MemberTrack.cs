@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Linq;
@@ -363,6 +363,8 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         /// <inheritdoc />
         public override void OnDestroy()
         {
+            if (_previewValue != null)
+                Timeline.ShowPreviewValuesChanged -= OnTimelineShowPreviewValuesChanged;
             _previewValue = null;
             _rightKey = null;
             _addKey = null;

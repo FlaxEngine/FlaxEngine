@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SpriteRender.h"
 #include "Engine/Core/Types/Variant.h"
@@ -18,7 +18,7 @@ SpriteRender::SpriteRender(const SpawnParams& params)
 {
     _quadModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Quad"));
     Material.Loaded.Bind<SpriteRender, &SpriteRender::OnMaterialLoaded>(this);
-    Image.Changed.Bind<SpriteRender, &SpriteRender::SetImage>(this);
+    Image.Changed.Bind<SpriteRender, &SpriteRender::SetImageParam>(this);
 }
 
 Float2 SpriteRender::GetSize() const
@@ -42,8 +42,7 @@ Color SpriteRender::GetColor() const
 void SpriteRender::SetColor(const Color& value)
 {
     _color = value;
-    if (_paramColor)
-        _paramColor->SetValue(value);
+    SetColorParam();
 }
 
 SpriteHandle SpriteRender::GetSprite() const
@@ -54,7 +53,7 @@ SpriteHandle SpriteRender::GetSprite() const
 void SpriteRender::SetSprite(const SpriteHandle& value)
 {
     _sprite = value;
-    SetImage();
+    SetImageParam();
 }
 
 void SpriteRender::OnMaterialLoaded()
@@ -66,6 +65,7 @@ void SpriteRender::OnMaterialLoaded()
         _materialInstance->AddReference();
     }
     _materialInstance->SetBaseMaterial(Material);
+    _materialInstance->ResetParameters();
 
     // Cache parameters
     _paramImageMAD = _materialInstance->GetParameter(TEXT("ImageMAD"));
@@ -75,15 +75,15 @@ void SpriteRender::OnMaterialLoaded()
     if (_paramImage && _paramImage->GetParameterType() != MaterialParameterType::Texture)
         _paramImage = nullptr;
     else if (_paramImage)
-        SetImage();
+        SetImageParam();
     _paramColor = _materialInstance->GetParameter(TEXT("Color"));
     if (_paramColor && _paramColor->GetParameterType() != MaterialParameterType::Color && _paramColor->GetParameterType() != MaterialParameterType::Vector4 && _paramColor->GetParameterType() != MaterialParameterType::Vector3)
         _paramColor = nullptr;
     else if (_paramColor)
-        _paramColor->SetValue(_color);
+        SetColorParam();
 }
 
-void SpriteRender::SetImage()
+void SpriteRender::SetImageParam()
 {
     TextureBase* image = Image.Get();
     Vector4 imageMAD(Vector2::One, Vector2::Zero);
@@ -94,9 +94,24 @@ void SpriteRender::SetImage()
         imageMAD = Vector4(sprite->Area.Size, sprite->Area.Location);
     }
     if (_paramImage)
+    {
         _paramImage->SetValue(image);
+        _paramImage->SetIsOverride(true);
+    }
     if (_paramImageMAD)
+    {
         _paramImageMAD->SetValue(imageMAD);
+        _paramImageMAD->SetIsOverride(true);
+    }
+}
+
+void SpriteRender::SetColorParam()
+{
+    if (_paramColor)
+    {
+        _paramColor->SetValue(_color);
+        _paramColor->SetIsOverride(true);
+    }
 }
 
 bool SpriteRender::HasContentLoaded() const
@@ -164,15 +179,14 @@ void SpriteRender::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(DrawModes);
     DESERIALIZE(SortOrder);
 
-    SetImage();
-    if (_paramColor)
-        _paramColor->SetValue(_color);
+    SetImageParam();
+    SetColorParam();
 }
 
 void SpriteRender::OnLayerChanged()
 {
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Layer);
 }
 
 void SpriteRender::OnEndPlay()

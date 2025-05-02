@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -21,7 +21,7 @@ namespace Flax.Build.Bindings
         public string Attributes;
         public string[] Comment;
         public bool IsInBuild;
-        public bool IsDeprecated;
+        public string DeprecatedMessage;
         public TypeInfo MarshalAs;
         internal bool IsInited;
         internal TypedefInfo Instigator;
@@ -34,6 +34,7 @@ namespace Flax.Build.Bindings
         public virtual bool IsScriptingObject => false;
         public virtual bool IsPod => false;
         public virtual bool SkipGeneration => IsInBuild;
+        public virtual bool IsDeprecated => DeprecatedMessage != null;
 
         public FileInfo File
         {
@@ -154,7 +155,7 @@ namespace Flax.Build.Bindings
             BindingsGenerator.Write(writer, Comment);
             BindingsGenerator.Write(writer, MarshalAs);
             writer.Write(IsInBuild);
-            writer.Write(IsDeprecated);
+            BindingsGenerator.Write(writer, DeprecatedMessage);
             BindingsGenerator.Write(writer, Tags);
             BindingsGenerator.Write(writer, Children);
         }
@@ -168,7 +169,7 @@ namespace Flax.Build.Bindings
             Comment = BindingsGenerator.Read(reader, Comment);
             MarshalAs = BindingsGenerator.Read(reader, MarshalAs);
             IsInBuild = reader.ReadBoolean();
-            IsDeprecated = reader.ReadBoolean();
+            DeprecatedMessage = BindingsGenerator.Read(reader, DeprecatedMessage);
             Tags = BindingsGenerator.Read(reader, Tags);
             Children = BindingsGenerator.Read(reader, Children);
 

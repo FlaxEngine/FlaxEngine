@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RenderList.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Graphics/Materials/IMaterial.h"
+#include "Engine/Graphics/Materials/MaterialShader.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -14,6 +15,7 @@
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Content/Assets/CubeTexture.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Level/Scene/Lightmap.h"
 #include "Engine/Level/Actors/PostFxVolume.h"
 
@@ -21,91 +23,148 @@ static_assert(sizeof(DrawCall) <= 288, "Too big draw call data size.");
 static_assert(sizeof(DrawCall::Surface) >= sizeof(DrawCall::Terrain), "Wrong draw call data size.");
 static_assert(sizeof(DrawCall::Surface) >= sizeof(DrawCall::Particle), "Wrong draw call data size.");
 static_assert(sizeof(DrawCall::Surface) >= sizeof(DrawCall::Custom), "Wrong draw call data size.");
+static_assert(sizeof(ShaderObjectData) == sizeof(Float4) * ARRAY_COUNT(ShaderObjectData::Raw), "Wrong object data.");
 
 namespace
 {
-    // Cached data for the draw calls sorting
-    Array<uint64> SortingKeys[2];
-    Array<int32> SortingIndices;
-    Array<DrawBatch> SortingBatches;
     Array<RenderList*> FreeRenderList;
-
-    struct MemPoolEntry
-    {
-        void* Ptr;
-        uintptr Size;
-    };
-
-    Array<MemPoolEntry> MemPool;
+    Array<Pair<void*, uintptr>> MemPool;
     CriticalSection MemPoolLocker;
 }
 
-void RendererDirectionalLightData::SetupLightData(LightData* data, bool useShadow) const
+void ShaderObjectData::Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Rectangle& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom, float worldDeterminantSign, float lodDitherFactor)
 {
-    data->SpotAngles.X = -2.0f;
-    data->SpotAngles.Y = 1.0f;
-    data->SourceRadius = 0;
-    data->SourceLength = 0;
-    data->Color = Color;
-    data->MinRoughness = Math::Max(MinRoughness, MIN_ROUGHNESS);
-    data->Position = Float3::Zero;
-    data->CastShadows = useShadow ? 1.0f : 0.0f;
-    data->Direction = -Direction;
-    data->Radius = 0;
-    data->FalloffExponent = 0;
-    data->InverseSquared = 0;
-    data->RadiusInv = 0;
+    Half4 lightmapUVsAreaPacked(*(Float4*)&lightmapUVsArea);
+    Float2 lightmapUVsAreaPackedAliased = *(Float2*)&lightmapUVsAreaPacked;
+    Raw[0] = Float4(worldMatrix.M11, worldMatrix.M12, worldMatrix.M13, worldMatrix.M41);
+    Raw[1] = Float4(worldMatrix.M21, worldMatrix.M22, worldMatrix.M23, worldMatrix.M42);
+    Raw[2] = Float4(worldMatrix.M31, worldMatrix.M32, worldMatrix.M33, worldMatrix.M43);
+    Raw[3] = Float4(prevWorldMatrix.M11, prevWorldMatrix.M12, prevWorldMatrix.M13, prevWorldMatrix.M41);
+    Raw[4] = Float4(prevWorldMatrix.M21, prevWorldMatrix.M22, prevWorldMatrix.M23, prevWorldMatrix.M42);
+    Raw[5] = Float4(prevWorldMatrix.M31, prevWorldMatrix.M32, prevWorldMatrix.M33, prevWorldMatrix.M43);
+    Raw[6] = Float4(geometrySize, perInstanceRandom);
+    Raw[7] = Float4(worldDeterminantSign, lodDitherFactor, lightmapUVsAreaPackedAliased.X, lightmapUVsAreaPackedAliased.Y);
+    // TODO: pack WorldDeterminantSign and LODDitherFactor
 }
 
-void RendererSpotLightData::SetupLightData(LightData* data, bool useShadow) const
+void ShaderObjectData::Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Rectangle& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, float& lodDitherFactor) const
 {
-    data->SpotAngles.X = CosOuterCone;
-    data->SpotAngles.Y = InvCosConeDifference;
-    data->SourceRadius = SourceRadius;
-    data->SourceLength = 0.0f;
-    data->Color = Color;
-    data->MinRoughness = Math::Max(MinRoughness, MIN_ROUGHNESS);
-    data->Position = Position;
-    data->CastShadows = useShadow ? 1.0f : 0.0f;
-    data->Direction = Direction;
-    data->Radius = Radius;
-    data->FalloffExponent = FallOffExponent;
-    data->InverseSquared = UseInverseSquaredFalloff ? 1.0f : 0.0f;
-    data->RadiusInv = 1.0f / Radius;
+    worldMatrix.SetRow1(Float4(Float3(Raw[0]), 0.0f));
+    worldMatrix.SetRow2(Float4(Float3(Raw[1]), 0.0f));
+    worldMatrix.SetRow3(Float4(Float3(Raw[2]), 0.0f));
+    worldMatrix.SetRow4(Float4(Raw[0].W, Raw[1].W, Raw[2].W, 1.0f));
+    prevWorldMatrix.SetRow1(Float4(Float3(Raw[3]), 0.0f));
+    prevWorldMatrix.SetRow2(Float4(Float3(Raw[4]), 0.0f));
+    prevWorldMatrix.SetRow3(Float4(Float3(Raw[5]), 0.0f));
+    prevWorldMatrix.SetRow4(Float4(Raw[3].W, Raw[4].W, Raw[5].W, 1.0f));
+    geometrySize = Float3(Raw[6]);
+    perInstanceRandom = Raw[6].W;
+    worldDeterminantSign = Raw[7].X;
+    lodDitherFactor = Raw[7].Y;
+    Float2 lightmapUVsAreaPackedAliased(Raw[7].Z, Raw[7].W);
+    Half4 lightmapUVsAreaPacked(*(Half4*)&lightmapUVsAreaPackedAliased);
+    *(Float4*)&lightmapUVsArea = lightmapUVsAreaPacked.ToFloat4();
 }
 
-void RendererPointLightData::SetupLightData(LightData* data, bool useShadow) const
+bool RenderLightData::CanRenderShadow(const RenderView& view) const
 {
-    data->SpotAngles.X = -2.0f;
-    data->SpotAngles.Y = 1.0f;
-    data->SourceRadius = SourceRadius;
-    data->SourceLength = SourceLength;
-    data->Color = Color;
-    data->MinRoughness = Math::Max(MinRoughness, MIN_ROUGHNESS);
-    data->Position = Position;
-    data->CastShadows = useShadow ? 1.0f : 0.0f;
-    data->Direction = Direction;
-    data->Radius = Radius;
-    data->FalloffExponent = FallOffExponent;
-    data->InverseSquared = UseInverseSquaredFalloff ? 1.0f : 0.0f;
-    data->RadiusInv = 1.0f / Radius;
+    bool result = false;
+    switch (ShadowsMode)
+    {
+    case ShadowsCastingMode::StaticOnly:
+        result = view.IsOfflinePass;
+        break;
+    case ShadowsCastingMode::DynamicOnly:
+        result = !view.IsOfflinePass;
+        break;
+    case ShadowsCastingMode::All:
+        result = true;
+        break;
+    }
+    return result && ShadowsStrength > ZeroTolerance;
 }
 
-void RendererSkyLightData::SetupLightData(LightData* data, bool useShadow) const
+void RenderDirectionalLightData::SetShaderData(ShaderLightData& data, bool useShadow) const
 {
-    data->SpotAngles.X = AdditiveColor.X;
-    data->SpotAngles.Y = AdditiveColor.Y;
-    data->SourceRadius = AdditiveColor.Z;
-    data->SourceLength = Image ? Image->StreamingTexture()->TotalMipLevels() - 2.0f : 0.0f;
-    data->Color = Color;
-    data->MinRoughness = MIN_ROUGHNESS;
-    data->Position = Position;
-    data->CastShadows = useShadow ? 1.0f : 0.0f;
-    data->Direction = Float3::Forward;
-    data->Radius = Radius;
-    data->FalloffExponent = 0;
-    data->InverseSquared = 0;
-    data->RadiusInv = 1.0f / Radius;
+    data.SpotAngles.X = -2.0f;
+    data.SpotAngles.Y = 1.0f;
+    data.SourceRadius = 0;
+    data.SourceLength = 0;
+    data.Color = Color;
+    data.MinRoughness = Math::Max(MinRoughness, MIN_ROUGHNESS);
+    data.Position = Float3::Zero;
+    data.ShadowsBufferAddress = useShadow ? ShadowsBufferAddress : 0;
+    data.Direction = -Direction;
+    data.Radius = 0;
+    data.FalloffExponent = 0;
+    data.InverseSquared = 0;
+    data.RadiusInv = 0;
+}
+
+bool RenderLocalLightData::CanRenderShadow(const RenderView& view) const
+{
+    // Fade shadow on distance
+    const float fadeDistance = Math::Max(ShadowsFadeDistance, 0.1f);
+    const float dstLightToView = Float3::Distance(Position, view.Position);
+    const float fade = 1 - Math::Saturate((dstLightToView - Radius - ShadowsDistance + fadeDistance) / fadeDistance);
+    return fade > ZeroTolerance && Radius > 10 && RenderLightData::CanRenderShadow(view);
+}
+
+void RenderSpotLightData::SetShaderData(ShaderLightData& data, bool useShadow) const
+{
+    data.SpotAngles.X = CosOuterCone;
+    data.SpotAngles.Y = InvCosConeDifference;
+    data.SourceRadius = SourceRadius;
+    data.SourceLength = 0.0f;
+    data.Color = Color;
+    data.MinRoughness = Math::Max(MinRoughness, MIN_ROUGHNESS);
+    data.Position = Position;
+    data.ShadowsBufferAddress = useShadow ? ShadowsBufferAddress : 0;
+    data.Direction = Direction;
+    data.Radius = Radius;
+    data.FalloffExponent = FallOffExponent;
+    data.InverseSquared = UseInverseSquaredFalloff ? 1.0f : 0.0f;
+    data.RadiusInv = 1.0f / Radius;
+}
+
+void RenderPointLightData::SetShaderData(ShaderLightData& data, bool useShadow) const
+{
+    data.SpotAngles.X = -2.0f;
+    data.SpotAngles.Y = 1.0f;
+    data.SourceRadius = SourceRadius;
+    data.SourceLength = SourceLength;
+    data.Color = Color;
+    data.MinRoughness = Math::Max(MinRoughness, MIN_ROUGHNESS);
+    data.Position = Position;
+    data.ShadowsBufferAddress = useShadow ? ShadowsBufferAddress : 0;
+    data.Direction = Direction;
+    data.Radius = Radius;
+    data.FalloffExponent = FallOffExponent;
+    data.InverseSquared = UseInverseSquaredFalloff ? 1.0f : 0.0f;
+    data.RadiusInv = 1.0f / Radius;
+}
+
+void RenderSkyLightData::SetShaderData(ShaderLightData& data, bool useShadow) const
+{
+    data.SpotAngles.X = AdditiveColor.X;
+    data.SpotAngles.Y = AdditiveColor.Y;
+    data.SourceRadius = AdditiveColor.Z;
+    data.SourceLength = Image ? Image->StreamingTexture()->TotalMipLevels() - 2.0f : 0.0f;
+    data.Color = Color;
+    data.MinRoughness = MIN_ROUGHNESS;
+    data.Position = Position;
+    data.ShadowsBufferAddress = useShadow ? ShadowsBufferAddress : 0;
+    data.Direction = Float3::Forward;
+    data.Radius = Radius;
+    data.FalloffExponent = 0;
+    data.InverseSquared = 0;
+    data.RadiusInv = 1.0f / Radius;
+}
+
+void RenderEnvironmentProbeData::SetShaderData(ShaderEnvProbeData& data) const
+{
+    data.Data0 = Float4(Position, 0);
+    data.Data1 = Float4(Radius, 1.0f / Radius, Brightness, 0);
 }
 
 void* RendererAllocation::Allocate(uintptr size)
@@ -114,18 +173,16 @@ void* RendererAllocation::Allocate(uintptr size)
     MemPoolLocker.Lock();
     for (int32 i = 0; i < MemPool.Count(); i++)
     {
-        if (MemPool[i].Size == size)
+        if (MemPool.Get()[i].Second == size)
         {
-            result = MemPool[i].Ptr;
+            result = MemPool.Get()[i].First;
             MemPool.RemoveAt(i);
             break;
         }
     }
     MemPoolLocker.Unlock();
     if (!result)
-    {
         result = Platform::Allocate(size, 16);
-    }
     return result;
 }
 
@@ -138,12 +195,15 @@ void RendererAllocation::Free(void* ptr, uintptr size)
 
 RenderList* RenderList::GetFromPool()
 {
+    MemPoolLocker.Lock();
     if (FreeRenderList.HasItems())
     {
         const auto result = FreeRenderList.Last();
         FreeRenderList.RemoveLast();
+        MemPoolLocker.Unlock();
         return result;
     }
+    MemPoolLocker.Unlock();
 
     return New<RenderList>();
 }
@@ -152,10 +212,12 @@ void RenderList::ReturnToPool(RenderList* cache)
 {
     if (!cache)
         return;
+    cache->Clear();
 
+    MemPoolLocker.Lock();
     ASSERT(!FreeRenderList.Contains(cache));
     FreeRenderList.Add(cache);
-    cache->Clear();
+    MemPoolLocker.Unlock();
 }
 
 void RenderList::CleanupCache()
@@ -163,13 +225,12 @@ void RenderList::CleanupCache()
     // Don't call it during rendering (data may be already in use)
     ASSERT(GPUDevice::Instance == nullptr || GPUDevice::Instance->CurrentTask == nullptr);
 
-    SortingKeys[0].Resize(0);
-    SortingKeys[1].Resize(0);
-    SortingIndices.Resize(0);
+    MemPoolLocker.Lock();
     FreeRenderList.ClearDelete();
     for (auto& e : MemPool)
-        Platform::Free(e.Ptr);
+        Platform::Free(e.First);
     MemPool.Clear();
+    MemPoolLocker.Unlock();
 }
 
 bool RenderList::BlendableSettings::operator<(const BlendableSettings& other) const
@@ -326,6 +387,7 @@ void RenderList::RunCustomPostFxPass(GPUContext* context, RenderContext& renderC
                 Swap(input, output);
             }
             context->ResetRenderTarget();
+            context->ResetSR();
         }
     }
 }
@@ -381,7 +443,9 @@ RenderList::RenderList(const SpawnParams& params)
     , AtmosphericFog(nullptr)
     , Fog(nullptr)
     , Blendable(32)
-    , _instanceBuffer(1024 * sizeof(InstanceData), sizeof(InstanceData), TEXT("Instance Buffer"))
+    , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Bufffer"))
+    , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Bufffer"))
+    , _instanceBuffer(0, sizeof(ShaderObjectDrawInstanceData), TEXT("Instance Buffer"), GPUVertexLayout::Get({ { VertexElement::Types::Attribute0, 3, 0, 1, PixelFormat::R32_UInt } }))
 {
 }
 
@@ -414,6 +478,8 @@ void RenderList::Clear()
     Settings = PostProcessSettings();
     Blendable.Clear();
     _instanceBuffer.Clear();
+    ObjectBuffer.Clear();
+    TempObjectBuffer.Clear();
 }
 
 struct PackedSortKey
@@ -422,16 +488,20 @@ struct PackedSortKey
     {
         uint64 Data;
 
+        PACK_BEGIN()
+
         struct
         {
-            uint32 DistanceKey;
+            // Sorting order: By Sort Order -> By Distance -> By Material -> By Geometry
+            uint8 DrawKey;
             uint16 BatchKey;
-            uint16 SortKey;
-        };
+            uint32 DistanceKey;
+            uint8 SortKey;
+        } PACK_END();
     };
 };
 
-FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall, int16 sortOrder)
+FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall, int8 sortOrder)
 {
     const Float3 planeNormal = renderContext.View.Direction;
     const float planePoint = -Float3::Dot(planeNormal, renderContext.View.Position);
@@ -439,20 +509,21 @@ FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall&
     PackedSortKey key;
     key.DistanceKey = RenderTools::ComputeDistanceSortKey(distance);
     uint32 batchKey = GetHash(drawCall.Material);
-    batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
-    batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
-    batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
-    batchKey = (batchKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
     IMaterial::InstancingHandler handler;
     if (drawCall.Material->CanUseInstancing(handler))
         handler.GetHash(drawCall, batchKey);
-    batchKey += (int32)(471 * drawCall.WorldDeterminantSign);
-    key.SortKey = (uint16)(sortOrder - MIN_int16);
     key.BatchKey = (uint16)batchKey;
+    uint32 drawKey = (uint32)(471 * drawCall.WorldDeterminantSign);
+    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
+    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
+    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
+    drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
+    key.DrawKey = (uint8)drawKey;
+    key.SortKey = (uint8)(sortOrder - MIN_int8);
     drawCall.SortKey = key.Data;
 }
 
-void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
+void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals, int8 sortOrder)
 {
 #if ENABLE_ASSERTION_LOW_LAYERS
     // Ensure that draw modes are non-empty and in conjunction with material draw modes
@@ -490,7 +561,7 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
     }
 }
 
-void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals, int16 sortOrder)
+void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals, int8 sortOrder)
 {
 #if ENABLE_ASSERTION_LOW_LAYERS
     // Ensure that draw modes are non-empty and in conjunction with material draw modes
@@ -537,35 +608,44 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
         const RenderContext& renderContext = renderContextBatch.Contexts.Get()[i];
         ASSERT_LOW_LAYER(renderContext.View.Pass == DrawPass::Depth);
         drawModes = modes & renderContext.View.Pass;
-        if (drawModes != DrawPass::None && renderContext.View.CullingFrustum.Intersects(bounds))
+        if (drawModes != DrawPass::None &&
+            (staticFlags & renderContext.View.StaticFlagsMask) == renderContext.View.StaticFlagsCompare &&
+            renderContext.View.CullingFrustum.Intersects(bounds))
         {
             renderContext.List->ShadowDepthDrawCallsList.Indices.Add(index);
         }
     }
 }
 
-namespace
+void RenderList::BuildObjectsBuffer()
 {
-    /// <summary>
-    /// Checks if this draw call be batched together with the other one.
-    /// </summary>
-    /// <param name="a">The first draw call.</param>
-    /// <param name="b">The second draw call.</param>
-    /// <returns>True if can merge them, otherwise false.</returns>
-    FORCE_INLINE bool CanBatchWith(const DrawCall& a, const DrawCall& b)
+    int32 count = DrawCalls.Count();
+    for (const auto& e : BatchedDrawCalls)
+        count += e.Instances.Count();
+    ObjectBuffer.Clear();
+    if (count == 0)
+        return;
+    PROFILE_CPU();
+    ObjectBuffer.Data.Resize(count * sizeof(ShaderObjectData));
+    auto* src = (const DrawCall*)DrawCalls.Get();
+    auto* dst = (ShaderObjectData*)ObjectBuffer.Data.Get();
+    for (int32 i = 0; i < DrawCalls.Count(); i++)
     {
-        IMaterial::InstancingHandler handler;
-        return a.Material == b.Material &&
-                a.Material->CanUseInstancing(handler) &&
-                Platform::MemoryCompare(&a.Geometry, &b.Geometry, sizeof(a.Geometry)) == 0 &&
-                a.InstanceCount != 0 &&
-                b.InstanceCount != 0 &&
-                handler.CanBatch(a, b) &&
-                a.WorldDeterminantSign * b.WorldDeterminantSign > 0;
+        dst->Store(src[i]);
+        dst++;
     }
+    int32 startIndex = DrawCalls.Count();
+    for (auto& batch : BatchedDrawCalls)
+    {
+        batch.ObjectsStartIndex = startIndex;
+        Platform::MemoryCopy(dst, batch.Instances.Get(), batch.Instances.Count() * sizeof(ShaderObjectData));
+        dst += batch.Instances.Count();
+        startIndex += batch.Instances.Count();
+    }
+    ZoneValue(ObjectBuffer.Data.Count() / 1024); // Objects Buffer size in kB
 }
 
-void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, bool stable)
+void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass, bool stable)
 {
     PROFILE_CPU();
     const auto* drawCallsData = drawCalls.Get();
@@ -573,12 +653,12 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     const int32 listSize = list.Indices.Count();
     ZoneValue(listSize);
 
-    // Peek shared memory
-#define PREPARE_CACHE(list) (list).Clear(); (list).Resize(listSize)
-    PREPARE_CACHE(SortingKeys[0]);
-    PREPARE_CACHE(SortingKeys[1]);
-    PREPARE_CACHE(SortingIndices);
-#undef PREPARE_CACHE
+    // Use shared memory from renderer allocator
+    Array<uint64, RendererAllocation> SortingKeys[2];
+    Array<int32, RendererAllocation> SortingIndices;
+    SortingKeys[0].Resize(listSize);
+    SortingKeys[1].Resize(listSize);
+    SortingIndices.Resize(listSize);
     uint64* sortedKeys = SortingKeys[0].Get();
 
     // Setup sort keys
@@ -590,7 +670,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
             PackedSortKey key;
             key.Data = drawCall.SortKey;
             key.DistanceKey ^= MAX_uint32; // Reverse depth
-            key.SortKey ^= MAX_uint16; // Reverse sort order
+            key.SortKey ^= MAX_uint8; // Reverse sort order
             sortedKeys[i] = key.Data;
         }
     }
@@ -616,15 +696,24 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
         const DrawCall& drawCall = drawCallsData[listData[i]];
         int32 batchSize = 1;
         int32 instanceCount = drawCall.InstanceCount;
-
-        // Check the following draw calls to merge them (using instancing)
-        for (int32 j = i + 1; j < listSize; j++)
+        IMaterial::InstancingHandler drawCallHandler, otherHandler;
+        if (instanceCount != 0 && drawCall.Material->CanUseInstancing(drawCallHandler))
         {
-            const DrawCall& other = drawCallsData[listData[j]];
-            if (!CanBatchWith(drawCall, other))
-                break;
-            batchSize++;
-            instanceCount += other.InstanceCount;
+            // Check the following draw calls sequence to merge them
+            for (int32 j = i + 1; j < listSize; j++)
+            {
+                const DrawCall& other = drawCallsData[listData[j]];
+                const bool canBatch =
+                        other.Material->CanUseInstancing(otherHandler) &&
+                        other.InstanceCount != 0 &&
+                        drawCallHandler.CanBatch == otherHandler.CanBatch &&
+                        drawCallHandler.CanBatch(drawCall, other, pass) &&
+                        drawCall.WorldDeterminantSign * other.WorldDeterminantSign > 0;
+                if (!canBatch)
+                    break;
+                batchSize++;
+                instanceCount += other.InstanceCount;
+            }
         }
 
         DrawBatch batch;
@@ -642,7 +731,8 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     if (stable)
     {
         // Sort draw calls batches by depth
-        Sorting::MergeSort(list.Batches, &SortingBatches);
+        Array<DrawBatch, RendererAllocation> sortingBatches;
+        Sorting::MergeSort(list.Batches, &sortingBatches);
     }
 }
 
@@ -651,17 +741,32 @@ FORCE_INLINE bool CanUseInstancing(DrawPass pass)
     return pass == DrawPass::GBuffer || pass == DrawPass::Depth;
 }
 
-void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, GPUTextureView* input)
+FORCE_INLINE bool DrawsEqual(const DrawCall* a, const DrawCall* b)
+{
+    return a->Geometry.IndexBuffer == b->Geometry.IndexBuffer &&
+            a->Draw.IndicesCount == b->Draw.IndicesCount &&
+            a->Draw.StartIndex == b->Draw.StartIndex &&
+            Platform::MemoryCompare(a->Geometry.VertexBuffers, b->Geometry.VertexBuffers, sizeof(a->Geometry.VertexBuffers) + sizeof(a->Geometry.VertexBuffersOffsets)) == 0;
+}
+
+void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, RenderList* drawCallsList, GPUTextureView* input)
 {
     if (list.IsEmpty())
         return;
     PROFILE_GPU_CPU("Drawing");
-    const auto* drawCallsData = drawCalls.Get();
+    const auto* drawCallsData = drawCallsList->DrawCalls.Get();
     const auto* listData = list.Indices.Get();
     const auto* batchesData = list.Batches.Get();
     const auto context = GPUDevice::Instance->GetMainContext();
     bool useInstancing = list.CanUseInstancing && CanUseInstancing(renderContext.View.Pass) && GPUDevice::Instance->Limits.HasInstancing;
     TaaJitterRemoveContext taaJitterRemove(renderContext.View);
+
+    // Lazy-init objects buffer (if user didn't do it)
+    if (drawCallsList->ObjectBuffer.Data.IsEmpty())
+    {
+        drawCallsList->BuildObjectsBuffer();
+        drawCallsList->ObjectBuffer.Flush(context);
+    }
 
     // Clear SR slots to prevent any resources binding issues (leftovers from the previous passes)
     context->ResetSR();
@@ -669,187 +774,178 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     // Prepare instance buffer
     if (useInstancing)
     {
-        // Prepare buffer memory
-        int32 instancedBatchesCount = 0;
+        // Estimate the maximum amount of elements for all instanced draws
+        int32 instancesCount = 0;
         for (int32 i = 0; i < list.Batches.Count(); i++)
         {
-            auto& batch = batchesData[i];
+            const DrawBatch& batch = batchesData[i];
             if (batch.BatchSize > 1)
-                instancedBatchesCount += batch.BatchSize;
+                instancesCount += batch.BatchSize;
         }
         for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
         {
-            auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
-            if (batch.Instances.Count() > 1)
-                instancedBatchesCount += batch.Instances.Count();
+            const BatchedDrawCall& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
+            instancesCount += batch.Instances.Count();
         }
-        if (instancedBatchesCount == 0)
+        if (instancesCount != 0)
         {
-            // Faster path if none of the draw batches requires instancing
-            useInstancing = false;
-            goto DRAW;
-        }
-        _instanceBuffer.Clear();
-        _instanceBuffer.Data.Resize(instancedBatchesCount * sizeof(InstanceData));
-        auto instanceData = (InstanceData*)_instanceBuffer.Data.Get();
+            PROFILE_CPU_NAMED("Build Instancing");
+            _instanceBuffer.Clear();
+            _instanceBuffer.Data.Resize(instancesCount * sizeof(ShaderObjectDrawInstanceData));
+            auto instanceData = (ShaderObjectDrawInstanceData*)_instanceBuffer.Data.Get();
 
-        // Write to instance buffer
-        for (int32 i = 0; i < list.Batches.Count(); i++)
-        {
-            auto& batch = batchesData[i];
-            if (batch.BatchSize > 1)
+            // Write to instance buffer
+            for (int32 i = 0; i < list.Batches.Count(); i++)
             {
-                IMaterial::InstancingHandler handler;
-                drawCallsData[listData[batch.StartIndex]].Material->CanUseInstancing(handler);
-                for (int32 j = 0; j < batch.BatchSize; j++)
+                const DrawBatch& batch = batchesData[i];
+                if (batch.BatchSize > 1)
                 {
-                    auto& drawCall = drawCallsData[listData[batch.StartIndex + j]];
-                    handler.WriteDrawCall(instanceData, drawCall);
+                    for (int32 j = 0; j < batch.BatchSize; j++)
+                    {
+                        instanceData->ObjectIndex = listData[batch.StartIndex + j];
+                        instanceData++;
+                    }
+                }
+            }
+            for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
+            {
+                const BatchedDrawCall& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
+                for (int32 j = 0; j < batch.Instances.Count(); j++)
+                {
+                    instanceData->ObjectIndex = batch.ObjectsStartIndex + j;
                     instanceData++;
                 }
             }
-        }
-        for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
-        {
-            auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
-            if (batch.Instances.Count() > 1)
-            {
-                Platform::MemoryCopy(instanceData, batch.Instances.Get(), batch.Instances.Count() * sizeof(InstanceData));
-                instanceData += batch.Instances.Count();
-            }
-        }
+            ASSERT((byte*)instanceData == _instanceBuffer.Data.end());
 
-        // Upload data
-        _instanceBuffer.Flush(context);
+            // Upload data
+            _instanceBuffer.Flush(context);
+            ZoneValue(instancesCount);
+        }
+        else
+        {
+            // No batches so no instancing
+            useInstancing = false;
+        }
     }
 
-DRAW:
-
     // Execute draw calls
+    int32 materialBinds = list.Batches.Count();
     MaterialBase::BindParameters bindParams(context, renderContext);
+    bindParams.ObjectBuffer = drawCallsList->ObjectBuffer.GetBuffer()->View();
     bindParams.Input = input;
     bindParams.BindViewData();
+    MaterialShaderDataPerDraw perDraw;
+    perDraw.DrawPadding = Float3::Zero;
+    GPUConstantBuffer* perDrawCB = IMaterial::BindParameters::PerDrawConstants;
+    context->BindCB(2, perDrawCB); // TODO: use rootSignature/pushConstants on D3D12/Vulkan
+    constexpr int32 vbMax = ARRAY_COUNT(DrawCall::Geometry.VertexBuffers);
     if (useInstancing)
     {
+        GPUBuffer* vb[vbMax + 1];
+        uint32 vbOffsets[vbMax + 1];
+        vb[3] = _instanceBuffer.GetBuffer(); // Pass object index in a vertex stream at slot 3 (used by VS in Surface.shader)
+        vbOffsets[3] = 0;
         int32 instanceBufferOffset = 0;
-        GPUBuffer* vb[4];
-        uint32 vbOffsets[4];
         for (int32 i = 0; i < list.Batches.Count(); i++)
         {
-            auto& batch = batchesData[i];
-            const DrawCall& drawCall = drawCallsData[listData[batch.StartIndex]];
+            const DrawBatch& batch = batchesData[i];
+            uint32 drawCallIndex = listData[batch.StartIndex];
+            const DrawCall& drawCall = drawCallsData[drawCallIndex];
 
-            int32 vbCount = 0;
-            while (vbCount < ARRAY_COUNT(drawCall.Geometry.VertexBuffers) && drawCall.Geometry.VertexBuffers[vbCount])
+            bindParams.Instanced = batch.BatchSize != 1;
+            bindParams.DrawCall = &drawCall;
+            bindParams.DrawCall->Material->Bind(bindParams);
+
+            if (bindParams.Instanced)
             {
-                vb[vbCount] = drawCall.Geometry.VertexBuffers[vbCount];
-                vbOffsets[vbCount] = drawCall.Geometry.VertexBuffersOffsets[vbCount];
-                vbCount++;
-            }
-            for (int32 j = vbCount; j < ARRAY_COUNT(drawCall.Geometry.VertexBuffers); j++)
-            {
-                vb[vbCount] = nullptr;
-                vbOffsets[vbCount] = 0;
-            }
+                // One or more draw calls per batch
+                const DrawCall* activeDraw = &drawCall;
+                int32 activeCount = 1;
+                for (int32 j = 1; j <= batch.BatchSize; j++)
+                {
+                    if (j != batch.BatchSize && DrawsEqual(activeDraw, drawCallsData + listData[batch.StartIndex + j]))
+                    {
+                        // Group two draw calls into active draw call
+                        activeCount++;
+                        continue;
+                    }
 
-            bindParams.FirstDrawCall = &drawCall;
-            bindParams.DrawCallsCount = batch.BatchSize;
-            drawCall.Material->Bind(bindParams);
+                    // Draw whole active draw (instanced)
+                    Platform::MemoryCopy(vb, activeDraw->Geometry.VertexBuffers, sizeof(DrawCall::Geometry.VertexBuffers));
+                    Platform::MemoryCopy(vbOffsets, activeDraw->Geometry.VertexBuffersOffsets, sizeof(DrawCall::Geometry.VertexBuffersOffsets));
+                    context->BindIB(activeDraw->Geometry.IndexBuffer);
+                    context->BindVB(ToSpan(vb, ARRAY_COUNT(vb)), vbOffsets);
+                    context->DrawIndexedInstanced(activeDraw->Draw.IndicesCount, activeCount, instanceBufferOffset, 0, activeDraw->Draw.StartIndex);
+                    instanceBufferOffset += activeCount;
 
-            context->BindIB(drawCall.Geometry.IndexBuffer);
-
-            if (drawCall.InstanceCount == 0)
-            {
-                // No support for batching indirect draw calls
-                ASSERT_LOW_LAYER(batch.BatchSize == 1);
-
-                context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
+                    // Reset active draw
+                    activeDraw = drawCallsData + listData[batch.StartIndex + j];
+                    activeCount = 1;
+                }
             }
             else
             {
-                if (batch.BatchSize == 1)
+                // Pass object index in constant buffer
+                perDraw.DrawObjectIndex = drawCallIndex;
+                context->UpdateCB(perDrawCB, &perDraw);
+
+                // Single-draw call batch
+                context->BindIB(drawCall.Geometry.IndexBuffer);
+                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
+                if (drawCall.InstanceCount == 0)
                 {
-                    context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
+                    context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
                 }
                 else
                 {
-                    vbCount = 3;
-                    vb[vbCount] = _instanceBuffer.GetBuffer();
-                    vbOffsets[vbCount] = 0;
-                    vbCount++;
-                    context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.InstanceCount, instanceBufferOffset, 0, drawCall.Draw.StartIndex);
-                    instanceBufferOffset += batch.BatchSize;
+                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
                 }
             }
         }
         for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
         {
-            auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
-            auto& drawCall = batch.DrawCall;
+            const BatchedDrawCall& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
+            const DrawCall& drawCall = batch.DrawCall;
 
-            int32 vbCount = 0;
-            while (vbCount < ARRAY_COUNT(drawCall.Geometry.VertexBuffers) && drawCall.Geometry.VertexBuffers[vbCount])
-            {
-                vb[vbCount] = drawCall.Geometry.VertexBuffers[vbCount];
-                vbOffsets[vbCount] = drawCall.Geometry.VertexBuffersOffsets[vbCount];
-                vbCount++;
-            }
-            for (int32 j = vbCount; j < ARRAY_COUNT(drawCall.Geometry.VertexBuffers); j++)
-            {
-                vb[vbCount] = nullptr;
-                vbOffsets[vbCount] = 0;
-            }
+            bindParams.Instanced = true;
+            bindParams.DrawCall = &drawCall;
+            bindParams.DrawCall->Material->Bind(bindParams);
 
-            bindParams.FirstDrawCall = &drawCall;
-            bindParams.DrawCallsCount = batch.Instances.Count();
-            drawCall.Material->Bind(bindParams);
-
+            Platform::MemoryCopy(vb, drawCall.Geometry.VertexBuffers, sizeof(DrawCall::Geometry.VertexBuffers));
+            Platform::MemoryCopy(vbOffsets, drawCall.Geometry.VertexBuffersOffsets, sizeof(DrawCall::Geometry.VertexBuffersOffsets));
             context->BindIB(drawCall.Geometry.IndexBuffer);
+            context->BindVB(ToSpan(vb, vbMax + 1), vbOffsets);
 
             if (drawCall.InstanceCount == 0)
             {
-                ASSERT_LOW_LAYER(batch.Instances.Count() == 1);
-                context->BindVB(ToSpan(vb, vbCount), vbOffsets);
                 context->DrawIndexedInstancedIndirect(drawCall.Draw.IndirectArgsBuffer, drawCall.Draw.IndirectArgsOffset);
             }
             else
             {
-                if (batch.Instances.Count() == 1)
-                {
-                    context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.Instances.Count(), 0, 0, drawCall.Draw.StartIndex);
-                }
-                else
-                {
-                    vbCount = 3;
-                    vb[vbCount] = _instanceBuffer.GetBuffer();
-                    vbOffsets[vbCount] = 0;
-                    vbCount++;
-                    context->BindVB(ToSpan(vb, vbCount), vbOffsets);
-                    context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.Instances.Count(), instanceBufferOffset, 0, drawCall.Draw.StartIndex);
-                    instanceBufferOffset += batch.Instances.Count();
-                }
+                context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, batch.Instances.Count(), instanceBufferOffset, 0, drawCall.Draw.StartIndex);
+                instanceBufferOffset += batch.Instances.Count();
             }
         }
+        materialBinds += list.PreBatchedDrawCalls.Count();
     }
     else
     {
-        bindParams.DrawCallsCount = 1;
         for (int32 i = 0; i < list.Batches.Count(); i++)
         {
-            auto& batch = batchesData[i];
+            const DrawBatch& batch = batchesData[i];
+
+            bindParams.DrawCall = drawCallsData + listData[batch.StartIndex];
+            bindParams.DrawCall->Material->Bind(bindParams);
 
             for (int32 j = 0; j < batch.BatchSize; j++)
             {
-                const DrawCall& drawCall = drawCalls[listData[batch.StartIndex + j]];
-                bindParams.FirstDrawCall = &drawCall;
-                drawCall.Material->Bind(bindParams);
+                perDraw.DrawObjectIndex = listData[batch.StartIndex + j];
+                context->UpdateCB(perDrawCB, &perDraw);
 
+                const DrawCall& drawCall = drawCallsData[perDraw.DrawObjectIndex];
                 context->BindIB(drawCall.Geometry.IndexBuffer);
-                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 3), drawCall.Geometry.VertexBuffersOffsets);
+                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
 
                 if (drawCall.InstanceCount == 0)
                 {
@@ -863,42 +959,38 @@ DRAW:
         }
         for (int32 i = 0; i < list.PreBatchedDrawCalls.Count(); i++)
         {
-            auto& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
-            auto drawCall = batch.DrawCall;
-            drawCall.ObjectRadius = 0.0f;
-            bindParams.FirstDrawCall = &drawCall;
-            const auto* instancesData = batch.Instances.Get();
+            const BatchedDrawCall& batch = BatchedDrawCalls.Get()[list.PreBatchedDrawCalls.Get()[i]];
+            const DrawCall& drawCall = batch.DrawCall;
+
+            bindParams.DrawCall = &drawCall;
+            bindParams.DrawCall->Material->Bind(bindParams);
+
+            context->BindIB(drawCall.Geometry.IndexBuffer);
+            context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
 
             for (int32 j = 0; j < batch.Instances.Count(); j++)
             {
-                auto& instance = instancesData[j];
-                drawCall.ObjectPosition = instance.InstanceOrigin;
-                drawCall.PerInstanceRandom = instance.PerInstanceRandom;
-                auto lightmapArea = instance.InstanceLightmapArea.ToFloat4();
-                drawCall.Surface.LightmapUVsArea = *(Rectangle*)&lightmapArea;
-                drawCall.Surface.LODDitherFactor = instance.LODDitherFactor;
-                drawCall.World.SetRow1(Float4(instance.InstanceTransform1, 0.0f));
-                drawCall.World.SetRow2(Float4(instance.InstanceTransform2, 0.0f));
-                drawCall.World.SetRow3(Float4(instance.InstanceTransform3, 0.0f));
-                drawCall.World.SetRow4(Float4(instance.InstanceOrigin, 1.0f));
-                drawCall.Material->Bind(bindParams);
+                perDraw.DrawObjectIndex = batch.ObjectsStartIndex + j;
+                context->UpdateCB(perDrawCB, &perDraw);
 
-                context->BindIB(drawCall.Geometry.IndexBuffer);
-                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 3), drawCall.Geometry.VertexBuffersOffsets);
                 context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
             }
         }
+        materialBinds += list.PreBatchedDrawCalls.Count();
         if (list.Batches.IsEmpty() && list.Indices.Count() != 0)
         {
-            // Draw calls list has nto been batched so execute draw calls separately
+            // Draw calls list has bot been batched so execute draw calls separately
             for (int32 j = 0; j < list.Indices.Count(); j++)
             {
-                const DrawCall& drawCall = drawCalls[listData[j]];
-                bindParams.FirstDrawCall = &drawCall;
+                perDraw.DrawObjectIndex = listData[j];
+                context->UpdateCB(perDrawCB, &perDraw);
+
+                const DrawCall& drawCall = drawCallsData[perDraw.DrawObjectIndex];
+                bindParams.DrawCall = &drawCall;
                 drawCall.Material->Bind(bindParams);
 
                 context->BindIB(drawCall.Geometry.IndexBuffer);
-                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, 3), drawCall.Geometry.VertexBuffersOffsets);
+                context->BindVB(ToSpan(drawCall.Geometry.VertexBuffers, vbMax), drawCall.Geometry.VertexBuffersOffsets);
 
                 if (drawCall.InstanceCount == 0)
                 {
@@ -909,8 +1001,10 @@ DRAW:
                     context->DrawIndexedInstanced(drawCall.Draw.IndicesCount, drawCall.InstanceCount, 0, 0, drawCall.Draw.StartIndex);
                 }
             }
+            materialBinds += list.Indices.Count();
         }
     }
+    ZoneValue(materialBinds); // Material shaders bindings count
 }
 
 void SurfaceDrawCallHandler::GetHash(const DrawCall& drawCall, uint32& batchKey)
@@ -918,22 +1012,27 @@ void SurfaceDrawCallHandler::GetHash(const DrawCall& drawCall, uint32& batchKey)
     batchKey = (batchKey * 397) ^ ::GetHash(drawCall.Surface.Lightmap);
 }
 
-bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b)
+bool SurfaceDrawCallHandler::CanBatch(const DrawCall& a, const DrawCall& b, DrawPass pass)
 {
     // TODO: find reason why batching static meshes with lightmap causes problems with sampling in shader (flickering when meshes in batch order gets changes due to async draw calls collection)
-    return a.Surface.Lightmap == nullptr && b.Surface.Lightmap == nullptr &&
-            //return a.Surface.Lightmap == b.Surface.Lightmap &&
-            a.Surface.Skinning == nullptr &&
-            b.Surface.Skinning == nullptr;
-}
-
-void SurfaceDrawCallHandler::WriteDrawCall(InstanceData* instanceData, const DrawCall& drawCall)
-{
-    instanceData->InstanceOrigin = Float3(drawCall.World.M41, drawCall.World.M42, drawCall.World.M43);
-    instanceData->PerInstanceRandom = drawCall.PerInstanceRandom;
-    instanceData->InstanceTransform1 = Float3(drawCall.World.M11, drawCall.World.M12, drawCall.World.M13);
-    instanceData->LODDitherFactor = drawCall.Surface.LODDitherFactor;
-    instanceData->InstanceTransform2 = Float3(drawCall.World.M21, drawCall.World.M22, drawCall.World.M23);
-    instanceData->InstanceTransform3 = Float3(drawCall.World.M31, drawCall.World.M32, drawCall.World.M33);
-    instanceData->InstanceLightmapArea = Half4(drawCall.Surface.LightmapUVsArea);
+    if (a.Surface.Lightmap == nullptr && b.Surface.Lightmap == nullptr &&
+        a.Surface.Skinning == nullptr && b.Surface.Skinning == nullptr)
+    {
+        if (a.Material != b.Material)
+        {
+            // Batch simple materials during depth-only drawing (when using default vertex shader and no pixel shader)
+            if (pass == DrawPass::Depth)
+            {
+                const MaterialInfo& aInfo = a.Material->GetInfo();
+                const MaterialInfo& bInfo = b.Material->GetInfo();
+                constexpr MaterialUsageFlags complexUsageFlags = MaterialUsageFlags::UseMask | MaterialUsageFlags::UsePositionOffset | MaterialUsageFlags::UseDisplacement;
+                const bool aIsSimple = EnumHasNoneFlags(aInfo.UsageFlags, complexUsageFlags) && aInfo.BlendMode == MaterialBlendMode::Opaque;
+                const bool bIsSimple = EnumHasNoneFlags(bInfo.UsageFlags, complexUsageFlags) && bInfo.BlendMode == MaterialBlendMode::Opaque;
+                return aIsSimple && bIsSimple;
+            }
+            return false;
+        }
+        return true;
+    }
+    return false;
 }

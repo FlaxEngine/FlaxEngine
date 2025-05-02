@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Threading;
 using FlaxEngine;
@@ -22,7 +22,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// <summary>
         /// The parent window.
         /// </summary>
-        protected Window _window;
+        protected volatile Window _window;
 
         /// <summary>
         /// The dialog result.

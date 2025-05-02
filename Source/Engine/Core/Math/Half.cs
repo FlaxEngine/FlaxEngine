@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 // -----------------------------------------------------------------------------
 // Original code from SharpDX project. https://github.com/sharpdx/SharpDX/
@@ -38,7 +38,7 @@ namespace FlaxEngine
     [StructLayout(LayoutKind.Sequential, Pack = 2)]
     public struct Half
     {
-        private ushort value;
+        private ushort rawValue;
 
         /// <summary>
         /// Number of decimal digits of precision.
@@ -111,17 +111,13 @@ namespace FlaxEngine
         /// <param name = "value">The floating point value that should be stored in 16 bit format.</param>
         public Half(float value)
         {
-            this.value = HalfUtils.Pack(value);
+            rawValue = HalfUtils.Pack(value);
         }
 
         /// <summary>
         /// Gets or sets the raw 16 bit value used to back this half-float.
         /// </summary>
-        public ushort RawValue
-        {
-            get => value;
-            set => this.value = value;
-        }
+        public ushort RawValue => rawValue;
 
         /// <summary>
         /// Converts an array of half precision values into full precision values.
@@ -166,7 +162,7 @@ namespace FlaxEngine
         /// <returns>The converted value.</returns>
         public static implicit operator float(Half value)
         {
-            return HalfUtils.Unpack(value.value);
+            return HalfUtils.Unpack(value.rawValue);
         }
 
         /// <summary>
@@ -177,7 +173,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if <paramref name = "left" /> has the same value as <paramref name = "right" />; otherwise, <c>false</c>.</returns>
         public static bool operator ==(Half left, Half right)
         {
-            return left.value == right.value;
+            return left.rawValue == right.rawValue;
         }
 
         /// <summary>
@@ -188,7 +184,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if <paramref name = "left" /> has a different value than <paramref name = "right" />; otherwise, <c>false</c>.</returns>
         public static bool operator !=(Half left, Half right)
         {
-            return left.value != right.value;
+            return left.rawValue != right.rawValue;
         }
 
         /// <summary>
@@ -207,7 +203,7 @@ namespace FlaxEngine
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            ushort num = value;
+            ushort num = rawValue;
             return (((num * 3) / 2) ^ num);
         }
 
@@ -219,7 +215,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if <paramref name = "value1" /> is the same instance as <paramref name = "value2" /> or  if both are <c>null</c> references or if <c>value1.Equals(value2)</c> returns <c>true</c>; otherwise, <c>false</c>.</returns>
         public static bool Equals(ref Half value1, ref Half value2)
         {
-            return value1.value == value2.value;
+            return value1.rawValue == value2.rawValue;
         }
 
         /// <summary>
@@ -229,7 +225,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the current instance is equal to the specified object; <c>false</c> otherwise.</returns>
         public bool Equals(Half other)
         {
-            return other.value == value;
+            return other.rawValue == rawValue;
         }
 
         /// <summary>
@@ -248,7 +244,7 @@ namespace FlaxEngine
                 return false;
             }
             Half half = (Half)obj;
-            return half.value == value;
+            return half.rawValue == rawValue;
         }
 
         static Half()

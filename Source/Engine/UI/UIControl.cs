@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine.GUI;
@@ -35,38 +35,58 @@ namespace FlaxEngine
 
                 // Set value
                 _control = value;
+                if (_control == null)
+                    return;
 
-                // Link the new one (events and parent)
-                if (_control != null)
+                // Setup control
+                var isDuringPlay = IsDuringPlay;
+                _blockEvents = true;
+                var container = _control as ContainerControl;
+                if (container != null)
                 {
-                    // Setup control
-                    _blockEvents = true;
-                    var containerControl = _control as ContainerControl;
-                    if (containerControl != null)
-                        containerControl.UnlockChildrenRecursive();
-                    _control.Visible = IsActive;
-                    _control.Parent = GetParent();
-                    _control.IndexInParent = OrderInParent;
-                    _control.Location = new Float2(LocalPosition);
-                    _control.LocationChanged += OnControlLocationChanged;
-
-                    // Link children UI controls
-                    if (containerControl != null)
+                    if (isDuringPlay)
+                        container.UnlockChildrenRecursive(); // Enable layout changes to any dynamically added UI
+                    else
+                        container.LockChildrenRecursive(); // Block layout changes during deserialization
+                }
+                _control.Visible = IsActive;
+                {
+                    var parent = GetParent();
+                    if (parent != null && !parent.IsLayoutLocked && !isDuringPlay)
                     {
-                        var children = ChildrenCount;
-                        var parent = Parent;
-                        for (int i = 0; i < children; i++)
+                        // Reparent but prevent layout if we're during pre-game setup (eg. deserialization) to avoid UI breaking during auto-layout resizing
+                        parent.IsLayoutLocked = true;
+                        _control.Parent = parent;
+                        parent.IsLayoutLocked = false;
+                    }
+                    else
+                    {
+                        _control.Parent = parent;
+                    }
+                }
+                _control.IndexInParent = OrderInParent;
+                _control.Location = new Float2(LocalPosition);
+                _control.LocationChanged += OnControlLocationChanged;
+
+                // Link children UI controls
+                if (container != null)
+                {
+                    var children = ChildrenCount;
+                    var parent = Parent;
+                    for (int i = 0; i < children; i++)
+                    {
+                        var child = GetChild(i) as UIControl;
+                        if (child != null && child.HasControl && child != parent)
                         {
-                            var child = GetChild(i) as UIControl;
-                            if (child != null && child.HasControl && child != parent)
-                            {
-                                child.Control.Parent = containerControl;
-                            }
+                            child.Control.Parent = container;
                         }
                     }
+                }
 
-                    // Refresh
-                    _blockEvents = false;
+                // Refresh layout
+                _blockEvents = false;
+                if (isDuringPlay)
+                {
                     if (prevControl == null && _control.Parent != null)
                         _control.Parent.PerformLayout();
                     else
@@ -326,11 +346,13 @@ namespace FlaxEngine
         {
             if ((_control == null || _control.GetType() != controlType) && controlType != null)
             {
+                // Create a new control
                 Control = (Control)Activator.CreateInstance(controlType);
             }
 
             if (_control != null)
             {
+                // Populate control object with properties
                 Json.JsonSerializer.Deserialize(_control, json);
 
                 // Synchronize actor with control location
@@ -374,16 +396,32 @@ namespace FlaxEngine
 
         internal void BeginPlay()
         {
-            if (_control != null)
+            var control = _control;
+            if (control == null)
+                return;
+
+            // Setup control
+            control.Visible = IsActive && control.Visible;
+            control.Parent = GetParent();
+            control.IndexInParent = OrderInParent;
+
+            // Setup navigation (all referenced controls are now loaded)
+            Internal_GetNavTargets(__unmanagedPtr, out UIControl up, out UIControl down, out UIControl left, out UIControl right);
+            control.NavTargetUp = up?.Control;
+            control.NavTargetDown = down?.Control;
+            control.NavTargetLeft = left?.Control;
+            control.NavTargetRight = right?.Control;
+
+            // Refresh layout (BeginPlay is called for parents first, then skip if already called by outer control)
+            var container = control as ContainerControl;
+            if (control.Parent == null || (container != null && container.IsLayoutLocked))
             {
-                _control.Visible = IsActive && _control.Visible;
-                _control.Parent = GetParent();
-                _control.IndexInParent = OrderInParent;
-                Internal_GetNavTargets(__unmanagedPtr, out UIControl up, out UIControl down, out UIControl left, out UIControl right);
-                _control.NavTargetUp = up?.Control;
-                _control.NavTargetDown = down?.Control;
-                _control.NavTargetLeft = left?.Control;
-                _control.NavTargetRight = right?.Control;
+                if (container != null)
+                {
+                    //container.UnlockChildrenRecursive();
+                    container.IsLayoutLocked = false; // Forces whole children tree lock/unlock sequence in PerformLayout
+                }
+                control.PerformLayout();
             }
         }
 

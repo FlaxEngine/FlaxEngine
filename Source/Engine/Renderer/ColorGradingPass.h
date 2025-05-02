@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -15,7 +15,7 @@ private:
     bool _useVolumeTexture;
     PixelFormat _lutFormat;
     AssetReference<Shader> _shader;
-    GPUPipelineStatePermutationsPs<3> _psLut;
+    GPUPipelineStatePermutationsPs<4> _psLut;
 
 public:
 

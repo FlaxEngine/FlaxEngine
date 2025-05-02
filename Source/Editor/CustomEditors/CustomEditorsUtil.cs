@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -72,6 +72,8 @@ namespace FlaxEditor.CustomEditors
                 return new GenericEditor();
             if (targetType.IsArray)
             {
+                if (targetType.Type == null)
+                    return new ArrayEditor();
                 if (targetType.Type.GetArrayRank() != 1)
                     return new GenericEditor(); // Not-supported multidimensional array
 

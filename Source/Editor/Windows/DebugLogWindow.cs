@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -95,15 +95,15 @@ namespace FlaxEditor.Windows
                 {
                 case LogType.Warning:
                     Group = LogGroup.Warning;
-                    Icon = _window.IconWarning;
+                    Icon = _window._iconWarning;
                     break;
                 case LogType.Info:
                     Group = LogGroup.Info;
-                    Icon = _window.IconInfo;
+                    Icon = _window._iconInfo;
                     break;
                 default:
                     Group = LogGroup.Error;
-                    Icon = _window.IconError;
+                    Icon = _window._iconError;
                     break;
                 }
             }
@@ -125,26 +125,33 @@ namespace FlaxEditor.Windows
 
                 // Background
                 if (_window._selected == this)
-                    Render2D.FillRectangle(clientRect, IsFocused ? style.BackgroundSelected : style.LightBackground);
+                {
+                    Render2D.FillRectangle(clientRect, style.LightBackground);
+                    // Small rectangle to signal that entry is selected
+                    Rectangle selectionHighlightRect = clientRect with { Width = 5 };
+                    Render2D.FillRectangle(selectionHighlightRect, style.BackgroundSelected);
+                }
                 else if (IsMouseOver)
                     Render2D.FillRectangle(clientRect, style.BackgroundHighlighted);
                 else if (index % 2 == 0)
                     Render2D.FillRectangle(clientRect, style.Background * 0.9f);
 
+                var color = Group == LogGroup.Error ? _window._colorError : (Group == LogGroup.Warning ? _window._colorWarning : _window._colorInfo);
+
                 // Icon
-                var iconColor = Group == LogGroup.Error ? Color.Red : (Group == LogGroup.Warning ? Color.Yellow : style.Foreground);
-                Render2D.DrawSprite(Icon, new Rectangle(5, 0, 32, 32), iconColor);
+                Render2D.DrawSprite(Icon, new Rectangle(8, 0, 32, 32), color);
 
                 // Title
-                var textRect = new Rectangle(38, 2, clientRect.Width - 40, clientRect.Height - 10);
+                var textRect = new Rectangle(43, 2, clientRect.Width - 40, clientRect.Height - 10);
                 Render2D.PushClip(ref clientRect);
+                bool coloredText = _window._colorDebugLogText;
                 if (LogCount == 1)
                 {
-                    Render2D.DrawText(style.FontMedium, Desc.Title, textRect, style.Foreground);
+                    Render2D.DrawText(style.FontMedium, Desc.Title, textRect, coloredText ? color : style.Foreground);
                 }
                 else if (LogCount > 1)
                 {
-                    Render2D.DrawText(style.FontMedium, $"{Desc.Title} ({LogCount})", textRect, style.Foreground);
+                    Render2D.DrawText(style.FontMedium, $"{Desc.Title} ({LogCount})", textRect, coloredText ? color : style.Foreground);
                 }
                 Render2D.PopClip();
             }
@@ -304,11 +311,14 @@ namespace FlaxEditor.Windows
         private readonly ToolStripButton[] _groupButtons = new ToolStripButton[3];
 
         private LogType _iconType = LogType.Info;
-
-        internal SpriteHandle IconInfo;
-        internal SpriteHandle IconWarning;
-        internal SpriteHandle IconError;
-
+        private SpriteHandle _iconInfo;
+        private SpriteHandle _iconWarning;
+        private SpriteHandle _iconError;
+        private Color _colorInfo;
+        private Color _colorWarning;
+        private Color _colorError;
+        private bool _colorDebugLogText;
+        
         /// <summary>
         /// Initializes a new instance of the <see cref="DebugLogWindow"/> class.
         /// </summary>
@@ -317,7 +327,7 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.None)
         {
             Title = "Debug Log";
-            Icon = IconInfo;
+            Icon = _iconInfo;
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
 
             // Toolstrip
@@ -361,7 +371,6 @@ namespace FlaxEditor.Windows
                 editor.Options.Apply(editor.Options.Options);
             }).SetAutoCheck(true).LinkTooltip("Shows/hides info messages");
             UpdateCount();
-            OnEditorOptionsChanged(Editor.Options.Options);
 
             // Split panel
             _split = new SplitPanel(Orientation.Vertical, ScrollBars.Vertical, ScrollBars.Both)
@@ -382,26 +391,31 @@ namespace FlaxEditor.Windows
                 VerticalAlignment = TextAlignment.Near,
                 HorizontalAlignment = TextAlignment.Near,
                 Offsets = Margin.Zero,
+                Pivot = Float2.Zero,
             };
 
             // Entries panel
             _entriesPanel = new VerticalPanel
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
+                Pivot = Float2.Zero,
                 Offsets = Margin.Zero,
                 IsScrollable = true,
                 Parent = _split.Panel1,
             };
 
             // Cache entries icons
-            IconInfo = Editor.Icons.Info64;
-            IconWarning = Editor.Icons.Warning64;
-            IconError = Editor.Icons.Error64;
+            _iconInfo = Editor.Icons.Info64;
+            _iconWarning = Editor.Icons.Warning64;
+            _iconError = Editor.Icons.Error64;
 
             // Bind events
             Editor.Options.OptionsChanged += OnEditorOptionsChanged;
             Debug.Logger.LogHandler.SendLog += LogHandlerOnSendLog;
             Debug.Logger.LogHandler.SendExceptionLog += LogHandlerOnSendExceptionLog;
+
+            // Init editor options
+            OnEditorOptionsChanged(Editor.Options.Options);
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
@@ -413,6 +427,10 @@ namespace FlaxEditor.Windows
             _groupButtons[0].Checked = options.Interface.DebugLogShowErrorMessages;
             _groupButtons[1].Checked = options.Interface.DebugLogShowWarningMessages;
             _groupButtons[2].Checked = options.Interface.DebugLogShowInfoMessages;
+            _colorInfo = options.Visual.LogInfoColor;
+            _colorWarning = options.Visual.LogWarningColor;
+            _colorError = options.Visual.LogErrorColor;
+            _colorDebugLogText = options.Visual.ColorDebugLogText;
         }
 
         /// <summary>
@@ -422,7 +440,6 @@ namespace FlaxEditor.Windows
         {
             if (_entriesPanel == null)
                 return;
-
             RemoveEntries();
         }
 
@@ -699,13 +716,13 @@ namespace FlaxEditor.Windows
                     // Scroll to the new entry (if any added to view)
                     if (scrollView && anyVisible)
                     {
-                        panelScroll.ScrollViewTo(newEntry);
+                        panelScroll.ScrollViewTo(newEntry, true);
 
                         bool scrollViewNew = (panelScroll.VScrollBar.Maximum - panelScroll.VScrollBar.TargetValue) < LogEntry.DefaultHeight * 1.5f;
                         if (scrollViewNew != scrollView)
                         {
                             // Make sure scrolling doesn't stop in case too many entries were added at once
-                            panelScroll.ScrollViewTo(new Float2(float.MaxValue, float.MaxValue));
+                            panelScroll.ScrollViewTo(new Float2(float.MaxValue, float.MaxValue), true);
                         }
                     }
                 }

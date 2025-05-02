@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -290,20 +290,14 @@ namespace Math
         return dividend / divisor;
     }
 
-    // Check if value is inside the given range
-    // @param value value to check
-    // @param min Minimum value
-    // @param max Maximum value
+    // Checks if value is inside the given range.
     template<class T>
     static bool IsInRange(const T value, const T min, const T max)
     {
         return value >= min && value <= max;
     }
 
-    // Check if value isn't inside the given range
-    // @param value value to check
-    // @param min Minimum value
-    // @param max Maximum value
+    // Checks if value isn't inside the given range.
     template<class T>
     static bool IsNotInRange(const T value, const T min, const T max)
     {
@@ -311,21 +305,19 @@ namespace Math
     }
 
     // Checks whether a number is a power of two.
-    // @param value Number to check
-    // @returns True if value is a power of two
     static bool IsPowerOfTwo(uint32 value)
     {
         return (value & value - 1) == 0;
     }
 
-    // Clamp value to be between minimum and maximum values, inclusive
+    // Clamps value to be between minimum and maximum values, inclusive
     template<class T>
     static T Clamp(const T value, const T min, const T max)
     {
         return value < min ? min : value < max ? value : max;
     }
 
-    // Clamp value to be between 0 and 1 range, inclusive
+    // Clamps value to be between 0 and 1 range, inclusive
     template<class T>
     static T Saturate(const T value)
     {
@@ -478,54 +470,43 @@ namespace Math
         return Saturate((value - a) / (b - a));
     }
 
-    // Performs smooth (cubic Hermite) interpolation between 0 and 1
-    // @param amount Value between 0 and 1 indicating interpolation amount
+    // Performs smooth (cubic Hermite) interpolation between 0 and 1.
     static float SmoothStep(float amount)
     {
         return amount <= 0 ? 0 : amount >= 1 ? 1 : amount * amount * (3 - 2 * amount);
     }
 
-    // Performs a smooth(er) interpolation between 0 and 1 with 1st and 2nd order derivatives of zero at endpoints
-    // @param amount Value between 0 and 1 indicating interpolation amount
+    // Performs a smooth(er) interpolation between 0 and 1 with 1st and 2nd order derivatives of zero at endpoints.
     static float SmootherStep(float amount)
     {
         return amount <= 0 ? 0 : amount >= 1 ? 1 : amount * amount * amount * (amount * (amount * 6 - 15) + 10);
     }
 
-    // Determines whether the specified value is close to zero (0.0)
-    // @param a The integer value
-    // @returns True if the specified value is close to zero (0.0). otherwise false
+    // Determines whether the specified value is close to zero (0.0).
     inline int32 IsZero(int32 a)
     {
         return a == 0;
     }
 
-    // Determines whether the specified value is close to zero (0.0f)
-    // @param a The floating value
-    // @returns True if the specified value is close to zero (0.0f). otherwise false
+    // Determines whether the specified value is close to zero (0.0f).
     inline bool IsZero(float a)
     {
         return Abs(a) < ZeroTolerance;
     }
 
-    // Determines whether the specified value is close to one (1.0)
-    // @param a The integer value
-    // @returns True if the specified value is close to one (1.0). otherwise false
+    // Determines whether the specified value is close to one (1.0).
     inline bool IsOne(int32 a)
     {
         return a == 1;
     }
 
-    // Determines whether the specified value is close to one (1.0f)
-    // @param a The floating value
-    // @returns True if the specified value is close to one (1.0f). otherwise false
+    // Determines whether the specified value is close to one (1.0f).
     inline bool IsOne(float a)
     {
         return IsZero(a - 1.0f);
     }
 
-    // Returns a value indicating the sign of a number
-    // @returns A number that indicates the sign of value
+    // Returns a value indicating the sign of a number.
     inline float Sign(float v)
     {
         return v > 0.0f ? 1.0f : v < 0.0f ? -1.0f : 0.0f;
@@ -623,7 +604,7 @@ namespace Math
     template<typename T>
     static T AlignUpWithMask(T value, T mask)
     {
-        return (T)(value + mask & ~mask);
+        return (T)((value + mask) & ~mask);
     }
 
     template<typename T>
@@ -642,7 +623,7 @@ namespace Math
     static T AlignUp(T value, T alignment)
     {
         T mask = alignment - 1;
-        return (T)(value + mask & ~mask);
+        return (T)((value + mask) & ~mask);
     }
 
     /// <summary>
@@ -667,7 +648,7 @@ namespace Math
     template<typename T>
     static bool IsAligned(T value, T alignment)
     {
-        return 0 == (value & alignment - 1);
+        return 0 == (value & (alignment - 1));
     }
 
     template<typename T>

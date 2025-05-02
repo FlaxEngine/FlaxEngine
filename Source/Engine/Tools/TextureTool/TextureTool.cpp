@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_TEXTURE_TOOL
 
@@ -6,15 +6,13 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
-#include "Engine/Core/Math/Packed.h"
-#include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Serialization/JsonWriter.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Scripting/Enums.h"
+#include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Graphics/Textures/TextureData.h"
-#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 
 #if USE_EDITOR
@@ -27,7 +25,7 @@ namespace
 
 String TextureTool::Options::ToString() const
 {
-    return String::Format(TEXT("Type: {}, IsAtlas: {}, NeverStream: {}, IndependentChannels: {}, sRGB: {}, GenerateMipMaps: {}, FlipY: {}, InvertGreen: {} Scale: {}, MaxSize: {}, Resize: {}, PreserveAlphaCoverage: {}, PreserveAlphaCoverageReference: {}, SizeX: {}, SizeY: {}"),
+    return String::Format(TEXT("Type: {}, IsAtlas: {}, NeverStream: {}, IndependentChannels: {}, sRGB: {}, GenerateMipMaps: {}, FlipY: {}, InvertRed: {}, InvertGreen: {}, InvertBlue {}, Invert Alpha {}, Scale: {}, MaxSize: {}, Resize: {}, PreserveAlphaCoverage: {}, PreserveAlphaCoverageReference: {}, SizeX: {}, SizeY: {}"),
                           ScriptingEnum::ToString(Type),
                           IsAtlas,
                           NeverStream,
@@ -35,7 +33,10 @@ String TextureTool::Options::ToString() const
                           sRGB,
                           GenerateMipMaps,
                           FlipY,
+                          InvertRedChannel,
                           InvertGreenChannel,
+                          InvertBlueChannel,
+                          InvertAlphaChannel,
                           Scale,
                           MaxSize,
                           MaxSize,
@@ -73,11 +74,29 @@ void TextureTool::Options::Serialize(SerializeStream& stream, const void* otherO
     stream.JKEY("FlipY");
     stream.Bool(FlipY);
 
+    stream.JKEY("FlipX");
+    stream.Bool(FlipX);
+
+    stream.JKEY("InvertRedChannel");
+    stream.Bool(InvertRedChannel);
+
     stream.JKEY("InvertGreenChannel");
     stream.Bool(InvertGreenChannel);
 
+    stream.JKEY("InvertBlueChannel");
+    stream.Bool(InvertBlueChannel);
+
+    stream.JKEY("InvertAlphaChannel");
+    stream.Bool(InvertAlphaChannel);
+
+    stream.JKEY("ReconstructZChannel");
+    stream.Bool(ReconstructZChannel);
+
     stream.JKEY("Resize");
     stream.Bool(Resize);
+
+    stream.JKEY("KeepAspectRatio");
+    stream.Bool(KeepAspectRatio);
 
     stream.JKEY("PreserveAlphaCoverage");
     stream.Bool(PreserveAlphaCoverage);
@@ -133,8 +152,14 @@ void TextureTool::Options::Deserialize(DeserializeStream& stream, ISerializeModi
     sRGB = JsonTools::GetBool(stream, "sRGB", sRGB);
     GenerateMipMaps = JsonTools::GetBool(stream, "GenerateMipMaps", GenerateMipMaps);
     FlipY = JsonTools::GetBool(stream, "FlipY", FlipY);
+    FlipX = JsonTools::GetBool(stream, "FlipX", FlipX);
+    InvertRedChannel = JsonTools::GetBool(stream, "InvertRedChannel", InvertRedChannel);
     InvertGreenChannel = JsonTools::GetBool(stream, "InvertGreenChannel", InvertGreenChannel);
+    InvertBlueChannel = JsonTools::GetBool(stream, "InvertBlueChannel", InvertBlueChannel);
+    InvertAlphaChannel = JsonTools::GetBool(stream, "InvertAlphaChannel", InvertAlphaChannel);
+    ReconstructZChannel = JsonTools::GetBool(stream, "ReconstructZChannel", ReconstructZChannel);
     Resize = JsonTools::GetBool(stream, "Resize", Resize);
+    KeepAspectRatio = JsonTools::GetBool(stream, "KeepAspectRatio", KeepAspectRatio);
     PreserveAlphaCoverage = JsonTools::GetBool(stream, "PreserveAlphaCoverage", PreserveAlphaCoverage);
     PreserveAlphaCoverageReference = JsonTools::GetFloat(stream, "PreserveAlphaCoverageReference", PreserveAlphaCoverageReference);
     TextureGroup = JsonTools::GetInt(stream, "TextureGroup", TextureGroup);
@@ -360,326 +385,6 @@ bool TextureTool::Resize(TextureData& dst, const TextureData& src, int32 dstWidt
 #endif
 }
 
-TextureTool::PixelFormatSampler PixelFormatSamplers[] =
-{
-    {
-        PixelFormat::R32G32B32A32_Float,
-        sizeof(Float4),
-        [](const void* ptr)
-        {
-            return Color(*(Float4*)ptr);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(Float4*)ptr = color.ToFloat4();
-        },
-    },
-    {
-        PixelFormat::R32G32B32_Float,
-        sizeof(Float3),
-        [](const void* ptr)
-        {
-            return Color(*(Float3*)ptr, 1.0f);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(Float3*)ptr = color.ToFloat3();
-        },
-    },
-    {
-        PixelFormat::R16G16B16A16_Float,
-        sizeof(Half4),
-        [](const void* ptr)
-        {
-            return Color(((Half4*)ptr)->ToFloat4());
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(Half4*)ptr = Half4(color.R, color.G, color.B, color.A);
-        },
-    },
-    {
-        PixelFormat::R16G16B16A16_UNorm,
-        sizeof(RGBA16UNorm),
-        [](const void* ptr)
-        {
-            return Color(((RGBA16UNorm*)ptr)->ToFloat4());
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(RGBA16UNorm*)ptr = RGBA16UNorm(color.R, color.G, color.B, color.A);
-        }
-    },
-    {
-        PixelFormat::R32G32_Float,
-        sizeof(Float2),
-        [](const void* ptr)
-        {
-            return Color(((Float2*)ptr)->X, ((Float2*)ptr)->Y, 1.0f);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(Float2*)ptr = Float2(color.R, color.G);
-        },
-    },
-    {
-        PixelFormat::R8G8B8A8_UNorm,
-        sizeof(Color32),
-        [](const void* ptr)
-        {
-            return Color(*(Color32*)ptr);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(Color32*)ptr = Color32(color);
-        },
-    },
-    {
-        PixelFormat::R8G8B8A8_UNorm_sRGB,
-        sizeof(Color32),
-        [](const void* ptr)
-        {
-            return Color::SrgbToLinear(Color(*(Color32*)ptr));
-        },
-        [](const void* ptr, const Color& color)
-        {
-            Color srgb = Color::LinearToSrgb(color);
-            *(Color32*)ptr = Color32(srgb);
-        },
-    },
-    {
-        PixelFormat::R8G8_UNorm,
-        sizeof(uint16),
-        [](const void* ptr)
-        {
-            const uint8* rg = (const uint8*)ptr;
-            return Color((float)rg[0] / MAX_uint8, (float)rg[1] / MAX_uint8, 0, 1);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            uint8* rg = (uint8*)ptr;
-            rg[0] = (uint8)(color.R * MAX_uint8);
-            rg[1] = (uint8)(color.G * MAX_uint8);
-        },
-    },
-    {
-        PixelFormat::R16G16_Float,
-        sizeof(Half2),
-        [](const void* ptr)
-        {
-            const Float2 rg = ((Half2*)ptr)->ToFloat2();
-            return Color(rg.X, rg.Y, 0, 1);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(Half2*)ptr = Half2(color.R, color.G);
-        },
-    },
-    {
-        PixelFormat::R16G16_UNorm,
-        sizeof(RG16UNorm),
-        [](const void* ptr)
-        {
-            const Float2 rg = ((RG16UNorm*)ptr)->ToFloat2();
-            return Color(rg.X, rg.Y, 0, 1);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(RG16UNorm*)ptr = RG16UNorm(color.R, color.G);
-        },
-    },
-    {
-        PixelFormat::R32_Float,
-        sizeof(float),
-        [](const void* ptr)
-        {
-            return Color(*(float*)ptr, 0, 0, 1);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(float*)ptr = color.R;
-        },
-    },
-    {
-        PixelFormat::R16_Float,
-        sizeof(Half),
-        [](const void* ptr)
-        {
-            return Color(Float16Compressor::Decompress(*(Half*)ptr), 0, 0, 1);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(Half*)ptr = Float16Compressor::Compress(color.R);
-        },
-    },
-    {
-        PixelFormat::R16_UNorm,
-        sizeof(uint16),
-        [](const void* ptr)
-        {
-            return Color((float)*(uint16*)ptr / MAX_uint16, 0, 0, 1);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(uint16*)ptr = (uint16)(color.R * MAX_uint16);
-        },
-    },
-    {
-        PixelFormat::R8_UNorm,
-        sizeof(uint8),
-        [](const void* ptr)
-        {
-            return Color((float)*(byte*)ptr / MAX_uint8, 0, 0, 1);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(byte*)ptr = (byte)(color.R * MAX_uint8);
-        },
-    },
-    {
-        PixelFormat::A8_UNorm,
-        sizeof(uint8),
-        [](const void* ptr)
-        {
-            return Color(0, 0, 0, (float)*(byte*)ptr / MAX_uint8);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(byte*)ptr = (byte)(color.A * MAX_uint8);
-        },
-    },
-    {
-        PixelFormat::B8G8R8A8_UNorm,
-        sizeof(Color32),
-        [](const void* ptr)
-        {
-            const Color32 bgra = *(Color32*)ptr;
-            return Color(Color32(bgra.B, bgra.G, bgra.R, bgra.A));
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(Color32*)ptr = Color32(byte(color.B * MAX_uint8), byte(color.G * MAX_uint8), byte(color.R * MAX_uint8), byte(color.A * MAX_uint8));
-        },
-    },
-    {
-        PixelFormat::B8G8R8A8_UNorm_sRGB,
-        sizeof(Color32),
-        [](const void* ptr)
-        {
-            const Color32 bgra = *(Color32*)ptr;
-            return Color::SrgbToLinear(Color(Color32(bgra.B, bgra.G, bgra.R, bgra.A)));
-        },
-        [](const void* ptr, const Color& color)
-        {
-            Color srgb = Color::LinearToSrgb(color);
-            *(Color32*)ptr = Color32(byte(srgb.B * MAX_uint8), byte(srgb.G * MAX_uint8), byte(srgb.R * MAX_uint8), byte(srgb.A * MAX_uint8));
-        },
-    },
-    {
-        PixelFormat::B8G8R8X8_UNorm,
-        sizeof(Color32),
-        [](const void* ptr)
-        {
-            const Color32 bgra = *(Color32*)ptr;
-            return Color(Color32(bgra.B, bgra.G, bgra.R, MAX_uint8));
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(Color32*)ptr = Color32(byte(color.B * MAX_uint8), byte(color.G * MAX_uint8), byte(color.R * MAX_uint8), MAX_uint8);
-        },
-    },
-    {
-        PixelFormat::B8G8R8X8_UNorm_sRGB,
-        sizeof(Color32),
-        [](const void* ptr)
-        {
-            const Color32 bgra = *(Color32*)ptr;
-            return Color::SrgbToLinear(Color(Color32(bgra.B, bgra.G, bgra.R, MAX_uint8)));
-        },
-        [](const void* ptr, const Color& color)
-        {
-            Color srgb = Color::LinearToSrgb(color);
-            *(Color32*)ptr = Color32(byte(srgb.B * MAX_uint8), byte(srgb.G * MAX_uint8), byte(srgb.R * MAX_uint8), MAX_uint8);
-        },
-    },
-    {
-        PixelFormat::R11G11B10_Float,
-        sizeof(FloatR11G11B10),
-        [](const void* ptr)
-        {
-            const Float3 rgb = ((FloatR11G11B10*)ptr)->ToFloat3();
-            return Color(rgb.X, rgb.Y, rgb.Z);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(FloatR11G11B10*)ptr = FloatR11G11B10(color.R, color.G, color.B);
-        },
-    },
-    {
-        PixelFormat::R10G10B10A2_UNorm,
-        sizeof(Float1010102),
-        [](const void* ptr)
-        {
-            const Float3 rgb = ((Float1010102*)ptr)->ToFloat3();
-            return Color(rgb.X, rgb.Y, rgb.Z);
-        },
-        [](const void* ptr, const Color& color)
-        {
-            *(Float1010102*)ptr = Float1010102(color.R, color.G, color.B, color.A);
-        },
-    },
-};
-
-const TextureTool::PixelFormatSampler* TextureTool::GetSampler(PixelFormat format)
-{
-    format = PixelFormatExtensions::MakeTypelessFloat(format);
-    for (auto& sampler : PixelFormatSamplers)
-    {
-        if (sampler.Format == format)
-            return &sampler;
-    }
-    return nullptr;
-}
-
-void TextureTool::Store(const PixelFormatSampler* sampler, int32 x, int32 y, const void* data, int32 rowPitch, const Color& color)
-{
-    ASSERT_LOW_LAYER(sampler);
-    sampler->Store((byte*)data + rowPitch * y + sampler->PixelSize * x, color);
-}
-
-Color TextureTool::SamplePoint(const PixelFormatSampler* sampler, const Float2& uv, const void* data, const Int2& size, int32 rowPitch)
-{
-    ASSERT_LOW_LAYER(sampler);
-
-    const Int2 end = size - 1;
-    const Int2 uvFloor(Math::Min(Math::FloorToInt(uv.X * size.X), end.X), Math::Min(Math::FloorToInt(uv.Y * size.Y), end.Y));
-
-    return sampler->Sample((byte*)data + rowPitch * uvFloor.Y + sampler->PixelSize * uvFloor.X);
-}
-
-Color TextureTool::SamplePoint(const PixelFormatSampler* sampler, int32 x, int32 y, const void* data, int32 rowPitch)
-{
-    ASSERT_LOW_LAYER(sampler);
-    return sampler->Sample((byte*)data + rowPitch * y + sampler->PixelSize * x);
-}
-
-Color TextureTool::SampleLinear(const PixelFormatSampler* sampler, const Float2& uv, const void* data, const Int2& size, int32 rowPitch)
-{
-    ASSERT_LOW_LAYER(sampler);
-
-    const Int2 end = size - 1;
-    const Int2 uvFloor(Math::Min(Math::FloorToInt(uv.X * size.X), end.X), Math::Min(Math::FloorToInt(uv.Y * size.Y), end.Y));
-    const Int2 uvNext(Math::Min(uvFloor.X + 1, end.X), Math::Min(uvFloor.Y + 1, end.Y));
-    const Float2 uvFraction(uv.X * size.Y - uvFloor.X, uv.Y * size.Y - uvFloor.Y);
-
-    const Color v00 = sampler->Sample((byte*)data + rowPitch * uvFloor.Y + sampler->PixelSize * uvFloor.X);
-    const Color v01 = sampler->Sample((byte*)data + rowPitch * uvFloor.Y + sampler->PixelSize * uvNext.X);
-    const Color v10 = sampler->Sample((byte*)data + rowPitch * uvNext.Y + sampler->PixelSize * uvFloor.X);
-    const Color v11 = sampler->Sample((byte*)data + rowPitch * uvNext.Y + sampler->PixelSize * uvNext.X);
-
-    return Color::Lerp(Color::Lerp(v00, v01, uvFraction.X), Color::Lerp(v10, v11, uvFraction.X), uvFraction.Y);
-}
-
 PixelFormat TextureTool::ToPixelFormat(TextureFormatType format, int32 width, int32 height, bool canCompress)
 {
     const bool canUseBlockCompression = width % 4 == 0 && height % 4 == 0;
@@ -783,7 +488,7 @@ bool TextureTool::GetImageType(const StringView& path, ImageType& type)
 bool TextureTool::Transform(TextureData& texture, const Function<void(Color&)>& transformation)
 {   
     PROFILE_CPU();
-    auto sampler = TextureTool::GetSampler(texture.Format);
+    auto sampler = PixelFormatSampler::Get(texture.Format);
     if (!sampler)
         return true;
     for (auto& slice : texture.Items)
@@ -797,9 +502,9 @@ bool TextureTool::Transform(TextureData& texture, const Function<void(Color&)>& 
             {
                 for (int32 x = 0; x < mipWidth; x++)
                 {    
-                    Color color = TextureTool::SamplePoint(sampler, x, y, mip.Data.Get(), mip.RowPitch);
+                    Color color = sampler->SamplePoint(mip.Data.Get(), x, y, mip.RowPitch);
                     transformation(color);
-                    TextureTool::Store(sampler, x, y, mip.Data.Get(), mip.RowPitch, color);
+                    sampler->Store(mip.Data.Get(), x, y, mip.RowPitch, color);
                 }
             }
         }

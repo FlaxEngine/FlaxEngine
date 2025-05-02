@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -182,6 +182,13 @@ namespace FlaxEditor.Surface.Archetypes
 
                 base.OnDestroy();
             }
+            
+            internal static void GetInputOutputDescription(NodeArchetype nodeArch, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs)
+            {
+                var type = new ScriptType(nodeArch.DefaultValues[0].GetType());
+                inputs = null;
+                outputs = [(type.Name, type)];
+            }
         }
 
         private class ArrayNode : SurfaceNode
@@ -321,6 +328,12 @@ namespace FlaxEditor.Surface.Archetypes
                 array.SetValue(value, box.ID - 1);
                 SetValue(0, array);
             }
+            
+            internal static void GetInputOutputDescription(NodeArchetype nodeArch, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs)
+            {
+                inputs = null;
+                outputs = [("", new ScriptType(typeof(Array)))];
+            }
         }
 
         private class DictionaryNode : SurfaceNode
@@ -448,6 +461,12 @@ namespace FlaxEditor.Surface.Archetypes
                 array = (Array)array.Clone();
                 array.SetValue(value, box.ID - 1);
                 SetValue(0, array);
+            }
+            
+            internal static void GetInputOutputDescription(NodeArchetype nodeArch, out (string, ScriptType)[] inputs, out (string, ScriptType)[] outputs)
+            {
+                inputs = null;
+                outputs = [("", new ScriptType(typeof(System.Collections.Generic.Dictionary<int, string>)))];
             }
         }
 
@@ -743,6 +762,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Enum",
                 Create = (id, context, arch, groupArch) => new EnumNode(id, context, arch, groupArch),
                 Description = "Enum constant value.",
+                GetInputOutputDescription = EnumNode.GetInputOutputDescription,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(180, 20),
                 DefaultValues = new object[]
@@ -779,6 +799,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Array",
                 Create = (id, context, arch, groupArch) => new ArrayNode(id, context, arch, groupArch),
                 Description = "Constant array value.",
+                GetInputOutputDescription = ArrayNode.GetInputOutputDescription,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
                 Size = new Float2(150, 20),
                 DefaultValues = new object[] { new int[] { 0, 1, 2 } },
@@ -790,6 +811,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Dictionary",
                 Create = (id, context, arch, groupArch) => new DictionaryNode(id, context, arch, groupArch),
                 Description = "Creates an empty dictionary.",
+                GetInputOutputDescription = DictionaryNode.GetInputOutputDescription,
                 Flags = NodeFlags.VisualScriptGraph | NodeFlags.AnimGraph,
                 Size = new Float2(150, 40),
                 DefaultValues = new object[] { typeof(int).FullName, typeof(string).FullName },

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "UICanvas.h"
 #include "Engine/Scripting/ManagedCLR/MException.h"
@@ -17,17 +17,17 @@ MMethod* UICanvas_PostDeserialize = nullptr;
 MMethod* UICanvas_Enable = nullptr;
 MMethod* UICanvas_Disable = nullptr;
 #if USE_EDITOR
-MMethod* UICanvas_OnActiveInTreeChanged = nullptr;
+MMethod* UICanvas_ActiveInTreeChanged = nullptr;
 #endif
 MMethod* UICanvas_EndPlay = nullptr;
 MMethod* UICanvas_ParentChanged = nullptr;
 
 #define UICANVAS_INVOKE(event) \
-    auto instance = GetManagedInstance(); \
-    if (instance) \
+    auto* managed = GetManagedInstance(); \
+    if (managed) \
     { \
 	    MObject* exception = nullptr; \
-	    UICanvas_##event->Invoke(instance, nullptr, &exception); \
+	    UICanvas_##event->Invoke(managed, nullptr, &exception); \
 	    if (exception) \
 	    { \
 		    MException ex(exception); \
@@ -49,7 +49,7 @@ UICanvas::UICanvas(const SpawnParams& params)
         UICanvas_Enable = mclass->GetMethod("Enable");
         UICanvas_Disable = mclass->GetMethod("Disable");
 #if USE_EDITOR
-        UICanvas_OnActiveInTreeChanged = mclass->GetMethod("OnActiveInTreeChanged");
+        UICanvas_ActiveInTreeChanged = mclass->GetMethod("ActiveInTreeChanged");
 #endif
         UICanvas_EndPlay = mclass->GetMethod("EndPlay");
         UICanvas_ParentChanged = mclass->GetMethod("ParentChanged");
@@ -182,7 +182,7 @@ void UICanvas::OnTransformChanged()
 
 void UICanvas::OnActiveInTreeChanged()
 {
-    UICANVAS_INVOKE(OnActiveInTreeChanged);
+    UICANVAS_INVOKE(ActiveInTreeChanged);
 
     // Base
     Actor::OnActiveInTreeChanged();

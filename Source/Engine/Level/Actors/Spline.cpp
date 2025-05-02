@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Spline.h"
 #include "Engine/Serialization/Serialization.h"
@@ -150,35 +150,30 @@ float Spline::GetSplineLength() const
 {
     float sum = 0.0f;
     constexpr int32 slices = 20;
-    constexpr float step = 1.0f / (float)slices;
-    Vector3 prevPoint = Vector3::Zero;
-    if (Curve.GetKeyframes().Count() != 0)
-    {
-        const auto& a = Curve[0];
-        prevPoint = a.Value.Translation * _transform.Scale;
-    }
+    constexpr float step = 1.0f / (float)(slices - 1);
+    const Vector3 scale = _transform.Scale;
     for (int32 i = 1; i < Curve.GetKeyframes().Count(); i++)
     {
         const auto& a = Curve[i - 1];
         const auto& b = Curve[i];
+        Vector3 prevPoint = a.Value.Translation * scale;
 
-        const float length = Math::Abs(b.Time - a.Time);
+        const float tangentScale = Math::Abs(b.Time - a.Time) / 3.0f;
         Vector3 leftTangent, rightTangent;
-        AnimationUtils::GetTangent(a.Value.Translation, a.TangentOut.Translation, length, leftTangent);
-        AnimationUtils::GetTangent(b.Value.Translation, b.TangentIn.Translation, length, rightTangent);
+        AnimationUtils::GetTangent(a.Value.Translation, a.TangentOut.Translation, tangentScale, leftTangent);
+        AnimationUtils::GetTangent(b.Value.Translation, b.TangentIn.Translation, tangentScale, rightTangent);
 
-        // TODO: implement sth more analytical than brute-force solution
-        for (int32 slice = 0; slice < slices; slice++)
+        for (int32 slice = 1; slice < slices; slice++)
         {
             const float t = (float)slice * step;
             Vector3 pos;
             AnimationUtils::Bezier(a.Value.Translation, leftTangent, rightTangent, b.Value.Translation, t, pos);
-            pos *= _transform.Scale;
-            sum += (float)Vector3::DistanceSquared(pos, prevPoint);
+            pos *= scale;
+            sum += (float)Vector3::Distance(pos, prevPoint);
             prevPoint = pos;
         }
     }
-    return Math::Sqrt(sum);
+    return sum;
 }
 
 float Spline::GetSplineSegmentLength(int32 index) const
@@ -188,28 +183,28 @@ float Spline::GetSplineSegmentLength(int32 index) const
     CHECK_RETURN(index > 0 && index < GetSplinePointsCount(), 0.0f);
     float sum = 0.0f;
     constexpr int32 slices = 20;
-    constexpr float step = 1.0f / (float)slices;
+    constexpr float step = 1.0f / (float)(slices - 1);
     const auto& a = Curve[index - 1];
     const auto& b = Curve[index];
-    Vector3 startPoint = a.Value.Translation * _transform.Scale;
+    const Vector3 scale = _transform.Scale;
+    Vector3 prevPoint = a.Value.Translation * scale;
     {
-        const float length = Math::Abs(b.Time - a.Time);
+        const float tangentScale = Math::Abs(b.Time - a.Time) / 3.0f;
         Vector3 leftTangent, rightTangent;
-        AnimationUtils::GetTangent(a.Value.Translation, a.TangentOut.Translation, length, leftTangent);
-        AnimationUtils::GetTangent(b.Value.Translation, b.TangentIn.Translation, length, rightTangent);
+        AnimationUtils::GetTangent(a.Value.Translation, a.TangentOut.Translation, tangentScale, leftTangent);
+        AnimationUtils::GetTangent(b.Value.Translation, b.TangentIn.Translation, tangentScale, rightTangent);
 
-        // TODO: implement sth more analytical than brute-force solution
-        for (int32 slice = 0; slice < slices; slice++)
+        for (int32 slice = 1; slice < slices; slice++)
         {
             const float t = (float)slice * step;
             Vector3 pos;
             AnimationUtils::Bezier(a.Value.Translation, leftTangent, rightTangent, b.Value.Translation, t, pos);
-            pos *= _transform.Scale;
-            sum += (float)Vector3::DistanceSquared(pos, startPoint);
-            startPoint = pos;
+            pos *= scale;
+            sum += (float)Vector3::Distance(pos, prevPoint);
+            prevPoint = pos;
         }
     }
-    return Math::Sqrt(sum);
+    return sum;
 }
 
 float Spline::GetSplineTime(int32 index) const
@@ -481,11 +476,9 @@ void Spline::GetKeyframes(MArray* data)
     Platform::MemoryCopy(MCore::Array::GetAddress(data), Curve.GetKeyframes().Get(), sizeof(Keyframe) * Curve.GetKeyframes().Count());
 }
 
-void Spline::SetKeyframes(MArray* data)
+void Spline::SetKeyframes(MArray* data, int32 keySize)
 {
-    const int32 count = MCore::Array::GetLength(data);
-    Curve.GetKeyframes().Resize(count, false);
-    Platform::MemoryCopy(Curve.GetKeyframes().Get(), MCore::Array::GetAddress(data), sizeof(Keyframe) * count);
+    Curve = Span<byte>(MCore::Array::GetAddress<byte>(data), keySize * MCore::Array::GetLength(data));
     UpdateSpline();
 }
 
@@ -497,19 +490,26 @@ void Spline::SetKeyframes(MArray* data)
 
 namespace
 {
-    void DrawSpline(Spline* spline, const Color& color, const Transform& transform, bool depthTest)
+    FORCE_INLINE float NodeSizeByDistance(const Vector3& nodePosition, bool scaleByDistance)
+    {
+        if (scaleByDistance)
+            return (float)(Vector3::Distance(DebugDraw::GetViewPos(), nodePosition) / 100);
+        return 5.0f;
+    }
+
+    void DrawSpline(Spline* spline, const Color& color, const Transform& transform, bool depthTest, bool scaleByDistance = false)
     {
         const int32 count = spline->Curve.GetKeyframes().Count();
         if (count == 0)
             return;
         Spline::Keyframe* prev = spline->Curve.GetKeyframes().Get();
         Vector3 prevPos = transform.LocalToWorld(prev->Value.Translation);
-        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(prevPos, 5.0f), color, 0.0f, depthTest);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(prevPos, NodeSizeByDistance(prevPos, scaleByDistance)), color, 0.0f, depthTest);
         for (int32 i = 1; i < count; i++)
         {
             Spline::Keyframe* next = prev + 1;
             Vector3 nextPos = transform.LocalToWorld(next->Value.Translation);
-            DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(nextPos, 5.0f), color, 0.0f, depthTest);
+            DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(nextPos, NodeSizeByDistance(nextPos, scaleByDistance)), color, 0.0f, depthTest);
             const float d = (next->Time - prev->Time) / 3.0f;
             DEBUG_DRAW_BEZIER(prevPos, prevPos + prev->TangentOut.Translation * d, nextPos + next->TangentIn.Translation * d, nextPos, color, 0.0f, depthTest);
             prev = next;
@@ -528,7 +528,7 @@ void Spline::OnDebugDraw()
 
 void Spline::OnDebugDrawSelected()
 {
-    DrawSpline(this, Color::White, _transform, false);
+    DrawSpline(this, Color::White, _transform, false, true);
 
     // Base
     Actor::OnDebugDrawSelected();

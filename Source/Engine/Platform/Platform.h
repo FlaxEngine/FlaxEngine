@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -35,7 +35,7 @@
 #endif
 
 #if ENABLE_ASSERTION
-// Performs hard assertion of the expression. Crashes the engine and inserts debugger break in case of expression fail.
+// Performs a hard assertion of the expression. Crashes the engine and triggers a debugger break if the expression fails.
 #define ASSERT(expression) \
     if (!(expression)) \
     { \
@@ -46,24 +46,40 @@
         Platform::Assert(#expression, __FILE__, __LINE__); \
     }
 #else
+// Performs a hard assertion of the expression. Crashes the engine and triggers a debugger break if the expression fails.
 #define ASSERT(expression) ((void)0)
 #endif
 #if ENABLE_ASSERTION_LOW_LAYERS
+// Performs a hard assertion of the expression. Crashes the engine and triggers a debugger break if the expression fails.
 #define ASSERT_LOW_LAYER(x) ASSERT(x)
 #else
+// Performs a hard assertion of the expression. Crashes the engine and triggers a debugger break if the expression fails.
 #define ASSERT_LOW_LAYER(x)
 #endif
 
-// Performs soft check of the expression. Logs the expression fail to log and returns the function call.
+// Performs a soft check of the expression. Logs the expression failure and returns from the function call.
 #define CHECK(expression) \
     if (!(expression)) \
     { \
         Platform::CheckFailed(#expression, __FILE__, __LINE__); \
         return; \
     }
+// Performs a soft check of the expression. Logs the expression failure and returns from the function call using the given return value.
 #define CHECK_RETURN(expression, returnValue) \
     if (!(expression)) \
     { \
         Platform::CheckFailed(#expression, __FILE__, __LINE__); \
         return returnValue; \
     }
+
+#if ENABLE_ASSERTION
+// Performs a soft check of the expression. Logs the expression failure and returns from the function call.
+#define CHECK_DEBUG(expression) CHECK(expression)
+// Performs a soft check of the expression. Logs the expression failure and returns from the function call using the given return value.
+#define CHECK_RETURN_DEBUG(expression, returnValue) CHECK_RETURN(expression, returnValue)
+#else
+// Performs a soft check of the expression. Logs the expression failure and returns from the function call.
+#define CHECK_DEBUG(expression) ((void)0)
+// Performs a soft check of the expression. Logs the expression failure and returns from the function call using the given return value.
+#define CHECK_RETURN_DEBUG(expression, returnValue) ((void)0)
+#endif

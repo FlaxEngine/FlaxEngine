@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -74,8 +74,7 @@ public:
     /// </summary>
     API_PROPERTY() FORCE_INLINE uint32 GetElementsCount() const
     {
-        ASSERT(_desc.Stride > 0);
-        return _desc.Size / _desc.Stride;
+        return _desc.Stride > 0 ? _desc.Size / _desc.Stride : 0;
     }
 
     /// <summary>
@@ -86,21 +85,23 @@ public:
         return _desc.Flags;
     }
 
-    /// <summary>
-    /// Checks if buffer is a staging buffer (supports CPU readback).
+    /// <summary>	
+    /// Gets vertex elements layout used by vertex buffers only.
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool IsStaging() const
+    API_PROPERTY() FORCE_INLINE GPUVertexLayout* GetVertexLayout() const
     {
-        return _desc.Usage == GPUResourceUsage::StagingReadback || _desc.Usage == GPUResourceUsage::StagingUpload;
+        return _desc.VertexLayout;
     }
 
     /// <summary>
-    /// Checks if buffer is a staging buffer (supports CPU readback).
+    /// Checks if buffer is a staging buffer (supports CPU access).
     /// </summary>
-    API_PROPERTY() FORCE_INLINE bool IsDynamic() const
-    {
-        return _desc.Usage == GPUResourceUsage::Dynamic;
-    }
+    API_PROPERTY() bool IsStaging() const;
+
+    /// <summary>
+    /// Checks if buffer is a dynamic buffer.
+    /// </summary>
+    API_PROPERTY() bool IsDynamic() const;
 
     /// <summary>
     /// Gets a value indicating whether this buffer is a shader resource.
@@ -174,7 +175,7 @@ public:
     Task* DownloadDataAsync(BytesContainer& result);
 
     /// <summary>
-    /// Gets the buffer data via map/memcpy/unmap sequence. Always supported for dynamic and staging readback buffers (other types support depends on graphics backend implementation).
+    /// Gets the buffer data via map/memcpy/unmap sequence. Always supported for dynamic and staging buffers (other types support depends on graphics backend implementation).
     /// </summary>
     /// <param name="output">The output data container.</param>
     /// <returns>True if failed, otherwise false.</returns>

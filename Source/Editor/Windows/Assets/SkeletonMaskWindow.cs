@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections;
 using System.Xml;
@@ -80,11 +80,8 @@ namespace FlaxEditor.Windows.Assets
                 public override void Initialize(LayoutElementsContainer layout)
                 {
                     var proxy = (PropertiesProxy)Values[0];
-                    if (proxy.Asset == null || !proxy.Asset.IsLoaded)
-                    {
-                        layout.Label("Loading...", TextAlignment.Center);
+                    if (Utilities.Utils.OnAssetProperties(layout, proxy.Asset))
                         return;
-                    }
 
                     base.Initialize(layout);
 
@@ -195,8 +192,10 @@ namespace FlaxEditor.Windows.Assets
         public SkeletonMaskWindow(Editor editor, AssetItem item)
         : base(editor, item)
         {
+            var inputOptions = Editor.Options.Options.Input;
+
             // Toolstrip
-            _saveButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save asset to the file");
+            _saveButton = _toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/animation/skeleton-mask.html")).LinkTooltip("See documentation to learn more");
 

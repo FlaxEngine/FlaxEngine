@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,37 +12,33 @@
 class AudioBackendOAL : public AudioBackend
 {
 public:
-
     // [AudioBackend]
-    void Listener_OnAdd(AudioListener* listener) override;
-    void Listener_OnRemove(AudioListener* listener) override;
-    void Listener_VelocityChanged(AudioListener* listener) override;
-    void Listener_TransformChanged(AudioListener* listener) override;
+    void Listener_Reset() override;
+    void Listener_VelocityChanged(const Vector3& velocity) override;
+    void Listener_TransformChanged(const Vector3& position, const Quaternion& orientation) override;
     void Listener_ReinitializeAll() override;
-    void Source_OnAdd(AudioSource* source) override;
-    void Source_OnRemove(AudioSource* source) override;
-    void Source_VelocityChanged(AudioSource* source) override;
-    void Source_TransformChanged(AudioSource* source) override;
-    void Source_VolumeChanged(AudioSource* source) override;
-    void Source_PitchChanged(AudioSource* source) override;
-    void Source_PanChanged(AudioSource* source) override;
-    void Source_IsLoopingChanged(AudioSource* source) override;
-    void Source_SpatialSetupChanged(AudioSource* source) override;
-    void Source_ClipLoaded(AudioSource* source) override;
-    void Source_Cleanup(AudioSource* source) override;
-    void Source_Play(AudioSource* source) override;
-    void Source_Pause(AudioSource* source) override;
-    void Source_Stop(AudioSource* source) override;
-    void Source_SetCurrentBufferTime(AudioSource* source, float value) override;
-    float Source_GetCurrentBufferTime(const AudioSource* source) override;
-    void Source_SetNonStreamingBuffer(AudioSource* source) override;
-    void Source_GetProcessedBuffersCount(AudioSource* source, int32& processedBuffersCount) override;
-    void Source_GetQueuedBuffersCount(AudioSource* source, int32& queuedBuffersCount) override;
-    void Source_QueueBuffer(AudioSource* source, uint32 bufferId) override;
-    void Source_DequeueProcessedBuffers(AudioSource* source) override;
+    uint32 Source_Add(const AudioDataInfo& format, const Vector3& position, const Quaternion& orientation, float volume, float pitch, float pan, bool loop, bool spatial, float attenuation, float minDistance, float doppler) override;
+    void Source_Remove(uint32 sourceID) override;
+    void Source_VelocityChanged(uint32 sourceID, const Vector3& velocity) override;
+    void Source_TransformChanged(uint32 sourceID, const Vector3& position, const Quaternion& orientation) override;
+    void Source_VolumeChanged(uint32 sourceID, float volume) override;
+    void Source_PitchChanged(uint32 sourceID, float pitch) override;
+    void Source_PanChanged(uint32 sourceID, float pan) override;
+    void Source_IsLoopingChanged(uint32 sourceID, bool loop) override;
+    void Source_SpatialSetupChanged(uint32 sourceID, bool spatial, float attenuation, float minDistance, float doppler) override;
+    void Source_Play(uint32 sourceID) override;
+    void Source_Pause(uint32 sourceID) override;
+    void Source_Stop(uint32 sourceID) override;
+    void Source_SetCurrentBufferTime(uint32 sourceID, float value) override;
+    float Source_GetCurrentBufferTime(uint32 sourceID) override;
+    void Source_SetNonStreamingBuffer(uint32 sourceID, uint32 bufferID) override;
+    void Source_GetProcessedBuffersCount(uint32 sourceID, int32& processedBuffersCount) override;
+    void Source_GetQueuedBuffersCount(uint32 sourceID, int32& queuedBuffersCount) override;
+    void Source_QueueBuffer(uint32 sourceID, uint32 bufferID) override;
+    void Source_DequeueProcessedBuffers(uint32 sourceID) override;
     uint32 Buffer_Create() override;
-    void Buffer_Delete(uint32 bufferId) override;
-    void Buffer_Write(uint32 bufferId, byte* samples, const AudioDataInfo& info) override;
+    void Buffer_Delete(uint32 bufferID) override;
+    void Buffer_Write(uint32 bufferID, byte* samples, const AudioDataInfo& info) override;
     const Char* Base_Name() override;
     FeatureFlags Base_Features() override;
     void Base_OnActiveDeviceChanged() override;

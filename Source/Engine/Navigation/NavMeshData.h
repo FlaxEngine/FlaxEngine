@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,13 +7,13 @@
 
 class WriteStream;
 
-struct NavMeshTileDataHeader
+PACK_STRUCT(struct NavMeshTileDataHeader
 {
     int32 PosX;
     int32 PosY;
     int32 Layer;
     int32 DataSize;
-};
+});
 
 struct NavMeshTileData
 {

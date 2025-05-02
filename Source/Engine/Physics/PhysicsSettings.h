@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -95,9 +95,15 @@ public:
     PhysicsBroadPhaseType BroadPhaseType = PhysicsBroadPhaseType::ParallelAutomaticBoxPruning;
 
     /// <summary>
+    /// Enables enhanced determinism in the simulation. This has a performance impact.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(71), EditorDisplay(\"Simulation\")")
+    bool EnableEnhancedDeterminism = false;
+
+    /// <summary>
     /// The solver type to use in the simulation.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(72), EditorDisplay(\"Simulation\")")
+    API_FIELD(Attributes="EditorOrder(73), EditorDisplay(\"Simulation\")")
     PhysicsSolverType SolverType = PhysicsSolverType::ProjectedGaussSeidelIterativeSolver;
 
     /// <summary>
@@ -137,7 +143,7 @@ public:
     float TriangleMeshTriangleMinAreaThreshold = 5.0f;
 
     /// <summary>
-    /// If enabled, any Raycast or other scene query that intersects with a Collider marked as a Trigger will returns with a hit. Individual raycasts can override this behavior.
+    /// If enabled, any Raycast or other scene query that intersects with a Collider marked as a Trigger will return with a hit. Individual raycasts can override this behavior.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(1200), EditorDisplay(\"Other\")")
     bool QueriesHitTriggers = true;
@@ -160,5 +166,8 @@ public:
 
     // [SettingsBase]
     void Apply() override;
+#if USE_EDITOR
+    void Serialize(SerializeStream& stream, const void* otherObj) override;
+#endif
     void Deserialize(DeserializeStream& stream, ISerializeModifier* modifier) final override;
 };

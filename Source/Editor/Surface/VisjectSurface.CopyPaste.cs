@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -190,15 +190,7 @@ namespace FlaxEditor.Surface
             if (data == null || data.Length < 2)
                 return false;
 
-            try
-            {
-                var model = JsonConvert.DeserializeObject<DataModel>(data);
-                return model?.Nodes != null && model.Nodes.Length != 0;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            return true;
         }
 
         /// <summary>
@@ -215,7 +207,15 @@ namespace FlaxEditor.Surface
             try
             {
                 // Load Mr Json
-                var model = FlaxEngine.Json.JsonSerializer.Deserialize<DataModel>(data);
+                DataModel model;
+                try
+                {
+                    model = FlaxEngine.Json.JsonSerializer.Deserialize<DataModel>(data);
+                }
+                catch
+                {
+                    return;
+                }
                 if (model.Nodes == null)
                     model.Nodes = new DataModelNode[0];
 
@@ -286,13 +286,14 @@ namespace FlaxEditor.Surface
                     // Initialize
                     if (nodeData.Values != null && node.Values.Length > 0)
                     {
-                        if (node.Values != null && node.Values.Length == nodeData.Values.Length)
+                        var nodeValues = (object[])node.Values?.Clone();
+                        if (nodeValues != null && nodeValues.Length == nodeData.Values.Length)
                         {
                             // Copy and fix values (Json deserializes may output them in a different format)
-                            for (int l = 0; l < node.Values.Length; l++)
+                            for (int l = 0; l < nodeData.Values.Length; l++)
                             {
                                 var src = nodeData.Values[l].Value;
-                                var dst = node.Values[l];
+                                var dst = nodeValues[l];
 
                                 try
                                 {
@@ -364,13 +365,24 @@ namespace FlaxEditor.Surface
                                     Editor.LogWarning(ex);
                                 }
 
-                                node.Values[l] = src;
+                                nodeValues[l] = src;
+                            }
+                        }
+                        else if (node.Archetype.Flags.HasFlag(NodeFlags.VariableValuesSize))
+                        {
+                            // Copy values
+                            nodeValues = new object[nodeData.Values.Length];
+                            for (int l = 0; l < nodeData.Values.Length; l++)
+                            {
+                                nodeValues[l] = nodeData.Values[l].Value;
                             }
                         }
                         else
                         {
                             Editor.LogWarning("Invalid node custom values.");
                         }
+                        if (nodeValues != null)
+                            node.SetValuesPaste(nodeValues);
                     }
 
                     Context.OnControlLoaded(node, SurfaceNodeActions.Paste);
@@ -445,7 +457,8 @@ namespace FlaxEditor.Surface
                 // Select those nodes
                 Select(nodes.Values);
 
-                MarkAsEdited();
+                if (nodes.Count > 0)
+                    MarkAsEdited();
             }
             catch (Exception ex)
             {

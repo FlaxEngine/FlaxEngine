@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Physics.h"
 #include "PhysicsScene.h"
@@ -6,6 +6,7 @@
 #include "PhysicalMaterial.h"
 #include "PhysicsSettings.h"
 #include "PhysicsStatistics.h"
+#include "Colliders/Collider.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -49,6 +50,36 @@ PhysicsSettings::PhysicsSettings()
         LayerMasks[i] = MAX_uint32;
 }
 
+#if USE_EDITOR
+
+void PhysicsSettings::Serialize(SerializeStream& stream, const void* otherObj)
+{
+    SERIALIZE_GET_OTHER_OBJ(PhysicsSettings);
+
+    SERIALIZE(DefaultGravity);
+    SERIALIZE(TriangleMeshTriangleMinAreaThreshold);
+    SERIALIZE(BounceThresholdVelocity);
+    SERIALIZE(FrictionCombineMode);
+    SERIALIZE(RestitutionCombineMode);
+    SERIALIZE(DisableCCD);
+    SERIALIZE(BroadPhaseType);
+    SERIALIZE(SolverType);
+    SERIALIZE(MaxDeltaTime);
+    SERIALIZE(EnableSubstepping);
+    SERIALIZE(SubstepDeltaTime);
+    SERIALIZE(MaxSubsteps);
+    SERIALIZE(QueriesHitTriggers);
+    SERIALIZE(SupportCookingAtRuntime);
+
+    stream.JKEY("LayerMasks");
+    stream.StartArray();
+    for (uint32 e : LayerMasks)
+        stream.Uint(e);
+    stream.EndArray();
+}
+
+#endif
+
 void PhysicsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     DESERIALIZE(DefaultGravity);
@@ -71,7 +102,7 @@ void PhysicsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier*
     {
         auto& layersArray = layers->value;
         ASSERT(layersArray.IsArray());
-        for (uint32 i = 0; i < layersArray.Size() && i < 32; i++)
+        for (uint32 i = 0; i < layersArray.Size() && i < ARRAY_COUNT(LayerMasks); i++)
         {
             LayerMasks[i] = layersArray[i].GetUint();
         }
@@ -81,7 +112,7 @@ void PhysicsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier*
 PhysicalMaterial::~PhysicalMaterial()
 {
     if (_material)
-        PhysicsBackend::DestroyObject(_material);
+        PhysicsBackend::DestroyMaterial(_material);
 }
 
 bool PhysicsService::Init()
@@ -235,76 +266,91 @@ bool Physics::LineCastAll(const Vector3& start, const Vector3& end, Array<RayCas
 
 bool Physics::RayCast(const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->RayCast(origin, direction, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->RayCast(origin, direction, hitInfo, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::RayCastAll(const Vector3& origin, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->RayCastAll(origin, direction, results, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->BoxCast(center, halfExtents, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->BoxCast(center, halfExtents, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::BoxCastAll(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->BoxCastAll(center, halfExtents, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::SphereCast(const Vector3& center, const float radius, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->SphereCast(center, radius, direction, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::SphereCast(const Vector3& center, const float radius, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->SphereCast(center, radius, direction, hitInfo, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::SphereCastAll(const Vector3& center, const float radius, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->SphereCastAll(center, radius, direction, results, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->CapsuleCast(center, radius, height, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->CapsuleCast(center, radius, height, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::CapsuleCastAll(const Vector3& center, const float radius, const float height, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->CapsuleCastAll(center, radius, height, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->ConvexCast(center, convexMesh, scale, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->ConvexCast(center, convexMesh, scale, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool Physics::ConvexCastAll(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return DefaultScene->ConvexCastAll(center, convexMesh, scale, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
@@ -479,102 +525,117 @@ void PhysicsScene::CollectResults()
 bool PhysicsScene::LineCast(const Vector3& start, const Vector3& end, uint32 layerMask, bool hitTriggers)
 {
     Vector3 directionToEnd = end - start;
-    const float distanceToEnd = directionToEnd.Length();
+    const Real distanceToEnd = directionToEnd.Length();
     if (distanceToEnd >= ZeroTolerance)
         directionToEnd /= distanceToEnd;
-    return PhysicsBackend::RayCast(_scene, start, directionToEnd, distanceToEnd, layerMask, hitTriggers);
+    return PhysicsBackend::RayCast(_scene, start, directionToEnd, (float)distanceToEnd, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::LineCast(const Vector3& start, const Vector3& end, RayCastHit& hitInfo, uint32 layerMask, bool hitTriggers)
 {
     Vector3 directionToEnd = end - start;
-    const float distanceToEnd = directionToEnd.Length();
+    const Real distanceToEnd = directionToEnd.Length();
     if (distanceToEnd >= ZeroTolerance)
         directionToEnd /= distanceToEnd;
-    return PhysicsBackend::RayCast(_scene, start, directionToEnd, hitInfo, distanceToEnd, layerMask, hitTriggers);
+    return PhysicsBackend::RayCast(_scene, start, directionToEnd, hitInfo, (float)distanceToEnd, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::LineCastAll(const Vector3& start, const Vector3& end, Array<RayCastHit>& results, uint32 layerMask, bool hitTriggers)
 {
     Vector3 directionToEnd = end - start;
-    const float distanceToEnd = directionToEnd.Length();
+    const Real distanceToEnd = directionToEnd.Length();
     if (distanceToEnd >= ZeroTolerance)
         directionToEnd /= distanceToEnd;
-    return PhysicsBackend::RayCastAll(_scene, start, directionToEnd, results, distanceToEnd, layerMask, hitTriggers);
+    return PhysicsBackend::RayCastAll(_scene, start, directionToEnd, results, (float)distanceToEnd, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::RayCast(const Vector3& origin, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::RayCast(_scene, origin, direction, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::RayCast(_scene, origin, direction, hitInfo, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::RayCastAll(const Vector3& origin, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::RayCastAll(_scene, origin, direction, results, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::BoxCast(_scene, center, halfExtents, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::BoxCast(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::BoxCast(_scene, center, halfExtents, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::BoxCastAll(const Vector3& center, const Vector3& halfExtents, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::BoxCastAll(_scene, center, halfExtents, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::SphereCast(const Vector3& center, const float radius, const Vector3& direction, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::SphereCast(_scene, center, radius, direction, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::SphereCast(const Vector3& center, const float radius, const Vector3& direction, RayCastHit& hitInfo, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::SphereCast(_scene, center, radius, direction, hitInfo, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::SphereCastAll(const Vector3& center, const float radius, const Vector3& direction, Array<RayCastHit>& results, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::SphereCastAll(_scene, center, radius, direction, results, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::CapsuleCast(_scene, center, radius, height, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::CapsuleCast(const Vector3& center, const float radius, const float height, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::CapsuleCast(_scene, center, radius, height, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::CapsuleCastAll(const Vector3& center, const float radius, const float height, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::CapsuleCastAll(_scene, center, radius, height, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::ConvexCast(_scene, center, convexMesh, scale, direction, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::ConvexCast(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, RayCastHit& hitInfo, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::ConvexCast(_scene, center, convexMesh, scale, direction, hitInfo, rotation, maxDistance, layerMask, hitTriggers);
 }
 
 bool PhysicsScene::ConvexCastAll(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, const Vector3& direction, Array<RayCastHit>& results, const Quaternion& rotation, const float maxDistance, uint32 layerMask, bool hitTriggers)
 {
+    CHECK_RETURN_DEBUG(direction.IsNormalized(), false);
     return PhysicsBackend::ConvexCastAll(_scene, center, convexMesh, scale, direction, results, rotation, maxDistance, layerMask, hitTriggers);
 }
 
@@ -600,22 +661,66 @@ bool PhysicsScene::CheckConvex(const Vector3& center, const CollisionData* conve
 
 bool PhysicsScene::OverlapBox(const Vector3& center, const Vector3& halfExtents, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    return PhysicsBackend::OverlapBox(_scene, center, halfExtents, results, rotation, layerMask, hitTriggers);
+    Array<PhysicsColliderActor*> tmp;
+    if (PhysicsBackend::OverlapBox(_scene, center, halfExtents, tmp, rotation, layerMask, hitTriggers))
+    {
+        results.EnsureCapacity(tmp.Count());
+        for (PhysicsColliderActor* e : tmp)
+        {
+            if (e && e->Is<Collider>())
+                results.Add((Collider*)e);
+        }
+        return true;
+    }
+    return false;
 }
 
 bool PhysicsScene::OverlapSphere(const Vector3& center, const float radius, Array<Collider*>& results, uint32 layerMask, bool hitTriggers)
 {
-    return PhysicsBackend::OverlapSphere(_scene, center, radius, results, layerMask, hitTriggers);
+    Array<PhysicsColliderActor*> tmp;
+    if (PhysicsBackend::OverlapSphere(_scene, center, radius, tmp, layerMask, hitTriggers))
+    {
+        results.EnsureCapacity(tmp.Count());
+        for (PhysicsColliderActor* e : tmp)
+        {
+            if (e && e->Is<Collider>())
+                results.Add((Collider*)e);
+        }
+        return true;
+    }
+    return false;
 }
 
 bool PhysicsScene::OverlapCapsule(const Vector3& center, const float radius, const float height, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    return PhysicsBackend::OverlapCapsule(_scene, center, radius, height, results, rotation, layerMask, hitTriggers);
+    Array<PhysicsColliderActor*> tmp;
+    if (PhysicsBackend::OverlapCapsule(_scene, center, radius, height, tmp, rotation, layerMask, hitTriggers))
+    {
+        results.EnsureCapacity(tmp.Count());
+        for (PhysicsColliderActor* e : tmp)
+        {
+            if (e && e->Is<Collider>())
+                results.Add((Collider*)e);
+        }
+        return true;
+    }
+    return false;
 }
 
 bool PhysicsScene::OverlapConvex(const Vector3& center, const CollisionData* convexMesh, const Vector3& scale, Array<Collider*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)
 {
-    return PhysicsBackend::OverlapConvex(_scene, center, convexMesh, scale, results, rotation, layerMask, hitTriggers);
+    Array<PhysicsColliderActor*> tmp;
+    if (PhysicsBackend::OverlapConvex(_scene, center, convexMesh, scale, tmp, rotation, layerMask, hitTriggers))
+    {
+        results.EnsureCapacity(tmp.Count());
+        for (PhysicsColliderActor* e : tmp)
+        {
+            if (e && e->Is<Collider>())
+                results.Add((Collider*)e);
+        }
+        return true;
+    }
+    return false;
 }
 
 bool PhysicsScene::OverlapBox(const Vector3& center, const Vector3& halfExtents, Array<PhysicsColliderActor*>& results, const Quaternion& rotation, uint32 layerMask, bool hitTriggers)

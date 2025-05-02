@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "BinaryAsset.h"
 #include "Cache/AssetsCache.h"
@@ -189,8 +189,10 @@ bool BinaryAsset::HasDependenciesModified() const
 
 #endif
 
-FlaxChunk* BinaryAsset::GetOrCreateChunk(int32 index)
+FlaxChunk* BinaryAsset::GetOrCreateChunk(int32 index) const
 {
+    if (IsVirtual()) // Virtual assets don't own storage container
+        return nullptr;
     ASSERT(Math::IsInRange(index, 0, ASSET_FILE_DATA_CHUNKS - 1));
 
     // Try get
@@ -203,7 +205,7 @@ FlaxChunk* BinaryAsset::GetOrCreateChunk(int32 index)
 
     // Allocate
     ASSERT(Storage);
-    _header.Chunks[index] = chunk = Storage->AllocateChunk();
+    const_cast<BinaryAsset*>(this)->_header.Chunks[index] = chunk = Storage->AllocateChunk();
     if (chunk)
         chunk->RegisterUsage();
 
@@ -261,10 +263,9 @@ void BinaryAsset::GetChunkData(int32 index, BytesContainer& data) const
     data.Link(chunk->Data);
 }
 
-bool BinaryAsset::LoadChunk(int32 chunkIndex)
+bool BinaryAsset::LoadChunk(int32 chunkIndex) const
 {
     ASSERT(Storage);
-
     const auto chunk = _header.Chunks[chunkIndex];
     if (chunk != nullptr
         && chunk->IsMissing()
@@ -273,19 +274,14 @@ bool BinaryAsset::LoadChunk(int32 chunkIndex)
         if (Storage->LoadAssetChunk(chunk))
             return true;
     }
-
     return false;
 }
 
-bool BinaryAsset::LoadChunks(AssetChunksFlag chunks)
+bool BinaryAsset::LoadChunks(AssetChunksFlag chunks) const
 {
-    ASSERT(Storage);
-
-    // Check if skip loading
     if (chunks == 0)
         return false;
-
-    // Load all missing marked chunks
+    ASSERT(Storage);
     for (int32 i = 0; i < ASSET_FILE_DATA_CHUNKS; i++)
     {
         auto chunk = _header.Chunks[i];
@@ -298,7 +294,6 @@ bool BinaryAsset::LoadChunks(AssetChunksFlag chunks)
                 return true;
         }
     }
-
     return false;
 }
 
@@ -319,6 +314,8 @@ bool BinaryAsset::SaveAsset(const StringView& path, AssetInitData& data, bool si
 
 bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool silentMode)
 {
+    PROFILE_CPU();
+
     // Ensure path is in a valid format
     String pathNorm(path);
     ContentStorageManager::FormatPath(pathNorm);
@@ -375,6 +372,7 @@ bool BinaryAsset::SaveToAsset(const StringView& path, AssetInitData& data, bool 
         const auto locks = storage->_chunksLock;
         storage->_chunksLock = 0;
         result = storage->Save(data, silentMode);
+        ASSERT(storage->_chunksLock == 0);
         storage->_chunksLock = locks;
     }
     else

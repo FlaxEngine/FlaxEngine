@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -310,8 +310,9 @@ namespace FlaxEditor.Modules
         /// </summary>
         /// <param name="actor">The actor.</param>
         /// <param name="parent">The parent actor. Set null as default.</param>
+        /// <param name="orderInParent">The order under the parent to put the spawned actor.</param>
         /// <param name="autoSelect">True if automatically select the spawned actor, otherwise false.</param>
-        public void Spawn(Actor actor, Actor parent = null, bool autoSelect = true)
+        public void Spawn(Actor actor, Actor parent = null, int orderInParent = -1, bool autoSelect = true)
         {
             bool isPlayMode = Editor.StateMachine.IsPlayMode;
 
@@ -320,17 +321,21 @@ namespace FlaxEditor.Modules
 
             SpawnBegin?.Invoke();
 
+            // During play in editor mode spawned actors should be dynamic (user can move them)
+            if (isPlayMode)
+                actor.StaticFlags = StaticFlags.None;
+
             // Add it
             Level.SpawnActor(actor, parent);
+
+            // Set order if given
+            if (orderInParent != -1)
+                actor.OrderInParent = orderInParent;
 
             // Peek spawned node
             var actorNode = Editor.Instance.Scene.GetActorNode(actor);
             if (actorNode == null)
                 throw new InvalidOperationException("Failed to create scene node for the spawned actor.");
-
-            // During play in editor mode spawned actors should be dynamic (user can move them)
-            if (isPlayMode)
-                actor.StaticFlags = StaticFlags.None;
 
             // Call post spawn action (can possibly setup custom default values)
             actorNode.PostSpawn();
@@ -555,10 +560,20 @@ namespace FlaxEditor.Modules
         /// </summary>
         public void CreateParentForSelectedActors()
         {
-            Actor actor = new EmptyActor();
-            Editor.SceneEditing.Spawn(actor, null, false);
             List<SceneGraphNode> selection = Editor.SceneEditing.Selection;
             var actors = selection.Where(x => x is ActorNode).Select(x => ((ActorNode)x).Actor);
+            var actorsCount = actors.Count();
+            if (actorsCount == 0)
+                return;
+            Vector3 center = Vector3.Zero;
+            foreach (var actor in actors)
+                center += actor.Position;
+            center /= actorsCount;
+            Actor parent = new EmptyActor
+            {
+                Position = center,
+            };
+            Editor.SceneEditing.Spawn(parent, null, -1, false);
             using (new UndoMultiBlock(Undo, actors, "Reparent actors"))
             {
                 for (int i = 0; i < selection.Count; i++)
@@ -574,15 +589,15 @@ namespace FlaxEditor.Modules
 
                             // Put created node as child of the Parent Node of node
                             int parentOrder = node.Actor.OrderInParent;
-                            actor.Parent = node.Actor.Parent;
-                            actor.OrderInParent = parentOrder;
+                            parent.SetParent(node.Actor.Parent, true, true);
+                            parent.OrderInParent = parentOrder;
                         }
-                        node.Actor.Parent = actor;
+                        node.Actor.SetParent(parent, true, false);
                     }
                 }
             }
-            Editor.SceneEditing.Select(actor);
-            Editor.Scene.GetActorNode(actor).TreeNode.StartRenaming(Editor.Windows.SceneWin, Editor.Windows.SceneWin.SceneTreePanel);
+            Editor.SceneEditing.Select(parent);
+            Editor.Scene.GetActorNode(parent).TreeNode.StartRenaming(Editor.Windows.SceneWin, Editor.Windows.SceneWin.SceneTreePanel);
         }
 
         /// <summary>

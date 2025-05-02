@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -31,6 +31,9 @@ public:
         Dictionary<Guid, int32> ObjectToInstance;
         CriticalSection Locker;
         ThreadLocal<ISerializeModifier*> Modifiers;
+#if USE_EDITOR
+        HashSet<Prefab*> DeprecatedPrefabs;
+#endif
 
         Context(ISerializeModifier* modifier);
         ~Context();

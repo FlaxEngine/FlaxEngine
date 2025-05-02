@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -225,8 +225,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public override void OnDestroy()
             {
-                if (Surface != null)
-                    Surface.RemoveContext(this);
+                Surface?.RemoveContext(this);
 
                 _maxTransitionsPerUpdate = null;
                 _reinitializeOnBecomingRelevant = null;
@@ -717,9 +716,12 @@ namespace FlaxEditor.Surface.Archetypes
 
                 LoadTransitions();
 
-                // Register for surface mouse events to handle transition arrows interactions
-                Surface.CustomMouseUp += OnSurfaceMouseUp;
-                Surface.CustomMouseDoubleClick += OnSurfaceMouseDoubleClick;
+                if (Surface != null)
+                {
+                    // Register for surface mouse events to handle transition arrows interactions
+                    Surface.CustomMouseUp += OnSurfaceMouseUp;
+                    Surface.CustomMouseDoubleClick += OnSurfaceMouseDoubleClick;
+                }
             }
 
             private void OnSurfaceMouseUp(ref Float2 mouse, MouseButton buttons, ref bool handled)
@@ -1351,6 +1353,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// </summary>
             public void Edit()
             {
+                Cursor = CursorType.Default;
                 Surface.OpenContext(this);
             }
 
@@ -1398,7 +1401,8 @@ namespace FlaxEditor.Surface.Archetypes
                 if (context.FindNode(9, 21) == null)
                 {
                     var wasEnabled = true;
-                    if (Surface.Undo != null)
+                    var undo = Surface?.Undo;
+                    if (undo != null)
                     {
                         wasEnabled = Surface.Undo.Enabled;
                         Surface.Undo.Enabled = false;
@@ -1406,7 +1410,7 @@ namespace FlaxEditor.Surface.Archetypes
 
                     context.SpawnNode(9, 21, new Float2(100.0f));
 
-                    if (Surface.Undo != null)
+                    if (undo != null)
                     {
                         Surface.Undo.Enabled = wasEnabled;
                     }
@@ -1492,7 +1496,7 @@ namespace FlaxEditor.Surface.Archetypes
             /// <inheritdoc />
             public override void OnDestroy()
             {
-                Surface.RemoveContext(this);
+                Surface?.RemoveContext(this);
 
                 base.OnDestroy();
             }
@@ -1886,7 +1890,7 @@ namespace FlaxEditor.Surface.Archetypes
                 if (context.FindNode(9, 22) == null)
                 {
                     var wasEnabled = true;
-                    var undo = SourceState.Surface.Undo;
+                    var undo = SourceState.Surface?.Undo;
                     if (undo != null)
                     {
                         wasEnabled = undo.Enabled;

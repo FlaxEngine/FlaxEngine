@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.IO;
 using System.Linq;
@@ -71,6 +71,24 @@ namespace Flax.Build.Platforms
         }
 
         /// <inheritdoc />
+        public override bool CanBuildArchitecture(TargetArchitecture targetArchitecture)
+        {
+            // Prevent generating configuration data for Windows x86 (deprecated)
+            if (targetArchitecture == TargetArchitecture.x86)
+                return false;
+
+            // Check if we have a compiler for this architecture
+            var toolsets = GetToolsets();
+            foreach (var toolset in toolsets)
+            {
+                if (GetVCToolPath(toolset.Key, BuildTargetArchitecture, targetArchitecture) != null)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <inheritdoc />
         void IVisualStudioProjectCustomizer.WriteVisualStudioBegin(VisualStudioProject project, Platform platform, StringBuilder vcProjectFileContent, StringBuilder vcFiltersFileContent, StringBuilder vcUserFileContent)
         {
         }
@@ -82,7 +100,7 @@ namespace Flax.Build.Platforms
             var outputType = project.OutputType ?? configuration.Target.OutputType;
             if (outputType != TargetOutputType.Executable && configuration.Name.StartsWith("Editor."))
             {
-                var editorFolder = configuration.Architecture == TargetArchitecture.x64 ? "Win64" : "Win32";
+                var editorFolder = configuration.Architecture == TargetArchitecture.x64 ? "Win64" : (configuration.Architecture == TargetArchitecture.ARM64 ? "ARM64" : "Win32");
                 vcUserFileContent.AppendLine(string.Format("  <PropertyGroup Condition=\"'$(Configuration)|$(Platform)'=='{0}'\">", configuration.Name));
                 vcUserFileContent.AppendLine(string.Format("    <LocalDebuggerCommand>{0}\\FlaxEditor.exe</LocalDebuggerCommand>", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", editorFolder, configuration.ConfigurationName)));
                 vcUserFileContent.AppendLine("    <LocalDebuggerCommandArguments>-project \"$(SolutionDir)\" -skipCompile</LocalDebuggerCommandArguments>");
@@ -107,6 +125,9 @@ namespace Flax.Build.Platforms
                 break;
             case TargetArchitecture.x64:
                 name = "Win64";
+                break;
+            case TargetArchitecture.ARM64:
+                name = "ARM64";
                 break;
             }
         }

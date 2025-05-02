@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "DepthOfFieldPass.h"
 #include "RenderList.h"
@@ -18,7 +18,7 @@
 #define DOF_GRID_SIZE 450
 #define DOF_DEPTH_BLUR_FORMAT PixelFormat::R16G16_Float
 
-PACK_STRUCT(struct Data {
+GPU_CB_STRUCT(Data {
     Float2 ProjectionAB;
     float BokehDepthCullThreshold;
     float BokehDepthCutoff;

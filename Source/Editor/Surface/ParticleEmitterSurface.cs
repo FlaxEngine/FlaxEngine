@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -23,6 +23,9 @@ namespace FlaxEditor.Surface
         /// Gets the root node of the emitter graph.
         /// </summary>
         public FlaxEditor.Surface.Archetypes.Particles.ParticleEmitterNode RootNode => _rootNode;
+
+        /// <inheritdoc />
+        public override bool UseContextMenuDescriptionPanel => true;
 
         /// <inheritdoc />
         public ParticleEmitterSurface(IVisjectSurfaceOwner owner, Action onSave, FlaxEditor.Undo undo)

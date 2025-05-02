@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,12 +6,16 @@
 #include "Engine/Core/Enums.h"
 #include "Engine/Graphics/Enums.h"
 
+// [Deprecated in v1.10]
 #define INPUT_LAYOUT_ELEMENT_ALIGN 0xffffffff
+// [Deprecated in v1.10]
 #define INPUT_LAYOUT_ELEMENT_PER_VERTEX_DATA 0
+// [Deprecated in v1.10]
 #define INPUT_LAYOUT_ELEMENT_PER_INSTANCE_DATA 1
 
 /// <summary>
 /// Maximum amount of input elements for vertex shader programs
+/// [Deprecated in v1.10]
 /// </summary>
 #define VERTEX_SHADER_MAX_INPUT_ELEMENTS 16
 
@@ -26,7 +30,8 @@
 #define SHADER_PERMUTATIONS_MAX_PARAMS_COUNT 4
 
 /// <summary>
-/// Maximum allowed amount of constant buffers that can be binded to the pipeline (maximum slot index is  MAX_CONSTANT_BUFFER_SLOTS-1)
+/// Maximum allowed amount of constant buffers that can be binded to the pipeline (maximum slot index is MAX_CONSTANT_BUFFER_SLOTS-1)
+/// [Deprecated in v1.10]
 /// </summary>
 #define MAX_CONSTANT_BUFFER_SLOTS 4
 

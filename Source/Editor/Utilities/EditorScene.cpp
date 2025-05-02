@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "EditorScene.h"
 
@@ -10,6 +10,9 @@ EditorScene::EditorScene(const SpawnParams& params)
     SceneBeginData beginData;
     EditorScene::BeginPlay(&beginData);
     beginData.OnDone();
+
+    // Mark as internal to prevent collection in ManagedEditor::WipeOutLeftoverSceneObjects
+    Tags.Add(Tags::Get(TEXT("__EditorInternal")));
 }
 
 void EditorScene::Update()

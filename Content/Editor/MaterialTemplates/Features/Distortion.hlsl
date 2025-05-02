@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 @0// Distortion: Defines
 @1// Distortion: Includes
@@ -12,13 +12,12 @@
 META_PS(USE_DISTORTION, FEATURE_LEVEL_ES2)
 float4 PS_Distortion(PixelInput input) : SV_Target0
 {
+	MaterialInput materialInput = GetMaterialInput(input);
 #if USE_DITHERED_LOD_TRANSITION
-	// LOD masking
-	ClipLODTransition(input);
+	ClipLODTransition(materialInput);
 #endif
 
 	// Get material parameters
-	MaterialInput materialInput = GetMaterialInput(input);
 	Material material = GetMaterialPS(materialInput);
 
 	// Masking

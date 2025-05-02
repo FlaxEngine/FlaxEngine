@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -103,20 +103,6 @@ public:
     API_FUNCTION() static bool IsCompressedASTC(PixelFormat format);
 
     /// <summary>
-    /// Determines whether the specified <see cref="PixelFormat"/> is packed.
-    /// </summary>
-    /// <param name="format">The Pixel Format.</param>
-    /// <returns><c>true</c> if the specified <see cref="PixelFormat"/> is packed; otherwise, <c>false</c>.</returns>
-    API_FUNCTION() static bool IsPacked(PixelFormat format);
-
-    /// <summary>
-    /// Determines whether the specified <see cref="PixelFormat"/> is planar.
-    /// </summary>
-    /// <param name="format">The Pixel Format.</param>
-    /// <returns><c>true</c> if the specified <see cref="PixelFormat"/> is planar; otherwise, <c>false</c>.</returns>
-    API_FUNCTION() static bool IsPlanar(PixelFormat format);
-
-    /// <summary>
     /// Determines whether the specified <see cref="PixelFormat"/> is video.
     /// </summary>
     /// <param name="format">The <see cref="PixelFormat"/>.</param>
@@ -219,4 +205,10 @@ public:
     static PixelFormat FindUnorderedAccessFormat(PixelFormat format);
     static PixelFormat FindDepthStencilFormat(PixelFormat format);
     static PixelFormat FindUncompressedFormat(PixelFormat format);
+
+private:
+    // Internal bindings
+#if !COMPILE_WITHOUT_CSHARP
+    API_FUNCTION(NoProxy) static void GetSamplerInternal(PixelFormat format, API_PARAM(Out) int32& pixelSize, API_PARAM(Out) void** read, API_PARAM(Out) void** write);
+#endif
 };

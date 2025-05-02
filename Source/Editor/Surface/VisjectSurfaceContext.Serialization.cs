@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -51,6 +51,7 @@ namespace FlaxEditor.Surface
         {
             TypeID = originalNodeId,
             Title = "Missing Node :(",
+            Signature = "Missing Node :(",
             Description = ":(",
             Flags = NodeFlags.AllGraphs,
             Size = new Float2(200, 70),

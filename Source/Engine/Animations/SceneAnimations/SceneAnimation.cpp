@@ -1,10 +1,11 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "SceneAnimation.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Audio/AudioClip.h"
 #include "Engine/Graphics/PostProcessSettings.h"
@@ -35,19 +36,166 @@ const BytesContainer& SceneAnimation::LoadTimeline()
 
 #if USE_EDITOR
 
-bool SceneAnimation::SaveTimeline(const BytesContainer& data)
+void SceneAnimation::SaveData(MemoryWriteStream& stream) const
 {
-    // Wait for asset to be loaded or don't if last load failed (eg. by shader source compilation error)
-    if (LastLoadFailed())
-    {
-        LOG(Warning, "Saving asset that failed to load.");
-    }
-    else if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
-        return true;
-    }
+    // Save properties
+    stream.Write(4);
+    stream.Write(FramesPerSecond);
+    stream.Write(DurationFrames);
 
+    // Save tracks
+    stream.Write(Tracks.Count());
+    for (const auto& track : Tracks)
+    {
+        stream.Write((byte)track.Type);
+        stream.Write((byte)track.Flag);
+        stream.Write((int32)track.ParentIndex);
+        stream.Write((int32)track.ChildrenCount);
+        stream.Write(track.Name, -13);
+        stream.Write(track.Color);
+        switch (track.Type)
+        {
+        case Track::Types::Folder:
+            break;
+        case Track::Types::PostProcessMaterial:
+        {
+            auto trackData = stream.Move<PostProcessMaterialTrack::Data>();
+            trackData->AssetID = track.Asset.GetID();
+            const auto trackRuntime = track.GetRuntimeData<PostProcessMaterialTrack::Runtime>();
+            stream.Write((int32)trackRuntime->Count);
+            stream.WriteBytes(trackRuntime->Media, sizeof(Media) * trackRuntime->Count);
+            break;
+        }
+        case Track::Types::NestedSceneAnimation:
+        {
+            auto trackData = stream.Move<NestedSceneAnimationTrack::Data>();
+            *trackData = *track.GetData<NestedSceneAnimationTrack::Data>();
+            trackData->AssetID = track.Asset.GetID();
+            break;
+        }
+        case Track::Types::ScreenFade:
+        {
+            auto trackData = stream.Move<ScreenFadeTrack::Data>();
+            *trackData = *track.GetData<ScreenFadeTrack::Data>();
+            const auto trackRuntime = track.GetRuntimeData<ScreenFadeTrack::Runtime>();
+            stream.WriteBytes(trackRuntime->GradientStops, sizeof(ScreenFadeTrack::GradientStop) * trackData->GradientStopsCount);
+            break;
+        }
+        case Track::Types::Audio:
+        {
+            auto trackData = stream.Move<AudioTrack::Data>();
+            trackData->AssetID = track.Asset.GetID();
+            const auto trackRuntime = track.GetRuntimeData<AudioTrack::Runtime>();
+            stream.Write((int32)trackRuntime->Count);
+            stream.WriteBytes(trackRuntime->Media, sizeof(AudioTrack::Media) * trackRuntime->Count);
+            break;
+        }
+        case Track::Types::AudioVolume:
+        {
+            auto trackData = stream.Move<AudioVolumeTrack::Data>();
+            *trackData = *track.GetData<AudioVolumeTrack::Data>();
+            const auto trackRuntime = track.GetRuntimeData<AudioVolumeTrack::Runtime>();
+            stream.WriteBytes(trackRuntime->Keyframes, sizeof(BezierCurveKeyframe<float>) * trackRuntime->KeyframesCount);
+            break;
+        }
+        case Track::Types::Actor:
+        {
+            auto trackData = stream.Move<ActorTrack::Data>();
+            *trackData = *track.GetData<ActorTrack::Data>();
+            break;
+        }
+        case Track::Types::Script:
+        {
+            auto trackData = stream.Move<ScriptTrack::Data>();
+            *trackData = *track.GetData<ScriptTrack::Data>();
+            break;
+        }
+        case Track::Types::KeyframesProperty:
+        case Track::Types::ObjectReferenceProperty:
+        {
+            auto trackData = stream.Move<KeyframesPropertyTrack::Data>();
+            *trackData = *track.GetData<KeyframesPropertyTrack::Data>();
+            const auto trackRuntime = track.GetRuntimeData<KeyframesPropertyTrack::Runtime>();
+            stream.WriteBytes(trackRuntime->PropertyName, trackData->PropertyNameLength + 1);
+            stream.WriteBytes(trackRuntime->PropertyTypeName, trackData->PropertyTypeNameLength + 1);
+            stream.WriteBytes(trackRuntime->Keyframes, trackRuntime->KeyframesSize);
+            break;
+        }
+        case Track::Types::CurveProperty:
+        {
+            auto trackData = stream.Move<CurvePropertyTrack::Data>();
+            *trackData = *track.GetData<CurvePropertyTrack::Data>();
+            const auto trackRuntime = track.GetRuntimeData<CurvePropertyTrack::Runtime>();
+            stream.WriteBytes(trackRuntime->PropertyName, trackData->PropertyNameLength + 1);
+            stream.WriteBytes(trackRuntime->PropertyTypeName, trackData->PropertyTypeNameLength + 1);
+            const int32 keyframesDataSize = trackData->KeyframesCount * (sizeof(float) + trackData->ValueSize * 3);
+            stream.WriteBytes(trackRuntime->Keyframes, keyframesDataSize);
+            break;
+        }
+        case Track::Types::StringProperty:
+        {
+            const auto trackData = stream.Move<StringPropertyTrack::Data>();
+            *trackData = *track.GetData<StringPropertyTrack::Data>();
+            const auto trackRuntime = track.GetRuntimeData<StringPropertyTrack::Runtime>();
+            stream.WriteBytes(trackRuntime->PropertyName, trackData->PropertyNameLength + 1);
+            stream.WriteBytes(trackRuntime->PropertyTypeName, trackData->PropertyTypeNameLength + 1);
+            const auto keyframesTimes = (float*)((byte*)trackRuntime + sizeof(StringPropertyTrack::Runtime));
+            const auto keyframesLengths = (int32*)((byte*)keyframesTimes + sizeof(float) * trackRuntime->KeyframesCount);
+            const auto keyframesValues = (Char**)((byte*)keyframesLengths + sizeof(int32) * trackRuntime->KeyframesCount);
+            for (int32 j = 0; j < trackRuntime->KeyframesCount; j++)
+            {
+                stream.Write((float)keyframesTimes[j]);
+                stream.Write((int32)keyframesLengths[j]);
+                stream.WriteBytes(keyframesValues[j], keyframesLengths[j] * sizeof(Char));
+            }
+            break;
+        }
+        case Track::Types::StructProperty:
+        case Track::Types::ObjectProperty:
+        {
+            auto trackData = stream.Move<StructPropertyTrack::Data>();
+            *trackData = *track.GetData<StructPropertyTrack::Data>();
+            const auto trackRuntime = track.GetRuntimeData<StructPropertyTrack::Runtime>();
+            stream.WriteBytes(trackRuntime->PropertyName, trackData->PropertyNameLength + 1);
+            stream.WriteBytes(trackRuntime->PropertyTypeName, trackData->PropertyTypeNameLength + 1);
+            break;
+        }
+        case Track::Types::Event:
+        {
+            const auto trackRuntime = track.GetRuntimeData<EventTrack::Runtime>();
+            int32 tmp = StringUtils::Length(trackRuntime->EventName);
+            stream.Write((int32)trackRuntime->EventParamsCount);
+            stream.Write((int32)trackRuntime->EventsCount);
+            stream.Write((int32)tmp);
+            stream.WriteBytes(trackRuntime->EventName, tmp + 1);
+            for (int j = 0; j < trackRuntime->EventParamsCount; j++)
+            {
+                stream.Write((int32)trackRuntime->EventParamSizes[j]);
+                stream.Write((int32)tmp);
+                stream.WriteBytes(trackRuntime->EventParamTypes[j], tmp + 1);
+            }
+            stream.WriteBytes(trackRuntime->DataBegin, trackRuntime->EventsCount * (sizeof(float) + trackRuntime->EventParamsSize));
+            break;
+        }
+        case Track::Types::CameraCut:
+        {
+            auto trackData = stream.Move<CameraCutTrack::Data>();
+            *trackData = *track.GetData<CameraCutTrack::Data>();
+            const auto trackRuntime = track.GetRuntimeData<CameraCutTrack::Runtime>();
+            stream.Write((int32)trackRuntime->Count);
+            stream.WriteBytes(trackRuntime->Media, sizeof(Media) * trackRuntime->Count);
+            break;
+        }
+        default:
+            break;
+        }
+    }
+}
+
+bool SceneAnimation::SaveTimeline(const BytesContainer& data) const
+{
+    if (OnCheckSave())
+        return true;
     ScopeLock lock(Locker);
 
     // Release all chunks
@@ -71,21 +219,29 @@ bool SceneAnimation::SaveTimeline(const BytesContainer& data)
     return false;
 }
 
-#endif
-
-#if USE_EDITOR
-
-void SceneAnimation::GetReferences(Array<Guid>& output) const
+void SceneAnimation::GetReferences(Array<Guid>& assets, Array<String>& files) const
 {
     // Base
-    BinaryAsset::GetReferences(output);
+    BinaryAsset::GetReferences(assets, files);
 
     for (int32 i = 0; i < Tracks.Count(); i++)
     {
         const auto& track = Tracks[i];
         if (track.Asset)
-            output.Add(track.Asset->GetID());
+            assets.Add(track.Asset->GetID());
     }
+}
+
+bool SceneAnimation::Save(const StringView& path)
+{
+    if (OnCheckSave(path))
+        return true;
+    ScopeLock lock(Locker);
+    MemoryWriteStream stream;
+    SaveData(stream);
+    BytesContainer data;
+    data.Link(ToSpan(stream));
+    return SaveTimeline(data);
 }
 
 #endif
@@ -112,19 +268,20 @@ Asset::LoadResult SceneAnimation::load()
 
     // Load properties
     int32 version;
-    stream.ReadInt32(&version);
+    stream.Read(version);
     switch (version)
     {
     case 2: // [Deprecated in 2020 expires on 03.09.2023]
     case 3: // [Deprecated on 03.09.2021 expires on 03.09.2023]
+        MARK_CONTENT_DEPRECATED();
     case 4:
     {
-        stream.ReadFloat(&FramesPerSecond);
-        stream.ReadInt32(&DurationFrames);
+        stream.Read(FramesPerSecond);
+        stream.Read(DurationFrames);
 
         // Load tracks
         int32 tracksCount;
-        stream.ReadInt32(&tracksCount);
+        stream.Read(tracksCount);
         Tracks.Resize(tracksCount, false);
         for (int32 i = 0; i < tracksCount; i++)
         {
@@ -134,7 +291,7 @@ Asset::LoadResult SceneAnimation::load()
             track.Flag = (Track::Flags)stream.ReadByte();
             stream.ReadInt32(&track.ParentIndex);
             stream.ReadInt32(&track.ChildrenCount);
-            stream.ReadString(&track.Name, -13);
+            stream.Read(track.Name, -13);
             stream.Read(track.Color);
             track.Disabled = (int32)track.Flag & (int32)Track::Flags::Mute || (track.ParentIndex != -1 && Tracks[track.ParentIndex].Disabled);
             track.TrackStateIndex = -1;

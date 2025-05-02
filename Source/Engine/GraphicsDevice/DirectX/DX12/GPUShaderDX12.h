@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -22,7 +22,6 @@ public:
     }
 
 public:
-
     /// <summary>
     /// Last uploaded data address.
     /// </summary>
@@ -35,7 +34,6 @@ public:
 class GPUShaderDX12 : public GPUResourceDX12<GPUShader>
 {
 public:
-
     /// <summary>
     /// Initializes a new instance of the <see cref="GPUShaderDX12"/> class.
     /// </summary>
@@ -47,9 +45,8 @@ public:
     }
 
 protected:
-
     // [GPUShader]
-    GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, byte* cacheBytes, uint32 cacheSize, MemoryReadStream& stream) override;
+    GPUShaderProgram* CreateGPUShaderProgram(ShaderStage type, const GPUShaderProgramInitializer& initializer, Span<byte> bytecode, MemoryReadStream& stream) override;
 };
 
 #endif

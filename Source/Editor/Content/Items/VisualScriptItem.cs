@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -100,13 +100,23 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public object GetValue(object obj)
         {
+            if (!_type.Asset)
+                throw new TargetException("Missing Visual Script asset.");
             return _type.Asset.GetScriptInstanceParameterValue(_parameter.Name, (Object)obj);
         }
 
         /// <inheritdoc />
         public void SetValue(object obj, object value)
         {
+            if (!_type.Asset)
+                throw new TargetException("Missing Visual Script asset.");
             _type.Asset.SetScriptInstanceParameterValue(_parameter.Name, (Object)obj, value);
+        }
+
+        /// <inheritdoc />
+        public object Invoke(object obj, object[] parameters)
+        {
+            throw new NotSupportedException();
         }
     }
 
@@ -235,6 +245,14 @@ namespace FlaxEditor.Content
         public void SetValue(object obj, object value)
         {
             throw new NotSupportedException();
+        }
+
+        /// <inheritdoc />
+        public object Invoke(object obj, object[] parameters)
+        {
+            if (!_type.Asset)
+                throw new TargetException("Missing Visual Script asset.");
+            return _type.Asset.InvokeMethod(_index, obj, parameters);
         }
     }
 

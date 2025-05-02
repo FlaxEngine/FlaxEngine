@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -80,20 +80,12 @@ public:
     /// </summary>
     API_FUNCTION() void ResetValues();
 
-#if USE_EDITOR
-
-    /// <summary>
-    /// Saves this asset to the file. Supported only in Editor.
-    /// </summary>
-    /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
-    /// <returns>True if cannot save data, otherwise false.</returns>
-    API_FUNCTION() bool Save(const StringView& path = StringView::Empty);
-
-#endif
-
 public:
     // [BinaryAsset]
     void InitAsVirtual() override;
+#if USE_EDITOR
+    bool Save(const StringView& path = StringView::Empty) override;
+#endif
 
 protected:
     // [BinaryAsset]

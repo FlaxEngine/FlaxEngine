@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -87,10 +87,16 @@ namespace FlaxEditor.Surface.Archetypes
             private class GradientStop : Control
             {
                 private bool _isMoving;
+                private float _movedToTime = float.MaxValue;
                 private Float2 _startMovePos;
 
                 public ColorGradientNode Node;
                 public Color Color;
+
+                public void UpdateLocation(float time)
+                {
+                    Location = Node._gradient.BottomLeft + new Float2(time * Node._gradient.Width - Width * 0.5f, 0.0f);
+                }
 
                 /// <inheritdoc />
                 public override void Draw()
@@ -118,6 +124,7 @@ namespace FlaxEditor.Surface.Archetypes
                     if (button == MouseButton.Left)
                     {
                         Node.Select(this);
+                        _movedToTime = float.MaxValue;
                         _isMoving = true;
                         _startMovePos = location;
                         StartMouseCapture();
@@ -133,6 +140,12 @@ namespace FlaxEditor.Surface.Archetypes
                     if (button == MouseButton.Left && _isMoving)
                     {
                         _isMoving = false;
+                        if (_movedToTime < float.MaxValue)
+                        {
+                            int index = Node._stops.IndexOf(this);
+                            Node.SetStopTime(index, _movedToTime);
+                            _movedToTime = float.MaxValue;
+                        }
                         EndMouseCapture();
                     }
 
@@ -159,9 +172,10 @@ namespace FlaxEditor.Surface.Archetypes
                     if (_isMoving && Float2.DistanceSquared(ref location, ref _startMovePos) > 25.0f)
                     {
                         _startMovePos = Float2.Minimum;
-                        var index = Node._stops.IndexOf(this);
-                        var time = (PointToParent(location).X - Node._gradient.BottomLeft.X) / Node._gradient.Width;
-                        Node.SetStopTime(index, time);
+                        int index = Node._stops.IndexOf(this);
+                        _movedToTime = (PointToParent(location).X - Node._gradient.BottomLeft.X) / Node._gradient.Width;
+                        _movedToTime = Node.ClampStopTime(index, _movedToTime);
+                        UpdateLocation(_movedToTime);
                     }
 
                     base.OnMouseMove(location);
@@ -171,6 +185,7 @@ namespace FlaxEditor.Surface.Archetypes
                 public override void OnEndMouseCapture()
                 {
                     _isMoving = false;
+                    _movedToTime = float.MaxValue;
 
                     base.OnEndMouseCapture();
                 }
@@ -223,6 +238,7 @@ namespace FlaxEditor.Surface.Archetypes
                     Parent = this
                 };
                 _timeValue.ValueChanged += OnTimeValueChanged;
+                _timeValue.SlidingEnd += OnTimeValueChanged;
 
                 _colorValue = new ColorValueBox(Color.Black, _timeValue.Right + 4.0f, controlsLevel)
                 {
@@ -301,8 +317,16 @@ namespace FlaxEditor.Surface.Archetypes
 
             private void OnTimeValueChanged()
             {
+                var time = _timeValue.Value;
                 var index = _stops.IndexOf(_selected);
-                SetStopTime(index, _timeValue.Value);
+                if (_timeValue.IsSliding)
+                {
+                    // Preview-only while sliding
+                    time = ClampStopTime(index, time);
+                    _selected.UpdateLocation(time);
+                    return;
+                }
+                SetStopTime(index, time);
             }
 
             private void OnColorValueChanged()
@@ -346,7 +370,7 @@ namespace FlaxEditor.Surface.Archetypes
                 UpdateStops();
             }
 
-            private void SetStopTime(int index, float time)
+            private float ClampStopTime(int index, float time)
             {
                 time = Mathf.Saturate(time);
                 if (index != 0)
@@ -357,6 +381,12 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     time = Mathf.Min(time, (float)Values[1 + index * 2 + 2]);
                 }
+                return time;
+            }
+
+            private void SetStopTime(int index, float time)
+            {
+                time = ClampStopTime(index, time);
                 SetValue(1 + index * 2, time);
             }
 
@@ -395,7 +425,7 @@ namespace FlaxEditor.Surface.Archetypes
                 {
                     var stop = _stops[i];
                     var time = (float)Values[i * 2 + 1];
-                    stop.Location = _gradient.BottomLeft + new Float2(time * _gradient.Width - stop.Width * 0.5f, 0.0f);
+                    stop.UpdateLocation(time);
                     stop.Color = (Color)Values[i * 2 + 2];
                     stop.TooltipText = stop.Color + " at " + time;
                 }
@@ -1469,12 +1499,12 @@ namespace FlaxEditor.Surface.Archetypes
                     2,
 
                     // Stop 0
-                    0.1f,
-                    Color.CornflowerBlue,
+                    0.05f,
+                    Color.Black,
 
                     // Stop 1
-                    0.9f,
-                    Color.GreenYellow,
+                    0.95f,
+                    Color.White,
 
                     // Empty stops 2-7
                     0.0f, Color.Black,
@@ -1502,9 +1532,10 @@ namespace FlaxEditor.Surface.Archetypes
                     {
                         data = new object[]
                         {
-                            filterText.Substring(2),
-                            new Color(1.0f, 1.0f, 1.0f, 0.2f),
-                            new Float2(400.0f, 400.0f),
+                            filterText.Substring(2), // Title
+                            new Color(1.0f, 1.0f, 1.0f, 0.2f), // Color
+                            new Float2(400.0f, 400.0f), // Size
+                            -1, // Order
                         };
                         return true;
                     }

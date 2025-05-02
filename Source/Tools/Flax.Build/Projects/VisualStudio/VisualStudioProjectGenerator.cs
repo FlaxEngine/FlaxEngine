@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -22,7 +22,7 @@ namespace Flax.Build.Projects.VisualStudio
             public override Guid ProjectTypeGuid => ProjectTypeGuids.Android;
 
             /// <inheritdoc />
-            public override void Generate(string solutionPath)
+            public override void Generate(string solutionPath, bool isMainProject)
             {
                 // Try to reuse the existing project guid from existing files
                 ProjectGuid = GetProjectGuid(Path, Name);
@@ -356,13 +356,13 @@ namespace Flax.Build.Projects.VisualStudio
 
                     if (project.SourceDirectories != null && project.SourceDirectories.Count == 1)
                     {
-                        var subFolder = Utilities.MakePathRelativeTo(Path.GetDirectoryName(project.SourceDirectories[0]), project.WorkspaceRootPath);
-                        if (subFolder.StartsWith("Source\\"))
-                            subFolder = subFolder.Substring(7);
+                        var subFolder = Utilities.NormalizePath(Utilities.MakePathRelativeTo(Path.GetDirectoryName(project.SourceDirectories[0]), project.WorkspaceRootPath));
+                        if (subFolder.StartsWith("Source/"))
+                            subFolder = subFolder.Substring("Source/".Length);
                         if (subFolder.Length != 0)
                         {
                             if (folder.Length != 0)
-                                folder += '\\';
+                                folder += '/';
                             folder += subFolder;
                         }
                     }
@@ -370,12 +370,12 @@ namespace Flax.Build.Projects.VisualStudio
                     if (string.IsNullOrEmpty(folder))
                         continue;
 
-                    var folderParents = folder.Split('\\');
+                    var folderParents = folder.Split('/');
                     for (int i = 0; i < folderParents.Length; i++)
                     {
                         var folderPath = folderParents[0];
                         for (int j = 1; j <= i; j++)
-                            folderPath += '\\' + folderParents[j];
+                            folderPath += '/' + folderParents[j];
 
                         if (folderNames.Contains(folderPath))
                         {
@@ -397,7 +397,7 @@ namespace Flax.Build.Projects.VisualStudio
                 {
                     var folderGuid = folderIds[folder].ToString("B").ToUpperInvariant();
                     var typeGuid = ProjectTypeGuids.ToOption(ProjectTypeGuids.SolutionFolder);
-                    var lastSplit = folder.LastIndexOf('\\');
+                    var lastSplit = folder.LastIndexOf('/');
                     var name = lastSplit != -1 ? folder.Substring(lastSplit + 1) : folder;
 
                     vcSolutionFileContent.AppendLine(string.Format("Project(\"{0}\") = \"{1}\", \"{2}\", \"{3}\"", typeGuid, name, folder, folderGuid));
@@ -434,6 +434,7 @@ namespace Flax.Build.Projects.VisualStudio
 
                 // Collect all unique configurations
                 var configurations = new HashSet<SolutionConfiguration>();
+                var mainArchitectures = solution.MainProject?.Targets?.SelectMany(x => x.Architectures).Distinct().ToArray();
                 foreach (var project in projects)
                 {
                     if (project.Configurations == null || project.Configurations.Count == 0)
@@ -445,6 +446,10 @@ namespace Flax.Build.Projects.VisualStudio
 
                     foreach (var configuration in project.Configurations)
                     {
+                        // Skip architectures which are not included in the game project
+                        if (mainArchitectures != null && !mainArchitectures.Contains(configuration.Architecture))
+                            continue;
+
                         configurations.Add(new SolutionConfiguration(configuration));
                     }
                 }
@@ -568,7 +573,7 @@ namespace Flax.Build.Projects.VisualStudio
                     // Write nested folders hierarchy
                     foreach (var folder in folderNames)
                     {
-                        var lastSplit = folder.LastIndexOf('\\');
+                        var lastSplit = folder.LastIndexOf('/');
                         if (lastSplit != -1)
                         {
                             var folderGuid = folderIds[folder].ToString("B").ToUpperInvariant();
@@ -610,7 +615,8 @@ namespace Flax.Build.Projects.VisualStudio
             {
                 var profiles = new Dictionary<string, string>();
                 var profile = new StringBuilder();
-                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), $"Development/FlaxEditor{Utilities.GetPlatformExecutableExt()}")).Replace('\\', '/');
+                var configuration = "Development";
+                var editorPath = Utilities.NormalizePath(Path.Combine(Globals.EngineRoot, Platform.GetEditorBinaryDirectory(), configuration, $"FlaxEditor{Utilities.GetPlatformExecutableExt()}")).Replace('\\', '/');
                 var workspacePath = Utilities.NormalizePath(solutionDirectory).Replace('\\', '/');
                 foreach (var project in projects)
                 {
@@ -721,6 +727,8 @@ namespace Flax.Build.Projects.VisualStudio
 
                 void AppendBuildToolCommands(StringBuilder str, string extraArgs)
                 {
+                    if (solution.MainProject == null)
+                        return;
                     foreach (var configuration in solution.MainProject.Configurations)
                     {
                         var cmdLine = string.Format("\"{0}\" -log -mutex -workspace=\"{1}\" -arch={2} -configuration={3} -platform={4} -buildTargets={5}",

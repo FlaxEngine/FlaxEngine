@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -83,6 +83,30 @@ public:
     FORCE_INLINE U* Get() const
     {
         return (U*)_data;
+    }
+
+public:
+    /// <summary>
+    /// Constructs a slice out of the current span that begins at a specified index.
+    /// </summary>
+    /// <param name="start">The zero-based index at which to begin the slice.</param>
+    /// <returns>A span that consists of all elements of the current span from <paramref name="start" /> to the end of the span.</returns>
+    Span<T> Slice(int32 start)
+    {
+        ASSERT(start <= _length);
+        return Span(_data + start, _length - start);
+    }
+
+    /// <summary>
+    /// Constructs a slice out of the current span starting at a specified index for a specified length.
+    /// </summary>
+    /// <param name="start">The zero-based index at which to begin this slice.</param>
+    /// <param name="length">The length for the result slice.</param>
+    /// <returns>A span that consists of <paramref name="length" /> elements from the current span starting at <paramref name="start" />.</returns>
+    Span<T> Slice(int32 start, int32 length)
+    {
+        ASSERT(start + length <= _length);
+        return Span(_data + start, length);
     }
 
 public:

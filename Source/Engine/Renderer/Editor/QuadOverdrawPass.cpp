@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_EDITOR
 
@@ -14,6 +14,7 @@
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Graphics/RenderTools.h"
 
 void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context, GPUTextureView* lightBuffer)
 {
@@ -49,7 +50,8 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     context->BindUA(1, overdrawTexture->View());
     context->BindUA(2, liveCountTexture->View());
     DrawCall drawCall;
-    drawCall.PerInstanceRandom = 1.0f;
+    drawCall.WorldDeterminantSign = 1.0f;
+    drawCall.PerInstanceRandom = 0.0f;
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
     bindParams.BindViewData();
     renderContext.View.Pass = DrawPass::QuadOverdraw;
@@ -62,13 +64,8 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
         // Draw decals
         for (int32 i = 0; i < renderContext.List->Decals.Count(); i++)
         {
-            const auto decal = renderContext.List->Decals[i];
-            ASSERT(decal && decal->Material);
-            Transform transform = decal->GetTransform();
-            transform.Scale *= decal->GetSize();
-            renderContext.View.GetWorldMatrix(transform, drawCall.World);
-            drawCall.ObjectPosition = drawCall.World.GetTranslation();
-            drawCall.PerInstanceRandom = decal->GetPerInstanceRandom();
+            const RenderDecalData& decal = renderContext.List->Decals.Get()[i];
+            drawCall.World = decal.World;
             defaultMaterial->Bind(bindParams);
             boxModel->Render(context);
         }
@@ -86,7 +83,7 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
         m1 *= m2;
         drawCall.World = m1;
         drawCall.ObjectPosition = drawCall.World.GetTranslation();
-        drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
+        drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
         skyMaterial->Bind(bindParams);
         skyModel->Render(context);
     }

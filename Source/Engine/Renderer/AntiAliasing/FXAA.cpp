@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "FXAA.h"
 #include "Engine/Content/Assets/Shader.h"
@@ -7,8 +7,7 @@
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 
-PACK_STRUCT(struct Data
-    {
+GPU_CB_STRUCT(Data {
     Float4 ScreenSize;
     });
 
@@ -66,10 +65,10 @@ void FXAA::Dispose()
 void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureView* output)
 {
     auto context = GPUDevice::Instance->GetMainContext();
+    context->SetRenderTarget(output);
     if (checkIfSkipPass())
     {
         // Resources are missing. Do not perform rendering, just copy input frame.
-        context->SetRenderTarget(output);
         context->Draw(input);
         return;
     }
@@ -84,7 +83,6 @@ void FXAA::Render(RenderContext& renderContext, GPUTexture* input, GPUTextureVie
     context->BindSR(0, input);
 
     // Render
-    context->SetRenderTarget(output);
     const auto qualityLevel = Math::Clamp(static_cast<int32>(Graphics::AAQuality), 0, static_cast<int32>(Quality::MAX) - 1);
     context->SetState(_psFXAA.Get(qualityLevel));
     context->DrawFullscreenTriangle();

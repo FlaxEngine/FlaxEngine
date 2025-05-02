@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "TerrainChunk.h"
 #include "Engine/Serialization/Serialization.h"
@@ -9,6 +9,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Graphics/RenderTools.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Level/Scene/Scene.h"
 #if USE_EDITOR
@@ -121,8 +122,12 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
         drawCall.Terrain.Lightmap = nullptr;
         drawCall.Terrain.LightmapUVsArea = Rectangle::Empty;
     }
-    drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
+    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = _perInstanceRandom;
+#if USE_EDITOR
+    if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
+        drawCall.Surface.LODDitherFactor = 1.0f; // See LightmapUVsDensityMaterialShader
+#endif
 
     // Add half-texel offset for heightmap sampling in vertex shader
     //const float lodHeightmapSize = Math::Max(1, drawCall.TerrainData.Heightmap->Width() >> lod);
@@ -178,8 +183,12 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
         drawCall.Terrain.Lightmap = nullptr;
         drawCall.Terrain.LightmapUVsArea = Rectangle::Empty;
     }
-    drawCall.WorldDeterminantSign = Math::FloatSelect(drawCall.World.RotDeterminant(), 1, -1);
+    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = _perInstanceRandom;
+#if USE_EDITOR
+    if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
+        drawCall.Surface.LODDitherFactor = 1.0f; // See LightmapUVsDensityMaterialShader
+#endif
 
     // Add half-texel offset for heightmap sampling in vertex shader
     //const float lodHeightmapSize = Math::Max(1, drawCall.TerrainData.Heightmap->Width() >> lod);

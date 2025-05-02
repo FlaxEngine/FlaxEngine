@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX
 
@@ -8,6 +8,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/Guid.h"
 #include "Engine/Core/Types/String.h"
+#include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Collections/HashFunctions.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
@@ -19,6 +20,7 @@
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/StringUtils.h"
 #include "Engine/Platform/MessageBox.h"
+#include "Engine/Platform/File.h"
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Platform/CreateProcessSettings.h"
 #include "Engine/Platform/Clipboard.h"
@@ -31,6 +33,7 @@
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #include "Engine/Input/Keyboard.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "IncludeX11.h"
 #include <sys/resource.h>
 #include <sys/sysinfo.h>
@@ -57,6 +60,7 @@
 
 CPUInfo UnixCpu;
 int ClockSource;
+uint64 ProgramSizeMemory;
 Guid DeviceId;
 String UserLocale, ComputerName, HomeDir;
 byte MacAddress[6];
@@ -653,7 +657,7 @@ static int X11_MessageBoxLoop(MessageBoxData* data)
 
 DialogResult MessageBox::Show(Window* parent, const StringView& text, const StringView& caption, MessageBoxButtons buttons, MessageBoxIcon icon)
 {
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
         return DialogResult::None;
 
 	// Setup for simple popup
@@ -1328,6 +1332,33 @@ namespace Impl
         X11::XQueryPointer(display, w, &wtmp, &child, &tmp, &tmp, &tmp, &tmp, &utmp);
         return FindAppWindow(display, child);
     }
+
+    Dictionary<String, String> LoadConfigFile(StringView path)
+	{
+        Dictionary<String, String> results;
+        String data;
+        File::ReadAllText(path, data);
+        Array<String> lines, parts;
+        data.Split('\n', lines);
+		for (String& line : lines)
+		{
+		    line = line.TrimTrailing();
+			if (line.StartsWith('#'))
+                continue; // Skip comments
+		    line.Split('=', parts);
+            if (parts.Count() == 2)
+            {
+                String key = parts[0].TrimTrailing();
+                String value = parts[1].TrimTrailing();
+                if (key.StartsWith('\"'))
+                    key = key.Substring(1, key.Length() - 2);
+                if (value.StartsWith('\"'))
+                    value = value.Substring(1, value.Length() - 2);
+                results[key] = value;
+			}
+		}
+		return results;
+	}
 }
 
 class LinuxDropFilesData : public IGuiData
@@ -1369,7 +1400,7 @@ public:
 
 DragDropEffect LinuxWindow::DoDragDrop(const StringView& data)
 {
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
         return DragDropEffect::None;
 	auto cursorWrong = X11::XCreateFontCursor(xDisplay, 54);
 	auto cursorTransient = X11::XCreateFontCursor(xDisplay, 24);
@@ -1673,7 +1704,7 @@ void LinuxClipboard::Clear()
 
 void LinuxClipboard::SetText(const StringView& text)
 {
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
         return;
     auto mainWindow = (LinuxWindow*)Engine::MainWindow;
     if (!mainWindow)
@@ -1695,7 +1726,7 @@ void LinuxClipboard::SetFiles(const Array<String>& files)
 
 String LinuxClipboard::GetText()
 {
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
         return String::Empty;
     String result;
     auto mainWindow = (LinuxWindow*)Engine::MainWindow;
@@ -1766,39 +1797,27 @@ CPUInfo LinuxPlatform::GetCPUInfo()
     return UnixCpu;
 }
 
-int32 LinuxPlatform::GetCacheLineSize()
-{
-    return UnixCpu.CacheLineSize;
-}
-
 MemoryStats LinuxPlatform::GetMemoryStats()
 {
-    // Get memory usage
     const uint64 pageSize = getpagesize();
     const uint64 totalPages = get_phys_pages();
     const uint64 availablePages = get_avphys_pages();
-
-    // Fill result data
     MemoryStats result;
     result.TotalPhysicalMemory = totalPages * pageSize;
     result.UsedPhysicalMemory = (totalPages - availablePages) * pageSize;
     result.TotalVirtualMemory = result.TotalPhysicalMemory;
     result.UsedVirtualMemory = result.UsedPhysicalMemory;
-
+    result.ProgramSizeMemory = ProgramSizeMemory;
     return result;
 }
 
 ProcessMemoryStats LinuxPlatform::GetProcessMemoryStats()
 {
-    // Get memory usage
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
-
-    // Fill result data
     ProcessMemoryStats result;
     result.UsedPhysicalMemory = usage.ru_maxrss;
     result.UsedVirtualMemory = result.UsedPhysicalMemory;
-
     return result;
 }
 
@@ -1929,6 +1948,9 @@ bool LinuxPlatform::Init()
     {
         ClockSource = CLOCK_MONOTONIC;
     }
+
+	// Estimate program size by checking physical memory usage on start
+	ProgramSizeMemory = Platform::GetProcessMemoryStats().UsedPhysicalMemory;
 
     // Set info about the CPU
     cpu_set_t cpus;
@@ -2068,28 +2090,6 @@ bool LinuxPlatform::Init()
 
     UnixGetMacAddress(MacAddress);
 
-    // Generate unique device ID
-    {
-        DeviceId = Guid::Empty;
-
-        // A - Computer Name and User Name
-        uint32 hash = GetHash(Platform::GetComputerName());
-        CombineHash(hash, GetHash(Platform::GetUserName()));
-        DeviceId.A = hash;
-
-        // B - MAC address
-        hash = MacAddress[0];
-        for (uint32 i = 0; i < 6; i++)
-            CombineHash(hash, MacAddress[i]);
-        DeviceId.B = hash;
-
-        // C - memory
-        DeviceId.C = (uint32)Platform::GetMemoryStats().TotalPhysicalMemory;
-
-        // D - cpuid
-        DeviceId.D = (uint32)UnixCpu.ClockSpeed * UnixCpu.LogicalProcessorCount * UnixCpu.ProcessorCoreCount * UnixCpu.CacheLineSize;
-    }
-
     // Get user locale string
     setlocale(LC_ALL, "");
     const char* locale = setlocale(LC_CTYPE, NULL);
@@ -2117,8 +2117,30 @@ bool LinuxPlatform::Init()
 	Platform::MemoryClear(Cursors, sizeof(Cursors));
 	Platform::MemoryClear(CursorsImg, sizeof(CursorsImg));
 
+    // Generate unique device ID
+    {
+        DeviceId = Guid::Empty;
+
+        // A - Computer Name and User Name
+        uint32 hash = GetHash(Platform::GetComputerName());
+        CombineHash(hash, GetHash(Platform::GetUserName()));
+        DeviceId.A = hash;
+
+        // B - MAC address
+        hash = MacAddress[0];
+        for (uint32 i = 0; i < 6; i++)
+            CombineHash(hash, MacAddress[i]);
+        DeviceId.B = hash;
+
+        // C - memory
+        DeviceId.C = (uint32)Platform::GetMemoryStats().TotalPhysicalMemory;
+
+        // D - cpuid
+        DeviceId.D = (uint32)UnixCpu.ClockSpeed * UnixCpu.LogicalProcessorCount * UnixCpu.ProcessorCoreCount * UnixCpu.CacheLineSize;
+    }
+
     // Skip setup if running in headless mode (X11 might not be available on servers)
-    if (CommandLine::Options.Headless)
+    if (CommandLine::Options.Headless.IsTrue())
         return false;
 
 	X11::XInitThreads();
@@ -2654,6 +2676,25 @@ void LinuxPlatform::Exit()
 	}
 }
 
+String LinuxPlatform::GetSystemName()
+{
+    Dictionary<String, String> configs = Impl::LoadConfigFile(TEXT("/etc/os-release"));
+    String str;
+    if (configs.TryGet(TEXT("NAME"), str))
+        return str;
+    return TEXT("Linux");
+}
+
+Version LinuxPlatform::GetSystemVersion()
+{
+    Dictionary<String, String> configs = Impl::LoadConfigFile(TEXT("/etc/os-release"));
+    String str;
+    Version version;
+    if (configs.TryGet(TEXT("VERSION_ID"), str) && !Version::Parse(str, &version))
+        return version;
+    return Version(0, 0);
+}
+
 int32 LinuxPlatform::GetDpi()
 {
     return SystemDpi;
@@ -2923,7 +2964,7 @@ int32 LinuxPlatform::CreateProcess(CreateProcessSettings& settings)
         LOG(Info, "Working directory: {0}", settings.WorkingDirectory);
     }
     const bool captureStdOut = settings.LogOutput || settings.SaveOutput;
-    const String cmdLine = settings.FileName + TEXT(" ") + settings.Arguments;
+    const String cmdLine = String::Format(TEXT("\"{0}\" {1}"), settings.FileName, settings.Arguments);
 
 	int fildes[2];
 	int32 returnCode = 0;
@@ -3029,6 +3070,8 @@ int32 LinuxPlatform::CreateProcess(CreateProcessSettings& settings)
 
 void* LinuxPlatform::LoadLibrary(const Char* filename)
 {
+    PROFILE_CPU();
+    ZoneText(filename, StringUtils::Length(filename));
     const StringAsANSI<> filenameANSI(filename);
     void* result = dlopen(filenameANSI.Get(), RTLD_LAZY | RTLD_LOCAL);
     if (!result)

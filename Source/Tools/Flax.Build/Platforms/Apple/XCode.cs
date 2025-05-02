@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -32,16 +32,32 @@ namespace Flax.Build.Platforms
                 return;
             try
             {
+                // Get path
                 RootPath = Utilities.ReadProcessOutput("xcode-select", "--print-path");
                 if (string.IsNullOrEmpty(RootPath) || !Directory.Exists(RootPath))
                     return;
                 IsValid = true;
                 Version = new Version(1, 0);
-                Log.Verbose(string.Format("Found XCode at {0}", RootPath));
+
+                // Get version (optional)
+                var versionText = Utilities.ReadProcessOutput("xcodebuild", "-version");
+                var versionLines = versionText?.Split('\n') ?? null;
+                if (versionLines != null && versionLines.Length != 0)
+                {
+                    versionText = versionLines[0].Trim();
+                    var versionParts = versionText.Split(' ');
+                    if (versionParts != null && versionParts.Length > 1)
+                    {
+                        versionText = versionParts[1].Trim();
+                        if (Version.TryParse(versionText, out var v))
+                            Version = v;
+                    }
+                }
             }
             catch
             {
             }
+            Log.Verbose(string.Format("Found XCode {1} at {0}", RootPath, Version));
         }
     }
 }

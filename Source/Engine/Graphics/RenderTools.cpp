@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RenderTools.h"
 #include "PixelFormatExtensions.h"
@@ -298,14 +298,13 @@ void RenderTools::ComputePitch(PixelFormat format, int32 width, int32 height, ui
     case PixelFormat::BC4_Typeless:
     case PixelFormat::BC4_UNorm:
     case PixelFormat::BC4_SNorm:
-        ASSERT(PixelFormatExtensions::IsCompressed(format));
-        {
-            uint32 nbw = Math::Max<uint32>(1, (width + 3) / 4);
-            uint32 nbh = Math::Max<uint32>(1, (height + 3) / 4);
-            rowPitch = nbw * 8;
-            slicePitch = rowPitch * nbh;
-        }
-        break;
+    {
+        const uint32 nbw = Math::Max<uint32>(1, (width + 3) / 4);
+        const uint32 nbh = Math::Max<uint32>(1, (height + 3) / 4);
+        rowPitch = nbw * 8;
+        slicePitch = rowPitch * nbh;
+    }
+    break;
     case PixelFormat::BC2_Typeless:
     case PixelFormat::BC2_UNorm:
     case PixelFormat::BC2_UNorm_sRGB:
@@ -321,14 +320,13 @@ void RenderTools::ComputePitch(PixelFormat format, int32 width, int32 height, ui
     case PixelFormat::BC7_Typeless:
     case PixelFormat::BC7_UNorm:
     case PixelFormat::BC7_UNorm_sRGB:
-        ASSERT(PixelFormatExtensions::IsCompressed(format));
-        {
-            uint32 nbw = Math::Max<uint32>(1, (width + 3) / 4);
-            uint32 nbh = Math::Max<uint32>(1, (height + 3) / 4);
-            rowPitch = nbw * 16;
-            slicePitch = rowPitch * nbh;
-        }
-        break;
+    {
+        const uint32 nbw = Math::Max<uint32>(1, (width + 3) / 4);
+        const uint32 nbh = Math::Max<uint32>(1, (height + 3) / 4);
+        rowPitch = nbw * 16;
+        slicePitch = rowPitch * nbh;
+    }
+    break;
     case PixelFormat::ASTC_4x4_UNorm:
     case PixelFormat::ASTC_4x4_UNorm_sRGB:
     case PixelFormat::ASTC_6x6_UNorm:
@@ -337,30 +335,28 @@ void RenderTools::ComputePitch(PixelFormat format, int32 width, int32 height, ui
     case PixelFormat::ASTC_8x8_UNorm_sRGB:
     case PixelFormat::ASTC_10x10_UNorm:
     case PixelFormat::ASTC_10x10_UNorm_sRGB:
-        {
-            const int32 blockSize = PixelFormatExtensions::ComputeBlockSize(format);
-            uint32 nbw = Math::Max<uint32>(1, Math::DivideAndRoundUp(width, blockSize));
-            uint32 nbh = Math::Max<uint32>(1, Math::DivideAndRoundUp(height, blockSize));
-            rowPitch = nbw * 16; // All ASTC blocks use 128 bits
-            slicePitch = rowPitch * nbh;
-        }
-        break;
+    {
+        const int32 blockSize = PixelFormatExtensions::ComputeBlockSize(format);
+        const uint32 nbw = Math::Max<uint32>(1, Math::DivideAndRoundUp(width, blockSize));
+        const uint32 nbh = Math::Max<uint32>(1, Math::DivideAndRoundUp(height, blockSize));
+        rowPitch = nbw * 16; // All ASTC blocks use 128 bits
+        slicePitch = rowPitch * nbh;
+    }
+    break;
     case PixelFormat::R8G8_B8G8_UNorm:
     case PixelFormat::G8R8_G8B8_UNorm:
-        ASSERT(PixelFormatExtensions::IsPacked(format));
+    case PixelFormat::YUY2:
         rowPitch = ((width + 1) >> 1) * 4;
         slicePitch = rowPitch * height;
         break;
+    case PixelFormat::NV12:
+        rowPitch = width;
+        slicePitch = width * height * 3 / 2;
+        break;
     default:
-        ASSERT(PixelFormatExtensions::IsValid(format));
-        ASSERT(!PixelFormatExtensions::IsCompressed(format) && !PixelFormatExtensions::IsPacked(format) && !PixelFormatExtensions::IsPlanar(format));
-        {
-            uint32 bpp = PixelFormatExtensions::SizeInBits(format);
-
-            // Default byte alignment
-            rowPitch = (width * bpp + 7) / 8;
-            slicePitch = rowPitch * height;
-        }
+        // Default byte alignment
+        rowPitch = (width * PixelFormatExtensions::SizeInBits(format) + 7) / 8;
+        slicePitch = rowPitch * height;
         break;
     }
 }
@@ -552,7 +548,35 @@ void RenderTools::ComputeCascadeUpdateFrequency(int32 cascadeIndex, int32 cascad
     }
 }
 
+float RenderTools::ComputeTemporalTime()
+{
+    const float time = Time::Draw.UnscaledTime.GetTotalSeconds();
+    const float scale = 10;
+    const float integral = roundf(time / scale) * scale;
+    return time - integral;
+}
+
 void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal)
+{
+    // [Deprecated in v1.10]
+    Float3 n;
+    Float4 t;
+    CalculateTangentFrame(n, t, normal);
+    resultNormal = FloatR10G10B10A2(n, 0);
+    resultTangent = FloatR10G10B10A2(t);
+}
+
+void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent)
+{
+    // [Deprecated in v1.10]
+    Float3 n;
+    Float4 t;
+    CalculateTangentFrame(n, t, normal, tangent);
+    resultNormal = FloatR10G10B10A2(n, 0);
+    resultTangent = FloatR10G10B10A2(t);
+}
+
+void RenderTools::CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal)
 {
     // Calculate tangent
     const Float3 c1 = Float3::Cross(normal, Float3::UnitZ);
@@ -564,46 +588,51 @@ void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10
     const byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
 
     // Set tangent frame
-    resultNormal = Float1010102(normal * 0.5f + 0.5f, 0);
-    resultTangent = Float1010102(tangent * 0.5f + 0.5f, sign);
+    resultNormal = normal * 0.5f + 0.5f;
+    resultTangent = Float4(tangent * 0.5f + 0.5f, sign);
 }
 
-void RenderTools::CalculateTangentFrame(FloatR10G10B10A2& resultNormal, FloatR10G10B10A2& resultTangent, const Float3& normal, const Float3& tangent)
+void RenderTools::CalculateTangentFrame(Float3& resultNormal, Float4& resultTangent, const Float3& normal, const Float3& tangent)
 {
     // Calculate bitangent sign
     const Float3 bitangent = Float3::Normalize(Float3::Cross(normal, tangent));
     const byte sign = static_cast<byte>(Float3::Dot(Float3::Cross(bitangent, normal), tangent) < 0.0f ? 1 : 0);
 
     // Set tangent frame
-    resultNormal = Float1010102(normal * 0.5f + 0.5f, 0);
-    resultTangent = Float1010102(tangent * 0.5f + 0.5f, sign);
+    resultNormal = normal * 0.5f + 0.5f;
+    resultTangent = Float4(tangent * 0.5f + 0.5f, sign);
 }
 
-int32 MipLevelsCount(int32 width, bool useMipLevels)
+void RenderTools::ComputeSphereModelDrawMatrix(const RenderView& view, const Float3& position, float radius, Matrix& resultWorld, bool& resultIsViewInside)
 {
-    if (!useMipLevels)
-        return 1;
+    // Construct world matrix
+    constexpr float sphereModelScale = 0.0205f; // Manually tweaked for 'Engine/Models/Sphere' with some slack
+    const float scaling = radius * sphereModelScale;
+    resultWorld = Matrix::Identity;
+    resultWorld.M11 = scaling;
+    resultWorld.M22 = scaling;
+    resultWorld.M33 = scaling;
+    resultWorld.M41 = position.X;
+    resultWorld.M42 = position.Y;
+    resultWorld.M43 = position.Z;
 
+    // Check if view is inside the sphere
+    resultIsViewInside = Float3::DistanceSquared(view.Position, position) < Math::Square(radius * 1.1f); // Manually tweaked bias
+}
+
+int32 MipLevelsCount(int32 width)
+{
     int32 result = 1;
     while (width > 1)
     {
         width >>= 1;
         result++;
     }
-
     return result;
 }
 
-int32 MipLevelsCount(int32 width, int32 height, bool useMipLevels)
+int32 MipLevelsCount(int32 width, int32 height)
 {
-    // Check if use mip maps
-    if (!useMipLevels)
-    {
-        // No mipmaps chain, only single mip map
-        return 1;
-    }
-
-    // Count mip maps
     int32 result = 1;
     while (width > 1 || height > 1)
     {
@@ -616,11 +645,8 @@ int32 MipLevelsCount(int32 width, int32 height, bool useMipLevels)
     return result;
 }
 
-int32 MipLevelsCount(int32 width, int32 height, int32 depth, bool useMipLevels)
+int32 MipLevelsCount(int32 width, int32 height, int32 depth)
 {
-    if (!useMipLevels)
-        return 1;
-
     int32 result = 1;
     while (width > 1 || height > 1 || depth > 1)
     {
@@ -632,39 +658,5 @@ int32 MipLevelsCount(int32 width, int32 height, int32 depth, bool useMipLevels)
             depth >>= 1;
         result++;
     }
-
     return result;
-}
-
-float ViewToCenterLessRadius(const RenderView& view, const Float3& center, float radius)
-{
-    // Calculate distance from view to sphere center
-    float viewToCenter = Float3::Distance(view.Position, center);
-
-    // Check if need to fix the radius
-    //if (radius + viewToCenter > view.Far)
-    {
-        // Clamp radius
-        //radius = view.Far - viewToCenter;
-    }
-
-    // Calculate result
-    return viewToCenter - radius;
-}
-
-void MeshBase::SetMaterialSlotIndex(int32 value)
-{
-    if (value < 0 || value >= _model->MaterialSlots.Count())
-    {
-        LOG(Warning, "Cannot set mesh material slot to {0} while model has {1} slots.", value, _model->MaterialSlots.Count());
-        return;
-    }
-
-    _materialSlotIndex = value;
-}
-
-void MeshBase::SetBounds(const BoundingBox& box)
-{
-    _box = box;
-    BoundingSphere::FromBox(box, _sphere);
 }

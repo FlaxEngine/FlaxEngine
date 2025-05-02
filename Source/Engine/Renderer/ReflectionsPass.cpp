@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ReflectionsPass.h"
 #include "GBufferPass.h"
@@ -12,6 +12,12 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Level/Actors/EnvironmentProbe.h"
+
+GPU_CB_STRUCT(Data {
+    ShaderEnvProbeData PData;
+    Matrix WVP;
+    ShaderGBufferData GBuffer;
+    });
 
 #if GENERATE_GF_CACHE
 
@@ -239,13 +245,6 @@ namespace PreIntegratedGF
 
 class Model;
 
-ReflectionsPass::ReflectionsPass()
-    : _psProbeNormal(nullptr)
-    , _psProbeInverted(nullptr)
-    , _psCombinePass(nullptr)
-{
-}
-
 String ReflectionsPass::ToString() const
 {
     return TEXT("ReflectionsPass");
@@ -254,25 +253,21 @@ String ReflectionsPass::ToString() const
 bool ReflectionsPass::Init()
 {
 #if GENERATE_GF_CACHE
-
 	// Generate cache
 	PreIntegratedGF::Generate();
-
 #endif
 
     // Create pipeline states
-    _psProbeNormal = GPUDevice::Instance->CreatePipelineState();
-    _psProbeInverted = GPUDevice::Instance->CreatePipelineState();
+    _psProbe = GPUDevice::Instance->CreatePipelineState();
+    _psProbeInside = GPUDevice::Instance->CreatePipelineState();
     _psCombinePass = GPUDevice::Instance->CreatePipelineState();
 
     // Load assets
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/Reflections"));
-    _sphereModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/SphereLowPoly"));
+    _sphereModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Sphere"));
     _preIntegratedGF = Content::LoadAsyncInternal<Texture>(PRE_INTEGRATED_GF_ASSET_NAME);
     if (_shader == nullptr || _sphereModel == nullptr || _preIntegratedGF == nullptr)
-    {
         return true;
-    }
 #if COMPILE_WITH_DEV_ENV
     _shader.Get()->OnReloading.Bind<ReflectionsPass, &ReflectionsPass::OnShaderReloading>(this);
 #endif
@@ -296,17 +291,19 @@ bool ReflectionsPass::setupResources()
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc;
-    if (!_psProbeNormal->IsValid() || !_psProbeInverted->IsValid())
+    if (!_psProbe->IsValid())
     {
         psDesc = GPUPipelineState::Description::DefaultNoDepth;
         psDesc.BlendMode = BlendingMode::AlphaBlend;
-        psDesc.CullMode = CullMode::Normal;
         psDesc.VS = shader->GetVS("VS_Model");
         psDesc.PS = shader->GetPS("PS_EnvProbe");
-        if (_psProbeNormal->Init(psDesc))
+        psDesc.CullMode = CullMode::Normal;
+        psDesc.DepthEnable = true;
+        if (_psProbe->Init(psDesc))
             return true;
+        psDesc.DepthFunc = ComparisonFunc::Greater;
         psDesc.CullMode = CullMode::Inverted;
-        if (_psProbeInverted->Init(psDesc))
+        if (_psProbeInside->Init(psDesc))
             return true;
     }
     psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
@@ -328,27 +325,23 @@ void ReflectionsPass::Dispose()
     RendererPass::Dispose();
 
     // Cleanup
-    SAFE_DELETE_GPU_RESOURCE(_psProbeNormal);
-    SAFE_DELETE_GPU_RESOURCE(_psProbeInverted);
+    SAFE_DELETE_GPU_RESOURCE(_psProbe);
+    SAFE_DELETE_GPU_RESOURCE(_psProbeInside);
     SAFE_DELETE_GPU_RESOURCE(_psCombinePass);
     _shader = nullptr;
     _sphereModel = nullptr;
     _preIntegratedGF = nullptr;
 }
 
-bool sortProbes(EnvironmentProbe* const& p1, EnvironmentProbe* const& p2)
+bool SortProbes(RenderEnvironmentProbeData const& p1, RenderEnvironmentProbeData const& p2)
 {
     // Compare by radius
-    int32 res = static_cast<int32>(p2->GetScaledRadius() - p1->GetScaledRadius());
-
-    // Check if are the same
+    int32 res = static_cast<int32>(p2.Radius - p1.Radius);
     if (res == 0)
     {
         // Compare by ID to prevent flickering
-        res = GetHash(p2->GetID()) - GetHash(p1->GetID());
+        res = p2.HashID - p1.HashID;
     }
-
-    // Return result
     return res < 0;
 }
 
@@ -400,41 +393,30 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
         context->SetRenderTarget(*reflectionsBuffer);
 
         // Sort probes by the radius
-        Sorting::QuickSort(renderContext.List->EnvironmentProbes.Get(), renderContext.List->EnvironmentProbes.Count(), &sortProbes);
-
-        // TODO: don't render too far probes, check area of the screen and apply culling!
+        Sorting::QuickSort(renderContext.List->EnvironmentProbes.Get(), renderContext.List->EnvironmentProbes.Count(), &SortProbes);
 
         // Render all env probes
-        for (int32 probeIndex = 0; probeIndex < probesCount; probeIndex++)
+        auto& sphereMesh = _sphereModel->LODs.Get()[0].Meshes.Get()[0];
+        for (int32 i = 0; i < probesCount; i++)
         {
-            // Cache data
-            auto probe = renderContext.List->EnvironmentProbes[probeIndex];
-            float probeRadius = probe->GetScaledRadius();
-            Float3 probePosition = probe->GetPosition() - renderContext.View.Origin;
-
-            // Get distance from view center to light center less radius (check if view is inside a sphere)
-            const float sphereModelScale = 2.0f;
-            float distance = ViewToCenterLessRadius(view, probePosition, probeRadius);
-            bool isViewInside = distance < 0;
+            const RenderEnvironmentProbeData& probe = renderContext.List->EnvironmentProbes.Get()[i];
 
             // Calculate world view projection matrix for the light sphere
-            Matrix world, wvp, matrix;
-            Matrix::Scaling(probeRadius * sphereModelScale, wvp);
-            Matrix::Translation(probePosition, matrix);
-            Matrix::Multiply(wvp, matrix, world);
+            Matrix world, wvp;
+            bool isViewInside;
+            RenderTools::ComputeSphereModelDrawMatrix(renderContext.View, probe.Position, probe.Radius, world, isViewInside);
             Matrix::Multiply(world, view.ViewProjection(), wvp);
 
             // Pack probe properties buffer
-            probe->SetupProbeData(renderContext, &data.PData);
+            probe.SetShaderData(data.PData);
             Matrix::Transpose(wvp, data.WVP);
 
             // Render reflections
             context->UpdateCB(cb, &data);
             context->BindCB(0, cb);
-            context->BindSR(4, probe->GetProbe());
-
-            context->SetState(isViewInside ? _psProbeInverted : _psProbeNormal);
-            _sphereModel->Render(context);
+            context->BindSR(4, probe.Texture);
+            context->SetState(isViewInside ? _psProbeInside : _psProbe);
+            sphereMesh.Render(context);
         }
 
         context->UnBindSR(4);

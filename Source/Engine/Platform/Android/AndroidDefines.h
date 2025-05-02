@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -32,6 +32,7 @@
 #endif
 #define PLATFORM_TYPE PlatformType::Android
 #define PLATFORM_CACHE_LINE_SIZE 64
+#define PLATFORM_OUT_OF_MEMORY_BUFFER_SIZE (64ull * 1024) // 64 kB
 
 #define USE_MONO_AOT_MODE MONO_AOT_MODE_NONE
 

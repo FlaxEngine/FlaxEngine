@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -22,10 +22,10 @@ private:
         double Lag;
         int32 Type;
         NetworkChannelType ChannelType;
-        NetworkMessage Message;
         NetworkConnection Target;
         Array<NetworkConnection> Targets;
         Array<byte> MessageData; // TODO: use message buffers cache (of size config.MessageSize) to reduce dynamic memory allocations
+        uint32 MessageLength;
     };
 
     struct LagEvent

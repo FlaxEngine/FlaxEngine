@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,6 +7,7 @@
 #include "Config.h"
 
 class GPUShader;
+class GPUVertexLayout;
 
 /// <summary>
 /// The shader program metadata container. Contains description about resources used by the shader.
@@ -18,17 +19,17 @@ struct FLAXENGINE_API ShaderBindings
     uint32 UsedSRsMask;
     uint32 UsedUAsMask;
 
-    bool IsUsingCB(uint32 slotIndex) const
+    FORCE_INLINE bool IsUsingCB(uint32 slotIndex) const
     {
         return (UsedCBsMask & (1u << slotIndex)) != 0u;
     }
 
-    bool IsUsingSR(uint32 slotIndex) const
+    FORCE_INLINE bool IsUsingSR(uint32 slotIndex) const
     {
         return (UsedSRsMask & (1u << slotIndex)) != 0u;
     }
 
-    bool IsUsingUA(uint32 slotIndex) const
+    FORCE_INLINE bool IsUsingUA(uint32 slotIndex) const
     {
         return (UsedUAsMask & (1u << slotIndex)) != 0u;
     }
@@ -57,15 +58,7 @@ protected:
     GPUShader* _owner;
 #endif
 
-    void Init(const GPUShaderProgramInitializer& initializer)
-    {
-        _name = initializer.Name;
-        _bindings = initializer.Bindings;
-        _flags = initializer.Flags;
-#if !BUILD_RELEASE
-        _owner = initializer.Owner;
-#endif
-    }
+    void Init(const GPUShaderProgramInitializer& initializer);
 
 public:
     /// <summary>
@@ -124,8 +117,9 @@ class GPUShaderProgramVS : public GPUShaderProgram
 {
 public:
     // Input element run-time data (see VertexShaderMeta::InputElement for compile-time data)
+    // [Deprecated in v1.10] Use VertexElement instead.
     PACK_STRUCT(struct InputElement
-    {
+        {
         byte Type; // VertexShaderMeta::InputType
         byte Index;
         byte Format; // PixelFormat
@@ -133,18 +127,17 @@ public:
         uint32 AlignedByteOffset; // Fixed value or INPUT_LAYOUT_ELEMENT_ALIGN if auto
         byte InputSlotClass; // INPUT_LAYOUT_ELEMENT_PER_VERTEX_DATA or INPUT_LAYOUT_ELEMENT_PER_INSTANCE_DATA
         uint32 InstanceDataStepRate; // 0 if per-vertex
-    });
+        });
 
-public:
-    /// <summary>
-    /// Gets input layout description handle (platform dependent).
-    /// </summary>
-    virtual void* GetInputLayout() const = 0;
+    // Vertex elements input layout defined explicitly in the shader.
+    // It's optional as it's been deprecated in favor or layouts defined by vertex buffers to allow data customizations.
+    // Can be overriden by the vertex buffers provided upon draw call.
+    // (don't release it as it's managed by GPUVertexLayout::Get)
+    // [Deprecated in v1.10]
+    GPUVertexLayout* Layout = nullptr;
 
-    /// <summary>
-    /// Gets input layout description size (in bytes).
-    /// </summary>
-    virtual byte GetInputLayoutSize() const = 0;
+    // Vertex shader inputs layout. Used to ensure that binded vertex buffers provide all required elements.
+    GPUVertexLayout* InputLayout = nullptr;
 
 public:
     // [GPUShaderProgram]
@@ -173,7 +166,7 @@ public:
 class GPUShaderProgramHS : public GPUShaderProgram
 {
 protected:
-    int32 _controlPointsCount;
+    int32 _controlPointsCount = 0;
 
 public:
     /// <summary>

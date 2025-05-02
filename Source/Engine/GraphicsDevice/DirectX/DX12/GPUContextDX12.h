@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -15,6 +15,7 @@ class GPUBufferDX12;
 class GPUSamplerDX12;
 class GPUConstantBufferDX12;
 class GPUTextureViewDX12;
+class GPUVertexLayoutDX12;
 
 /// <summary>
 /// Size of the resource barriers buffer size (will be flushed on overflow)
@@ -61,6 +62,7 @@ private:
     GPUTextureViewDX12* _rtHandles[GPU_MAX_RT_BINDED];
     IShaderResourceDX12* _srHandles[GPU_MAX_SR_BINDED];
     IShaderResourceDX12* _uaHandles[GPU_MAX_UA_BINDED];
+    GPUVertexLayoutDX12* _vertexLayout;
     GPUBufferDX12* _ibHandle;
     GPUBufferDX12* _vbHandles[GPU_MAX_VB_BINDED];
     D3D12_INDEX_BUFFER_VIEW _ibView;
@@ -159,7 +161,7 @@ public:
     void* GetNativePtr() const override;
     bool IsDepthBufferBinded() override;
     void Clear(GPUTextureView* rt, const Color& color) override;
-    void ClearDepth(GPUTextureView* depthBuffer, float depthValue) override;
+    void ClearDepth(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue) override;
     void ClearUA(GPUBuffer* buf, const Float4& value) override;
     void ClearUA(GPUBuffer* buf, const uint32 value[4]) override;
     void ClearUA(GPUTexture* texture, const uint32 value[4]) override;
@@ -176,7 +178,7 @@ public:
     void BindCB(int32 slot, GPUConstantBuffer* cb) override;
     void BindSR(int32 slot, GPUResourceView* view) override;
     void BindUA(int32 slot, GPUResourceView* view) override;
-    void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr) override;
+    void BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets = nullptr, GPUVertexLayout* vertexLayout = nullptr) override;
     void BindIB(GPUBuffer* indexBuffer) override;
     void BindSampler(int32 slot, GPUSampler* sampler) override;
     void UpdateCB(GPUConstantBuffer* cb, const void* data) override;

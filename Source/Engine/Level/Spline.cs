@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Runtime.InteropServices;
@@ -34,7 +34,7 @@ namespace FlaxEngine
                 if (value == null)
                     value = Utils.GetEmptyArray<BezierCurve<Transform>.Keyframe>();
                 _keyframes = null;
-                Internal_SetKeyframes(__unmanagedPtr, value);
+                Internal_SetKeyframes(__unmanagedPtr, value, System.Runtime.CompilerServices.Unsafe.SizeOf<BezierCurve<Transform>.Keyframe>());
             }
         }
 

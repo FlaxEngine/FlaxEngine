@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -61,6 +61,40 @@ public:
     }
 
     /// <summary>
+    /// Searches for the specified object using a custom query and returns it or default value.
+    /// </summary>
+    /// <param name="obj">The target collection.</param>
+    /// <param name="predicate">The prediction function. Should return true for the target element to find.</param>
+    /// <returns>The first found item or default value if nothing found.</returns>
+    template<typename T, typename AllocationType>
+    static T First(const Array<T, AllocationType>& obj, const Function<bool(const T&)>& predicate)
+    {
+        for (int32 i = 0; i < obj.Count(); i++)
+        {
+            if (predicate(obj[i]))
+                return obj[i];
+        }
+        return T();
+    }
+
+    /// <summary>
+    /// Searches for the specified object using a custom query and returns it or default value.
+    /// </summary>
+    /// <param name="obj">The target collection.</param>
+    /// <param name="predicate">The prediction function. Should return true for the target element to find.</param>
+    /// <returns>The first found item or default value if nothing found.</returns>
+    template<typename T, typename AllocationType>
+    static T* First(const Array<T*, AllocationType>& obj, const Function<bool(const T*)>& predicate)
+    {
+        for (int32 i = 0; i < obj.Count(); i++)
+        {
+            if (predicate(obj[i]))
+                return obj[i];
+        }
+        return nullptr;
+    }
+
+    /// <summary>
     /// The Any operator checks, if there are any elements in the collection matching the predicate. It does not select the element, but returns true if at least one element is matched.
     /// </summary>
     /// <param name="obj">The target collection.</param>
@@ -85,6 +119,23 @@ public:
     /// <returns>True if all elements in the collection matches the prediction, otherwise false.</returns>
     template<typename T, typename AllocationType>
     static int32 All(const Array<T, AllocationType>& obj, const Function<bool(const T&)>& predicate)
+    {
+        for (int32 i = 0; i < obj.Count(); i++)
+        {
+            if (!predicate(obj[i]))
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// All Any operator returns true if all elements match the predicate. It does not select the element, but returns true if all elements are matching.
+    /// </summary>
+    /// <param name="obj">The target collection.</param>
+    /// <param name="predicate">The prediction function.</param>
+    /// <returns>True if all elements in the collection matches the prediction, otherwise false.</returns>
+    template<typename T, typename AllocationType>
+    static int32 All(const Array<T*, AllocationType>& obj, const Function<bool(const T*)>& predicate)
     {
         for (int32 i = 0; i < obj.Count(); i++)
         {

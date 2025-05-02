@@ -1,22 +1,10 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX12
 
 #include "DescriptorHeapDX12.h"
 #include "GPUDeviceDX12.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
-
-D3D12_CPU_DESCRIPTOR_HANDLE DescriptorHeapWithSlotsDX12::Slot::CPU() const
-{
-    ASSERT_LOW_LAYER(Heap);
-    return Heap->CPU(Index);
-}
-
-D3D12_GPU_DESCRIPTOR_HANDLE DescriptorHeapWithSlotsDX12::Slot::GPU() const
-{
-    ASSERT_LOW_LAYER(Heap);
-    return Heap->GPU(Index);
-}
 
 void DescriptorHeapWithSlotsDX12::Slot::CreateSRV(GPUDeviceDX12* device, ID3D12Resource* resource, D3D12_SHADER_RESOURCE_VIEW_DESC* desc)
 {
@@ -124,7 +112,7 @@ void DescriptorHeapWithSlotsDX12::ReleaseSlot(uint32 index)
 {
     uint32& value = _usage[index / 32];
     const uint32 mask = 1 << (index & 31);
-    ASSERT_LOW_LAYER((value & mask) == mask);
+    //ASSERT_LOW_LAYER((value & mask) == mask);
     value &= ~mask;
 }
 

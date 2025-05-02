@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -423,6 +423,12 @@ namespace FlaxEditor.Surface.Archetypes
                     _combobox.SelectedIndex = -1;
 
                 UpdateCombo();
+            }
+
+            /// <inheritdoc />
+            public bool IsParamUsed(SurfaceParameter param)
+            {
+                return (Guid)Values[0] == param.ID;
             }
 
             /// <inheritdoc />
@@ -937,11 +943,15 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 // Deselect if that parameter is selected
                 if ((Guid)Values[0] == param.ID)
-                {
                     _combobox.SelectedIndex = -1;
-                }
 
                 UpdateCombo();
+            }
+
+            /// <inheritdoc />
+            public bool IsParamUsed(SurfaceParameter param)
+            {
+                return (Guid)Values[0] == param.ID;
             }
 
             /// <inheritdoc />

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 // Diffuse-only lighting
 #define LIGHTING_NO_SPECULAR 1
@@ -40,9 +40,6 @@ struct AtlasVertexOutput
 
 // Vertex shader for Global Surface Atlas rendering (custom vertex buffer to render per-tile)
 META_VS(true, FEATURE_LEVEL_SM5)
-META_VS_IN_ELEMENT(POSITION, 0, R16G16_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 0, R16G16_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(TEXCOORD, 1, R32_UINT,  0, ALIGN, PER_VERTEX, 0, true)
 AtlasVertexOutput VS_Atlas(AtlasVertexInput input)
 {
 	AtlasVertexOutput output;
@@ -91,8 +88,8 @@ Texture2D<snorm float4> ProbesData : register(t5);
 Texture2D<float4> ProbesDistance : register(t6);
 Texture2D<float4> ProbesIrradiance : register(t7);
 #else
-Texture3D<float> GlobalSDFTex : register(t5);
-Texture3D<float> GlobalSDFMip : register(t6);
+Texture3D<snorm float> GlobalSDFTex : register(t5);
+Texture3D<snorm float> GlobalSDFMip : register(t6);
 #endif
 
 // Pixel shader for Global Surface Atlas shading
@@ -107,8 +104,14 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 	float2 atlasUV = input.TileUV * tile.AtlasRectUV.zw + tile.AtlasRectUV.xy;
 
 	// Load GBuffer sample from atlas
-	GBufferData gBufferData = (GBufferData)0;
-	GBufferSample gBuffer = SampleGBuffer(gBufferData, atlasUV);
+    float4 gBuffer0 = SAMPLE_RT(GBuffer0, atlasUV);
+    float4 gBuffer1 = SAMPLE_RT(GBuffer1, atlasUV);
+    GBufferSample gBuffer = (GBufferSample)0;
+    gBuffer.Normal = DecodeNormal(gBuffer1.rgb);
+    gBuffer.ShadingModel = (int)(gBuffer1.a * 3.999);
+    gBuffer.Color = gBuffer0.rgb;
+    gBuffer.Roughness = 1.0f;
+    gBuffer.AO = gBuffer0.a;
 	BRANCH
 	if (gBuffer.ShadingModel == SHADING_MODEL_UNLIT)
 	{
@@ -119,11 +122,6 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 
 	// Reconstruct world-space position manually (from uv+depth within a tile)
 	float tileDepth = SampleZ(atlasUV);
-	//float tileNear = -GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET;
-	//float tileFar = tile.ViewBoundsSize.z + 2 * GLOBAL_SURFACE_ATLAS_TILE_PROJ_PLANE_OFFSET;
-	//gBufferData.ViewInfo.zw = float2(tileFar / (tileFar - tileNear), (-tileFar * tileNear) / (tileFar - tileNear) / tileFar);
-	//gBufferData.ViewInfo.zw = float2(1, 0);
-	//float tileLinearDepth = LinearizeZ(gBufferData, tileDepth);
 	float3 tileSpacePos = float3(input.TileUV.x - 0.5f, 0.5f - input.TileUV.y, tileDepth);
 	float3 gBufferTilePos = tileSpacePos * tile.ViewBoundsSize;
 	float4x4 tileLocalToWorld = Inverse(tile.WorldToLocal);
@@ -159,7 +157,7 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 	float toLightDst = GLOBAL_SDF_WORLD_SIZE;
 #endif
 	float4 shadowMask = 1;
-	if (Light.CastShadows > 0)
+	if (Light.ShadowsBufferAddress != 0)
 	{
 		float NoL = dot(gBuffer.Normal, L);
 		float shadowBias = 10.0f;
@@ -167,9 +165,6 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 		BRANCH
 		if (NoL > 0)
 		{
-			// TODO: try using shadow map for on-screen pixels
-			// TODO: try using cone trace with Global SDF for smoother shadow (eg. for sun shadows or for area lights)
-
 			// Shot a ray from texel into the light to see if there is any occluder
 			GlobalSDFTrace trace;
 			trace.Init(gBuffer.WorldPos + gBuffer.Normal * shadowBias, L, bias, toLightDst - bias);
@@ -203,41 +198,67 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 RWByteAddressBuffer RWGlobalSurfaceAtlasChunks : register(u0);
 RWByteAddressBuffer RWGlobalSurfaceAtlasCulledObjects : register(u1);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t0);
+Buffer<uint> GlobalSurfaceAtlasObjectsList : register(t1);
 
-#define GLOBAL_SURFACE_ATLAS_CULL_LOCAL_SIZE 32 // Amount of objects to cache locally per-thread for culling
+#define GLOBAL_SURFACE_ATLAS_SHARED_CULL_SIZE 511 // Limit of objects that can be culled for a whole group of 4x4x4 threads (64 chunks)
+
+groupshared uint SharedCulledObjectsCount;
+groupshared uint SharedCulledObjects[GLOBAL_SURFACE_ATLAS_SHARED_CULL_SIZE];
 
 // Compute shader for culling objects into chunks
 META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE, GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE, GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE)]
-void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID)
+void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupId : SV_GroupID, uint3 GroupThreadId : SV_GroupThreadID)
 {
 	uint3 chunkCoord = DispatchThreadId;
 	uint chunkAddress = (chunkCoord.z * (GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION * GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION) + chunkCoord.y * GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION + chunkCoord.x) * 4;
 	float3 chunkMin = GlobalSurfaceAtlas.ViewPos + (chunkCoord - (GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION * 0.5f)) * GlobalSurfaceAtlas.ChunkSize;
-	float3 chunkMax = chunkMin + GlobalSurfaceAtlas.ChunkSize;
+	float3 chunkMax = chunkMin + GlobalSurfaceAtlas.ChunkSize.xxx;
+	uint groupIndex = (GroupThreadId.z * GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE + GroupThreadId.y) * GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE + GroupThreadId.x;
+	float3 groupMin = GlobalSurfaceAtlas.ViewPos + (GroupId * GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE - (GLOBAL_SURFACE_ATLAS_CHUNKS_RESOLUTION * 0.5f)) * GlobalSurfaceAtlas.ChunkSize;
+	float3 groupMax = groupMin + (GlobalSurfaceAtlas.ChunkSize * GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE).xxx;
 
-	// Count objects in this chunk
-	uint objectAddress = 0, objectsCount = 0;
-    // TODO: pre-cull objects within a thread group
-	uint localCulledObjects[GLOBAL_SURFACE_ATLAS_CULL_LOCAL_SIZE];
+    // Clear shared memory
+	if (groupIndex == 0)
+	{
+        SharedCulledObjectsCount = 0;
+	}
+	GroupMemoryBarrierWithGroupSync();
+
+    // Shared culling of all objects by all threads for a whole group
 	LOOP
-	for (uint objectIndex = 0; objectIndex < GlobalSurfaceAtlas.ObjectsCount; objectIndex++)
+	for (uint objectIndex = groupIndex; objectIndex < GlobalSurfaceAtlas.ObjectsCount; objectIndex += GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE * GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE * GLOBAL_SURFACE_ATLAS_CHUNKS_GROUP_SIZE)
 	{
+        uint objectAddress = GlobalSurfaceAtlasObjectsList.Load(objectIndex);
 		float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(GlobalSurfaceAtlasObjects, objectAddress);
-		uint objectSize = LoadGlobalSurfaceAtlasObjectDataSize(GlobalSurfaceAtlasObjects, objectAddress);
-		if (BoxIntersectsSphere(chunkMin, chunkMax, objectBounds.xyz, objectBounds.w))
+		if (BoxIntersectsSphere(groupMin, groupMax, objectBounds.xyz, objectBounds.w))
 		{
-		    localCulledObjects[objectsCount % GLOBAL_SURFACE_ATLAS_CULL_LOCAL_SIZE] = objectAddress;
-			objectsCount++;
+            uint sharedIndex;
+            InterlockedAdd(SharedCulledObjectsCount, 1, sharedIndex);
+            if (sharedIndex < GLOBAL_SURFACE_ATLAS_SHARED_CULL_SIZE)
+                SharedCulledObjects[sharedIndex] = objectAddress;
 		}
-		objectAddress += objectSize;
 	}
-	if (objectsCount == 0)
+	GroupMemoryBarrierWithGroupSync();
+
+    // Cull objects from the shared buffer against active thread's chunk
+    uint objectsCount = 0;
+	LOOP
+	for (uint i = 0; i < SharedCulledObjectsCount; i++)
 	{
-		// Empty chunk
-		RWGlobalSurfaceAtlasChunks.Store(chunkAddress, 0);
-		return;
+        uint objectAddress = SharedCulledObjects[i];
+		float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(GlobalSurfaceAtlasObjects, objectAddress);
+		if (BoxIntersectsSphere(chunkMin, chunkMax, objectBounds.xyz, objectBounds.w))
+        {
+            objectsCount++;
+        }
 	}
+    if (objectsCount == 0)
+    {
+        // Empty chunk
+        RWGlobalSurfaceAtlasChunks.Store(chunkAddress, 0);
+        return;
+    }
 
 	// Allocate object data size in the buffer
 	uint objectsStart;
@@ -256,33 +277,16 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID)
 	// Write objects count before actual objects indices
 	RWGlobalSurfaceAtlasCulledObjects.Store(objectsStart * 4, objectsCount);
 
-	// Copy objects data in this chunk
-	if (objectsCount <= GLOBAL_SURFACE_ATLAS_CULL_LOCAL_SIZE)
-	{
-	    // Reuse locally cached objects
-        LOOP
-        for (uint objectIndex = 0; objectIndex < objectsCount; objectIndex++)
+	// Copy objects data in this chunk (cull from the shared buffer)
+    LOOP
+	for (uint i = 0; i < SharedCulledObjectsCount; i++)
+    {
+        uint objectAddress = SharedCulledObjects[i];
+		float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(GlobalSurfaceAtlasObjects, objectAddress);
+		if (BoxIntersectsSphere(chunkMin, chunkMax, objectBounds.xyz, objectBounds.w))
         {
-            objectAddress = localCulledObjects[objectIndex];
             objectsStart++;
             RWGlobalSurfaceAtlasCulledObjects.Store(objectsStart * 4, objectAddress);
-        }
-	}
-	else
-	{
-	    // Brute-force culling
-        objectAddress = 0;
-        LOOP
-        for (uint objectIndex = 0; objectIndex < GlobalSurfaceAtlas.ObjectsCount; objectIndex++)
-        {
-            float4 objectBounds = LoadGlobalSurfaceAtlasObjectBounds(GlobalSurfaceAtlasObjects, objectAddress);
-            uint objectSize = LoadGlobalSurfaceAtlasObjectDataSize(GlobalSurfaceAtlasObjects, objectAddress);
-            if (BoxIntersectsSphere(chunkMin, chunkMax, objectBounds.xyz, objectBounds.w))
-            {
-                objectsStart++;
-                RWGlobalSurfaceAtlasCulledObjects.Store(objectsStart * 4, objectAddress);
-            }
-            objectAddress += objectSize;
         }
     }
 }
@@ -291,8 +295,8 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID)
 
 #ifdef _PS_Debug
 
-Texture3D<float> GlobalSDFTex : register(t0);
-Texture3D<float> GlobalSDFMip : register(t1);
+Texture3D<snorm float> GlobalSDFTex : register(t0);
+Texture3D<snorm float> GlobalSDFMip : register(t1);
 ByteAddressBuffer GlobalSurfaceAtlasChunks : register(t2);
 ByteAddressBuffer GlobalSurfaceAtlasCulledObjects : register(t3);
 Buffer<float4> GlobalSurfaceAtlasObjects : register(t4);

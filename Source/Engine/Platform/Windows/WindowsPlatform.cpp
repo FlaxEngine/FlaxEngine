@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_WINDOWS
 
@@ -11,13 +11,14 @@
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/BatteryInfo.h"
 #include "Engine/Platform/Base/PlatformUtils.h"
-#include "Engine/Engine/Globals.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Types/Version.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Platform/MessageBox.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "../Win32/IncludeWindowsHeaders.h"
 #include <VersionHelpers.h>
 #include <ShellAPI.h>
@@ -282,7 +283,7 @@ long __stdcall WindowsPlatform::SehExceptionHandler(EXCEPTION_POINTERS* ep)
     }
 
     // Skip if engine already crashed
-    if (Globals::FatalErrorOccurred)
+    if (Engine::FatalError != FatalErrorType::None)
         return EXCEPTION_CONTINUE_SEARCH;
 
     // Get exception info
@@ -326,7 +327,7 @@ long __stdcall WindowsPlatform::SehExceptionHandler(EXCEPTION_POINTERS* ep)
     }
 
     // Crash engine
-    Platform::Fatal(errorMsg.Get(), ep);
+    Platform::Fatal(errorMsg.Get(), ep, FatalErrorType::Exception);
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
@@ -616,7 +617,7 @@ bool WindowsPlatform::Init()
         return true;
 
     // Init console output (engine is linked with /SUBSYSTEM:WINDOWS so it lacks of proper console output on Windows)
-    if (CommandLine::Options.Std)
+    if (CommandLine::Options.Std.IsTrue())
     {
         // Attaches output of application to parent console, returns true if running in console-mode
         // [Reference: https://www.tillett.info/2013/05/13/how-to-create-a-windows-program-that-works-as-both-as-a-gui-and-console-application]
@@ -637,12 +638,32 @@ bool WindowsPlatform::Init()
         }
     }
 
-    // Check if can run Engine on current platform (requires Windows Vista SP1 or above)
-    if (!IsWindowsVistaSP1OrGreater() && !IsWindowsServer())
+    // Check if can run Engine on current platform
+#if WINVER >= 0x0A00
+    if (!IsWindows10OrGreater() && !IsWindowsServer())
     {
-        Platform::Fatal(TEXT("Flax Engine requires Windows Vista SP1 or higher."));
+        Platform::Fatal(TEXT("Flax Engine requires Windows 10 or higher."));
         return true;
     }
+#elif WINVER >= 0x0603
+    if (!IsWindows8Point1OrGreater() && !IsWindowsServer())
+    {
+        Platform::Fatal(TEXT("Flax Engine requires Windows 8.1 or higher."));
+        return true;
+    }
+#elif WINVER >= 0x0602
+    if (!IsWindows8OrGreater() && !IsWindowsServer())
+    {
+        Platform::Fatal(TEXT("Flax Engine requires Windows 8 or higher."));
+        return true;
+    }
+#else
+    if (!IsWindows7OrGreater() && !IsWindowsServer())
+    {
+        Platform::Fatal(TEXT("Flax Engine requires Windows 7 or higher."));
+        return true;
+    }
+#endif
 
     // Set the lowest possible timer resolution
     const HMODULE ntdll = LoadLibraryW(L"ntdll.dll");
@@ -689,6 +710,24 @@ bool WindowsPlatform::Init()
 void WindowsPlatform::LogInfo()
 {
     Win32Platform::LogInfo();
+
+#if PLATFORM_ARCH_X86 || PLATFORM_ARCH_X64
+    // Log CPU brand
+    {
+	    char brandBuffer[0x40] = {};
+	    int32 cpuInfo[4] = { -1 };
+	    __cpuid(cpuInfo, 0x80000000);
+	    if (cpuInfo[0] >= 0x80000004)
+	    {
+		    for (uint32 i = 0; i < 3; i++)
+		    {
+			    __cpuid(cpuInfo, 0x80000002 + i);
+			    memcpy(brandBuffer + i * sizeof(cpuInfo), cpuInfo, sizeof(cpuInfo));
+		    }
+	    }
+        LOG(Info, "CPU: {0}", String(brandBuffer));
+    }
+#endif
 
     LOG(Info, "Microsoft {0} {1}-bit ({2}.{3}.{4})", WindowsName, Platform::Is64BitPlatform() ? TEXT("64") : TEXT("32"), VersionMajor, VersionMinor, VersionBuild);
 
@@ -791,6 +830,16 @@ void WindowsPlatform::SetHighDpiAwarenessEnabled(bool enable)
     }
     SystemDpi = CalculateDpi(shCoreDll);
     ::FreeLibrary(shCoreDll);
+}
+
+String WindowsPlatform::GetSystemName()
+{
+    return WindowsName;
+}
+
+Version WindowsPlatform::GetSystemVersion()
+{
+    return Version(VersionMajor, VersionMinor, VersionBuild);
 }
 
 BatteryInfo WindowsPlatform::GetBatteryInfo()
@@ -1194,6 +1243,8 @@ Window* WindowsPlatform::CreateWindow(const CreateWindowSettings& settings)
 void* WindowsPlatform::LoadLibrary(const Char* filename)
 {
     ASSERT(filename);
+    PROFILE_CPU();
+    ZoneText(filename, StringUtils::Length(filename));
 
     // Add folder to search path to load dependency libraries
     StringView folder = StringUtils::GetDirectoryName(filename);
@@ -1311,6 +1362,14 @@ Array<PlatformBase::StackFrame> WindowsPlatform::GetStackFrames(int32 skipCount,
         stack.AddrBStore.Offset = ctx.RsBSP;
         stack.AddrBStore.Mode = AddrModeFlat;
         stack.AddrStack.Offset = ctx.IntSp;
+        stack.AddrStack.Mode = AddrModeFlat;
+#elif _M_ARM64
+        imageType = IMAGE_FILE_MACHINE_ARM64;
+        stack.AddrPC.Offset = ctx.Pc;
+        stack.AddrPC.Mode = AddrModeFlat;
+        stack.AddrFrame.Offset = ctx.Fp;
+        stack.AddrFrame.Mode = AddrModeFlat;
+        stack.AddrStack.Offset = ctx.Sp;
         stack.AddrStack.Mode = AddrModeFlat;
 #else
 #error "Platform not supported!"

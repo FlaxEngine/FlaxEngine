@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ImportTexture.h"
 #if COMPILE_WITH_ASSETS_IMPORTER
@@ -43,17 +43,17 @@ bool ImportTexture::TryGetImportOptions(const StringView& path, Options& options
                 {
                     MemoryReadStream stream(chunk15->Data.Get(), chunk15->Data.Length());
                     int32 tilesVersion, tilesCount;
-                    stream.ReadInt32(&tilesVersion);
+                    stream.Read(tilesVersion);
                     if (tilesVersion == 1)
                     {
                         options.Sprites.Clear();
-                        stream.ReadInt32(&tilesCount);
+                        stream.Read(tilesCount);
                         for (int32 i = 0; i < tilesCount; i++)
                         {
                             // Load sprite
                             Sprite t;
                             stream.Read(t.Area);
-                            stream.ReadString(&t.Name, 49);
+                            stream.Read(t.Name, 49);
                             options.Sprites.Add(t);
                         }
                     }
@@ -168,17 +168,17 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
     if (options.IsAtlas)
     {
         MemoryWriteStream stream(256);
-        stream.WriteInt32(1); // Version
-        stream.WriteInt32(options.Sprites.Count()); // Amount of tiles
+        stream.Write(1); // Version
+        stream.Write(options.Sprites.Count()); // Amount of tiles
         for (int32 i = 0; i < options.Sprites.Count(); i++)
         {
             auto& sprite = options.Sprites[i];
             stream.Write(sprite.Area);
-            stream.WriteString(sprite.Name, 49);
+            stream.Write(sprite.Name, 49);
         }
         if (context.AllocateChunk(15))
             return CreateAssetResult::CannotAllocateChunk;
-        context.Data.Header.Chunks[15]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        context.Data.Header.Chunks[15]->Data.Copy(ToSpan(stream));
     }
 
     // Save mip maps
@@ -307,17 +307,17 @@ CreateAssetResult ImportTexture::Create(CreateAssetContext& context, const Textu
     if (options.IsAtlas)
     {
         MemoryWriteStream stream(256);
-        stream.WriteInt32(1); // Version
-        stream.WriteInt32(options.Sprites.Count()); // Amount of tiles
+        stream.Write(1); // Version
+        stream.Write(options.Sprites.Count()); // Amount of tiles
         for (int32 i = 0; i < options.Sprites.Count(); i++)
         {
             auto& sprite = options.Sprites[i];
             stream.Write(sprite.Area);
-            stream.WriteString(sprite.Name, 49);
+            stream.Write(sprite.Name, 49);
         }
         if (context.AllocateChunk(15))
             return CreateAssetResult::CannotAllocateChunk;
-        context.Data.Header.Chunks[15]->Data.Copy(stream.GetHandle(), stream.GetPosition());
+        context.Data.Header.Chunks[15]->Data.Copy(ToSpan(stream));
     }
 
     // Save mip maps

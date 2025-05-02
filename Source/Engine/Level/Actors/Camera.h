@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -44,6 +44,7 @@ private:
     float _customAspectRatio;
     float _near;
     float _far;
+    float _orthoSize;
     float _orthoScale;
 
 #if USE_EDITOR
@@ -88,7 +89,7 @@ public:
     /// <summary>
     /// Gets the custom aspect ratio. 0 if not use custom value.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective))")
+    API_PROPERTY(Attributes="EditorOrder(50), DefaultValue(0.0f), Limit(0, 10, 0.01f), EditorDisplay(\"Camera\")")
     float GetCustomAspectRatio() const;
 
     /// <summary>
@@ -119,6 +120,17 @@ public:
     API_PROPERTY() void SetFarPlane(float value);
 
     /// <summary>
+    /// Gets the orthographic projection view height (width is based on the aspect ratio). Use `0` for size to be based on the viewport size.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(59), DefaultValue(0.0f), Limit(0.0f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective), true)")
+    float GetOrthographicSize() const;
+
+    /// <summary>
+    /// Sets the orthographic projection view height (width is based on the aspect ratio). Use `0` for size to be based on the viewport size.
+    /// </summary>
+    API_PROPERTY() void SetOrthographicSize(float value);
+
+    /// <summary>
     /// Gets the orthographic projection scale.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(60), DefaultValue(1.0f), Limit(0.0001f, 1000, 0.01f), EditorDisplay(\"Camera\"), VisibleIf(nameof(UsePerspective), true)")
@@ -138,13 +150,13 @@ public:
     /// <summary>
     /// Frame rendering flags used to switch between graphics features for this camera.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(110), EditorDisplay(\"Camera\")")
+    API_FIELD(Attributes="EditorOrder(110), EditorDisplay(\"Camera\")")
     ViewFlags RenderFlags = ViewFlags::DefaultGame;
 
     /// <summary>
     /// Describes frame rendering modes for this camera.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(120), EditorDisplay(\"Camera\")")
+    API_FIELD(Attributes="EditorOrder(120), EditorDisplay(\"Camera\")")
     ViewMode RenderMode = ViewMode::Default;
 
 public:

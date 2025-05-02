@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -68,13 +68,13 @@ public:
     /// <summary>
     /// Default probes cubemap resolution (use for Environment Probes, can be overriden per-actor).
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(1500), EditorDisplay(\"Quality\")")
+    API_FIELD(Attributes="EditorOrder(1500), EditorDisplay(\"Quality\")")
     ProbeCubemapResolution DefaultProbeResolution = ProbeCubemapResolution::_128;
 
     /// <summary>
     /// If checked, Environment Probes will use HDR texture format. Improves quality in very bright scenes at cost of higher memory usage.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(1502), EditorDisplay(\"Quality\")")
+    API_FIELD(Attributes="EditorOrder(1502), EditorDisplay(\"Quality\")")
     bool UseHDRProbes = false;
 
     /// <summary>
@@ -82,6 +82,12 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2000), EditorDisplay(\"Global SDF\")")
     bool EnableGlobalSDF = false;
+
+    /// <summary>
+    /// Draw distance of the Global SDF. Actual value can be large when using DDGI.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2001), EditorDisplay(\"Global SDF\"), Limit(1000), ValueCategory(Utils.ValueCategory.Distance)")
+    float GlobalSDFDistance = 15000.0f;
 
     /// <summary>
     /// The Global SDF quality. Controls the volume texture resolution and amount of cascades to use.
@@ -110,6 +116,12 @@ public:
     float GIProbesSpacing = 100;
 
     /// <summary>
+    /// Enables cascades splits blending for Global Illumination.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(2125), DefaultValue(false), EditorDisplay(\"Global Illumination\", \"GI Cascades Blending\")")
+    bool GICascadesBlending = false;
+
+    /// <summary>
     /// The Global Surface Atlas resolution. Adjust it if atlas `flickers` due to overflow (eg. to 4096).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2130), Limit(256, 8192), EditorDisplay(\"Global Illumination\")")
@@ -132,15 +144,12 @@ private:
     /// Renamed UeeHDRProbes into UseHDRProbes
     /// [Deprecated on 12.10.2022, expires on 12.10.2024]
     /// </summary>
-    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") bool GetUeeHDRProbes() const
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") bool GetUeeHDRProbes() const
     {
         return UseHDRProbes;
     }
 
-    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") void SetUeeHDRProbes(bool value)
-    {
-        UseHDRProbes = value;
-    }
+    API_PROPERTY(Attributes="Serialize, Obsolete, NoUndo") DEPRECATED("Use UseHDRProbes instead.") void SetUeeHDRProbes(bool value);
 
 public:
     /// <summary>

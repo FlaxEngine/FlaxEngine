@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -14,11 +14,13 @@ namespace Flax.Build.Bindings
         public string[] Comment;
         public bool IsStatic;
         public bool IsConstexpr;
-        public bool IsDeprecated;
+        public string DeprecatedMessage;
         public bool IsHidden;
         public AccessLevel Access;
         public string Attributes;
         public Dictionary<string, string> Tags;
+
+        public virtual bool IsDeprecated => DeprecatedMessage != null;
 
         public bool HasAttribute(string name)
         {
@@ -46,7 +48,7 @@ namespace Flax.Build.Bindings
             BindingsGenerator.Write(writer, Comment);
             writer.Write(IsStatic);
             writer.Write(IsConstexpr);
-            writer.Write(IsDeprecated);
+            BindingsGenerator.Write(writer, DeprecatedMessage);
             writer.Write(IsHidden);
             writer.Write((byte)Access);
             BindingsGenerator.Write(writer, Attributes);
@@ -59,7 +61,7 @@ namespace Flax.Build.Bindings
             Comment = BindingsGenerator.Read(reader, Comment);
             IsStatic = reader.ReadBoolean();
             IsConstexpr = reader.ReadBoolean();
-            IsDeprecated = reader.ReadBoolean();
+            DeprecatedMessage = BindingsGenerator.Read(reader, DeprecatedMessage);
             IsHidden = reader.ReadBoolean();
             Access = (AccessLevel)reader.ReadByte();
             Attributes = BindingsGenerator.Read(reader, Attributes);

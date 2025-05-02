@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -18,6 +18,7 @@ public:
     static PxCooking* GetCooking();
 #endif
     static PxMaterial* GetDefaultMaterial();
+    static void SimulationStepDone(PxScene* scene, float dt);
 };
 
 #endif

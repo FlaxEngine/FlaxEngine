@@ -1,10 +1,13 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Vector3.h"
+#if USE_LARGE_WORLDS
+#include "Engine/Core/Math/Double4x4.h"
+#endif
 #include "Engine/Core/Types/LayersMask.h"
 #include "Engine/Level/Types.h"
 #include "Enums.h"
@@ -128,6 +131,11 @@ public:
     API_FIELD() StaticFlags StaticFlagsMask = StaticFlags::None;
 
     /// <summary>
+    /// The static flags mask comparision rhs. Allows to draw objects that don't pass the static flags mask. Objects are checked with the following formula: (ObjectStaticFlags and StaticFlagsMask) == StaticFlagsMaskCompare.
+    /// </summary>
+    API_FIELD() StaticFlags StaticFlagsCompare = StaticFlags::None;
+
+    /// <summary>
     /// The view flags.
     /// </summary>
     API_FIELD() ViewFlags Flags = ViewFlags::DefaultGame;
@@ -156,13 +164,13 @@ public:
     /// The model LOD bias. Default is 0. Applied to all the objects in the shadow maps render views. Can be used to improve shadows rendering performance or increase quality.
     /// [Deprecated on 26.10.2022, expires on 26.10.2024]
     /// </summary>
-    API_FIELD() DEPRECATED int32 ShadowModelLODBias = 0;
+    API_FIELD() DEPRECATED() int32 ShadowModelLODBias = 0;
 
     /// <summary>
     /// The model LOD distance scale factor. Default is 1. Applied to all the objects in the shadow maps render views. Higher values increase LODs quality. Can be used to improve shadows rendering performance or increase quality.
     /// [Deprecated on 26.10.2022, expires on 26.10.2024]
     /// </summary>
-    API_FIELD() DEPRECATED float ShadowModelLODDistanceFactor = 1.0f;
+    API_FIELD() DEPRECATED() float ShadowModelLODDistanceFactor = 1.0f;
 
     /// <summary>
     /// Temporal Anti-Aliasing jitter frame index.
@@ -271,17 +279,14 @@ public:
     /// </summary>
     void UpdateCachedData();
 
-    // Set up view with custom params
-    // @param viewProjection View * Projection matrix
+    // Setups view with custom params.
     void SetUp(const Matrix& viewProjection);
 
-    // Set up view with custom params
-    // @param view View matrix
-    // @param projection Projection matrix
+    // Setups view with custom params.
     void SetUp(const Matrix& view, const Matrix& projection);
 
     /// <summary>
-    /// Set up view for cube rendering
+    /// Setups view for cube rendering.
     /// </summary>
     /// <param name="nearPlane">Near plane</param>
     /// <param name="farPlane">Far plane</param>
@@ -289,13 +294,13 @@ public:
     void SetUpCube(float nearPlane, float farPlane, const Float3& position);
 
     /// <summary>
-    /// Set up view for given face of the cube rendering
+    /// Setups view for given face of the cube rendering.
     /// </summary>
     /// <param name="faceIndex">Face index(0-5)</param>
     void SetFace(int32 faceIndex);
 
     /// <summary>
-    /// Set up view for cube rendering
+    /// Setups view for cube rendering.
     /// </summary>
     /// <param name="nearPlane">Near plane</param>
     /// <param name="farPlane">Far plane</param>
@@ -353,6 +358,9 @@ public:
         world.M42 -= (float)Origin.Y;
         world.M43 -= (float)Origin.Z;
     }
+
+    // Applies the render origin to the transformation instance matrix.
+    void GetWorldMatrix(Double4x4& world) const;
 };
 
 // Removes TAA jitter from the RenderView when drawing geometry after TAA has been resolved to prevent unwanted jittering.

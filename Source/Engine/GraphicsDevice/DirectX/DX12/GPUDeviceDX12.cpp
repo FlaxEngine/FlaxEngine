@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX12
 
@@ -10,10 +10,12 @@
 #include "GPUTimerQueryDX12.h"
 #include "GPUBufferDX12.h"
 #include "GPUSamplerDX12.h"
+#include "GPUVertexLayoutDX12.h"
 #include "GPUSwapChainDX12.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Core/Log.h"
@@ -32,6 +34,24 @@ static bool CheckDX12Support(IDXGIAdapter* adapter)
         return true;
     }
     return false;
+}
+
+GPUVertexLayoutDX12::GPUVertexLayoutDX12(GPUDeviceDX12* device, const Elements& elements, bool explicitOffsets)
+    : GPUResourceDX12<GPUVertexLayout>(device, StringView::Empty)
+    , InputElementsCount(elements.Count())
+{
+    SetElements(elements, explicitOffsets);
+    for (int32 i = 0; i < elements.Count(); i++)
+    {
+        const VertexElement& src = GetElements().Get()[i];
+        D3D12_INPUT_ELEMENT_DESC& dst = InputElements[i];
+        dst.SemanticName = RenderToolsDX::GetVertexInputSemantic(src.Type, dst.SemanticIndex);
+        dst.Format = RenderToolsDX::ToDxgiFormat(src.Format);
+        dst.InputSlot = src.Slot;
+        dst.AlignedByteOffset = src.Offset;
+        dst.InputSlotClass = src.PerInstance ? D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA : D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA;
+        dst.InstanceDataStepRate = src.PerInstance ? 1 : 0;
+    }
 }
 
 GPUDevice* GPUDeviceDX12::Create()
@@ -77,7 +97,7 @@ GPUDevice* GPUDeviceDX12::Create()
 #endif
 #ifdef __ID3D12DeviceRemovedExtendedDataSettings_FWD_DEFINED__
     ComPtr<ID3D12DeviceRemovedExtendedDataSettings> dredSettings;
-    VALIDATE_DIRECTX_CALL(D3D12GetDebugInterface(IID_PPV_ARGS(&dredSettings)));
+    D3D12GetDebugInterface(IID_PPV_ARGS(&dredSettings));
     if (dredSettings)
     {
         // Turn on AutoBreadcrumbs and Page Fault reporting
@@ -161,11 +181,11 @@ GPUDevice* GPUDeviceDX12::Create()
     }
     GPUAdapterDX selectedAdapter = adapters[selectedAdapterIndex];
     uint32 vendorId = 0;
-    if (CommandLine::Options.NVIDIA)
+    if (CommandLine::Options.NVIDIA.IsTrue())
         vendorId = GPU_VENDOR_ID_NVIDIA;
-    else if (CommandLine::Options.AMD)
+    else if (CommandLine::Options.AMD.IsTrue())
         vendorId = GPU_VENDOR_ID_AMD;
-    else if (CommandLine::Options.Intel)
+    else if (CommandLine::Options.Intel.IsTrue())
         vendorId = GPU_VENDOR_ID_INTEL;
     if (vendorId != 0)
     {
@@ -178,17 +198,14 @@ GPUDevice* GPUDeviceDX12::Create()
             }
         }
     }
-
-    // Validate adapter
     if (!selectedAdapter.IsValid())
     {
         LOG(Error, "Failed to choose valid DirectX adapter!");
         return nullptr;
     }
-
-    // Check if selected adapter does not support DirectX 12
-    if (!selectedAdapter.IsSupportingDX12())
+    if (selectedAdapter.MaxFeatureLevel < D3D_FEATURE_LEVEL_12_0)
     {
+        LOG(Error, "Failed to choose valid DirectX adapter!");
         return nullptr;
     }
 #endif
@@ -304,6 +321,26 @@ bool GPUDeviceDX12::Init()
     }
     UpdateOutputs(adapter);
 
+    // Create DirectX device
+    VALIDATE_DIRECTX_CALL(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device)));
+
+#if PLATFORM_WINDOWS
+    // Detect RenderDoc usage (UUID {A7AA6116-9C8D-4BBA-9083-B4D816B71B78})
+    IUnknown* unknown = nullptr;
+    const GUID uuidRenderDoc = { 0xa7aa6116, 0x9c8d, 0x4bba, { 0x90, 0x83, 0xb4, 0xd8, 0x16, 0xb7, 0x1b, 0x78 } };
+    HRESULT hr = _device->QueryInterface(uuidRenderDoc, (void**)&unknown);
+    if (SUCCEEDED(hr) && unknown)
+    {
+        IsDebugToolAttached = true;
+        unknown->Release();
+    }
+    if (!IsDebugToolAttached && GetModuleHandleA("renderdoc.dll") != nullptr)
+    {
+        IsDebugToolAttached = true;
+    }
+#endif
+
+    // Check if can use screen tearing on a swapchain
     ComPtr<IDXGIFactory5> factory5;
     _factoryDXGI->QueryInterface(IID_PPV_ARGS(&factory5));
     if (factory5)
@@ -312,14 +349,11 @@ bool GPUDeviceDX12::Init()
         if (SUCCEEDED(factory5->CheckFeatureSupport(DXGI_FEATURE_PRESENT_ALLOW_TEARING, &allowTearing, sizeof(allowTearing)))
             && allowTearing
 #if PLATFORM_WINDOWS
-            && GetModuleHandleA("renderdoc.dll") == nullptr // Disable tearing with RenderDoc (prevents crashing)
+            && !IsDebugToolAttached // Disable tearing with RenderDoc (prevents crashing)
 #endif
         )
             AllowTearing = true;
     }
-
-    // Create DirectX device
-    VALIDATE_DIRECTX_CALL(D3D12CreateDevice(adapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&_device)));
 
     // Debug Layer
 #if GPU_ENABLE_DIAGNOSTICS
@@ -398,21 +432,20 @@ bool GPUDeviceDX12::Init()
         {
             const PixelFormat format = static_cast<PixelFormat>(i);
             const DXGI_FORMAT dxgiFormat = RenderToolsDX::ToDxgiFormat(format);
-
             D3D12_FEATURE_DATA_FORMAT_SUPPORT formatInfo = { dxgiFormat };
             if (FAILED(_device->CheckFeatureSupport(D3D12_FEATURE_FORMAT_SUPPORT, &formatInfo, sizeof(formatInfo))))
-            {
                 formatInfo.Support1 = D3D12_FORMAT_SUPPORT1_NONE;
-            }
             const MSAALevel maximumMultisampleCount = GetMaximumMultisampleCount(_device, dxgiFormat);
-
             FeaturesPerFormat[i] = FormatFeatures(format, maximumMultisampleCount, (FormatSupport)formatInfo.Support1);
         }
     }
 
-#if BUILD_DEBUG && false
+#if !BUILD_RELEASE
 	// Prevent the GPU from overclocking or under-clocking to get consistent timings
-	_device->SetStablePowerState(TRUE);
+    if (CommandLine::Options.ShaderProfile.IsTrue())
+    {
+	    _device->SetStablePowerState(TRUE);
+    }
 #endif
 
     // Setup resources
@@ -568,7 +601,6 @@ bool GPUDeviceDX12::Init()
         // Static samplers
         D3D12_STATIC_SAMPLER_DESC staticSamplers[6];
         static_assert(GPU_STATIC_SAMPLERS_COUNT == ARRAY_COUNT(staticSamplers), "Update static samplers setup.");
-        // TODO: describe visibilities for the static samples, maybe use all pixel? or again pixel + all combo?
         // Linear Clamp
         staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
         staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
@@ -649,8 +681,6 @@ bool GPUDeviceDX12::Init()
         staticSamplers[5].ShaderRegister = 5;
         staticSamplers[5].RegisterSpace = 0;
         staticSamplers[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-        // TODO: static samplers for the shadow pass change into bindable samplers or sth?
 
         // Init
         D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc;
@@ -767,6 +797,7 @@ void GPUDeviceDX12::Dispose()
     updateRes2Dispose();
 
     // Clear pipeline objects
+    SAFE_DELETE_GPU_RESOURCE(DummyVB);
     for (auto& srv : _nullSrv)
         srv.Release();
     _nullUav.Release();
@@ -828,6 +859,11 @@ GPUBuffer* GPUDeviceDX12::CreateBuffer(const StringView& name)
 GPUSampler* GPUDeviceDX12::CreateSampler()
 {
     return New<GPUSamplerDX12>(this);
+}
+
+GPUVertexLayout* GPUDeviceDX12::CreateVertexLayout(const VertexElements& elements, bool explicitOffsets)
+{
+    return New<GPUVertexLayoutDX12>(this, elements, explicitOffsets);
 }
 
 GPUSwapChain* GPUDeviceDX12::CreateSwapChain(Window* window)

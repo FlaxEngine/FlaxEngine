@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -46,7 +46,7 @@ typedef wchar_t Char;
 #define MIN_uint64 ((uint64)0x0000000000000000)
 #define MIN_int8 ((int8)-128)
 #define MIN_int16 ((int16)-32768)
-#define MIN_int32 -((int32)2147483648)
+#define MIN_int32 ((int32)-2147483648ll)
 #define MIN_int64 -((int64)9223372036854775808)
 #define MIN_float -(3.402823466e+38f)
 #define MIN_double -(1.7976931348623158e+308)
@@ -83,6 +83,8 @@ template<typename T, typename U>
 class Pair;
 template<typename KeyType, typename ValueType, typename AllocationType>
 class Dictionary;
+template<typename T, typename AllocationType>
+class HashSet;
 template<typename>
 class Function;
 template<typename... Params>
@@ -126,6 +128,7 @@ API_TYPEDEF(Alias) typedef Vector4Base<Real> Vector4;
 struct BoundingBox;
 struct Matrix;
 struct Matrix3x3;
+struct Double4x4;
 struct Ray;
 struct Plane;
 struct Rectangle;
@@ -136,6 +139,11 @@ struct OrientedBoundingBox;
 struct Transform;
 struct Color;
 struct Color32;
+#if USE_LARGE_WORLDS
+typedef Double4x4 Real4x4;
+#else
+typedef Matrix Real4x4;
+#endif
 
 // @formatter:on
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -78,6 +78,13 @@ namespace FlaxEditor.Viewport.Previews
                         if (_uiControlLinked.Control?.Parent == _uiParentLink)
                             _uiControlLinked.Control.Parent = null;
                         _uiControlLinked = null;
+                    }
+                    foreach (var child in _uiParentLink.Children.ToArray())
+                    {
+                        if (child is CanvasRootControl canvasRoot)
+                        {
+                            canvasRoot.Canvas.EditorOverride(null, null);
+                        }
                     }
 
                     // Remove for the preview

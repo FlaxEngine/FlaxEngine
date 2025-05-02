@@ -1,9 +1,10 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_AUDIO_TOOL
 
 #include "AudioTool.h"
 #include "Engine/Core/Core.h"
+#include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Memory/Allocation.h"
 #if USE_EDITOR
 #include "Engine/Serialization/Serialization.h"
@@ -307,8 +308,9 @@ void AudioTool::ConvertFromFloat(const float* input, int32* output, uint32 numSa
 {
     for (uint32 i = 0; i < numSamples; i++)
     {
-        const float sample = *(float*)input;
-        output[i] = static_cast<int32>(sample * 2147483647.0f);
+        float sample = *(float*)input;
+        sample = Math::Clamp(sample, -1.0f + ZeroTolerance, +1.0f - ZeroTolerance);
+        output[i] = static_cast<int32>(sample * 2147483648.0f);
         input++;
     }
 }

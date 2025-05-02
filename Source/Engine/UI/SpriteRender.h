@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -85,14 +85,15 @@ public:
     DrawPass DrawModes = DrawPass::Default;
 
     /// <summary>
-    /// Gets the object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be use to control transparency drawing.
+    /// Gets the object sort order key used when sorting drawable objects during rendering. Use lower values to draw object before others, higher values are rendered later (on top). Can be used to control transparency drawing.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(60), DefaultValue(0), EditorDisplay(\"Sprite\")")
-    int16 SortOrder = 0;
+    int8 SortOrder = 0;
 
 private:
     void OnMaterialLoaded();
-    void SetImage();
+    void SetImageParam();
+    void SetColorParam();
 
 public:
     // [Actor]

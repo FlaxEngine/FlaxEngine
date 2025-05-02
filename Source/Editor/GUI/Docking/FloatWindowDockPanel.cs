@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -139,6 +139,8 @@ namespace FlaxEditor.GUI.Docking
         /// <inheritdoc />
         protected override void OnLastTabRemoved()
         {
+            if (ChildPanelsCount > 0)
+                return;
             // Close window
             _window?.Close();
         }

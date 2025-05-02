@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_TOOLS_IOS
 
@@ -203,7 +203,7 @@ bool iOSPlatformTools::OnPostProcess(CookingData& data)
         return true;
 
     // Copy fresh XCode project template
-    if (FileSystem::CopyDirectory(data.OriginalOutputPath, platformDataPath / TEXT("Project"), true))
+    if (FileSystem::CopyDirectory(data.OriginalOutputPath, platformDataPath / TEXT("Project")))
     {
         LOG(Error, "Failed to deploy XCode project to {0} from {1}", data.OriginalOutputPath, platformDataPath);
         return true;

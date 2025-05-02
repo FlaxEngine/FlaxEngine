@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX11
 
@@ -549,18 +549,17 @@ void GPUTextureDX11::initHandles()
     }
 }
 
-bool GPUTextureDX11::GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch)
+bool GPUTextureDX11::GetData(int32 arrayIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch)
 {
     if (!IsStaging())
     {
         LOG(Warning, "Texture::GetData is valid only for staging resources.");
         return true;
     }
-
     GPUDeviceLock lock(_device);
 
     // Map the staging resource mip map for reading
-    const uint32 subresource = RenderToolsDX::CalcSubresourceIndex(mipMapIndex, arrayOrDepthSliceIndex, MipLevels());
+    const uint32 subresource = RenderToolsDX::CalcSubresourceIndex(mipMapIndex, arrayIndex, MipLevels());
     D3D11_MAPPED_SUBRESOURCE mapped;
     const HRESULT mapResult = _device->GetIM()->Map(_resource, subresource, D3D11_MAP_READ, 0, &mapped);
     if (FAILED(mapResult))
@@ -569,31 +568,7 @@ bool GPUTextureDX11::GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, Te
         return true;
     }
 
-    // Check if target row pitch is the same
-    if (mipRowPitch == mapped.RowPitch || mipRowPitch == 0)
-    {
-        // Init mip info
-        data.Lines = mapped.DepthPitch / mapped.RowPitch;
-        data.DepthPitch = mapped.DepthPitch;
-        data.RowPitch = mapped.RowPitch;
-
-        // Copy data
-        data.Data.Copy((byte*)mapped.pData, mapped.DepthPitch);
-    }
-    else
-    {
-        // Init mip info
-        data.Lines = mapped.DepthPitch / mapped.RowPitch;
-        data.DepthPitch = mipRowPitch * data.Lines;
-        data.RowPitch = mipRowPitch;
-
-        // Copy data
-        data.Data.Allocate(data.DepthPitch);
-        for (uint32 i = 0; i < data.Lines; i++)
-        {
-            Platform::MemoryCopy(data.Data.Get() + data.RowPitch * i, ((byte*)mapped.pData) + mapped.RowPitch * i, data.RowPitch);
-        }
-    }
+    data.Copy(mapped.pData, mapped.RowPitch, mapped.DepthPitch, Depth(), mipRowPitch);
 
     // Unmap texture
     _device->GetIM()->Unmap(_resource, subresource);

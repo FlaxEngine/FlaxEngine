@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RigidBody.h"
 #include "Engine/Core/Log.h"
@@ -447,9 +447,13 @@ void RigidBody::OnActiveTransformChanged()
     // Change actor transform (but with locking)
     ASSERT(!_isUpdatingTransform);
     _isUpdatingTransform = true;
-    Transform transform;
+    Transform transform = _transform;
     PhysicsBackend::GetRigidActorPose(_actor, transform.Translation, transform.Orientation);
-    transform.Scale = _transform.Scale;
+    if (transform.Translation.IsNanOrInfinity() || transform.Orientation.IsNanOrInfinity())
+    {
+        LOG(Error, "GetRigidActorPose retuned NaN/Inf transformation");
+        transform = _transform;
+    }
     if (_parent)
     {
         _parent->GetTransform().WorldToLocal(transform, _localTransform);

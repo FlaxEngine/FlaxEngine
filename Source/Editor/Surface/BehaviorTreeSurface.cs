@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -24,6 +24,7 @@ namespace FlaxEditor.Surface
         public BehaviorTreeSurface(IVisjectSurfaceOwner owner, Action onSave, FlaxEditor.Undo undo)
         : base(owner, onSave, undo, CreateStyle())
         {
+            ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
         }
 
         private static SurfaceStyle CreateStyle()
@@ -33,6 +34,11 @@ namespace FlaxEditor.Surface
             style.DrawBox = DrawBox;
             style.DrawConnection = SurfaceStyle.DrawStraightConnection;
             return style;
+        }
+
+        private void OnScriptsReloadBegin()
+        {
+            _nodesCache.Clear();
         }
 
         private static void DrawBox(Box box)
@@ -186,6 +192,7 @@ namespace FlaxEditor.Surface
         {
             if (IsDisposing)
                 return;
+            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
             _nodesCache.Wait();
 
             base.OnDestroy();

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "DeferredMaterialShader.h"
 #include "MaterialShaderFeatures.h"
@@ -16,16 +16,6 @@
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/RenderTask.h"
 
-PACK_STRUCT(struct DeferredMaterialShaderData {
-    Matrix WorldMatrix;
-    Matrix PrevWorldMatrix;
-    Float2 Dummy0;
-    float LODDitherFactor;
-    float PerInstanceRandom;
-    Float3 GeometrySize;
-    float WorldDeterminantSign;
-    });
-
 DrawPass DeferredMaterialShader::GetDrawModes() const
 {
     return DrawPass::Depth | DrawPass::GBuffer | DrawPass::GlobalSurfaceAtlas | DrawPass::MotionVectors | DrawPass::QuadOverdraw;
@@ -38,22 +28,17 @@ bool DeferredMaterialShader::CanUseLightmap() const
 
 bool DeferredMaterialShader::CanUseInstancing(InstancingHandler& handler) const
 {
-    handler = { SurfaceDrawCallHandler::GetHash, SurfaceDrawCallHandler::CanBatch, SurfaceDrawCallHandler::WriteDrawCall, };
+    handler = { SurfaceDrawCallHandler::GetHash, SurfaceDrawCallHandler::CanBatch, };
     return true;
 }
 
 void DeferredMaterialShader::Bind(BindParameters& params)
 {
-    //PROFILE_CPU();
-    // Prepare
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
     Span<byte> cb(_cbData.Get(), _cbData.Count());
-    ASSERT_LOW_LAYER(cb.Length() >= sizeof(DeferredMaterialShaderData));
-    auto materialData = reinterpret_cast<DeferredMaterialShaderData*>(cb.Get());
-    cb = Span<byte>(cb.Get() + sizeof(DeferredMaterialShaderData), cb.Length() - sizeof(DeferredMaterialShaderData));
-    int32 srv = 2;
+    int32 srv = 3;
 
     // Setup features
     const bool useLightmap = _info.BlendMode == MaterialBlendMode::Opaque && LightmapFeature::Bind(params, cb, srv);
@@ -67,28 +52,19 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     bindMeta.CanSampleDepth = false;
     bindMeta.CanSampleGBuffer = false;
     MaterialParams::Bind(params.ParamsLink, bindMeta);
+    context->BindSR(0, params.ObjectBuffer);
 
-    // Setup material constants
-    {
-        Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
-        Matrix::Transpose(drawCall.Surface.PrevWorld, materialData->PrevWorldMatrix);
-        materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
-        materialData->LODDitherFactor = drawCall.Surface.LODDitherFactor;
-        materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
-        materialData->GeometrySize = drawCall.Surface.GeometrySize;
-    }
-
-    // Check if is using mesh skinning
+    // Check if using mesh skinning
     const bool useSkinning = drawCall.Surface.Skinning != nullptr;
     bool perBoneMotionBlur = false;
     if (useSkinning)
     {
         // Bind skinning buffer
         ASSERT(drawCall.Surface.Skinning->IsReady());
-        context->BindSR(0, drawCall.Surface.Skinning->BoneMatrices->View());
+        context->BindSR(1, drawCall.Surface.Skinning->BoneMatrices->View());
         if (drawCall.Surface.Skinning->PrevBoneMatrices && drawCall.Surface.Skinning->PrevBoneMatrices->IsAllocated())
         {
-            context->BindSR(1, drawCall.Surface.Skinning->PrevBoneMatrices->View());
+            context->BindSR(2, drawCall.Surface.Skinning->PrevBoneMatrices->View());
             perBoneMotionBlur = true;
         }
     }
@@ -115,8 +91,8 @@ void DeferredMaterialShader::Bind(BindParameters& params)
         else
             cullMode = CullMode::Normal;
     }
-    ASSERT_LOW_LAYER(!(useSkinning && params.DrawCallsCount > 1)); // No support for instancing skinned meshes
-    const auto cache = params.DrawCallsCount == 1 ? &_cache : &_cacheInstanced;
+    ASSERT_LOW_LAYER(!(useSkinning && params.Instanced)); // No support for instancing skinned meshes
+    const auto cache = params.Instanced ? &_cacheInstanced : &_cache;
     PipelineStateCache* psCache = cache->GetPS(view.Pass, useLightmap, useSkinning, perBoneMotionBlur);
     ASSERT(psCache);
     GPUPipelineState* state = psCache->GetPS(cullMode, wireframe);

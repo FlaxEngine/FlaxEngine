@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "RenderTask.h"
 #include "RenderBuffers.h"
@@ -46,9 +46,9 @@ void RenderTask::DrawAll()
     for (auto task : Tasks)
     {
         if (task->CanDraw())
-        {
             task->OnDraw();
-        }
+        else
+            task->OnIdle();
     }
 }
 
@@ -82,6 +82,10 @@ void RenderTask::OnDraw()
     OnBegin(context);
     OnRender(context);
     OnEnd(context);
+}
+
+void RenderTask::OnIdle()
+{
 }
 
 void RenderTask::OnBegin(GPUContext* context)
@@ -325,6 +329,9 @@ void SceneRenderTask::OnPostRender(GPUContext* context, RenderContext& renderCon
     OnCollectDrawCalls(renderContextBatch, SceneRendering::PostRender);
 
     PostRender(context, renderContext);
+
+    if (Buffers)
+        Buffers->ReleaseUnusedMemory();
 }
 
 Viewport SceneRenderTask::GetViewport() const
@@ -422,6 +429,14 @@ bool SceneRenderTask::CanDraw() const
     if (Output && !Output->IsAllocated())
         return false;
     return RenderTask::CanDraw();
+}
+
+void SceneRenderTask::OnIdle()
+{
+    RenderTask::OnIdle();
+
+    if (Buffers)
+        Buffers->ReleaseUnusedMemory();
 }
 
 MainRenderTask::MainRenderTask(const SpawnParams& params)

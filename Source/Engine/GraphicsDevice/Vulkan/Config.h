@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -28,7 +28,7 @@
 #define VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT 20
 
 #define VULKAN_ENABLE_API_DUMP 0
-#define VULKAN_RESET_QUERY_POOLS 0
+#define VULKAN_RESET_QUERY_POOLS 1
 #define VULKAN_HASH_POOLS_WITH_LAYOUT_TYPES 1
 #define VULKAN_USE_DEBUG_LAYER GPU_ENABLE_DIAGNOSTICS
 #define VULKAN_USE_DEBUG_DATA (GPU_ENABLE_DIAGNOSTICS && COMPILE_WITH_DEV_ENV)

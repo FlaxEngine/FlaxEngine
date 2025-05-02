@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -107,6 +107,19 @@ namespace FlaxEditor.GUI.Timeline.Tracks
         {
             MinMediaCount = 1;
             MaxMediaCount = 1;
+        }
+
+        /// <inheritdoc />
+        public override void OnDuplicated(Track clone)
+        {
+            base.OnDuplicated(clone);
+
+            // Clone overriden parameters
+            if (clone is ParticleEmitterTrack cloneTrack)
+            {
+                foreach (var e in ParametersOverrides)
+                    cloneTrack.ParametersOverrides.Add(e.Key, e.Value);
+            }
         }
 
         /// <inheritdoc />

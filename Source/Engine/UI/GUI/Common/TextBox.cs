@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 namespace FlaxEngine.GUI
 {
@@ -24,6 +24,18 @@ namespace FlaxEngine.GUI
             get => _watermarkText;
             set => _watermarkText = value;
         }
+
+        /// <summary>
+        /// Whether to Obfuscate the text with a different character.
+        /// </summary>
+        [EditorOrder(21), Tooltip("Whether to Obfuscate the text with a different character.")]
+        public bool ObfuscateText = false;
+
+        /// <summary>
+        /// The character to Obfuscate the text.
+        /// </summary>
+        [EditorOrder(22), VisibleIf(nameof(ObfuscateText)), Tooltip("The character to Obfuscate the text.")]
+        public char ObfuscateCharacter = '\u25cf';
         
         /// <summary>
         /// The text case.
@@ -159,6 +171,9 @@ namespace FlaxEngine.GUI
 
         private string ConvertedText()
         {
+            if (ObfuscateText)
+                return new string(ObfuscateCharacter, _text.Length);
+
             string text = _text;
             switch (CaseOption)
             {
@@ -234,7 +249,7 @@ namespace FlaxEngine.GUI
             var text = ConvertedText();
 
             // Check if sth is selected to draw selection
-            if (HasSelection)
+            if (HasSelection && IsFocused)
             {
                 var leftEdge = font.GetCharPosition(text, SelectionLeft, ref _layout);
                 var rightEdge = font.GetCharPosition(text, SelectionRight, ref _layout);
@@ -279,6 +294,8 @@ namespace FlaxEngine.GUI
                 var color = TextColor;
                 if (!enabled)
                     color *= 0.6f;
+                else if (_isReadOnly)
+                    color *= 0.85f;
                 Render2D.DrawText(font, text, color, ref _layout, TextMaterial);
             }
             else if (!string.IsNullOrEmpty(_watermarkText))
@@ -291,25 +308,7 @@ namespace FlaxEngine.GUI
             {
                 float alpha = Mathf.Saturate(Mathf.Cos(_animateTime * CaretFlashSpeed) * 0.5f + 0.7f);
                 alpha = alpha * alpha * alpha * alpha * alpha * alpha;
-                if (CaretPosition == 0)
-                {
-                    var bounds = CaretBounds;
-                    if (_layout.VerticalAlignment == TextAlignment.Center)
-                        bounds.Y = _layout.Bounds.Y + _layout.Bounds.Height * 0.5f - bounds.Height * 0.5f;
-                    else if (_layout.VerticalAlignment == TextAlignment.Far)
-                        bounds.Y = _layout.Bounds.Y + _layout.Bounds.Height - bounds.Height;
-
-                    if (_layout.HorizontalAlignment == TextAlignment.Center)
-                        bounds.X = _layout.Bounds.X + _layout.Bounds.Width * 0.5f - bounds.Width * 0.5f;
-                    else if (_layout.HorizontalAlignment == TextAlignment.Far)
-                        bounds.X = _layout.Bounds.X + _layout.Bounds.Width - bounds.Width;
-                    Render2D.FillRectangle(bounds, CaretColor * alpha);
-                }
-                else
-                {
-                    Render2D.FillRectangle(CaretBounds, CaretColor * alpha);
-                }
-                
+                Render2D.FillRectangle(CaretBounds, CaretColor * alpha);
             }
 
             // Restore rendering state

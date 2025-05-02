@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -205,6 +205,7 @@ private:
     MaterialValue AccessParticleAttribute(Node* caller, const StringView& name, ParticleAttributeValueTypes valueType, const Char* index = nullptr, ParticleAttributeSpace space = ParticleAttributeSpace::AsIs);
     void prepareLayer(MaterialLayer* layer, bool allowVisibleParams);
     void WriteCustomGlobalCode(const Array<const MaterialGraph::Node*, InlinedAllocation<8>>& nodes, int32 templateInputsMapping);
+    Value VsToPs(Node* node, Box* input);
 
 public:
 

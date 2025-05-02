@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 namespace FlaxEditor.Windows.Profiler
 {
@@ -36,7 +36,11 @@ namespace FlaxEditor.Windows.Profiler
         /// Initializes a new instance of the <see cref="SamplesBuffer{T}"/> class.
         /// </summary>
         /// <param name="capacity">The maximum buffer capacity.</param>
+#if USE_PROFILER
         public SamplesBuffer(int capacity = ProfilerMode.MaxSamples)
+#else
+        public SamplesBuffer(int capacity = 600)
+#endif
         {
             _data = new T[capacity];
             _count = 0;

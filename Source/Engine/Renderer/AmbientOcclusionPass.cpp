@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "AmbientOcclusionPass.h"
 #include "RenderList.h"
@@ -214,6 +214,7 @@ void AmbientOcclusionPass::Render(RenderContext& renderContext)
         return;
     PROFILE_GPU_CPU("Ambient Occlusion");
 
+    settings = ASSAO_Settings();
     settings.Radius = aoSettings.Radius * 0.006f;
     settings.ShadowMultiplier = aoSettings.Intensity;
     settings.ShadowPower = aoSettings.Power;
@@ -296,8 +297,11 @@ void AmbientOcclusionPass::InitRTs(const RenderContext& renderContext)
     GPUTextureDescription tempDesc;
     for (int i = 0; i < 4; i++)
     {
-        // TODO: maybe instead of using whole mip chain request only SSAO_DEPTH_MIP_LEVELS?
+#if SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET < 99
         tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, 0, SSAO_DEPTH_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
+#else
+        tempDesc = GPUTextureDescription::New2D((int32)m_halfSizeX, (int32)m_halfSizeY, SSAO_DEPTH_FORMAT, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget);
+#endif
         m_halfDepths[i] = RenderTargetPool::Get(tempDesc);
         RENDER_TARGET_POOL_SET_NAME(m_halfDepths[i], "SSAO.HalfDepth");
     }
@@ -334,6 +338,7 @@ void AmbientOcclusionPass::UpdateCB(const RenderContext& renderContext, GPUConte
     const float farPlane = view.Far;
     const Matrix& proj = view.Projection;
 
+    Platform::MemoryClear(&_constantsBufferData, sizeof(_constantsBufferData));
     GBufferPass::SetInputs(view, _constantsBufferData.GBuffer);
     Matrix::Transpose(view.View, _constantsBufferData.ViewMatrix);
 
@@ -447,7 +452,7 @@ void AmbientOcclusionPass::PrepareDepths(const RenderContext& renderContext)
     }
 
     // Only do mipmaps for higher quality levels (not beneficial on quality level 1, and detrimental on quality level 0)
-    if (settings.QualityLevel > 1)
+    if (settings.QualityLevel > 1 && SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET < 99)
     {
         for (int i = 1; i < SSAO_DEPTH_MIP_LEVELS; i++)
         {

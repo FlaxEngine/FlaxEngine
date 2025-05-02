@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -12,21 +12,20 @@
 class FLAXENGINE_API MacPlatform : public ApplePlatform
 {
 public:
-
     // [ApplePlatform]
     static bool Init();
     static void LogInfo();
     static void BeforeRun();
     static void Tick();
     static int32 GetDpi();
-	static Guid GetUniqueDeviceId();
+    static Guid GetUniqueDeviceId();
     static String GetComputerName();
     static Float2 GetMousePosition();
     static void SetMousePosition(const Float2& pos);
     static Rectangle GetMonitorBounds(const Float2& screenPos);
     static Float2 GetDesktopSize();
     static Rectangle GetVirtualDesktopBounds();
-	static String GetMainDirectory();
+    static String GetMainDirectory();
     static Window* CreateWindow(const CreateWindowSettings& settings);
     static int32 CreateProcess(CreateProcessSettings& settings);
 };

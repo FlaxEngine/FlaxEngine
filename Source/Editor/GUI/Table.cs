@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Runtime.CompilerServices;
@@ -130,12 +130,14 @@ namespace FlaxEditor.GUI
 
             var style = Style.Current;
             var font = column.TitleFont ?? style.FontMedium;
-            Render2D.DrawText(font, column.Title, rect, column.TitleColor, TextAlignment.Center, TextAlignment.Center);
+            var textRect = rect;
+            column.TitleMargin.ShrinkRectangle(ref textRect);
+            Render2D.DrawText(font, column.Title, textRect, column.TitleColor, column.TitleAlignment, TextAlignment.Center);
 
             if (columnIndex < _columns.Length - 1)
             {
-                var splitRect = new Rectangle(rect.Right - 1, 2, 2, rect.Height - 4);
-                Render2D.FillRectangle(splitRect, _movingSplit == columnIndex || splitRect.Contains(_mousePos) ? style.BorderNormal : column.TitleBackgroundColor * 0.9f);
+                var splitRect = new Rectangle(rect.Right - 2, 2, 4, rect.Height - 4);
+                Render2D.FillRectangle(splitRect, _movingSplit == columnIndex || splitRect.Contains(_mousePos) ? style.BorderNormal : style.Background * 0.9f);
             }
         }
 
@@ -151,7 +153,7 @@ namespace FlaxEditor.GUI
                     {
                         rect.Width = GetColumnWidth(i);
 
-                        var splitRect = new Rectangle(rect.Right - 1, 2, 2, rect.Height - 4);
+                        var splitRect = new Rectangle(rect.Right - 2, 2, 4, rect.Height - 4);
                         if (splitRect.Contains(location))
                         {
                             // Start moving splitter
@@ -192,6 +194,31 @@ namespace FlaxEditor.GUI
                 _splits[nextSplit] = _columns[nextSplit].ClampColumnSize(rightSplit, width);
 
                 PerformLayout();
+            }
+            else
+            {
+                if (_columns != null && _splits != null)
+                {
+                    Rectangle rect = new Rectangle(0, 0, 0, _headerHeight);
+                    for (int i = 0; i < _columns.Length - 1; i++)
+                    {
+                        rect.Width = GetColumnWidth(i);
+
+                        var splitRect = new Rectangle(rect.Right - 2, 2, 4, rect.Height - 4);
+                        if (splitRect.Contains(location))
+                        {
+                            // Start moving splitter
+                            Cursor = CursorType.SizeWE;
+                            break;
+                        }
+                        else
+                        {
+                            Cursor = CursorType.Default;
+                        }
+
+                        rect.X += rect.Width;
+                    }
+                }
             }
 
             base.OnMouseMove(location);

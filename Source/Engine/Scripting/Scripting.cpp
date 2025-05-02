@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "BinaryModule.h"
 #include "Scripting.h"
@@ -21,6 +21,7 @@
 #include "ManagedCLR/MCore.h"
 #include "ManagedCLR/MException.h"
 #include "Internal/StdTypesContainer.h"
+#include "Engine/Core/LogContext.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Stopwatch.h"
@@ -155,6 +156,12 @@ Action Scripting::ScriptsLoaded;
 Action Scripting::ScriptsUnload;
 Action Scripting::ScriptsReloading;
 Action Scripting::ScriptsReloaded;
+Action Scripting::Update;
+Action Scripting::LateUpdate;
+Action Scripting::FixedUpdate;
+Action Scripting::LateFixedUpdate;
+Action Scripting::Draw;
+Action Scripting::Exit;
 ThreadLocal<Scripting::IdsMappingTable*, PLATFORM_THREADS_LIMIT> Scripting::ObjectsLookupIdMapping;
 ScriptingService ScriptingServiceInstance;
 
@@ -174,6 +181,8 @@ bool ScriptingService::Init()
         LOG(Fatal, "C# runtime initialization failed.");
         return true;
     }
+
+    MCore::CreateScriptingAssemblyLoadContext();
 
     // Cache root domain
     _rootDomain = MCore::GetRootDomain();
@@ -204,9 +213,9 @@ bool ScriptingService::Init()
 }
 
 #if COMPILE_WITHOUT_CSHARP
-#define INVOKE_EVENT(name)
+#define INVOKE_EVENT(name) Scripting::name();
 #else
-#define INVOKE_EVENT(name) \
+#define INVOKE_EVENT(name) Scripting::name(); \
     if (!_isEngineAssemblyLoaded) return; \
 	if (_method_##name == nullptr) \
 	{ \
@@ -703,7 +712,8 @@ void Scripting::Reload(bool canTriggerSceneReload)
     _hasGameModulesLoaded = false;
 
     // Release and create a new assembly load context for user assemblies
-    MCore::ReloadScriptingAssemblyLoadContext();
+    MCore::UnloadScriptingAssemblyLoadContext();
+    MCore::CreateScriptingAssemblyLoadContext();
 
     // Give GC a try to cleanup old user objects and the other mess
     MCore::GC::Collect();
@@ -725,7 +735,12 @@ Array<ScriptingObject*, HeapAllocation> Scripting::GetObjects()
 {
     Array<ScriptingObject*> objects;
     _objectsLocker.Lock();
+#if USE_OBJECTS_DISPOSE_CRASHES_DEBUGGING
+    for (const auto& e : _objectsDictionary)
+        objects.Add(e.Value.Ptr);
+#else
     _objectsDictionary.GetValues(objects);
+#endif
     _objectsLocker.Unlock();
     return objects;
 }
@@ -880,7 +895,8 @@ ScriptingObject* Scripting::FindObject(Guid id, const MClass* type)
         // Check type
         if (!type || result->Is(type))
             return result;
-        LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}.", id, String(result->GetType().Fullname), String(type->GetFullName()));
+        LOG(Warning, "Found scripting object with ID={0} of type {1} that doesn't match type {2}", id, String(result->GetType().Fullname), String(type->GetFullName()));
+        LogContext::Print(LogType::Warning);
         return nullptr;
     }
 
@@ -899,7 +915,8 @@ ScriptingObject* Scripting::FindObject(Guid id, const MClass* type)
             return asset;
     }
 
-    LOG(Warning, "Unable to find scripting object with ID={0}. Required type {1}.", id, String(type->GetFullName()));
+    LOG(Warning, "Unable to find scripting object with ID={0}. Required type {1}", id, String(type->GetFullName()));
+    LogContext::Print(LogType::Warning);
     return nullptr;
 }
 

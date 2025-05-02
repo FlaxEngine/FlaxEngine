@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -21,21 +21,6 @@ namespace FlaxEditor.Tools.Terrain
     [HideInEditor]
     public class PaintTerrainGizmoMode : EditorGizmoMode
     {
-        /// <summary>
-        /// The terrain layer names.
-        /// </summary>
-        public static readonly string[] TerrainLayerNames =
-        {
-            "Layer 0",
-            "Layer 1",
-            "Layer 2",
-            "Layer 3",
-            "Layer 4",
-            "Layer 5",
-            "Layer 6",
-            "Layer 7",
-        };
-
         private struct SplatmapData
         {
             public IntPtr DataPtr;

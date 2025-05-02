@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_WIN32
 
@@ -8,16 +8,12 @@
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Utilities/StringConverter.h"
 #include "IncludeWindowsHeaders.h"
 
 const DateTime WindowsEpoch(1970, 1, 1);
 
-#define WIN32_INIT_BUFFER(path, buffer) \
-    Char buffer[MAX_PATH]; \
-    if (path.Length() > MAX_PATH) \
-        return true; \
-    Platform::MemoryCopy(buffer, path.Get(), path.Length() * sizeof(Char)); \
-    buffer[path.Length()] = 0
+#define WIN32_INIT_BUFFER(path, buffer) StringAsTerminated<> buffer(path.Get(), path.Length())
 
 bool Win32FileSystem::CreateDirectory(const StringView& path)
 {
@@ -133,11 +129,11 @@ bool Win32FileSystem::DirectoryGetFiles(Array<String>& results, const String& pa
     return getFilesFromDirectoryAll(results, path, searchPattern);
 }
 
-bool Win32FileSystem::GetChildDirectories(Array<String>& results, const String& directory)
+bool Win32FileSystem::GetChildDirectories(Array<String>& results, const String& path)
 {
     // Try to find first file
     WIN32_FIND_DATA info;
-    String pattern = directory / TEXT('*');
+    String pattern = path / TEXT('*');
     const HANDLE handle = FindFirstFileW(*pattern, &info);
     if (INVALID_HANDLE_VALUE == handle)
     {
@@ -155,7 +151,7 @@ bool Win32FileSystem::GetChildDirectories(Array<String>& results, const String& 
         if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
         {
             // Add directory
-            results.Add(directory / info.cFileName);
+            results.Add(path / info.cFileName);
         }
     } while (FindNextFileW(handle, &info) != 0);
     FindClose(handle);

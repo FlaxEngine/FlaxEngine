@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.IO;
 using FlaxEngine;
@@ -34,6 +34,8 @@ namespace FlaxEditor.GUI.Timeline.Undo
 
         private void Set(byte[] data)
         {
+            if (_timeline == null)
+                return;
             var track = _timeline.FindTrack(_name);
             using (var memory = new MemoryStream(data))
             using (var stream = new BinaryReader(memory))
@@ -42,11 +44,8 @@ namespace FlaxEditor.GUI.Timeline.Undo
                 track.Flags = (TrackFlags)stream.ReadByte();
                 track.Archetype.Load(Timeline.FormatVersion, track, stream);
             }
-            if (_timeline != null)
-            {
-                _timeline.ArrangeTracks();
-                _timeline.MarkAsEdited();
-            }
+            _timeline.ArrangeTracks();
+            _timeline.MarkAsEdited();
             track.OnUndo();
         }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -101,6 +101,14 @@ API_CLASS(Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API GDKPlatf
     /// </summary>
     API_FIELD(Attributes="EditorOrder(330), EditorDisplay(\"Xbox Live\")")
     StringAnsi SCID;
+
+#if !BUILD_RELEASE
+    /// <summary>
+    /// Enables debugging Xbox Live via verbose tracing.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(370), EditorDisplay(\"Xbox Live\")")
+    bool DebugXboxLive = false;
+#endif
 
     /// <summary>
     /// Specifies if the Game DVR system component is enabled or not.

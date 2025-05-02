@@ -1,7 +1,6 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
-using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
 using FlaxEngine;
@@ -75,6 +74,7 @@ namespace FlaxEditor.Surface
                 Visible = false,
                 Parent = this,
                 EndEditOnClick = false, // We have to handle this ourselves, otherwise the textbox instantly loses focus when double-clicking the header
+                HorizontalAlignment = TextAlignment.Center,
             };
         }
 
@@ -86,7 +86,10 @@ namespace FlaxEditor.Surface
             // Read node data
             Title = TitleValue;
             Color = ColorValue;
-            Size = SizeValue;
+            var size = SizeValue;
+            if (Surface != null && Surface.GridSnappingEnabled)
+                size = Surface.SnapToGrid(size, true);
+            Size = size;
 
             // Order
             // Backwards compatibility - When opening with an older version send the old comments to the back
@@ -169,10 +172,22 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
-            if (_isRenaming && (!_renameTextBox.IsFocused || !RootWindow.IsFocused))
+            if (_isRenaming)
             {
-                Rename(_renameTextBox.Text);
-                StopRenaming();
+                // Stop renaming when clicking anywhere else
+                if (!_renameTextBox.IsFocused || !RootWindow.IsFocused)
+                {
+                    Rename(_renameTextBox.Text);
+                    StopRenaming();
+                }
+            }
+            else
+            {
+                // Rename on F2
+                if (IsSelected && Editor.Instance.Options.Options.Input.Rename.Process(this))
+                {
+                    StartRenaming();
+                }
             }
 
             base.Update(deltaTime);
@@ -299,7 +314,10 @@ namespace FlaxEditor.Surface
             if (_isResizing)
             {
                 // Update size
-                Size = Float2.Max(location, new Float2(140.0f, _headerRect.Bottom));
+                var size = Float2.Max(location, new Float2(140.0f, _headerRect.Bottom));
+                if (Surface.GridSnappingEnabled)
+                    size = Surface.SnapToGrid(size, true);
+                Size = size;
             }
             else
             {
@@ -411,6 +429,7 @@ namespace FlaxEditor.Surface
             base.OnShowSecondaryContextMenu(menu, location);
 
             menu.AddSeparator();
+            menu.AddButton("Rename", StartRenaming);
             ContextMenuChildMenu cmOrder = menu.AddChildMenu("Order");
             {
                 cmOrder.ContextMenu.AddButton("Bring Forward", () =>

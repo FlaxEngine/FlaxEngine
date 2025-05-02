@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -103,6 +103,33 @@ namespace FlaxEditor.Modules
 
             var proxy = Editor.ContentDatabase.GetProxy<Prefab>();
             Editor.Windows.ContentWin.NewItem(proxy, actor, contentItem => OnPrefabCreated(contentItem, actor, prefabWindow), actor.Name, rename);
+        }
+
+        /// <summary>
+        /// Opens a prefab editor window.
+        /// </summary>
+        public void OpenPrefab(ActorNode actorNode)
+        {
+            if (actorNode != null)
+                OpenPrefab(actorNode.Actor.PrefabID);
+        }
+
+        /// <summary>
+        /// Opens a prefab editor window.
+        /// </summary>
+        public void OpenPrefab(Guid prefabID = default)
+        {
+            if (prefabID == Guid.Empty)
+            {
+                var selection = Editor.SceneEditing.Selection.Where(x => x is ActorNode actorNode && actorNode.HasPrefabLink).ToList().BuildNodesParents();
+                if (selection.Count == 0 || !((ActorNode)selection[0]).Actor.HasPrefabLink)
+                    return;
+                prefabID = ((ActorNode)selection[0]).Actor.PrefabID;
+            }
+
+            var item = Editor.ContentDatabase.Find(prefabID);
+            if (item != null)
+                Editor.ContentEditing.Open(item);
         }
 
         private void OnPrefabCreated(ContentItem contentItem, Actor actor, Windows.Assets.PrefabWindow prefabWindow)

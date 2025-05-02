@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 @0// Motion Vectors: Defines
 @1// Motion Vectors: Includes
@@ -11,14 +11,15 @@
 META_PS(true, FEATURE_LEVEL_ES2)
 float4 PS_MotionVectors(PixelInput input) : SV_Target0
 {
+#if USE_DITHERED_LOD_TRANSITION || MATERIAL_MASKED
+	MaterialInput materialInput = GetMaterialInput(input);
 #if USE_DITHERED_LOD_TRANSITION
-	// LOD masking
-	ClipLODTransition(input);
+	ClipLODTransition(materialInput);
+#endif
 #endif
 
 #if MATERIAL_MASKED
 	// Perform per pixel clipping if material requries it
-	MaterialInput materialInput = GetMaterialInput(input);
 	Material material = GetMaterialPS(materialInput);
 	clip(material.Mask - MATERIAL_MASK_THRESHOLD);
 #endif

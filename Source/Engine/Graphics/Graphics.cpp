@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Graphics.h"
 #include "GPUDevice.h"
@@ -8,6 +8,7 @@
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Profiler/ProfilerGPU.h"
 #include "Engine/Render2D/Font.h"
 
 bool Graphics::UseVSync = false;
@@ -17,10 +18,13 @@ Quality Graphics::SSAOQuality = Quality::Medium;
 Quality Graphics::VolumetricFogQuality = Quality::High;
 Quality Graphics::ShadowsQuality = Quality::Medium;
 Quality Graphics::ShadowMapsQuality = Quality::Medium;
+float Graphics::ShadowUpdateRate = 1.0f;
 bool Graphics::AllowCSMBlending = false;
 Quality Graphics::GlobalSDFQuality = Quality::High;
 Quality Graphics::GIQuality = Quality::High;
+bool Graphics::GICascadesBlending = false;
 PostProcessSettings Graphics::PostProcessSettings;
+bool Graphics::SpreadWorkload = true;
 
 #if GRAPHICS_API_NULL
 extern GPUDevice* CreateGPUDeviceNull();
@@ -68,6 +72,7 @@ void GraphicsSettings::Apply()
     Graphics::AllowCSMBlending = AllowCSMBlending;
     Graphics::GlobalSDFQuality = GlobalSDFQuality;
     Graphics::GIQuality = GIQuality;
+    Graphics::GICascadesBlending = GICascadesBlending;
     Graphics::PostProcessSettings = ::PostProcessSettings();
     Graphics::PostProcessSettings.BlendWith(PostProcessSettings, 1.0f);
 #if !USE_EDITOR // OptionsModule handles fallback fonts in Editor
@@ -100,7 +105,7 @@ bool GraphicsService::Init()
     GPUDevice* device = nullptr;
 
     // Null
-    if (!device && CommandLine::Options.Null)
+    if (!device && CommandLine::Options.Null.IsTrue())
     {
 #if GRAPHICS_API_NULL
         device = CreateGPUDeviceNull();
@@ -110,7 +115,7 @@ bool GraphicsService::Init()
     }
 
     // Vulkan
-    if (!device && CommandLine::Options.Vulkan)
+    if (!device && CommandLine::Options.Vulkan.IsTrue())
     {
 #if GRAPHICS_API_VULKAN
         device = CreateGPUDeviceVulkan();
@@ -120,7 +125,7 @@ bool GraphicsService::Init()
     }
 
     // DirectX 12
-    if (!device && CommandLine::Options.D3D12)
+    if (!device && CommandLine::Options.D3D12.IsTrue())
     {
 #if GRAPHICS_API_DIRECTX12
         if (Platform::IsWindows10())
@@ -133,7 +138,7 @@ bool GraphicsService::Init()
     }
 
     // DirectX 11 and DirectX 10
-    if (!device && (CommandLine::Options.D3D11 || CommandLine::Options.D3D10))
+    if (!device && (CommandLine::Options.D3D11.IsTrue() || CommandLine::Options.D3D10.IsTrue()))
     {
 #if GRAPHICS_API_DIRECTX11
         device = CreateGPUDeviceDX11();
@@ -178,15 +183,33 @@ bool GraphicsService::Init()
         return true;
     }
     GPUDevice::Instance = device;
-    LOG(Info,
-        "Graphics Device created! Adapter: \'{0}\', Renderer: {1}, Shader Profile: {2}, Feature Level: {3}",
-        device->GetAdapter()->GetDescription(),
+    LOG(Info, "GPU Device created: {}", device->GetAdapter()->GetDescription());
+    LOG(Info, "Renderer: {}, Shader Profile: {}, Feature Level: {}, Driver: {}",
         ::ToString(device->GetRendererType()),
         ::ToString(device->GetShaderProfile()),
-        ::ToString(device->GetFeatureLevel())
+        ::ToString(device->GetFeatureLevel()),
+        device->GetAdapter()->GetDriverVersion().ToString()
     );
 
     // Initialize
+    if (device->IsDebugToolAttached
+#if USE_EDITOR || !BUILD_RELEASE
+        || CommandLine::Options.ShaderProfile.IsTrue()
+#endif
+#if USE_EDITOR
+        || CommandLine::Options.ShaderDebug.IsTrue()
+#endif
+        )
+    {
+#if !USE_EDITOR && BUILD_RELEASE && !PLATFORM_LINUX // IsDebugToolAttached seams to be enabled on many Linux machines via VK_EXT_tooling_info
+        // Block graphics debugging to protect contents
+        Platform::Fatal(TEXT("Graphics debugger attached."));
+#endif
+#if COMPILE_WITH_PROFILER
+        // Auto-enable GPU events
+        ProfilerGPU::EventsEnabled = true;
+#endif
+    }
     if (device->LoadContent())
     {
         return true;

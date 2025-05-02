@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -25,6 +25,12 @@ protected:
     constexpr StringViewBase(const T* data, int32 length)
         : _data(data)
         , _length(length)
+    {
+    }
+
+    StringViewBase(const StringViewBase& other)
+        : _data(other._data)
+        , _length(other._length)
     {
     }
 
@@ -115,7 +121,7 @@ public:
     /// Gets the pointer to the string or to the static empty text if string is null. Returned pointer is always non-null, but is not null-terminated.
     /// [Deprecated on 26.10.2022, expires on 26.10.2024] Use GetText()
     /// </summary>
-    DEPRECATED const T* GetNonTerminatedText() const
+    DEPRECATED("Use GetText instead") const T* GetNonTerminatedText() const
     {
         return _data ? _data : (const T*)TEXT("");
     }

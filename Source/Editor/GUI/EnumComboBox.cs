@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
+using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 
@@ -275,6 +276,14 @@ namespace FlaxEditor.GUI
 
                 entries.Add(new Entry(name, Convert.ToInt64(field.GetRawConstantValue()), tooltip));
             }
+        }
+
+        /// <inheritdoc />
+        protected override void OnLayoutMenuButton(ContextMenuButton button, int index, bool construct = false)
+        {
+            base.OnLayoutMenuButton(button, index, construct);
+            if (IsFlags)
+                button.CloseMenuOnClick = false;
         }
 
         /// <inheritdoc />

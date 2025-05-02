@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Engine/Scripting/Types.h"
 
@@ -211,7 +211,25 @@ MClass* GetClass(MType* typeHandle);
 MClass* GetOrCreateClass(MType* typeHandle);
 MType* GetObjectType(MObject* obj);
 
-void* GetCustomAttribute(const MClass* klass, const MClass* attributeClass);
+void* GetCustomAttribute(const Array<MObject*>& attributes, const MClass* attributeClass)
+{
+    for (MObject* attr : attributes)
+    {
+        MClass* attrClass = MCore::Object::GetClass(attr);
+        if (attrClass == attributeClass)
+            return attr;
+    }
+    return nullptr;
+}
+
+void GetCustomAttributes(Array<MObject*>& result, void* handle, void* getAttributesFunc)
+{
+    MObject** attributes;
+    int numAttributes;
+    CallStaticMethod<void, void*, MObject***, int*>(getAttributesFunc, handle, &attributes, &numAttributes);
+    result.Set(attributes, numAttributes);
+    MCore::GC::FreeMemory(attributes);
+}
 
 // Structures used to pass information from runtime, must match with the structures in managed side
 struct NativeClassDefinitions
@@ -244,6 +262,7 @@ struct NativeFieldDefinitions
 struct NativePropertyDefinitions
 {
     const char* name;
+    void* propertyHandle;
     void* getterHandle;
     void* setterHandle;
     MMethodAttributes getterAttributes;
@@ -311,16 +330,61 @@ void MCore::UnloadEngine()
     ShutdownHostfxr();
 }
 
+void MCore::CreateScriptingAssemblyLoadContext()
+{
+    static void* CreateScriptingAssemblyLoadContextPtr = GetStaticMethodPointer(TEXT("CreateScriptingAssemblyLoadContext"));
+    CallStaticMethod<void>(CreateScriptingAssemblyLoadContextPtr);
+}
+
 #if USE_EDITOR
 
-void MCore::ReloadScriptingAssemblyLoadContext()
+void MCore::UnloadScriptingAssemblyLoadContext()
 {
     // Clear any cached class attributes (see https://github.com/FlaxEngine/FlaxEngine/issues/1108)
-    for (auto e : CachedClassHandles)
+    for (const auto& e : CachedClassHandles)
+    {
+        e.Value->_hasCachedAttributes = false;
         e.Value->_attributes.Clear();
+    }
+    for (const auto& e : CachedAssemblyHandles)
+    {
+        MAssembly* a = e.Value;
+        if (!a->IsLoaded() || !a->_hasCachedClasses)
+            continue;
+        for (const auto& q : a->GetClasses())
+        {
+            MClass* c = q.Value;
+            c->_hasCachedAttributes = false;
+            c->_attributes.Clear();
+            if (c->_hasCachedMethods)
+            {
+                for (MMethod* m : c->GetMethods())
+                {
+                    m->_hasCachedAttributes = false;
+                    m->_attributes.Clear();
+                }
+            }
+            if (c->_hasCachedFields)
+            {
+                for (MField* f : c->GetFields())
+                {
+                    f->_hasCachedAttributes = false;
+                    f->_attributes.Clear();
+                }
+            }
+            if (c->_hasCachedProperties)
+            {
+                for (MProperty* p : c->GetProperties())
+                {
+                    p->_hasCachedAttributes = false;
+                    p->_attributes.Clear();
+                }
+            }
+        }
+    }
 
-    static void* ReloadScriptingAssemblyLoadContextPtr = GetStaticMethodPointer(TEXT("ReloadScriptingAssemblyLoadContext"));
-    CallStaticMethod<void>(ReloadScriptingAssemblyLoadContextPtr);
+    static void* UnloadScriptingAssemblyLoadContextPtr = GetStaticMethodPointer(TEXT("UnloadScriptingAssemblyLoadContext"));
+    CallStaticMethod<void>(UnloadScriptingAssemblyLoadContextPtr);
 }
 
 #endif
@@ -1000,11 +1064,12 @@ const Array<MMethod*>& MClass::GetMethods() const
     int methodsCount;
     static void* GetClassMethodsPtr = GetStaticMethodPointer(TEXT("GetClassMethods"));
     CallStaticMethod<void, void*, NativeMethodDefinitions**, int*>(GetClassMethodsPtr, _handle, &methods, &methodsCount);
+    _methods.Resize(methodsCount);
     for (int32 i = 0; i < methodsCount; i++)
     {
         NativeMethodDefinitions& definition = methods[i];
         MMethod* method = New<MMethod>(const_cast<MClass*>(this), StringAnsi(definition.name), definition.handle, definition.numParameters, definition.methodAttributes);
-        _methods.Add(method);
+        _methods[i] = method;
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(methods);
@@ -1036,11 +1101,12 @@ const Array<MField*>& MClass::GetFields() const
     int numFields;
     static void* GetClassFieldsPtr = GetStaticMethodPointer(TEXT("GetClassFields"));
     CallStaticMethod<void, void*, NativeFieldDefinitions**, int*>(GetClassFieldsPtr, _handle, &fields, &numFields);
+    _fields.Resize(numFields);
     for (int32 i = 0; i < numFields; i++)
     {
         NativeFieldDefinitions& definition = fields[i];
         MField* field = New<MField>(const_cast<MClass*>(this), definition.fieldHandle, definition.name, definition.fieldType, definition.fieldOffset, definition.fieldAttributes);
-        _fields.Add(field);
+        _fields[i] = field;
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(fields);
@@ -1083,11 +1149,12 @@ const Array<MProperty*>& MClass::GetProperties() const
     int numProperties;
     static void* GetClassPropertiesPtr = GetStaticMethodPointer(TEXT("GetClassProperties"));
     CallStaticMethod<void, void*, NativePropertyDefinitions**, int*>(GetClassPropertiesPtr, _handle, &foundProperties, &numProperties);
+    _properties.Resize(numProperties);
     for (int i = 0; i < numProperties; i++)
     {
         const NativePropertyDefinitions& definition = foundProperties[i];
-        MProperty* property = New<MProperty>(const_cast<MClass*>(this), definition.name, definition.getterHandle, definition.setterHandle, definition.getterAttributes, definition.setterAttributes);
-        _properties.Add(property);
+        MProperty* property = New<MProperty>(const_cast<MClass*>(this), definition.name, definition.propertyHandle, definition.getterHandle, definition.setterHandle, definition.getterAttributes, definition.setterAttributes);
+        _properties[i] = property;
         MCore::GC::FreeMemory((void*)definition.name);
     }
     MCore::GC::FreeMemory(foundProperties);
@@ -1108,10 +1175,11 @@ const Array<MClass*>& MClass::GetInterfaces() const
     int numInterfaces;
     static void* GetClassInterfacesPtr = GetStaticMethodPointer(TEXT("GetClassInterfaces"));
     CallStaticMethod<void, void*, MType***, int*>(GetClassInterfacesPtr, _handle, &foundInterfaceTypes, &numInterfaces);
+    _interfaces.Resize(numInterfaces);
     for (int32 i = 0; i < numInterfaces; i++)
     {
         MClass* interfaceClass = GetOrCreateClass(foundInterfaceTypes[i]);
-        _interfaces.Add(interfaceClass);
+        _interfaces[i] = interfaceClass;
     }
     MCore::GC::FreeMemory(foundInterfaceTypes);
 
@@ -1119,9 +1187,9 @@ const Array<MClass*>& MClass::GetInterfaces() const
     return _interfaces;
 }
 
-bool MClass::HasAttribute(const MClass* monoClass) const
+bool MClass::HasAttribute(const MClass* klass) const
 {
-    return GetCustomAttribute(this, monoClass) != nullptr;
+    return GetCustomAttribute(GetAttributes(), klass) != nullptr;
 }
 
 bool MClass::HasAttribute() const
@@ -1129,9 +1197,9 @@ bool MClass::HasAttribute() const
     return !GetAttributes().IsEmpty();
 }
 
-MObject* MClass::GetAttribute(const MClass* monoClass) const
+MObject* MClass::GetAttribute(const MClass* klass) const
 {
-    return (MObject*)GetCustomAttribute(this, monoClass);
+    return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
 const Array<MObject*>& MClass::GetAttributes() const
@@ -1141,14 +1209,8 @@ const Array<MObject*>& MClass::GetAttributes() const
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedAttributes)
         return _attributes;
-
-    MObject** attributes;
-    int numAttributes;
     static void* GetClassAttributesPtr = GetStaticMethodPointer(TEXT("GetClassAttributes"));
-    CallStaticMethod<void, void*, MObject***, int*>(GetClassAttributesPtr, _handle, &attributes, &numAttributes);
-    _attributes.Set(attributes, numAttributes);
-    MCore::GC::FreeMemory(attributes);
-
+    GetCustomAttributes(_attributes, _handle, GetClassAttributesPtr);
     _hasCachedAttributes = true;
     return _attributes;
 }
@@ -1185,19 +1247,19 @@ MMethod* MEvent::GetRemoveMethod() const
     return nullptr; // TODO: implement MEvent in .NET
 }
 
-bool MEvent::HasAttribute(MClass* monoClass) const
+bool MEvent::HasAttribute(const MClass* klass) const
 {
-    return false; // TODO: implement MEvent in .NET
+    return GetCustomAttribute(GetAttributes(), klass) != nullptr;
 }
 
 bool MEvent::HasAttribute() const
 {
-    return false; // TODO: implement MEvent in .NET
+    return !GetAttributes().IsEmpty();
 }
 
-MObject* MEvent::GetAttribute(MClass* monoClass) const
+MObject* MEvent::GetAttribute(const MClass* klass) const
 {
-    return nullptr; // TODO: implement MEvent in .NET
+    return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
 const Array<MObject*>& MEvent::GetAttributes() const
@@ -1307,31 +1369,31 @@ void MField::SetValue(MObject* instance, void* value) const
     CallStaticMethod<void, void*, void*, void*>(FieldSetValuePtr, instance, _handle, value);
 }
 
-bool MField::HasAttribute(MClass* monoClass) const
+bool MField::HasAttribute(const MClass* klass) const
 {
-    // TODO: implement MField attributes in .NET
-    return false;
+    return GetCustomAttribute(GetAttributes(), klass) != nullptr;
 }
 
 bool MField::HasAttribute() const
 {
-    // TODO: implement MField attributes in .NET
-    return false;
+    return !GetAttributes().IsEmpty();
 }
 
-MObject* MField::GetAttribute(MClass* monoClass) const
+MObject* MField::GetAttribute(const MClass* klass) const
 {
-    // TODO: implement MField attributes in .NET
-    return nullptr;
+    return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
 const Array<MObject*>& MField::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
+    ScopeLock lock(BinaryModule::Locker);
+    if (_hasCachedAttributes)
+        return _attributes;
+    static void* GetFieldAttributesPtr = GetStaticMethodPointer(TEXT("GetFieldAttributes"));
+    GetCustomAttributes(_attributes, _handle, GetFieldAttributesPtr);
     _hasCachedAttributes = true;
-
-    // TODO: implement MField attributes in .NET
     return _attributes;
 }
 
@@ -1469,42 +1531,43 @@ bool MMethod::GetParameterIsOut(int32 paramIdx) const
     return CallStaticMethod<bool, void*, int>(GetMethodParameterIsOutPtr, _handle, paramIdx);
 }
 
-bool MMethod::HasAttribute(MClass* monoClass) const
+bool MMethod::HasAttribute(const MClass* klass) const
 {
-    // TODO: implement MMethod attributes in .NET
-    return false;
+    return GetCustomAttribute(GetAttributes(), klass) != nullptr;
 }
 
 bool MMethod::HasAttribute() const
 {
-    // TODO: implement MMethod attributes in .NET
-    return false;
+    return !GetAttributes().IsEmpty();
 }
 
-MObject* MMethod::GetAttribute(MClass* monoClass) const
+MObject* MMethod::GetAttribute(const MClass* klass) const
 {
-    // TODO: implement MMethod attributes in .NET
-    return nullptr;
+    return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
 const Array<MObject*>& MMethod::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
+    ScopeLock lock(BinaryModule::Locker);
+    if (_hasCachedAttributes)
+        return _attributes;
+    static void* GetMethodAttributesPtr = GetStaticMethodPointer(TEXT("GetMethodAttributes"));
+    GetCustomAttributes(_attributes, _handle, GetMethodAttributesPtr);
     _hasCachedAttributes = true;
-
-    // TODO: implement MMethod attributes in .NET
     return _attributes;
 }
 
-MProperty::MProperty(MClass* parentClass, const char* name, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes)
+MProperty::MProperty(MClass* parentClass, const char* name, void* handle, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes)
     : _parentClass(parentClass)
     , _name(name)
+    , _handle(handle)
     , _hasCachedAttributes(false)
 {
     _hasGetMethod = getterHandle != nullptr;
     if (_hasGetMethod)
-        _getMethod = New<MMethod>(parentClass, StringAnsi("get_" + _name), getterHandle, 1, getterAttributes);
+        _getMethod = New<MMethod>(parentClass, StringAnsi("get_" + _name), getterHandle, 0, getterAttributes);
     else
         _getMethod = nullptr;
     _hasSetMethod = setterHandle != nullptr;
@@ -1546,31 +1609,31 @@ void MProperty::SetValue(MObject* instance, void* value, MObject** exception) co
     _setMethod->Invoke(instance, params, exception);
 }
 
-bool MProperty::HasAttribute(MClass* monoClass) const
+bool MProperty::HasAttribute(const MClass* klass) const
 {
-    // TODO: implement MProperty attributes in .NET
-    return false;
+    return GetCustomAttribute(GetAttributes(), klass) != nullptr;
 }
 
 bool MProperty::HasAttribute() const
 {
-    // TODO: implement MProperty attributes in .NET
-    return false;
+    return !GetAttributes().IsEmpty();
 }
 
-MObject* MProperty::GetAttribute(MClass* monoClass) const
+MObject* MProperty::GetAttribute(const MClass* klass) const
 {
-    // TODO: implement MProperty attributes in .NET
-    return nullptr;
+    return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
 const Array<MObject*>& MProperty::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
+    ScopeLock lock(BinaryModule::Locker);
+    if (_hasCachedAttributes)
+        return _attributes;
+    static void* GetPropertyAttributesPtr = GetStaticMethodPointer(TEXT("GetPropertyAttributes"));
+    GetCustomAttributes(_attributes, _handle, GetPropertyAttributesPtr);
     _hasCachedAttributes = true;
-
-    // TODO: implement MProperty attributes in .NET
     return _attributes;
 }
 
@@ -1631,18 +1694,6 @@ MType* GetObjectType(MObject* obj)
     static void* GetObjectTypePtr = GetStaticMethodPointer(TEXT("GetObjectType"));
     void* typeHandle = CallStaticMethod<void*, void*>(GetObjectTypePtr, obj);
     return (MType*)typeHandle;
-}
-
-void* GetCustomAttribute(const MClass* klass, const MClass* attributeClass)
-{
-    const Array<MObject*>& attributes = klass->GetAttributes();
-    for (MObject* attr : attributes)
-    {
-        MClass* attrClass = MCore::Object::GetClass(attr);
-        if (attrClass == attributeClass)
-            return attr;
-    }
-    return nullptr;
 }
 
 #if DOTNET_HOST_CORECLR
@@ -1713,7 +1764,7 @@ bool InitHostfxr()
 
         // Warn user about missing .Net
 #if PLATFORM_DESKTOP
-        Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet/8.0"));
+        Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet"));
 #endif
 #if USE_EDITOR
         LOG(Fatal, "Missing .NET 8 or later SDK installation required to run Flax Editor.");
@@ -1777,13 +1828,18 @@ bool InitHostfxr()
             {
             case PlatformType::Windows:
             case PlatformType::UWP:
-                platformStr = PLATFORM_64BITS ? "Windows x64" : "Windows x86";
+                if (PLATFORM_ARCH == ArchitectureType::x64)
+                    platformStr = "Windows x64";
+                else if (PLATFORM_ARCH == ArchitectureType::ARM64)
+                    platformStr = "Windows ARM64";
+                else
+                    platformStr = "Windows x86";
                 break;
             case PlatformType::Linux:
-                platformStr = PLATFORM_ARCH_ARM64 ? "Linux Arm64" : PLATFORM_ARCH_ARM ? "Linux Arm32" : PLATFORM_64BITS ? "Linux x64" : "Linux x86";
+                platformStr = PLATFORM_ARCH_ARM64 ? "Linux ARM64" : PLATFORM_ARCH_ARM ? "Linux Arm32" : PLATFORM_64BITS ? "Linux x64" : "Linux x86";
                 break;
             case PlatformType::Mac:
-                platformStr = PLATFORM_ARCH_ARM || PLATFORM_ARCH_ARM64 ? "macOS Arm64" : PLATFORM_64BITS ? "macOS x64" : "macOS x86";
+                platformStr = PLATFORM_ARCH_ARM || PLATFORM_ARCH_ARM64 ? "macOS ARM64" : PLATFORM_64BITS ? "macOS x64" : "macOS x86";
                 break;
             default:;
                 platformStr = "";

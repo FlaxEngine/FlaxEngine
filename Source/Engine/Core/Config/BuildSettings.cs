@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEngine;
@@ -21,8 +21,8 @@ namespace FlaxEditor.Content.Settings
                 {
                     new BuildTarget
                     {
-                        Name = "Windows 64bit",
-                        Output = "Output\\Win64",
+                        Name = "Windows",
+                        Output = "Output\\Windows",
                         Platform = BuildPlatform.Windows64,
                         Mode = BuildConfiguration.Development,
                     },
@@ -35,8 +35,8 @@ namespace FlaxEditor.Content.Settings
                 {
                     new BuildTarget
                     {
-                        Name = "Windows 64bit",
-                        Output = "Output\\Win64",
+                        Name = "Windows",
+                        Output = "Output\\Windows",
                         Platform = BuildPlatform.Windows64,
                         Mode = BuildConfiguration.Release,
                     },

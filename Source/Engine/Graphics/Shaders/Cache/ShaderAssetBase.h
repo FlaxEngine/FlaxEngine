@@ -30,15 +30,13 @@ public:
     static int32 GetCacheChunkIndex(ShaderProfile profile);
 
 #if USE_EDITOR
-
     /// <summary>
-    /// Prepare shader compilation options
+    /// Prepare shader compilation options.
     /// </summary>
-    /// <param name="options">Options</param>
+    /// <param name="options">The output options.</param>
     virtual void InitCompilationOptions(struct ShaderCompilationOptions& options)
     {
     }
-
 #endif
 
 protected:
@@ -50,13 +48,11 @@ protected:
     virtual BinaryAsset* GetShaderAsset() const = 0;
 
 #if USE_EDITOR
-
     /// <summary>
     /// Saves this shader asset to the storage container.
     /// </summary>
     /// <returns>True if failed, otherwise false.</returns>
-    bool Save();
-
+    bool SaveShaderAsset() const;
 #endif
 
     /// <summary>
@@ -70,12 +66,10 @@ protected:
         DataContainer<byte> Data;
 
 #if COMPILE_WITH_SHADER_COMPILER
-
         /// <summary>
         /// The list of files included by the shader source (used by the given cache on the runtime graphics platform shader profile). Paths are absolute and unique.
         /// </summary>
         Array<String> Includes;
-
 #endif
     };
 
@@ -87,7 +81,6 @@ protected:
     bool LoadShaderCache(ShaderCacheResult& result);
 
 #if COMPILE_WITH_SHADER_COMPILER
-
     /// <summary>
     /// Registers shader asset for the automated reloads on source includes changes.
     /// </summary>
@@ -100,7 +93,6 @@ protected:
     /// </summary>
     /// <param name="asset">The asset.</param>
     void UnregisterForShaderReloads(Asset* asset);
-
 #endif
 };
 

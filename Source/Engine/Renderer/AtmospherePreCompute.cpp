@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "AtmospherePreCompute.h"
 #include "Engine/Engine/Engine.h"
@@ -61,8 +61,7 @@ protected:
     bool Run() override;
 };
 
-PACK_STRUCT(struct Data
-    {
+GPU_CB_STRUCT(Data {
     float First;
     float AtmosphereR;
     int AtmosphereLayer;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "AnimationData.h"
 
@@ -73,7 +73,7 @@ void AnimationData::Swap(AnimationData& other)
     Channels.Swap(other.Channels);
 }
 
-void AnimationData::Dispose()
+void AnimationData::Release()
 {
     Name.Clear();
     Duration = 0.0;

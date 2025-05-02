@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -313,8 +313,17 @@ public:
     /// Gets the asset entry at given index.
     /// </summary>
     /// <param name="index">The asset index.</param>
-    /// <param name="output">The output.</param>
-    virtual void GetEntry(int32 index, Entry& output) const = 0;
+    /// <param name="value">The result.</param>
+    virtual void GetEntry(int32 index, Entry& value) const = 0;
+
+#if USE_EDITOR
+    /// <summary>
+    /// Sets the asset entry at given index.
+    /// </summary>
+    /// <param name="index">The asset index.</param>
+    /// <param name="value">The input value.</param>
+    virtual void SetEntry(int32 index, const Entry& value) = 0;
+#endif
 
     /// <summary>
     /// Gets all the entries in the storage.
@@ -424,62 +433,58 @@ public:
 
 public:
 #if USE_EDITOR
-
     /// <summary>
     /// Saves the specified asset data to the storage container.
     /// </summary>
     /// <param name="data">The data to save.</param>
     /// <param name="silentMode">In silent mode don't reload opened storage container that is using target file.</param>
     /// <returns>True if cannot save, otherwise false</returns>
-    bool Save(AssetInitData& data, bool silentMode = false);
+    bool Save(const AssetInitData& data, bool silentMode = false);
 
     /// <summary>
     /// Creates new FlaxFile using specified asset data.
     /// </summary>
     /// <param name="path">The file path.</param>
-    /// <param name="data">The data to write.</param>
+    /// <param name="asset">The asset data to write.</param>
     /// <param name="silentMode">In silent mode don't reload opened storage container that is using target file.</param>
     /// <param name="customData">Custom options.</param>
     /// <returns>True if cannot create package, otherwise false</returns>
-    FORCE_INLINE static bool Create(const StringView& path, const AssetInitData& data, bool silentMode = false, const CustomData* customData = nullptr)
+    FORCE_INLINE static bool Create(const StringView& path, const AssetInitData& asset, bool silentMode = false, const CustomData* customData = nullptr)
     {
-        return Create(path, &data, 1, silentMode, customData);
+        return Create(path, ToSpan(&asset, 1), silentMode, customData);
     }
 
     /// <summary>
     /// Creates new FlaxFile using specified assets data.
     /// </summary>
     /// <param name="path">The file path.</param>
-    /// <param name="data">The data to write.</param>
+    /// <param name="assets">The assets data to write.</param>
     /// <param name="silentMode">In silent mode don't reload opened storage container that is using target file.</param>
     /// <param name="customData">Custom options.</param>
     /// <returns>True if cannot create package, otherwise false</returns>
-    FORCE_INLINE static bool Create(const StringView& path, const Array<AssetInitData>& data, bool silentMode = false, const CustomData* customData = nullptr)
+    FORCE_INLINE static bool Create(const StringView& path, const Array<AssetInitData>& assets, bool silentMode = false, const CustomData* customData = nullptr)
     {
-        return Create(path, data.Get(), data.Count(), silentMode, customData);
+        return Create(path, ToSpan(assets), silentMode, customData);
     }
 
     /// <summary>
     /// Creates new FlaxFile using specified assets data.
     /// </summary>
     /// <param name="path">The file path.</param>
-    /// <param name="data">The data to write.</param>
-    /// <param name="dataCount">The data size.</param>
+    /// <param name="assets">The assets data to write.</param>
     /// <param name="silentMode">In silent mode don't reload opened storage container that is using target file.</param>
     /// <param name="customData">Custom options.</param>
     /// <returns>True if cannot create package, otherwise false</returns>
-    static bool Create(const StringView& path, const AssetInitData* data, int32 dataCount, bool silentMode = false, const CustomData* customData = nullptr);
+    static bool Create(const StringView& path, Span<AssetInitData> assets, bool silentMode = false, const CustomData* customData = nullptr);
 
     /// <summary>
     /// Creates new FlaxFile using specified assets data.
     /// </summary>
     /// <param name="stream">The output stream.</param>
-    /// <param name="data">The data to write.</param>
-    /// <param name="dataCount">The data size.</param>
+    /// <param name="assets">The assets data to write.</param>
     /// <param name="customData">Custom options.</param>
     /// <returns>True if cannot create package, otherwise false</returns>
-    static bool Create(WriteStream* stream, const AssetInitData* data, int32 dataCount, const CustomData* customData = nullptr);
-
+    static bool Create(WriteStream* stream, Span<AssetInitData> assets, const CustomData* customData = nullptr);
 #endif
 
 protected:
@@ -488,4 +493,5 @@ protected:
     virtual void AddEntry(Entry& e) = 0;
     FileReadStream* OpenFile();
     virtual bool GetEntry(const Guid& id, Entry& e) = 0;
+    bool ReloadSilent();
 };

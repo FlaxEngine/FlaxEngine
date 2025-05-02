@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -169,22 +169,6 @@ DECLARE_ENUM_OPERATORS(AnimGraphStateTransition::FlagTypes);
 API_CLASS() class AnimGraphParameter : public VisjectGraphParameter
 {
     DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(AnimGraphParameter, VisjectGraphParameter);
-public:
-    AnimGraphParameter(const AnimGraphParameter& other)
-        : AnimGraphParameter()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    AnimGraphParameter& operator=(const AnimGraphParameter& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
-    }
 };
 
 /// <summary>
@@ -245,7 +229,10 @@ public:
 
     struct MultiBlendBucket
     {
-        float TimePosition;
+        constexpr static int32 MaxCount = 3; // Up to 3 anims to be used at once in 2D blend space (triangle)
+        float TimePositions[MaxCount];
+        ANIM_GRAPH_MULTI_BLEND_INDEX Animations[MaxCount];
+        byte Count;
         uint64 LastUpdateFrame;
     };
 
@@ -431,22 +418,22 @@ typedef VisjectGraphBox AnimGraphBox;
 class AnimGraphNode : public VisjectGraphNode<AnimGraphBox>
 {
 public:
-    struct MultiBlend1DData
+    struct MultiBlendData
     {
         // Amount of blend points.
         ANIM_GRAPH_MULTI_BLEND_INDEX Count;
         // The computed length of the mixes animations. Shared for all blend points to provide more stabilization during looped playback.
         float Length;
+    };
+
+    struct MultiBlend1DData : MultiBlendData
+    {
         // The indices of the animations to blend. Sorted from the lowest X to the highest X. Contains only valid used animations. Unused items are using index ANIM_GRAPH_MULTI_BLEND_INVALID which is invalid.
         ANIM_GRAPH_MULTI_BLEND_INDEX* IndicesSorted;
     };
 
-    struct MultiBlend2DData
+    struct MultiBlend2DData : MultiBlendData
     {
-        // Amount of blend points.
-        ANIM_GRAPH_MULTI_BLEND_INDEX Count;
-        // The computed length of the mixes animations. Shared for all blend points to provide more stabilization during looped playback.
-        float Length;
         // Amount of triangles.
         int32 TrianglesCount;
         // Cached triangles vertices (3 bytes per triangle). Contains list of indices for triangles to use for blending.
@@ -711,7 +698,6 @@ public:
         : AnimGraphBase(this)
         , _isFunction(isFunction)
         , _isRegisteredForScriptingEvents(false)
-        , _bucketInitializerList(64)
         , _owner(owner)
     {
     }
@@ -862,8 +848,9 @@ private:
     void ProcessAnimEvents(AnimGraphNode* node, bool loop, float length, float animPos, float animPrevPos, Animation* anim, float speed);
     void ProcessAnimation(AnimGraphImpulse* nodes, AnimGraphNode* node, bool loop, float length, float pos, float prevPos, Animation* anim, float speed, float weight = 1.0f, ProcessAnimationMode mode = ProcessAnimationMode::Override, BitArray<InlinedAllocation<8>>* usedNodes = nullptr);
     Variant SampleAnimation(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* anim, float speed);
-    Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, float speedA, float speedB, float alpha);
-    Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float length, float startTimePos, float prevTimePos, float& newTimePos, Animation* animA, Animation* animB, Animation* animC, float speedA, float speedB, float speedC, float alphaA, float alphaB, float alphaC);
+    Variant SampleAnimation(AnimGraphNode* node, bool loop, float startTimePos, struct AnimSampleData& sample);
+    Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float startTimePos, AnimSampleData& a, AnimSampleData& b, float alpha);
+    Variant SampleAnimationsWithBlend(AnimGraphNode* node, bool loop, float startTimePos, AnimSampleData& a, AnimSampleData& b, AnimSampleData& c, float alphaA, float alphaB, float alphaC);
     Variant Blend(AnimGraphNode* node, const Value& poseA, const Value& poseB, float alpha, AlphaBlendMode alphaMode);
     Variant SampleState(AnimGraphContext& context, const AnimGraphNode* state);
     void InitStateTransition(AnimGraphContext& context, AnimGraphInstanceData::StateMachineBucket& stateMachineBucket, AnimGraphStateTransition* transition = nullptr);

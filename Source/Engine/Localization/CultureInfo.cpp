@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "CultureInfo.h"
 #include "Engine/Core/Log.h"
@@ -74,6 +74,8 @@ CultureInfo::CultureInfo(int32 lcid)
     }
     if (!_data)
     {
+        _lcid = 127;
+        _lcidParent = 0;
         _englishName = TEXT("Invariant Culture");
         LOG(Error, "Unknown LCID {0} for CultureInfo", lcid);
     }

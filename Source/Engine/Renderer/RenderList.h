@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -22,8 +22,10 @@ class CubeTexture;
 struct RenderContext;
 struct RenderContextBatch;
 
-struct RendererDirectionalLightData
+struct RenderLightData
 {
+    Guid ID;
+
     Float3 Position;
     float MinRoughness;
 
@@ -36,129 +38,133 @@ struct RendererDirectionalLightData
     float ShadowsNormalOffsetScale;
     float ShadowsDepthBias;
     float ShadowsSharpness;
-    float VolumetricScatteringIntensity;
+    float ShadowsDistance;
 
     StaticFlags StaticFlags;
+    ShadowsCastingMode ShadowsMode;
     float IndirectLightingIntensity;
-    int16 ShadowDataIndex = -1;
+    uint8 HasShadow : 1;
     uint8 CastVolumetricShadow : 1;
-    uint8 RenderedVolumetricFog : 1;
+    uint8 UseInverseSquaredFalloff : 1;
+    uint8 IsDirectionalLight : 1;
+    uint8 IsPointLight : 1;
+    uint8 IsSpotLight : 1;
+    uint8 IsSkyLight : 1;
 
-    float ShadowsDistance;
-    int32 CascadeCount;
+    float VolumetricScatteringIntensity;
+    float ContactShadowsLength;
+    float ScreenSize;
+    uint32 ShadowsBufferAddress;
+
+    float ShadowsUpdateRate;
+    float ShadowsUpdateRateAtDistance;
+    uint32 ShadowFrame;
+    int32 ShadowsResolution;
+
+    bool CanRenderShadow(const RenderView& view) const;
+};
+
+struct RenderDirectionalLightData : RenderLightData
+{
     float Cascade1Spacing;
     float Cascade2Spacing;
     float Cascade3Spacing;
     float Cascade4Spacing;
 
     PartitionMode PartitionMode;
-    float ContactShadowsLength;
-    ShadowsCastingMode ShadowsMode;
+    int32 CascadeCount;
 
-    Guid ID;
+    RenderDirectionalLightData()
+    {
+        Platform::MemoryClear(this, sizeof(RenderDirectionalLightData));
+        IsDirectionalLight = 1;
+    }
 
-    void SetupLightData(LightData* data, bool useShadow) const;
+    POD_COPYABLE(RenderDirectionalLightData);
+
+    void SetShaderData(ShaderLightData& data, bool useShadow) const;
 };
 
-struct RendererSpotLightData
+struct RenderLocalLightData : RenderLightData
 {
-    Float3 Position;
-    float MinRoughness;
+    GPUTexture* IESTexture;
 
-    Float3 Color;
-    float ShadowsStrength;
-
-    Float3 Direction;
-    float ShadowsFadeDistance;
-
-    float ShadowsNormalOffsetScale;
-    float ShadowsDepthBias;
-    float ShadowsSharpness;
-    float VolumetricScatteringIntensity;
-
-    float ShadowsDistance;
     float Radius;
-    float FallOffExponent;
     float SourceRadius;
 
+    bool CanRenderShadow(const RenderView& view) const;
+};
+
+struct RenderSpotLightData : RenderLocalLightData
+{
     Float3 UpVector;
     float OuterConeAngle;
 
     float CosOuterCone;
     float InvCosConeDifference;
-    float ContactShadowsLength;
-    float IndirectLightingIntensity;
-    ShadowsCastingMode ShadowsMode;
-
-    StaticFlags StaticFlags;
-    int16 ShadowDataIndex = -1;
-    uint8 CastVolumetricShadow : 1;
-    uint8 RenderedVolumetricFog : 1;
-    uint8 UseInverseSquaredFalloff : 1;
-
-    GPUTexture* IESTexture;
-    Guid ID;
-
-    void SetupLightData(LightData* data, bool useShadow) const;
-};
-
-struct RendererPointLightData
-{
-    Float3 Position;
-    float MinRoughness;
-
-    Float3 Color;
-    float ShadowsStrength;
-
-    Float3 Direction;
-    float ShadowsFadeDistance;
-
-    float ShadowsNormalOffsetScale;
-    float ShadowsDepthBias;
-    float ShadowsSharpness;
-    float VolumetricScatteringIntensity;
-
-    float ShadowsDistance;
-    float Radius;
     float FallOffExponent;
-    float SourceRadius;
 
-    float SourceLength;
-    float ContactShadowsLength;
-    float IndirectLightingIntensity;
-    ShadowsCastingMode ShadowsMode;
+    RenderSpotLightData()
+    {
+        Platform::MemoryClear(this, sizeof(RenderSpotLightData));
+        IsSpotLight = 1;
+    }
 
-    StaticFlags StaticFlags;
-    int16 ShadowDataIndex = -1;
-    uint8 CastVolumetricShadow : 1;
-    uint8 RenderedVolumetricFog : 1;
-    uint8 UseInverseSquaredFalloff : 1;
+    POD_COPYABLE(RenderSpotLightData);
 
-    GPUTexture* IESTexture;
-    Guid ID;
-
-    void SetupLightData(LightData* data, bool useShadow) const;
+    void SetShaderData(ShaderLightData& data, bool useShadow) const;
 };
 
-struct RendererSkyLightData
+struct RenderPointLightData : RenderLocalLightData
 {
-    Float3 Position;
-    float VolumetricScatteringIntensity;
+    float FallOffExponent;
+    float SourceLength;
 
-    Float3 Color;
-    float Radius;
+    RenderPointLightData()
+    {
+        Platform::MemoryClear(this, sizeof(RenderPointLightData));
+        IsPointLight = 1;
+    }
 
+    POD_COPYABLE(RenderPointLightData);
+
+    void SetShaderData(ShaderLightData& data, bool useShadow) const;
+};
+
+struct RenderSkyLightData : RenderLightData
+{
     Float3 AdditiveColor;
-    float IndirectLightingIntensity;
-
-    StaticFlags StaticFlags;
-    uint8 CastVolumetricShadow : 1;
-    uint8 RenderedVolumetricFog : 1;
+    float Radius;
 
     CubeTexture* Image;
-    Guid ID;
 
-    void SetupLightData(LightData* data, bool useShadow) const;
+    RenderSkyLightData()
+    {
+        Platform::MemoryClear(this, sizeof(RenderSkyLightData));
+        IsSkyLight = 1;
+    }
+
+    POD_COPYABLE(RenderSkyLightData);
+
+    void SetShaderData(ShaderLightData& data, bool useShadow) const;
+};
+
+struct RenderEnvironmentProbeData
+{
+    GPUTexture* Texture;
+    Float3 Position;
+    float Radius;
+    float Brightness;
+    uint32 HashID;
+
+    void SetShaderData(ShaderEnvProbeData& data) const;
+};
+
+struct RenderDecalData
+{
+    Matrix World;
+    MaterialBase* Material;
+    int32 SortOrder;
 };
 
 /// <summary>
@@ -233,7 +239,8 @@ struct DrawBatch
 struct BatchedDrawCall
 {
     DrawCall DrawCall;
-    Array<struct InstanceData, RendererAllocation> Instances;
+    uint16 ObjectsStartIndex = 0; // Index of the instances start in the ObjectsBuffer (set internally).
+    Array<struct ShaderObjectData, RendererAllocation> Instances;
 };
 
 /// <summary>
@@ -318,32 +325,32 @@ public:
     /// <summary>
     /// Light pass members - directional lights
     /// </summary>
-    Array<RendererDirectionalLightData> DirectionalLights;
+    Array<RenderDirectionalLightData> DirectionalLights;
 
     /// <summary>
     /// Light pass members - point lights
     /// </summary>
-    Array<RendererPointLightData> PointLights;
+    Array<RenderPointLightData> PointLights;
 
     /// <summary>
     /// Light pass members - spot lights
     /// </summary>
-    Array<RendererSpotLightData> SpotLights;
+    Array<RenderSpotLightData> SpotLights;
 
     /// <summary>
     /// Light pass members - sky lights
     /// </summary>
-    Array<RendererSkyLightData> SkyLights;
+    Array<RenderSkyLightData> SkyLights;
 
     /// <summary>
     /// Environment probes to use for rendering reflections
     /// </summary>
-    Array<EnvironmentProbe*> EnvironmentProbes;
+    Array<RenderEnvironmentProbeData> EnvironmentProbes;
 
     /// <summary>
     /// Decals registered for the rendering.
     /// </summary>
-    Array<Decal*> Decals;
+    Array<RenderDecalData> Decals;
 
     /// <summary>
     /// Local volumetric fog particles registered for the rendering.
@@ -406,6 +413,16 @@ public:
     /// Camera frustum corners in View Space
     /// </summary>
     Float3 FrustumCornersVs[8];
+
+    /// <summary>
+    /// Objects buffer that contains ShaderObjectData for each DrawCall.
+    /// </summary>
+    DynamicTypedBuffer ObjectBuffer;
+
+    /// <summary>
+    /// Temporary objects buffer that contains ShaderObjectData for each DrawCall reused during scene rendering (eg. by skybox).
+    /// </summary>
+    DynamicTypedBuffer TempObjectBuffer;
 
 private:
     DynamicVertexBuffer _instanceBuffer;
@@ -496,7 +513,7 @@ public:
     /// <param name="drawCall">The draw call data.</param>
     /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
     /// <param name="sortOrder">Object sorting key.</param>
-    void AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals = true, int16 sortOrder = 0);
+    void AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals = true, int8 sortOrder = 0);
 
     /// <summary>
     /// Adds the draw call to the draw lists and references it in other render contexts. Performs additional per-context frustum culling.
@@ -509,7 +526,12 @@ public:
     /// <param name="drawCall">The draw call data.</param>
     /// <param name="receivesDecals">True if the rendered mesh can receive decals.</param>
     /// <param name="sortOrder">Object sorting key.</param>
-    void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals = true, int16 sortOrder = 0);
+    void AddDrawCall(const RenderContextBatch& renderContextBatch, DrawPass drawModes, StaticFlags staticFlags, ShadowsCastingMode shadowsMode, const BoundingSphere& bounds, DrawCall& drawCall, bool receivesDecals = true, int8 sortOrder = 0);
+
+    /// <summary>
+    /// Writes all draw calls into large objects buffer (used for random-access object data access on a GPU). Can be executed in async.
+    /// </summary>
+    void BuildObjectsBuffer();
 
     /// <summary>
     /// Sorts the collected draw calls list.
@@ -517,10 +539,11 @@ public:
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="reverseDistance">If set to <c>true</c> reverse draw call distance to the view. Results in back to front sorting.</param>
     /// <param name="listType">The collected draw calls list type.</param>
-    API_FUNCTION() FORCE_INLINE void SortDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, bool reverseDistance, DrawCallsListType listType)
+    /// <param name="pass">The draw pass (optional).</param>
+    API_FUNCTION() FORCE_INLINE void SortDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, bool reverseDistance, DrawCallsListType listType, DrawPass pass = DrawPass::All)
     {
         const bool stable = listType == DrawCallsListType::Forward;
-        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, stable);
+        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, pass, stable);
     }
 
     /// <summary>
@@ -530,8 +553,9 @@ public:
     /// <param name="reverseDistance">If set to <c>true</c> reverse draw call distance to the view. Results in back to front sorting.</param>
     /// <param name="list">The collected draw calls indices list.</param>
     /// <param name="drawCalls">The collected draw calls list.</param>
+    /// <param name="pass">The draw pass (optional).</param>
     /// <param name="stable">If set to <c>true</c> draw batches will be additionally sorted to prevent any flickering, otherwise Depth Buffer will smooth out any non-stability in sorting.</param>
-    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, bool stable = false);
+    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass = DrawPass::All, bool stable = false);
 
     /// <summary>
     /// Executes the collected draw calls.
@@ -541,7 +565,7 @@ public:
     /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
     API_FUNCTION() FORCE_INLINE void ExecuteDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, DrawCallsListType listType, GPUTextureView* input = nullptr)
     {
-        ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], DrawCalls, input);
+        ExecuteDrawCalls(renderContext, DrawCallsLists[(int32)listType], this, input);
     }
 
     /// <summary>
@@ -552,7 +576,7 @@ public:
     /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
     FORCE_INLINE void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, GPUTextureView* input = nullptr)
     {
-        ExecuteDrawCalls(renderContext, list, DrawCalls, input);
+        ExecuteDrawCalls(renderContext, list, this, input);
     }
 
     /// <summary>
@@ -560,28 +584,43 @@ public:
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
     /// <param name="list">The collected draw calls indices list.</param>
-    /// <param name="drawCalls">The collected draw calls list.</param>
+    /// <param name="drawCallsList">The collected draw calls list owner.</param>
     /// <param name="input">The input scene color. It's optional and used in forward/postFx rendering.</param>
-    void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, GPUTextureView* input);
+    void ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsList& list, RenderList* drawCallsList, GPUTextureView* input);
 };
 
 /// <summary>
-/// Represents data per instance element used for instanced rendering.
+/// Represents a single object information for GPU rendering.
 /// </summary>
-PACK_STRUCT(struct FLAXENGINE_API InstanceData
+GPU_CB_STRUCT(ShaderObjectData
     {
-    Float3 InstanceOrigin;
-    float PerInstanceRandom;
-    Float3 InstanceTransform1;
-    float LODDitherFactor;
-    Float3 InstanceTransform2;
-    Float3 InstanceTransform3;
-    Half4 InstanceLightmapArea;
+    Float4 Raw[8];
+
+    void FLAXENGINE_API Store(const Matrix& worldMatrix, const Matrix& prevWorldMatrix, const Rectangle& lightmapUVsArea, const Float3& geometrySize, float perInstanceRandom = 0.0f, float worldDeterminantSign = 1.0f, float lodDitherFactor = 0.0f);
+    void FLAXENGINE_API Load(Matrix& worldMatrix, Matrix& prevWorldMatrix, Rectangle& lightmapUVsArea, Float3& geometrySize, float& perInstanceRandom, float& worldDeterminantSign, float& lodDitherFactor) const;
+
+    FORCE_INLINE void Store(const DrawCall& drawCall)
+    {
+    Store(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminantSign, drawCall.Surface.LODDitherFactor);
+    }
+
+    FORCE_INLINE void Load(DrawCall& drawCall) const
+    {
+    Load(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminantSign, drawCall.Surface.LODDitherFactor);
+    drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    }
+    });
+
+/// <summary>
+/// Represents data passed to Vertex Shader used for instanced rendering (per-instance element).
+/// </summary>
+PACK_STRUCT(struct ShaderObjectDrawInstanceData
+    {
+    uint32 ObjectIndex;
     });
 
 struct SurfaceDrawCallHandler
 {
     static void GetHash(const DrawCall& drawCall, uint32& batchKey);
-    static bool CanBatch(const DrawCall& a, const DrawCall& b);
-    static void WriteDrawCall(InstanceData* instanceData, const DrawCall& drawCall);
+    static bool CanBatch(const DrawCall& a, const DrawCall& b, DrawPass pass);
 };

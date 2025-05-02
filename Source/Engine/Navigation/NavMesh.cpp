@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "NavMesh.h"
 #include "NavMeshRuntime.h"
@@ -56,7 +56,7 @@ void NavMesh::SaveNavMesh()
     MemoryWriteStream stream(streamInitialCapacity);
     Data.Save(stream);
     BytesContainer bytesContainer;
-    bytesContainer.Link(stream.GetHandle(), stream.GetPosition());
+    bytesContainer.Link(ToSpan(stream));
 
     // Save asset to file
     if (AssetsImportingManager::Create(AssetsImportingManager::CreateRawDataTag, assetPath, assetId, (void*)&bytesContainer))
@@ -104,6 +104,7 @@ void NavMesh::OnDataAssetLoaded()
     // Skip if already has data (prevent reloading navmesh on saving)
     if (Data.Tiles.HasItems())
         return;
+    ScopeLock lock(DataAsset->Locker);
 
     // Remove added tiles
     if (_navMeshActive)

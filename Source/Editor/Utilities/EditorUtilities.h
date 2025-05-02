@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -58,6 +58,13 @@ public:
     static bool IsInvalidPathChar(Char c);
 
     /// <summary>
+    /// Validates path characters and replaces any incorrect ones.
+    /// </summary>
+    /// <param name="filename">The input and output filename string to process.</param>
+    /// <param name="invalidCharReplacement">The character to use for replacement for any invalid characters in the path. Use '0' to remove them.</param>
+    static void ValidatePathChars(String& filename, char invalidCharReplacement = ' ');
+
+    /// <summary>
     /// Replaces the given text with other one in the files.
     /// </summary>
     /// <param name="folderPath">The relative or absolute path to the directory to search.</param>
@@ -79,5 +86,5 @@ public:
     static bool ReplaceInFile(const StringView& file, const Dictionary<String, String, HeapAllocation>& replaceMap);
 
     static bool CopyFileIfNewer(const StringView& dst, const StringView& src);
-    static bool CopyDirectoryIfNewer(const StringView& dst, const StringView& src, bool withSubDirectories);
+    static bool CopyDirectoryIfNewer(const StringView& dst, const StringView& src, bool withSubDirectories = true);
 };

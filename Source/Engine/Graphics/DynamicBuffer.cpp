@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "DynamicBuffer.h"
 #include "GPUContext.h"
@@ -22,68 +22,42 @@ DynamicBuffer::~DynamicBuffer()
     SAFE_DELETE_GPU_RESOURCE(_buffer);
 }
 
-void DynamicBuffer::Flush()
-{
-    // Check if has sth to flush
-    const uint32 size = Data.Count();
-    if (size > 0)
-    {
-        // Check if has no buffer
-        if (_buffer == nullptr)
-            _buffer = GPUDevice::Instance->CreateBuffer(_name);
-
-        // Check if need to resize buffer
-        if (_buffer->GetSize() < size)
-        {
-            const uint32 numElements = Math::AlignUp<uint32>(static_cast<uint32>((size / _stride) * 1.3f), 32);
-            GPUBufferDescription desc;
-            InitDesc(desc, numElements);
-            if (_buffer->Init(desc))
-            {
-                LOG(Fatal, "Cannot setup dynamic buffer '{0}'! Size: {1}", _name, Utilities::BytesToText(size));
-                return;
-            }
-        }
-
-        // Upload data to the buffer
-        if (GPUDevice::Instance->IsRendering())
-        {
-            RenderContext::GPULocker.Lock();
-            GPUDevice::Instance->GetMainContext()->UpdateBuffer(_buffer, Data.Get(), size);
-            RenderContext::GPULocker.Unlock();
-        }
-        else
-        {
-            _buffer->SetData(Data.Get(), size);
-        }
-    }
-}
-
 void DynamicBuffer::Flush(GPUContext* context)
 {
-    // Check if has sth to flush
     const uint32 size = Data.Count();
-    if (size > 0)
+    if (size == 0)
+        return;
+
+    // Lazy-resize buffer
+    if (_buffer == nullptr)
+        _buffer = GPUDevice::Instance->CreateBuffer(_name);
+    if (_buffer->GetSize() < size || _buffer->GetDescription().Usage != Usage)
     {
-        // Check if has no buffer
-        if (_buffer == nullptr)
-            _buffer = GPUDevice::Instance->CreateBuffer(_name);
-
-        // Check if need to resize buffer
-        if (_buffer->GetSize() < size)
+        const int32 numElements = Math::AlignUp<int32>(static_cast<int32>((size / _stride) * 1.3f), 32);
+        GPUBufferDescription desc;
+        InitDesc(desc, numElements);
+        desc.Usage = Usage;
+        if (_buffer->Init(desc))
         {
-            const uint32 numElements = Math::AlignUp<uint32>(static_cast<uint32>((size / _stride) * 1.3f), 32);
-            GPUBufferDescription desc;
-            InitDesc(desc, numElements);
-            if (_buffer->Init(desc))
-            {
-                LOG(Fatal, "Cannot setup dynamic buffer '{0}'! Size: {1}", _name, Utilities::BytesToText(size));
-                return;
-            }
+            LOG(Fatal, "Cannot setup dynamic buffer '{0}'! Size: {1}", _name, Utilities::BytesToText(size));
+            return;
         }
+    }
 
-        // Upload data to the buffer
+    // Upload data to the buffer
+    if (context)
+    {
         context->UpdateBuffer(_buffer, Data.Get(), size);
+    }
+    else if (GPUDevice::Instance->IsRendering())
+    {
+        RenderContext::GPULocker.Lock();
+        GPUDevice::Instance->GetMainContext()->UpdateBuffer(_buffer, Data.Get(), size);
+        RenderContext::GPULocker.Unlock();
+    }
+    else
+    {
+        _buffer->SetData(Data.Get(), size);
     }
 }
 
@@ -93,10 +67,37 @@ void DynamicBuffer::Dispose()
     Data.Resize(0);
 }
 
+GPUVertexLayout* DynamicVertexBuffer::GetLayout() const
+{
+    return _layout ? _layout : (GetBuffer() ? GetBuffer()->GetVertexLayout() : nullptr);
+}
+
+void DynamicVertexBuffer::SetLayout(GPUVertexLayout* layout)
+{
+    _layout = layout;
+    SAFE_DELETE_GPU_RESOURCE(_buffer);
+}
+
+void DynamicVertexBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
+{
+    desc = GPUBufferDescription::Vertex(_layout, _stride, numElements, GPUResourceUsage::Dynamic);
+}
+
+void DynamicIndexBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
+{
+    desc = GPUBufferDescription::Index(_stride, numElements, GPUResourceUsage::Dynamic);
+}
+
+DynamicStructuredBuffer::DynamicStructuredBuffer(uint32 initialCapacity, uint32 stride, bool isUnorderedAccess, const String& name)
+    : DynamicBuffer(initialCapacity, stride, name)
+    , _isUnorderedAccess(isUnorderedAccess)
+{
+    Usage = GPUResourceUsage::Default; // The most common use-case is just for a single upload of data prepared by CPU
+}
+
 void DynamicStructuredBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
 {
     desc = GPUBufferDescription::Structured(numElements, _stride, _isUnorderedAccess);
-    desc.Usage = GPUResourceUsage::Dynamic;
 }
 
 DynamicTypedBuffer::DynamicTypedBuffer(uint32 initialCapacity, PixelFormat format, bool isUnorderedAccess, const String& name)
@@ -104,6 +105,7 @@ DynamicTypedBuffer::DynamicTypedBuffer(uint32 initialCapacity, PixelFormat forma
     , _format(format)
     , _isUnorderedAccess(isUnorderedAccess)
 {
+    Usage = GPUResourceUsage::Default; // The most common use-case is just for a single upload of data prepared by CPU
 }
 
 void DynamicTypedBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
@@ -111,5 +113,5 @@ void DynamicTypedBuffer::InitDesc(GPUBufferDescription& desc, int32 numElements)
     auto bufferFlags = GPUBufferFlags::ShaderResource;
     if (_isUnorderedAccess)
         bufferFlags |= GPUBufferFlags::UnorderedAccess;
-    desc = GPUBufferDescription::Buffer(numElements * _stride, bufferFlags, _format, nullptr, _stride, GPUResourceUsage::Dynamic);
+    desc = GPUBufferDescription::Buffer(numElements * _stride, bufferFlags, _format, nullptr, _stride);
 }

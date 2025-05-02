@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_EMPTY_PHYSICS
 
@@ -862,6 +862,10 @@ void PhysicsBackend::DestroyJoint(void* joint)
 }
 
 void PhysicsBackend::DestroyController(void* controller)
+{
+}
+
+void PhysicsBackend::DestroyMaterial(void* material)
 {
 }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Streaming.h"
 #include "StreamableResource.h"
@@ -58,11 +58,6 @@ void StreamingSettings::Apply()
     Streaming::TextureGroups = TextureGroups;
     SAFE_DELETE_GPU_RESOURCES(TextureGroupSamplers);
     TextureGroupSamplers.Resize(TextureGroups.Count(), false);
-}
-
-void StreamingSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
-{
-    DESERIALIZE(TextureGroups);
 }
 
 StreamableResource::StreamableResource(StreamingGroup* group)

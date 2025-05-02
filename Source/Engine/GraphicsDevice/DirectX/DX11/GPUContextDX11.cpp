@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX11
 
@@ -9,6 +9,7 @@
 #include "GPUTextureDX11.h"
 #include "GPUBufferDX11.h"
 #include "GPUSamplerDX11.h"
+#include "GPUVertexLayoutDX11.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Rectangle.h"
@@ -23,18 +24,18 @@ ID3D11ShaderResourceView* EmptySRHandles[GPU_MAX_SR_BINDED] = {};
 // Ensure to match the indirect commands arguments layout
 static_assert(sizeof(GPUDispatchIndirectArgs) == sizeof(uint32) * 3, "Wrong size of GPUDrawIndirectArgs.");
 static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountX) == sizeof(uint32) * 0, "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountX");
-static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountY) == sizeof(uint32) * 1,"Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountY");
+static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountY) == sizeof(uint32) * 1, "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountY");
 static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountZ) == sizeof(uint32) * 2, "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountZ");
 //
 static_assert(sizeof(GPUDrawIndirectArgs) == sizeof(D3D11_DRAW_INSTANCED_INDIRECT_ARGS), "Wrong size of GPUDrawIndirectArgs.");
 static_assert(OFFSET_OF(GPUDrawIndirectArgs, VerticesCount) == OFFSET_OF(D3D11_DRAW_INSTANCED_INDIRECT_ARGS, VertexCountPerInstance), "Wrong offset for GPUDrawIndirectArgs::VerticesCount");
-static_assert(OFFSET_OF(GPUDrawIndirectArgs, InstanceCount) == OFFSET_OF(D3D11_DRAW_INSTANCED_INDIRECT_ARGS, InstanceCount),"Wrong offset for GPUDrawIndirectArgs::InstanceCount");
+static_assert(OFFSET_OF(GPUDrawIndirectArgs, InstanceCount) == OFFSET_OF(D3D11_DRAW_INSTANCED_INDIRECT_ARGS, InstanceCount), "Wrong offset for GPUDrawIndirectArgs::InstanceCount");
 static_assert(OFFSET_OF(GPUDrawIndirectArgs, StartVertex) == OFFSET_OF(D3D11_DRAW_INSTANCED_INDIRECT_ARGS, StartVertexLocation), "Wrong offset for GPUDrawIndirectArgs::StartVertex");
 static_assert(OFFSET_OF(GPUDrawIndirectArgs, StartInstance) == OFFSET_OF(D3D11_DRAW_INSTANCED_INDIRECT_ARGS, StartInstanceLocation), "Wrong offset for GPUDrawIndirectArgs::StartInstance");
 //
 static_assert(sizeof(GPUDrawIndexedIndirectArgs) == sizeof(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS), "Wrong size of GPUDrawIndexedIndirectArgs.");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, IndicesCount) == OFFSET_OF(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS, IndexCountPerInstance), "Wrong offset for GPUDrawIndexedIndirectArgs::IndicesCount");
-static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, InstanceCount) == OFFSET_OF(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS, InstanceCount),"Wrong offset for GPUDrawIndexedIndirectArgs::InstanceCount");
+static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, InstanceCount) == OFFSET_OF(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS, InstanceCount), "Wrong offset for GPUDrawIndexedIndirectArgs::InstanceCount");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, StartIndex) == OFFSET_OF(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS, StartIndexLocation), "Wrong offset for GPUDrawIndexedIndirectArgs::StartIndex");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, StartVertex) == OFFSET_OF(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS, BaseVertexLocation), "Wrong offset for GPUDrawIndexedIndirectArgs::StartVertex");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, StartInstance) == OFFSET_OF(D3D11_DRAW_INDEXED_INSTANCED_INDIRECT_ARGS, StartInstanceLocation), "Wrong offset for GPUDrawIndexedIndirectArgs::StartInstance");
@@ -82,9 +83,11 @@ void GPUContextDX11::FrameBegin()
     _omDirtyFlag = false;
     _uaDirtyFlag = false;
     _cbDirtyFlag = false;
+    _iaInputLayoutDirtyFlag = false;
     _srMaskDirtyGraphics = 0;
     _srMaskDirtyCompute = 0;
     _rtCount = 0;
+    _vertexLayout = nullptr;
     _currentState = nullptr;
     _rtDepth = nullptr;
     Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
@@ -111,6 +114,12 @@ void GPUContextDX11::FrameBegin()
     CurrentPrimitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
     CurrentStencilRef = 0;
     CurrentBlendFactor = Float4::One;
+    
+    // Bind dummy vertex buffer (used by missing bindings)
+    auto dummyVB = (GPUBufferDX11*)_device->GetDummyVB();
+    ID3D11Buffer* dummyVBBuffer = dummyVB->GetBuffer();
+    UINT stride = dummyVB->GetStride(), offset = 0;
+    _context->IASetVertexBuffers(GPU_MAX_VB_BINDED, 1, &dummyVBBuffer, &stride, &offset);
 
     // Bind static samplers
     ID3D11SamplerState* samplers[] =
@@ -120,7 +129,7 @@ void GPUContextDX11::FrameBegin()
         _device->_samplerLinearWrap,
         _device->_samplerPointWrap,
         _device->_samplerShadow,
-        _device->_samplerShadowPCF
+        _device->_samplerShadowLinear
     };
     _context->VSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
 #if GPU_ALLOW_TESSELLATION_SHADERS
@@ -159,21 +168,19 @@ bool GPUContextDX11::IsDepthBufferBinded()
 void GPUContextDX11::Clear(GPUTextureView* rt, const Color& color)
 {
     auto rtDX11 = static_cast<GPUTextureViewDX11*>(rt);
-
     if (rtDX11)
     {
         _context->ClearRenderTargetView(rtDX11->RTV(), color.Raw);
     }
 }
 
-void GPUContextDX11::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
+void GPUContextDX11::ClearDepth(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue)
 {
     auto depthBufferDX11 = static_cast<GPUTextureViewDX11*>(depthBuffer);
-
     if (depthBufferDX11)
     {
         ASSERT(depthBufferDX11->DSV());
-        _context->ClearDepthStencilView(depthBufferDX11->DSV(), D3D11_CLEAR_DEPTH, depthValue, 0xff);
+        _context->ClearDepthStencilView(depthBufferDX11->DSV(), D3D11_CLEAR_DEPTH, depthValue, stencilValue);
     }
 }
 
@@ -287,7 +294,10 @@ void GPUContextDX11::SetBlendFactor(const Float4& value)
 void GPUContextDX11::SetStencilRef(uint32 value)
 {
     if (CurrentStencilRef != value)
+    {
+        CurrentStencilRef = value;
         _context->OMSetDepthStencilState(CurrentDepthStencilState, CurrentStencilRef);
+    }
 }
 
 void GPUContextDX11::ResetSR()
@@ -354,7 +364,11 @@ void GPUContextDX11::BindCB(int32 slot, GPUConstantBuffer* cb)
 
 void GPUContextDX11::BindSR(int32 slot, GPUResourceView* view)
 {
+#if !BUILD_RELEASE
     ASSERT(slot >= 0 && slot < GPU_MAX_SR_BINDED);
+    if (view && ((IShaderResourceDX11*)view->GetNativePtr())->SRV() == nullptr)
+        LogInvalidResourceUsage(slot, view, InvalidBindPoint::SRV);
+#endif
     auto handle = view ? ((IShaderResourceDX11*)view->GetNativePtr())->SRV() : nullptr;
     if (_srHandles[slot] != handle)
     {
@@ -368,7 +382,11 @@ void GPUContextDX11::BindSR(int32 slot, GPUResourceView* view)
 
 void GPUContextDX11::BindUA(int32 slot, GPUResourceView* view)
 {
+#if !BUILD_RELEASE
     ASSERT(slot >= 0 && slot < GPU_MAX_UA_BINDED);
+    if (view && ((IShaderResourceDX11*)view->GetNativePtr())->UAV() == nullptr)
+        LogInvalidResourceUsage(slot, view, InvalidBindPoint::UAV);
+#endif
     auto handle = view ? ((IShaderResourceDX11*)view->GetNativePtr())->UAV() : nullptr;
     if (_uaHandles[slot] != handle)
     {
@@ -379,7 +397,7 @@ void GPUContextDX11::BindUA(int32 slot, GPUResourceView* view)
     }
 }
 
-void GPUContextDX11::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)
+void GPUContextDX11::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets, GPUVertexLayout* vertexLayout)
 {
     ASSERT(vertexBuffers.Length() >= 0 && vertexBuffers.Length() <= GPU_MAX_VB_BINDED);
 
@@ -400,6 +418,13 @@ void GPUContextDX11::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
     if (vbEdited)
     {
         _context->IASetVertexBuffers(0, vertexBuffers.Length(), _vbHandles, _vbStrides, _vbOffsets);
+    }
+    if (!vertexLayout)
+        vertexLayout = GPUVertexLayout::Get(vertexBuffers);
+    if (_vertexLayout != vertexLayout)
+    {
+        _vertexLayout = (GPUVertexLayoutDX11*)vertexLayout;
+        _iaInputLayoutDirtyFlag = true;
     }
 }
 
@@ -489,20 +514,14 @@ void GPUContextDX11::ResolveMultisample(GPUTexture* sourceMultisampleTexture, GP
 void GPUContextDX11::DrawInstanced(uint32 verticesCount, uint32 instanceCount, int32 startInstance, int32 startVertex)
 {
     onDrawCall();
-    if (instanceCount > 1)
-        _context->DrawInstanced(verticesCount, instanceCount, startVertex, startInstance);
-    else
-        _context->Draw(verticesCount, startVertex);
+    _context->DrawInstanced(verticesCount, instanceCount, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(verticesCount * instanceCount, verticesCount * instanceCount / 3);
 }
 
 void GPUContextDX11::DrawIndexedInstanced(uint32 indicesCount, uint32 instanceCount, int32 startInstance, int32 startVertex, int32 startIndex)
 {
     onDrawCall();
-    if (instanceCount > 1)
-        _context->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
-    else
-        _context->DrawIndexed(indicesCount, startIndex, startVertex);
+    _context->DrawIndexedInstanced(indicesCount, instanceCount, startIndex, startVertex, startInstance);
     RENDER_STAT_DRAW_CALL(0, indicesCount / 3 * instanceCount);
 }
 
@@ -567,15 +586,13 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #endif
         GPUShaderProgramPSDX11* ps = nullptr;
         D3D11_PRIMITIVE_TOPOLOGY primitiveTopology = D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
-
         if (state)
         {
             ASSERT(_currentState->IsValid());
-
             blendState = _currentState->BlendState;
             rasterizerState = _device->RasterizerStates[_currentState->RasterizerStateIndex];
-            depthStencilState = _device->DepthStencilStates[_currentState->DepthStencilStateIndex];
-
+            //depthStencilState = _device->DepthStencilStates2[_currentState->DepthStencilStateIndex];
+            depthStencilState = _currentState->DepthStencilState;
             ASSERT(_currentState->VS != nullptr);
             vs = _currentState->VS;
 #if GPU_ALLOW_TESSELLATION_SHADERS
@@ -586,11 +603,11 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
             gs = _currentState->GS;
 #endif
             ps = _currentState->PS;
-
             primitiveTopology = _currentState->PrimitiveTopology;
         }
 
         // Per pipeline stage state caching
+        bool shaderEnabled = false;
         if (CurrentDepthStencilState != depthStencilState)
         {
             CurrentDepthStencilState = depthStencilState;
@@ -608,6 +625,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         }
         if (CurrentVS != vs)
         {
+            shaderEnabled |= CurrentVS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentVS && !vs)
 			{
@@ -616,11 +634,12 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #endif
             CurrentVS = vs;
             _context->VSSetShader(vs ? vs->GetBufferHandleDX11() : nullptr, nullptr, 0);
-            _context->IASetInputLayout(vs ? vs->GetInputLayoutDX11() : nullptr);
+            _iaInputLayoutDirtyFlag = true;
         }
 #if GPU_ALLOW_TESSELLATION_SHADERS
         if (CurrentHS != hs)
         {
+            shaderEnabled |= CurrentHS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentHS && !hs)
 			{
@@ -632,6 +651,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         }
         if (CurrentDS != ds)
         {
+            shaderEnabled |= CurrentDS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentDS && !ds)
 			{
@@ -645,6 +665,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #if GPU_ALLOW_GEOMETRY_SHADERS
         if (CurrentGS != gs)
         {
+            shaderEnabled |= CurrentGS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentGS && !gs)
 			{
@@ -657,6 +678,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
 #endif
         if (CurrentPS != ps)
         {
+            shaderEnabled |= CurrentPS == nullptr;
 #if DX11_CLEAR_SR_ON_STAGE_DISABLE
 			if (CurrentPS && !ps)
 			{
@@ -670,6 +692,13 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
         {
             CurrentPrimitiveTopology = primitiveTopology;
             _context->IASetPrimitiveTopology(primitiveTopology);
+        }
+        if (shaderEnabled)
+        {
+            // Fix bug when binding constant buffer or texture, then binding PSO with tess and the drawing (data binded before tess shader is active was missing)
+            // TODO: use per-shader dirty flags
+            _cbDirtyFlag = true;
+            _srMaskDirtyGraphics = MAX_uint32;
         }
 
         RENDER_STAT_PS_STATE_CHANGE();
@@ -715,6 +744,7 @@ void GPUContextDX11::FlushState()
     flushCBs();
     flushSRVs();
     flushUAVs();
+    flushIA();
     flushOM();
 }
 
@@ -853,13 +883,13 @@ void GPUContextDX11::flushSRVs()
         {
             _srMaskDirtyGraphics = 0;
             FLUSH_STAGE(VS);
-    #if GPU_ALLOW_TESSELLATION_SHADERS
+#if GPU_ALLOW_TESSELLATION_SHADERS
             FLUSH_STAGE(HS);
             FLUSH_STAGE(DS);
-    #endif
-    #if GPU_ALLOW_GEOMETRY_SHADERS
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
             FLUSH_STAGE(GS);
-    #endif
+#endif
             FLUSH_STAGE(PS);
         }
     }
@@ -927,11 +957,28 @@ void GPUContextDX11::flushOM()
     }
 }
 
+void GPUContextDX11::flushIA()
+{
+    if (_iaInputLayoutDirtyFlag)
+    {
+        _iaInputLayoutDirtyFlag = false;
+        ID3D11InputLayout* inputLayout = CurrentVS ? CurrentVS->GetInputLayout(_vertexLayout) : nullptr;
+#if GPU_ENABLE_ASSERTION_LOW_LAYERS
+        if (!inputLayout && CurrentVS && !_vertexLayout && _vbHandles[0])
+        {
+            LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
+        }
+#endif
+        _context->IASetInputLayout(inputLayout);
+    }
+}
+
 void GPUContextDX11::onDrawCall()
 {
     flushCBs();
     flushSRVs();
     flushUAVs();
+    flushIA();
     flushOM();
 }
 

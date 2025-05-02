@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GPUContext.h"
 #include "GPUDevice.h"
@@ -10,6 +10,53 @@ GPUContext::GPUContext(GPUDevice* device)
     , _device(device)
 {
 }
+
+#if !BUILD_RELEASE
+
+#include "Engine/Core/Log.h"
+
+void GPUContext::LogInvalidResourceUsage(int32 slot, const GPUResourceView* view, InvalidBindPoint bindPoint)
+{
+    GPUResource* resource = view ? view->GetParent() : nullptr;
+    const Char* resourceType = TEXT("resource");
+    const Char* flagType = TEXT("flags");
+    if (resource)
+    {
+        switch (resource->GetResourceType())
+        {
+        case GPUResourceType::RenderTarget:
+        case GPUResourceType::Texture:
+        case GPUResourceType::CubeTexture:
+        case GPUResourceType::VolumeTexture:
+            resourceType = TEXT("texture");
+            flagType = TEXT("GPUTextureFlags");
+            break;
+        case GPUResourceType::Buffer:
+            resourceType = TEXT("buffer");
+            flagType = TEXT("GPUBufferFlags");
+            break;
+        }
+    }
+    const Char* usage = TEXT("-");
+    switch (bindPoint)
+    {
+    case InvalidBindPoint::SRV:
+        usage = TEXT("shader resource");
+        break;
+    case InvalidBindPoint::UAV:
+        usage = TEXT("unordered access");
+        break;
+    case InvalidBindPoint::DSV:
+        usage = TEXT("depth stencil");
+        break;
+    case InvalidBindPoint::RTV:
+        usage = TEXT("render target");
+        break;
+    }
+    LOG(Error, "Incorrect {} bind at slot {} as {} (ensure to setup correct {} when creating that resource)", resourceType, slot, usage, flagType);
+}
+
+#endif
 
 void GPUContext::FrameBegin()
 {

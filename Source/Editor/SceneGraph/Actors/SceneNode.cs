@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.IO;
 using FlaxEditor.GUI.ContextMenu;
@@ -48,6 +48,9 @@ namespace FlaxEditor.SceneGraph.Actors
         }
 
         /// <inheritdoc />
+        public override bool CanSelectInViewport => false;
+
+        /// <inheritdoc />
         public override bool CanCreatePrefab => false;
 
         /// <inheritdoc />
@@ -81,6 +84,7 @@ namespace FlaxEditor.SceneGraph.Actors
             if (Level.ScenesCount > 1)
                 contextMenu.AddButton("Unload all but this scene", OnUnloadAllButSelectedScene).LinkTooltip("Unloads all of the active scenes except for the selected scene.").Enabled = Editor.Instance.StateMachine.CurrentState.CanChangeScene;
 
+            contextMenu.MaximumItemsInViewCount += 3;
             base.OnContextMenu(contextMenu, window);
         }
 

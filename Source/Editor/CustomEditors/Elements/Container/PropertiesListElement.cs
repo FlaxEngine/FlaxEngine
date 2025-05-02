@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -53,13 +53,7 @@ namespace FlaxEditor.CustomEditors.Elements
 
         internal void OnAddProperty(string name, string tooltip)
         {
-            var label = new PropertyNameLabel(name)
-            {
-                Parent = Properties,
-                TooltipText = tooltip,
-                FirstChildControlIndex = Properties.Children.Count
-            };
-            Labels.Add(label);
+            OnAddProperty(new PropertyNameLabel(name), tooltip);
         }
 
         internal void OnAddProperty(PropertyNameLabel label, string tooltip)
@@ -88,6 +82,7 @@ namespace FlaxEditor.CustomEditors.Elements
         public override void ClearLayout()
         {
             base.ClearLayout();
+
             Labels.Clear();
         }
     }

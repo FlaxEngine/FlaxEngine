@@ -1,8 +1,10 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "FileReadStream.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Platform/File.h"
+
+#define USE_FILE_POS (1)
 
 FileReadStream* FileReadStream::Open(const StringView& path)
 {
@@ -24,8 +26,12 @@ FileReadStream::FileReadStream(File* file)
     : _file(file)
     , _virtualPosInBuffer(0)
     , _bufferSize(0)
+#if USE_FILE_POS
+    , _filePosition(file->GetPosition())
+#else
+    , _filePosition(0)
+#endif
 {
-    ASSERT_LOW_LAYER(_file);
 }
 
 FileReadStream::~FileReadStream()
@@ -62,16 +68,40 @@ uint32 FileReadStream::GetLength()
 
 uint32 FileReadStream::GetPosition()
 {
+#if USE_FILE_POS
+    return _filePosition - _bufferSize + _virtualPosInBuffer;
+#else
     return _file->GetPosition() - _bufferSize + _virtualPosInBuffer;
+#endif
 }
 
 void FileReadStream::SetPosition(uint32 seek)
 {
+#if USE_FILE_POS
+    // Skip if position won't change
+    if (GetPosition() == seek)
+    {
+        return;
+    }
+
+    // Try to seek with virtual position
+    uint32 bufferStartPos = _filePosition - _bufferSize;
+    if (seek >= GetPosition() && seek < _filePosition)
+    {
+        _virtualPosInBuffer = seek - bufferStartPos;
+        return;
+    }
+#endif
+
     // Seek
     _file->SetPosition(seek);
+    _filePosition = _file->GetPosition();
 
     // Update buffer
     _hasError |= _file->Read(_buffer, FILESTREAM_BUFFER_SIZE, &_bufferSize) != 0;
+#if USE_FILE_POS
+    _filePosition += _bufferSize;
+#endif
     _virtualPosInBuffer = 0;
 }
 
@@ -88,6 +118,9 @@ void FileReadStream::ReadBytes(void* data, uint32 bytes)
     {
         CHECK(_virtualPosInBuffer == 0);
         _hasError |= _file->Read(_buffer, FILESTREAM_BUFFER_SIZE, &_bufferSize) != 0;
+#if USE_FILE_POS
+        _filePosition += _bufferSize;
+#endif
     }
 
     // Check if buffer has enough data for this read
@@ -107,6 +140,9 @@ void FileReadStream::ReadBytes(void* data, uint32 bytes)
             bytes -= bufferBytesLeft;
             _virtualPosInBuffer = 0;
             _hasError |= _file->Read(_buffer, FILESTREAM_BUFFER_SIZE, &_bufferSize) != 0;
+#if USE_FILE_POS
+            _filePosition += _bufferSize;
+#endif
         }
 
         // Read as much as can using whole buffer
@@ -116,6 +152,9 @@ void FileReadStream::ReadBytes(void* data, uint32 bytes)
             data = (byte*)data + FILESTREAM_BUFFER_SIZE;
             bytes -= FILESTREAM_BUFFER_SIZE;
             _hasError |= _file->Read(_buffer, FILESTREAM_BUFFER_SIZE, &_bufferSize) != 0;
+#if USE_FILE_POS
+            _filePosition += _bufferSize;
+#endif
         }
 
         // Read the rest of the buffer but without flushing its data

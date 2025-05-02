@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -81,13 +81,13 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     /// <summary>
     /// The minimum Android API level (eg. 20, 28, 34).
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(20), EditorDisplay(\"General\")")
+    API_FIELD(Attributes="EditorOrder(20), EditorDisplay(\"General\")")
     String MinimumAPILevel = TEXT("23");
 
     /// <summary>
     /// The target Android API level (eg. 20, 28, 34).
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(30), EditorDisplay(\"General\")")
+    API_FIELD(Attributes="EditorOrder(30), EditorDisplay(\"General\")")
     String TargetAPILevel = TEXT("33");
 
     /// <summary>
@@ -99,7 +99,7 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     /// <summary>
     /// The default screen orientation.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(110), EditorDisplay(\"General\")")
+    API_FIELD(Attributes="EditorOrder(110), EditorDisplay(\"General\")")
     ScreenOrientation DefaultOrientation = ScreenOrientation::AutoRotation;
 
     /// <summary>
@@ -107,6 +107,12 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings") class FLAXENGINE_API 
     /// </summary>
     API_FIELD(Attributes="EditorOrder(500), EditorDisplay(\"General\")")
     TextureQuality TexturesQuality = TextureQuality::ASTC_Medium;
+
+    /// <summary>
+    /// Whether to build Android App Bundle (aab) side by side with apk.
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(500), EditorDisplay(\"General\", \"Build .aab\")")
+    bool BuildAAB = true;
 
     /// <summary>
     /// Custom icon texture to use for the application (overrides the default one).

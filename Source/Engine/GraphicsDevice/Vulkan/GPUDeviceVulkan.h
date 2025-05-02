@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -187,8 +187,10 @@ struct RenderTargetLayoutVulkan
             uint32 WriteStencil : 1;
             uint32 BlendEnable : 1;
         };
+
         uint32 Flags;
     };
+
     MSAALevel MSAA;
     PixelFormat DepthFormat;
     PixelFormat RTVsFormats[GPU_MAX_RT_BINDED];
@@ -237,6 +239,7 @@ public:
     GPUDeviceVulkan* Device;
     VkRenderPass Handle;
     RenderTargetLayoutVulkan Layout;
+    bool CanDepthWrite;
 #if VULKAN_USE_DEBUG_DATA
     VkRenderPassCreateInfo DebugCreateInfo;
 #endif
@@ -257,8 +260,6 @@ protected:
     GPUDeviceVulkan* _device;
     VkQueryPool _handle;
 
-    volatile int32 _count;
-    const uint32 _capacity;
     const VkQueryType _type;
 #if VULKAN_RESET_QUERY_POOLS
     Array<Range> _resetRanges;
@@ -275,6 +276,7 @@ public:
     }
 
 #if VULKAN_RESET_QUERY_POOLS
+    bool ResetBeforeUse;
     void Reset(CmdBufferVulkan* cmdBuffer);
 #endif
 };
@@ -292,7 +294,7 @@ private:
 
 public:
     BufferedQueryPoolVulkan(GPUDeviceVulkan* device, int32 capacity, VkQueryType type);
-    bool AcquireQuery(uint32& resultIndex);
+    bool AcquireQuery(CmdBufferVulkan* cmdBuffer, uint32& resultIndex);
     void ReleaseQuery(uint32 queryIndex);
     void MarkQueryAsStarted(uint32 queryIndex);
     bool GetResults(GPUContextVulkan* context, uint32 index, uint64& result);
@@ -307,8 +309,9 @@ class HelperResourcesVulkan
 private:
     GPUDeviceVulkan* _device;
     GPUTextureVulkan* _dummyTextures[6];
-    GPUBufferVulkan* _dummyBuffer;
-    GPUBufferVulkan* _dummyVB;
+    GPUBufferVulkan** _dummyBuffers = nullptr;
+    GPUBufferVulkan* _dummyVB = nullptr;
+    GPUConstantBuffer* _dummyCB = nullptr;
     VkSampler _staticSamplers[GPU_STATIC_SAMPLERS_COUNT];
 
 public:
@@ -317,8 +320,9 @@ public:
 public:
     VkSampler* GetStaticSamplers();
     GPUTextureVulkan* GetDummyTexture(SpirvShaderResourceType type);
-    GPUBufferVulkan* GetDummyBuffer();
+    GPUBufferVulkan* GetDummyBuffer(PixelFormat format);
     GPUBufferVulkan* GetDummyVertexBuffer();
+    GPUConstantBuffer* GetDummyConstantBuffer();
     void Dispose();
 };
 
@@ -405,11 +409,12 @@ public:
 #endif
     };
 
-    static void GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils);
-    static void GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions, Array<const char*>& outDeviceLayers);
-
-    void ParseOptionalDeviceExtensions(const Array<const char*>& deviceExtensions);
     static OptionalVulkanDeviceExtensions OptionalDeviceExtensions;
+
+private:
+    static void GetInstanceLayersAndExtensions(Array<const char*>& outInstanceExtensions, Array<const char*>& outInstanceLayers, bool& outDebugUtils);
+    void GetDeviceExtensionsAndLayers(VkPhysicalDevice gpu, Array<const char*>& outDeviceExtensions, Array<const char*>& outDeviceLayers);
+    static void ParseOptionalDeviceExtensions(const Array<const char*>& deviceExtensions);
 
 public:
     /// <summary>
@@ -608,6 +613,7 @@ public:
     GPUTimerQuery* CreateTimerQuery() override;
     GPUBuffer* CreateBuffer(const StringView& name) override;
     GPUSampler* CreateSampler() override;
+    GPUVertexLayout* CreateVertexLayout(const VertexElements& elements, bool explicitOffsets) override;
     GPUSwapChain* CreateSwapChain(Window* window) override;
     GPUConstantBuffer* CreateConstantBuffer(uint32 size, const StringView& name) override;
 };
@@ -720,6 +726,12 @@ public:
     {
         CRASH;
     }
+
+#if !BUILD_RELEASE
+    // Utilities for incorrect resource usage.
+    virtual bool HasSRV() const { return false; }
+    virtual bool HasUAV() const { return false; }
+#endif
 };
 
 extern GPUDevice* CreateGPUDeviceVulkan();

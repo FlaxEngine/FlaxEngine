@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_MODEL_TOOL && USE_ASSIMP
 
@@ -23,21 +23,20 @@
 #include <ThirdParty/assimp/LogStream.hpp>
 #include <ThirdParty/assimp/DefaultLogger.hpp>
 #include <ThirdParty/assimp/Logger.hpp>
-using namespace Assimp;
 
-class AssimpLogStream : public LogStream
+class AssimpLogStream : public Assimp::LogStream
 {
 public:
     AssimpLogStream()
     {
-        DefaultLogger::create("");
-        DefaultLogger::get()->attachStream(this);
+        Assimp::DefaultLogger::create("");
+        Assimp::DefaultLogger::get()->attachStream(this);
     }
 
     ~AssimpLogStream()
     {
-        DefaultLogger::get()->detatchStream(this);
-        DefaultLogger::kill();
+        Assimp::DefaultLogger::get()->detachStream(this);
+        Assimp::DefaultLogger::kill();
     }
 
     void write(const char* message) override
@@ -148,7 +147,7 @@ struct AssimpBone
 
 struct AssimpImporterData
 {
-    Importer AssimpImporter;
+    Assimp::Importer AssimpImporter;
     AssimpLogStream AssimpLogStream;
     const String Path;
     const aiScene* Scene = nullptr;
@@ -247,13 +246,15 @@ bool ProcessMesh(ModelData& result, AssimpImporterData& data, const aiMesh* aMes
     mesh.Positions.Set((const Float3*)aMesh->mVertices, aMesh->mNumVertices);
 
     // Texture coordinates
-    if (aMesh->mTextureCoords[0])
+    for (int32 channelIndex = 0; channelIndex < MODEL_MAX_UV && aMesh->mTextureCoords[channelIndex]; channelIndex++)
     {
-        mesh.UVs.Resize(aMesh->mNumVertices, false);
-        aiVector3D* a = aMesh->mTextureCoords[0];
+        mesh.UVs.Resize(channelIndex + 1);
+        auto& channel = mesh.UVs[channelIndex];
+        channel.Resize(aMesh->mNumVertices, false);
+        aiVector3D* a = aMesh->mTextureCoords[channelIndex];
         for (uint32 v = 0; v < aMesh->mNumVertices; v++)
         {
-            mesh.UVs[v] = *(Float2*)a;
+            channel.Get()[v] = *(Float2*)a;
             a++;
         }
     }
@@ -266,7 +267,7 @@ bool ProcessMesh(ModelData& result, AssimpImporterData& data, const aiMesh* aMes
         const auto face = &aMesh->mFaces[faceIndex];
         if (face->mNumIndices != 3)
         {
-            errorMsg = TEXT("All faces in a mesh must be trangles!");
+            errorMsg = TEXT("All faces in a mesh must be triangles!");
             return true;
         }
 
@@ -297,57 +298,7 @@ bool ProcessMesh(ModelData& result, AssimpImporterData& data, const aiMesh* aMes
     }
 
     // Lightmap UVs
-    if (data.Options.LightmapUVsSource == ModelLightmapUVsSource::Disable)
-    {
-        // No lightmap UVs
-    }
-    else if (data.Options.LightmapUVsSource == ModelLightmapUVsSource::Generate)
-    {
-        // Generate lightmap UVs
-        if (mesh.GenerateLightmapUVs())
-        {
-            LOG(Error, "Failed to generate lightmap uvs");
-        }
-    }
-    else
-    {
-        // Select input channel index
-        int32 inputChannelIndex;
-        switch (data.Options.LightmapUVsSource)
-        {
-        case ModelLightmapUVsSource::Channel0:
-            inputChannelIndex = 0;
-            break;
-        case ModelLightmapUVsSource::Channel1:
-            inputChannelIndex = 1;
-            break;
-        case ModelLightmapUVsSource::Channel2:
-            inputChannelIndex = 2;
-            break;
-        case ModelLightmapUVsSource::Channel3:
-            inputChannelIndex = 3;
-            break;
-        default:
-            inputChannelIndex = INVALID_INDEX;
-            break;
-        }
-
-        // Check if has that channel texcoords
-        if (inputChannelIndex >= 0 && inputChannelIndex < AI_MAX_NUMBER_OF_TEXTURECOORDS && aMesh->mTextureCoords[inputChannelIndex])
-        {
-            mesh.LightmapUVs.Resize(aMesh->mNumVertices, false);
-            aiVector3D* a = aMesh->mTextureCoords[inputChannelIndex];
-            for (uint32 v = 0; v < aMesh->mNumVertices; v++)
-            {
-                mesh.LightmapUVs[v] = *(Float2*)a;
-                a++;
-            }
-        }
-        else
-        {
-            LOG(Warning, "Cannot import result lightmap uvs. Missing texcoords channel {0}.", inputChannelIndex);
-        }
-    }
+    mesh.SetLightmapUVsSource(data.Options.LightmapUVsSource);
 
     // Vertex Colors
     if (data.Options.ImportVertexColors && aMesh->mColors[0])
@@ -646,24 +597,10 @@ bool ImportMesh(int32 index, ModelData& result, AssimpImporterData& data, String
         // Link mesh
         meshData->NodeIndex = nodeIndex;
         AssimpNode* curNode = &data.Nodes[meshData->NodeIndex];
-        Vector3 translation = Vector3::Zero;
-        Vector3 scale = Vector3::One;
-        Quaternion rotation = Quaternion::Identity;
-
-        while (true)
-        {
-            translation += curNode->LocalTransform.Translation;
-            scale *= curNode->LocalTransform.Scale;
-            rotation *= curNode->LocalTransform.Orientation;
-
-            if (curNode->ParentIndex == -1)
-                break;
-            curNode = &data.Nodes[curNode->ParentIndex];
-        }
-
-        meshData->OriginTranslation = translation;
-        meshData->OriginOrientation = rotation;
-        meshData->Scaling = scale;
+        
+        meshData->OriginTranslation = curNode->LocalTransform.Translation;
+        meshData->OriginOrientation = curNode->LocalTransform.Orientation;
+        meshData->Scaling = curNode->LocalTransform.Scale;
 
         if (result.LODs.Count() <= lodIndex)
             result.LODs.Resize(lodIndex + 1);
@@ -766,6 +703,8 @@ bool ModelTool::ImportDataAssimp(const String& path, ModelData& data, Options& o
             flags |= aiProcess_FixInfacingNormals | aiProcess_GenSmoothNormals;
         if (options.CalculateTangents)
             flags |= aiProcess_CalcTangentSpace;
+        if (options.ReverseWindingOrder)
+            flags &= ~aiProcess_FlipWindingOrder;
         if (options.OptimizeMeshes)
             flags |= aiProcess_OptimizeMeshes | aiProcess_SplitLargeMeshes | aiProcess_ImproveCacheLocality;
         if (options.MergeMeshes)

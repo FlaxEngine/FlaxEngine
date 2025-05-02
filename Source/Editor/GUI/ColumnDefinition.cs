@@ -1,6 +1,7 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.GUI
 {
@@ -43,9 +44,19 @@ namespace FlaxEditor.GUI
         public Color TitleColor = Color.White;
 
         /// <summary>
-        /// The column title background background.
+        /// The column title background color.
         /// </summary>
         public Color TitleBackgroundColor = Color.Brown;
+
+        /// <summary>
+        /// The column title horizontal text alignment
+        /// </summary>
+        public TextAlignment TitleAlignment = TextAlignment.Near;
+
+        /// <summary>
+        /// The column title margin.
+        /// </summary>
+        public Margin TitleMargin = new Margin(4, 4, 0, 0);
 
         /// <summary>
         /// The minimum size (in pixels) of the column.

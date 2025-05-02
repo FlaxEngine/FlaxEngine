@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -133,6 +133,11 @@ public:
     /// Updates the cull distance for all foliage instances and for created clusters.
     /// </summary>
     API_FUNCTION() void UpdateCullDistance();
+
+    /// <summary>
+    /// Clears all foliage instances. Preserves the foliage types and other properties.
+    /// </summary>
+    API_FUNCTION() void RemoveAllInstances();
 
 public:
     /// <summary>

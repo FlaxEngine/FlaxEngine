@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.IO;
@@ -76,7 +76,7 @@ namespace Flax.Build.Bindings
                 if (Comment != null && Comment.Length != 0)
                     typedef.Comment = Comment;
                 typedef.IsInBuild |= IsInBuild;
-                typedef.IsDeprecated |= IsDeprecated;
+                typedef.DeprecatedMessage = DeprecatedMessage;
                 if (typedef is ClassStructInfo typedefClassStruct && typedefClassStruct.IsTemplate)
                 {
                     // Inflate template type

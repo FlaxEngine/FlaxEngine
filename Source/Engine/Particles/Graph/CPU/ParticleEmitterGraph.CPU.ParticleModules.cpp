@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitterGraph.CPU.h"
 #include "Engine/Core/Random.h"
@@ -1148,6 +1148,47 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
     case 215:
     {
         // Not supported
+        break;
+    }
+    // Rotate Position Shape
+    case 216:
+    {
+        PARTICLE_EMITTER_MODULE("Rotate Position Shape");
+        auto& positionAttr = context.Data->Buffer->Layout->Attributes[node->Attributes[0]];
+
+        byte* positionPtr = start + positionAttr.Offset;
+
+        auto quatBox = node->GetBox(0);
+
+#define INPUTS_FETCH() \
+    const Quaternion quat = (Quaternion)GetValue(quatBox, 2);
+#define LOGIC() \
+    Quaternion nq = Quaternion::Invert(quat); \
+    Float3 v3 = *((Float3*)positionPtr); \
+    Quaternion q = Quaternion(v3.X, v3.Y, v3.Z, 0.0f); \
+    Quaternion rq = quat * (q * nq); \
+    *(Float3*)positionPtr = Float3(rq.X, rq.Y, rq.Z); \
+    positionPtr += stride;
+
+        if (node->UsePerParticleDataResolve())
+        {
+            for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
+            {
+                context.ParticleIndex = particleIndex;
+                INPUTS_FETCH();
+                LOGIC();
+            }
+        }
+        else
+        {
+            INPUTS_FETCH();
+            for (int32 particleIndex = particlesStart; particleIndex < particlesEnd; particleIndex++)
+            {
+                LOGIC();
+            }
+        }
+#undef INPUTS_FETCH
+#undef LOGIC
         break;
     }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -34,7 +34,7 @@ namespace FlaxEngine.Utilities
             if (value == null)
                 return default;
             var type = value.GetType();
-            if (type != typeof(T))
+            if (type != typeof(T) && !typeof(T).IsAssignableFrom(type))
             {
                 if (typeof(T) == typeof(Vector2))
                 {
@@ -354,14 +354,17 @@ namespace FlaxEngine.Utilities
             if (typeNameLength == int.MaxValue)
             {
                 typeNameLength = stream.ReadInt32();
-                var data = new byte[typeNameLength];
-                for (int i = 0; i < typeNameLength; i++)
+                if (typeNameLength > 0)
                 {
-                    var c = stream.ReadByte();
-                    data[i] = (byte)(c ^ 77);
+                    var data = new byte[typeNameLength];
+                    for (int i = 0; i < typeNameLength; i++)
+                    {
+                        var c = stream.ReadByte();
+                        data[i] = (byte)(c ^ 77);
+                    }
+                    var typeName = System.Text.Encoding.ASCII.GetString(data);
+                    return TypeUtils.GetType(typeName);
                 }
-                var typeName = System.Text.Encoding.ASCII.GetString(data);
-                return TypeUtils.GetType(typeName);
             }
             if (typeNameLength > 0)
             {
@@ -426,14 +429,17 @@ namespace FlaxEngine.Utilities
             if (typeNameLength == int.MaxValue)
             {
                 typeNameLength = stream.ReadInt32();
-                var data = new byte[typeNameLength];
-                for (int i = 0; i < typeNameLength; i++)
+                if (typeNameLength > 0)
                 {
-                    var c = stream.ReadByte();
-                    data[i] = (byte)(c ^ 77);
+                    var data = new byte[typeNameLength];
+                    for (int i = 0; i < typeNameLength; i++)
+                    {
+                        var c = stream.ReadByte();
+                        data[i] = (byte)(c ^ 77);
+                    }
+                    var typeName = System.Text.Encoding.ASCII.GetString(data);
+                    return TypeUtils.GetManagedType(typeName);
                 }
-                var typeName = System.Text.Encoding.ASCII.GetString(data);
-                return TypeUtils.GetManagedType(typeName);
             }
             if (typeNameLength > 0)
             {
@@ -500,14 +506,17 @@ namespace FlaxEngine.Utilities
             if (typeNameLength == int.MaxValue)
             {
                 typeNameLength = stream.ReadInt32();
-                var data = new byte[typeNameLength];
-                for (int i = 0; i < typeNameLength; i++)
+                if (typeNameLength > 0)
                 {
-                    var c = stream.ReadByte();
-                    data[i] = (byte)(c ^ 77);
+                    var data = new byte[typeNameLength];
+                    for (int i = 0; i < typeNameLength; i++)
+                    {
+                        var c = stream.ReadByte();
+                        data[i] = (byte)(c ^ 77);
+                    }
+                    typeName = System.Text.Encoding.ASCII.GetString(data);
+                    type = TypeUtils.GetManagedType(typeName);
                 }
-                typeName = System.Text.Encoding.ASCII.GetString(data);
-                type = TypeUtils.GetManagedType(typeName);
             }
             else if (typeNameLength > 0)
             {

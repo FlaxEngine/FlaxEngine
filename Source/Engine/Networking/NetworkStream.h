@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -11,7 +11,7 @@ class INetworkSerializable;
 /// <summary>
 /// Objects and values serialization stream for sending data over network. Uses memory buffer for both read and write operations.
 /// </summary>
-API_CLASS(sealed, Namespace = "FlaxEngine.Networking") class FLAXENGINE_API NetworkStream final : public ScriptingObject, public ReadStream, public WriteStream
+API_CLASS(sealed, Namespace="FlaxEngine.Networking") class FLAXENGINE_API NetworkStream final : public ScriptingObject, public ReadStream, public WriteStream
 {
     DECLARE_SCRIPTING_TYPE(NetworkStream);
 private:
@@ -72,10 +72,14 @@ public:
     using ReadStream::Read;
     void Read(INetworkSerializable& obj);
     void Read(INetworkSerializable* obj);
+    void Read(Quaternion& data);
+    void Read(Transform& data, bool useDouble = false);
 
     using WriteStream::Write;
     void Write(INetworkSerializable& obj);
     void Write(INetworkSerializable* obj);
+    void Write(const Quaternion& data);
+    void Write(const Transform& data, bool useDouble = false);
 
 public:
     // [Stream]

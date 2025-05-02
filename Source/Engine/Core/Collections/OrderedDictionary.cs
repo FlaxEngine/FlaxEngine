@@ -1,4 +1,6 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
+
+#if !NET9_0_OR_GREATER
 
 using System;
 using System.Collections;
@@ -674,3 +676,5 @@ namespace FlaxEngine.Collections
         public object Current => Entry;
     }
 }
+
+#endif

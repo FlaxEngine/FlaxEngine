@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 /// <summary>
 /// Interface for objects for network replication to receive additional events.
 /// </summary>
-API_INTERFACE(Namespace = "FlaxEngine.Networking") class FLAXENGINE_API INetworkObject
+API_INTERFACE(Namespace="FlaxEngine.Networking") class FLAXENGINE_API INetworkObject
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(INetworkObject);
 public:

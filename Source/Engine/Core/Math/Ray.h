@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -46,6 +46,7 @@ public:
         : Position(position)
         , Direction(direction)
     {
+        CHECK_DEBUG(Direction.IsNormalized());
     }
 
 public:
@@ -81,7 +82,7 @@ public:
     Vector3 GetPoint(Real distance) const;
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a point.
+    /// Determines if there is an intersection between ray and a point.
     /// </summary>
     /// <param name="point">The point to test.</param>
     /// <returns>Whether the two objects intersected.</returns>
@@ -91,7 +92,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
+    /// Determines if there is an intersection between two rays.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <returns>Whether the two objects intersected.</returns>
@@ -102,7 +103,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a <see cref="Ray" />.
+    /// Determines if there is an intersection between ray and a <see cref="Ray" />.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.
@@ -114,7 +115,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a <see cref="Plane" />.
+    /// Determines if there is an intersection between ray and a <see cref="Plane" />.
     /// </summary>
     /// <param name="plane">The plane to test</param>
     /// <returns>Whether the two objects intersected.</returns>
@@ -125,7 +126,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a <see cref="Plane" />.
+    /// Determines if there is an intersection between ray and a <see cref="Plane" />.
     /// </summary>
     /// <param name="plane">The plane to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
@@ -136,7 +137,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a <see cref="Plane" />.
+    /// Determines if there is an intersection between ray and a <see cref="Plane" />.
     /// </summary>
     /// <param name="plane">The plane to test.</param>
     /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
@@ -147,7 +148,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a triangle.
+    /// Determines if there is an intersection between ray and a triangle.
     /// </summary>
     /// <param name="vertex1">The first vertex of the triangle to test.</param>
     /// <param name="vertex2">The second vertex of the triangle to test.</param>
@@ -160,7 +161,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a triangle.
+    /// Determines if there is an intersection between ray and a triangle.
     /// </summary>
     /// <param name="vertex1">The first vertex of the triangle to test.</param>
     /// <param name="vertex2">The second vertex of the triangle to test.</param>
@@ -173,7 +174,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a triangle.
+    /// Determines if there is an intersection between ray and a triangle.
     /// </summary>
     /// <param name="vertex1">The first vertex of the triangle to test.</param>
     /// <param name="vertex2">The second vertex of the triangle to test.</param>
@@ -186,7 +187,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a <see cref="BoundingBox" />.
+    /// Determines if there is an intersection between ray and a <see cref="BoundingBox" />.
     /// </summary>
     /// <param name="box">The box to test.</param>
     /// <returns>Whether the two objects intersected.</returns>
@@ -197,7 +198,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a <see cref="BoundingBox" />.
+    /// Determines if there is an intersection between ray and a <see cref="BoundingBox" />.
     /// </summary>
     /// <param name="box">The box to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
@@ -208,7 +209,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a <see cref="BoundingBox" />.
+    /// Determines if there is an intersection between ray and a <see cref="BoundingBox" />.
     /// </summary>
     /// <param name="box">The box to test.</param>
     /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>
@@ -219,7 +220,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a <see cref="BoundingSphere" />.
+    /// Determines if there is an intersection between ray and a <see cref="BoundingSphere" />.
     /// </summary>
     /// <param name="sphere">The sphere to test.</param>
     /// <returns>Whether the two objects intersected.</returns>
@@ -230,7 +231,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a <see cref="BoundingSphere" />.
+    /// Determines if there is an intersection between ray and a <see cref="BoundingSphere" />.
     /// </summary>
     /// <param name="sphere">The sphere to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
@@ -241,7 +242,7 @@ public:
     }
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a <see cref="BoundingSphere" />.
+    /// Determines if there is an intersection between ray and a <see cref="BoundingSphere" />.
     /// </summary>
     /// <param name="sphere">The sphere to test.</param>
     /// <param name="point">When the method completes, contains the point of intersection, or <see cref="Vector3.Zero" /> if there was no intersection.</param>

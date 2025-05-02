@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -74,11 +74,11 @@ namespace FlaxEditor.CustomEditors
         {
             var element = Group(title, useTransparentHeader);
             element.Panel.Tag = linkedEditor;
-            element.Panel.MouseButtonRightClicked += OnGroupPanelMouseButtonRightClicked;
+            element.Panel.MouseButtonRightClicked += (panel, location) => OnGroupPanelMouseButtonRightClicked(element, panel, location);
             return element;
         }
 
-        private void OnGroupPanelMouseButtonRightClicked(DropPanel groupPanel, Float2 location)
+        private void OnGroupPanelMouseButtonRightClicked(GroupElement element, DropPanel groupPanel, Float2 location)
         {
             var linkedEditor = (CustomEditor)groupPanel.Tag;
             var menu = new ContextMenu();
@@ -91,8 +91,23 @@ namespace FlaxEditor.CustomEditors
             menu.AddButton("Copy", linkedEditor.Copy);
             var paste = menu.AddButton("Paste", linkedEditor.Paste);
             paste.Enabled = linkedEditor.CanPaste;
+            element.SetupContextMenu?.Invoke(menu, groupPanel);
 
             menu.Show(groupPanel, location);
+        }
+
+        internal string GetLayoutCachePath(string name)
+        {
+            // Build group identifier (made of path from group titles)
+            var expandPath = name;
+            var container = this;
+            while (container != null && !(container is CustomEditorPresenter))
+            {
+                if (container.ContainerControl is DropPanel dropPanel)
+                    expandPath = dropPanel.HeaderText + "/" + expandPath;
+                container = container._parent;
+            }
+            return expandPath;
         }
 
         /// <summary>
@@ -111,14 +126,7 @@ namespace FlaxEditor.CustomEditors
             if (presenter != null && (presenter.Features & FeatureFlags.CacheExpandedGroups) != 0)
             {
                 // Build group identifier (made of path from group titles)
-                var expandPath = title;
-                var container = this;
-                while (container != null && !(container is CustomEditorPresenter))
-                {
-                    if (container.ContainerControl is DropPanel dropPanel)
-                        expandPath = dropPanel.HeaderText + "/" + expandPath;
-                    container = container._parent;
-                }
+                var expandPath = GetLayoutCachePath(title);
 
                 // Caching/restoring expanded groups (non-root groups cache expanded state so invert boolean expression)
                 if (Editor.Instance.ProjectCache.IsGroupToggled(expandPath) ^ isSubGroup)
@@ -666,7 +674,20 @@ namespace FlaxEditor.CustomEditors
             }
 
             var property = AddPropertyItem(name, tooltip);
-            return property.Object(values, editor);
+            int start = property.Properties.Children.Count;
+            var result = property.Object(values, editor);
+
+            // Special case when properties list is nested into another properties list (eg. array of structures or LocalizedString editor)
+            if (this is PropertiesListElement thisPropertiesList &&
+                editor.ParentEditor != null &&
+                editor.ParentEditor.LinkedLabel != null &&
+                editor.ParentEditor.LinkedLabel.FirstChildControlContainer == null)
+            {
+                editor.ParentEditor.LinkedLabel.FirstChildControlIndex = start;
+                editor.ParentEditor.LinkedLabel.FirstChildControlContainer = property.Properties;
+            }
+
+            return result;
         }
 
         /// <summary>

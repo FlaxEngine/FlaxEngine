@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Camera.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Double4x4.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Content.h"
@@ -39,6 +40,7 @@ Camera::Camera(const SpawnParams& params)
     , _customAspectRatio(0.0f)
     , _near(10.0f)
     , _far(40000.0f)
+    , _orthoSize(0.0f)
     , _orthoScale(1.0f)
 {
 #if USE_EDITOR
@@ -120,6 +122,21 @@ void Camera::SetFarPlane(float value)
     }
 }
 
+float Camera::GetOrthographicSize() const
+{
+    return _orthoSize;
+}
+
+void Camera::SetOrthographicSize(float value)
+{
+    value = Math::Clamp(value, 0.0f, 1000000.0f);
+    if (Math::NotNearEqual(_orthoSize, value))
+    {
+        _orthoSize = value;
+        UpdateCache();
+    }
+}
+
 float Camera::GetOrthographicScale() const
 {
     return _orthoScale;
@@ -191,49 +208,55 @@ Ray Camera::ConvertMouseToRay(const Float2& mousePosition) const
 
 Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewport) const
 {
-#if 1
-    // Gather camera properties
+    Vector3 position = GetPosition();
+    if (viewport.Width < ZeroTolerance || viewport.Height < ZeroTolerance || mousePosition.IsNaN())
+        return Ray(position, GetDirection());
+
+    // Use different logic in orthographic projection
+    if (!_usePerspective)
+    {
+        Float2 screenPosition(mousePosition.X / viewport.Width - 0.5f, -mousePosition.Y / viewport.Height + 0.5f);
+        Quaternion orientation = GetOrientation();
+        Float3 direction = orientation * Float3::Forward;
+        const float orthoSize = (_orthoSize > 0.0f ? _orthoSize : viewport.Height) * _orthoScale;
+        const float aspect = _customAspectRatio <= 0.0f ? viewport.GetAspectRatio() : _customAspectRatio;
+        Vector3 rayOrigin(screenPosition.X * orthoSize * aspect, screenPosition.Y * orthoSize, 0);
+        rayOrigin = position + Vector3::Transform(rayOrigin, orientation);
+        rayOrigin += direction * _near;
+        return Ray(rayOrigin, direction);
+    }
+
+    // Create view frustum
     Matrix v, p, ivp;
     GetMatrices(v, p, viewport);
     Matrix::Multiply(v, p, ivp);
     ivp.Invert();
 
     // Create near and far points
-    Vector3 nearPoint(mousePosition, 0.0f);
-    Vector3 farPoint(mousePosition, 1.0f);
+    Vector3 nearPoint(mousePosition, _near);
+    Vector3 farPoint(mousePosition, _far);
     viewport.Unproject(nearPoint, ivp, nearPoint);
     viewport.Unproject(farPoint, ivp, farPoint);
 
-    // Create direction vector
-    Vector3 direction = farPoint - nearPoint;
-    direction.Normalize();
-
-    return Ray(nearPoint, direction);
-#else
-    // Create near and far points
-    Vector3 nearPoint, farPoint;
-    Matrix ivp;
-    _frustum.GetInvMatrix(&ivp);
-    viewport.Unproject(Vector3(mousePosition, 0.0f), ivp, nearPoint);
-    viewport.Unproject(Vector3(mousePosition, 1.0f), ivp, farPoint);
-
-    // Create direction vector
-    Vector3 direction = farPoint - nearPoint;
-    direction.Normalize();
-
-    // Return result
-    return Ray(nearPoint, direction);
-#endif
+    Vector3 dir = Vector3::Normalize(farPoint - nearPoint);
+    if (dir.IsZero())
+        return Ray::Identity;
+    return Ray(nearPoint, dir);
 }
 
 Viewport Camera::GetViewport() const
 {
     Viewport result = Viewport(Float2::Zero);
+    float dpiScale = Platform::GetDpiScale();
 
 #if USE_EDITOR
     // Editor
     if (Editor::Managed)
+    {
         result.Size = Editor::Managed->GetGameWindowSize();
+        if (auto* window = Editor::Managed->GetGameWindow())
+            dpiScale = window->GetDpiScale();
+    }
 #else
 	// Game
 	auto mainWin = Engine::MainWindow;
@@ -241,8 +264,12 @@ Viewport Camera::GetViewport() const
 	{
 		const auto size = mainWin->GetClientSize();
 		result.Size = size;
+        dpiScale = mainWin->GetDpiScale();
 	}
 #endif
+
+    // Remove DPI scale (game viewport coords are unscaled)
+    result.Size /= dpiScale;
 
     // Fallback to the default value
     if (result.Size.MinValue() <= ZeroTolerance)
@@ -264,23 +291,27 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
 void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewport, const Vector3& origin) const
 {
     // Create projection matrix
+    const float aspect = _customAspectRatio <= 0.0f ? viewport.GetAspectRatio() : _customAspectRatio;
     if (_usePerspective)
     {
-        const float aspect = _customAspectRatio <= 0.0f ? viewport.GetAspectRatio() : _customAspectRatio;
         Matrix::PerspectiveFov(_fov * DegreesToRadians, aspect, _near, _far, projection);
     }
     else
     {
-        Matrix::Ortho(viewport.Width * _orthoScale, viewport.Height * _orthoScale, _near, _far, projection);
+        const float orthoSize = (_orthoSize > 0.0f ? _orthoSize : viewport.Height) * _orthoScale;
+        Matrix::Ortho(orthoSize * aspect, orthoSize, _near, _far, projection);
     }
 
     // Create view matrix
-    const Float3 direction = GetDirection();
-    const Float3 position = _transform.Translation - origin;
-    const Float3 target = position + direction;
-    Float3 up;
-    Float3::Transform(Float3::Up, GetOrientation(), up);
-    Matrix::LookAt(position, target, up, view);
+    const Vector3 direction = Vector3::Transform(Vector3::Forward, GetOrientation());
+    const Vector3 position = _transform.Translation - origin;
+    const Vector3 target = position + direction;
+
+    Vector3 up;
+    Vector3::Transform(Vector3::Up, GetOrientation(), up);
+    Real4x4 viewResult;
+    Real4x4::LookAt(position, target, up, viewResult);
+    view = Matrix(viewResult);
 }
 
 #if USE_EDITOR
@@ -288,6 +319,8 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
 void Camera::OnPreviewModelLoaded()
 {
     _previewModelBuffer.Setup(_previewModel.Get());
+    if (_previewModelBuffer.Count() > 0)
+        _previewModelBuffer.At(0).ReceiveDecals = false;
 
     UpdateCache();
 }
@@ -320,6 +353,7 @@ bool Camera::HasContentLoaded() const
 void Camera::Draw(RenderContext& renderContext)
 {
     if (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::EditorSprites)
+        && renderContext.View.CullingFrustum.Intersects(_previewModelBox)
         && _previewModel
         && _previewModel->IsLoaded())
     {

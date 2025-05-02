@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -8,6 +8,7 @@ using FlaxEditor.Content;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Drag;
 using FlaxEditor.GUI.Tree;
+using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEditor.Utilities;
 using FlaxEditor.Windows;
@@ -15,7 +16,6 @@ using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
-using Object = FlaxEngine.Object;
 
 namespace FlaxEditor.SceneGraph.GUI
 {
@@ -166,7 +166,7 @@ namespace FlaxEditor.SceneGraph.GUI
         /// <param name="filterText">The filter text.</param>
         public void UpdateFilter(string filterText)
         {
-            // SKip hidden actors
+            // Skip hidden actors
             var actor = Actor;
             if (actor != null && (actor.HideFlags & HideFlags.HideInHierarchy) != 0)
                 return;
@@ -184,30 +184,123 @@ namespace FlaxEditor.SceneGraph.GUI
             }
             else
             {
-                var text = Text;
-                if (QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
+                var splitFilter = filterText.Split(',');
+                var hasAllFilters = true;
+                foreach (var filter in splitFilter)
                 {
-                    // Update highlights
-                    if (_highlights == null)
-                        _highlights = new List<Rectangle>(ranges.Length);
-                    else
-                        _highlights.Clear();
-                    var font = Style.Current.FontSmall;
-                    var textRect = TextRect;
-                    for (int i = 0; i < ranges.Length; i++)
+                    if (string.IsNullOrEmpty(filter))
+                        continue;
+                    var trimmedFilter = filter.Trim();
+                    var hasFilter = false;
+                    
+                    // Check if script
+                    if (trimmedFilter.Contains("s:", StringComparison.OrdinalIgnoreCase))
                     {
-                        var start = font.GetCharPosition(text, ranges[i].StartIndex);
-                        var end = font.GetCharPosition(text, ranges[i].EndIndex);
-                        _highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
+                        // Check for any scripts
+                        if (trimmedFilter.Equals("s:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (Actor != null)
+                            {
+                                if (Actor.ScriptsCount > 0)
+                                {
+                                    hasFilter = true;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var scriptText = trimmedFilter.Replace("s:", "", StringComparison.OrdinalIgnoreCase).Trim();
+                            var scriptFound = false;
+                            if (Actor != null)
+                            {
+                                foreach (var script in Actor.Scripts)
+                                {
+                                    var name = TypeUtils.GetTypeDisplayName(script.GetType());
+                                    var nameNoSpaces = name.Replace(" ", "");
+                                    if (name.Contains(scriptText, StringComparison.OrdinalIgnoreCase) || nameNoSpaces.Contains(scriptText, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        scriptFound = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            hasFilter = scriptFound;
+                        }
                     }
-                    isThisVisible = true;
+                    // Check for actor type
+                    else if (trimmedFilter.Contains("a:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (trimmedFilter.Equals("a:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (Actor != null)
+                                hasFilter = true;
+                        }
+                        else
+                        {
+                            if (Actor != null)
+                            {
+                                var actorTypeText = trimmedFilter.Replace("a:", "", StringComparison.OrdinalIgnoreCase).Trim();
+                                var name = TypeUtils.GetTypeDisplayName(Actor.GetType());
+                                var nameNoSpaces = name.Replace(" ", "");
+                                if (name.Contains(actorTypeText, StringComparison.OrdinalIgnoreCase) || nameNoSpaces.Contains(actorTypeText, StringComparison.OrdinalIgnoreCase))
+                                    hasFilter = true;
+                            }
+                        }
+                    }
+                    // Check for control type
+                    else if (trimmedFilter.Contains("c:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (trimmedFilter.Equals("c:", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (Actor != null)
+                                hasFilter = true;
+                        }
+                        else
+                        {
+                            if (Actor != null && Actor is UIControl uic && uic.Control != null)
+                            {
+                                var controlTypeText = trimmedFilter.Replace("c:", "", StringComparison.OrdinalIgnoreCase).Trim();
+                                var name = TypeUtils.GetTypeDisplayName(uic.Control.GetType());
+                                var nameNoSpaces = name.Replace(" ", "");
+                                if (name.Contains(controlTypeText, StringComparison.OrdinalIgnoreCase) || nameNoSpaces.Contains(controlTypeText, StringComparison.OrdinalIgnoreCase))
+                                    hasFilter = true;
+                            }
+                        }
+                    }
+                    // Match text
+                    else
+                    {
+                        var text = Text;
+                        if (QueryFilterHelper.Match(trimmedFilter, text, out QueryFilterHelper.Range[] ranges))
+                        {
+                            // Update highlights
+                            if (_highlights == null)
+                                _highlights = new List<Rectangle>(ranges.Length);
+                            else
+                                _highlights.Clear();
+                            var font = Style.Current.FontSmall;
+                            var textRect = TextRect;
+                            for (int i = 0; i < ranges.Length; i++)
+                            {
+                                var start = font.GetCharPosition(text, ranges[i].StartIndex);
+                                var end = font.GetCharPosition(text, ranges[i].EndIndex);
+                                _highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
+                            }
+                            hasFilter = true;
+                        }
+                    }
+                    
+                    if (!hasFilter)
+                    {
+                        hasAllFilters = false;
+                        break;
+                    }
                 }
-                else
-                {
-                    // Hide
+
+                isThisVisible = hasAllFilters;
+                if (!hasAllFilters)
                     _highlights?.Clear();
-                    isThisVisible = false;
-                }
             }
 
             // Update children
@@ -320,7 +413,7 @@ namespace FlaxEditor.SceneGraph.GUI
         /// <summary>
         /// Starts the actor renaming action.
         /// </summary>
-        public void StartRenaming(EditorWindow window, Panel treePanel = null)
+        public void StartRenaming(EditorWindow window = null, Panel treePanel = null)
         {
             // Block renaming during scripts reload
             if (Editor.Instance.ProgressReporting.CompileScripts.IsActive)
@@ -386,6 +479,30 @@ namespace FlaxEditor.SceneGraph.GUI
                 for (int i = 0; i < _highlights.Count; i++)
                     Render2D.FillRectangle(_highlights[i], color);
             }
+        }
+
+        /// <inheritdoc />
+        protected override bool OnMouseDoubleClickHeader(ref Float2 location, MouseButton button)
+        {
+            if (button == MouseButton.Left)
+            {
+                var sceneContext = this.GetSceneContext();
+                switch (Editor.Instance.Options.Options.Input.DoubleClickSceneNode)
+                {
+                case SceneNodeDoubleClick.RenameActor:
+                    sceneContext.RenameSelection();
+                    return true;
+                case SceneNodeDoubleClick.FocusActor:
+                    sceneContext.FocusSelection();
+                    return true;
+                case SceneNodeDoubleClick.OpenPrefab:
+                    Editor.Instance.Prefabs.OpenPrefab(ActorNode);
+                    return true;
+                case SceneNodeDoubleClick.Expand:
+                default: break;
+                }
+            }
+            return base.OnMouseDoubleClickHeader(ref location, button);
         }
 
         /// <inheritdoc />
@@ -523,11 +640,17 @@ namespace FlaxEditor.SceneGraph.GUI
             {
                 bool worldPositionsStays = Root.GetKey(KeyboardKeys.Control) == false;
                 var objects = new SceneObject[_dragActors.Objects.Count];
+                var treeNodes = new TreeNode[_dragActors.Objects.Count];
                 for (int i = 0; i < objects.Length; i++)
+                {
                     objects[i] = _dragActors.Objects[i].Actor;
+                    treeNodes[i] = _dragActors.Objects[i].TreeNode;
+                }
                 var action = new ParentActorsAction(objects, newParent, newOrder, worldPositionsStays);
                 ActorNode.Root.Undo?.AddAction(action);
                 action.Do();
+                ParentTree.Focus();
+                ParentTree.Select(treeNodes.ToList());
                 result = DragDropEffect.Move;
             }
             // Drag scripts
@@ -567,9 +690,8 @@ namespace FlaxEditor.SceneGraph.GUI
                     if (_dragAssets.Objects[i] is not PrefabItem)
                         actor.Transform = Transform.Identity;
                     var previousTrans = actor.Transform;
-                    ActorNode.Root.Spawn(actor, spawnParent);
+                    ActorNode.Root.Spawn(actor, spawnParent, newOrder);
                     actor.LocalTransform = previousTrans;
-                    actor.OrderInParent = newOrder;
                 }
                 result = DragDropEffect.Move;
             }
@@ -587,8 +709,7 @@ namespace FlaxEditor.SceneGraph.GUI
                     }
                     actor.StaticFlags = newParent.StaticFlags;
                     actor.Name = item.Name;
-                    ActorNode.Root.Spawn(actor, newParent);
-                    actor.OrderInParent = newOrder;
+                    ActorNode.Root.Spawn(actor, newParent, newOrder);
                 }
                 result = DragDropEffect.Move;
             }
@@ -610,8 +731,7 @@ namespace FlaxEditor.SceneGraph.GUI
                         StaticFlags = newParent.StaticFlags,
                         Name = item.Name,
                     };
-                    ActorNode.Root.Spawn(uiControl, newParent);
-                    uiControl.OrderInParent = newOrder;
+                    ActorNode.Root.Spawn(uiControl, newParent, newOrder);
                 }
                 result = DragDropEffect.Move;
             }
@@ -638,8 +758,7 @@ namespace FlaxEditor.SceneGraph.GUI
                         actor.StaticFlags = spawnParent.StaticFlags;
                         actor.Name = actorType.Name;
                         actor.Transform = spawnParent.Transform;
-                        ActorNode.Root.Spawn(actor, spawnParent);
-                        actor.OrderInParent = newOrder;
+                        ActorNode.Root.Spawn(actor, spawnParent, newOrder);
                     }
                     else if (scriptType != ScriptType.Null)
                     {

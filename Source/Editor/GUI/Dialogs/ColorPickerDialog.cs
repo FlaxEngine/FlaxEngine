@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.Input;
 using FlaxEditor.GUI.Tabs;
@@ -638,7 +638,7 @@ namespace FlaxEditor.GUI.Dialogs
                     TooltipText = $"{SavedColorButtonTooltip} {i + 1}.",
                     BackgroundColorSelected = savedColor.RGBMultiplied(0.8f),
                 };
-                savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
+                savedColorButton.ButtonClicked += OnSavedColorButtonClicked;
                 _savedColorButtons.Add(savedColorButton);
             }
 
@@ -677,6 +677,19 @@ namespace FlaxEditor.GUI.Dialogs
             }
             else
                 _savedColorButtons.Last().Enabled = true;
+        }
+
+        private void OnWindowLostFocus()
+        {
+            // Auto apply color on defocus
+            var autoAcceptColorPickerChange = Editor.Instance.Options.Options.Interface.AutoAcceptColorPickerChange;
+            if (_useDynamicEditing && _initialValue != _value && _canPassLastChangeEvent && autoAcceptColorPickerChange)
+            {
+                _canPassLastChangeEvent = false;
+                _onChanged?.Invoke(_value, false);
+            }
+
+            OnCancel();
         }
 
         /// <inheritdoc />

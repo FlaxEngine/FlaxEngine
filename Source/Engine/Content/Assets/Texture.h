@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -23,17 +23,6 @@ API_CLASS(NoSpawn) class FLAXENGINE_API Texture : public TextureBase
 
 public:
 #if USE_EDITOR
-
-    /// <summary>
-    /// Saves this asset to the file. Supported only in Editor.
-    /// </summary>
-    /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
-    /// <returns>True if cannot save data, otherwise false.</returns>
-    API_FUNCTION() bool Save(const StringView& path = StringView::Empty)
-    {
-        return Save(path, nullptr);
-    }
-
     /// <summary>
     /// Saves this asset to the file. Supported only in Editor.
     /// </summary>
@@ -41,7 +30,6 @@ public:
     /// <param name="customData">The custom texture data container. Can be used to override the data stored in the asset. Use null to ignore this argument.</param>
     /// <returns>True if cannot save data, otherwise false.</returns>
     bool Save(const StringView& path, const InitData* customData);
-
 #endif
 
     /// <summary>
@@ -60,4 +48,10 @@ public:
     /// <param name="generateMips">True if generate mipmaps for the imported texture.</param>
     /// <returns>The loaded texture (virtual asset) or null if fails.</returns>
     API_FUNCTION() static Texture* FromFile(const StringView& path, bool generateMips = false);
+
+public:
+    // [TextureBase]
+#if USE_EDITOR
+    bool Save(const StringView& path = StringView::Empty) override;
+#endif
 };

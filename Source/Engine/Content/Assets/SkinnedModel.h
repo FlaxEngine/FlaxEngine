@@ -1,23 +1,101 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
 #include "ModelBase.h"
 #include "Engine/Core/Collections/Dictionary.h"
-#include "Engine/Graphics/Models/Config.h"
+#include "Engine/Graphics/Models/SkinnedMesh.h"
 #include "Engine/Graphics/Models/SkeletonData.h"
-#include "Engine/Graphics/Models/SkinnedModelLOD.h"
 
-class StreamSkinnedModelLODTask;
+/// <summary>
+/// Represents single Level Of Detail for the skinned model. Contains a collection of the meshes.
+/// </summary>
+API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModelLOD : public ModelLODBase
+{
+    DECLARE_SCRIPTING_TYPE_WITH_CONSTRUCTOR_IMPL(SkinnedModelLOD, ModelLODBase);
+    friend SkinnedModel;
+private:
+    SkinnedModel* _model = nullptr;
+
+public:
+    /// <summary>
+    /// The meshes array.
+    /// </summary>
+    API_FIELD(ReadOnly) Array<SkinnedMesh> Meshes;
+
+public:
+    /// <summary>
+    /// Determines if there is an intersection between the Model and a Ray in given world using given instance
+    /// </summary>
+    /// <param name="ray">The ray to test</param>
+    /// <param name="world">World to test</param>
+    /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
+    /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
+    /// <param name="mesh">Mesh, or null</param>
+    /// <returns>True whether the two objects intersected</returns>
+    bool Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, SkinnedMesh** mesh);
+
+    /// <summary>
+    /// Determines if there is an intersection between the Model and a Ray in given world using given instance
+    /// </summary>
+    /// <param name="ray">The ray to test</param>
+    /// <param name="transform">Instance transformation</param>
+    /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
+    /// <param name="normal">When the method completes, contains the intersection surface normal vector (if any valid).</param>
+    /// <param name="mesh">Mesh, or null</param>
+    /// <returns>True whether the two objects intersected</returns>
+    bool Intersects(const Ray& ray, const Transform& transform, Real& distance, Vector3& normal, SkinnedMesh** mesh);
+
+    /// <summary>
+    /// Draws the meshes. Binds vertex and index buffers and invokes the draw calls.
+    /// </summary>
+    /// <param name="context">The GPU context to draw with.</param>
+    FORCE_INLINE void Render(GPUContext* context)
+    {
+        for (int32 i = 0; i < Meshes.Count(); i++)
+            Meshes.Get()[i].Render(context);
+    }
+
+    /// <summary>
+    /// Draws all the meshes from the model LOD.
+    /// </summary>
+    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="info">The packed drawing info data.</param>
+    /// <param name="lodDitherFactor">The LOD transition dither factor.</param>
+    FORCE_INLINE void Draw(const RenderContext& renderContext, const SkinnedMesh::DrawInfo& info, float lodDitherFactor) const
+    {
+        for (int32 i = 0; i < Meshes.Count(); i++)
+            Meshes.Get()[i].Draw(renderContext, info, lodDitherFactor);
+    }
+
+    /// <summary>
+    /// Draws all the meshes from the model LOD.
+    /// </summary>
+    /// <param name="renderContextBatch">The rendering context batch.</param>
+    /// <param name="info">The packed drawing info data.</param>
+    /// <param name="lodDitherFactor">The LOD transition dither factor.</param>
+    FORCE_INLINE void Draw(const RenderContextBatch& renderContextBatch, const SkinnedMesh::DrawInfo& info, float lodDitherFactor) const
+    {
+        for (int32 i = 0; i < Meshes.Count(); i++)
+            Meshes.Get()[i].Draw(renderContextBatch, info, lodDitherFactor);
+    }
+
+public:
+    // [ModelLODBase]
+    int32 GetMeshesCount() const override;
+    const MeshBase* GetMesh(int32 index) const override;
+    MeshBase* GetMesh(int32 index) override;
+    void GetMeshes(Array<MeshBase*>& meshes) override;
+    void GetMeshes(Array<const MeshBase*>& meshes) const override;
+};
 
 /// <summary>
 /// Skinned model asset that contains model object made of meshes that can be rendered on the GPU using skeleton bones skinning.
 /// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API SkinnedModel : public ModelBase
 {
-    DECLARE_BINARY_ASSET_HEADER(SkinnedModel, 5);
+    DECLARE_BINARY_ASSET_HEADER(SkinnedModel, 30);
     friend SkinnedMesh;
-    friend StreamSkinnedModelLODTask;
 public:
     // Skeleton mapping descriptor.
     struct FLAXENGINE_API SkeletonMapping
@@ -37,9 +115,6 @@ private:
         Span<int32> NodesMapping;
     };
 
-    bool _initialized = false;
-    int32 _loadedLODs = 0;
-    StreamSkinnedModelLODTask* _streamingTask = nullptr;
     Dictionary<Asset*, SkeletonMappingData> _skeletonMappingCache;
 
 public:
@@ -61,51 +136,9 @@ public:
 
 public:
     /// <summary>
-    /// Gets a value indicating whether this instance is initialized. 
-    /// </summary>
-    FORCE_INLINE bool IsInitialized() const
-    {
-        return _initialized;
-    }
-
-    /// <summary>
-    /// Gets the amount of loaded model LODs.
-    /// </summary>
-    API_PROPERTY() FORCE_INLINE int32 GetLoadedLODs() const
-    {
-        return _loadedLODs;
-    }
-
-    /// <summary>
-    /// Clamps the index of the LOD to be valid for rendering (only loaded LODs).
-    /// </summary>
-    /// <param name="index">The index.</param>
-    /// <returns>The resident LOD index.</returns>
-    FORCE_INLINE int32 ClampLODIndex(int32 index) const
-    {
-        return Math::Clamp(index, HighestResidentLODIndex(), LODs.Count() - 1);
-    }
-
-    /// <summary>
-    /// Gets index of the highest resident LOD (may be equal to LODs.Count if no LOD has been uploaded). Note: LOD=0 is the highest (top quality)
-    /// </summary>
-    FORCE_INLINE int32 HighestResidentLODIndex() const
-    {
-        return LODs.Count() - _loadedLODs;
-    }
-
-    /// <summary>
     /// Determines whether any LOD has been initialized.
     /// </summary>
     bool HasAnyLODInitialized() const;
-
-    /// <summary>
-    /// Determines whether this model can be rendered.
-    /// </summary>
-    FORCE_INLINE bool CanBeRendered() const
-    {
-        return _loadedLODs > 0;
-    }
 
     /// <summary>
     /// Gets the skeleton nodes hierarchy.
@@ -160,25 +193,12 @@ public:
 
 public:
     /// <summary>
-    /// Requests the LOD data asynchronously (creates task that will gather chunk data or null if already here).
-    /// </summary>
-    /// <param name="lodIndex">Index of the LOD.</param>
-    /// <returns>Task that will gather chunk data or null if already here.</returns>
-    ContentLoadTask* RequestLODDataAsync(int32 lodIndex);
-
-    /// <summary>
-    /// Gets the model LOD data (links bytes).
-    /// </summary>
-    /// <param name="lodIndex">Index of the LOD.</param>
-    /// <param name="data">The data (may be missing if failed to get it).</param>
-    void GetLODData(int32 lodIndex, BytesContainer& data) const;
-
-    /// <summary>
     /// Gets the skeleton mapping for a given asset (animation or other skinned model). Uses identity mapping or manually created retargeting setup.
     /// </summary>
     /// <param name="source">The source asset (animation or other skinned model) to get mapping to its skeleton.</param>
+    /// <param name="autoRetarget">Enables automatic skeleton retargeting based on nodes names. Can be disabled to query existing skeleton mapping or return null if not defined.</param>
     /// <returns>The skeleton mapping for the source asset into this skeleton.</returns>
-    SkeletonMapping GetSkeletonMapping(Asset* source);
+    SkeletonMapping GetSkeletonMapping(Asset* source, bool autoRetarget = true);
 
     /// <summary>
     /// Determines if there is an intersection between the SkinnedModel and a Ray in given world using given instance.
@@ -266,17 +286,6 @@ public:
     /// <returns>True if failed, otherwise false.</returns>
     API_FUNCTION() bool SetupSkeleton(const Array<SkeletonNode>& nodes, const Array<SkeletonBone>& bones, bool autoCalculateOffsetMatrix);
 
-#if USE_EDITOR
-    /// <summary>
-    /// Saves this asset to the file. Supported only in Editor.
-    /// </summary>
-    /// <remarks>If you use saving with the GPU mesh data then the call has to be provided from the thread other than the main game thread.</remarks>
-    /// <param name="withMeshDataFromGpu">True if save also GPU mesh buffers, otherwise will keep data in storage unmodified. Valid only if saving the same asset to the same location and it's loaded.</param>
-    /// <param name="path">The custom asset path to use for the saving. Use empty value to save this asset to its own storage location. Can be used to duplicate asset. Must be specified when saving virtual asset.</param>
-    /// <returns>True if cannot save data, otherwise false.</returns>
-    API_FUNCTION() bool Save(bool withMeshDataFromGpu = false, const StringView& path = StringView::Empty);
-#endif
-
 private:
     /// <summary>
     /// Initializes this skinned model to an empty collection of meshes. Ensure to init SkeletonData manually after the call.
@@ -284,6 +293,17 @@ private:
     /// <param name="meshesCountPerLod">The meshes count per lod array (amount of meshes per LOD).</param>
     /// <returns>True if failed, otherwise false.</returns>
     bool Init(const Span<int32>& meshesCountPerLod);
+
+    // [ModelBase]
+    bool LoadMesh(MemoryReadStream& stream, byte meshVersion, MeshBase* mesh, MeshData* dataIfReadOnly) override;
+    bool LoadHeader(ReadStream& stream, byte& headerVersion);
+#if USE_EDITOR
+    friend class ImportModel;
+    bool SaveHeader(WriteStream& stream) const override;
+    static bool SaveHeader(WriteStream& stream, const ModelData& modelData);
+    bool SaveMesh(WriteStream& stream, const MeshBase* mesh) const override;
+    static bool SaveMesh(WriteStream& stream, const ModelData& modelData, int32 lodIndex, int32 meshIndex);
+#endif
 
     void ClearSkeletonMapping();
     void OnSkeletonMappingSourceAssetUnloaded(Asset* obj);
@@ -319,26 +339,21 @@ public:
     uint64 GetMemoryUsage() const override;
     void SetupMaterialSlots(int32 slotsCount) override;
     int32 GetLODsCount() const override;
+    const ModelLODBase* GetLOD(int32 lodIndex) const override;
+    ModelLODBase* GetLOD(int32 lodIndex) override;
+    const MeshBase* GetMesh(int32 meshIndex, int32 lodIndex = 0) const override;
+    MeshBase* GetMesh(int32 meshIndex, int32 lodIndex = 0) override;
+    void GetMeshes(Array<const MeshBase*>& meshes, int32 lodIndex = 0) const override;
     void GetMeshes(Array<MeshBase*>& meshes, int32 lodIndex = 0) override;
     void InitAsVirtual() override;
-    void CancelStreaming() override;
-#if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override;
-#endif
 
     // [StreamableResource]
     int32 GetMaxResidency() const override;
-    int32 GetCurrentResidency() const override;
     int32 GetAllocatedResidency() const override;
-    bool CanBeUpdated() const override;
-    Task* UpdateAllocation(int32 residency) override;
-    Task* CreateStreamingTask(int32 residency) override;
-    void CancelStreamingTasks() override;
 
 protected:
     // [ModelBase]
     LoadResult load() override;
     void unload(bool isReloading) override;
-    bool init(AssetInitData& initData) override;
     AssetChunksFlag getChunksToPreload() const override;
 };

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -72,7 +72,6 @@ private:
     Vector3 _boundsExtent;
     Float3 _cachedScale;
     Array<TerrainPatch*, InlinedAllocation<64>> _patches;
-    Array<TerrainChunk*> _drawChunks;
     Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>> _physicalMaterials;
 
 public:
@@ -130,7 +129,7 @@ public:
     }
 
     /// <summary>
-    /// Gets the terrain LODs distribution parameter. Adjusts terrain chunks transitions distances. Use lower value to increase terrain quality or higher value to increase performance. Default value is 0.75.
+    /// Gets the terrain LODs distribution parameter. Adjusts terrain chunks transitions distances. Use lower value to increase terrain quality or higher value to increase performance.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(70), DefaultValue(0.6f), Limit(0, 5, 0.01f), EditorDisplay(\"Terrain\", \"LOD Distribution\")")
     FORCE_INLINE float GetLODDistribution() const
@@ -139,7 +138,7 @@ public:
     }
 
     /// <summary>
-    /// Sets the terrain LODs distribution parameter. Adjusts terrain chunks transitions distances. Use lower value to increase terrain quality or higher value to increase performance. Default value is 0.75.
+    /// Sets the terrain LODs distribution parameter. Adjusts terrain chunks transitions distances. Use lower value to increase terrain quality or higher value to increase performance.
     /// </summary>
     API_PROPERTY() void SetLODDistribution(float value);
 
@@ -188,7 +187,7 @@ public:
     /// <summary>
     /// Gets the list with physical materials used to define the terrain collider physical properties - each for terrain layer (layer index matches index in this array).
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(520), EditorDisplay(\"Collision\"), Collection(MinCount = 8, MaxCount = 8)")
+    API_PROPERTY(Attributes="EditorOrder(520), EditorDisplay(\"Collision\"), Collection(MinCount=8, MaxCount=8)")
     FORCE_INLINE const Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>>& GetPhysicalMaterials() const
     {
         return _physicalMaterials;
@@ -199,6 +198,27 @@ public:
     /// </summary>
     API_PROPERTY()
     void SetPhysicalMaterials(const Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>>& value);
+
+    /// <summary>
+    /// Gets the physical material used to define the terrain collider physical properties.
+    /// [Deprecated on 16.02.2024, expires on 16.02.2026]
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize")
+    DEPRECATED("Use PhysicalMaterials instead.") FORCE_INLINE JsonAssetReference<PhysicalMaterial>& GetPhysicalMaterial()
+    {
+        return _physicalMaterials[0];
+    }
+
+    /// <summary>
+    /// Sets the physical materials used to define the terrain collider physical properties.
+    /// [Deprecated on 16.02.2024, expires on 16.02.2026]
+    /// </summary>
+    DEPRECATED("Use PhysicalMaterials instead.") API_PROPERTY()
+    void SetPhysicalMaterial(const JsonAssetReference<PhysicalMaterial>& value)
+    {
+        for (auto& e : _physicalMaterials)
+            e = value;
+    }
 
     /// <summary>
     /// Gets the terrain Level Of Detail count.
@@ -424,9 +444,12 @@ private:
 #if TERRAIN_USE_PHYSICS_DEBUG
     void DrawPhysicsDebug(RenderView& view);
 #endif
+    bool DrawSetup(RenderContext& renderContext);
+    void DrawImpl(RenderContext& renderContext, HashSet<TerrainChunk*, class RendererAllocation>& drawnChunks);
 
 public:
     // [PhysicsColliderActor]
+    void Draw(RenderContextBatch& renderContextBatch) override;
     void Draw(RenderContext& renderContext) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;

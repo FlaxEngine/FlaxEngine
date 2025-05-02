@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "./Flax/Common.hlsl"
 #include "./Flax/GammaCorrectionCommon.hlsl"
@@ -193,6 +193,57 @@ float3 TonemapACES(float3 linearColor)
 
 #endif
 
+#ifdef TONE_MAPPING_MODE_AGX
+
+float3 agxAscCdl(float3 color, float3 slope, float3 offset, float3 power, float sat)
+{
+    const float3 lw = float3(0.2126, 0.7152, 0.0722);
+    float luma = dot(color, lw);
+    float3 c = pow(color * slope + offset, power);
+    return luma + sat * (c - luma);
+}
+
+float3 TonemapAGX(float3 linearColor)
+{
+    static const float3x3 AgXInsetMatrix = {
+        0.8566, 0.1373, 0.1119,
+        0.0951, 0.7612, 0.0768,
+        0.0483, 0.1014, 0.8113
+    };
+    static const float3x3 AgXOutsetMatrix = {
+        1.1271, -0.1413, -0.1413,
+        -0.1106, 1.1578, -0.1106,
+        -0.0165, -0.0165, 1.2519
+    };
+    static const float AgxMinEv = -12.47393;
+    static const float AgxMaxEv = 4.026069;
+
+    float3 color = linearColor;
+    color = mul(color, AgXInsetMatrix);
+    color = max(color, 1e-10);
+    color = clamp(log2(color), AgxMinEv, AgxMaxEv);
+    color = (color - AgxMinEv) / (AgxMaxEv - AgxMinEv);
+    color = saturate(color);
+
+    float3 x2 = color * color;
+    float3 x4 = x2 * x2;    
+    color = + 15.5      * x4 * x2
+            - 40.14     * x4 * color
+            + 31.96     * x4
+            - 6.868     * x2 * color
+            + 0.4298    * x2
+            + 0.1191    * color
+            - 0.00232;
+
+    // color = agxAscCdl(color, float3(1.0, 1.0, 1.0), float3(0.0, 0.0, 0.0), float3(1.35, 1.35, 1.35), 1.4);
+    color = mul(color, AgXOutsetMatrix);
+    color = pow(max(float3(0.0, 0.0, 0.0), color), float3(2.2, 2.2, 2.2));
+    color = saturate(color);
+    return color;
+}
+
+#endif
+
 // Perfoms the tonemapping on the input linear color
 float3 Tonemap(float3 linearColor)
 {
@@ -202,6 +253,8 @@ float3 Tonemap(float3 linearColor)
 	return TonemapNeutral(linearColor);
 #elif defined(TONE_MAPPING_MODE_ACES)
 	return TonemapACES(linearColor);
+#elif defined(TONE_MAPPING_MODE_AGX)
+    return TonemapAGX(linearColor);
 #else
 	return float3(0, 0, 0);
 #endif
@@ -292,6 +345,7 @@ META_PS(true, FEATURE_LEVEL_ES2)
 META_PERMUTATION_1(TONE_MAPPING_MODE_NONE=1)
 META_PERMUTATION_1(TONE_MAPPING_MODE_NEUTRAL=1)
 META_PERMUTATION_1(TONE_MAPPING_MODE_ACES=1)
+META_PERMUTATION_1(TONE_MAPPING_MODE_AGX=1)
 float4 PS_Lut2D(Quad_VS2PS input) : SV_Target
 {
 	return CombineLUTs(input.TexCoord, 0);
@@ -301,6 +355,7 @@ META_PS(true, FEATURE_LEVEL_ES2)
 META_PERMUTATION_1(TONE_MAPPING_MODE_NONE=1)
 META_PERMUTATION_1(TONE_MAPPING_MODE_NEUTRAL=1)
 META_PERMUTATION_1(TONE_MAPPING_MODE_ACES=1)
+META_PERMUTATION_1(TONE_MAPPING_MODE_AGX=1)
 float4 PS_Lut3D(Quad_GS2PS input) : SV_Target
 {
 	return CombineLUTs(input.Vertex.TexCoord, input.LayerIndex);

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 
@@ -134,6 +134,15 @@ namespace FlaxEngine.GUI
             }
 
             return false;
+        }
+
+        /// <inheritdoc />
+        public override void OnSubmit()
+        {
+            base.OnSubmit();
+
+            // Execute default user interaction via mouse click
+            Clicked?.Invoke(this, MouseButton.Left);
         }
     }
 }

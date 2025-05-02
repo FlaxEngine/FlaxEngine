@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+# Copyright (c) Wojciech Figat. All rights reserved.
 
 set -e
 
@@ -9,4 +9,4 @@ echo Building and packaging Flax Editor...
 cd "`dirname "$0"`"
 
 # Run Flax.Build (also pass the arguments)
-bash ./Development/Scripts/Linux/CallBuildTool.sh --deploy --deployEditor --dotnet=8 --verbose --log --logFile="Cache/Intermediate/PackageLog.txt" "$@"
+bash ./Development/Scripts/Linux/CallBuildTool.sh --deploy --deployEditor --verbose --log --logFile="Cache/Intermediate/PackageLog.txt" "$@"

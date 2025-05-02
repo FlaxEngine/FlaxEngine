@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -8,7 +8,7 @@
 
 // @formatter:off
 
-VkFormat RenderToolsVulkan::PixelFormatToVkFormat[108] =
+VkFormat RenderToolsVulkan::PixelFormatToVkFormat[110] =
 {
     VK_FORMAT_UNDEFINED,
     VK_FORMAT_R32G32B32A32_SFLOAT,
@@ -118,28 +118,8 @@ VkFormat RenderToolsVulkan::PixelFormatToVkFormat[108] =
     VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
     VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
     VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
-};
-
-VkBlendFactor RenderToolsVulkan::BlendToVkBlendFactor[20] =
-{
-    VK_BLEND_FACTOR_MAX_ENUM,
-    VK_BLEND_FACTOR_ZERO, // Zero
-    VK_BLEND_FACTOR_ONE, // One
-    VK_BLEND_FACTOR_SRC_COLOR, // SrcColor
-    VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR, // InvSrcColor
-    VK_BLEND_FACTOR_SRC_ALPHA, // SrcAlpha
-    VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // InvSrcAlpha
-    VK_BLEND_FACTOR_DST_ALPHA, // DestAlpha
-    VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA, // InvDestAlpha
-    VK_BLEND_FACTOR_DST_COLOR, // DestColor,
-    VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR, // InvDestColor
-    VK_BLEND_FACTOR_SRC_ALPHA_SATURATE, // SrcAlphaSat
-    VK_BLEND_FACTOR_CONSTANT_ALPHA, // BlendFactor
-    VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA, // BlendInvFactor
-    VK_BLEND_FACTOR_SRC1_COLOR, // Src1Color
-    VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR, // InvSrc1Color
-    VK_BLEND_FACTOR_SRC1_ALPHA, // Src1Alpha
-    VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA, // InvSrc1Alpha
+    VK_FORMAT_G8B8G8R8_422_UNORM, // YUY2
+    VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, // NV12
 };
 
 VkBlendOp RenderToolsVulkan::OperationToVkBlendOp[6] =
@@ -200,7 +180,7 @@ void RenderToolsVulkan::SetObjectName(VkDevice device, uint64 objectHandle, VkOb
 
 String RenderToolsVulkan::GetVkErrorString(VkResult result)
 {
-    StringBuilder sb(256);
+    StringBuilder sb(64);
 
     // Switch error code
     switch (result)
@@ -248,33 +228,30 @@ String RenderToolsVulkan::GetVkErrorString(VkResult result)
     return sb.ToString();
 }
 
-void RenderToolsVulkan::ValidateVkResult(VkResult result, const char* file, uint32 line)
+void RenderToolsVulkan::LogVkResult(VkResult result, const char* file, uint32 line, bool fatal)
 {
-    // Ensure result if invalid
     ASSERT(result != VK_SUCCESS);
 
-    // Get error string
-    const String& errorString = GetVkErrorString(result);
+    // Process error and format message
+    StringBuilder sb;
+    sb.Append(TEXT("Vulkan error: "));
+    sb.Append(GetVkErrorString(result));
+    if (file)
+        sb.Append(TEXT(" at ")).Append(file).Append(':').Append(line);
+    const StringView msg(sb.ToStringView());
 
-    // Send error
-    LOG(Fatal, "Vulkan error: {0} at {1}:{2}", errorString, String(file), line);
-}
-
-void RenderToolsVulkan::LogVkResult(VkResult result, const char* file, uint32 line)
-{
-    // Ensure result if invalid
-    ASSERT(result != VK_SUCCESS);
-
-    // Get error string
-    const String& errorString = GetVkErrorString(result);
-
-    // Send error
-    LOG(Error, "Vulkan error: {0} at {1}:{2}", errorString, String(file), line);
-}
-
-void RenderToolsVulkan::LogVkResult(VkResult result)
-{
-    LogVkResult(result, "", 0);
+    // Handle error
+    FatalErrorType errorType = FatalErrorType::None;
+    if (result == VK_ERROR_OUT_OF_HOST_MEMORY || result == VK_ERROR_OUT_OF_DEVICE_MEMORY || result == VK_ERROR_OUT_OF_POOL_MEMORY)
+        errorType = FatalErrorType::GPUOutOfMemory;
+    else if (result == VK_TIMEOUT)
+        errorType = FatalErrorType::GPUHang;
+    else if (result == VK_ERROR_DEVICE_LOST || result == VK_ERROR_SURFACE_LOST_KHR || result == VK_ERROR_MEMORY_MAP_FAILED)
+        errorType = FatalErrorType::GPUCrash;
+    if (errorType != FatalErrorType::None)
+        Platform::Fatal(msg, nullptr, errorType);
+    else
+        Log::Logger::Write(fatal ? LogType::Fatal : LogType::Error, msg);
 }
 
 bool RenderToolsVulkan::HasExtension(const Array<const char*>& extensions, const char* name)

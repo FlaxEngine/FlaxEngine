@@ -1,7 +1,10 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #ifndef __MATH__
 #define __MATH__
+
+#define RadiansToDegrees (180.0f / PI)
+#define DegreesToRadians (PI / 180.0f)
 
 uint NextPow2(uint value)
 {

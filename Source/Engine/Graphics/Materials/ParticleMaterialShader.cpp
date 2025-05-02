@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ParticleMaterialShader.h"
 #include "MaterialShaderFeatures.h"
 #include "MaterialParams.h"
+#include "Engine/Core/Math/Matrix3x4.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Graphics/RenderView.h"
@@ -15,7 +16,7 @@
 #include "Engine/Particles/Graph/CPU/ParticleEmitterGraph.CPU.h"
 
 PACK_STRUCT(struct ParticleMaterialShaderData {
-    Matrix WorldMatrix;
+    Matrix3x4 WorldMatrix;
     uint32 SortedIndicesOffset;
     float PerInstanceRandom;
     int32 ParticleStride;
@@ -34,7 +35,7 @@ PACK_STRUCT(struct ParticleMaterialShaderData {
     int32 RibbonTwistOffset;
     int32 RibbonFacingVectorOffset;
     uint32 RibbonSegmentCount;
-    Matrix WorldMatrixInverseTransposed;
+    Matrix3x4 WorldMatrixInverseTransposed;
     });
 
 DrawPass ParticleMaterialShader::GetDrawModes() const
@@ -47,12 +48,12 @@ void ParticleMaterialShader::Bind(BindParameters& params)
     // Prepare
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
     const uint32 sortedIndicesOffset = drawCall.Particle.Module->SortedIndicesOffset;
     Span<byte> cb(_cbData.Get(), _cbData.Count());
     ASSERT_LOW_LAYER(cb.Length() >= sizeof(ParticleMaterialShaderData));
     auto materialData = reinterpret_cast<ParticleMaterialShaderData*>(cb.Get());
-    cb = Span<byte>(cb.Get() + sizeof(ParticleMaterialShaderData), cb.Length() - sizeof(ParticleMaterialShaderData));
+    cb = cb.Slice(sizeof(ParticleMaterialShaderData));
     int32 srv = 2;
 
     // Setup features
@@ -84,7 +85,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
             {
                 const StringView name(param.GetName().Get() + 9, param.GetName().Length() - 9);
                 const int32 offset = drawCall.Particle.Particles->Layout->FindAttributeOffset(name);
-                ASSERT_LOW_LAYER(bindMeta.Constants.Get() && bindMeta.Constants.Length() >= (int32)param.GetBindOffset() + sizeof(int32));
+                ASSERT_LOW_LAYER(bindMeta.Constants.Get() && bindMeta.Constants.Length() >= (int32)(param.GetBindOffset() + sizeof(int32)));
                 *((int32*)(bindMeta.Constants.Get() + param.GetBindOffset())) = offset;
             }
         }
@@ -101,7 +102,7 @@ void ParticleMaterialShader::Bind(BindParameters& params)
         static StringView ParticleScaleOffset(TEXT("Scale"));
         static StringView ParticleModelFacingModeOffset(TEXT("ModelFacingMode"));
 
-        Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
+        materialData->WorldMatrix.SetMatrixTranspose(drawCall.World);
         materialData->SortedIndicesOffset = drawCall.Particle.Particles->GPU.SortedIndices && params.RenderContext.View.Pass != DrawPass::Depth ? sortedIndicesOffset : 0xFFFFFFFF;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
         materialData->ParticleStride = drawCall.Particle.Particles->Stride;
@@ -113,7 +114,9 @@ void ParticleMaterialShader::Bind(BindParameters& params)
         materialData->RotationOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleRotationOffset, ParticleAttribute::ValueTypes::Float3, -1);
         materialData->ScaleOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleScaleOffset, ParticleAttribute::ValueTypes::Float3, -1);
         materialData->ModelFacingModeOffset = drawCall.Particle.Particles->Layout->FindAttributeOffset(ParticleModelFacingModeOffset, ParticleAttribute::ValueTypes::Int, -1);
-        Matrix::Invert(drawCall.World, materialData->WorldMatrixInverseTransposed);
+        Matrix worldMatrixInverseTransposed;
+        Matrix::Invert(drawCall.World, worldMatrixInverseTransposed);
+        materialData->WorldMatrixInverseTransposed.SetMatrix(worldMatrixInverseTransposed);
     }
 
     // Select pipeline state based on current pass and render mode

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "FontAsset.h"
 #include "Font.h"
@@ -167,18 +167,8 @@ bool FontAsset::Init(const BytesContainer& fontFile)
 
 bool FontAsset::Save(const StringView& path)
 {
-    // Validate state
-    if (WaitForLoaded())
-    {
-        LOG(Error, "Asset loading failed. Cannot save it.");
+    if (OnCheckSave(path))
         return true;
-    }
-    if (IsVirtual() && path.IsEmpty())
-    {
-        LOG(Error, "To save virtual asset asset you need to specify the target asset path location.");
-        return true;
-    }
-
     ScopeLock lock(Locker);
 
     AssetInitData data;
@@ -228,13 +218,6 @@ bool FontAsset::init(AssetInitData& initData)
 {
     if (IsVirtual())
         return false;
-
-    // Validate
-    if (initData.SerializedVersion != SerializedVersion)
-    {
-        LOG(Error, "Invalid serialized font asset version.");
-        return true;
-    }
     if (initData.CustomData.Length() != sizeof(_options))
     {
         LOG(Error, "Missing font asset header.");

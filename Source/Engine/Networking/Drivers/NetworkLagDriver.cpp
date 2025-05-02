@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "NetworkLagDriver.h"
 #include "ENetDriver.h"
@@ -132,9 +132,10 @@ void NetworkLagDriver::SendMessage(const NetworkChannelType channelType, const N
 
     auto& msg = _messages.AddOne();
     msg.Lag = (double)Lag;
+    msg.ChannelType = channelType;
     msg.Type = 0;
-    msg.Message = message;
     msg.MessageData.Set(message.Buffer, message.Length);
+    msg.MessageLength = message.Length;
 }
 
 void NetworkLagDriver::SendMessage(NetworkChannelType channelType, const NetworkMessage& message, NetworkConnection target)
@@ -147,10 +148,11 @@ void NetworkLagDriver::SendMessage(NetworkChannelType channelType, const Network
 
     auto& msg = _messages.AddOne();
     msg.Lag = (double)Lag;
+    msg.ChannelType = channelType;
     msg.Type = 1;
-    msg.Message = message;
     msg.Target = target;
     msg.MessageData.Set(message.Buffer, message.Length);
+    msg.MessageLength = message.Length;
 }
 
 void NetworkLagDriver::SendMessage(const NetworkChannelType channelType, const NetworkMessage& message, const Array<NetworkConnection, HeapAllocation>& targets)
@@ -163,10 +165,11 @@ void NetworkLagDriver::SendMessage(const NetworkChannelType channelType, const N
 
     auto& msg = _messages.AddOne();
     msg.Lag = (double)Lag;
+    msg.ChannelType = channelType;
     msg.Type = 2;
-    msg.Message = message;
     msg.Targets = targets;
     msg.MessageData.Set(message.Buffer, message.Length);
+    msg.MessageLength = message.Length;
 }
 
 NetworkDriverStats NetworkLagDriver::GetStats()
@@ -197,19 +200,21 @@ void NetworkLagDriver::OnUpdate()
         if (msg.Lag > 0.0)
             continue;
 
-        // Fix message to point to the current buffer
-        msg.Message.Buffer = msg.MessageData.Get();
+        // Use this helper message as a container to send the stored data and length to the ENet driver
+        NetworkMessage message;
+        message.Buffer = msg.MessageData.Get();
+        message.Length = msg.MessageLength;
 
         switch (msg.Type)
         {
         case 0:
-            _driver->SendMessage(msg.ChannelType, msg.Message);
+            _driver->SendMessage(msg.ChannelType, message);
             break;
         case 1:
-            _driver->SendMessage(msg.ChannelType, msg.Message, msg.Target);
+            _driver->SendMessage(msg.ChannelType, message, msg.Target);
             break;
         case 2:
-            _driver->SendMessage(msg.ChannelType, msg.Message, msg.Targets);
+            _driver->SendMessage(msg.ChannelType, message, msg.Targets);
             break;
         }
         _messages.RemoveAt(i);

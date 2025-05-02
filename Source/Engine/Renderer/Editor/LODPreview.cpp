@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_EDITOR
 
@@ -7,7 +7,6 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Graphics/GPUDevice.h"
-#include "Engine/Graphics/RenderTask.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/GBufferPass.h"
@@ -35,7 +34,7 @@ bool LODPreviewMaterialShader::IsReady() const
 
 bool LODPreviewMaterialShader::CanUseInstancing(InstancingHandler& handler) const
 {
-    return _material->CanUseInstancing(handler);
+    return false;
 }
 
 DrawPass LODPreviewMaterialShader::GetDrawModes() const
@@ -47,7 +46,7 @@ void LODPreviewMaterialShader::Bind(BindParameters& params)
 {
     // Find the LOD that produced this draw call
     int32 lodIndex = 0;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
     const ModelLOD* drawCallModelLod;
     if (GBufferPass::IndexBufferToModelLOD.TryGet(drawCall.Geometry.IndexBuffer, drawCallModelLod))
     {

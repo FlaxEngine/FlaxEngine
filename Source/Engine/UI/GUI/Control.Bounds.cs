@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.ComponentModel;
@@ -50,7 +50,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the normalized position in the parent control that the upper left corner is anchored to (range 0-1).
         /// </summary>
-        [Serialize, HideInEditor]
+        [Serialize, HideInEditor, Limit(0, 1, 0.01f)]
         public Float2 AnchorMin
         {
             get => _anchorMin;
@@ -69,7 +69,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the normalized position in the parent control that the bottom right corner is anchored to (range 0-1).
         /// </summary>
-        [Serialize, HideInEditor]
+        [Serialize, HideInEditor, Limit(0, 1, 0.01f)]
         public Float2 AnchorMax
         {
             get => _anchorMax;
@@ -234,6 +234,11 @@ namespace FlaxEngine.GUI
                 if (_bounds.Size.Equals(ref value))
                     return;
                 var bounds = new Rectangle(_bounds.Location, value);
+                if (_pivotRelativeSizing)
+                {
+                    var delta = _bounds.Size - value;
+                    bounds.Location += delta * Pivot;
+                }
                 SetBounds(ref bounds);
             }
         }
@@ -415,6 +420,19 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Resizes the control based on where the pivot is rather than just the top-left.
+        /// </summary>
+        [NoAnimate]
+        public void Resize(ref Float2 value)
+        {
+            if (_bounds.Size.Equals(ref value))
+                return;
+            var bounds = new Rectangle(_bounds.Location, value);
+            bounds.Location += (_bounds.Size - value) * Pivot; // Pivot-relative resizing
+            SetBounds(ref bounds);
+        }
+
+        /// <summary>
         /// Updates the control cached bounds (based on anchors and offsets).
         /// </summary>
         [NoAnimate]
@@ -566,7 +584,7 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Sets the anchor preset for the control. Can be use to auto-place the control for a given preset or can preserve the current control bounds.
+        /// Sets the anchor preset for the control. Can be used to auto-place the control for a given preset or can preserve the current control bounds.
         /// </summary>
         /// <param name="anchorPreset">The anchor preset to set.</param>
         /// <param name="preserveBounds">True if preserve current control bounds, otherwise will align control position accordingly to the anchor location.</param>

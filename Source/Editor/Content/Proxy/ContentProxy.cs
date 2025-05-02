@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.GUI.ContextMenu;
@@ -37,6 +37,16 @@ namespace FlaxEditor.Content
         public virtual bool IsProxyFor<T>() where T : Asset
         {
             return false;
+        }
+
+        /// <summary>
+        /// Constructs the item for the file.
+        /// </summary>
+        /// <param name="path">The file path.</param>
+        /// <returns>Created item or null.</returns>
+        public virtual ContentItem ConstructItem(string path)
+        {
+            return null;
         }
 
         /// <summary>

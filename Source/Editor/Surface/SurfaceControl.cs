@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -131,6 +131,15 @@ namespace FlaxEditor.Surface
         /// </summary>
         public virtual void OnSurfaceLoaded(SurfaceNodeActions action)
         {
+            // Snap bounds (with ceil) when using grid snapping
+            if (Surface != null && Surface.GridSnappingEnabled)
+            {
+                var bounds = Bounds;
+                bounds.Location = Surface.SnapToGrid(bounds.Location, false);
+                bounds.Size = Surface.SnapToGrid(bounds.Size, true);
+                Bounds = bounds;
+            }
+
             UpdateRectangles();
         }
 

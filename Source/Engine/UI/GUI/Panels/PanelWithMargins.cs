@@ -1,4 +1,6 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
+
+using System.ComponentModel;
 
 namespace FlaxEngine.GUI
 {
@@ -27,6 +29,11 @@ namespace FlaxEngine.GUI
         /// The control offset.
         /// </summary>
         protected Float2 _offset;
+
+        /// <summary>
+        /// The child controls alignment within layout area.
+        /// </summary>
+        protected TextAlignment _alignment = TextAlignment.Near;
 
         /// <summary>
         /// Gets or sets the left margin.
@@ -133,7 +140,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the value indicating whenever the panel size will be based on a children dimensions.
         /// </summary>
-        [EditorOrder(30), Tooltip("If checked, the panel size will be based on a children dimensions.")]
+        [EditorOrder(30), DefaultValue(true), Tooltip("If checked, the panel size will be based on a children dimensions.")]
         public bool AutoSize
         {
             get => _autoSize;
@@ -148,6 +155,12 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
+        /// Gets or sets the value indicating whenever the panel can resize children controls (eg. auto-fit width/height).
+        /// </summary>
+        [EditorOrder(35), DefaultValue(true), Tooltip("If checked, the panel can resize children controls (eg. auto-fit width/height).")]
+        public bool ControlChildSize { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the panel area margin.
         /// </summary>
         [EditorOrder(40), Tooltip("The panel area margin.")]
@@ -159,6 +172,23 @@ namespace FlaxEngine.GUI
                 if (_margin != value)
                 {
                     _margin = value;
+                    PerformLayout();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the child controls alignment within layout area.
+        /// </summary>
+        [EditorOrder(50), VisibleIf(nameof(AutoSize), true)]
+        public TextAlignment Alignment
+        {
+            get => _alignment;
+            set
+            {
+                if (_alignment != value)
+                {
+                    _alignment = value;
                     PerformLayout();
                 }
             }

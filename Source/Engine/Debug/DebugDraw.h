@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -6,11 +6,18 @@
 
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Core/Math/Color.h"
+#include "Engine/Core/Math/Color32.h"
+#include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Types/Span.h"
 
+struct RenderView;
+class Collider;
+class Light;
 struct RenderContext;
 class GPUTextureView;
 class GPUContext;
+class GPUBuffer;
+class GPUVertexLayout;
 class RenderTask;
 class SceneRenderTask;
 class Actor;
@@ -23,9 +30,19 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 {
     DECLARE_SCRIPTING_TYPE_NO_SPAWN(DebugDraw);
 
+    /// <summary>
+    /// Vertex data for debug shapes.
+    /// </summary>
+    PACK_STRUCT(struct Vertex {
+        Float3 Position;
+        Color32 Color;
+
+        static GPUVertexLayout* GetLayout();
+        });
+
 #if USE_EDITOR
     /// <summary>
-    /// Allocates the context for Debug Drawing. Can be use to redirect debug shapes collecting to a separate container (instead of global state).
+    /// Allocates the context for Debug Drawing. Can be used to redirect debug shapes collecting to a separate container (instead of global state).
     /// </summary>
     /// <returns>The context object. Release it wil FreeContext. Returns null if failed.</returns>
     API_FUNCTION() static void* AllocateContext();
@@ -48,7 +65,17 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// </summary>
     /// <param name="context">The context or null.</param>
     API_FUNCTION() static void SetContext(void* context);
+
+    /// <summary>
+    /// Checks if can clear all debug shapes displayed on screen. Can be used to disable this functionality when not needed for the user.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    /// <returns>True fi context can be cleared (has any shapes), otherwise false.</returns>
+    API_FUNCTION() static bool CanClear(void* context = nullptr);
 #endif
+
+    // Gets the last view position when rendering the current context. Can be sued for custom culling or LODing when drawing more complex shapes.
+    static Vector3 GetViewPos();
 
     /// <summary>
     /// Draws the collected debug shapes to the output.
@@ -66,6 +93,28 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="selectedActorsCount">The size of the list of actors.</param>
     /// <param name="drawScenes">True if draw all debug shapes from scenes too or false if draw just from specified actor list.</param>
     API_FUNCTION() static void DrawActors(Actor** selectedActors, int32 selectedActorsCount, bool drawScenes);
+
+    /// <summary>
+    /// Draws the debug shapes for the given actor and the actor's children
+    /// </summary>
+    /// <param name="actor">The actor to start drawing at.</param>
+    API_FUNCTION() static void DrawActorsTree(Actor* actor);
+
+#if USE_EDITOR
+    /// <summary>
+    /// Draws the physics debug shapes for the given collider. Editor Only
+    /// </summary>
+    /// <param name="collider">The collider to draw.</param>
+    /// <param name="view">The render view to draw in.</param>
+    API_FUNCTION() static void DrawColliderDebugPhysics(Collider* collider, RenderView& view);
+
+    /// <summary>
+    /// Draws the light debug shapes for the given light. Editor Only
+    /// </summary>
+    /// <param name="light">The light debug to draw.</param>
+    /// <param name="view">The render view to draw in.</param>
+    API_FUNCTION() static void DrawLightDebug(Light* light, RenderView& view);
+#endif
 
     /// <summary>
     /// Draws the lines axis from direction.
@@ -96,7 +145,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-    API_FUNCTION() DEPRECATED static void DrawRay(const Vector3& origin, const Vector3& direction, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
+    API_FUNCTION() DEPRECATED("Use DrawRay with length parameter instead") static void DrawRay(const Vector3& origin, const Vector3& direction, const Color& color, float duration, bool depthTest);
 
     /// <summary>
     /// Draws the line in a direction.
@@ -149,6 +198,15 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
     API_FUNCTION() static void DrawLines(const Span<Float3>& lines, const Matrix& transform, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the lines using the provided vertex buffer that contains pairs of Vertex elements. Line positions are located one after another (e.g. l0.start, l0.end, l1.start, l1.end,...).
+    /// </summary>
+    /// <param name="lines">The GPU buffer with vertices for lines (must have multiple of 2 elements).</param>
+    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawLines(GPUBuffer* lines, const Matrix& transform, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the lines. Line positions are located one after another (e.g. l0.start, l0.end, l1.start, l1.end,...).
@@ -508,6 +566,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 
     /// <summary>
     /// Draws the tube.
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="position">The center position.</param>
     /// <param name="orientation">The orientation.</param>
@@ -516,10 +575,23 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-    API_FUNCTION() static void DrawTube(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
+    API_FUNCTION() DEPRECATED("Depricated v1.10, use DrawCapsule instead.") static void DrawTube(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws a capsule.
+    /// </summary>
+    /// <param name="position">The center position.</param>
+    /// <param name="orientation">The orientation.</param>
+    /// <param name="radius">The radius.</param>
+    /// <param name="length">The length.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawCapsule(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the wireframe tube.
+    /// [Deprecated in v1.10]
     /// </summary>
     /// <param name="position">The center position.</param>
     /// <param name="orientation">The orientation.</param>
@@ -528,7 +600,19 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
-    API_FUNCTION() static void DrawWireTube(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
+    API_FUNCTION() DEPRECATED("Depricated v1.10, use DrawWireCapsule instead.") static void DrawWireTube(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the wireframe capsule.
+    /// </summary>
+    /// <param name="position">The center position.</param>
+    /// <param name="orientation">The orientation.</param>
+    /// <param name="radius">The radius.</param>
+    /// <param name="length">The length.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawWireCapsule(const Vector3& position, const Quaternion& orientation, float radius, float length, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the cylinder.
@@ -664,9 +748,15 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// <param name="size">The font size.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     API_FUNCTION() static void DrawText(const StringView& text, const Transform& transform, const Color& color = Color::White, int32 size = 32, float duration = 0.0f);
+
+    /// <summary>
+    /// Clears all debug shapes displayed on screen.
+    /// </summary>
+    /// <param name="context">The context.</param>
+    API_FUNCTION() static void Clear(void* context = nullptr);
 };
 
-#define DEBUG_DRAW_AXIS_FROM_DIRECTION(origin, direction, size, duration, depthTest)                 DebugDraw::DrawAxisFromDirection(origin, direction, size, duration, depthTest);
+#define DEBUG_DRAW_AXIS_FROM_DIRECTION(origin, direction, size, duration, depthTest)                        DebugDraw::DrawAxisFromDirection(origin, direction, size, duration, depthTest);
 #define DEBUG_DRAW_DIRECTION(origin, direction, color, duration, depthTest)                                 DebugDraw::DrawDirection(origin, direction, color, duration, depthTest);
 #define DEBUG_DRAW_RAY(origin, direction, color, length, duration, depthTest)                               DebugDraw::DrawRay(origin, direction, color, length, duration, depthTest);
 #define DEBUG_DRAW_RAY(ray, color, length, duration, depthTest)                                             DebugDraw::DrawRay(ray, color, length, duration, depthTest);
@@ -679,7 +769,9 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 #define DEBUG_DRAW_TRIANGLES_EX(vertices, indices, color, duration, depthTest)                              DebugDraw::DrawTriangles(vertices, indices, color, duration, depthTest)
 #define DEBUG_DRAW_TRIANGLES_EX2(vertices, indices, transform, color, duration, depthTest)                  DebugDraw::DrawTriangles(vertices, indices, transform, color, duration, depthTest)
 #define DEBUG_DRAW_SPHERE(sphere, color, duration, depthTest)                                               DebugDraw::DrawSphere(sphere, color, duration, depthTest)
-#define DEBUG_DRAW_TUBE(position, orientation, radius, length, color, duration, depthTest)                  DebugDraw::DrawTube(position, orientation, radius, length, color, duration, depthTest)
+// [Deprecated v1.10. Use DEBUG_DRAW_CAPSULE]
+#define DEBUG_DRAW_TUBE(position, orientation, radius, length, color, duration, depthTest)                  DebugDraw::DrawCapsule(position, orientation, radius, length, color, duration, depthTest)
+#define DEBUG_DRAW_CAPSULE(position, orientation, radius, length, color, duration, depthTest)               DebugDraw::DrawCapsule(position, orientation, radius, length, color, duration, depthTest)
 #define DEBUG_DRAW_BOX(box, color, duration, depthTest)                                                     DebugDraw::DrawBox(box, color, duration, depthTest)
 #define DEBUG_DRAW_CYLINDER(position, orientation, radius, height, color, duration, depthTest)              DebugDraw::DrawCylinder(position, orientation, radius, height, color, duration, depthTest)
 #define DEBUG_DRAW_CONE(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest)        DebugDraw::DrawCone(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest)
@@ -690,12 +782,15 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 #define DEBUG_DRAW_WIRE_BOX(box, color, duration, depthTest)                                                DebugDraw::DrawWireBox(box, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_FRUSTUM(frustum, color, duration, depthTest)                                        DebugDraw::DrawWireFrustum(frustum, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_SPHERE(sphere, color, duration, depthTest)                                          DebugDraw::DrawWireSphere(sphere, color, duration, depthTest)
-#define DEBUG_DRAW_WIRE_TUBE(position, orientation, radius, length, color, duration, depthTest)             DebugDraw::DrawWireTube(position, orientation, radius, length, color, duration, depthTest)
+// [Deprecated v1.10. Use DEBUG_DRAW_WIRE_CAPSULE]
+#define DEBUG_DRAW_WIRE_TUBE(position, orientation, radius, length, color, duration, depthTest)             DebugDraw::DrawWireCapsule(position, orientation, radius, length, color, duration, depthTest)
+#define DEBUG_DRAW_WIRE_CAPSULE(position, orientation, radius, length, color, duration, depthTest)          DebugDraw::DrawWireCapsule(position, orientation, radius, length, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_CYLINDER(position, orientation, radius, height, color, duration, depthTest)         DebugDraw::DrawWireCylinder(position, orientation, radius, height, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_CONE(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest)   DebugDraw::DrawWireCone(position, orientation, radius, angleXY, angleXZ, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARC(position, orientation, radius, angle, color, duration, depthTest)               DebugDraw::DrawWireArc(position, orientation, radius, angle, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, capScale, color, duration, depthTest)           DebugDraw::DrawWireArrow(position, orientation, scale, capScale, color, duration, depthTest)
 #define DEBUG_DRAW_TEXT(text, position, color, size, duration)                                              DebugDraw::DrawText(text, position, color, size, duration)
+#define DEBUG_DRAW_CLEAR(context)                                                                           DebugDraw::Clear(context)
 
 #else
 
@@ -728,5 +823,6 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 #define DEBUG_DRAW_WIRE_ARC(position, orientation, radius, angle, color, duration, depthTest)
 #define DEBUG_DRAW_WIRE_ARROW(position, orientation, scale, capScale, color, duration, depthTest)
 #define DEBUG_DRAW_TEXT(text, position, color, size, duration)
+#define DEBUG_DRAW_CLEAR(context)
 
 #endif

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 namespace FlaxEngine.Utilities
 {
@@ -51,6 +51,12 @@ namespace FlaxEngine.Utilities
         /// <param name="nextState">The next state.</param>
         public virtual void OnExit(State nextState)
         {
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return GetType().Name;
         }
     }
 }

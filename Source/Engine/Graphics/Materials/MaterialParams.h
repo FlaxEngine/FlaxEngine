@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -197,23 +197,6 @@ private:
     AssetReference<Asset> _asAsset;
     ScriptingObjectReference<GPUTexture> _asGPUTexture;
     String _name;
-
-public:
-    MaterialParameter(const MaterialParameter& other)
-        : MaterialParameter()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    MaterialParameter& operator=(const MaterialParameter& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
-    }
 
 public:
     /// <summary>
@@ -417,13 +400,11 @@ public:
 
 public:
 #if USE_EDITOR
-
     /// <summary>
     /// Gets the asset references (see Asset.GetReferences for more info).
     /// </summary>
-    /// <param name="output">The output.</param>
-    void GetReferences(Array<Guid>& output) const;
-
+    /// <param name="assets">The output assets.</param>
+    void GetReferences(Array<Guid>& assets) const;
 #endif
 
     bool HasContentLoaded() const;

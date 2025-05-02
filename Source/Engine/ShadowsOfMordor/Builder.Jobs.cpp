@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Builder.h"
 #include "Engine/Core/Log.h"
@@ -23,7 +23,7 @@
 
 namespace ShadowsOfMordor
 {
-    PACK_STRUCT(struct ShaderData {
+    GPU_CB_STRUCT(ShaderData {
         Rectangle LightmapArea;
         Matrix WorldMatrix;
         Matrix ToTangentSpace;
@@ -344,6 +344,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
 #if COMPILE_WITH_PROFILER
         auto gpuProfilerEnabled = ProfilerGPU::Enabled;
         ProfilerGPU::Enabled = false;
+        ProfilerGPU::EventsEnabled = false;
 #endif
 
         // Render hemispheres
@@ -432,6 +433,7 @@ void ShadowsOfMordor::Builder::onJobRender(GPUContext* context)
         }
 #if COMPILE_WITH_PROFILER
         ProfilerGPU::Enabled = gpuProfilerEnabled;
+        ProfilerGPU::EventsEnabled = gpuProfilerEnabled;
 #endif
 
         // Report progress

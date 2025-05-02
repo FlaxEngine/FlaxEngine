@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace FlaxEngine.GUI
 {
     /// <summary>
-    /// GUI root control that is represented by a window or an canvas and can contain children but has no parent at all. It's a source of the input events.
+    /// GUI root control that is represented by a window or a canvas and can contain children but has no parent at all. It's a source of the input events.
     /// </summary>
     public abstract class RootControl : ContainerControl
     {

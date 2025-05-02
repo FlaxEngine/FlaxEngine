@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 
@@ -59,8 +59,8 @@ namespace FlaxEditor.Surface.Archetypes
         {
             Op1(1, "Bitwise NOT", "Negates the value using bitwise operation", new[] { "!", "~" }),
             Op2(2, "Bitwise AND", "Performs a bitwise conjunction on two values", new[] { "&" }),
-            Op2(3, "Bitwise OR", "", new[] { "|" }),
-            Op2(4, "Bitwise XOR", "", new[] { "^" }),
+            Op2(3, "Bitwise OR", "Performs a bitwise disjunction on two values", new[] { "|" }),
+            Op2(4, "Bitwise XOR", "Performs a bitwise exclusive disjunction on two values", new[] { "^" }),
         };
     }
 }

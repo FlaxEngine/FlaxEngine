@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -9,6 +9,7 @@ using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tree;
+using FlaxEditor.Modules;
 using FlaxEditor.Scripting;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
@@ -67,28 +68,33 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         // Use default prefab instance as a reference for the editor
                         Values.SetReferenceValue(prefabInstance);
 
-                        // Add some UI
+                        // Display prefab UI (when displaying object inside Prefab Window then display only nested prefabs)
+                        prefab.GetNestedObject(ref prefabObjectId, out var nestedPrefabId, out var nestedPrefabObjectId);
+                        var nestedPrefab = FlaxEngine.Content.Load<Prefab>(nestedPrefabId);
                         var panel = layout.CustomContainer<UniformGridPanel>();
                         panel.CustomControl.Height = 20.0f;
                         panel.CustomControl.SlotsVertically = 1;
-                        panel.CustomControl.SlotsHorizontally = 3;
-
-                        // Selecting actor prefab asset
-                        var selectPrefab = panel.Button("Select Prefab");
-                        selectPrefab.Button.Clicked += () =>
+                        if (Presenter == Editor.Instance.Windows.PropertiesWin.Presenter || nestedPrefab)
                         {
-                            Editor.Instance.Windows.ContentWin.ClearItemsSearch();
-                            Editor.Instance.Windows.ContentWin.Select(prefab);
-                        };
+                            var targetPrefab = nestedPrefab ?? prefab;
+                            panel.CustomControl.SlotsHorizontally = 3;
+                            
+                            // Selecting actor prefab asset
+                            var selectPrefab = panel.Button("Select Prefab");
+                            selectPrefab.Button.Clicked += () =>
+                            {
+                                Editor.Instance.Windows.ContentWin.ClearItemsSearch();
+                                Editor.Instance.Windows.ContentWin.Select(targetPrefab);
+                            };
 
-                        // Edit selected prefab asset
-                        var editPrefab = panel.Button("Edit Prefab");
-                        editPrefab.Button.Clicked += () =>
+                            // Edit selected prefab asset
+                            var editPrefab = panel.Button("Edit Prefab");
+                            editPrefab.Button.Clicked += () => Editor.Instance.Windows.ContentWin.Open(Editor.Instance.ContentDatabase.FindAsset(targetPrefab.ID));
+                        }
+                        else
                         {
-                            Editor.Instance.Windows.ContentWin.ClearItemsSearch();
-                            Editor.Instance.Windows.ContentWin.Select(prefab);
-                            Editor.Instance.Windows.ContentWin.Open(Editor.Instance.Windows.ContentWin.View.Selection[0]);
-                        };
+                            panel.CustomControl.SlotsHorizontally = 1;
+                        }
 
                         // Viewing changes applied to this actor
                         var viewChanges = panel.Button("View Changes");
@@ -199,7 +205,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (_linkedPrefabId != Guid.Empty)
             {
                 _linkedPrefabId = Guid.Empty;
-                Editor.Instance.Prefabs.PrefabApplied -= OnPrefabApplying;
+                Editor.Instance.Prefabs.PrefabApplying -= OnPrefabApplying;
                 Editor.Instance.Prefabs.PrefabApplied -= OnPrefabApplied;
             }
         }

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "CollectAssetsStep.h"
 #include "Engine/Content/Content.h"
@@ -10,47 +10,26 @@
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/Cache/AssetsCache.h"
 
-bool CollectAssetsStep::Process(CookingData& data, Asset* asset)
-{
-    // Skip virtual/temporary assets
-    if (asset->IsVirtual())
-        return false;
-
-    // Keep reference to the asset
-    AssetReference<Asset> ref(asset);
-
-    // Asset should have loaded data
-    if (asset->WaitForLoaded())
-        return false;
-
-    // Gather asset references
-    _references.Clear();
-    asset->Locker.Lock();
-    asset->GetReferences(_references);
-    asset->Locker.Unlock();
-    _assetsQueue.Add(_references);
-
-    return false;
-}
-
 bool CollectAssetsStep::Perform(CookingData& data)
 {
     LOG(Info, "Searching for assets to include in a build. Using {0} root assets.", data.RootAssets.Count());
     data.StepProgress(TEXT("Collecting assets"), 0);
 
     // Initialize assets queue
-    _assetsQueue.Clear();
-    _assetsQueue.EnsureCapacity(1024);
+    Array<Guid> assetsQueue;
+    assetsQueue.Clear();
+    assetsQueue.EnsureCapacity(1024);
     for (auto i = data.RootAssets.Begin(); i.IsNotEnd(); ++i)
-        _assetsQueue.Add(i->Item);
+        assetsQueue.Add(i->Item);
 
     // Iterate through the assets graph
     AssetInfo assetInfo;
-    while (_assetsQueue.HasItems())
+    Array<Guid> references;
+    Array<String> files;
+    while (assetsQueue.HasItems())
     {
         BUILD_STEP_CANCEL_CHECK;
-
-        const auto assetId = _assetsQueue.Dequeue();
+        const Guid assetId = assetsQueue.Dequeue();
 
         // Skip already processed or invalid assets
         if (!assetId.IsValid()
@@ -69,14 +48,31 @@ bool CollectAssetsStep::Perform(CookingData& data)
         }
 
         // Load asset
-        const auto asset = Content::LoadAsync<Asset>(assetId);
+        AssetReference<Asset> asset = Content::LoadAsync<Asset>(assetId);
         if (asset == nullptr)
             continue;
-
-        // Process that asset
         LOG_STR(Info, asset->GetPath());
         data.Assets.Add(assetId);
-        Process(data, asset);
+
+        // Skip virtual/temporary assets
+        if (asset->IsVirtual())
+            continue;
+
+        // Asset should have loaded data
+        if (asset->WaitForLoaded())
+            continue;
+
+        // Gather asset references
+        references.Clear();
+        asset->Locker.Lock();
+        asset->GetReferences(references, files);
+        asset->Locker.Unlock();
+        assetsQueue.Add(references);
+        for (String& file : files)
+        {
+            if (file.HasChars())
+                data.Files.Add(MoveTemp(file));
+        }
     }
 
     data.Stats.TotalAssets = data.Assets.Count();

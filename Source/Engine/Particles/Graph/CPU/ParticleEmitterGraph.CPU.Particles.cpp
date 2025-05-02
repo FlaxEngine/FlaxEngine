@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitterGraph.CPU.h"
 #include "Engine/Particles/ParticleEmitter.h"
@@ -16,6 +16,7 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupParameters(Box* box, Node* nod
     switch (node->TypeID)
     {
     // Get
+    case 1:
     case 2:
     {
         int32 paramIndex;

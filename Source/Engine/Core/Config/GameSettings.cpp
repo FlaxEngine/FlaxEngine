@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GameSettings.h"
 #include "Engine/Serialization/JsonTools.h"
@@ -42,6 +42,14 @@ public:
 };
 
 IMPLEMENT_ENGINE_SETTINGS_GETTER(BuildSettings, GameCooking);
+
+#include "Engine/Content/Deprecated.h"
+void GraphicsSettings::SetUeeHDRProbes(bool value)
+{
+    MARK_CONTENT_DEPRECATED();
+    UseHDRProbes = value;
+}
+
 IMPLEMENT_ENGINE_SETTINGS_GETTER(GraphicsSettings, Graphics);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(NetworkSettings, Network);
 IMPLEMENT_ENGINE_SETTINGS_GETTER(LayersAndTagsSettings, LayersAndTags);
@@ -260,6 +268,27 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     DESERIALIZE(iOSPlatform);
 }
 
+#if USE_EDITOR
+
+void LayersAndTagsSettings::Serialize(SerializeStream& stream, const void* otherObj)
+{
+    SERIALIZE_GET_OTHER_OBJ(LayersAndTagsSettings);
+
+    stream.JKEY("Tags");
+    stream.StartArray();
+    for (const String& e : Tags)
+        stream.String(e);
+    stream.EndArray();
+
+    stream.JKEY("Layers");
+    stream.StartArray();
+    for (const String& e : Layers)
+        stream.String(e);
+    stream.EndArray();
+}
+
+#endif
+
 void LayersAndTagsSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     const auto tags = stream.FindMember("Tags");
@@ -280,7 +309,7 @@ void LayersAndTagsSettings::Deserialize(DeserializeStream& stream, ISerializeMod
     if (layers != stream.MemberEnd() && layers->value.IsArray())
     {
         auto& layersArray = layers->value;
-        for (uint32 i = 0; i < layersArray.Size() && i < 32; i++)
+        for (uint32 i = 0; i < layersArray.Size() && i < ARRAY_COUNT(Layers); i++)
         {
             auto& v = layersArray[i];
             if (v.IsString())
@@ -288,7 +317,7 @@ void LayersAndTagsSettings::Deserialize(DeserializeStream& stream, ISerializeMod
             else
                 Layers[i].Clear();
         }
-        for (uint32 i = layersArray.Size(); i < 32; i++)
+        for (uint32 i = layersArray.Size(); i < ARRAY_COUNT(Layers); i++)
         {
             Layers[i].Clear();
         }

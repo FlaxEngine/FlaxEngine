@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ForwardMaterialShader.h"
 #include "MaterialShaderFeatures.h"
@@ -17,16 +17,6 @@
 #include "Engine/Renderer/Lightmaps.h"
 #endif
 
-PACK_STRUCT(struct ForwardMaterialShaderData {
-    Matrix WorldMatrix;
-    Matrix PrevWorldMatrix;
-    Float2 Dummy0;
-    float LODDitherFactor;
-    float PerInstanceRandom;
-    Float3 GeometrySize;
-    float WorldDeterminantSign;
-    });
-
 DrawPass ForwardMaterialShader::GetDrawModes() const
 {
     return _drawModes;
@@ -34,7 +24,7 @@ DrawPass ForwardMaterialShader::GetDrawModes() const
 
 bool ForwardMaterialShader::CanUseInstancing(InstancingHandler& handler) const
 {
-    handler = { SurfaceDrawCallHandler::GetHash, SurfaceDrawCallHandler::CanBatch, SurfaceDrawCallHandler::WriteDrawCall, };
+    handler = { SurfaceDrawCallHandler::GetHash, SurfaceDrawCallHandler::CanBatch, };
     return true;
 }
 
@@ -43,16 +33,17 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     // Prepare
     auto context = params.GPUContext;
     auto& view = params.RenderContext.View;
-    auto& drawCall = *params.FirstDrawCall;
+    auto& drawCall = *params.DrawCall;
     Span<byte> cb(_cbData.Get(), _cbData.Count());
-    ASSERT_LOW_LAYER(cb.Length() >= sizeof(ForwardMaterialShaderData));
-    auto materialData = reinterpret_cast<ForwardMaterialShaderData*>(cb.Get());
-    cb = Span<byte>(cb.Get() + sizeof(ForwardMaterialShaderData), cb.Length() - sizeof(ForwardMaterialShaderData));
-    int32 srv = 2;
+    int32 srv = 3;
 
     // Setup features
     if ((_info.FeaturesFlags & MaterialFeaturesFlags::GlobalIllumination) != MaterialFeaturesFlags::None)
+    {
         GlobalIlluminationFeature::Bind(params, cb, srv);
+        if ((_info.FeaturesFlags & MaterialFeaturesFlags::ScreenSpaceReflections) != MaterialFeaturesFlags::None)
+            SDFReflectionsFeature::Bind(params, cb, srv);
+    }
     ForwardShadingFeature::Bind(params, cb, srv);
 
     // Setup parameters
@@ -64,24 +55,15 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     bindMeta.CanSampleDepth = GPUDevice::Instance->Limits.HasReadOnlyDepth;
     bindMeta.CanSampleGBuffer = true;
     MaterialParams::Bind(params.ParamsLink, bindMeta);
+    context->BindSR(0, params.ObjectBuffer);
 
-    // Check if is using mesh skinning
+    // Check if using mesh skinning
     const bool useSkinning = drawCall.Surface.Skinning != nullptr;
     if (useSkinning)
     {
         // Bind skinning buffer
         ASSERT(drawCall.Surface.Skinning->IsReady());
-        context->BindSR(0, drawCall.Surface.Skinning->BoneMatrices->View());
-    }
-
-    // Setup material constants
-    {
-        Matrix::Transpose(drawCall.World, materialData->WorldMatrix);
-        Matrix::Transpose(drawCall.Surface.PrevWorld, materialData->PrevWorldMatrix);
-        materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
-        materialData->LODDitherFactor = drawCall.Surface.LODDitherFactor;
-        materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
-        materialData->GeometrySize = drawCall.Surface.GeometrySize;
+        context->BindSR(1, drawCall.Surface.Skinning->BoneMatrices->View());
     }
 
     // Bind constants
@@ -106,8 +88,8 @@ void ForwardMaterialShader::Bind(BindParameters& params)
         else
             cullMode = CullMode::Normal;
     }
-    ASSERT_LOW_LAYER(!(useSkinning && params.DrawCallsCount > 1)); // No support for instancing skinned meshes
-    const auto cacheObj = params.DrawCallsCount == 1 ? &_cache : &_cacheInstanced;
+    ASSERT_LOW_LAYER(!(useSkinning && params.Instanced)); // No support for instancing skinned meshes
+    const auto cacheObj = params.Instanced ? &_cacheInstanced : &_cache;
     PipelineStateCache* psCache = cacheObj->GetPS(view.Pass, useSkinning);
     ASSERT(psCache);
     GPUPipelineState* state = psCache->GetPS(cullMode, wireframe);

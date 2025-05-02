@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -136,6 +136,12 @@ public:
     /// <param name="result">World matrix</param>
     void GetWorld(Matrix& result) const;
 
+    /// <summary>
+    /// Gets world matrix that describes transformation as a 4 by 4 matrix.
+    /// </summary>
+    /// <param name="result">World matrix</param>
+    void GetWorld(Double4x4& result) const;
+
 public:
     /// <summary>
     /// Adds translation to this transform.
@@ -155,7 +161,7 @@ public:
     /// Subtracts transformation from this transform.
     /// </summary>
     /// <param name="other">The other transformation.</param>
-    /// <returns>The different of two transformations.</returns>
+    /// <returns>The difference of two transformations.</returns>
     Transform Subtract(const Transform& other) const;
 
     /// <summary>
@@ -290,6 +296,20 @@ public:
         WorldToLocal(rotation, result);
         return result;
     }
+
+    /// <summary>
+    /// Combines the functions: <br/>
+    /// <see cref="SnapToGrid"/>,<br/>
+    /// <see cref="GetRotationFromNormal"/>.
+    /// </summary>
+    /// <param name="point">The position to snap.</param>
+    /// <param name="gridSize">The size of the grid.</param>
+    /// <param name="normalOffset">The local grid offset to apply after snapping.</param>
+    /// <param name="normal">The normal vector.</param>
+    /// <param name="relativeTo">The relative transform.</param>
+    /// <param name="scale">The scale to apply to the transform.</param>
+    /// <returns>The rotated and snapped transform.</returns>
+    static Transform AlignRotationToNormalAndSnapToGrid(const Vector3& point, const Vector3& normal, const Vector3& normalOffset, const Transform& relativeTo, const Vector3& gridSize, const Float3& scale = Float3::One);
 
 public:
     FORCE_INLINE Transform operator*(const Transform& other) const

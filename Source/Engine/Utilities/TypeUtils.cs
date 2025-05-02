@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Text;
@@ -23,6 +23,33 @@ namespace FlaxEngine.Utilities
                 var sb = new StringBuilder();
                 sb.Append(type.Namespace);
                 sb.Append('.');
+                var parent = type.DeclaringType;
+                if (parent != null)
+                {
+                    // Find outer types in which this one is nested
+                    var count = 0;
+                    while (parent != null)
+                    {
+                        count++;
+                        parent = parent.DeclaringType;
+                    }
+                    var path = new Type[count];
+                    parent = type.DeclaringType;
+                    count = 0;
+                    while (parent != null)
+                    {
+                        path[count++] = parent;
+                        parent = parent.DeclaringType;
+                    }
+
+                    // Insert type nesting into typename path (from the back to front)
+                    for (int i = count - 1; i >= 0; i--)
+                    {
+                        parent = path[i];
+                        sb.Append(parent.Name);
+                        sb.Append('+');
+                    }
+                }
                 sb.Append(type.Name);
                 sb.Append('[');
                 var genericArgs = type.GetGenericArguments();

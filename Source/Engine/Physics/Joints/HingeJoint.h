@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -38,7 +38,7 @@ API_STRUCT() struct HingeJointDrive
     /// <summary>
     /// Target velocity of the joint.
     /// </summary>
-    API_FIELD(Attributes="Limit(0)") float Velocity = 0.0f;
+    API_FIELD() float Velocity = 0.0f;
 
     /// <summary>
     /// Maximum torque the drive is allowed to apply.
@@ -80,7 +80,7 @@ public:
     /// <summary>
     /// Gets the joint mode flags. Controls joint behaviour.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(100), DefaultValue(HingeJointFlag.Limit | HingeJointFlag.Drive)")
+    API_PROPERTY(Attributes="EditorOrder(100), EditorDisplay(\"Joint\"), DefaultValue(HingeJointFlag.Limit | HingeJointFlag.Drive)")
     FORCE_INLINE HingeJointFlag GetFlags() const
     {
         return _flags;

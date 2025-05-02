@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -28,6 +28,10 @@ public:
     String GetDescription() const override
     {
         return TEXT("Null");
+    }
+    Version GetDriverVersion() const override
+    {
+        return Version(0, 0);
     }
 };
 

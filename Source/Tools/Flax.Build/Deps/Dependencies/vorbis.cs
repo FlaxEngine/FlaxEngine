@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
 using System.IO;
@@ -26,7 +26,6 @@ namespace Flax.Deps.Dependencies
                     return new[]
                     {
                         TargetPlatform.Windows,
-                        TargetPlatform.UWP,
                         TargetPlatform.XboxOne,
                         TargetPlatform.PS4,
                         TargetPlatform.PS5,
@@ -69,10 +68,26 @@ namespace Flax.Deps.Dependencies
         private List<string> vcxprojContentsWindows;
         private string[] vcxprojPathsWindows;
 
-        private Binary[] binariesToCopyWindows =
+        private Binary[] vorbisBinariesToCopyWindows =
         {
             new Binary("libvorbis_static.lib", "libvorbis"),
             new Binary("libvorbisfile_static.lib", "libvorbisfile"),
+        };
+
+        private (string, string)[] vorbisBinariesToCopyWindowsCmake =
+        {
+            ("vorbis.lib", "libvorbis_static.lib"),
+            ("vorbisfile.lib", "libvorbisfile_static.lib"),
+        };
+
+        private Binary[] oggBinariesToCopyWindows =
+        {
+            new Binary("libogg_static.lib", "ogg"),
+        };
+
+        private (string, string)[] oggBinariesToCopyWindowsCmake =
+        {
+            ("ogg.lib", "libogg_static.lib"),
         };
 
         private void PatchWindowsTargetPlatformVersion(string windowsTargetPlatformVersion, string platformToolset)
@@ -92,28 +107,24 @@ namespace Flax.Deps.Dependencies
                 return;
 
             hasSourcesReady = true;
-
-            var packagePath = Path.Combine(root, "package.zip");
             configurationMsvc = "Release";
 
-            // Get the additional source (ogg dependency)
-            Downloader.DownloadFileFromUrlToPath("http://downloads.xiph.org/releases/ogg/libogg-1.3.3.zip", packagePath);
-            using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
-            {
-                archive.ExtractToDirectory(root);
-                Directory.Move(Path.Combine(root, archive.Entries.First().FullName), Path.Combine(root, "libogg"));
-            }
+            string oggRoot = Path.Combine(root, "libogg");
+            string vorbisRoot = Path.Combine(root, "libvorbis");
 
-            // Get the source
-            File.Delete(packagePath);
-            Downloader.DownloadFileFromUrlToPath("http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.6.zip", packagePath);
-            using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
-            {
-                archive.ExtractToDirectory(root);
-                rootMsvcLib = Path.Combine(root, archive.Entries.First().FullName);
-            }
+            SetupDirectory(oggRoot, false);
+            CloneGitRepo(oggRoot, "https://github.com/xiph/ogg.git");
+            GitResetLocalChanges(oggRoot); // Reset patches
+            GitCheckout(oggRoot, "master", "db5c7a49ce7ebda47b15b78471e78fb7f2483e22");
 
-            // Patch Windows projects
+            SetupDirectory(vorbisRoot, false);
+            CloneGitRepo(vorbisRoot, "https://github.com/xiph/vorbis.git");
+            GitResetLocalChanges(vorbisRoot); // Reset patches
+            GitCheckout(vorbisRoot, "master", "84c023699cdf023a32fa4ded32019f194afcdad0");
+
+            rootMsvcLib = vorbisRoot;
+
+            // Patch Windows projects which use MSBuild
             vcxprojPathsWindows = new[]
             {
                 Path.Combine(rootMsvcLib, "win32", "VS2010", "libvorbis", "libvorbis_static.vcxproj"),
@@ -127,6 +138,36 @@ namespace Flax.Deps.Dependencies
                 contents = contents.Replace("<DebugInformationFormat>ProgramDatabase</DebugInformationFormat>", "<DebugInformationFormat></DebugInformationFormat>");
                 vcxprojContentsWindows[i] = contents.Replace("<WholeProgramOptimization>true</WholeProgramOptimization>", "<WholeProgramOptimization>false</WholeProgramOptimization>");
             }
+
+            // TODO: FIXME for UWP/XBoxOne (use CMake for these too?)
+#if false
+            var packagePath = Path.Combine(root, "package.zip");
+            configurationMsvc = "Release";
+
+            // Get the additional source (ogg dependency)
+            if (!Directory.Exists(Path.Combine(root, "libogg")))
+            {
+                File.Delete(packagePath);
+                Downloader.DownloadFileFromUrlToPath("http://downloads.xiph.org/releases/ogg/libogg-1.3.3.zip", packagePath);
+                using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
+                {
+                    archive.ExtractToDirectory(root);
+                    Directory.Move(Path.Combine(root, archive.Entries.First().FullName), Path.Combine(root, "libogg"));
+                }
+            }
+
+            // Get the source
+            if (!Directory.Exists(Path.Combine(root, "libvorbis")))
+            {
+                File.Delete(packagePath);
+                Downloader.DownloadFileFromUrlToPath("http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.6.zip", packagePath);
+                using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
+                {
+                    archive.ExtractToDirectory(root);
+                    Directory.Move(Path.Combine(root, archive.Entries.First().FullName), Path.Combine(root, "libvorbis"));
+                }
+            }
+#endif
         }
 
         private void BuildMsbuild(BuildOptions options, TargetPlatform platform, TargetArchitecture architecture)
@@ -135,14 +176,14 @@ namespace Flax.Deps.Dependencies
 
             string buildPlatform, buildDir;
             string[] vcxprojPaths;
-            Binary[] binariesToCopy;
+            List<Binary> binariesToCopy = new List<Binary>();
             switch (platform)
             {
             case TargetPlatform.Windows:
+            {
                 buildDir = Path.Combine(rootMsvcLib, "win32", "VS2010");
-                binariesToCopy = binariesToCopyWindows;
                 vcxprojPaths = vcxprojPathsWindows;
-                PatchWindowsTargetPlatformVersion("8.1", "v140");
+                PatchWindowsTargetPlatformVersion("10.0", "v143");
                 switch (architecture)
                 {
                 case TargetArchitecture.x86:
@@ -151,33 +192,18 @@ namespace Flax.Deps.Dependencies
                 case TargetArchitecture.x64:
                     buildPlatform = "x64";
                     break;
-                default: throw new InvalidArchitectureException(architecture);
-                }
-
-                break;
-            case TargetPlatform.UWP:
-                buildDir = Path.Combine(rootMsvcLib, "win32", "VS2010");
-                binariesToCopy = binariesToCopyWindows;
-                vcxprojPaths = vcxprojPathsWindows;
-                PatchWindowsTargetPlatformVersion("10.0.17763.0", "v141");
-                switch (architecture)
-                {
-                case TargetArchitecture.x86:
-                    buildPlatform = "Win32";
-                    break;
-                case TargetArchitecture.x64:
-                    buildPlatform = "x64";
-                    break;
-                case TargetArchitecture.ARM:
-                    buildPlatform = "ARM";
+                case TargetArchitecture.ARM64:
+                    buildPlatform = "ARM64";
                     break;
                 default: throw new InvalidArchitectureException(architecture);
                 }
-
+                binariesToCopy.AddRange(vorbisBinariesToCopyWindows.Select(x => new Binary(x.Filename, Path.Combine(buildDir, x.SrcFolder, buildPlatform, configurationMsvc))));
                 break;
+            }
             case TargetPlatform.PS4:
+            {
                 buildDir = Path.Combine(rootMsvcLib, "PS4");
-                binariesToCopy = new[]
+                var binariesToCopyVorbis = new[]
                 {
                     new Binary("libvorbis.a", "libvorbis"),
                 };
@@ -186,16 +212,17 @@ namespace Flax.Deps.Dependencies
                     Path.Combine(buildDir, "libvorbis", "libvorbis_static.vcxproj"),
                 };
                 buildPlatform = "ORBIS";
-                Utilities.DirectoryCopy(
-                                        Path.Combine(GetBinariesFolder(options, platform), "Data", "vorbis"),
+                Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "vorbis"),
                                         buildDir, true, true);
-                Utilities.FileCopy(
-                                   Path.Combine(GetBinariesFolder(options, platform), "Data", "ogg", "ogg", "config_types.h"),
+                Utilities.FileCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "ogg", "ogg", "config_types.h"),
                                    Path.Combine(root, "libogg", "include", "ogg", "config_types.h"));
+                binariesToCopy.AddRange(binariesToCopyVorbis.Select(x => new Binary(x.Filename, Path.Combine(buildDir, x.SrcFolder, buildPlatform, configurationMsvc))));
                 break;
+            }
             case TargetPlatform.PS5:
+            {
                 buildDir = Path.Combine(rootMsvcLib, "PS5");
-                binariesToCopy = new[]
+                var binariesToCopyVorbis = new[]
                 {
                     new Binary("libvorbis.a", "libvorbis"),
                 };
@@ -210,20 +237,22 @@ namespace Flax.Deps.Dependencies
                 Utilities.FileCopy(
                                    Path.Combine(GetBinariesFolder(options, platform), "Data", "ogg", "ogg", "config_types.h"),
                                    Path.Combine(root, "libogg", "include", "ogg", "config_types.h"));
+                binariesToCopy.AddRange(binariesToCopyVorbis.Select(x => new Binary(x.Filename, Path.Combine(buildDir, x.SrcFolder, buildPlatform, configurationMsvc))));
                 break;
+            }
             case TargetPlatform.XboxOne:
                 buildDir = Path.Combine(rootMsvcLib, "win32", "VS2010");
-                binariesToCopy = binariesToCopyWindows;
                 vcxprojPaths = vcxprojPathsWindows;
                 buildPlatform = "x64";
-                PatchWindowsTargetPlatformVersion("10.0.19041.0", "v142");
+                PatchWindowsTargetPlatformVersion("10.0", "v143");
+                binariesToCopy.AddRange(vorbisBinariesToCopyWindows.Select(x => new Binary(x.Filename, Path.Combine(buildDir, x.SrcFolder, buildPlatform, configurationMsvc))));
                 break;
             case TargetPlatform.XboxScarlett:
                 buildDir = Path.Combine(rootMsvcLib, "win32", "VS2010");
-                binariesToCopy = binariesToCopyWindows;
                 vcxprojPaths = vcxprojPathsWindows;
                 buildPlatform = "x64";
-                PatchWindowsTargetPlatformVersion("10.0.19041.0", "v142");
+                PatchWindowsTargetPlatformVersion("10.0", "v143");
+                binariesToCopy.AddRange(vorbisBinariesToCopyWindows.Select(x => new Binary(x.Filename, Path.Combine(buildDir, x.SrcFolder, buildPlatform, configurationMsvc))));
                 break;
             default: throw new InvalidPlatformException(platform);
             }
@@ -235,7 +264,60 @@ namespace Flax.Deps.Dependencies
             // Copy binaries
             var depsFolder = GetThirdPartyFolder(options, platform, architecture);
             foreach (var filename in binariesToCopy)
-                Utilities.FileCopy(Path.Combine(buildDir, filename.SrcFolder, buildPlatform, configurationMsvc, filename.Filename), Path.Combine(depsFolder, filename.Filename));
+                Utilities.FileCopy(Path.Combine(filename.SrcFolder, filename.Filename), Path.Combine(depsFolder, filename.Filename));
+        }
+
+        private void BuildCmake(BuildOptions options, TargetPlatform platform, TargetArchitecture architecture)
+        {
+            GetSources();
+
+            string oggRoot = Path.Combine(root, "libogg");
+            string vorbisRoot = Path.Combine(root, "libvorbis");
+
+            var oggBuildDir = Path.Combine(oggRoot, "build-" + architecture.ToString());
+            var vorbisBuildDir = Path.Combine(vorbisRoot, "build-" + architecture.ToString());
+
+            string ext;
+            switch (platform)
+            {
+            case TargetPlatform.Windows:
+            case TargetPlatform.UWP:
+            case TargetPlatform.XboxOne:
+                ext = ".lib";
+                break;
+            case TargetPlatform.Linux:
+                ext = ".a";
+                break;
+            default: throw new InvalidPlatformException(platform);
+            }
+
+            var binariesToCopy = new List<(string, string)>();
+
+            // Build ogg
+            {
+                var solutionPath = Path.Combine(oggBuildDir, "ogg.sln");
+
+                RunCmake(oggRoot, platform, architecture, $"-B\"{oggBuildDir}\" -DBUILD_SHARED_LIBS=OFF");
+                Deploy.VCEnvironment.BuildSolution(solutionPath, configurationMsvc, architecture.ToString());
+                foreach (var file in oggBinariesToCopyWindowsCmake)
+                    binariesToCopy.Add((Path.Combine(oggBuildDir, configurationMsvc, file.Item1), file.Item2));
+            }
+
+            // Build vorbis
+            {
+                var oggLibraryPath = Path.Combine(oggBuildDir, configurationMsvc, "ogg" + ext);
+                var solutionPath = Path.Combine(vorbisBuildDir, "vorbis.sln");
+
+                RunCmake(vorbisRoot, platform, architecture, $"-B\"{vorbisBuildDir}\" -DOGG_INCLUDE_DIR=\"{Path.Combine(oggRoot, "include")}\" -DOGG_LIBRARY=\"{oggLibraryPath}\" -DBUILD_SHARED_LIBS=OFF");
+                Deploy.VCEnvironment.BuildSolution(solutionPath, configurationMsvc, architecture.ToString());
+                foreach (var file in vorbisBinariesToCopyWindowsCmake)
+                    binariesToCopy.Add((Path.Combine(vorbisBuildDir, "lib", configurationMsvc, file.Item1), file.Item2));
+            }
+
+            // Copy binaries
+            var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+            foreach (var file in binariesToCopy)
+                Utilities.FileCopy(file.Item1, Path.Combine(depsFolder, file.Item2));
         }
 
         /// <inheritdoc />
@@ -255,11 +337,13 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:
                 {
-                    BuildMsbuild(options, TargetPlatform.Windows, TargetArchitecture.x64);
+                    BuildCmake(options, TargetPlatform.Windows, TargetArchitecture.x64);
+                    BuildCmake(options, TargetPlatform.Windows, TargetArchitecture.ARM64);
                     break;
                 }
                 case TargetPlatform.UWP:
@@ -428,18 +512,24 @@ namespace Flax.Deps.Dependencies
                 Utilities.FileCopy(src, dst);
             }
 
-            // Setup headers directory
-            SetupDirectory(dstIncludePath, true);
-
-            // Deploy header files and restore files
-            Directory.GetFiles(srcIncludePath, "Makefile*").ToList().ForEach(File.Delete);
-            Utilities.DirectoryCopy(srcIncludePath, dstIncludePath, true, true);
-            Utilities.FileCopy(Path.Combine(root, "COPYING"), Path.Combine(dstIncludePath, "COPYING"));
-            foreach (var filename in filesToKeep)
+            try
             {
-                var src = Path.Combine(options.IntermediateFolder, filename + ".tmp");
-                var dst = Path.Combine(dstIncludePath, filename);
-                Utilities.FileCopy(src, dst);
+                // Setup headers directory
+                SetupDirectory(dstIncludePath, true);
+
+                // Deploy header files and restore files
+                Directory.GetFiles(srcIncludePath, "Makefile*").ToList().ForEach(File.Delete);
+                Utilities.DirectoryCopy(srcIncludePath, dstIncludePath, true, true);
+                Utilities.FileCopy(Path.Combine(root, "COPYING"), Path.Combine(dstIncludePath, "COPYING"));
+            }
+            finally
+            {
+                foreach (var filename in filesToKeep)
+                {
+                    var src = Path.Combine(options.IntermediateFolder, filename + ".tmp");
+                    var dst = Path.Combine(dstIncludePath, filename);
+                    Utilities.FileCopy(src, dst);
+                }
             }
         }
     }

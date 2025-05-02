@@ -1,9 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Surface.Undo;
-using FlaxEngine;
 
 namespace FlaxEditor.Surface
 {
@@ -58,6 +58,28 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
+        /// Opens the surface context with the given owning nodes IDs path.
+        /// </summary>
+        /// <param name="nodePath">The node ids path.</param>
+        /// <returns>Found context or null if cannot.</returns>
+        public VisjectSurfaceContext OpenContext(Span<uint> nodePath)
+        {
+            OpenContext(RootContext.Context);
+            if (nodePath != null && nodePath.Length != 0)
+            {
+                for (int i = 0; i < nodePath.Length; i++)
+                {
+                    var node = Context.FindNode(nodePath[i]);
+                    if (node is ISurfaceContext context)
+                        OpenContext(context);
+                    else
+                        return null;
+                }
+            }
+            return Context;
+        }
+
+        /// <summary>
         /// Creates the Visject surface context for the given surface data source context.
         /// </summary>
         /// <param name="parent">The parent context.</param>
@@ -101,7 +123,12 @@ namespace FlaxEditor.Surface
             if (_root == null)
                 _root = surfaceContext;
             else if (ContextStack.Contains(surfaceContext))
-                throw new ArgumentException("Context has been already added to the stack.");
+            {
+                // Go up until the given context
+                while (ContextStack.First() != surfaceContext)
+                    CloseContext();
+                return;
+            }
 
             // Change stack
             ContextStack.Push(surfaceContext);
@@ -201,6 +228,13 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected virtual void OnContextChanged()
         {
+            // Cache viewport of the context (used to restore when leaving it)
+            if (_context != null)
+            {
+                _context._cachedViewCenterPosition = ViewCenterPosition;
+                _context._cachedViewScale = ViewScale;
+            }
+
             var context = ContextStack.Count > 0 ? ContextStack.Peek() : null;
             _context = context;
             if (ContextStack.Count == 0)
@@ -222,6 +256,18 @@ namespace FlaxEditor.Surface
             }
 
             ContextChanged?.Invoke(_context);
+
+            // Restore viewport in the context
+            if (_context?._cachedViewScale > 0.0f)
+            {
+                ViewScale = _context._cachedViewScale;
+                ViewCenterPosition = _context._cachedViewCenterPosition;
+            }
+            else
+            {
+                // Show whole surface on load
+                ShowWholeGraph();
+            }
         }
     }
 }

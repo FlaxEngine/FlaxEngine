@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 namespace FlaxEngine.GUI
 {
@@ -22,6 +22,8 @@ namespace FlaxEngine.GUI
             base.PerformLayoutBeforeChildren();
 
             // Pre-set width of all controls
+            if (!ControlChildSize)
+                return;
             float w = Width - _margin.Width;
             for (int i = 0; i < _children.Count; i++)
             {
@@ -40,6 +42,7 @@ namespace FlaxEngine.GUI
             float top = _margin.Top;
             float bottom = _margin.Bottom;
             float w = Width - _margin.Width;
+            float maxWidth = w;
             bool hasAnyTop = false, hasAnyBottom = false;
             for (int i = 0; i < _children.Count; i++)
             {
@@ -47,18 +50,20 @@ namespace FlaxEngine.GUI
                 if (c.Visible)
                 {
                     var h = c.Height;
+                    var cw = ControlChildSize ? w : c.Width;
                     if (Mathf.IsZero(c.AnchorMin.Y) && Mathf.IsZero(c.AnchorMax.Y))
                     {
-                        c.Bounds = new Rectangle(_margin.Left + _offset.X, top + _offset.Y, w, h);
+                        c.Bounds = new Rectangle(_margin.Left + _offset.X, top + _offset.Y, cw, h);
                         top = c.Bottom + _spacing;
                         hasAnyTop = true;
                     }
                     else if (Mathf.IsOne(c.AnchorMin.Y) && Mathf.IsOne(c.AnchorMax.Y))
                     {
                         bottom += h + _spacing;
-                        c.Bounds = new Rectangle(_margin.Left + _offset.X, Height - bottom + _offset.Y, w, h);
+                        c.Bounds = new Rectangle(_margin.Left + _offset.X, Height - bottom + _offset.Y, cw, h);
                         hasAnyBottom = true;
                     }
+                    maxWidth = Mathf.Max(maxWidth, cw);
                 }
             }
             if (hasAnyTop)
@@ -68,7 +73,31 @@ namespace FlaxEngine.GUI
 
             // Update size
             if (_autoSize)
-                Height = top + bottom;
+            {
+                var size = Size;
+                size.Y = top + bottom;
+                if (!ControlChildSize)
+                    size.X = maxWidth;
+                Resize(ref size);
+            }
+            else if (_alignment != TextAlignment.Near && hasAnyTop)
+            {
+                // Apply layout alignment
+                var offset = Height - top - _margin.Bottom;
+                if (_alignment == TextAlignment.Center)
+                    offset *= 0.5f;
+                for (int i = 0; i < _children.Count; i++)
+                {
+                    Control c = _children[i];
+                    if (c.Visible)
+                    {
+                        if (Mathf.IsZero(c.AnchorMin.Y) && Mathf.IsZero(c.AnchorMax.Y))
+                        {
+                            c.Y += offset;
+                        }
+                    }
+                }
+            }
         }
     }
 }

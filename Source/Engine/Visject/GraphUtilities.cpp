@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GraphUtilities.h"
 
@@ -62,6 +62,7 @@ enum class GraphConnectionType_Deprecated : uint32
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Level/Actor.h"
 
+PRAGMA_DISABLE_DEPRECATION_WARNINGS
 FLAXENGINE_API void ReadOldGraphParamValue_Deprecated(byte graphParamType, ReadStream* stream, GraphParameter* param)
 {
     // [Deprecated on 31.07.2020, expires on 31.07.2022]
@@ -290,6 +291,7 @@ FLAXENGINE_API StringView GetGraphFunctionTypeName_Deprecated(const Variant& v)
     }
     return StringView::Empty;
 }
+PRAGMA_ENABLE_DEPRECATION_WARNINGS
 
 void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, MathOp1 op)
 {
@@ -409,8 +411,23 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, Variant& b, MathO
     case VariantType::Uint:
         v.AsUint = (uint32)op((float)a.AsUint, (float)b.AsUint);
         break;
+    case VariantType::Int64:
+        v.AsUint = (int64)op((float)a.AsInt64, (float)b.AsInt64);
+        break;
+    case VariantType::Uint64:
+        v.AsUint = (uint64)op((float)a.AsUint64, (float)b.AsUint64);
+        break;
+    case VariantType::Int16:
+        v.AsUint = (int16)op((float)a.AsInt16, (float)b.AsInt16);
+        break;
+    case VariantType::Uint16:
+        v.AsUint = (uint16)op((float)a.AsUint16, (float)b.AsUint16);
+        break;
     case VariantType::Float:
         v.AsFloat = op(a.AsFloat, b.AsFloat);
+        break;
+    case VariantType::Double:
+        v.AsDouble = op((float)a.AsDouble, (float)b.AsDouble);
         break;
     case VariantType::Float2:
     {

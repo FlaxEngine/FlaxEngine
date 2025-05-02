@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #ifndef __COMMON__
 #define __COMMON__
@@ -33,7 +33,7 @@
 
 // Meta macros used by shaders parser
 #define META_VS(isVisible, minFeatureLevel)
-#define META_VS_IN_ELEMENT(type, index, format, slot, offset, slotClass, stepRate, isVisible)
+#define META_VS_IN_ELEMENT(type, index, format, slot, offset, slotClass, stepRate, isVisible) // [Deprecated in v1.10]
 #define META_HS(isVisible, minFeatureLevel)
 #define META_HS_PATCH(inControlPoints)
 #define META_DS(isVisible, minFeatureLevel)
@@ -88,42 +88,33 @@
 // Performs branching by using control flow instructions like jmp and label.
 #define BRANCH [branch]
 
-/// Performs branching by using the cnd instructions.
+// Performs branching by using the cnd instructions.
 #define FLATTEN [flatten]
 
 #endif
 
 // Compiler attribute fallback
-
 #ifndef UNROLL
 #define UNROLL
 #endif
-
 #ifndef LOOP
 #define LOOP
 #endif
-
 #ifndef BRANCH
 #define BRANCH
 #endif
-
 #ifndef FLATTEN
 #define FLATTEN
 #endif
 
-// TODO: cleanup global samplers with per-platform customization support
 #ifndef SamplerLinearClamp
-
 // Static samplers
 sampler SamplerLinearClamp : register(s0);
 sampler SamplerPointClamp : register(s1);
 sampler SamplerLinearWrap : register(s2);
 sampler SamplerPointWrap : register(s3);
-
-// TODO: use custom pipeline layouts and bind different sampler during shadows rendering
 SamplerComparisonState ShadowSampler : register(s4);
-SamplerComparisonState ShadowSamplerPCF : register(s5);
-
+SamplerComparisonState ShadowSamplerLinear : register(s5);
 #endif
 
 // General purpose macros
@@ -228,6 +219,12 @@ float4 SampleUnwrappedTexture3D(Texture2D tex, SamplerState s, float3 uvw, float
     float4 rg0 = tex.Sample(s, float2(u, v));
     float4 rg1 = tex.Sample(s, float2(u + 1.0f / size, v));
     return lerp(rg0, rg1, fracW);
+}
+
+// Converts compact 4x3 object transformation matrix into a full 4x4 matrix.
+float4x4 ToMatrix4x4(float4x3 m)
+{
+    return float4x4(float4(m[0].xyz, 0.0f), float4(m[1].xyz, 0.0f), float4(m[2].xyz, 0.0f), float4(m._m30, m._m31, m._m32, 1.0f));
 }
 
 #endif

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -189,6 +189,16 @@ namespace Flax.Build
         }
 
         /// <summary>
+        /// Determines whether this platform can compile or cross-compile for the specified architecture.
+        /// </summary>
+        /// <param name="targetArchitecture">The architecture.</param>
+        /// <returns><c>true</c> if this platform can build the specified architecture; otherwise, <c>false</c>.</returns>
+        public virtual bool CanBuildArchitecture(TargetArchitecture targetArchitecture)
+        {
+            return IsPlatformSupported(Target, targetArchitecture);
+        }
+
+        /// <summary>
         /// Gets the path to the output file for the linker.
         /// </summary>
         /// <param name="name">The original library name.</param>
@@ -286,11 +296,24 @@ namespace Flax.Build
             var subdir = "Binaries/Editor/";
             switch (Platform.BuildTargetPlatform)
             {
-            case TargetPlatform.Windows: return subdir + "Win64";
+            case TargetPlatform.Windows:
+            {
+                switch (Platform.BuildTargetArchitecture)
+                {
+                case TargetArchitecture.x64:
+                    return subdir + "Win64";
+                case TargetArchitecture.x86:
+                    return subdir + "Win32";
+                case TargetArchitecture.ARM64:
+                    return subdir + "ARM64";
+                default:
+                    throw new NotImplementedException($"{Platform.BuildTargetPlatform}: {Platform.BuildTargetArchitecture}");
+                }
+            }
             case TargetPlatform.Linux: return subdir + "Linux";
             case TargetPlatform.Mac: return subdir + "Mac";
             }
-            throw new NotImplementedException();
+            throw new NotImplementedException(Platform.BuildTargetPlatform.ToString());
         }
 
         /// <summary>
@@ -306,7 +329,7 @@ namespace Flax.Build
 
             switch (targetPlatform)
             {
-            case TargetPlatform.Windows: return targetArchitecture == TargetArchitecture.x64 || targetArchitecture == TargetArchitecture.x86;
+            case TargetPlatform.Windows: return targetArchitecture == TargetArchitecture.x64 || targetArchitecture == TargetArchitecture.x86 || targetArchitecture == TargetArchitecture.ARM64;
             case TargetPlatform.XboxScarlett: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.XboxOne: return targetArchitecture == TargetArchitecture.x64;
             case TargetPlatform.UWP: return targetArchitecture == TargetArchitecture.x64;

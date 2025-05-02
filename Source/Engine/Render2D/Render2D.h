@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -55,6 +55,7 @@ API_CLASS(Static) class FLAXENGINE_API Render2D
     {
         Matrix ViewProjection;
         Float2 ViewSize;
+        bool UseDepthBuffer;
     };
 
 public:
@@ -390,6 +391,17 @@ public:
     API_FUNCTION() static void DrawBezier(const Float2& p1, const Float2& p2, const Float2& p3, const Float2& p4, const Color& color, float thickness = 1.0f);
 
     /// <summary>
+    /// Draws a spline curve (Bezier but X axis represents uniform time).
+    /// </summary>
+    /// <param name="p1">The start point.</param>
+    /// <param name="p2">The first control point.</param>
+    /// <param name="p3">The second control point.</param>
+    /// <param name="p4">The end point.</param>
+    /// <param name="color">The line color</param>
+    /// <param name="thickness">The line thickness.</param>
+    API_FUNCTION() static void DrawSpline(const Float2& p1, const Float2& p2, const Float2& p3, const Float2& p4, const Color& color, float thickness = 1.0f);
+
+    /// <summary>
     /// Draws the GUI material.
     /// </summary>
     /// <param name="material">The material to render. Must be a GUI material type.</param>
@@ -403,6 +415,22 @@ public:
     /// <param name="rect">The target rectangle to draw (blurs its background).</param>
     /// <param name="blurStrength">The blur strength defines how blurry the background is. Larger numbers increase blur, resulting in a larger runtime cost on the GPU.</param>
     API_FUNCTION() static void DrawBlur(const Rectangle& rect, float blurStrength);
+
+    /// <summary>
+    /// Draws vertices array.
+    /// </summary>
+    /// <param name="vertices">The vertices array.</param>
+    /// <param name="color">The color.</param>
+    /// <param name="thickness">The line thickness.</param>
+    API_FUNCTION() static void DrawTriangles(const Span<Float2>& vertices, const Color& color, float thickness = 1.0f);
+
+    /// <summary>
+    /// Draws vertices array.
+    /// </summary>
+    /// <param name="vertices">The vertices array.</param>
+    /// <param name="colors">The colors array.</param>
+    /// <param name="thickness">The line thickness.</param>
+    API_FUNCTION() static void DrawTriangles(const Span<Float2>& vertices, const Span<Color>& colors, float thickness = 1.0f);
 
     /// <summary>
     /// Draws vertices array.
@@ -444,9 +472,16 @@ public:
     /// Draws vertices array.
     /// </summary>
     /// <param name="vertices">The vertices array.</param>
+    /// <param name="color">The color.</param>
+    API_FUNCTION() static void FillTriangles(const Span<Float2>& vertices, const Color& color);
+
+    /// <summary>
+    /// Draws vertices array.
+    /// </summary>
+    /// <param name="vertices">The vertices array.</param>
     /// <param name="colors">The colors array.</param>
     /// <param name="useAlpha">If true alpha blending will be enabled.</param>
-    API_FUNCTION() static void FillTriangles(const Span<Float2>& vertices, const Span<Color>& colors, bool useAlpha);
+    API_FUNCTION() static void FillTriangles(const Span<Float2>& vertices, const Span<Color>& colors, bool useAlpha = true);
 
     /// <summary>
     /// Fills a triangular area.

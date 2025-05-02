@@ -1,7 +1,8 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.Scripting;
@@ -104,6 +105,9 @@ namespace FlaxEditor.Windows.Assets
                                                         (instance, parameter, tag) => ((ParticleEmitterWindow)instance).Preview.PreviewActor.GetParameterValue(string.Empty, parameter.Name),
                                                         (instance, value, parameter, tag) => ((ParticleEmitterWindow)instance).Preview.PreviewActor.SetParameterValue(string.Empty, parameter.Name, value),
                                                         Values);
+
+                    if (!parameters.Any())
+                        layout.Label("No parameters", TextAlignment.Center);
                 }
             }
         }
@@ -141,8 +145,9 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Toolstrip
-            _toolstrip.AddSeparator();
+            SurfaceUtils.PerformCommonSetup(this, _toolstrip, _surface, out _saveButton, out _undoButton, out _redoButton);
             _toolstrip.AddButton(editor.Icons.Code64, ShowSourceCode).LinkTooltip("Show generated shader source code");
+            _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/particles/index.html")).LinkTooltip("See documentation to learn more");
         }
 

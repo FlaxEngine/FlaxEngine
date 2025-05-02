@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #ifndef __GUI_COMMON__
 #define __GUI_COMMON__
@@ -43,13 +43,9 @@ float4 PointInParallelogram(float2 p, float2 a, float4 bc)
 void PerformClipping(float2 clipOrigin, float2 windowPos, float4 clipExtents)
 {
 #if CLIPPING_ENABLE
-
-    // Clip pixels which are outside of the clipping rect
+    // Clip pixels which are outside the clipping rect
     float4 clipTest = PointInParallelogram(windowPos, clipOrigin, clipExtents);
-
-    // Clip pixels which are outside of the clipping rect
     clip(clipTest);
-
 #endif
 }
 

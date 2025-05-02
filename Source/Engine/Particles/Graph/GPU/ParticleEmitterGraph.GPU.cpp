@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
 
@@ -456,6 +456,7 @@ void ParticleEmitterGPUGenerator::PrepareGraph(ParticleEmitterGraphGPU* graph)
             mp.AsFloat3 = param->Value.AsFloat3();
             break;
         case VariantType::Float4:
+        case VariantType::Quaternion:
             mp.Type = MaterialParameterType::Vector4;
             *(Float4*)&mp.AsData = param->Value.AsFloat4();
             break;

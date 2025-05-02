@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -17,22 +17,6 @@ class GPUTextureViewVulkan : public GPUTextureView, public DescriptorOwnerResour
 public:
     GPUTextureViewVulkan()
     {
-    }
-
-    GPUTextureViewVulkan(const GPUTextureViewVulkan& other)
-        : GPUTextureViewVulkan()
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-    }
-
-    GPUTextureViewVulkan& operator=(const GPUTextureViewVulkan& other)
-    {
-#if !BUILD_RELEASE
-        CRASH; // Not used
-#endif
-        return *this;
     }
 
 #if !BUILD_RELEASE
@@ -77,6 +61,10 @@ public:
     // [DescriptorOwnerResourceVulkan]
     void DescriptorAsImage(GPUContextVulkan* context, VkImageView& imageView, VkImageLayout& layout) override;
     void DescriptorAsStorageImage(GPUContextVulkan* context, VkImageView& imageView, VkImageLayout& layout) override;
+#if !BUILD_RELEASE
+    bool HasSRV() const override { return ((GPUTexture*)_parent)->IsShaderResource(); }
+    bool HasUAV() const override { return ((GPUTexture*)_parent)->IsUnorderedAccess(); }
+#endif
 };
 
 /// <summary>
@@ -133,36 +121,30 @@ public:
     {
         return (GPUTextureView*)&_handlesPerSlice[arrayOrDepthIndex];
     }
-
     GPUTextureView* View(int32 arrayOrDepthIndex, int32 mipMapIndex) const override
     {
         return (GPUTextureView*)&_handlesPerMip[arrayOrDepthIndex][mipMapIndex];
     }
-
     GPUTextureView* ViewArray() const override
     {
         ASSERT(ArraySize() > 1);
         return (GPUTextureView*)&_handleArray;
     }
-
     GPUTextureView* ViewVolume() const override
     {
         ASSERT(IsVolume());
         return (GPUTextureView*)&_handleVolume;
     }
-
     GPUTextureView* ViewReadOnlyDepth() const override
     {
         ASSERT(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView);
         return (GPUTextureView*)&_handleReadOnlyDepth;
     }
-
     void* GetNativePtr() const override
     {
         return (void*)_image;
     }
-
-    bool GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch) override;
+    bool GetData(int32 arrayIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch) override;
 
     // [ResourceOwnerVulkan]
     GPUResource* AsGPUResource() const override

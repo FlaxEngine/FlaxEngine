@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -74,14 +74,14 @@ public:
 
 public:
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Ray.
+    /// Determines if there is an intersection between sphere and a rat.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <returns>Whether the two objects intersected.</returns>
     bool Intersects(const Ray& ray) const;
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Ray.
+    /// Determines if there is an intersection between sphere and a rat.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
@@ -89,7 +89,7 @@ public:
     bool Intersects(const Ray& ray, Real& distance) const;
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Ray.
+    /// Determines if there is an intersection between sphere and a rat.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
@@ -98,7 +98,7 @@ public:
     bool Intersects(const Ray& ray, Real& distance, Vector3& normal) const;
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Ray.
+    /// Determines if there is an intersection between sphere and a rat.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <param name="point">When the method completes, contains the point of intersection, or Vector3::Zero if there was no intersection.</param>
@@ -106,14 +106,14 @@ public:
     bool Intersects(const Ray& ray, Vector3& point) const;
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Plane.
+    /// Determines if there is an intersection between sphere and a plane.
     /// </summary>
     /// <param name="plane">The plane to test.</param>
     /// <returns>Whether the two objects intersected.</returns>
     PlaneIntersectionType Intersects(const Plane& plane) const;
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a triangle.
+    /// Determines if there is an intersection between sphere and a triangle.
     /// </summary>
     /// <param name="vertex1">The first vertex of the triangle to test.</param>
     /// <param name="vertex2">The second vertex of the triangle to test.</param>
@@ -122,28 +122,28 @@ public:
     bool Intersects(const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3) const;
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Bounding Box.
+    /// Determines if there is an intersection between sphere and a box.
     /// </summary>
     /// <param name="box">The box to test.</param>
     /// <returns>Whether the two objects intersected.</returns>
     bool Intersects(const BoundingBox& box) const;
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Bounding Sphere.
+    /// Determines if there is an intersection between two spheres.
     /// </summary>
     /// <param name="sphere">The sphere to test.</param>
     /// <returns>Whether the two objects intersected.</returns>
     bool Intersects(const BoundingSphere& sphere) const;
 
     /// <summary>
-    /// Determines whether the current objects contains a point.
+    /// Determines whether sphere contains a point.
     /// </summary>
     /// <param name="point">The point to test.</param>
     /// <returns> The type of containment the two objects have.</returns>
     ContainmentType Contains(const Vector3& point) const;
 
     /// <summary>
-    /// Determines whether the current objects contains a triangle.
+    /// Determines whether sphere contains a triangle.
     /// </summary>
     /// <param name="vertex1">The first vertex of the triangle to test.</param>
     /// <param name="vertex2">The second vertex of the triangle to test.</param>
@@ -152,14 +152,14 @@ public:
     ContainmentType Contains(const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3) const;
 
     /// <summary>
-    /// Determines whether the current objects contains a Bounding Box
+    /// Determines whether sphere contains a box.
     /// </summary>
     /// <param name="box">The box to test.</param>
     /// <returns>The type of containment the two objects have.</returns>
     ContainmentType Contains(const BoundingBox& box) const;
 
     /// <summary>
-    /// Determines whether the current objects contains a Bounding Sphere.
+    /// Determines whether sphere contains a sphere.
     /// </summary>
     /// <param name="sphere">The sphere to test.</param>
     /// <returns>The type of containment the two objects have.</returns>

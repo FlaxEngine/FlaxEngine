@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -105,7 +105,7 @@ public:
     // Gets a value indicting whether this instance is normalized.
     bool IsNormalized() const
     {
-        return Math::IsOne(X * X + Y * Y);
+        return Math::Abs((X * X + Y * Y) - 1.0f) < 1e-4f;
     }
 
     // Gets a value indicting whether this vector is zero.
@@ -499,11 +499,7 @@ public:
     }
 
 public:
-    // Clamp vector values within given range
-    // @param v Vector to clamp
-    // @param min Minimum value
-    // @param max Maximum value
-    // @returns Clamped vector
+    // Restricts a value to be within a specified range (inclusive min/max).
     static Vector2Base Clamp(const Vector2Base& v, const Vector2Base& min, const Vector2Base& max)
     {
         Vector2Base result;
@@ -511,20 +507,13 @@ public:
         return result;
     }
 
-    // Restricts a value to be within a specified range
-    // @param v The value to clamp
-    // @param min The minimum value,
-    // @param max The maximum value
-    // @param result When the method completes, contains the clamped value
+    // Restricts a value to be within a specified range (inclusive min/max).
     static void Clamp(const Vector2Base& v, const Vector2Base& min, const Vector2Base& max, Vector2Base& result)
     {
         result = Vector2Base(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y));
     }
 
-    // Calculates distance between two points in 2D
-    // @param a 1st point
-    // @param b 2nd point
-    // @returns Distance
+    // Calculates distance between two points in 2D.
     static T Distance(const Vector2Base& a, const Vector2Base& b)
     {
         const T x = a.X - b.X;
@@ -532,10 +521,7 @@ public:
         return Math::Sqrt(x * x + y * y);
     }
 
-    // Calculates the squared distance between two points in 2D
-    // @param a 1st point
-    // @param b 2nd point
-    // @returns Distance
+    // Calculates the squared distance between two points in 2D.
     static T DistanceSquared(const Vector2Base& a, const Vector2Base& b)
     {
         const T x = a.X - b.X;
@@ -557,24 +543,14 @@ public:
         return r;
     }
 
-    // Performs a linear interpolation between two vectors
-    // @param start Start vector
-    // @param end End vector
-    // @param amount Value between 0 and 1 indicating the weight of end
-    // @param result When the method completes, contains the linear interpolation of the two vectors
+    // Performs a linear interpolation between two vectors.
     static void Lerp(const Vector2Base& start, const Vector2Base& end, T amount, Vector2Base& result)
     {
         result.X = Math::Lerp(start.X, end.X, amount);
         result.Y = Math::Lerp(start.Y, end.Y, amount);
     }
 
-    // <summary>
     // Performs a linear interpolation between two vectors.
-    // </summary>
-    // @param start Start vector,
-    // @param end End vector,
-    // @param amount Value between 0 and 1 indicating the weight of @paramref end"/>,
-    // @returns The linear interpolation of the two vectors
     static Vector2Base Lerp(const Vector2Base& start, const Vector2Base& end, T amount)
     {
         Vector2Base result;

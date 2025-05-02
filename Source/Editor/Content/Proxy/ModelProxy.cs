@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.Content.Thumbnails;
@@ -94,7 +94,10 @@ namespace FlaxEditor.Content
             _preview.Model = (Model)request.Asset;
             _preview.Parent = guiRoot;
             _preview.SyncBackbufferSize();
-            _preview.ViewportCamera.SetArcBallView(_preview.Model.GetBox());
+            var bounds = _preview.Model.GetBox();
+            var maxSize = Math.Max(0.001f, (float)bounds.Size.MaxValue);
+            _preview.ViewportCamera.SetArcBallView(bounds);
+            _preview.FarPlane = Mathf.Max(1000.0f, maxSize * 2 + 100.0f);
 
             _preview.Task.OnDraw();
         }

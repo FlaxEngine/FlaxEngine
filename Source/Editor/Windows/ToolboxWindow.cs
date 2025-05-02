@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -101,6 +101,7 @@ namespace FlaxEditor.Windows
         private TextBox _searchBox;
         private ContainerControl _groupSearch;
         private Tabs _actorGroups;
+        private ContainerControl groupPrimitives;
 
         /// <summary>
         /// The editor instance.
@@ -150,6 +151,22 @@ namespace FlaxEditor.Windows
             _searchBox.Clear();
             _groupSearch.DisposeChildren();
             _groupSearch.PerformLayout();
+
+            // Remove tabs
+            var tabs = new List<Tab>();
+            foreach (var child in _actorGroups.Children)
+            {
+                if (child is Tab tab)
+                {
+                    if (tab.Text != "Search")
+                        tabs.Add(tab);
+                }
+            }
+            foreach (var tab in tabs)
+            {
+                var group = _actorGroups.Children.Find(T => T == tab);
+                group.Dispose();
+            }
         }
 
         private void OnScriptsReloadEnd()
@@ -176,13 +193,13 @@ namespace FlaxEditor.Windows
             }
 
             // Setup primitives tabs
-            var groupBasicModels = CreateGroupWithList(_actorGroups, "Basic Models");
-            groupBasicModels.AddChild(CreateEditorAssetItem("Cube", "Primitives/Cube.flax"));
-            groupBasicModels.AddChild(CreateEditorAssetItem("Sphere", "Primitives/Sphere.flax"));
-            groupBasicModels.AddChild(CreateEditorAssetItem("Plane", "Primitives/Plane.flax"));
-            groupBasicModels.AddChild(CreateEditorAssetItem("Cylinder", "Primitives/Cylinder.flax"));
-            groupBasicModels.AddChild(CreateEditorAssetItem("Cone", "Primitives/Cone.flax"));
-            groupBasicModels.AddChild(CreateEditorAssetItem("Capsule", "Primitives/Capsule.flax"));
+            groupPrimitives = CreateGroupWithList(_actorGroups, "Primitives");
+            groupPrimitives.AddChild(CreateEditorAssetItem("Cube", "Primitives/Cube.flax"));
+            groupPrimitives.AddChild(CreateEditorAssetItem("Sphere", "Primitives/Sphere.flax"));
+            groupPrimitives.AddChild(CreateEditorAssetItem("Plane", "Primitives/Plane.flax"));
+            groupPrimitives.AddChild(CreateEditorAssetItem("Cylinder", "Primitives/Cylinder.flax"));
+            groupPrimitives.AddChild(CreateEditorAssetItem("Cone", "Primitives/Cone.flax"));
+            groupPrimitives.AddChild(CreateEditorAssetItem("Capsule", "Primitives/Capsule.flax"));
 
             // Created first to order specific tabs
             CreateGroupWithList(_actorGroups, "Lights");
@@ -308,7 +325,7 @@ namespace FlaxEditor.Windows
                 }
 
                 var text = (attribute == null) ? actorType.Name : string.IsNullOrEmpty(attribute.Name) ? actorType.Name : attribute.Name;
-                
+
                 // Display all actors on no search
                 if (string.IsNullOrEmpty(filterText))
                     _groupSearch.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType));
@@ -316,21 +333,28 @@ namespace FlaxEditor.Windows
                 if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
                     continue;
 
-                var item = _groupSearch.AddChild(CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType));
-
-                var highlights = new List<Rectangle>(ranges.Length);
-                var style = Style.Current;
-                var font = style.FontSmall;
-                var textRect = item.TextRect;
-                for (int i = 0; i < ranges.Length; i++)
-                {
-                    var start = font.GetCharPosition(text, ranges[i].StartIndex);
-                    var end = font.GetCharPosition(text, ranges[i].EndIndex);
-                    highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
-                }
-                item.SetHighlights(highlights);
+                var item = CreateActorItem(Utilities.Utils.GetPropertyNameUI(text), actorType);
+                SearchFilterHighlights(item, text, ranges);
             }
-            
+
+            // Hack primitive models into the search results
+            foreach (var child in groupPrimitives.Children)
+            {
+                if (child is Item primitiveAssetItem)
+                {
+                    var text = primitiveAssetItem.Text;
+
+                    if (!QueryFilterHelper.Match(filterText, text, out QueryFilterHelper.Range[] ranges))
+                        continue;
+
+                    // Rebuild the path based on item name (it would be better to convert the drag data back to a string somehow)
+                    string path = $"Primitives/{text}.flax";
+
+                    var item = CreateEditorAssetItem(text, path);
+                    SearchFilterHighlights(item, text, ranges);
+                }
+            }
+
             if (string.IsNullOrEmpty(filterText))
                 _groupSearch.SortChildren();
 
@@ -339,10 +363,27 @@ namespace FlaxEditor.Windows
             PerformLayout();
         }
 
+        private void SearchFilterHighlights(Item item, string text, QueryFilterHelper.Range[] ranges)
+        {
+            _groupSearch.AddChild(item);
+            var highlights = new List<Rectangle>(ranges.Length);
+            var font = Style.Current.FontSmall;
+            var textRect = item.TextRect;
+            for (int i = 0; i < ranges.Length; i++)
+            {
+                var start = font.GetCharPosition(text, ranges[i].StartIndex);
+                var end = font.GetCharPosition(text, ranges[i].EndIndex);
+                highlights.Add(new Rectangle(start.X + textRect.X, textRect.Y, end.X - start.X, textRect.Height));
+            }
+            item.SetHighlights(highlights);
+        }
+
         private Item CreateEditorAssetItem(string name, string path)
         {
-            path = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor", path);
-            return new Item(name, GUI.Drag.DragItems.GetDragData(path));
+            string globalPath = StringUtils.CombinePaths(Globals.EngineContentFolder, "Editor", path);
+            Item item = new Item(name, GUI.Drag.DragItems.GetDragData(globalPath));
+            item.TooltipText = $"{path}\nActor with a {name} asset.";
+            return item;
         }
 
         private Item CreateActorItem(string name, ScriptType type)

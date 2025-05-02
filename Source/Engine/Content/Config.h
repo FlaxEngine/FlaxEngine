@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,13 +7,13 @@
 // Amount of content loading threads per single physical CPU core
 #define LOADING_THREAD_PER_LOGICAL_CORE 0.5f
 
-// Enable/disable additional assets metadata verification, note: we should disable it for release builds
+// Enables additional assets metadata verification
 #define ASSETS_LOADING_EXTRA_VERIFICATION (BUILD_DEBUG || USE_EDITOR)
 
 // Maximum amount of data chunks used by the single asset
 #define ASSET_FILE_DATA_CHUNKS 16
 
-// Enables searching workspace for missing assets (should be disabled in the final builds where assets registry is solid)
+// Enables searching workspace for missing assets
 #define ENABLE_ASSETS_DISCOVERY (USE_EDITOR)
 
 // Default extension for all asset files

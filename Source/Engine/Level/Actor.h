@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -37,6 +37,7 @@ protected:
     uint16 _isActiveInHierarchy : 1;
     uint16 _isPrefabRoot : 1;
     uint16 _isEnabled : 1;
+    uint16 _isHierarchyDirty : 1;
     uint16 _drawNoCulling : 1;
     uint16 _drawCategory : 4;
     byte _layer;
@@ -164,13 +165,13 @@ public:
     /// [Deprecated in v1.5]
     /// </summary>
     API_PROPERTY(Attributes="HideInEditor, NoSerialize, NoAnimate")
-    DEPRECATED const String& GetTag() const;
+    DEPRECATED("Use HasTag instead") const String& GetTag() const;
 
     /// <summary>
     /// Sets the name of the tag.
     /// [Deprecated in v1.5]
     /// </summary>
-    API_PROPERTY() DEPRECATED void SetTag(const StringView& value);
+    API_PROPERTY() DEPRECATED("Use AddTag instead") void SetTag(const StringView& value);
 
     /// <summary>
     /// Gets the actor name.
@@ -185,7 +186,13 @@ public:
     /// Sets the actor name.
     /// </summary>
     /// <param name="value">The value to set.</param>
-    API_PROPERTY() void SetName(const StringView& value);
+    API_PROPERTY() void SetName(String&& value);
+
+    /// <summary>
+    /// Sets the actor name.
+    /// </summary>
+    /// <param name="value">The value to set.</param>
+    void SetName(const StringView& value);
 
 public:
     /// <summary>
@@ -231,7 +238,7 @@ public:
     /// <summary>
     /// Gets the child actor of the given type.
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <returns>The child actor or null.</returns>
     API_FUNCTION() Actor* GetChild(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type) const;
 
@@ -264,7 +271,7 @@ public:
     /// <summary>
     /// Gets the child actors of the given type.
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <returns>The child actors.</returns>
     API_FUNCTION() Array<Actor*> GetChildren(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type) const;
 
@@ -309,7 +316,7 @@ public:
     /// <summary>
     /// Gets the script of the given type from this actor.
     /// </summary>
-    /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
+    /// <param name="type">Type of the script to search for. Includes any scripts derived from the type. Supports interface types.</param>
     /// <returns>The script or null.</returns>
     API_FUNCTION() Script* GetScript(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type) const;
 
@@ -326,7 +333,7 @@ public:
     /// <summary>
     /// Gets the scripts of the given type from this actor.
     /// </summary>
-    /// <param name="type">Type of the script to search for. Includes any scripts derived from the type.</param>
+    /// <param name="type">Type of the script to search for. Includes any scripts derived from the type. Supports interface types.</param>
     /// <returns>The scripts.</returns>
     API_FUNCTION() Array<Script*> GetScripts(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type) const;
 
@@ -649,6 +656,18 @@ public:
     /// <param name="localToWorld">The world to local matrix.</param>
     API_FUNCTION() void GetLocalToWorldMatrix(API_PARAM(Out) Matrix& localToWorld) const;
 
+    /// <summary>
+    /// Gets the matrix that transforms a point from the world space to local space of the actor.
+    /// </summary>
+    /// <param name="worldToLocal">The world to local matrix.</param>
+    void GetWorldToLocalMatrix(Double4x4& worldToLocal) const;
+
+    /// <summary>
+    /// Gets the matrix that transforms a point from the local space of the actor to world space.
+    /// </summary>
+    /// <param name="localToWorld">The world to local matrix.</param>
+    void GetLocalToWorldMatrix(Double4x4& localToWorld) const;
+
 public:
     /// <summary>
     /// Gets actor bounding sphere that defines 3D space intersecting with the actor (for determination of the visibility for actor).
@@ -760,7 +779,7 @@ public:
     /// <summary>
     /// Tries to find the actor of the given type in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <param name="activeOnly">Finds only a active actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
     API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, bool activeOnly = false) const;
@@ -768,7 +787,7 @@ public:
     /// <summary>
     /// Tries to find the actor of the given type and name in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <param name="name">The name of the actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
     API_FUNCTION() Actor* FindActor(API_PARAM(Attributes="TypeReference(typeof(Actor))") const MClass* type, const StringView& name) const;
@@ -776,7 +795,7 @@ public:
     /// <summary>
     /// Tries to find the actor of the given type and tag in this actor hierarchy.
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <param name="tag">The tag of the actor to search for.</param>
     /// <param name="activeOnly">Finds only an active actor.</param>
     /// <returns>Actor instance if found, null otherwise.</returns>
@@ -817,7 +836,7 @@ public:
     /// <summary>
     /// Tries to find the script of the given type in this actor hierarchy (checks this actor and all children hierarchy).
     /// </summary>
-    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type.</param>
+    /// <param name="type">Type of the actor to search for. Includes any actors derived from the type. Supports interface types.</param>
     /// <returns>Script instance if found, null otherwise.</returns>
     API_FUNCTION() Script* FindScript(API_PARAM(Attributes="TypeReference(typeof(Script))") const MClass* type) const;
 
@@ -846,7 +865,7 @@ public:
     API_FUNCTION() bool HasActorInChildren(Actor* a) const;
 
     /// <summary>
-    /// Determines if there is an intersection between the current object and a Ray.
+    /// Determines if there is an intersection between the current object and a ray.
     /// </summary>
     /// <param name="ray">The ray to test.</param>
     /// <param name="distance">When the method completes, contains the distance of the intersection (if any valid).</param>
@@ -873,7 +892,7 @@ public:
     /// Rotates actor to orient it towards the specified world position with upwards direction.
     /// </summary>
     /// <param name="worldPos">The world position to orient towards.</param>
-    /// <param name="worldUp">The up direction that Constrains y axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
+    /// <param name="worldUp">The up direction that constrains up axis orientation to a plane this vector lies on. This rule might be broken if forward and up direction are nearly parallel.</param>
     API_FUNCTION() void LookAt(const Vector3& worldPos, const Vector3& worldUp);
 
     /// <summary>
@@ -976,6 +995,11 @@ public:
     /// <param name="json">The serialized actor data (state).</param>
     API_FUNCTION() void FromJson(const StringAnsiView& json);
 
+    /// <summary>
+    /// Clones actor including all scripts and any child actors (whole scene tree). Objects are duplicated via serialization (any transient/non-saved state is ignored).
+    /// </summary>
+    API_FUNCTION() Actor* Clone();
+
 public:
     /// <summary>
     /// Called when actor gets added to game systems. Occurs on BeginPlay event or when actor gets activated in hierarchy. Use this event to register object to other game system (eg. audio).
@@ -990,37 +1014,37 @@ public:
     /// <summary>
     /// Called when actor parent gets changed.
     /// </summary>
-    virtual void OnParentChanged();
+    API_FUNCTION() virtual void OnParentChanged();
 
     /// <summary>
     /// Called when actor transform gets changed.
     /// </summary>
-    virtual void OnTransformChanged();
+    API_FUNCTION() virtual void OnTransformChanged();
 
     /// <summary>
     /// Called when actor active state gets changed.
     /// </summary>
-    virtual void OnActiveChanged();
+    API_FUNCTION() virtual void OnActiveChanged();
 
     /// <summary>
     /// Called when actor active in tree state gets changed.
     /// </summary>
-    virtual void OnActiveInTreeChanged();
+    API_FUNCTION() virtual void OnActiveInTreeChanged();
 
     /// <summary>
     /// Called when order in parent children array gets changed.
     /// </summary>
-    virtual void OnOrderInParentChanged();
+    API_FUNCTION() virtual void OnOrderInParentChanged();
 
     /// <summary>
     /// Called when actor static flag gets changed.
     /// </summary>
-    virtual void OnStaticFlagsChanged();
+    API_FUNCTION() virtual void OnStaticFlagsChanged();
 
     /// <summary>
     /// Called when layer gets changed.
     /// </summary>
-    virtual void OnLayerChanged();
+    API_FUNCTION() virtual void OnLayerChanged();
 
     /// <summary>
     /// Called when adding object to the game.

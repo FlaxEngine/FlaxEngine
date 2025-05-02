@@ -3,9 +3,7 @@
 Open Asset Import Library (assimp)
 ---------------------------------------------------------------------------
 
-Copyright (c) 2006-2019, assimp team
-
-
+Copyright (c) 2006-2024, assimp team
 
 All rights reserved.
 
@@ -48,12 +46,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef AI_MATRIX3X3_H_INC
 #define AI_MATRIX3X3_H_INC
 
-#include "defs.h"
+#ifdef __GNUC__
+#   pragma GCC system_header
+#endif
+
+#include <assimp/defs.h>
 
 #ifdef __cplusplus
 
 template <typename T> class aiMatrix4x4t;
 template <typename T> class aiVector2t;
+template <typename T> class aiVector3t;
 
 // ---------------------------------------------------------------------------
 /** @brief Represents a row-major 3x3 matrix
@@ -65,10 +68,8 @@ template <typename T> class aiVector2t;
  *  defined thereby.
  */
 template <typename TReal>
-class aiMatrix3x3t
-{
+class aiMatrix3x3t {
 public:
-
     aiMatrix3x3t() AI_NO_EXCEPT :
         a1(static_cast<TReal>(1.0f)), a2(), a3(),
         b1(), b2(static_cast<TReal>(1.0f)), b3(),
@@ -82,8 +83,6 @@ public:
         c1(_c1), c2(_c2), c3(_c3)
     {}
 
-public:
-
     // matrix multiplication.
     aiMatrix3x3t& operator *= (const aiMatrix3x3t& m);
     aiMatrix3x3t  operator  * (const aiMatrix3x3t& m) const;
@@ -93,15 +92,13 @@ public:
     const TReal* operator[] (unsigned int p_iIndex) const;
 
     // comparison operators
-    bool operator== (const aiMatrix4x4t<TReal>& m) const;
-    bool operator!= (const aiMatrix4x4t<TReal>& m) const;
+    bool operator== (const aiMatrix3x3t<TReal>& m) const;
+    bool operator!= (const aiMatrix3x3t<TReal>& m) const;
 
-    bool Equal(const aiMatrix4x4t<TReal>& m, TReal epsilon = 1e-6) const;
+    bool Equal(const aiMatrix3x3t<TReal> &m, TReal epsilon = ai_epsilon) const;
 
     template <typename TOther>
     operator aiMatrix3x3t<TOther> () const;
-
-public:
 
     // -------------------------------------------------------------------
     /** @brief Construction from a 4x4 matrix. The remaining parts
@@ -122,7 +119,6 @@ public:
     aiMatrix3x3t& Inverse();
     TReal Determinant() const;
 
-public:
     // -------------------------------------------------------------------
     /** @brief Returns a rotation matrix for a rotation around z
      *  @param a Rotation angle, in radians
@@ -139,8 +135,7 @@ public:
      *  @param axis Axis to rotate around
      *  @param out To be filled
      */
-    static aiMatrix3x3t& Rotation( TReal a,
-        const aiVector3t<TReal>& axis, aiMatrix3x3t& out);
+    static aiMatrix3x3t& Rotation( TReal a, const aiVector3t<TReal>& axis, aiMatrix3x3t& out);
 
     // -------------------------------------------------------------------
     /** @brief Returns a translation matrix

@@ -1,8 +1,10 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using FlaxEditor.Content;
@@ -137,6 +139,7 @@ namespace FlaxEditor.Windows
             }
         }
 
+        private string _cacheFolder;
         private Guid _assetId;
         private Surface _surface;
         private Label _loadingLabel;
@@ -144,6 +147,7 @@ namespace FlaxEditor.Windows
         private Task _task;
         private const float MarginX = 200;
         private const float MarginY = 50;
+        private string _tempFolder;
 
         // Async task data
         private float _progress;
@@ -161,6 +165,10 @@ namespace FlaxEditor.Windows
         {
             Title = assetItem.ShortName + " References";
 
+            _tempFolder = StringUtils.NormalizePath(Path.GetDirectoryName(Globals.TemporaryFolder));
+            _cacheFolder = Path.Combine(Globals.ProjectCacheFolder, "References");
+            if (!Directory.Exists(_cacheFolder))
+                Directory.CreateDirectory(_cacheFolder);
             _assetId = assetItem.ID;
             _surface = new Surface(this)
             {
@@ -189,7 +197,12 @@ namespace FlaxEditor.Windows
             return node;
         }
 
-        private void SearchRefs(Guid assetId)
+        private bool CheckSkipAsset(Asset asset)
+        {
+            return asset == null || asset.IsVirtual || asset.Path.StartsWith(_tempFolder);
+        }
+
+        private unsafe void SearchRefs(Guid assetId)
         {
             // Skip assets that never contain references to prevent loading them
             if (FlaxEngine.Content.GetAssetInfo(assetId, out var assetInfo) &&
@@ -202,8 +215,24 @@ namespace FlaxEditor.Windows
             if (_refs.ContainsKey(assetId))
                 return;
 
+            // Try to load cached references form previous run
+            var cachePath = Path.Combine(_cacheFolder, $"{FlaxEngine.Json.JsonSerializer.GetStringID(assetId)}.1.cache");
+            var hasInfo = FlaxEngine.Content.GetAssetInfo(assetId, out var info);
+            if (hasInfo && File.Exists(cachePath) && File.GetLastWriteTime(cachePath) > File.GetLastWriteTime(info.Path))
+            {
+                byte[] rawData = File.ReadAllBytes(cachePath);
+                Guid[] loadedRefs = new Guid[rawData.Length / sizeof(Guid)];
+                if (rawData.Length != 0)
+                {
+                    fixed (byte* rawDataPtr = rawData)
+                    fixed (Guid* loadedRefsPtr = loadedRefs)
+                        Unsafe.CopyBlock(loadedRefsPtr, rawDataPtr, (uint)rawData.Length);
+                }
+                _refs[assetId] = loadedRefs;
+                return;
+            }
+
             // Load asset (with cancel support)
-            //Debug.Log("Searching refs for " + assetInfo.Path);
             var obj = FlaxEngine.Object.TryFind<FlaxEngine.Object>(ref assetId);
             if (obj is Scene scene)
             {
@@ -214,7 +243,7 @@ namespace FlaxEditor.Windows
             var asset = obj as Asset;
             if (!asset)
                 asset = FlaxEngine.Content.LoadAsync<Asset>(assetId);
-            if (asset == null || asset.IsVirtual)
+            if (CheckSkipAsset(asset))
                 return;
             while (asset && !asset.IsLoaded && !asset.LastLoadFailed)
             {
@@ -226,7 +255,21 @@ namespace FlaxEditor.Windows
                 return;
 
             // Get direct references
-            _refs[assetId] = asset.GetReferences();
+            var references = asset.GetReferences();
+            _refs[assetId] = references;
+
+            // Save reference to the cache
+            if (hasInfo)
+            {
+                byte[] rawData = new byte[references.Length * sizeof(Guid)];
+                if (rawData.Length != 0)
+                {
+                    fixed (byte* rawDataPtr = rawData)
+                    fixed (Guid* referencesPtr = references)
+                        Unsafe.CopyBlock(rawDataPtr, referencesPtr, (uint)rawData.Length);
+                }
+                File.WriteAllBytes(cachePath, rawData);
+            }
         }
 
         private void BuildGraph(AssetNode node, int level, bool reverse)
@@ -264,9 +307,11 @@ namespace FlaxEditor.Windows
                 if (!(obj is Asset) && !(obj is Scene))
                 {
                     var asset = FlaxEngine.Content.LoadAsync<Asset>(assetRef);
-                    if (asset == null || asset.IsVirtual)
+                    if (CheckSkipAsset(asset))
                         continue;
                 }
+                else if (obj is Asset asset && CheckSkipAsset(asset))
+                    continue;
 
                 // Skip nodes that were already added to the graph
                 if (_nodesAssets.Contains(assetRef))

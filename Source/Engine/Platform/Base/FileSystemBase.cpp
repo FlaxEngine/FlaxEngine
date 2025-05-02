@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/File.h"
@@ -195,7 +195,7 @@ String FileSystemBase::ConvertAbsolutePathToRelative(const String& basePath, con
     return output;
 }
 
-bool FileSystemBase::CopyFile(const String& dst, const String& src)
+bool FileSystemBase::CopyFile(const StringView& dst, const StringView& src)
 {
     // Open and create files
     const auto srcFile = File::Open(src, FileMode::OpenExisting, FileAccess::Read);
@@ -247,7 +247,7 @@ uint64 FileSystemBase::GetDirectorySize(const StringView& path)
 {
     uint64 result = 0;
     Array<String> files;
-    FileSystem::DirectoryGetFiles(files, path, TEXT("*"), DirectorySearchOption::AllDirectories);
+    FileSystem::DirectoryGetFiles(files, path);
     for (const String& file : files)
         result += FileSystem::GetFileSize(file);
     return result;

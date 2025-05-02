@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -196,6 +196,12 @@ namespace FlaxEditor.Tools.Foliage
             if (foliage != _paintFoliage && IsPainting)
             {
                 PaintEnd();
+            }
+            
+            // Increase or decrease brush size with scroll
+            if (Input.GetKey(KeyboardKeys.Shift) && !Input.GetMouseButton(MouseButton.Right))
+            {
+                Mode.CurrentBrush.Size += dt * Mode.CurrentBrush.Size * Input.Mouse.ScrollDelta * 5f;
             }
 
             // Perform detailed tracing to find cursor location for the foliage placement

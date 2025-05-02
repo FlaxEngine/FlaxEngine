@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_NETCORE
 using System;
@@ -49,94 +49,11 @@ namespace FlaxEngine.Interop
     internal struct NativePropertyDefinitions
     {
         internal IntPtr name;
+        internal ManagedHandle propertyHandle;
         internal ManagedHandle getterHandle;
         internal ManagedHandle setterHandle;
         internal uint getterAttributes;
         internal uint setterAttributes;
-    }
-
-    [StructLayout(LayoutKind.Explicit)]
-    public struct NativeVariant
-    {
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct NativeVariantType
-        {
-            internal VariantUtils.VariantType types;
-            internal IntPtr TypeName; // char*
-        }
-
-        [FieldOffset(0)]
-        NativeVariantType Type;
-
-        [FieldOffset(8)]
-        byte AsBool;
-
-        [FieldOffset(8)]
-        short AsInt16;
-
-        [FieldOffset(8)]
-        ushort AsUint16;
-
-        [FieldOffset(8)]
-        int AsInt;
-
-        [FieldOffset(8)]
-        uint AsUint;
-
-        [FieldOffset(8)]
-        long AsInt64;
-
-        [FieldOffset(8)]
-        ulong AsUint64;
-
-        [FieldOffset(8)]
-        float AsFloat;
-
-        [FieldOffset(8)]
-        double AsDouble;
-
-        [FieldOffset(8)]
-        IntPtr AsPointer;
-
-        [FieldOffset(8)]
-        int AsData0;
-
-        [FieldOffset(12)]
-        int AsData1;
-
-        [FieldOffset(16)]
-        int AsData2;
-
-        [FieldOffset(20)]
-        int AsData3;
-
-        [FieldOffset(24)]
-        int AsData4;
-
-        [FieldOffset(28)]
-        int AsData5;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct NativeVersion
-    {
-        internal int _Major;
-        internal int _Minor;
-        internal int _Build;
-        internal int _Revision;
-
-        internal NativeVersion(Version ver)
-        {
-            _Major = ver.Major;
-            _Minor = ver.Minor;
-            _Build = ver.Build;
-            _Revision = ver.Revision;
-        }
-
-        internal Version GetVersion()
-        {
-            return new Version(_Major, _Minor, _Build, _Revision);
-        }
     }
 
     unsafe partial class NativeInterop
@@ -319,14 +236,15 @@ namespace FlaxEngine.Interop
             var arr = (NativeMethodDefinitions*)NativeAlloc(methods.Count, Unsafe.SizeOf<NativeMethodDefinitions>());
             for (int i = 0; i < methods.Count; i++)
             {
+                var method = methods[i];
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativeMethodDefinitions>() * i);
                 var classMethod = new NativeMethodDefinitions
                 {
-                    name = NativeAllocStringAnsi(methods[i].Name),
-                    numParameters = methods[i].GetParameters().Length,
-                    methodAttributes = (uint)methods[i].Attributes,
+                    name = NativeAllocStringAnsi(method.Name),
+                    numParameters = method.GetParameters().Length,
+                    methodAttributes = (uint)method.Attributes,
                 };
-                classMethod.typeHandle = GetMethodGCHandle(methods[i]);
+                classMethod.typeHandle = GetMethodGCHandle(method);
                 Unsafe.Write(ptr.ToPointer(), classMethod);
             }
             *classMethods = arr;
@@ -338,6 +256,8 @@ namespace FlaxEngine.Interop
         {
             Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             var fields = type.GetFields(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (type.IsValueType && !type.IsEnum && !type.IsPrimitive && type.GetCustomAttribute<System.Runtime.CompilerServices.IsByRefLikeAttribute>() != null)
+                fields = Array.Empty<FieldInfo>(); // ref struct are not supported
 
             NativeFieldDefinitions* arr = (NativeFieldDefinitions*)NativeAlloc(fields.Length, Unsafe.SizeOf<NativeFieldDefinitions>());
             for (int i = 0; i < fields.Length; i++)
@@ -377,14 +297,27 @@ namespace FlaxEngine.Interop
             var arr = (NativePropertyDefinitions*)NativeAlloc(properties.Length, Unsafe.SizeOf<NativePropertyDefinitions>());
             for (int i = 0; i < properties.Length; i++)
             {
+                var property = properties[i];
+
+                ManagedHandle propertyHandle = ManagedHandle.Alloc(property);
+#if FLAX_EDITOR
+                if (type.IsCollectible)
+                    propertyHandleCacheCollectible.Add(propertyHandle);
+                else
+#endif
+                {
+                    propertyHandleCache.Add(propertyHandle);
+                }
+
                 IntPtr ptr = IntPtr.Add(new IntPtr(arr), Unsafe.SizeOf<NativePropertyDefinitions>() * i);
 
-                var getterMethod = properties[i].GetGetMethod(true);
-                var setterMethod = properties[i].GetSetMethod(true);
+                var getterMethod = property.GetGetMethod(true);
+                var setterMethod = property.GetSetMethod(true);
 
                 var classProperty = new NativePropertyDefinitions
                 {
-                    name = NativeAllocStringAnsi(properties[i].Name),
+                    name = NativeAllocStringAnsi(property.Name),
+                    propertyHandle = propertyHandle,
                 };
                 if (getterMethod != null)
                 {
@@ -402,12 +335,8 @@ namespace FlaxEngine.Interop
             *classPropertiesCount = properties.Length;
         }
 
-        [UnmanagedCallersOnly]
-        internal static void GetClassAttributes(ManagedHandle typeHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        internal static void GetAttributes(object[] attributeValues, ManagedHandle** classAttributes, int* classAttributesCount)
         {
-            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
-            object[] attributeValues = type.GetCustomAttributes(false);
-
             ManagedHandle* arr = (ManagedHandle*)NativeAlloc(attributeValues.Length, Unsafe.SizeOf<ManagedHandle>());
             for (int i = 0; i < attributeValues.Length; i++)
             {
@@ -420,6 +349,38 @@ namespace FlaxEngine.Interop
             }
             *classAttributes = arr;
             *classAttributesCount = attributeValues.Length;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetClassAttributes(ManagedHandle typeHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        {
+            Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
+            object[] attributeValues = type.GetCustomAttributes(false);
+            GetAttributes(attributeValues, classAttributes, classAttributesCount);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetMethodAttributes(ManagedHandle methodHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        {
+            MethodHolder methodHolder = Unsafe.As<MethodHolder>(methodHandle.Target);
+            object[] attributeValues = methodHolder.method.GetCustomAttributes(false);
+            GetAttributes(attributeValues, classAttributes, classAttributesCount);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetFieldAttributes(ManagedHandle fieldHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        {
+            FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
+            object[] attributeValues = field.field.GetCustomAttributes(false);
+            GetAttributes(attributeValues, classAttributes, classAttributesCount);
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GetPropertyAttributes(ManagedHandle propertyHandle, ManagedHandle** classAttributes, int* classAttributesCount)
+        {
+            PropertyInfo property = Unsafe.As<PropertyInfo>(propertyHandle.Target);
+            object[] attributeValues = property.GetCustomAttributes(false);
+            GetAttributes(attributeValues, classAttributes, classAttributesCount);
         }
 
         [UnmanagedCallersOnly]
@@ -848,13 +809,9 @@ namespace FlaxEngine.Interop
         [UnmanagedCallersOnly]
         internal static void FieldSetValue(ManagedHandle fieldOwnerHandle, ManagedHandle fieldHandle, IntPtr valuePtr)
         {
-            object fieldOwner = fieldOwnerHandle.Target;
+            object fieldOwner = fieldOwnerHandle.IsAllocated ? fieldOwnerHandle.Target : null;
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
-            object value = null;
-            if (field.field.FieldType.IsValueType)
-                value = Marshal.PtrToStructure(valuePtr, field.field.FieldType);
-            else if (valuePtr != IntPtr.Zero)
-                value = ManagedHandle.FromIntPtr(valuePtr).Target;
+            object value = MarshalToManaged(valuePtr, field.field.FieldType);
             field.field.SetValue(fieldOwner, value);
         }
 
@@ -1015,13 +972,59 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
-        internal static void ReloadScriptingAssemblyLoadContext()
+        internal static void CreateScriptingAssemblyLoadContext()
         {
 #if FLAX_EDITOR
-            // Clear all caches which might hold references to assemblies in collectible ALC
-            typeCache.Clear();
+            if (scriptingAssemblyLoadContext != null)
+            {
+                // Wait for previous ALC to finish unloading, track it without holding strong references to it
+                GCHandle weakRef = GCHandle.Alloc(scriptingAssemblyLoadContext, GCHandleType.WeakTrackResurrection);
+                scriptingAssemblyLoadContext = null;
+#if false
+                // In case the ALC doesn't unload properly: https://learn.microsoft.com/en-us/dotnet/standard/assembly/unloadability#debug-unloading-issues
+                while (true)
+#else
+                for (int attempts = 5; attempts > 0; attempts--)
+#endif
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
 
-            // Release all references in collectible ALC
+                    if (!IsHandleAlive(weakRef))
+                        break;
+                    System.Threading.Thread.Sleep(1);
+                }
+                if (IsHandleAlive(weakRef))
+                    Debug.Logger.LogHandler.LogWrite(LogType.Warning, "Scripting AssemblyLoadContext was not unloaded.");
+                weakRef.Free();
+
+                static bool IsHandleAlive(GCHandle weakRef)
+                {
+                    // Checking the target in scope somehow holds a reference to it...?
+                    return weakRef.Target != null;
+                }
+            }
+
+            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible: true);
+            scriptingAssemblyLoadContext.Resolving += OnScriptingAssemblyLoadContextResolving;
+#else
+            scriptingAssemblyLoadContext = new AssemblyLoadContext("Flax", isCollectible: false);
+#endif
+            DelegateHelpers.InitMethods();
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void UnloadScriptingAssemblyLoadContext()
+        {
+#if FLAX_EDITOR
+            // Any of the windows might still process events while GC is blocking, the events
+            // might go through the interop layer and require DelegateHelpers to invoke internal methods.
+            // This seems to happen quite often with OnLostFocus event from debugger stealing the focus
+            // after hitting a breakpoint in the middle of scripting ALC being reloaded.
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            // Clear all caches which might hold references to assemblies in collectible ALC
             cachedDelegatesCollectible.Clear();
             foreach (var pair in managedTypesCollectible)
                 pair.Value.handle.Free();
@@ -1032,6 +1035,14 @@ namespace FlaxEngine.Interop
             foreach (var handle in fieldHandleCacheCollectible)
                 handle.Free();
             fieldHandleCacheCollectible.Clear();
+            foreach (var handle in propertyHandleCacheCollectible)
+                handle.Free();
+            propertyHandleCacheCollectible.Clear();
+
+            foreach (var key in assemblyHandles.Keys.Where(x => x.IsCollectible))
+                assemblyHandles.Remove(key);
+            foreach (var key in assemblyOwnedNativeLibraries.Keys.Where(x => x.IsCollectible))
+                assemblyOwnedNativeLibraries.Remove(key);
 
             _typeSizeCache.Clear();
 
@@ -1039,18 +1050,77 @@ namespace FlaxEngine.Interop
                 pair.Value.Free();
             classAttributesCacheCollectible.Clear();
 
+            ArrayFactory.marshalledTypes.Clear();
+            ArrayFactory.arrayTypes.Clear();
+            ArrayFactory.createArrayDelegates.Clear();
+
             FlaxEngine.Json.JsonSerializer.ResetCache();
 
+            // Ensure both pools are empty
+            ManagedHandle.ManagedHandlePool.TryCollectWeakHandles(true);
+            ManagedHandle.ManagedHandlePool.TryCollectWeakHandles(true);
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            // Release these as late as possible in case native code tries to call managed side during cleanup
+            DelegateHelpers.Release();
+
+            {
+                // HACK: Workaround for TypeDescriptor holding references to collectible types (https://github.com/dotnet/runtime/issues/30656)
+
+                Type typeDescriptionProviderType = typeof(System.ComponentModel.TypeDescriptionProvider);
+                MethodInfo clearCacheMethod = typeDescriptionProviderType?.Assembly.GetType("System.ComponentModel.ReflectionCachesUpdateHandler")?.GetMethod("ClearCache");
+                if (clearCacheMethod != null)
+                    clearCacheMethod.Invoke(null, new object[] { null });
+
+                Type TypeDescriptorType = typeof(System.ComponentModel.TypeDescriptor);
+                object s_providerTable = TypeDescriptorType?.GetField("s_providerTable", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+
+                // Added in .NET runtime 8.0.10, used as the main locking object
+                object s_commonSyncObject = TypeDescriptorType?.GetField("s_commonSyncObject", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                if (s_commonSyncObject == null)
+                    s_commonSyncObject = s_providerTable;
+
+                // Removed in .NET runtime 8.0.7
+                object s_internalSyncObject = TypeDescriptorType?.GetField("s_internalSyncObject", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                object s_defaultProviders = TypeDescriptorType?.GetField("s_defaultProviders", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                if (s_internalSyncObject != null && s_defaultProviders != null)
+                {
+                    lock (s_internalSyncObject)
+                        InvokeClear(s_defaultProviders);
+                }
+
+                // Replaces s_defaultProviders in 8.0.7
+                object s_defaultProviderInitialized = TypeDescriptorType?.GetField("s_defaultProviderInitialized", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                if (s_commonSyncObject != null && s_defaultProviderInitialized != null)
+                {
+                    lock (s_commonSyncObject)
+                        InvokeClear(s_defaultProviderInitialized);
+                }
+
+                object s_providerTypeTable = TypeDescriptorType?.GetField("s_providerTypeTable", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)?.GetValue(null);
+                if (s_providerTable != null && s_providerTypeTable != null)
+                {
+                    lock (s_commonSyncObject)
+                        InvokeClear(s_providerTypeTable);
+                    InvokeClear(s_providerTable);
+                }
+
+                static void InvokeClear(object instance)
+                {
+                    Type type = instance.GetType();
+                    Assertions.Assert.IsTrue(type.Name == "ConcurrentDictionary`2" || type.Name == "Hashtable" || type.Name == "WeakHashtable");
+                    type.GetMethods(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault(x => x.Name == "Clear")?.Invoke(instance, Array.Empty<object>());
+                }
+            }
+
             // Unload the ALC
-            bool unloading = true;
-            scriptingAssemblyLoadContext.Unloading += (alc) => { unloading = false; };
             scriptingAssemblyLoadContext.Unload();
+            scriptingAssemblyLoadContext.Resolving -= OnScriptingAssemblyLoadContextResolving;
 
-            while (unloading)
-                System.Threading.Thread.Sleep(1);
-
-            InitScriptingAssemblyLoadContext();
-            DelegateHelpers.InitMethods();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
 #endif
         }
 
@@ -1059,8 +1129,6 @@ namespace FlaxEngine.Interop
         {
             Type type = Unsafe.As<TypeHolder>(typeHandle.Target);
             Type nativeType = GetInternalType(type) ?? type;
-            if (nativeType == typeof(Version))
-                nativeType = typeof(NativeVersion);
             int size;
             if (nativeType.IsClass)
                 size = sizeof(IntPtr);

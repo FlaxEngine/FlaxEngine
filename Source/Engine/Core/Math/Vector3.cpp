@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Vector3.h"
 #include "Vector2.h"
@@ -320,8 +320,31 @@ float Float3::Angle(const Float3& from, const Float3& to)
 {
     const float dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0f, 1.0f);
     if (Math::Abs(dot) > 1.0f - ZeroTolerance)
-        return dot > 0.0f ? 0.0f : PI;
-    return Math::Acos(dot);
+        return dot > 0.0f ? 0.0f : 180.0f;
+    return Math::Acos(dot) * RadiansToDegrees;
+}
+
+template<>
+float Float3::SignedAngle(const Float3& from, const Float3& to, const Float3& axis)
+{
+    const float angle = Angle(from, to);
+    const Float3 cross = Cross(from, to);
+    const float sign = Math::Sign(axis.X * cross.X + axis.Y * cross.Y + axis.Z * cross.Z);
+    return angle * sign;
+}
+
+template<>
+Float3 Float3::SnapToGrid(const Float3& pos, const Float3& gridSize)
+{
+    return Float3(Math::Ceil((pos.X - (gridSize.X * 0.5f)) / gridSize.X) * gridSize.X,
+                  Math::Ceil((pos.Y - (gridSize.Y * 0.5f)) / gridSize.Y) * gridSize.Y,
+                  Math::Ceil((pos.Z - (gridSize.Z * 0.5f)) / gridSize.Z) * gridSize.Z);
+}
+
+template<>
+Float3 Float3::SnapToGrid(const Float3& point, const Float3& gridSize, const Quaternion& gridOrientation, const Float3& gridOrigin, const Float3& offset)
+{
+    return (gridOrientation * (gridOrientation.Conjugated() * SnapToGrid(point - gridOrigin, gridSize) + offset)) + gridOrigin;
 }
 
 // Double
@@ -634,8 +657,31 @@ double Double3::Angle(const Double3& from, const Double3& to)
 {
     const double dot = Math::Clamp(Dot(Normalize(from), Normalize(to)), -1.0, 1.0);
     if (Math::Abs(dot) > 1.0 - ZeroTolerance)
-        return dot > 0.0 ? 0.0 : PI;
-    return Math::Acos(dot);
+        return dot > 0.0f ? 0.0f : 180.0f;
+    return Math::Acos(dot) * RadiansToDegrees;
+}
+
+template<>
+double Double3::SignedAngle(const Double3& from, const Double3& to, const Double3& axis)
+{
+    const double angle = Angle(from, to);
+    const Double3 cross = Cross(from, to);
+    const double sign = Math::Sign(axis.X * cross.X + axis.Y * cross.Y + axis.Z * cross.Z);
+    return angle * sign;
+}
+
+template<>
+Double3 Double3::SnapToGrid(const Double3& pos, const Double3& gridSize)
+{
+    return Double3(Math::Ceil((pos.X - (gridSize.X * 0.5)) / gridSize.X) * gridSize.X,
+                   Math::Ceil((pos.Y - (gridSize.Y * 0.5)) / gridSize.Y) * gridSize.Y,
+                   Math::Ceil((pos.Z - (gridSize.Z * 0.5)) / gridSize.Z) * gridSize.Z);
+}
+
+template<>
+Double3 Double3::SnapToGrid(const Double3& point, const Double3& gridSize, const Quaternion& gridOrientation, const Double3& gridOrigin, const Double3& offset)
+{
+    return (gridOrientation * (gridOrientation.Conjugated() * SnapToGrid(point - gridOrigin, gridSize) + offset)) + gridOrigin;
 }
 
 // Int
@@ -851,4 +897,24 @@ template<>
 int32 Int3::Angle(const Int3& from, const Int3& to)
 {
     return 0;
+}
+
+template<>
+int32 Int3::SignedAngle(const Int3& from, const Int3& to, const Int3& axis)
+{
+    return 0;
+}
+
+template<>
+Int3 Int3::SnapToGrid(const Int3& pos, const Int3& gridSize)
+{
+    return Int3(((pos.X - (gridSize.X / 2)) / gridSize.X) * gridSize.X,
+                ((pos.Y - (gridSize.Y / 2)) / gridSize.Y) * gridSize.Y,
+                ((pos.Z - (gridSize.Z / 2)) / gridSize.Z) * gridSize.Z);
+}
+
+template<>
+Int3 Int3::SnapToGrid(const Int3& point, const Int3& gridSize, const Quaternion& gridOrientation, const Int3& gridOrigin, const Int3& offset)
+{
+    return (gridOrientation * (gridOrientation.Conjugated() * SnapToGrid(point - gridOrigin, gridSize) + offset)) + gridOrigin;
 }

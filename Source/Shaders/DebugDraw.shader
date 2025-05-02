@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "./Flax/Common.hlsl"
 
@@ -18,8 +18,6 @@ struct VS2PS
 Texture2D SceneDepthTexture : register(t0);
 
 META_VS(true, FEATURE_LEVEL_ES2)
-META_VS_IN_ELEMENT(POSITION, 0, R32G32B32_FLOAT, 0, ALIGN, PER_VERTEX, 0, true)
-META_VS_IN_ELEMENT(COLOR,    0, R8G8B8A8_UNORM,  0, ALIGN, PER_VERTEX, 0, true)
 VS2PS VS(float3 Position : POSITION, float4 Color : COLOR)
 {
 	VS2PS output;

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "GPUTasksManager.h"
 #include "GPUTask.h"
@@ -30,6 +30,11 @@ void GPUTask::Execute(GPUTasksContext* context)
         // Save task completion point (for synchronization)
         _syncPoint = context->GetCurrentSyncPoint();
         _context = context;
+        if (_syncLatency == 0)
+        {
+            // No delay on sync
+            Sync();
+        }
     }
 }
 
@@ -41,6 +46,21 @@ String GPUTask::ToString() const
 void GPUTask::Enqueue()
 {
     GPUDevice::Instance->GetTasksManager()->_tasks.Add(this);
+}
+
+void GPUTask::OnCancel()
+{
+    // Check if task is waiting for sync (very likely situation)
+    if (IsSyncing())
+    {
+        // Task has been performed but is waiting for a CPU/GPU sync so we have to cancel that
+        _context->OnCancelSync(this);
+        _context = nullptr;
+        SetState(TaskState::Canceled);
+    }
+
+    // Base
+    Task::OnCancel();
 }
 
 GPUTasksManager::GPUTasksManager()

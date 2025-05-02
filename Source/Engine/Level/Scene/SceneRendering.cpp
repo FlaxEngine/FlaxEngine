@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #define SCENE_RENDERING_USE_PROFILER_PER_ACTOR 0
 
@@ -90,6 +90,7 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
         // Draw physics shapes
         if (EnumHasAnyFlags(view.Flags, ViewFlags::PhysicsDebug) || view.Mode == ViewMode::PhysicsColliders)
         {
+            PROFILE_CPU_NAMED("PhysicsDebug");
             const PhysicsDebugCallback* physicsDebugData = PhysicsDebug.Get();
             for (int32 i = 0; i < PhysicsDebug.Count(); i++)
             {
@@ -100,6 +101,7 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
         // Draw light shapes
         if (EnumHasAnyFlags(view.Flags, ViewFlags::LightsDebug))
         {
+            PROFILE_CPU_NAMED("LightsDebug");
             const LightsDebugCallback* lightsDebugData = LightsDebug.Get();
             for (int32 i = 0; i < LightsDebug.Count(); i++)
             {
@@ -162,7 +164,7 @@ void SceneRendering::AddActor(Actor* a, int32& key)
         listener->OnSceneRenderingAddActor(a);
 }
 
-void SceneRendering::UpdateActor(Actor* a, int32& key)
+void SceneRendering::UpdateActor(Actor* a, int32& key, ISceneRenderingListener::UpdateFlags flags)
 {
     const int32 category = a->_drawCategory;
     ScopeLock lock(Locker);
@@ -173,9 +175,11 @@ void SceneRendering::UpdateActor(Actor* a, int32& key)
     if (e.Actor == a)
     {
         for (auto* listener : _listeners)
-            listener->OnSceneRenderingUpdateActor(a, e.Bounds);
-        e.LayerMask = a->GetLayerMask();
-        e.Bounds = a->GetSphere();
+            listener->OnSceneRenderingUpdateActor(a, e.Bounds, flags);
+        if (flags & ISceneRenderingListener::Layer)
+            e.LayerMask = a->GetLayerMask();
+        if (flags & ISceneRenderingListener::Bounds)
+            e.Bounds = a->GetSphere();
     }
 }
 
@@ -212,12 +216,12 @@ void SceneRendering::DrawActorsJob(int32)
     PROFILE_CPU();
     auto& mainContext = _drawBatch->GetMainContext();
     const auto& view = mainContext.View;
-    if (view.IsOfflinePass)
+    if (view.StaticFlagsMask != StaticFlags::None)
     {
-        // Offline pass with additional static flags culling
+        // Static-flags culling
         FOR_EACH_BATCH_ACTOR
             e.Bounds.Center -= view.Origin;
-            if (CHECK_ACTOR && (e.Actor->GetStaticFlags() & view.StaticFlagsMask) != StaticFlags::None)
+            if (CHECK_ACTOR && (e.Actor->GetStaticFlags() & view.StaticFlagsMask) == view.StaticFlagsCompare)
             {
                 DRAW_ACTOR(*_drawBatch);
             }

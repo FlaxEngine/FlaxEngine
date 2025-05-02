@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,12 +10,18 @@
 /// <summary>
 /// Current materials shader version.
 /// </summary>
-#define MATERIAL_GRAPH_VERSION 162
+#define MATERIAL_GRAPH_VERSION 173
 
 class Material;
 class GPUShader;
 class GPUConstantBuffer;
 class MemoryReadStream;
+
+// Draw pipeline constant buffer (with per-draw constants at slot 2)
+GPU_CB_STRUCT(MaterialShaderDataPerDraw {
+    Float3 DrawPadding;
+    uint32 DrawObjectIndex;
+    });
 
 /// <summary>
 /// Represents material shader that can be used to render objects, visuals or effects. Contains a dedicated shader.

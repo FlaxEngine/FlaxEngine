@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -10,7 +10,7 @@
 /// <summary>
 /// Environment Probe can capture space around the objects to provide reflections.
 /// </summary>
-API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Environment Probe\"), ActorToolbox(\"Visuals\")")
+API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Lighting & PostFX/Environment Probe\"), ActorToolbox(\"Visuals\")")
 class FLAXENGINE_API EnvironmentProbe : public Actor
 {
     DECLARE_SCENE_OBJECT(EnvironmentProbe);
@@ -42,7 +42,7 @@ public:
     /// <summary>
     /// The reflections texture resolution.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(0), EditorDisplay(\"Probe\")")
+    API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Probe\")")
     ProbeCubemapResolution CubemapResolution = ProbeCubemapResolution::UseGraphicsSettings;
 
     /// <summary>
@@ -89,13 +89,6 @@ public:
     /// True if probe is using custom cube texture (not baked).
     /// </summary>
     API_PROPERTY() bool IsUsingCustomProbe() const;
-
-    /// <summary>
-    /// Setup probe data structure
-    /// </summary>
-    /// <param name="renderContext">Rendering context</param>
-    /// <param name="data">Packed probe data to set</param>
-    void SetupProbeData(const RenderContext& renderContext, struct ProbeData* data) const;
 
     /// <summary>
     /// Gets the custom probe (null if using baked one or none).

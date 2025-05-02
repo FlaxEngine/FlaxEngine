@@ -1,9 +1,23 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX12
 
+#include "Engine/Graphics/Config.h"
+#if USE_PIX && GPU_ALLOW_PROFILE_EVENTS
+// Include these header files before pix3
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#define NOGDI
+#define NODRAWTEXT
+//#define NOCTLMGR
+#define NOFLATSBAPIS
+#include <Windows.h>
+#include <d3d12.h>
+#include <ThirdParty/WinPixEventRuntime/pix3.h>
+#endif
 #include "GPUContextDX12.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Rectangle.h"
 #include "GPUShaderDX12.h"
@@ -12,6 +26,7 @@
 #include "GPUTextureDX12.h"
 #include "GPUBufferDX12.h"
 #include "GPUSamplerDX12.h"
+#include "GPUVertexLayoutDX12.h"
 #include "CommandQueueDX12.h"
 #include "DescriptorHeapDX12.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -22,9 +37,6 @@
 #include "Engine/Profiler/RenderStats.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Threading/Threading.h"
-#if USE_PIX && GPU_ALLOW_PROFILE_EVENTS
-#include <pix3.h>
-#endif
 
 #define DX12_ENABLE_RESOURCE_BARRIERS_BATCHING 1
 #define DX12_ENABLE_RESOURCE_BARRIERS_DEBUGGING 0
@@ -42,18 +54,18 @@ inline bool operator!=(const D3D12_INDEX_BUFFER_VIEW& l, const D3D12_INDEX_BUFFE
 // Ensure to match the indirect commands arguments layout
 static_assert(sizeof(GPUDispatchIndirectArgs) == sizeof(D3D12_DISPATCH_ARGUMENTS), "Wrong size of GPUDrawIndirectArgs.");
 static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountX) == OFFSET_OF(D3D12_DISPATCH_ARGUMENTS, ThreadGroupCountX), "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountX");
-static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountY) == OFFSET_OF(D3D12_DISPATCH_ARGUMENTS, ThreadGroupCountY),"Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountY");
+static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountY) == OFFSET_OF(D3D12_DISPATCH_ARGUMENTS, ThreadGroupCountY), "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountY");
 static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountZ) == OFFSET_OF(D3D12_DISPATCH_ARGUMENTS, ThreadGroupCountZ), "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountZ");
 //
 static_assert(sizeof(GPUDrawIndirectArgs) == sizeof(D3D12_DRAW_ARGUMENTS), "Wrong size of GPUDrawIndirectArgs.");
 static_assert(OFFSET_OF(GPUDrawIndirectArgs, VerticesCount) == OFFSET_OF(D3D12_DRAW_ARGUMENTS, VertexCountPerInstance), "Wrong offset for GPUDrawIndirectArgs::VerticesCount");
-static_assert(OFFSET_OF(GPUDrawIndirectArgs, InstanceCount) == OFFSET_OF(D3D12_DRAW_ARGUMENTS, InstanceCount),"Wrong offset for GPUDrawIndirectArgs::InstanceCount");
+static_assert(OFFSET_OF(GPUDrawIndirectArgs, InstanceCount) == OFFSET_OF(D3D12_DRAW_ARGUMENTS, InstanceCount), "Wrong offset for GPUDrawIndirectArgs::InstanceCount");
 static_assert(OFFSET_OF(GPUDrawIndirectArgs, StartVertex) == OFFSET_OF(D3D12_DRAW_ARGUMENTS, StartVertexLocation), "Wrong offset for GPUDrawIndirectArgs::StartVertex");
 static_assert(OFFSET_OF(GPUDrawIndirectArgs, StartInstance) == OFFSET_OF(D3D12_DRAW_ARGUMENTS, StartInstanceLocation), "Wrong offset for GPUDrawIndirectArgs::StartInstance");
 //
 static_assert(sizeof(GPUDrawIndexedIndirectArgs) == sizeof(D3D12_DRAW_INDEXED_ARGUMENTS), "Wrong size of GPUDrawIndexedIndirectArgs.");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, IndicesCount) == OFFSET_OF(D3D12_DRAW_INDEXED_ARGUMENTS, IndexCountPerInstance), "Wrong offset for GPUDrawIndexedIndirectArgs::IndicesCount");
-static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, InstanceCount) == OFFSET_OF(D3D12_DRAW_INDEXED_ARGUMENTS, InstanceCount),"Wrong offset for GPUDrawIndexedIndirectArgs::InstanceCount");
+static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, InstanceCount) == OFFSET_OF(D3D12_DRAW_INDEXED_ARGUMENTS, InstanceCount), "Wrong offset for GPUDrawIndexedIndirectArgs::InstanceCount");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, StartIndex) == OFFSET_OF(D3D12_DRAW_INDEXED_ARGUMENTS, StartIndexLocation), "Wrong offset for GPUDrawIndexedIndirectArgs::StartIndex");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, StartVertex) == OFFSET_OF(D3D12_DRAW_INDEXED_ARGUMENTS, BaseVertexLocation), "Wrong offset for GPUDrawIndexedIndirectArgs::StartVertex");
 static_assert(OFFSET_OF(GPUDrawIndexedIndirectArgs, StartInstance) == OFFSET_OF(D3D12_DRAW_INDEXED_ARGUMENTS, StartInstanceLocation), "Wrong offset for GPUDrawIndexedIndirectArgs::StartInstance");
@@ -233,10 +245,22 @@ void GPUContextDX12::Reset()
     Platform::MemoryClear(_srHandles, sizeof(_srHandles));
     Platform::MemoryClear(_uaHandles, sizeof(_uaHandles));
     Platform::MemoryClear(_vbHandles, sizeof(_vbHandles));
+    _vertexLayout = nullptr;
     _ibHandle = nullptr;
     Platform::MemoryClear(&_cbHandles, sizeof(_cbHandles));
     Platform::MemoryClear(&_samplers, sizeof(_samplers));
     _swapChainsUsed = 0;
+    
+    // Bind dummy vertex buffer (used by missing bindings)
+    D3D12_VERTEX_BUFFER_VIEW dummyVBView;
+    if (!_device->DummyVB)
+    {
+        _device->DummyVB = _device->CreateBuffer(TEXT("DummyVertexBuffer"));
+        auto* layout = GPUVertexLayout::Get({ { VertexElement::Types::Attribute3, 0, 0, 0, PixelFormat::R32G32B32A32_Float } });
+        _device->DummyVB->Init(GPUBufferDescription::Vertex(layout, sizeof(Color), 1, &Color::Transparent));
+    }
+    ((GPUBufferDX12*)_device->DummyVB)->GetVBView(dummyVBView);
+    _commandList->IASetVertexBuffers(GPU_MAX_VB_BINDED, 1, &dummyVBView);
 
     ForceRebindDescriptors();
 }
@@ -459,8 +483,10 @@ void GPUContextDX12::flushCBs()
             const auto cb = _cbHandles[i];
             if (cb)
             {
-                ASSERT(cb->GPUAddress != 0);
-                _commandList->SetGraphicsRootConstantBufferView(DX12_ROOT_SIGNATURE_CB + i, cb->GPUAddress);
+                if (cb->GPUAddress != 0)
+                    _commandList->SetGraphicsRootConstantBufferView(DX12_ROOT_SIGNATURE_CB + i, cb->GPUAddress);
+                else
+                    _cbGraphicsDirtyFlag = true; // CB was binded but not yet assigned so stay in dirty state
             }
         }
     }
@@ -472,8 +498,10 @@ void GPUContextDX12::flushCBs()
             const auto cb = _cbHandles[i];
             if (cb)
             {
-                ASSERT(cb->GPUAddress != 0);
-                _commandList->SetComputeRootConstantBufferView(DX12_ROOT_SIGNATURE_CB + i, cb->GPUAddress);
+                if (cb->GPUAddress != 0)
+                    _commandList->SetComputeRootConstantBufferView(DX12_ROOT_SIGNATURE_CB + i, cb->GPUAddress);
+                else
+                    _cbComputeDirtyFlag = true; // CB was binded but not yet assigned so stay in dirty state
             }
         }
     }
@@ -545,7 +573,13 @@ void GPUContextDX12::flushPS()
 
         // Change state
         ASSERT(_currentState->IsValid());
-        _commandList->SetPipelineState(_currentState->GetState(_rtDepth, _rtCount, _rtHandles));
+#if GPU_ENABLE_ASSERTION_LOW_LAYERS
+        if (!_vertexLayout && _vbHandles[0] && !_currentState->VertexBufferLayout)
+        {
+            LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
+        }
+#endif
+        _commandList->SetPipelineState(_currentState->GetState(_rtDepth, _rtCount, _rtHandles, _vertexLayout));
         if (_primitiveTopology != _currentState->PrimitiveTopology)
         {
             _primitiveTopology = _currentState->PrimitiveTopology;
@@ -703,7 +737,6 @@ bool GPUContextDX12::IsDepthBufferBinded()
 void GPUContextDX12::Clear(GPUTextureView* rt, const Color& color)
 {
     auto rtDX12 = static_cast<GPUTextureViewDX12*>(rt);
-
     if (rtDX12)
     {
         SetResourceState(rtDX12->GetResourceOwner(), D3D12_RESOURCE_STATE_RENDER_TARGET, rtDX12->SubresourceIndex);
@@ -713,16 +746,15 @@ void GPUContextDX12::Clear(GPUTextureView* rt, const Color& color)
     }
 }
 
-void GPUContextDX12::ClearDepth(GPUTextureView* depthBuffer, float depthValue)
+void GPUContextDX12::ClearDepth(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue)
 {
     auto depthBufferDX12 = static_cast<GPUTextureViewDX12*>(depthBuffer);
-
     if (depthBufferDX12)
     {
         SetResourceState(depthBufferDX12->GetResourceOwner(), D3D12_RESOURCE_STATE_DEPTH_WRITE, depthBufferDX12->SubresourceIndex);
         flushRBs();
 
-        _commandList->ClearDepthStencilView(depthBufferDX12->DSV(), D3D12_CLEAR_FLAG_DEPTH, depthValue, 0xff, 0, nullptr);
+        _commandList->ClearDepthStencilView(depthBufferDX12->DSV(), D3D12_CLEAR_FLAG_DEPTH, depthValue, stencilValue, 0, nullptr);
     }
 }
 
@@ -913,9 +945,13 @@ void GPUContextDX12::BindCB(int32 slot, GPUConstantBuffer* cb)
 
 void GPUContextDX12::BindSR(int32 slot, GPUResourceView* view)
 {
+#if !BUILD_RELEASE
     ASSERT(slot >= 0 && slot < GPU_MAX_SR_BINDED);
+    if (view && ((IShaderResourceDX12*)view->GetNativePtr())->SRV().ptr == 0)
+        LogInvalidResourceUsage(slot, view, InvalidBindPoint::SRV);
+#endif
     auto handle = view ? (IShaderResourceDX12*)view->GetNativePtr() : nullptr;
-    if (_srHandles[slot] != handle || !handle)
+    if (_srHandles[slot] != handle)
     {
         _srMaskDirtyGraphics |= 1 << slot;
         _srMaskDirtyCompute |= 1 << slot;
@@ -927,16 +963,19 @@ void GPUContextDX12::BindSR(int32 slot, GPUResourceView* view)
 
 void GPUContextDX12::BindUA(int32 slot, GPUResourceView* view)
 {
+#if !BUILD_RELEASE
     ASSERT(slot >= 0 && slot < GPU_MAX_UA_BINDED);
+    if (view && ((IShaderResourceDX12*)view->GetNativePtr())->UAV().ptr == 0)
+        LogInvalidResourceUsage(slot, view, InvalidBindPoint::UAV);
+#endif
     _uaHandles[slot] = view ? (IShaderResourceDX12*)view->GetNativePtr() : nullptr;
     if (view)
         *view->LastRenderTime = _lastRenderTime;
 }
 
-void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets)
+void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32* vertexBuffersOffsets, GPUVertexLayout* vertexLayout)
 {
     ASSERT(vertexBuffers.Length() >= 0 && vertexBuffers.Length() <= GPU_MAX_VB_BINDED);
-
     bool vbEdited = _vbCount != vertexBuffers.Length();
     D3D12_VERTEX_BUFFER_VIEW views[GPU_MAX_VB_BINDED];
     for (int32 i = 0; i < vertexBuffers.Length(); i++)
@@ -968,6 +1007,13 @@ void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
             return;
 #endif
         _commandList->IASetVertexBuffers(0, vertexBuffers.Length(), views);
+    }
+    if (!vertexLayout)
+         vertexLayout = GPUVertexLayout::Get(vertexBuffers);
+    if (_vertexLayout != vertexLayout)
+    {
+        _vertexLayout = (GPUVertexLayoutDX12*)vertexLayout;
+        _psDirtyFlag = true;
     }
 }
 
@@ -1261,8 +1307,23 @@ void GPUContextDX12::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource,
     // Get destination copy location
     D3D12_TEXTURE_COPY_LOCATION dst;
     dst.pResource = dstTextureDX12->GetResource();
-    dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-    dst.SubresourceIndex = dstSubresource;
+    if (dstTextureDX12->IsStaging())
+    {
+        const int32 mipLevel = (int32)dstSubresource % dstTextureDX12->MipLevels();
+        const int32 copyOffset = dstTextureDX12->ComputeBufferOffset((int32)dstSubresource, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
+        dst.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+        dst.PlacedFootprint.Offset = copyOffset;
+        dst.PlacedFootprint.Footprint.Width = dstTextureDX12->CalculateMipSize(dstTextureDX12->Width(), mipLevel);
+        dst.PlacedFootprint.Footprint.Height = dstTextureDX12->CalculateMipSize(dstTextureDX12->Height(), mipLevel);
+        dst.PlacedFootprint.Footprint.Depth = dstTextureDX12->CalculateMipSize(dstTextureDX12->Depth(), mipLevel);
+        dst.PlacedFootprint.Footprint.Format = RenderToolsDX::ToDxgiFormat(dstTextureDX12->Format());
+        dst.PlacedFootprint.Footprint.RowPitch = dstTextureDX12->ComputeRowPitch(mipLevel, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
+    }
+    else
+    {
+        dst.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+        dst.SubresourceIndex = dstSubresource;
+    }
 
     // Get source copy location
     D3D12_TEXTURE_COPY_LOCATION src;
@@ -1457,7 +1518,7 @@ void GPUContextDX12::ForceRebindDescriptors()
     _commandList->SetComputeRootSignature(_device->GetRootSignature());
 
     // Bind heaps
-    ID3D12DescriptorHeap* ppHeaps[] = {_device->RingHeap_CBV_SRV_UAV.GetHeap(), _device->RingHeap_Sampler.GetHeap()};
+    ID3D12DescriptorHeap* ppHeaps[] = { _device->RingHeap_CBV_SRV_UAV.GetHeap(), _device->RingHeap_Sampler.GetHeap() };
     _commandList->SetDescriptorHeaps(ARRAY_COUNT(ppHeaps), ppHeaps);
 }
 

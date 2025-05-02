@@ -1,10 +1,11 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "WheeledVehicle.h"
-#include "Engine/Physics/Physics.h"
 #include "Engine/Level/Scene/Scene.h"
+#include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Physics/PhysicsScene.h"
+#include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/Serialization.h"
 #if USE_EDITOR
 #include "Engine/Level/Scene/SceneRendering.h"
@@ -67,8 +68,9 @@ void WheeledVehicle::SetDriveControl(DriveControlSettings value)
     for (int32 i = 0; i < steerVsSpeedCount; i++)
     {
         // Apply only on changed value
-        if (Math::NotNearEqual(_driveControl.SteerVsSpeed[i].Speed, value.SteerVsSpeed[i].Speed) ||
-            Math::NotNearEqual(_driveControl.SteerVsSpeed[i].Steer, value.SteerVsSpeed[i].Steer))
+        if (i > _driveControl.SteerVsSpeed.Count() - 1 ||
+            Math::NotNearEqual(_driveControl.SteerVsSpeed[i].Speed, value.SteerVsSpeed[i].Speed) ||
+             Math::NotNearEqual(_driveControl.SteerVsSpeed[i].Steer, value.SteerVsSpeed[i].Steer))
         {
             SteerControl& steerVsSpeed = value.SteerVsSpeed[i];
             steerVsSpeed.Steer = Math::Saturate(steerVsSpeed.Steer);
@@ -187,6 +189,11 @@ const Array<WheeledVehicle::AntiRollBar>& WheeledVehicle::GetAntiRollBars() cons
 void WheeledVehicle::SetThrottle(float value)
 {
     _throttle = Math::Clamp(value, -1.0f, 1.0f);
+}
+
+float WheeledVehicle::GetThrottle()
+{
+    return _throttle;
 }
 
 void WheeledVehicle::SetSteering(float value)
@@ -470,7 +477,11 @@ void WheeledVehicle::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     DESERIALIZE_MEMBER(AntiRollBars, _antiRollBars);
 
     // [Deprecated on 13.06.2023, expires on 13.06.2025]
-    _fixInvalidForwardDir |= modifier->EngineBuild < 6341;
+    if (modifier->EngineBuild < 6341)
+    {
+        MARK_CONTENT_DEPRECATED();
+        _fixInvalidForwardDir = true;
+    }
 }
 
 void WheeledVehicle::OnColliderChanged(Collider* c)

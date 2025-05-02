@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_DIRECTX12
 
@@ -7,7 +7,7 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 
-bool GPUTextureDX12::GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch)
+bool GPUTextureDX12::GetData(int32 arrayIndex, int32 mipMapIndex, TextureMipData& data, uint32 mipRowPitch)
 {
     if (!IsStaging())
     {
@@ -18,7 +18,7 @@ bool GPUTextureDX12::GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, Te
     GPUDeviceLock lock(_device);
 
     // Internally it's a buffer, so adapt resource index and offset
-    const uint32 subresource = RenderToolsDX::CalcSubresourceIndex(mipMapIndex, arrayOrDepthSliceIndex, MipLevels());
+    const uint32 subresource = RenderToolsDX::CalcSubresourceIndex(mipMapIndex, arrayIndex, MipLevels());
     const int32 offsetInBytes = ComputeBufferOffset(subresource, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
     const int32 lengthInBytes = ComputeSubresourceSize(subresource, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
     const int32 rowPitch = ComputeRowPitch(mipMapIndex, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
@@ -37,31 +37,7 @@ bool GPUTextureDX12::GetData(int32 arrayOrDepthSliceIndex, int32 mipMapIndex, Te
     }
     mapped = (byte*)mapped + offsetInBytes;
 
-    // Check if target row pitch is the same
-    if (mipRowPitch == rowPitch || mipRowPitch == 0)
-    {
-        // Init mip info
-        data.Lines = depthPitch / rowPitch;
-        data.DepthPitch = depthPitch;
-        data.RowPitch = rowPitch;
-
-        // Copy data
-        data.Data.Copy((byte*)mapped, depthPitch);
-    }
-    else
-    {
-        // Init mip info
-        data.Lines = depthPitch / rowPitch;
-        data.DepthPitch = mipRowPitch * data.Lines;
-        data.RowPitch = mipRowPitch;
-
-        // Copy data
-        data.Data.Allocate(data.DepthPitch);
-        for (uint32 i = 0; i < data.Lines; i++)
-        {
-            Platform::MemoryCopy(data.Data.Get() + data.RowPitch * i, ((byte*)mapped) + rowPitch * i, data.RowPitch);
-        }
-    }
+    data.Copy(mapped, rowPitch, depthPitch, Depth(), mipRowPitch);
 
     // Unmap buffer
     _resource->Unmap(0, nullptr);

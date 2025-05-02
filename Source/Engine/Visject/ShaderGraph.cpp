@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_EDITOR
 
@@ -92,9 +92,13 @@ void ShaderGenerator::ProcessGroupConstants(Box* box, Node* node, Value& value)
             value = Value(cv.W);
         break;
     }
+    // Rotation
     case 8:
     {
-        value = Value::Zero;
+        const float pitch = (float)node->Values[0];
+        const float yaw = (float)node->Values[1];
+        const float roll = (float)node->Values[2];
+        value = Value(Quaternion::Euler(pitch, yaw, roll));
         break;
     }
     // PI
@@ -360,8 +364,8 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
     // Fmod
     case 40:
     {
-        Value v1 = tryGetValue(node->GetBox(0), Value::Zero);
-        Value v2 = tryGetValue(node->GetBox(1), Value::Zero);
+        Value v1 = tryGetValue(node->GetBox(0), 0, Value::Zero);
+        Value v2 = tryGetValue(node->GetBox(1), 1, Value::Zero);
         value = writeFunction2(node, v1, v2, TEXT("fmod"));
         break;
     }
@@ -1049,6 +1053,8 @@ ShaderGenerator::Value ShaderGenerator::eatBox(Node* caller, Box* box)
 
 ShaderGenerator::Value ShaderGenerator::tryGetValue(Box* box, int32 defaultValueBoxIndex, const Value& defaultValue)
 {
+    if (!box)
+        return defaultValue;
     const auto parentNode = box->GetParent<Node>();
     if (box->HasConnection())
         return eatBox(parentNode, box->FirstConnection());
@@ -1206,11 +1212,8 @@ SerializedMaterialParam* ShaderGenerator::findParam(const String& shaderName)
     {
         SerializedMaterialParam& param = _parameters[i];
         if (param.ShaderName == shaderName)
-        {
             return &param;
-        }
     }
-
     return nullptr;
 }
 
@@ -1235,9 +1238,7 @@ SerializedMaterialParam ShaderGenerator::findOrAddTexture(const Guid& id)
     {
         SerializedMaterialParam& param = _parameters[i];
         if (!param.IsPublic && param.Type == MaterialParameterType::Texture && param.AsGuid == id)
-        {
             return param;
-        }
     }
 
     // Create
@@ -1259,9 +1260,7 @@ SerializedMaterialParam ShaderGenerator::findOrAddNormalMap(const Guid& id)
     {
         SerializedMaterialParam& param = _parameters[i];
         if (!param.IsPublic && param.Type == MaterialParameterType::NormalMap && param.AsGuid == id)
-        {
             return param;
-        }
     }
 
     // Create
@@ -1283,9 +1282,7 @@ SerializedMaterialParam ShaderGenerator::findOrAddCubeTexture(const Guid& id)
     {
         SerializedMaterialParam& param = _parameters[i];
         if (!param.IsPublic && param.Type == MaterialParameterType::CubeTexture && param.AsGuid == id)
-        {
             return param;
-        }
     }
 
     // Create
@@ -1309,9 +1306,7 @@ SerializedMaterialParam ShaderGenerator::findOrAddSceneTexture(MaterialSceneText
     {
         SerializedMaterialParam& param = _parameters[i];
         if (!param.IsPublic && param.Type == MaterialParameterType::SceneTexture && param.AsInteger == asInt)
-        {
             return param;
-        }
     }
 
     // Create
@@ -1333,9 +1328,7 @@ SerializedMaterialParam& ShaderGenerator::findOrAddTextureGroupSampler(int32 ind
     {
         SerializedMaterialParam& param = _parameters[i];
         if (!param.IsPublic && param.Type == MaterialParameterType::TextureGroupSampler && param.AsInteger == index)
-        {
             return param;
-        }
     }
 
     // Create

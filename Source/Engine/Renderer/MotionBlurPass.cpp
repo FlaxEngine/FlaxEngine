@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "MotionBlurPass.h"
 #include "GBufferPass.h"
@@ -17,8 +17,8 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Engine/Time.h"
 
-PACK_STRUCT(struct Data {
-    GBufferData GBuffer;
+GPU_CB_STRUCT(Data {
+    ShaderGBufferData GBuffer;
     Matrix CurrentVP;
     Matrix PreviousVP;
     Float4 TemporalAAJitter;

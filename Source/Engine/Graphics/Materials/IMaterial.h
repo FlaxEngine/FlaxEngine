@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -8,6 +8,7 @@ struct MaterialParamsLink;
 class GPUShader;
 class GPUContext;
 class GPUTextureView;
+class GPUBufferView;
 class GPUConstantBuffer;
 class RenderBuffers;
 class SceneRenderTask;
@@ -119,8 +120,7 @@ public:
     struct InstancingHandler
     {
         void (*GetHash)(const DrawCall& drawCall, uint32& batchKey);
-        bool (*CanBatch)(const DrawCall& a, const DrawCall& b);
-        void (*WriteDrawCall)(struct InstanceData* instanceData, const DrawCall& drawCall);
+        bool (*CanBatch)(const DrawCall& a, const DrawCall& b, DrawPass pass);
     };
 
     /// <summary>
@@ -131,7 +131,7 @@ public:
     virtual bool CanUseInstancing(InstancingHandler& handler) const
     {
 #if BUILD_DEBUG
-        handler = { nullptr, nullptr, nullptr };
+        handler = { nullptr, nullptr };
 #endif
         return false;
     }
@@ -144,11 +144,12 @@ public:
     {
         GPUContext* GPUContext;
         const RenderContext& RenderContext;
-        const DrawCall* FirstDrawCall;
-        int32 DrawCallsCount;
+        GPUBufferView* ObjectBuffer = nullptr;
+        const ::DrawCall* DrawCall = nullptr;
         MaterialParamsLink* ParamsLink = nullptr;
         void* CustomData = nullptr;
         float TimeParam;
+        bool Instanced = false;
 
         /// <summary>
         /// The input scene color. It's optional and used in forward/postFx rendering.
@@ -156,14 +157,17 @@ public:
         GPUTextureView* Input = nullptr;
 
         BindParameters(::GPUContext* context, const ::RenderContext& renderContext);
-        BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall& drawCall);
-        BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall* firstDrawCall, int32 drawCallsCount);
+        BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const ::DrawCall& drawCall, bool instanced = false);
 
         // Per-view shared constant buffer (see ViewData in MaterialCommon.hlsl).
         static GPUConstantBuffer* PerViewConstants;
+        // Per-draw shared constant buffer (see ViewData in MaterialCommon.hlsl).
+        static GPUConstantBuffer* PerDrawConstants;
 
         // Binds the shared per-view constant buffer at slot 1 (see ViewData in MaterialCommon.hlsl)
         void BindViewData();
+        // Binds the shared per-draw constant buffer at slot 2 (see DrawData in MaterialCommon.hlsl)
+        void BindDrawData();
     };
 
     /// <summary>

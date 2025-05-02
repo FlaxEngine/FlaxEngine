@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -136,7 +136,7 @@ public:
     // Gets a value indicting whether this instance is normalized.
     bool IsNormalized() const
     {
-        return Math::IsOne(X * X + Y * Y + Z * Z);
+        return Math::Abs((X * X + Y * Y + Z * Z) - 1.0f) < 1e-4f;
     }
 
     // Gets a value indicting whether this vector is zero.
@@ -542,11 +542,7 @@ public:
     }
 
 public:
-    // Restricts a value to be within a specified range
-    // @param v The value to clamp
-    // @param min The minimum value,
-    // @param max The maximum value
-    // @returns Clamped value
+    // Restricts a value to be within a specified range (inclusive min/max).
     static Vector3Base Clamp(const Vector3Base& v, const Vector3Base& min, const Vector3Base& max)
     {
         Vector3Base result;
@@ -554,11 +550,7 @@ public:
         return result;
     }
 
-    // Restricts a value to be within a specified range
-    // @param v The value to clamp
-    // @param min The minimum value,
-    // @param max The maximum value
-    // @param result When the method completes, contains the clamped value
+    // Restricts a value to be within a specified range (inclusive min/max).
     static void Clamp(const Vector3Base& v, const Vector3Base& min, const Vector3Base& max, Vector3Base& result)
     {
         result = Vector3Base(Math::Clamp(v.X, min.X, max.X), Math::Clamp(v.Y, min.Y, max.Y), Math::Clamp(v.Z, min.Z, max.Z));
@@ -614,10 +606,7 @@ public:
         }
     }
 
-    // Calculates the distance between two vectors
-    // @param a The first vector
-    // @param b The second vector
-    // @returns The distance between the two vectors
+    // Calculates the distance between two vectors.
     static T Distance(const Vector3Base& a, const Vector3Base& b)
     {
         const T x = a.X - b.X;
@@ -626,10 +615,7 @@ public:
         return Math::Sqrt(x * x + y * y + z * z);
     }
 
-    // Calculates the squared distance between two vectors
-    // @param a The first vector
-    // @param b The second vector
-    // @returns The squared distance between the two vectors
+    // Calculates the squared distance between two vectors.
     static T DistanceSquared(const Vector3Base& a, const Vector3Base& b)
     {
         const T x = a.X - b.X;
@@ -653,52 +639,38 @@ public:
         return r;
     }
 
-    // Performs vector normalization (scales vector up to unit length). This is a faster version that does not performs check for length equal 0 (it assumes that input vector is not empty).
-    // @param inout Input vector to normalize (cannot be zero).
-    // @returns Output vector that is normalized (has unit length)
+    // Performs vector normalization (scales vector up to unit length). This is a faster version that does not perform check for length equal 0 (it assumes that input vector is not empty).
     static Vector3Base NormalizeFast(const Vector3Base& v)
     {
         const T inv = 1.0f / v.Length();
         return Vector3Base(v.X * inv, v.Y * inv, v.Z * inv);
     }
 
-    // Performs vector normalization (scales vector up to unit length)
-    // @param inout Input vector to normalize
-    // @param output Output vector that is normalized (has unit length)
+    // Performs vector normalization (scales vector up to unit length).
     static FORCE_INLINE void Normalize(const Vector3Base& input, Vector3Base& result)
     {
         result = Normalize(input);
     }
 
-    // dot product with another vector
+    // Calculates the dot product of two vectors.
     FORCE_INLINE static T Dot(const Vector3Base& a, const Vector3Base& b)
     {
         return a.X * b.X + a.Y * b.Y + a.Z * b.Z;
     }
 
-    // Calculates the cross product of two vectors
-    // @param a First source vector
-    // @param b Second source vector
-    // @param result When the method completes, contains the cross product of the two vectors
+    // Calculates the cross product of two vectors.
     static void Cross(const Vector3Base& a, const Vector3Base& b, Vector3Base& result)
     {
         result = Vector3Base(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
     }
 
-    // Calculates the cross product of two vectors
-    // @param a First source vector
-    // @param b Second source vector
-    // @returns Cross product of the two vectors
+    // Calculates the cross product of two vectors.
     static Vector3Base Cross(const Vector3Base& a, const Vector3Base& b)
     {
         return Vector3Base(a.Y * b.Z - a.Z * b.Y, a.Z * b.X - a.X * b.Z, a.X * b.Y - a.Y * b.X);
     }
 
-    // Performs a linear interpolation between two vectors
-    // @param start Start vector
-    // @param end End vector
-    // @param amount Value between 0 and 1 indicating the weight of end
-    // @param result When the method completes, contains the linear interpolation of the two vectors
+    // Performs a linear interpolation between two vectors.
     static void Lerp(const Vector3Base& start, const Vector3Base& end, T amount, Vector3Base& result)
     {
         result.X = Math::Lerp(start.X, end.X, amount);
@@ -706,9 +678,7 @@ public:
         result.Z = Math::Lerp(start.Z, end.Z, amount);
     }
 
-    // <summary>
     // Performs a linear interpolation between two vectors.
-    // </summary>
     static Vector3Base Lerp(const Vector3Base& start, const Vector3Base& end, T amount)
     {
         Vector3Base result;
@@ -716,11 +686,7 @@ public:
         return result;
     }
 
-    // Performs a cubic interpolation between two vectors
-    // @param start Start vector
-    // @param end End vector
-    // @param amount Value between 0 and 1 indicating the weight of end
-    // @param result When the method completes, contains the cubic interpolation of the two vectors
+    // Performs a cubic interpolation between two vectors.
     static void SmoothStep(const Vector3Base& start, const Vector3Base& end, T amount, Vector3Base& result)
     {
         amount = Math::SmoothStep(amount);
@@ -745,78 +711,39 @@ public:
     }
 
     // Performs a Hermite spline interpolation.
-    // @param value1 First source position vector
-    // @param tangent1 First source tangent vector
-    // @param value2 Second source position vector
-    // @param tangent2 Second source tangent vector
-    // @param amount Weighting factor,
-    // @param result When the method completes, contains the result of the Hermite spline interpolation,
     static FLAXENGINE_API void Hermite(const Vector3Base& value1, const Vector3Base& tangent1, const Vector3Base& value2, const Vector3Base& tangent2, T amount, Vector3Base& result);
 
-    // Returns the reflection of a vector off a surface that has the specified normal
-    // @param vector The source vector
-    // @param normal Normal of the surface
-    // @param result When the method completes, contains the reflected vector
+    // Returns the reflection of a vector off a surface that has the specified normal.
     static FLAXENGINE_API void Reflect(const Vector3Base& vector, const Vector3Base& normal, Vector3Base& result);
 
-    // Transforms a 3D vector by the given Quaternion rotation
-    // @param vector The vector to rotate
-    // @param rotation The Quaternion rotation to apply
-    // @param result When the method completes, contains the transformed Vector3
+    // Transforms a 3D vector by the given Quaternion rotation.
     static FLAXENGINE_API void Transform(const Vector3Base& vector, const Quaternion& rotation, Vector3Base& result);
 
-    // Transforms a 3D vector by the given Quaternion rotation
-    // @param vector The vector to rotate
-    // @param rotation The Quaternion rotation to apply
-    // @returns The transformed Vector3
+    // Transforms a 3D vector by the given Quaternion rotation.
     static FLAXENGINE_API Vector3Base Transform(const Vector3Base& vector, const Quaternion& rotation);
 
-    // Transforms a 3D vector by the given matrix
-    // @param vector The source vector
-    // @param transform The transformation matrix
-    // @param result When the method completes, contains the transformed Vector3
+    // Transforms a 3D vector by the given matrix.
     static FLAXENGINE_API void Transform(const Vector3Base& vector, const Matrix& transform, Vector3Base& result);
 
-    // Transforms a 3D vector by the given matrix
-    // @param vector The source vector
-    // @param transform The transformation matrix
-    // @param result When the method completes, contains the transformed Vector3
+    // Transforms a 3D vector by the given matrix.
     static FLAXENGINE_API void Transform(const Vector3Base& vector, const Matrix3x3& transform, Vector3Base& result);
 
-    // Transforms a 3D vector by the given transformation
-    // @param vector The source vector
-    // @param transform The transformation
-    // @param result When the method completes, contains the transformed Vector3
+    // Transforms a 3D vector by the given transformation.
     static FLAXENGINE_API void Transform(const Vector3Base& vector, const ::Transform& transform, Vector3Base& result);
 
-    // Transforms a 3D vector by the given matrix
-    // @param vector The source vector
-    // @param transform The transformation matrix
-    // @returns Transformed Vector3
+    // Transforms a 3D vector by the given matrix.
     static FLAXENGINE_API Vector3Base Transform(const Vector3Base& vector, const Matrix& transform);
 
-    // Transforms a 3D vector by the given transformation
-    // @param vector The source vector
-    // @param transform The transformation
-    // @returns Transformed Vector3
+    // Transforms a 3D vector by the given transformation.
     static FLAXENGINE_API Vector3Base Transform(const Vector3Base& vector, const ::Transform& transform);
 
-    // Transforms a 3D vector by the given matrix
-    // @param vector The source vector
-    // @param transform The transformation matrix
-    // @param result When the method completes, contains the transformed Vector4
+    // Transforms a 3D vector by the given matrix.
     static FLAXENGINE_API void Transform(const Vector3Base& vector, const Matrix& transform, Vector4Base<T>& result);
 
-    // Performs a coordinate transformation using the given matrix
-    // @param coordinate The coordinate vector to transform
-    // @param transform The transformation matrix
-    // @param result When the method completes, contains the transformed coordinates
+    // Performs a coordinate transformation using the given matrix.
     static FLAXENGINE_API void TransformCoordinate(const Vector3Base& coordinate, const Matrix& transform, Vector3Base& result);
 
-    // Performs a normal transformation using the given matrix
-    // @param normal The normal vector to transform
-    // @param transform The transformation matrix
-    // @param result When the method completes, contains the transformed normal
+    // Performs a normal transformation using the given matrix.
     static FLAXENGINE_API void TransformNormal(const Vector3Base& normal, const Matrix& transform, Vector3Base& result);
 
     /// <summary>
@@ -838,28 +765,10 @@ public:
         return vector - Project(vector, planeNormal);
     }
 
-    // Projects a 3D vector from object space into screen space
-    // @param vector The vector to project
-    // @param x The X position of the viewport
-    // @param y The Y position of the viewport
-    // @param width The width of the viewport
-    // @param height The height of the viewport
-    // @param minZ The minimum depth of the viewport
-    // @param maxZ The maximum depth of the viewport
-    // @param worldViewProjection The combined world-view-projection matrix
-    // @param result When the method completes, contains the vector in screen space
+    // Projects a 3D vector from object space into screen space using the provided viewport and transformation matrix.
     static FLAXENGINE_API void Project(const Vector3Base& vector, float x, float y, float width, float height, float minZ, float maxZ, const Matrix& worldViewProjection, Vector3Base& result);
 
-    // Projects a 3D vector from object space into screen space
-    // @param vector The vector to project
-    // @param x The X position of the viewport
-    // @param y The Y position of the viewport
-    // @param width The width of the viewport
-    // @param height The height of the viewport
-    // @param minZ The minimum depth of the viewport
-    // @param maxZ The maximum depth of the viewport
-    // @param worldViewProjection The combined world-view-projection matrix
-    // @returns The vector in screen space
+    // Projects a 3D vector from object space into screen space using the provided viewport and transformation matrix.
     static Vector3Base Project(const Vector3Base& vector, float x, float y, float width, float height, float minZ, float maxZ, const Matrix& worldViewProjection)
     {
         Vector3Base result;
@@ -867,28 +776,10 @@ public:
         return result;
     }
 
-    // Projects a 3D vector from screen space into object space
-    // @param vector The vector to project
-    // @param x The X position of the viewport
-    // @param y The Y position of the viewport
-    // @param width The width of the viewport
-    // @param height The height of the viewport
-    // @param minZ The minimum depth of the viewport
-    // @param maxZ The maximum depth of the viewport
-    // @param worldViewProjection The combined world-view-projection matrix
-    // @param result When the method completes, contains the vector in object space
+    // Projects a 3D vector from screen space into object space using the provided viewport and transformation matrix.
     static FLAXENGINE_API void Unproject(const Vector3Base& vector, float x, float y, float width, float height, float minZ, float maxZ, const Matrix& worldViewProjection, Vector3Base& result);
 
-    // Projects a 3D vector from screen space into object space
-    // @param vector The vector to project
-    // @param x The X position of the viewport
-    // @param y The Y position of the viewport
-    // @param width The width of the viewport
-    // @param height The height of the viewport
-    // @param minZ The minimum depth of the viewport
-    // @param maxZ The maximum depth of the viewport
-    // @param worldViewProjection The combined world-view-projection matrix
-    // @returns The vector in object space
+    // Projects a 3D vector from screen space into object space using the provided viewport and transformation matrix.
     static Vector3Base Unproject(const Vector3Base& vector, float x, float y, float width, float height, float minZ, float maxZ, const Matrix& worldViewProjection)
     {
         Vector3Base result;
@@ -921,12 +812,40 @@ public:
     static FLAXENGINE_API T TriangleArea(const Vector3Base& v0, const Vector3Base& v1, const Vector3Base& v2);
 
     /// <summary>
-    /// Calculates the angle (in radians) between from and to. This is always the smallest value.
+    /// Calculates the angle (in degrees) between from and to vectors. This is always the smallest value.
     /// </summary>
     /// <param name="from">The first vector.</param>
     /// <param name="to">The second vector.</param>
-    /// <returns>The angle (in radians).</returns>
+    /// <returns>The angle (in degrees).</returns>
     static FLAXENGINE_API T Angle(const Vector3Base& from, const Vector3Base& to);
+
+    /// <summary>
+    /// Calculates the signed angle (in degrees) between from and to vectors. This is always the smallest value. The sign of the result depends on: the order of input vectors, and the direction of the axis vector.
+    /// </summary>
+    /// <param name="from">The first vector.</param>
+    /// <param name="to">The second vector.</param>
+    /// <param name="axis">The axis around which the vectors are rotated.</param>
+    /// <returns>The angle (in degrees).</returns>
+    static FLAXENGINE_API T SignedAngle(const Vector3Base& from, const Vector3Base& to, const Vector3Base& axis);
+
+    /// <summary>
+    /// Snaps the input position onto the grid.
+    /// </summary>
+    /// <param name="pos">The position to snap.</param>
+    /// <param name="gridSize">The size of the grid.</param>
+    /// <returns>The position snapped to the grid.</returns>
+    static FLAXENGINE_API Vector3Base SnapToGrid(const Vector3Base& pos, const Vector3Base& gridSize);
+
+    /// <summary>
+    /// Snaps the <paramref name="point"/> onto the rotated grid. For world aligned grid snapping use <b><see cref="SnapToGrid"/></b> instead.
+    /// </summary>
+    /// <param name="point">The position to snap.</param>
+    /// <param name="gridSize">The size of the grid.</param>
+    /// <param name="gridOrigin">The center point of the grid.</param>
+    /// <param name="gridOrientation">The rotation of the grid.</param>
+    /// <param name="offset">The local position offset applied to the snapped position before grid rotation.</param>
+    /// <returns>The position snapped to the grid.</returns>
+    static FLAXENGINE_API Vector3Base SnapToGrid(const Vector3Base& point, const Vector3Base& gridSize, const Quaternion& gridOrientation, const Vector3Base& gridOrigin = Zero, const Vector3Base& offset = Zero);
 };
 
 template<typename T>

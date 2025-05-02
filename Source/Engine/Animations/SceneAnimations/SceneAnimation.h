@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -415,6 +415,10 @@ private:
     BytesContainer _data;
     MemoryWriteStream _runtimeData;
 
+#if USE_EDITOR
+    void SaveData(MemoryWriteStream& stream) const;
+#endif
+
 public:
     /// <summary>
     /// The frames amount per second of the timeline animation.
@@ -457,14 +461,15 @@ public:
     /// <remarks>It cannot be used by virtual assets.</remarks>
     /// <param name="data">The timeline data container.</param>
     /// <returns><c>true</c> failed to save data; otherwise, <c>false</c>.</returns>
-    API_FUNCTION() bool SaveTimeline(const BytesContainer& data);
+    API_FUNCTION() bool SaveTimeline(const BytesContainer& data) const;
 
 #endif
 
 public:
     // [BinaryAsset]
 #if USE_EDITOR
-    void GetReferences(Array<Guid>& output) const override;
+    void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
+    bool Save(const StringView& path = StringView::Empty) override;
 #endif
 
 protected:

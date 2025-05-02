@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -14,25 +14,18 @@
 class GPUAdapterDX : public GPUAdapter
 {
 public:
-
     int32 Index = INVALID_INDEX;
     D3D_FEATURE_LEVEL MaxFeatureLevel;
     DXGI_ADAPTER_DESC Description;
+    Version DriverVersion = Version(0, 0);
 
 public:
+    void GetDriverVersion();
 
-    // Returns true if adapter is supporting DirectX 12.
-    FORCE_INLINE bool IsSupportingDX12() const
-    {
-#if GRAPHICS_API_DIRECTX12
-        return MaxFeatureLevel >= D3D_FEATURE_LEVEL_12_0;
-#else
-        return false;
-#endif
-    }
+private:
+    void SetDriverVersion(Version& ver);
 
 public:
-
     // [GPUAdapter]
     bool IsValid() const override
     {
@@ -49,6 +42,10 @@ public:
     String GetDescription() const override
     {
         return Description.Description;
+    }
+    Version GetDriverVersion() const override
+    {
+        return DriverVersion;
     }
 };
 

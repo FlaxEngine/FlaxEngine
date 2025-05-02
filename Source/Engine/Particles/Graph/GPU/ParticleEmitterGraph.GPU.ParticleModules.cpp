@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "ParticleEmitterGraph.GPU.h"
 #include "Engine/Graphics/Materials/MaterialInfo.h"
@@ -626,10 +626,24 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                 "		// Position (Global SDF)\n"
                 "		float3 wsPos = {2};\n"
                 "		float dist;\n"
-                "		float3 dir = -normalize(SampleGlobalSDFGradient({1}, {1}_Tex, wsPos, dist));\n"
-                "		{0} += dir * dist;\n"
+                "		float3 dir = -normalize(SampleGlobalSDFGradient({1}, {1}_Tex, {1}_Mip, wsPos, dist));\n"
+                "		{0} += dist < GLOBAL_SDF_WORLD_SIZE ? dir * dist : float3(0, 0, 0);\n"
                 "	}}\n"
             ), position.Value, param.ShaderName, wsPos);
+        break;
+    }
+    // Rotate position shape
+    case 216:
+    {
+        auto positionAttr = AccessParticleAttribute(node, nodeGpu->Attributes[0], AccessMode::Write);
+        const Value quaternion = GetValue(node->GetBox(0), 2).Cast(VariantType::Quaternion);
+        _writer.Write(
+            TEXT(
+                "   {{\n"
+                "       // Rotate position shape\n"
+                "       {0} = QuatRotateVector({1}, {0});\n"
+                "   }}\n"
+                ), positionAttr.Value, quaternion.Value);
         break;
     }
 
@@ -892,7 +906,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                 "	{{\n"
                 "		// Conform to Global SDF\n"
                 "		float dist;\n"
-                "		float3 dir = normalize(SampleGlobalSDFGradient({3}, {3}_Tex, {0}, dist));\n"
+                "		float3 dir = normalize(SampleGlobalSDFGradient({3}, {3}_Tex, {3}_Mip, {0}, dist));\n"
                 "		if (dist > 0) dir *= -1;\n"
                 "		float distToSurface = abs(dist);\n"
                 "		float spdNormal = dot(dir, {1});\n"
@@ -900,7 +914,7 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                 "		float tgtSpeed = {4} * ratio;\n"
                 "		float deltaSpeed = tgtSpeed - spdNormal;\n"
                 "		float3 deltaVelocity = dir * (sign(deltaSpeed) * min(abs(deltaSpeed), DeltaTime * lerp({7}, {5}, ratio)) / max({2}, PARTICLE_THRESHOLD));\n"
-                "		{1} += deltaVelocity;\n"
+                "		{1} += dist < GLOBAL_SDF_WORLD_SIZE ? deltaVelocity : 0.0f;\n"
                 "	}}\n"
             ), position.Value, velocity.Value, mass.Value, param.ShaderName, attractionSpeed.Value, attractionForce.Value, stickDistance.Value, stickForce.Value);
         break;
@@ -917,11 +931,11 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                                      "		// Collision (Global SDF)\n"
                                      "		float3 nextPos = {0} + {1} * DeltaTime;\n"
                                      "		nextPos = mul(float4(nextPos, 1), WorldMatrix).xyz;\n"
-                                     "		float dist = SampleGlobalSDF({10}, {10}_Tex, nextPos);\n"
+                                     "		float dist = SampleGlobalSDF({10}, {10}_Tex, {10}_Mip, nextPos);\n"
                                      "		if (dist < {5})\n"
                                      "		{{\n"
                                      "			{0} = mul(float4({0}, 1), WorldMatrix).xyz;\n"
-                                     "			float3 n = normalize(SampleGlobalSDFGradient({10}, {10}_Tex, {0}, dist));\n"
+                                     "			float3 n = normalize(SampleGlobalSDFGradient({10}, {10}_Tex, {10}_Mip, {0}, dist));\n"
                                      "			{0} += n * -dist;\n"
                                      "			{0} = mul(float4({0}, 1), InvWorldMatrix).xyz;\n"
                                      COLLISION_LOGIC()
@@ -931,10 +945,10 @@ void ParticleEmitterGPUGenerator::ProcessModule(Node* node)
                                      "	{{\n"
                                      "		// Collision (Global SDF)\n"
                                      "		float3 nextPos = {0} + {1} * DeltaTime;\n"
-                                     "		float dist = SampleGlobalSDF({10}, {10}_Tex, nextPos);\n"
+                                     "		float dist = SampleGlobalSDF({10}, {10}_Tex, {10}_Mip, nextPos);\n"
                                      "		if (dist < {5})\n"
                                      "		{{\n"
-                                     "			float3 n = normalize(SampleGlobalSDFGradient({10}, {10}_Tex, {0}, dist));\n"
+                                     "			float3 n = normalize(SampleGlobalSDFGradient({10}, {10}_Tex, {10}_Mip, {0}, dist));\n"
                                      "			{0} += n * -dist;\n"
                                      COLLISION_LOGIC()
                                      "	}}\n"

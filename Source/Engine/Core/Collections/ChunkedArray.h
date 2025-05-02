@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -166,6 +166,14 @@ public:
         }
 
         Iterator& operator=(const Iterator& v)
+        {
+            _collection = v._collection;
+            _chunkIndex = v._chunkIndex;
+            _index = v._index;
+            return *this;
+        }
+
+        Iterator& operator=(Iterator&& v)
         {
             _collection = v._collection;
             _chunkIndex = v._chunkIndex;

@@ -1,8 +1,9 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "MaterialShader.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Level/LargeWorlds.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -20,7 +21,7 @@
 #include "DeformableMaterialShader.h"
 #include "VolumeParticleMaterialShader.h"
 
-PACK_STRUCT(struct MaterialShaderDataPerView {
+GPU_CB_STRUCT(MaterialShaderDataPerView {
     Matrix ViewMatrix;
     Matrix ViewProjectionMatrix;
     Matrix PrevViewProjectionMatrix;
@@ -33,36 +34,28 @@ PACK_STRUCT(struct MaterialShaderDataPerView {
     Float4 ViewInfo;
     Float4 ScreenSize;
     Float4 TemporalAAJitter;
+    Float3 LargeWorldsChunkIndex;
+    float LargeWorldsChunkSize;
     });
 
 IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext)
     : GPUContext(context)
     , RenderContext(renderContext)
-    , FirstDrawCall(nullptr)
-    , DrawCallsCount(0)
     , TimeParam(Time::Draw.UnscaledTime.GetTotalSeconds())
 {
 }
 
-IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall& drawCall)
+IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const ::DrawCall& drawCall, bool instanced)
     : GPUContext(context)
     , RenderContext(renderContext)
-    , FirstDrawCall(&drawCall)
-    , DrawCallsCount(1)
+    , DrawCall(&drawCall)
     , TimeParam(Time::Draw.UnscaledTime.GetTotalSeconds())
-{
-}
-
-IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext, const DrawCall* firstDrawCall, int32 drawCallsCount)
-    : GPUContext(context)
-    , RenderContext(renderContext)
-    , FirstDrawCall(firstDrawCall)
-    , DrawCallsCount(drawCallsCount)
-    , TimeParam(Time::Draw.UnscaledTime.GetTotalSeconds())
+    , Instanced(instanced)
 {
 }
 
 GPUConstantBuffer* IMaterial::BindParameters::PerViewConstants = nullptr;
+GPUConstantBuffer* IMaterial::BindParameters::PerDrawConstants = nullptr;
 
 void IMaterial::BindParameters::BindViewData()
 {
@@ -70,27 +63,52 @@ void IMaterial::BindParameters::BindViewData()
     if (!PerViewConstants)
     {
         PerViewConstants = GPUDevice::Instance->CreateConstantBuffer(sizeof(MaterialShaderDataPerView), TEXT("PerViewConstants"));
+        PerDrawConstants = GPUDevice::Instance->CreateConstantBuffer(sizeof(MaterialShaderDataPerDraw), TEXT("PerDrawConstants"));
     }
 
     // Setup data
+    const auto& view = RenderContext.View;
     MaterialShaderDataPerView cb;
-    int aa1 = sizeof(MaterialShaderDataPerView);
-    Matrix::Transpose(RenderContext.View.Frustum.GetMatrix(), cb.ViewProjectionMatrix);
-    Matrix::Transpose(RenderContext.View.View, cb.ViewMatrix);
-    Matrix::Transpose(RenderContext.View.PrevViewProjection, cb.PrevViewProjectionMatrix);
-    Matrix::Transpose(RenderContext.View.MainViewProjection, cb.MainViewProjectionMatrix);
-    cb.MainScreenSize = RenderContext.View.MainScreenSize;
-    cb.ViewPos = RenderContext.View.Position;
-    cb.ViewFar = RenderContext.View.Far;
-    cb.ViewDir = RenderContext.View.Direction;
+    Matrix::Transpose(view.Frustum.GetMatrix(), cb.ViewProjectionMatrix);
+    Matrix::Transpose(view.View, cb.ViewMatrix);
+    Matrix::Transpose(view.PrevViewProjection, cb.PrevViewProjectionMatrix);
+    Matrix::Transpose(view.MainViewProjection, cb.MainViewProjectionMatrix);
+    cb.MainScreenSize = view.MainScreenSize;
+    cb.ViewPos = view.Position;
+    cb.ViewFar = view.Far;
+    cb.ViewDir = view.Direction;
     cb.TimeParam = TimeParam;
-    cb.ViewInfo = RenderContext.View.ViewInfo;
-    cb.ScreenSize = RenderContext.View.ScreenSize;
-    cb.TemporalAAJitter = RenderContext.View.TemporalAAJitter;
+    cb.ViewInfo = view.ViewInfo;
+    cb.ScreenSize = view.ScreenSize;
+    cb.TemporalAAJitter = view.TemporalAAJitter;
+    cb.LargeWorldsChunkIndex = LargeWorlds::Enable ? (Float3)Int3(view.Origin / LargeWorlds::ChunkSize) : Float3::Zero;
+    cb.LargeWorldsChunkSize = LargeWorlds::ChunkSize;
 
     // Update constants
     GPUContext->UpdateCB(PerViewConstants, &cb);
     GPUContext->BindCB(1, PerViewConstants);
+}
+
+void IMaterial::BindParameters::BindDrawData()
+{
+    // Write draw call to the object buffer
+    ASSERT(DrawCall);
+    auto& objectBuffer = RenderContext.List->TempObjectBuffer;
+    objectBuffer.Clear();
+    ShaderObjectData objData;
+    objData.Store(*DrawCall);
+    objectBuffer.Write(objData);
+    objectBuffer.Flush(GPUContext);
+    ObjectBuffer = objectBuffer.GetBuffer()->View();
+
+    // Setup data
+    MaterialShaderDataPerDraw perDraw;
+    perDraw.DrawPadding = Float3::Zero;
+    perDraw.DrawObjectIndex = 0;
+
+    // Update constants
+    GPUContext->UpdateCB(PerDrawConstants, &perDraw);
+    GPUContext->BindCB(2, PerDrawConstants);
 }
 
 GPUPipelineState* MaterialShader::PipelineStateCache::InitPS(CullMode mode, bool wireframe)

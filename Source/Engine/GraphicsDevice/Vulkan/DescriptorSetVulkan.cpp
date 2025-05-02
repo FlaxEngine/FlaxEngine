@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if GRAPHICS_API_VULKAN
 
@@ -292,7 +292,7 @@ DescriptorPoolSetContainerVulkan* DescriptorPoolsManagerVulkan::AcquirePoolSetCo
     ScopeLock lock(_locker);
     for (auto* poolSet : _poolSets)
     {
-        if (poolSet->Refs == 0)
+        if (poolSet->Refs == 0 && Engine::FrameCount - poolSet->LastFrameUsed > VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT)
         {
             poolSet->LastFrameUsed = Engine::FrameCount;
             poolSet->Reset();

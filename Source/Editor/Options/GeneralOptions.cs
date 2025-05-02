@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.ComponentModel;
 using FlaxEngine;
@@ -161,6 +161,13 @@ namespace FlaxEditor.Options
         [DefaultValue(true)]
         [EditorDisplay("Content"), EditorOrder(550)]
         public bool UseAssetImportPathRelative { get; set; } = true;
+
+        /// <summary>
+        /// If checked, editor windows will try to automatically attach to the first found valid actor for preview. For example, Animation Graph window will pick the first matching instance to preview.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Content"), EditorOrder(550)]
+        public bool AutoAttachDebugPreviewActor { get; set; } = false;
 
         /// <summary>
         /// Gets or sets a value indicating whether perform automatic CSG rebuild on brush change.

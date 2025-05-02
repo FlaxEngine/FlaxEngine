@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -41,6 +41,13 @@ namespace FlaxEditor.CustomEditors.Editors
             public override void Initialize(LayoutElementsContainer layout)
             {
                 base.Initialize(layout);
+                
+                if (XElement.ValueBox.Parent is UniformGridPanel ug)
+                {
+                    ug.Height += 2;
+                    ug.SlotSpacing = new Float2(4);
+                    ug.SlotPadding = new Margin(0, 0, 1, 1);
+                }
 
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
@@ -66,6 +73,13 @@ namespace FlaxEditor.CustomEditors.Editors
             public override void Initialize(LayoutElementsContainer layout)
             {
                 base.Initialize(layout);
+                
+                if (XElement.ValueBox.Parent is UniformGridPanel ug)
+                {
+                    ug.Height += 2;
+                    ug.SlotSpacing = new Float2(4);
+                    ug.SlotPadding = new Margin(0, 0, 1, 1);
+                }
 
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
@@ -109,10 +123,10 @@ namespace FlaxEditor.CustomEditors.Editors
                 _linkButton.Clicked += ToggleLink;
                 ToggleEnabled();
                 SetLinkStyle();
-                var textSize = FlaxEngine.GUI.Style.Current.FontMedium.MeasureText(LinkedLabel.Text.Value);
-                _linkButton.LocalX += textSize.X + 10;
                 if (LinkedLabel != null)
                 {
+                    var textSize = FlaxEngine.GUI.Style.Current.FontMedium.MeasureText(LinkedLabel.Text.Value);
+                    _linkButton.LocalX += textSize.X + 10;
                     LinkedLabel.SetupContextMenu += (label, menu, editor) =>
                     {
                         menu.AddSeparator();
@@ -121,6 +135,13 @@ namespace FlaxEditor.CustomEditors.Editors
                         else
                             menu.AddButton("Link", ToggleLink).LinkTooltip("Links scale components for uniform scaling");
                     };
+                }
+                
+                if (XElement.ValueBox.Parent is UniformGridPanel ug)
+                {
+                    ug.Height += 2;
+                    ug.SlotSpacing = new Float2(4);
+                    ug.SlotPadding = new Margin(0, 0, 1, 1);
                 }
 
                 // Override colors

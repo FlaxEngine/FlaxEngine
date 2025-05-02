@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if COMPILE_WITH_TEXTURE_TOOL && COMPILE_WITH_STB
 
@@ -9,6 +9,7 @@
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/Graphics/PixelFormatSampler.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Utilities/AnsiPathTempFile.h"
 #include "Engine/Platform/File.h"
@@ -199,7 +200,7 @@ bool TextureTool::ExportTextureStb(ImageType type, const StringView& path, const
 #endif
 
     // Convert into RGBA8
-    const auto sampler = GetSampler(texture->Format);
+    const auto sampler = PixelFormatSampler::Get(texture->Format);
     if (sampler == nullptr)
     {
         LOG(Warning, "Texture data format {0} is not supported.", (int32)textureData.Format);
@@ -218,7 +219,7 @@ bool TextureTool::ExportTextureStb(ImageType type, const StringView& path, const
         {
             for (int32 x = 0; x < texture->Width; x++)
             {
-                Color color = SamplePoint(sampler, x, y, srcData->Data.Get(), srcData->RowPitch);
+                Color color = sampler->SamplePoint(srcData->Data.Get(), x, y, srcData->RowPitch);
                 if (sRGB)
                     color = Color::SrgbToLinear(color);
                 *(ptr + x + y * texture->Width) = color.ToFloat4();
@@ -234,7 +235,7 @@ bool TextureTool::ExportTextureStb(ImageType type, const StringView& path, const
         {
             for (int32 x = 0; x < texture->Width; x++)
             {
-                Color color = SamplePoint(sampler, x, y, srcData->Data.Get(), srcData->RowPitch);
+                Color color = sampler->SamplePoint(srcData->Data.Get(), x, y, srcData->RowPitch);
                 if (sRGB)
                     color = Color::SrgbToLinear(color);
                 *(ptr + x + y * texture->Width) = Color32(color);
@@ -458,7 +459,7 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     {
         if (!options.InternalLoad.IsBinded() || options.InternalLoad(textureData))
             return true;
-        if (options.FlipY)
+        if (options.FlipY || options.FlipX)
         {
             // TODO: impl this
             errorMsg = TEXT("Flipping images imported from Internal source is not supported by stb.");
@@ -489,7 +490,7 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     if (sourceWidth != width || sourceHeight != height)
     {
         // During resizing we need to keep texture aspect ratio
-        const bool keepAspectRatio = false; // TODO: expose as import option
+        const bool keepAspectRatio = options.KeepAspectRatio; // TODO: expose as import option
         if (keepAspectRatio)
         {
             const float aspectRatio = static_cast<float>(sourceWidth) / sourceHeight;
@@ -534,6 +535,22 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         // TODO: implement texture decompression
         errorMsg = String::Format(TEXT("Imported texture used compressed format {0}. Not supported for importing on this platform.."), (int32)textureDataSrc->Format);
         return true;
+    }
+
+    if (options.FlipX)
+    {
+        // TODO: impl this
+        LOG(Warning, "Option 'Flip X' is not supported");
+    }
+    if (options.InvertRedChannel || options.InvertGreenChannel || options.InvertBlueChannel || options.InvertAlphaChannel)
+    {
+        // TODO: impl this
+        LOG(Warning, "Option to invert channels is not supported");
+    }
+    if (options.ReconstructZChannel)
+    {
+        // TODO: impl this
+        LOG(Warning, "Option 'Reconstruct Z Channel' is not supported");
     }
 
     // Generate mip maps chain
@@ -607,7 +624,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
     dst.Items.Resize(arraySize, false);
     auto formatSize = PixelFormatExtensions::SizeInBytes(textureData->Format);
     auto components = PixelFormatExtensions::ComputeComponentsCount(textureData->Format);
-    auto sampler = TextureTool::GetSampler(textureData->Format);
+    auto sampler = PixelFormatSampler::Get(textureData->Format);
     if (!sampler)
     {
         LOG(Warning, "Cannot convert image. Unsupported format {0}", static_cast<int32>(textureData->Format));
@@ -674,7 +691,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
                         {
                             for (int32 x = 0; x < 4; x++)
                             {
-                                Color color = TextureTool::SamplePoint(sampler, xBlock * 4 + x, yBlock * 4 + y, srcMip.Data.Get(), srcMip.RowPitch);
+                                Color color = sampler->SamplePoint(srcMip.Data.Get(), xBlock * 4 + x, yBlock * 4 + y, srcMip.RowPitch);
                                 if (isDstSRGB)
                                     color = Color::LinearToSrgb(color);
                                 srcBlock[y * 4 + x] = Color32(color);
@@ -731,7 +748,7 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
 #endif
     {
         int32 bytesPerPixel = PixelFormatExtensions::SizeInBytes(dstFormat);
-        auto dstSampler = TextureTool::GetSampler(dstFormat);
+        auto dstSampler = PixelFormatSampler::Get(dstFormat);
         if (!dstSampler)
         {
             LOG(Warning, "Cannot convert image. Unsupported format {0}", static_cast<int32>(dstFormat));
@@ -766,10 +783,10 @@ bool TextureTool::ConvertStb(TextureData& dst, const TextureData& src, const Pix
                     for (int32 x = 0; x < mipWidth; x++)
                     {
                         // Sample source texture
-                        Color color = TextureTool::SamplePoint(sampler, x, y, srcMip.Data.Get(), srcMip.RowPitch);
+                        Color color = sampler->SamplePoint(srcMip.Data.Get(), x, y, srcMip.RowPitch);
 
                         // Store destination texture
-                        TextureTool::Store(dstSampler, x, y, dstMip.Data.Get(), dstMip.RowPitch, color);
+                        dstSampler->Store(dstMip.Data.Get(), x, y, dstMip.RowPitch, color);
                     }
                 }
             }
@@ -786,7 +803,7 @@ bool TextureTool::ResizeStb(PixelFormat format, TextureMipData& dstMip, const Te
     auto components = PixelFormatExtensions::ComputeComponentsCount(format);
     auto srcMipWidth = srcMip.RowPitch / formatSize;
     auto srcMipHeight = srcMip.DepthPitch / srcMip.RowPitch;
-    auto sampler = GetSampler(format);
+    auto sampler = PixelFormatSampler::Get(format);
 
     // Allocate memory
     dstMip.RowPitch = dstMipWidth * formatSize;
@@ -853,8 +870,8 @@ bool TextureTool::ResizeStb(PixelFormat format, TextureMipData& dstMip, const Te
                 for (int32 x = 0; x < dstMipWidth; x++)
                 {
                     const Float2 uv((float)x / dstMipWidth, (float)y / dstMipHeight);
-                    Color color = SamplePoint(sampler, uv, srcMip.Data.Get(), srcSize, srcMip.RowPitch);
-                    Store(sampler, x, y, dstMip.Data.Get(), dstMip.RowPitch, color);
+                    Color color = sampler->SamplePoint(srcMip.Data.Get(), uv, srcSize, srcMip.RowPitch);
+                    sampler->Store(dstMip.Data.Get(), x, y, dstMip.RowPitch, color);
                 }
             }
             return false;

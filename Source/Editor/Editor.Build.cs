@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -40,8 +40,10 @@ public class Editor : EditorModule
         options.ScriptingAPI.SystemReferences.Add("System.Xml");
         options.ScriptingAPI.SystemReferences.Add("System.Xml.ReaderWriter");
         options.ScriptingAPI.SystemReferences.Add("System.Text.RegularExpressions");
-        options.ScriptingAPI.SystemReferences.Add("System.ComponentModel.TypeConverter");
         options.ScriptingAPI.SystemReferences.Add("System.IO.Compression.ZipFile");
+        options.ScriptingAPI.SystemReferences.Add("System.Diagnostics.Process");
+        if (Profiler.Use(options))
+            options.ScriptingAPI.Defines.Add("USE_PROFILER");
 
         // Enable optimizations for Editor, disable this for debugging the editor
         if (options.Configuration == TargetConfiguration.Development)
@@ -94,6 +96,18 @@ public class Editor : EditorModule
 #pragma warning restore CA1416
             if (path != null && File.Exists(path))
                 options.PrivateDefinitions.Add("USE_VISUAL_STUDIO_DTE");
+        }
+
+        // Setup .NET versions range valid for Game Cooker (minimal is the one used by the native runtime)
+        var dotnetSdk = DotNetSdk.Instance;
+        if (dotnetSdk.IsValid)
+        {
+            var sdkVer = dotnetSdk.Version.Major;
+            var minVer = Math.Max(DotNetSdk.MinimumVersion.Major, sdkVer);
+            var maxVer = DotNetSdk.MaximumVersion.Major;
+            options.PrivateDefinitions.Add("GAME_BUILD_DOTNET_RUNTIME_MIN_VER=" + minVer);
+            options.PrivateDefinitions.Add("GAME_BUILD_DOTNET_RUNTIME_MAX_VER=" + DotNetSdk.MaximumVersion.Major);
+            Log.Verbose($"Using Dotnet runtime versions range {minVer}-{maxVer} for Game Cooker");
         }
     }
 

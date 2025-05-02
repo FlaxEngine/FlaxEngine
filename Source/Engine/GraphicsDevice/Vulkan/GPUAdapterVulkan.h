@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -69,6 +69,27 @@ public:
     String GetDescription() const override
     {
         return Description;
+    }
+    Version GetDriverVersion() const override
+    {
+        Version version(VK_VERSION_MAJOR(GpuProps.driverVersion), VK_VERSION_MINOR(GpuProps.driverVersion), VK_VERSION_PATCH(GpuProps.driverVersion));
+        if (IsNVIDIA())
+        {
+            union NvidiaDriverVersion
+            {
+                struct
+                {
+                    uint32 Tertiary : 6;
+                    uint32 Secondary : 8;
+                    uint32 Minor : 8;
+                    uint32 Major : 10;
+                };
+                uint32 Packed;
+            } NvidiaVersion;
+            NvidiaVersion.Packed = GpuProps.driverVersion;
+            version = Version(NvidiaVersion.Major, NvidiaVersion.Minor);
+        }
+        return version;
     }
 };
 

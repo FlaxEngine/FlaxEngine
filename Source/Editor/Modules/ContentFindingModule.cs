@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -92,7 +92,7 @@ namespace FlaxEditor.Modules
             DockWindow window = null;
             foreach (var editorWindow in Editor.Windows.Windows)
             {
-                if (editorWindow.Visible && editorWindow.ContainsFocus)
+                if (editorWindow.Visible && editorWindow.ContainsFocus && editorWindow.Parent != null)
                 {
                     window = editorWindow;
                     break;
@@ -192,7 +192,7 @@ namespace FlaxEditor.Modules
         /// Removes a quick action by name.
         /// </summary>
         /// <param name="name">The action's name.</param>
-        /// <returns>True when it succeed, false if there is no Quick Action with this name.</returns>
+        /// <returns>True when it succeeds, false if there is no Quick Action with this name.</returns>
         public bool RemoveQuickAction(string name)
         {
             if (_quickActions == null)
@@ -228,12 +228,22 @@ namespace FlaxEditor.Modules
                         new SearchResult { Name = item.ShortName, Type = assetItem.TypeName, Item = item }
                     };
                 }
-                var actor = FlaxEngine.Object.Find<Actor>(ref id);
+                var actor = FlaxEngine.Object.Find<Actor>(ref id, true);
                 if (actor != null)
                 {
                     return new List<SearchResult>
                     {
                         new SearchResult { Name = actor.Name, Type = actor.TypeName, Item = actor }
+                    };
+                }
+                var script = FlaxEngine.Object.Find<Script>(ref id, true);
+                if (script != null && script.Actor != null)
+                {
+                    string actorPathStart = $"{script.Actor.Name}/";
+
+                    return new List<SearchResult>
+                    {
+                        new SearchResult { Name = $"{actorPathStart}{script.TypeName}", Type = script.TypeName, Item = script }
                     };
                 }
             }
@@ -276,6 +286,16 @@ namespace FlaxEditor.Modules
                         matches.Add(new SearchResult { Name = action.Name, Type = "Quick Action", Item = action });
                 }
                 Profiler.EndEvent();
+            }
+
+            // Editor window
+            foreach (var window in Editor.Windows.Windows)
+            {
+                if (window is Windows.Assets.AssetEditorWindow)
+                    continue;
+                var windowName = window.Title + " (window)";
+                if (nameRegex.Match(windowName).Success)
+                    matches.Add(new SearchResult { Name = windowName, Type = "Window", Item = window });
             }
 
             Profiler.EndEvent();
@@ -332,9 +352,10 @@ namespace FlaxEditor.Modules
         {
             foreach (var contentItem in items)
             {
+                var name = contentItem.ShortName;
                 if (contentItem.IsAsset)
                 {
-                    if (nameRegex.Match(contentItem.ShortName).Success)
+                    if (nameRegex.Match(name).Success)
                     {
                         var asset = contentItem as AssetItem;
                         if (asset == null || !typeRegex.Match(asset.TypeName).Success)
@@ -348,7 +369,7 @@ namespace FlaxEditor.Modules
                             var splits = asset.TypeName.Split('.');
                             finalName = splits[splits.Length - 1];
                         }
-                        matches.Add(new SearchResult { Name = asset.ShortName, Type = finalName, Item = asset });
+                        matches.Add(new SearchResult { Name = name, Type = finalName, Item = asset });
                     }
                 }
                 else if (contentItem.IsFolder)
@@ -360,11 +381,12 @@ namespace FlaxEditor.Modules
                 }
                 else
                 {
-                    if (nameRegex.Match(contentItem.ShortName).Success && typeRegex.Match(contentItem.GetType().Name).Success)
+                    if (nameRegex.Match(name).Success && typeRegex.Match(contentItem.GetType().Name).Success)
                     {
                         string finalName = contentItem.GetType().Name.Replace("Item", "");
-
-                        matches.Add(new SearchResult { Name = contentItem.ShortName, Type = finalName, Item = contentItem });
+                        if (contentItem is ScriptItem)
+                            name = contentItem.FileName; // Show extension for scripts (esp. for .h and .cpp files of the same name)
+                        matches.Add(new SearchResult { Name = name, Type = finalName, Item = contentItem });
                     }
                 }
             }
@@ -387,6 +409,16 @@ namespace FlaxEditor.Modules
             case Actor actor:
                 Editor.Instance.SceneEditing.Select(actor);
                 Editor.Instance.Windows.EditWin.Viewport.FocusSelection();
+                break;
+            case Script script:
+                if (script.Actor != null)
+                {
+                    Editor.Instance.SceneEditing.Select(script.Actor);
+                    Editor.Instance.Windows.EditWin.Viewport.FocusSelection();
+                }
+                break;
+            case Windows.EditorWindow window:
+                window.FocusOrShow();
                 break;
             }
         }

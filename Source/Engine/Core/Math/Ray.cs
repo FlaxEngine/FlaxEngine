@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if USE_LARGE_WORLDS
 using Real = System.Double;
@@ -57,6 +57,7 @@ using Real = System.Single;
 using System;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using FlaxEngine.Assertions;
 
 namespace FlaxEngine
 {
@@ -77,6 +78,7 @@ namespace FlaxEngine
         {
             Position = position;
             Direction = direction;
+            Assert.IsTrue(Direction.IsNormalized, $"The Ray Direction was not normalized (direction: {direction}, length: {direction.Length})");
         }
 
         /// <summary>
@@ -149,7 +151,7 @@ namespace FlaxEngine
         /// <param name="plane">The plane to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        [Obsolete("Deprecated in 1.4")]
+        [Obsolete("Use Intersects with 'out Real distance' parameter instead")]
         public bool Intersects(ref Plane plane, out float distance)
         {
             return CollisionsHelper.RayIntersectsPlane(ref this, ref plane, out distance);
@@ -202,7 +204,7 @@ namespace FlaxEngine
         /// <param name="vertex3">The third vertex of the triangle to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        [Obsolete("Deprecated in 1.4")]
+        [Obsolete("Use Intersects with 'out Real distance' parameter instead")]
         public bool Intersects(ref Vector3 vertex1, ref Vector3 vertex2, ref Vector3 vertex3, out float distance)
         {
             var result = CollisionsHelper.RayIntersectsTriangle(ref this, ref vertex1, ref vertex2, ref vertex3, out Real dst);
@@ -305,7 +307,7 @@ namespace FlaxEngine
         /// <param name="sphere">The sphere to test.</param>
         /// <param name="distance">When the method completes, contains the distance of the intersection, or 0 if there was no intersection.</param>
         /// <returns>Whether the two objects intersected.</returns>
-        [Obsolete("Deprecated in 1.4")]
+        [Obsolete("Use Intersects with 'out Real distance' parameter instead")]
         public bool Intersects(ref BoundingSphere sphere, out float distance)
         {
             var result = CollisionsHelper.RayIntersectsSphere(ref this, ref sphere, out Real dst);

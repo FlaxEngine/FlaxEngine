@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using System.Collections.Generic;
@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading.Tasks;
 using FlaxEditor.Content;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Content.Thumbnails;
@@ -48,9 +49,9 @@ namespace FlaxEditor
         }
 
         private readonly List<EditorModule> _modules = new List<EditorModule>(16);
-        private bool _isAfterInit, _areModulesInited, _areModulesAfterInitEnd, _isHeadlessMode;
+        private bool _isAfterInit, _areModulesInited, _areModulesAfterInitEnd, _isHeadlessMode, _autoExit;
         private string _projectToOpen;
-        private float _lastAutoSaveTimer;
+        private float _lastAutoSaveTimer, _autoExitTimeout = 0.1f;
         private Button _saveNowButton;
         private Button _cancelSaveButton;
         private bool _autoSaveNow;
@@ -247,15 +248,21 @@ namespace FlaxEditor
         /// </summary>
         public event Action PlayModeEnd;
 
+        /// <summary>
+        /// Fired on Editor update
+        /// </summary>
+        public event Action EditorUpdate;
+
         internal Editor()
         {
             Instance = this;
         }
 
-        internal void Init(bool isHeadless, bool skipCompile, bool newProject, Guid startupScene)
+        internal void Init(StartupFlags flags, Guid startupScene)
         {
             Log("Setting up C# Editor...");
-            _isHeadlessMode = isHeadless;
+            _isHeadlessMode = flags.HasFlag(StartupFlags.Headless);
+            _autoExit = flags.HasFlag(StartupFlags.Exit);
             _startupSceneCmdLine = startupScene;
 
             Profiler.BeginEvent("Projects");
@@ -291,11 +298,11 @@ namespace FlaxEditor
             StateMachine = new EditorStateMachine(this);
             Undo = new EditorUndo(this);
 
-            if (newProject)
+            if (flags.HasFlag(StartupFlags.NewProject))
                 InitProject();
             EnsureState<LoadingState>();
             Log("Editor init");
-            if (isHeadless)
+            if (_isHeadlessMode)
                 Log("Running in headless mode");
 
             // Note: we don't sort modules before Init (optimized)
@@ -351,7 +358,7 @@ namespace FlaxEditor
             InitializationStart?.Invoke();
 
             // Start Editor initialization ending phrase (will wait for scripts compilation result)
-            StateMachine.LoadingState.StartInitEnding(skipCompile);
+            StateMachine.LoadingState.StartInitEnding(flags.HasFlag(StartupFlags.SkipCompile));
         }
 
         internal void RegisterModule(EditorModule module)
@@ -480,11 +487,22 @@ namespace FlaxEditor
             {
                 StateMachine.Update();
                 UpdateAutoSave();
+                if (_autoExit && StateMachine.CurrentState == StateMachine.EditingSceneState)
+                {
+                    _autoExitTimeout -= Time.UnscaledGameTime;
+                    if (_autoExitTimeout < 0.0f)
+                    {
+                        Log("Auto exit");
+                        Engine.RequestExit(0);
+                    }
+                }
 
                 if (!StateMachine.IsPlayMode)
                 {
                     StateMachine.CurrentState.UpdateFPS();
                 }
+                
+                EditorUpdate?.Invoke();
 
                 // Update modules
                 for (int i = 0; i < _modules.Count; i++)
@@ -833,6 +851,11 @@ namespace FlaxEditor
         {
             LogWarning("Exception: " + ex.Message);
             LogWarning(ex.StackTrace);
+            if (ex.InnerException != null)
+            {
+                LogWarning("Inner exception:");
+                LogWarning(ex.InnerException);
+            }
         }
 
         /// <summary>
@@ -849,7 +872,7 @@ namespace FlaxEditor
         /// New asset types allowed to create.
         /// [Deprecated in v1.8]
         /// </summary>
-        [Obsolete("Use CreateAsset with named tag.")]
+        [Obsolete("Use CreateAsset with named tag instead")]
         public enum NewAssetType
         {
             /// <summary>
@@ -1030,7 +1053,7 @@ namespace FlaxEditor
         /// </summary>
         /// <param name="type">New asset type.</param>
         /// <param name="outputPath">Output asset path.</param>
-        [Obsolete("Use CreateAsset with named tag.")]
+        [Obsolete("Use CreateAsset with named tag instead")]
         public static bool CreateAsset(NewAssetType type, string outputPath)
         {
             // [Deprecated on 18.02.2024, expires on 18.02.2025]
@@ -1338,19 +1361,32 @@ namespace FlaxEditor
         /// </summary>
         public void BuildAllMeshesSDF()
         {
-            // TODO: async maybe with progress reporting?
+            var models = new List<Model>();
             Scene.ExecuteOnGraph(node =>
             {
                 if (node is StaticModelNode staticModelNode && staticModelNode.Actor is StaticModel staticModel)
                 {
-                    if (staticModel.DrawModes.HasFlag(DrawPass.GlobalSDF) && staticModel.Model != null && !staticModel.Model.IsVirtual && staticModel.Model.SDF.Texture == null)
+                    var model = staticModel.Model;
+                    if (staticModel.DrawModes.HasFlag(DrawPass.GlobalSDF) &&
+                        model != null &&
+                        !models.Contains(model) &&
+                        !model.IsVirtual &&
+                        model.SDF.Texture == null)
                     {
-                        Log("Generating SDF for " + staticModel.Model);
-                        if (!staticModel.Model.GenerateSDF())
-                            staticModel.Model.Save();
+                        models.Add(model);
                     }
                 }
                 return true;
+            });
+            Task.Run(() =>
+            {
+                for (int i = 0; i < models.Count; i++)
+                {
+                    var model = models[i];
+                    Log($"[{i}/{models.Count}] Generating SDF for {model}");
+                    if (!model.GenerateSDF())
+                        model.Save();
+                }
             });
         }
 
@@ -1364,6 +1400,7 @@ namespace FlaxEditor
             public byte AutoReloadScriptsOnMainWindowFocus;
             public byte ForceScriptCompilationOnStartup;
             public byte UseAssetImportPathRelative;
+            public byte EnableParticlesPreview;
             public byte AutoRebuildCSG;
             public float AutoRebuildCSGTimeoutMs;
             public byte AutoRebuildNavMesh;
@@ -1477,7 +1514,8 @@ namespace FlaxEditor
             var win = Windows.GameWin?.Root;
             if (win?.RootWindow is WindowRootControl root)
             {
-                pos = Float2.Round(Windows.GameWin.Viewport.PointFromScreen(pos) * root.DpiScale);
+                pos = Windows.GameWin.Viewport.PointFromScreen(pos);
+                pos = Float2.Round(pos);
             }
             else
             {
@@ -1490,7 +1528,8 @@ namespace FlaxEditor
             var win = Windows.GameWin?.Root;
             if (win?.RootWindow is WindowRootControl root)
             {
-                pos = Float2.Round(Windows.GameWin.Viewport.PointToScreen(pos / root.DpiScale));
+                pos = Windows.GameWin.Viewport.PointToScreen(pos);
+                pos = Float2.Round(pos);
             }
             else
             {
@@ -1518,10 +1557,11 @@ namespace FlaxEditor
                 // Handle case when Game window is not selected in tab view
                 var dockedTo = gameWin.ParentDockPanel;
                 if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
-                    result = dockedTo.SelectedTab.Size * root.DpiScale;
+                    result = dockedTo.SelectedTab.Size;
                 else
-                    result = gameWin.Viewport.Size * root.DpiScale;
+                    result = gameWin.Viewport.Size;
 
+                result *= root.DpiScale;
                 result = Float2.Round(result);
             }
         }
@@ -1653,9 +1693,6 @@ namespace FlaxEditor
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_CanSetToRoot", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         [return: MarshalAs(UnmanagedType.U1)]
         internal static partial bool Internal_CanSetToRoot(IntPtr prefab, IntPtr newRoot);
-
-        [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetPrefabNestedObject", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
-        internal static partial void Internal_GetPrefabNestedObject(IntPtr prefabId, IntPtr prefabObjectId, IntPtr outPrefabId, IntPtr outPrefabObjectId);
 
         [LibraryImport("FlaxEngine", EntryPoint = "EditorInternal_GetAnimationTime", StringMarshalling = StringMarshalling.Custom, StringMarshallingCustomType = typeof(StringMarshaller))]
         internal static partial float Internal_GetAnimationTime(IntPtr animatedModel);

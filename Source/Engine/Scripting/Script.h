@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -41,6 +41,11 @@ public:
     /// Sets enabled state if this script.
     /// </summary>
     API_PROPERTY() void SetEnabled(bool value);
+
+    /// <summary>
+    /// Gets value indicating if script is enabled and active in the scene graph. It must be active as well as all it's parents.
+    /// </summary>
+    API_PROPERTY(Attributes="HideInEditor, NoSerialize") bool IsEnabledInHierarchy() const;
 
     /// <summary>
     /// Gets the actor owning that script.
@@ -113,7 +118,7 @@ public:
     /// <summary>
     /// Called every fixed framerate frame (after FixedUpdate) if object is enabled.
     /// </summary>
-    API_FUNCTION(Attributes = "NoAnimate") virtual void OnLateFixedUpdate()
+    API_FUNCTION(Attributes="NoAnimate") virtual void OnLateFixedUpdate()
     {
     }
 

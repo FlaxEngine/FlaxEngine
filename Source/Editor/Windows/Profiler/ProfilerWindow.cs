@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
 using FlaxEditor.GUI;
@@ -14,6 +14,7 @@ namespace FlaxEditor.Windows.Profiler
     /// <seealso cref="FlaxEditor.Windows.EditorWindow" />
     public sealed class ProfilerWindow : EditorWindow
     {
+#if USE_PROFILER
         private readonly ToolStripButton _liveRecordingButton;
         private readonly ToolStripButton _clearButton;
         private readonly ToolStripButton _prevFrameButton;
@@ -77,6 +78,7 @@ namespace FlaxEditor.Windows.Profiler
                 }
             }
         }
+#endif
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProfilerWindow"/> class.
@@ -87,12 +89,13 @@ namespace FlaxEditor.Windows.Profiler
         {
             Title = "Profiler";
 
+#if USE_PROFILER
             var toolstrip = new ToolStrip
             {
                 Parent = this,
             };
             _liveRecordingButton = toolstrip.AddButton(editor.Icons.Play64);
-            _liveRecordingButton.LinkTooltip("Live profiling events recording");
+            //_liveRecordingButton.LinkTooltip("Live profiling events recording");
             _liveRecordingButton.AutoCheck = true;
             _liveRecordingButton.Clicked += OnLiveRecordingChanged;
             _clearButton = toolstrip.AddButton(editor.Icons.Rotate32, Clear);
@@ -121,8 +124,10 @@ namespace FlaxEditor.Windows.Profiler
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
             InputActions.Bindings.RemoveAll(x => x.Callback == this.FocusOrShow);
             InputActions.Add(options => options.ProfilerWindow, Hide);
+#endif
         }
 
+#if USE_PROFILER
         private void OnLiveRecordingChanged()
         {
             _liveRecordingButton.Icon = LiveRecording ? Editor.Icons.Stop64 : Editor.Icons.Play64;
@@ -230,6 +235,12 @@ namespace FlaxEditor.Windows.Profiler
         /// <inheritdoc />
         public override void OnUpdate()
         {
+            for (int i = 0; i < _tabs.ChildrenCount; i++)
+            {
+                if (_tabs.Children[i] is ProfilerMode mode)
+                    mode.UpdateStats();
+            }
+
             if (LiveRecording)
             {
                 FlaxEngine.Profiler.BeginEvent("ProfilerWindow.OnUpdate");
@@ -292,5 +303,6 @@ namespace FlaxEditor.Windows.Profiler
 
             return false;
         }
+#endif
     }
 }
