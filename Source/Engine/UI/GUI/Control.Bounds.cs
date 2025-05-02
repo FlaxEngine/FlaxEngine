@@ -189,7 +189,7 @@ namespace FlaxEngine.GUI
             get => _bounds.Size.X;
             set
             {
-                if (Mathf.NearEqual(_bounds.Size.X, value))
+                if (_bounds.Size.X == value)
                     return;
                 var bounds = new Rectangle(_bounds.Location, value, _bounds.Size.Y);
                 if (_pivotRelativeSizing)
@@ -210,7 +210,7 @@ namespace FlaxEngine.GUI
             get => _bounds.Size.Y;
             set
             {
-                if (Mathf.NearEqual(_bounds.Size.Y, value))
+                if (_bounds.Size.Y == value)
                     return;
                 var bounds = new Rectangle(_bounds.Location, _bounds.Size.X, value);
                 if (_pivotRelativeSizing)
@@ -412,7 +412,7 @@ namespace FlaxEngine.GUI
             get => _rotation;
             set
             {
-                if (!Mathf.NearEqual(_rotation, value))
+                if (_rotation != value)
                 {
                     SetRotationInternal(value);
                 }
@@ -598,8 +598,7 @@ namespace FlaxEngine.GUI
                     var anchorMin = AnchorPresetsData[i].Min;
                     var anchorMax = AnchorPresetsData[i].Max;
                     var bounds = _bounds;
-                    if (!Float2.NearEqual(ref _anchorMin, ref anchorMin) ||
-                        !Float2.NearEqual(ref _anchorMax, ref anchorMax))
+                    if (_anchorMin != anchorMin || _anchorMax != anchorMax)
                     {
                         // Disable scrolling for anchored controls (by default but can be manually restored)
                         if (!anchorMin.IsZero || !anchorMax.IsZero)

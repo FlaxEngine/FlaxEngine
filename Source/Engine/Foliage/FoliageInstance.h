@@ -52,7 +52,7 @@ API_STRUCT(NoPod) struct FLAXENGINE_API FoliageInstance
 public:
     bool operator==(const FoliageInstance& v) const
     {
-        return Type == v.Type && Math::NearEqual(Random, v.Random) && Transform == v.Transform;
+        return Type == v.Type && Random == v.Random && Transform == v.Transform;
     }
 
     /// <summary>

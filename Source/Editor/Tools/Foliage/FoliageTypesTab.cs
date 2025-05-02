@@ -107,7 +107,7 @@ namespace FlaxEditor.Tools.Foliage
                 get => _type.CullDistance;
                 set
                 {
-                    if (Mathf.NearEqual(_type.CullDistance, value))
+                    if (_type.CullDistance == value)
                         return;
                     _type.CullDistance = value;
                     Foliage.UpdateCullDistance();
@@ -120,7 +120,7 @@ namespace FlaxEditor.Tools.Foliage
                 get => _type.CullDistanceRandomRange;
                 set
                 {
-                    if (Mathf.NearEqual(_type.CullDistanceRandomRange, value))
+                    if (_type.CullDistanceRandomRange == value)
                         return;
                     _type.CullDistanceRandomRange = value;
                     Foliage.UpdateCullDistance();
@@ -174,7 +174,7 @@ namespace FlaxEditor.Tools.Foliage
                 get => _type.DensityScalingScale;
                 set
                 {
-                    if (Mathf.NearEqual(_type.DensityScalingScale, value))
+                    if (_type.DensityScalingScale == value)
                         return;
                     _type.DensityScalingScale = value;
                     Foliage.RebuildClusters();

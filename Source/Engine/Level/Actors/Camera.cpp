@@ -70,7 +70,7 @@ float Camera::GetFieldOfView() const
 void Camera::SetFieldOfView(float value)
 {
     value = Math::Clamp(value, 1.0f, 179.9f);
-    if (Math::NotNearEqual(_fov, value))
+    if (_fov != value)
     {
         _fov = value;
         UpdateCache();
@@ -85,7 +85,7 @@ float Camera::GetCustomAspectRatio() const
 void Camera::SetCustomAspectRatio(float value)
 {
     value = Math::Clamp(value, 0.0f, 100.0f);
-    if (Math::NotNearEqual(_customAspectRatio, value))
+    if (_customAspectRatio != value)
     {
         _customAspectRatio = value;
         UpdateCache();
@@ -100,7 +100,7 @@ float Camera::GetNearPlane() const
 void Camera::SetNearPlane(float value)
 {
     value = Math::Clamp(value, 0.001f, _far - 1.0f);
-    if (Math::NotNearEqual(_near, value))
+    if (_near != value)
     {
         _near = value;
         UpdateCache();
@@ -115,7 +115,7 @@ float Camera::GetFarPlane() const
 void Camera::SetFarPlane(float value)
 {
     value = Math::Max(value, _near + 1.0f);
-    if (Math::NotNearEqual(_far, value))
+    if (_far != value)
     {
         _far = value;
         UpdateCache();
@@ -130,7 +130,7 @@ float Camera::GetOrthographicSize() const
 void Camera::SetOrthographicSize(float value)
 {
     value = Math::Clamp(value, 0.0f, 1000000.0f);
-    if (Math::NotNearEqual(_orthoSize, value))
+    if (_orthoSize != value)
     {
         _orthoSize = value;
         UpdateCache();
@@ -145,7 +145,7 @@ float Camera::GetOrthographicScale() const
 void Camera::SetOrthographicScale(float value)
 {
     value = Math::Clamp(value, 0.0001f, 1000000.0f);
-    if (Math::NotNearEqual(_orthoScale, value))
+    if (_orthoScale != value)
     {
         _orthoScale = value;
         UpdateCache();

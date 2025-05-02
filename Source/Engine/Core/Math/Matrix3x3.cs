@@ -2125,15 +2125,15 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="Matrix3x3"/> is equal to this instance; otherwise, <c>false</c>.</returns>
         public bool Equals(ref Matrix3x3 other)
         {
-            return (Mathf.NearEqual(other.M11, M11) &&
-                    Mathf.NearEqual(other.M12, M12) &&
-                    Mathf.NearEqual(other.M13, M13) &&
-                    Mathf.NearEqual(other.M21, M21) &&
-                    Mathf.NearEqual(other.M22, M22) &&
-                    Mathf.NearEqual(other.M23, M23) &&
-                    Mathf.NearEqual(other.M31, M31) &&
-                    Mathf.NearEqual(other.M32, M32) &&
-                    Mathf.NearEqual(other.M33, M33));
+            return  M11 == other.M11 &&
+                    M12 == other.M12 &&
+                    M13 == other.M13 &&
+                    M21 == other.M21 &&
+                    M22 == other.M22 &&
+                    M23 == other.M23 &&
+                    M31 == other.M31 &&
+                    M32 == other.M32 &&
+                    M33 == other.M33;
         }
 
         /// <summary>
@@ -2152,17 +2152,7 @@ namespace FlaxEngine
         /// </summary>
         public static bool Equals(ref Matrix3x3 a, ref Matrix3x3 b)
         {
-            return
-            Mathf.NearEqual(a.M11, b.M11) &&
-            Mathf.NearEqual(a.M12, b.M12) &&
-            Mathf.NearEqual(a.M13, b.M13) &&
-            Mathf.NearEqual(a.M21, b.M21) &&
-            Mathf.NearEqual(a.M22, b.M22) &&
-            Mathf.NearEqual(a.M23, b.M23) &&
-            Mathf.NearEqual(a.M31, b.M31) &&
-            Mathf.NearEqual(a.M32, b.M32) &&
-            Mathf.NearEqual(a.M33, b.M33)
-            ;
+            return a.Equals(ref b);
         }
 
         /// <summary>

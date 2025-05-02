@@ -242,14 +242,13 @@ void Matrix3x3::Decompose(Float3& scale, Quaternion& rotation) const
 
 bool Matrix3x3::operator==(const Matrix3x3& other) const
 {
-    return
-            Math::NearEqual(M11, other.M11) &&
-            Math::NearEqual(M12, other.M12) &&
-            Math::NearEqual(M13, other.M13) &&
-            Math::NearEqual(M21, other.M21) &&
-            Math::NearEqual(M22, other.M22) &&
-            Math::NearEqual(M23, other.M23) &&
-            Math::NearEqual(M31, other.M31) &&
-            Math::NearEqual(M32, other.M32) &&
-            Math::NearEqual(M33, other.M33);
+    return  M11 == other.M11 &&
+            M12 == other.M12 &&
+            M13 == other.M13 &&
+            M21 == other.M21 &&
+            M22 == other.M22 &&
+            M23 == other.M23 &&
+            M31 == other.M31 &&
+            M32 == other.M32 &&
+            M33 == other.M33;
 }
