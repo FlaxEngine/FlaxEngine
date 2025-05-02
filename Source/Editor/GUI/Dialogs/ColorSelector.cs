@@ -363,7 +363,6 @@ namespace FlaxEditor.GUI.Dialogs
             float valueKnobY = _valueSliderRect.Height * (1 - hsv.Z);
             valueKnobY = Mathf.Clamp(valueKnobY, 0.0f, _valueSliderRect.Height) - valueKnobHeight * 0.5f;
 
-            Color valueSliderTopOutlineColor = hsv.X > 205 && hsv.Y > 0.65f ? Color.White : Color.Black;
             Color valueKnobColor = Color.FromHSV(new Float3(0, 0, Mathf.Clamp(1f - hsv.Z, 0.45f, 1)));
             
             Rectangle valueKnob = new Rectangle(valueKnobX, valueKnobY, valueKnobWidth, valueKnobHeight);
@@ -379,20 +378,17 @@ namespace FlaxEditor.GUI.Dialogs
             var opaqueColor = _color;
             opaqueColor.A = 1; 
             
-            Color alphaSliderTopOutlineColor = hsv.X > 205 && hsv.Y > 0.65f || hsv.Z < 0.6f ? Color.White : Color.Black;
             Color alphaKnobColor = Color.FromHSV(new Float3(0, 0, Mathf.Clamp(1f - hsv.Z, 0.35f, 1)));
 
             Rectangle alphaKnob = new Rectangle(alphaKnobX, alphaKnobY, alphaKnobWidth, alphaKnobHeight);
 
             // Draw value slider and knob
             Render2D.FillRectangle(_valueSliderRect, hsC, hsC, Color.Black, Color.Black);
-            Render2D.DrawRectangle(_valueSliderRect, valueSliderTopOutlineColor, valueSliderTopOutlineColor, Color.White, Color.White);
             Render2D.DrawRectangle(valueKnob, valueKnobColor, _isMouseDownValueSlider ? 3 : 2);
 
             // Draw alpha slider, grid and knob
             Render2D.DrawMaterial(_checkerMaterial, _alphaSliderRect);
             Render2D.FillRectangle(_alphaSliderRect, opaqueColor, opaqueColor, Color.Transparent, Color.Transparent);
-            Render2D.DrawRectangle(_alphaSliderRect, alphaSliderTopOutlineColor, alphaSliderTopOutlineColor, Color.Transparent, Color.Transparent);
             Render2D.DrawRectangle(alphaKnob, alphaKnobColor, _isMouseDownAlphaSlider ? 3 : 2);
 
             // Sliders hitbox debug

@@ -530,9 +530,6 @@ namespace FlaxEditor.GUI.Dialogs
 
                     _onChanged?.Invoke(_eyedropperStartColor, false);
 
-
-                    // TODO: Focus the dialog on eyedropper esc
-
                     return true;
                 }
 
