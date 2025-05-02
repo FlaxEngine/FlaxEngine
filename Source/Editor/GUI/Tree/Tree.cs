@@ -40,6 +40,7 @@ namespace FlaxEditor.GUI.Tree
         private readonly bool _supportMultiSelect;
         private Margin _margin;
         private bool _autoSize = true;
+        private bool _deferLayoutUpdate = false;
 
         /// <summary>
         /// The TreeNode that is being dragged over. This could have a value when not dragging.
@@ -354,8 +355,24 @@ namespace FlaxEditor.GUI.Tree
         }
 
         /// <inheritdoc />
+        public override void PerformLayout(bool force = false)
+        {
+            if (_isLayoutLocked && !force)
+                return;
+
+            // In case the tree was fully expanded or collapsed along its children, avoid calculating the layout multiple times for each child
+            _deferLayoutUpdate = true;
+        }
+
+        /// <inheritdoc />
         public override void Update(float deltaTime)
         {
+            if (_deferLayoutUpdate)
+            {
+                base.PerformLayout();
+                _deferLayoutUpdate = false;
+            }
+
             var node = SelectedNode;
 
             // Check if has focus and if any node is focused and it isn't a root
