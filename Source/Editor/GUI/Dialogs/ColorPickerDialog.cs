@@ -282,16 +282,16 @@ namespace FlaxEditor.GUI.Dialogs
         {
             switch (tabs.SelectedTabIndex)
             {
-                // RGB
-                case 0:
-                    rgbPanel.Visible = true;
-                    hsvPanel.Visible = false;
-                    break;
-                // HSV
-                case 1:
-                    rgbPanel.Visible = false;
-                    hsvPanel.Visible = true;
-                    break;
+            // RGB
+            case 0:
+                rgbPanel.Visible = true;
+                hsvPanel.Visible = false;
+                break;
+            // HSV
+            case 1:
+                rgbPanel.Visible = false;
+                hsvPanel.Visible = true;
+                break;
             }
         }
 
@@ -408,39 +408,39 @@ namespace FlaxEditor.GUI.Dialogs
 
             switch (_chsvRGBTabs.SelectedTabIndex)
             { 
-                // RGB
-                case 0:
-                    Float2 rgbTextX = rgbPanel.PointToWindow(rgbPanel.Location);
-                    var rgbRect = new Rectangle(rgbTextX.X, rgbPanel.PointToWindow(_cRed.Location).Y, 25, _cRed.Height);
+            // RGB
+            case 0:
+                Float2 rgbTextX = rgbPanel.PointToWindow(rgbPanel.Location);
+                var rgbRect = new Rectangle(rgbTextX.X, rgbPanel.PointToWindow(_cRed.Location).Y, 25, _cRed.Height);
 
-                    Render2D.DrawText(style.FontMedium, "R", rgbRect, textColor, TextAlignment.Near, TextAlignment.Center);
-                    rgbRect.Location.Y = rgbPanel.PointToWindow(_cGreen.Location).Y;
-                    Render2D.DrawText(style.FontMedium, "G", rgbRect, textColor, TextAlignment.Near, TextAlignment.Center);
-                    rgbRect.Location.Y = rgbPanel.PointToWindow(_cBlue.Location).Y;
-                    Render2D.DrawText(style.FontMedium, "B", rgbRect, textColor, TextAlignment.Near, TextAlignment.Center);
-                    break;
-                // HSV
-                case 1:
-                    // HSV letters (left)
-                    Float2 hsvTextX = rgbPanel.PointToWindow(hsvPanel.Location);
-                    var hsvLRect = new Rectangle(hsvTextX.X, hsvPanel.PointToWindow(_cHue.Location).Y, 25, _cHue.Height);
+                Render2D.DrawText(style.FontMedium, "R", rgbRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                rgbRect.Location.Y = rgbPanel.PointToWindow(_cGreen.Location).Y;
+                Render2D.DrawText(style.FontMedium, "G", rgbRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                rgbRect.Location.Y = rgbPanel.PointToWindow(_cBlue.Location).Y;
+                Render2D.DrawText(style.FontMedium, "B", rgbRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                break;
+            // HSV
+            case 1:
+                // HSV letters (left)
+                Float2 hsvTextX = rgbPanel.PointToWindow(hsvPanel.Location);
+                var hsvLRect = new Rectangle(hsvTextX.X, hsvPanel.PointToWindow(_cHue.Location).Y, 25, _cHue.Height);
 
-                    Render2D.DrawText(style.FontMedium, "H", hsvLRect, textColor, TextAlignment.Near, TextAlignment.Center);
-                    hsvLRect.Location.Y = hsvPanel.PointToWindow(_cSaturation.Location).Y;
-                    Render2D.DrawText(style.FontMedium, "S", hsvLRect, textColor, TextAlignment.Near, TextAlignment.Center);
-                    hsvLRect.Location.Y = hsvPanel.PointToWindow(_cValue.Location).Y;
-                    Render2D.DrawText(style.FontMedium, "V", hsvLRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                Render2D.DrawText(style.FontMedium, "H", hsvLRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                hsvLRect.Location.Y = hsvPanel.PointToWindow(_cSaturation.Location).Y;
+                Render2D.DrawText(style.FontMedium, "S", hsvLRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                hsvLRect.Location.Y = hsvPanel.PointToWindow(_cValue.Location).Y;
+                Render2D.DrawText(style.FontMedium, "V", hsvLRect, textColor, TextAlignment.Near, TextAlignment.Center);
 
-                    // HSV math symbols (right)
-                    Float2 hsvSymbolsX = rgbPanel.PointToWindow(rgbPanel.Location) + _cHue.Width + 20;
-                    var hsvRRect = new Rectangle(hsvSymbolsX.X, hsvPanel.PointToWindow(_cHue.Location).Y, 25, _cHue.Height);
+                // HSV math symbols (right)
+                Float2 hsvSymbolsX = rgbPanel.PointToWindow(rgbPanel.Location) + _cHue.Width + 20;
+                var hsvRRect = new Rectangle(hsvSymbolsX.X, hsvPanel.PointToWindow(_cHue.Location).Y, 25, _cHue.Height);
 
-                    Render2D.DrawText(style.FontMedium, "°", hsvRRect, textColor, TextAlignment.Near, TextAlignment.Center);
-                    hsvRRect.Location.Y = hsvPanel.PointToWindow(_cSaturation.Location).Y;
-                    Render2D.DrawText(style.FontMedium, "%", hsvRRect, textColor, TextAlignment.Near, TextAlignment.Center);
-                    hsvRRect.Location.Y = hsvPanel.PointToWindow(_cValue.Location).Y;
-                    Render2D.DrawText(style.FontMedium, "%", hsvRRect, textColor, TextAlignment.Near, TextAlignment.Center);
-                    break;
+                Render2D.DrawText(style.FontMedium, "°", hsvRRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                hsvRRect.Location.Y = hsvPanel.PointToWindow(_cSaturation.Location).Y;
+                Render2D.DrawText(style.FontMedium, "%", hsvRRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                hsvRRect.Location.Y = hsvPanel.PointToWindow(_cValue.Location).Y;
+                Render2D.DrawText(style.FontMedium, "%", hsvRRect, textColor, TextAlignment.Near, TextAlignment.Center);
+                break;
             }
 
             // Alpha
