@@ -37,7 +37,6 @@ namespace FlaxEditor.GUI.Dialogs
         private const float SaturationAlphaSlidersThickness = 20.0f;
         private const float HSVRGBFloatBoxesWidht = 100;
         private const float GridScale = 4f;
-        private const string AddSavedColorButtonTooltip = "Save current color.";
         private const string SavedColorButtonTooltip = "Saved color";
         private const string ScaleParamName = "Scale";
 
@@ -658,7 +657,7 @@ namespace FlaxEditor.GUI.Dialogs
             {
                 Text = "+",
                 Parent = this,
-                TooltipText = AddSavedColorButtonTooltip,
+                TooltipText = "Save current color.",
                 Tag = null,
             };
             savedColorButton.ButtonClicked += (b) => OnSavedColorButtonClicked(b);
@@ -668,28 +667,10 @@ namespace FlaxEditor.GUI.Dialogs
         private void UpdateAddSavedColorsButton()
         {
             // Make not being able to save the same color twice a bit more intuitive by disabeling the button when the color is already saved
-            if (_savedColors.Contains(_value))
-            {
-                if (_savedColorButtons.Last().Tag == null)
-                    _savedColorButtons.Last().Enabled = false;
-                else
-                    _savedColorButtons.Last().Enabled = true;
-            }
+            if (_savedColors.Contains(_value) && _savedColorButtons.Last().Tag == null)
+                _savedColorButtons.Last().Enabled = false;
             else
                 _savedColorButtons.Last().Enabled = true;
-        }
-
-        private void OnWindowLostFocus()
-        {
-            // Auto apply color on defocus
-            var autoAcceptColorPickerChange = Editor.Instance.Options.Options.Interface.AutoAcceptColorPickerChange;
-            if (_useDynamicEditing && _initialValue != _value && _canPassLastChangeEvent && autoAcceptColorPickerChange)
-            {
-                _canPassLastChangeEvent = false;
-                _onChanged?.Invoke(_value, false);
-            }
-
-            OnCancel();
         }
 
         /// <inheritdoc />
