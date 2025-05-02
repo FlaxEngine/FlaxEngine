@@ -47,7 +47,6 @@ namespace FlaxEditor.GUI.Dialogs
         private const float LargeMargin = 25.0f;
       
         private Margin _pickerMargin = new Margin(SmallMargin, SmallMargin, SmallMargin, SmallMargin);
-        private Margin _textBoxBlockMargin = new Margin(LargeMargin + 1.5f, SmallMargin + 1.5f, SmallMargin + 1.5f, SmallMargin + 1.5f);
         private Margin _hsvRgbFloatBoxBlockMargin = new Margin(MediumMargin, MediumMargin, SmallMargin, SmallMargin);
 
         private Color _eyedropperStartColor;
