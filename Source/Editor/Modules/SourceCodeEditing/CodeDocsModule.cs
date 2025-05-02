@@ -374,7 +374,12 @@ namespace FlaxEditor.Modules.SourceCodeEditing
         {
             _typeCache.Clear();
             _memberCache.Clear();
-            _xmlCache.Clear();
+
+            foreach (var asm in _xmlCache.Keys.ToArray())
+            {
+                if (asm.IsCollectible)
+                    _xmlCache.Remove(asm);
+            }
         }
 
         /// <inheritdoc />
