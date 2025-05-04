@@ -176,7 +176,7 @@ void TextRender::UpdateLayout()
     int32 kerning;
 
     // Perform layout
-    Array<FontLineCache> lines;
+    Array<FontLineCache, InlinedAllocation<8>> lines;
     font->ProcessText(text, lines, _layoutOptions);
 
     // Prepare buffers capacity
