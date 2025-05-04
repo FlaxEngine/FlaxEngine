@@ -43,6 +43,89 @@ namespace MUtils
     extern FLAXENGINE_API MObject* BoxVariant(const Variant& value);
 }
 
+/// <summary>
+/// A wrapper for Array which reuses previously allocated arrays of same type for short-lived managed array conversions.
+/// </summary>
+/// <typeparam name="T"></typeparam>
+/// <typeparam name="AllocationType"></typeparam>
+template<typename T, typename AllocationType = HeapAllocation>
+class SharedArray
+{
+private:
+    static Array<Array<T, AllocationType>, InlinedAllocation<8>> _sharedArrays;
+public:
+    Array<T, AllocationType> _array;
+
+    SharedArray()
+    {
+        if (!_sharedArrays.IsEmpty())
+            _array = _sharedArrays.Pop();
+    }
+
+    SharedArray(SharedArray&& other)
+    {
+        Swap(_array, other._array);
+    }
+
+    ~SharedArray()
+    {
+        if (_array.Capacity() > 0)
+        {
+            // Store the array for later reuse
+            _array.Clear();
+            _sharedArrays.Push(_array);
+        }
+    }
+
+    SharedArray& operator=(const SharedArray&& other)
+    {
+        if (this != &other)
+            *this = MoveTemp(other);
+        return *this;
+    }
+
+    SharedArray& operator=(SharedArray&& other)
+    {
+        if (this != &other)
+            *this = MoveTemp(other);
+        return *this;
+    }
+
+    FORCE_INLINE T& operator[](const int32 index)
+    {
+        return _array.Get()[index];
+    }
+
+    FORCE_INLINE const T& operator[](const int32 index) const
+    {
+        return _array.Get()[index];
+    }
+
+    FORCE_INLINE T* Get()
+    {
+        return _array.Get();
+    }
+
+    FORCE_INLINE const T* Get() const
+    {
+        return _array.Get();
+    }
+
+    FORCE_INLINE int32 Count() const
+    {
+        return _array.Count();
+    }
+
+    FORCE_INLINE void Resize(const int32 size, const bool preserveContents = true)
+    {
+        _array.Resize(size, preserveContents);
+    }
+
+    operator Array<T, AllocationType>& () { return _array; };
+};
+template<typename T, typename AllocationType>
+Array<Array<T, AllocationType>, InlinedAllocation<8>> SharedArray<T, AllocationType>::_sharedArrays;
+
 // Converter for data of type T between managed and unmanaged world
 template<typename T, typename Enable = void>
 struct MConverter
@@ -481,6 +564,18 @@ namespace MUtils
     }
 
     /// <summary>
+    /// Allocates new managed array of data and copies contents from given native array.
+    /// </summary>
+    /// <param name="data">The array object.</param>
+    /// <param name="valueClass">The array values type class.</param>
+    /// <returns>The output array.</returns>
+    template<typename T, typename AllocationType>
+    FORCE_INLINE MArray* ToArray(const SharedArray<T, AllocationType>& data, const MClass* valueClass)
+    {
+        return MUtils::ToArray(Span<T>(data.Get(), data.Count()), valueClass);
+    }
+
+    /// <summary>
     /// Converts the managed array into native array container object.
     /// </summary>
     /// <param name="arrayObj">The managed array object.</param>
@@ -577,6 +672,23 @@ namespace MUtils
     FORCE_INLINE MArray* ToArray(const Array<String>& data)
     {
         return ToArray(Span<String>(data.Get(), data.Count()), MCore::TypeCache::String);
+    }
+
+    /// <summary>
+    /// Converts the managed array into native array container object using shared array.
+    /// </summary>
+    /// <param name="arrayObj">The managed array object.</param>
+    /// <returns>The output array.</returns>
+    template<typename T, typename AllocationType = HeapAllocation>
+    SharedArray<T, AllocationType> ToArrayShared(MArray* arrayObj)
+    {
+        SharedArray<T, AllocationType> result;
+        const int32 length = arrayObj ? MCore::Array::GetLength(arrayObj) : 0;
+        result.Resize(length, false);
+        MConverter<T> converter;
+        Span<T> resultSpan(result.Get(), length);
+        converter.ToNativeArray(resultSpan, arrayObj);
+        return result;
     }
 
 #if USE_NETCORE
