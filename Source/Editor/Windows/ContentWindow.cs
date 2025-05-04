@@ -282,7 +282,7 @@ namespace FlaxEditor.Windows
             CreateNewModuleMenu(menu, CurrentViewFolder, true);
             menu.AddSeparator();
             CreateNewContentItemMenu(menu, CurrentViewFolder, false, true);
-            menu.Show(this, new Float2(1, _createNewButton.Bottom));
+            menu.Show(this, _createNewButton.UpperLeft, ContextMenuDirection.RightUp);
         }
 
         private ContextMenu OnViewDropdownPopupCreate(ComboBox comboBox)
