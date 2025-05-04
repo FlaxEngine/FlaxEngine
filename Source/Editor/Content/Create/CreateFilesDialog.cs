@@ -60,7 +60,8 @@ namespace FlaxEditor.Content.Create
                 Text = "Create",
                 AnchorPreset = AnchorPresets.BottomRight,
                 Offsets = new Margin(-ButtonsWidth - ButtonsMargin, ButtonsWidth, -ButtonsHeight - ButtonsMargin, ButtonsHeight),
-                Parent = this
+                Parent = this,
+                Enabled = entry.CanBeCreated,
             };
             createButton.Clicked += OnSubmit;
             var cancelButton = new Button
@@ -68,7 +69,7 @@ namespace FlaxEditor.Content.Create
                 Text = "Cancel",
                 AnchorPreset = AnchorPresets.BottomRight,
                 Offsets = new Margin(-ButtonsWidth - ButtonsMargin - ButtonsWidth - ButtonsMargin, ButtonsWidth, -ButtonsHeight - ButtonsMargin, ButtonsHeight),
-                Parent = this
+                Parent = this,
             };
             cancelButton.Clicked += OnCancel;
 
@@ -77,7 +78,7 @@ namespace FlaxEditor.Content.Create
             {
                 AnchorPreset = AnchorPresets.HorizontalStretchTop,
                 Offsets = new Margin(2, 2, infoLabel.Bottom + 2, EditorHeight),
-                Parent = this
+                Parent = this,
             };
 
             // Settings editor
@@ -87,6 +88,7 @@ namespace FlaxEditor.Content.Create
             _dialogSize = new Float2(TotalWidth, panel.Bottom);
 
             _settingsEditor.Select(_entry.Settings);
+            _settingsEditor.Modified += () => createButton.Enabled = _entry.CanBeCreated;
         }
 
         /// <inheritdoc />
