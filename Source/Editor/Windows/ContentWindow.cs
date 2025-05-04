@@ -37,6 +37,7 @@ namespace FlaxEditor.Windows
 
         private readonly ToolStrip _toolStrip;
         private readonly ToolStripButton _importButton;
+        private readonly ToolStripButton _createNewButton;
         private readonly ToolStripButton _navigateBackwardButton;
         private readonly ToolStripButton _navigateForwardButton;
         private readonly ToolStripButton _navigateUpButton;
@@ -153,11 +154,12 @@ namespace FlaxEditor.Windows
             {
                 Parent = this,
             };
-            _importButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Import64, () => Editor.ContentImporting.ShowImportFileDialog(CurrentViewFolder)).LinkTooltip("Import content");
+            _importButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Import64, () => Editor.ContentImporting.ShowImportFileDialog(CurrentViewFolder)).LinkTooltip("Import content.");
+            _createNewButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Add64, OnCreateNewItemButtonClicked).LinkTooltip("Create a new asset.");
             _toolStrip.AddSeparator();
-            _navigateBackwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Left64, NavigateBackward).LinkTooltip("Navigate backward");
-            _navigateForwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Right64, NavigateForward).LinkTooltip("Navigate forward");
-            _navigateUpButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Up64, NavigateUp).LinkTooltip("Navigate up");
+            _navigateBackwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Left64, NavigateBackward).LinkTooltip("Navigate backward.");
+            _navigateForwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Right64, NavigateForward).LinkTooltip("Navigate forward.");
+            _navigateUpButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Up64, NavigateUp).LinkTooltip("Navigate up.");
             _toolStrip.AddSeparator();
 
             // Navigation bar
@@ -265,6 +267,22 @@ namespace FlaxEditor.Windows
 
             _view.InputActions.Add(options => options.Search, () => _itemsSearchBox.Focus());
             InputActions.Add(options => options.Search, () => _itemsSearchBox.Focus());
+        }
+
+        private void OnCreateNewItemButtonClicked()
+        {
+            if (Input.GetKey(KeyboardKeys.Shift) && CanCreateFolder())
+            {
+                NewFolder();
+                return;
+            }
+
+            var menu = new ContextMenu();
+            CreateNewFolderMenu(menu, CurrentViewFolder, true);
+            CreateNewModuleMenu(menu, CurrentViewFolder, true);
+            menu.AddSeparator();
+            CreateNewContentItemMenu(menu, CurrentViewFolder, false, true);
+            menu.Show(this, new Float2(1, _createNewButton.Bottom));
         }
 
         private ContextMenu OnViewDropdownPopupCreate(ComboBox comboBox)
