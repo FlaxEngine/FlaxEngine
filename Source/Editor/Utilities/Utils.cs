@@ -1505,7 +1505,6 @@ namespace FlaxEditor.Utilities
             inputActions.Add(options => options.BuildNav, Editor.Instance.BuildNavMesh);
             inputActions.Add(options => options.BuildSDF, Editor.Instance.BuildAllMeshesSDF);
             inputActions.Add(options => options.TakeScreenshot, Editor.Instance.Windows.TakeScreenshot);
-            inputActions.Add(options => options.ProfilerWindow, () => Editor.Instance.Windows.ProfilerWin.FocusOrShow());
 #if USE_PROFILER
             inputActions.Add(options => options.ProfilerStartStop, () =>
             {
