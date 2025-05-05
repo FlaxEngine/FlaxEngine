@@ -14,7 +14,7 @@ namespace FlaxEditor.Content.Create
         public string ResultUrl { get; }
 
         /// <summary>
-        /// Gets or sets wether a file can be created based on the current settings.
+        /// Gets a value indicating wether a file can be created based on the current settings.
         /// </summary>
         public abstract bool CanBeCreated { get; }
 
