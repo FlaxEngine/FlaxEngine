@@ -60,12 +60,12 @@ namespace FlaxEditor.Options
     public sealed class InputOptions
     {
         /// <summary>
-        /// TODO.
+        /// Gets a value based on the current settings that indicates wether window shortcuts will be avaliable during play mode.
         /// </summary>
         public static bool WindowShortcutsAvaliable => !Editor.IsPlayMode || Editor.Instance.Options.Options.Input.PlayModeWindowShortcutAvaliability == PlayModeShortcutAvailability.All;
 
         /// <summary>
-        /// TODO.
+        /// Gets a value based on the current settings that indicates wether the profiler window shortcut will be avaliable during play mode.
         /// </summary>
         public static bool ProfilerShortcutAvaliable => WindowShortcutsAvaliable || Editor.Instance.Options.Options.Input.PlayModeWindowShortcutAvaliability == PlayModeShortcutAvailability.ProfilerOnly;
 
