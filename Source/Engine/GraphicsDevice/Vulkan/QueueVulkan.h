@@ -24,6 +24,7 @@ private:
     CriticalSection _locker;
     CmdBufferVulkan* _lastSubmittedCmdBuffer;
     uint64 _lastSubmittedCmdBufferFenceCounter;
+
 public:
     QueueVulkan(GPUDeviceVulkan* device, uint32 familyIndex);
 
