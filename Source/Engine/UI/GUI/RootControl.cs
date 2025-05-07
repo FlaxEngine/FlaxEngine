@@ -125,11 +125,11 @@ namespace FlaxEngine.GUI
 
         #endregion
 
-        /// <inheritdoc />
-        public override void Update(float deltaTime)
+        /// <summary>
+        /// Flushes update callback requests.
+        /// </summary>
+        public void SyncCallbacks()
         {
-            base.Update(deltaTime);
-
             // Flush requests
             Profiler.BeginEvent("RootControl.SyncCallbacks");
             for (int i = 0; i < UpdateCallbacksToAdd.Count; i++)
@@ -143,6 +143,14 @@ namespace FlaxEngine.GUI
             }
             UpdateCallbacksToRemove.Clear();
             Profiler.EndEvent();
+        }
+
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            SyncCallbacks();
 
             // Perform the UI update
             try
