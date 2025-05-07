@@ -618,6 +618,8 @@ public:
     /// </summary>
     API_FUNCTION() virtual void Flush() = 0;
 
+    API_FUNCTION() virtual void  FinishGPUCommands() = 0;
+
     /// <summary>
     /// Sets the state of the resource (or subresource).
     /// </summary>

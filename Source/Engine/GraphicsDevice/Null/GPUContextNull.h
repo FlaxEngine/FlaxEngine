@@ -188,6 +188,7 @@ public:
     void Flush() override
     {
     }
+    void FinishGPUCommands() override {};
 
     void UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 size, uint32 offset) override
     {

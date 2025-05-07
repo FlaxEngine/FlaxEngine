@@ -18,6 +18,8 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Debug/Exceptions/NotImplementedException.h"
 
+#include "Engine\GraphicsDevice\Vulkan\QueueVulkan.h"
+
 // Ensure to match the indirect commands arguments layout
 static_assert(sizeof(GPUDispatchIndirectArgs) == sizeof(VkDispatchIndirectCommand), "Wrong size of GPUDrawIndirectArgs.");
 static_assert(OFFSET_OF(GPUDispatchIndirectArgs, ThreadGroupCountX) == OFFSET_OF(VkDispatchIndirectCommand, x), "Wrong offset for GPUDrawIndirectArgs::ThreadGroupCountX");
@@ -1308,6 +1310,13 @@ void GPUContextVulkan::Flush()
     _cmdBufferManager->SubmitActiveCmdBuffer();
     _cmdBufferManager->PrepareForNewActiveCommandBuffer();
     ASSERT(_cmdBufferManager->HasPendingActiveCmdBuffer() && _cmdBufferManager->GetActiveCmdBuffer()->GetState() == CmdBufferVulkan::State::IsInsideBegin);
+}
+
+void GPUContextVulkan::FinishGPUCommands()
+{
+    auto f = _device->FenceManager.AllocateFence();
+    Flush();
+    _device->FenceManager.WaitAndReleaseFence(f, INFINITE);
 }
 
 void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 size, uint32 offset)
