@@ -1316,7 +1316,7 @@ void GPUContextVulkan::FinishGPUCommands()
 {
     auto f = _device->FenceManager.AllocateFence();
     Flush();
-    _device->FenceManager.WaitAndReleaseFence(f, INFINITE);
+    _device->FenceManager.WaitAndReleaseFence(f, 0xFFFFFFFF);
 }
 
 void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 size, uint32 offset)
