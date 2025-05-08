@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.Collections.Generic;
+using System.Reflection.Emit;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -93,8 +94,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Add info box
             if (IsSingleObject && Values[0] is RigidBody && Editor.IsPlayMode)
             {
-                _infoLabel = layout.Label(string.Empty).Label;
+                var group = layout.Group("Info");
+                _infoLabel = group.Label(string.Empty).Label;
                 _infoLabel.AutoHeight = true;
+                _infoLabel.Margin = new Margin(3);
             }
         }
     }
