@@ -12,6 +12,9 @@ namespace FlaxEditor.Content.Create
     /// <seealso cref="FlaxEditor.Content.Create.CreateFileEntry" />
     public class ParticleEmitterCreateEntry : CreateFileEntry
     {
+        /// <inheritdoc/>
+        public override bool CanBeCreated => true;
+
         /// <summary>
         /// Types of the emitter templates that can be created.
         /// </summary>

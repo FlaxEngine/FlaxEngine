@@ -17,6 +17,8 @@ namespace FlaxEditor.Content.Create
     /// <seealso cref="FlaxEditor.Content.Create.CreateFileEntry" />
     internal class SettingsCreateEntry : CreateFileEntry
     {
+        public override bool CanBeCreated => _options.Type != null;
+
         internal class Options
         {
             [Tooltip("The settings type.")]
