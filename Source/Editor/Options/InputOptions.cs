@@ -34,7 +34,7 @@ namespace FlaxEditor.Options
     }
 
     /// <summary>
-    /// Play Mode shortcuts availability in play mode.
+    /// Shortcut availability in play mode.
     /// </summary>
     public enum PlayModeShortcutAvailability
     {
