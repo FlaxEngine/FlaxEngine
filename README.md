@@ -50,8 +50,8 @@ Follow the instructions below to compile and run the engine from source.
   * Arch: `sudo pacman -S dotnet-sdk-8.0 dotnet-runtime-8.0 dotnet-targeting-pack-8.0 dotnet-host`
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
   * Ubuntu: `sudo apt install vulkan-sdk`
-  * Fedora: `sudo dnf install vulkan-headers vulkan-tools vulkan-validation-layers spirv-tools`
-  * Arch: `sudo pacman -S spirv-tools vulkan-headers vulkan-tools vulkan-validation-layers`
+  * Fedora: `sudo dnf install vulkan-headers vulkan-tools vulkan-validation-layers`
+  * Arch: `sudo pacman -S vulkan-headers vulkan-tools vulkan-validation-layers`
 * Install Git with LFS
   * Ubuntu: `sudo apt-get install git git-lfs`
   * Arch: `sudo pacman -S git git-lfs`
