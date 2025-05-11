@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Config/Settings.h"
+#include "AudioMixerGroup.h"
 
 /// <summary>
 /// Audio Mixer settings container
