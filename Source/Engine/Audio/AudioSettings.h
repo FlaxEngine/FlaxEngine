@@ -40,7 +40,7 @@ public:
     bool EnableHRTF = false;
 
     /// <summary>
-    /// 
+    /// Audio Mixer configuration (per-group).
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(400), EditorDisplay(\"Audio Mixer\")")
     Array<AudioMixerGroup,InlinedAllocation<32>> AudioMixerGroups;
