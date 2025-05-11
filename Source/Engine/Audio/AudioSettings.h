@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Config/Settings.h"
+#include "AudioMixerGroup.h"
 
 /// <summary>
 /// Audio settings container.
@@ -37,6 +38,12 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(300), EditorDisplay(\"Spatial Audio\")")
     bool EnableHRTF = false;
+
+    /// <summary>
+    /// 
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(400), EditorDisplay(\"Audio Mixer\")")
+    Array<AudioMixerGroup,InlinedAllocation<32>> AudioMixerGroups;
 
 public:
     /// <summary>

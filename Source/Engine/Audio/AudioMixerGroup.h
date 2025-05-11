@@ -8,6 +8,7 @@
 #include "Engine/Core/Collections/Dictionary.h"
 #endif
 
+
 /// <summary>
 ///  Settings container for a group of audio mixer settings. Defines the data audio mixer options.
 /// </summary>
@@ -23,7 +24,7 @@ API_STRUCT() struct AudioMixerGroup : ISerializable
     String Name;
 
     /// <summary>
-    /// 
+    ///  Volume of the pitch.
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(15), Limit(0, 1)")
     float PitchMixer;
