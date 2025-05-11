@@ -4,10 +4,7 @@
 
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/ISerializable.h"
-#if USE_EDITOR
-#include "Engine/Core/Collections/Dictionary.h"
-#endif
-
+#include "AudioQuality.h"
 
 /// <summary>
 ///  Settings container for a group of audio mixer settings. Defines the data audio mixer options.
@@ -26,8 +23,14 @@ API_STRUCT() struct AudioMixerGroup : ISerializable
     /// <summary>
     ///  Volume of the pitch.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(15), Limit(0, 1)")
+    API_FIELD(Attributes = "EditorOrder(20), Limit(0, 1)")
     float PitchMixer;
+
+    /// <summary>
+    /// Quality of audio.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(30)")
+    AudioQuality QualityAudio;
 
 };
 
