@@ -7,7 +7,7 @@
 /// <summary>
 /// Audio Mixer settings container
 /// </summary>
-API_CLASS(sealed, Namespace = "") class FLAXENGINE_API AudioMixerSettings : public SettingsBase
+API_CLASS(sealed, Namespace = "FlaxEditor.Content.Settings") class FLAXENGINE_API AudioMixerSettings : public SettingsBase
 {
     DECLARE_SCRIPTING_TYPE_MINIMAL(AudioMixerSettings);
     API_AUTO_SERIALIZATION();
