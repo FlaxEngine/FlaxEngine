@@ -19,6 +19,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             base.Initialize(layout);
 
+            var properties = layout.Group("Properties");
+
+            // properties.Property("Audio Mixer Group",,new AudioMixerGroupEditor(), "The audio mixer group used by this audio source.");
+
             // Show playback options during simulation
             if (Editor.IsPlayMode)
             {
@@ -38,6 +42,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 grid.Button("Pause").Button.Clicked += () => Foreach(x => x.Pause());
                 grid.Button("Stop").Button.Clicked += () => Foreach(x => x.Stop());
             }
+
         }
 
         /// <inheritdoc />
