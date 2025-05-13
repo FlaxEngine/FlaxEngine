@@ -792,7 +792,7 @@ namespace FlaxEditor.Windows
         public override bool OnKeyDown(KeyboardKeys key)
         {
             var input = Editor.Options.Options.Input;
-            if (input.Search.Process(this, key))
+            if (input.Search.Process(this))
             {
                 if (!_searchBox.ContainsFocus)
                 {

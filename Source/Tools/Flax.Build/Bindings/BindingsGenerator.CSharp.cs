@@ -133,24 +133,24 @@ namespace Flax.Build.Bindings
             // In-built constants
             switch (value)
             {
-            case "nullptr":
-            case "NULL":
-            case "String::Empty":
-            case "StringAnsi::Empty":
-            case "StringAnsiView::Empty":
-            case "StringView::Empty": return "null";
-            case "MAX_int8": return "sbyte.MaxValue";
-            case "MAX_uint8": return "byte.MaxValue";
-            case "MAX_int16": return "short.MaxValue";
-            case "MAX_uint16": return "ushort.MaxValue";
-            case "MAX_int32": return "int.MaxValue";
-            case "MAX_uint32": return "uint.MaxValue";
-            case "MAX_int64": return "long.MaxValue";
-            case "MAX_uint64": return "ulong.MaxValue";
-            case "MAX_float": return "float.MaxValue";
-            case "MAX_double": return "double.MaxValue";
-            case "true":
-            case "false": return value;
+                case "nullptr":
+                case "NULL":
+                case "String::Empty":
+                case "StringAnsi::Empty":
+                case "StringAnsiView::Empty":
+                case "StringView::Empty": return "null";
+                case "MAX_int8": return "sbyte.MaxValue";
+                case "MAX_uint8": return "byte.MaxValue";
+                case "MAX_int16": return "short.MaxValue";
+                case "MAX_uint16": return "ushort.MaxValue";
+                case "MAX_int32": return "int.MaxValue";
+                case "MAX_uint32": return "uint.MaxValue";
+                case "MAX_int64": return "long.MaxValue";
+                case "MAX_uint64": return "ulong.MaxValue";
+                case "MAX_float": return "float.MaxValue";
+                case "MAX_double": return "double.MaxValue";
+                case "true":
+                case "false": return value;
             }
 
             // Handle float{_} style type of default values
@@ -214,34 +214,34 @@ namespace Flax.Build.Bindings
                     // Support for in-built constants
                     switch (value)
                     {
-                    case "Vector2.Zero": return "typeof(Vector2), \"0,0\"";
-                    case "Vector2.One": return "typeof(Vector2), \"1,1\"";
-                    case "Float2.Zero": return "typeof(Float2), \"0,0\"";
-                    case "Float2.One": return "typeof(Float2), \"1,1\"";
-                    case "Double2.Zero": return "typeof(Double2), \"0,0\"";
-                    case "Double2.One": return "typeof(Double2), \"1,1\"";
-                    case "Int2.Zero": return "typeof(Int2), \"0,0\"";
-                    case "Int2.One": return "typeof(Int2), \"1,1\"";
+                        case "Vector2.Zero": return "typeof(Vector2), \"0,0\"";
+                        case "Vector2.One": return "typeof(Vector2), \"1,1\"";
+                        case "Float2.Zero": return "typeof(Float2), \"0,0\"";
+                        case "Float2.One": return "typeof(Float2), \"1,1\"";
+                        case "Double2.Zero": return "typeof(Double2), \"0,0\"";
+                        case "Double2.One": return "typeof(Double2), \"1,1\"";
+                        case "Int2.Zero": return "typeof(Int2), \"0,0\"";
+                        case "Int2.One": return "typeof(Int2), \"1,1\"";
 
-                    case "Vector3.Zero": return "typeof(Vector3), \"0,0,0\"";
-                    case "Vector3.One": return "typeof(Vector3), \"1,1,1\"";
-                    case "Float3.Zero": return "typeof(Float3), \"0,0,0\"";
-                    case "Float3.One": return "typeof(Float3), \"1,1,1\"";
-                    case "Double3.Zero": return "typeof(Double3), \"0,0,0\"";
-                    case "Double3.One": return "typeof(Double3), \"1,1,1\"";
-                    case "Int3.Zero": return "typeof(Int3), \"0,0,0\"";
-                    case "Int3.One": return "typeof(Int3), \"1,1,1\"";
+                        case "Vector3.Zero": return "typeof(Vector3), \"0,0,0\"";
+                        case "Vector3.One": return "typeof(Vector3), \"1,1,1\"";
+                        case "Float3.Zero": return "typeof(Float3), \"0,0,0\"";
+                        case "Float3.One": return "typeof(Float3), \"1,1,1\"";
+                        case "Double3.Zero": return "typeof(Double3), \"0,0,0\"";
+                        case "Double3.One": return "typeof(Double3), \"1,1,1\"";
+                        case "Int3.Zero": return "typeof(Int3), \"0,0,0\"";
+                        case "Int3.One": return "typeof(Int3), \"1,1,1\"";
 
-                    case "Vector4.Zero": return "typeof(Vector4), \"0,0,0,0\"";
-                    case "Vector4.One": return "typeof(Vector4), \"1,1,1,1\"";
-                    case "Double4.Zero": return "typeof(Double4), \"0,0,0,0\"";
-                    case "Double4.One": return "typeof(Double4), \"1,1,1,1\"";
-                    case "Float4.Zero": return "typeof(Float4), \"0,0,0,0\"";
-                    case "Float4.One": return "typeof(Float4), \"1,1,1,1\"";
-                    case "Int4.Zero": return "typeof(Float4), \"0,0,0,0\"";
-                    case "Int4.One": return "typeof(Float4), \"1,1,1,1\"";
+                        case "Vector4.Zero": return "typeof(Vector4), \"0,0,0,0\"";
+                        case "Vector4.One": return "typeof(Vector4), \"1,1,1,1\"";
+                        case "Double4.Zero": return "typeof(Double4), \"0,0,0,0\"";
+                        case "Double4.One": return "typeof(Double4), \"1,1,1,1\"";
+                        case "Float4.Zero": return "typeof(Float4), \"0,0,0,0\"";
+                        case "Float4.One": return "typeof(Float4), \"1,1,1,1\"";
+                        case "Int4.Zero": return "typeof(Float4), \"0,0,0,0\"";
+                        case "Int4.One": return "typeof(Float4), \"1,1,1,1\"";
 
-                    case "Quaternion.Identity": return "typeof(Quaternion), \"0,0,0,1\"";
+                        case "Quaternion.Identity": return "typeof(Quaternion), \"0,0,0,1\"";
                     }
 
                     // Enums
@@ -529,51 +529,51 @@ namespace Flax.Build.Bindings
 
             switch (typeInfo.Type)
             {
-            case "String":
-            case "StringView":
-            case "StringAnsi":
-            case "StringAnsiView":
-                // String
-                return string.Empty;
-            case "ScriptingObject":
-            case "PersistentScriptingObject":
-            case "ManagedScriptingObject":
-                // object
-                return "FlaxEngine.Object.GetUnmanagedPtr({0})";
-            case "Function":
-                // delegate
-                return "NativeInterop.GetFunctionPointerForDelegate({0})";
-            case "Array":
-            case "Span":
-            case "DataContainer":
-                if (typeInfo.GenericArgs != null)
-                {
-                    // Convert array that uses different type for marshalling
-                    var arrayTypeInfo = typeInfo.GenericArgs[0];
-                    var arrayApiType = FindApiTypeInfo(buildData, arrayTypeInfo, caller);
-                    if (arrayApiType != null && arrayApiType.MarshalAs != null)
-                        return $"{{0}}.ConvertArray(x => ({GenerateCSharpNativeToManaged(buildData, arrayApiType.MarshalAs, caller)})x)";
-                }
-                return string.Empty;
-            default:
-                var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
-                if (apiType != null)
-                {
-                    // Scripting Object
-                    if (apiType.IsScriptingObject)
+                case "String":
+                case "StringView":
+                case "StringAnsi":
+                case "StringAnsiView":
+                    // String
+                    return string.Empty;
+                case "ScriptingObject":
+                case "PersistentScriptingObject":
+                case "ManagedScriptingObject":
+                    // object
+                    return "FlaxEngine.Object.GetUnmanagedPtr({0})";
+                case "Function":
+                    // delegate
+                    return "NativeInterop.GetFunctionPointerForDelegate({0})";
+                case "Array":
+                case "Span":
+                case "DataContainer":
+                    if (typeInfo.GenericArgs != null)
+                    {
+                        // Convert array that uses different type for marshalling
+                        var arrayTypeInfo = typeInfo.GenericArgs[0];
+                        var arrayApiType = FindApiTypeInfo(buildData, arrayTypeInfo, caller);
+                        if (arrayApiType != null && arrayApiType.MarshalAs != null)
+                            return $"{{0}}.ConvertArray(x => ({GenerateCSharpNativeToManaged(buildData, arrayApiType.MarshalAs, caller)})x)";
+                    }
+                    return string.Empty;
+                default:
+                    var apiType = FindApiTypeInfo(buildData, typeInfo, caller);
+                    if (apiType != null)
+                    {
+                        // Scripting Object
+                        if (apiType.IsScriptingObject)
+                            return "FlaxEngine.Object.GetUnmanagedPtr({0})";
+
+                        // interface
+                        if (apiType.IsInterface)
+                            return string.Format("FlaxEngine.Object.GetUnmanagedInterface({{0}}, typeof({0}))", apiType.Name);
+                    }
+
+                    // Object reference property
+                    if (typeInfo.IsObjectRef)
                         return "FlaxEngine.Object.GetUnmanagedPtr({0})";
 
-                    // interface
-                    if (apiType.IsInterface)
-                        return string.Format("FlaxEngine.Object.GetUnmanagedInterface({{0}}, typeof({0}))", apiType.Name);
-                }
-
-                // Object reference property
-                if (typeInfo.IsObjectRef)
-                    return "FlaxEngine.Object.GetUnmanagedPtr({0})";
-
-                // Default
-                return string.Empty;
+                    // Default
+                    return string.Empty;
             }
         }
 
@@ -951,7 +951,7 @@ namespace Flax.Build.Bindings
                 if (defaultValue != null)
                     contents.Append(indent).Append("[DefaultValue(").Append(defaultValue).Append(")]").AppendLine();
             }
-            
+
             // Check if array has fixed allocation and add in MaxCount Collection attribute if a Collection attribute does not already exist.
             if (defaultValueType != null && (string.IsNullOrEmpty(attributes) || !attributes.Contains("Collection", StringComparison.Ordinal)))
             {
@@ -2179,6 +2179,30 @@ namespace Flax.Build.Bindings
             {
                 contents.AppendLine("}");
             }
+
+            // Also emit a matching string constants class for enums like KeyboardKeys
+            if (enumInfo.Name == "KeyboardKeys" || enumInfo.Name == "MouseButton")
+            {
+                contents.AppendLine();
+                contents.AppendLine($"namespace {enumInfo.Namespace}");
+                contents.AppendLine("{");
+                contents.AppendLine($"{indent}/// <summary>");
+                contents.AppendLine($"{indent}/// String constants for {enumInfo.Name}.");
+                contents.AppendLine($"{indent}/// </summary>");
+                contents.AppendLine($"{indent}public static class {enumInfo.Name}String");
+                contents.AppendLine($"{indent}{{");
+
+                foreach (var entry in enumInfo.Entries)
+                {
+                    contents.AppendLine($"{indent}    /// <summary>");
+                    contents.AppendLine($"{indent}    /// String representation of <see cref=\"{enumInfo.Name}.{entry.Name}\"/>.");
+                    contents.AppendLine($"{indent}    /// </summary>");
+                    contents.AppendLine($"{indent}    public const string {entry.Name} = \"{entry.Name}\";");
+                }
+
+                contents.AppendLine($"{indent}}}");
+                contents.AppendLine("}");
+            }
         }
 
         private static void GenerateCSharpInterface(BuildData buildData, StringBuilder contents, string indent, InterfaceInfo interfaceInfo)
@@ -2300,7 +2324,9 @@ namespace Flax.Build.Bindings
                 else if (type is StructureInfo structureInfo)
                     GenerateCSharpStructure(buildData, contents, indent, structureInfo);
                 else if (type is EnumInfo enumInfo)
+                {
                     GenerateCSharpEnum(buildData, contents, indent, enumInfo);
+                }
                 else if (type is InterfaceInfo interfaceInfo)
                     GenerateCSharpInterface(buildData, contents, indent, interfaceInfo);
                 else if (type is InjectCodeInfo injectCodeInfo && string.Equals(injectCodeInfo.Lang, "csharp", StringComparison.OrdinalIgnoreCase))

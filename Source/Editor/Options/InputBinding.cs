@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
+using System.Linq;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEngine;
@@ -22,85 +23,77 @@ namespace FlaxEditor.Options
     public struct InputBinding : IEquatable<InputBinding>
     {
         /// <summary>
-        /// The key to bind.
+        /// The <see cref="InputTrigger"/> list to bind.
         /// </summary>
-        public KeyboardKeys Key;
+        public List<InputTrigger> InputTriggers;
+        private const int MAX_TRIGGERS = 4;
 
         /// <summary>
-        /// The first modifier (<see cref="KeyboardKeys.None"/> if not used).
+        /// Initializes an empty <see cref="InputBinding"/>
         /// </summary>
-        public KeyboardKeys Modifier1;
-
-        /// <summary>
-        /// The second modifier (<see cref="KeyboardKeys.None"/> if not used).
-        /// </summary>
-        public KeyboardKeys Modifier2;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="InputBinding"/> struct.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        public InputBinding(KeyboardKeys key)
+        public InputBinding()
         {
-            Key = key;
-            Modifier1 = KeyboardKeys.None;
-            Modifier2 = KeyboardKeys.None;
+            InputTriggers = new List<InputTrigger>();
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="InputBinding"/> struct.
+        /// Initializes using <see cref="string"/>, <see cref="KeyboardKeys"/>, <see cref="MouseButton"/>, or <see cref="InputTrigger"/> struct.
         /// </summary>
-        /// <param name="key">The key.</param>
-        /// <param name="modifier1">The first modifier.</param>
-        public InputBinding(KeyboardKeys key, KeyboardKeys modifier1)
+        public InputBinding(params object[] inputs)
         {
-            Key = key;
-            Modifier1 = modifier1;
-            Modifier2 = KeyboardKeys.None;
-        }
+            InputTriggers = new List<InputTrigger>();
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="InputBinding"/> struct.
-        /// </summary>
-        /// <param name="key">The key.</param>
-        /// <param name="modifier1">The first modifier.</param>
-        /// <param name="modifier2">The second modifier.</param>
-        public InputBinding(KeyboardKeys key, KeyboardKeys modifier1, KeyboardKeys modifier2)
-        {
-            Key = key;
-            Modifier1 = modifier1;
-            Modifier2 = modifier2;
-        }
-
-        /// <summary>
-        /// Parses the specified key text value.
-        /// </summary>
-        /// <param name="value">The value.</param>
-        /// <param name="result">The result (valid only if parsing succeed).</param>
-        /// <returns>True if parsing succeed, otherwise false.</returns>
-        public static bool Parse(string value, out KeyboardKeys result)
-        {
-            if (string.Equals(value, "Ctrl", StringComparison.OrdinalIgnoreCase))
+            if (inputs.Length == 0)
             {
-                result = KeyboardKeys.Control;
-                return true;
+                InputTriggers.Add(new InputTrigger());
+                return;
             }
 
-            return Enum.TryParse(value, true, out result);
+            for (int i = 0; i < inputs.Length && i < MAX_TRIGGERS; i++)
+            {
+                object input = inputs[i];
+                if (
+                    input is string str
+                    && InputTrigger.TryParseInput(str, out var parsedStr))
+                {
+                    InputTriggers.Add(parsedStr);
+                    continue;
+                }
+                if (
+                    input is InputTrigger
+                    && InputTrigger.TryParseInput(input.ToString(), out var parsedTrigger))
+                {
+                    InputTriggers.Add(parsedTrigger);
+                    continue;
+                }
+                if (
+                    input is KeyboardKeys
+                    && InputTrigger.TryParseInput(input.ToString(), out var parsedKey))
+                {
+                    InputTriggers.Add(parsedKey);
+                    continue;
+                }
+                if (
+                    input is MouseButton
+                    && InputTrigger.TryParseInput(input.ToString(), out var parsedMouse))
+                {
+                    InputTriggers.Add(parsedMouse);
+                    continue;
+                }
+                throw new ArgumentException($"Unsupported input type: {input.GetType().Name}");
+            }
         }
 
         /// <summary>
-        /// Returns a <see cref="System.String" /> that represents the key enum (for UI).
+        /// Initializes using input <see cref="string"/> separated by +
+        /// <para>Example: "Left+Control+R" = MouseButton.Left, KeyboardKeys.Control, KeyboardKeys.R</para>
         /// </summary>
-        /// <param name="key">The key.</param>
-        /// <returns>A <see cref="System.String" /> that represents the key.</returns>
-        public static string ToString(KeyboardKeys key)
+        public InputBinding(string bindingString)
         {
-            switch (key)
-            {
-            case KeyboardKeys.Control: return "Ctrl";
-            default: return key.ToString();
-            }
+            if (!TryParse(bindingString, out var result))
+                throw new ArgumentException($"Invalid binding string: {bindingString}");
+
+            this = result;
         }
 
         /// <summary>
@@ -111,88 +104,29 @@ namespace FlaxEditor.Options
         /// <returns>True if parsing succeed, otherwise false.</returns>
         public static bool TryParse(string value, out InputBinding result)
         {
-            result = new InputBinding();
-            string[] v = value.Split('+');
-            switch (v.Length)
-            {
-            case 3:
-                if (Parse(v[2], out result.Key) &&
-                    Parse(v[1], out result.Modifier1) &&
-                    Parse(v[0], out result.Modifier2))
-                    return true;
-                break;
-            case 2:
-                if (Parse(v[1], out result.Key) &&
-                    Parse(v[0], out result.Modifier1))
-                    return true;
-                break;
+            var parts = value.Split('+', StringSplitOptions.RemoveEmptyEntries);
+            var triggers = new List<InputTrigger>();
 
-            case 1:
-                if (Parse(v[0], out result.Key))
-                    return true;
-                break;
-            }
-            return false;
-        }
-
-        private bool ProcessModifiers(Control control)
-        {
-            return ProcessModifiers(control.Root.GetKey);
-        }
-
-        private bool ProcessModifiers(Window window)
-        {
-            return ProcessModifiers(window.GetKey);
-        }
-
-        private bool ProcessModifiers(Func<KeyboardKeys, bool> getKeyFunc)
-        {
-            bool ctrlPressed = getKeyFunc(KeyboardKeys.Control);
-            bool shiftPressed = getKeyFunc(KeyboardKeys.Shift);
-            bool altPressed = getKeyFunc(KeyboardKeys.Alt);
-
-            bool mod1 = false;
-            if (Modifier1 == KeyboardKeys.None)
-                mod1 = true;
-            else if (Modifier1 == KeyboardKeys.Control)
+            string parsedString = value + "\n";
+            foreach (var part in parts)
             {
-                mod1 = ctrlPressed;
-                ctrlPressed = false;
+                if (InputTrigger.TryParseInput(part.Trim(), out var trigger))
+                {
+                    triggers.Add(trigger);
+                    Debug.Log(parsedString);
+                }
+                else
+                {
+                    Debug.Log(parsedString);
+                    result = new InputBinding();
+                    return false;
+                }
             }
-            else if (Modifier1 == KeyboardKeys.Shift)
+            result = new InputBinding()
             {
-                mod1 = shiftPressed;
-                shiftPressed = false;
-            }
-            else if (Modifier1 == KeyboardKeys.Alt)
-            {
-                mod1 = altPressed;
-                altPressed = false;
-            }
-
-            bool mod2 = false;
-            if (Modifier2 == KeyboardKeys.None)
-                mod2 = true;
-            else if (Modifier2 == KeyboardKeys.Control)
-            {
-                mod2 = ctrlPressed;
-                ctrlPressed = false;
-            }
-            else if (Modifier2 == KeyboardKeys.Shift)
-            {
-                mod2 = shiftPressed;
-                shiftPressed = false;
-            }
-            else if (Modifier2 == KeyboardKeys.Alt)
-            {
-                mod2 = altPressed;
-                altPressed = false;
-            }
-
-            // Check if any unhandled modifiers are not pressed
-            if (mod1 && mod2)
-                return !ctrlPressed && !shiftPressed && !altPressed;
-            return false;
+                InputTriggers = triggers
+            };
+            return true;
         }
 
         /// <summary>
@@ -202,62 +136,47 @@ namespace FlaxEditor.Options
         /// <returns>True if input has been processed, otherwise false.</returns>
         public bool Process(Control control)
         {
-            var root = control?.Root;
-            return root != null && root.GetKey(Key) && ProcessModifiers(control);
-        }
-
-        /// <summary>
-        /// Processes this input binding to check if state matches.
-        /// </summary>
-        /// <param name="control">The input providing control.</param>
-        /// <param name="key">The input key.</param>
-        /// <returns>True if input has been processed, otherwise false.</returns>
-        public bool Process(Control control, KeyboardKeys key)
-        {
-            if (key != Key)
+            if (control?.Root == null)
                 return false;
 
-            return ProcessModifiers(control);
+            return Process(control.Root.GetKey, control.Root.GetMouseButton);
         }
 
         /// <summary>
         /// Processes this input binding to check if state matches.
+        /// Gives priority to keyboard input
         /// </summary>
         /// <param name="window">The input providing window.</param>
         /// <returns>True if input has been processed, otherwise false.</returns>
         public bool Process(Window window)
         {
-            return window.GetKey(Key) && ProcessModifiers(window);
+            return Process(window.GetKey, window.GetMouseButton);
+        }
+
+        /// <summary>
+        /// Processes this input binding to check if all input triggers are currently active.
+        /// </summary>
+        /// <param name="getKey">Function to check if a keyboard key is currently pressed.</param>
+        /// <param name="getMouse">Function to check if a mouse button is currently pressed.</param>
+        /// <returns>True if all input triggers are currently pressed; otherwise, false.</returns>
+        private bool Process(Func<KeyboardKeys, bool> getKey, Func<MouseButton, bool> getMouse)
+        {
+            foreach (var trigger in InputTriggers)
+            {
+                if (!trigger.IsPressed(getKey, getMouse))
+                    return false;
+            }
+            return true;
         }
 
         /// <inheritdoc />
         public override string ToString()
         {
-            string result = string.Empty;
-            if (Modifier2 != KeyboardKeys.None)
-            {
-                result = ToString(Modifier2);
-            }
-            if (Modifier1 != KeyboardKeys.None)
-            {
-                if (result.Length != 0)
-                    result += '+';
-                result += ToString(Modifier1);
-            }
-            if (Key != KeyboardKeys.None)
-            {
-                if (result.Length != 0)
-                    result += '+';
-                result += ToString(Key);
-            }
-            return result;
+            return (InputTriggers != null && InputTriggers.Count > 0)
+            ? string.Join("+", InputTriggers)
+            : string.Empty;
         }
 
-        /// <inheritdoc />
-        public bool Equals(InputBinding other)
-        {
-            return Key == other.Key && Modifier1 == other.Modifier1 && Modifier2 == other.Modifier2;
-        }
 
         /// <inheritdoc />
         public override bool Equals(object obj)
@@ -266,25 +185,37 @@ namespace FlaxEditor.Options
         }
 
         /// <inheritdoc />
+        public bool Equals(InputBinding other)
+        {
+            if (InputTriggers is null || other.InputTriggers is null)
+                return false;
+
+            if (InputTriggers.Count != other.InputTriggers.Count)
+                return false;
+
+            return new HashSet<InputTrigger>(InputTriggers).SetEquals(other.InputTriggers);
+        }
+
+        /// <inheritdoc />
         public override int GetHashCode()
         {
-            return HashCode.Combine((int)Key, (int)Modifier1, (int)Modifier2);
+            // Order-independent hash
+            int hash = 0;
+            foreach (var trigger in InputTriggers)
+                hash ^= trigger.GetHashCode();
+            return hash;
         }
 
-        /// <summary>
-        /// Compares two values.
-        /// </summary>
+        /// <inheritdoc />
         public static bool operator ==(InputBinding left, InputBinding right)
         {
-            return left.Equals(right);
+            return Equals(left, right);
         }
 
-        /// <summary>
-        /// Compares two values.
-        /// </summary>
+        /// <inheritdoc />
         public static bool operator !=(InputBinding left, InputBinding right)
         {
-            return !left.Equals(right);
+            return !Equals(left, right);
         }
     }
 
@@ -311,8 +242,18 @@ namespace FlaxEditor.Options
         {
             if (value is string str)
             {
-                InputBinding.TryParse(str, out var result);
-                return result;
+                //Debug.Log($"[Converter] Converting '{str}'");
+                if (InputBinding.TryParse(str, out var result))
+                {
+                    //Debug.Log("[Converter] Successs!");
+                    return result;
+                }
+                else
+                {
+                    throw new NotSupportedException($"InputBindingConverter cannot convert from '{str}' to InputBinding.");
+                }
+
+                //Debug.Log("[Converter] Failed to parse string." + value.ToString());
             }
             return base.ConvertFrom(context, culture, value);
         }
@@ -324,7 +265,11 @@ namespace FlaxEditor.Options
             {
                 return ((InputBinding)value).ToString();
             }
-            return base.ConvertTo(context, culture, value, destinationType);
+            else
+            {
+                throw new NotSupportedException($"InputBindingConverter cannot convert '{value}' to InputBinding.");
+            }
+            //return base.ConvertTo(context, culture, value, destinationType);
         }
     }
 
@@ -354,42 +299,35 @@ namespace FlaxEditor.Options
             }
 
             /// <inheritdoc />
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (IsFocused)
+                {
+                    var trigger = new InputTrigger(button.ToString());
+                    if (!_binding.InputTriggers.Contains(trigger))
+                    {
+                        _binding.InputTriggers.Add(trigger);
+                    }
+
+                    _text = _binding.ToString();
+                }
+                else
+                {
+                    base.OnMouseDown(location, button);
+                }
+                return true;
+            }
+
+            /// <inheritdoc />
             public override bool OnKeyDown(KeyboardKeys key)
             {
-                // Skip already added keys
-                if (_binding.Key == key || _binding.Modifier1 == key || _binding.Modifier2 == key)
-                    return true;
-
-                switch (key)
+                var trigger = new InputTrigger(key.ToString());
+                if (!_binding.InputTriggers.Contains(trigger))
                 {
-                // Skip
-                case KeyboardKeys.Spacebar: break;
-
-                // Modifiers
-                case KeyboardKeys.Control:
-                case KeyboardKeys.Shift:
-                    if (_binding.Modifier1 == KeyboardKeys.None)
-                    {
-                        _binding.Modifier1 = key;
-                        _text = _binding.ToString();
-                    }
-                    else if (_binding.Modifier2 == KeyboardKeys.None)
-                    {
-                        _binding.Modifier2 = key;
-                        _text = _binding.ToString();
-                    }
-                    break;
-
-                // Keys
-                default:
-                    if (_binding.Key == KeyboardKeys.None)
-                    {
-                        _binding.Key = key;
-                        _text = _binding.ToString();
-                        Defocus();
-                    }
-                    break;
+                    _binding.InputTriggers.Add(trigger);
                 }
+
+                _text = _binding.ToString();
                 return true;
             }
         }
@@ -404,15 +342,15 @@ namespace FlaxEditor.Options
             var gridControl = grid.CustomControl;
             gridControl.ClipChildren = false;
             gridControl.Height = TextBox.DefaultHeight;
-            gridControl.RowFill = new[]
-            {
+            gridControl.RowFill =
+            [
                 1.0f,
-            };
-            gridControl.ColumnFill = new[]
-            {
+            ];
+            gridControl.ColumnFill =
+            [
                 0.9f,
                 0.1f
-            };
+            ];
 
             _element = grid.Custom<InputBindingBox>();
             SetText();
@@ -432,9 +370,13 @@ namespace FlaxEditor.Options
         private void OnValueChanged()
         {
             if (InputBinding.TryParse(_element.CustomControl.Text, out var value))
-                SetValue(value);
+            {
+                SetValue(value.ToString());
+            }
             else
+            {
                 SetText();
+            }
         }
 
         private void SetText()
@@ -446,7 +388,6 @@ namespace FlaxEditor.Options
         public override void Refresh()
         {
             base.Refresh();
-
             SetText();
         }
     }
@@ -538,9 +479,8 @@ namespace FlaxEditor.Options
         /// </summary>
         /// <param name="editor">The editor instance.</param>
         /// <param name="control">The input providing control.</param>
-        /// <param name="key">The input key.</param>
         /// <returns>True if event has been handled, otherwise false.</returns>
-        public bool Process(Editor editor, Control control, KeyboardKeys key)
+        public bool Process(Editor editor, Control control)
         {
             var root = control.Root;
             var options = editor.Options.Options.Input;
@@ -548,7 +488,7 @@ namespace FlaxEditor.Options
             for (int i = 0; i < Bindings.Count; i++)
             {
                 var binding = Bindings[i].Binder(options);
-                if (binding.Process(control, key))
+                if (binding.Process(control))
                 {
                     Bindings[i].Callback();
                     return true;

@@ -313,7 +313,7 @@ namespace FlaxEditor.GUI
 
             // Fallback to the edit window for shortcuts
             var editor = Editor.Instance;
-            return editor.Windows.EditWin.InputActions.Process(editor, this, key);
+            return editor.Windows.EditWin.InputActions.Process(editor, this);
         }
 
         /// <inheritdoc />
