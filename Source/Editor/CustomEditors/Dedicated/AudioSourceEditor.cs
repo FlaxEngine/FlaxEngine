@@ -20,8 +20,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             base.Initialize(layout);
 
             var properties = layout.Group("Properties");
-
-            // properties.Property("Audio Mixer Group",,new AudioMixerGroupEditor(), "The audio mixer group used by this audio source.");
+            //var audioMixerGroupContainer = new CustomValueContainer();
+            //properties.Property("Audio Mixer Group",audioMixerGroupContainer,new AudioMixerGroupEditor(), "The audio mixer group used by this audio source.");
 
             // Show playback options during simulation
             if (Editor.IsPlayMode)

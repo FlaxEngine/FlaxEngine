@@ -5,6 +5,7 @@
 #include "Engine/Level/Actor.h"
 #include "Engine/Content/AssetReference.h"
 #include "AudioClip.h"
+#include "AudioMixerGroup.h"
 
 /// <summary>
 /// Represents a source for emitting audio. Audio can be played spatially (gun shot), or normally (music). Each audio source must have an AudioClip to play - back, and it can also have a position in the case of spatial (3D) audio.
@@ -18,6 +19,7 @@ class FLAXENGINE_API AudioSource : public Actor
     DECLARE_SCENE_OBJECT(AudioSource);
     friend class AudioStreamingHandler;
     friend class AudioClip;
+    friend class AudioMixerGroup;
 
 public:
     /// <summary>
@@ -218,6 +220,9 @@ public:
     {
         return _allowSpatialization;
     }
+
+    API_FIELD((Attributes="EditorOrder(85), DefaultValue(null), EditorDisplay(\"Audio Source\")"))
+    AudioMixerGroup _audioMixerGroup;
 
     /// <summary>
     /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
