@@ -194,7 +194,7 @@ namespace
 
     // Drawing
     Array<Render2DDrawCall> DrawCalls;
-    Array<FontLineCache> Lines;
+    Array<FontLineCache, InlinedAllocation<8>> Lines;
     Array<Float2> Lines2;
     bool IsScissorsRectEmpty;
     bool IsScissorsRectEnabled;

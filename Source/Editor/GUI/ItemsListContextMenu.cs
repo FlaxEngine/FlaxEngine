@@ -611,6 +611,16 @@ namespace FlaxEditor.GUI
                     OnClickItem(focusedItem);
                     return true;
                 }
+                else
+                {
+                    // Select first item if no item is focused (most likely to be the best result), saves the user from pressing arrow down first
+                    var visibleItems = GetVisibleItems();
+                    if (visibleItems.Count > 0)
+                    {
+                        OnClickItem(visibleItems[0]);
+                        return true;
+                    }
+                }
                 break;
             }
 
