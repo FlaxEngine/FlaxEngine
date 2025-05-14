@@ -114,23 +114,23 @@ namespace FlaxEditor.Options
 
         #region File
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("File"), EditorOrder(300)]
         public InputBinding SaveScenes = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("File"), EditorOrder(310)]
         public InputBinding CloseScenes = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("File"), EditorOrder(320)]
         public InputBinding OpenScriptsProject = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("File"), EditorOrder(330)]
         public InputBinding GenerateScriptsProject = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("File"), EditorOrder(340)]
         public InputBinding RecompileScripts = new InputBinding(KeyboardKeys.None);
 
@@ -150,7 +150,7 @@ namespace FlaxEditor.Options
         [EditorDisplay("Scene", "Play/Stop"), EditorOrder(510)]
         public InputBinding Play = new InputBinding(KeyboardKeys.F5);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene", "Play Current Scenes/Stop"), EditorOrder(520)]
         public InputBinding PlayCurrentScenes = new InputBinding(KeyboardKeys.None);
 
@@ -162,27 +162,27 @@ namespace FlaxEditor.Options
         [EditorDisplay("Scene"), EditorOrder(540)]
         public InputBinding StepFrame = new InputBinding(KeyboardKeys.F11);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene", "Cook & Run"), EditorOrder(550)]
         public InputBinding CookAndRun = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene", "Run cooked game"), EditorOrder(560)]
         public InputBinding RunCookedGame = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene", "Move actor to viewport"), EditorOrder(570)]
         public InputBinding MoveActorToViewport = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene", "Align actor with viewport"), EditorOrder(571)]
         public InputBinding AlignActorWithViewport = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene", "Align viewport with actor"), EditorOrder(572)]
         public InputBinding AlignViewportWithActor = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene"), EditorOrder(573)]
         public InputBinding PilotActor = new InputBinding(KeyboardKeys.None);
 
@@ -198,27 +198,27 @@ namespace FlaxEditor.Options
         [EditorDisplay("Tools", "Build scenes data"), EditorOrder(600)]
         public InputBinding BuildScenesData = new InputBinding(KeyboardKeys.F10 + "+" + KeyboardKeys.Control);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Tools", "Bake lightmaps"), EditorOrder(601)]
         public InputBinding BakeLightmaps = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Tools", "Clear lightmaps data"), EditorOrder(602)]
         public InputBinding ClearLightmaps = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Tools", "Bake all env probes"), EditorOrder(603)]
         public InputBinding BakeEnvProbes = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Tools", "Build CSG mesh"), EditorOrder(604)]
         public InputBinding BuildCSG = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Tools", "Build Nav Mesh"), EditorOrder(605)]
         public InputBinding BuildNav = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Tools", "Build all meshes SDF"), EditorOrder(606)]
         public InputBinding BuildSDF = new InputBinding(KeyboardKeys.None);
 
@@ -230,15 +230,15 @@ namespace FlaxEditor.Options
 
         #region Profiler
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Profiler", "Open Profiler Window"), EditorOrder(630)]
         public InputBinding ProfilerWindow = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Profiler", "Start/Stop Profiler"), EditorOrder(631)]
         public InputBinding ProfilerStartStop = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Profiler", "Clear Profiler data"), EditorOrder(632)]
         public InputBinding ProfilerClear = new InputBinding(KeyboardKeys.None);
 
@@ -326,15 +326,15 @@ namespace FlaxEditor.Options
         [EditorDisplay("Viewport"), EditorOrder(1551)]
         public InputBinding Rotate = new InputBinding(MouseButton.Right);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Viewport", "Toggle Camera Rotation"), EditorOrder(1560)]
         public InputBinding CameraToggleRotation = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Viewport", "Increase Camera Move Speed"), EditorOrder(1570)]
         public InputBinding CameraIncreaseMoveSpeed = new InputBinding(KeyboardKeys.None);
 
-        [DefaultValue(typeof(InputBinding), KeyboardKeysString.None)]
+        [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Viewport", "Decrease Camera Move Speed"), EditorOrder(1571)]
         public InputBinding CameraDecreaseMoveSpeed = new InputBinding(KeyboardKeys.None);
 

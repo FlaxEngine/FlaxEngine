@@ -139,18 +139,17 @@ namespace FlaxEditor.Options
             if (control?.Root == null)
                 return false;
 
-            return Process(control.Root.GetKey, control.Root.GetMouseButton);
+            return Process(control.Root.GetKey, control.Root.GetMouseButton, control.Root.GetMouseScrollDelta());
         }
 
         /// <summary>
         /// Processes this input binding to check if state matches.
-        /// Gives priority to keyboard input
         /// </summary>
         /// <param name="window">The input providing window.</param>
         /// <returns>True if input has been processed, otherwise false.</returns>
         public bool Process(Window window)
         {
-            return Process(window.GetKey, window.GetMouseButton);
+            return Process(window.GetKey, window.GetMouseButton, window.MouseScrollDelta);
         }
 
         /// <summary>
@@ -158,12 +157,13 @@ namespace FlaxEditor.Options
         /// </summary>
         /// <param name="getKey">Function to check if a keyboard key is currently pressed.</param>
         /// <param name="getMouse">Function to check if a mouse button is currently pressed.</param>
+        /// <param name="scrollDelta">The mouse scroll delta over the last frame</param>
         /// <returns>True if all input triggers are currently pressed; otherwise, false.</returns>
-        private bool Process(Func<KeyboardKeys, bool> getKey, Func<MouseButton, bool> getMouse)
+        private bool Process(Func<KeyboardKeys, bool> getKey, Func<MouseButton, bool> getMouse, float scrollDelta)
         {
             foreach (var trigger in InputTriggers)
             {
-                if (!trigger.IsPressed(getKey, getMouse))
+                if (!trigger.IsPressed(getKey, getMouse, scrollDelta))
                     return false;
             }
             return true;
@@ -301,27 +301,45 @@ namespace FlaxEditor.Options
             /// <inheritdoc />
             public override bool OnMouseDown(Float2 location, MouseButton button)
             {
-                if (IsFocused)
+                if (!IsFocused)
                 {
-                    var trigger = new InputTrigger(button.ToString());
-                    if (!_binding.InputTriggers.Contains(trigger))
-                    {
-                        _binding.InputTriggers.Add(trigger);
-                    }
+                    return false;
+                }
+                var trigger = new InputTrigger(button.ToString());
+                if (!_binding.InputTriggers.Contains(trigger))
+                {
+                    _binding.InputTriggers.Add(trigger);
+                }
 
-                    _text = _binding.ToString();
-                }
-                else
-                {
-                    base.OnMouseDown(location, button);
-                }
+                _text = _binding.ToString();
                 return true;
             }
 
             /// <inheritdoc />
             public override bool OnKeyDown(KeyboardKeys key)
             {
+                if (!IsFocused)
+                {
+                    return false;
+                }
                 var trigger = new InputTrigger(key.ToString());
+                if (!_binding.InputTriggers.Contains(trigger))
+                {
+                    _binding.InputTriggers.Add(trigger);
+                }
+
+                _text = _binding.ToString();
+                return true;
+            }
+
+            public override bool OnMouseWheel(Float2 location, float delta)
+            {
+                if (!IsFocused)
+                {
+                    return false;
+                }
+                var trigger = new InputTrigger(MouseScrollHelper.GetScrollDirection(delta).ToString());
+                Debug.Log(trigger);
                 if (!_binding.InputTriggers.Contains(trigger))
                 {
                     _binding.InputTriggers.Add(trigger);
