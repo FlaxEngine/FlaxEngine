@@ -258,7 +258,7 @@ public:
     /// <param name="nodeIndex">The index of the skinned model skeleton node.</param>
     /// <param name="nodeTransformation">The final node transformation matrix.</param>
     /// <param name="worldSpace">True if convert matrices from world-space, otherwise values will be in local-space of the actor.</param>
-    API_FUNCTION() void SetNodeTransformation(int32 nodeIndex, const Matrix& modelBoneNodes, bool worldSpace = false);
+    API_FUNCTION() void SetNodeTransformation(int32 nodeIndex, const Matrix& nodeTransformation, bool worldSpace = false);
 
     /// <summary>
     /// Sets the node final transformation. If multiple nodes are to be set within a frame, do not use set worldSpace to true, and do the conversion yourself to avoid recalculation of inv matrices. 
@@ -271,10 +271,10 @@ public:
     /// <summary>
     /// Sets a group of nodes final transformation.
     /// </summary>
-    /// <param name="nodesTransformations">Array of the final node transformation matrix.</param>
+    /// <param name="modelBoneNodes">Array of the final node transformation matrix.</param>
     /// <param name="worldSpace">True if convert matrices from world-space, otherwise values will be in local-space of the actor.</param>
     /// <returns></returns>
-    API_FUNCTION() void SetNodeTransformation(Array<ModelBoneNode>& nodesTransformations, bool worldSpace = false);
+    API_FUNCTION() void SetNodeTransformation(Array<ModelBoneNode>& modelBoneNodes, bool worldSpace = false);
 
     /// <summary>
     /// Finds the closest node to a given location.
