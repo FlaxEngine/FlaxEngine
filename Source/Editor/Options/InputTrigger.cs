@@ -76,7 +76,6 @@ namespace FlaxEditor.Options
             }
 
             trigger = new InputTrigger();
-            Debug.Log("problem parsing " + token);
             return false;
         }
         /// <summary>

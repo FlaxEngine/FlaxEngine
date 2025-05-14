@@ -80,6 +80,13 @@ namespace FlaxEditor.Options
                     InputTriggers.Add(parsedMouse);
                     continue;
                 }
+                if (
+                    input is MouseScroll
+                    && InputTrigger.TryParseInput(input.ToString(), out var parsedMouseScroll))
+                {
+                    InputTriggers.Add(parsedMouseScroll);
+                    continue;
+                }
                 throw new ArgumentException($"Unsupported input type: {input.GetType().Name}");
             }
         }
@@ -107,17 +114,14 @@ namespace FlaxEditor.Options
             var parts = value.Split('+', StringSplitOptions.RemoveEmptyEntries);
             var triggers = new List<InputTrigger>();
 
-            string parsedString = value + "\n";
             foreach (var part in parts)
             {
                 if (InputTrigger.TryParseInput(part.Trim(), out var trigger))
                 {
                     triggers.Add(trigger);
-                    Debug.Log(parsedString);
                 }
                 else
                 {
-                    Debug.Log(parsedString);
                     result = new InputBinding();
                     return false;
                 }
@@ -242,18 +246,14 @@ namespace FlaxEditor.Options
         {
             if (value is string str)
             {
-                //Debug.Log($"[Converter] Converting '{str}'");
                 if (InputBinding.TryParse(str, out var result))
                 {
-                    //Debug.Log("[Converter] Successs!");
                     return result;
                 }
                 else
                 {
                     throw new NotSupportedException($"InputBindingConverter cannot convert from '{str}' to InputBinding.");
                 }
-
-                //Debug.Log("[Converter] Failed to parse string." + value.ToString());
             }
             return base.ConvertFrom(context, culture, value);
         }
@@ -339,7 +339,6 @@ namespace FlaxEditor.Options
                     return false;
                 }
                 var trigger = new InputTrigger(MouseScrollHelper.GetScrollDirection(delta).ToString());
-                Debug.Log(trigger);
                 if (!_binding.InputTriggers.Contains(trigger))
                 {
                     _binding.InputTriggers.Add(trigger);
