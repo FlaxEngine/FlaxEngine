@@ -988,6 +988,7 @@ namespace FlaxEditor.Windows
                 if (!_vScroll.IsThumbClicked)
                     _vScroll.TargetValue = isBottomScroll ? _vScroll.Maximum : cachedScrollValue;
                 _output.SelectionRange = cachedSelection;
+                _output.PerformLayout();
             }
 
             base.Update(deltaTime);
