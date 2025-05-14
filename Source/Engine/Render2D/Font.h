@@ -344,7 +344,7 @@ public:
     /// <param name="text">The input text.</param>
     /// <param name="layout">The layout properties.</param>
     /// <param name="outputLines">The output lines list.</param>
-    void ProcessText(const StringView& text, Array<FontLineCache>& outputLines, API_PARAM(Ref) const TextLayoutOptions& layout);
+    void ProcessText(const StringView& text, Array<FontLineCache, InlinedAllocation<8>>& outputLines, API_PARAM(Ref) const TextLayoutOptions& layout);
 
     /// <summary>
     /// Processes text to get cached lines for rendering.
@@ -352,9 +352,9 @@ public:
     /// <param name="text">The input text.</param>
     /// <param name="layout">The layout properties.</param>
     /// <returns>The output lines list.</returns>
-    API_FUNCTION() Array<FontLineCache> ProcessText(const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout)
+    API_FUNCTION() Array<FontLineCache, InlinedAllocation<8>> ProcessText(const StringView& text, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
-        Array<FontLineCache> lines;
+        Array<FontLineCache, InlinedAllocation<8>> lines;
         ProcessText(text, lines, layout);
         return lines;
     }
@@ -366,9 +366,9 @@ public:
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
     /// <param name="layout">The layout properties.</param>
     /// <returns>The output lines list.</returns>
-    API_FUNCTION() Array<FontLineCache> ProcessText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
+    API_FUNCTION() Array<FontLineCache, InlinedAllocation<8>> ProcessText(const StringView& text, API_PARAM(Ref) const TextRange& textRange, API_PARAM(Ref) const TextLayoutOptions& layout)
     {
-        Array<FontLineCache> lines;
+        Array<FontLineCache, InlinedAllocation<8>> lines;
         ProcessText(textRange.Substring(text), lines, layout);
         return lines;
     }
@@ -378,7 +378,7 @@ public:
     /// </summary>
     /// <param name="text">The input text.</param>
     /// <returns>The output lines list.</returns>
-    API_FUNCTION() FORCE_INLINE Array<FontLineCache> ProcessText(const StringView& text)
+    API_FUNCTION() FORCE_INLINE Array<FontLineCache, InlinedAllocation<8>> ProcessText(const StringView& text)
     {
         return ProcessText(text, TextLayoutOptions());
     }
@@ -389,7 +389,7 @@ public:
     /// <param name="text">The input text.</param>
     /// <param name="textRange">The input text range (substring range of the input text parameter).</param>
     /// <returns>The output lines list.</returns>
-    API_FUNCTION() FORCE_INLINE Array<FontLineCache> ProcessText(const StringView& text, API_PARAM(Ref) const TextRange& textRange)
+    API_FUNCTION() FORCE_INLINE Array<FontLineCache, InlinedAllocation<8>> ProcessText(const StringView& text, API_PARAM(Ref) const TextRange& textRange)
     {
         return ProcessText(textRange.Substring(text), TextLayoutOptions());
     }
