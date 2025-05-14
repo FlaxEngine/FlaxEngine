@@ -14,6 +14,7 @@ Source/*.csproj
 PackageEditor_Cert.command
 PackageEditor_Cert.bat
 PackagePlatforms_Cert.bat
+*.flax
 
 # User-specific files
 *.suo

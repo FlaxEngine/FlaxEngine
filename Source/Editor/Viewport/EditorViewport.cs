@@ -1649,11 +1649,11 @@ namespace FlaxEditor.Viewport
                     bool rbDown = _input.IsMouseRightDown || _isVirtualMouseRightDown;
                     bool wheelInUse = Math.Abs(_input.MouseWheelDelta) > Mathf.Epsilon;
 
-                    _input.IsPanning = !isAltDown && mbDown && !rbDown;
-                    _input.IsRotating = !isAltDown && !mbDown && rbDown;
+                    _input.IsPanning = options.Input.Pan.Process(window);
+                    _input.IsRotating = options.Input.Rotate.Process(window);
                     _input.IsMoving = !isAltDown && mbDown && rbDown;
                     _input.IsZooming = wheelInUse && !(_input.IsShiftDown || (!ContainsFocus && FlaxEngine.Input.GetKey(KeyboardKeys.Shift)));
-                    _input.IsOrbiting = isAltDown && lbDown && !mbDown && !rbDown;
+                    _input.IsOrbiting = options.Input.Orbit.Process(window);
 
                     // Control move speed with RMB+Wheel
                     rmbWheel = useMovementSpeed && (_input.IsMouseRightDown || _isVirtualMouseRightDown) && wheelInUse;
@@ -1666,31 +1666,30 @@ namespace FlaxEditor.Viewport
 
                 // Get input movement
                 var moveDelta = Vector3.Zero;
-                if (win.GetKey(options.Input.Forward.Key))
+                if (options.Input.Forward.Process(window))
                 {
                     moveDelta += Vector3.Forward;
                 }
-                if (win.GetKey(options.Input.Backward.Key))
+                if (options.Input.Backward.Process(window))
                 {
                     moveDelta += Vector3.Backward;
                 }
-                if (win.GetKey(options.Input.Right.Key))
+                if (options.Input.Right.Process(window))
                 {
                     moveDelta += Vector3.Right;
                 }
-                if (win.GetKey(options.Input.Left.Key))
+                if (options.Input.Left.Process(window))
                 {
                     moveDelta += Vector3.Left;
                 }
-                if (win.GetKey(options.Input.Up.Key))
+                if (options.Input.Up.Process(window))
                 {
                     moveDelta += Vector3.Up;
                 }
-                if (win.GetKey(options.Input.Down.Key))
+                if (options.Input.Down.Process(window))
                 {
                     moveDelta += Vector3.Down;
                 }
-                moveDelta.Normalize(); // normalize direction
                 moveDelta *= _movementSpeed;
 
                 // Speed up or speed down
@@ -1861,7 +1860,7 @@ namespace FlaxEditor.Viewport
                 return true;
 
             // Custom input events
-            return InputActions.Process(Editor.Instance, this, key);
+            return InputActions.Process(Editor.Instance, this);
         }
 
         /// <inheritdoc />

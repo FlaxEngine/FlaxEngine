@@ -476,7 +476,7 @@ namespace FlaxEditor.GUI.Docking
                 return true;
 
             // Custom input events
-            return InputActions.Process(Editor.Instance, this, key);
+            return InputActions.Process(Editor.Instance, this);
         }
 
         /// <inheritdoc />

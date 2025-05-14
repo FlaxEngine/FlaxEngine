@@ -1135,7 +1135,7 @@ namespace FlaxEditor.Windows
         public override bool OnKeyDown(KeyboardKeys key)
         {
             // Prevent closing the game window tab during a play session
-            if (Editor.StateMachine.IsPlayMode && Editor.Options.Options.Input.CloseTab.Process(this, key))
+            if (Editor.StateMachine.IsPlayMode && Editor.Options.Options.Input.CloseTab.Process(this))
             {
                 return true;
             }

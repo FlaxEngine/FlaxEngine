@@ -225,8 +225,14 @@ namespace FlaxEngine.GUI
         /// Gets mouse button up state.
         /// </summary>
         /// <param name="button">Mouse button to check.</param>
-        /// <returns>True during the frame the user releases the button.</returns>
+        /// <returns>True during the frame the user scrolls the mouse.</returns>
         public abstract bool GetMouseButtonUp(MouseButton button);
+
+        /// <summary>
+        /// Gets mouse button up state.
+        /// </summary>
+        /// <returns>Mouse delta during the frame the user scrolls.</returns>
+        public abstract float GetMouseScrollDelta();
 
         /// <inheritdoc />
         public override RootControl Root => this;

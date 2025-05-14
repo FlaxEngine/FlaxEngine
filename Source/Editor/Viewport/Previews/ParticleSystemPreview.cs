@@ -278,12 +278,12 @@ namespace FlaxEditor.Viewport.Previews
             }
 
             var inputOptions = Editor.Instance.Options.Options.Input;
-            if (inputOptions.Play.Process(this, key))
+            if (inputOptions.Play.Process(this))
             {
                 PlaySimulation = true;
                 return true;
             }
-            if (inputOptions.Pause.Process(this, key))
+            if (inputOptions.Pause.Process(this))
             {
                 PlaySimulation = false;
                 return true;

@@ -232,6 +232,12 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override float GetMouseScrollDelta()
+        {
+            return _window.MouseScrollDelta;
+        }
+
+        /// <inheritdoc />
         public override Float2 PointFromScreen(Float2 location)
         {
             return _window.ScreenToClient(location) / _window.DpiScale;
