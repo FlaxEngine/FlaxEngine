@@ -24,7 +24,7 @@ API_STRUCT() struct AudioMixerGroup : ISerializable
     ///  Volume of the pitch.
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(20), Limit(0, 1)")
-    float PitchMixer = 1.0f;
+    float MixerVolume = 1.0f;
 
     /// <summary>
     /// Quality of audio.
