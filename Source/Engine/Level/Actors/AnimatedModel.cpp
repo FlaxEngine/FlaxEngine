@@ -174,6 +174,14 @@ void AnimatedModel::GetNodeTransformation(const StringView& nodeName, Matrix& no
     GetNodeTransformation(SkinnedModel ? SkinnedModel->FindNode(nodeName) : -1, nodeTransformation, worldSpace);
 }
 
+void AnimatedModel::GetNodeTransformation(Array<ModelBoneNode>& modelBoneNodes, bool worldSpace) const
+{
+    for (ModelBoneNode& item : modelBoneNodes)
+    {
+        GetNodeTransformation(item.NodeIndex, item.NodeMatrix, worldSpace);
+    }
+}
+
 void AnimatedModel::SetNodeTransformation(int32 nodeIndex, const Matrix& nodeTransformation, bool worldSpace)
 {
     if (GraphInstance.NodesPose.IsEmpty())
@@ -187,6 +195,33 @@ void AnimatedModel::SetNodeTransformation(int32 nodeIndex, const Matrix& nodeTra
         Matrix invWorld;
         Matrix::Invert(world, invWorld);
         GraphInstance.NodesPose[nodeIndex] = GraphInstance.NodesPose[nodeIndex] * invWorld;
+    }
+    OnAnimationUpdated();
+}
+
+void AnimatedModel::SetNodeTransformation(Array<ModelBoneNode>& modelBoneNodes, bool worldSpace)
+{
+    if (GraphInstance.NodesPose.IsEmpty())
+        const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
+
+    // Calculate it once, outside loop
+    Matrix invWorld;
+    if (worldSpace) 
+    {
+        Matrix world;
+        GetLocalToWorldMatrix(world);
+        Matrix::Invert(world, invWorld);
+    }
+
+    for (int i = 0; i < modelBoneNodes.Count(); i++)
+    {
+        int nodeIndex = modelBoneNodes[i].NodeIndex;
+        CHECK(nodeIndex >= 0 && nodeIndex < GraphInstance.NodesPose.Count());
+        GraphInstance.NodesPose[nodeIndex] = modelBoneNodes[i].NodeMatrix;
+        if (worldSpace)
+        {
+            GraphInstance.NodesPose[nodeIndex] = GraphInstance.NodesPose[nodeIndex] * invWorld;
+        }
     }
     OnAnimationUpdated();
 }
@@ -809,7 +844,10 @@ void AnimatedModel::OnAnimationUpdated_Async()
         _skinningData.OnDataChanged(!PerBoneMotionBlur);
     }
 
-    UpdateBounds();
+    if (UpdateWhenOffscreen) 
+    {
+        UpdateBounds();
+    }
 }
 
 void AnimatedModel::OnAnimationUpdated_Sync()

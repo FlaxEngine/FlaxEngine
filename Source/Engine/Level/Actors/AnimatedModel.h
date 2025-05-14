@@ -9,6 +9,14 @@
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Core/Delegate.h"
 
+API_STRUCT() struct ModelBoneNode
+{
+    DECLARE_SCRIPTING_TYPE_MINIMAL(ModelBoneNode);
+
+    API_FIELD() uint32 NodeIndex;
+    API_FIELD() Matrix NodeMatrix;
+};
+
 /// <summary>
 /// Performs an animation and renders a skinned model.
 /// </summary>
@@ -237,12 +245,20 @@ public:
     API_FUNCTION() void GetNodeTransformation(const StringView& nodeName, API_PARAM(Out) Matrix& nodeTransformation, bool worldSpace = false) const;
 
     /// <summary>
+    /// Gets the node final transformation for a series of nodes.
+    /// </summary>
+    /// <param name="modelBoneNodes">The series of nodes that will be returned</param>
+    /// <param name="worldSpace">True if convert matrices into world-space, otherwise returned values will be in local-space of the actor.</param>
+    /// <returns></returns>
+    API_FUNCTION() void GetNodeTransformation(API_PARAM(Out) Array<ModelBoneNode>& modelBoneNodes, bool worldSpace = false) const;
+
+    /// <summary>
     /// Sets the node final transformation. If multiple nodes are to be set within a frame, do not use set worldSpace to true, and do the conversion yourself to avoid recalculation of inv matrices. 
     /// </summary>
     /// <param name="nodeIndex">The index of the skinned model skeleton node.</param>
     /// <param name="nodeTransformation">The final node transformation matrix.</param>
     /// <param name="worldSpace">True if convert matrices from world-space, otherwise values will be in local-space of the actor.</param>
-    API_FUNCTION() void SetNodeTransformation(int32 nodeIndex, const Matrix& nodeTransformation, bool worldSpace = false);
+    API_FUNCTION() void SetNodeTransformation(int32 nodeIndex, const Matrix& modelBoneNodes, bool worldSpace = false);
 
     /// <summary>
     /// Sets the node final transformation. If multiple nodes are to be set within a frame, do not use set worldSpace to true, and do the conversion yourself to avoid recalculation of inv matrices. 
@@ -251,6 +267,14 @@ public:
     /// <param name="nodeTransformation">The final node transformation matrix.</param>
     /// <param name="worldSpace">True if convert matrices from world-space, otherwise values will be in local-space of the actor.</param>
     API_FUNCTION() void SetNodeTransformation(const StringView& nodeName, const Matrix& nodeTransformation, bool worldSpace = false);
+
+    /// <summary>
+    /// Sets a group of nodes final transformation.
+    /// </summary>
+    /// <param name="nodesTransformations">Array of the final node transformation matrix.</param>
+    /// <param name="worldSpace">True if convert matrices from world-space, otherwise values will be in local-space of the actor.</param>
+    /// <returns></returns>
+    API_FUNCTION() void SetNodeTransformation(Array<ModelBoneNode>& nodesTransformations, bool worldSpace = false);
 
     /// <summary>
     /// Finds the closest node to a given location.
