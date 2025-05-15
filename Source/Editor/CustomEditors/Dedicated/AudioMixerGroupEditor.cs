@@ -35,7 +35,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void OnSelectedIndexChanged(ComboBox comboBox)
         {
-            var value = comboBox.HasSelection ? comboBox.SelectedIndex - 1 : -1;
+            var value = comboBox.HasSelection ? comboBox.SelectedIndex : 0;
             SetValue(value);
         }
 

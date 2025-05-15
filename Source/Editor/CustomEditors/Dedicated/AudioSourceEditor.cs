@@ -20,9 +20,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             base.Initialize(layout);
 
-            var properties = layout.Group("Properties");
-            properties.Panel.Open();
-            var gridPanel = properties.CustomContainer<UniformGridPanel>();
+            var audioMixerProperties = layout.Group("Audio Mixer properties");
+            audioMixerProperties.Panel.Open();
+            var gridPanel = audioMixerProperties.CustomContainer<UniformGridPanel>();
             var gridAudioMixerControl = gridPanel.CustomControl;
             gridAudioMixerControl.ClipChildren = false;
             gridAudioMixerControl.Height = Button.DefaultHeight;
@@ -30,7 +30,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
             gridAudioMixerControl.SlotsVertically = 1;
             var audioMixerGroup = new AudioMixerGroupEditor();
             audioMixerGroup.Initialize(gridPanel);
-            properties.Panel.Close();
 
             // Show playback options during simulation
             if (Editor.IsPlayMode)
