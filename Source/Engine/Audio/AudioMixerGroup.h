@@ -21,15 +21,21 @@ API_STRUCT() struct AudioMixerGroup : ISerializable
     String Name;
 
     /// <summary>
-    ///  Volume of the pitch.
+    ///  Volume of the volume.
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(20), Limit(0, 1)")
-    float MixerVolume = 1.0f;
+    float MixerVolume = .5f;
+
+    /// <summary>
+    /// Distance between mixer and audio source
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(30)")
+    float FaceOnDistance = 0.0f;
 
     /// <summary>
     /// Quality of audio.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(30)")
+    API_FIELD(Attributes = "EditorOrder(40)")
     AudioQuality QualityAudio;
 
 };
