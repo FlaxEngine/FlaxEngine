@@ -4,7 +4,7 @@
 
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/ISerializable.h"
-#include "AudioQuality.h"
+#include "AudioMixLODOptions.h"
 
 /// <summary>
 ///  Settings container for a group of audio mixer settings. Defines the data audio mixer options.
@@ -27,16 +27,10 @@ API_STRUCT() struct AudioMixerGroup : ISerializable
     float MixerVolume = .5f;
 
     /// <summary>
-    /// Distance between mixer and audio source
+    /// Audio Mixer LOD Options.
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(30)")
-    float FaceOnDistance = 0.0f;
-
-    /// <summary>
-    /// Quality of audio.
-    /// </summary>
-    API_FIELD(Attributes = "EditorOrder(40)")
-    AudioQuality QualityAudio;
+    AudioMixLODOptions AudioLODOptions;
 
 };
 
