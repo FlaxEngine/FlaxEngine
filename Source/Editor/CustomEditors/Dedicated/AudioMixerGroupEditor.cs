@@ -31,6 +31,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     _element.ComboBox.AddItem(groups.AudioMixerGroups[i].Name);
                 }
             }
+            _element.ComboBox.SelectedIndex = 0;
         }
 
         private void OnSelectedIndexChanged(ComboBox comboBox)
