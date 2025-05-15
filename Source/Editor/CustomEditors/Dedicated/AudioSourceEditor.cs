@@ -26,6 +26,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var gridAudioMixerControl = gridPanel.CustomControl;
             gridAudioMixerControl.ClipChildren = false;
             gridAudioMixerControl.Height = Button.DefaultHeight;
+            gridAudioMixerControl.SlotsHorizontally = 3;
+            gridAudioMixerControl.SlotsVertically = 1;
             var audioMixerGroup = new AudioMixerGroupEditor();
             audioMixerGroup.Initialize(gridPanel);
             properties.Panel.Close();
