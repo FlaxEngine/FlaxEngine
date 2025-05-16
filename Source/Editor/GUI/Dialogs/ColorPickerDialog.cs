@@ -140,7 +140,7 @@ namespace FlaxEditor.GUI.Dialogs
             _onClosed = pickerClosed;
 
             // Load alpha grid material
-            _checkerMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.ColorAlphaBackgroundGrid);
+            _checkerMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.AlphaGridMaterial);
             _checkerMaterial = _checkerMaterial.CreateVirtualInstance();
             _checkerMaterial.SetParameterValue(ScaleParamName, GridScale);
 

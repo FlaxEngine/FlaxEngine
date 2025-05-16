@@ -65,6 +65,17 @@ namespace FlaxEditor
         public static string InconsolataRegularFont = "Editor/Fonts/Inconsolata-Regular";
 
         /// <summary>
+        /// The checkboard material used as a background for displaying transparent colors.
+        /// </summary>
+        public static string AlphaGridMaterial = "Editor/ColorPicker/AlphaBackgroundGrid";
+
+        /// <summary>
+        /// The material used for the HS color wheel.
+        /// </summary>
+        public static string HSWheelMaterial = "Editor/ColorPicker/HSWheel";
+
+
+        /// <summary>
         /// The window icon.
         /// </summary>
         public static string WindowIcon = "Editor/EditorIcon";

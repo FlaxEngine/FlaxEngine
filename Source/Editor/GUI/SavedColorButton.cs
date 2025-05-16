@@ -28,7 +28,7 @@ namespace FlaxEditor.GUI
         : base(x, y, width, height)
         {
             // Load alpha grid material
-            checkerMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.ColorAlphaBackgroundGrid);
+            checkerMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.AlphaGridMaterial);
             checkerMaterial = checkerMaterial.CreateVirtualInstance();
             checkerMaterial.SetParameterValue(ScaleParamName, GridScale);
         }
