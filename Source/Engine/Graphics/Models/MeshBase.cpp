@@ -477,8 +477,8 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
 
     // Free old buffers
     SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[0]);
+    SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[1]);
     SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[2]);
-    SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[3]);
     SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
 
     // Initialize
