@@ -283,8 +283,10 @@ namespace Flax.Build
             Log.Verbose($"Found the following .NET SDK versions: {string.Join(", ", dotnetSdkVersions)}");
             Log.Verbose($"Found the following .NET runtime versions: {string.Join(", ", dotnetRuntimeVersions)}");
 
+            string configuredDotnetVersion = Configuration.Dotnet;
             var dotnetSdkVersion = GetVersion(dotnetSdkVersions);
             var dotnetRuntimeVersion = GetVersion(dotnetRuntimeVersions);
+
             if (!string.IsNullOrEmpty(dotnetSdkVersion) && !string.IsNullOrEmpty(dotnetRuntimeVersion) && ParseVersion(dotnetRuntimeVersion).Major > ParseVersion(dotnetSdkVersion).Major)
             {
                 // Make sure the reference assemblies are not newer than the SDK itself
@@ -296,21 +298,24 @@ namespace Flax.Build
                 } while (!string.IsNullOrEmpty(dotnetRuntimeVersion) && ParseVersion(dotnetRuntimeVersion).Major > ParseVersion(dotnetSdkVersion).Major);
             }
             
-            var minVer = string.IsNullOrEmpty(Configuration.Dotnet) ? MinimumVersion.ToString() : Configuration.Dotnet;
             if (string.IsNullOrEmpty(dotnetSdkVersion))
             {
-                if (dotnetSdkVersions.Any())
-                    Log.Warning($"Unsupported .NET SDK versions found: {string.Join(", ", dotnetSdkVersions)}. Minimum version required is .NET {minVer}.");
-                else
-                    Log.Warning($"Missing .NET SDK. Minimum version required is .NET {minVer}.");
+                string installedVersionsText = dotnetSdkVersions.Any()
+                    ? $"{string.Join(", ", dotnetSdkVersions)}"
+                    : "None";
+                Log.Warning(!string.IsNullOrEmpty(configuredDotnetVersion)
+                    ? $"Configured .NET SDK '{configuredDotnetVersion}' not found. Installed versions: {installedVersionsText}."
+                    : $"No compatible .NET SDK found within the supported range: .NET {MinimumVersion.ToString()} - {MaximumVersion.ToString()}. Installed versions: {installedVersionsText}.");
                 return;
             }
             if (string.IsNullOrEmpty(dotnetRuntimeVersion))
             {
-                if (dotnetRuntimeVersions.Any())
-                    Log.Warning($"Unsupported .NET runtime versions found: {string.Join(", ", dotnetRuntimeVersions)}. Minimum version required is .NET {minVer}.");
-                else
-                    Log.Warning($"Missing .NET runtime. Minimum version required is .NET {minVer}.");
+                string installedRuntimeVersionsText = dotnetRuntimeVersions.Any()
+                    ? $"{string.Join(", ", dotnetRuntimeVersions)}"
+                    : "None";
+                Log.Warning(!string.IsNullOrEmpty(configuredDotnetVersion)
+                    ? $"Configured .NET runtime version '{configuredDotnetVersion}' not found. Installed versions: {installedRuntimeVersionsText}."
+                    : $"No compatible .NET runtime found within the supported range: .NET {MinimumVersion.ToString()} - {MaximumVersion.ToString()}. Installed versions: {installedRuntimeVersionsText}.");
                 return;
             }
             RootPath = dotnetPath;
