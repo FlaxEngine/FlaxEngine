@@ -132,7 +132,6 @@ namespace FlaxEditor
         public SpriteHandle Document128;
         public SpriteHandle XBoxOne128;
         public SpriteHandle UWPStore128;
-        public SpriteHandle ColorWheel128;
         public SpriteHandle LinuxSettings128;
         public SpriteHandle NavigationSettings128;
         public SpriteHandle AudioSettings128;

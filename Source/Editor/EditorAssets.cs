@@ -90,6 +90,7 @@ namespace FlaxEditor
         /// </summary>
         public static string DefaultFontMaterial = "Editor/DefaultFontMaterial";
 
+
         /// <summary>
         /// The highlight material.
         /// </summary>
@@ -99,6 +100,7 @@ namespace FlaxEditor
         /// The highlight terrain material.
         /// </summary>
         public static string HighlightTerrainMaterial = "Editor/Terrain/Highlight Terrain Material";
+
 
         /// <summary>
         /// The terrain circle brush material.
