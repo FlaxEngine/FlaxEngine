@@ -13,13 +13,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
     public class AudioSourceEditor : ActorEditor
     {
         private Label _infoLabel;
-        private Dropdown AudioMixerDropDown;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
             base.Initialize(layout);
 
+            // Show audio mixer name channel
             var audioMixerProperties = layout.Group("Audio Mixer properties");
             audioMixerProperties.Panel.Open();
             var gridPanel = audioMixerProperties.CustomContainer<UniformGridPanel>();
