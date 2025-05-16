@@ -178,7 +178,7 @@ namespace FlaxEditor.GUI.Dialogs
             // Wheel
             // TODO: Update this this parameter on some kind of callback when EnabledInHierarchy changed. 
             _hsWheelMaterial.SetParameterValue(GrayedOutParamName, enabled ? 1.0f : 0.5f);
-            Render2D.DrawMaterial(_hsWheelMaterial, _wheelRect, enabled ? Color.White : Color.Gray);
+            Render2D.DrawMaterial(_hsWheelMaterial, _wheelRect.MakeExpanded(8.0f), enabled ? Color.White : Color.Gray);
             float hAngle = hsv.X * Mathf.DegreesToRadians;
             float hRadius = hsv.Y * _wheelRect.Width * 0.5f;
             var hsPos = new Float2(hRadius * Mathf.Cos(hAngle), -hRadius * Mathf.Sin(hAngle));
