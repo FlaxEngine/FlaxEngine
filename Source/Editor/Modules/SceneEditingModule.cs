@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Actions;
 using FlaxEditor.SceneGraph;
+using FlaxEditor.SceneGraph.Actors;
 using FlaxEngine;
 
 namespace FlaxEditor.Modules
@@ -561,7 +562,8 @@ namespace FlaxEditor.Modules
         public void CreateParentForSelectedActors()
         {
             List<SceneGraphNode> selection = Editor.SceneEditing.Selection;
-            var actors = selection.Where(x => x is ActorNode).Select(x => ((ActorNode)x).Actor);
+            // Get Actors but skip scene node
+            var actors = selection.Where(x => x is ActorNode and not SceneNode).Select(x => ((ActorNode)x).Actor);
             var actorsCount = actors.Count();
             if (actorsCount == 0)
                 return;

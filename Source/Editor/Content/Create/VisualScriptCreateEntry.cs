@@ -11,6 +11,9 @@ namespace FlaxEditor.Content.Create
     /// <seealso cref="FlaxEditor.Content.Create.CreateFileEntry" />
     public class VisualScriptCreateEntry : CreateFileEntry
     {
+        /// <inheritdoc/>
+        public override bool CanBeCreated => _options.BaseClass != null;
+
         /// <summary>
         /// The create options.
         /// </summary>

@@ -102,6 +102,8 @@ namespace FlaxEditor.Windows.Assets
 
             private class CookData : CreateFileEntry
             {
+                public override bool CanBeCreated => true;
+
                 public PropertiesProxy Proxy;
                 public CollisionDataType Type;
                 public ModelBase Model;
