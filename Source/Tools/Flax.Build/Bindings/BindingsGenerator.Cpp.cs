@@ -672,7 +672,17 @@ namespace Flax.Build.Bindings
             }
         }
 
-        private static string GenerateCppWrapperManagedToNative(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, out string type, out ApiTypeInfo apiType, FunctionInfo functionInfo, out bool needLocalVariable)
+        private static string GenerateCppWrapperManagedToNative(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, FunctionInfo functionInfo, out string type, out ApiTypeInfo apiType, out bool needLocalVariable)
+        {
+            return GenerateCppWrapperManagedToNative(buildData, typeInfo, caller, functionInfo, null, out type, out apiType, out needLocalVariable);
+        }
+
+        private static string GenerateCppWrapperManagedToNative(BuildData buildData, FunctionInfo.ParameterInfo parameterInfo, ApiTypeInfo caller, FunctionInfo functionInfo, out string type, out ApiTypeInfo apiType, out bool needLocalVariable)
+        {
+            return GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, functionInfo, parameterInfo, out type, out apiType, out needLocalVariable);
+        }
+
+        private static string GenerateCppWrapperManagedToNative(BuildData buildData, TypeInfo typeInfo, ApiTypeInfo caller, FunctionInfo functionInfo, FunctionInfo.ParameterInfo? parameterInfo, out string type, out ApiTypeInfo apiType, out bool needLocalVariable)
         {
             needLocalVariable = false;
 
@@ -684,7 +694,7 @@ namespace Flax.Build.Bindings
             if (typeInfo.IsArray)
             {
                 var arrayType = new TypeInfo { Type = "Array", GenericArgs = new List<TypeInfo> { new TypeInfo(typeInfo) { IsArray = false } } };
-                var result = GenerateCppWrapperManagedToNative(buildData, arrayType, caller, out type, out _, functionInfo, out needLocalVariable);
+                var result = GenerateCppWrapperManagedToNative(buildData, arrayType, caller, functionInfo, parameterInfo, out type, out _, out needLocalVariable);
                 return result + ".Get()";
             }
 
@@ -760,15 +770,21 @@ namespace Flax.Build.Bindings
                         genericArgs += ", " + typeInfo.GenericArgs[1];
 
                     type = "MArray*";
-                    var result = "MUtils::ToArray<" + genericArgs + ">({0})";
+                    string result;
+                    bool isFixedAllocation = typeInfo.GenericArgs.Count > 1 && typeInfo.GenericArgs[1].Type == "FixedAllocation";
+                    if (CppNonPodTypesConvertingGeneration || isFixedAllocation)
+                        result = "MUtils::ToArray<" + genericArgs + ">({0})";
+                    else
+                        result = "MUtils::ToArrayShared<" + genericArgs + ">({0})";
 
                     if (arrayApiType != null && arrayApiType.MarshalAs != null)
                     {
+                        string castType = $"Array<{genericArgs}>"; // Cast SharedArray explicitly
                         // Convert array that uses different type for marshalling
                         genericArgs = typeInfo.GenericArgs[0].GetFullNameNative(buildData, caller);
                         if (typeInfo.GenericArgs.Count != 1)
                             genericArgs += ", " + typeInfo.GenericArgs[1];
-                        result = $"Array<{genericArgs}>({result})";
+                        result = $"Array<{genericArgs}>(({castType}){result})";
                     }
                     return result;
                 }
@@ -836,7 +852,7 @@ namespace Flax.Build.Bindings
                 if (apiType != null)
                 {
                     if (apiType.MarshalAs != null)
-                        return GenerateCppWrapperManagedToNative(buildData, apiType.MarshalAs, caller, out type, out apiType, functionInfo, out needLocalVariable);
+                        return GenerateCppWrapperManagedToNative(buildData, apiType.MarshalAs, caller, functionInfo, parameterInfo, out type, out apiType, out needLocalVariable);
 
                     // Scripting Object (for non-pod types converting only, other API converts managed to unmanaged object in C# wrapper code)
                     if (CppNonPodTypesConvertingGeneration && apiType.IsScriptingObject && typeInfo.IsPtr)
@@ -1040,6 +1056,7 @@ namespace Flax.Build.Bindings
             }
 #endif
 
+            // Generate signature for the wrapper
             var prevIndent = "    ";
             var indent = "        ";
             contents.Append(prevIndent);
@@ -1093,7 +1110,7 @@ namespace Flax.Build.Bindings
                 separator = true;
 
                 CppParamsThatNeedConversion[i] = false;
-                CppParamsWrappersCache[i] = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, out var apiType, functionInfo, out CppParamsThatNeedLocalVariable[i]);
+                var wrapper = CppParamsWrappersCache[i] = GenerateCppWrapperManagedToNative(buildData, parameterInfo, caller, functionInfo, out var managedType, out var apiType, out CppParamsThatNeedLocalVariable[i]);
 
                 // Out parameters that need additional converting will be converted at the native side (eg. object reference)
                 var isOutWithManagedConverter = parameterInfo.IsOut && !string.IsNullOrEmpty(GenerateCSharpManagedToNativeConverter(buildData, parameterInfo.Type, caller));
@@ -1137,7 +1154,7 @@ namespace Flax.Build.Bindings
                     {
                         useInlinedReturn = false;
                         CppParamsThatNeedConversion[i] = true;
-                        CppParamsThatNeedConversionWrappers[i] = GenerateCppWrapperNativeToManaged(buildData, parameterInfo.Type, caller, out CppParamsThatNeedConversionTypes[i], functionInfo);
+                        wrapper = CppParamsThatNeedConversionWrappers[i] = GenerateCppWrapperNativeToManaged(buildData, parameterInfo.Type, caller, out CppParamsThatNeedConversionTypes[i], functionInfo);
                     }
                 }
 #if USE_NETCORE
@@ -1167,7 +1184,7 @@ namespace Flax.Build.Bindings
                     contents.Append(", ");
                 separator = true;
 
-                GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, caller, out var managedType, out _, functionInfo, out _);
+                GenerateCppWrapperManagedToNative(buildData, parameterInfo, caller, functionInfo, out var managedType, out _, out _);
                 contents.Append(managedType);
                 if (parameterInfo.IsRef || parameterInfo.IsOut || UsePassByReference(buildData, parameterInfo.Type, caller))
                     contents.Append('*');
@@ -1189,6 +1206,8 @@ namespace Flax.Build.Bindings
             }
             contents.AppendLine();
             contents.Append(prevIndent).AppendLine("{");
+
+            // Generate the body of the wrapper function
 #if USE_NETCORE
             if (buildData.Toolchain?.Compiler == TargetCompiler.MSVC && !useLibraryExportInPlainC)
                 contents.Append(indent).AppendLine($"MSVC_FUNC_EXPORT(\"{libraryEntryPoint}\")"); // Export generated function binding under the C# name
@@ -1221,6 +1240,8 @@ namespace Flax.Build.Bindings
                     callReturnCount += "*__returnCount = {0}.Count();";
             }
 #endif
+            // Generate the call signature of the wrapped method, and prepare for possible conversion of the parameters
+
             string call;
             if (functionInfo.IsStatic)
             {
@@ -1268,7 +1289,15 @@ namespace Flax.Build.Bindings
                     if (apiType != null)
                     {
                         if (parameterInfo.IsOut)
-                            contents.Append(indent).AppendFormat("{1} {0}Temp;", parameterInfo.Name, parameterInfo.Type.GetFullNameNative(buildData, caller, false)).AppendLine();
+                        {
+                            var nativeName = parameterInfo.Type.GetFullNameNative(buildData, caller, false);
+                            if (parameterInfo.Type.Type == "Array")
+                            {
+                                // Use wrapper for Arrays to share allocations from previous conversions
+                                nativeName = "SharedArray" + nativeName.Substring("Array".Length);
+                            }
+                            contents.Append(indent).AppendFormat("{1} {0}Temp;", parameterInfo.Name, nativeName).AppendLine();
+                        }
                         else
                             contents.Append(indent).AppendFormat("auto {0}Temp = {1};", parameterInfo.Name, param).AppendLine();
                         if (parameterInfo.Type.IsPtr && !parameterInfo.Type.IsRef)
@@ -1617,7 +1646,7 @@ namespace Flax.Build.Bindings
                     if ((parameterInfo.IsRef || parameterInfo.IsOut) && !parameterInfo.Type.IsConst)
                     {
                         // Direct value convert
-                        var managedToNative = GenerateCppWrapperManagedToNative(buildData, parameterInfo.Type, classInfo, out var managedType, out var apiType, null, out _);
+                        var managedToNative = GenerateCppWrapperManagedToNative(buildData, parameterInfo, classInfo, null, out var managedType, out var apiType, out _);
                         var passAsParamPtr = managedType.EndsWith("*");
                         var useLocalVarPointer = CppParamsThatNeedConversion[i] && !apiType.IsValueType;
                         var paramValue = useLocalVarPointer ? $"*({managedType}{(passAsParamPtr ? "" : "*")}*)params[{i}]" : $"({managedType}{(passAsParamPtr ? "" : "*")})params[{i}]";
@@ -2071,7 +2100,7 @@ namespace Flax.Build.Bindings
                         {
                             // Convert value back from managed to native (could be modified there)
                             paramType.IsRef = false;
-                            var managedToNative = GenerateCppWrapperManagedToNative(buildData, paramType, classInfo, out var managedType, out var apiType, null, out _);
+                            var managedToNative = GenerateCppWrapperManagedToNative(buildData, paramType, classInfo, null, out var managedType, out var apiType, out _);
                             var passAsParamPtr = managedType.EndsWith("*");
                             var useLocalVarPointer = CppParamsThatNeedConversion[i] && !apiType.IsValueType;
                             var paramValue = useLocalVarPointer ? $"*({managedType}{(passAsParamPtr ? "" : "*")}*)params[{i}]" : $"({managedType}{(passAsParamPtr ? "" : "*")})params[{i}]";
@@ -3068,7 +3097,7 @@ namespace Flax.Build.Bindings
                                 continue;
 
                             CppNonPodTypesConvertingGeneration = true;
-                            var wrapper = GenerateCppWrapperManagedToNative(buildData, fieldInfo.Type, apiType, out _, out _, null, out _);
+                            var wrapper = GenerateCppWrapperManagedToNative(buildData, fieldInfo.Type, apiType, null, out _, out _, out _);
                             CppNonPodTypesConvertingGeneration = false;
 
                             if (fieldInfo.Type.IsArray)
@@ -3144,7 +3173,7 @@ namespace Flax.Build.Bindings
                                 continue;
 
                             CppNonPodTypesConvertingGeneration = true;
-                            var wrapper = GenerateCppWrapperManagedToNative(buildData, fieldInfo.Type, apiType, out var type, out _, null, out _);
+                            var wrapper = GenerateCppWrapperManagedToNative(buildData, fieldInfo.Type, apiType, null, out var type, out _, out _);
                             CppNonPodTypesConvertingGeneration = false;
 
                             CppIncludeFiles.Add("Engine/Scripting/ManagedCLR/MField.h");
