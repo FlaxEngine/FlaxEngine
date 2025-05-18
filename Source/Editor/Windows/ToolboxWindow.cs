@@ -455,6 +455,7 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.None)
         {
             Title = "Toolbox";
+            Icon = editor.Icons.Toolbox96;
 
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
         }

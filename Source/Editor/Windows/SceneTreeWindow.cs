@@ -48,6 +48,7 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.None)
         {
             Title = "Scene";
+            Icon = editor.Icons.Globe32;
 
             // Scene searching query input box
             var headerPanel = new ContainerControl

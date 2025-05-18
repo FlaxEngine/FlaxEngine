@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEditor.Content;
+using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using DockWindow = FlaxEditor.GUI.Docking.DockWindow;
@@ -47,6 +48,73 @@ namespace FlaxEditor.Windows
                 {
                     Editor.ContentFinding.ShowFinder(RootWindow);
                 }
+            });
+
+            // Set up editor window shortcuts
+            InputActions.Add(options => options.ContentWindow, () => 
+            { 
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.Windows.ContentWin.FocusOrShow();
+            });
+            InputActions.Add(options => options.SceneWindow, () => 
+            { 
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.Windows.SceneWin.FocusOrShow();
+            });
+            InputActions.Add(options => options.ToolboxWindow, () => 
+            { 
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.Windows.ToolboxWin.FocusOrShow();
+            });
+            InputActions.Add(options => options.PropertiesWindow, () => 
+            { 
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.Windows.PropertiesWin.FocusOrShow();
+            });
+            InputActions.Add(options => options.GameWindow, () => 
+            { 
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.Windows.GameWin.FocusOrShow();
+            });
+            InputActions.Add(options => options.EditorWindow, () => 
+            { 
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.Windows.EditWin.FocusOrShow();
+            });
+            InputActions.Add(options => options.DebugLogWindow, () => 
+            { 
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.Windows.DebugLogWin.FocusOrShow();
+            });
+            InputActions.Add(options => options.OutputLogWindow, () => 
+            { 
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.Windows.OutputLogWin.FocusOrShow();
+            });
+            InputActions.Add(options => options.GraphicsQualityWindow, () => 
+            { 
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.Windows.GraphicsQualityWin.FocusOrShow();
+            });
+            InputActions.Add(options => options.GameCookerWindow, () => 
+            { 
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.Windows.GameCookerWin.FocusOrShow();
+            });
+            InputActions.Add(options => options.ProfilerWindow, () =>
+            {
+                if (InputOptions.ProfilerShortcutAvaliable)
+                    Editor.Windows.ProfilerWin.FocusOrShow();
+            });
+            InputActions.Add(options => options.ContentFinder, () =>
+            {
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.ContentFinding.ShowSearch();
+            });
+            InputActions.Add(options => options.VisualScriptDebuggerWindow, () => 
+            { 
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.Windows.VisualScriptDebuggerWin.FocusOrShow();
             });
 
             // Register
