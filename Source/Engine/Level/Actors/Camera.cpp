@@ -239,7 +239,7 @@ Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewp
     viewport.Unproject(farPoint, ivp, farPoint);
 
     Vector3 dir = Vector3::Normalize(farPoint - nearPoint);
-    if (dir.IsZero())
+    if (dir.IsZero() || dir.IsNanOrInfinity())
         return Ray::Identity;
     return Ray(nearPoint, dir);
 }
