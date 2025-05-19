@@ -12,10 +12,24 @@ API_CLASS(NoSpawn) class FLAXENGINE_API AudioMixer : public BinaryAsset
     DECLARE_BINARY_ASSET_HEADER(AudioMixer,2);
 
 public:
+    struct MixerVariable
+    {
+        /// <summary>
+        /// The current value.
+        /// </summary>
+        float Value;
+
+        /// <summary>
+        /// The default value.
+        /// </summary>
+        float DefaultValue;
+    };
+
+public:
     /// <summary>
     /// The collection of audio mixer variables identified by the name.
     /// </summary>
-    Dictionary<String, float> AudioMixerVariables;
+    Dictionary<String, MixerVariable> AudioMixerVariables;
 
 
 
