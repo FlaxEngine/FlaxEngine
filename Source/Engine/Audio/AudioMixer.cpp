@@ -11,6 +11,66 @@
 #include "AudioSettings.h"
 
 #if USE_EDITOR
+class AudioMixerUpgrader : public BinaryAssetUpgrader
+{
+public:
+    AudioMixerUpgrader()
+    {
+        const Upgrader upgraders[] =
+        {
+            { 1, 2, &Upgrade_1_To_2 }, // [Deprecated on 31.07.2020, expires on 31.07.2022]
+        };
+        setup(upgraders, ARRAY_COUNT(upgraders));
+    }
+
+private:
+    static bool Upgrade_1_To_2(AssetMigrationContext& context)
+    {
+        // [Deprecated on 31.07.2020, expires on 31.07.2022]
+        PRAGMA_DISABLE_DEPRECATION_WARNINGS
+            ASSERT(context.Input.SerializedVersion == 1 && context.Output.SerializedVersion == 2);
+        if (context.AllocateChunk(0))
+            return true;
+        auto& data = context.Input.Header.Chunks[0]->Data;
+        MemoryReadStream stream(data.Get(), data.Length());
+        MemoryWriteStream output;
+        int32 count;
+        stream.ReadInt32(&count);
+        output.WriteInt32(count);
+        String name;
+        for (int32 i = 0; i < count; i++)
+        {
+            stream.Read(name, 71);
+            CommonValue commonValue;
+            stream.ReadCommonValue(&commonValue);
+            Variant variant(commonValue);
+            output.WriteVariant(variant);
+        }
+        context.Output.Header.Chunks[0]->Data.Copy(output.GetHandle(), output.GetPosition());
+        PRAGMA_ENABLE_DEPRECATION_WARNINGS
+
+            return false;
+    }
+};
+#endif
+
+REGISTER_BINARY_ASSET_WITH_UPGRADER(AudioMixer,"FlaxEngine.Audio.AudioMixer", AudioMixerUpgrader, true);
+
+AudioMixer::AudioMixer(const SpawnParams& params, const AssetInfo* info)
+    : BinaryAsset(params, info)
+{
+}
+
+Dictionary<String, Variant> AudioMixer::GetMixerValues() const
+{
+    ScopeLock lock(Locker);
+    Dictionary<String,Variant> result;
+    for (auto& e : AudioMixerVariables)
+        result.Add(e.Key, e.Value.Value);
+    return result;
+}
+
+#if USE_EDITOR
     bool AudioMixer::Save(const StringView& path)
     {
         if (OnCheckSave(path))
@@ -21,11 +81,11 @@
         const auto AudioMixerGroup = AudioSettings::Get()->AudioMixerGroups;
         MemoryWriteStream stream(1024);
         stream.Write(AudioMixerVariables.Count());
-        for (int index = 0; index < AudioMixerGroup.Count(); index++) 
+        for (auto& i : AudioMixerGroup)
         {
             for (auto& e : AudioMixerVariables)
             {
-                e.Key = AudioMixerGroup[index].Name; e.Value.DefaultValue = AudioMixerGroup[index].MixerVolume;
+                e.Key = i.Name; e.Value.DefaultValue = i.MixerVolume;
                 stream.Write(e.Key, 71);
                 stream.Write(e.Value.DefaultValue);
             }

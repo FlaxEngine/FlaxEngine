@@ -7,22 +7,28 @@
 #include "Engine/Core/Types/Variant.h"
 #include "Audio.h"
 
+/// <summary>
+/// 
+/// </summary>
 API_CLASS(NoSpawn) class FLAXENGINE_API AudioMixer : public BinaryAsset 
 {
     DECLARE_BINARY_ASSET_HEADER(AudioMixer,2);
 
 public:
+    /// <summary>
+    /// The mixer variable data.
+    /// </summary>
     struct MixerVariable
     {
         /// <summary>
         /// The current value.
         /// </summary>
-        float Value;
+        Variant Value;
 
         /// <summary>
         /// The default value.
         /// </summary>
-        float DefaultValue;
+        Variant DefaultValue;
     };
 
 public:
@@ -31,7 +37,12 @@ public:
     /// </summary>
     Dictionary<String, MixerVariable> AudioMixerVariables;
 
-
+public:
+    /// <summary>
+    /// Gets the values (run-time).
+    /// </summary>
+    /// <returns>The values (run-time).</returns>
+    API_PROPERTY() Dictionary<String, Variant> GetMixerValues() const;
 
 public:
     // [BinaryAsset]
