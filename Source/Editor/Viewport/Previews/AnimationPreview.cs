@@ -108,12 +108,12 @@ namespace FlaxEditor.Viewport.Previews
         public override bool OnKeyDown(KeyboardKeys key)
         {
             var inputOptions = Editor.Instance.Options.Options.Input;
-            if (inputOptions.Play.Process(this, key))
+            if (inputOptions.Play.Process(this))
             {
                 PlayAnimation = true;
                 return true;
             }
-            if (inputOptions.Pause.Process(this, key))
+            if (inputOptions.Pause.Process(this))
             {
                 PlayAnimation = false;
                 return true;
