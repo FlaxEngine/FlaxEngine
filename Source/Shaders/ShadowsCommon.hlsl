@@ -72,9 +72,20 @@ float3 GetShadowPositionOffset(float offsetScale, float NoL, float3 normal)
 
 float CalculateSubsurfaceOcclusion(float opacity, float sceneDepth, float shadowMapDepth)
 {
+    // `sceneDepth` and `shadowMapDepth`are raw depths, so we have to flip them when reverse-z is enabled
+#if FLAX_REVERSE_Z
+    float thickness = max(shadowMapDepth - sceneDepth, 0);
+#else
     float thickness = max(sceneDepth - shadowMapDepth, 0);
+#endif
+
     float occlusion = 1 - saturate(thickness * lerp(1.0f, 100.0f, opacity));
+
+#if FLAX_REVERSE_Z
+    return shadowMapDepth < 0.01f ? 1 : occlusion;
+#else
     return shadowMapDepth > 0.99f ? 1 : occlusion;
+#endif
 }
 
 float PostProcessShadow(ShadowData lightShadow, float shadow)
