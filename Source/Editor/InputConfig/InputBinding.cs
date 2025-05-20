@@ -4,14 +4,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
-using System.Linq;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using static FlaxEditor.Viewport.EditorViewport;
 
-namespace FlaxEditor.Options
+namespace FlaxEditor.InputConfig
 {
     /// <summary>
     /// The input binding container.
@@ -22,6 +20,11 @@ namespace FlaxEditor.Options
     [CustomEditor(typeof(InputBindingEditor))]
     public struct InputBinding : IEquatable<InputBinding>
     {
+        /// <summary>
+        /// The action callback.
+        /// </summary>
+        public Action Callback;
+
         /// <summary>
         /// The <see cref="InputTrigger"/> list to bind.
         /// </summary>
@@ -94,6 +97,36 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Initializes using input <see cref="string"/> separated by +
         /// <para>Example: "Left+Control+R" = MouseButton.Left, KeyboardKeys.Control, KeyboardKeys.R</para>
+        /// <param name="bindingString">The string to parse and set the binding.</param>
+        /// <param name="bindingList">For collecting the bindings to parse in bulk.</param>
+        /// </summary>
+        public InputBinding(string bindingString, List<InputBinding> bindingList)
+        {
+            if (!TryParse(bindingString, out var result))
+                throw new ArgumentException($"Invalid binding string: {bindingString}");
+
+            this = result;
+            bindingList.Add(this);
+        }
+
+        /// <summary>
+        /// Initializes using input <see cref="string"/> separated by +
+        /// <para>Example: "Left+Control+R" = MouseButton.Left, KeyboardKeys.Control, KeyboardKeys.R</para>
+        /// <param name="bindingString">The string to parse and set the binding.</param>
+        /// <param name="callback">The callback.</param>
+        /// </summary>
+        public InputBinding(string bindingString, Action callback)
+        {
+            if (!TryParse(bindingString, out var result))
+                throw new ArgumentException($"Invalid binding string: {bindingString}");
+
+            this = result;
+            Callback = callback;
+        }
+
+        /// <summary>
+        /// Initializes using input <see cref="string"/> separated by +
+        /// <para>Example: "Left+Control+R" = MouseButton.Left, KeyboardKeys.Control, KeyboardKeys.R</para>
         /// </summary>
         public InputBinding(string bindingString)
         {
@@ -158,6 +191,7 @@ namespace FlaxEditor.Options
 
         /// <summary>
         /// Processes this input binding to check if all input triggers are currently active.
+        /// Fires a callback if defined.
         /// </summary>
         /// <param name="getKey">Function to check if a keyboard key is currently pressed.</param>
         /// <param name="getMouse">Function to check if a mouse button is currently pressed.</param>
@@ -165,11 +199,17 @@ namespace FlaxEditor.Options
         /// <returns>True if all input triggers are currently pressed; otherwise, false.</returns>
         private bool Process(Func<KeyboardKeys, bool> getKey, Func<MouseButton, bool> getMouse, float scrollDelta)
         {
+            if (InputTriggers == null || InputTriggers.Count == 0)
+                return false;
+
             foreach (var trigger in InputTriggers)
             {
+                Debug.Log(trigger);
                 if (!trigger.IsPressed(getKey, getMouse, scrollDelta))
                     return false;
             }
+            Debug.Log(this);
+            Callback?.Invoke();
             return true;
         }
 
@@ -406,135 +446,6 @@ namespace FlaxEditor.Options
         {
             base.Refresh();
             SetText();
-        }
-    }
-
-    /// <summary>
-    /// The input actions processing helper that handles input bindings configuration layer.
-    /// </summary>
-    public class InputActionsContainer
-    {
-        /// <summary>
-        /// The binding.
-        /// </summary>
-        public struct Binding
-        {
-            /// <summary>
-            /// The binded options callback.
-            /// </summary>
-            public Func<InputOptions, InputBinding> Binder;
-
-            /// <summary>
-            /// The action callback.
-            /// </summary>
-            public Action Callback;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="Binding"/> struct.
-            /// </summary>
-            /// <param name="binder">The input binding options getter (can read from editor options or use constant binding).</param>
-            /// <param name="callback">The callback to invoke on user input.</param>
-            public Binding(Func<InputOptions, InputBinding> binder, Action callback)
-            {
-                Binder = binder;
-                Callback = callback;
-            }
-        }
-
-        /// <summary>
-        /// List of all available bindings.
-        /// </summary>
-        public List<Binding> Bindings;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="InputActionsContainer"/> class.
-        /// </summary>
-        public InputActionsContainer()
-        {
-            Bindings = new List<Binding>();
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="InputActionsContainer"/> class.
-        /// </summary>
-        /// <param name="bindings">The input bindings collection.</param>
-        public InputActionsContainer(params Binding[] bindings)
-        {
-            Bindings = new List<Binding>(bindings);
-        }
-
-        /// <summary>
-        /// Adds the specified binding.
-        /// </summary>
-        /// <param name="binding">The input binding.</param>
-        public void Add(Binding binding)
-        {
-            Bindings.Add(binding);
-        }
-
-        /// <summary>
-        /// Adds the specified binding.
-        /// </summary>
-        /// <param name="binder">The input binding options getter (can read from editor options or use constant binding).</param>
-        /// <param name="callback">The callback to invoke on user input.</param>
-        public void Add(Func<InputOptions, InputBinding> binder, Action callback)
-        {
-            Bindings.Add(new Binding(binder, callback));
-        }
-
-        /// <summary>
-        /// Adds the specified bindings.
-        /// </summary>
-        /// <param name="bindings">The input bindings collection.</param>
-        public void Add(params Binding[] bindings)
-        {
-            Bindings.AddRange(bindings);
-        }
-
-        /// <summary>
-        /// Processes the specified key input and tries to invoke first matching callback for the current user input state.
-        /// </summary>
-        /// <param name="editor">The editor instance.</param>
-        /// <param name="control">The input providing control.</param>
-        /// <returns>True if event has been handled, otherwise false.</returns>
-        public bool Process(Editor editor, Control control)
-        {
-            var root = control.Root;
-            var options = editor.Options.Options.Input;
-
-            for (int i = 0; i < Bindings.Count; i++)
-            {
-                var binding = Bindings[i].Binder(options);
-                if (binding.Process(control))
-                {
-                    Bindings[i].Callback();
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Invokes a specific binding.
-        /// </summary>
-        /// <param name="editor">The editor instance.</param>
-        /// <param name="binding">The binding to execute.</param>
-        /// <returns>True if event has been handled, otherwise false.</returns>
-        public bool Invoke(Editor editor, InputBinding binding)
-        {
-            if (binding == new InputBinding())
-                return false;
-            var options = editor.Options.Options.Input;
-            for (int i = 0; i < Bindings.Count; i++)
-            {
-                if (Bindings[i].Binder(options) == binding)
-                {
-                    Bindings[i].Callback();
-                    return true;
-                }
-            }
-            return false;
         }
     }
 }

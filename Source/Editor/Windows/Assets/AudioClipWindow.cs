@@ -212,8 +212,9 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/audio/audio-clip.html")).LinkTooltip("See documentation to learn more");
 
-            InputActions.Add(options => options.Play, OnPlay);
-            InputActions.Add(options => options.Pause, OnPause);
+            var inputOptions = Editor.Options.Options.Input;
+            InputActions.Add(inputOptions.Play, OnPlay);
+            InputActions.Add(inputOptions.Pause, OnPause);
         }
 
         private void OnPlay()

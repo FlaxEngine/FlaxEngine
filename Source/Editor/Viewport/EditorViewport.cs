@@ -1,10 +1,12 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
+using FlaxEditor.InputConfig;
 using FlaxEditor.Options;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Widgets;
@@ -131,6 +133,8 @@ namespace FlaxEditor.Viewport
                 IsMouseLeftDown = false;
             }
         }
+
+        public InputOptions InputOptions = Editor.Instance.Options.Options.Input;
 
         /// <summary>
         /// The FPS camera filtering frames count (how much frames we want to keep in the buffer to calculate the avg. delta currently hardcoded).
@@ -506,11 +510,6 @@ namespace FlaxEditor.Viewport
             get => _panningSpeed;
             set => _panningSpeed = value;
         }
-
-        /// <summary>
-        /// The input actions collection to processed during user input.
-        /// </summary>
-        public InputActionsContainer InputActions = new InputActionsContainer();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditorViewport"/> class.
@@ -1005,16 +1004,18 @@ namespace FlaxEditor.Viewport
                 #endregion View mode widget
             }
 
-            InputActions.Add(options => options.ViewpointTop, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Top").Orientation)));
-            InputActions.Add(options => options.ViewpointBottom, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Bottom").Orientation)));
-            InputActions.Add(options => options.ViewpointFront, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Front").Orientation)));
-            InputActions.Add(options => options.ViewpointBack, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Back").Orientation)));
-            InputActions.Add(options => options.ViewpointRight, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Right").Orientation)));
-            InputActions.Add(options => options.ViewpointLeft, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Left").Orientation)));
-            InputActions.Add(options => options.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown);
-            InputActions.Add(options => options.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(1));
-            InputActions.Add(options => options.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(-1));
-            InputActions.Add(options => options.ToggleOrthographic, () => OnOrthographicModeToggled(null));
+            InputOptions.List.SetCallback(
+                (InputOptions.ViewpointTop, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Top").Orientation))),
+                (InputOptions.ViewpointBottom, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Bottom").Orientation))),
+                (InputOptions.ViewpointFront, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Front").Orientation))),
+                (InputOptions.ViewpointBack, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Back").Orientation))),
+                (InputOptions.ViewpointRight, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Right").Orientation))),
+                (InputOptions.ViewpointLeft, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Left").Orientation))),
+                (InputOptions.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown),
+                (InputOptions.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(1)),
+                (InputOptions.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(-1)),
+                (InputOptions.ToggleOrthographic, () => OnOrthographicModeToggled(null))
+            );
 
             // Link for task event
             task.Begin += OnRenderBegin;
@@ -1860,7 +1861,7 @@ namespace FlaxEditor.Viewport
                 return true;
 
             // Custom input events
-            return InputActions.Process(Editor.Instance, this);
+            return InputOptions.List.Process(this);
         }
 
         /// <inheritdoc />

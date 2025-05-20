@@ -1,6 +1,8 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System.ComponentModel;
+using System.Reflection;
+using FlaxEditor.InputConfig;
 using FlaxEngine;
 
 #pragma warning disable 1591
@@ -40,6 +42,7 @@ namespace FlaxEditor.Options
     [HideInEditor]
     public sealed class InputOptions
     {
+        public InputBindingList List = new InputBindingList();
         #region Common
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.S)]
@@ -387,5 +390,17 @@ namespace FlaxEditor.Options
         public SceneNodeDoubleClick DoubleClickSceneNode = SceneNodeDoubleClick.Expand;
 
         #endregion
+
+        public InputOptions()
+        {
+            foreach (var field in GetType().GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            {
+                if (field.FieldType == typeof(InputBinding))
+                {
+                    var binding = (InputBinding)field.GetValue(this);
+                    List.Add(binding);
+                }
+            }
+        }
     }
 }

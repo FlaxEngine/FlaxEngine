@@ -429,9 +429,11 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddSeparator();
             _resetButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Rotate32, Reset).LinkTooltip("Resets the variables values to the default values");
 
-            InputActions.Add(options => options.Save, Save);
-            InputActions.Add(options => options.Undo, _undo.PerformUndo);
-            InputActions.Add(options => options.Redo, _undo.PerformRedo);
+            InputActions.Add(
+                (inputOptions.Save, Save),
+                (inputOptions.Undo, _undo.PerformUndo),
+                (inputOptions.Redo, _undo.PerformRedo)
+            );
         }
 
         private void OnPropertiesEditorModified()

@@ -38,10 +38,12 @@ namespace FlaxEditor.Windows
         protected EditorWindow(Editor editor, bool hideOnClose, ScrollBars scrollBars)
         : base(editor.UI.MasterPanel, hideOnClose, scrollBars)
         {
+            var inputOptions = editor.Options.Options.Input;
+
             AutoFocus = true;
             Editor = editor;
 
-            InputActions.Add(options => options.ContentFinder, () =>
+            InputActions.Add(inputOptions.ContentFinder, () =>
             {
                 if (CanOpenContentFinder)
                 {
@@ -205,21 +207,21 @@ namespace FlaxEditor.Windows
 
             switch (key)
             {
-            case KeyboardKeys.Return:
-                if (CanUseNavigation && Root?.FocusedControl != null)
-                {
-                    Root.SubmitFocused();
-                    return true;
-                }
-                break;
-            case KeyboardKeys.Tab:
-                if (CanUseNavigation && Root != null)
-                {
-                    bool shiftDown = Root.GetKey(KeyboardKeys.Shift);
-                    Root.Navigate(shiftDown ? NavDirection.Previous : NavDirection.Next);
-                    return true;
-                }
-                break;
+                case KeyboardKeys.Return:
+                    if (CanUseNavigation && Root?.FocusedControl != null)
+                    {
+                        Root.SubmitFocused();
+                        return true;
+                    }
+                    break;
+                case KeyboardKeys.Tab:
+                    if (CanUseNavigation && Root != null)
+                    {
+                        bool shiftDown = Root.GetKey(KeyboardKeys.Shift);
+                        Root.Navigate(shiftDown ? NavDirection.Previous : NavDirection.Next);
+                        return true;
+                    }
+                    break;
             }
             return false;
         }

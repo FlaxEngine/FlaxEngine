@@ -405,31 +405,35 @@ namespace FlaxEditor.Viewport
             };
 
             // Setup input actions
-            viewport.InputActions.Add(options => options.TranslateMode, () =>
+            viewport.InputOptions.List.SetCallback(
+            (viewport.InputOptions.TranslateMode, () =>
             {
                 viewport.GetInput(out var input);
                 if (input.IsMouseRightDown)
                     return;
 
                 transformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate;
-            });
-            viewport.InputActions.Add(options => options.RotateMode, () =>
+            }
+            ),
+            (viewport.InputOptions.RotateMode, () =>
             {
                 viewport.GetInput(out var input);
                 if (input.IsMouseRightDown)
                     return;
 
                 transformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate;
-            });
-            viewport.InputActions.Add(options => options.ScaleMode, () =>
+            }
+            ),
+            (viewport.InputOptions.ScaleMode, () =>
             {
                 viewport.GetInput(out var input);
                 if (input.IsMouseRightDown)
                     return;
 
                 transformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale;
-            });
-            viewport.InputActions.Add(options => options.ToggleTransformSpace, () =>
+            }
+            ),
+            (viewport.InputOptions.ToggleTransformSpace, () =>
             {
                 viewport.GetInput(out var input);
                 if (input.IsMouseRightDown)
@@ -439,7 +443,9 @@ namespace FlaxEditor.Viewport
                 if (useProjectCache)
                     editor.ProjectCache.SetCustomData("TransformSpaceState", transformGizmo.ActiveTransformSpace.ToString());
                 transformSpaceToggle.Checked = !transformSpaceToggle.Checked;
-            });
+            }
+            )
+            );
         }
 
         internal static readonly float[] TranslateSnapValues =

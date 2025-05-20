@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.GUI.Drag;
+using FlaxEditor.InputConfig;
 using FlaxEditor.Options;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Windows;
@@ -184,7 +185,7 @@ namespace FlaxEditor.Content.GUI
         /// <summary>
         /// The input actions collection to processed during user input.
         /// </summary>
-        public readonly InputActionsContainer InputActions;
+        public InputBindingList InputBindings;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ContentView"/> class.
@@ -192,16 +193,17 @@ namespace FlaxEditor.Content.GUI
         public ContentView()
         {
             // Setup input actions
-            InputActions = new InputActionsContainer(new[]
-            {
-                new InputActionsContainer.Binding(options => options.Delete, () =>
+            InputOptions options = Editor.Instance.Options.Options.Input;
+            InputBindings = new InputBindingList(
+            (options.Delete, () =>
                 {
                     if (HasSelection)
                         OnDelete?.Invoke(_selection);
-                }),
-                new InputActionsContainer.Binding(options => options.SelectAll, SelectAll),
-                new InputActionsContainer.Binding(options => options.DeselectAll, DeselectAll),
-                new InputActionsContainer.Binding(options => options.Rename, () =>
+                }
+            ),
+            (options.SelectAll, SelectAll),
+            (options.DeselectAll, DeselectAll),
+            (options.Rename, () =>
                 {
                     if (HasSelection && _selection[0].CanRename)
                     {
@@ -209,17 +211,19 @@ namespace FlaxEditor.Content.GUI
                             Select(_selection[0]);
                         OnRename?.Invoke(_selection[0]);
                     }
-                }),
-                new InputActionsContainer.Binding(options => options.Copy, Copy),
-                new InputActionsContainer.Binding(options => options.Paste, Paste),
-                new InputActionsContainer.Binding(options => options.Cut, Cut),
-                new InputActionsContainer.Binding(options => options.Undo, () =>
+                }
+            ),
+            (options.Copy, Copy),
+            (options.Paste, Paste),
+            (options.Cut, Cut),
+            (options.Undo, () =>
                 {
                     if (_isCutting)
                         UpdateContentItemCut(false);
-                }),
-                new InputActionsContainer.Binding(options => options.Duplicate, Duplicate),
-            });
+                }
+            ),
+            (options.Duplicate, Duplicate)
+            );
         }
 
         /// <summary>
@@ -522,17 +526,17 @@ namespace FlaxEditor.Content.GUI
         private void UpdateContentItemCut(bool cut)
         {
             _isCutting = cut;
-  
+
             // Add selection to cut list
             if (cut)
                 _cutItems.AddRange(_selection);
-            
+
             // Update item with if it is being cut.
             foreach (var item in _cutItems)
             {
                 item.IsBeingCut = cut;
             }
-            
+
             // Clean up cut items
             if (!cut)
                 _cutItems.Clear();
@@ -754,7 +758,7 @@ namespace FlaxEditor.Content.GUI
                 return true;
             }
 
-            if (InputActions.Process(Editor.Instance, this))
+            if (InputBindings.Process(this))
                 return true;
 
             // Check if sth is selected
@@ -949,49 +953,49 @@ namespace FlaxEditor.Content.GUI
 
             switch (ViewType)
             {
-            case ContentViewType.Tiles:
-            {
-                float defaultItemsWidth = ContentItem.DefaultWidth * viewScale;
-                int itemsToFit = Mathf.FloorToInt(width / defaultItemsWidth) - 1;
-                if (itemsToFit < 1)
-                    itemsToFit = 1;
-                int xSpace = 4;
-                float itemsWidth = width / Mathf.Max(itemsToFit, 1) - xSpace;
-                float itemsHeight = itemsWidth / defaultItemsWidth * (ContentItem.DefaultHeight * viewScale);
-                var flooredItemsWidth = Mathf.Floor(itemsWidth);
-                var flooredItemsHeight = Mathf.Floor(itemsHeight);
-                x = itemsToFit == 1 ? 1 : itemsWidth / itemsToFit + xSpace;
-                for (int i = 0; i < _children.Count; i++)
-                {
-                    var c = _children[i];
-                    c.Bounds = new Rectangle(Mathf.Floor(x), Mathf.Floor(y), flooredItemsWidth, flooredItemsHeight);
-
-                    x += (itemsWidth + xSpace) + (itemsWidth + xSpace) / itemsToFit;
-                    if (x + itemsWidth > width)
+                case ContentViewType.Tiles:
                     {
+                        float defaultItemsWidth = ContentItem.DefaultWidth * viewScale;
+                        int itemsToFit = Mathf.FloorToInt(width / defaultItemsWidth) - 1;
+                        if (itemsToFit < 1)
+                            itemsToFit = 1;
+                        int xSpace = 4;
+                        float itemsWidth = width / Mathf.Max(itemsToFit, 1) - xSpace;
+                        float itemsHeight = itemsWidth / defaultItemsWidth * (ContentItem.DefaultHeight * viewScale);
+                        var flooredItemsWidth = Mathf.Floor(itemsWidth);
+                        var flooredItemsHeight = Mathf.Floor(itemsHeight);
                         x = itemsToFit == 1 ? 1 : itemsWidth / itemsToFit + xSpace;
-                        y += itemsHeight + 7;
+                        for (int i = 0; i < _children.Count; i++)
+                        {
+                            var c = _children[i];
+                            c.Bounds = new Rectangle(Mathf.Floor(x), Mathf.Floor(y), flooredItemsWidth, flooredItemsHeight);
+
+                            x += (itemsWidth + xSpace) + (itemsWidth + xSpace) / itemsToFit;
+                            if (x + itemsWidth > width)
+                            {
+                                x = itemsToFit == 1 ? 1 : itemsWidth / itemsToFit + xSpace;
+                                y += itemsHeight + 7;
+                            }
+                        }
+                        if (x > 0)
+                            y += itemsHeight;
+
+                        break;
                     }
-                }
-                if (x > 0)
-                    y += itemsHeight;
+                case ContentViewType.List:
+                    {
+                        float itemsHeight = 50.0f * viewScale;
+                        for (int i = 0; i < _children.Count; i++)
+                        {
+                            var c = _children[i];
+                            c.Bounds = new Rectangle(x, y, width, itemsHeight);
+                            y += itemsHeight + 1;
+                        }
+                        y += 40.0f;
 
-                break;
-            }
-            case ContentViewType.List:
-            {
-                float itemsHeight = 50.0f * viewScale;
-                for (int i = 0; i < _children.Count; i++)
-                {
-                    var c = _children[i];
-                    c.Bounds = new Rectangle(x, y, width, itemsHeight);
-                    y += itemsHeight + 1;
-                }
-                y += 40.0f;
-
-                break;
-            }
-            default: throw new ArgumentOutOfRangeException();
+                        break;
+                    }
+                default: throw new ArgumentOutOfRangeException();
             }
 
             // Set maximum size and fit the parent container

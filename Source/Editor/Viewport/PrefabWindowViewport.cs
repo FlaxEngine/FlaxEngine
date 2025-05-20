@@ -217,7 +217,7 @@ namespace FlaxEditor.Viewport
             EditorGizmoViewport.AddGizmoViewportWidgets(this, TransformGizmo);
 
             // Setup input actions
-            InputActions.Add(options => options.FocusSelection, ShowSelectedActors);
+            Viewport.InputOptions.FocusSelection.Callback = ShowSelectedActors;
 
             SetUpdate(ref _update, OnUpdate);
         }

@@ -434,7 +434,7 @@ namespace FlaxEditor.Windows
             foreach (var tab in _tabs)
                 tabs.AddTab(tab);
 
-            InputActions.Add(options => options.DebuggerContinue, OnDebuggerContinue);
+            InputActions.Add(inputOptions.DebuggerContinue, OnDebuggerContinue);
 
             Editor.Simulation.BreakpointHangBegin += OnBreakpointHangBegin;
             Editor.Simulation.BreakpointHangEnd += OnBreakpointHangEnd;

@@ -652,128 +652,128 @@ namespace FlaxEditor.Utilities
 
             switch (type)
             {
-            case 0: // CommonType::Bool:
-                value = stream.ReadByte() != 0;
-                break;
-            case 1: // CommonType::Integer:
-            {
-                value = stream.ReadInt32();
-            }
-                break;
-            case 2: // CommonType::Float:
-            {
-                value = stream.ReadSingle();
-            }
-                break;
-            case 3: // CommonType::Vector2:
-            {
-                value = stream.ReadFloat2();
-            }
-                break;
-            case 4: // CommonType::Vector3:
-            {
-                value = stream.ReadFloat3();
-            }
-                break;
-            case 5: // CommonType::Vector4:
-            {
-                value = stream.ReadFloat4();
-            }
-                break;
-            case 6: // CommonType::Color:
-            {
-                value = stream.ReadColor();
-            }
-                break;
-            case 7: // CommonType::Guid:
-            {
-                value = stream.ReadGuid();
-            }
-                break;
-            case 8: // CommonType::String:
-            {
-                int length = stream.ReadInt32();
-                if (length <= 0)
-                {
-                    value = string.Empty;
-                }
-                else
-                {
-                    var data = new char[length];
-                    for (int i = 0; i < length; i++)
+                case 0: // CommonType::Bool:
+                    value = stream.ReadByte() != 0;
+                    break;
+                case 1: // CommonType::Integer:
                     {
-                        var c = stream.ReadUInt16();
-                        data[i] = (char)(c ^ 953);
+                        value = stream.ReadInt32();
                     }
-                    value = new string(data);
-                }
-                break;
-            }
-            case 9: // CommonType::Box:
-            {
-                value = new BoundingBox(new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()),
+                    break;
+                case 2: // CommonType::Float:
+                    {
+                        value = stream.ReadSingle();
+                    }
+                    break;
+                case 3: // CommonType::Vector2:
+                    {
+                        value = stream.ReadFloat2();
+                    }
+                    break;
+                case 4: // CommonType::Vector3:
+                    {
+                        value = stream.ReadFloat3();
+                    }
+                    break;
+                case 5: // CommonType::Vector4:
+                    {
+                        value = stream.ReadFloat4();
+                    }
+                    break;
+                case 6: // CommonType::Color:
+                    {
+                        value = stream.ReadColor();
+                    }
+                    break;
+                case 7: // CommonType::Guid:
+                    {
+                        value = stream.ReadGuid();
+                    }
+                    break;
+                case 8: // CommonType::String:
+                    {
+                        int length = stream.ReadInt32();
+                        if (length <= 0)
+                        {
+                            value = string.Empty;
+                        }
+                        else
+                        {
+                            var data = new char[length];
+                            for (int i = 0; i < length; i++)
+                            {
+                                var c = stream.ReadUInt16();
+                                data[i] = (char)(c ^ 953);
+                            }
+                            value = new string(data);
+                        }
+                        break;
+                    }
+                case 9: // CommonType::Box:
+                    {
+                        value = new BoundingBox(new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()),
+                                                new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()));
+                    }
+                    break;
+                case 10: // CommonType::Rotation:
+                    {
+                        value = stream.ReadQuaternion();
+                    }
+                    break;
+                case 11: // CommonType::Transform:
+                    {
+                        value = new Transform(new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()),
+                                              new Quaternion(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()),
+                                              new Float3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()));
+                    }
+                    break;
+                case 12: // CommonType::Sphere:
+                    {
+                        value = new BoundingSphere(new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()),
+                                                   stream.ReadSingle());
+                    }
+                    break;
+                case 13: // CommonType::Rect:
+                    {
+                        value = new Rectangle(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle());
+                    }
+                    break;
+                case 15: // CommonType::Matrix
+                    {
+                        value = new Matrix(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(),
+                                           stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(),
+                                           stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(),
+                                           stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle());
+                        break;
+                    }
+                case 16: // CommonType::Blob
+                    {
+                        int length = stream.ReadInt32();
+                        value = stream.ReadBytes(length);
+                        break;
+                    }
+                case 18: // CommonType::Ray
+                    {
+                        value = new Ray(new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()),
                                         new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()));
-            }
-                break;
-            case 10: // CommonType::Rotation:
-            {
-                value = stream.ReadQuaternion();
-            }
-                break;
-            case 11: // CommonType::Transform:
-            {
-                value = new Transform(new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()),
-                                      new Quaternion(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()),
-                                      new Float3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()));
-            }
-                break;
-            case 12: // CommonType::Sphere:
-            {
-                value = new BoundingSphere(new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()),
-                                           stream.ReadSingle());
-            }
-                break;
-            case 13: // CommonType::Rect:
-            {
-                value = new Rectangle(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle());
-            }
-                break;
-            case 15: // CommonType::Matrix
-            {
-                value = new Matrix(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(),
-                                   stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(),
-                                   stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(),
-                                   stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle());
-                break;
-            }
-            case 16: // CommonType::Blob
-            {
-                int length = stream.ReadInt32();
-                value = stream.ReadBytes(length);
-                break;
-            }
-            case 18: // CommonType::Ray
-            {
-                value = new Ray(new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()),
-                                new Vector3(stream.ReadSingle(), stream.ReadSingle(), stream.ReadSingle()));
-                break;
-            }
-            case 19: // CommonType::Int2
-            {
-                value = stream.ReadInt2();
-                break;
-            }
-            case 20: // CommonType::Int3
-            {
-                value = stream.ReadInt3();
-                break;
-            }
-            case 21: // CommonType::Int4
-            {
-                value = stream.ReadInt4();
-                break;
-            }
-            default: throw new SystemException();
+                        break;
+                    }
+                case 19: // CommonType::Int2
+                    {
+                        value = stream.ReadInt2();
+                        break;
+                    }
+                case 20: // CommonType::Int3
+                    {
+                        value = stream.ReadInt3();
+                        break;
+                    }
+                case 21: // CommonType::Int4
+                    {
+                        value = stream.ReadInt4();
+                        break;
+                    }
+                default: throw new SystemException();
             }
         }
 
@@ -1302,28 +1302,28 @@ namespace FlaxEditor.Utilities
         {
             switch (category)
             {
-            case FlaxEngine.Utils.ValueCategory.Distance:
-                if (!Units.AutomaticUnitsFormatting)
-                    return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("m");
-                var absValue = Mathf.Abs(value);
-                // in case a unit != cm this would be (value / Meters2Units * 100)
-                if (absValue < Units.Meters2Units)
-                    return value.ToString(format, CultureInfo.InvariantCulture) + Units.Unit("cm");
-                if (absValue < Units.Meters2Units * 1000)
-                    return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("m");
-                return (value / 1000 / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("km");
-            case FlaxEngine.Utils.ValueCategory.Angle: return value.ToString(format, CultureInfo.InvariantCulture) + "°";
-            case FlaxEngine.Utils.ValueCategory.Time: return value.ToString(format, CultureInfo.InvariantCulture) + Units.Unit("s");
-            // some fonts have a symbol for that: "\u33A7"
-            case FlaxEngine.Utils.ValueCategory.Speed: return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("m/s");
-            case FlaxEngine.Utils.ValueCategory.Acceleration: return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("m/s²");
-            case FlaxEngine.Utils.ValueCategory.Area: return (value / Units.Meters2Units / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("m²");
-            case FlaxEngine.Utils.ValueCategory.Volume: return (value / Units.Meters2Units / Units.Meters2Units / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("m³");
-            case FlaxEngine.Utils.ValueCategory.Mass: return value.ToString(format, CultureInfo.InvariantCulture) + Units.Unit("kg");
-            case FlaxEngine.Utils.ValueCategory.Force: return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("N");
-            case FlaxEngine.Utils.ValueCategory.Torque: return (value / Units.Meters2Units / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("Nm");
-            case FlaxEngine.Utils.ValueCategory.None:
-            default: return FormatFloat(value);
+                case FlaxEngine.Utils.ValueCategory.Distance:
+                    if (!Units.AutomaticUnitsFormatting)
+                        return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("m");
+                    var absValue = Mathf.Abs(value);
+                    // in case a unit != cm this would be (value / Meters2Units * 100)
+                    if (absValue < Units.Meters2Units)
+                        return value.ToString(format, CultureInfo.InvariantCulture) + Units.Unit("cm");
+                    if (absValue < Units.Meters2Units * 1000)
+                        return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("m");
+                    return (value / 1000 / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("km");
+                case FlaxEngine.Utils.ValueCategory.Angle: return value.ToString(format, CultureInfo.InvariantCulture) + "°";
+                case FlaxEngine.Utils.ValueCategory.Time: return value.ToString(format, CultureInfo.InvariantCulture) + Units.Unit("s");
+                // some fonts have a symbol for that: "\u33A7"
+                case FlaxEngine.Utils.ValueCategory.Speed: return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("m/s");
+                case FlaxEngine.Utils.ValueCategory.Acceleration: return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("m/s²");
+                case FlaxEngine.Utils.ValueCategory.Area: return (value / Units.Meters2Units / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("m²");
+                case FlaxEngine.Utils.ValueCategory.Volume: return (value / Units.Meters2Units / Units.Meters2Units / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("m³");
+                case FlaxEngine.Utils.ValueCategory.Mass: return value.ToString(format, CultureInfo.InvariantCulture) + Units.Unit("kg");
+                case FlaxEngine.Utils.ValueCategory.Force: return (value / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("N");
+                case FlaxEngine.Utils.ValueCategory.Torque: return (value / Units.Meters2Units / Units.Meters2Units).ToString(format, CultureInfo.InvariantCulture) + Units.Unit("Nm");
+                case FlaxEngine.Utils.ValueCategory.None:
+                default: return FormatFloat(value);
             }
         }
 
@@ -1463,65 +1463,71 @@ namespace FlaxEditor.Utilities
         public static void SetupCommonInputActions(EditorWindow window)
         {
             var inputActions = window.InputActions;
-
+            var inputOptions = Editor.Instance.Options.Options.Input;
             // Setup input actions
-            inputActions.Add(options => options.Save, Editor.Instance.SaveAll);
-            inputActions.Add(options => options.Undo, () =>
+            inputActions.Add(
+                (inputOptions.Save, Editor.Instance.SaveAll),
+            (inputOptions.Undo, () =>
             {
                 Editor.Instance.PerformUndo();
                 window.Focus();
-            });
-            inputActions.Add(options => options.Redo, () =>
+            }
+            ),
+            (inputOptions.Redo, () =>
             {
                 Editor.Instance.PerformRedo();
                 window.Focus();
-            });
-            inputActions.Add(options => options.Cut, Editor.Instance.SceneEditing.Cut);
-            inputActions.Add(options => options.Copy, Editor.Instance.SceneEditing.Copy);
-            inputActions.Add(options => options.Paste, Editor.Instance.SceneEditing.Paste);
-            inputActions.Add(options => options.Duplicate, Editor.Instance.SceneEditing.Duplicate);
-            inputActions.Add(options => options.SelectAll, Editor.Instance.SceneEditing.SelectAllScenes);
-            inputActions.Add(options => options.DeselectAll, Editor.Instance.SceneEditing.DeselectAllScenes);
-            inputActions.Add(options => options.Delete, Editor.Instance.SceneEditing.Delete);
-            inputActions.Add(options => options.GroupSelectedActors, Editor.Instance.SceneEditing.CreateParentForSelectedActors);
-            inputActions.Add(options => options.Search, () => Editor.Instance.Windows.SceneWin.Search());
-            inputActions.Add(options => options.MoveActorToViewport, Editor.Instance.UI.MoveActorToViewport);
-            inputActions.Add(options => options.AlignActorWithViewport, Editor.Instance.UI.AlignActorWithViewport);
-            inputActions.Add(options => options.AlignViewportWithActor, Editor.Instance.UI.AlignViewportWithActor);
-            inputActions.Add(options => options.PilotActor, Editor.Instance.UI.PilotActor);
-            inputActions.Add(options => options.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor);
-            inputActions.Add(options => options.PlayCurrentScenes, Editor.Instance.Simulation.RequestPlayScenesOrStopPlay);
-            inputActions.Add(options => options.Pause, Editor.Instance.Simulation.RequestResumeOrPause);
-            inputActions.Add(options => options.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame);
-            inputActions.Add(options => options.CookAndRun, () => Editor.Instance.Windows.GameCookerWin.BuildAndRun());
-            inputActions.Add(options => options.RunCookedGame, () => Editor.Instance.Windows.GameCookerWin.RunCooked());
-            inputActions.Add(options => options.BuildScenesData, Editor.Instance.BuildScenesOrCancel);
-            inputActions.Add(options => options.BakeLightmaps, Editor.Instance.BakeLightmapsOrCancel);
-            inputActions.Add(options => options.ClearLightmaps, Editor.Instance.ClearLightmaps);
-            inputActions.Add(options => options.BakeEnvProbes, Editor.Instance.BakeAllEnvProbes);
-            inputActions.Add(options => options.BuildCSG, Editor.Instance.BuildCSG);
-            inputActions.Add(options => options.BuildNav, Editor.Instance.BuildNavMesh);
-            inputActions.Add(options => options.BuildSDF, Editor.Instance.BuildAllMeshesSDF);
-            inputActions.Add(options => options.TakeScreenshot, Editor.Instance.Windows.TakeScreenshot);
-            inputActions.Add(options => options.ProfilerWindow, () => Editor.Instance.Windows.ProfilerWin.FocusOrShow());
+            }
+            ),
+            (inputOptions.Cut, Editor.Instance.SceneEditing.Cut),
+            (inputOptions.Copy, Editor.Instance.SceneEditing.Copy),
+            (inputOptions.Paste, Editor.Instance.SceneEditing.Paste),
+            (inputOptions.Duplicate, Editor.Instance.SceneEditing.Duplicate),
+            (inputOptions.SelectAll, Editor.Instance.SceneEditing.SelectAllScenes),
+            (inputOptions.DeselectAll, Editor.Instance.SceneEditing.DeselectAllScenes),
+            (inputOptions.Delete, Editor.Instance.SceneEditing.Delete),
+            (inputOptions.GroupSelectedActors, Editor.Instance.SceneEditing.CreateParentForSelectedActors),
+            (inputOptions.Search, () => Editor.Instance.Windows.SceneWin.Search()),
+            (inputOptions.MoveActorToViewport, Editor.Instance.UI.MoveActorToViewport),
+            (inputOptions.AlignActorWithViewport, Editor.Instance.UI.AlignActorWithViewport),
+            (inputOptions.AlignViewportWithActor, Editor.Instance.UI.AlignViewportWithActor),
+            (inputOptions.PilotActor, Editor.Instance.UI.PilotActor),
+            (inputOptions.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor),
+            (inputOptions.PlayCurrentScenes, Editor.Instance.Simulation.RequestPlayScenesOrStopPlay),
+            (inputOptions.Pause, Editor.Instance.Simulation.RequestResumeOrPause),
+            (inputOptions.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame),
+            (inputOptions.CookAndRun, () => Editor.Instance.Windows.GameCookerWin.BuildAndRun()),
+            (inputOptions.RunCookedGame, () => Editor.Instance.Windows.GameCookerWin.RunCooked()),
+            (inputOptions.BuildScenesData, Editor.Instance.BuildScenesOrCancel),
+            (inputOptions.BakeLightmaps, Editor.Instance.BakeLightmapsOrCancel),
+            (inputOptions.ClearLightmaps, Editor.Instance.ClearLightmaps),
+            (inputOptions.BakeEnvProbes, Editor.Instance.BakeAllEnvProbes),
+            (inputOptions.BuildCSG, Editor.Instance.BuildCSG),
+            (inputOptions.BuildNav, Editor.Instance.BuildNavMesh),
+            (inputOptions.BuildSDF, Editor.Instance.BuildAllMeshesSDF),
+            (inputOptions.TakeScreenshot, Editor.Instance.Windows.TakeScreenshot),
+            (inputOptions.ProfilerWindow, () => Editor.Instance.Windows.ProfilerWin.FocusOrShow()),
 #if USE_PROFILER
-            inputActions.Add(options => options.ProfilerStartStop, () =>
+            (inputOptions.ProfilerStartStop, () =>
             {
                 bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
                 Editor.Instance.Windows.ProfilerWin.LiveRecording = recording;
                 Editor.Instance.UI.AddStatusMessage($"Profiling {(recording ? "started" : "stopped")}.");
-            });
-            inputActions.Add(options => options.ProfilerClear, () =>
+            }
+            ),
+            (inputOptions.ProfilerClear, () =>
             {
                 Editor.Instance.Windows.ProfilerWin.Clear();
                 Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
-            });
+            }
+            ),
 #endif
-            inputActions.Add(options => options.SaveScenes, () => Editor.Instance.Scene.SaveScenes());
-            inputActions.Add(options => options.CloseScenes, () => Editor.Instance.Scene.CloseAllScenes());
-            inputActions.Add(options => options.OpenScriptsProject, () => Editor.Instance.CodeEditing.OpenSolution());
-            inputActions.Add(options => options.GenerateScriptsProject, () => Editor.Instance.ProgressReporting.GenerateScriptsProjectFiles.RunAsync());
-            inputActions.Add(options => options.RecompileScripts, ScriptsBuilder.Compile);
+            (inputOptions.SaveScenes, () => Editor.Instance.Scene.SaveScenes()),
+            (inputOptions.CloseScenes, () => Editor.Instance.Scene.CloseAllScenes()),
+            (inputOptions.OpenScriptsProject, () => Editor.Instance.CodeEditing.OpenSolution()),
+            (inputOptions.GenerateScriptsProject, () => Editor.Instance.ProgressReporting.GenerateScriptsProjectFiles.RunAsync()),
+            (inputOptions.RecompileScripts, ScriptsBuilder.Compile)
+            );
         }
 
         internal static string ToPathProject(string path)

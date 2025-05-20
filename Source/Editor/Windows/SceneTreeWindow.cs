@@ -13,6 +13,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.States;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEditor.Options;
 
 namespace FlaxEditor.Windows
 {
@@ -47,6 +48,8 @@ namespace FlaxEditor.Windows
         public SceneTreeWindow(Editor editor)
         : base(editor, true, ScrollBars.None)
         {
+            InputOptions inputOptions = Editor.Instance.Options.Options.Input;
+
             Title = "Scene";
 
             // Scene searching query input box
@@ -92,12 +95,14 @@ namespace FlaxEditor.Windows
             headerPanel.Parent = this;
 
             // Setup input actions
-            InputActions.Add(options => options.TranslateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
-            InputActions.Add(options => options.RotateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
-            InputActions.Add(options => options.ScaleMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale);
-            InputActions.Add(options => options.FocusSelection, () => Editor.Windows.EditWin.Viewport.FocusSelection());
-            InputActions.Add(options => options.LockFocusSelection, () => Editor.Windows.EditWin.Viewport.LockFocusSelection());
-            InputActions.Add(options => options.Rename, RenameSelection);
+            InputActions.Add(
+                (inputOptions.TranslateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate),
+                (inputOptions.RotateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate),
+                (inputOptions.ScaleMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale),
+                (inputOptions.FocusSelection, () => Editor.Windows.EditWin.Viewport.FocusSelection()),
+                (inputOptions.LockFocusSelection, () => Editor.Windows.EditWin.Viewport.LockFocusSelection()),
+                (inputOptions.Rename, RenameSelection)
+            );
         }
 
         /// <summary>

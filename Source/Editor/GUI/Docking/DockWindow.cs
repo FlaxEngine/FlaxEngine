@@ -6,6 +6,7 @@ using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
 using FlaxEditor.Options;
+using FlaxEditor.InputConfig;
 
 namespace FlaxEditor.GUI.Docking
 {
@@ -107,7 +108,7 @@ namespace FlaxEditor.GUI.Docking
         /// <summary>
         /// The input actions collection to processed during user input.
         /// </summary>
-        public InputActionsContainer InputActions = new InputActionsContainer();
+        public InputBindingList InputActions = new InputBindingList();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DockWindow"/> class.
@@ -123,26 +124,29 @@ namespace FlaxEditor.GUI.Docking
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
 
+            InputOptions inputOptions = Editor.Instance.Options.Options.Input;
             // Bind navigation shortcuts
-            InputActions.Add(options => options.CloseTab, () => Close(ClosingReason.User));
-            InputActions.Add(options => options.PreviousTab, () =>
-            {
-                if (_dockedTo != null)
+            InputActions.Add(
+                (inputOptions.CloseTab, () => Close(ClosingReason.User)),
+                (inputOptions.PreviousTab, () =>
                 {
-                    var index = _dockedTo.SelectedTabIndex;
-                    index = index == 0 ? _dockedTo.TabsCount - 1 : index - 1;
-                    _dockedTo.SelectedTabIndex = index;
-                }
-            });
-            InputActions.Add(options => options.NextTab, () =>
-            {
-                if (_dockedTo != null)
+                    if (_dockedTo != null)
+                    {
+                        var index = _dockedTo.SelectedTabIndex;
+                        index = index == 0 ? _dockedTo.TabsCount - 1 : index - 1;
+                        _dockedTo.SelectedTabIndex = index;
+                    }
+                }),
+                (inputOptions.NextTab, () =>
                 {
-                    var index = _dockedTo.SelectedTabIndex;
-                    index = (index + 1) % _dockedTo.TabsCount;
-                    _dockedTo.SelectedTabIndex = index;
-                }
-            });
+                    if (_dockedTo != null)
+                    {
+                        var index = _dockedTo.SelectedTabIndex;
+                        index = (index + 1) % _dockedTo.TabsCount;
+                        _dockedTo.SelectedTabIndex = index;
+                    }
+                })
+            );
 
             // Link to the master panel
             _masterPanel?.LinkWindow(this);
@@ -474,9 +478,9 @@ namespace FlaxEditor.GUI.Docking
             // Base
             if (base.OnKeyDown(key))
                 return true;
-
+            Debug.Log(InputActions.List.ToString());
             // Custom input events
-            return InputActions.Process(Editor.Instance, this);
+            return InputActions.Process(this);
         }
 
         /// <inheritdoc />

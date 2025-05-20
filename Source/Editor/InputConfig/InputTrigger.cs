@@ -2,7 +2,7 @@ using System;
 using FlaxEngine;
 
 #pragma warning disable 1591
-namespace FlaxEditor.Options
+namespace FlaxEditor.InputConfig
 {
     /// <summary>
     /// The input trigger, either mouse or keyboard
@@ -78,6 +78,15 @@ namespace FlaxEditor.Options
             trigger = new InputTrigger();
             return false;
         }
+
+        public InputTrigger()
+        {
+            Type = InputType.None;
+            Button = MouseButton.None;
+            Scroll = MouseScroll.None;
+            Key = KeyboardKeys.None;
+        }
+
         /// <summary>
         /// Checks whether this individual input trigger is currently active.
         /// </summary>
@@ -87,6 +96,7 @@ namespace FlaxEditor.Options
         /// <returns>True if the trigger is currently active; otherwise, false.</returns>
         public bool IsPressed(Func<KeyboardKeys, bool> getKey, Func<MouseButton, bool> getMouse, float scrollDelta)
         {
+            Debug.Log(Key);
             return Type switch
             {
                 InputType.Key => getKey(Key),

@@ -1,7 +1,7 @@
 #pragma warning disable 1591
 using System;
 
-namespace FlaxEngine
+namespace FlaxEditor.InputConfig
 {
     public enum MouseScroll
     {
