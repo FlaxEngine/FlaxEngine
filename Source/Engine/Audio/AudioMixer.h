@@ -5,7 +5,6 @@
 #include "Engine/Content/BinaryAsset.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Types/Variant.h"
-#include "Audio.h"
 
 /// <summary>
 /// 
@@ -23,12 +22,12 @@ public:
         /// <summary>
         /// The current value.
         /// </summary>
-        Variant Value;
+        float Value;
 
         /// <summary>
         /// The default value.
         /// </summary>
-        Variant DefaultValue;
+        float DefaultValue;
     };
 
 public:
@@ -42,7 +41,45 @@ public:
     /// Gets the values (run-time).
     /// </summary>
     /// <returns>The values (run-time).</returns>
-    API_PROPERTY() Dictionary<String, Variant> GetMixerValues() const;
+    API_PROPERTY() Dictionary<String, float> GetMixerValues() const;
+
+    /// <summary>
+    /// Sets the values (run-time).
+    /// </summary>
+    /// <param name="values">The values (run-time).</param>
+    API_PROPERTY() void SetMixerValues(const Dictionary<String, float>& values);
+
+    /// <summary>
+    /// Gets the default values (edit-time).
+    /// </summary>
+    /// <returns>The default values (edit-time).</returns>
+    API_PROPERTY() Dictionary<String, float> GetDefaultValues() const;
+
+    /// <summary>
+    /// Sets the default values (edit-time).
+    /// </summary>
+    /// <param name="values">The default values (edit-time).</param>
+    API_PROPERTY() void SetDefaultValues(const Dictionary<String, float>& values);
+
+public:
+    /// <summary>
+    /// Gets the value of the mixer volume variable
+    /// </summary>
+    /// <param name="nameChannel">The mixer channel name.</param>
+    /// <returns>The value.</returns>
+    API_FUNCTION() const float& GetMixerVolumeValue(const StringView& nameChannel) const;
+
+    // <summary>
+    /// Sets the value of the global variable (it must be added first).
+    /// </summary>
+    /// <param name="nameChannel">The mixer channel name.</param>
+    /// <param name="value">The mixer volume value.</param>
+    API_FUNCTION() void SetMixerVolumeValue(const StringView& nameChannel, const float& value);
+
+    /// <summary>
+   /// Resets the variables values to default values.
+   /// </summary>
+    API_FUNCTION() void ResetValues();
 
 public:
     // [BinaryAsset]

@@ -61,16 +61,97 @@ AudioMixer::AudioMixer(const SpawnParams& params, const AssetInfo* info)
 {
 }
 
-Dictionary<String, Variant> AudioMixer::GetMixerValues() const
+Dictionary<String, float> AudioMixer::GetMixerValues() const
 {
     ScopeLock lock(Locker);
-    Dictionary<String,Variant> result;
+    Dictionary<String,float> result;
     for (auto& e : AudioMixerVariables)
         result.Add(e.Key, e.Value.Value);
     return result;
 }
 
+void AudioMixer::SetMixerValues(const Dictionary<String, float>& values)
+{
+    ScopeLock lock(Locker);
+    for (auto it = AudioMixerVariables.Begin(); it.IsNotEnd(); ++it)
+    {
+        if (!values.ContainsKey(it->Key)) 
+        {
+            AudioMixerVariables.Remove(it);
+        }
+    }
+    for (auto i = values.Begin(); i.IsNotEnd(); ++i) 
+    {
+        auto e = AudioMixerVariables.TryGet(i->Key);
+        if (!e) 
+        {
+            e = &AudioMixerVariables[i->Key];
+            e->DefaultValue = i->Value;
+        }
+        e->Value = i->Value;
+    }
+}
+
+Dictionary<String, float> AudioMixer::GetDefaultValues() const 
+{
+    ScopeLock lock(Locker);
+    Dictionary<String, float> result;
+    for (auto& e : AudioMixerVariables)
+        result.Add(e.Key, e.Value.DefaultValue);
+    return result;
+}
+
+void AudioMixer::SetDefaultValues(const Dictionary<String, float>& values) 
+{
+    ScopeLock lock(Locker);
+    for (auto it = AudioMixerVariables.Begin(); it.IsNotEnd(); ++it)
+    {
+        if (!values.ContainsKey(it->Key))
+        {
+            AudioMixerVariables.Remove(it);
+        }
+    }
+    for (auto i = values.Begin(); i.IsNotEnd(); ++i)
+    {
+        auto e = AudioMixerVariables.TryGet(i->Key);
+        if (!e)
+        {
+            e = &AudioMixerVariables[i->Key];
+            e->Value = i->Value;
+        }
+        e->DefaultValue = i->Value;
+    }
+}
+
+const float& AudioMixer::GetMixerVolumeValue(const StringView& nameChannel) const
+{
+    ScopeLock lock(Locker);
+    auto e = AudioMixerVariables.TryGet(nameChannel);
+    return e ? e->Value : Variant::Zero.AsFloat;
+}
+
+void AudioMixer::SetMixerVolumeValue(const StringView& nameChannel, const float& value)
+{
+    ScopeLock lock(Locker);
+    auto e = AudioMixerVariables.TryGet(nameChannel);
+    if (e) 
+    {
+        e->Value = value;
+    }
+}
+
+
+void AudioMixer::ResetValues() 
+{
+    ScopeLock lock(Locker);
+    for (auto& e : AudioMixerVariables) 
+    {
+        e.Value.Value = e.Value.DefaultValue;
+    }
+}
+
 #if USE_EDITOR
+
     bool AudioMixer::Save(const StringView& path)
     {
         if (OnCheckSave(path))
