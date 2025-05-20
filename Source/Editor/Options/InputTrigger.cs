@@ -78,6 +78,15 @@ namespace FlaxEditor.Options
             trigger = new InputTrigger();
             return false;
         }
+
+        public InputTrigger()
+        {
+            Type = InputType.None;
+            Button = MouseButton.None;
+            Scroll = MouseScroll.None;
+            Key = KeyboardKeys.None;
+        }
+
         /// <summary>
         /// Checks whether this individual input trigger is currently active.
         /// </summary>

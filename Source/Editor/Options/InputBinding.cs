@@ -303,7 +303,7 @@ namespace FlaxEditor.Options
             {
                 if (!IsFocused)
                 {
-                    return false;
+                    return base.OnMouseDown(location, button);
                 }
                 var trigger = new InputTrigger(button.ToString());
                 if (!_binding.InputTriggers.Contains(trigger))
@@ -320,7 +320,7 @@ namespace FlaxEditor.Options
             {
                 if (!IsFocused)
                 {
-                    return false;
+                    return base.OnKeyDown(key);
                 }
                 var trigger = new InputTrigger(key.ToString());
                 if (!_binding.InputTriggers.Contains(trigger))
@@ -336,7 +336,7 @@ namespace FlaxEditor.Options
             {
                 if (!IsFocused)
                 {
-                    return false;
+                    return base.OnMouseWheel(location, delta);
                 }
                 var trigger = new InputTrigger(MouseScrollHelper.GetScrollDirection(delta).ToString());
                 if (!_binding.InputTriggers.Contains(trigger))
