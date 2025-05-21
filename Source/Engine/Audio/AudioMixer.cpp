@@ -107,10 +107,8 @@ void AudioMixer::SetDefaultValues(const Dictionary<String, float>& values)
     const auto AudioMixerGroup = AudioSettings::Get()->AudioMixerGroups;
     for (auto& i : AudioMixerGroup)
     {
-        for (auto& e : AudioMixerVariables)
-        {
-            e.Key = i.Name; e.Value.DefaultValue = i.MixerVolume;
-        }
+        auto& var = AudioMixerVariables[i.Name];
+        var.DefaultValue = i.MixerVolume;
     }
     for (auto it = AudioMixerVariables.Begin(); it.IsNotEnd(); ++it)
     {
