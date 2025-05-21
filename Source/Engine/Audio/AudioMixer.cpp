@@ -8,7 +8,6 @@
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Content/Upgraders/BinaryAssetUpgrader.h"
 #include "Engine/Threading/Threading.h"
-#include "AudioSettings.h"
 
 #if USE_EDITOR
 class AudioMixerUpgrader : public BinaryAssetUpgrader
@@ -104,12 +103,6 @@ Dictionary<String, float> AudioMixer::GetDefaultValues() const
 void AudioMixer::SetDefaultValues(const Dictionary<String, float>& values) 
 {
     ScopeLock lock(Locker);
-    const auto AudioMixerGroup = AudioSettings::Get()->AudioMixerGroups;
-    for (auto& i : AudioMixerGroup)
-    {
-        auto& var = AudioMixerVariables[i.Name];
-        var.DefaultValue = i.MixerVolume;
-    }
     for (auto it = AudioMixerVariables.Begin(); it.IsNotEnd(); ++it)
     {
         if (!values.ContainsKey(it->Key))

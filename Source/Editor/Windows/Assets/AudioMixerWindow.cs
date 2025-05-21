@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Content;
-using FlaxEditor.Content.Settings;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
@@ -129,7 +128,6 @@ namespace FlaxEditor.Windows.Assets
             {
                 Window = window;
                 Asset = window.Asset;
-                var groups = GameSettings.Load<AudioSettings>();
                 DefaultValues = Asset.DefaultValues;
             }
         }
