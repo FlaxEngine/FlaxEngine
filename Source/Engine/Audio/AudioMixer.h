@@ -5,6 +5,7 @@
 #include "Engine/Content/BinaryAsset.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Types/Variant.h"
+#include "AudioMixerGroup.h"
 
 /// <summary>
 /// 
@@ -62,6 +63,8 @@ public:
     API_PROPERTY() void SetDefaultValues(const Dictionary<String, float>& values);
 
 public:
+    API_FUNCTION() void MixerInit(const Array<AudioMixerGroup>& array);
+
     /// <summary>
     /// Gets the value of the mixer volume variable
     /// </summary>

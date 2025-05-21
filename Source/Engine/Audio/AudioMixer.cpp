@@ -122,6 +122,15 @@ void AudioMixer::SetDefaultValues(const Dictionary<String, float>& values)
     }
 }
 
+void AudioMixer::MixerInit(const Array<AudioMixerGroup>& array)
+{
+    for (auto& e : array)
+    {
+        auto& var = AudioMixerVariables[e.Name];
+        var.DefaultValue = e.MixerVolume;
+    }
+}
+
 const float& AudioMixer::GetMixerVolumeValue(const StringView& nameChannel) const
 {
     ScopeLock lock(Locker);
