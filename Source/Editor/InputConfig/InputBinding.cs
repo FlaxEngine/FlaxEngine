@@ -29,7 +29,7 @@ namespace FlaxEditor.InputConfig
         /// The <see cref="InputTrigger"/> list to bind.
         /// </summary>
         public List<InputTrigger> InputTriggers;
-        private const int MAX_TRIGGERS = 4;
+        public const int MAX_TRIGGERS = 4;
 
         /// <summary>
         /// Initializes an empty <see cref="InputBinding"/>
@@ -343,7 +343,7 @@ namespace FlaxEditor.InputConfig
             {
                 if (!IsFocused)
                 {
-                    return false;
+                    return base.OnMouseDown(location, button);
                 }
                 var trigger = new InputTrigger(button.ToString());
                 if (!_binding.InputTriggers.Contains(trigger))
@@ -352,6 +352,11 @@ namespace FlaxEditor.InputConfig
                 }
 
                 _text = _binding.ToString();
+                if (_binding.InputTriggers.Count >= InputBinding.MAX_TRIGGERS)
+                {
+                    Defocus();
+                    return true;
+                }
                 return true;
             }
 
@@ -360,7 +365,7 @@ namespace FlaxEditor.InputConfig
             {
                 if (!IsFocused)
                 {
-                    return false;
+                    return base.OnKeyDown(key);
                 }
                 var trigger = new InputTrigger(key.ToString());
                 if (!_binding.InputTriggers.Contains(trigger))
@@ -369,6 +374,11 @@ namespace FlaxEditor.InputConfig
                 }
 
                 _text = _binding.ToString();
+                if (_binding.InputTriggers.Count >= InputBinding.MAX_TRIGGERS)
+                {
+                    Defocus();
+                    return true;
+                }
                 return true;
             }
 
@@ -376,7 +386,7 @@ namespace FlaxEditor.InputConfig
             {
                 if (!IsFocused)
                 {
-                    return false;
+                    return base.OnMouseWheel(location, delta);
                 }
                 var trigger = new InputTrigger(MouseScrollHelper.GetScrollDirection(delta).ToString());
                 if (!_binding.InputTriggers.Contains(trigger))
@@ -385,6 +395,11 @@ namespace FlaxEditor.InputConfig
                 }
 
                 _text = _binding.ToString();
+                if (_binding.InputTriggers.Count >= InputBinding.MAX_TRIGGERS)
+                {
+                    Defocus();
+                    return true;
+                }
                 return true;
             }
         }

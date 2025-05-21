@@ -42,7 +42,34 @@ namespace FlaxEditor.Options
     [HideInEditor]
     public sealed class InputOptions
     {
+        [HideInEditor]
         public InputBindingList List = new InputBindingList();
+
+        #region General
+
+        /// <summary>
+        /// Gets or sets the mouse movement sensitivity scale applied when using the viewport camera.
+        /// </summary>
+        [DefaultValue(1.0f), Limit(0.01f, 100.0f)]
+        [EditorDisplay("General"), EditorOrder(10), Tooltip("The mouse movement sensitivity scale applied when using the viewport camera.")]
+        public float MouseSensitivity { get; set; } = 1.0f;
+
+        /// <summary>
+        /// Gets or sets the mouse wheel sensitivity applied to zoom in orthographic mode.
+        /// </summary>
+        [DefaultValue(1.0f), Limit(0.01f, 100.0f)]
+        [EditorDisplay("General"), EditorOrder(11), Tooltip("The mouse wheel sensitivity applied to zoom in orthographic mode.")]
+        public float MouseWheelSensitivity { get; set; } = 1.0f;
+
+        /// <summary>
+        /// Gets or sets whether to invert the Y rotation of the mouse in the editor viewport.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("General"), EditorOrder(12), Tooltip("Whether to invert the Y rotation of the mouse in the editor viewport.")]
+        public bool InvertMouseYAxisRotation { get; set; } = false;
+
+        #endregion
+
         #region Common
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.S)]
@@ -316,29 +343,71 @@ namespace FlaxEditor.Options
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Q)]
         [EditorDisplay("Viewport"), EditorOrder(1550)]
         public InputBinding Down = new InputBinding(KeyboardKeys.Q);
+        
+        /// <summary>
+        /// Gets or sets the default movement speed for the viewport camera (must be in range between minimum and maximum movement speed values).
+        /// </summary>
+        [DefaultValue(1.0f), Limit(0.05f, 32.0f)]
+        [EditorDisplay("Viewport"), EditorOrder(1570), Tooltip("The default movement speed for the viewport camera (must be in range between minimum and maximum movement speed values).")]
+        public float MovementSpeed { get; set; } = 1.0f;
+
+        /// <summary>
+        /// Gets or sets the default minimum camera movement speed.
+        /// </summary>
+        [DefaultValue(0.05f), Limit(0.05f, 32.0f)]
+        [EditorDisplay("Viewport"), EditorOrder(1580), Tooltip("The default minimum movement speed for the viewport camera.")]
+        public float MinMovementSpeed { get; set; } = 0.05f;
+
+        /// <summary>
+        /// Gets or sets the default maximum camera movement speed.
+        /// </summary>
+        [DefaultValue(32.0f), Limit(16.0f, 1000.0f)]
+        [EditorDisplay("Viewport"), EditorOrder(1590), Tooltip("The default maximum movement speed for the viewport camera.")]
+        public float MaxMovementSpeed { get; set; } = 32f;
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Alt + "+" + MouseButtonString.Left)]
-        [EditorDisplay("Viewport"), EditorOrder(1551)]
+        [EditorDisplay("Viewport"), EditorOrder(1600)]
         public InputBinding Orbit = new InputBinding(MouseButton.Middle + "+" + KeyboardKeys.Alt);
 
         [DefaultValue(typeof(InputBinding), MouseButtonString.Middle)]
-        [EditorDisplay("Viewport"), EditorOrder(1551)]
+        [EditorDisplay("Viewport"), EditorOrder(1610)]
         public InputBinding Pan = new InputBinding(MouseButton.Middle);
 
+        /// <summary>
+        /// Gets or sets the default panning direction for the viewport camera.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Viewport"), EditorOrder(1620), Tooltip("The default panning direction for the viewport camera.")]
+        public bool InvertPanning { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the default relative panning mode.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Viewport"), EditorOrder(1630), Tooltip("The default relative panning mode. Uses distance between camera and target to determine panning speed.")]
+        public bool UseRelativePanning { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the default panning speed (ignored if relative panning is speed enabled).
+        /// </summary>
+        [DefaultValue(0.8f), Limit(0.01f, 128.0f, 0.1f)]
+        [EditorDisplay("Viewport"), EditorOrder(1640), Tooltip("The default camera panning speed (ignored if relative panning is enabled).")]
+        public float PanningSpeed { get; set; } = 0.8f;
+
         [DefaultValue(typeof(InputBinding), MouseButtonString.Right)]
-        [EditorDisplay("Viewport"), EditorOrder(1551)]
+        [EditorDisplay("Viewport"), EditorOrder(1650)]
         public InputBinding Rotate = new InputBinding(MouseButton.Right);
 
         [DefaultValue(typeof(InputBinding), "")]
-        [EditorDisplay("Viewport", "Toggle Camera Rotation"), EditorOrder(1560)]
+        [EditorDisplay("Viewport", "Toggle Camera Rotation"), EditorOrder(1660)]
         public InputBinding CameraToggleRotation = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
-        [EditorDisplay("Viewport", "Increase Camera Move Speed"), EditorOrder(1570)]
+        [EditorDisplay("Viewport", "Increase Camera Move Speed"), EditorOrder(1670)]
         public InputBinding CameraIncreaseMoveSpeed = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
-        [EditorDisplay("Viewport", "Decrease Camera Move Speed"), EditorOrder(1571)]
+        [EditorDisplay("Viewport", "Decrease Camera Move Speed"), EditorOrder(1671)]
         public InputBinding CameraDecreaseMoveSpeed = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Numpad0)]

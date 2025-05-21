@@ -1027,13 +1027,13 @@ namespace FlaxEditor.Viewport
         private void SetupViewportOptions()
         {
             var options = Editor.Instance.Options.Options;
-            _minMovementSpeed = options.Viewport.MinMovementSpeed;
-            MovementSpeed = options.Viewport.MovementSpeed;
-            _maxMovementSpeed = options.Viewport.MaxMovementSpeed;
+            _minMovementSpeed = options.Input.MinMovementSpeed;
+            MovementSpeed = options.Input.MovementSpeed;
+            _maxMovementSpeed = options.Input.MaxMovementSpeed;
             _useCameraEasing = options.Viewport.UseCameraEasing;
-            _panningSpeed = options.Viewport.PanningSpeed;
-            _invertPanning = options.Viewport.InvertPanning;
-            _relativePanning = options.Viewport.UseRelativePanning;
+            _panningSpeed = options.Input.PanningSpeed;
+            _invertPanning = options.Input.InvertPanning;
+            _relativePanning = options.Input.UseRelativePanning;
 
             _isOrtho = options.Viewport.UseOrthographicProjection;
             _orthoSize = options.Viewport.OrthographicScale;
@@ -1230,7 +1230,7 @@ namespace FlaxEditor.Viewport
 
         private void OnEditorOptionsChanged(EditorOptions options)
         {
-            _mouseSensitivity = options.Viewport.MouseSensitivity;
+            _mouseSensitivity = options.Input.MouseSensitivity;
             _maxSpeedSteps = options.Viewport.TotalCameraSpeedSteps;
             _cameraEasingDegree = options.Viewport.CameraEasingDegree;
             OnCameraMovementProgressChanged();
@@ -1660,7 +1660,7 @@ namespace FlaxEditor.Viewport
                     rmbWheel = useMovementSpeed && (_input.IsMouseRightDown || _isVirtualMouseRightDown) && wheelInUse;
                     if (rmbWheel)
                     {
-                        var step = _input.MouseWheelDelta * options.Viewport.MouseWheelSensitivity;
+                        var step = _input.MouseWheelDelta * options.Input.MouseWheelSensitivity;
                         AdjustCameraMoveSpeed(step > 0.0f ? 1 : -1);
                     }
                 }
@@ -1744,7 +1744,7 @@ namespace FlaxEditor.Viewport
                 // Update
                 moveDelta *= dt * (60.0f * 4.0f);
                 mouseDelta *= 0.1833f * MouseSpeed * _mouseSensitivity;
-                if (options.Viewport.InvertMouseYAxisRotation)
+                if (options.Input.InvertMouseYAxisRotation)
                     mouseDelta *= new Float2(1, -1);
                 UpdateView(dt, ref moveDelta, ref mouseDelta, out var centerMouse);
 
@@ -1760,7 +1760,7 @@ namespace FlaxEditor.Viewport
                 {
                     var scroll = _input.MouseWheelDelta;
                     if (scroll > Mathf.Epsilon || scroll < -Mathf.Epsilon)
-                        _orthoSize -= scroll * options.Viewport.MouseWheelSensitivity * 0.2f * _orthoSize;
+                        _orthoSize -= scroll * options.Input.MouseWheelSensitivity * 0.2f * _orthoSize;
                 }
             }
             else
@@ -1782,12 +1782,6 @@ namespace FlaxEditor.Viewport
 
                 if (ContainsFocus)
                 {
-                    _input.IsPanning = false;
-                    _input.IsRotating = false;
-                    _input.IsMoving = true;
-                    _input.IsZooming = false;
-                    _input.IsOrbiting = false;
-
                     // Get input movement
                     var moveDelta = Vector3.Zero;
                     var mouseDelta = Float2.Zero;
@@ -1797,27 +1791,8 @@ namespace FlaxEditor.Viewport
                         moveDelta += new Vector3(GetGamepadAxis(GamepadAxis.LeftStickX), 0, GetGamepadAxis(GamepadAxis.LeftStickY));
                         mouseDelta += new Float2(GetGamepadAxis(GamepadAxis.RightStickX), -GetGamepadAxis(GamepadAxis.RightStickY));
                         _input.IsRotating |= !mouseDelta.IsZero;
-                    }
-                    if (win.GetKey(KeyboardKeys.ArrowRight))
-                    {
-                        moveDelta += Vector3.Right;
-                    }
-                    if (win.GetKey(KeyboardKeys.ArrowLeft))
-                    {
-                        moveDelta += Vector3.Left;
-                    }
-                    if (win.GetKey(KeyboardKeys.ArrowUp))
-                    {
-                        moveDelta += Vector3.Up;
-                    }
-                    if (win.GetKey(KeyboardKeys.ArrowDown))
-                    {
-                        moveDelta += Vector3.Down;
-                    }
-                    moveDelta.Normalize();
-                    moveDelta *= _movementSpeed;
-                    if (FlaxEngine.Input.GamepadsCount > 0)
                         moveDelta *= Mathf.Remap(GetGamepadAxis(GamepadAxis.RightTrigger), 0, 1, 1, 4.0f);
+                    }
 
                     // Update
                     moveDelta *= dt * (60.0f * 4.0f);
