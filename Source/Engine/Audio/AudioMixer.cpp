@@ -104,6 +104,14 @@ Dictionary<String, float> AudioMixer::GetDefaultValues() const
 void AudioMixer::SetDefaultValues(const Dictionary<String, float>& values) 
 {
     ScopeLock lock(Locker);
+    const auto AudioMixerGroup = AudioSettings::Get()->AudioMixerGroups;
+    for (auto& i : AudioMixerGroup)
+    {
+        for (auto& e : AudioMixerVariables)
+        {
+            e.Key = i.Name; e.Value.DefaultValue = i.MixerVolume;
+        }
+    }
     for (auto it = AudioMixerVariables.Begin(); it.IsNotEnd(); ++it)
     {
         if (!values.ContainsKey(it->Key))
@@ -159,17 +167,12 @@ void AudioMixer::ResetValues()
         ScopeLock lock(Locker);
 
         // Save to bytes
-        const auto AudioMixerGroup = AudioSettings::Get()->AudioMixerGroups;
         MemoryWriteStream stream(1024);
         stream.Write(AudioMixerVariables.Count());
-        for (auto& i : AudioMixerGroup)
+        for (auto& e : AudioMixerVariables)
         {
-            for (auto& e : AudioMixerVariables)
-            {
-                e.Key = i.Name; e.Value.DefaultValue = i.MixerVolume;
-                stream.Write(e.Key, 71);
-                stream.Write(e.Value.DefaultValue);
-            }
+            stream.Write(e.Key, 71);
+            stream.Write(e.Value.DefaultValue);
         }
 
         // Set chunk data
