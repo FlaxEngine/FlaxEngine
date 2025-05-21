@@ -453,7 +453,7 @@ namespace FlaxEditor.Surface
         {
             var child = _editor.ChildrenEditors[0];
             var container = child.Layout.ContainerControl;
-            var mousePosition = container.PointFromScreen(Input.MouseScreenPosition);
+            var mousePosition = container.PointFromScreen(FlaxEngine.Input.MouseScreenPosition);
             var barSidesExtend = 20.0f;
             var barHeight = 5.0f;
             var barCheckAreaHeight = 40.0f;

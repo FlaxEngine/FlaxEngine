@@ -255,10 +255,12 @@ namespace FlaxEditor.Viewport
             }
 
             // Setup input actions
-            InputActions.Add(options => options.LockFocusSelection, LockFocusSelection);
-            InputActions.Add(options => options.FocusSelection, FocusSelection);
-            InputActions.Add(options => options.RotateSelection, RotateSelection);
-            InputActions.Add(options => options.Delete, _editor.SceneEditing.Delete);
+            Viewport.InputOptions.List.SetCallback(
+                (Viewport.InputOptions.LockFocusSelection, LockFocusSelection),
+                (Viewport.InputOptions.FocusSelection, FocusSelection),
+                (Viewport.InputOptions.RotateSelection, RotateSelection),
+                (Viewport.InputOptions.Delete, _editor.SceneEditing.Delete)
+            );
         }
 
         /// <inheritdoc />
@@ -391,10 +393,10 @@ namespace FlaxEditor.Viewport
             bool renderPostFx = true;
             switch (renderContext.View.Mode)
             {
-            case ViewMode.Default:
-            case ViewMode.PhysicsColliders:
-                renderPostFx = false;
-                break;
+                case ViewMode.Default:
+                case ViewMode.PhysicsColliders:
+                    renderPostFx = false;
+                    break;
             }
             if (renderPostFx)
             {

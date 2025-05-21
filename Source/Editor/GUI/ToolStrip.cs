@@ -200,7 +200,7 @@ namespace FlaxEditor.GUI
             var editor = Editor.Instance;
             if (editorWindow == null)
                 editorWindow = editor.Windows.EditWin; // Fallback to main editor window
-            return editorWindow.InputActions.Process(editor, this, key);
+            return editorWindow.InputActions.Process(this);
         }
     }
 }

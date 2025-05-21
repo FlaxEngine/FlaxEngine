@@ -367,8 +367,8 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/particles/index.html")).LinkTooltip("See documentation to learn more");
 
             // Setup input actions
-            InputActions.Add(options => options.Undo, _undo.PerformUndo);
-            InputActions.Add(options => options.Redo, _undo.PerformRedo);
+            InputActions.Add(inputOptions.Undo, _undo.PerformUndo);
+            InputActions.Add(inputOptions.Redo, _undo.PerformRedo);
         }
 
         private void OnUndoRedo(IUndoAction action)

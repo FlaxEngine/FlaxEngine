@@ -33,8 +33,10 @@ namespace FlaxEditor.Windows
         public EditorOptionsWindow(Editor editor)
         : base(editor, true, ScrollBars.None)
         {
+            var inputOptions = editor.Options.Options.Input;
+
             Title = "Editor Options";
-            
+
             // Undo
             _undo = new Undo();
             _undo.UndoDone += OnUndoRedo;
@@ -65,15 +67,17 @@ namespace FlaxEditor.Windows
             CreateTab("Visual", () => _options.Visual);
             CreateTab("Source Code", () => _options.SourceCode);
             CreateTab("Theme", () => _options.Theme);
-            
+
             // Setup input actions
-            InputActions.Add(options => options.Undo, _undo.PerformUndo);
-            InputActions.Add(options => options.Redo, _undo.PerformRedo);
-            InputActions.Add(options => options.Save, SaveData);
+            InputActions.Add(
+                (inputOptions.Undo, _undo.PerformUndo),
+                (inputOptions.Redo, _undo.PerformRedo),
+                (inputOptions.Save, SaveData)
+            );
 
             _tabs.SelectedTabIndex = 0;
         }
-        
+
         private void OnUndoRedo(IUndoAction action)
         {
             MarkAsEdited();

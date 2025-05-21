@@ -304,6 +304,8 @@ namespace FlaxEditor.Windows
         public GameWindow(Editor editor)
         : base(editor, true, ScrollBars.None)
         {
+            var inputOptions = editor.Options.Options.Input;
+
             Title = "Game";
             AutoFocus = true;
 
@@ -335,75 +337,87 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged += OnOptionsChanged;
             OnOptionsChanged(Editor.Options.Options);
 
-            InputActions.Add(options => options.TakeScreenshot, () => Screenshot.Capture(string.Empty));
-            InputActions.Add(options => options.DebuggerUnlockMouse, UnlockMouseInPlay);
-            InputActions.Add(options => options.ToggleFullscreen, () => { if (Editor.IsPlayMode) IsMaximized = !IsMaximized; });
-            InputActions.Add(options => options.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor);
-            InputActions.Add(options => options.Pause, Editor.Instance.Simulation.RequestResumeOrPause);
-            InputActions.Add(options => options.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame);
+            InputActions.Add(
+                (inputOptions.TakeScreenshot, () => Screenshot.Capture(string.Empty)),
+                (inputOptions.DebuggerUnlockMouse, UnlockMouseInPlay),
+                (inputOptions.ToggleFullscreen, () => { if (Editor.IsPlayMode) IsMaximized = !IsMaximized; }),
+                (inputOptions.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor),
+                (inputOptions.Pause, Editor.Instance.Simulation.RequestResumeOrPause),
+                (inputOptions.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame),
 #if USE_PROFILER
-            InputActions.Add(options => options.ProfilerStartStop, () =>
-            {
-                bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
-                Editor.Instance.Windows.ProfilerWin.LiveRecording = recording;
-                Editor.Instance.UI.AddStatusMessage($"Profiling {(recording ? "started" : "stopped")}.");
-            });
-            InputActions.Add(options => options.ProfilerClear, () =>
-            {
-                Editor.Instance.Windows.ProfilerWin.Clear();
-                Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
-            });
+                (inputOptions.ProfilerStartStop, () =>
+                {
+                    bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
+                    Editor.Instance.Windows.ProfilerWin.LiveRecording = recording;
+                    Editor.Instance.UI.AddStatusMessage($"Profiling {(recording ? "started" : "stopped")}.");
+                }
+                ),
+                (inputOptions.ProfilerClear, () =>
+                {
+                    Editor.Instance.Windows.ProfilerWin.Clear();
+                    Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
+                }
+                ),
 #endif
-            InputActions.Add(options => options.Save, () =>
-            {
-                if (Editor.IsPlayMode)
-                    return;
-                Editor.Instance.SaveAll();
-            });
-            InputActions.Add(options => options.Undo, () =>
-            {
-                if (Editor.IsPlayMode)
-                    return;
-                Editor.Instance.PerformUndo();
-                Focus();
-            });
-            InputActions.Add(options => options.Redo, () =>
-            {
-                if (Editor.IsPlayMode)
-                    return;
-                Editor.Instance.PerformRedo();
-                Focus();
-            });
-            InputActions.Add(options => options.Cut, () =>
-            {
-                if (Editor.IsPlayMode)
-                    return;
-                Editor.Instance.SceneEditing.Cut();
-            });
-            InputActions.Add(options => options.Copy, () =>
-            {
-                if (Editor.IsPlayMode)
-                    return;
-                Editor.Instance.SceneEditing.Copy();
-            });
-            InputActions.Add(options => options.Paste, () =>
-            {
-                if (Editor.IsPlayMode)
-                    return;
-                Editor.Instance.SceneEditing.Paste();
-            });
-            InputActions.Add(options => options.Duplicate, () =>
-            {
-                if (Editor.IsPlayMode)
-                    return;
-                Editor.Instance.SceneEditing.Duplicate();
-            });
-            InputActions.Add(options => options.Delete, () =>
-            {
-                if (Editor.IsPlayMode)
-                    return;
-                Editor.Instance.SceneEditing.Delete();
-            });
+                (inputOptions.Save, () =>
+                {
+                    if (Editor.IsPlayMode)
+                        return;
+                    Editor.Instance.SaveAll();
+                }
+                ),
+                (inputOptions.Undo, () =>
+                {
+                    if (Editor.IsPlayMode)
+                        return;
+                    Editor.Instance.PerformUndo();
+                    Focus();
+                }
+                ),
+                (inputOptions.Redo, () =>
+                {
+                    if (Editor.IsPlayMode)
+                        return;
+                    Editor.Instance.PerformRedo();
+                    Focus();
+                }
+                ),
+                (inputOptions.Cut, () =>
+                {
+                    if (Editor.IsPlayMode)
+                        return;
+                    Editor.Instance.SceneEditing.Cut();
+                }
+                ),
+                (inputOptions.Copy, () =>
+                {
+                    if (Editor.IsPlayMode)
+                        return;
+                    Editor.Instance.SceneEditing.Copy();
+                }
+                ),
+                (inputOptions.Paste, () =>
+                {
+                    if (Editor.IsPlayMode)
+                        return;
+                    Editor.Instance.SceneEditing.Paste();
+                }
+                ),
+                (inputOptions.Duplicate, () =>
+                {
+                    if (Editor.IsPlayMode)
+                        return;
+                    Editor.Instance.SceneEditing.Duplicate();
+                }
+                ),
+                (inputOptions.Delete, () =>
+                {
+                    if (Editor.IsPlayMode)
+                        return;
+                    Editor.Instance.SceneEditing.Delete();
+                }
+                )
+            );
         }
 
         private void ChangeViewportRatio(ViewportScaleOptions v)
@@ -425,14 +439,14 @@ namespace FlaxEditor.Windows
             {
                 switch (v.ScaleType)
                 {
-                case ViewportScaleType.Aspect:
-                    _useAspect = true;
-                    _freeAspect = false;
-                    break;
-                case ViewportScaleType.Resolution:
-                    _useAspect = false;
-                    _freeAspect = false;
-                    break;
+                    case ViewportScaleType.Aspect:
+                        _useAspect = true;
+                        _freeAspect = false;
+                        break;
+                    case ViewportScaleType.Resolution:
+                        _useAspect = false;
+                        _freeAspect = false;
+                        break;
                 }
             }
 
@@ -1099,18 +1113,18 @@ namespace FlaxEditor.Windows
         {
             switch (mode)
             {
-            case InterfaceOptions.GameWindowMode.Docked:
-                break;
-            case InterfaceOptions.GameWindowMode.PopupWindow:
-                IsFloating = true;
-                break;
-            case InterfaceOptions.GameWindowMode.MaximizedWindow:
-                IsMaximized = true;
-                break;
-            case InterfaceOptions.GameWindowMode.BorderlessWindow:
-                IsBorderless = true;
-                break;
-            default: throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
+                case InterfaceOptions.GameWindowMode.Docked:
+                    break;
+                case InterfaceOptions.GameWindowMode.PopupWindow:
+                    IsFloating = true;
+                    break;
+                case InterfaceOptions.GameWindowMode.MaximizedWindow:
+                    IsMaximized = true;
+                    break;
+                case InterfaceOptions.GameWindowMode.BorderlessWindow:
+                    IsBorderless = true;
+                    break;
+                default: throw new ArgumentOutOfRangeException(nameof(mode), mode, null);
             }
         }
 
@@ -1135,7 +1149,7 @@ namespace FlaxEditor.Windows
         public override bool OnKeyDown(KeyboardKeys key)
         {
             // Prevent closing the game window tab during a play session
-            if (Editor.StateMachine.IsPlayMode && Editor.Options.Options.Input.CloseTab.Process(this, key))
+            if (Editor.StateMachine.IsPlayMode && Editor.Options.Options.Input.CloseTab.Process(this))
             {
                 return true;
             }

@@ -214,23 +214,27 @@ namespace FlaxEditor.Windows.Assets
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
 
             // Setup input actions
-            InputActions.Add(options => options.Undo, () =>
+            InputActions.Add(
+                (inputOptions.Undo, () =>
             {
                 _undo.PerformUndo();
                 Focus();
-            });
-            InputActions.Add(options => options.Redo, () =>
+            }
+            ),
+            (inputOptions.Redo, () =>
             {
                 _undo.PerformRedo();
                 Focus();
-            });
-            InputActions.Add(options => options.Cut, Cut);
-            InputActions.Add(options => options.Copy, Copy);
-            InputActions.Add(options => options.Paste, Paste);
-            InputActions.Add(options => options.Duplicate, Duplicate);
-            InputActions.Add(options => options.Delete, Delete);
-            InputActions.Add(options => options.Rename, RenameSelection);
-            InputActions.Add(options => options.FocusSelection, FocusSelection);
+            }
+            ),
+            (inputOptions.Cut, Cut),
+            (inputOptions.Copy, Copy),
+            (inputOptions.Paste, Paste),
+            (inputOptions.Duplicate, Duplicate),
+            (inputOptions.Delete, Delete),
+            (inputOptions.Rename, RenameSelection),
+            (inputOptions.FocusSelection, FocusSelection)
+            );
         }
 
         /// <summary>

@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Tabs;
+using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -87,6 +88,8 @@ namespace FlaxEditor.Windows.Profiler
         public ProfilerWindow(Editor editor)
         : base(editor, true, ScrollBars.None)
         {
+            InputOptions inputOptions = Editor.Instance.Options.Options.Input;
+
             Title = "Profiler";
 
 #if USE_PROFILER
@@ -122,8 +125,8 @@ namespace FlaxEditor.Windows.Profiler
             _tabs.SelectedTabChanged += OnSelectedTabChanged;
 
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
-            InputActions.Bindings.RemoveAll(x => x.Callback == this.FocusOrShow);
-            InputActions.Add(options => options.ProfilerWindow, Hide);
+            InputActions.Remove(this.FocusOrShow);
+            InputActions.Add(inputOptions.ProfilerWindow, Hide);
 #endif
         }
 
@@ -293,12 +296,12 @@ namespace FlaxEditor.Windows.Profiler
 
             switch (key)
             {
-            case KeyboardKeys.ArrowLeft:
-                ViewFrameIndex--;
-                return true;
-            case KeyboardKeys.ArrowRight:
-                ViewFrameIndex++;
-                return true;
+                case KeyboardKeys.ArrowLeft:
+                    ViewFrameIndex--;
+                    return true;
+                case KeyboardKeys.ArrowRight:
+                    ViewFrameIndex++;
+                    return true;
             }
 
             return false;

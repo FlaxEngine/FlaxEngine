@@ -699,8 +699,10 @@ namespace FlaxEditor.Windows.Assets
             _previewPlayerPicker.ValueChanged += OnPreviewPlayerPickerChanged;
 
             // Setup input actions
-            InputActions.Add(options => options.Undo, _undo.PerformUndo);
-            InputActions.Add(options => options.Redo, _undo.PerformRedo);
+            InputActions.Add(
+                (inputOptions.Undo, _undo.PerformUndo),
+                (inputOptions.Redo, _undo.PerformRedo)
+            );
         }
 
         private void OnUndoRedo(IUndoAction action)

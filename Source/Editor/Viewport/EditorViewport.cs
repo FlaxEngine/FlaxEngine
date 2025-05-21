@@ -1,10 +1,12 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
+using FlaxEditor.InputConfig;
 using FlaxEditor.Options;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Widgets;
@@ -131,6 +133,8 @@ namespace FlaxEditor.Viewport
                 IsMouseLeftDown = false;
             }
         }
+
+        public InputOptions InputOptions = Editor.Instance.Options.Options.Input;
 
         /// <summary>
         /// The FPS camera filtering frames count (how much frames we want to keep in the buffer to calculate the avg. delta currently hardcoded).
@@ -506,11 +510,6 @@ namespace FlaxEditor.Viewport
             get => _panningSpeed;
             set => _panningSpeed = value;
         }
-
-        /// <summary>
-        /// The input actions collection to processed during user input.
-        /// </summary>
-        public InputActionsContainer InputActions = new InputActionsContainer();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditorViewport"/> class.
@@ -1005,16 +1004,18 @@ namespace FlaxEditor.Viewport
                 #endregion View mode widget
             }
 
-            InputActions.Add(options => options.ViewpointTop, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Top").Orientation)));
-            InputActions.Add(options => options.ViewpointBottom, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Bottom").Orientation)));
-            InputActions.Add(options => options.ViewpointFront, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Front").Orientation)));
-            InputActions.Add(options => options.ViewpointBack, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Back").Orientation)));
-            InputActions.Add(options => options.ViewpointRight, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Right").Orientation)));
-            InputActions.Add(options => options.ViewpointLeft, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Left").Orientation)));
-            InputActions.Add(options => options.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown);
-            InputActions.Add(options => options.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(1));
-            InputActions.Add(options => options.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(-1));
-            InputActions.Add(options => options.ToggleOrthographic, () => OnOrthographicModeToggled(null));
+            InputOptions.List.SetCallback(
+                (InputOptions.ViewpointTop, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Top").Orientation))),
+                (InputOptions.ViewpointBottom, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Bottom").Orientation))),
+                (InputOptions.ViewpointFront, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Front").Orientation))),
+                (InputOptions.ViewpointBack, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Back").Orientation))),
+                (InputOptions.ViewpointRight, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Right").Orientation))),
+                (InputOptions.ViewpointLeft, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Left").Orientation))),
+                (InputOptions.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown),
+                (InputOptions.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(1)),
+                (InputOptions.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(-1)),
+                (InputOptions.ToggleOrthographic, () => OnOrthographicModeToggled(null))
+            );
 
             // Link for task event
             task.Begin += OnRenderBegin;
@@ -1026,13 +1027,13 @@ namespace FlaxEditor.Viewport
         private void SetupViewportOptions()
         {
             var options = Editor.Instance.Options.Options;
-            _minMovementSpeed = options.Viewport.MinMovementSpeed;
-            MovementSpeed = options.Viewport.MovementSpeed;
-            _maxMovementSpeed = options.Viewport.MaxMovementSpeed;
+            _minMovementSpeed = options.Input.MinMovementSpeed;
+            MovementSpeed = options.Input.MovementSpeed;
+            _maxMovementSpeed = options.Input.MaxMovementSpeed;
             _useCameraEasing = options.Viewport.UseCameraEasing;
-            _panningSpeed = options.Viewport.PanningSpeed;
-            _invertPanning = options.Viewport.InvertPanning;
-            _relativePanning = options.Viewport.UseRelativePanning;
+            _panningSpeed = options.Input.PanningSpeed;
+            _invertPanning = options.Input.InvertPanning;
+            _relativePanning = options.Input.UseRelativePanning;
 
             _isOrtho = options.Viewport.UseOrthographicProjection;
             _orthoSize = options.Viewport.OrthographicScale;
@@ -1229,7 +1230,7 @@ namespace FlaxEditor.Viewport
 
         private void OnEditorOptionsChanged(EditorOptions options)
         {
-            _mouseSensitivity = options.Viewport.MouseSensitivity;
+            _mouseSensitivity = options.Input.MouseSensitivity;
             _maxSpeedSteps = options.Viewport.TotalCameraSpeedSteps;
             _cameraEasingDegree = options.Viewport.CameraEasingDegree;
             OnCameraMovementProgressChanged();
@@ -1649,48 +1650,47 @@ namespace FlaxEditor.Viewport
                     bool rbDown = _input.IsMouseRightDown || _isVirtualMouseRightDown;
                     bool wheelInUse = Math.Abs(_input.MouseWheelDelta) > Mathf.Epsilon;
 
-                    _input.IsPanning = !isAltDown && mbDown && !rbDown;
-                    _input.IsRotating = !isAltDown && !mbDown && rbDown;
+                    _input.IsPanning = options.Input.Pan.Process(window);
+                    _input.IsRotating = options.Input.Rotate.Process(window);
                     _input.IsMoving = !isAltDown && mbDown && rbDown;
                     _input.IsZooming = wheelInUse && !(_input.IsShiftDown || (!ContainsFocus && FlaxEngine.Input.GetKey(KeyboardKeys.Shift)));
-                    _input.IsOrbiting = isAltDown && lbDown && !mbDown && !rbDown;
+                    _input.IsOrbiting = options.Input.Orbit.Process(window);
 
                     // Control move speed with RMB+Wheel
                     rmbWheel = useMovementSpeed && (_input.IsMouseRightDown || _isVirtualMouseRightDown) && wheelInUse;
                     if (rmbWheel)
                     {
-                        var step = _input.MouseWheelDelta * options.Viewport.MouseWheelSensitivity;
+                        var step = _input.MouseWheelDelta * options.Input.MouseWheelSensitivity;
                         AdjustCameraMoveSpeed(step > 0.0f ? 1 : -1);
                     }
                 }
 
                 // Get input movement
                 var moveDelta = Vector3.Zero;
-                if (win.GetKey(options.Input.Forward.Key))
+                if (options.Input.Forward.Process(window))
                 {
                     moveDelta += Vector3.Forward;
                 }
-                if (win.GetKey(options.Input.Backward.Key))
+                if (options.Input.Backward.Process(window))
                 {
                     moveDelta += Vector3.Backward;
                 }
-                if (win.GetKey(options.Input.Right.Key))
+                if (options.Input.Right.Process(window))
                 {
                     moveDelta += Vector3.Right;
                 }
-                if (win.GetKey(options.Input.Left.Key))
+                if (options.Input.Left.Process(window))
                 {
                     moveDelta += Vector3.Left;
                 }
-                if (win.GetKey(options.Input.Up.Key))
+                if (options.Input.Up.Process(window))
                 {
                     moveDelta += Vector3.Up;
                 }
-                if (win.GetKey(options.Input.Down.Key))
+                if (options.Input.Down.Process(window))
                 {
                     moveDelta += Vector3.Down;
                 }
-                moveDelta.Normalize(); // normalize direction
                 moveDelta *= _movementSpeed;
 
                 // Speed up or speed down
@@ -1744,7 +1744,7 @@ namespace FlaxEditor.Viewport
                 // Update
                 moveDelta *= dt * (60.0f * 4.0f);
                 mouseDelta *= 0.1833f * MouseSpeed * _mouseSensitivity;
-                if (options.Viewport.InvertMouseYAxisRotation)
+                if (options.Input.InvertMouseYAxisRotation)
                     mouseDelta *= new Float2(1, -1);
                 UpdateView(dt, ref moveDelta, ref mouseDelta, out var centerMouse);
 
@@ -1760,7 +1760,7 @@ namespace FlaxEditor.Viewport
                 {
                     var scroll = _input.MouseWheelDelta;
                     if (scroll > Mathf.Epsilon || scroll < -Mathf.Epsilon)
-                        _orthoSize -= scroll * options.Viewport.MouseWheelSensitivity * 0.2f * _orthoSize;
+                        _orthoSize -= scroll * options.Input.MouseWheelSensitivity * 0.2f * _orthoSize;
                 }
             }
             else
@@ -1782,12 +1782,6 @@ namespace FlaxEditor.Viewport
 
                 if (ContainsFocus)
                 {
-                    _input.IsPanning = false;
-                    _input.IsRotating = false;
-                    _input.IsMoving = true;
-                    _input.IsZooming = false;
-                    _input.IsOrbiting = false;
-
                     // Get input movement
                     var moveDelta = Vector3.Zero;
                     var mouseDelta = Float2.Zero;
@@ -1797,27 +1791,8 @@ namespace FlaxEditor.Viewport
                         moveDelta += new Vector3(GetGamepadAxis(GamepadAxis.LeftStickX), 0, GetGamepadAxis(GamepadAxis.LeftStickY));
                         mouseDelta += new Float2(GetGamepadAxis(GamepadAxis.RightStickX), -GetGamepadAxis(GamepadAxis.RightStickY));
                         _input.IsRotating |= !mouseDelta.IsZero;
-                    }
-                    if (win.GetKey(KeyboardKeys.ArrowRight))
-                    {
-                        moveDelta += Vector3.Right;
-                    }
-                    if (win.GetKey(KeyboardKeys.ArrowLeft))
-                    {
-                        moveDelta += Vector3.Left;
-                    }
-                    if (win.GetKey(KeyboardKeys.ArrowUp))
-                    {
-                        moveDelta += Vector3.Up;
-                    }
-                    if (win.GetKey(KeyboardKeys.ArrowDown))
-                    {
-                        moveDelta += Vector3.Down;
-                    }
-                    moveDelta.Normalize();
-                    moveDelta *= _movementSpeed;
-                    if (FlaxEngine.Input.GamepadsCount > 0)
                         moveDelta *= Mathf.Remap(GetGamepadAxis(GamepadAxis.RightTrigger), 0, 1, 1, 4.0f);
+                    }
 
                     // Update
                     moveDelta *= dt * (60.0f * 4.0f);
@@ -1861,7 +1836,7 @@ namespace FlaxEditor.Viewport
                 return true;
 
             // Custom input events
-            return InputActions.Process(Editor.Instance, this, key);
+            return InputOptions.List.Process(this);
         }
 
         /// <inheritdoc />

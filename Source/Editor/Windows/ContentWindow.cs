@@ -263,8 +263,10 @@ namespace FlaxEditor.Windows
             _view.OnDuplicate += Duplicate;
             _view.OnPaste += Paste;
 
-            _view.InputActions.Add(options => options.Search, () => _itemsSearchBox.Focus());
-            InputActions.Add(options => options.Search, () => _itemsSearchBox.Focus());
+            InputOptions inputOptions = Editor.Instance.Options.Options.Input;
+
+            _view.InputBindings.Add(inputOptions.Search, () => _itemsSearchBox.Focus());
+            InputActions.Add(inputOptions.Search, () => _itemsSearchBox.Focus());
         }
 
         private ContextMenu OnViewDropdownPopupCreate(ComboBox comboBox)

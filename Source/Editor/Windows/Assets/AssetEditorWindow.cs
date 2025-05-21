@@ -46,6 +46,8 @@ namespace FlaxEditor.Windows.Assets
         protected AssetEditorWindow(Editor editor, AssetItem item)
         : base(editor, false, ScrollBars.None)
         {
+            var inputOptions = Editor.Options.Options.Input;
+
             _item = item ?? throw new ArgumentNullException(nameof(item));
             _item.AddReference(this);
 
@@ -55,7 +57,7 @@ namespace FlaxEditor.Windows.Assets
             };
             _toolstrip.AddButton(editor.Icons.Search64, () => Editor.Windows.ContentWin.Select(_item)).LinkTooltip("Show and select in Content Window");
 
-            InputActions.Add(options => options.Save, Save);
+            InputActions.Add(inputOptions.Save, Save);
 
             UpdateTitle();
 

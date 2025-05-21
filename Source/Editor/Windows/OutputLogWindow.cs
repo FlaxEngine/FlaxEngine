@@ -113,9 +113,9 @@ namespace FlaxEditor.Windows
                     {
                         switch (tag.Type)
                         {
-                        case TextBlockTag.Types.CodeLocation:
-                            Window.Editor.CodeEditing.OpenFile(tag.Url, tag.Line);
-                            return true;
+                            case TextBlockTag.Types.CodeLocation:
+                                Window.Editor.CodeEditing.OpenFile(tag.Url, tag.Line);
+                                return true;
                         }
                     }
                 }
@@ -163,38 +163,38 @@ namespace FlaxEditor.Windows
                 {
                     switch (key)
                     {
-                    case KeyboardKeys.Delete:
-                    case KeyboardKeys.Backspace:
-                        if (Owner != null && (!Owner._searchPopup?.Visible ?? true))
-                        {
-                            // Redirect input into search textbox while typing and using command history
-                            Owner.OnKeyDown(key);
-                            return true;
-                        }
-                        break;
-                    case KeyboardKeys.ArrowLeft:
-                        if (Owner != null && (!Owner._searchPopup?.Visible ?? true))
-                        {
-                            // Focus back the input field as user want to modify command from history
-                            Owner._searchPopup?.Hide();
-                            Owner.RootWindow.Focus();
-                            Owner.Focus();
-                            Owner.OnKeyDown(key);
-                            return true;
-                        }
-                        break;
-                    case KeyboardKeys.ArrowDown:
-                    case KeyboardKeys.ArrowUp:
-                        // UI navigation
-                        return base.OnKeyDown(key);
-                    default:
-                        if (Owner != null && (Owner._searchPopup?.Visible ?? false))
-                        {
-                            // Redirect input into search textbox while typing and using command history
-                            Owner.OnKeyDown(key);
-                            return true;
-                        }
-                        break;
+                        case KeyboardKeys.Delete:
+                        case KeyboardKeys.Backspace:
+                            if (Owner != null && (!Owner._searchPopup?.Visible ?? true))
+                            {
+                                // Redirect input into search textbox while typing and using command history
+                                Owner.OnKeyDown(key);
+                                return true;
+                            }
+                            break;
+                        case KeyboardKeys.ArrowLeft:
+                            if (Owner != null && (!Owner._searchPopup?.Visible ?? true))
+                            {
+                                // Focus back the input field as user want to modify command from history
+                                Owner._searchPopup?.Hide();
+                                Owner.RootWindow.Focus();
+                                Owner.Focus();
+                                Owner.OnKeyDown(key);
+                                return true;
+                            }
+                            break;
+                        case KeyboardKeys.ArrowDown:
+                        case KeyboardKeys.ArrowUp:
+                            // UI navigation
+                            return base.OnKeyDown(key);
+                        default:
+                            if (Owner != null && (Owner._searchPopup?.Visible ?? false))
+                            {
+                                // Redirect input into search textbox while typing and using command history
+                                Owner.OnKeyDown(key);
+                                return true;
+                            }
+                            break;
                     }
 
                     return base.OnKeyDown(key);
@@ -331,106 +331,106 @@ namespace FlaxEditor.Windows
             {
                 switch (key)
                 {
-                case KeyboardKeys.Return:
-                {
-                    // Run command
-                    _searchPopup?.Hide();
-                    var command = Text.Trim();
-                    if (command.Length == 0)
-                        return true;
-                    DebugCommands.Execute(command);
-                    SetText(string.Empty);
-
-                    // Update history buffer
-                    if (_window._commandHistory == null)
-                        _window._commandHistory = new List<string>();
-                    else if (_window._commandHistory.Count != 0 && _window._commandHistory.Last() == command)
-                        _window._commandHistory.RemoveAt(_window._commandHistory.Count - 1);
-                    _window._commandHistory.Add(command);
-                    if (_window._commandHistory.Count > CommandHistoryLimit)
-                        _window._commandHistory.RemoveAt(0);
-                    _window.SaveHistory();
-
-                    return true;
-                }
-                case KeyboardKeys.Tab:
-                {
-                    // Auto-complete
-                    DebugCommands.Search(Text, out var matches, true);
-                    if (matches.Length == 0)
-                    {
-                        // Nothing found
-                    }
-                    else if (matches.Length == 1)
-                    {
-                        // Exact match
-                        Set(matches[0]);
-                    }
-                    else
-                    {
-                        // Find the most common part
-                        Array.Sort(matches);
-                        int minLength = Text.Length;
-                        int maxLength = matches[0].Length;
-                        int sharedLength = minLength + 1;
-                        bool allMatch = true;
-                        for (; allMatch && sharedLength < maxLength; sharedLength++)
+                    case KeyboardKeys.Return:
                         {
-                            var shared = matches[0].Substring(0, sharedLength);
-                            for (int i = 1; i < matches.Length; i++)
+                            // Run command
+                            _searchPopup?.Hide();
+                            var command = Text.Trim();
+                            if (command.Length == 0)
+                                return true;
+                            DebugCommands.Execute(command);
+                            SetText(string.Empty);
+
+                            // Update history buffer
+                            if (_window._commandHistory == null)
+                                _window._commandHistory = new List<string>();
+                            else if (_window._commandHistory.Count != 0 && _window._commandHistory.Last() == command)
+                                _window._commandHistory.RemoveAt(_window._commandHistory.Count - 1);
+                            _window._commandHistory.Add(command);
+                            if (_window._commandHistory.Count > CommandHistoryLimit)
+                                _window._commandHistory.RemoveAt(0);
+                            _window.SaveHistory();
+
+                            return true;
+                        }
+                    case KeyboardKeys.Tab:
+                        {
+                            // Auto-complete
+                            DebugCommands.Search(Text, out var matches, true);
+                            if (matches.Length == 0)
                             {
-                                if (!matches[i].StartsWith(shared, StringComparison.OrdinalIgnoreCase))
+                                // Nothing found
+                            }
+                            else if (matches.Length == 1)
+                            {
+                                // Exact match
+                                Set(matches[0]);
+                            }
+                            else
+                            {
+                                // Find the most common part
+                                Array.Sort(matches);
+                                int minLength = Text.Length;
+                                int maxLength = matches[0].Length;
+                                int sharedLength = minLength + 1;
+                                bool allMatch = true;
+                                for (; allMatch && sharedLength < maxLength; sharedLength++)
                                 {
-                                    sharedLength -= 2;
-                                    allMatch = false;
-                                    break;
+                                    var shared = matches[0].Substring(0, sharedLength);
+                                    for (int i = 1; i < matches.Length; i++)
+                                    {
+                                        if (!matches[i].StartsWith(shared, StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            sharedLength -= 2;
+                                            allMatch = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (sharedLength > minLength)
+                                {
+                                    // Use the largest shared part of all matches
+                                    Set(matches[0].Substring(0, sharedLength));
                                 }
                             }
+                            return true;
                         }
-                        if (sharedLength > minLength)
+                    case KeyboardKeys.ArrowUp:
                         {
-                            // Use the largest shared part of all matches
-                            Set(matches[0].Substring(0, sharedLength));
+                            if (_searchPopup != null && _searchPopup.Visible)
+                            {
+                                // Route navigation to active popup
+                                var focusedItem = _searchPopup.RootWindow.FocusedControl as Item;
+                                if (focusedItem == null)
+                                    _searchPopup.SelectItem((Item)_searchPopup.ItemsPanel.Children.Last());
+                                else
+                                    _searchPopup.OnKeyDown(key);
+                            }
+                            else if (TextLength == 0)
+                            {
+                                if (_window._commandHistory != null && _window._commandHistory.Count != 0)
+                                {
+                                    // Show command history popup
+                                    _searchPopup?.Hide();
+                                    ItemsListContextMenu cm = null;
+                                    ShowPopup(ref cm, _window._commandHistory);
+                                }
+                            }
+                            return true;
                         }
-                    }
-                    return true;
-                }
-                case KeyboardKeys.ArrowUp:
-                {
-                    if (_searchPopup != null && _searchPopup.Visible)
-                    {
-                        // Route navigation to active popup
-                        var focusedItem = _searchPopup.RootWindow.FocusedControl as Item;
-                        if (focusedItem == null)
-                            _searchPopup.SelectItem((Item)_searchPopup.ItemsPanel.Children.Last());
-                        else
-                            _searchPopup.OnKeyDown(key);
-                    }
-                    else if (TextLength == 0)
-                    {
-                        if (_window._commandHistory != null && _window._commandHistory.Count != 0)
+                    case KeyboardKeys.ArrowDown:
                         {
-                            // Show command history popup
-                            _searchPopup?.Hide();
-                            ItemsListContextMenu cm = null;
-                            ShowPopup(ref cm, _window._commandHistory);
+                            if (_searchPopup != null && _searchPopup.Visible)
+                            {
+                                // Route navigation to active popup
+                                var focusedItem = _searchPopup.RootWindow.FocusedControl as Item;
+                                if (focusedItem == null)
+                                    _searchPopup.SelectItem((Item)_searchPopup.ItemsPanel.Children.First());
+                                else
+                                    _searchPopup.OnKeyDown(key);
+                            }
+                            return true;
                         }
-                    }
-                    return true;
-                }
-                case KeyboardKeys.ArrowDown:
-                {
-                    if (_searchPopup != null && _searchPopup.Visible)
-                    {
-                        // Route navigation to active popup
-                        var focusedItem = _searchPopup.RootWindow.FocusedControl as Item;
-                        if (focusedItem == null)
-                            _searchPopup.SelectItem((Item)_searchPopup.ItemsPanel.Children.First());
-                        else
-                            _searchPopup.OnKeyDown(key);
-                    }
-                    return true;
-                }
                 }
 
                 return base.OnKeyDown(key);
@@ -481,6 +481,8 @@ namespace FlaxEditor.Windows
         public OutputLogWindow(Editor editor)
         : base(editor, true, ScrollBars.None)
         {
+            var inputOptions = editor.Options.Options.Input;
+
             Title = "Output Log";
             ClipChildren = false;
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
@@ -539,7 +541,7 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged += OnEditorOptionsChanged;
             OnEditorOptionsChanged(Editor.Options.Options);
 
-            InputActions.Add(options => options.Search, _searchBox.Focus);
+            InputActions.Add(inputOptions.Search, _searchBox.Focus);
 
             GameCooker.Event += OnGameCookerEvent;
             ScriptsBuilder.CompilationFailed += OnScriptsCompilationFailed;
@@ -792,7 +794,7 @@ namespace FlaxEditor.Windows
         public override bool OnKeyDown(KeyboardKeys key)
         {
             var input = Editor.Options.Options.Input;
-            if (input.Search.Process(this, key))
+            if (input.Search.Process(this))
             {
                 if (!_searchBox.ContainsFocus)
                 {
@@ -878,16 +880,16 @@ namespace FlaxEditor.Windows
                     var startIndex = _textBuffer.Length;
                     switch (_timestampsFormats)
                     {
-                    case InterfaceOptions.TimestampsFormats.Utc:
-                        _textBuffer.AppendFormat("[ {0} ]: ", entry.Time.ToUniversalTime());
-                        break;
-                    case InterfaceOptions.TimestampsFormats.LocalTime:
-                        _textBuffer.AppendFormat("[ {0} ]: ", entry.Time);
-                        break;
-                    case InterfaceOptions.TimestampsFormats.TimeSinceStartup:
-                        var diff = entry.Time - _startupTime;
-                        _textBuffer.AppendFormat("[ {0:00}:{1:00}:{2:00}.{3:000} ]: ", diff.Hours, diff.Minutes, diff.Seconds, diff.Milliseconds);
-                        break;
+                        case InterfaceOptions.TimestampsFormats.Utc:
+                            _textBuffer.AppendFormat("[ {0} ]: ", entry.Time.ToUniversalTime());
+                            break;
+                        case InterfaceOptions.TimestampsFormats.LocalTime:
+                            _textBuffer.AppendFormat("[ {0} ]: ", entry.Time);
+                            break;
+                        case InterfaceOptions.TimestampsFormats.TimeSinceStartup:
+                            var diff = entry.Time - _startupTime;
+                            _textBuffer.AppendFormat("[ {0:00}:{1:00}:{2:00}.{3:000} ]: ", diff.Hours, diff.Minutes, diff.Seconds, diff.Milliseconds);
+                            break;
                     }
                     if (_showLogType)
                     {
@@ -912,17 +914,17 @@ namespace FlaxEditor.Windows
 
                     switch (entry.Level)
                     {
-                    case LogType.Info:
-                        textBlock.Style = _output.DefaultStyle;
-                        break;
-                    case LogType.Warning:
-                        textBlock.Style = _output.WarningStyle;
-                        break;
-                    case LogType.Error:
-                    case LogType.Fatal:
-                        textBlock.Style = _output.ErrorStyle;
-                        break;
-                    default: throw new ArgumentOutOfRangeException();
+                        case LogType.Info:
+                            textBlock.Style = _output.DefaultStyle;
+                            break;
+                        case LogType.Warning:
+                            textBlock.Style = _output.WarningStyle;
+                            break;
+                        case LogType.Error:
+                        case LogType.Fatal:
+                            textBlock.Style = _output.ErrorStyle;
+                            break;
+                        default: throw new ArgumentOutOfRangeException();
                     }
                     var prevBlockBottom = _textBlocks.Count == 0 ? 0.0f : _textBlocks[_textBlocks.Count - 1].Bounds.Bottom;
                     var entryText = _textBuffer.ToString(startIndex, endIndex - startIndex);
@@ -952,12 +954,12 @@ namespace FlaxEditor.Windows
                                 {
                                     switch (match.Groups["level"].Value)
                                     {
-                                    case "error":
-                                        textBlock.Style = _output.ErrorStyle;
-                                        break;
-                                    case "warning":
-                                        textBlock.Style = _output.WarningStyle;
-                                        break;
+                                        case "error":
+                                            textBlock.Style = _output.ErrorStyle;
+                                            break;
+                                        case "warning":
+                                            textBlock.Style = _output.WarningStyle;
+                                            break;
                                     }
                                     textBlock.Tag = new TextBlockTag
                                     {

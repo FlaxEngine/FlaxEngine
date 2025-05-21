@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FlaxEditor.InputConfig;
 using FlaxEditor.Options;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Surface.Undo;
@@ -16,7 +17,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The input actions collection to processed during user input.
         /// </summary>
-        public readonly InputActionsContainer InputActions;
+        public readonly InputBindingList InputActions;
 
         /// <summary>
         /// Optional feature.
@@ -682,7 +683,7 @@ namespace FlaxEditor.Surface
             if (base.OnKeyDown(key))
                 return true;
 
-            if (InputActions.Process(Editor.Instance, this, key))
+            if (InputActions.Process(this))
                 return true;
 
             if (HasNodesSelection)

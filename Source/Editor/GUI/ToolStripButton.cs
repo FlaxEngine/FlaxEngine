@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using FlaxEditor.InputConfig;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -113,7 +114,7 @@ namespace FlaxEditor.GUI
         /// <param name="text">The text.</param>
         /// <param name="inputBinding">The input key binding.</param>
         /// <returns>This tooltip.</returns>
-        public ToolStripButton LinkTooltip(string text, ref Options.InputBinding inputBinding)
+        public ToolStripButton LinkTooltip(string text, ref InputBinding inputBinding)
         {
             var input = inputBinding.ToString();
             if (input.Length != 0)

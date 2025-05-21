@@ -637,10 +637,12 @@ namespace FlaxEditor.Windows.Assets
             debugObjectPickerContainer.Parent = _toolstrip;
 
             // Setup input actions
-            InputActions.Add(options => options.DebuggerContinue, OnDebuggerContinue);
-            InputActions.Add(options => options.DebuggerStepOver, OnDebuggerStepOver);
-            InputActions.Add(options => options.DebuggerStepOut, OnDebuggerStepOut);
-            InputActions.Add(options => options.DebuggerStepInto, OnDebuggerStepInto);
+            InputActions.Add(
+                (inputOptions.DebuggerContinue, OnDebuggerContinue),
+                (inputOptions.DebuggerStepOver, OnDebuggerStepOver),
+                (inputOptions.DebuggerStepOut, OnDebuggerStepOut),
+                (inputOptions.DebuggerStepInto, OnDebuggerStepInto)
+            );
 
             SetCanEdit(!isPlayMode);
         }

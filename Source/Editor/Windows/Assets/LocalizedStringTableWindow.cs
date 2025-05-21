@@ -156,8 +156,8 @@ namespace FlaxEditor.Windows.Assets
             _presenter.Modified += MarkAsEdited;
 
             // Setup input actions
-            InputActions.Add(options => options.Undo, _undo.PerformUndo);
-            InputActions.Add(options => options.Redo, _undo.PerformRedo);
+            InputActions.Add(inputOptions.Undo, _undo.PerformUndo);
+            InputActions.Add(inputOptions.Redo, _undo.PerformRedo);
         }
 
         private void OnUndoRedo(IUndoAction action)

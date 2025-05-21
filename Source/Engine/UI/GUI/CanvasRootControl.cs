@@ -157,6 +157,12 @@ namespace FlaxEngine.GUI
         }
 
         /// <inheritdoc />
+        public override float GetMouseScrollDelta()
+        {
+            return Input.MouseScrollDelta;
+        }
+
+        /// <inheritdoc />
         public override Float2 PointToParent(ref Float2 location)
         {
             if (Is2D)

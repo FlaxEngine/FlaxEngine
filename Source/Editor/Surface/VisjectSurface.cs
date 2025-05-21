@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Drag;
+using FlaxEditor.InputConfig;
 using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Archetypes;
@@ -396,645 +397,645 @@ namespace FlaxEditor.Surface
             RootContext.Modified += OnRootContextModified;
 
             // Setup input actions
-            InputActions = new InputActionsContainer(new[]
-            {
-                new InputActionsContainer.Binding(options => options.Delete, Delete),
-                new InputActionsContainer.Binding(options => options.SelectAll, SelectAll),
-                new InputActionsContainer.Binding(options => options.DeselectAll, DeselectAll),
-                new InputActionsContainer.Binding(options => options.Copy, Copy),
-                new InputActionsContainer.Binding(options => options.Paste, Paste),
-                new InputActionsContainer.Binding(options => options.Cut, Cut),
-                new InputActionsContainer.Binding(options => options.Duplicate, Duplicate),
-            });
+            var inputOptions = Editor.Instance.Options.Options.Input;
+            InputActions = new InputBindingList(
+                (inputOptions.Delete, Delete),
+                (inputOptions.SelectAll, SelectAll),
+                (inputOptions.DeselectAll, DeselectAll),
+                (inputOptions.Copy, Copy),
+                (inputOptions.Paste, Paste),
+                (inputOptions.Cut, Cut),
+                (inputOptions.Duplicate, Duplicate)
+            );
 
             Context.ControlSpawned += OnSurfaceControlSpawned;
             Context.ControlDeleted += OnSurfaceControlDeleted;
 
             SelectionChanged += () => { _selectedConnectionIndex = 0; };
 
-            // Init drag handlers
-            DragHandlers.Add(_dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem));
+    // Init drag handlers
+    DragHandlers.Add(_dragAssets = new DragAssets<DragDropEventArgs>(ValidateDragItem));
             DragHandlers.Add(_dragParameters = new DragNames<DragDropEventArgs>(SurfaceParameter.DragPrefix, ValidateDragParameter));
 
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
         }
 
-        private void OnScriptsReloadBegin()
+private void OnScriptsReloadBegin()
+{
+    _activeVisjectCM = null;
+    _cmPrimaryMenu?.Dispose();
+    _cmPrimaryMenu = null;
+}
+
+/// <summary>
+/// Gets the display name of the connection type used in the surface.
+/// </summary>
+/// <param name="type">The graph connection type.</param>
+/// <returns>The display name (for UI).</returns>
+public virtual string GetTypeName(ScriptType type)
+{
+    return type == ScriptType.Null ? null : type.Name;
+}
+
+/// <summary>
+/// Gets the debugger tooltip for the given box.
+/// </summary>
+/// <param name="box">The box.</param>
+/// <param name="text">The result tooltip text.</param>
+/// <returns>True if processed output text should be used to display it on a box tooltip for debugger UI, otherwise false.</returns>
+public virtual bool GetBoxDebuggerTooltip(Elements.Box box, out string text)
+{
+    text = null;
+    return false;
+}
+
+private void OnRootContextModified(VisjectSurfaceContext context, bool graphEdited)
+{
+    Owner.OnSurfaceEditedChanged();
+
+    if (graphEdited)
+    {
+        Owner.OnSurfaceGraphEdited();
+    }
+}
+
+/// <summary>
+/// Gets the custom nodes group archetype with custom nodes archetypes. May be null if no custom nodes in use.
+/// </summary>
+/// <returns>The custom nodes or null if no used.</returns>
+public GroupArchetype GetCustomNodes()
+{
+    return _customNodesGroup;
+}
+
+/// <summary>
+/// Adds the custom nodes archetypes to the surface (user can spawn them and surface can deserialize).
+/// </summary>
+/// <remarks>Custom nodes has to have a node logic typename in DefaultValues[0] and group name in DefaultValues[1].</remarks>
+/// <param name="archetypes">The archetypes.</param>
+public void AddCustomNodes(IEnumerable<NodeArchetype> archetypes)
+{
+    if (_customNodes == null)
+    {
+        // First time setup
+        _customNodes = new List<NodeArchetype>(archetypes);
+        _customNodesGroup = new GroupArchetype
         {
-            _activeVisjectCM = null;
-            _cmPrimaryMenu?.Dispose();
-            _cmPrimaryMenu = null;
+            GroupID = Custom.GroupID,
+            Name = "Custom",
+            Color = Color.Wheat
+        };
+    }
+    else
+    {
+        // Add more nodes
+        _customNodes.AddRange(archetypes);
+    }
+
+    // Update collection
+    _customNodesGroup.Archetypes = _customNodes;
+}
+
+/// <summary>
+/// Updates the navigation bar of the toolstrip from window that uses this surface. Updates the navigation bar panel buttons to match the current view path.
+/// </summary>
+/// <param name="navigationBar">The navigation bar to update.</param>
+/// <param name="toolStrip">The toolstrip to use as layout reference.</param>
+/// <param name="hideIfRoot">True if skip showing nav button if the current context is the root location (user has no option to change context).</param>
+public void UpdateNavigationBar(NavigationBar navigationBar, ToolStrip toolStrip, bool hideIfRoot = true)
+{
+    if (navigationBar == null || toolStrip == null)
+        return;
+
+    bool wasLayoutLocked = navigationBar.IsLayoutLocked;
+    navigationBar.IsLayoutLocked = true;
+
+    // Remove previous buttons
+    navigationBar.DisposeChildren();
+
+    // Spawn buttons
+    var nodes = NavUpdateCache;
+    nodes.Clear();
+    var context = Context;
+    if (hideIfRoot && context == RootContext)
+        context = null;
+    while (context != null)
+    {
+        nodes.Add(context);
+        context = context.Parent;
+    }
+    float x = NavigationBar.DefaultButtonsMargin;
+    float h = toolStrip.ItemsHeight - 2 * ToolStrip.DefaultMarginV;
+    for (int i = nodes.Count - 1; i >= 0; i--)
+    {
+        var button = new VisjectContextNavigationButton(this, nodes[i].Context, x, ToolStrip.DefaultMarginV, h);
+        button.PerformLayout();
+        x += button.Width + NavigationBar.DefaultButtonsMargin;
+        navigationBar.AddChild(button);
+    }
+    nodes.Clear();
+
+    // Update
+    navigationBar.IsLayoutLocked = wasLayoutLocked;
+    navigationBar.PerformLayout();
+}
+
+/// <summary>
+/// Gets all nodes bounds or empty if surface is empty.
+/// </summary>
+public Rectangle AllNodesBounds
+{
+    get
+    {
+        var area = Rectangle.Empty;
+        if (Nodes.Count != 0)
+        {
+            area = Nodes[0].Bounds;
+            for (int i = 1; i < Nodes.Count; i++)
+                area = Rectangle.Union(area, Nodes[i].Bounds);
         }
+        return area;
+    }
+}
 
-        /// <summary>
-        /// Gets the display name of the connection type used in the surface.
-        /// </summary>
-        /// <param name="type">The graph connection type.</param>
-        /// <returns>The display name (for UI).</returns>
-        public virtual string GetTypeName(ScriptType type)
+/// <summary>
+/// Gets a value indicating whether surface parameters are not read-only and can be modified in a surface graph.
+/// </summary>
+public virtual bool CanSetParameters => false;
+
+/// <summary>
+/// True of the context menu should make use of a description panel drawn at the bottom of the menu
+/// </summary>
+public virtual bool UseContextMenuDescriptionPanel => false;
+
+/// <summary>
+/// Gets a value indicating whether surface supports/allows live previewing graph modifications due to value sliders and color pickers. True by default but disabled for shader surfaces that generate and compile shader source at flight.
+/// </summary>
+public virtual bool CanLivePreviewValueChanges => true;
+
+/// <summary>
+/// Determines whether the specified node archetype can be used in the surface.
+/// </summary>
+/// <param name="groupID">The nodes group archetype identifier.</param>
+/// <param name="typeID">The node archetype identifier.</param>
+/// <returns>True if can use this node archetype, otherwise false.</returns>
+public bool CanUseNodeType(ushort groupID, ushort typeID)
+{
+    var result = false;
+    var nodeArchetypes = NodeArchetypes ?? NodeFactory.DefaultGroups;
+    if (NodeFactory.GetArchetype(nodeArchetypes, groupID, typeID, out var groupArchetype, out var nodeArchetype))
+    {
+        var flags = nodeArchetype.Flags;
+        nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaGUI;
+        nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaPaste;
+        result = CanUseNodeType(groupArchetype, nodeArchetype);
+        nodeArchetype.Flags = flags;
+    }
+    return result;
+}
+
+/// <summary>
+/// Determines whether the specified node archetype can be used in the surface.
+/// </summary>
+/// <param name="groupArchetype">The nodes group archetype.</param>
+/// <param name="nodeArchetype">The node archetype.</param>
+/// <returns>True if can use this node archetype, otherwise false.</returns>
+public virtual bool CanUseNodeType(GroupArchetype groupArchetype, NodeArchetype nodeArchetype)
+{
+    return (nodeArchetype.Flags & NodeFlags.NoSpawnViaPaste) == 0;
+}
+
+/// <summary>
+/// Shows the whole graph by changing the view scale and the position.
+/// </summary>
+public void ShowWholeGraph()
+{
+    ShowArea(AllNodesBounds.MakeExpanded(100.0f));
+}
+
+/// <summary>
+/// Shows the given surface area by changing the view scale and the position.
+/// </summary>
+/// <param name="areaRect">The area rectangle.</param>
+public void ShowArea(Rectangle areaRect)
+{
+    ViewScale = (Size / areaRect.Size).MinValue * 0.95f;
+    ViewCenterPosition = areaRect.Center;
+}
+
+/// <summary>
+/// Shows the given surface node by changing the view scale and the position and focuses the node.
+/// </summary>
+/// <param name="node">The node to show.</param>
+public void FocusNode(SurfaceNode node)
+{
+    if (node != null)
+    {
+        ShowArea(node.Bounds.MakeExpanded(500.0f));
+        Select(node);
+    }
+}
+
+/// <summary>
+/// Mark surface as edited.
+/// </summary>
+/// <param name="graphEdited">True if graph has been edited (nodes structure or parameter value).</param>
+public void MarkAsEdited(bool graphEdited = true)
+{
+    _context.MarkAsModified(graphEdited);
+}
+
+private void BulkSelectUpdate(bool select = true)
+{
+    bool selectionChanged = false;
+    for (int i = 0; i < _rootControl.Children.Count; i++)
+    {
+        if (_rootControl.Children[i] is SurfaceControl control && control.IsSelected != select)
         {
-            return type == ScriptType.Null ? null : type.Name;
+            control.IsSelected = select;
+            selectionChanged = true;
         }
+    }
+    if (selectionChanged)
+        SelectionChanged?.Invoke();
+}
 
-        /// <summary>
-        /// Gets the debugger tooltip for the given box.
-        /// </summary>
-        /// <param name="box">The box.</param>
-        /// <param name="text">The result tooltip text.</param>
-        /// <returns>True if processed output text should be used to display it on a box tooltip for debugger UI, otherwise false.</returns>
-        public virtual bool GetBoxDebuggerTooltip(Elements.Box box, out string text)
+internal void ToggleGridSnapping()
+{
+    GridSnappingEnabled = !GridSnappingEnabled;
+}
+
+/// <summary>
+/// Selects all the nodes.
+/// </summary>
+public void SelectAll()
+{
+    BulkSelectUpdate(true);
+}
+
+/// <summary>
+/// Deelects all the nodes.
+/// </summary>
+public void DeselectAll()
+{
+    BulkSelectUpdate(false);
+}
+
+/// <summary>
+/// Clears the selection.
+/// </summary>
+public void ClearSelection()
+{
+    bool selectionChanged = false;
+    for (int i = 0; i < _rootControl.Children.Count; i++)
+    {
+        if (_rootControl.Children[i] is SurfaceControl control && control.IsSelected)
         {
-            text = null;
-            return false;
-        }
-
-        private void OnRootContextModified(VisjectSurfaceContext context, bool graphEdited)
-        {
-            Owner.OnSurfaceEditedChanged();
-
-            if (graphEdited)
-            {
-                Owner.OnSurfaceGraphEdited();
-            }
-        }
-
-        /// <summary>
-        /// Gets the custom nodes group archetype with custom nodes archetypes. May be null if no custom nodes in use.
-        /// </summary>
-        /// <returns>The custom nodes or null if no used.</returns>
-        public GroupArchetype GetCustomNodes()
-        {
-            return _customNodesGroup;
-        }
-
-        /// <summary>
-        /// Adds the custom nodes archetypes to the surface (user can spawn them and surface can deserialize).
-        /// </summary>
-        /// <remarks>Custom nodes has to have a node logic typename in DefaultValues[0] and group name in DefaultValues[1].</remarks>
-        /// <param name="archetypes">The archetypes.</param>
-        public void AddCustomNodes(IEnumerable<NodeArchetype> archetypes)
-        {
-            if (_customNodes == null)
-            {
-                // First time setup
-                _customNodes = new List<NodeArchetype>(archetypes);
-                _customNodesGroup = new GroupArchetype
-                {
-                    GroupID = Custom.GroupID,
-                    Name = "Custom",
-                    Color = Color.Wheat
-                };
-            }
-            else
-            {
-                // Add more nodes
-                _customNodes.AddRange(archetypes);
-            }
-
-            // Update collection
-            _customNodesGroup.Archetypes = _customNodes;
-        }
-
-        /// <summary>
-        /// Updates the navigation bar of the toolstrip from window that uses this surface. Updates the navigation bar panel buttons to match the current view path.
-        /// </summary>
-        /// <param name="navigationBar">The navigation bar to update.</param>
-        /// <param name="toolStrip">The toolstrip to use as layout reference.</param>
-        /// <param name="hideIfRoot">True if skip showing nav button if the current context is the root location (user has no option to change context).</param>
-        public void UpdateNavigationBar(NavigationBar navigationBar, ToolStrip toolStrip, bool hideIfRoot = true)
-        {
-            if (navigationBar == null || toolStrip == null)
-                return;
-
-            bool wasLayoutLocked = navigationBar.IsLayoutLocked;
-            navigationBar.IsLayoutLocked = true;
-
-            // Remove previous buttons
-            navigationBar.DisposeChildren();
-
-            // Spawn buttons
-            var nodes = NavUpdateCache;
-            nodes.Clear();
-            var context = Context;
-            if (hideIfRoot && context == RootContext)
-                context = null;
-            while (context != null)
-            {
-                nodes.Add(context);
-                context = context.Parent;
-            }
-            float x = NavigationBar.DefaultButtonsMargin;
-            float h = toolStrip.ItemsHeight - 2 * ToolStrip.DefaultMarginV;
-            for (int i = nodes.Count - 1; i >= 0; i--)
-            {
-                var button = new VisjectContextNavigationButton(this, nodes[i].Context, x, ToolStrip.DefaultMarginV, h);
-                button.PerformLayout();
-                x += button.Width + NavigationBar.DefaultButtonsMargin;
-                navigationBar.AddChild(button);
-            }
-            nodes.Clear();
-
-            // Update
-            navigationBar.IsLayoutLocked = wasLayoutLocked;
-            navigationBar.PerformLayout();
-        }
-
-        /// <summary>
-        /// Gets all nodes bounds or empty if surface is empty.
-        /// </summary>
-        public Rectangle AllNodesBounds
-        {
-            get
-            {
-                var area = Rectangle.Empty;
-                if (Nodes.Count != 0)
-                {
-                    area = Nodes[0].Bounds;
-                    for (int i = 1; i < Nodes.Count; i++)
-                        area = Rectangle.Union(area, Nodes[i].Bounds);
-                }
-                return area;
-            }
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether surface parameters are not read-only and can be modified in a surface graph.
-        /// </summary>
-        public virtual bool CanSetParameters => false;
-
-        /// <summary>
-        /// True of the context menu should make use of a description panel drawn at the bottom of the menu
-        /// </summary>
-        public virtual bool UseContextMenuDescriptionPanel => false;
-
-        /// <summary>
-        /// Gets a value indicating whether surface supports/allows live previewing graph modifications due to value sliders and color pickers. True by default but disabled for shader surfaces that generate and compile shader source at flight.
-        /// </summary>
-        public virtual bool CanLivePreviewValueChanges => true;
-
-        /// <summary>
-        /// Determines whether the specified node archetype can be used in the surface.
-        /// </summary>
-        /// <param name="groupID">The nodes group archetype identifier.</param>
-        /// <param name="typeID">The node archetype identifier.</param>
-        /// <returns>True if can use this node archetype, otherwise false.</returns>
-        public bool CanUseNodeType(ushort groupID, ushort typeID)
-        {
-            var result = false;
-            var nodeArchetypes = NodeArchetypes ?? NodeFactory.DefaultGroups;
-            if (NodeFactory.GetArchetype(nodeArchetypes, groupID, typeID, out var groupArchetype, out var nodeArchetype))
-            {
-                var flags = nodeArchetype.Flags;
-                nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaGUI;
-                nodeArchetype.Flags &= ~NodeFlags.NoSpawnViaPaste;
-                result = CanUseNodeType(groupArchetype, nodeArchetype);
-                nodeArchetype.Flags = flags;
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Determines whether the specified node archetype can be used in the surface.
-        /// </summary>
-        /// <param name="groupArchetype">The nodes group archetype.</param>
-        /// <param name="nodeArchetype">The node archetype.</param>
-        /// <returns>True if can use this node archetype, otherwise false.</returns>
-        public virtual bool CanUseNodeType(GroupArchetype groupArchetype, NodeArchetype nodeArchetype)
-        {
-            return (nodeArchetype.Flags & NodeFlags.NoSpawnViaPaste) == 0;
-        }
-
-        /// <summary>
-        /// Shows the whole graph by changing the view scale and the position.
-        /// </summary>
-        public void ShowWholeGraph()
-        {
-            ShowArea(AllNodesBounds.MakeExpanded(100.0f));
-        }
-
-        /// <summary>
-        /// Shows the given surface area by changing the view scale and the position.
-        /// </summary>
-        /// <param name="areaRect">The area rectangle.</param>
-        public void ShowArea(Rectangle areaRect)
-        {
-            ViewScale = (Size / areaRect.Size).MinValue * 0.95f;
-            ViewCenterPosition = areaRect.Center;
-        }
-
-        /// <summary>
-        /// Shows the given surface node by changing the view scale and the position and focuses the node.
-        /// </summary>
-        /// <param name="node">The node to show.</param>
-        public void FocusNode(SurfaceNode node)
-        {
-            if (node != null)
-            {
-                ShowArea(node.Bounds.MakeExpanded(500.0f));
-                Select(node);
-            }
-        }
-
-        /// <summary>
-        /// Mark surface as edited.
-        /// </summary>
-        /// <param name="graphEdited">True if graph has been edited (nodes structure or parameter value).</param>
-        public void MarkAsEdited(bool graphEdited = true)
-        {
-            _context.MarkAsModified(graphEdited);
-        }
-
-        private void BulkSelectUpdate(bool select = true)
-        {
-            bool selectionChanged = false;
-            for (int i = 0; i < _rootControl.Children.Count; i++)
-            {
-                if (_rootControl.Children[i] is SurfaceControl control && control.IsSelected != select)
-                {
-                    control.IsSelected = select;
-                    selectionChanged = true;
-                }
-            }
-            if (selectionChanged)
-                SelectionChanged?.Invoke();
-        }
-
-        internal void ToggleGridSnapping()
-        {
-            GridSnappingEnabled = !GridSnappingEnabled;
-        }
-
-        /// <summary>
-        /// Selects all the nodes.
-        /// </summary>
-        public void SelectAll()
-        {
-            BulkSelectUpdate(true);
-        }
-
-        /// <summary>
-        /// Deelects all the nodes.
-        /// </summary>
-        public void DeselectAll()
-        {
-            BulkSelectUpdate(false);
-        }
-
-        /// <summary>
-        /// Clears the selection.
-        /// </summary>
-        public void ClearSelection()
-        {
-            bool selectionChanged = false;
-            for (int i = 0; i < _rootControl.Children.Count; i++)
-            {
-                if (_rootControl.Children[i] is SurfaceControl control && control.IsSelected)
-                {
-                    control.IsSelected = false;
-                    selectionChanged = true;
-                }
-            }
-            if (selectionChanged)
-                SelectionChanged?.Invoke();
-        }
-
-        /// <summary>
-        /// Adds the specified control to the selection.
-        /// </summary>
-        /// <param name="control">The control.</param>
-        public void AddToSelection(SurfaceControl control)
-        {
-            if (control.IsSelected)
-                return;
-            control.IsSelected = true;
-            SelectionChanged?.Invoke();
-        }
-
-        /// <summary>
-        /// Selects the specified control.
-        /// </summary>
-        /// <param name="control">The control.</param>
-        public void Select(SurfaceControl control)
-        {
-            bool selectionChanged = false;
-            for (int i = 0; i < _rootControl.Children.Count; i++)
-            {
-                if (_rootControl.Children[i] is SurfaceControl c && c != control && c.IsSelected)
-                {
-                    c.IsSelected = false;
-                    selectionChanged = true;
-                }
-            }
-            if (!control.IsSelected)
-            {
-                control.IsSelected = true;
-                selectionChanged = true;
-            }
-            if (selectionChanged)
-                SelectionChanged?.Invoke();
-        }
-
-        /// <summary>
-        /// Selects the specified controls collection.
-        /// </summary>
-        /// <param name="controls">The controls.</param>
-        public void Select(IEnumerable<SurfaceControl> controls)
-        {
-            var newSelection = controls.ToList();
-            var prevSelection = SelectedControls;
-            if (Utils.ArraysEqual(newSelection, prevSelection))
-                return;
-            ClearSelection();
-            foreach (var control in newSelection)
-                control.IsSelected = true;
-            SelectionChanged?.Invoke();
-        }
-
-        /// <summary>
-        /// Deselects the specified control.
-        /// </summary>
-        /// <param name="control">The control.</param>
-        public void Deselect(SurfaceControl control)
-        {
-            if (!control.IsSelected)
-                return;
             control.IsSelected = false;
-            SelectionChanged?.Invoke();
+            selectionChanged = true;
+        }
+    }
+    if (selectionChanged)
+        SelectionChanged?.Invoke();
+}
+
+/// <summary>
+/// Adds the specified control to the selection.
+/// </summary>
+/// <param name="control">The control.</param>
+public void AddToSelection(SurfaceControl control)
+{
+    if (control.IsSelected)
+        return;
+    control.IsSelected = true;
+    SelectionChanged?.Invoke();
+}
+
+/// <summary>
+/// Selects the specified control.
+/// </summary>
+/// <param name="control">The control.</param>
+public void Select(SurfaceControl control)
+{
+    bool selectionChanged = false;
+    for (int i = 0; i < _rootControl.Children.Count; i++)
+    {
+        if (_rootControl.Children[i] is SurfaceControl c && c != control && c.IsSelected)
+        {
+            c.IsSelected = false;
+            selectionChanged = true;
+        }
+    }
+    if (!control.IsSelected)
+    {
+        control.IsSelected = true;
+        selectionChanged = true;
+    }
+    if (selectionChanged)
+        SelectionChanged?.Invoke();
+}
+
+/// <summary>
+/// Selects the specified controls collection.
+/// </summary>
+/// <param name="controls">The controls.</param>
+public void Select(IEnumerable<SurfaceControl> controls)
+{
+    var newSelection = controls.ToList();
+    var prevSelection = SelectedControls;
+    if (Utils.ArraysEqual(newSelection, prevSelection))
+        return;
+    ClearSelection();
+    foreach (var control in newSelection)
+        control.IsSelected = true;
+    SelectionChanged?.Invoke();
+}
+
+/// <summary>
+/// Deselects the specified control.
+/// </summary>
+/// <param name="control">The control.</param>
+public void Deselect(SurfaceControl control)
+{
+    if (!control.IsSelected)
+        return;
+    control.IsSelected = false;
+    SelectionChanged?.Invoke();
+}
+
+/// <summary>
+/// Creates the comment around the selected nodes.
+/// </summary>
+public SurfaceComment CommentSelection(string text = "")
+{
+    var selection = SelectedNodes;
+    if (selection.Count == 0)
+        return null;
+    Rectangle surfaceArea = GetNodesBounds(selection).MakeExpanded(80.0f);
+
+    // Order below other selected comments
+    bool hasCommentsSelected = false;
+    int lowestCommentOrder = int.MaxValue;
+    for (int i = 0; i < selection.Count; i++)
+    {
+        if (selection[i] is not SurfaceComment || selection[i].IndexInParent >= lowestCommentOrder)
+            continue;
+        hasCommentsSelected = true;
+        lowestCommentOrder = selection[i].IndexInParent;
+    }
+
+    return _context.CreateComment(ref surfaceArea, string.IsNullOrEmpty(text) ? "Comment" : text, new Color(1.0f, 1.0f, 1.0f, 0.2f), hasCommentsSelected ? lowestCommentOrder : -1);
+}
+
+private static Rectangle GetNodesBounds(List<SurfaceNode> nodes)
+{
+    if (nodes.Count == 0)
+        return Rectangle.Empty;
+
+    Rectangle surfaceArea = nodes[0].Bounds;
+    for (int i = 1; i < nodes.Count; i++)
+    {
+        surfaceArea = Rectangle.Union(surfaceArea, nodes[i].Bounds);
+    }
+
+    return surfaceArea;
+}
+
+/// <summary>
+/// Deletes the specified collection of the controls.
+/// </summary>
+/// <param name="controls">The controls.</param>
+/// <param name="withUndo">True if use undo/redo action for node removing.</param>
+public void Delete(IEnumerable<SurfaceControl> controls, bool withUndo = true)
+{
+    if (!CanEdit || controls == null || !controls.Any())
+        return;
+
+    var selectionChanged = false;
+    List<SurfaceNode> nodes = null;
+    foreach (var control in controls)
+    {
+        if (control.IsSelected)
+        {
+            selectionChanged = true;
+            control.IsSelected = false;
         }
 
-        /// <summary>
-        /// Creates the comment around the selected nodes.
-        /// </summary>
-        public SurfaceComment CommentSelection(string text = "")
+        if (control is SurfaceNode node)
         {
-            var selection = SelectedNodes;
-            if (selection.Count == 0)
-                return null;
-            Rectangle surfaceArea = GetNodesBounds(selection).MakeExpanded(80.0f);
-
-            // Order below other selected comments
-            bool hasCommentsSelected = false;
-            int lowestCommentOrder = int.MaxValue;
-            for (int i = 0; i < selection.Count; i++)
+            if ((node.Archetype.Flags & NodeFlags.NoRemove) == 0)
             {
-                if (selection[i] is not SurfaceComment || selection[i].IndexInParent >= lowestCommentOrder)
-                    continue;
-                hasCommentsSelected = true;
-                lowestCommentOrder = selection[i].IndexInParent;
-            }
-
-            return _context.CreateComment(ref surfaceArea, string.IsNullOrEmpty(text) ? "Comment" : text, new Color(1.0f, 1.0f, 1.0f, 0.2f), hasCommentsSelected ? lowestCommentOrder : -1);
-        }
-
-        private static Rectangle GetNodesBounds(List<SurfaceNode> nodes)
-        {
-            if (nodes.Count == 0)
-                return Rectangle.Empty;
-
-            Rectangle surfaceArea = nodes[0].Bounds;
-            for (int i = 1; i < nodes.Count; i++)
-            {
-                surfaceArea = Rectangle.Union(surfaceArea, nodes[i].Bounds);
-            }
-
-            return surfaceArea;
-        }
-
-        /// <summary>
-        /// Deletes the specified collection of the controls.
-        /// </summary>
-        /// <param name="controls">The controls.</param>
-        /// <param name="withUndo">True if use undo/redo action for node removing.</param>
-        public void Delete(IEnumerable<SurfaceControl> controls, bool withUndo = true)
-        {
-            if (!CanEdit || controls == null || !controls.Any())
-                return;
-
-            var selectionChanged = false;
-            List<SurfaceNode> nodes = null;
-            foreach (var control in controls)
-            {
-                if (control.IsSelected)
+                if (nodes == null)
+                    nodes = new List<SurfaceNode>();
+                var sealedNodes = node.SealedNodes;
+                if (sealedNodes != null)
                 {
-                    selectionChanged = true;
-                    control.IsSelected = false;
-                }
-
-                if (control is SurfaceNode node)
-                {
-                    if ((node.Archetype.Flags & NodeFlags.NoRemove) == 0)
+                    foreach (var sealedNode in sealedNodes)
                     {
-                        if (nodes == null)
-                            nodes = new List<SurfaceNode>();
-                        var sealedNodes = node.SealedNodes;
-                        if (sealedNodes != null)
+                        if (sealedNode != null)
                         {
-                            foreach (var sealedNode in sealedNodes)
+                            if (sealedNode.IsSelected)
                             {
-                                if (sealedNode != null)
-                                {
-                                    if (sealedNode.IsSelected)
-                                    {
-                                        selectionChanged = true;
-                                        sealedNode.IsSelected = false;
-                                    }
-                                    if (!nodes.Contains(sealedNode))
-                                        nodes.Add(sealedNode);
-                                }
+                                selectionChanged = true;
+                                sealedNode.IsSelected = false;
                             }
+                            if (!nodes.Contains(sealedNode))
+                                nodes.Add(sealedNode);
                         }
-                        if (!nodes.Contains(node))
-                            nodes.Add(node);
                     }
                 }
-                else
-                {
-                    Context.OnControlDeleted(control, SurfaceNodeActions.User);
-                }
+                if (!nodes.Contains(node))
+                    nodes.Add(node);
             }
-            if (selectionChanged)
-                SelectionChanged?.Invoke();
+        }
+        else
+        {
+            Context.OnControlDeleted(control, SurfaceNodeActions.User);
+        }
+    }
+    if (selectionChanged)
+        SelectionChanged?.Invoke();
 
-            if (nodes != null)
+    if (nodes != null)
+    {
+        if (Undo == null || !withUndo)
+        {
+            // Remove all nodes
+            foreach (var node in nodes)
             {
-                if (Undo == null || !withUndo)
-                {
-                    // Remove all nodes
-                    foreach (var node in nodes)
-                    {
-                        node.RemoveConnections();
-                        Nodes.Remove(node);
-                        Context.OnControlDeleted(node, SurfaceNodeActions.User);
-                    }
-                }
-                else
-                {
-                    var actions = new List<IUndoAction>();
-
-                    // Break connections for all nodes
-                    foreach (var node in nodes)
-                    {
-                        var action = new EditNodeConnections(Context, node);
-                        node.RemoveConnections();
-                        action.End();
-                        actions.Add(action);
-                    }
-
-                    // Remove all nodes
-                    foreach (var node in nodes)
-                    {
-                        var action = new AddRemoveNodeAction(node, false);
-                        action.Do();
-                        actions.Add(action);
-                    }
-
-                    AddBatchedUndoAction(new MultiUndoAction(actions, nodes.Count == 1 ? "Remove node" : "Remove nodes"));
-                }
+                node.RemoveConnections();
+                Nodes.Remove(node);
+                Context.OnControlDeleted(node, SurfaceNodeActions.User);
             }
-
-            MarkAsEdited();
         }
-
-        /// <summary>
-        /// Deletes the specified control.
-        /// </summary>
-        /// <param name="control">The control.</param>
-        /// <param name="withUndo">True if use undo/redo action for node removing.</param>
-        public void Delete(SurfaceControl control, bool withUndo = true)
+        else
         {
-            if (!CanEdit)
-                return;
-            Delete(new[] { control }, withUndo);
-        }
+            var actions = new List<IUndoAction>();
 
-        /// <summary>
-        /// Deletes the selected controls.
-        /// </summary>
-        public void Delete()
-        {
-            if (!CanEdit)
-                return;
-            Delete(SelectedControls, true);
-        }
-
-        /// <summary>
-        /// Finds the node of the given type.
-        /// </summary>
-        /// <param name="groupId">The group identifier.</param>
-        /// <param name="typeId">The type identifier.</param>
-        /// <returns>Found node or null if cannot.</returns>
-        public SurfaceNode FindNode(ushort groupId, ushort typeId)
-        {
-            return _context.FindNode(groupId, typeId);
-        }
-
-        /// <summary>
-        /// Finds the node with the given ID.
-        /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <returns>Found node or null if cannot.</returns>
-        public SurfaceNode FindNode(int id)
-        {
-            return _context.FindNode(id);
-        }
-
-        /// <summary>
-        /// Finds the node with the given ID.
-        /// </summary>
-        /// <param name="id">The identifier.</param>
-        /// <returns>Found node or null if cannot.</returns>
-        public SurfaceNode FindNode(uint id)
-        {
-            return _context.FindNode(id);
-        }
-
-        /// <summary>
-        /// Adds the undo action to be batched (eg. if multiple undo actions is performed in a sequence during single update).
-        /// </summary>
-        /// <param name="action">The action.</param>
-        public void AddBatchedUndoAction(IUndoAction action)
-        {
-            if (Undo == null || !Undo.Enabled)
-                return;
-            if (_batchedUndoActions == null)
-                _batchedUndoActions = new List<IUndoAction>();
-            _batchedUndoActions.Add(action);
-        }
-
-        /// <summary>
-        /// Called when node gets spawned in the surface (via UI).
-        /// </summary>
-        public virtual void OnNodeSpawned(SurfaceNode node)
-        {
-            NodeSpawned?.Invoke(node);
-        }
-
-        /// <summary>
-        /// Called when node values gets modified in the surface (via UI).
-        /// </summary>
-        public virtual void OnNodeValuesEdited(SurfaceNode node)
-        {
-            NodeValuesEdited?.Invoke(node);
-        }
-
-        /// <summary>
-        /// Called when node breakpoint gets modified.
-        /// </summary>
-        public virtual void OnNodeBreakpointEdited(SurfaceNode node)
-        {
-            NodeBreakpointEdited?.Invoke(node);
-        }
-
-        /// <summary>
-        /// Called when node gets removed from the surface (via UI).
-        /// </summary>
-        public virtual void OnNodeDeleted(SurfaceNode node)
-        {
-            NodeDeleted?.Invoke(node);
-        }
-
-        /// <summary>
-        /// Called when two nodes gets connected (via UI).
-        /// </summary>
-        public virtual void OnNodesConnected(IConnectionInstigator a, IConnectionInstigator b)
-        {
-            NodesConnected?.Invoke(a, b);
-            MarkAsEdited();
-        }
-
-        /// <summary>
-        /// Called when two nodes gets disconnected (via UI).
-        /// </summary>
-        public virtual void OnNodesDisconnected(IConnectionInstigator a, IConnectionInstigator b)
-        {
-            NodesDisconnected?.Invoke(a, b);
-        }
-
-        /// <inheritdoc />
-        public override void OnDestroy()
-        {
-            if (IsDisposing)
-                return;
-            _isReleasing = true;
-
-            // Cleanup context cache
-            _root = null;
-            _context = null;
-            _onSave = null;
-            ContextStack.Clear();
-            foreach (var context in _contextCache.Values)
+            // Break connections for all nodes
+            foreach (var node in nodes)
             {
-                context.Clear();
+                var action = new EditNodeConnections(Context, node);
+                node.RemoveConnections();
+                action.End();
+                actions.Add(action);
             }
-            _contextCache.Clear();
 
-            // Cleanup
-            _activeVisjectCM = null;
-            _cmPrimaryMenu?.Dispose();
+            // Remove all nodes
+            foreach (var node in nodes)
+            {
+                var action = new AddRemoveNodeAction(node, false);
+                action.Do();
+                actions.Add(action);
+            }
 
-            ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
-
-            base.OnDestroy();
+            AddBatchedUndoAction(new MultiUndoAction(actions, nodes.Count == 1 ? "Remove node" : "Remove nodes"));
         }
+    }
+
+    MarkAsEdited();
+}
+
+/// <summary>
+/// Deletes the specified control.
+/// </summary>
+/// <param name="control">The control.</param>
+/// <param name="withUndo">True if use undo/redo action for node removing.</param>
+public void Delete(SurfaceControl control, bool withUndo = true)
+{
+    if (!CanEdit)
+        return;
+    Delete(new[] { control }, withUndo);
+}
+
+/// <summary>
+/// Deletes the selected controls.
+/// </summary>
+public void Delete()
+{
+    if (!CanEdit)
+        return;
+    Delete(SelectedControls, true);
+}
+
+/// <summary>
+/// Finds the node of the given type.
+/// </summary>
+/// <param name="groupId">The group identifier.</param>
+/// <param name="typeId">The type identifier.</param>
+/// <returns>Found node or null if cannot.</returns>
+public SurfaceNode FindNode(ushort groupId, ushort typeId)
+{
+    return _context.FindNode(groupId, typeId);
+}
+
+/// <summary>
+/// Finds the node with the given ID.
+/// </summary>
+/// <param name="id">The identifier.</param>
+/// <returns>Found node or null if cannot.</returns>
+public SurfaceNode FindNode(int id)
+{
+    return _context.FindNode(id);
+}
+
+/// <summary>
+/// Finds the node with the given ID.
+/// </summary>
+/// <param name="id">The identifier.</param>
+/// <returns>Found node or null if cannot.</returns>
+public SurfaceNode FindNode(uint id)
+{
+    return _context.FindNode(id);
+}
+
+/// <summary>
+/// Adds the undo action to be batched (eg. if multiple undo actions is performed in a sequence during single update).
+/// </summary>
+/// <param name="action">The action.</param>
+public void AddBatchedUndoAction(IUndoAction action)
+{
+    if (Undo == null || !Undo.Enabled)
+        return;
+    if (_batchedUndoActions == null)
+        _batchedUndoActions = new List<IUndoAction>();
+    _batchedUndoActions.Add(action);
+}
+
+/// <summary>
+/// Called when node gets spawned in the surface (via UI).
+/// </summary>
+public virtual void OnNodeSpawned(SurfaceNode node)
+{
+    NodeSpawned?.Invoke(node);
+}
+
+/// <summary>
+/// Called when node values gets modified in the surface (via UI).
+/// </summary>
+public virtual void OnNodeValuesEdited(SurfaceNode node)
+{
+    NodeValuesEdited?.Invoke(node);
+}
+
+/// <summary>
+/// Called when node breakpoint gets modified.
+/// </summary>
+public virtual void OnNodeBreakpointEdited(SurfaceNode node)
+{
+    NodeBreakpointEdited?.Invoke(node);
+}
+
+/// <summary>
+/// Called when node gets removed from the surface (via UI).
+/// </summary>
+public virtual void OnNodeDeleted(SurfaceNode node)
+{
+    NodeDeleted?.Invoke(node);
+}
+
+/// <summary>
+/// Called when two nodes gets connected (via UI).
+/// </summary>
+public virtual void OnNodesConnected(IConnectionInstigator a, IConnectionInstigator b)
+{
+    NodesConnected?.Invoke(a, b);
+    MarkAsEdited();
+}
+
+/// <summary>
+/// Called when two nodes gets disconnected (via UI).
+/// </summary>
+public virtual void OnNodesDisconnected(IConnectionInstigator a, IConnectionInstigator b)
+{
+    NodesDisconnected?.Invoke(a, b);
+}
+
+/// <inheritdoc />
+public override void OnDestroy()
+{
+    if (IsDisposing)
+        return;
+    _isReleasing = true;
+
+    // Cleanup context cache
+    _root = null;
+    _context = null;
+    _onSave = null;
+    ContextStack.Clear();
+    foreach (var context in _contextCache.Values)
+    {
+        context.Clear();
+    }
+    _contextCache.Clear();
+
+    // Cleanup
+    _activeVisjectCM = null;
+    _cmPrimaryMenu?.Dispose();
+
+    ScriptsBuilder.ScriptsReloadBegin -= OnScriptsReloadBegin;
+
+    base.OnDestroy();
+}
     }
 }
