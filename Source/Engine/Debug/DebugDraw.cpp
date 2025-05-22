@@ -515,6 +515,7 @@ DebugDrawService DebugDrawServiceInstance;
 
 bool DebugDrawService::Init()
 {
+    PROFILE_MEM(Graphics);
     Context = &GlobalContext;
 
     // Init wireframe sphere cache
@@ -633,6 +634,7 @@ void DebugDrawService::Update()
     }
 
     PROFILE_CPU();
+    PROFILE_MEM(Graphics);
 
     // Update lists
     float deltaTime = Time::Update.DeltaTime.GetTotalSeconds();

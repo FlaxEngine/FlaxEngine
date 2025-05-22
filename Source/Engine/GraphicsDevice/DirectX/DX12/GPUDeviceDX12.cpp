@@ -18,6 +18,7 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Config/PlatformSettings.h"
 #include "UploadBufferDX12.h"
@@ -833,16 +834,19 @@ void GPUDeviceDX12::WaitForGPU()
 
 GPUTexture* GPUDeviceDX12::CreateTexture(const StringView& name)
 {
+    PROFILE_MEM(GraphicsTextures);
     return New<GPUTextureDX12>(this, name);
 }
 
 GPUShader* GPUDeviceDX12::CreateShader(const StringView& name)
 {
+    PROFILE_MEM(GraphicsShaders);
     return New<GPUShaderDX12>(this, name);
 }
 
 GPUPipelineState* GPUDeviceDX12::CreatePipelineState()
 {
+    PROFILE_MEM(GraphicsCommands);
     return New<GPUPipelineStateDX12>(this);
 }
 
@@ -853,6 +857,7 @@ GPUTimerQuery* GPUDeviceDX12::CreateTimerQuery()
 
 GPUBuffer* GPUDeviceDX12::CreateBuffer(const StringView& name)
 {
+    PROFILE_MEM(GraphicsBuffers);
     return New<GPUBufferDX12>(this, name);
 }
 
@@ -873,6 +878,7 @@ GPUSwapChain* GPUDeviceDX12::CreateSwapChain(Window* window)
 
 GPUConstantBuffer* GPUDeviceDX12::CreateConstantBuffer(uint32 size, const StringView& name)
 {
+    PROFILE_MEM(GraphicsShaders);
     return New<GPUConstantBufferDX12>(this, size, name);
 }
 

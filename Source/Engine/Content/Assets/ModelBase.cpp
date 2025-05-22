@@ -5,6 +5,7 @@
 #include "Engine/Core/Math/Transform.h"
 #include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Graphics/Config.h"
 #include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
@@ -51,6 +52,7 @@ public:
         AssetReference<ModelBase> model = _model.Get();
         if (model == nullptr)
             return true;
+        PROFILE_MEM(GraphicsMeshes);
 
         // Get data
         BytesContainer data;
@@ -334,6 +336,8 @@ bool ModelBase::LoadHeader(ReadStream& stream, byte& headerVersion)
 
 bool ModelBase::LoadMesh(MemoryReadStream& stream, byte meshVersion, MeshBase* mesh, MeshData* dataIfReadOnly)
 {
+    PROFILE_MEM(GraphicsMeshes);
+
     // Load descriptor
     static_assert(MODEL_MESH_VERSION == 2, "Update code");
     uint32 vertices, triangles;

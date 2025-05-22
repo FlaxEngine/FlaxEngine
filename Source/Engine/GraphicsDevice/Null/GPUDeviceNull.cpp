@@ -14,6 +14,7 @@
 #include "GPUVertexLayoutNull.h"
 #include "GPUSwapChainNull.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Graphics/Async/GPUTasksManager.h"
 
 GPUDeviceNull::GPUDeviceNull()
@@ -145,16 +146,19 @@ void GPUDeviceNull::WaitForGPU()
 
 GPUTexture* GPUDeviceNull::CreateTexture(const StringView& name)
 {
+    PROFILE_MEM(GraphicsTextures);
     return New<GPUTextureNull>();
 }
 
 GPUShader* GPUDeviceNull::CreateShader(const StringView& name)
 {
+    PROFILE_MEM(GraphicsShaders);
     return New<GPUShaderNull>();
 }
 
 GPUPipelineState* GPUDeviceNull::CreatePipelineState()
 {
+    PROFILE_MEM(GraphicsCommands);
     return New<GPUPipelineStateNull>();
 }
 
@@ -165,6 +169,7 @@ GPUTimerQuery* GPUDeviceNull::CreateTimerQuery()
 
 GPUBuffer* GPUDeviceNull::CreateBuffer(const StringView& name)
 {
+    PROFILE_MEM(GraphicsBuffers);
     return New<GPUBufferNull>();
 }
 

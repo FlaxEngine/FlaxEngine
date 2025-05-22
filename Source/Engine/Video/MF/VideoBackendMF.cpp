@@ -4,6 +4,7 @@
 
 #include "VideoBackendMF.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/TaskGraph.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/Time.h"
@@ -43,6 +44,7 @@ namespace MF
     bool Configure(VideoBackendPlayer& player, VideoPlayerMF& playerMF, DWORD streamIndex)
     {
         PROFILE_CPU_NAMED("Configure");
+        PROFILE_MEM(Video);
         IMFMediaType *mediaType = nullptr, *nativeType = nullptr;
         bool result = true;
 
@@ -367,6 +369,7 @@ namespace MF
     void UpdatePlayer(int32 index)
     {
         PROFILE_CPU();
+        PROFILE_MEM(Video);
         auto& player = *Players[index];
         ZoneText(player.DebugUrl, player.DebugUrlLen);
         auto& playerMF = player.GetBackendState<VideoPlayerMF>();
@@ -453,6 +456,7 @@ namespace MF
 bool VideoBackendMF::Player_Create(const VideoBackendPlayerInfo& info, VideoBackendPlayer& player)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Video);
     player = VideoBackendPlayer();
     auto& playerMF = player.GetBackendState<VideoPlayerMF>();
 
@@ -572,6 +576,7 @@ const Char* VideoBackendMF::Base_Name()
 bool VideoBackendMF::Base_Init()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Video);
 
     // Init COM
     HRESULT hr = CoInitializeEx(0, COINIT_MULTITHREADED);

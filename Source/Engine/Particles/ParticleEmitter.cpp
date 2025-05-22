@@ -13,6 +13,7 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "ParticleEmitterFunction.h"
 #include "Engine/ShadersCompilation/Config.h"
@@ -41,6 +42,7 @@ ParticleEmitter::ParticleEmitter(const SpawnParams& params, const AssetInfo* inf
 
 ParticleEffect* ParticleEmitter::Spawn(Actor* parent, const Transform& transform, float duration, bool autoDestroy)
 {
+    PROFILE_MEM(Particles);
     CHECK_RETURN(!WaitForLoaded(), nullptr);
     auto system = Content::CreateVirtualAsset<ParticleSystem>();
     CHECK_RETURN(system, nullptr);
@@ -72,6 +74,7 @@ namespace
 
 Asset::LoadResult ParticleEmitter::load()
 {
+    PROFILE_MEM(Particles);
     ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
 
     // Load the graph

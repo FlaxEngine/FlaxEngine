@@ -15,6 +15,7 @@
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Threading/Threading.h"
@@ -188,6 +189,8 @@ bool GPUBuffer::IsDynamic() const
 
 bool GPUBuffer::Init(const GPUBufferDescription& desc)
 {
+    PROFILE_MEM(GraphicsBuffers);
+
     // Validate description
 #if !BUILD_RELEASE
 #define GET_NAME() GetName()
@@ -241,6 +244,7 @@ bool GPUBuffer::Init(const GPUBufferDescription& desc)
         LOG(Warning, "Cannot initialize buffer. Description: {0}", desc.ToString());
         return true;
     }
+    PROFILE_MEM_INC(GraphicsBuffers, GetMemoryUsage());
 
     return false;
 }
@@ -476,6 +480,7 @@ GPUResourceType GPUBuffer::GetResourceType() const
 
 void GPUBuffer::OnReleaseGPU()
 {
+    PROFILE_MEM_DEC(GraphicsBuffers, GetMemoryUsage());
     _desc.Clear();
     _isLocked = false;
 }

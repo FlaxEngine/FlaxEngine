@@ -7,6 +7,7 @@
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/TaskGraph.h"
 
 class BehaviorSystem : public TaskGraphSystem
@@ -38,6 +39,7 @@ TaskGraphSystem* Behavior::System = nullptr;
 void BehaviorSystem::Job(int32 index)
 {
     PROFILE_CPU_NAMED("Behavior.Job");
+    PROFILE_MEM(AI);
     Behaviors[index]->UpdateAsync();
 }
 
@@ -57,6 +59,7 @@ void BehaviorSystem::Execute(TaskGraph* graph)
 
 bool BehaviorService::Init()
 {
+    PROFILE_MEM(AI);
     Behavior::System = New<BehaviorSystem>();
     Engine::UpdateGraph->AddSystem(Behavior::System);
     return false;

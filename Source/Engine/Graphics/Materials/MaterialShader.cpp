@@ -11,6 +11,7 @@
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Engine/Time.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "DecalMaterialShader.h"
 #include "PostFxMaterialShader.h"
 #include "ForwardMaterialShader.h"
@@ -136,6 +137,7 @@ MaterialShader::~MaterialShader()
 
 MaterialShader* MaterialShader::Create(const StringView& name, MemoryReadStream& shaderCacheStream, const MaterialInfo& info)
 {
+    PROFILE_MEM(GraphicsMaterials);
     MaterialShader* material;
     switch (info.Domain)
     {
@@ -199,6 +201,7 @@ protected:
 
 MaterialShader* MaterialShader::CreateDummy(MemoryReadStream& shaderCacheStream, const MaterialInfo& info)
 {
+    PROFILE_MEM(GraphicsMaterials);
     MaterialShader* material = New<DummyMaterial>();
     if (material->Load(shaderCacheStream, info))
     {
@@ -225,6 +228,7 @@ bool MaterialShader::IsReady() const
 
 bool MaterialShader::Load(MemoryReadStream& shaderCacheStream, const MaterialInfo& info)
 {
+    PROFILE_MEM(GraphicsMaterials);
     ASSERT(!_isLoaded);
 
     // Cache material info

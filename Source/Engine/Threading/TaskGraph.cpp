@@ -4,6 +4,7 @@
 #include "JobSystem.h"
 #include "Engine/Core/Collections/Sorting.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 namespace
 {
@@ -67,6 +68,7 @@ const Array<TaskGraphSystem*, InlinedAllocation<64>>& TaskGraph::GetSystems() co
 
 void TaskGraph::AddSystem(TaskGraphSystem* system)
 {
+    PROFILE_MEM(Engine);
     _systems.Add(system);
 }
 
@@ -78,6 +80,7 @@ void TaskGraph::RemoveSystem(TaskGraphSystem* system)
 void TaskGraph::Execute()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Engine);
 
     for (auto system : _systems)
         system->PreExecute(this);

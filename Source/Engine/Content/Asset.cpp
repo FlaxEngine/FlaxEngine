@@ -526,6 +526,7 @@ ContentLoadTask* Asset::createLoadingTask()
 
 void Asset::startLoading()
 {
+    PROFILE_MEM(ContentAssets);
     ASSERT(!IsLoaded());
     ASSERT(Platform::AtomicRead(&_loadingTask) == 0);
     auto loadingTask = createLoadingTask();

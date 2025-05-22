@@ -165,9 +165,13 @@ Asset::LoadResult Material::load()
         MaterialGenerator generator;
         generator.Error.Bind(&OnGeneratorError);
         if (_shaderHeader.Material.GraphVersion != MATERIAL_GRAPH_VERSION)
+        {
             LOG(Info, "Converting material \'{0}\', from version {1} to {2}...", name, _shaderHeader.Material.GraphVersion, MATERIAL_GRAPH_VERSION);
+        }
         else
+        {
             LOG(Info, "Updating material \'{0}\'...", name);
+        }
 
         // Load or create material surface
         MaterialLayer* layer;

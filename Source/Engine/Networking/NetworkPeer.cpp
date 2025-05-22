@@ -7,6 +7,7 @@
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 Array<NetworkPeer*> NetworkPeer::Peers;
 
@@ -85,6 +86,7 @@ void NetworkPeer::Shutdown()
 
 void NetworkPeer::CreateMessageBuffers()
 {
+    PROFILE_MEM(Networking);
     ASSERT(MessageBuffer == nullptr);
 
     const uint32 pageSize = Platform::GetCPUInfo().PageSize;
@@ -198,6 +200,8 @@ bool NetworkPeer::EndSendMessage(const NetworkChannelType channelType, const Net
 
 NetworkPeer* NetworkPeer::CreatePeer(const NetworkConfig& config)
 {
+    PROFILE_MEM(Networking);
+
     // Validate the address for listen/connect
     if (config.Address != TEXT("any"))
     {

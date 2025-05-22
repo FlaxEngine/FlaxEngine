@@ -5,6 +5,7 @@
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Actors/PointLight.h"
@@ -253,6 +254,7 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
 
 bool ViewportIconsRendererService::Init()
 {
+    PROFILE_MEM(Editor);
     QuadModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Quad"));
 #define INIT(type, path) \
     InstanceBuffers[static_cast<int32>(IconTypes::type)].Setup(1); \

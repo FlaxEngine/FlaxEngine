@@ -8,6 +8,7 @@
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Content/Asset.h"
 #include "Engine/Content/Content.h"
@@ -61,6 +62,14 @@ uint32 AssetInitData::GetHashCode() const
 void FlaxChunk::RegisterUsage()
 {
     LastAccessTime = Platform::GetTimeSeconds();
+}
+
+FlaxChunk* FlaxChunk::Clone() const
+{
+    PROFILE_MEM(ContentFiles);
+    auto chunk = New<FlaxChunk>();
+    chunk->Data.Copy(Data);
+    return chunk;
 }
 
 const int32 FlaxStorage::MagicCode = 1180124739;
@@ -281,19 +290,12 @@ uint32 FlaxStorage::GetMemoryUsage() const
 
 bool FlaxStorage::Load()
 {
-    // Check if was already loaded
     if (IsLoaded())
-    {
         return false;
-    }
-
-    // Prevent loading by more than one thread
+    PROFILE_MEM(ContentFiles);
     ScopeLock lock(_loadLocker);
     if (IsLoaded())
-    {
-        // Other thread loaded it
         return false;
-    }
     ASSERT(GetEntriesCount() == 0);
 
     // Open file
@@ -693,6 +695,7 @@ bool FlaxStorage::LoadAssetHeader(const Guid& id, AssetInitData& data)
 
 bool FlaxStorage::LoadAssetChunk(FlaxChunk* chunk)
 {
+    PROFILE_MEM(ContentFiles);
     ASSERT(IsLoaded());
     ASSERT(chunk != nullptr && _chunks.Contains(chunk));
 
@@ -866,6 +869,7 @@ FlaxChunk* FlaxStorage::AllocateChunk()
 {
     if (AllowDataModifications())
     {
+        PROFILE_MEM(ContentFiles);
         auto chunk = New<FlaxChunk>();
         _chunks.Add(chunk);
         return chunk;
@@ -1125,6 +1129,7 @@ bool FlaxStorage::Save(const AssetInitData& data, bool silentMode)
 
 bool FlaxStorage::LoadAssetHeader(const Entry& e, AssetInitData& data)
 {
+    PROFILE_MEM(ContentFiles);
     ASSERT(IsLoaded());
 
     auto lock = Lock();
@@ -1396,6 +1401,8 @@ FileReadStream* FlaxStorage::OpenFile()
     auto& stream = _file.Get();
     if (stream == nullptr)
     {
+        PROFILE_MEM(ContentFiles);
+
         // Open file
         auto file = File::Open(_path, FileMode::OpenExisting, FileAccess::Read, FileShare::Read);
         if (file == nullptr)

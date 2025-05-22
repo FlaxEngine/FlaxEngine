@@ -5,6 +5,7 @@
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/DynamicBuffer.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 ParticleBuffer::ParticleBuffer()
 {
@@ -23,6 +24,7 @@ ParticleBuffer::~ParticleBuffer()
 
 bool ParticleBuffer::Init(ParticleEmitter* emitter)
 {
+    PROFILE_MEM(Particles);
     ASSERT(emitter && emitter->IsLoaded());
 
     Version = emitter->Graph.Version;

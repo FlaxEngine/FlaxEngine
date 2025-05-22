@@ -626,6 +626,7 @@ void RenderList::BuildObjectsBuffer()
     if (count == 0)
         return;
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsCommands);
     ObjectBuffer.Data.Resize(count * sizeof(ShaderObjectData));
     auto* src = (const DrawCall*)DrawCalls.Get();
     auto* dst = (ShaderObjectData*)ObjectBuffer.Data.Get();
@@ -648,6 +649,7 @@ void RenderList::BuildObjectsBuffer()
 void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass, bool stable)
 {
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsCommands);
     const auto* drawCallsData = drawCalls.Get();
     const auto* listData = list.Indices.Get();
     const int32 listSize = list.Indices.Count();
@@ -754,6 +756,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     if (list.IsEmpty())
         return;
     PROFILE_GPU_CPU("Drawing");
+    PROFILE_MEM(GraphicsCommands);
     const auto* drawCallsData = drawCallsList->DrawCalls.Get();
     const auto* listData = list.Indices.Get();
     const auto* batchesData = list.Batches.Get();

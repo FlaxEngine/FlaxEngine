@@ -9,6 +9,7 @@
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerGPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Render2D/Font.h"
 
 bool Graphics::UseVSync = false;
@@ -97,6 +98,7 @@ void Graphics::DisposeDevice()
 bool GraphicsService::Init()
 {
     ASSERT(GPUDevice::Instance == nullptr);
+    PROFILE_MEM(Graphics);
 
     // Create and initialize graphics device
     Log::Logger::WriteFloor();

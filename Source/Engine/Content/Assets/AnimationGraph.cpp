@@ -9,6 +9,7 @@
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Animations/Animations.h"
 #include "Engine/Threading/Threading.h"
@@ -25,6 +26,7 @@ AnimationGraph::AnimationGraph(const SpawnParams& params, const AssetInfo* info)
 
 Asset::LoadResult AnimationGraph::load()
 {
+    PROFILE_MEM(AnimationsData);
     ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
 
     // Get stream with graph data
@@ -83,6 +85,7 @@ bool AnimationGraph::InitAsAnimation(SkinnedModel* baseModel, Animation* anim, b
         Log::ArgumentNullException();
         return true;
     }
+    PROFILE_MEM(AnimationsData);
     ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
 
     // Create Graph data

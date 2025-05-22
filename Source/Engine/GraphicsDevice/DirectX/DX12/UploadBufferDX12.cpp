@@ -6,6 +6,7 @@
 #include "GPUTextureDX12.h"
 #include "GPUContextDX12.h"
 #include "../RenderToolsDX.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 UploadBufferDX12::UploadBufferDX12(GPUDeviceDX12* device)
     : _device(device)
@@ -235,6 +236,7 @@ UploadBufferPageDX12::UploadBufferPageDX12(GPUDeviceDX12* device, uint64 size)
     initResource(resource, D3D12_RESOURCE_STATE_GENERIC_READ, 1);
     DX_SET_DEBUG_NAME(_resource, GPUResourceDX12::GetName());
     _memoryUsage = size;
+    PROFILE_MEM_INC(GraphicsCommands, _memoryUsage);
     GPUAddress = _resource->GetGPUVirtualAddress();
 
     // Map buffer
@@ -243,6 +245,8 @@ UploadBufferPageDX12::UploadBufferPageDX12(GPUDeviceDX12* device, uint64 size)
 
 void UploadBufferPageDX12::OnReleaseGPU()
 {
+    PROFILE_MEM_DEC(GraphicsCommands, _memoryUsage);
+
     // Unmap
     if (_resource && CPUAddress)
     {

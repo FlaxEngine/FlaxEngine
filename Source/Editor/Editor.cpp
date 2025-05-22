@@ -20,6 +20,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/ShadowsOfMordor/Builder.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "FlaxEngine.Gen.h"
 #if PLATFORM_LINUX
 #include "Engine/Tools/TextureTool/TextureTool.h"
@@ -47,6 +48,7 @@ void Editor::CloseSplashScreen()
 
 bool Editor::CheckProjectUpgrade()
 {
+    PROFILE_MEM(Editor);
     const auto versionFilePath = Globals::ProjectCacheFolder / TEXT("version");
 
     // Load version cache file
@@ -366,6 +368,8 @@ bool Editor::BackupProject()
 
 int32 Editor::LoadProduct()
 {
+    PROFILE_MEM(Editor);
+
     // Flax Editor product
     Globals::ProductName = TEXT("Flax Editor");
     Globals::CompanyName = TEXT("Flax");
@@ -626,6 +630,7 @@ int32 Editor::LoadProduct()
 
 Window* Editor::CreateMainWindow()
 {
+    PROFILE_MEM(Editor);
     Window* window = Managed->GetMainWindow();
 
 #if PLATFORM_LINUX
@@ -662,6 +667,7 @@ bool Editor::Init()
         return true;
     }
     PROFILE_CPU();
+    PROFILE_MEM(Editor);
 
     // If during last lightmaps baking engine crashed we could try to restore the progress
     ShadowsOfMordor::Builder::Instance()->CheckIfRestoreState();
@@ -693,11 +699,13 @@ bool Editor::Init()
 
 void Editor::BeforeRun()
 {
+    PROFILE_MEM(Editor);
     Managed->BeforeRun();
 }
 
 void Editor::BeforeExit()
 {
+    PROFILE_MEM(Editor);
     CloseSplashScreen();
 
     Managed->Exit();
@@ -708,6 +716,8 @@ void Editor::BeforeExit()
 
 void EditorImpl::OnUpdate()
 {
+    PROFILE_MEM(Editor);
+
     // Update c# editor
     Editor::Managed->Update();
 

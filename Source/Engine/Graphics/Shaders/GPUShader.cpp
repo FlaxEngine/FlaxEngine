@@ -8,6 +8,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 static FORCE_INLINE uint32 HashPermutation(const StringAnsiView& name, int32 permutationIndex)
 {
@@ -33,6 +34,7 @@ GPUShader::GPUShader()
 bool GPUShader::Create(MemoryReadStream& stream)
 {
     ReleaseGPU();
+    _memoryUsage = sizeof(GPUShader);
 
     // Version
     int32 version;
@@ -111,6 +113,7 @@ bool GPUShader::Create(MemoryReadStream& stream)
             const uint32 hash = HashPermutation(shader->GetName(), permutationIndex);
             ASSERT_LOW_LAYER(!_shaders.ContainsKey(hash));
             _shaders.Add(hash, shader);
+            _memoryUsage += sizeof(GPUShaderProgram) + bytecodeSize;
         }
     }
 
@@ -142,11 +145,12 @@ bool GPUShader::Create(MemoryReadStream& stream)
             return true;
         }
         _constantBuffers[slotIndex] = cb;
+        _memoryUsage += sizeof(GPUConstantBuffer);
     }
 
     // Don't read additional data
 
-    _memoryUsage = 1;
+    PROFILE_MEM_INC(GraphicsShaders, _memoryUsage);
     return false;
 }
 
@@ -208,6 +212,7 @@ GPUResourceType GPUShader::GetResourceType() const
 
 void GPUShader::OnReleaseGPU()
 {
+    PROFILE_MEM_DEC(GraphicsShaders, _memoryUsage);
     for (GPUConstantBuffer*& cb : _constantBuffers)
     {
         if (cb)

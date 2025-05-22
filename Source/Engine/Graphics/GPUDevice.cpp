@@ -650,6 +650,7 @@ GPUTasksExecutor* GPUDevice::CreateTasksExecutor()
 
 void GPUDevice::Draw()
 {
+    PROFILE_MEM(Graphics);
     DrawBegin();
 
     auto context = GetMainContext();

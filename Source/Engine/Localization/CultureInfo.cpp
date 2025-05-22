@@ -3,6 +3,7 @@
 #include "CultureInfo.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/StringView.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Scripting/Types.h"
 #include "Engine/Scripting/ManagedCLR/MProperty.h"
@@ -51,6 +52,7 @@ CultureInfo::CultureInfo(int32 lcid)
     _data = nullptr;
     if (lcid == 0)
         return;
+    PROFILE_MEM(Localization);
     if (lcid == 127)
     {
         _englishName = TEXT("Invariant Culture");
@@ -88,6 +90,7 @@ CultureInfo::CultureInfo(const StringView& name)
 
 CultureInfo::CultureInfo(const StringAnsiView& name)
 {
+    PROFILE_MEM(Localization);
     _data = nullptr;
     if (name.IsEmpty())
     {
@@ -160,6 +163,7 @@ bool CultureInfo::operator==(const CultureInfo& other) const
 void* MUtils::ToManaged(const CultureInfo& value)
 {
 #if USE_CSHARP
+    PROFILE_MEM(Localization);
     auto scriptingClass = Scripting::GetStaticClass();
     CHECK_RETURN(scriptingClass, nullptr);
     auto cultureInfoToManaged = scriptingClass->GetMethod("CultureInfoToManaged", 1);
@@ -182,6 +186,7 @@ CultureInfo MUtils::ToNative(void* value)
     if (value)
         lcid = static_cast<MonoCultureInfo*>(value)->lcid;
 #elif USE_CSHARP
+    PROFILE_MEM(Localization);
     const MClass* klass = GetBinaryModuleCorlib()->Assembly->GetClass("System.Globalization.CultureInfo");
     if (value && klass)
     {

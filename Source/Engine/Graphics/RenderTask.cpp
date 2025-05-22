@@ -417,6 +417,7 @@ void SceneRenderTask::OnEnd(GPUContext* context)
 
 bool SceneRenderTask::Resize(int32 width, int32 height)
 {
+    PROFILE_MEM(Graphics);
     if (Output && Output->Resize(width, height))
         return true;
     if (Buffers && Buffers->Init((int32)((float)width * RenderingPercentage), (int32)((float)height * RenderingPercentage)))

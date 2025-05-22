@@ -14,6 +14,7 @@
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/JsonTools.h"
 
 struct AxisEvaluation
@@ -89,12 +90,14 @@ Array<AxisConfig> Input::AxisMappings;
 
 void InputSettings::Apply()
 {
+    PROFILE_MEM(Input);
     Input::ActionMappings = ActionMappings;
     Input::AxisMappings = AxisMappings;
 }
 
 void InputSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
+    PROFILE_MEM(Input);
     const auto actionMappings = stream.FindMember("ActionMappings");
     if (actionMappings != stream.MemberEnd())
     {
@@ -615,6 +618,7 @@ float Input::GetAxisRaw(const StringView& name)
 
 void Input::SetInputMappingFromSettings(const JsonAssetReference<InputSettings>& settings)
 {
+    PROFILE_MEM(Input);
     auto actionMappings = settings.GetInstance()->ActionMappings;
     ActionMappings.Resize(actionMappings.Count(), false);
     for (int i = 0; i < actionMappings.Count(); i++)
@@ -634,6 +638,7 @@ void Input::SetInputMappingFromSettings(const JsonAssetReference<InputSettings>&
 
 void Input::SetInputMappingToDefaultSettings()
 {
+    PROFILE_MEM(Input);
     InputSettings* settings = InputSettings::Get();
     if (settings)
     {
@@ -696,6 +701,7 @@ Array<AxisConfig> Input::GetAllAxisConfigsByName(const StringView& name)
 
 void Input::SetAxisConfigByName(const StringView& name, AxisConfig& config, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < AxisMappings.Count(); ++i)
     {
         auto& mapping = AxisMappings.At(i);
@@ -712,6 +718,7 @@ void Input::SetAxisConfigByName(const StringView& name, AxisConfig& config, bool
 
 void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType, const KeyboardKeys positiveButton, const KeyboardKeys negativeButton, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < AxisMappings.Count(); ++i)
     {
         auto& mapping = AxisMappings.At(i);
@@ -727,6 +734,7 @@ void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType,
 
 void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType, const GamepadButton positiveButton, const GamepadButton negativeButton, InputGamepadIndex gamepadIndex, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < AxisMappings.Count(); ++i)
     {
         auto& mapping = AxisMappings.At(i);
@@ -742,6 +750,7 @@ void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType,
 
 void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType, const float gravity, const float deadZone, const float sensitivity, const float scale, const bool snap, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < AxisMappings.Count(); ++i)
     {
         auto& mapping = AxisMappings.At(i);
@@ -760,6 +769,7 @@ void Input::SetAxisConfigByName(const StringView& name, InputAxisType inputType,
 
 void Input::SetActionConfigByName(const StringView& name, const KeyboardKeys key, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < ActionMappings.Count(); ++i)
     {
         auto& mapping = ActionMappings.At(i);
@@ -774,6 +784,7 @@ void Input::SetActionConfigByName(const StringView& name, const KeyboardKeys key
 
 void Input::SetActionConfigByName(const StringView& name, const MouseButton mouseButton, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < ActionMappings.Count(); ++i)
     {
         auto& mapping = ActionMappings.At(i);
@@ -788,6 +799,7 @@ void Input::SetActionConfigByName(const StringView& name, const MouseButton mous
 
 void Input::SetActionConfigByName(const StringView& name, const GamepadButton gamepadButton, InputGamepadIndex gamepadIndex, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < ActionMappings.Count(); ++i)
     {
         auto& mapping = ActionMappings.At(i);
@@ -802,6 +814,7 @@ void Input::SetActionConfigByName(const StringView& name, const GamepadButton ga
 
 void Input::SetActionConfigByName(const StringView& name, ActionConfig& config, bool all)
 {
+    PROFILE_MEM(Input);
     for (int i = 0; i < ActionMappings.Count(); ++i)
     {
         auto& mapping = ActionMappings.At(i);
@@ -819,6 +832,7 @@ void Input::SetActionConfigByName(const StringView& name, ActionConfig& config, 
 void InputService::Update()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Input);
     const auto frame = Time::Update.TicksCount;
     const auto dt = Time::Update.UnscaledDeltaTime.GetTotalSeconds();
     InputEvents.Clear();

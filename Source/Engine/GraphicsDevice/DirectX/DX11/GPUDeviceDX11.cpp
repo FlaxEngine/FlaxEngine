@@ -19,6 +19,7 @@
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Engine/CommandLine.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 #if !USE_EDITOR && PLATFORM_WINDOWS
 #include "Engine/Core/Config/PlatformSettings.h"
@@ -810,16 +811,19 @@ void GPUDeviceDX11::DrawEnd()
 
 GPUTexture* GPUDeviceDX11::CreateTexture(const StringView& name)
 {
+    PROFILE_MEM(GraphicsTextures);
     return New<GPUTextureDX11>(this, name);
 }
 
 GPUShader* GPUDeviceDX11::CreateShader(const StringView& name)
 {
+    PROFILE_MEM(GraphicsShaders);
     return New<GPUShaderDX11>(this, name);
 }
 
 GPUPipelineState* GPUDeviceDX11::CreatePipelineState()
 {
+    PROFILE_MEM(GraphicsCommands);
     return New<GPUPipelineStateDX11>(this);
 }
 
@@ -830,6 +834,7 @@ GPUTimerQuery* GPUDeviceDX11::CreateTimerQuery()
 
 GPUBuffer* GPUDeviceDX11::CreateBuffer(const StringView& name)
 {
+    PROFILE_MEM(GraphicsBuffers);
     return New<GPUBufferDX11>(this, name);
 }
 
@@ -850,6 +855,7 @@ GPUSwapChain* GPUDeviceDX11::CreateSwapChain(Window* window)
 
 GPUConstantBuffer* GPUDeviceDX11::CreateConstantBuffer(uint32 size, const StringView& name)
 {
+    PROFILE_MEM(GraphicsShaders);
     ID3D11Buffer* buffer = nullptr;
     uint32 memorySize = 0;
     if (size)

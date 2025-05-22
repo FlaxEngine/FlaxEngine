@@ -5,6 +5,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
@@ -41,6 +42,7 @@ ParticleEmitterFunction::ParticleEmitterFunction(const SpawnParams& params, cons
 
 Asset::LoadResult ParticleEmitterFunction::load()
 {
+    PROFILE_MEM(Particles);
     ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
 
     // Load graph

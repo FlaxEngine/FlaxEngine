@@ -8,6 +8,7 @@
 #include "Engine/Serialization/MemoryWriteStream.h"
 #endif
 #include "Engine/Animations/Animations.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Threading/Threading.h"
 
@@ -20,6 +21,7 @@ AnimationGraphFunction::AnimationGraphFunction(const SpawnParams& params, const 
 
 Asset::LoadResult AnimationGraphFunction::load()
 {
+    PROFILE_MEM(AnimationsData);
     ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
 
     // Get graph data from chunk

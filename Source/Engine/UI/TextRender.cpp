@@ -13,6 +13,8 @@
 #include "Engine/Render2D/FontManager.h"
 #include "Engine/Render2D/FontTextureAtlas.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
 #include "Engine/Content/Content.h"
@@ -120,6 +122,9 @@ void TextRender::SetLayoutOptions(TextLayoutOptions& value)
 
 void TextRender::UpdateLayout()
 {
+    PROFILE_CPU();
+    PROFILE_MEM(UI);
+
     // Clear
     _ib.Clear();
     _vb.Clear();

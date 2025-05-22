@@ -597,6 +597,8 @@ void OnGUIShaderReloading(Asset* obj)
 
 bool Render2DService::Init()
 {
+    PROFILE_MEM(UI);
+
     // GUI Shader
     GUIShader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GUI"));
     if (GUIShader == nullptr)

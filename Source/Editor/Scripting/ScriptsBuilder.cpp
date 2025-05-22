@@ -23,6 +23,7 @@
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Level/Level.h"
 #include "FlaxEngine.Gen.h"
 
@@ -413,6 +414,7 @@ void ScriptsBuilder::GetBinariesConfiguration(const Char*& target, const Char*& 
 
 bool ScriptsBuilderImpl::compileGameScriptsAsyncInner()
 {
+    PROFILE_MEM(Editor);
     LOG(Info, "Starting scripts compilation...");
     CallEvent(EventType::CompileStarted);
 
@@ -519,6 +521,8 @@ void ScriptsBuilderImpl::onEditorAssemblyUnloading(MAssembly* assembly)
 
 bool ScriptsBuilderImpl::compileGameScriptsAsync()
 {
+    PROFILE_MEM(Editor);
+
     // Start
     {
         ScopeLock scopeLock(_locker);
@@ -562,6 +566,7 @@ bool ScriptsBuilderService::Init()
     // Check flag
     if (_isInited)
         return false;
+    PROFILE_MEM(Editor);
     _isInited = true;
 
     // Link for Editor assembly unload event to clear cached Internal_OnCompilationEnd to prevent errors

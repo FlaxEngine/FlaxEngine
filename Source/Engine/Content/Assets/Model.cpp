@@ -18,6 +18,7 @@
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Tools/ModelTool/ModelTool.h"
@@ -304,6 +305,7 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
         Log::ArgumentOutOfRangeException();
         return true;
     }
+    PROFILE_MEM(GraphicsMeshes);
 
     // Dispose previous data and disable streaming (will start data uploading tasks manually)
     StopStreaming();
@@ -343,6 +345,7 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
 
 bool Model::LoadHeader(ReadStream& stream, byte& headerVersion)
 {
+    PROFILE_MEM(GraphicsMeshes);
     if (ModelBase::LoadHeader(stream, headerVersion))
         return true;
     
@@ -509,6 +512,7 @@ bool Model::Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk
 
 void Model::SetupMaterialSlots(int32 slotsCount)
 {
+    PROFILE_MEM(GraphicsMeshes);
     ModelBase::SetupMaterialSlots(slotsCount);
 
     // Adjust meshes indices for slots
@@ -584,6 +588,8 @@ int32 Model::GetAllocatedResidency() const
 
 Asset::LoadResult Model::load()
 {
+    PROFILE_MEM(GraphicsMeshes);
+
     // Get header chunk
     auto chunk0 = GetChunk(0);
     if (chunk0 == nullptr || chunk0->IsMissing())

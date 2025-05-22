@@ -9,6 +9,7 @@
 #include "Engine/Animations/Animations.h"
 #include "Engine/Animations/SceneAnimations/SceneAnimation.h"
 #include "Engine/Scripting/Scripting.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #if USE_EDITOR
@@ -598,6 +599,7 @@ void Animation::OnScriptingDispose()
 
 Asset::LoadResult Animation::load()
 {
+    PROFILE_MEM(AnimationsData);
     ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
 
     // Get stream with animations data

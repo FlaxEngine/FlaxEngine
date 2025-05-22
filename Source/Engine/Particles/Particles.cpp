@@ -16,6 +16,7 @@
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Threading/TaskGraph.h"
@@ -167,6 +168,7 @@ ParticleManagerService ParticleManagerServiceInstance;
 
 void Particles::UpdateEffect(ParticleEffect* effect)
 {
+    PROFILE_MEM(Particles);
     UpdateList.Add(effect);
 }
 
@@ -933,6 +935,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
     const DrawPass drawModes = view.Pass & effect->DrawModes;
     if (drawModes == DrawPass::None || SpriteRenderer.Init())
         return;
+    PROFILE_MEM(Particles);
     Matrix worlds[2];
     Matrix::Translation(-renderContext.View.Origin, worlds[0]); // World
     renderContext.View.GetWorldMatrix(effect->GetTransform(), worlds[1]); // Local
@@ -1073,6 +1076,7 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
     if (GpuUpdateList.IsEmpty())
         return;
     PROFILE_GPU("GPU Particles");
+    PROFILE_MEM(Particles);
 
     for (ParticleEffect* effect : GpuUpdateList)
     {
@@ -1112,6 +1116,7 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
 ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Particles);
     ParticleBuffer* result = nullptr;
     ASSERT(emitter && emitter->IsLoaded());
 
@@ -1161,6 +1166,7 @@ ParticleBuffer* Particles::AcquireParticleBuffer(ParticleEmitter* emitter)
 void Particles::RecycleParticleBuffer(ParticleBuffer* buffer)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Particles);
     if (buffer->Emitter->EnablePooling && EnableParticleBufferPooling)
     {
         // Return to pool
@@ -1208,6 +1214,7 @@ void Particles::OnEmitterUnload(ParticleEmitter* emitter)
 
 bool ParticleManagerService::Init()
 {
+    PROFILE_MEM(Particles);
     Particles::System = New<ParticlesSystem>();
     Particles::System->Order = 10000;
     Engine::UpdateGraph->AddSystem(Particles::System);
@@ -1253,6 +1260,7 @@ void ParticleManagerService::Dispose()
 void ParticlesSystem::Job(int32 index)
 {
     PROFILE_CPU_NAMED("Particles.Job");
+    PROFILE_MEM(Particles);
     auto effect = UpdateList[index];
     auto& instance = effect->Instance;
     const auto particleSystem = effect->ParticleSystem.Get();
@@ -1432,6 +1440,7 @@ void ParticlesSystem::PostExecute(TaskGraph* graph)
     if (!Active)
         return;
     PROFILE_CPU_NAMED("Particles.PostExecute");
+    PROFILE_MEM(Particles);
 
     // Cleanup
     Particles::SystemLocker.End(false);

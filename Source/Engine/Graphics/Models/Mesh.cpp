@@ -14,6 +14,7 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "Engine/Renderer/GBufferPass.h"
 #endif
@@ -48,6 +49,7 @@ namespace
 {
     bool UpdateMesh(MeshBase* mesh, uint32 vertexCount, uint32 triangleCount, PixelFormat indexFormat, const Float3* vertices, const void* triangles, const Float3* normals, const Float3* tangents, const Float2* uvs, const Color32* colors)
     {
+        PROFILE_MEM(GraphicsMeshes);
         auto model = mesh->GetModelBase();
         CHECK_RETURN(model && model->IsVirtual(), true);
         CHECK_RETURN(triangles && vertices, true);
@@ -172,6 +174,7 @@ bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0Element
 
 bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const void* ib, bool use16BitIndices)
 {
+    PROFILE_MEM(GraphicsMeshes);
     Release();
 
     // Setup GPU resources

@@ -34,6 +34,7 @@
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Utilities/StringConverter.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Scripting/Enums.h"
 
@@ -229,9 +230,13 @@ static VKAPI_ATTR VkBool32 VKAPI_PTR DebugUtilsCallback(VkDebugUtilsMessageSever
 
     const String message(callbackData->pMessage);
     if (callbackData->pMessageIdName)
+    {
         LOG(Info, "[Vulkan] {0} {1}:{2}({3}) {4}", type, severity, callbackData->messageIdNumber, String(callbackData->pMessageIdName), message);
+    }
     else
+    {
         LOG(Info, "[Vulkan] {0} {1}:{2} {3}", type, severity, callbackData->messageIdNumber, message);
+    }
 
 #if BUILD_DEBUG
     if (auto* context = (GPUContextVulkan*)GPUDevice::Instance->GetMainContext())
@@ -2095,16 +2100,19 @@ void GPUDeviceVulkan::WaitForGPU()
 
 GPUTexture* GPUDeviceVulkan::CreateTexture(const StringView& name)
 {
+    PROFILE_MEM(GraphicsTextures);
     return New<GPUTextureVulkan>(this, name);
 }
 
 GPUShader* GPUDeviceVulkan::CreateShader(const StringView& name)
 {
+    PROFILE_MEM(GraphicsShaders);
     return New<GPUShaderVulkan>(this, name);
 }
 
 GPUPipelineState* GPUDeviceVulkan::CreatePipelineState()
 {
+    PROFILE_MEM(GraphicsCommands);
     return New<GPUPipelineStateVulkan>(this);
 }
 
@@ -2115,6 +2123,7 @@ GPUTimerQuery* GPUDeviceVulkan::CreateTimerQuery()
 
 GPUBuffer* GPUDeviceVulkan::CreateBuffer(const StringView& name)
 {
+    PROFILE_MEM(GraphicsBuffers);
     return New<GPUBufferVulkan>(this, name);
 }
 
@@ -2135,6 +2144,7 @@ GPUSwapChain* GPUDeviceVulkan::CreateSwapChain(Window* window)
 
 GPUConstantBuffer* GPUDeviceVulkan::CreateConstantBuffer(uint32 size, const StringView& name)
 {
+    PROFILE_MEM(GraphicsShaders);
     return New<GPUConstantBufferVulkan>(this, size);
 }
 

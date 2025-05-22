@@ -1900,9 +1900,13 @@ bool VisualScriptingBinaryModule::InvokeMethod(void* method, const Variant& inst
         if (!instanceObject || instanceObject->GetTypeHandle() != vsMethod->Script->GetScriptingType())
         {
             if (!instanceObject)
+            {
                 LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) without object instance", String(vsMethod->Script->GetScriptTypeName()), String(vsMethod->Name), vsMethod->ParamNames.Count());
+            }
             else
+            {
                 LOG(Error, "Failed to call method '{0}.{1}' (args count: {2}) with invalid object instance of type '{3}'", String(vsMethod->Script->GetScriptTypeName()), String(vsMethod->Name), vsMethod->ParamNames.Count(), String(instanceObject->GetType().Fullname));
+            }
             return true;
         }
     }

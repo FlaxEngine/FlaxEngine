@@ -6,6 +6,7 @@
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Engine/Time.h"
@@ -380,6 +381,7 @@ void ParticleEffect::Sync()
         Instance.ClearState();
         return;
     }
+    PROFILE_MEM(Particles);
 
     Instance.Sync(system);
 
@@ -498,6 +500,7 @@ void ParticleEffect::CacheModifiedParameters()
 {
     if (_parameters.IsEmpty())
         return;
+    PROFILE_MEM(Particles);
     _parametersOverrides.Clear();
     auto& parameters = GetParameters();
     for (auto& param : parameters)
@@ -516,6 +519,7 @@ void ParticleEffect::ApplyModifiedParameters()
 {
     if (_parametersOverrides.IsEmpty())
         return;
+    PROFILE_MEM(Particles);
 
     // Parameters getter applies the parameters overrides
     if (_parameters.IsEmpty())
@@ -658,6 +662,7 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
     // Base
     Actor::Deserialize(stream, modifier);
 
+    PROFILE_MEM(Particles);
     const auto overridesMember = stream.FindMember("Overrides");
     if (overridesMember != stream.MemberEnd())
     {

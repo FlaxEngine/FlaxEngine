@@ -34,9 +34,13 @@ bool NavCrowd::Init(const NavAgentProperties& agentProperties, int32 maxAgents)
     if (!navMeshRuntime)
     {
         if (NavMeshRuntime::Get())
+        {
             LOG(Error, "Cannot create crowd. Failed to find a navmesh that matches a given agent properties.");
+        }
         else
+        {
             LOG(Error, "Cannot create crowd. No navmesh is loaded.");
+        }
     }
 #endif
     return Init(agentProperties.Radius * 3.0f, maxAgents, navMeshRuntime);

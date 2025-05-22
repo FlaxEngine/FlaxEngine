@@ -10,6 +10,7 @@
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Threading/ThreadPoolTask.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Threading/Threading.h"
@@ -527,6 +528,7 @@ protected:
         auto storage = ref->Storage;
         auto factory = (BinaryAssetFactoryBase*)Content::GetAssetFactory(ref->GetTypeName());
         ASSERT(factory);
+        PROFILE_MEM(ContentAssets);
 
         // Here we should open storage and extract AssetInitData
         // This would also allow to convert/upgrade data

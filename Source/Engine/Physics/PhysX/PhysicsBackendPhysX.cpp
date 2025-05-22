@@ -24,6 +24,7 @@
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/WriteStream.h"
 #include <ThirdParty/PhysX/PxPhysicsAPI.h>
 #include <ThirdParty/PhysX/PxQueryFiltering.h>
@@ -117,6 +118,7 @@ class AllocatorPhysX : public PxAllocatorCallback
     void* allocate(size_t size, const char* typeName, const char* filename, int line) override
     {
         ASSERT(size < 1024 * 1024 * 1024); // Prevent invalid allocation size
+        PROFILE_MEM(Physics);
         return Allocator::Allocate(size, 16);
     }
 
@@ -725,6 +727,7 @@ void ScenePhysX::UpdateVehicles(float dt)
     if (WheelVehicles.IsEmpty())
         return;
     PROFILE_CPU_NAMED("Physics.Vehicles");
+    PROFILE_MEM(Physics);
 
     // Update vehicles steering
     WheelVehiclesCache.Clear();
@@ -1861,6 +1864,7 @@ void PhysicsBackend::DestroyScene(void* scene)
 
 void PhysicsBackend::StartSimulateScene(void* scene, float dt)
 {
+    PROFILE_MEM(Physics);
     auto scenePhysX = (ScenePhysX*)scene;
     const auto& settings = *PhysicsSettings::Get();
 
@@ -1895,6 +1899,7 @@ void PhysicsBackend::StartSimulateScene(void* scene, float dt)
 
 void PhysicsBackend::EndSimulateScene(void* scene)
 {
+    PROFILE_MEM(Physics);
     auto scenePhysX = (ScenePhysX*)scene;
 
     {
@@ -3880,6 +3885,7 @@ void PhysicsBackend::RemoveVehicle(void* scene, WheeledVehicle* actor)
 void* PhysicsBackend::CreateCloth(const PhysicsClothDesc& desc)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Physics);
 #if USE_CLOTH_SANITY_CHECKS
     {
         // Sanity check

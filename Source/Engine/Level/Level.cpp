@@ -24,6 +24,7 @@
 #include "Engine/Platform/File.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
@@ -248,6 +249,7 @@ void LayersAndTagsSettings::Apply()
 
 #define TICK_LEVEL(tickingStage, name) \
     PROFILE_CPU_NAMED(name); \
+    PROFILE_MEM(Level); \
     ScopeLock lock(Level::ScenesLock); \
     auto& scenes = Level::Scenes; \
     if (!Time::GetGamePaused() && Level::TickEnabled) \
@@ -504,6 +506,7 @@ public:
         // Note: we don't want to override original scene files
 
         PROFILE_CPU_NAMED("Level.ReloadScripts");
+        PROFILE_MEM(Level);
         LOG(Info, "Scripts reloading start");
         const auto startTime = DateTime::NowUTC();
 
@@ -784,6 +787,7 @@ bool LevelImpl::unloadScene(Scene* scene)
     const auto sceneId = scene->GetID();
 
     PROFILE_CPU_NAMED("Level.UnloadScene");
+    PROFILE_MEM(Level);
 
     // Fire event
     CallSceneEvent(SceneEventType::OnSceneUnloading, scene, sceneId);
@@ -838,6 +842,7 @@ bool Level::loadScene(const BytesContainer& sceneData, Scene** outScene)
         LOG(Error, "Missing scene data.");
         return true;
     }
+    PROFILE_MEM(Level);
 
     // Parse scene JSON file
     rapidjson_flax::Document document;
@@ -870,6 +875,7 @@ bool Level::loadScene(rapidjson_flax::Document& document, Scene** outScene)
 bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene, const String* assetPath)
 {
     PROFILE_CPU_NAMED("Level.LoadScene");
+    PROFILE_MEM(Level);
     if (outScene)
         *outScene = nullptr;
 #if USE_EDITOR
@@ -954,6 +960,7 @@ bool Level::loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** ou
             ScenesLock.Unlock(); // Unlock scenes from Main Thread so Job Threads can use it to safely setup actors hierarchy (see Actor::Deserialize)
             JobSystem::Execute([&](int32 i)
             {
+                PROFILE_MEM(Level);
                 i++; // Start from 1. at index [0] was scene
                 auto& stream = data[i];
                 auto obj = SceneObjectsFactory::Spawn(context, stream);
@@ -1165,6 +1172,7 @@ bool LevelImpl::saveScene(Scene* scene)
 bool LevelImpl::saveScene(Scene* scene, const String& path)
 {
     PROFILE_CPU_NAMED("Level.SaveScene");
+    PROFILE_MEM(Level);
     ASSERT(scene && EnumHasNoneFlags(scene->Flags, ObjectFlags::WasMarkedToDelete));
     auto sceneId = scene->GetID();
 
@@ -1208,6 +1216,7 @@ bool LevelImpl::saveScene(Scene* scene, const String& path)
 bool LevelImpl::saveScene(Scene* scene, rapidjson_flax::StringBuffer& outBuffer, bool prettyJson)
 {
     PROFILE_CPU_NAMED("Level.SaveScene");
+    PROFILE_MEM(Level);
     if (prettyJson)
     {
         PrettyJsonWriter writerObj(outBuffer);

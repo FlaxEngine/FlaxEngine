@@ -8,6 +8,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/CriticalSection.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Debug/Exceptions/Exceptions.h"
 #if USE_EDITOR
@@ -42,6 +43,7 @@ bool Log::Logger::Init()
     // Skip if disabled
     if (!IsLogEnabled())
         return false;
+    PROFILE_MEM(Engine);
 
     // Create logs directory (if is missing)
 #if USE_EDITOR
@@ -119,6 +121,7 @@ void Log::Logger::Write(const StringView& msg)
     const auto length = msg.Length();
     if (length <= 0)
         return;
+    PROFILE_MEM(Engine);
 
     LogLocker.Lock();
     if (IsDuringLog)
@@ -258,6 +261,7 @@ void Log::Logger::Write(LogType type, const StringView& msg)
 {
     if (msg.Length() <= 0)
         return;
+    PROFILE_MEM(Engine);
     const bool isError = IsError(type);
 
     // Create message for the log file

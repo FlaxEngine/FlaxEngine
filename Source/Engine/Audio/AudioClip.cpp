@@ -10,6 +10,7 @@
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Tools/AudioTool/OggVorbisDecoder.h"
 #include "Engine/Tools/AudioTool/AudioTool.h"
 #include "Engine/Threading/Threading.h"
@@ -318,6 +319,7 @@ bool AudioClip::init(AssetInitData& initData)
 
 Asset::LoadResult AudioClip::load()
 {
+    PROFILE_MEM(Audio);
 #if !COMPILE_WITH_OGG_VORBIS
     if (AudioHeader.Format == AudioFormat::Vorbis)
     {

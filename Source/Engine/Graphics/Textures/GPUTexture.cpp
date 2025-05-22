@@ -16,6 +16,7 @@
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/Enums.h"
 
 namespace
@@ -353,6 +354,8 @@ int32 GPUTexture::ComputeRowPitch(int32 mipLevel, int32 rowAlign) const
 
 bool GPUTexture::Init(const GPUTextureDescription& desc)
 {
+    PROFILE_MEM(GraphicsTextures);
+
     // Validate description
     const auto device = GPUDevice::Instance;
     if (desc.Usage == GPUResourceUsage::Dynamic)
@@ -500,6 +503,7 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
         LOG(Warning, "Cannot initialize texture. Description: {0}", desc.ToString());
         return true;
     }
+    PROFILE_MEM_INC(GraphicsTextures, GetMemoryUsage());
 
     // Render targets and depth buffers doesn't support normal textures streaming and are considered to be always resident
     if (IsRegularTexture() == false)
@@ -589,6 +593,7 @@ GPUResourceType GPUTexture::GetResourceType() const
 
 void GPUTexture::OnReleaseGPU()
 {
+    PROFILE_MEM_DEC(GraphicsTextures, GetMemoryUsage());
     _desc.Clear();
     _residentMipLevels = 0;
 }

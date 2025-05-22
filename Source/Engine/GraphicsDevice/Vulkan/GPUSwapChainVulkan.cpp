@@ -12,6 +12,7 @@
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 void BackBufferVulkan::Setup(GPUSwapChainVulkan* window, VkImage backbuffer, PixelFormat format, VkExtent3D extent)
 {
@@ -61,6 +62,7 @@ void GPUSwapChainVulkan::OnReleaseGPU()
     ReleaseBackBuffer();
 
     // Release data
+    PROFILE_MEM_DEC(Graphics, _memoryUsage);
     _currentImageIndex = -1;
     _semaphoreIndex = 0;
     _acquiredImageIndex = -1;
@@ -76,6 +78,7 @@ void GPUSwapChainVulkan::OnReleaseGPU()
         _surface = VK_NULL_HANDLE;
     }
     _width = _height = 0;
+    _memoryUsage = 0;
 }
 
 bool GPUSwapChainVulkan::IsFullscreen()
@@ -412,6 +415,7 @@ bool GPUSwapChainVulkan::CreateSwapChain(int32 width, int32 height)
 
     // Estimate memory usage
     _memoryUsage = 1024 + RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * _backBuffers.Count();
+    PROFILE_MEM_INC(Graphics, _memoryUsage);
 
     return false;
 }

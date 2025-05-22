@@ -1127,9 +1127,13 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
             else if (!parent && parentId.IsValid())
             {
                 if (_prefabObjectID.IsValid())
+                {
                     LOG(Warning, "Missing parent actor {0} for \'{1}\', prefab object {2}", parentId, ToString(), _prefabObjectID);
+                }
                 else
+                {
                     LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
+                }
             }
         }
     }

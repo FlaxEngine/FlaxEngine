@@ -36,6 +36,7 @@
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Threading/JobSystem.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/QuadOverdrawPass.h"
@@ -68,6 +69,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
 bool RendererService::Init()
 {
+    PROFILE_MEM(Graphics);
+
     // Register passes
     PassList.Add(GBufferPass::Instance());
     PassList.Add(ShadowsPass::Instance());

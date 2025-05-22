@@ -7,6 +7,7 @@
 #include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
 
 SplineRopeBody::SplineRopeBody(const SpawnParams& params)
@@ -19,6 +20,7 @@ void SplineRopeBody::Tick()
     if (!_spline || _spline->GetSplinePointsCount() < 2)
         return;
     PROFILE_CPU();
+    PROFILE_MEM(Physics);
 
     // Cache data
     const Vector3 gravity = GetPhysicsScene()->GetGravity() * GravityScale;

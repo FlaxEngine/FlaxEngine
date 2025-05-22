@@ -14,6 +14,7 @@
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Debug/Exceptions/FileNotFoundException.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 
@@ -80,6 +81,7 @@ bool MAssembly::Load(const String& assemblyPath, const StringView& nativePath)
     if (IsLoaded())
         return false;
     PROFILE_CPU();
+    PROFILE_MEM(Scripting);
     ZoneText(*assemblyPath, assemblyPath.Length());
     Stopwatch stopwatch;
 

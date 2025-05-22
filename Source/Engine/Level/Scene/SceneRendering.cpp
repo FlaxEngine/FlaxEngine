@@ -9,6 +9,7 @@
 #include "Engine/Threading/JobSystem.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 ISceneRenderingListener::~ISceneRenderingListener()
 {
@@ -41,6 +42,7 @@ FORCE_INLINE bool FrustumsListCull(const BoundingSphere& bounds, const Array<Bou
 
 void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory category)
 {
+    PROFILE_MEM(Graphics);
     ScopeLock lock(Locker);
     if (category == PreRender)
     {
@@ -143,6 +145,7 @@ void SceneRendering::AddActor(Actor* a, int32& key)
 {
     if (key != -1)
         return;
+    PROFILE_MEM(Graphics);
     const int32 category = a->_drawCategory;
     ScopeLock lock(Locker);
     auto& list = Actors[category];
@@ -214,6 +217,7 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
 void SceneRendering::DrawActorsJob(int32)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Graphics);
     auto& mainContext = _drawBatch->GetMainContext();
     const auto& view = mainContext.View;
     if (view.StaticFlagsMask != StaticFlags::None)
