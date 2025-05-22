@@ -194,6 +194,41 @@ namespace FlaxEditor.Windows.Assets
                 }
             }
 
+            /// <inheritdoc />
+            public override void Set(ValueContainer instanceValues, ValueContainer values)
+            {
+                /*if (instanceValues == null || instanceValues.Count != Count)
+                    throw new ArgumentException();
+                if (values == null || values.Count != Count)
+                    throw new ArgumentException();
+
+                for (int i = 0; i < Count; i++)
+                {
+                    var v = instanceValues[i];
+                    var value = ((CustomValueContainer)values)[i];
+                    Setter(v, i, value);
+                    this[i] = value;
+                }*/
+            }
+
+            /// <inheritdoc />
+            public override void Set(ValueContainer instanceValues)
+            {
+                if (instanceValues == null || instanceValues.Count != Count)
+                    throw new ArgumentException();
+
+                for (int i = 0; i < Count; i++)
+                {
+                    var v = instanceValues[i];
+                    Setter(v, i, Getter(v, i));
+                }
+            }
+
+            /// <inheritdoc />
+            public override void RefreshReferenceValue(object instanceValue)
+            {
+                // Not supported
+            }
         }
 
         public AudioMixerWindow(Editor editor, AssetItem item) : base(editor, item)
