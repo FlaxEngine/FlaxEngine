@@ -224,8 +224,11 @@ MemoryStats ApplePlatform::GetMemoryStats()
 ProcessMemoryStats ApplePlatform::GetProcessMemoryStats()
 {
     ProcessMemoryStats result;
-    result.UsedPhysicalMemory = 1024;
-    result.UsedVirtualMemory = 1024;
+	mach_task_basic_info_data_t taskInfo;
+	mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+	task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t)&taskInfo, &count);
+    result.UsedPhysicalMemory = taskInfo.resident_size;
+    result.UsedVirtualMemory = result.UsedPhysicalMemory;
     return result;
 }
 
