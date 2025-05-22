@@ -215,7 +215,7 @@ public:
     /// <summary>
     /// The profiling tools usage flag. Can be used to disable profiler. Run engine with '-mem' command line to activate it from start.
     /// </summary>
-    static bool Enabled;
+    API_FIELD(ReadOnly) static bool Enabled;
 
     static void OnMemoryAlloc(void* ptr, uint64 size);
     static void OnMemoryFree(void* ptr);

@@ -186,6 +186,10 @@ namespace
             output.AppendLine();
         }
 #endif
+
+        // Warn that data might be missing due to inactive profiler
+        if (!ProfilerMemory::Enabled)
+            output.AppendLine(TEXT("Detailed memory profiling is disabled. Run with command line: -mem"));
     }
 
     FORCE_INLINE void AddGroupMemory(ProfilerMemory::Groups group, int64 add)

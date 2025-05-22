@@ -29,6 +29,7 @@ namespace FlaxEditor.Windows.Profiler
         private List<Row> _tableRowsCache;
         private string[] _groupNames;
         private int[] _groupOrder;
+        private Label _warningText;
         
         public Memory()
         : base("Memory")
@@ -64,6 +65,18 @@ namespace FlaxEditor.Windows.Profiler
                 Parent = layout,
             };
             _managedAllocationsChart.SelectedSampleChanged += OnSelectedSampleChanged;
+
+            // Warning text
+            if (!ProfilerMemory.Enabled)
+            {
+                _warningText = new Label
+                {
+                    Text = "Detailed memory profiling is disabled. Run with command line: -mem",
+                    TextColor = Color.Red,
+                    Visible = false,
+                    Parent = layout,
+                };
+            }
 
             // Table
             var style = Style.Current;
@@ -204,6 +217,8 @@ namespace FlaxEditor.Windows.Profiler
         {
             if (_frames.Count == 0)
                 return;
+            if (_warningText != null)
+                _warningText.Visible = true;
             var frame = _frames.Get(selectedFrame);
             var totalUage = frame.Usage.Values0[(int)ProfilerMemory.Groups.TotalTracked];
             var totalPeek = frame.Peek.Values0[(int)ProfilerMemory.Groups.TotalTracked];
