@@ -286,7 +286,7 @@ public:
     /// </summary>
     /// <param name="dst">A pointer to the first operand. This value will be replaced with the result of the operation.</param>
     /// <param name="value">The second operand.</param>
-    /// <returns>The result value of the operation.</returns>
+    /// <returns>The original value of the dst parameter.</returns>
     static int64 InterlockedAdd(int64 volatile* dst, int64 value) = delete;
 
     /// <summary>

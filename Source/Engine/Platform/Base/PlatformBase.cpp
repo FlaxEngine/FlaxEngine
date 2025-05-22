@@ -17,6 +17,7 @@
 #include "Engine/Core/Utilities.h"
 #if COMPILE_WITH_PROFILER
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #endif
 #include "Engine/Threading/Threading.h"
 #include "Engine/Engine/CommandLine.h"
@@ -218,6 +219,10 @@ void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
     tracy::Profiler::MemAllocCallstack(ptr, (size_t)size, 12, false);
 #endif
 
+    // Register in memory profiler
+    if (ProfilerMemory::Enabled)
+        ProfilerMemory::OnMemoryAlloc(ptr, size);
+
     // Register allocation during the current CPU event
     auto thread = ProfilerCPU::GetCurrentThread();
     if (thread != nullptr && thread->Buffer.GetCount() != 0)
@@ -234,6 +239,10 @@ void PlatformBase::OnMemoryFree(void* ptr)
 {
     if (!ptr)
         return;
+
+    // Register in memory profiler
+    if (ProfilerMemory::Enabled)
+        ProfilerMemory::OnMemoryFree(ptr);
 
 #if TRACY_ENABLE_MEMORY
     // Track memory allocation in Tracy
@@ -372,6 +381,12 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
             LOG(Error, "External Used Physical Memory: {0} ({1}%)", Utilities::BytesToText(externalUsedPhysical), (int32)(100 * externalUsedPhysical / memoryStats.TotalPhysicalMemory));
             LOG(Error, "External Used Virtual Memory: {0} ({1}%)", Utilities::BytesToText(externalUsedVirtual), (int32)(100 * externalUsedVirtual / memoryStats.TotalVirtualMemory));
         }
+#if COMPILE_WITH_PROFILER
+        if (error == FatalErrorType::OutOfMemory || error == FatalErrorType::GPUOutOfMemory)
+        {
+            ProfilerMemory::Dump();
+        }
+#endif
     }
     if (Log::Logger::LogFilePath.HasChars())
     {

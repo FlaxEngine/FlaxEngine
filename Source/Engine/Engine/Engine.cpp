@@ -79,6 +79,11 @@ Window* Engine::MainWindow = nullptr;
 
 int32 Engine::Main(const Char* cmdLine)
 {
+#if COMPILE_WITH_PROFILER
+    extern void InitProfilerMemory(const Char*);
+    InitProfilerMemory(cmdLine);
+#endif
+    PROFILE_MEM_BEGIN(Engine);
     EngineImpl::CommandLine = cmdLine;
     Globals::MainThreadID = Platform::GetCurrentThreadID();
     StartupTime = DateTime::Now();
@@ -164,6 +169,7 @@ int32 Engine::Main(const Char* cmdLine)
     LOG_FLUSH();
     Time::Synchronize();
     EngineImpl::IsReady = true;
+    PROFILE_MEM_END();
 
     // Main engine loop
     const bool useSleep = true; // TODO: this should probably be a platform setting
@@ -204,6 +210,10 @@ int32 Engine::Main(const Char* cmdLine)
         {
             PROFILE_CPU_NAMED("Platform.Tick");
             Platform::Tick();
+#if COMPILE_WITH_PROFILER
+            extern void TickProfilerMemory();
+            TickProfilerMemory();
+#endif
         }
 
         // Update game logic
