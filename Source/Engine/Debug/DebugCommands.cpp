@@ -438,6 +438,8 @@ void DebugCommands::InitAsync()
 DebugCommands::CommandFlags DebugCommands::GetCommandFlags(StringView command)
 {
     CommandFlags result = CommandFlags::None;
+    if (command.FindLast(' ') != -1)
+        command = command.Left(command.Find(' '));
     // TODO: fix missing string handle on 1st command execution (command gets invalid after InitCommands due to dotnet GC or dotnet interop handles flush)
     String commandCopy = command;
     command = commandCopy;
