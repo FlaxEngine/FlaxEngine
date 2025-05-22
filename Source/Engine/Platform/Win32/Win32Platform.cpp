@@ -283,14 +283,23 @@ void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
 {
     const uint64 numBytes = numPages * pageSize;
 #if PLATFORM_UWP
-    return VirtualAllocFromApp(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    void* ptr = VirtualAllocFromApp(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 #else
-    return VirtualAlloc(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    void* ptr = VirtualAlloc(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 #endif
+    if (!ptr)
+        OutOfMemory();
+#if COMPILE_WITH_PROFILER
+    OnMemoryAlloc(ptr, size);
+#endif
+    return ptr;
 }
 
 void Win32Platform::FreePages(void* ptr)
 {
+#if COMPILE_WITH_PROFILER
+    OnMemoryFree(ptr);
+#endif
     VirtualFree(ptr, 0, MEM_RELEASE);
 }
 
