@@ -446,6 +446,11 @@ namespace FlaxEditor.Windows
             }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether the command line box is focused. Useful for blocking input when typing into the command line box. 
+        /// </summary>
+        public bool IsCommandLineBoxFocused => IsDisposing ? false : _commandLineBox.IsFocused;
+
         private InterfaceOptions.TimestampsFormats _timestampsFormats;
         private bool _showLogType;
 
