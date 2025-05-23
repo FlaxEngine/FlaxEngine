@@ -342,6 +342,7 @@ namespace FlaxEditor.GUI
 
             UnlockChildrenRecursive();
             PerformLayout(true);
+            PerformLayout(true);
             _searchBox?.Focus();
             TextChanged?.Invoke(searchText);
         }
