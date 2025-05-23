@@ -762,7 +762,7 @@ namespace FlaxEditor.GUI.Tree
             {
                 TreeNode parentNode = Parent as TreeNode;
                 bool thisNodeIsLast = false;
-                while (parentNode != null && parentNode != ParentTree.Children[0])
+                while (parentNode != null && (parentNode != ParentTree.Children[0] || _tree.DrawRootTreeLine))
                 {
                     float bottomOffset = 0;
                     float topOffset = 0;
@@ -773,7 +773,7 @@ namespace FlaxEditor.GUI.Tree
                     if (thisNodeIsLast && parentNode.Children.Count == 1)
                         bottomOffset = topOffset != 0 ? 4 : 2;
 
-                    if (Parent == parentNode && this == Parent.Children[Parent.Children.Count - 1] && !_opened)
+                    if (Parent == parentNode && this == Parent.Children[^1] && !_opened)
                     {
                         thisNodeIsLast = true;
                         bottomOffset = topOffset != 0 ? 4 : 2;

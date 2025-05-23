@@ -56,6 +56,7 @@ namespace FlaxEditor.Windows.Assets
             public PrefabTree()
             : base(true)
             {
+                DrawRootTreeLine = false;
             }
         }
 
