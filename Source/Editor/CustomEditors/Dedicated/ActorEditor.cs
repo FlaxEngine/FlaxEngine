@@ -257,8 +257,17 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Actor or Script
             else if (editor.Values[0] is SceneObject sceneObject)
             {
-                node.TextColor = sceneObject.HasPrefabLink ? FlaxEngine.GUI.Style.Current.ProgressNormal : FlaxEngine.GUI.Style.Current.BackgroundSelected;
-                node.Text = Utilities.Utils.GetPropertyNameUI(sceneObject.GetType().Name);
+                if (editor.Values.Info != ScriptMemberInfo.Null)
+                {
+                    if (editor.Values.GetAttributes().FirstOrDefault(x => x is EditorDisplayAttribute) is EditorDisplayAttribute editorDisplayAttribute && !string.IsNullOrEmpty(editorDisplayAttribute.Name))
+                        node.Text = $"{Utilities.Utils.GetPropertyNameUI(editorDisplayAttribute.Name)} ({Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name)})";
+                    else
+                        node.Text = $"{Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name)}";
+                }
+                else if (sceneObject is Actor actor)
+                    node.Text = $"{actor.Name} ({Utilities.Utils.GetPropertyNameUI(sceneObject.GetType().Name)})";
+                else
+                    node.Text = Utilities.Utils.GetPropertyNameUI(sceneObject.GetType().Name);
             }
             // Array Item
             else if (editor.ParentEditor is CollectionEditor)
@@ -268,7 +277,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Common type
             else if (editor.Values.Info != ScriptMemberInfo.Null)
             {
-                node.Text = Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name);
+                if (editor.Values.GetAttributes().FirstOrDefault(x => x is EditorDisplayAttribute) is EditorDisplayAttribute editorDisplayAttribute 
+                    && !string.IsNullOrEmpty(editorDisplayAttribute.Name) 
+                    && !editorDisplayAttribute.Name.Contains("_inline"))
+                    node.Text = $"{Utilities.Utils.GetPropertyNameUI(editorDisplayAttribute.Name)} ({Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name)})";
+                else
+                    node.Text = Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name);
             }
             // Custom type
             else if (editor.Values[0] != null)
