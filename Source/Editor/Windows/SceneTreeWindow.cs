@@ -84,6 +84,7 @@ namespace FlaxEditor.Windows
             {
                 Margin = new Margin(0.0f, 0.0f, -16.0f, _sceneTreePanel.ScrollBarsSize), // Hide root node
                 IsScrollable = true,
+                DrawRootTreeLine = false,
             };
             _tree.AddChild(root.TreeNode);
             _tree.SelectedChanged += Tree_OnSelectedChanged;
