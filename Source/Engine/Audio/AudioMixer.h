@@ -38,6 +38,8 @@ public:
     Dictionary<String, MixerVariable> AudioMixerVariables;
 
 public:
+    API_FUNCTION() void MixerInit(const Array<AudioMixerGroup>& array);
+
     /// <summary>
     /// Gets the values (run-time).
     /// </summary>
@@ -63,8 +65,6 @@ public:
     API_PROPERTY() void SetDefaultValues(const Dictionary<String, float>& values);
 
 public:
-    API_FUNCTION() void MixerInit(const Array<AudioMixerGroup>& array);
-
     /// <summary>
     /// Gets the value of the mixer volume variable
     /// </summary>

@@ -60,6 +60,15 @@ AudioMixer::AudioMixer(const SpawnParams& params, const AssetInfo* info)
 {
 }
 
+void AudioMixer::MixerInit(const Array<AudioMixerGroup>& array)
+{
+    for (auto& e : array)
+    {
+        auto& var = AudioMixerVariables[e.Name];
+        var.DefaultValue = e.MixerVolume;
+    }
+}
+
 Dictionary<String, float> AudioMixer::GetMixerValues() const
 {
     ScopeLock lock(Locker);
@@ -119,15 +128,6 @@ void AudioMixer::SetDefaultValues(const Dictionary<String, float>& values)
             e->Value = i->Value;
         }
         e->DefaultValue = i->Value;
-    }
-}
-
-void AudioMixer::MixerInit(const Array<AudioMixerGroup>& array)
-{
-    for (auto& e : array)
-    {
-        auto& var = AudioMixerVariables[e.Name];
-        var.DefaultValue = e.MixerVolume;
     }
 }
 
