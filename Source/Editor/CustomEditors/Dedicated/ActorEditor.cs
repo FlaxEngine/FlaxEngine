@@ -257,6 +257,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Actor or Script
             else if (editor.Values[0] is SceneObject sceneObject)
             {
+                node.TextColor = sceneObject.HasPrefabLink ? FlaxEngine.GUI.Style.Current.ProgressNormal : FlaxEngine.GUI.Style.Current.BackgroundSelected;
                 if (editor.Values.Info != ScriptMemberInfo.Null)
                 {
                     if (editor.Values.GetAttributes().FirstOrDefault(x => x is EditorDisplayAttribute) is EditorDisplayAttribute editorDisplayAttribute && !string.IsNullOrEmpty(editorDisplayAttribute.Name))
