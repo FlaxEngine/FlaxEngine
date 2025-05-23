@@ -1090,7 +1090,7 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
                 root = dynamic_cast<Actor*>(sceneObjects.Value->At(targetActorIdx));
             }
 
-            // Try using the first actor without a parent as a new ro0t
+            // Try using the first actor without a parent as a new root
             for (int32 i = 1; i < sceneObjects->Count(); i++)
             {
                 SceneObject* obj = sceneObjects.Value->At(i);

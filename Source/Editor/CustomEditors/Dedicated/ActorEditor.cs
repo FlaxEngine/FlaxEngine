@@ -316,7 +316,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var childEditor = editor.ChildrenEditors[i];
 
                 // Special case for root actor transformation (can be applied only in Prefab editor, not in Level)
-                if (isActorEditorInLevel && childEditor.Values.Info.Name is "LocalPosition" or "LocalOrientation" or "LocalScale")
+                if (isActorEditorInLevel && childEditor.Values.Info.Name is "LocalPosition" or "LocalOrientation" or "LocalScale" or "Name")
                     continue;
 
                 var child = ProcessDiff(childEditor, !isScriptEditorWithRefValue);
