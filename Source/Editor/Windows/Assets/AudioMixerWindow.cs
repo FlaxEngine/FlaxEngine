@@ -231,6 +231,32 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
+
+        private sealed class PropertiesProxyEditor : CustomEditor
+        {
+            private PropertiesProxy _proxy;
+            private ComboBox _addParamType;
+            
+            private static readonly Type[] AllowedTypes =
+            {
+                typeof(float),
+                typeof(bool),
+                typeof(int),
+                typeof(Float2),
+                typeof(Float3),
+                typeof(Float4),
+                typeof(Double2),
+                typeof(Double3),
+                typeof(Double4)
+            };
+
+            public override void Initialize(LayoutElementsContainer layout)
+            {
+
+            }
+
+        }
+
         public AudioMixerWindow(Editor editor, AssetItem item) : base(editor, item)
         {
             var inputOptions = Editor.Options.Options.Input;
