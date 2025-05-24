@@ -19,6 +19,18 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             base.Initialize(layout);
 
+            // Show audio mixer name channel
+            var audioMixerProperties = layout.Group("Audio Mixer properties");
+            audioMixerProperties.Panel.Open();
+            var gridPanel = audioMixerProperties.CustomContainer<UniformGridPanel>();
+            var gridAudioMixerControl = gridPanel.CustomControl;
+            gridAudioMixerControl.ClipChildren = false;
+            gridAudioMixerControl.Height = Button.DefaultHeight;
+            gridAudioMixerControl.SlotsHorizontally = 3;
+            gridAudioMixerControl.SlotsVertically = 1;
+            var audioMixerGroup = new AudioMixerGroupEditor();
+            audioMixerGroup.Initialize(gridPanel);
+
             // Show playback options during simulation
             if (Editor.IsPlayMode)
             {
@@ -38,6 +50,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 grid.Button("Pause").Button.Clicked += () => Foreach(x => x.Pause());
                 grid.Button("Stop").Button.Clicked += () => Foreach(x => x.Stop());
             }
+
         }
 
         /// <inheritdoc />

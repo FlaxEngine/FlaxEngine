@@ -9,6 +9,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "AudioBackend.h"
+#include "AudioMixerGroup.h"
 #include "Audio.h"
 
 AudioSource::AudioSource(const SpawnParams& params)
@@ -24,6 +25,16 @@ AudioSource::AudioSource(const SpawnParams& params)
 {
     Clip.Changed.Bind<AudioSource, &AudioSource::OnClipChanged>(this);
     Clip.Loaded.Bind<AudioSource, &AudioSource::OnClipLoaded>(this);
+}
+
+void AudioSource::SetAudioMixerNameChannel(StringView& NameChannel)
+{
+    AudioMixerChannelName = NameChannel;
+}
+
+String AudioSource::GetAudioMixerNameChannel()
+{
+    return AudioMixerChannelName;
 }
 
 void AudioSource::SetVolume(float value)

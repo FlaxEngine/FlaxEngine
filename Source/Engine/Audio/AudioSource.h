@@ -64,6 +64,13 @@ private:
     float _savedTime = 0;
     int32 _streamingFirstChunk = 0;
 
+    String AudioMixerChannelName;
+
+public:
+    API_FUNCTION() void SetAudioMixerNameChannel(StringView& NameChannel);
+
+    API_FUNCTION() String GetAudioMixerNameChannel();
+
 public:
     /// <summary>
     /// The internal ID of this audio source used by the audio backend. Empty if 0.
