@@ -143,6 +143,7 @@ void MAssembly::Unload(bool isReloading)
 #else
     _classes.ClearDelete();
 #endif
+    Memory.Free();
 
     Unloaded(this);
 }

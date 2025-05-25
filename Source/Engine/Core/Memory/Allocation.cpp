@@ -14,6 +14,9 @@ void ArenaAllocator::Free()
         Allocator::Free(page);
         page = next;
     }
+
+    // Unlink
+    _first = nullptr;
 }
 
 void* ArenaAllocator::Allocate(uint64 size, uint64 alignment)
@@ -31,14 +34,14 @@ void* ArenaAllocator::Allocate(uint64 size, uint64 alignment)
         page->Memory = Allocator::Allocate(pageSize);
         page->Next = _first;
         page->Offset = 0;
-        page->Size = pageSize;
+        page->Size = (uint32)pageSize;
         _first = page;
     }
 
     // Allocate within a page
     page->Offset = Math::AlignUp(page->Offset, (uint32)alignment);
     void* mem = (byte*)page->Memory + page->Offset;
-    page->Offset += size;
+    page->Offset += (uint32)size;
 
     return mem;
 }
