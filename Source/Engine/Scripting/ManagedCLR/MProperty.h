@@ -17,15 +17,15 @@ class FLAXENGINE_API MProperty
 protected:
 #if USE_MONO
     MonoProperty* _monoProperty;
+    StringAnsi _name;
 #elif USE_NETCORE
     void* _handle;
+    StringAnsiView _name;
 #endif
 
     mutable MMethod* _getMethod;
     mutable MMethod* _setMethod;
     MClass* _parentClass;
-
-    StringAnsi _name;
 
     mutable int32 _hasCachedAttributes : 1;
     mutable int32 _hasSetMethod : 1;
@@ -49,7 +49,7 @@ public:
     /// <summary>
     /// Gets the property name.
     /// </summary>
-    FORCE_INLINE const StringAnsi& GetName() const
+    FORCE_INLINE StringAnsiView GetName() const
     {
         return _name;
     }

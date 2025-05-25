@@ -215,7 +215,7 @@ namespace
                 {
                     if (!method->IsStatic())
                         continue;
-                    const StringAnsi& name = method->GetName();
+                    const StringAnsiView name = method->GetName();
                     if (name.Contains("Internal_") ||
                         mclass->GetFullName().Contains(".Interop."))
                         continue;

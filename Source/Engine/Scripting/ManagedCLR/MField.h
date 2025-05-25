@@ -17,14 +17,15 @@ protected:
 #if USE_MONO
     MonoClassField* _monoField;
     MonoType* _monoType;
+    StringAnsi _name;
 #elif USE_NETCORE
     void* _handle;
     void* _type;
     int32 _fieldOffset;
+    StringAnsiView _name;
 #endif
 
     MClass* _parentClass;
-    StringAnsi _name;
 
     MVisibility _visibility;
 
@@ -44,7 +45,7 @@ public:
     /// <summary>
     /// Gets field name.
     /// </summary>
-    FORCE_INLINE const StringAnsi& GetName() const
+    FORCE_INLINE StringAnsiView GetName() const
     {
         return _name;
     }

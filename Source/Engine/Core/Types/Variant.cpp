@@ -118,7 +118,7 @@ VariantType::VariantType(Types type, const MClass* klass)
 #if USE_CSHARP
     if (klass)
     {
-        const StringAnsi& typeName = klass->GetFullName();
+        const StringAnsiView typeName = klass->GetFullName();
         const int32 length = typeName.Length();
         TypeName = static_cast<char*>(Allocator::Allocate(length + 1));
         Platform::MemoryCopy(TypeName, typeName.Get(), length);

@@ -78,7 +78,7 @@ namespace ScriptsBuilderImpl
     void onScriptsReloadEnd();
     void onScriptsLoaded();
 
-    void GetClassName(const StringAnsi& fullname, StringAnsi& className);
+    void GetClassName(const StringAnsiView fullname, StringAnsi& className);
 
     void onCodeEditorAsyncOpenBegin()
     {
@@ -273,7 +273,7 @@ bool ScriptsBuilder::GenerateProject(const StringView& customArgs)
     return RunBuildTool(args);
 }
 
-void ScriptsBuilderImpl::GetClassName(const StringAnsi& fullname, StringAnsi& className)
+void ScriptsBuilderImpl::GetClassName(const StringAnsiView fullname, StringAnsi& className)
 {
     const auto lastDotIndex = fullname.FindLast('.');
     if (lastDotIndex != -1)

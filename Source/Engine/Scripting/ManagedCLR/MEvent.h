@@ -15,15 +15,15 @@ class FLAXENGINE_API MEvent
 protected:
 #if USE_MONO
     MonoEvent* _monoEvent;
+    StringAnsi _name;
 #elif USE_NETCORE
     void* _handle;
+    StringAnsiView _name;
 #endif
 
     mutable MMethod* _addMethod;
     mutable MMethod* _removeMethod;
     MClass* _parentClass;
-
-    StringAnsi _name;
 
     mutable int32 _hasCachedAttributes : 1;
     mutable int32 _hasAddMonoMethod : 1;
@@ -42,7 +42,7 @@ public:
     /// <summary>
     /// Gets the event name.
     /// </summary>
-    FORCE_INLINE const StringAnsi& GetName() const
+    FORCE_INLINE StringAnsiView GetName() const
     {
         return _name;
     }

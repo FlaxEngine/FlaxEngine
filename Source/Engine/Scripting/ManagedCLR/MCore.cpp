@@ -71,6 +71,17 @@ MAssembly::~MAssembly()
     Unload();
 }
 
+StringAnsiView MAssembly::AllocString(const char* str)
+{
+    if (!str)
+        return StringAnsiView::Empty;
+    int32 len = StringUtils::Length(str);
+    char* mem = (char*)Memory.Allocate(len + 1);
+    Platform::MemoryCopy(mem, str, len);
+    mem[len] = 0;
+    return StringAnsiView(mem, len);
+}
+
 String MAssembly::ToString() const
 {
     return _name.ToString();
@@ -127,7 +138,11 @@ void MAssembly::Unload(bool isReloading)
     _isLoading = false;
     _isLoaded = false;
     _hasCachedClasses = false;
+#if USE_NETCORE
+    ArenaAllocator::ClearDelete(_classes);
+#else
     _classes.ClearDelete();
+#endif
 
     Unloaded(this);
 }

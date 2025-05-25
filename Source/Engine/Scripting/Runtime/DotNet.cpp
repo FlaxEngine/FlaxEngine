@@ -183,7 +183,7 @@ Dictionary<void*, MAssembly*> CachedAssemblyHandles;
 /// <summary>
 /// Returns the function pointer to the managed static method in NativeInterop class.
 /// </summary>
-void* GetStaticMethodPointer(const String& methodName);
+void* GetStaticMethodPointer(StringView methodName);
 
 /// <summary>
 /// Calls the managed static method with given parameters.
@@ -753,12 +753,13 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
     static void* GetManagedClassesPtr = GetStaticMethodPointer(TEXT("GetManagedClasses"));
     CallStaticMethod<void, void*, NativeClassDefinitions**, int*>(GetManagedClassesPtr, _handle, &managedClasses, &classCount);
     _classes.EnsureCapacity(classCount);
+    MAssembly* assembly = const_cast<MAssembly*>(this);
     for (int32 i = 0; i < classCount; i++)
     {
         NativeClassDefinitions& managedClass = managedClasses[i];
 
         // Create class object
-        MClass* klass = New<MClass>(this, managedClass.typeHandle, managedClass.name, managedClass.fullname, managedClass.namespace_, managedClass.typeAttributes);
+        MClass* klass = assembly->Memory.New<MClass>(assembly, managedClass.typeHandle, managedClass.name, managedClass.fullname, managedClass.namespace_, managedClass.typeAttributes);
         _classes.Add(klass->GetFullName(), klass);
 
         managedClass.nativePointer = klass;
@@ -811,7 +812,7 @@ DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* man
         CachedAssemblyHandles.Add(assemblyHandle, assembly);
     }
 
-    MClass* klass = New<MClass>(assembly, managedClass->typeHandle, managedClass->name, managedClass->fullname, managedClass->namespace_, managedClass->typeAttributes);
+    MClass* klass = assembly->Memory.New<MClass>(assembly, managedClass->typeHandle, managedClass->name, managedClass->fullname, managedClass->namespace_, managedClass->typeAttributes);
     if (assembly != nullptr)
     {
         auto& classes = const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses());
@@ -819,7 +820,7 @@ DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* man
         if (classes.TryGet(klass->GetFullName(), oldKlass))
         {
             LOG(Warning, "Class '{0}' was already added to assembly '{1}'", String(klass->GetFullName()), String(assembly->GetName()));
-            Delete(klass);
+            Memory::DestructItem(klass);
             klass = oldKlass;
         }
         else
@@ -915,12 +916,12 @@ bool MAssembly::UnloadImage(bool isReloading)
     return false;
 }
 
-MClass::MClass(const MAssembly* parentAssembly, void* handle, const char* name, const char* fullname, const char* namespace_, MTypeAttributes attributes)
+MClass::MClass(MAssembly* parentAssembly, void* handle, const char* name, const char* fullname, const char* namespace_, MTypeAttributes attributes)
     : _handle(handle)
-    , _name(name)
-    , _namespace(namespace_)
+    , _name(parentAssembly->AllocString(name))
+    , _namespace(parentAssembly->AllocString(namespace_))
+    , _fullname(parentAssembly->AllocString(fullname))
     , _assembly(parentAssembly)
-    , _fullname(fullname)
     , _hasCachedProperties(false)
     , _hasCachedFields(false)
     , _hasCachedMethods(false)
@@ -967,6 +968,8 @@ MClass::MClass(const MAssembly* parentAssembly, void* handle, const char* name, 
     static void* TypeIsEnumPtr = GetStaticMethodPointer(TEXT("TypeIsEnum"));
     _isEnum = CallStaticMethod<bool, void*>(TypeIsEnumPtr, handle);
 
+    _isGeneric = _fullname.FindLast('`') != -1;
+
     CachedClassHandles[handle] = this;
 }
 
@@ -982,22 +985,12 @@ bool MAssembly::ResolveMissingFile(String& assemblyPath) const
 
 MClass::~MClass()
 {
-    _methods.ClearDelete();
-    _fields.ClearDelete();
-    _properties.ClearDelete();
-    _events.ClearDelete();
+    ArenaAllocator::ClearDelete(_methods);
+    ArenaAllocator::ClearDelete(_fields);
+    ArenaAllocator::ClearDelete(_properties);
+    ArenaAllocator::ClearDelete(_events);
 
     CachedClassHandles.Remove(_handle);
-}
-
-StringAnsiView MClass::GetName() const
-{
-    return _name;
-}
-
-StringAnsiView MClass::GetNamespace() const
-{
-    return _namespace;
 }
 
 MType* MClass::GetType() const
@@ -1071,10 +1064,11 @@ const Array<MMethod*>& MClass::GetMethods() const
     static void* GetClassMethodsPtr = GetStaticMethodPointer(TEXT("GetClassMethods"));
     CallStaticMethod<void, void*, NativeMethodDefinitions**, int*>(GetClassMethodsPtr, _handle, &methods, &methodsCount);
     _methods.Resize(methodsCount);
+    MAssembly* assembly = const_cast<MAssembly*>(_assembly);
     for (int32 i = 0; i < methodsCount; i++)
     {
         NativeMethodDefinitions& definition = methods[i];
-        MMethod* method = New<MMethod>(const_cast<MClass*>(this), StringAnsi(definition.name), definition.handle, definition.numParameters, definition.methodAttributes);
+        MMethod* method = assembly->Memory.New<MMethod>(const_cast<MClass*>(this), assembly->AllocString(definition.name), definition.handle, definition.numParameters, definition.methodAttributes);
         _methods[i] = method;
         MCore::GC::FreeMemory((void*)definition.name);
     }
@@ -1112,7 +1106,7 @@ const Array<MField*>& MClass::GetFields() const
     for (int32 i = 0; i < numFields; i++)
     {
         NativeFieldDefinitions& definition = fields[i];
-        MField* field = New<MField>(const_cast<MClass*>(this), definition.fieldHandle, definition.name, definition.fieldType, definition.fieldOffset, definition.fieldAttributes);
+        MField* field = _assembly->Memory.New<MField>(const_cast<MClass*>(this), definition.fieldHandle, definition.name, definition.fieldType, definition.fieldOffset, definition.fieldAttributes);
         _fields[i] = field;
         MCore::GC::FreeMemory((void*)definition.name);
     }
@@ -1162,7 +1156,7 @@ const Array<MProperty*>& MClass::GetProperties() const
     for (int i = 0; i < numProperties; i++)
     {
         const NativePropertyDefinitions& definition = foundProperties[i];
-        MProperty* property = New<MProperty>(const_cast<MClass*>(this), definition.name, definition.propertyHandle, definition.getterHandle, definition.setterHandle, definition.getterAttributes, definition.setterAttributes);
+        MProperty* property = _assembly->Memory.New<MProperty>(const_cast<MClass*>(this), definition.name, definition.propertyHandle, definition.getterHandle, definition.setterHandle, definition.getterAttributes, definition.setterAttributes);
         _properties[i] = property;
         MCore::GC::FreeMemory((void*)definition.name);
     }
@@ -1241,7 +1235,7 @@ MEvent::MEvent(MClass* parentClass, void* handle, const char* name)
     , _addMethod(nullptr)
     , _removeMethod(nullptr)
     , _parentClass(parentClass)
-    , _name(name)
+    , _name(parentClass->GetAssembly()->AllocString(name))
     , _hasCachedAttributes(false)
     , _hasAddMonoMethod(true)
     , _hasRemoveMonoMethod(true)
@@ -1317,7 +1311,7 @@ MField::MField(MClass* parentClass, void* handle, const char* name, void* type, 
     , _type(type)
     , _fieldOffset(fieldOffset)
     , _parentClass(parentClass)
-    , _name(name)
+    , _name(parentClass->GetAssembly()->AllocString(name))
     , _hasCachedAttributes(false)
 {
     switch (attributes & MFieldAttributes::FieldAccessMask)
@@ -1409,11 +1403,11 @@ const Array<MObject*>& MField::GetAttributes() const
     return _attributes;
 }
 
-MMethod::MMethod(MClass* parentClass, StringAnsi&& name, void* handle, int32 paramsCount, MMethodAttributes attributes)
+MMethod::MMethod(MClass* parentClass, StringAnsiView name, void* handle, int32 paramsCount, MMethodAttributes attributes)
     : _handle(handle)
     , _paramsCount(paramsCount)
     , _parentClass(parentClass)
-    , _name(MoveTemp(name))
+    , _name(name)
     , _hasCachedAttributes(false)
     , _hasCachedSignature(false)
 {
@@ -1443,13 +1437,15 @@ MMethod::MMethod(MClass* parentClass, StringAnsi&& name, void* handle, int32 par
     _isStatic = (attributes & MMethodAttributes::Static) == MMethodAttributes::Static;
 
 #if COMPILE_WITH_PROFILER
-    const StringAnsi& className = parentClass->GetFullName();
-    ProfilerName.Resize(className.Length() + 2 + _name.Length());
-    Platform::MemoryCopy(ProfilerName.Get(), className.Get(), className.Length());
-    ProfilerName.Get()[className.Length()] = ':';
-    ProfilerName.Get()[className.Length() + 1] = ':';
-    Platform::MemoryCopy(ProfilerName.Get() + className.Length() + 2, _name.Get(), _name.Length());
-    ProfilerData.name = ProfilerName.Get();
+    // Setup Tracy profiler entry (use assembly memory)
+    const StringAnsiView className = parentClass->GetFullName();
+    char* profilerName = (char*)parentClass->GetAssembly()->Memory.Allocate(className.Length() + _name.Length() + 3);
+    Platform::MemoryCopy(profilerName, className.Get(), className.Length());
+    profilerName[className.Length()] = ':';
+    profilerName[className.Length() + 1] = ':';
+    Platform::MemoryCopy(profilerName + className.Length() + 2, _name.Get(), _name.Length());
+    profilerName[className.Length() + 2 + _name.Length()] = 0;
+    ProfilerData.name = profilerName;
     ProfilerData.function = _name.Get();
     ProfilerData.file = nullptr;
     ProfilerData.line = 0;
@@ -1573,20 +1569,30 @@ const Array<MObject*>& MMethod::GetAttributes() const
     return _attributes;
 }
 
+FORCE_INLINE StringAnsiView GetPropertyMethodName(MProperty* property, StringAnsiView prefix)
+{
+    StringAnsiView name = property->GetName();
+    char* mem = (char*)property->GetParentClass()->GetAssembly()->Memory.Allocate(name.Length() + prefix.Length() + 1);
+    Platform::MemoryCopy(mem, prefix.Get(), prefix.Length());
+    Platform::MemoryCopy(mem + prefix.Length(), name.Get(), name.Length());
+    mem[name.Length() + prefix.Length()] = 0;
+    return StringAnsiView(mem, name.Length() + prefix.Length() + 1);
+}
+
 MProperty::MProperty(MClass* parentClass, const char* name, void* handle, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes)
     : _parentClass(parentClass)
-    , _name(name)
+    , _name(parentClass->GetAssembly()->AllocString(name))
     , _handle(handle)
     , _hasCachedAttributes(false)
 {
     _hasGetMethod = getterHandle != nullptr;
     if (_hasGetMethod)
-        _getMethod = New<MMethod>(parentClass, StringAnsi("get_" + _name), getterHandle, 0, getterAttributes);
+        _getMethod = parentClass->GetAssembly()->Memory.New<MMethod>(parentClass, GetPropertyMethodName(this, StringAnsiView("get_", 4)), getterHandle, 0, getterAttributes);
     else
         _getMethod = nullptr;
     _hasSetMethod = setterHandle != nullptr;
     if (_hasSetMethod)
-        _setMethod = New<MMethod>(parentClass, StringAnsi("set_" + _name), setterHandle, 1, setterAttributes);
+        _setMethod = parentClass->GetAssembly()->Memory.New<MMethod>(parentClass, GetPropertyMethodName(this, StringAnsiView("set_", 4)), setterHandle, 1, setterAttributes);
     else
         _setMethod = nullptr;
 }
@@ -1594,9 +1600,9 @@ MProperty::MProperty(MClass* parentClass, const char* name, void* handle, void* 
 MProperty::~MProperty()
 {
     if (_getMethod)
-        Delete(_getMethod);
+        Memory::DestructItem(_getMethod);
     if (_setMethod)
-        Delete(_setMethod);
+        Memory::DestructItem(_setMethod);
 }
 
 MMethod* MProperty::GetGetMethod() const
@@ -1683,7 +1689,7 @@ MClass* GetOrCreateClass(MType* typeHandle)
         static void* GetManagedClassFromTypePtr = GetStaticMethodPointer(TEXT("GetManagedClassFromType"));
         CallStaticMethod<void, void*, void*>(GetManagedClassFromTypePtr, typeHandle, &classInfo, &assemblyHandle);
         MAssembly* assembly = GetAssembly(assemblyHandle);
-        klass = New<MClass>(assembly, classInfo.typeHandle, classInfo.name, classInfo.fullname, classInfo.namespace_, classInfo.typeAttributes);
+        klass = assembly->Memory.New<MClass>(assembly, classInfo.typeHandle, classInfo.name, classInfo.fullname, classInfo.namespace_, classInfo.typeAttributes);
         if (assembly != nullptr)
         {
             auto& classes = const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses());
@@ -1889,7 +1895,7 @@ void ShutdownHostfxr()
 {
 }
 
-void* GetStaticMethodPointer(const String& methodName)
+void* GetStaticMethodPointer(StringView methodName)
 {
     void* fun;
     if (CachedFunctions.TryGet(methodName, fun))

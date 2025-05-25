@@ -44,9 +44,19 @@ public:
         return ptr;
     }
 
+    // Invokes destructor on values in an array and clears it.
+    template<typename Value, typename Allocator>
+    static void ClearDelete(Array<Value, Allocator>& collection)
+    {
+        Value* ptr = collection.Get();
+        for (int32 i = 0; i < collection.Count(); i++)
+            Memory::DestructItem(ptr[i]);
+        collection.Clear();
+    }
+
     // Invokes destructor on values in a dictionary and clears it.
     template<typename Key, typename Value, typename Allocator>
-    void ClearDelete(Dictionary<Key, Value, Allocator>& collection)
+    static void ClearDelete(Dictionary<Key, Value, Allocator>& collection)
     {
         for (auto it = collection.Begin(); it.IsNotEnd(); ++it)
             Memory::DestructItem(it->Value);

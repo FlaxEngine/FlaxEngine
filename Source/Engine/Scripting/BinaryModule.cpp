@@ -1029,7 +1029,7 @@ void ManagedBinaryModule::InitType(MClass* mclass)
 {
 #if !COMPILE_WITHOUT_CSHARP
     // Skip if already initialized
-    const StringAnsi& typeName = mclass->GetFullName();
+    const StringAnsiView typeName = mclass->GetFullName();
     if (TypeNameToTypeIndex.ContainsKey(typeName))
         return;
     PROFILE_MEM(Scripting);

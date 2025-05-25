@@ -150,7 +150,7 @@ ScriptingTypeHandle MUtils::UnboxScriptingTypeHandle(MTypeObject* value)
     MClass* klass = GetClass(value);
     if (!klass)
         return ScriptingTypeHandle();
-    const StringAnsi& typeName = klass->GetFullName();
+    const StringAnsiView typeName = klass->GetFullName();
     const ScriptingTypeHandle typeHandle = Scripting::FindScriptingType(typeName);
     if (!typeHandle)
         LOG(Warning, "Unknown scripting type {}", String(typeName));
@@ -821,14 +821,14 @@ MObject* MUtils::BoxVariant(const Variant& value)
     }
 }
 
-const StringAnsi& MUtils::GetClassFullname(MObject* obj)
+StringAnsiView MUtils::GetClassFullname(MObject* obj)
 {
     if (obj)
     {
         MClass* mClass = MCore::Object::GetClass(obj);
         return mClass->GetFullName();
     }
-    return StringAnsi::Empty;
+    return StringAnsiView::Empty;
 }
 
 MClass* MUtils::GetClass(MTypeObject* type)

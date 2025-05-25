@@ -17,14 +17,13 @@ private:
     mutable void* _attrInfo = nullptr;
 #elif USE_NETCORE
     void* _handle;
-    StringAnsi _name;
-    StringAnsi _namespace;
+    StringAnsiView _name;
+    StringAnsiView _namespace;
+    StringAnsiView _fullname;
     uint32 _types = 0;
     mutable uint32 _size = 0;
 #endif
-    const MAssembly* _assembly;
-
-    StringAnsi _fullname;
+    MAssembly* _assembly;
 
     mutable Array<MMethod*> _methods;
     mutable Array<MField*> _fields;
@@ -47,12 +46,13 @@ private:
     int32 _isInterface : 1;
     int32 _isValueType : 1;
     int32 _isEnum : 1;
+    int32 _isGeneric : 1;
 
 public:
 #if USE_MONO
     MClass(const MAssembly* parentAssembly, MonoClass* monoClass, const StringAnsi& fullname);
 #elif USE_NETCORE
-    MClass(const MAssembly* parentAssembly, void* handle, const char* name, const char* fullname, const char* namespace_, MTypeAttributes typeAttributes);
+    MClass(MAssembly* parentAssembly, void* handle, const char* name, const char* fullname, const char* namespace_, MTypeAttributes typeAttributes);
 #endif
 
     /// <summary>
@@ -64,7 +64,7 @@ public:
     /// <summary>
     /// Gets the parent assembly.
     /// </summary>
-    const MAssembly* GetAssembly() const
+    FORCE_INLINE MAssembly* GetAssembly() const
     {
         return _assembly;
     }
@@ -72,7 +72,7 @@ public:
     /// <summary>
     /// Gets the full name of the class (namespace and typename).
     /// </summary>
-    FORCE_INLINE const StringAnsi& GetFullName() const
+    FORCE_INLINE StringAnsiView GetFullName() const
     {
         return _fullname;
     }
@@ -80,12 +80,18 @@ public:
     /// <summary>
     /// Gets the name of the class.
     /// </summary>
-    StringAnsiView GetName() const;
+    FORCE_INLINE StringAnsiView GetName() const
+    {
+        return _name;
+    }
 
     /// <summary>
     /// Gets the namespace of the class.
     /// </summary>
-    StringAnsiView GetNamespace() const;
+    FORCE_INLINE StringAnsiView GetNamespace() const
+    {
+        return _name;
+    }
 
 #if USE_MONO
     /// <summary>
@@ -161,9 +167,9 @@ public:
     /// <summary>
     /// Gets if class is generic
     /// </summary>
-    bool IsGeneric() const
+    FORCE_INLINE bool IsGeneric() const
     {
-        return _fullname.FindLast('`') != -1;
+        return _isGeneric != 0;
     }
 
     /// <summary>
