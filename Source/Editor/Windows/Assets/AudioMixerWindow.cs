@@ -235,23 +235,42 @@ namespace FlaxEditor.Windows.Assets
         private sealed class PropertiesProxyEditor : CustomEditor
         {
             private PropertiesProxy _proxy;
-            private ComboBox _addParamType;
             
-            private static readonly Type[] AllowedTypes =
-            {
-                typeof(float),
-                typeof(bool),
-                typeof(int),
-                typeof(Float2),
-                typeof(Float3),
-                typeof(Float4),
-                typeof(Double2),
-                typeof(Double3),
-                typeof(Double4)
-            };
-
             public override void Initialize(LayoutElementsContainer layout)
             {
+                _proxy = (PropertiesProxy)Values[0];
+                List<Panel> AudioMixerGroupPanel = new();
+
+                if (_proxy?.DefaultValues == null)
+                {
+                    layout.Label("Loading...", TextAlignment.Center);
+                    return;
+                }
+
+                var isPlayModeActive = _proxy.Window.Editor.StateMachine.IsPlayMode;
+
+                if (isPlayModeActive)
+                {
+                    layout.Label("Play mode is active. Editing runtime values.", TextAlignment.Center);
+                    layout.Space(10);
+
+                    foreach(var e in _proxy.DefaultValues)
+                    {
+                        var name = e.Key;
+                        var value = _proxy.Asset.GetMixerVolumeValue(name);
+                        var valueContainer = new VariableValueContainer(_proxy, name, value, false);
+                        var propertyLabel = new PropertyNameLabel(name)
+                        {
+                            Tag = name,
+                        };
+                        string tooltip = null;
+                        if (_proxy.DefaultValues.TryGetValue(name, out var defaultValue))
+                            tooltip = "Default value: " + defaultValue;
+                        layout.Object(propertyLabel, valueContainer, null, tooltip);
+                    }
+
+                    return;
+                }
 
             }
 
