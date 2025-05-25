@@ -27,9 +27,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var groups = GameSettings.Load<AudioSettings>();
             if (groups?.AudioMixerGroups != null)
             {
-                for (int i = 0; i < groups.AudioMixerGroups.Length; i++)
+                foreach (var mixer in groups.AudioMixerGroups)
                 {
-                    _element.ComboBox.AddItem(groups.AudioMixerGroups[i].Name);
+                    _element.ComboBox.AddItem(mixer.Name);
                 }
             }
         }
