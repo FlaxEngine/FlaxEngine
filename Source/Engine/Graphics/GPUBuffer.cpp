@@ -244,7 +244,15 @@ bool GPUBuffer::Init(const GPUBufferDescription& desc)
         LOG(Warning, "Cannot initialize buffer. Description: {0}", desc.ToString());
         return true;
     }
-    PROFILE_MEM_INC(GraphicsBuffers, GetMemoryUsage());
+
+#if COMPILE_WITH_PROFILER
+    auto group = ProfilerMemory::Groups::GraphicsBuffers;
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::VertexBuffer))
+        group = ProfilerMemory::Groups::GraphicsVertexBuffers;
+    else if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::IndexBuffer))
+        group = ProfilerMemory::Groups::GraphicsIndexBuffers;
+    ProfilerMemory::IncrementGroup(group, _memoryUsage);
+#endif
 
     return false;
 }
@@ -480,7 +488,15 @@ GPUResourceType GPUBuffer::GetResourceType() const
 
 void GPUBuffer::OnReleaseGPU()
 {
-    PROFILE_MEM_DEC(GraphicsBuffers, GetMemoryUsage());
+#if COMPILE_WITH_PROFILER
+    auto group = ProfilerMemory::Groups::GraphicsBuffers;
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::VertexBuffer))
+        group = ProfilerMemory::Groups::GraphicsVertexBuffers;
+    else if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::IndexBuffer))
+        group = ProfilerMemory::Groups::GraphicsIndexBuffers;
+    ProfilerMemory::IncrementGroup(group, _memoryUsage);
+#endif
+
     _desc.Clear();
     _isLocked = false;
 }

@@ -25,14 +25,14 @@ struct GroupNameBuffer
     Char Buffer[30];
 
     template<typename T>
-    void Set(const T* str)
+    void Set(const T* str, bool autoFormat = false)
     {
         int32 max = StringUtils::Length(str), dst = 0;
         char prev = 0;
         for (int32 i = 0; i < max && dst < ARRAY_COUNT(Buffer) - 2; i++)
         {
             char cur = str[i];
-            if (StringUtils::IsUpper(cur) && StringUtils::IsLower(prev))
+            if (autoFormat && StringUtils::IsUpper(cur) && StringUtils::IsLower(prev))
                 Buffer[dst++] = '/';
             Buffer[dst++] = cur;
             prev = cur;
@@ -52,10 +52,6 @@ struct GroupStackData
     {
         if (Count < ARRAY_COUNT(Stack))
             Count++;
-        else
-        {
-            int a= 10;
-        }
         Stack[Count - 1] = (uint8)group;
     }
 
@@ -112,8 +108,15 @@ namespace
         for (int32 i = 0; i < GROUPS_COUNT; i++)
         {
             const char* name = ScriptingEnum::GetName((ProfilerMemory::Groups)i);
-            GroupNames[i].Set(name);
+            GroupNames[i].Set(name, true);
         }
+#define RENAME_GROUP(group, name) GroupNames[(int32)ProfilerMemory::Groups::group].Set(name)
+        RENAME_GROUP(GraphicsRenderTargets, "Graphics/RenderTargets");
+        RENAME_GROUP(GraphicsCubeMaps, "Graphics/CubeMaps");
+        RENAME_GROUP(GraphicsVolumeTextures, "Graphics/VolumeTextures");
+        RENAME_GROUP(GraphicsVertexBuffers, "Graphics/VertexBuffers");
+        RENAME_GROUP(GraphicsIndexBuffers, "Graphics/IndexBuffers");
+#undef RENAME_GROUP
 
         // Init constant memory
         PROFILE_MEM_INC(ProgramSize, Platform::GetMemoryStats().ProgramSizeMemory);
@@ -161,31 +164,6 @@ namespace
             output.AppendFormat(TEXT("{:>30}: {:>11} (peek: {}, count: {})"), name, size.Get(), peek.Get(), group.Count);
             output.AppendLine();
         }
-
-#if 0
-        // Print count of memory allocs count per group
-        for (int32 i = 0; i < GROUPS_COUNT; i++)
-        {
-            GroupInfo& group = groups[i];
-            group.Group = (ProfilerMemory::Groups)i;
-            group.Size = 0;
-        }
-        PointersLocker.Lock();
-        for (auto& e : Pointers)
-            groups[e.Value.Group].Size++;
-        PointersLocker.Unlock();
-        Sorting::QuickSort(groups, GROUPS_COUNT);
-        output.Append(TEXT("Memory allocations count summary:")).AppendLine();
-        for (int32 i = 0; i < maxCount; i++)
-        {
-            const GroupInfo& group = groups[i];
-            if (group.Size == 0)
-                break;
-            const Char* name = GroupName[(int32)group.Group].Buffer;
-            output.AppendFormat(TEXT("{:>30}: {:>11}"), name, group.Size);
-            output.AppendLine();
-        }
-#endif
 
         // Warn that data might be missing due to inactive profiler
         if (!ProfilerMemory::Enabled)
@@ -243,8 +221,14 @@ void InitProfilerMemory(const Char* cmdLine)
 
     // Init hierarchy
 #define INIT_PARENT(parent, child) GroupParents[(int32)ProfilerMemory::Groups::child] = (uint8)ProfilerMemory::Groups::parent
+    INIT_PARENT(Malloc, MallocArena);
     INIT_PARENT(Graphics, GraphicsTextures);
+    INIT_PARENT(Graphics, GraphicsRenderTargets);
+    INIT_PARENT(Graphics, GraphicsCubeMaps);
+    INIT_PARENT(Graphics, GraphicsVolumeTextures);
     INIT_PARENT(Graphics, GraphicsBuffers);
+    INIT_PARENT(Graphics, GraphicsVertexBuffers);
+    INIT_PARENT(Graphics, GraphicsIndexBuffers);
     INIT_PARENT(Graphics, GraphicsMeshes);
     INIT_PARENT(Graphics, GraphicsShaders);
     INIT_PARENT(Graphics, GraphicsMaterials);
@@ -412,6 +396,13 @@ void ProfilerMemory::OnMemoryFree(void* ptr)
     }
 
     stack.SkipRecursion = false;
+}
+
+void ProfilerMemory::OnGroupUpdate(Groups group, int64 sizeDelta, int64 countDetla)
+{
+    Platform::InterlockedAdd(&GroupMemory[(int32)group], sizeDelta);
+    Platform::InterlockedAdd(&GroupMemoryCount[(int32)group], countDetla);
+    UPDATE_PEEK(group);
 }
 
 #endif

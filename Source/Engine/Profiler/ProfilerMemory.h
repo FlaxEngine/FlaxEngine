@@ -30,19 +30,32 @@ public:
         TotalUntracked,
         // Initial memory used by program upon startup (eg. executable size, static variables).
         ProgramSize,
-        // Total memory allocated via malloc.
-        Malloc,
         // General purpose engine memory.
         Engine,
         // Profiling tool memory overhead.
         Profiler,
 
+        // Total memory allocated via dynamic memory allocations.
+        Malloc,
+        // Total memory allocated via arena allocators (all pages).
+        MallocArena,
+
         // Total graphics memory usage.
         Graphics,
         // Total textures memory usage.
         GraphicsTextures,
+        // Total render targets memory usage (textures used as target image for rendering).
+        GraphicsRenderTargets,
+        // Total cubemap textures memory usage (each cubemap is 6 textures).
+        GraphicsCubeMaps,
+        // Total volume textures memory usage (3D textures).
+        GraphicsVolumeTextures,
         // Total buffers memory usage.
         GraphicsBuffers,
+        // Total vertex buffers memory usage.
+        GraphicsVertexBuffers,
+        // Total index buffers memory usage.
+        GraphicsIndexBuffers,
         // Total meshes memory usage (vertex and idnex buffers allocated by models).
         GraphicsMeshes,
         // Totoal shaders memory usage (shaders bytecode, PSOs data).
@@ -95,6 +108,8 @@ public:
 
         // Total scripting memory allocated by game.
         Scripting,
+        // Total Visual scripting memory allocated by game (visual script graphs, data and runtime allocations).
+        ScriptingVisual,
 
         // Total User Interface components memory.
         UI,
@@ -143,6 +158,15 @@ public:
         CustomPlugin8,
         // Custom plugin-specific memory tracking.
         CustomPlugin9,
+
+        // Custom platform-specific memory tracking.
+        CustomPlatform0,
+        // Custom platform-specific memory tracking.
+        CustomPlatform1,
+        // Custom platform-specific memory tracking.
+        CustomPlatform2,
+        // Custom platform-specific memory tracking.
+        CustomPlatform3,
 
         // Total editor-specific memory.
         Editor,
@@ -219,6 +243,7 @@ public:
 
     static void OnMemoryAlloc(void* ptr, uint64 size);
     static void OnMemoryFree(void* ptr);
+    static void OnGroupUpdate(Groups group, int64 sizeDelta, int64 countDetla);
 
 public:
     /// <summary>

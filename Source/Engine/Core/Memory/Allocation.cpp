@@ -2,6 +2,7 @@
 
 #include "ArenaAllocation.h"
 #include "../Math/Math.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 void ArenaAllocator::Free()
 {
@@ -9,6 +10,9 @@ void ArenaAllocator::Free()
     Page* page = _first;
     while (page)
     {
+#if COMPILE_WITH_PROFILER
+        ProfilerMemory::OnGroupUpdate(ProfilerMemory::Groups::MallocArena, -page->Size, -1);
+#endif
         Allocator::Free(page->Memory);
         Page* next = page->Next;
         Allocator::Free(page);
@@ -30,6 +34,9 @@ void* ArenaAllocator::Allocate(uint64 size, uint64 alignment)
     if (!page)
     {
         uint64 pageSize = Math::Max<uint64>(_pageSize, size);
+#if COMPILE_WITH_PROFILER
+        ProfilerMemory::OnGroupUpdate(ProfilerMemory::Groups::MallocArena, pageSize, 1);
+#endif
         page = (Page*)Allocator::Allocate(sizeof(Page));
         page->Memory = Allocator::Allocate(pageSize);
         page->Next = _first;

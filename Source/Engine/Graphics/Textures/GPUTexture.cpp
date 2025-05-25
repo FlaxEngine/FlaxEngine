@@ -503,7 +503,17 @@ bool GPUTexture::Init(const GPUTextureDescription& desc)
         LOG(Warning, "Cannot initialize texture. Description: {0}", desc.ToString());
         return true;
     }
-    PROFILE_MEM_INC(GraphicsTextures, GetMemoryUsage());
+
+#if COMPILE_WITH_PROFILER
+    auto group = ProfilerMemory::Groups::GraphicsTextures;
+    if (_desc.IsRenderTarget())
+        group = ProfilerMemory::Groups::GraphicsRenderTargets;
+    else if (_desc.IsCubeMap())
+        group = ProfilerMemory::Groups::GraphicsCubeMaps;
+    else if (_desc.IsVolume())
+        group = ProfilerMemory::Groups::GraphicsVolumeTextures;
+    ProfilerMemory::IncrementGroup(group, _memoryUsage);
+#endif
 
     // Render targets and depth buffers doesn't support normal textures streaming and are considered to be always resident
     if (IsRegularTexture() == false)
@@ -593,7 +603,17 @@ GPUResourceType GPUTexture::GetResourceType() const
 
 void GPUTexture::OnReleaseGPU()
 {
-    PROFILE_MEM_DEC(GraphicsTextures, GetMemoryUsage());
+#if COMPILE_WITH_PROFILER
+    auto group = ProfilerMemory::Groups::GraphicsTextures;
+    if (_desc.IsRenderTarget())
+        group = ProfilerMemory::Groups::GraphicsRenderTargets;
+    else if (_desc.IsCubeMap())
+        group = ProfilerMemory::Groups::GraphicsCubeMaps;
+    else if (_desc.IsVolume())
+        group = ProfilerMemory::Groups::GraphicsVolumeTextures;
+    ProfilerMemory::DecrementGroup(group, _memoryUsage);
+#endif
+
     _desc.Clear();
     _residentMipLevels = 0;
 }
