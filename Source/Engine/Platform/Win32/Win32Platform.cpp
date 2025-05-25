@@ -290,7 +290,7 @@ void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
     if (!ptr)
         OutOfMemory();
 #if COMPILE_WITH_PROFILER
-    OnMemoryAlloc(ptr, size);
+    OnMemoryAlloc(ptr, numBytes);
 #endif
     return ptr;
 }

@@ -2,6 +2,9 @@
 
 #if PLATFORM_MAC || PLATFORM_IOS
 
+#define PLATFORM_MAC_CACHED PLATFORM_MAC
+#define PLATFORM_IOS_CACHED PLATFORM_IOS
+
 #include "ApplePlatform.h"
 #include "AppleUtils.h"
 #include "Engine/Core/Log.h"
@@ -49,6 +52,10 @@
 #include <execinfo.h>
 #include <cxxabi.h>
 #endif
+
+// System includes break those defines
+#define PLATFORM_MAC PLATFORM_MAC_CACHED
+#define PLATFORM_IOS PLATFORM_IOS_CACHED
 
 CPUInfo Cpu;
 String UserLocale;
@@ -224,10 +231,16 @@ MemoryStats ApplePlatform::GetMemoryStats()
 ProcessMemoryStats ApplePlatform::GetProcessMemoryStats()
 {
     ProcessMemoryStats result;
+#if PLATFORM_IOS
+    rusage_info_current rusage_payload;
+    proc_pid_rusage(getpid(), RUSAGE_INFO_CURRENT, (rusage_info_t*)&rusage_payload);
+    result.UsedPhysicalMemory = rusage_payload.ri_phys_footprint;
+#else
 	mach_task_basic_info_data_t taskInfo;
 	mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
 	task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t)&taskInfo, &count);
     result.UsedPhysicalMemory = taskInfo.resident_size;
+#endif
     result.UsedVirtualMemory = result.UsedPhysicalMemory;
     return result;
 }
