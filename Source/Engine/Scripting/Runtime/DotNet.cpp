@@ -2272,7 +2272,7 @@ void ShutdownHostfxr()
 #endif
 }
 
-void* GetStaticMethodPointer(const String& methodName)
+void* GetStaticMethodPointer(StringView methodName)
 {
     void* fun;
     if (CachedFunctions.TryGet(methodName, fun))
