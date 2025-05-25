@@ -212,7 +212,7 @@ MClass* GetClass(MType* typeHandle);
 MClass* GetOrCreateClass(MType* typeHandle);
 MType* GetObjectType(MObject* obj);
 
-void* GetCustomAttribute(const Array<MObject*>& attributes, const MClass* attributeClass)
+void* GetCustomAttribute(const Array<MObject*, ArenaAllocation>& attributes, const MClass* attributeClass)
 {
     for (MObject* attr : attributes)
     {
@@ -223,7 +223,7 @@ void* GetCustomAttribute(const Array<MObject*>& attributes, const MClass* attrib
     return nullptr;
 }
 
-void GetCustomAttributes(Array<MObject*>& result, void* handle, void* getAttributesFunc)
+void GetCustomAttributes(Array<MObject*, ArenaAllocation>& result, void* handle, void* getAttributesFunc)
 {
     MObject** attributes;
     int numAttributes;
@@ -922,6 +922,12 @@ MClass::MClass(MAssembly* parentAssembly, void* handle, const char* name, const 
     , _namespace(parentAssembly->AllocString(namespace_))
     , _fullname(parentAssembly->AllocString(fullname))
     , _assembly(parentAssembly)
+    , _methods(&parentAssembly->Memory)
+    , _fields(&parentAssembly->Memory)
+    , _properties(&parentAssembly->Memory)
+    , _attributes(&parentAssembly->Memory)
+    , _events(&parentAssembly->Memory)
+    , _interfaces(&parentAssembly->Memory)
     , _hasCachedProperties(false)
     , _hasCachedFields(false)
     , _hasCachedMethods(false)
@@ -1050,7 +1056,7 @@ MMethod* MClass::GetMethod(const char* name, int32 numParams) const
     return nullptr;
 }
 
-const Array<MMethod*>& MClass::GetMethods() const
+const Array<MMethod*, ArenaAllocation>& MClass::GetMethods() const
 {
     if (_hasCachedMethods)
         return _methods;
@@ -1089,7 +1095,7 @@ MField* MClass::GetField(const char* name) const
     return nullptr;
 }
 
-const Array<MField*>& MClass::GetFields() const
+const Array<MField*, ArenaAllocation>& MClass::GetFields() const
 {
     if (_hasCachedFields)
         return _fields;
@@ -1116,7 +1122,7 @@ const Array<MField*>& MClass::GetFields() const
     return _fields;
 }
 
-const Array<MEvent*>& MClass::GetEvents() const
+const Array<MEvent*, ArenaAllocation>& MClass::GetEvents() const
 {
     if (_hasCachedEvents)
         return _events;
@@ -1139,7 +1145,7 @@ MProperty* MClass::GetProperty(const char* name) const
     return nullptr;
 }
 
-const Array<MProperty*>& MClass::GetProperties() const
+const Array<MProperty*, ArenaAllocation>& MClass::GetProperties() const
 {
     if (_hasCachedProperties)
         return _properties;
@@ -1166,7 +1172,7 @@ const Array<MProperty*>& MClass::GetProperties() const
     return _properties;
 }
 
-const Array<MClass*>& MClass::GetInterfaces() const
+const Array<MClass*, ArenaAllocation>& MClass::GetInterfaces() const
 {
     if (_hasCachedInterfaces)
         return _interfaces;
@@ -1206,7 +1212,7 @@ MObject* MClass::GetAttribute(const MClass* klass) const
     return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
-const Array<MObject*>& MClass::GetAttributes() const
+const Array<MObject*, ArenaAllocation>& MClass::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
@@ -1239,6 +1245,7 @@ MEvent::MEvent(MClass* parentClass, void* handle, const char* name)
     , _hasCachedAttributes(false)
     , _hasAddMonoMethod(true)
     , _hasRemoveMonoMethod(true)
+    , _attributes(&parentClass->GetAssembly()->Memory)
 {
 }
 
@@ -1267,7 +1274,7 @@ MObject* MEvent::GetAttribute(const MClass* klass) const
     return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
-const Array<MObject*>& MEvent::GetAttributes() const
+const Array<MObject*, ArenaAllocation>& MEvent::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
@@ -1313,6 +1320,7 @@ MField::MField(MClass* parentClass, void* handle, const char* name, void* type, 
     , _parentClass(parentClass)
     , _name(parentClass->GetAssembly()->AllocString(name))
     , _hasCachedAttributes(false)
+    , _attributes(&parentClass->GetAssembly()->Memory)
 {
     switch (attributes & MFieldAttributes::FieldAccessMask)
     {
@@ -1389,7 +1397,7 @@ MObject* MField::GetAttribute(const MClass* klass) const
     return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
-const Array<MObject*>& MField::GetAttributes() const
+const Array<MObject*, ArenaAllocation>& MField::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
@@ -1410,6 +1418,7 @@ MMethod::MMethod(MClass* parentClass, StringAnsiView name, void* handle, int32 p
     , _name(name)
     , _hasCachedAttributes(false)
     , _hasCachedSignature(false)
+    , _attributes(&parentClass->GetAssembly()->Memory)
 {
     switch (attributes & MMethodAttributes::MemberAccessMask)
     {
@@ -1555,7 +1564,7 @@ MObject* MMethod::GetAttribute(const MClass* klass) const
     return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
-const Array<MObject*>& MMethod::GetAttributes() const
+const Array<MObject*, ArenaAllocation>& MMethod::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
@@ -1584,6 +1593,7 @@ MProperty::MProperty(MClass* parentClass, const char* name, void* handle, void* 
     , _name(parentClass->GetAssembly()->AllocString(name))
     , _handle(handle)
     , _hasCachedAttributes(false)
+    , _attributes(&parentClass->GetAssembly()->Memory)
 {
     _hasGetMethod = getterHandle != nullptr;
     if (_hasGetMethod)
@@ -1644,7 +1654,7 @@ MObject* MProperty::GetAttribute(const MClass* klass) const
     return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
-const Array<MObject*>& MProperty::GetAttributes() const
+const Array<MObject*, ArenaAllocation>& MProperty::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;

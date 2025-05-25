@@ -815,7 +815,7 @@ namespace
 {
     MMethod* FindMethod(MClass* mclass, const MMethod* referenceMethod)
     {
-        const Array<MMethod*>& methods = mclass->GetMethods();
+        const auto& methods = mclass->GetMethods();
         for (int32 i = 0; i < methods.Count(); i++)
         {
             MMethod* method = methods[i];
@@ -1095,7 +1095,7 @@ void ManagedBinaryModule::InitType(MClass* mclass)
     // Initialize scripting interfaces implemented in C#
     int32 interfacesCount = 0;
     MClass* klass = mclass;
-    const Array<MClass*>& interfaceClasses = klass->GetInterfaces();
+    const auto& interfaceClasses = klass->GetInterfaces();
     for (const MClass* interfaceClass : interfaceClasses)
     {
         const ScriptingTypeHandle interfaceType = FindType(interfaceClass);

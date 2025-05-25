@@ -1,5 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+#pragma once
+
 #include "Allocation.h"
 
 /// <summary>
@@ -62,4 +64,81 @@ public:
             Memory::DestructItem(it->Value);
         collection.Clear();
     }
+};
+
+/// <summary>
+/// The memory allocation policy that uses a part of shared page allocator. Allocations are performed in stack-manner, and free is no-op.
+/// </summary>
+class ArenaAllocation
+{
+public:
+    enum { HasSwap = true };
+    typedef ArenaAllocator* Tag;
+
+    template<typename T>
+    class Data
+    {
+    private:
+        T* _data = nullptr;
+        ArenaAllocator* _arena = nullptr;
+
+    public:
+        FORCE_INLINE Data()
+        {
+        }
+
+        FORCE_INLINE Data(Tag tag)
+        {
+            _arena = tag;
+        }
+
+        FORCE_INLINE ~Data()
+        {
+        }
+
+        FORCE_INLINE T* Get()
+        {
+            return _data;
+        }
+
+        FORCE_INLINE const T* Get() const
+        {
+            return _data;
+        }
+
+        FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, const int32 minCapacity) const
+        {
+            return AllocationUtils::CalculateCapacityGrow(capacity, minCapacity);
+        }
+
+        FORCE_INLINE void Allocate(const int32 capacity)
+        {
+            ASSERT_LOW_LAYER(!_data && _arena);
+            _data = (T*)_arena->Allocate(capacity * sizeof(T), alignof(T));
+        }
+
+        FORCE_INLINE void Relocate(const int32 capacity, int32 oldCount, int32 newCount)
+        {
+            ASSERT_LOW_LAYER(_arena);
+            T* newData = capacity != 0 ? (T*)_arena->Allocate(capacity * sizeof(T), alignof(T)) : nullptr;
+            if (oldCount)
+            {
+                if (newCount > 0)
+                    Memory::MoveItems(newData, _data, newCount);
+                Memory::DestructItems(_data, oldCount);
+            }
+            _data = newData;
+        }
+
+        FORCE_INLINE void Free()
+        {
+            _data = nullptr;
+        }
+
+        FORCE_INLINE void Swap(Data& other)
+        {
+            ::Swap(_data, other._data);
+            ::Swap(_arena, other._arena);
+        }
+    };
 };

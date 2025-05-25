@@ -29,7 +29,7 @@ protected:
     mutable int32 _hasAddMonoMethod : 1;
     mutable int32 _hasRemoveMonoMethod : 1;
 
-    mutable Array<MObject*> _attributes;
+    mutable Array<MObject*, ArenaAllocation> _attributes;
 
 public:
 #if USE_MONO
@@ -121,5 +121,5 @@ public:
     /// Returns an instance of all attributes connected with given event. Returns null if the event doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MObject*>& GetAttributes() const;
+    const Array<MObject*, ArenaAllocation>& GetAttributes() const;
 };

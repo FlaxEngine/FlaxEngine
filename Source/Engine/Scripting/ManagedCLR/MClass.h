@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Memory/ArenaAllocation.h"
 #include "MTypes.h"
 
 /// <summary>
@@ -25,12 +26,12 @@ private:
 #endif
     MAssembly* _assembly;
 
-    mutable Array<MMethod*> _methods;
-    mutable Array<MField*> _fields;
-    mutable Array<MProperty*> _properties;
-    mutable Array<MObject*> _attributes;
-    mutable Array<MEvent*> _events;
-    mutable Array<MClass*> _interfaces;
+    mutable Array<MMethod*, ArenaAllocation> _methods;
+    mutable Array<MField*, ArenaAllocation> _fields;
+    mutable Array<MProperty*, ArenaAllocation> _properties;
+    mutable Array<MObject*, ArenaAllocation> _attributes;
+    mutable Array<MEvent*, ArenaAllocation> _events;
+    mutable Array<MClass*, ArenaAllocation> _interfaces;
 
     MVisibility _visibility;
 
@@ -248,7 +249,7 @@ public:
     /// </summary>
     /// <remarks>Be aware this will not include the methods of any base classes.</remarks>
     /// <returns>The list of methods.</returns>
-    const Array<MMethod*>& GetMethods() const;
+    const Array<MMethod*, ArenaAllocation>& GetMethods() const;
 
     /// <summary>
     /// Returns an object referencing a field with the specified name.
@@ -263,7 +264,7 @@ public:
     /// </summary>
     /// <remarks>Be aware this will not include the fields of any base classes.</remarks>
     /// <returns>The list of fields.</returns>
-    const Array<MField*>& GetFields() const;
+    const Array<MField*, ArenaAllocation>& GetFields() const;
 
     /// <summary>
     /// Returns an object referencing a event with the specified name.
@@ -276,7 +277,7 @@ public:
     /// Returns all events belonging to this class.
     /// </summary>
     /// <returns>The list of events.</returns>
-    const Array<MEvent*>& GetEvents() const;
+    const Array<MEvent*, ArenaAllocation>& GetEvents() const;
 
     /// <summary>
     /// Returns an object referencing a property with the specified name.
@@ -291,14 +292,14 @@ public:
     /// </summary>
     /// <remarks>Be aware this will not include the properties of any base classes.</remarks>
     /// <returns>The list of properties.</returns>
-    const Array<MProperty*>& GetProperties() const;
+    const Array<MProperty*, ArenaAllocation>& GetProperties() const;
 
     /// <summary>
     /// Returns all interfaces implemented by this class (excluding interfaces from base classes).
     /// </summary>
     /// <remarks>Be aware this will not include the interfaces of any base classes.</remarks>
     /// <returns>The list of interfaces.</returns>
-    const Array<MClass*>& GetInterfaces() const;
+    const Array<MClass*, ArenaAllocation>& GetInterfaces() const;
 
 public:
     /// <summary>
@@ -332,5 +333,5 @@ public:
     /// Returns an instance of all attributes connected with given class. Returns null if the class doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MObject*>& GetAttributes() const;
+    const Array<MObject*, ArenaAllocation>& GetAttributes() const;
 };
