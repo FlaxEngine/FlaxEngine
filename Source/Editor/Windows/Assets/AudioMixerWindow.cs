@@ -235,13 +235,12 @@ namespace FlaxEditor.Windows.Assets
         private sealed class PropertiesProxyEditor : CustomEditor
         {
             private PropertiesProxy _proxy;
-            
+
             public override void Initialize(LayoutElementsContainer layout)
             {
                 _proxy = (PropertiesProxy)Values[0];
-                List<Panel> AudioMixerGroupPanel = new();
 
-                if (_proxy?.DefaultValues == null)
+                if (_proxy?.DefaultValues is null)
                 {
                     layout.Label("Loading...", TextAlignment.Center);
                     return;
@@ -272,8 +271,67 @@ namespace FlaxEditor.Windows.Assets
                     return;
                 }
 
+                foreach (var e in _proxy.DefaultValues)
+                {
+                    var name = e.Key;
+                    var value = e.Value;
+                    var valueContainer = new VariableValueContainer(_proxy, name, value, true);
+                    var propertyLabel = new ClickablePropertyNameLabel(name)
+                    {
+                        Tag = name,
+                    };
+                    propertyLabel.MouseLeftDoubleClick += (label, location) => StartParameterRenaming(name, label);
+                    propertyLabel.SetupContextMenu += OnPropertyLabelSetupContextMenu;
+                    layout.Object(propertyLabel,valueContainer, null, "Type: " + CustomEditorsUtil.GetTypeNameUI(value.GetType()));
+                }
+
             }
 
+            private void OnPropertyLabelSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
+            {
+                var name = (string)label.Tag;
+                menu.AddSeparator();
+                menu.AddButton("Rename", () => StartParameterRenaming(name, label));
+                menu.AddButton("Delete", () => DeleteParameter(name));
+            }
+
+            private void StartParameterRenaming(string name, Control label)
+            {
+                var dialog = RenamePopup.Show(label, new Rectangle(0, 0, label.Width - 2, label.Height), name, false);
+                dialog.Tag = name;
+                dialog.Validate += OnParameterRenameValidate;
+                dialog.Renamed += OnParameterRenamed;
+            }
+
+            private bool OnParameterRenameValidate(RenamePopup popup, string value)
+            {
+                return !string.IsNullOrWhiteSpace(value) && !_proxy.DefaultValues.ContainsKey(value);
+            }
+
+            private void OnParameterRenamed(RenamePopup renamePopup)
+            {
+                var name = (string)renamePopup.Tag;
+                var action = new RenameParamAction
+                {
+                    Proxy = _proxy,
+                    Before = name,
+                    After = renamePopup.Text,
+                };
+                // _proxy.Window.Undo.AddAction(action);
+                action.Do();
+            }
+
+            private void DeleteParameter(string name)
+            {
+                var action = new AddRemoveParamAction
+                {
+                    Proxy = _proxy,
+                    IsAdd = false,
+                    Name = name,
+                };
+                // _proxy.Window.Undo.AddAction(action);
+                action.Do();
+            }
         }
 
         public AudioMixerWindow(Editor editor, AssetItem item) : base(editor, item)
