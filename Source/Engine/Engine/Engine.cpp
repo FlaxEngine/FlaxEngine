@@ -80,8 +80,8 @@ Window* Engine::MainWindow = nullptr;
 int32 Engine::Main(const Char* cmdLine)
 {
 #if COMPILE_WITH_PROFILER
-    extern void InitProfilerMemory(const Char*);
-    InitProfilerMemory(cmdLine);
+    extern void InitProfilerMemory(const Char* cmdLine, int32 stage);
+    InitProfilerMemory(cmdLine, 0);
 #endif
     PROFILE_MEM_BEGIN(Engine);
     EngineImpl::CommandLine = cmdLine;
@@ -109,6 +109,9 @@ int32 Engine::Main(const Char* cmdLine)
         Platform::Fatal(TEXT("Cannot init platform."));
         return -1;
     }
+#if COMPILE_WITH_PROFILER
+    InitProfilerMemory(cmdLine, 1);
+#endif
 
     Platform::SetHighDpiAwarenessEnabled(!CommandLine::Options.LowDPI.IsTrue());
     Time::StartupTime = DateTime::Now();

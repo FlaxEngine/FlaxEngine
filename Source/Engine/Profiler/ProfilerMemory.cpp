@@ -14,8 +14,10 @@
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Threading/ThreadLocal.h"
 #include "Engine/Utilities/StringConverter.h"
+#include <ThirdParty/tracy/tracy/Tracy.hpp>
 
 #define GROUPS_COUNT (int32)ProfilerMemory::Groups::MAX
+#define USE_TRACY_MEMORY_PLOTS (defined(TRACY_ENABLE))
 
 static_assert(GROUPS_COUNT <= MAX_uint8, "Fix memory profiler groups to fit a single byte.");
 
@@ -23,6 +25,7 @@ static_assert(GROUPS_COUNT <= MAX_uint8, "Fix memory profiler groups to fit a si
 struct GroupNameBuffer
 {
     Char Buffer[30];
+    char Ansi[30];
 
     template<typename T>
     void Set(const T* str, bool autoFormat = false)
@@ -33,11 +36,16 @@ struct GroupNameBuffer
         {
             char cur = str[i];
             if (autoFormat && StringUtils::IsUpper(cur) && StringUtils::IsLower(prev))
+            {
+                Ansi[dst] = '/';
                 Buffer[dst++] = '/';
+            }
+            Ansi[dst] = cur;
             Buffer[dst++] = cur;
             prev = cur;
         }
         Buffer[dst] = 0;
+        Ansi[dst] = 0;
     }
 };
 
@@ -93,40 +101,17 @@ namespace
     alignas(16) volatile int64 GroupMemory[GROUPS_COUNT] = {};
     alignas(16) volatile int64 GroupMemoryPeek[GROUPS_COUNT] = {};
     alignas(16) volatile int64 GroupMemoryCount[GROUPS_COUNT] = {};
+#ifdef USE_TRACY_MEMORY_PLOTS
+    alignas(16) volatile uint32 GroupTracyPlotEnable[(GROUPS_COUNT + 31) / 32] = {};
+#endif
     uint8 GroupParents[GROUPS_COUNT] = {};
     ThreadLocal<GroupStackData> GroupStack;
     GroupNameBuffer GroupNames[GROUPS_COUNT];
-    bool InitedNames = false;
     CriticalSection PointersLocker;
     Dictionary<void*, PointerData> Pointers;
 
-    void InitNames()
-    {
-        if (InitedNames)
-            return;
-        InitedNames = true;
-        for (int32 i = 0; i < GROUPS_COUNT; i++)
-        {
-            const char* name = ScriptingEnum::GetName((ProfilerMemory::Groups)i);
-            GroupNames[i].Set(name, true);
-        }
-#define RENAME_GROUP(group, name) GroupNames[(int32)ProfilerMemory::Groups::group].Set(name)
-        RENAME_GROUP(GraphicsRenderTargets, "Graphics/RenderTargets");
-        RENAME_GROUP(GraphicsCubeMaps, "Graphics/CubeMaps");
-        RENAME_GROUP(GraphicsVolumeTextures, "Graphics/VolumeTextures");
-        RENAME_GROUP(GraphicsVertexBuffers, "Graphics/VertexBuffers");
-        RENAME_GROUP(GraphicsIndexBuffers, "Graphics/IndexBuffers");
-#undef RENAME_GROUP
-
-        // Init constant memory
-        PROFILE_MEM_INC(ProgramSize, Platform::GetMemoryStats().ProgramSizeMemory);
-        UPDATE_PEEK(ProfilerMemory::Groups::ProgramSize);
-    }
-
     void Dump(StringBuilder& output, const int32 maxCount)
     {
-        InitNames();
-
         // Sort groups
         struct GroupInfo
         {
@@ -170,11 +155,26 @@ namespace
             output.AppendLine(TEXT("Detailed memory profiling is disabled. Run with command line: -mem"));
     }
 
+#ifdef USE_TRACY_MEMORY_PLOTS
+    FORCE_INLINE void UpdateGroupTracyPlot(ProfilerMemory::Groups group)
+    {
+        // Track only selected groups in Tracy
+        uint32 bit = (uint32)(1 << ((int32)group & 31));
+        if ((GroupTracyPlotEnable[(int32)group / 32] & bit) == bit)
+        {
+            TracyPlot(GroupNames[(int32)group].Ansi, GroupMemory[(int32)group]);
+        }
+    }
+#else
+#define UpdateGroupTracyPlot(group)
+#endif
+
     FORCE_INLINE void AddGroupMemory(ProfilerMemory::Groups group, int64 add)
     {
         // Group itself
         Platform::InterlockedAdd(&GroupMemory[(int32)group], add);
         Platform::InterlockedIncrement(&GroupMemoryCount[(int32)group]);
+        UpdateGroupTracyPlot(group);
         UPDATE_PEEK(group);
 
         // Total memory
@@ -188,6 +188,7 @@ namespace
         {
             Platform::InterlockedAdd(&GroupMemory[parent], add);
             Platform::InterlockedIncrement(&GroupMemoryCount[parent]);
+            UpdateGroupTracyPlot((ProfilerMemory::Groups)parent);
             UPDATE_PEEK(parent);
             parent = GroupParents[parent];
         }
@@ -196,26 +197,37 @@ namespace
     FORCE_INLINE void SubGroupMemory(ProfilerMemory::Groups group, int64 add)
     {
         // Group itself
-        int64 value = Platform::InterlockedAdd(&GroupMemory[(int32)group], add);
+        Platform::InterlockedAdd(&GroupMemory[(int32)group], add);
         Platform::InterlockedDecrement(&GroupMemoryCount[(int32)group]);
+        UpdateGroupTracyPlot(group);
 
         // Total memory
-        value = Platform::InterlockedAdd(&GroupMemory[(int32)ProfilerMemory::Groups::TotalTracked], add);
+        Platform::InterlockedAdd(&GroupMemory[(int32)ProfilerMemory::Groups::TotalTracked], add);
         Platform::InterlockedDecrement(&GroupMemoryCount[(int32)ProfilerMemory::Groups::TotalTracked]);
 
         // Group hierarchy parents
         uint8 parent = GroupParents[(int32)group];
         while (parent != 0)
         {
-            value = Platform::InterlockedAdd(&GroupMemory[parent], add);
+            Platform::InterlockedAdd(&GroupMemory[parent], add);
             Platform::InterlockedDecrement(&GroupMemoryCount[parent]);
+            UpdateGroupTracyPlot((ProfilerMemory::Groups)parent);
             parent = GroupParents[parent];
         }
     }
 }
 
-void InitProfilerMemory(const Char* cmdLine)
+void InitProfilerMemory(const Char* cmdLine, int32 stage)
 {
+    if (stage == 1) // Post-platform init
+    {
+        // Init constant memory
+        PROFILE_MEM_INC(ProgramSize, Platform::GetMemoryStats().ProgramSizeMemory);
+        UPDATE_PEEK(ProfilerMemory::Groups::ProgramSize);
+
+        return;
+    }
+
     // Check for command line option (memory profiling affects performance thus not active by default)
     ProfilerMemory::Enabled = StringUtils::FindIgnoreCase(cmdLine, TEXT("-mem"));
 
@@ -237,6 +249,44 @@ void InitProfilerMemory(const Char* cmdLine)
     INIT_PARENT(Content, ContentAssets);
     INIT_PARENT(Content, ContentFiles);
 #undef INIT_PARENT
+
+    // Init group names
+    for (int32 i = 0; i < GROUPS_COUNT; i++)
+    {
+        const char* name = ScriptingEnum::GetName((ProfilerMemory::Groups)i);
+        GroupNames[i].Set(name, true);
+    }
+#define RENAME_GROUP(group, name) GroupNames[(int32)ProfilerMemory::Groups::group].Set(name)
+    RENAME_GROUP(GraphicsRenderTargets, "Graphics/RenderTargets");
+    RENAME_GROUP(GraphicsCubeMaps, "Graphics/CubeMaps");
+    RENAME_GROUP(GraphicsVolumeTextures, "Graphics/VolumeTextures");
+    RENAME_GROUP(GraphicsVertexBuffers, "Graphics/VertexBuffers");
+    RENAME_GROUP(GraphicsIndexBuffers, "Graphics/IndexBuffers");
+#undef RENAME_GROUP
+
+    // Init Tracy
+#ifdef USE_TRACY_MEMORY_PLOTS
+    // Toggle on specific groups only for high-level overview only
+#define ENABLE_GROUP(group) GroupTracyPlotEnable[(uint32)ProfilerMemory::Groups::group / 32] |= (uint32)(1 << ((int32)ProfilerMemory::Groups::group & 31))
+    ENABLE_GROUP(Graphics);
+    ENABLE_GROUP(Audio);
+    ENABLE_GROUP(Content);
+    ENABLE_GROUP(Level);
+    ENABLE_GROUP(Physics);
+    ENABLE_GROUP(Scripting);
+    ENABLE_GROUP(UI);
+#undef ENABLE_GROUP
+
+    // Setup plots
+    for (int32 i = 0; i < GROUPS_COUNT; i++)
+    {
+        uint32 bit = (uint32)(1 << ((int32)i & 31));
+        if ((GroupTracyPlotEnable[i / 32] & bit) == bit)
+        {
+            TracyPlotConfig(GroupNames[i].Ansi, tracy::PlotFormatType::Memory, false, true, 0);
+        }
+    }
+#endif
 }
 
 void TickProfilerMemory()
@@ -294,7 +344,6 @@ Array<String> ProfilerMemory::GetGroupNames()
 {
     Array<String> result;
     result.Resize((int32)Groups::MAX);
-    InitNames();
     for (int32 i = 0; i < (int32)Groups::MAX; i++)
         result[i] = GroupNames[i].Buffer;
     return result;
@@ -305,7 +354,6 @@ ProfilerMemory::GroupsArray ProfilerMemory::GetGroups(int32 mode)
     GroupsArray result;
     Platform::MemoryClear(&result, sizeof(result));
     static_assert(ARRAY_COUNT(result.Values) >= (int32)Groups::MAX, "Update group array size.");
-    InitNames();
     if (mode == 0)
     {
         for (int32 i = 0; i < (int32)Groups::MAX; i++)
