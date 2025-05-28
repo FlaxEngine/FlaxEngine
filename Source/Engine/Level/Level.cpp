@@ -813,6 +813,7 @@ bool LevelImpl::unloadScene(Scene* scene)
 
 bool LevelImpl::unloadScenes()
 {
+    PROFILE_MEM(Level);
     auto scenes = Level::Scenes;
     for (int32 i = scenes.Count() - 1; i >= 0; i--)
     {

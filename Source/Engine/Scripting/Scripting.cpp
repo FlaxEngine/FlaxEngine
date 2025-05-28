@@ -617,6 +617,7 @@ bool Scripting::Load()
 void Scripting::Release()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Scripting);
     // Note: this action can be called from main thread (due to Mono problems with assemblies actions from other threads)
     ASSERT(IsInMainThread());
 

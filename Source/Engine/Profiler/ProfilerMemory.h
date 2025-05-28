@@ -110,6 +110,12 @@ public:
         Scripting,
         // Total Visual scripting memory allocated by game (visual script graphs, data and runtime allocations).
         ScriptingVisual,
+        // Total C# scripting memory allocated by game (runtime assemblies, managed interop and runtime allocations).
+        ScriptingCSharp,
+        // Total amount of committed virtual memory in use by the .NET GC, as observed during the latest garbage collection.
+        ScriptingCSharpGCCommitted,
+        // Total managed GC heap size (including fragmentation), as observed during the latest garbage collection.
+        ScriptingCSharpGCHeap,
 
         // Total User Interface components memory.
         UI,

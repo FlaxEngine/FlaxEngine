@@ -282,7 +282,7 @@ void MCore::UnloadDomain(const StringAnsi& domainName)
 bool MCore::LoadEngine()
 {
     PROFILE_CPU();
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
 
     // Initialize hostfxr
     if (InitHostfxr())
@@ -550,6 +550,12 @@ int32 MCore::GC::MaxGeneration()
     return maxGeneration;
 }
 
+void MCore::GC::MemoryInfo(int64& totalCommitted, int64& heapSize)
+{
+    static void* GCMemoryInfoPtr = GetStaticMethodPointer(TEXT("GCMemoryInfo"));
+    CallStaticMethod<void, int64*, int64*>(GCMemoryInfoPtr, &totalCommitted, &heapSize);
+}
+
 void MCore::GC::WaitForPendingFinalizers()
 {
     PROFILE_CPU();
@@ -737,7 +743,7 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
     if (_hasCachedClasses || !IsLoaded())
         return _classes;
     PROFILE_CPU();
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     Stopwatch stopwatch;
 
 #if TRACY_ENABLE
@@ -800,7 +806,7 @@ void GetAssemblyName(void* assemblyHandle, StringAnsi& name, StringAnsi& fullnam
 
 DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* managedClass, void* assemblyHandle)
 {
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     MAssembly* assembly = GetAssembly(assemblyHandle);
     if (assembly == nullptr)
@@ -836,7 +842,7 @@ bool MAssembly::LoadCorlib()
     if (IsLoaded())
         return false;
     PROFILE_CPU();
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
 #if TRACY_ENABLE
     const StringAnsiView name("Corlib");
     ZoneText(*name, name.Length());
@@ -1060,7 +1066,7 @@ const Array<MMethod*, ArenaAllocation>& MClass::GetMethods() const
 {
     if (_hasCachedMethods)
         return _methods;
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedMethods)
         return _methods;
@@ -1099,7 +1105,7 @@ const Array<MField*, ArenaAllocation>& MClass::GetFields() const
 {
     if (_hasCachedFields)
         return _fields;
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedFields)
         return _fields;
@@ -1126,7 +1132,7 @@ const Array<MEvent*, ArenaAllocation>& MClass::GetEvents() const
 {
     if (_hasCachedEvents)
         return _events;
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
 
     // TODO: implement MEvent in .NET
 
@@ -1149,7 +1155,7 @@ const Array<MProperty*, ArenaAllocation>& MClass::GetProperties() const
 {
     if (_hasCachedProperties)
         return _properties;
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedProperties)
         return _properties;
@@ -1176,7 +1182,7 @@ const Array<MClass*, ArenaAllocation>& MClass::GetInterfaces() const
 {
     if (_hasCachedInterfaces)
         return _interfaces;
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedInterfaces)
         return _interfaces;
@@ -1216,7 +1222,7 @@ const Array<MObject*, ArenaAllocation>& MClass::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedAttributes)
         return _attributes;
@@ -1401,7 +1407,7 @@ const Array<MObject*, ArenaAllocation>& MField::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedAttributes)
         return _attributes;
@@ -1467,7 +1473,7 @@ void MMethod::CacheSignature() const
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedSignature)
         return;
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
 
     static void* GetMethodReturnTypePtr = GetStaticMethodPointer(TEXT("GetMethodReturnType"));
     static void* GetMethodParameterTypesPtr = GetStaticMethodPointer(TEXT("GetMethodParameterTypes"));
@@ -1568,7 +1574,7 @@ const Array<MObject*, ArenaAllocation>& MMethod::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedAttributes)
         return _attributes;
@@ -1658,7 +1664,7 @@ const Array<MObject*, ArenaAllocation>& MProperty::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedAttributes)
         return _attributes;
@@ -1689,7 +1695,7 @@ MClass* GetOrCreateClass(MType* typeHandle)
 {
     if (!typeHandle)
         return nullptr;
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     MClass* klass;
     if (!CachedClassHandles.TryGet(typeHandle, klass))
@@ -1911,6 +1917,7 @@ void* GetStaticMethodPointer(StringView methodName)
     if (CachedFunctions.TryGet(methodName, fun))
         return fun;
     PROFILE_CPU();
+    PROFILE_MEM(ScriptingCSharp);
     const int rc = get_function_pointer(NativeInteropTypeName, FLAX_CORECLR_STRING(methodName).Get(), UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, &fun);
     if (rc != 0)
         LOG(Fatal, "Failed to get unmanaged function pointer for method '{0}': 0x{1:x}", methodName, (unsigned int)rc);
@@ -2278,6 +2285,7 @@ void* GetStaticMethodPointer(StringView methodName)
     if (CachedFunctions.TryGet(methodName, fun))
         return fun;
     PROFILE_CPU();
+    PROFILE_MEM(ScriptingCSharp);
 
     static MonoClass* nativeInteropClass = nullptr;
     if (!nativeInteropClass)

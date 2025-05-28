@@ -1278,6 +1278,14 @@ namespace FlaxEngine.Interop
         }
 
         [UnmanagedCallersOnly]
+        internal static void GCMemoryInfo(long* totalCommitted, long* heapSize)
+        {
+            GCMemoryInfo gcMemoryInfo = GC.GetGCMemoryInfo();
+            *totalCommitted = gcMemoryInfo.TotalCommittedBytes;
+            *heapSize = gcMemoryInfo.HeapSizeBytes;
+        }
+
+        [UnmanagedCallersOnly]
         internal static void GCWaitForPendingFinalizers()
         {
             GC.WaitForPendingFinalizers();

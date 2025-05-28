@@ -310,6 +310,7 @@ Asset::LoadResult JsonAssetBase::loadAsset()
 
 void JsonAssetBase::unload(bool isReloading)
 {
+    PROFILE_MEM(ContentAssets);
     ISerializable::SerializeDocument tmp;
     Document.Swap(tmp);
     Data = nullptr;

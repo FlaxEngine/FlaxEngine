@@ -342,6 +342,9 @@ void AtmospherePreComputeService::Update()
     }
     else if (_isUpdatePending && (_task == nullptr || !_task->Enabled))
     {
+        PROFILE_CPU();
+        PROFILE_MEM(Graphics);
+
         // TODO: init but without a stalls, just wait for resources loaded and then start rendering
 
         // Init service

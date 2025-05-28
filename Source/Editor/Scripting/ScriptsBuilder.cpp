@@ -664,6 +664,9 @@ bool ScriptsBuilderService::Init()
 
 void ScriptsBuilderService::Update()
 {
+    PROFILE_CPU();
+    PROFILE_MEM(Editor);
+
     // Send compilation events
     {
         ScopeLock scopeLock(_compileEventsLocker);

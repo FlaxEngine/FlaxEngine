@@ -864,6 +864,11 @@ int32 MCore::GC::MaxGeneration()
     return mono_gc_max_generation();
 }
 
+void MCore::GC::MemoryInfo(int64& totalCommitted, int64& heapSize)
+{
+    totalCommitted = heapSize = 0;
+}
+
 void MCore::GC::WaitForPendingFinalizers()
 {
     PROFILE_CPU();

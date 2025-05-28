@@ -12,6 +12,7 @@
 #include "Engine/Platform/MemoryStats.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Scripting/Enums.h"
+#include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Threading/ThreadLocal.h"
 #include "Engine/Utilities/StringConverter.h"
 #include <ThirdParty/tracy/tracy/Tracy.hpp>
@@ -24,8 +25,8 @@ static_assert(GROUPS_COUNT <= MAX_uint8, "Fix memory profiler groups to fit a si
 // Compact name storage.
 struct GroupNameBuffer
 {
-    Char Buffer[30];
-    char Ansi[30];
+    Char Buffer[40];
+    char Ansi[40];
 
     template<typename T>
     void Set(const T* str, bool autoFormat = false)
@@ -248,6 +249,10 @@ void InitProfilerMemory(const Char* cmdLine, int32 stage)
     INIT_PARENT(Animations, AnimationsData);
     INIT_PARENT(Content, ContentAssets);
     INIT_PARENT(Content, ContentFiles);
+    INIT_PARENT(Scripting, ScriptingVisual);
+    INIT_PARENT(Scripting, ScriptingCSharp);
+    INIT_PARENT(ScriptingCSharp, ScriptingCSharpGCCommitted);
+    INIT_PARENT(ScriptingCSharp, ScriptingCSharpGCHeap);
 #undef INIT_PARENT
 
     // Init group names
@@ -262,6 +267,8 @@ void InitProfilerMemory(const Char* cmdLine, int32 stage)
     RENAME_GROUP(GraphicsVolumeTextures, "Graphics/VolumeTextures");
     RENAME_GROUP(GraphicsVertexBuffers, "Graphics/VertexBuffers");
     RENAME_GROUP(GraphicsIndexBuffers, "Graphics/IndexBuffers");
+    RENAME_GROUP(ScriptingCSharpGCCommitted, "Scripting/CSharp/GC/Committed");
+    RENAME_GROUP(ScriptingCSharpGCHeap, "Scripting/CSharp/GC/Heap");
 #undef RENAME_GROUP
 
     // Init Tracy
@@ -291,10 +298,23 @@ void InitProfilerMemory(const Char* cmdLine, int32 stage)
 
 void TickProfilerMemory()
 {
+    // Update .NET GC memory stats
+    int64 totalCommitted, heapSize;
+    MCore::GC::MemoryInfo(totalCommitted, heapSize);
+    int64 gcComittedDelta = totalCommitted - GroupMemory[(int32)ProfilerMemory::Groups::ScriptingCSharpGCCommitted];
+    GroupMemory[(int32)ProfilerMemory::Groups::ScriptingCSharpGCCommitted] = totalCommitted;
+    GroupMemory[(int32)ProfilerMemory::Groups::ScriptingCSharpGCHeap] = heapSize;
+    UPDATE_PEEK(ProfilerMemory::Groups::ScriptingCSharpGCCommitted);
+    UPDATE_PEEK(ProfilerMemory::Groups::ScriptingCSharpGCHeap);
+    Platform::InterlockedAdd(&GroupMemory[(int32)ProfilerMemory::Groups::TotalTracked], gcComittedDelta);
+
     // Update profiler memory
     PointersLocker.Lock();
     GroupMemory[(int32)ProfilerMemory::Groups::Profiler] = 
         sizeof(GroupMemory) + sizeof(GroupNames) + sizeof(GroupStack) + 
+#ifdef USE_TRACY_MEMORY_PLOTS
+        sizeof(GroupTracyPlotEnable) +
+#endif
         Pointers.Capacity() * sizeof(Dictionary<void*, PointerData>::Bucket);
     PointersLocker.Unlock();
 

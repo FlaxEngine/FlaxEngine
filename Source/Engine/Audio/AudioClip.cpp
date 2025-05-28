@@ -19,6 +19,7 @@ REGISTER_BINARY_ASSET_WITH_UPGRADER(AudioClip, "FlaxEngine.AudioClip", AudioClip
 
 bool AudioClip::StreamingTask::Run()
 {
+    PROFILE_MEM(Audio);
     AssetReference<AudioClip> ref = _asset.Get();
     if (ref == nullptr || AudioBackend::Instance == nullptr)
         return true;

@@ -763,7 +763,7 @@ ManagedBinaryModule* ManagedBinaryModule::GetModule(const MAssembly* assembly)
 
 ScriptingObject* ManagedBinaryModule::ManagedObjectSpawn(const ScriptingObjectSpawnParams& params)
 {
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
 
     // Create native object
     ScriptingTypeHandle managedTypeHandle = params.Type;
@@ -935,7 +935,7 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
 {
 #if !COMPILE_WITHOUT_CSHARP
     PROFILE_CPU();
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     ASSERT(ClassToTypeIndex.IsEmpty());
     ScopeLock lock(Locker);
 
@@ -1032,7 +1032,7 @@ void ManagedBinaryModule::InitType(MClass* mclass)
     const StringAnsiView typeName = mclass->GetFullName();
     if (TypeNameToTypeIndex.ContainsKey(typeName))
         return;
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
 
     // Find first native base C++ class of this C# class
     MClass* baseClass = mclass->GetBaseClass();
@@ -1192,7 +1192,7 @@ void ManagedBinaryModule::OnUnloading(MAssembly* assembly)
 void ManagedBinaryModule::OnUnloaded(MAssembly* assembly)
 {
     PROFILE_CPU();
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
 
     // Clear managed-only types
     Types.Resize(_firstManagedTypeIndex);

@@ -92,7 +92,7 @@ bool MAssembly::Load(const String& assemblyPath, const StringView& nativePath)
     if (IsLoaded())
         return false;
     PROFILE_CPU();
-    PROFILE_MEM(Scripting);
+    PROFILE_MEM(ScriptingCSharp);
     ZoneText(*assemblyPath, assemblyPath.Length());
     Stopwatch stopwatch;
 
