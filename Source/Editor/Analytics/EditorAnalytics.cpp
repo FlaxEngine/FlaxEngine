@@ -174,7 +174,9 @@ void EditorAnalytics::StartSession()
     // Bind events
     GameCooker::OnEvent.Bind<RegisterGameCookingStart>();
     ShadowsOfMordor::Builder::Instance()->OnBuildStarted.Bind<RegisterLightmapsBuildingStart>();
+#if LOG_ENABLE
     Log::Logger::OnError.Bind<RegisterError>();
+#endif
 }
 
 void EditorAnalytics::EndSession()
@@ -187,7 +189,9 @@ void EditorAnalytics::EndSession()
     // Unbind events
     GameCooker::OnEvent.Unbind<RegisterGameCookingStart>();
     ShadowsOfMordor::Builder::Instance()->OnBuildStarted.Unbind<RegisterLightmapsBuildingStart>();
+#if LOG_ENABLE
     Log::Logger::OnError.Unbind<RegisterError>();
+#endif
 
     // End session
     {

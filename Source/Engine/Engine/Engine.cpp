@@ -150,7 +150,9 @@ int32 Engine::Main(const Char* cmdLine)
     {
         // End
         LOG(Warning, "Loading project cancelled. Closing...");
+#if LOG_ENABLE
         Log::Logger::Dispose();
+#endif
         return 0;
     }
 #endif
@@ -168,8 +170,10 @@ int32 Engine::Main(const Char* cmdLine)
 #if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX || PLATFORM_MAC)
     EngineImpl::RunInBackground = PlatformSettings::Get()->RunInBackground;
 #endif
+#if LOG_ENABLE
     Log::Logger::WriteFloor();
     LOG_FLUSH();
+#endif
     Time::Synchronize();
     EngineImpl::IsReady = true;
     PROFILE_MEM_END();
@@ -546,14 +550,17 @@ void Engine::OnExit()
     ProfilerGPU::Dispose();
 #endif
 
+#if LOG_ENABLE
     // Close logging service
     Log::Logger::Dispose();
+#endif
 
     Platform::Exit();
 }
 
 void EngineImpl::InitLog()
 {
+#if LOG_ENABLE
     // Initialize logger
     Log::Logger::Init();
 
@@ -607,6 +614,7 @@ void EngineImpl::InitLog()
     Platform::LogInfo();
 
     LOG_FLUSH();
+#endif
 }
 
 void EngineImpl::InitPaths()

@@ -156,7 +156,9 @@ ManagedEditor::ManagedEditor()
     lightmapsBuilder->OnBuildProgress.Bind<OnLightmapsBuildProgress>();
     lightmapsBuilder->OnBuildFinished.Bind<OnLightmapsBuildFinished>();
     CSG::Builder::OnBrushModified.Bind<OnBrushModified>();
+#if LOG_ENABLE
     Log::Logger::OnMessage.Bind<OnLogMessage>();
+#endif
     VisualScripting::DebugFlow.Bind<OnVisualScriptingDebugFlow>();
 }
 
@@ -172,7 +174,9 @@ ManagedEditor::~ManagedEditor()
     lightmapsBuilder->OnBuildProgress.Unbind<OnLightmapsBuildProgress>();
     lightmapsBuilder->OnBuildFinished.Unbind<OnLightmapsBuildFinished>();
     CSG::Builder::OnBrushModified.Unbind<OnBrushModified>();
+#if LOG_ENABLE
     Log::Logger::OnMessage.Unbind<OnLogMessage>();
+#endif
     VisualScripting::DebugFlow.Unbind<OnVisualScriptingDebugFlow>();
 }
 

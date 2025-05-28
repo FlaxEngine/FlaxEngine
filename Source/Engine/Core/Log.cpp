@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "Log.h"
+#if LOG_ENABLE
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Collections/Array.h"
@@ -310,3 +311,5 @@ const Char* ToString(LogType e)
     }
     return result;
 }
+
+#endif

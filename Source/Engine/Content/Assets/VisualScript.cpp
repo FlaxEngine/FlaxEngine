@@ -38,10 +38,12 @@ namespace
 
     void PrintStack(LogType type)
     {
+#if LOG_ENABLE
         const String stack = VisualScripting::GetStackTrace();
         Log::Logger::Write(type, TEXT("Visual Script stack trace:"));
         Log::Logger::Write(type, stack);
         Log::Logger::Write(type, TEXT(""));
+#endif
     }
 
     bool SerializeValue(const Variant& a, const Variant& b)

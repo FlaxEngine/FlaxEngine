@@ -246,6 +246,7 @@ MType* MEvent::GetType() const
 
 void MException::Log(const LogType type, const Char* target)
 {
+#if LOG_ENABLE
     // Log inner exceptions chain
     MException* inner = InnerException;
     while (inner)
@@ -260,6 +261,7 @@ void MException::Log(const LogType type, const Char* target)
     const String info = target && *target ? String::Format(TEXT("Exception has been thrown during {0}."), target) : TEXT("Exception has been thrown.");
     Log::Logger::Write(LogType::Warning, String::Format(TEXT("{0} {1}\nStack strace:\n{2}"), info, Message, stackTrace));
     Log::Logger::Write(type, String::Format(TEXT("{0}\n{1}"), info, Message));
+#endif
 }
 
 MType* MProperty::GetType() const

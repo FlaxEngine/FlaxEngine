@@ -490,7 +490,9 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                         StringView lineView(line);
                         if (line[line.Length() - 1] == '\n')
                             lineView = StringView(line.Get(), line.Length() - 1);
+#if LOG_ENABLE
                         Log::Logger::Write(LogType::Info, lineView);
+#endif
                       }
                     [[stdoutPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
                 }
@@ -517,7 +519,9 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                         StringView lineView(line);
                         if (line[line.Length() - 1] == '\n')
                             lineView = StringView(line.Get(), line.Length() - 1);
+#if LOG_ENABLE
                         Log::Logger::Write(LogType::Error, lineView);
+#endif
                       }
                     [[stderrPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
                 }

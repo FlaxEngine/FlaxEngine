@@ -250,8 +250,10 @@ void RenderToolsVulkan::LogVkResult(VkResult result, const char* file, uint32 li
         errorType = FatalErrorType::GPUCrash;
     if (errorType != FatalErrorType::None)
         Platform::Fatal(msg, nullptr, errorType);
+#if LOG_ENABLE
     else
         Log::Logger::Write(fatal ? LogType::Fatal : LogType::Error, msg);
+#endif
 }
 
 bool RenderToolsVulkan::HasExtension(const Array<const char*>& extensions, const char* name)

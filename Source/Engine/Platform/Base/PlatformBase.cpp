@@ -310,6 +310,7 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
     Engine::RequestingExit();
 
     // Collect crash info (platform-dependant implementation that might collect stack trace and/or create memory dump)
+#if LOG_ENABLE
     {
         // Log separation for crash info
         LOG_FLUSH();
@@ -406,6 +407,7 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
         LOG(Error, "Crash info collected.");
         Log::Logger::WriteFloor();
     }
+#endif
 
     // Show error message
     if (Engine::ReportCrash.IsBinded())

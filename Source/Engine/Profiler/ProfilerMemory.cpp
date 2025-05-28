@@ -394,6 +394,7 @@ ProfilerMemory::GroupsArray ProfilerMemory::GetGroups(int32 mode)
 
 void ProfilerMemory::Dump(const StringView& options)
 {
+#if LOG_ENABLE
     bool file = options.Contains(TEXT("file"));
     StringBuilder output;
     int32 maxCount = 20;
@@ -408,6 +409,7 @@ void ProfilerMemory::Dump(const StringView& options)
         return;
     }
     LOG_STR(Info, output.ToStringView());
+#endif
 }
 
 void ProfilerMemory::OnMemoryAlloc(void* ptr, uint64 size)
