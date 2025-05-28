@@ -163,7 +163,7 @@ namespace
         uint32 bit = (uint32)(1 << ((int32)group & 31));
         if ((GroupTracyPlotEnable[(int32)group / 32] & bit) == bit)
         {
-            TracyPlot(GroupNames[(int32)group].Ansi, GroupMemory[(int32)group]);
+            TracyPlot(GroupNames[(int32)group].Ansi, (int64_t)GroupMemory[(int32)group]);
         }
     }
 #else
