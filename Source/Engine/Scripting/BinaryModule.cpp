@@ -1184,8 +1184,7 @@ void ManagedBinaryModule::OnUnloading(MAssembly* assembly)
     for (int32 i = _firstManagedTypeIndex; i < Types.Count(); i++)
     {
         const ScriptingType& type = Types[i];
-        const StringAnsi typeName(type.Fullname.Get(), type.Fullname.Length());
-        TypeNameToTypeIndex.Remove(typeName);
+        TypeNameToTypeIndex.Remove(type.Fullname);
     }
 }
 
