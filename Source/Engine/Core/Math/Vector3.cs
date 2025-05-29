@@ -2172,7 +2172,7 @@ namespace FlaxEngine
                 return 1;
 
             if (obj is not Vector3 other)
-                throw new ArgumentException("Object is not a Vector3", nameof(obj));
+                throw new ArgumentException("Object is not a Vector3.", nameof(obj));
 
             return LengthSquared.CompareTo(other.LengthSquared);
         }
