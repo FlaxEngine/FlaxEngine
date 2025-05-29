@@ -14,7 +14,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Int3Converter))]
 #endif
-    partial struct Int3 : IEquatable<Int3>, IFormattable, IComparable, IComparable<Int2>
+    partial struct Int3 : IEquatable<Int3>, IFormattable, IComparable, IComparable<Int3>
     {
         private static readonly string _formatString = "X:{0} Y:{1} Z:{2}";
 
@@ -1069,7 +1069,7 @@ namespace FlaxEngine
 
         /// <inheritdoc/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int CompareTo(Int2 other)
+        public int CompareTo(Int3 other)
         {
             return LengthSquared.CompareTo(other.LengthSquared);
         }
