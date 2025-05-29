@@ -60,7 +60,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Float3Converter))]
 #endif
-    partial struct Float3 : IEquatable<Float3>, IFormattable
+    partial struct Float3 : IEquatable<Float3>, IFormattable, IComparable, IComparable<Float3>
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2} Z:{2:F2}";
 
@@ -1934,6 +1934,25 @@ namespace FlaxEngine
         public override bool Equals(object value)
         {
             return value is Float3 other && Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y) && Mathf.NearEqual(other.Z, Z);
+        }
+
+        /// <inheritdoc/>
+        public int CompareTo(object obj)
+        {
+            if (obj == null)
+                return 1;
+
+            if (obj is not Float3 other)
+                throw new ArgumentException("Object is not a Float3.", nameof(obj));
+
+            return LengthSquared.CompareTo(other.LengthSquared);
+        }
+
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int CompareTo(Float3 other)
+        {
+            return LengthSquared.CompareTo(other.LengthSquared);
         }
     }
 }
