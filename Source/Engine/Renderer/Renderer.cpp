@@ -237,6 +237,12 @@ void Renderer::Render(SceneRenderTask* task)
             | ViewFlags::ContactShadows
             | ViewFlags::DepthOfField);
     }
+
+    // Force Debug Draw usage in some specific views that depend on it
+    if (renderContext.View.Mode == ViewMode::PhysicsColliders)
+    {
+        renderContext.View.Flags |= ViewFlags::DebugDraw;
+    }
 #endif
 
     // Perform the actual rendering
