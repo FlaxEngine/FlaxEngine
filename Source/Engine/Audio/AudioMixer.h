@@ -38,7 +38,7 @@ public:
     Dictionary<String, MixerVariable> AudioMixerVariables;
 
 public:
-    API_FUNCTION() void MixerInit(const Array<AudioMixerGroup>& array);
+    API_FUNCTION() void MixerInit();
 
     /// <summary>
     /// Gets the values (run-time).

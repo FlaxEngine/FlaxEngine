@@ -130,8 +130,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 Window = window;
                 Asset = window.Asset;
-                var groups = GameSettings.Load<AudioSettings>();
-                if (groups?.AudioMixerGroups is not null) Asset.MixerInit(groups.AudioMixerGroups);
+                Asset.MixerInit();
                 DefaultValues = Asset.DefaultValues;
             }
         }
@@ -285,6 +284,12 @@ namespace FlaxEditor.Windows.Assets
                     layout.Object(propertyLabel,valueContainer, null, "Type: " + CustomEditorsUtil.GetTypeNameUI(value.GetType()));
                 }
 
+                // TODO: improve the UI
+                layout.Space(40);
+                object lastValue = null;
+                foreach (var e in _proxy.DefaultValues)
+                    lastValue = e.Value;
+
             }
 
             private void OnPropertyLabelSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
@@ -333,6 +338,15 @@ namespace FlaxEditor.Windows.Assets
                 action.Do();
             }
         }
+
+
+        private CustomEditorPresenter _propertiesEditor;
+        private PropertiesProxy _proxy;
+        private ToolStripButton _saveButton;
+        private ToolStripButton _undoButton;
+        private ToolStripButton _redoButton;
+        private ToolStripButton _resetButton;
+        private Undo _undo;
 
         public AudioMixerWindow(Editor editor, AssetItem item) : base(editor, item)
         {

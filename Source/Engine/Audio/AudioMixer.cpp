@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 #include "AudioMixer.h"
+#include "AudioSettings.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/CommonValue.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -60,12 +61,12 @@ AudioMixer::AudioMixer(const SpawnParams& params, const AssetInfo* info)
 {
 }
 
-void AudioMixer::MixerInit(const Array<AudioMixerGroup>& array)
+void AudioMixer::MixerInit()
 {
-    for (auto& e : array)
+    for (auto& audioMixerGroup : AudioSettings::Get()->AudioMixerGroups)
     {
-        auto& var = AudioMixerVariables[e.Name];
-        var.DefaultValue = e.MixerVolume;
+        auto& var = AudioMixerVariables[audioMixerGroup.Name];
+        var.DefaultValue = audioMixerGroup.MixerVolume;
     }
 }
 
