@@ -3,6 +3,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/ScopeExit.h"
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Actors/EmptyActor.h"
 #include "Engine/Level/Actors/DirectionalLight.h"
@@ -27,6 +28,7 @@ TEST_CASE("Prefabs")
         // Create Prefab B with two children attached to the root
         AssetReference<Prefab> prefabB = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(prefabB);
+        SCOPE_EXIT{ Content::DeleteAsset(prefabB); };
         Guid id;
         Guid::Parse("665bb01c49a3370f14a023b5395de261", id);
         prefabB->ChangeID(id);
@@ -55,6 +57,7 @@ TEST_CASE("Prefabs")
         // Create Prefab A with nested Prefab B attached to the root
         AssetReference<Prefab> prefabA = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(prefabA);
+        SCOPE_EXIT{ Content::DeleteAsset(prefabA); };
         Guid::Parse("02524a044184af56b6c664a0f98bd761", id);
         prefabA->ChangeID(id);
         auto prefabAInit = prefabA->Init(Prefab::TypeName,
@@ -123,8 +126,6 @@ TEST_CASE("Prefabs")
         // Cleanup
         instanceA->DeleteObject();
         instanceB->DeleteObject();
-        Content::DeleteAsset(prefabA);
-        Content::DeleteAsset(prefabB);
     }
     SECTION("Test Adding Object in Nested Prefab")
     {
@@ -133,6 +134,7 @@ TEST_CASE("Prefabs")
         // Create Prefab B with just root object
         AssetReference<Prefab> prefabB = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(prefabB);
+        SCOPE_EXIT{ Content::DeleteAsset(prefabB); };
         Guid id;
         Guid::Parse("25dbe4b0416be0777a6ce59e8788b10f", id);
         prefabB->ChangeID(id);
@@ -149,6 +151,7 @@ TEST_CASE("Prefabs")
         // Create Prefab A with two nested Prefab B attached to the root
         AssetReference<Prefab> prefabA = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(prefabA);
+        SCOPE_EXIT{ Content::DeleteAsset(prefabA); };
         Guid::Parse("4cb744714f746e31855f41815612d14b", id);
         prefabA->ChangeID(id);
         auto prefabAInit = prefabA->Init(Prefab::TypeName,
@@ -243,8 +246,6 @@ TEST_CASE("Prefabs")
         // Cleanup
         instanceA->DeleteObject();
         instanceB->DeleteObject();
-        Content::DeleteAsset(prefabA);
-        Content::DeleteAsset(prefabB);
     }
     SECTION("Test Syncing Changes In Nested Prefab Instance")
     {
@@ -253,6 +254,7 @@ TEST_CASE("Prefabs")
         // Create TestActor prefab with just root object
         AssetReference<Prefab> testActorPrefab = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(testActorPrefab);
+        SCOPE_EXIT{ Content::DeleteAsset(testActorPrefab); };
         Guid id;
         Guid::Parse("7691e981482f2a486e10cfae149e07d3", id);
         testActorPrefab->ChangeID(id);
@@ -269,6 +271,7 @@ TEST_CASE("Prefabs")
         // Create NestedActor prefab that inherits from TestActor prefab
         AssetReference<Prefab> nestedActorPrefab = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(nestedActorPrefab);
+        SCOPE_EXIT{ Content::DeleteAsset(nestedActorPrefab); };
         Guid::Parse("1d521df4465ad849e274748c6d14b703", id);
         nestedActorPrefab->ChangeID(id);
         auto nestedActorPrefabInit = nestedActorPrefab->Init(Prefab::TypeName,
@@ -328,8 +331,6 @@ TEST_CASE("Prefabs")
         // Cleanup
         nestedActor->DeleteObject();
         testActor->DeleteObject();
-        Content::DeleteAsset(nestedActorPrefab);
-        Content::DeleteAsset(testActorPrefab);
     }
     SECTION("Test Loading Nested Prefab After Changing Root")
     {
@@ -338,6 +339,7 @@ TEST_CASE("Prefabs")
         // Create base prefab with 3 objects
         AssetReference<Prefab> prefabBase = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(prefabBase);
+        SCOPE_EXIT{ Content::DeleteAsset(prefabBase); };
         Guid id;
         Guid::Parse("2b3334524c696dcfa93cabacd2a4f404", id);
         prefabBase->ChangeID(id);
@@ -366,6 +368,7 @@ TEST_CASE("Prefabs")
         // Create nested prefab but with 'old' state where root object is different
         AssetReference<Prefab> prefabNested = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(prefabNested);
+        SCOPE_EXIT{ Content::DeleteAsset(prefabNested); };
         Guid::Parse("a71447e947cbd2deea018a8377636ce6", id);
         prefabNested->ChangeID(id);
         auto prefabNestedInit = prefabNested->Init(Prefab::TypeName,
@@ -411,8 +414,6 @@ TEST_CASE("Prefabs")
         // Cleanup
         instanceNested->DeleteObject();
         instanceBase->DeleteObject();
-        Content::DeleteAsset(prefabNested);
-        Content::DeleteAsset(prefabBase);
     }
     SECTION("Test Loading Nested Prefab After Changing and Deleting Root")
     {
@@ -421,6 +422,7 @@ TEST_CASE("Prefabs")
         // Create base prefab with 1 object
         AssetReference<Prefab> prefabBase = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(prefabBase);
+        SCOPE_EXIT{ Content::DeleteAsset(prefabBase); };
         Guid id;
         Guid::Parse("3b3334524c696dcfa93cabacd2a4f404", id);
         prefabBase->ChangeID(id);
@@ -455,6 +457,7 @@ TEST_CASE("Prefabs")
         // Create nested prefab but with 'old' state where root object is different
         AssetReference<Prefab> prefabNested1 = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(prefabNested1);
+        SCOPE_EXIT{ Content::DeleteAsset(prefabNested1); };
         Guid::Parse("671447e947cbd2deea018a8377636ce6", id);
         prefabNested1->ChangeID(id);
         auto prefabNestedInit1 = prefabNested1->Init(Prefab::TypeName,
@@ -491,6 +494,7 @@ TEST_CASE("Prefabs")
         // Create nested prefab but with 'old' state where root object is different and doesn't exist anymore
         AssetReference<Prefab> prefabNested2 = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(prefabNested2);
+        SCOPE_EXIT{ Content::DeleteAsset(prefabNested2); };
         Guid::Parse("b71447e947cbd2deea018a8377636ce6", id);
         prefabNested2->ChangeID(id);
         auto prefabNestedInit2 = prefabNested2->Init(Prefab::TypeName,
@@ -555,9 +559,6 @@ TEST_CASE("Prefabs")
         instanceNested2->DeleteObject();
         instanceNested1->DeleteObject();
         instanceBase->DeleteObject();
-        Content::DeleteAsset(prefabNested2);
-        Content::DeleteAsset(prefabNested1);
-        Content::DeleteAsset(prefabBase);
     }
     SECTION("Test Applying Prefab Change To Object References")
     {
@@ -566,6 +567,7 @@ TEST_CASE("Prefabs")
         // Create Prefab
         AssetReference<Prefab> prefab = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(prefab);
+        SCOPE_EXIT{ Content::DeleteAsset(prefab); };
         Guid id;
         Guid::Parse("690e55514cd6fdc2a269429a2bf84133", id);
         prefab->ChangeID(id);
@@ -612,7 +614,6 @@ TEST_CASE("Prefabs")
         // Cleanup
         instanceA->DeleteObject();
         instanceB->DeleteObject();
-        Content::DeleteAsset(prefab);
     }
     SECTION("Test Applying Prefab With Missing Nested Prefab")
     {
@@ -637,6 +638,7 @@ TEST_CASE("Prefabs")
         // Create Prefab A with nested Prefab B attached to the root
         AssetReference<Prefab> prefabA = Content::CreateVirtualAsset<Prefab>();
         REQUIRE(prefabA);
+        SCOPE_EXIT{ Content::DeleteAsset(prefabA); };
         Guid::Parse("4cb744714f746e31855f41815612d14b", id);
         prefabA->ChangeID(id);
         auto prefabAInit = prefabA->Init(Prefab::TypeName,
@@ -685,7 +687,6 @@ TEST_CASE("Prefabs")
         instanceA->DeleteObject();
         instanceB->DeleteObject();
         instanceC->DeleteObject();
-        Content::DeleteAsset(prefabA);
 
     }
 }

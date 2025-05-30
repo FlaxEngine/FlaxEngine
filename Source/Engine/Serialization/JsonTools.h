@@ -214,7 +214,7 @@ public:
         const auto member = node.FindMember(name);
         if (member != node.MemberEnd() && member->value.IsInt())
         {
-            result = member->value.GetInt();
+            result = (byte)member->value.GetInt();
         }
     }
 
@@ -232,7 +232,7 @@ public:
         const auto member = node.FindMember(name);
         if (member != node.MemberEnd() && member->value.IsInt())
         {
-            result = member->value.GetInt();
+            result = (uint32)member->value.GetInt();
         }
     }
 
@@ -241,7 +241,7 @@ public:
         const auto member = node.FindMember(name);
         if (member != node.MemberEnd() && member->value.IsInt())
         {
-            result = member->value.GetInt();
+            result = (int16)member->value.GetInt();
         }
     }
 
@@ -250,7 +250,7 @@ public:
         const auto member = node.FindMember(name);
         if (member != node.MemberEnd() && member->value.IsInt())
         {
-            result = member->value.GetInt();
+            result = (uint16)member->value.GetInt();
         }
     }
 
