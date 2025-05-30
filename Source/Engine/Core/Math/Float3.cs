@@ -1807,6 +1807,54 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Determines if one <see cref="Float3"/> is greater than another <see cref="Float3"/>.
+        /// </summary>
+        /// <param name="left">The first <see cref="Float3"/> to compare.</param>
+        /// <param name="right">The second <see cref="Float3"/> to compare.</param>
+        /// <returns><c>true</c> if the <see cref="LengthSquared"/> of <paramref name="left"/> is greater than the <see cref="LengthSquared"/> of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator >(Float3 left, Float3 right)
+        {
+            return left.LengthSquared > right.LengthSquared;
+        }
+
+        /// <summary>
+        /// Determines if one <see cref="Float3"/> is less than another <see cref="Float3"/>.
+        /// </summary>
+        /// <param name="left">The first <see cref="Float3"/> to compare.</param>
+        /// <param name="right">The second <see cref="Float3"/> to compare.</param>
+        /// <returns><c>true</c> if the <see cref="LengthSquared"/> of <paramref name="left"/> is less than the <see cref="LengthSquared"/> of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator <(Float3 left, Float3 right)
+        {
+            return left.LengthSquared < right.LengthSquared;
+        }
+
+        /// <summary>
+        /// Determines if one <see cref="Float3"/> is greater than or equal to another <see cref="Float3"/>.
+        /// </summary>
+        /// <param name="left">The first <see cref="Float3"/> to compare.</param>
+        /// <param name="right">The second <see cref="Float3"/> to compare.</param>
+        /// <returns><c>true</c> if the <see cref="LengthSquared"/> of <paramref name="left"/> is greater than or equal to the <see cref="LengthSquared"/> of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator >=(Float3 left, Float3 right)
+        {
+            return left.LengthSquared >= right.LengthSquared;
+        }
+
+        /// <summary>
+        /// Determines if one <see cref="Float3"/> is less than or equal to another <see cref="Float3"/>.
+        /// </summary>
+        /// <param name="left">The first <see cref="Float3"/> to compare.</param>
+        /// <param name="right">The second <see cref="Float3"/> to compare.</param>
+        /// <returns><c>true</c> if the <see cref="LengthSquared"/> of <paramref name="left"/> is less than or equal to the <see cref="LengthSquared"/> of <paramref name="right"/>; otherwise, <c>false</c>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator <=(Float3 left, Float3 right)
+        {
+            return left.LengthSquared <= right.LengthSquared;
+        }
+
+        /// <summary>
         /// Performs an explicit conversion from <see cref="Float3" /> to <see cref="Vector3" />.
         /// </summary>
         /// <param name="value">The value.</param>
