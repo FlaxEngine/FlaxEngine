@@ -15,6 +15,8 @@
 
 #if USE_EDITOR
 
+#include "Engine/Engine/Globals.h"
+
 ThreadLocal<bool> ContentDeprecatedFlags;
 
 void ContentDeprecated::Mark()
@@ -592,7 +594,7 @@ bool Asset::onLoad(LoadAssetTask* task)
     
 #if USE_EDITOR
     // Auto-save deprecated assets to get rid of data in an old format
-    if (isDeprecated && isLoaded)
+    if (isDeprecated && isLoaded && !IsVirtual() && !GetPath().StartsWith(StringUtils::GetDirectoryName(Globals::TemporaryFolder)))
     {
         PROFILE_CPU_NAMED("Asset.Save");
         LOG(Info, "Resaving asset '{}' that uses deprecated data format", ToString());
