@@ -197,5 +197,96 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
     if (previousLuminanceMap)
         RenderTargetPool::Release(previousLuminanceMap);
 }
+String EyeAdaptationPass::ToString() const
+{
+    return TEXT("EyeAdaptationPass");
+}
 
+bool EyeAdaptationPass::Init()
+{
+    auto device = GPUDevice::Instance;
+    _canUseHistogram = device->Limits.HasCompute;
+
+    // Create pipeline states
+    _psManual = device->CreatePipelineState();
+    _psLuminanceMap = device->CreatePipelineState();
+    _psBlendLuminance = device->CreatePipelineState();
+    _psApplyLuminance = device->CreatePipelineState();
+    _psHistogram = device->CreatePipelineState();
+
+    // Load shaders
+    _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/EyeAdaptation"));
+    if (_shader == nullptr)
+        return true;
+#if COMPILE_WITH_DEV_ENV
+    _shader.Get()->OnReloading.Bind<EyeAdaptationPass, &EyeAdaptationPass::OnShaderReloading>(this);
+#endif
+
+    return false;
+}
+
+void EyeAdaptationPass::Dispose()
+{
+    // Base
+    RendererPass::Dispose();
+
+    // Cleanup
+    SAFE_DELETE_GPU_RESOURCE(_psManual);
+    SAFE_DELETE_GPU_RESOURCE(_psLuminanceMap);
+    SAFE_DELETE_GPU_RESOURCE(_psBlendLuminance);
+    SAFE_DELETE_GPU_RESOURCE(_psApplyLuminance);
+    SAFE_DELETE_GPU_RESOURCE(_psHistogram);
+    _shader = nullptr;
+}
+
+bool EyeAdaptationPass::setupResources()
+{
+    // Wait for shader
+    if (!_shader->IsLoaded())
+        return true;
+    const auto shader = _shader->GetShader();
+
+    // Validate shader constant buffer size
+    if (shader->GetCB(0)->GetSize() != sizeof(EyeAdaptationData))
+    {
+        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, EyeAdaptationData);
+        return true;
+    }
+
+    // Create pipeline stages
+    GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+    if (!_psLuminanceMap->IsValid())
+    {
+        psDesc.PS = shader->GetPS("PS_LuminanceMap");
+        if (_psLuminanceMap->Init(psDesc))
+            return true;
+    }
+    if (!_psBlendLuminance->IsValid())
+    {
+        psDesc.PS = shader->GetPS("PS_BlendLuminance");
+        if (_psBlendLuminance->Init(psDesc))
+            return true;
+    }
+    if (!_psHistogram->IsValid())
+    {
+        psDesc.PS = shader->GetPS("PS_Histogram");
+        if (_psHistogram->Init(psDesc))
+            return true;
+    }
+    psDesc.BlendMode = BlendingMode::Multiply;
+    if (!_psManual->IsValid())
+    {
+        psDesc.PS = shader->GetPS("PS_Manual");
+        if (_psManual->Init(psDesc))
+            return true;
+    }
+    if (!_psApplyLuminance->IsValid())
+    {
+        psDesc.PS = shader->GetPS("PS_ApplyLuminance");
+        if (_psApplyLuminance->Init(psDesc))
+            return true;
+    }
+
+    return false;
+}
 // ... (rest of the file remains unchanged)
