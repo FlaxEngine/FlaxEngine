@@ -320,7 +320,7 @@ namespace FlaxEditor.SceneGraph.GUI
             if (noFilter && actor != null)
             {
                 // Pick the correct id when inside a prefab window.
-                var id = actor.HasPrefabLink && actor.Scene.Scene == null ? actor.PrefabObjectID : actor.ID;
+                var id = actor.HasPrefabLink && actor.Scene == null ? actor.PrefabObjectID : actor.ID;
                 isExpanded = Editor.Instance.ProjectCache.IsExpandedActor(ref id);
             }
 
