@@ -759,7 +759,6 @@ namespace FlaxEditor.Windows.Assets
                     var importSettingsField = typeof(ImportPropertiesProxyBase).GetField(nameof(ImportSettings), BindingFlags.NonPublic | BindingFlags.Instance);
                     var importSettingsValues = new ValueContainer(new ScriptMemberInfo(importSettingsField)) { proxy.ImportSettings };
                     importSettingsGroup.Object(importSettingsValues);
-                    importSettingsGroup.Space(3);
 
                     // Creates the import path UI
                     var group = layout.Group("Import Path");

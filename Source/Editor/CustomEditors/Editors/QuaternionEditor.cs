@@ -46,7 +46,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            var grid = layout.CustomContainer<UniformGridPanel>();
+            var grid = layout.UniformGrid();
             var gridControl = grid.CustomControl;
             gridControl.ClipChildren = false;
             gridControl.Height = TextBox.DefaultHeight;

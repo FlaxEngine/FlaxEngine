@@ -59,7 +59,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var paintValue = new ReadOnlyValueContainer(new ScriptType(typeof(ClothPaintingGizmoMode)), _gizmoMode);
             paintGroup.Object(paintValue);
             {
-                var grid = paintGroup.CustomContainer<UniformGridPanel>();
+                var grid = paintGroup.UniformGrid();
                 var gridControl = grid.CustomControl;
                 gridControl.ClipChildren = false;
                 gridControl.Height = Button.DefaultHeight;

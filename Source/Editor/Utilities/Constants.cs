@@ -20,5 +20,7 @@ namespace FlaxEditor.Utilities
 #else
         public const string ShowInExplorer = "Show in explorer";
 #endif
+
+        public const float UIMargin = 3.0f;
     }
 }

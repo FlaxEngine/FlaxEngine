@@ -81,6 +81,8 @@ namespace FlaxEditor.CustomEditors
                 Offsets = Margin.Zero;
                 Pivot = Float2.Zero;
                 IsScrollable = true;
+                Spacing = Utilities.Constants.UIMargin;
+                Margin = new Margin(Utilities.Constants.UIMargin);
             }
 
             /// <inheritdoc />
@@ -95,7 +97,7 @@ namespace FlaxEditor.CustomEditors
                 {
                     FlaxEditor.Editor.LogWarning(ex);
 
-                    // Refresh layout on errors to reduce lgo spam
+                    // Refresh layout on errors to reduce log spam
                     _presenter.BuildLayout();
                 }
 

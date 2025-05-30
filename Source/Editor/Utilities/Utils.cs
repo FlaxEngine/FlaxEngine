@@ -415,13 +415,10 @@ namespace FlaxEditor.Utilities
         /// </summary>
         /// <param name="parentLayout">The parent layout element.</param>
         /// <param name="path">The import path.</param>
-        /// <param name="useInitialSpacing">Whether to use an initial layout space of 5 for separation.</param>
-        public static void CreateImportPathUI(CustomEditors.LayoutElementsContainer parentLayout, string path, bool useInitialSpacing = true)
+        public static void CreateImportPathUI(CustomEditors.LayoutElementsContainer parentLayout, string path)
         {
             if (!string.IsNullOrEmpty(path))
             {
-                if (useInitialSpacing)
-                    parentLayout.Space(0);
                 var textBox = parentLayout.TextBox().TextBox;
                 textBox.TooltipText = "Source asset path. Can be relative or absolute to the project. Path is not editable here.";
                 textBox.IsReadOnly = true;

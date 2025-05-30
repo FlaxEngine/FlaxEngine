@@ -642,10 +642,10 @@ namespace FlaxEditor.CustomEditors.Editors
             if (_canResize && !_readOnly)
             {
                 var panel = dragArea.HorizontalPanel();
-                panel.Panel.Size = new Float2(0, 20);
-                panel.Panel.Margin = new Margin(2);
+                panel.Panel.Size = new Float2(0, 18);
+                panel.Panel.Margin = new Margin(0, 0, Utilities.Constants.UIMargin, 0);
 
-                var removeButton = panel.Button("-", "Remove last item");
+                var removeButton = panel.Button("-", "Remove the last item");
                 removeButton.Button.Size = new Float2(16, 16);
                 removeButton.Button.Enabled = size > _minCount;
                 removeButton.Button.AnchorPreset = AnchorPresets.TopRight;
@@ -656,7 +656,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Resize(Count - 1);
                 };
 
-                var addButton = panel.Button("+", "Add new item");
+                var addButton = panel.Button("+", "Add a new item");
                 addButton.Button.Size = new Float2(16, 16);
                 addButton.Button.Enabled = (!NotNullItems || size > 0) && size < _maxCount;
                 addButton.Button.AnchorPreset = AnchorPresets.TopRight;

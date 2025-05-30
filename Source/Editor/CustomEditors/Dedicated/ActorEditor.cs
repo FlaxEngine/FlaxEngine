@@ -71,14 +71,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         // Display prefab UI (when displaying object inside Prefab Window then display only nested prefabs)
                         prefab.GetNestedObject(ref prefabObjectId, out var nestedPrefabId, out var nestedPrefabObjectId);
                         var nestedPrefab = FlaxEngine.Content.Load<Prefab>(nestedPrefabId);
-                        var panel = layout.CustomContainer<UniformGridPanel>();
+                        var panel = layout.UniformGrid();
                         panel.CustomControl.Height = 20.0f;
                         panel.CustomControl.SlotsVertically = 1;
                         if (Presenter == Editor.Instance.Windows.PropertiesWin.Presenter || nestedPrefab)
                         {
                             var targetPrefab = nestedPrefab ?? prefab;
                             panel.CustomControl.SlotsHorizontally = 3;
-                            
+
                             // Selecting actor prefab asset
                             var selectPrefab = panel.Button("Select Prefab");
                             selectPrefab.Button.Clicked += () =>

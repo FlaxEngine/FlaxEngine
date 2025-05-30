@@ -50,7 +50,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Scale editor
             {
-                var grid = masterPanel.CustomContainer<UniformGridPanel>();
+                var grid = masterPanel.UniformGrid();
                 var gridControl = grid.CustomControl;
                 gridControl.SlotPadding = new Margin(4, 2, 2, 2);
                 gridControl.ClipChildren = false;
