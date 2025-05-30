@@ -34,7 +34,7 @@ void ChangeIds(rapidjson_flax::Value& obj, rapidjson_flax::Document& document, c
             //obj.SetString(value.ToString(Guid::FormatType::N).ToSTD().c_str(), 32, document.GetAllocator());
 
             // Optimized version:
-            static char buffer[32] =
+            char buffer[32] =
             {
             // @formatter:off
                 '0','0','0','0','0','0','0','0','0','0',
