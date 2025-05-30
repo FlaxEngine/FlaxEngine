@@ -72,7 +72,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Vector4Converter))]
 #endif
-    public partial struct Vector4 : IEquatable<Vector4>, IFormattable
+    public partial struct Vector4 : IEquatable<Vector4>, IFormattable, IComparable, IComparable<Vector4>
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2} Z:{2:F2} W:{3:F2}";
 
@@ -1515,6 +1515,25 @@ namespace FlaxEngine
         public override bool Equals(object value)
         {
             return value is Vector4 other && Mathr.NearEqual(other.X, X) && Mathr.NearEqual(other.Y, Y) && Mathr.NearEqual(other.Z, Z) && Mathr.NearEqual(other.W, W);
+        }
+
+        /// <inheritdoc/>
+        public int CompareTo(object obj)
+        {
+            if (obj == null)
+                return 1;
+
+            if (obj is not Vector4 other)
+                throw new ArgumentException("Object is not a Vector4.", nameof(obj));
+
+            return LengthSquared.CompareTo(other.LengthSquared);
+        }
+
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int CompareTo(Vector4 other)
+        {
+            return LengthSquared.CompareTo(other.LengthSquared);
         }
     }
 }
