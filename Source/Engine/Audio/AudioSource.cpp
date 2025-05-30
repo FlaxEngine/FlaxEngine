@@ -27,16 +27,6 @@ AudioSource::AudioSource(const SpawnParams& params)
     Clip.Loaded.Bind<AudioSource, &AudioSource::OnClipLoaded>(this);
 }
 
-void AudioSource::SetAudioMixerNameChannel(StringView& NameChannel)
-{
-    AudioMixerChannelName = NameChannel;
-}
-
-String AudioSource::GetAudioMixerNameChannel()
-{
-    return AudioMixerChannelName;
-}
-
 void AudioSource::SetVolume(float value)
 {
     value = Math::Saturate(value);

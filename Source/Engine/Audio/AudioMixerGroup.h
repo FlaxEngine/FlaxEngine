@@ -4,7 +4,6 @@
 
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/ISerializable.h"
-#include "AudioMixLODOptions.h"
 
 /// <summary>
 ///  Settings container for a group of audio mixer settings. Defines the data audio mixer options.
@@ -25,12 +24,6 @@ API_STRUCT() struct AudioMixerGroup : ISerializable
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(20), Limit(0, 1)")
     float MixerVolume = .5f;
-
-    /// <summary>
-    /// Audio Mixer LOD Options.
-    /// </summary>
-    API_FIELD(Attributes = "EditorOrder(30)")
-    AudioMixLODOptions AudioLODOptions;
 
 };
 
