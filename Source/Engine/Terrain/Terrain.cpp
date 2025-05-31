@@ -240,6 +240,7 @@ void Terrain::DrawChunk(const RenderContext& renderContext, const Int2& patchCoo
 
 void Terrain::DrawPhysicsDebug(RenderView& view)
 {
+    PROFILE_CPU();
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
         _patches[pathIndex]->DrawPhysicsDebug(view);
