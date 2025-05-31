@@ -27,7 +27,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
-            float trackBallSize = 80.0f;
+            float trackBallSize = 100f;
             float margin = 4.0f;
 
             // Panel
