@@ -9,6 +9,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "AudioBackend.h"
+#include "AudioMixerGroup.h"
 #include "Audio.h"
 
 AudioSource::AudioSource(const SpawnParams& params)
