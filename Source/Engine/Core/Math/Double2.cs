@@ -65,7 +65,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Double2Converter))]
 #endif
-    partial struct Double2 : IEquatable<Double2>, IFormattable
+    partial struct Double2 : IEquatable<Double2>, IFormattable, IComparable, IComparable<Double2>
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2}";
 
@@ -1612,6 +1612,25 @@ namespace FlaxEngine
         public override bool Equals(object value)
         {
             return value is Double2 other && Mathd.NearEqual(other.X, X) && Mathd.NearEqual(other.Y, Y);
+        }
+
+        /// <inheritdoc/>
+        public int CompareTo(object obj)
+        {
+            if (obj == null)
+                return 1;
+
+            if (obj is not Double2 other)
+                throw new ArgumentException("Object is not a Double2.", nameof(obj));
+
+            return LengthSquared.CompareTo(other.LengthSquared);
+        }
+
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int CompareTo(Double2 other)
+        {
+            return LengthSquared.CompareTo(other.LengthSquared);
         }
     }
 }

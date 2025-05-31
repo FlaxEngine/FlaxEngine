@@ -66,7 +66,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Double4Converter))]
 #endif
-    partial struct Double4 : IEquatable<Double4>, IFormattable
+    partial struct Double4 : IEquatable<Double4>, IFormattable, IComparable, IComparable<Double4>
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2} Z:{2:F2} W:{3:F2}";
 
@@ -1401,6 +1401,25 @@ namespace FlaxEngine
         public override bool Equals(object value)
         {
             return value is Double4 other && Mathd.NearEqual(other.X, X) && Mathd.NearEqual(other.Y, Y) && Mathd.NearEqual(other.Z, Z) && Mathd.NearEqual(other.W, W);
+        }
+
+        /// <inheritdoc/>
+        public int CompareTo(object obj)
+        {
+            if (obj == null)
+                return 1;
+
+            if (obj is not Double4 other)
+                throw new ArgumentException("Object is not a Double4.", nameof(obj));
+
+            return LengthSquared.CompareTo(other.LengthSquared);
+        }
+
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int CompareTo(Double4 other)
+        {
+            return LengthSquared.CompareTo(other.LengthSquared);
         }
     }
 }

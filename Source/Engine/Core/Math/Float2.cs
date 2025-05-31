@@ -60,7 +60,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Float2Converter))]
 #endif
-    partial struct Float2 : IEquatable<Float2>, IFormattable
+    partial struct Float2 : IEquatable<Float2>, IFormattable, IComparable, IComparable<Float2>
     {
         private static readonly string _formatString = "X:{0:F2} Y:{1:F2}";
 
@@ -1688,6 +1688,25 @@ namespace FlaxEngine
         public override bool Equals(object value)
         {
             return value is Float2 other && Mathf.NearEqual(other.X, X) && Mathf.NearEqual(other.Y, Y);
+        }
+
+        /// <inheritdoc/>
+        public int CompareTo(object obj)
+        {
+            if (obj == null)
+                return 1;
+
+            if (obj is not Float2 other)
+                throw new ArgumentException("Object is not a Float2.", nameof(obj));
+
+            return LengthSquared.CompareTo(other.LengthSquared);
+        }
+
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int CompareTo(Float2 other)
+        {
+            return LengthSquared.CompareTo(other.LengthSquared);
         }
     }
 }
