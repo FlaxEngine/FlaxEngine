@@ -235,6 +235,14 @@ void TeleportList(const Float3& delta, Array<DebugText3D>& list)
     }
 }
 
+void TeleportList(const Float3& delta, Array<DebugGeometryBuffer>& list)
+{
+    for (auto& v : list)
+    {
+        v.Transform.SetTranslation(v.Transform.GetTranslation() + delta);
+    }
+}
+
 struct DebugDrawData
 {
     Array<DebugGeometryBuffer> GeometryBuffers;
@@ -303,6 +311,7 @@ struct DebugDrawData
 
     void Teleport(const Float3& delta)
     {
+        TeleportList(delta, GeometryBuffers);
         TeleportList(delta, DefaultLines);
         TeleportList(delta, OneFrameLines);
         TeleportList(delta, DefaultTriangles);
