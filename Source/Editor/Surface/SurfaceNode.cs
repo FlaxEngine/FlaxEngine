@@ -409,7 +409,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Called after adding the control to the surface after paste.
         /// </summary>
-        /// <param name="idsMapping">The nodes IDs mapping (original node ID to pasted node ID). Can be sued to update internal node's data after paste operation from the original data.</param>
+        /// <param name="idsMapping">The nodes IDs mapping (original node ID to pasted node ID). Can be used to update internal node's data after paste operation from the original data.</param>
         public virtual void OnPasted(System.Collections.Generic.Dictionary<uint, uint> idsMapping)
         {
         }

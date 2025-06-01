@@ -74,7 +74,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     API_FUNCTION() static bool CanClear(void* context = nullptr);
 #endif
 
-    // Gets the last view position when rendering the current context. Can be sued for custom culling or LODing when drawing more complex shapes.
+    // Gets the last view position when rendering the current context. Can be used for custom culling or LODing when drawing more complex shapes.
     static Vector3 GetViewPos();
 
     /// <summary>
