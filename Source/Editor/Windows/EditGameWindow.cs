@@ -140,6 +140,7 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.None)
         {
             Title = "Editor";
+            Icon = editor.Icons.Grid32;
 
             // Create viewport
             Viewport = new MainEditorGizmoViewport(editor)

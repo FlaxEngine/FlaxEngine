@@ -34,12 +34,41 @@ namespace FlaxEditor.Options
     }
 
     /// <summary>
+    /// Shortcut availability in play mode.
+    /// </summary>
+    public enum PlayModeShortcutAvailability
+    {
+        /// <summary>
+        /// None of the window shortcuts will be available in play mode.
+        /// </summary>
+        None,
+        /// <summary>
+        /// Only the profiler window shortcut will be available in play mode.
+        /// </summary>
+        ProfilerOnly,
+        /// <summary>
+        /// All window shortcuts will be available in play mode.
+        /// </summary>
+        All,
+    }
+
+    /// <summary>
     /// Input editor options data container.
     /// </summary>
     [CustomEditor(typeof(Editor<InputOptions>))]
     [HideInEditor]
     public sealed class InputOptions
     {
+        /// <summary>
+        /// Gets a value based on the current settings that indicates wether window shortcuts will be avaliable during play mode.
+        /// </summary>
+        public static bool WindowShortcutsAvaliable => !Editor.IsPlayMode || Editor.Instance.Options.Options.Input.PlayModeWindowShortcutAvaliability == PlayModeShortcutAvailability.All;
+
+        /// <summary>
+        /// Gets a value based on the current settings that indicates wether the profiler window shortcut will be avaliable during play mode.
+        /// </summary>
+        public static bool ProfilerShortcutAvaliable => WindowShortcutsAvaliable || Editor.Instance.Options.Options.Input.PlayModeWindowShortcutAvaliability == PlayModeShortcutAvailability.ProfilerOnly;
+
         #region Common
 
         [DefaultValue(typeof(InputBinding), "Ctrl+S")]
@@ -230,9 +259,9 @@ namespace FlaxEditor.Options
 
         #region Profiler
 
-        [DefaultValue(typeof(InputBinding), "None")]
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha7")]
         [EditorDisplay("Profiler", "Open Profiler Window"), EditorOrder(630)]
-        public InputBinding ProfilerWindow = new InputBinding(KeyboardKeys.None);
+        public InputBinding ProfilerWindow = new InputBinding(KeyboardKeys.Alpha7, KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("Profiler", "Start/Stop Profiler"), EditorOrder(631)]
@@ -557,6 +586,65 @@ namespace FlaxEditor.Options
         [DefaultValue(SceneNodeDoubleClick.Expand)]
         [EditorDisplay("Interface"), EditorOrder(3530)]
         public SceneNodeDoubleClick DoubleClickSceneNode = SceneNodeDoubleClick.Expand;
+
+        #endregion
+
+        #region Windows
+
+        /// <summary>
+        /// Gets or sets a value indicating what window shortcuts will be available during play mode.
+        /// </summary>
+        [DefaultValue(PlayModeShortcutAvailability.ProfilerOnly)]
+        [EditorDisplay("Windows", "Avaliability in Play Mode"), EditorOrder(3000)]
+        public PlayModeShortcutAvailability PlayModeWindowShortcutAvaliability { get; set; } = PlayModeShortcutAvailability.ProfilerOnly;
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha5")]
+        [EditorDisplay("Windows"), EditorOrder(3010)]
+        public InputBinding ContentWindow = new InputBinding(KeyboardKeys.Alpha5, KeyboardKeys.Control);
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha4")]
+        [EditorDisplay("Windows"), EditorOrder(3020)]
+        public InputBinding SceneWindow = new InputBinding(KeyboardKeys.Alpha4, KeyboardKeys.Control);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(3030)]
+        public InputBinding ToolboxWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha3")]
+        [EditorDisplay("Windows"), EditorOrder(3040)]
+        public InputBinding PropertiesWindow = new InputBinding(KeyboardKeys.Alpha3, KeyboardKeys.Control);
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha2")]
+        [EditorDisplay("Windows"), EditorOrder(3050)]
+        public InputBinding GameWindow = new InputBinding(KeyboardKeys.Alpha2, KeyboardKeys.Control);
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha1")]
+        [EditorDisplay("Windows"), EditorOrder(3060)]
+        public InputBinding EditorWindow = new InputBinding(KeyboardKeys.Alpha1, KeyboardKeys.Control);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(3070)]
+        public InputBinding DebugLogWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(3080)]
+        public InputBinding OutputLogWindow = new InputBinding(KeyboardKeys.C, KeyboardKeys.Control, KeyboardKeys.Shift);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(3090)]
+        public InputBinding GraphicsQualityWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(4000)]
+        public InputBinding GameCookerWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(4010)]
+        public InputBinding ContentSearchWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(4020)]
+        public InputBinding VisualScriptDebuggerWindow = new InputBinding(KeyboardKeys.None);
 
         #endregion
     }

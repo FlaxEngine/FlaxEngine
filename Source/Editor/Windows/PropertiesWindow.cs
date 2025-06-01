@@ -66,6 +66,7 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.Vertical)
         {
             Title = "Properties";
+            Icon = editor.Icons.Build64;
             AutoFocus = true;
 
             Presenter = new CustomEditorPresenter(editor.Undo, null, this);

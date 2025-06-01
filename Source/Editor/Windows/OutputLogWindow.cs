@@ -482,6 +482,7 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.None)
         {
             Title = "Output Log";
+            Icon = editor.Icons.Info64;
             ClipChildren = false;
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
 
