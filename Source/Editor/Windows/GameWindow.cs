@@ -305,6 +305,7 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.None)
         {
             Title = "Game";
+            Icon = editor.Icons.Play64;
             AutoFocus = true;
 
             var task = MainRenderTask.Instance;
