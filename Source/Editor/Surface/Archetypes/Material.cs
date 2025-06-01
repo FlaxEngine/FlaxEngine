@@ -607,14 +607,14 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Terrain Layer Weight",
                 Description = "Terrain layer weight mask used for blending terrain layers",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(220, 30),
+                Size = new Float2(200, 30),
                 DefaultValues = new object[]
                 {
                     0,
                 },
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.ComboBox(0, 0, 70.0f, 0, LayersAndTagsSettings.GetCurrentTerrainLayers()),
+                    NodeElementArchetype.Factory.ComboBox(0, 0, 175.0f, 0, LayersAndTagsSettings.GetCurrentTerrainLayers()),
                     NodeElementArchetype.Factory.Output(0, "", typeof(float), 0),
                 }
             },
