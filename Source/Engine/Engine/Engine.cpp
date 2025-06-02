@@ -24,10 +24,12 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Core/Config/GameSettings.h"
+#include "Engine/Core/Types/StringBuilder.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Threading/TaskGraph.h"
+
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/ProjectInfo.h"
@@ -41,6 +43,9 @@
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
 #include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Core/Config/PlatformSettings.h"
+#endif
+#if PLATFORM_LINUX | PLATFORM_MAC
+#include <iostream>
 #endif
 
 namespace EngineImpl
@@ -77,19 +82,34 @@ bool Engine::IsRequestingExit = false;
 int32 Engine::ExitCode = 0;
 Window* Engine::MainWindow = nullptr;
 
+// if the general command line parsing can be adopted to Windows as well
+// we can get rid of these preprocessor directives
+#if PLATFORM_LINUX | PLATFORM_MAC
+int32 Engine::Main(Array<String> arg)
+{
+    if (CommandLine::Parse(arg))
+    {
+        std::cerr << "Invalid command line.";
+        return -1;
+    }
+    const Char *cmdLine = CommandLine::Options.CmdLine;
+#else
 int32 Engine::Main(const Char* cmdLine)
 {
+#endif
     EngineImpl::CommandLine = cmdLine;
     Globals::MainThreadID = Platform::GetCurrentThreadID();
     StartupTime = DateTime::Now();
 
     EngineService::Sort();
 
+#if !(PLATFORM_LINUX | PLATFORM_MAC)
     if (CommandLine::Parse(cmdLine))
     {
         Platform::Fatal(TEXT("Invalid command line."));
         return -1;
     }
+#endif
 
 #if FLAX_TESTS
     // Configure engine for test running environment

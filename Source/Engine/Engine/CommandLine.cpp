@@ -1,5 +1,97 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+#if PLATFORM_LINUX | PLATFORM_MAC
+#include "CommandLine.h"
+#include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Types/StringBuilder.h"
+
+CommandLine::OptionsData CommandLine::Options;
+
+bool CommandLine::HasOption(const String& name, const Array<String>& arg)
+{
+    return arg.Contains(name);
+}
+
+Nullable<bool> CommandLine::GetOption(const String& name, const Array<String>& arg)
+{
+    if (!HasOption(name, arg))
+        return Nullable<bool>();
+    return true;
+}
+
+String CommandLine::GetOptionValue(const String& name, const Array<String>& arg)
+{
+    const int index = arg.Find(name);
+    if (index < 0)
+        return nullptr;
+    if (index+1 < arg.Count())
+        return arg[index+1];
+    return String::Empty;
+}
+
+Nullable<String> CommandLine::GetOptionalValue(const String& name, const Array<String>& arg)
+{
+    const int index = arg.Find(name);
+    if (index < 0)
+        return Nullable<String>();
+    if (index+1 < arg.Count())
+        return Nullable<String>(arg[index+1]);
+    return Nullable<String>(String::Empty);
+}
+
+// arg is already excluding the argv[0] (the called program name)
+bool CommandLine::Parse(const Array<String>& arg)
+{
+    StringBuilder sb;
+    for (int i = 0; i < arg.Count(); i++)
+    {
+        if (i > 0)
+            sb.Append(TEXT(" "));
+        sb.Append(arg[i]);
+    }
+    sb.Append(TEXT('\0'));
+    Options.CmdLine = *sb;
+
+    Options.Windowed = GetOption(TEXT("-windowed"), arg);
+    Options.Fullscreen = GetOption(TEXT("-fullscreen"), arg);
+    Options.VSync = GetOption(TEXT("-vsync"), arg);
+    Options.NoVSync = GetOption(TEXT("-novsync"), arg);
+    Options.NoLog = GetOption(TEXT("-nolog"), arg);
+    Options.Std = GetOption(TEXT("-std"), arg);
+#if !BUILD_RELEASE
+    Options.DebuggerAddress = GetOptionalValue(TEXT("-debug"), arg);
+    Options.WaitForDebugger = GetOption(TEXT("-debugwait"), arg);
+#endif
+#if PLATFORM_HAS_HEADLESS_MODE
+    Options.Headless = GetOption(TEXT("-headless"), arg);
+#endif
+    Options.D3D10 = GetOption(TEXT("-d3d10"), arg);
+    Options.D3D11 = GetOption(TEXT("-d3d11"), arg);
+    Options.D3D12 = GetOption(TEXT("-d3d12"), arg);
+    Options.Null = GetOption(TEXT("-null"), arg);
+    Options.Vulkan = GetOption(TEXT("-vulkan"), arg);
+    Options.NVIDIA = GetOption(TEXT("-nvidia"), arg);
+    Options.AMD = GetOption(TEXT("-amd"), arg);
+    Options.Intel = GetOption(TEXT("-intel"), arg);
+    Options.MonoLog = GetOption(TEXT("-monolog"), arg);
+    Options.Mute = GetOption(TEXT("-mute"), arg);
+    Options.LowDPI = GetOption(TEXT("-lowdpi"), arg);
+#if USE_EDITOR
+    Options.ClearCache = GetOption(TEXT("-clearcache"), arg);
+    Options.ClearCookerCache = GetOption(TEXT("-clearcooker"), arg);
+    Options.Project = GetOptionValue(TEXT("-project"), arg);
+    Options.NewProject = GetOption(TEXT("-new"), arg);
+    Options.GenProjectFiles = GetOption(TEXT("-genprojectfiles"), arg);
+    Options.Build = GetOptionalValue(TEXT("-build"), arg);
+    Options.SkipCompile = GetOption(TEXT("-skipcompile"), arg);
+    Options.ShaderDebug = GetOption(TEXT("-shaderdebug"), arg);
+    Options.Play = GetOptionalValue(TEXT("-play"), arg);
+#endif
+
+    return false;
+}
+
+#else
 #include "CommandLine.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Utilities.h"
@@ -163,3 +255,5 @@ bool CommandLine::Parse(const Char* cmdLine)
 
     return false;
 }
+#endif
+
