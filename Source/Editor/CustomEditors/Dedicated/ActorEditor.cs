@@ -9,7 +9,6 @@ using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tree;
-using FlaxEditor.Modules;
 using FlaxEditor.Scripting;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
@@ -263,7 +262,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     if (editor.Values.GetAttributes().FirstOrDefault(x => x is EditorDisplayAttribute) is EditorDisplayAttribute editorDisplayAttribute && !string.IsNullOrEmpty(editorDisplayAttribute.Name))
                         node.Text = $"{Utilities.Utils.GetPropertyNameUI(editorDisplayAttribute.Name)} ({Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name)})";
                     else
-                        node.Text = $"{Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name)}";
+                        node.Text = Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name);
                 }
                 else if (sceneObject is Actor actor)
                     node.Text = $"{actor.Name} ({Utilities.Utils.GetPropertyNameUI(sceneObject.GetType().Name)})";
@@ -278,8 +277,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Common type
             else if (editor.Values.Info != ScriptMemberInfo.Null)
             {
-                if (editor.Values.GetAttributes().FirstOrDefault(x => x is EditorDisplayAttribute) is EditorDisplayAttribute editorDisplayAttribute 
-                    && !string.IsNullOrEmpty(editorDisplayAttribute.Name) 
+                if (editor.Values.GetAttributes().FirstOrDefault(x => x is EditorDisplayAttribute) is EditorDisplayAttribute editorDisplayAttribute
+                    && !string.IsNullOrEmpty(editorDisplayAttribute.Name)
                     && !editorDisplayAttribute.Name.Contains("_inline"))
                     node.Text = $"{Utilities.Utils.GetPropertyNameUI(editorDisplayAttribute.Name)} ({Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name)})";
                 else
@@ -406,7 +405,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var presenter = new CustomEditorPresenter(null);
             var layout = new CustomElementsContainer<ContainerControl>();
             var rootNode = CreateDiffTree(rootActor, presenter, layout);
- 
+
             // Skip if no changes detected
             if (rootNode == null)
             {
@@ -415,7 +414,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 cm1.Show(target, targetLocation);
                 return;
             }
-          
+
             // Create context menu
             var cm = new PrefabDiffContextMenu();
             cm.Tree.AddChild(rootNode);
