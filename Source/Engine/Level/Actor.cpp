@@ -29,6 +29,8 @@
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 
+#include "Engine/Debug/DebugLog.h"
+
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #define CHECK_EXECUTE_IN_EDITOR if (Editor::IsPlayMode || script->_executeInEditor)
@@ -659,7 +661,21 @@ void Actor::SetStaticFlags(StaticFlags value)
 
 void Actor::SetTransform(const Transform& value)
 {
-    CHECK(!value.IsNanOrInfinity());
+    if (value.IsNanOrInfinity() || Math::NearEqual(value.Orientation.W, ACTOR_ORIENTATION_EPSILON) && Math::NearEqual(value.Orientation.X, ACTOR_ORIENTATION_EPSILON) && Math::NearEqual(value.Orientation.Y, ACTOR_ORIENTATION_EPSILON) && Math::NearEqual(value.Orientation.Z, ACTOR_ORIENTATION_EPSILON))
+    {
+        LOG(Error,
+                        "Invalid Transform Component('s) passed to Actor::SetTransform"
+            "\n"        "Value's:"
+            "\n""\t"    "Translation:{0}"
+            "\n""\t"    "Orientation:{1}"
+            "\n""\t"    "Scale:{2}"
+            "\n"        
+            "\n"        "StackTrace:"
+            "\n"        "{3}",
+            value.Translation, value.Orientation, value.Scale, DebugLog::GetStackTrace());
+        return;
+    }
+
     if (!(Vector3::NearEqual(_transform.Translation, value.Translation) && Quaternion::NearEqual(_transform.Orientation, value.Orientation, ACTOR_ORIENTATION_EPSILON) && Float3::NearEqual(_transform.Scale, value.Scale)))
     {
         if (_parent)
@@ -685,7 +701,19 @@ void Actor::SetPosition(const Vector3& value)
 
 void Actor::SetOrientation(const Quaternion& value)
 {
-    CHECK(!value.IsNanOrInfinity());
+    if (value.IsNanOrInfinity() || Math::NearEqual(value.W, ACTOR_ORIENTATION_EPSILON) && Math::NearEqual(value.X, ACTOR_ORIENTATION_EPSILON) && Math::NearEqual(value.Y, ACTOR_ORIENTATION_EPSILON) && Math::NearEqual(value.Z, ACTOR_ORIENTATION_EPSILON))
+    {
+        LOG(Error,
+                        "Invalid Quaternion passed to Actor::SetOrientation"
+            "\n"        "Value:"
+            "\n""\t"    "{0}"
+            "\n"        
+            "\n"        "StackTrace:"
+            "\n"        "{1}",
+            value, DebugLog::GetStackTrace());
+        return;
+    }
+
     if (!Quaternion::NearEqual(_transform.Orientation, value, ACTOR_ORIENTATION_EPSILON))
     {
         if (_parent)
