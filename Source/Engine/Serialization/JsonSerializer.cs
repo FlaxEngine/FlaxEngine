@@ -27,6 +27,11 @@ namespace FlaxEngine.Json
         }
     }
 
+    internal interface ICustomValueEquals
+    {
+        bool ValueEquals(object other);
+    }
+
     partial class JsonSerializer
     {
         internal class SerializerCache
@@ -262,7 +267,7 @@ namespace FlaxEngine.Json
                 return true;
             if (objA == null || objB == null)
                 return false;
-            
+
             // Special case when saving reference to prefab object and the objects are different but the point to the same prefab object
             // In that case, skip saving reference as it's defined in prefab (will be populated via IdsMapping during deserialization)
             if (objA is SceneObject sceneA && objB is SceneObject sceneB && sceneA && sceneB && sceneA.HasPrefabLink && sceneB.HasPrefabLink)
@@ -311,6 +316,8 @@ namespace FlaxEngine.Json
                 return !bEnumerator.MoveNext();
             }
 
+            if (objA is ICustomValueEquals customValueEquals && objA.GetType() == objB.GetType())
+                return customValueEquals.ValueEquals(objB);
             return objA.Equals(objB);
 #endif
         }
