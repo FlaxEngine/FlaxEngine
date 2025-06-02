@@ -984,6 +984,10 @@ namespace FlaxEditor.Windows
                 var cachedOutputTargetViewOffset = _output.TargetViewOffset;
                 var isBottomScroll = _vScroll.Value >= _vScroll.Maximum - (_scrollSize * 2) || wasEmpty;
                 _output.Text = _textBuffer.ToString();
+                if (_hScroll.Maximum <= 0.0)
+                    cachedOutputTargetViewOffset.X = 0;
+                if (_vScroll.Maximum <= 0.0)
+                    cachedOutputTargetViewOffset.Y = 0;
                 _output.TargetViewOffset = cachedOutputTargetViewOffset;
                 _textBufferCount = _entries.Count;
                 if (!_vScroll.IsThumbClicked)
