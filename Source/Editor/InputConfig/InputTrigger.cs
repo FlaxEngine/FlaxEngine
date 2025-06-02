@@ -15,9 +15,9 @@ namespace FlaxEditor.InputConfig
         public KeyboardKeys Key;
         public MouseScroll Scroll;
         public InputType Type;
-        public bool IsKeyboard => Type == InputType.Key;
-        public bool IsMouse => Type == InputType.Mouse;
-        public bool IsScroll => Type == InputType.Scroll;
+        public readonly bool IsKeyboard => Type == InputType.Key;
+        public readonly bool IsMouse => Type == InputType.Mouse;
+        public readonly bool IsScroll => Type == InputType.Scroll;
         public InputTrigger(string token)
         {
             if (!TryParseInput(token, out var parsed))
@@ -96,7 +96,6 @@ namespace FlaxEditor.InputConfig
         /// <returns>True if the trigger is currently active; otherwise, false.</returns>
         public bool IsPressed(Func<KeyboardKeys, bool> getKey, Func<MouseButton, bool> getMouse, float scrollDelta)
         {
-            Debug.Log(Key);
             return Type switch
             {
                 InputType.Key => getKey(Key),

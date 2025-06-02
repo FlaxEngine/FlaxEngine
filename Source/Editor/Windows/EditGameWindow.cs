@@ -422,14 +422,15 @@ namespace FlaxEditor.Windows
         public override void OnLayoutSerialize(XmlWriter writer)
         {
             writer.WriteAttributeString("GridEnabled", Viewport.Grid.Enabled.ToString());
-            writer.WriteAttributeString("ShowFpsCounter", Viewport.ShowFpsCounter.ToString());
+            //todo
+            //writer.WriteAttributeString("ShowFpsCounter", Viewport.FpsCounter.ShowFpsCounter.ToString());
             writer.WriteAttributeString("ShowNavigation", Viewport.ShowNavigation.ToString());
             writer.WriteAttributeString("NearPlane", Viewport.NearPlane.ToString());
             writer.WriteAttributeString("FarPlane", Viewport.FarPlane.ToString());
             writer.WriteAttributeString("FieldOfView", Viewport.FieldOfView.ToString());
             writer.WriteAttributeString("MovementSpeed", Viewport.MovementSpeed.ToString());
             writer.WriteAttributeString("OrthographicScale", Viewport.OrthographicScale.ToString());
-            writer.WriteAttributeString("UseOrthographicProjection", Viewport.UseOrthographicProjection.ToString());
+            writer.WriteAttributeString("UseOrthographicProjection", Viewport.OrthographicProjection.ToString());
             writer.WriteAttributeString("ViewFlags", ((ulong)Viewport.Task.View.Flags).ToString());
         }
 
@@ -439,8 +440,9 @@ namespace FlaxEditor.Windows
             if (bool.TryParse(node.GetAttribute("GridEnabled"), out bool value1))
                 Viewport.Grid.Enabled = value1;
 
-            if (bool.TryParse(node.GetAttribute("ShowFpsCounter"), out value1))
-                Viewport.ShowFpsCounter = value1;
+            //todo
+            //if (bool.TryParse(node.GetAttribute("ShowFpsCounter"), out value1))
+            //Viewport.FpsCounter.ShowFpsCounter = value1;
 
             if (bool.TryParse(node.GetAttribute("ShowNavigation"), out value1))
                 Viewport.ShowNavigation = value1;
@@ -461,7 +463,7 @@ namespace FlaxEditor.Windows
                 Viewport.OrthographicScale = value2;
 
             if (bool.TryParse(node.GetAttribute("UseOrthographicProjection"), out value1))
-                Viewport.UseOrthographicProjection = value1;
+                Viewport.OrthographicProjection = value1;
 
             if (ulong.TryParse(node.GetAttribute("ViewFlags"), out ulong value3))
                 Viewport.Task.ViewFlags = (ViewFlags)value3;
@@ -480,7 +482,7 @@ namespace FlaxEditor.Windows
             Viewport.FieldOfView = 60.0f;
             Viewport.MovementSpeed = 1.0f;
             Viewport.OrthographicScale = 1.0f;
-            Viewport.UseOrthographicProjection = false;
+            Viewport.OrthographicProjection = false;
         }
     }
 }

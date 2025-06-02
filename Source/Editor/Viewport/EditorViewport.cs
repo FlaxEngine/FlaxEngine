@@ -2,17 +2,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using FlaxEditor.Content.Settings;
-using FlaxEditor.GUI.ContextMenu;
-using FlaxEditor.GUI.Input;
 using FlaxEditor.InputConfig;
 using FlaxEditor.Options;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEngine;
 using FlaxEngine.GUI;
-using JsonSerializer = FlaxEngine.Json.JsonSerializer;
 
 namespace FlaxEditor.Viewport
 {
@@ -22,36 +17,9 @@ namespace FlaxEditor.Viewport
     /// <seealso cref="FlaxEngine.GUI.RenderOutputControl" />
     public class EditorViewport : RenderOutputControl
     {
-        /// <summary>
-        /// Gathered input data.
-        /// </summary>
+
         public struct Input
         {
-            /// <summary>
-            /// The is panning state.
-            /// </summary>
-            public bool IsPanning;
-
-            /// <summary>
-            /// The is rotating state.
-            /// </summary>
-            public bool IsRotating;
-
-            /// <summary>
-            /// The is moving state.
-            /// </summary>
-            public bool IsMoving;
-
-            /// <summary>
-            /// The is zooming state.
-            /// </summary>
-            public bool IsZooming;
-
-            /// <summary>
-            /// The is orbiting state.
-            /// </summary>
-            public bool IsOrbiting;
-
             /// <summary>
             /// The is control down flag.
             /// </summary>
@@ -88,14 +56,9 @@ namespace FlaxEditor.Viewport
             public bool IsMouseLeftDown;
 
             /// <summary>
-            /// The mouse wheel delta.
-            /// </summary>
-            public float MouseWheelDelta;
-
-            /// <summary>
             /// Gets a value indicating whether use is controlling mouse.
             /// </summary>
-            public bool IsControllingMouse => IsMouseMiddleDown || IsMouseRightDown || ((IsAltDown || WasAltDownBefore) && IsMouseLeftDown) || Mathf.Abs(MouseWheelDelta) > 0.1f;
+            public bool IsControllingMouse;
 
             /// <summary>
             /// Gathers input from the specified window.
@@ -134,46 +97,314 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        public InputOptions InputOptions = Editor.Instance.Options.Options.Input;
+        private bool _pan;
+        public bool Pan { get => _pan; set => _pan = value; }
+
+        private bool _orbit;
+        public bool Orbit { get => _orbit; set => _orbit = value; }
+        private bool _rotate;
+        public bool Rotate { get => _rotate; set => _rotate = value; }
+        private bool _move;
+        public bool Move { get => _move; set => _move = value; }
+        private bool _zoom;
+        public bool Zoom { get => _zoom; set => _zoom = value; }
+
+
+        private float _mouseSensitivity;
+        public float MouseSensitivity { get => _mouseSensitivity; set => _mouseSensitivity = value; }
+
+        private float _mouseAccelerationScale;
+        public float MouseAccelerationScale { get => _mouseAccelerationScale; set => _mouseAccelerationScale = value; }
+
+        private bool _mouseFiltering;
+        public bool UseMouseFiltering { get => _mouseFiltering; set => _mouseFiltering = value; }
 
         /// <summary>
         /// The FPS camera filtering frames count (how much frames we want to keep in the buffer to calculate the avg. delta currently hardcoded).
         /// </summary>
-        public const int FpsCameraFilteringFrames = 3;
+        private int _mouseFilteringFrames;
+        public int MouseFilteringFrames { get => _mouseFilteringFrames; set => _mouseFilteringFrames = value; }
 
-        /// <summary>
-        /// The camera settings widget.
-        /// </summary>
-        protected ViewportWidgetsContainer _cameraWidget;
 
-        /// <summary>
-        /// The camera settings widget button.
-        /// </summary>
-        protected ViewportWidgetButton _cameraButton;
+        private bool _mouseAcceleration;
+        public bool UseMouseAcceleration { get => _mouseAcceleration; set => _mouseAcceleration = value; }
 
+        private float _mouseWheelDelta;
+        public float MouseWheelDelta { get => _mouseWheelDelta; set => _mouseWheelDelta = value; }
+        public bool IsControllingMouse
+        {
+            get =>
+            _input.IsMouseMiddleDown
+            || _input.IsMouseRightDown
+            || ((_input.IsAltDown || _input.WasAltDownBefore) && _input.IsMouseLeftDown)
+            || Mathf.Abs(MouseWheelDelta) > 0.1f
+            || _isVirtualMouseRightDown;
+        }
+
+        private float _mouseSpeed = 1;
         /// <summary>
-        /// The orthographic mode widget button.
+        /// Speed of the mouse.
         /// </summary>
-        protected ViewportWidgetButton _orthographicModeButton;
+        public float MouseSpeed { get => _mouseSpeed; set => _mouseSpeed = value; }
+
+        private float _panningSpeed;
+        /// <summary>
+        /// Gets or sets the camera panning speed.
+        /// </summary>
+        public float PanningSpeed { get => _panningSpeed; set => _panningSpeed = value; }
+
+        private bool _relativePanning;
+        /// <summary>
+        /// Gets or sets if the panning speed should be relative to the camera target.
+        /// </summary>
+        public bool RelativePanning { get => _relativePanning; set => _relativePanning = value; }
+
+        private bool _invertPanning;
+        /// <summary>
+        /// Gets or sets if the panning direction is inverted.
+        /// </summary>
+        public bool InvertPanning { get => _invertPanning; set => _invertPanning = value; }
+
+        private bool _invertMouseYAxisRotation;
+        public bool InvertMouseYAxisRotation { get => _invertMouseYAxisRotation; set => _invertMouseYAxisRotation = value; }
+
+
+        //todo im just making these public consts until i figure out what to do with them
+        public const float MaxAllowedSpeed = 1000f;
+        public const float MinAllowedSpeed = 0.05f;
+        public const float MovementSpeedEpsilon = 0.01f;
+
+        private float _minMovementSpeed;
+        /// <summary>
+        /// Gets or sets the minimum camera movement speed.
+        /// </summary>
+        public float MinMovementSpeed
+        {
+            get => _minMovementSpeed;
+            set
+            {
+                _minMovementSpeed = Mathf.Clamp(value, MinAllowedSpeed, MaxAllowedSpeed - MovementSpeedEpsilon);
+
+                //adjust max speed if min raised above it
+                if (MaxMovementSpeed - _minMovementSpeed < MovementSpeedEpsilon)
+                    MaxMovementSpeed = _minMovementSpeed + MovementSpeedEpsilon;
+
+                if (MovementSpeed < _minMovementSpeed)
+                    MovementSpeed = _minMovementSpeed;
+            }
+        }
+
+        private float _maxMovementSpeed;
+        /// <summary>
+        /// Gets or sets the maximum camera movement speed.
+        /// </summary>
+        public float MaxMovementSpeed
+        {
+            get => _maxMovementSpeed;
+            set
+            {
+                _maxMovementSpeed = Mathf.Clamp(value, MinAllowedSpeed + MovementSpeedEpsilon, MaxAllowedSpeed);
+
+                //adjust min speed if max lowered below it it
+                if (_maxMovementSpeed - MinMovementSpeed < MovementSpeedEpsilon)
+                    MinMovementSpeed = _maxMovementSpeed - MovementSpeedEpsilon;
+
+                if (MovementSpeed > _maxMovementSpeed)
+                    MovementSpeed = _maxMovementSpeed;
+            }
+        }
+
+        private float _movementPercentage;
+        public float MovementPercentage { get => _movementPercentage; private set => _movementPercentage = value; }
+
+        private float _movementSpeed;
+        /// <summary>
+        /// Gets or sets the camera movement speed.
+        /// </summary>
+        public float MovementSpeed
+        {
+            get => _movementSpeed;
+            set
+            {
+                _movementSpeed = Mathf.Clamp(value, MinMovementSpeed, MaxMovementSpeed);
+                MovementPercentage = Mathf.Remap(_movementSpeed, MinMovementSpeed, MaxMovementSpeed, 0f, 100f);
+            }
+        }
+
+        private bool _orthographicProjection;
+        /// <summary>
+        /// Gets or sets the camera orthographic mode (otherwise uses perspective projection).
+        /// </summary>
+        public bool OrthographicProjection
+        {
+            get => _orthographicProjection;
+            set
+            {
+                _orthographicProjection = value;
+                if (_orthographicProjection)
+                {
+                    OrientViewport(ViewOrientation);
+                }
+            }
+        }
+
+        private float _orthographicScale;
+        /// <summary>
+        /// Gets or sets the camera orthographic size scale (if camera uses orthographic mode).
+        /// </summary>
+        public float OrthographicScale { get => _orthographicScale; set => _orthographicScale = value; }
+
+        private float _fieldOfView;
+        /// <summary>
+        /// Gets or sets the camera field of view (in degrees).
+        /// </summary>
+        public float FieldOfView { get => _fieldOfView; set => _fieldOfView = value; }
+
+        private float _nearPlane;
+        /// <summary>
+        /// Gets or sets the camera near clipping plane.
+        /// </summary>
+        public float NearPlane { get => _nearPlane; set => _nearPlane = value; }
+
+        private float _farPlane;
+        /// <summary>
+        /// Gets or sets the camera far clipping plane.
+        /// </summary>
+        public float FarPlane { get => _farPlane; set => _farPlane = value; }
+
+        private float _mouseWheelSensitivity = 1;
+        /// <summary>
+        /// Speed of the mouse wheel zooming.
+        /// </summary>
+        public float MouseWheelSensitivity { get => _mouseWheelSensitivity; set => _mouseWheelSensitivity = value; }
+
+        public InputOptions InputOptions = Editor.Instance.Options.Options.Input;
 
         private readonly Editor _editor;
 
-        private float _mouseSensitivity;
-        private float _movementSpeed;
-        private float _minMovementSpeed;
-        private float _maxMovementSpeed;
-        private float _mouseAccelerationScale;
-        private bool _useMouseFiltering;
-        private bool _useMouseAcceleration;
+        private float _yaw;
+        /// <summary>
+        /// Gets or sets the yaw angle (in degrees).
+        /// </summary>
+        public float Yaw { get => _yaw; set => _yaw = value; }
+
+        private float _pitch;
+        /// <summary>
+        /// Gets or sets the pitch angle (in degrees).
+        /// </summary>
+        public float Pitch
+        {
+            get => _pitch;
+            set
+            {
+                var pitchLimit = OrthographicProjection ? new Float2(-90, 90) : new Float2(-88, 88);
+                _pitch = Mathf.Clamp(value, pitchLimit.X, pitchLimit.Y);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the absolute mouse position (normalized, not in pixels). Yaw is X, Pitch is Y.
+        /// </summary>
+        public Float2 YawPitch
+        {
+            get => new Float2(Yaw, Pitch);
+            set
+            {
+                Yaw = value.X;
+                Pitch = value.Y;
+            }
+        }
+
+        public InputBindingList InputBindingList = new InputBindingList();
+
+
+        public void GetViewportOptions()
+        {
+            ViewportOptions ViewportOptions = Editor.Instance.Options.Options.Viewport;
+            _mouseSpeed = ViewportOptions.MouseSpeed;
+            _mouseSensitivity = ViewportOptions.MouseSensitivity;
+            _mouseAccelerationScale = ViewportOptions.MouseAccelerationScale;
+            _mouseFiltering = ViewportOptions.MouseFiltering;
+            _mouseFilteringFrames = ViewportOptions.MouseFilteringFrames;
+            _mouseAcceleration = ViewportOptions.MouseAcceleration;
+            _mouseWheelSensitivity = ViewportOptions.MouseWheelSensitivity;
+            _panningSpeed = ViewportOptions.PanningSpeed;
+            _relativePanning = ViewportOptions.RelativePanning;
+            _invertPanning = ViewportOptions.InvertPanning;
+            _minMovementSpeed = ViewportOptions.MinMovementSpeed;
+            _maxMovementSpeed = ViewportOptions.MaxMovementSpeed;
+            _movementSpeed = ViewportOptions.MovementSpeed;
+            _orthographicProjection = ViewportOptions.OrthographicProjection;
+            _orthographicScale = ViewportOptions.OrthographicScale;
+            _fieldOfView = ViewportOptions.FieldOfView;
+            _nearPlane = ViewportOptions.NearPlane;
+            _farPlane = ViewportOptions.FarPlane;
+        }
+        private void SetBindings()
+        {
+            InputOptions InputOptions = Editor.Instance.Options.Options.Input;
+            InputBindingList.Add(
+                [
+                (InputOptions.Forward, () => {Move = true; _moveDelta = Vector3.Forward * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
+                (InputOptions.Backward, () => {Move = true; _moveDelta = Vector3.Backward * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
+                (InputOptions.Left, () => {Move = true; _moveDelta = Vector3.Left * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
+                (InputOptions.Right, () => {Move = true; _moveDelta = Vector3.Right * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
+                (InputOptions.Up, () => {Move = true; _moveDelta = Vector3.Up * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
+                (InputOptions.Down, () => {Move = true; _moveDelta = Vector3.Down * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
+                (InputOptions.Orbit, () => Orbit = true, () => Orbit = false),
+                (InputOptions.Pan, () => Pan = true, () => Pan = false),
+                (InputOptions.Rotate, () => Rotate = true, () => Rotate = false),
+                (InputOptions.ZoomIn, () =>
+                {
+                    Zoom = true;
+                    if (OrthographicProjection)
+                    {
+                        OrthographicScale -= MouseWheelDelta * MouseWheelSensitivity * 0.2f * OrthographicScale;
+                    }
+                }, () => Zoom = false),
+                (InputOptions.ZoomOut, () =>
+                {
+                    Zoom = true;
+                    if (OrthographicProjection)
+                    {
+                        OrthographicScale -= MouseWheelDelta * MouseWheelSensitivity * 0.2f * OrthographicScale;
+                    }
+                }, () => Zoom = false),
+                (InputOptions.CameraIncreaseMoveSpeed, () => MovementSpeed += MouseWheelDelta * MouseWheelSensitivity, null),
+                (InputOptions.CameraDecreaseMoveSpeed, () => MovementSpeed += MouseWheelDelta * MouseWheelSensitivity, null),
+                (InputOptions.ViewpointTop, () => OrientViewport(CameraViewpoints[Viewpoint.Front]), null),
+                (InputOptions.ViewpointBottom, () => OrientViewport(CameraViewpoints[Viewpoint.Back]), null),
+                (InputOptions.ViewpointFront, () => OrientViewport(CameraViewpoints[Viewpoint.Left]), null),
+                (InputOptions.ViewpointBack, () => OrientViewport(CameraViewpoints[Viewpoint.Right]), null),
+                (InputOptions.ViewpointRight, () => OrientViewport(CameraViewpoints[Viewpoint.Top]), null),
+                (InputOptions.ViewpointLeft, () => OrientViewport(CameraViewpoints[Viewpoint.Bottom]), null),
+                //todo no idea, we need to hold down mouse buttons for trackpads so they dont have to deal with holding it and moving 
+                // (InputOptions.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown),
+                (InputOptions.ToggleOrthographic, () => OrthographicProjection = !OrthographicProjection, null)
+                ]
+            );
+        }
+        private Vector3 _moveDelta = Vector3.Zero;
+
+        public enum Viewpoint { Front, Back, Left, Right, Top, Bottom }
+        public static readonly Dictionary<Viewpoint, Quaternion> CameraViewpoints = new(){
+            { Viewpoint.Front, Quaternion.Euler(0, 180, 0) },
+            { Viewpoint.Back, Quaternion.Euler(0, 0, 0) },
+            { Viewpoint.Left, Quaternion.Euler(0, 90, 0) },
+            { Viewpoint.Right, Quaternion.Euler(0, -90, 0) },
+            { Viewpoint.Top, Quaternion.Euler(90, 0, 0) },
+            { Viewpoint.Bottom, Quaternion.Euler(-90, 0, 0) }
+        };
+
 
         // Input
 
         internal bool _disableInputUpdate;
-        private bool _isControllingMouse, _isViewportControllingMouse, _wasVirtualMouseRightDown, _isVirtualMouseRightDown;
+        private bool _isVirtualMouseRightDown;
         private int _deltaFilteringStep;
         private Float2 _startPos;
         private Float2 _mouseDeltaLast;
-        private Float2[] _deltaFilteringBuffer = new Float2[FpsCameraFilteringFrames];
+        private Float2[] _deltaFilteringBuffer;
 
         /// <summary>
         /// The previous input (from the previous update).
@@ -196,97 +427,24 @@ namespace FlaxEditor.Viewport
         protected Float2 _mouseDelta;
 
         // Camera
-
-        private ViewportCamera _camera;
-        private float _yaw;
-        private float _pitch;
-        private float _fieldOfView;
-        private float _nearPlane;
-        private float _farPlane;
-        private float _orthoSize;
-        private bool _isOrtho;
-        private bool _useCameraEasing;
-        private float _cameraEasingDegree;
-        private float _panningSpeed;
-        private bool _relativePanning;
-        private bool _invertPanning;
-
-        private int _speedStep;
-        private int _maxSpeedSteps;
-
+        private ViewportCamera _viewportCamera;
         /// <summary>
-        /// Speed of the mouse.
+        /// Gets or sets the viewport camera controller.
         /// </summary>
-        public float MouseSpeed = 1;
-
-        /// <summary>
-        /// Speed of the mouse wheel zooming.
-        /// </summary>
-        public float MouseWheelZoomSpeedFactor = 1;
-
-        /// <summary>
-        /// Format of the text for the camera move speed.
-        /// </summary>
-        private string MovementSpeedTextFormat
+        public ViewportCamera ViewportCamera
         {
-            get
-            {
-                if (Mathf.Abs(_movementSpeed - _maxMovementSpeed) < Mathf.Epsilon || Mathf.Abs(_movementSpeed - _minMovementSpeed) < Mathf.Epsilon)
-                    return "{0:0.##}";
-                if (_movementSpeed < 10.0f)
-                    return "{0:0.00}";
-                if (_movementSpeed < 100.0f)
-                    return "{0:0.0}";
-                return "{0:#}";
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the camera movement speed.
-        /// </summary>
-        public float MovementSpeed
-        {
-            get => _movementSpeed;
+            get => _viewportCamera;
             set
             {
-                _movementSpeed = value;
+                if (_viewportCamera != null)
+                    _viewportCamera.Viewport = null;
 
-                if (_cameraButton != null)
-                    _cameraButton.Text = string.Format(MovementSpeedTextFormat, _movementSpeed);
+                _viewportCamera = value;
+
+                if (_viewportCamera != null)
+                    _viewportCamera.Viewport = this;
             }
         }
-
-        /// <summary>
-        /// Gets or sets the minimum camera movement speed.
-        /// </summary>
-        public float MinMovementSpeed
-        {
-            get => _minMovementSpeed;
-            set => _minMovementSpeed = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the maximum camera movement speed.
-        /// </summary>
-        public float MaxMovementSpeed
-        {
-            get => _maxMovementSpeed;
-            set => _maxMovementSpeed = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the camera easing mode.
-        /// </summary>
-        public bool UseCameraEasing
-        {
-            get => _useCameraEasing;
-            set => _useCameraEasing = value;
-        }
-
-        /// <summary>
-        /// Gets the mouse movement position delta (user press and move).
-        /// </summary>
-        public Float2 MousePositionDelta => _mouseDelta;
 
         /// <summary>
         /// Gets the view transform.
@@ -306,14 +464,16 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public Vector3 ViewPosition { get; set; }
 
+        private bool _useCameraEasing;
         /// <summary>
-        /// Gets or sets the view orientation.
+        /// Gets or sets the camera easing mode.
         /// </summary>
-        public Quaternion ViewOrientation
-        {
-            get => Quaternion.RotationYawPitchRoll(_yaw * Mathf.DegreesToRadians, _pitch * Mathf.DegreesToRadians, 0);
-            set => EulerAngles = value.EulerAngles;
-        }
+        public bool UseCameraEasing { get => _useCameraEasing; set => _useCameraEasing = value; }
+
+        /// <summary>
+        /// Gets the mouse movement position delta (user press and move).
+        /// </summary>
+        public Float2 MousePositionDelta => _mouseDelta;
 
         /// <summary>
         /// Gets or sets the view direction vector.
@@ -326,6 +486,28 @@ namespace FlaxEditor.Viewport
                 var right = Mathf.Abs(Float3.Dot(value, Float3.Up)) < 1.0f - Mathf.Epsilon ? Float3.Cross(value, Float3.Up) : Float3.Forward;
                 var up = Float3.Cross(right, value);
                 ViewOrientation = Quaternion.LookRotation(value, up);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the view orientation.
+        /// </summary>
+        public Quaternion ViewOrientation
+        {
+            get => Quaternion.RotationYawPitchRoll(Yaw * Mathf.DegreesToRadians, Pitch * Mathf.DegreesToRadians, 0);
+            set => EulerAngles = value.EulerAngles;
+        }
+
+        /// <summary>
+        /// Gets or sets the euler angles (pitch, yaw, roll).
+        /// </summary>
+        public Float3 EulerAngles
+        {
+            get => new Float3(Pitch, Yaw, 0);
+            set
+            {
+                Pitch = value.X;
+                Yaw = value.Y;
             }
         }
 
@@ -359,157 +541,9 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
-        /// Gets or sets the yaw angle (in degrees).
-        /// </summary>
-        public float Yaw
-        {
-            get => _yaw;
-            set => _yaw = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the pitch angle (in degrees).
-        /// </summary>
-        public float Pitch
-        {
-            get => _pitch;
-            set
-            {
-                var pitchLimit = _isOrtho ? new Float2(-90, 90) : new Float2(-88, 88);
-                _pitch = Mathf.Clamp(value, pitchLimit.X, pitchLimit.Y);
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the absolute mouse position (normalized, not in pixels). Yaw is X, Pitch is Y.
-        /// </summary>
-        public Float2 YawPitch
-        {
-            get => new Float2(_yaw, _pitch);
-            set
-            {
-                Yaw = value.X;
-                Pitch = value.Y;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the euler angles (pitch, yaw, roll).
-        /// </summary>
-        public Float3 EulerAngles
-        {
-            get => new Float3(_pitch, _yaw, 0);
-            set
-            {
-                Pitch = value.X;
-                Yaw = value.Y;
-            }
-        }
-
-        /// <summary>
         /// Gets a value indicating whether this viewport has loaded dependant assets.
         /// </summary>
         public virtual bool HasLoadedAssets => true;
-
-        /// <summary>
-        /// The 'View' widget button context menu.
-        /// </summary>
-        public ContextMenu ViewWidgetButtonMenu;
-
-        /// <summary>
-        /// The 'View' widget 'Show' category context menu.
-        /// </summary>
-        public ContextMenu ViewWidgetShowMenu;
-
-        /// <summary>
-        /// Gets or sets the viewport camera controller.
-        /// </summary>
-        public ViewportCamera ViewportCamera
-        {
-            get => _camera;
-            set
-            {
-                if (_camera != null)
-                    _camera.Viewport = null;
-
-                _camera = value;
-
-                if (_camera != null)
-                    _camera.Viewport = this;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the camera near clipping plane.
-        /// </summary>
-        public float NearPlane
-        {
-            get => _nearPlane;
-            set => _nearPlane = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the camera far clipping plane.
-        /// </summary>
-        public float FarPlane
-        {
-            get => _farPlane;
-            set => _farPlane = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the camera field of view (in degrees).
-        /// </summary>
-        public float FieldOfView
-        {
-            get => _fieldOfView;
-            set => _fieldOfView = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the camera orthographic size scale (if camera uses orthographic mode).
-        /// </summary>
-        public float OrthographicScale
-        {
-            get => _orthoSize;
-            set => _orthoSize = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the camera orthographic mode (otherwise uses perspective projection).
-        /// </summary>
-        public bool UseOrthographicProjection
-        {
-            get => _isOrtho;
-            set => _isOrtho = value;
-        }
-
-        /// <summary>
-        /// Gets or sets if the panning speed should be relative to the camera target.
-        /// </summary>
-        public bool RelativePanning
-        {
-            get => _relativePanning;
-            set => _relativePanning = value;
-        }
-
-        /// <summary>
-        /// Gets or sets if the panning direction is inverted.
-        /// </summary>
-        public bool InvertPanning
-        {
-            get => _invertPanning;
-            set => _invertPanning = value;
-        }
-
-        /// <summary>
-        /// Gets or sets the camera panning speed.
-        /// </summary>
-        public float PanningSpeed
-        {
-            get => _panningSpeed;
-            set => _panningSpeed = value;
-        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EditorViewport"/> class.
@@ -521,654 +555,25 @@ namespace FlaxEditor.Viewport
         : base(task)
         {
             _editor = Editor.Instance;
-
-            _mouseAccelerationScale = 0.1f;
-            _useMouseFiltering = false;
-            _useMouseAcceleration = false;
-            _camera = camera;
-            if (_camera != null)
-                _camera.Viewport = this;
+            SetBindings();
+            GetViewportOptions();
+            _deltaFilteringBuffer = new Float2[MouseFilteringFrames];
+            ViewportCamera = camera;
 
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
 
-            // Setup options
-            {
-                Editor.Instance.Options.OptionsChanged += OnEditorOptionsChanged;
-                SetupViewportOptions();
-            }
 
-            // Initialize camera values from cache
-            if (_editor.ProjectCache.TryGetCustomData("CameraMovementSpeedValue", out float cachedFloat))
-                MovementSpeed = cachedFloat;
-            if (_editor.ProjectCache.TryGetCustomData("CameraMinMovementSpeedValue", out cachedFloat))
-                _minMovementSpeed = cachedFloat;
-            if (_editor.ProjectCache.TryGetCustomData("CameraMaxMovementSpeedValue", out cachedFloat))
-                _maxMovementSpeed = cachedFloat;
-            if (_editor.ProjectCache.TryGetCustomData("UseCameraEasingState", out bool cachedBool))
-                _useCameraEasing = cachedBool;
-            if (_editor.ProjectCache.TryGetCustomData("CameraPanningSpeedValue", out cachedFloat))
-                _panningSpeed = cachedFloat;
-            if (_editor.ProjectCache.TryGetCustomData("CameraInvertPanningState", out cachedBool))
-                _invertPanning = cachedBool;
-            if (_editor.ProjectCache.TryGetCustomData("CameraRelativePanningState", out cachedBool))
-                _relativePanning = cachedBool;
-            if (_editor.ProjectCache.TryGetCustomData("CameraOrthographicState", out cachedBool))
-                _isOrtho = cachedBool;
-            if (_editor.ProjectCache.TryGetCustomData("CameraOrthographicSizeValue", out cachedFloat))
-                _orthoSize = cachedFloat;
-            if (_editor.ProjectCache.TryGetCustomData("CameraFieldOfViewValue", out cachedFloat))
-                _fieldOfView = cachedFloat;
-            if (_editor.ProjectCache.TryGetCustomData("CameraNearPlaneValue", out cachedFloat))
-                _nearPlane = cachedFloat;
-            if (_editor.ProjectCache.TryGetCustomData("CameraFarPlaneValue", out cachedFloat))
-                _farPlane = cachedFloat;
-
-            OnCameraMovementProgressChanged();
-
-            if (useWidgets)
-            {
-                #region Camera settings widget
-
-                var largestText = "Relative Panning";
-                var textSize = Style.Current.FontMedium.MeasureText(largestText);
-                var xLocationForExtras = textSize.X + 5;
-                var cameraSpeedTextWidth = Style.Current.FontMedium.MeasureText("0.00").X;
-
-                // Camera Settings Widget
-                _cameraWidget = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperRight);
-
-                // Camera Settings Menu
-                var cameraCM = new ContextMenu();
-                _cameraButton = new ViewportWidgetButton(string.Format(MovementSpeedTextFormat, _movementSpeed), Editor.Instance.Icons.Camera64, cameraCM, false, cameraSpeedTextWidth)
-                {
-                    Tag = this,
-                    TooltipText = "Camera Settings",
-                    Parent = _cameraWidget
-                };
-                _cameraWidget.Parent = this;
-
-                // Orthographic/Perspective Mode Widget
-                _orthographicModeButton = new ViewportWidgetButton(string.Empty, Editor.Instance.Icons.CamSpeed32, null, true)
-                {
-                    Checked = !_isOrtho,
-                    TooltipText = "Toggle Orthographic/Perspective Mode",
-                    Parent = _cameraWidget
-                };
-                _orthographicModeButton.Toggled += OnOrthographicModeToggled;
-
-                // Camera Speed
-                var camSpeedButton = cameraCM.AddButton("Camera Speed");
-                camSpeedButton.CloseMenuOnClick = false;
-                var camSpeedValue = new FloatValueBox(_movementSpeed, xLocationForExtras, 2, 70.0f, _minMovementSpeed, _maxMovementSpeed, 0.5f)
-                {
-                    Parent = camSpeedButton
-                };
-
-                camSpeedValue.ValueChanged += () => OnMovementSpeedChanged(camSpeedValue);
-                cameraCM.VisibleChanged += control => camSpeedValue.Value = _movementSpeed;
-
-                // Minimum & Maximum Camera Speed
-                var minCamSpeedButton = cameraCM.AddButton("Min Cam Speed");
-                minCamSpeedButton.CloseMenuOnClick = false;
-                var minCamSpeedValue = new FloatValueBox(_minMovementSpeed, xLocationForExtras, 2, 70.0f, 0.05f, _maxMovementSpeed, 0.5f)
-                {
-                    Parent = minCamSpeedButton
-                };
-                var maxCamSpeedButton = cameraCM.AddButton("Max Cam Speed");
-                maxCamSpeedButton.CloseMenuOnClick = false;
-                var maxCamSpeedValue = new FloatValueBox(_maxMovementSpeed, xLocationForExtras, 2, 70.0f, _minMovementSpeed, 1000.0f, 0.5f)
-                {
-                    Parent = maxCamSpeedButton
-                };
-
-                minCamSpeedValue.ValueChanged += () =>
-                {
-                    OnMinMovementSpeedChanged(minCamSpeedValue);
-
-                    maxCamSpeedValue.MinValue = minCamSpeedValue.Value;
-
-                    if (Math.Abs(camSpeedValue.MinValue - minCamSpeedValue.Value) > Mathf.Epsilon)
-                        camSpeedValue.MinValue = minCamSpeedValue.Value;
-                };
-                cameraCM.VisibleChanged += control => minCamSpeedValue.Value = _minMovementSpeed;
-                maxCamSpeedValue.ValueChanged += () =>
-                {
-                    OnMaxMovementSpeedChanged(maxCamSpeedValue);
-
-                    minCamSpeedValue.MaxValue = maxCamSpeedValue.Value;
-
-                    if (Math.Abs(camSpeedValue.MaxValue - maxCamSpeedValue.Value) > Mathf.Epsilon)
-                        camSpeedValue.MaxValue = maxCamSpeedValue.Value;
-                };
-                cameraCM.VisibleChanged += control => maxCamSpeedValue.Value = _maxMovementSpeed;
-
-                // Camera Easing
-                {
-                    var useCameraEasing = cameraCM.AddButton("Camera Easing");
-                    useCameraEasing.CloseMenuOnClick = false;
-                    var useCameraEasingValue = new CheckBox(xLocationForExtras, 2, _useCameraEasing)
-                    {
-                        Parent = useCameraEasing
-                    };
-
-                    useCameraEasingValue.StateChanged += OnCameraEasingToggled;
-                    cameraCM.VisibleChanged += control => useCameraEasingValue.Checked = _useCameraEasing;
-                }
-
-                // Panning Speed
-                {
-                    var panningSpeed = cameraCM.AddButton("Panning Speed");
-                    panningSpeed.CloseMenuOnClick = false;
-                    var panningSpeedValue = new FloatValueBox(_panningSpeed, xLocationForExtras, 2, 70.0f, 0.01f, 128.0f, 0.1f)
-                    {
-                        Parent = panningSpeed
-                    };
-
-                    panningSpeedValue.ValueChanged += () => OnPanningSpeedChanged(panningSpeedValue);
-                    cameraCM.VisibleChanged += control =>
-                    {
-                        panningSpeed.Visible = !_relativePanning;
-                        panningSpeedValue.Value = _panningSpeed;
-                    };
-                }
-
-                // Relative Panning
-                {
-                    var relativePanning = cameraCM.AddButton("Relative Panning");
-                    relativePanning.CloseMenuOnClick = false;
-                    var relativePanningValue = new CheckBox(xLocationForExtras, 2, _relativePanning)
-                    {
-                        Parent = relativePanning
-                    };
-
-                    relativePanningValue.StateChanged += checkBox =>
-                    {
-                        if (checkBox.Checked != _relativePanning)
-                        {
-                            OnRelativePanningToggled(checkBox);
-                            cameraCM.Hide();
-                        }
-                    };
-                    cameraCM.VisibleChanged += control => relativePanningValue.Checked = _relativePanning;
-                }
-
-                // Invert Panning
-                {
-                    var invertPanning = cameraCM.AddButton("Invert Panning");
-                    invertPanning.CloseMenuOnClick = false;
-                    var invertPanningValue = new CheckBox(xLocationForExtras, 2, _invertPanning)
-                    {
-                        Parent = invertPanning
-                    };
-
-                    invertPanningValue.StateChanged += OnInvertPanningToggled;
-                    cameraCM.VisibleChanged += control => invertPanningValue.Checked = _invertPanning;
-                }
-
-                cameraCM.AddSeparator();
-
-                // Camera Viewpoints
-                {
-                    var cameraView = cameraCM.AddChildMenu("Viewpoints").ContextMenu;
-                    for (int i = 0; i < CameraViewpointValues.Length; i++)
-                    {
-                        var co = CameraViewpointValues[i];
-                        var button = cameraView.AddButton(co.Name);
-                        button.Tag = co.Orientation;
-                    }
-
-                    cameraView.ButtonClicked += OnViewpointChanged;
-                }
-
-                // Orthographic Mode
-                {
-                    var ortho = cameraCM.AddButton("Orthographic");
-                    ortho.CloseMenuOnClick = false;
-                    var orthoValue = new CheckBox(xLocationForExtras, 2, _isOrtho)
-                    {
-                        Parent = ortho
-                    };
-
-                    orthoValue.StateChanged += checkBox =>
-                    {
-                        if (checkBox.Checked != _isOrtho)
-                        {
-                            OnOrthographicModeToggled(checkBox);
-                            cameraCM.Hide();
-                        }
-                    };
-                    cameraCM.VisibleChanged += control => orthoValue.Checked = _isOrtho;
-                }
-
-                // Field of View
-                {
-                    var fov = cameraCM.AddButton("Field Of View");
-                    fov.CloseMenuOnClick = false;
-                    var fovValue = new FloatValueBox(_fieldOfView, xLocationForExtras, 2, 70.0f, 35.0f, 160.0f, 0.1f)
-                    {
-                        Parent = fov
-                    };
-
-                    fovValue.ValueChanged += () => OnFieldOfViewChanged(fovValue);
-                    cameraCM.VisibleChanged += control =>
-                    {
-                        fov.Visible = !_isOrtho;
-                        fovValue.Value = _fieldOfView;
-                    };
-                }
-
-                // Orthographic Scale
-                {
-                    var orthoSize = cameraCM.AddButton("Ortho Scale");
-                    orthoSize.CloseMenuOnClick = false;
-                    var orthoSizeValue = new FloatValueBox(_orthoSize, xLocationForExtras, 2, 70.0f, 0.001f, 100000.0f, 0.01f)
-                    {
-                        Parent = orthoSize
-                    };
-
-                    orthoSizeValue.ValueChanged += () => OnOrthographicSizeChanged(orthoSizeValue);
-                    cameraCM.VisibleChanged += control =>
-                    {
-                        orthoSize.Visible = _isOrtho;
-                        orthoSizeValue.Value = _orthoSize;
-                    };
-                }
-
-                // Near Plane
-                {
-                    var nearPlane = cameraCM.AddButton("Near Plane");
-                    nearPlane.CloseMenuOnClick = false;
-                    var nearPlaneValue = new FloatValueBox(_nearPlane, xLocationForExtras, 2, 70.0f, 0.001f, 1000.0f)
-                    {
-                        Parent = nearPlane
-                    };
-
-                    nearPlaneValue.ValueChanged += () => OnNearPlaneChanged(nearPlaneValue);
-                    cameraCM.VisibleChanged += control => nearPlaneValue.Value = _nearPlane;
-                }
-
-                // Far Plane
-                {
-                    var farPlane = cameraCM.AddButton("Far Plane");
-                    farPlane.CloseMenuOnClick = false;
-                    var farPlaneValue = new FloatValueBox(_farPlane, xLocationForExtras, 2, 70.0f, 10.0f)
-                    {
-                        Parent = farPlane
-                    };
-
-                    farPlaneValue.ValueChanged += () => OnFarPlaneChanged(farPlaneValue);
-                    cameraCM.VisibleChanged += control => farPlaneValue.Value = _farPlane;
-                }
-
-                cameraCM.AddSeparator();
-
-                // Reset Button
-                {
-                    var reset = cameraCM.AddButton("Reset to default");
-                    reset.ButtonClicked += button =>
-                    {
-                        SetupViewportOptions();
-
-                        // if the context menu is opened without triggering the value changes beforehand,
-                        // the movement speed will not be correctly reset to its default value in certain cases
-                        // therefore, a UI update needs to be triggered here
-                        minCamSpeedValue.Value = _minMovementSpeed;
-                        camSpeedValue.Value = _movementSpeed;
-                        maxCamSpeedValue.Value = _maxMovementSpeed;
-                    };
-                }
-
-                #endregion Camera settings widget
-
-                #region View mode widget
-
-                largestText = "Brightness";
-                textSize = Style.Current.FontMedium.MeasureText(largestText);
-                xLocationForExtras = textSize.X + 5;
-
-                var viewMode = new ViewportWidgetsContainer(ViewportWidgetLocation.UpperLeft);
-                ViewWidgetButtonMenu = new ContextMenu();
-                var viewModeButton = new ViewportWidgetButton("View", SpriteHandle.Invalid, ViewWidgetButtonMenu)
-                {
-                    TooltipText = "View properties",
-                    Parent = viewMode
-                };
-                viewMode.Parent = this;
-
-                // Show
-                {
-                    ViewWidgetShowMenu = ViewWidgetButtonMenu.AddChildMenu("Show").ContextMenu;
-
-                    // Show FPS
-                    {
-                        InitFpsCounter();
-                        _showFpsButton = ViewWidgetShowMenu.AddButton("FPS Counter", () => ShowFpsCounter = !ShowFpsCounter);
-                        _showFpsButton.CloseMenuOnClick = false;
-                    }
-                }
-
-                // View Layers
-                {
-                    var viewLayers = ViewWidgetButtonMenu.AddChildMenu("View Layers").ContextMenu;
-                    viewLayers.AddButton("Copy layers", () => Clipboard.Text = JsonSerializer.Serialize(Task.View.RenderLayersMask));
-                    viewLayers.AddButton("Paste layers", () =>
-                    {
-                        try
-                        {
-                            Task.ViewLayersMask = JsonSerializer.Deserialize<LayersMask>(Clipboard.Text);
-                        }
-                        catch
-                        {
-                        }
-                    });
-                    viewLayers.AddButton("Reset layers", () => Task.ViewLayersMask = LayersMask.Default).Icon = Editor.Instance.Icons.Rotate32;
-                    viewLayers.AddButton("Disable layers", () => Task.ViewLayersMask = new LayersMask(0)).Icon = Editor.Instance.Icons.Rotate32;
-                    viewLayers.AddSeparator();
-                    var layers = LayersAndTagsSettings.GetCurrentLayers();
-                    if (layers != null && layers.Length > 0)
-                    {
-                        for (int i = 0; i < layers.Length; i++)
-                        {
-                            var layer = layers[i];
-                            var button = viewLayers.AddButton(layer);
-                            button.CloseMenuOnClick = false;
-                            button.Tag = 1 << i;
-                        }
-                    }
-                    viewLayers.ButtonClicked += button =>
-                    {
-                        if (button.Tag != null)
-                        {
-                            int layerIndex = (int)button.Tag;
-                            LayersMask mask = new LayersMask(layerIndex);
-                            Task.ViewLayersMask ^= mask;
-                            button.Icon = (Task.ViewLayersMask & mask) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-                        }
-                    };
-                    viewLayers.VisibleChanged += WidgetViewLayersShowHide;
-                }
-
-                // View Flags
-                {
-                    var viewFlags = ViewWidgetButtonMenu.AddChildMenu("View Flags").ContextMenu;
-                    viewFlags.AddButton("Copy flags", () => Clipboard.Text = JsonSerializer.Serialize(Task.ViewFlags));
-                    viewFlags.AddButton("Paste flags", () =>
-                    {
-                        try
-                        {
-                            Task.ViewFlags = JsonSerializer.Deserialize<ViewFlags>(Clipboard.Text);
-                        }
-                        catch
-                        {
-                        }
-                    });
-                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
-                    viewFlags.AddButton("Disable flags", () => Task.ViewFlags = ViewFlags.None).Icon = Editor.Instance.Icons.Rotate32;
-                    viewFlags.AddSeparator();
-                    for (int i = 0; i < ViewFlagsValues.Length; i++)
-                    {
-                        var v = ViewFlagsValues[i];
-                        var button = viewFlags.AddButton(v.Name);
-                        button.CloseMenuOnClick = false;
-                        button.Tag = v.Mode;
-                    }
-                    viewFlags.ButtonClicked += button =>
-                    {
-                        if (button.Tag != null)
-                        {
-                            var v = (ViewFlags)button.Tag;
-                            Task.ViewFlags ^= v;
-                            button.Icon = (Task.ViewFlags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-                        }
-                    };
-                    viewFlags.VisibleChanged += WidgetViewFlagsShowHide;
-                }
-
-                // Debug View
-                {
-                    var debugView = ViewWidgetButtonMenu.AddChildMenu("Debug View").ContextMenu;
-                    debugView.AddButton("Copy view", () => Clipboard.Text = JsonSerializer.Serialize(Task.ViewMode));
-                    debugView.AddButton("Paste view", () =>
-                    {
-                        try
-                        {
-                            Task.ViewMode = JsonSerializer.Deserialize<ViewMode>(Clipboard.Text);
-                        }
-                        catch
-                        {
-                        }
-                    });
-                    debugView.AddSeparator();
-                    for (int i = 0; i < ViewModeValues.Length; i++)
-                    {
-                        ref var v = ref ViewModeValues[i];
-                        if (v.Options != null)
-                        {
-                            var childMenu = debugView.AddChildMenu(v.Name).ContextMenu;
-                            childMenu.ButtonClicked += WidgetViewModeShowHideClicked;
-                            childMenu.VisibleChanged += WidgetViewModeShowHide;
-                            for (int j = 0; j < v.Options.Length; j++)
-                            {
-                                ref var vv = ref v.Options[j];
-                                var button = childMenu.AddButton(vv.Name);
-                                button.CloseMenuOnClick = false;
-                                button.Tag = vv.Mode;
-                            }
-                        }
-                        else
-                        {
-                            var button = debugView.AddButton(v.Name);
-                            button.CloseMenuOnClick = false;
-                            button.Tag = v.Mode;
-                        }
-                    }
-                    debugView.ButtonClicked += WidgetViewModeShowHideClicked;
-                    debugView.VisibleChanged += WidgetViewModeShowHide;
-                }
-
-                // Clear Debug Draw
-                {
-                    var button = ViewWidgetButtonMenu.AddButton("Clear Debug Draw");
-                    button.CloseMenuOnClick = false;
-                    button.Clicked += () => DebugDraw.Clear();
-                    ViewWidgetButtonMenu.VisibleChanged += (Control cm) => { button.Visible = DebugDraw.CanClear(); };
-                }
-
-                ViewWidgetButtonMenu.AddSeparator();
-
-                // Brightness
-                {
-                    var brightness = ViewWidgetButtonMenu.AddButton("Brightness");
-                    brightness.CloseMenuOnClick = false;
-                    var brightnessValue = new FloatValueBox(1.0f, xLocationForExtras, 2, 70.0f, 0.001f, 10.0f, 0.001f)
-                    {
-                        Parent = brightness
-                    };
-                    brightnessValue.ValueChanged += () => Brightness = brightnessValue.Value;
-                    ViewWidgetButtonMenu.VisibleChanged += control => brightnessValue.Value = Brightness;
-                }
-
-                // Resolution
-                {
-                    var resolution = ViewWidgetButtonMenu.AddButton("Resolution");
-                    resolution.CloseMenuOnClick = false;
-                    var resolutionValue = new FloatValueBox(1.0f, xLocationForExtras, 2, 70.0f, 0.1f, 4.0f, 0.001f)
-                    {
-                        Parent = resolution
-                    };
-                    resolutionValue.ValueChanged += () => ResolutionScale = resolutionValue.Value;
-                    ViewWidgetButtonMenu.VisibleChanged += control => resolutionValue.Value = ResolutionScale;
-                }
-
-                #endregion View mode widget
-            }
-
-            InputOptions.List.SetCallback(
-                (InputOptions.ViewpointTop, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Top").Orientation))),
-                (InputOptions.ViewpointBottom, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Bottom").Orientation))),
-                (InputOptions.ViewpointFront, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Front").Orientation))),
-                (InputOptions.ViewpointBack, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Back").Orientation))),
-                (InputOptions.ViewpointRight, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Right").Orientation))),
-                (InputOptions.ViewpointLeft, () => OrientViewport(Quaternion.Euler(CameraViewpointValues.First(vp => vp.Name == "Left").Orientation))),
-                (InputOptions.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown),
-                (InputOptions.CameraIncreaseMoveSpeed, () => AdjustCameraMoveSpeed(1)),
-                (InputOptions.CameraDecreaseMoveSpeed, () => AdjustCameraMoveSpeed(-1)),
-                (InputOptions.ToggleOrthographic, () => OnOrthographicModeToggled(null))
-            );
 
             // Link for task event
             task.Begin += OnRenderBegin;
         }
 
         /// <summary>
-        /// Sets the viewport options to the default values.
-        /// </summary>
-        private void SetupViewportOptions()
-        {
-            var options = Editor.Instance.Options.Options;
-            _minMovementSpeed = options.Input.MinMovementSpeed;
-            MovementSpeed = options.Input.MovementSpeed;
-            _maxMovementSpeed = options.Input.MaxMovementSpeed;
-            _useCameraEasing = options.Viewport.UseCameraEasing;
-            _panningSpeed = options.Input.PanningSpeed;
-            _invertPanning = options.Input.InvertPanning;
-            _relativePanning = options.Input.UseRelativePanning;
-
-            _isOrtho = options.Viewport.UseOrthographicProjection;
-            _orthoSize = options.Viewport.OrthographicScale;
-            _fieldOfView = options.Viewport.FieldOfView;
-            _nearPlane = options.Viewport.NearPlane;
-            _farPlane = options.Viewport.FarPlane;
-
-            OnEditorOptionsChanged(options);
-        }
-
-        private void OnMovementSpeedChanged(FloatValueBox control)
-        {
-            var value = Mathf.Clamp(control.Value, _minMovementSpeed, _maxMovementSpeed);
-            MovementSpeed = value;
-
-            OnCameraMovementProgressChanged();
-            _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed);
-        }
-
-        private void OnMinMovementSpeedChanged(FloatValueBox control)
-        {
-            var value = Mathf.Clamp(control.Value, 0.05f, _maxMovementSpeed);
-            _minMovementSpeed = value;
-
-            if (_movementSpeed < value)
-                MovementSpeed = value;
-
-            OnCameraMovementProgressChanged();
-            _editor.ProjectCache.SetCustomData("CameraMinMovementSpeedValue", _minMovementSpeed);
-        }
-
-        private void OnMaxMovementSpeedChanged(FloatValueBox control)
-        {
-            var value = Mathf.Clamp(control.Value, _minMovementSpeed, 1000.0f);
-            _maxMovementSpeed = value;
-
-            if (_movementSpeed > value)
-                MovementSpeed = value;
-
-            OnCameraMovementProgressChanged();
-            _editor.ProjectCache.SetCustomData("CameraMaxMovementSpeedValue", _maxMovementSpeed);
-        }
-
-        private void OnCameraEasingToggled(Control control)
-        {
-            _useCameraEasing = !_useCameraEasing;
-
-            OnCameraMovementProgressChanged();
-            _editor.ProjectCache.SetCustomData("UseCameraEasingState", _useCameraEasing);
-        }
-
-        private void OnPanningSpeedChanged(FloatValueBox control)
-        {
-            _panningSpeed = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraPanningSpeedValue", _panningSpeed);
-        }
-
-        private void OnRelativePanningToggled(Control control)
-        {
-            _relativePanning = !_relativePanning;
-            _editor.ProjectCache.SetCustomData("CameraRelativePanningState", _relativePanning);
-        }
-
-        private void OnInvertPanningToggled(Control control)
-        {
-            _invertPanning = !_invertPanning;
-            _editor.ProjectCache.SetCustomData("CameraInvertPanningState", _invertPanning);
-        }
-
-
-        private void OnViewpointChanged(ContextMenuButton button)
-        {
-            var orient = Quaternion.Euler((Float3)button.Tag);
-            OrientViewport(ref orient);
-        }
-
-        private void OnFieldOfViewChanged(FloatValueBox control)
-        {
-            _fieldOfView = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraFieldOfViewValue", _fieldOfView);
-        }
-
-        private void OnOrthographicModeToggled(Control control)
-        {
-            _isOrtho = !_isOrtho;
-
-            if (_orthographicModeButton != null)
-                _orthographicModeButton.Checked = !_isOrtho;
-
-            if (_isOrtho)
-            {
-                var orient = ViewOrientation;
-                OrientViewport(ref orient);
-            }
-
-            _editor.ProjectCache.SetCustomData("CameraOrthographicState", _isOrtho);
-        }
-
-        private void OnOrthographicSizeChanged(FloatValueBox control)
-        {
-            _orthoSize = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraOrthographicSizeValue", _orthoSize);
-        }
-
-        private void OnNearPlaneChanged(FloatValueBox control)
-        {
-            _nearPlane = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraNearPlaneValue", _nearPlane);
-        }
-
-        private void OnFarPlaneChanged(FloatValueBox control)
-        {
-            _farPlane = control.Value;
-            _editor.ProjectCache.SetCustomData("CameraFarPlaneValue", _farPlane);
-        }
-
-        /// <summary>
-        /// Gets a value indicating whether this viewport is using mouse currently (eg. user moving objects).
-        /// </summary>
-        protected virtual bool IsControllingMouse => false;
-
-        /// <summary>
         /// Orients the viewport.
         /// </summary>
         /// <param name="orientation">The orientation.</param>
-        protected void OrientViewport(Quaternion orientation)
-        {
-            OrientViewport(ref orientation);
-        }
-
-        /// <summary>
-        /// Orients the viewport.
-        /// </summary>
-        /// <param name="orientation">The orientation.</param>
-        protected virtual void OrientViewport(ref Quaternion orientation)
+        public virtual void OrientViewport(Quaternion orientation)
         {
             if (ViewportCamera is FPSCamera fpsCamera)
             {
@@ -1181,61 +586,6 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        private void OnCameraMovementProgressChanged()
-        {
-            // prevent NaN
-            if (Math.Abs(_minMovementSpeed - _maxMovementSpeed) < Mathf.Epsilon)
-            {
-                _speedStep = 0;
-                return;
-            }
-
-            if (Math.Abs(_movementSpeed - _maxMovementSpeed) < Mathf.Epsilon)
-            {
-                _speedStep = _maxSpeedSteps;
-                return;
-            }
-            else if (Math.Abs(_movementSpeed - _minMovementSpeed) < Mathf.Epsilon)
-            {
-                _speedStep = 0;
-                return;
-            }
-
-            // calculate current linear/eased progress
-            var progress = Mathf.Remap(_movementSpeed, _minMovementSpeed, _maxMovementSpeed, 0.0f, 1.0f);
-
-            if (_useCameraEasing)
-                progress = Mathf.Pow(progress, 1.0f / _cameraEasingDegree);
-
-            _speedStep = Mathf.RoundToInt(progress * _maxSpeedSteps);
-        }
-
-        /// <summary>
-        /// Increases or decreases the camera movement speed.
-        /// </summary>
-        /// <param name="step">The stepping direction for speed adjustment.</param>
-        protected void AdjustCameraMoveSpeed(int step)
-        {
-            _speedStep = Mathf.Clamp(_speedStep + step, 0, _maxSpeedSteps);
-
-            // calculate new linear/eased progress
-            var progress = _useCameraEasing
-                           ? Mathf.Pow((float)_speedStep / _maxSpeedSteps, _cameraEasingDegree)
-                           : (float)_speedStep / _maxSpeedSteps;
-
-            var speed = Mathf.Lerp(_minMovementSpeed, _maxMovementSpeed, progress);
-            MovementSpeed = (float)Math.Round(speed, 3);
-            _editor.ProjectCache.SetCustomData("CameraMovementSpeedValue", _movementSpeed);
-        }
-
-        private void OnEditorOptionsChanged(EditorOptions options)
-        {
-            _mouseSensitivity = options.Input.MouseSensitivity;
-            _maxSpeedSteps = options.Viewport.TotalCameraSpeedSteps;
-            _cameraEasingDegree = options.Viewport.CameraEasingDegree;
-            OnCameraMovementProgressChanged();
-        }
-
         private void OnRenderBegin(RenderTask task, GPUContext context)
         {
             var sceneTask = (SceneRenderTask)task;
@@ -1243,62 +593,9 @@ namespace FlaxEditor.Viewport
             var view = sceneTask.View;
             CopyViewData(ref view);
             sceneTask.View = view;
+            _rootControl = ((WindowRootControl)Root);
+            _rootWindow = _rootControl.Window;
         }
-
-        #region FPS Counter
-
-        private class FpsCounter : Control
-        {
-            public FpsCounter(float x, float y)
-            : base(x, y, 64, 32)
-            {
-            }
-
-            public override void Draw()
-            {
-                base.Draw();
-
-                int fps = Engine.FramesPerSecond;
-                Color color = Color.Green;
-                if (fps < 13)
-                    color = Color.Red;
-                else if (fps < 22)
-                    color = Color.Yellow;
-                var text = string.Format("FPS: {0}", fps);
-                var font = Style.Current.FontMedium;
-                Render2D.DrawText(font, text, new Rectangle(Float2.One, Size), Color.Black);
-                Render2D.DrawText(font, text, new Rectangle(Float2.Zero, Size), color);
-            }
-        }
-
-        private FpsCounter _fpsCounter;
-        private ContextMenuButton _showFpsButton;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether show or hide FPS counter.
-        /// </summary>
-        public bool ShowFpsCounter
-        {
-            get => _fpsCounter.Visible;
-            set
-            {
-                _fpsCounter.Visible = value;
-                _fpsCounter.Enabled = value;
-                _showFpsButton.Icon = value ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-            }
-        }
-
-        private void InitFpsCounter()
-        {
-            _fpsCounter = new FpsCounter(10, ViewportWidgetsContainer.WidgetsHeight + 14)
-            {
-                Visible = false,
-                Enabled = false,
-                Parent = this
-            };
-        }
-
-        #endregion
 
         /// <summary>
         /// Takes the screenshot of the current viewport.
@@ -1352,9 +649,9 @@ namespace FlaxEditor.Viewport
         /// <param name="result">The result.</param>
         protected virtual void CreateProjectionMatrix(out Matrix result)
         {
-            if (_isOrtho)
+            if (OrthographicProjection)
             {
-                Matrix.Ortho(Width * _orthoSize, Height * _orthoSize, _nearPlane, _farPlane, out result);
+                Matrix.Ortho(Width * OrthographicScale, Height * OrthographicScale, _nearPlane, _farPlane, out result);
             }
             else
             {
@@ -1405,16 +702,11 @@ namespace FlaxEditor.Viewport
             Float3 position = ViewPosition - viewOrigin;
 
             // Use different logic in orthographic projection
-            if (_isOrtho)
+            if (OrthographicProjection)
             {
-                var screenPosition = new Float2(mousePosition.X / viewport.Width - 0.5f, -mousePosition.Y / viewport.Height + 0.5f);
                 var orientation = ViewOrientation;
                 var direction = Float3.Forward * orientation;
-                var rayOrigin = new Vector3(screenPosition.X * viewport.Width * _orthoSize, screenPosition.Y * viewport.Height * _orthoSize, 0);
-                rayOrigin = position + Vector3.Transform(rayOrigin, orientation);
-                rayOrigin += direction * _nearPlane;
-                rayOrigin += viewOrigin;
-                return new Ray(rayOrigin, direction);
+                return new Ray(viewOrigin, direction);
             }
 
             // Create view frustum
@@ -1433,99 +725,66 @@ namespace FlaxEditor.Viewport
         }
 
         /// <summary>
-        /// Projects the point from 3D world-space to viewport coordinates.
+        /// Gets a value indicating whether this viewport is using mouse currently (eg. user moving objects).
         /// </summary>
-        /// <param name="worldSpaceLocation">The input world-space location (XYZ in world).</param>
-        /// <param name="viewportSpaceLocation">The output viewport window coordinates (XY in screen pixels).</param>
-        public void ProjectPoint(Vector3 worldSpaceLocation, out Float2 viewportSpaceLocation)
-        {
-            viewportSpaceLocation = Float2.Minimum;
-            var viewport = new FlaxEngine.Viewport(0, 0, Width, Height);
-            if (viewport.Width < Mathf.Epsilon || viewport.Height < Mathf.Epsilon)
-                return;
-            Vector3 viewOrigin = Task.View.Origin;
-            Float3 position = ViewPosition - viewOrigin;
-            CreateProjectionMatrix(out var p);
-            CreateViewMatrix(position, out var v);
-            Matrix.Multiply(ref v, ref p, out var vp);
-            viewport.Project(ref worldSpaceLocation, ref vp, out var projected);
-            viewportSpaceLocation = new Float2((float)projected.X, (float)projected.Y);
-        }
+        protected virtual bool WantsMouseCapture => false;
 
-        /// <summary>
-        /// Called when mouse control begins.
-        /// </summary>
-        /// <param name="win">The parent window.</param>
-        protected virtual void OnControlMouseBegin(Window win)
+        private void UpdateView()
         {
-            // Hide cursor and start tracking mouse movement
-            win.StartTrackingMouse(false);
-            win.Cursor = CursorType.Hidden;
-
-            // Center mouse position if it's too close to the edge
-            var size = Size;
-            var center = Float2.Round(size * 0.5f);
-            if (Mathf.Abs(_viewMousePos.X - center.X) > center.X * 0.8f || Mathf.Abs(_viewMousePos.Y - center.Y) > center.Y * 0.8f)
+            var offset = _viewMousePos - _startPos;
+            if (UseMouseFiltering)
             {
-                _viewMousePos = center;
-                win.MousePosition = PointToWindow(_viewMousePos);
+                // Calculate smooth mouse delta not dependant on viewport size
+
+                offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
+                offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
+                _mouseDelta = offset;
+
+                // Update delta filtering buffer
+                _deltaFilteringBuffer[_deltaFilteringStep] = _mouseDelta;
+                _deltaFilteringStep++;
+
+                // If the step is too far, zero
+                if (_deltaFilteringStep == MouseFilteringFrames)
+                    _deltaFilteringStep = 0;
+
+                // Calculate filtered delta (avg)
+                for (int i = 0; i < MouseFilteringFrames; i++)
+                    _mouseDelta += _deltaFilteringBuffer[i];
+
+                _mouseDelta /= MouseFilteringFrames;
             }
-        }
+            else
+            {
+                _mouseDelta = offset;
+            }
+            if (UseMouseAcceleration)
+            {
+                // Accelerate the delta
+                var currentDelta = _mouseDelta;
+                _mouseDelta += _mouseDeltaLast * MouseAccelerationScale;
+                _mouseDeltaLast = currentDelta;
+            }
 
-        /// <summary>
-        /// Called when mouse control ends.
-        /// </summary>
-        /// <param name="win">The parent window.</param>
-        protected virtual void OnControlMouseEnd(Window win)
-        {
-            // Restore cursor and stop tracking mouse movement
-            win.Cursor = CursorType.Default;
-            win.EndTrackingMouse();
-        }
+            // Update
+            _moveDelta *= _deltaTime * (60.0f * 4.0f);
+            _mouseDelta *= 0.1833f * MouseSpeed * MouseSensitivity;
+            if (InvertMouseYAxisRotation)
+                _mouseDelta *= new Float2(1, -1);
 
-        /// <summary>
-        /// Called when left mouse button goes down (on press).
-        /// </summary>
-        protected virtual void OnLeftMouseButtonDown()
-        {
-            _startPos = _viewMousePos;
-        }
+            UpdateView(_deltaTime, ref _moveDelta, ref _mouseDelta, out var centerMouse);
 
-        /// <summary>
-        /// Called when left mouse button goes up (on release).
-        /// </summary>
-        protected virtual void OnLeftMouseButtonUp()
-        {
-        }
-
-        /// <summary>
-        /// Called when right mouse button goes down (on press).
-        /// </summary>
-        protected virtual void OnRightMouseButtonDown()
-        {
-            _startPos = _viewMousePos;
-        }
-
-        /// <summary>
-        /// Called when right mouse button goes up (on release).
-        /// </summary>
-        protected virtual void OnRightMouseButtonUp()
-        {
-        }
-
-        /// <summary>
-        /// Called when middle mouse button goes down (on press).
-        /// </summary>
-        protected virtual void OnMiddleMouseButtonDown()
-        {
-            _startPos = _viewMousePos;
-        }
-
-        /// <summary>
-        /// Called when middle mouse button goes up (on release).
-        /// </summary>
-        protected virtual void OnMiddleMouseButtonUp()
-        {
+            // Move mouse back to the root position
+            if (IsControllingMouse && centerMouse && (_input.IsMouseRightDown || _input.IsMouseLeftDown || _input.IsMouseMiddleDown || _isVirtualMouseRightDown))
+            {
+                _rootWindow.Cursor = CursorType.Hidden;
+                var center = PointToWindow(_startPos);
+                _rootWindow.MousePosition = center;
+            }
+            else
+            {
+                _rootWindow.Cursor = CursorType.Default;
+            }
         }
 
         /// <summary>
@@ -1538,269 +797,77 @@ namespace FlaxEditor.Viewport
         protected virtual void UpdateView(float dt, ref Vector3 moveDelta, ref Float2 mouseDelta, out bool centerMouse)
         {
             centerMouse = true;
-            _camera?.UpdateView(dt, ref moveDelta, ref mouseDelta, out centerMouse);
+            ViewportCamera?.UpdateView(dt, ref moveDelta, ref mouseDelta, out centerMouse);
         }
 
         /// <inheritdoc />
+        float _deltaTime = 0;
+        //bindings are always bools, they can just be set to false
+        InputBinding? _lastBinding;
+        Window _rootWindow;
+        WindowRootControl _rootControl;
+
+        bool _canUseInput
+        {
+            get
+            {
+
+                return _rootWindow != null && _rootWindow.IsFocused && _rootWindow.IsForegroundWindow;
+            }
+        }
+
+
         public override void Update(float deltaTime)
         {
+            if (_rootControl == null)
+            {
+                return;
+            }
+            // continue to render in background, and set initial deltas
+            _deltaTime = Math.Min(Time.UnscaledDeltaTime, 1.0f);
             base.Update(deltaTime);
+            ViewportCamera?.Update(deltaTime);
+            _moveDelta = Vector3.Zero;
+            _mouseDelta = Float2.Zero;
+            MouseWheelDelta = 0;
+            InitViewMousePos();
 
             if (_disableInputUpdate)
                 return;
 
-            // Update camera
-            bool useMovementSpeed = false;
-            if (_camera != null)
+            //check for inputs and fire events if necessary
+            InputBindingListProcess();
+            //temporary gather or clear check
+            GatherClear();
+
+            if (_canUseInput && ContainsFocus)
             {
-                _camera.Update(deltaTime);
-                useMovementSpeed = _camera.UseMovementSpeed;
-
-                if (_cameraButton != null)
-                    _cameraButton.Parent.Visible = useMovementSpeed;
+                UpdateView();
             }
+        }
 
-            // Get parent window
-            var win = (WindowRootControl)Root;
-
-            // Get current mouse position in the view
+        private void InputBindingListProcess()
+        {
+            InputBinding? newBinding = InputBindingList.Process(this);
+            if (newBinding != null && _lastBinding == null)
             {
-                // When the window is not focused, the position in window does not return sane values
-                Float2 pos = PointFromWindow(win.MousePosition);
-                if (!float.IsInfinity(pos.LengthSquared))
-                    _viewMousePos = pos;
+                _lastBinding = newBinding;
             }
-
-            // Update input
-            var window = win.Window;
-            var canUseInput = window != null && window.IsFocused && window.IsForegroundWindow;
+            if (_lastBinding != null && newBinding != _lastBinding)
             {
-                // Get input buttons and keys (skip if viewport has no focus or mouse is over a child control)
-                var isViewportControllingMouse = canUseInput && IsControllingMouse;
-                if (isViewportControllingMouse != _isViewportControllingMouse)
-                {
-                    _isViewportControllingMouse = isViewportControllingMouse;
-                    if (isViewportControllingMouse)
-                        StartMouseCapture();
-                    else
-                        EndMouseCapture();
-                }
-                bool useMouse = IsControllingMouse || (Mathf.IsInRange(_viewMousePos.X, 0, Width) && Mathf.IsInRange(_viewMousePos.Y, 0, Height));
-                _prevInput = _input;
-                var hit = GetChildAt(_viewMousePos, c => c.Visible && !(c is CanvasRootControl) && !(c is UIEditorRoot));
-                if (canUseInput && ContainsFocus && hit == null)
-                    _input.Gather(win.Window, useMouse, ref _prevInput);
-                else
-                    _input.Clear();
-
-                // Track controlling mouse state change
-                bool wasControllingMouse = _prevInput.IsControllingMouse;
-                _isControllingMouse = _input.IsControllingMouse;
-
-                // Simulate holding mouse right down for trackpad users
-                if ((_prevInput.IsMouseRightDown && !_input.IsMouseRightDown) || win.GetKeyDown(KeyboardKeys.Escape))
-                    _isVirtualMouseRightDown = false; // Cancel when mouse right or escape is pressed
-                if (_wasVirtualMouseRightDown)
-                    wasControllingMouse = true;
-                if (_isVirtualMouseRightDown)
-                    _isControllingMouse = _isVirtualMouseRightDown;
-
-                if (wasControllingMouse != _isControllingMouse)
-                {
-                    if (_isControllingMouse)
-                        OnControlMouseBegin(win.Window);
-                    else
-                        OnControlMouseEnd(win.Window);
-                }
-
-                // Track mouse buttons state change
-                if (!_prevInput.IsMouseLeftDown && _input.IsMouseLeftDown)
-                    OnLeftMouseButtonDown();
-                else if (_prevInput.IsMouseLeftDown && !_input.IsMouseLeftDown)
-                    OnLeftMouseButtonUp();
-
-                if ((!_prevInput.IsMouseRightDown && _input.IsMouseRightDown) || (!_wasVirtualMouseRightDown && _isVirtualMouseRightDown))
-                    OnRightMouseButtonDown();
-                else if ((_prevInput.IsMouseRightDown && !_input.IsMouseRightDown) || (_wasVirtualMouseRightDown && !_isVirtualMouseRightDown))
-                    OnRightMouseButtonUp();
-
-                if (!_prevInput.IsMouseMiddleDown && _input.IsMouseMiddleDown)
-                    OnMiddleMouseButtonDown();
-                else if (_prevInput.IsMouseMiddleDown && !_input.IsMouseMiddleDown)
-                    OnMiddleMouseButtonUp();
-
-                _wasVirtualMouseRightDown = _isVirtualMouseRightDown;
+                _lastBinding?.ClearState();
+                _lastBinding = newBinding;
             }
+            //todo check for trackpad users here...
+            //was rotating etc...
+            _lastBinding = newBinding;
+        }
 
-            // Get clamped delta time (more stable during lags)
-            var dt = Math.Min(Time.UnscaledDeltaTime, 1.0f);
-
-            // Check if update mouse
-            var size = Size;
-            var options = Editor.Instance.Options.Options;
-            if (_isControllingMouse)
-            {
-                var rmbWheel = false;
-
-                // Gather input
-                {
-                    bool isAltDown = _input.IsAltDown;
-                    bool lbDown = _input.IsMouseLeftDown;
-                    bool mbDown = _input.IsMouseMiddleDown;
-                    bool rbDown = _input.IsMouseRightDown || _isVirtualMouseRightDown;
-                    bool wheelInUse = Math.Abs(_input.MouseWheelDelta) > Mathf.Epsilon;
-
-                    _input.IsPanning = options.Input.Pan.Process(window);
-                    _input.IsRotating = options.Input.Rotate.Process(window);
-                    _input.IsMoving = !isAltDown && mbDown && rbDown;
-                    _input.IsZooming = wheelInUse && !(_input.IsShiftDown || (!ContainsFocus && FlaxEngine.Input.GetKey(KeyboardKeys.Shift)));
-                    _input.IsOrbiting = options.Input.Orbit.Process(window);
-
-                    // Control move speed with RMB+Wheel
-                    rmbWheel = useMovementSpeed && (_input.IsMouseRightDown || _isVirtualMouseRightDown) && wheelInUse;
-                    if (rmbWheel)
-                    {
-                        var step = _input.MouseWheelDelta * options.Input.MouseWheelSensitivity;
-                        AdjustCameraMoveSpeed(step > 0.0f ? 1 : -1);
-                    }
-                }
-
-                // Get input movement
-                var moveDelta = Vector3.Zero;
-                if (options.Input.Forward.Process(window))
-                {
-                    moveDelta += Vector3.Forward;
-                }
-                if (options.Input.Backward.Process(window))
-                {
-                    moveDelta += Vector3.Backward;
-                }
-                if (options.Input.Right.Process(window))
-                {
-                    moveDelta += Vector3.Right;
-                }
-                if (options.Input.Left.Process(window))
-                {
-                    moveDelta += Vector3.Left;
-                }
-                if (options.Input.Up.Process(window))
-                {
-                    moveDelta += Vector3.Up;
-                }
-                if (options.Input.Down.Process(window))
-                {
-                    moveDelta += Vector3.Down;
-                }
-                moveDelta *= _movementSpeed;
-
-                // Speed up or speed down
-                if (_input.IsShiftDown)
-                    moveDelta *= 4.0f;
-                if (_input.IsControlDown)
-                    moveDelta *= 0.3f;
-
-                // Calculate smooth mouse delta not dependant on viewport size
-                var offset = _viewMousePos - _startPos;
-                if (_input.IsZooming && !_input.IsMouseRightDown && !_input.IsMouseLeftDown && !_input.IsMouseMiddleDown && !_isOrtho && !rmbWheel && !_isVirtualMouseRightDown)
-                {
-                    offset = Float2.Zero;
-                }
-
-                var mouseDelta = Float2.Zero;
-                if (_useMouseFiltering)
-                {
-                    offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
-                    offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
-                    _mouseDelta = offset;
-
-                    // Update delta filtering buffer
-                    _deltaFilteringBuffer[_deltaFilteringStep] = _mouseDelta;
-                    _deltaFilteringStep++;
-
-                    // If the step is too far, zero
-                    if (_deltaFilteringStep == FpsCameraFilteringFrames)
-                        _deltaFilteringStep = 0;
-
-                    // Calculate filtered delta (avg)
-                    for (int i = 0; i < FpsCameraFilteringFrames; i++)
-                        mouseDelta += _deltaFilteringBuffer[i];
-
-                    mouseDelta /= FpsCameraFilteringFrames;
-                }
-                else
-                {
-                    _mouseDelta = offset;
-                    mouseDelta = _mouseDelta;
-                }
-
-                if (_useMouseAcceleration)
-                {
-                    // Accelerate the delta
-                    var currentDelta = mouseDelta;
-                    mouseDelta += _mouseDeltaLast * _mouseAccelerationScale;
-                    _mouseDeltaLast = currentDelta;
-                }
-
-                // Update
-                moveDelta *= dt * (60.0f * 4.0f);
-                mouseDelta *= 0.1833f * MouseSpeed * _mouseSensitivity;
-                if (options.Input.InvertMouseYAxisRotation)
-                    mouseDelta *= new Float2(1, -1);
-                UpdateView(dt, ref moveDelta, ref mouseDelta, out var centerMouse);
-
-                // Move mouse back to the root position
-                if (centerMouse && (_input.IsMouseRightDown || _input.IsMouseLeftDown || _input.IsMouseMiddleDown || _isVirtualMouseRightDown))
-                {
-                    var center = PointToWindow(_startPos);
-                    win.MousePosition = center;
-                }
-
-                // Change Ortho size on mouse scroll
-                if (_isOrtho && !rmbWheel)
-                {
-                    var scroll = _input.MouseWheelDelta;
-                    if (scroll > Mathf.Epsilon || scroll < -Mathf.Epsilon)
-                        _orthoSize -= scroll * options.Input.MouseWheelSensitivity * 0.2f * _orthoSize;
-                }
-            }
-            else
-            {
-                if (_input.IsMouseLeftDown || _input.IsMouseRightDown || _isVirtualMouseRightDown)
-                {
-                    // Calculate smooth mouse delta not dependant on viewport size
-                    var offset = _viewMousePos - _startPos;
-                    offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
-                    offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
-                    _mouseDelta = offset;
-                    _startPos = _viewMousePos;
-                }
-                else
-                {
-                    _mouseDelta = Float2.Zero;
-                }
-                _mouseDeltaLast = Float2.Zero;
-
-                if (ContainsFocus)
-                {
-                    // Get input movement
-                    var moveDelta = Vector3.Zero;
-                    var mouseDelta = Float2.Zero;
-                    if (FlaxEngine.Input.GamepadsCount > 0)
-                    {
-                        // Gamepads handling
-                        moveDelta += new Vector3(GetGamepadAxis(GamepadAxis.LeftStickX), 0, GetGamepadAxis(GamepadAxis.LeftStickY));
-                        mouseDelta += new Float2(GetGamepadAxis(GamepadAxis.RightStickX), -GetGamepadAxis(GamepadAxis.RightStickY));
-                        _input.IsRotating |= !mouseDelta.IsZero;
-                        moveDelta *= Mathf.Remap(GetGamepadAxis(GamepadAxis.RightTrigger), 0, 1, 1, 4.0f);
-                    }
-
-                    // Update
-                    moveDelta *= dt * (60.0f * 4.0f);
-                    UpdateView(dt, ref moveDelta, ref mouseDelta, out _);
-                }
-            }
-
-            _input.MouseWheelDelta = 0;
+        private void InitViewMousePos()
+        {
+            Float2 pos = PointFromWindow(_rootControl.MousePosition);
+            if (!float.IsInfinity(pos.LengthSquared))
+                _viewMousePos = pos;
         }
 
         /// <inheritdoc />
@@ -1809,14 +876,14 @@ namespace FlaxEditor.Viewport
             Focus();
 
             base.OnMouseDown(location, button);
+            _startPos = _viewMousePos;
             return true;
         }
 
         /// <inheritdoc />
         public override bool OnMouseWheel(Float2 location, float delta)
         {
-            _input.MouseWheelDelta += delta;
-
+            MouseWheelDelta += delta;
             return base.OnMouseWheel(location, delta);
         }
 
@@ -1826,17 +893,6 @@ namespace FlaxEditor.Viewport
             base.OnChildResized(control);
 
             PerformLayout();
-        }
-
-        /// <inheritdoc />
-        public override bool OnKeyDown(KeyboardKeys key)
-        {
-            // Base
-            if (base.OnKeyDown(key))
-                return true;
-
-            // Custom input events
-            return InputOptions.List.Process(this);
         }
 
         /// <inheritdoc />
@@ -1861,210 +917,62 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        /// <inheritdoc />
-        public override void OnLostFocus()
+        private void GatherClear()
         {
-            base.OnLostFocus();
-
-            if (_isControllingMouse)
-            {
-                OnControlMouseEnd(RootWindow.Window);
-                _isControllingMouse = false;
-                _isVirtualMouseRightDown = false;
-            }
+            _prevInput = _input;
+            var hit = GetChildAt(_viewMousePos, c => c.Visible && !(c is CanvasRootControl) && !(c is UIEditorRoot));
+            var useMouse = WantsMouseCapture || (Mathf.IsInRange(_viewMousePos.X, 0, Width) && Mathf.IsInRange(_viewMousePos.Y, 0, Height));
+            if (_canUseInput && ContainsFocus && hit == null)
+                _input.Gather
+                (
+                    _rootWindow,
+                    useMouse,
+                    ref _prevInput
+                );
+            else
+                _input.Clear();
         }
 
-        /// <inheritdoc />
-        public override void OnDestroy()
+        /// <summary>
+        /// Called when left mouse button goes down (on press).
+        /// </summary>
+        protected virtual void OnLeftMouseButtonDown()
         {
-            Editor.Instance.Options.OptionsChanged -= OnEditorOptionsChanged;
-
-            base.OnDestroy();
         }
 
-        private struct CameraViewpoint
+        /// <summary>
+        /// Called when left mouse button goes up (on release).
+        /// </summary>
+        protected virtual void OnLeftMouseButtonUp()
         {
-            public readonly string Name;
-            public readonly Float3 Orientation;
-
-            public CameraViewpoint(string name, Vector3 orientation)
-            {
-                Name = name;
-                Orientation = orientation;
-            }
         }
 
-        private readonly CameraViewpoint[] CameraViewpointValues =
+        /// <summary>
+        /// Called when right mouse button goes down (on press).
+        /// </summary>
+        protected virtual void OnRightMouseButtonDown()
         {
-            new CameraViewpoint("Front", new Float3(0, 180, 0)),
-            new CameraViewpoint("Back", new Float3(0, 0, 0)),
-            new CameraViewpoint("Left", new Float3(0, 90, 0)),
-            new CameraViewpoint("Right", new Float3(0, -90, 0)),
-            new CameraViewpoint("Top", new Float3(90, 0, 0)),
-            new CameraViewpoint("Bottom", new Float3(-90, 0, 0))
-        };
-
-        private struct ViewModeOptions
-        {
-            public readonly string Name;
-            public readonly ViewMode Mode;
-            public readonly ViewModeOptions[] Options;
-
-            public ViewModeOptions(ViewMode mode, string name)
-            {
-                Mode = mode;
-                Name = name;
-                Options = null;
-            }
-
-            public ViewModeOptions(string name, ViewModeOptions[] options)
-            {
-                Name = name;
-                Mode = ViewMode.Default;
-                Options = options;
-            }
         }
 
-        private static readonly ViewModeOptions[] ViewModeValues =
+        /// <summary>
+        /// Called when right mouse button goes up (on release).
+        /// </summary>
+        protected virtual void OnRightMouseButtonUp()
         {
-            new ViewModeOptions(ViewMode.Default, "Default"),
-            new ViewModeOptions(ViewMode.Unlit, "Unlit"),
-            new ViewModeOptions(ViewMode.NoPostFx, "No PostFx"),
-            new ViewModeOptions(ViewMode.Wireframe, "Wireframe"),
-            new ViewModeOptions(ViewMode.LightBuffer, "Light Buffer"),
-            new ViewModeOptions(ViewMode.Reflections, "Reflections Buffer"),
-            new ViewModeOptions(ViewMode.Depth, "Depth Buffer"),
-            new ViewModeOptions("GBuffer", new[]
-            {
-                new ViewModeOptions(ViewMode.Diffuse, "Diffuse"),
-                new ViewModeOptions(ViewMode.Metalness, "Metalness"),
-                new ViewModeOptions(ViewMode.Roughness, "Roughness"),
-                new ViewModeOptions(ViewMode.Specular, "Specular"),
-                new ViewModeOptions(ViewMode.SpecularColor, "Specular Color"),
-                new ViewModeOptions(ViewMode.SubsurfaceColor, "Subsurface Color"),
-                new ViewModeOptions(ViewMode.ShadingModel, "Shading Model"),
-                new ViewModeOptions(ViewMode.Emissive, "Emissive Light"),
-                new ViewModeOptions(ViewMode.Normals, "Normals"),
-                new ViewModeOptions(ViewMode.AmbientOcclusion, "Ambient Occlusion"),
-            }),
-            new ViewModeOptions(ViewMode.MotionVectors, "Motion Vectors"),
-            new ViewModeOptions(ViewMode.LightmapUVsDensity, "Lightmap UVs Density"),
-            new ViewModeOptions(ViewMode.VertexColors, "Vertex Colors"),
-            new ViewModeOptions(ViewMode.PhysicsColliders, "Physics Colliders"),
-            new ViewModeOptions(ViewMode.LODPreview, "LOD Preview"),
-            new ViewModeOptions(ViewMode.MaterialComplexity, "Material Complexity"),
-            new ViewModeOptions(ViewMode.QuadOverdraw, "Quad Overdraw"),
-            new ViewModeOptions(ViewMode.GlobalSDF, "Global SDF"),
-            new ViewModeOptions(ViewMode.GlobalSurfaceAtlas, "Global Surface Atlas"),
-            new ViewModeOptions(ViewMode.GlobalIllumination, "Global Illumination"),
-        };
-
-        private void WidgetViewModeShowHideClicked(ContextMenuButton button)
-        {
-            if (button.Tag is ViewMode v)
-            {
-                Task.ViewMode = v;
-                var cm = button.ParentContextMenu;
-                WidgetViewModeShowHide(cm);
-                var mainCM = ViewWidgetButtonMenu.GetChildMenu("Debug View").ContextMenu;
-                if (mainCM != null && cm != mainCM)
-                    WidgetViewModeShowHide(mainCM);
-            }
         }
 
-        private void WidgetViewModeShowHide(Control cm)
+        /// <summary>
+        /// Called when middle mouse button goes down (on press).
+        /// </summary>
+        protected virtual void OnMiddleMouseButtonDown()
         {
-            if (cm.Visible == false)
-                return;
-
-            var ccm = (ContextMenu)cm;
-            foreach (var e in ccm.Items)
-            {
-                if (e is ContextMenuButton b && b.Tag is ViewMode v)
-                    b.Icon = Task.ViewMode == v ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-            }
         }
 
-        private struct ViewFlagOptions
+        /// <summary>
+        /// Called when middle mouse button goes up (on release).
+        /// </summary>
+        protected virtual void OnMiddleMouseButtonUp()
         {
-            public readonly ViewFlags Mode;
-            public readonly string Name;
-
-            public ViewFlagOptions(ViewFlags mode, string name)
-            {
-                Mode = mode;
-                Name = name;
-            }
-        }
-
-        private static readonly ViewFlagOptions[] ViewFlagsValues =
-        {
-            new ViewFlagOptions(ViewFlags.AntiAliasing, "Anti Aliasing"),
-            new ViewFlagOptions(ViewFlags.Shadows, "Shadows"),
-            new ViewFlagOptions(ViewFlags.EditorSprites, "Editor Sprites"),
-            new ViewFlagOptions(ViewFlags.Reflections, "Reflections"),
-            new ViewFlagOptions(ViewFlags.SSR, "Screen Space Reflections"),
-            new ViewFlagOptions(ViewFlags.AO, "Ambient Occlusion"),
-            new ViewFlagOptions(ViewFlags.GI, "Global Illumination"),
-            new ViewFlagOptions(ViewFlags.DirectionalLights, "Directional Lights"),
-            new ViewFlagOptions(ViewFlags.PointLights, "Point Lights"),
-            new ViewFlagOptions(ViewFlags.SpotLights, "Spot Lights"),
-            new ViewFlagOptions(ViewFlags.SkyLights, "Sky Lights"),
-            new ViewFlagOptions(ViewFlags.Sky, "Sky"),
-            new ViewFlagOptions(ViewFlags.Fog, "Fog"),
-            new ViewFlagOptions(ViewFlags.SpecularLight, "Specular Light"),
-            new ViewFlagOptions(ViewFlags.Decals, "Decals"),
-            new ViewFlagOptions(ViewFlags.CustomPostProcess, "Custom Post Process"),
-            new ViewFlagOptions(ViewFlags.Bloom, "Bloom"),
-            new ViewFlagOptions(ViewFlags.ToneMapping, "Tone Mapping"),
-            new ViewFlagOptions(ViewFlags.EyeAdaptation, "Eye Adaptation"),
-            new ViewFlagOptions(ViewFlags.CameraArtifacts, "Camera Artifacts"),
-            new ViewFlagOptions(ViewFlags.LensFlares, "Lens Flares"),
-            new ViewFlagOptions(ViewFlags.DepthOfField, "Depth of Field"),
-            new ViewFlagOptions(ViewFlags.MotionBlur, "Motion Blur"),
-            new ViewFlagOptions(ViewFlags.ContactShadows, "Contact Shadows"),
-            new ViewFlagOptions(ViewFlags.PhysicsDebug, "Physics Debug"),
-            new ViewFlagOptions(ViewFlags.LightsDebug, "Lights Debug"),
-            new ViewFlagOptions(ViewFlags.DebugDraw, "Debug Draw"),
-        };
-
-        private void WidgetViewFlagsShowHide(Control cm)
-        {
-            if (cm.Visible == false)
-                return;
-            var ccm = (ContextMenu)cm;
-            foreach (var e in ccm.Items)
-            {
-                if (e is ContextMenuButton b && b.Tag != null)
-                {
-                    var v = (ViewFlags)b.Tag;
-                    b.Icon = (Task.View.Flags & v) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-                }
-            }
-        }
-
-        private void WidgetViewLayersShowHide(Control cm)
-        {
-            if (cm.Visible == false)
-                return;
-            var ccm = (ContextMenu)cm;
-            var layersMask = Task.ViewLayersMask;
-            foreach (var e in ccm.Items)
-            {
-                if (e is ContextMenuButton b && b != null && b.Tag != null)
-                {
-                    int layerIndex = (int)b.Tag;
-                    LayersMask mask = new LayersMask(layerIndex);
-                    b.Icon = (layersMask & mask) != 0 ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
-                }
-            }
-        }
-
-        private float GetGamepadAxis(GamepadAxis axis)
-        {
-            var value = FlaxEngine.Input.GetGamepadAxis(InputGamepadIndex.All, axis);
-            var deadZone = 0.2f;
-            return value >= deadZone || value <= -deadZone ? value : 0.0f;
         }
     }
 }

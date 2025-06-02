@@ -146,10 +146,12 @@ namespace FlaxEditor.Viewport
         /// <summary>
         /// Gets or sets a value indicating whether show navigation mesh.
         /// </summary>
+        //todo
+        private bool DUMMY;
         public bool ShowNavigation
         {
-            get => _showNavigationButton.Checked;
-            set => _showNavigationButton.Checked = value;
+            get => true; //todo _showNavigationButton.Checked;
+            set => DUMMY = value;  //todo _showNavigationButton.Checked = value;
         }
 
         /// <summary>
@@ -227,17 +229,20 @@ namespace FlaxEditor.Viewport
             AddGizmoViewportWidgets(this, TransformGizmo, true);
 
             // Show grid widget
-            _showGridButton = ViewWidgetShowMenu.AddButton("Grid", () => Grid.Enabled = !Grid.Enabled);
-            _showGridButton.Icon = Style.Current.CheckBoxTick;
-            _showGridButton.CloseMenuOnClick = false;
+            //todo
+            //_showGridButton = ViewWidgetShowMenu.AddButton("Grid", () => Grid.Enabled = !Grid.Enabled);
+            //_showGridButton.Icon = Style.Current.CheckBoxTick;
+            //_showGridButton.CloseMenuOnClick = false;
 
             // Show navigation widget
-            _showNavigationButton = ViewWidgetShowMenu.AddButton("Navigation", () => ShowNavigation = !ShowNavigation);
-            _showNavigationButton.CloseMenuOnClick = false;
+            //todo
+            //_showNavigationButton = ViewWidgetShowMenu.AddButton("Navigation", () => ShowNavigation = !ShowNavigation);
+            //_showNavigationButton.CloseMenuOnClick = false;
 
             // Create camera widget
-            ViewWidgetButtonMenu.AddSeparator();
-            ViewWidgetButtonMenu.AddButton("Create camera here", CreateCameraAtView);
+            //todo
+            //ViewWidgetButtonMenu.AddSeparator();
+            //ViewWidgetButtonMenu.AddButton("Create camera here", CreateCameraAtView);
 
             // Init gizmo modes
             {
@@ -255,12 +260,14 @@ namespace FlaxEditor.Viewport
             }
 
             // Setup input actions
+            //todo
+            /*
             Viewport.InputOptions.List.SetCallback(
                 (Viewport.InputOptions.LockFocusSelection, LockFocusSelection),
                 (Viewport.InputOptions.FocusSelection, FocusSelection),
                 (Viewport.InputOptions.RotateSelection, RotateSelection),
                 (Viewport.InputOptions.Delete, _editor.SceneEditing.Delete)
-            );
+            );*/
         }
 
         /// <inheritdoc />
@@ -330,7 +337,7 @@ namespace FlaxEditor.Viewport
                 NearPlane = NearPlane,
                 FarPlane = FarPlane,
                 OrthographicScale = OrthographicScale,
-                UsePerspective = !UseOrthographicProjection,
+                UsePerspective = !OrthographicProjection,
                 FieldOfView = FieldOfView
             };
 
@@ -598,12 +605,12 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        protected override void OrientViewport(ref Quaternion orientation)
+        public override void OrientViewport(Quaternion orientation)
         {
             if (TransformGizmo.SelectedParents.Count != 0)
                 FocusSelection(ref orientation);
             else
-                base.OrientViewport(ref orientation);
+                base.OrientViewport(orientation);
         }
 
         /// <inheritdoc />
@@ -620,8 +627,6 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         protected override void OnLeftMouseButtonDown()
         {
-            base.OnLeftMouseButtonDown();
-
             _rubberBandSelector.TryStartingRubberBandSelection();
         }
 
@@ -641,8 +646,6 @@ namespace FlaxEditor.Viewport
 
             // Keep focus
             Focus();
-
-            base.OnLeftMouseButtonUp();
         }
 
         /// <inheritdoc />

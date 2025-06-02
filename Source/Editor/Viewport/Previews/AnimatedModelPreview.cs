@@ -192,6 +192,8 @@ namespace FlaxEditor.Viewport.Previews
 
             if (useWidgets)
             {
+                //todo
+                /*
                 // Show Bounds
                 _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
                 _showBoundsButton.CloseMenuOnClick = false;
@@ -208,6 +210,7 @@ namespace FlaxEditor.Viewport.Previews
                 _showFloorButton = ViewWidgetShowMenu.AddButton("Floor", button => ShowFloor = !ShowFloor);
                 _showFloorButton.IndexInParent = 1;
                 _showFloorButton.CloseMenuOnClick = false;
+                */
             }
 
             // Enable shadows

@@ -198,6 +198,8 @@ namespace FlaxEditor.Viewport.Previews
 
             if (useWidgets)
             {
+                //todo
+                /*
                 _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
                 _showBoundsButton.CloseMenuOnClick = false;
                 _showNormalsButton = ViewWidgetShowMenu.AddButton("Normals", () => ShowNormals = !ShowNormals);
@@ -250,7 +252,7 @@ namespace FlaxEditor.Viewport.Previews
                     TooltipText = "Preview LOD properties",
                     Parent = PreviewLODsMode,
                 };
-                PreviewLODsMode.Parent = this;
+                PreviewLODsMode.Parent = this;*/
             }
         }
 

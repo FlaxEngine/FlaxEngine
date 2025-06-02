@@ -42,6 +42,8 @@ namespace FlaxEditor.Viewport.Previews
         {
             if (useWidgets)
             {
+                //todo
+                /*
                 // Show Current LOD
                 _showCurrentLODButton = ViewWidgetShowMenu.AddButton("Current LOD", button =>
                 {
@@ -80,7 +82,7 @@ namespace FlaxEditor.Viewport.Previews
                     TooltipText = "Preview LOD properties",
                     Parent = PreviewLODSMode,
                 };
-                PreviewLODSMode.Parent = this;
+                PreviewLODSMode.Parent = this;*/
             }
         }
 

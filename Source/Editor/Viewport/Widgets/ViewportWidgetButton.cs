@@ -18,7 +18,7 @@ namespace FlaxEditor.Viewport.Widgets
         private ContextMenu _cm;
         private bool _checked;
         private bool _autoCheck;
-        private bool _isMosueDown;
+        private bool _isMouseDown;
         private float _forcedTextWidth;
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace FlaxEditor.Viewport.Widgets
         {
             if (button == MouseButton.Left)
             {
-                _isMosueDown = true;
+                _isMouseDown = true;
             }
             if (_autoCheck)
             {
@@ -148,9 +148,9 @@ namespace FlaxEditor.Viewport.Widgets
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left && _isMosueDown)
+            if (button == MouseButton.Left && _isMouseDown)
             {
-                _isMosueDown = false;
+                _isMouseDown = false;
                 Clicked?.Invoke(this);
             }
 

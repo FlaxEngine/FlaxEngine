@@ -185,6 +185,8 @@ namespace FlaxEditor.Viewport.Previews
 
             if (!useWidgets)
                 return;
+            //todo
+            /*
             _showBoundsButton = ViewWidgetShowMenu.AddButton("Bounds", () => ShowBounds = !ShowBounds);
             _showBoundsButton.CloseMenuOnClick = false;
             _showOriginButton = ViewWidgetShowMenu.AddButton("Origin", () => ShowOrigin = !ShowOrigin);
@@ -202,7 +204,7 @@ namespace FlaxEditor.Viewport.Previews
                 };
                 _playPauseButton.Clicked += button => PlaySimulation = !PlaySimulation;
                 playPauseWidget.Parent = this;
-            }
+            }*/
         }
 
         private void UpdateBoundsModel()

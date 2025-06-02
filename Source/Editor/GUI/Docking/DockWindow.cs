@@ -478,9 +478,8 @@ namespace FlaxEditor.GUI.Docking
             // Base
             if (base.OnKeyDown(key))
                 return true;
-            Debug.Log(InputActions.List.ToString());
             // Custom input events
-            return InputActions.Process(this);
+            return InputActions.Process(this) == null ? false : true;
         }
 
         /// <inheritdoc />

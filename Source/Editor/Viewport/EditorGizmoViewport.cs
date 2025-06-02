@@ -101,7 +101,7 @@ namespace FlaxEditor.Viewport
         public abstract void OpenContextMenu();
 
         /// <inheritdoc />
-        protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;
+        protected override bool WantsMouseCapture => Gizmos.Active?.IsControllingMouse ?? false;
 
         /// <inheritdoc />
         protected override void AddUpdateCallbacks(RootControl root)
@@ -405,6 +405,8 @@ namespace FlaxEditor.Viewport
             };
 
             // Setup input actions
+            //todo
+            /*
             viewport.InputOptions.List.SetCallback(
             (viewport.InputOptions.TranslateMode, () =>
             {
@@ -445,7 +447,7 @@ namespace FlaxEditor.Viewport
                 transformSpaceToggle.Checked = !transformSpaceToggle.Checked;
             }
             )
-            );
+            );*/
         }
 
         internal static readonly float[] TranslateSnapValues =

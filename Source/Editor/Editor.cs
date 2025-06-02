@@ -99,6 +99,11 @@ namespace FlaxEditor
         public WindowsModule Windows;
 
         /// <summary>
+        /// The windows module.
+        /// </summary>
+        public ViewportWidgetsModule ViewportWidgets;
+
+        /// <summary>
         /// The UI module.
         /// </summary>
         public UIModule UI;
@@ -281,6 +286,7 @@ namespace FlaxEditor
             RegisterModule(ProjectCache = new ProjectCacheModule(this));
             RegisterModule(Scene = new SceneModule(this));
             RegisterModule(Windows = new WindowsModule(this));
+            RegisterModule(ViewportWidgets = new ViewportWidgetsModule(this));
             RegisterModule(UI = new UIModule(this));
             RegisterModule(Thumbnails = new ThumbnailsModule(this));
             RegisterModule(Simulation = new SimulationModule(this));
@@ -327,27 +333,27 @@ namespace FlaxEditor
                     startupSceneMode = GeneralOptions.StartupSceneModes.ProjectDefault;
                 switch (startupSceneMode)
                 {
-                case GeneralOptions.StartupSceneModes.ProjectDefault:
-                {
-                    if (string.IsNullOrEmpty(GameProject.DefaultScene))
-                        break;
-                    JsonSerializer.ParseID(GameProject.DefaultScene, out var defaultSceneId);
-                    Internal_LoadAsset(ref defaultSceneId);
-                    break;
-                }
-                case GeneralOptions.StartupSceneModes.LastOpened:
-                {
-                    if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out string lastSceneIdName))
-                    {
-                        var lastScenes = JsonSerializer.Deserialize<Guid[]>(lastSceneIdName);
-                        foreach (var scene in lastScenes)
+                    case GeneralOptions.StartupSceneModes.ProjectDefault:
                         {
-                            var lastScene = scene;
-                            Internal_LoadAsset(ref lastScene);
+                            if (string.IsNullOrEmpty(GameProject.DefaultScene))
+                                break;
+                            JsonSerializer.ParseID(GameProject.DefaultScene, out var defaultSceneId);
+                            Internal_LoadAsset(ref defaultSceneId);
+                            break;
                         }
-                    }
-                    break;
-                }
+                    case GeneralOptions.StartupSceneModes.LastOpened:
+                        {
+                            if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out string lastSceneIdName))
+                            {
+                                var lastScenes = JsonSerializer.Deserialize<Guid[]>(lastSceneIdName);
+                                foreach (var scene in lastScenes)
+                                {
+                                    var lastScene = scene;
+                                    Internal_LoadAsset(ref lastScene);
+                                }
+                            }
+                            break;
+                        }
                 }
             }
             catch (Exception)
@@ -431,46 +437,46 @@ namespace FlaxEditor
                 }
                 switch (startupSceneMode)
                 {
-                case GeneralOptions.StartupSceneModes.ProjectDefault:
-                {
-                    if (string.IsNullOrEmpty(GameProject.DefaultScene))
-                        break;
-                    JsonSerializer.ParseID(GameProject.DefaultScene, out var defaultSceneId);
-                    var defaultScene = ContentDatabase.Find(defaultSceneId);
-                    if (defaultScene is SceneItem)
-                    {
-                        Editor.Log("Loading default project scene");
-                        Scene.OpenScene(defaultSceneId);
-
-                        // Use spawn point
-                        Windows.EditWin.Viewport.ViewRay = GameProject.DefaultSceneSpawn;
-                    }
-                    break;
-                }
-                case GeneralOptions.StartupSceneModes.LastOpened:
-                {
-                    if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out string lastSceneIdName))
-                    {
-                        var lastScenes = JsonSerializer.Deserialize<Guid[]>(lastSceneIdName);
-                        foreach (var sceneId in lastScenes)
+                    case GeneralOptions.StartupSceneModes.ProjectDefault:
                         {
-                            var lastScene = ContentDatabase.Find(sceneId);
-                            if (!(lastScene is SceneItem))
-                                continue;
+                            if (string.IsNullOrEmpty(GameProject.DefaultScene))
+                                break;
+                            JsonSerializer.ParseID(GameProject.DefaultScene, out var defaultSceneId);
+                            var defaultScene = ContentDatabase.Find(defaultSceneId);
+                            if (defaultScene is SceneItem)
+                            {
+                                Editor.Log("Loading default project scene");
+                                Scene.OpenScene(defaultSceneId);
 
-                            Editor.Log($"Loading last opened scene: {lastScene.ShortName}");
-                            if (sceneId == lastScenes[0])
-                                Scene.OpenScene(sceneId);
-                            else
-                                Level.LoadSceneAsync(sceneId);
+                                // Use spawn point
+                                Windows.EditWin.Viewport.ViewRay = GameProject.DefaultSceneSpawn;
+                            }
+                            break;
                         }
+                    case GeneralOptions.StartupSceneModes.LastOpened:
+                        {
+                            if (ProjectCache.TryGetCustomData(ProjectDataLastScene, out string lastSceneIdName))
+                            {
+                                var lastScenes = JsonSerializer.Deserialize<Guid[]>(lastSceneIdName);
+                                foreach (var sceneId in lastScenes)
+                                {
+                                    var lastScene = ContentDatabase.Find(sceneId);
+                                    if (!(lastScene is SceneItem))
+                                        continue;
 
-                        // Restore view
-                        if (ProjectCache.TryGetCustomData(ProjectDataLastSceneSpawn, out string lastSceneSpawnName))
-                            Windows.EditWin.Viewport.ViewRay = JsonSerializer.Deserialize<Ray>(lastSceneSpawnName);
-                    }
-                    break;
-                }
+                                    Editor.Log($"Loading last opened scene: {lastScene.ShortName}");
+                                    if (sceneId == lastScenes[0])
+                                        Scene.OpenScene(sceneId);
+                                    else
+                                        Level.LoadSceneAsync(sceneId);
+                                }
+
+                                // Restore view
+                                if (ProjectCache.TryGetCustomData(ProjectDataLastSceneSpawn, out string lastSceneSpawnName))
+                                    Windows.EditWin.Viewport.ViewRay = JsonSerializer.Deserialize<Ray>(lastSceneSpawnName);
+                            }
+                            break;
+                        }
                 }
             }
             catch (Exception)
@@ -501,7 +507,7 @@ namespace FlaxEditor
                 {
                     StateMachine.CurrentState.UpdateFPS();
                 }
-                
+
                 EditorUpdate?.Invoke();
 
                 // Update modules
@@ -1060,46 +1066,46 @@ namespace FlaxEditor
             string tag;
             switch (type)
             {
-            case NewAssetType.Material:
-                tag = "Material";
-                break;
-            case NewAssetType.MaterialInstance:
-                tag = "MaterialInstance";
-                break;
-            case NewAssetType.CollisionData:
-                tag = "CollisionData";
-                break;
-            case NewAssetType.AnimationGraph:
-                tag = "AnimationGraph";
-                break;
-            case NewAssetType.SkeletonMask:
-                tag = "SkeletonMask";
-                break;
-            case NewAssetType.ParticleEmitter:
-                tag = "ParticleEmitter";
-                break;
-            case NewAssetType.ParticleSystem:
-                tag = "ParticleSystem";
-                break;
-            case NewAssetType.SceneAnimation:
-                tag = "SceneAnimation";
-                break;
-            case NewAssetType.MaterialFunction:
-                tag = "MaterialFunction";
-                break;
-            case NewAssetType.ParticleEmitterFunction:
-                tag = "ParticleEmitterFunction";
-                break;
-            case NewAssetType.AnimationGraphFunction:
-                tag = "AnimationGraphFunction";
-                break;
-            case NewAssetType.Animation:
-                tag = "Animation";
-                break;
-            case NewAssetType.BehaviorTree:
-                tag = "BehaviorTree";
-                break;
-            default: return true;
+                case NewAssetType.Material:
+                    tag = "Material";
+                    break;
+                case NewAssetType.MaterialInstance:
+                    tag = "MaterialInstance";
+                    break;
+                case NewAssetType.CollisionData:
+                    tag = "CollisionData";
+                    break;
+                case NewAssetType.AnimationGraph:
+                    tag = "AnimationGraph";
+                    break;
+                case NewAssetType.SkeletonMask:
+                    tag = "SkeletonMask";
+                    break;
+                case NewAssetType.ParticleEmitter:
+                    tag = "ParticleEmitter";
+                    break;
+                case NewAssetType.ParticleSystem:
+                    tag = "ParticleSystem";
+                    break;
+                case NewAssetType.SceneAnimation:
+                    tag = "SceneAnimation";
+                    break;
+                case NewAssetType.MaterialFunction:
+                    tag = "MaterialFunction";
+                    break;
+                case NewAssetType.ParticleEmitterFunction:
+                    tag = "ParticleEmitterFunction";
+                    break;
+                case NewAssetType.AnimationGraphFunction:
+                    tag = "AnimationGraphFunction";
+                    break;
+                case NewAssetType.Animation:
+                    tag = "Animation";
+                    break;
+                case NewAssetType.BehaviorTree:
+                    tag = "BehaviorTree";
+                    break;
+                default: return true;
             }
             return CreateAsset(tag, outputPath);
         }

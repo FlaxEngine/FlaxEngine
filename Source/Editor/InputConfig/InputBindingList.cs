@@ -24,11 +24,25 @@ namespace FlaxEditor.InputConfig
             }
         }
 
+        public InputBinding? Get(InputBinding binding)
+        {
+            foreach (var item in List)
+            {
+                if (item.ToString().Equals(binding.ToString()))
+                {
+                    return item;
+                }
+            }
+
+            return null; // Or throw, or handle however you want if not found
+        }
+
         public void Add(InputBinding binding)
         {
             if (!List.Contains(binding))
             {
-                List.Add(binding);
+                InputBinding newBinding = new InputBinding(binding.ToString());
+                List.Add(newBinding);
             }
         }
 
@@ -36,8 +50,25 @@ namespace FlaxEditor.InputConfig
         {
             if (!List.Contains(binding))
             {
-                binding.Callback = callback;
-                List.Add(binding);
+                InputBinding newBinding = new InputBinding(binding.ToString());
+                newBinding.Callback = callback;
+                List.Add(newBinding);
+                return;
+            }
+
+            var foundBinding = List.FirstOrDefault(b => b == binding);
+            foundBinding.Callback = callback;
+        }
+
+#nullable enable annotations
+        public void Add(InputBinding binding, Action callback, Action? clear)
+        {
+            if (!List.Contains(binding))
+            {
+                InputBinding newBinding = new InputBinding(binding.ToString());
+                newBinding.Callback = callback;
+                newBinding.Clear = clear;
+                List.Add(newBinding);
                 return;
             }
 
@@ -50,6 +81,15 @@ namespace FlaxEditor.InputConfig
             foreach (var (binding, callback) in bindings)
             {
                 this.Add(binding, callback);
+            }
+        }
+
+#nullable enable annotations
+        public void Add(List<(InputBinding, Action, Action?)> bindings)
+        {
+            foreach (var (binding, callback, clear) in bindings)
+            {
+                this.Add(binding, callback, clear);
             }
         }
 
@@ -76,17 +116,27 @@ namespace FlaxEditor.InputConfig
         /// Processes the specified key input and tries to invoke first matching callback for the current user input state.
         /// </summary>
         /// <param name="control">The input providing control.</param>
-        /// <returns>True if event has been handled, otherwise false.</returns>
-        public bool Process(Control control)
+        /// <returns>The InputBinding if event has been handled, otherwise null.</returns>
+        public InputBinding? Process(Control control)
         {
+            InputBinding? bestMatch = null;
+            int maxTriggerCount = -1;
+
             for (int i = 0; i < List.Count; i++)
             {
-                if (List[i].Process(control))
+                if (List[i].Process(control, false))
                 {
-                    return true;
+                    int triggerCount = List[i].InputTriggers.Count;
+                    if (triggerCount > maxTriggerCount)
+                    {
+                        maxTriggerCount = triggerCount;
+                        bestMatch = List[i];
+                    }
                 }
             }
-            return false;
+
+            bestMatch?.Process(control);
+            return bestMatch;
         }
 
         /// <summary>

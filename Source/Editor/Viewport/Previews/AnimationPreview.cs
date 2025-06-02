@@ -37,6 +37,8 @@ namespace FlaxEditor.Viewport.Previews
         public AnimationPreview(bool useWidgets)
         : base(useWidgets)
         {
+            //todo
+            /*
             PlayAnimation = true;
             PlayAnimationChanged += OnPlayAnimationChanged;
             _snapToOrigin = false;
@@ -80,6 +82,7 @@ namespace FlaxEditor.Viewport.Previews
             PreviewLight.CascadeCount = 2;
             PreviewLight.ShadowsDistance = 1000.0f;
             Task.ViewFlags |= ViewFlags.Shadows;
+            */
         }
 
         private void OnPlayAnimationChanged()

@@ -179,7 +179,7 @@ namespace FlaxEditor.Gizmo
 
             // Scale gizmo to fit on-screen
             Vector3 position = Position;
-            if (Owner.Viewport.UseOrthographicProjection)
+            if (Owner.Viewport.OrthographicProjection)
             {
                 //[hack] this is far form ideal the View Position is in wrong location, any think using the View Position will have problem
                 //the camera system needs rewrite the to be a camera on springarm, similar how the ArcBallCamera is handled

@@ -87,7 +87,7 @@ namespace FlaxEditor.Viewport.Cameras
         public override void ShowSphere(ref BoundingSphere sphere, ref Quaternion orientation)
         {
             Vector3 position;
-            if (Viewport.UseOrthographicProjection)
+            if (Viewport.OrthographicProjection)
             {
                 position = sphere.Center + Vector3.Backward * orientation * (sphere.Radius * 5.0f);
                 Viewport.OrthographicScale = (float)Vector3.Distance(position, sphere.Center) / 1000;
@@ -175,14 +175,14 @@ namespace FlaxEditor.Viewport.Cameras
             var right = Vector3.Cross(forward, up);
 
             // Dolly
-            if (input.IsPanning || input.IsMoving || input.IsRotating)
+            if (Viewport.Pan || Viewport.Move || Viewport.Rotate)
             {
                 Vector3.Transform(ref moveDelta, ref rotation, out Vector3 move);
                 position += move;
             }
 
             // Pan
-            if (input.IsPanning)
+            if (Viewport.Pan)
             {
                 var panningSpeed = (Viewport.RelativePanning)
                     ? Mathf.Abs((position - TargetPoint).Length) * 0.005f
@@ -201,7 +201,7 @@ namespace FlaxEditor.Viewport.Cameras
             }
 
             // Move
-            if (input.IsMoving)
+            if (Viewport.Move)
             {
                 // Move camera over XZ plane
                 var projectedForward = Vector3.Normalize(new Vector3(forward.X, 0, forward.Z));
@@ -210,16 +210,16 @@ namespace FlaxEditor.Viewport.Cameras
             }
 
             // Rotate or orbit
-            if (input.IsRotating || (input.IsOrbiting && !isUsingGizmo && prevInput.IsOrbiting))
+            if (Viewport.Rotate || (Viewport.Orbit && !isUsingGizmo))
             {
                 yaw += mouseDelta.X;
                 pitch += mouseDelta.Y;
             }
 
             // Zoom in/out
-            if (input.IsZooming && !input.IsRotating)
+            if (Viewport.Zoom && !Viewport.Rotate)
             {
-                position += forward * (Viewport.MouseWheelZoomSpeedFactor * input.MouseWheelDelta * 25.0f);
+                position += forward * (Viewport.MouseWheelSensitivity * Viewport.MouseWheelDelta * 25.0f);
                 if (input.IsAltDown)
                 {
                     position += forward * (Viewport.MouseSpeed * 40 * Viewport.MousePositionDelta.ValuesSum);
@@ -227,7 +227,7 @@ namespace FlaxEditor.Viewport.Cameras
             }
 
             // Move camera with the gizmo
-            if (input.IsOrbiting && isUsingGizmo)
+            if (Viewport.Orbit && isUsingGizmo)
             {
                 centerMouse = false;
                 Viewport.ViewPosition += transformGizmo.LastDelta.Translation;
@@ -237,7 +237,7 @@ namespace FlaxEditor.Viewport.Cameras
             // Update view
             Viewport.Yaw = yaw;
             Viewport.Pitch = pitch;
-            if (input.IsOrbiting)
+            if (Viewport.Orbit)
             {
                 float orbitRadius = Mathf.Max((float)Vector3.Distance(ref position, ref TargetPoint), 0.0001f);
                 Vector3 localPosition = Viewport.ViewDirection * (-1 * orbitRadius);

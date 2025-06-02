@@ -758,7 +758,7 @@ namespace FlaxEditor.Content.GUI
                 return true;
             }
 
-            if (InputBindings.Process(this))
+            if (InputBindings.Process(this) != null)
                 return true;
 
             // Check if sth is selected

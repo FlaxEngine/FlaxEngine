@@ -130,9 +130,10 @@ namespace FlaxEditor.Viewport
                 _spritesRenderer.Enabled = defaultFeatures;
                 SelectionOutline.Enabled = defaultFeatures;
                 _showDefaultSceneButton.Visible = defaultFeatures;
-                _cameraWidget.Visible = defaultFeatures;
-                _cameraButton.Visible = defaultFeatures;
-                _orthographicModeButton.Visible = defaultFeatures;
+                //todo...
+                //_cameraWidget.Visible = defaultFeatures;
+                //_cameraButton.Visible = defaultFeatures;
+                //_orthographicModeButton.Visible = defaultFeatures;
                 Task.Enabled = defaultFeatures;
                 UseAutomaticTaskManagement = defaultFeatures;
                 ShowDefaultSceneActors = defaultFeatures;
@@ -173,7 +174,8 @@ namespace FlaxEditor.Viewport
             Gizmos = new GizmosCollection(this);
 
             _gridGizmo = new GridGizmo(this);
-            var showGridButton = ViewWidgetShowMenu.AddButton("Grid");
+            //todo
+            /*var showGridButton = ViewWidgetShowMenu.AddButton("Grid");
             showGridButton.Clicked += () =>
             {
                 _gridGizmo.Enabled = !_gridGizmo.Enabled;
@@ -181,7 +183,7 @@ namespace FlaxEditor.Viewport
             };
             showGridButton.Checked = true;
             showGridButton.CloseMenuOnClick = false;
-
+*/
             // Prepare rendering task
             Task.ActorsSource = ActorsSources.CustomActors;
             Task.ViewFlags = ViewFlags.DefaultEditor;
@@ -209,8 +211,9 @@ namespace FlaxEditor.Viewport
             _uiRoot.IndexInParent = 0; // Move viewport down below other widgets in the viewport
             _uiParentLink = _uiRoot.UIRoot;
 
-            // UI mode buton
-            _uiModeButton = ViewWidgetShowMenu.AddButton("UI Mode", (button) => ShowUI = button.Checked);
+            // UI mode button
+            //todo
+            //_uiModeButton = ViewWidgetShowMenu.AddButton("UI Mode", (button) => ShowUI = button.Checked);
             _uiModeButton.AutoCheck = true;
             _uiModeButton.VisibleChanged += control => (control as ContextMenuButton).Checked = ShowUI;
 
@@ -366,7 +369,7 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        protected override bool IsControllingMouse => Gizmos.Active?.IsControllingMouse ?? false;
+        protected override bool WantsMouseCapture => Gizmos.Active?.IsControllingMouse ?? false;
 
         /// <inheritdoc />
         protected override void AddUpdateCallbacks(RootControl root)
@@ -511,8 +514,6 @@ namespace FlaxEditor.Viewport
 
             // Keep focus
             Focus();
-
-            base.OnLeftMouseButtonUp();
         }
 
         /// <inheritdoc />
@@ -584,12 +585,12 @@ namespace FlaxEditor.Viewport
         }
 
         /// <inheritdoc />
-        protected override void OrientViewport(ref Quaternion orientation)
+        public override void OrientViewport(Quaternion orientation)
         {
             if (TransformGizmo.SelectedParents.Count != 0)
                 FocusSelection(ref orientation);
             else
-                base.OrientViewport(ref orientation);
+                base.OrientViewport(orientation);
         }
 
         /// <inheritdoc />

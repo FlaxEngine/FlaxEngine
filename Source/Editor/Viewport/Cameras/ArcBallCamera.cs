@@ -120,9 +120,9 @@ namespace FlaxEditor.Viewport.Cameras
             Viewport.YawPitch += mouseDelta;
 
             // Zoom
-            if (input.IsZooming)
+            if (Viewport.Zoom)
             {
-                _orbitRadius = Mathf.Clamp(_orbitRadius - (Viewport.MouseWheelZoomSpeedFactor * input.MouseWheelDelta * 25.0f), 0.001f, 10000.0f);
+                _orbitRadius = Mathf.Clamp(_orbitRadius - (Viewport.MouseWheelSensitivity * Viewport.MouseWheelDelta * 25.0f), 0.001f, 10000.0f);
             }
 
             // Update view position

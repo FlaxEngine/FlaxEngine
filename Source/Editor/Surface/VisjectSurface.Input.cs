@@ -683,7 +683,7 @@ namespace FlaxEditor.Surface
             if (base.OnKeyDown(key))
                 return true;
 
-            if (InputActions.Process(this))
+            if (InputActions.Process(this) != null)
                 return true;
 
             if (HasNodesSelection)
