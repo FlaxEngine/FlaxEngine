@@ -67,6 +67,11 @@ namespace FlaxEditor.GUI.Tree
         /// Gets the first selected node or null.
         /// </summary>
         public TreeNode SelectedNode => Selection.Count > 0 ? Selection[0] : null;
+        
+        /// <summary>
+        /// Allow nodes to Draw the root tree line.
+        /// </summary>
+        public bool DrawRootTreeLine = true;
 
         /// <summary>
         /// Gets or sets the margin for the child tree nodes.
