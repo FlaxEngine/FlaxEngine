@@ -20,6 +20,7 @@ namespace FlaxEngine.GUI
         private Color _scrollbarTrackColor;
         private Color _scrollbarThumbColor;
         private Color _scrollbarThumbSelectedColor;
+        private Rectangle _controlsBoundsBeforeLayout;
 
         /// <summary>
         /// The cached scroll area bounds. Used to scroll contents of the panel control. Cached during performing layout.
@@ -530,8 +531,25 @@ namespace FlaxEngine.GUI
         {
             // Arrange controls and get scroll bounds
             ArrangeAndGetBounds();
+            UpdateScrollBars();
+            _controlsBoundsBeforeLayout = _controlsBounds;
+        }
 
-            // Update scroll bars
+        /// <inheritdoc />
+        protected override void PerformLayoutAfterChildren()
+        {
+            // If controls area changed during layout then update scroll bars again
+            ArrangeAndGetBounds();
+            if (_controlsBoundsBeforeLayout != _controlsBounds)
+            {
+                UpdateScrollBars();
+            }
+
+            base.PerformLayoutAfterChildren();
+        }
+
+        private void UpdateScrollBars()
+        {
             var controlsBounds = _controlsBounds;
             var scrollBounds = controlsBounds;
             _scrollMargin.ExpandRectangle(ref scrollBounds);
