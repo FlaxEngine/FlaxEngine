@@ -96,7 +96,7 @@ public:
     bool PerBoneMotionBlur = true;
 
     /// <summary>
-    /// If true, animation speed will be affected by the global time scale parameter.
+    /// If true, animation speed will be affected by the global timescale parameter.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(30), DefaultValue(true), EditorDisplay(\"Skinned Model\")")
     bool UseTimeScale = true;
@@ -108,7 +108,7 @@ public:
     bool UpdateWhenOffscreen = false;
 
     /// <summary>
-    /// The animation update delta time scale. Can be used to speed up animation playback or create slow motion effect.
+    /// The animation update delta timescale. Can be used to speed up animation playback or create slow motion effect.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(45), EditorDisplay(\"Skinned Model\")")
     float UpdateSpeed = 1.0f;
@@ -120,7 +120,7 @@ public:
     AnimationUpdateMode UpdateMode = AnimationUpdateMode::Auto;
 
     /// <summary>
-    /// The master scale parameter for the actor bounding box. Helps reducing mesh flickering effect on screen edges.
+    /// The master scale parameter for the actor bounding box. Helps to reduce mesh flickering effect on screen edges.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(60), DefaultValue(1.5f), Limit(0), EditorDisplay(\"Skinned Model\")")
     float BoundsScale = 1.5f;
@@ -388,7 +388,7 @@ public:
     API_FUNCTION() void PauseSlotAnimation(const StringView& slotName, Animation* anim);
 
     /// <summary>
-    /// Checks if the any animation playback is active on the any slot in Anim Graph (not paused).
+    /// Checks if any  animation playback is active on any  slot in Anim Graph (not paused).
     /// </summary>
     API_FUNCTION() bool IsPlayingSlotAnimation();
 

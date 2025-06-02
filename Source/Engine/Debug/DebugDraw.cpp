@@ -99,6 +99,7 @@ struct DebugGeometryBuffer
 {
     GPUBuffer* Buffer;
     float TimeLeft;
+    bool Lines;
     Matrix Transform;
 };
 
@@ -234,6 +235,14 @@ void TeleportList(const Float3& delta, Array<DebugText3D>& list)
     }
 }
 
+void TeleportList(const Float3& delta, Array<DebugGeometryBuffer>& list)
+{
+    for (auto& v : list)
+    {
+        v.Transform.SetTranslation(v.Transform.GetTranslation() + delta);
+    }
+}
+
 struct DebugDrawData
 {
     Array<DebugGeometryBuffer> GeometryBuffers;
@@ -302,6 +311,7 @@ struct DebugDrawData
 
     void Teleport(const Float3& delta)
     {
+        TeleportList(delta, GeometryBuffers);
         TeleportList(delta, DefaultLines);
         TeleportList(delta, OneFrameLines);
         TeleportList(delta, DefaultTriangles);
@@ -810,6 +820,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
         defaultWireTriangles = WriteLists(vertexCounter, Context->DebugDrawDefault.DefaultWireTriangles, Context->DebugDrawDefault.OneFrameWireTriangles);
         {
             PROFILE_CPU_NAMED("Flush");
+            ZoneValue(DebugDrawVB->Data.Count() / 1024); // Size in kB
             DebugDrawVB->Flush(context);
         }
     }
@@ -869,8 +880,8 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
             Matrix mvp;
             Matrix::Multiply(geometry.Transform, vp, mvp);
             Matrix::Transpose(mvp, tmp.ViewProjection);
+            auto state = data.EnableDepthTest ? (geometry.Lines ? &DebugDrawPsLinesDepthTest : &DebugDrawPsTrianglesDepthTest) : (geometry.Lines ? &DebugDrawPsLinesDefault : &DebugDrawPsTrianglesDefault);
             context->UpdateCB(cb, &tmp);
-            auto state = data.EnableDepthTest ? &DebugDrawPsLinesDepthTest : &DebugDrawPsLinesDefault;
             context->SetState(state->Get(enableDepthWrite, true));
             context->BindVB(ToSpan(&geometry.Buffer, 1));
             context->Draw(0, geometry.Buffer->GetElementsCount());
@@ -918,8 +929,9 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
             Matrix mvp;
             Matrix::Multiply(geometry.Transform, vp, mvp);
             Matrix::Transpose(mvp, tmp.ViewProjection);
+            auto state = geometry.Lines ? &DebugDrawPsLinesDefault : &DebugDrawPsTrianglesDefault;
             context->UpdateCB(cb, &tmp);
-            context->SetState(DebugDrawPsLinesDefault.Get(false, false));
+            context->SetState(state->Get(false, false));
             context->BindVB(ToSpan(&geometry.Buffer, 1));
             context->Draw(0, geometry.Buffer->GetElementsCount());
         }
@@ -1164,6 +1176,7 @@ void DebugDraw::DrawLines(GPUBuffer* lines, const Matrix& transform, float durat
     auto& geometry = debugDrawData.GeometryBuffers.AddOne();
     geometry.Buffer = lines;
     geometry.TimeLeft = duration;
+    geometry.Lines = true;
     geometry.Transform = transform * Matrix::Translation(-Context->Origin);
 }
 
@@ -1518,6 +1531,23 @@ void DebugDraw::DrawTriangles(const Span<Float3>& vertices, const Matrix& transf
         Float3::Transform(vertices.Get()[i++], transformF, t.V2);
         *dst++ = t;
     }
+}
+
+void DebugDraw::DrawTriangles(GPUBuffer* triangles, const Matrix& transform, float duration, bool depthTest)
+{
+    if (triangles == nullptr || triangles->GetSize() == 0)
+        return;
+    if (triangles->GetSize() % (sizeof(Vertex) * 3) != 0)
+    {
+        DebugLog::ThrowException("Cannot draw debug lines with incorrect amount of items in array");
+        return;
+    }
+    auto& debugDrawData = depthTest ? Context->DebugDrawDepthTest : Context->DebugDrawDefault;
+    auto& geometry = debugDrawData.GeometryBuffers.AddOne();
+    geometry.Buffer = triangles;
+    geometry.TimeLeft = duration;
+    geometry.Lines = false;
+    geometry.Transform = transform * Matrix::Translation(-Context->Origin);
 }
 
 void DebugDraw::DrawTriangles(const Array<Float3>& vertices, const Color& color, float duration, bool depthTest)

@@ -114,7 +114,7 @@ namespace FlaxEditor.Windows.Assets
                     lodIndex.IntValue.Value = sdf.Texture != null ? sdf.LOD : 6;
                     _sdfModelLodIndex = lodIndex;
 
-                    var buttons = group.CustomContainer<UniformGridPanel>();
+                    var buttons = layout.UniformGrid();
                     var gridControl = buttons.CustomControl;
                     gridControl.ClipChildren = false;
                     gridControl.Height = Button.DefaultHeight;

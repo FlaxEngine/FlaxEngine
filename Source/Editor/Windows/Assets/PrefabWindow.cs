@@ -78,7 +78,7 @@ namespace FlaxEditor.Windows.Assets
         /// <summary>
         /// Indication of if the prefab window selection is locked on specific objects.
         /// </summary>
-        public bool LockSelectedObjects
+        public bool LockSelection
         {
             get => _lockSelection;
             set
@@ -160,6 +160,7 @@ namespace FlaxEditor.Windows.Assets
                 AnchorPreset = AnchorPresets.HorizontalStretchMiddle,
                 Parent = headerPanel,
                 Bounds = new Rectangle(4, 4, headerPanel.Width - 8, 18),
+                TooltipText = "Search the prefab.\n\nYou can prefix your search with different search operators:\ns: -> Actor with script of type\na: -> Actor type\nc: -> Control type",
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
 

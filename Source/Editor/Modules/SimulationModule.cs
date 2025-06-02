@@ -306,19 +306,21 @@ namespace FlaxEditor.Modules
         public override void OnPlayEnd()
         {
             var gameWin = Editor.Windows.GameWin;
-
-            switch (gameWin.FocusOnPlayOption)
+            if (gameWin != null)
             {
-            case Options.InterfaceOptions.PlayModeFocus.None: break;
-            case Options.InterfaceOptions.PlayModeFocus.GameWindow: break;
-            case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestore:
-                if (_previousWindow != null && !_previousWindow.IsDisposing)
+                switch (gameWin.FocusOnPlayOption)
                 {
-                    if (!Editor.Windows.GameWin.ParentDockPanel.ContainsTab(_previousWindow))
-                        break;
-                    _previousWindow.Focus();
+                case Options.InterfaceOptions.PlayModeFocus.None: break;
+                case Options.InterfaceOptions.PlayModeFocus.GameWindow: break;
+                case Options.InterfaceOptions.PlayModeFocus.GameWindowThenRestore:
+                    if (_previousWindow != null && !_previousWindow.IsDisposing)
+                    {
+                        if (!Editor.Windows.GameWin.ParentDockPanel.ContainsTab(_previousWindow))
+                            break;
+                        _previousWindow.Focus();
+                    }
+                    break;
                 }
-                break;
             }
 
             Editor.UI.UncheckPauseButton();

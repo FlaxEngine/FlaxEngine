@@ -20,13 +20,6 @@ namespace FlaxEditor.CustomEditors.GUI
         /// </summary>
         public const int SplitterSize = 2;
 
-        /// <summary>
-        /// The splitter margin (in pixels).
-        /// </summary>
-        public const int SplitterMargin = 4;
-
-        private const int SplitterSizeHalf = SplitterSize / 2;
-
         private PropertiesListElement _element;
         private float _splitterValue;
         private Rectangle _splitterRect;
@@ -65,16 +58,18 @@ namespace FlaxEditor.CustomEditors.GUI
         /// <param name="element">The element.</param>
         public PropertiesList(PropertiesListElement element)
         {
+            ClipChildren = false;
             _element = element;
             _splitterValue = 0.4f;
-            BottomMargin = TopMargin = RightMargin = SplitterMargin;
+            Margin = new Margin();
+            Spacing = Utilities.Constants.UIMargin;
             UpdateSplitRect();
         }
 
         private void UpdateSplitRect()
         {
-            _splitterRect = new Rectangle(Mathf.Clamp(_splitterValue * Width - SplitterSizeHalf, 0.0f, Width), 0, SplitterSize, Height);
-            LeftMargin = _splitterValue * Width + SplitterMargin;
+            _splitterRect = new Rectangle(Mathf.Clamp(_splitterValue * Width - SplitterSize * 0.5f, 0.0f, Width), 0, SplitterSize, Height);
+            LeftMargin = _splitterValue * Width + _spacing;
         }
 
         private void StartTracking()
@@ -222,23 +217,33 @@ namespace FlaxEditor.CustomEditors.GUI
         /// <inheritdoc />
         protected override void PerformLayoutAfterChildren()
         {
-            // Sort controls from up to down into two columns: one for labels and one for the rest of the stuff
-
+            // Place non-label controls from top to down
             float y = _margin.Top;
             float w = Width - _margin.Width;
+            bool firstItem = true;
             for (int i = 0; i < _children.Count; i++)
             {
                 Control c = _children[i];
                 if (!(c is PropertyNameLabel))
                 {
-                    var h = c.Height;
-                    c.Bounds = new Rectangle(_margin.Left, y + _spacing, w, h);
+                    var rect = new Rectangle(_margin.Left, y, w, c.Height);
+                    if (c.Visible)
+                    {
+                        if (firstItem)
+                            firstItem = false;
+                        else
+                            rect.Y += _spacing;
+                    }
+                    else if (!firstItem)
+                        rect.Y += _spacing;
+                    c.Bounds = rect;
                     if (c.Visible)
                         y = c.Bottom;
                 }
             }
             y += _margin.Bottom;
 
+            // Place labels accordingly to their respective controls placement
             float namesWidth = _splitterValue * Width;
             int count = _element.Labels.Count;
             float[] yStarts = new float[count + 1];
@@ -271,7 +276,9 @@ namespace FlaxEditor.CustomEditors.GUI
             {
                 var label = _element.Labels[i];
 
-                var rect = new Rectangle(0, yStarts[i] + 1, namesWidth, yStarts[i + 1] - yStarts[i] - 2);
+                var rect = new Rectangle(0, yStarts[i], namesWidth, yStarts[i + 1] - yStarts[i]);
+                if (i != count - 1)
+                    rect.Height -= _spacing;
                 //label.Parent = this;
                 label.Bounds = rect;
             }

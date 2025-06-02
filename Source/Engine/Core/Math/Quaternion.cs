@@ -1149,7 +1149,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets the quaternion that will rotate vector from into vector to, around their plan perpendicular axis.The input vectors don't need to be normalized.
+        /// Gets the quaternion that will rotate vector from into vector to, around their plan perpendicular axis. The input vectors don't need to be normalized.
         /// </summary>
         /// <param name="from">The source vector.</param>
         /// <param name="to">The destination vector.</param>
@@ -1179,7 +1179,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Gets the quaternion that will rotate vector from into vector to, around their plan perpendicular axis.The input vectors don't need to be normalized.
+        /// Gets the quaternion that will rotate the from into vector to, around their plan perpendicular axis. The input vectors don't need to be normalized.
         /// </summary>
         /// <param name="from">The source vector.</param>
         /// <param name="to">The destination vector.</param>

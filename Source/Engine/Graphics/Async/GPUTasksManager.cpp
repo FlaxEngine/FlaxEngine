@@ -54,9 +54,9 @@ void GPUTask::OnCancel()
     if (IsSyncing())
     {
         // Task has been performed but is waiting for a CPU/GPU sync so we have to cancel that
-        ASSERT(_context != nullptr);
         _context->OnCancelSync(this);
         _context = nullptr;
+        SetState(TaskState::Canceled);
     }
 
     // Base

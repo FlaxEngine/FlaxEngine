@@ -65,6 +65,9 @@ namespace FlaxEditor.Content
     /// <seealso cref="FlaxEditor.Content.Create.CreateFileEntry" />
     public class GenericJsonCreateEntry : CreateFileEntry
     {
+        /// <inheritdoc/>
+        public override bool CanBeCreated => _options.Type != null; 
+
         /// <summary>
         /// The create options.
         /// </summary>

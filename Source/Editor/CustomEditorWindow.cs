@@ -33,8 +33,8 @@ namespace FlaxEditor
             private void Set(CustomEditorWindow value)
             {
                 _customEditor = value;
-                _presenter.Select(value);
                 _presenter.OverrideEditor = value;
+                _presenter.Select(value);
             }
 
             /// <inheritdoc />

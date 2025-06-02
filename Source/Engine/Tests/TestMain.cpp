@@ -44,9 +44,9 @@ void TestsRunnerService::Update()
     LOG(Info, "Running Flax Tests...");
     const int result = Catch::Session().run();
     if (result == 0)
-        LOG(Info, "Result: {0}", result);
+        LOG(Info, "Flax Tests result: {0}", result);
     else
-        LOG(Error, "Result: {0}", result);
+        LOG(Error, "Flax Tests result: {0}", result);
     Log::Logger::WriteFloor();
     Engine::RequestExit(result);
 }

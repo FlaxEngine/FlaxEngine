@@ -34,6 +34,10 @@ public:
 
 public:
     // [ContentLoadTask]
+    String ToString() const override
+    {
+        return String::Format(TEXT("Load Asset Data Task ({}, {}, {})"), (int32)GetState(), _chunks, _asset ? _asset->GetPath() : String::Empty);
+    }
     bool HasReference(Object* obj) const override
     {
         return obj == _asset;

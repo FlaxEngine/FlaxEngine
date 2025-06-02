@@ -55,10 +55,11 @@ namespace FlaxEditor.Windows.Assets
                     base.Initialize(layout);
 
                     // Creates the import path UI
-                    Utilities.Utils.CreateImportPathUI(layout, window.Item as BinaryAssetItem);
+                    var pathGroup = layout.Group("Import Path");
+                    Utilities.Utils.CreateImportPathUI(pathGroup, window.Item as BinaryAssetItem);
 
-                    layout.Space(5);
-                    var reimportButton = layout.Button("Reimport");
+                    pathGroup.Space(5);
+                    var reimportButton = pathGroup.Button("Reimport");
                     reimportButton.Button.Clicked += () => ((PropertiesProxy)Values[0]).Reimport();
                 }
             }

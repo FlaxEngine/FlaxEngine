@@ -14,6 +14,9 @@ namespace FlaxEditor.Content.Create
     /// <seealso cref="FlaxEditor.Content.Create.CreateFileEntry" />
     public class PrefabCreateEntry : CreateFileEntry
     {
+        /// <inheritdoc />
+        public override bool CanBeCreated => _options.RootActorType != null;
+
         /// <summary>
         /// The create options.
         /// </summary>
@@ -73,6 +76,9 @@ namespace FlaxEditor.Content.Create
     /// <seealso cref="FlaxEditor.Content.Create.CreateFileEntry" />
     public class WidgetCreateEntry : CreateFileEntry
     {
+        /// <inheritdoc/>
+        public override bool CanBeCreated => _options.RootControlType != null;
+
         /// <summary>
         /// The create options.
         /// </summary>

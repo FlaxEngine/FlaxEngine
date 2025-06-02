@@ -20,6 +20,7 @@ namespace FlaxEngine.GUI
         private Color _scrollbarTrackColor;
         private Color _scrollbarThumbColor;
         private Color _scrollbarThumbSelectedColor;
+        private Rectangle _controlsBoundsBeforeLayout;
 
         /// <summary>
         /// The cached scroll area bounds. Used to scroll contents of the panel control. Cached during performing layout.
@@ -530,8 +531,25 @@ namespace FlaxEngine.GUI
         {
             // Arrange controls and get scroll bounds
             ArrangeAndGetBounds();
+            UpdateScrollBars();
+            _controlsBoundsBeforeLayout = _controlsBounds;
+        }
 
-            // Update scroll bars
+        /// <inheritdoc />
+        protected override void PerformLayoutAfterChildren()
+        {
+            // If controls area changed during layout then update scroll bars again
+            ArrangeAndGetBounds();
+            if (_controlsBoundsBeforeLayout != _controlsBounds)
+            {
+                UpdateScrollBars();
+            }
+
+            base.PerformLayoutAfterChildren();
+        }
+
+        private void UpdateScrollBars()
+        {
             var controlsBounds = _controlsBounds;
             var scrollBounds = controlsBounds;
             _scrollMargin.ExpandRectangle(ref scrollBounds);
@@ -689,7 +707,7 @@ namespace FlaxEngine.GUI
                 }
 
                 viewOffset.Y = Mathf.Clamp(viewOffset.Y, VScrollBar.Minimum, VScrollBar.Maximum);
-                VScrollBar.Value = viewOffset.Y;
+                VScrollBar.TargetValue = viewOffset.Y;
             }
 
             if (HScrollBar != null && HScrollBar.Enabled && width > MinSize)
@@ -704,7 +722,7 @@ namespace FlaxEngine.GUI
                 }
 
                 viewOffset.X = Mathf.Clamp(viewOffset.X, HScrollBar.Minimum, HScrollBar.Maximum);
-                HScrollBar.Value = viewOffset.X;
+                HScrollBar.TargetValue = viewOffset.X;
             }
 
             viewOffset *= -1;

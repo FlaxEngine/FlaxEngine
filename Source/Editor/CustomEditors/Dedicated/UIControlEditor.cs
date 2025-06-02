@@ -682,7 +682,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private CustomElementsContainer<UniformGridPanel> UniformGridTwoByOne(LayoutElementsContainer cont)
         {
-            var grid = cont.CustomContainer<UniformGridPanel>();
+            var grid = cont.UniformGrid();
             grid.CustomControl.SlotsHorizontally = 2;
             grid.CustomControl.SlotsVertically = 1;
             grid.CustomControl.SlotPadding = Margin.Zero;

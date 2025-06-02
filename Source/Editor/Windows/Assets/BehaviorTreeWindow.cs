@@ -635,5 +635,11 @@ namespace FlaxEditor.Windows.Assets
         public void Select(List<SceneGraphNode> nodes)
         {
         }
+
+        /// <inheritdoc />
+        public List<SceneGraphNode> Selection => new List<SceneGraphNode>();
+
+        /// <inheritdoc />
+        public bool LockSelection { get; set; }
     }
 }

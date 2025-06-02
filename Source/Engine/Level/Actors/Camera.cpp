@@ -3,6 +3,7 @@
 #include "Camera.h"
 #include "Engine/Level/SceneObjectsFactory.h"
 #include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Double4x4.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Content.h"
@@ -238,7 +239,7 @@ Ray Camera::ConvertMouseToRay(const Float2& mousePosition, const Viewport& viewp
     viewport.Unproject(farPoint, ivp, farPoint);
 
     Vector3 dir = Vector3::Normalize(farPoint - nearPoint);
-    if (dir.IsZero())
+    if (dir.IsZero() || dir.IsNanOrInfinity())
         return Ray::Identity;
     return Ray(nearPoint, dir);
 }
@@ -302,12 +303,15 @@ void Camera::GetMatrices(Matrix& view, Matrix& projection, const Viewport& viewp
     }
 
     // Create view matrix
-    const Float3 direction = GetDirection();
-    const Float3 position = _transform.Translation - origin;
-    const Float3 target = position + direction;
-    Float3 up;
-    Float3::Transform(Float3::Up, GetOrientation(), up);
-    Matrix::LookAt(position, target, up, view);
+    const Vector3 direction = Vector3::Transform(Vector3::Forward, GetOrientation());
+    const Vector3 position = _transform.Translation - origin;
+    const Vector3 target = position + direction;
+
+    Vector3 up;
+    Vector3::Transform(Vector3::Up, GetOrientation(), up);
+    Real4x4 viewResult;
+    Real4x4::LookAt(position, target, up, viewResult);
+    view = Matrix(viewResult);
 }
 
 #if USE_EDITOR

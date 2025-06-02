@@ -1629,8 +1629,6 @@ namespace Flax.Build.Bindings
                         }
                         else
                             originalType = type = GenerateCSharpNativeToManaged(buildData, marshalType, structureInfo);
-                        if (apiType != null && apiType.MarshalAs != null)
-                            Log.Error("marshal as into type: " + type);
                         structContents.Append(structIndent).Append("public ");
                         string internalTypeMarshaller = "";
                         if (marshalType.IsArray && (fieldInfo.NoArray || structureInfo.IsPod))

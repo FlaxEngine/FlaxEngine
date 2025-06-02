@@ -6,7 +6,7 @@
 Flax Engine is a high quality modern 3D game engine written in C++ and C#.
 From stunning graphics to powerful scripts, it's designed for fast workflow with many ready-to-use features waiting for you right now. To learn more see the website ([www.flaxengine.com](https://flaxengine.com)).
 
-This repository contains full source code of the Flax Engine (excluding NDA-protected platforms support). Anyone is welcome to contribute or use the modified source in Flax-based games.
+This repository contains full source code of the Flax Engine (excluding NDA-protected platforms support). Documentation source is also available in a separate repository. Anyone is welcome to contribute or use the modified source in Flax-based games.
 
 # Development
 
@@ -46,21 +46,26 @@ Follow the instructions below to compile and run the engine from source.
 * Install Visual Studio Code
 * Install .NET 8 or 9 SDK ([https://dotnet.microsoft.com/en-us/download/dotnet/8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0))
   * Ubuntu: `sudo apt install dotnet-sdk-8.0`
+  * Fedora: `sudo dnf install dotnet-sdk-8.0`
   * Arch: `sudo pacman -S dotnet-sdk-8.0 dotnet-runtime-8.0 dotnet-targeting-pack-8.0 dotnet-host`
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
   * Ubuntu: `sudo apt install vulkan-sdk`
-  * Arch: `sudo pacman -S spirv-tools vulkan-headers vulkan-tools vulkan-validation-layers`
+  * Fedora: `sudo dnf install vulkan-headers vulkan-tools vulkan-validation-layers`
+  * Arch: `sudo pacman -S vulkan-headers vulkan-tools vulkan-validation-layers`
 * Install Git with LFS
   * Ubuntu: `sudo apt-get install git git-lfs`
   * Arch: `sudo pacman -S git git-lfs`
   * `git-lfs install`
 * Install the required packages:
   * Ubuntu: `sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev zlib1g-dev`
+  * Fedora: `sudo dnf install libX11-devel libXcursor-devel  libXinerama-devel ghc-zlib-devel`
   * Arch: `sudo pacman -S base-devel libx11 libxcursor libxinerama zlib`
 * Install Clang compiler (version 6 or later):
   * Ubuntu: `sudo apt-get install clang lldb lld`
+  * Fedora: `sudo dnf install clang llvm lldb lld`
   * Arch: `sudo pacman -S clang lldb lld`
 * Clone the repository (with LFS)
+  * git-lfs clone https://github.com/FlaxEngine/FlaxEngine.git
 * Run `./GenerateProjectFiles.sh`
 * Open workspace with Visual Code
 * Build and run (configuration and task named `Flax|Editor.Linux.Development|x64`)

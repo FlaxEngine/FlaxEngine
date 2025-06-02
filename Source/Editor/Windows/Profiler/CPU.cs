@@ -492,7 +492,7 @@ namespace FlaxEditor.Windows.Profiler
                         {
                             break;
                         }
-                        subEventsMemoryTotal += sub.ManagedMemoryAllocation + e.NativeMemoryAllocation;
+                        subEventsMemoryTotal += sub.ManagedMemoryAllocation + sub.NativeMemoryAllocation;
                     }
 
                     string name = e.Name.Replace("::", ".");

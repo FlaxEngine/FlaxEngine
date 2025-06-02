@@ -15,6 +15,8 @@
 
 #if USE_EDITOR
 
+#include "Engine/Engine/Globals.h"
+
 ThreadLocal<bool> ContentDeprecatedFlags;
 
 void ContentDeprecated::Mark()
@@ -467,11 +469,13 @@ void Asset::CancelStreaming()
 {
     // Cancel loading task but go over asset locker to prevent case if other load threads still loads asset while it's reimported on other thread
     Locker.Lock();
-    auto loadTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
+    auto loadingTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
     Locker.Unlock();
-    if (loadTask)
+    if (loadingTask)
     {
-        loadTask->Cancel();
+        Platform::AtomicStore(&_loadingTask, 0);
+        LOG(Warning, "Cancel loading task for \'{0}\'", ToString());
+        loadingTask->Cancel();
     }
 }
 
@@ -590,7 +594,7 @@ bool Asset::onLoad(LoadAssetTask* task)
     
 #if USE_EDITOR
     // Auto-save deprecated assets to get rid of data in an old format
-    if (isDeprecated && isLoaded)
+    if (isDeprecated && isLoaded && !IsVirtual() && !GetPath().StartsWith(StringUtils::GetDirectoryName(Globals::TemporaryFolder)))
     {
         PROFILE_CPU_NAMED("Asset.Save");
         LOG(Info, "Resaving asset '{}' that uses deprecated data format", ToString());
@@ -632,18 +636,11 @@ void Asset::onUnload_MainThread()
 
     ASSERT(IsInMainThread());
 
+    // Cancel any streaming before calling OnUnloaded event
+    CancelStreaming();
+
     // Send event
     OnUnloaded(this);
-
-    // Check if is during loading
-    auto loadingTask = (ContentLoadTask*)Platform::AtomicRead(&_loadingTask);
-    if (loadingTask != nullptr)
-    {
-        // Cancel loading
-        Platform::AtomicStore(&_loadingTask, 0);
-        LOG(Warning, "Cancel loading task for \'{0}\'", ToString());
-        loadingTask->Cancel();
-    }
 }
 
 #if USE_EDITOR

@@ -475,6 +475,12 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
         _collisionProxy.Init<uint32>(vertices, triangles, (const Float3*)vbData[0], (const uint32*)ibData);
 #endif
 
+    // Free old buffers
+    SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[0]);
+    SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[1]);
+    SAFE_DELETE_GPU_RESOURCE(_vertexBuffers[2]);
+    SAFE_DELETE_GPU_RESOURCE(_indexBuffer);
+
     // Initialize
     _vertexBuffers[0] = vertexBuffer0;
     _vertexBuffers[1] = vertexBuffer1;
