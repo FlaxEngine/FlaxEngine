@@ -51,6 +51,7 @@ namespace FlaxEditor
         private readonly List<EditorModule> _modules = new List<EditorModule>(16);
         private bool _isAfterInit, _areModulesInited, _areModulesAfterInitEnd, _isHeadlessMode, _autoExit;
         private string _projectToOpen;
+        private bool _projectIsNew;
         private float _lastAutoSaveTimer, _autoExitTimeout = 0.1f;
         private Button _saveNowButton;
         private Button _cancelSaveButton;
@@ -731,11 +732,12 @@ namespace FlaxEditor
                 var procSettings = new CreateProcessSettings
                 {
                     FileName = Platform.ExecutableFilePath,
-                    Arguments = string.Format("-project \"{0}\"", _projectToOpen),
+                    Arguments = string.Format("-project \"{0}\"" + (_projectIsNew ? " -new" : string.Empty), _projectToOpen),
                     ShellExecute = true,
                     WaitForEnd = false,
                     HiddenWindow = false,
                 };
+                _projectIsNew = false;
                 _projectToOpen = null;
                 Platform.CreateProcess(ref procSettings);
             }
@@ -782,6 +784,24 @@ namespace FlaxEditor
                     win.Save();
                 }
             }
+        }
+
+        /// <summary>
+        /// Creates the given project. Afterwards closes this project with running editor and opens the given project.
+        /// </summary>
+        /// <param name="projectFilePath">The project file path.</param>
+        public void NewProject(string projectFilePath)
+        {
+            if (projectFilePath == null)
+            {
+                MessageBox.Show("Missing project");
+                return;
+            }
+
+            // Cache project path and start editor exit (it will open new instance on valid closing)
+            _projectToOpen = StringUtils.NormalizePath(Path.GetDirectoryName(projectFilePath));
+            _projectIsNew = true;
+            Windows.MainWindow.Close(ClosingReason.User);
         }
 
         /// <summary>
