@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -52,6 +53,16 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         /// <param name="nodes">The nodes to select</param>
         public void Select(List<SceneGraph.SceneGraphNode> nodes);
+
+        /// <summary>
+        /// Gets the current selection.
+        /// </summary>
+        public List<SceneGraphNode> Selection { get; }
+
+        /// <summary>
+        /// Indication of if the properties window is locked on specific objects.
+        /// </summary>
+        public bool LockSelection { get; set; }
     }
 
     /// <summary>

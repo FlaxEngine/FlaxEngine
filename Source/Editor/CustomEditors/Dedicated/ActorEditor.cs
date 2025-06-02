@@ -132,35 +132,22 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var actor = (Actor)Values[0];
             var scriptType = TypeUtils.GetType(actor.TypeName);
             var item = scriptType.ContentItem;
-            if (Presenter.Owner is PropertiesWindow propertiesWindow)
+            if (Presenter.Owner != null)
             {
-                var lockButton = cm.AddButton(propertiesWindow.LockObjects ? "Unlock" : "Lock");
+                var lockButton = cm.AddButton(Presenter.Owner.LockSelection ? "Unlock" : "Lock");
                 lockButton.ButtonClicked += button =>
                 {
-                    propertiesWindow.LockObjects = !propertiesWindow.LockObjects;
+                    var owner = Presenter?.Owner;
+                    if (owner == null)
+                        return;
+                    owner.LockSelection = !owner.LockSelection;
 
                     // Reselect current selection
-                    if (!propertiesWindow.LockObjects && Editor.Instance.SceneEditing.SelectionCount > 0)
+                    if (!owner.LockSelection && owner.Selection.Count > 0)
                     {
-                        var cachedSelection = Editor.Instance.SceneEditing.Selection.ToArray();
-                        Editor.Instance.SceneEditing.Select(null);
-                        Editor.Instance.SceneEditing.Select(cachedSelection);
-                    }
-                };
-            }
-            else if (Presenter.Owner is PrefabWindow prefabWindow)
-            {
-                var lockButton = cm.AddButton(prefabWindow.LockSelectedObjects ? "Unlock" : "Lock");
-                lockButton.ButtonClicked += button =>
-                {
-                    prefabWindow.LockSelectedObjects = !prefabWindow.LockSelectedObjects;
-
-                    // Reselect current selection
-                    if (!prefabWindow.LockSelectedObjects && prefabWindow.Selection.Count > 0)
-                    {
-                        var cachedSelection = prefabWindow.Selection.ToList();
-                        prefabWindow.Select(null);
-                        prefabWindow.Select(cachedSelection);
+                        var cachedSelection = owner.Selection.ToList();
+                        owner.Select(null);
+                        owner.Select(cachedSelection);
                     }
                 };
             }
