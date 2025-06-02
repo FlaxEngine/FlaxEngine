@@ -158,8 +158,6 @@ namespace FlaxEditor.Viewport.Cameras
             if (IsAnimatingMove)
                 return;
 
-            Viewport.GetInput(out var input);
-            Viewport.GetPrevInput(out var prevInput);
             var transformGizmo = (Viewport as EditorGizmoViewport)?.Gizmos.Active as TransformGizmoBase;
             var isUsingGizmo = transformGizmo != null && transformGizmo.ActiveAxis != TransformGizmoBase.Axis.None;
 
@@ -220,10 +218,7 @@ namespace FlaxEditor.Viewport.Cameras
             if (Viewport.Zoom && !Viewport.Rotate)
             {
                 position += forward * (Viewport.MouseWheelSensitivity * Viewport.MouseWheelDelta * 25.0f);
-                if (input.IsAltDown)
-                {
-                    position += forward * (Viewport.MouseSpeed * 40 * Viewport.MousePositionDelta.ValuesSum);
-                }
+                //todo speed increase? for alt held
             }
 
             // Move camera with the gizmo

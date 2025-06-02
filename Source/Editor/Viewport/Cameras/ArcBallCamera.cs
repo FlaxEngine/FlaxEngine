@@ -114,8 +114,6 @@ namespace FlaxEditor.Viewport.Cameras
         {
             centerMouse = true;
 
-            Viewport.GetInput(out EditorViewport.Input input);
-
             // Rotate
             Viewport.YawPitch += mouseDelta;
 

@@ -16,6 +16,7 @@ namespace FlaxEditor.Viewport.Cameras
         /// <param name="deltaTime">The delta time (in seconds).</param>
         void Update(float deltaTime);
 
+        //todo i think the centering of the mouse should be predetermined. it depends on what kind of movement is happening and that comes from the controller not the camera being controlled
         /// <summary>
         /// Updates the view.
         /// </summary>

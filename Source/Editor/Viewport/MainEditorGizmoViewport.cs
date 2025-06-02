@@ -634,7 +634,7 @@ namespace FlaxEditor.Viewport
         protected override void OnLeftMouseButtonUp()
         {
             // Skip if was controlling mouse or mouse is not over the area
-            if (_prevInput.IsControllingMouse || !Bounds.Contains(ref _viewMousePos))
+            if (!Bounds.Contains(ref _viewMousePos))
                 return;
 
             // Select rubberbanded rect actor nodes or pick with gizmo

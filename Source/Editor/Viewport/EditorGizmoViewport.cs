@@ -59,16 +59,16 @@ namespace FlaxEditor.Viewport
         public float ViewFarPlane => FarPlane;
 
         /// <inheritdoc />
-        public bool IsLeftMouseButtonDown => _input.IsMouseLeftDown;
+        public bool IsLeftMouseButtonDown => Root?.GetMouseButton(MouseButton.Left) ?? false;
 
         /// <inheritdoc />
-        public bool IsRightMouseButtonDown => _input.IsMouseRightDown;
+        public bool IsRightMouseButtonDown => Root?.GetMouseButton(MouseButton.Right) ?? false;
 
         /// <inheritdoc />
-        public bool IsAltKeyDown => _input.IsAltDown;
+        public bool IsAltKeyDown => Root?.GetKey(KeyboardKeys.Alt) ?? false;
 
         /// <inheritdoc />
-        public bool IsControlDown => _input.IsControlDown;
+        public bool IsControlDown => Root?.GetKey(KeyboardKeys.Control) ?? false;
 
         /// <inheritdoc />
         public bool SnapToGround => ContainsFocus && Editor.Instance.Options.Options.Input.SnapToGround.Process(Root);
