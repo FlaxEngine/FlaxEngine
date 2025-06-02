@@ -47,6 +47,13 @@ public:
     API_FUNCTION() static void InitAsync();
 
     /// <summary>
+    /// Gets all available commands.
+    /// </summary>
+    /// <param name="matches">The output list of all commands (unsorted).</param>
+    /// <returns>TODO.</returns>
+    API_FUNCTION() static void GetAllCommands(API_PARAM(Out) Array<StringView, HeapAllocation>& commands);
+
+    /// <summary>
     /// Returns flags of the command.
     /// </summary>
     /// <param name="command">The full name of the command.</param>

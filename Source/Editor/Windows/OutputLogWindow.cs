@@ -325,12 +325,17 @@ namespace FlaxEditor.Windows
 
                 // Show commands search popup based on current text input
                 var text = Text.Trim();
-                if (text.Length != 0)
+                bool isWhitespaceOnly = string.IsNullOrWhiteSpace(Text) && !string.IsNullOrEmpty(Text);
+                if (text.Length != 0 || isWhitespaceOnly)
                 {
                     DebugCommands.Search(text, out var matches);
-                    if (matches.Length != 0)
+                    if (matches.Length != 0 || isWhitespaceOnly)
                     {
-                        ShowPopup(ref _searchPopup, matches, text);
+                        string[] commands = [];
+                        if (isWhitespaceOnly)
+                            DebugCommands.GetAllCommands(out commands);
+
+                        ShowPopup(ref _searchPopup, isWhitespaceOnly ? commands : matches, isWhitespaceOnly ? commands[0] : text);
                         return;
                     }
                 }
