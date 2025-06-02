@@ -438,7 +438,6 @@ VertexOutput VS(TerrainVertexInput input)
 	// Apply world position offset per-vertex
 #if USE_POSITION_OFFSET
 	output.Geometry.WorldPosition += material.PositionOffset;
-	output.Geometry.PrevWorldPosition += material.PositionOffset;
 	output.Position = mul(float4(output.Geometry.WorldPosition, 1), ViewProjectionMatrix);
 #endif
 
