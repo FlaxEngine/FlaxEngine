@@ -87,6 +87,13 @@ namespace Flax.Build.Platforms
                     if (lines.Length > 1)
                     {
                         var ver = lines[1].Substring(lines[1].IndexOf(" = ", StringComparison.Ordinal) + 2);
+                        if (ver.Contains('-'))
+                        {
+                            // Ignore any beta tags (eg. '29.0.13113456-beta1')
+                            var parts = ver.Split('-');
+                            if (parts.Length > 1)
+                                ver = parts[0];
+                        }
                         if (Version.TryParse(ver, out var v))
                         {
                             Version = v;

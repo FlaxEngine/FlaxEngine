@@ -72,7 +72,7 @@ void ForwardPass::Dispose()
     _shader = nullptr;
 }
 
-void ForwardPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTexture* output)
+void ForwardPass::Render(RenderContext& renderContext, GPUTexture*& input, GPUTexture*& output)
 {
     PROFILE_GPU_CPU("Forward");
     auto context = GPUDevice::Instance->GetMainContext();
@@ -91,6 +91,16 @@ void ForwardPass::Render(RenderContext& renderContext, GPUTexture* input, GPUTex
     // Check if there is no objects to render or no resources ready
     auto& forwardList = mainCache->DrawCallsLists[(int32)DrawCallsListType::Forward];
     auto& distortionList = mainCache->DrawCallsLists[(int32)DrawCallsListType::Distortion];
+    if ((forwardList.IsEmpty() && distortionList.IsEmpty())
+#if USE_EDITOR
+        || renderContext.View.Mode == ViewMode::PhysicsColliders
+#endif
+        )
+    {
+        // Skip rendering
+        Swap(input, output);
+        return;
+    }
     if (distortionList.IsEmpty() || checkIfSkipPass())
     {
         // Copy frame

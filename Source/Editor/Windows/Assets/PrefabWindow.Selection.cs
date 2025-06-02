@@ -51,7 +51,7 @@ namespace FlaxEditor.Windows.Assets
         /// <param name="before">The selection before the change.</param>
         public void OnSelectionChanged(SceneGraphNode[] before)
         {
-            if (LockSelectedObjects)
+            if (LockSelection)
                 return;
 
             Undo.AddAction(new SelectionChangeAction(before, Selection.ToArray(), OnSelectionUndo));

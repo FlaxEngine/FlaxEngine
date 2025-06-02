@@ -9,7 +9,6 @@ using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tree;
-using FlaxEditor.Modules;
 using FlaxEditor.Scripting;
 using FlaxEditor.Windows;
 using FlaxEditor.Windows.Assets;
@@ -71,14 +70,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
                         // Display prefab UI (when displaying object inside Prefab Window then display only nested prefabs)
                         prefab.GetNestedObject(ref prefabObjectId, out var nestedPrefabId, out var nestedPrefabObjectId);
                         var nestedPrefab = FlaxEngine.Content.Load<Prefab>(nestedPrefabId);
-                        var panel = layout.CustomContainer<UniformGridPanel>();
+                        var panel = layout.UniformGrid();
                         panel.CustomControl.Height = 20.0f;
                         panel.CustomControl.SlotsVertically = 1;
                         if (Presenter == Editor.Instance.Windows.PropertiesWin.Presenter || nestedPrefab)
                         {
                             var targetPrefab = nestedPrefab ?? prefab;
                             panel.CustomControl.SlotsHorizontally = 3;
-                            
+
                             // Selecting actor prefab asset
                             var selectPrefab = panel.Button("Select Prefab");
                             selectPrefab.Button.Clicked += () =>
@@ -133,35 +132,22 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var actor = (Actor)Values[0];
             var scriptType = TypeUtils.GetType(actor.TypeName);
             var item = scriptType.ContentItem;
-            if (Presenter.Owner is PropertiesWindow propertiesWindow)
+            if (Presenter.Owner != null)
             {
-                var lockButton = cm.AddButton(propertiesWindow.LockObjects ? "Unlock" : "Lock");
+                var lockButton = cm.AddButton(Presenter.Owner.LockSelection ? "Unlock" : "Lock");
                 lockButton.ButtonClicked += button =>
                 {
-                    propertiesWindow.LockObjects = !propertiesWindow.LockObjects;
+                    var owner = Presenter?.Owner;
+                    if (owner == null)
+                        return;
+                    owner.LockSelection = !owner.LockSelection;
 
                     // Reselect current selection
-                    if (!propertiesWindow.LockObjects && Editor.Instance.SceneEditing.SelectionCount > 0)
+                    if (!owner.LockSelection && owner.Selection.Count > 0)
                     {
-                        var cachedSelection = Editor.Instance.SceneEditing.Selection.ToArray();
-                        Editor.Instance.SceneEditing.Select(null);
-                        Editor.Instance.SceneEditing.Select(cachedSelection);
-                    }
-                };
-            }
-            else if (Presenter.Owner is PrefabWindow prefabWindow)
-            {
-                var lockButton = cm.AddButton(prefabWindow.LockSelectedObjects ? "Unlock" : "Lock");
-                lockButton.ButtonClicked += button =>
-                {
-                    prefabWindow.LockSelectedObjects = !prefabWindow.LockSelectedObjects;
-
-                    // Reselect current selection
-                    if (!prefabWindow.LockSelectedObjects && prefabWindow.Selection.Count > 0)
-                    {
-                        var cachedSelection = prefabWindow.Selection.ToList();
-                        prefabWindow.Select(null);
-                        prefabWindow.Select(cachedSelection);
+                        var cachedSelection = owner.Selection.ToList();
+                        owner.Select(null);
+                        owner.Select(cachedSelection);
                     }
                 };
             }
@@ -258,7 +244,17 @@ namespace FlaxEditor.CustomEditors.Dedicated
             else if (editor.Values[0] is SceneObject sceneObject)
             {
                 node.TextColor = sceneObject.HasPrefabLink ? FlaxEngine.GUI.Style.Current.ProgressNormal : FlaxEngine.GUI.Style.Current.BackgroundSelected;
-                node.Text = Utilities.Utils.GetPropertyNameUI(sceneObject.GetType().Name);
+                if (editor.Values.Info != ScriptMemberInfo.Null)
+                {
+                    if (editor.Values.GetAttributes().FirstOrDefault(x => x is EditorDisplayAttribute) is EditorDisplayAttribute editorDisplayAttribute && !string.IsNullOrEmpty(editorDisplayAttribute.Name))
+                        node.Text = $"{Utilities.Utils.GetPropertyNameUI(editorDisplayAttribute.Name)} ({Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name)})";
+                    else
+                        node.Text = Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name);
+                }
+                else if (sceneObject is Actor actor)
+                    node.Text = $"{actor.Name} ({Utilities.Utils.GetPropertyNameUI(sceneObject.GetType().Name)})";
+                else
+                    node.Text = Utilities.Utils.GetPropertyNameUI(sceneObject.GetType().Name);
             }
             // Array Item
             else if (editor.ParentEditor is CollectionEditor)
@@ -268,7 +264,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
             // Common type
             else if (editor.Values.Info != ScriptMemberInfo.Null)
             {
-                node.Text = Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name);
+                if (editor.Values.GetAttributes().FirstOrDefault(x => x is EditorDisplayAttribute) is EditorDisplayAttribute editorDisplayAttribute
+                    && !string.IsNullOrEmpty(editorDisplayAttribute.Name)
+                    && !editorDisplayAttribute.Name.Contains("_inline"))
+                    node.Text = $"{Utilities.Utils.GetPropertyNameUI(editorDisplayAttribute.Name)} ({Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name)})";
+                else
+                    node.Text = Utilities.Utils.GetPropertyNameUI(editor.Values.Info.Name);
             }
             // Custom type
             else if (editor.Values[0] != null)
@@ -316,7 +317,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var childEditor = editor.ChildrenEditors[i];
 
                 // Special case for root actor transformation (can be applied only in Prefab editor, not in Level)
-                if (isActorEditorInLevel && childEditor.Values.Info.Name is "LocalPosition" or "LocalOrientation" or "LocalScale")
+                if (isActorEditorInLevel && childEditor.Values.Info.Name is "LocalPosition" or "LocalOrientation" or "LocalScale" or "Name")
                     continue;
 
                 var child = ProcessDiff(childEditor, !isScriptEditorWithRefValue);
@@ -361,13 +362,39 @@ namespace FlaxEditor.CustomEditors.Dedicated
             return result;
         }
 
+        private TreeNode CreateDiffTree(Actor actor, CustomEditorPresenter presenter, LayoutElementsContainer layout)
+        {
+            var actorNode = Editor.Instance.Scene.GetActorNode(actor);
+            ValueContainer vc = new ValueContainer(ScriptMemberInfo.Null);
+            vc.SetType(new ScriptType(actorNode.EditableObject.GetType()));
+            vc.Add(actorNode.EditableObject);
+            var editor = CustomEditorsUtil.CreateEditor(vc, null, false);
+            editor.Initialize(presenter, layout, vc);
+            var node = ProcessDiff(editor, false);
+            layout.ClearLayout();
+            foreach (var child in actor.Children)
+            {
+                var childNode = CreateDiffTree(child, presenter, layout);
+                if (childNode == null)
+                    continue;
+                if (node == null)
+                    node = CreateDiffNode(editor);
+                node.AddChild(childNode);
+            }
+            return node;
+        }
+
         private void ViewChanges(Control target, Float2 targetLocation)
         {
             // Build a tree out of modified properties
-            var rootNode = ProcessDiff(this, false);
+            var thisActor = (Actor)Values[0];
+            var rootActor = thisActor.IsPrefabRoot ? thisActor : thisActor.GetPrefabRoot();
+            var presenter = new CustomEditorPresenter(null);
+            var layout = new CustomElementsContainer<ContainerControl>();
+            var rootNode = CreateDiffTree(rootActor, presenter, layout);
 
             // Skip if no changes detected
-            if (rootNode == null || rootNode.ChildrenCount == 0)
+            if (rootNode == null)
             {
                 var cm1 = new ContextMenu();
                 cm1.AddButton("No changes detected");

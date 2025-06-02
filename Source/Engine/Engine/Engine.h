@@ -179,6 +179,11 @@ public:
     API_PROPERTY() static bool IsEditor();
 
     /// <summary>
+    /// Returns whether the editor is in play mode or will always return true in a shipped applications.
+    /// </summary>
+    API_PROPERTY() static bool IsPlayMode();
+
+    /// <summary>
     /// Gets the amount of frames rendered during last second known as Frames Per Second. User scripts updates or fixed updates for physics may run at a different frequency than scene rendering. Use this property to get an accurate amount of frames rendered during the last second.
     /// </summary>
     API_PROPERTY() static int32 GetFramesPerSecond();

@@ -413,7 +413,7 @@ namespace FlaxEditor.Windows.Assets
                 var group = layout.Group("Functions");
                 var nodes = window.VisjectSurface.Nodes;
 
-                var grid = group.CustomContainer<UniformGridPanel>();
+                var grid = layout.UniformGrid();
                 var gridControl = grid.CustomControl;
                 gridControl.ClipChildren = false;
                 gridControl.Height = Button.DefaultHeight;

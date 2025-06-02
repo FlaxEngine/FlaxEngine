@@ -203,6 +203,17 @@ namespace FlaxEditor.CustomEditors
         }
 
         /// <summary>
+        /// Adds new uniform grid control.
+        /// </summary>
+        /// <returns>The created element.</returns>
+        public CustomElementsContainer<UniformGridPanel> UniformGrid()
+        {
+            var grid = CustomContainer<UniformGridPanel>();
+            grid.CustomControl.SlotSpacing = new Float2(Utilities.Constants.UIMargin);
+            return grid;
+        }
+
+        /// <summary>
         /// Adds new custom element.
         /// </summary>
         /// <typeparam name="T">The custom control.</typeparam>

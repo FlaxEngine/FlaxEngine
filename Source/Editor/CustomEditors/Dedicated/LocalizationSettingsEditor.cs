@@ -92,12 +92,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                 // Update add button
                 var update = group.Button("Update").Button;
+                group.Space(0);
                 update.TooltipText = "Refreshes the dashboard statistics";
                 update.Height = 16.0f;
                 update.Clicked += RebuildLayout;
 
                 // New locale add button
                 var addLocale = group.Button("Add Locale...").Button;
+                group.Space(0);
                 addLocale.TooltipText = "Shows a locale picker and creates new localization for it with not translated string tables";
                 addLocale.Height = 16.0f;
                 addLocale.ButtonClicked += delegate(Button button)
@@ -167,12 +169,14 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
                 // Export button
                 var exportLocalization = group.Button("Export...").Button;
+                group.Space(0);
                 exportLocalization.TooltipText = "Exports the localization strings into .pot file for translation";
                 exportLocalization.Height = 16.0f;
                 exportLocalization.Clicked += () => Export(tableEntries, allKeys);
 
                 // Find localized strings in code button
                 var findStringsCode = group.Button("Find localized strings in code").Button;
+                group.Space(0);
                 findStringsCode.TooltipText = "Searches for localized string usage in inside a project source files";
                 findStringsCode.Height = 16.0f;
                 findStringsCode.Clicked += delegate
