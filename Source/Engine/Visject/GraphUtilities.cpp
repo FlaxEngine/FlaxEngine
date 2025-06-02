@@ -299,7 +299,7 @@ void GraphUtilities::ApplySomeMathHere(Variant& v, Variant& a, MathOp1 op)
     switch (a.Type.Type)
     {
     case VariantType::Bool:
-        v.AsBool = op(a.AsBool ? 1.0f : 0.0f) > ZeroTolerance;
+        v.AsBool = op(a.AsBool ? 1.0f : -1.0f) > ZeroTolerance;
         break;
     case VariantType::Int:
         v.AsInt = (int32)op((float)a.AsInt);
