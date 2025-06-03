@@ -1931,9 +1931,43 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 auto mesh = lod.Meshes[i];
                 if (mesh->Name.StartsWith(options.CollisionMeshesPrefix, StringSearchCase::IgnoreCase))
                 {
+                    // Remove material slot used by this mesh (if no other mesh else uses it)
+                    int32 materialSlotUsageCount = 0;
+                    for (const auto& e : data.LODs)
+                    {
+                        for (const MeshData* q : e.Meshes)
+                        {
+                            if (q->MaterialSlotIndex == mesh->MaterialSlotIndex)
+                                materialSlotUsageCount++;
+                        }
+                    }
+                    if (materialSlotUsageCount == 1)
+                    {
+                        data.Materials.RemoveAt(mesh->MaterialSlotIndex);
+
+                        // Fixup linkage of other meshes to materials
+                        for (auto& e : data.LODs)
+                        {
+                            for (MeshData* q : e.Meshes)
+                            {
+                                if (q->MaterialSlotIndex > mesh->MaterialSlotIndex)
+                                {
+                                    q->MaterialSlotIndex--;
+                                }
+                            }
+                        }
+                    }
+
+                    // Remove data linkage
+                    mesh->NodeIndex = 0;
+                    mesh->MaterialSlotIndex = 0;
+
+                    // Add mesh to collision
                     if (collisionModel.LODs.Count() == 0)
                         collisionModel.LODs.AddOne();
                     collisionModel.LODs[0].Meshes.Add(mesh);
+
+                    // Remove mesh from model
                     lod.Meshes.RemoveAtKeepOrder(i);
                     if (lod.Meshes.IsEmpty())
                         break;
