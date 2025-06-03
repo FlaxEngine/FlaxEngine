@@ -68,10 +68,10 @@ float ViewportIconsRenderer::Scale = 1.0f;
 
 void ViewportIconsRenderer::GetBounds(const Vector3& position, const Vector3& viewPosition, BoundingSphere& bounds)
 {
-    constexpr float minSize = 7.0f;
-    constexpr float maxSize = 30.0f;
+    constexpr Real minSize = 7.0;
+    constexpr Real maxSize = 30.0;
     Real scale = Math::Square(Vector3::Distance(position, viewPosition) / 1000.0f);
-    Real radius = minSize + Math::Min(scale, 1.0f) * (maxSize - minSize);
+    Real radius = minSize + Math::Min<Real>(scale, 1.0f) * (maxSize - minSize);
     bounds = BoundingSphere(position, radius * Scale);
 }
 
@@ -182,7 +182,7 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene
         if (draw.Buffer)
         {
             // Create world matrix
-            Matrix::Scaling(sphere.Radius * 2.0f, m2);
+            Matrix::Scaling((float)sphere.Radius * 2.0f, m2);
             Matrix::RotationY(PI, world);
             Matrix::Multiply(m2, world, m1);
             Matrix::Billboard(sphere.Center, view.Position, Vector3::Up, view.Direction, m2);
@@ -210,7 +210,7 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
     if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(actor->GetTypeHandle(), iconType))
     {
         // Create world matrix
-        Matrix::Scaling(sphere.Radius * 2.0f, m2);
+        Matrix::Scaling((float)sphere.Radius * 2.0f, m2);
         Matrix::RotationY(PI, world);
         Matrix::Multiply(m2, world, m1);
         Matrix::Billboard(sphere.Center, view.Position, Vector3::Up, view.Direction, m2);
