@@ -25,7 +25,7 @@ void DistanceJoint::SetFlags(DistanceJointFlag value)
 void DistanceJoint::SetMinDistance(float value)
 {
     value = Math::Clamp(value, 0.0f, _maxDistance);
-    if (Math::NearEqual(value, _minDistance))
+    if (value == _minDistance)
         return;
     _minDistance = value;
     if (_joint)
@@ -35,7 +35,7 @@ void DistanceJoint::SetMinDistance(float value)
 void DistanceJoint::SetMaxDistance(float value)
 {
     value = Math::Max(_minDistance, value);
-    if (Math::NearEqual(value, _maxDistance))
+    if (value == _maxDistance)
         return;
     _maxDistance = value;
     if (_joint)
@@ -45,7 +45,7 @@ void DistanceJoint::SetMaxDistance(float value)
 void DistanceJoint::SetTolerance(float value)
 {
     value = Math::Max(0.1f, value);
-    if (Math::NearEqual(value, _tolerance))
+    if (value == _tolerance)
         return;
     _tolerance = value;
     if (_joint)

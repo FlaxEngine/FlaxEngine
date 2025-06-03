@@ -11,7 +11,7 @@ CapsuleCollider::CapsuleCollider(const SpawnParams& params)
 
 void CapsuleCollider::SetRadius(const float value)
 {
-    if (Math::NearEqual(value, _radius))
+    if (value == _radius)
         return;
 
     _radius = value;
@@ -22,7 +22,7 @@ void CapsuleCollider::SetRadius(const float value)
 
 void CapsuleCollider::SetHeight(const float value)
 {
-    if (Math::NearEqual(value, _height))
+    if (value == _height)
         return;
 
     _height = value;

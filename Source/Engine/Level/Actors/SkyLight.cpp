@@ -26,7 +26,7 @@ SkyLight::SkyLight(const SpawnParams& params)
 void SkyLight::SetRadius(float value)
 {
     value = Math::Max(0.0f, value);
-    if (Math::NearEqual(value, _radius))
+    if (value == _radius)
         return;
 
     _radius = value;
