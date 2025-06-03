@@ -665,6 +665,8 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
         Array<GPUVertexLayout::Elements, FixedAllocation<MODEL_MAX_VB>> vbElements;
         const bool useSeparatePositions = !isSkinned;
         const bool useSeparateColors = !isSkinned;
+        PixelFormat positionsFormat = modelData.PositionFormat == ModelData::PositionFormats::Float32 ? PixelFormat::R32G32B32_Float : PixelFormat::R16G16B16A16_Float;
+        PixelFormat texCoordsFormat = modelData.TexCoordFormat == ModelData::TexCoordFormats::Float16 ? PixelFormat::R16G16_Float : PixelFormat::R8G8_UNorm;
         PixelFormat blendIndicesFormat = PixelFormat::R8G8B8A8_UInt;
         PixelFormat blendWeightsFormat = PixelFormat::R8G8B8A8_UNorm;
         for (const Int4& indices : mesh.BlendIndices)
@@ -677,14 +679,13 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
         }
         {
             byte vbIndex = 0;
-            // TODO: add option to quantize vertex positions (eg. 16-bit)
             // TODO: add option to quantize vertex attributes (eg. 8-bit blend weights, 8-bit texcoords)
 
             // Position
             if (useSeparatePositions)
             {
                 auto& vb0 = vbElements.AddOne();
-                vb0.Add({ VertexElement::Types::Position, vbIndex, 0, 0, PixelFormat::R32G32B32_Float });
+                vb0.Add({ VertexElement::Types::Position, vbIndex, 0, 0, positionsFormat });
                 vbIndex++;
             }
 
@@ -692,13 +693,13 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
             {
                 auto& vb = vbElements.AddOne();
                 if (!useSeparatePositions)
-                    vb.Add({ VertexElement::Types::Position, vbIndex, 0, 0, PixelFormat::R32G32B32_Float });
+                    vb.Add({ VertexElement::Types::Position, vbIndex, 0, 0, positionsFormat });
                 for (int32 channelIdx = 0; channelIdx < mesh.UVs.Count(); channelIdx++)
                 {
                     auto& channel = mesh.UVs.Get()[channelIdx];
                     if (channel.HasItems())
                     {
-                        vb.Add({ (VertexElement::Types)((int32)VertexElement::Types::TexCoord0 + channelIdx), vbIndex, 0, 0, PixelFormat::R16G16_Float });
+                        vb.Add({ (VertexElement::Types)((int32)VertexElement::Types::TexCoord0 + channelIdx), vbIndex, 0, 0, texCoordsFormat });
                     }
                 }
                 vb.Add({ VertexElement::Types::Normal, vbIndex, 0, 0, PixelFormat::R10G10B10A2_UNorm });
@@ -733,7 +734,7 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
         // Write vertex buffers
         for (int32 vbIndex = 0; vbIndex < vbCount; vbIndex++)
         {
-            if (useSeparatePositions && vbIndex == 0)
+            if (useSeparatePositions && vbIndex == 0 && positionsFormat == PixelFormat::R32G32B32_Float)
             {
                 // Fast path for vertex positions of static models using the first buffer
                 stream.WriteBytes(mesh.Positions.Get(), sizeof(Float3) * vertices);
@@ -751,7 +752,15 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                     case VertexElement::Types::Position:
                     {
                         const Float3 position = mesh.Positions.Get()[vertex];
-                        stream.Write(position);
+                        if (positionsFormat == PixelFormat::R16G16B16A16_Float)
+                        {
+                            const Half4 positionEnc(Float4(position, 0.0f));
+                            stream.Write(positionEnc);
+                        }
+                        else //if (positionsFormat == PixelFormat::R32G32B32_Float)
+                        {
+                            stream.Write(position);
+                        }
                         break;
                     }
                     case VertexElement::Types::Color:
@@ -817,8 +826,16 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
                     {
                         const int32 channelIdx = (int32)element.Type - (int32)VertexElement::Types::TexCoord0;
                         const Float2 uv = mesh.UVs.Get()[channelIdx].Get()[vertex];
-                        const Half2 uvEnc(uv);
-                        stream.Write(uvEnc);
+                        if (texCoordsFormat == PixelFormat::R8G8_UNorm)
+                        {
+                            stream.Write((uint8)Math::Clamp<int32>((int32)(uv.X * 255), 0, 255));
+                            stream.Write((uint8)Math::Clamp<int32>((int32)(uv.Y * 255), 0, 255));
+                        }
+                        else //if (texCoordsFormat == PixelFormat::R16G16_Float)
+                        {
+                            const Half2 uvEnc(uv);
+                            stream.Write(uvEnc);
+                        }
                         break;
                     }
                     default:

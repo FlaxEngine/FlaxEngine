@@ -429,6 +429,21 @@ public:
     Array<AnimationData> Animations;
 
 public:
+    // See ModelTool::PositionFormat
+    enum class PositionFormats
+    {
+        Float32,
+        Float16,
+    } PositionFormat = PositionFormats::Float32;
+
+    // See ModelTool::TexCoordFormats
+    enum class TexCoordFormats
+    {
+        Float16,
+        UNorm8,
+    } TexCoordFormat = TexCoordFormats::Float16;
+
+public:
     /// <summary>
     /// Automatically calculates the screen size for every model LOD for a proper transitions.
     /// </summary>

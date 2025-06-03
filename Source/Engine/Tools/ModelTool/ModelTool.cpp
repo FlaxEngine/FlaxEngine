@@ -676,6 +676,9 @@ void ModelTool::Options::Serialize(SerializeStream& stream, const void* otherObj
     SERIALIZE(CalculateBoneOffsetMatrices);
     SERIALIZE(LightmapUVsSource);
     SERIALIZE(CollisionMeshesPrefix);
+    SERIALIZE(CollisionType);
+    SERIALIZE(PositionFormat);
+    SERIALIZE(TexCoordFormat);
     SERIALIZE(Scale);
     SERIALIZE(Rotation);
     SERIALIZE(Translation);
@@ -727,6 +730,9 @@ void ModelTool::Options::Deserialize(DeserializeStream& stream, ISerializeModifi
     DESERIALIZE(CalculateBoneOffsetMatrices);
     DESERIALIZE(LightmapUVsSource);
     DESERIALIZE(CollisionMeshesPrefix);
+    DESERIALIZE(CollisionType);
+    DESERIALIZE(PositionFormat);
+    DESERIALIZE(TexCoordFormat);
     DESERIALIZE(Scale);
     DESERIALIZE(Rotation);
     DESERIALIZE(Translation);
@@ -1136,6 +1142,10 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
     }
     if (ImportData(path, data, options, errorMsg))
         return true;
+
+    // Copy over data format options
+    data.PositionFormat = (ModelData::PositionFormats)options.PositionFormat;
+    data.TexCoordFormat = (ModelData::TexCoordFormats)options.TexCoordFormat;
 
     // Validate result data
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Geometry))
