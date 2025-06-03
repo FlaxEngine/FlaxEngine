@@ -488,11 +488,9 @@ namespace FlaxEditor.Surface
                     // Check if user is pressing control
                     if (Root.GetKey(KeyboardKeys.Control))
                     {
-                        // Add to selection
-                        if (!controlUnderMouse.IsSelected)
-                        {
-                            AddToSelection(controlUnderMouse);
-                        }
+                        // Add/remove from selection
+                        controlUnderMouse.IsSelected = !controlUnderMouse.IsSelected;
+                        SelectionChanged?.Invoke();
                     }
                     // Check if node isn't selected
                     else if (!controlUnderMouse.IsSelected)
