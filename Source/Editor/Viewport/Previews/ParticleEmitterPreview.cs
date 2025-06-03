@@ -42,7 +42,7 @@ namespace FlaxEditor.Viewport.Previews
             set
             {
                 value = Mathf.Clamp(value, 0.1f, 100000000000.0f);
-                if (_playbackDuration == value)
+                if (Mathf.NearEqual(_playbackDuration, value))
                     return;
 
                 _playbackDuration = value;

@@ -236,9 +236,9 @@ struct ShadowAtlasLight
     {
         if (!Cache.StaticValid || !Cache.DynamicValid)
             return;
-        if (Cache.Distance != light.ShadowsDistance ||
-            Cache.ShadowsUpdateRate != light.ShadowsUpdateRate ||
-            Cache.ShadowsUpdateRateAtDistance != light.ShadowsUpdateRateAtDistance ||
+        if (!Math::NearEqual(Cache.Distance, light.ShadowsDistance) ||
+            !Math::NearEqual(Cache.ShadowsUpdateRate, light.ShadowsUpdateRate) ||
+            !Math::NearEqual(Cache.ShadowsUpdateRateAtDistance, light.ShadowsUpdateRateAtDistance) ||
             Cache.ShadowFrame != light.ShadowFrame ||
             Cache.ShadowsResolution != light.ShadowsResolution ||
             Float3::Dot(Cache.Direction, light.Direction) < SHADOWS_ROTATION_ERROR)
@@ -250,7 +250,7 @@ struct ShadowAtlasLight
         {
             // Sun
             if (!Float3::NearEqual(Cache.Position, view.Position, SHADOWS_POSITION_ERROR) ||
-                Cache.CascadeSplits != CascadeSplits ||
+                !Float4::NearEqual(Cache.CascadeSplits, CascadeSplits) ||
                 Float3::Dot(Cache.ViewDirection, view.Direction) < SHADOWS_ROTATION_ERROR)
             {
                 // Invalidate
@@ -262,12 +262,12 @@ struct ShadowAtlasLight
             // Local light
             const auto& localLight = (const RenderLocalLightData&)light;
             if (!Float3::NearEqual(Cache.Position, light.Position, SHADOWS_POSITION_ERROR) ||
-                Cache.Radius != localLight.Radius)
+                !Math::NearEqual(Cache.Radius, localLight.Radius))
             {
                 // Invalidate
                 Cache.StaticValid = false;
             }
-            if (light.IsSpotLight && Cache.OuterConeAngle != ((const RenderSpotLightData&)light).OuterConeAngle)
+            if (light.IsSpotLight && !Math::NearEqual(Cache.OuterConeAngle, ((const RenderSpotLightData&)light).OuterConeAngle))
             {
                 // Invalidate
                 Cache.StaticValid = false;

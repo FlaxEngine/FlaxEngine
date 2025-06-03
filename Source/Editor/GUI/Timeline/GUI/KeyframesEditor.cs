@@ -692,7 +692,7 @@ namespace FlaxEditor.GUI
             get => _fps;
             set
             {
-                if (_fps.HasValue == value.HasValue && (!value.HasValue || _fps.Value == value.Value))
+                if (_fps.HasValue == value.HasValue && (!value.HasValue || Mathf.NearEqual(_fps.Value, value.Value)))
                     return;
 
                 _fps = value;

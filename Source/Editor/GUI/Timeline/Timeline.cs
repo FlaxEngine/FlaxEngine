@@ -319,7 +319,7 @@ namespace FlaxEditor.GUI.Timeline
             set
             {
                 value = Mathf.Clamp(value, 0.1f, 1000.0f);
-                if (_framesPerSecond == value)
+                if (Mathf.NearEqual(_framesPerSecond, value))
                     return;
 
                 Undo?.AddAction(new EditFpsAction(this, _framesPerSecond, value));
@@ -508,7 +508,7 @@ namespace FlaxEditor.GUI.Timeline
             set
             {
                 value = Mathf.Clamp(value, 0.00001f, 1000.0f);
-                if (_zoom == value)
+                if (Mathf.NearEqual(_zoom, value))
                     return;
 
                 _zoom = value;

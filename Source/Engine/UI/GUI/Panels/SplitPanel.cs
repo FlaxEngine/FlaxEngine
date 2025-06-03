@@ -67,7 +67,7 @@ namespace FlaxEngine.GUI
             set
             {
                 value = Mathf.Saturate(value);
-                if (_splitterValue != value)
+                if (!Mathf.NearEqual(_splitterValue, value))
                 {
                     // Set new value
                     _splitterValue = value;

@@ -42,7 +42,7 @@ void VideoPlayer::SetIsAudioSpatial(bool value)
 void VideoPlayer::SetAudioVolume(float value)
 {
     value = Math::Saturate(value);
-    if (_volume == value)
+    if (Math::NearEqual(_volume, value))
         return;
     _volume = value;
     UpdateInfo();
@@ -51,7 +51,7 @@ void VideoPlayer::SetAudioVolume(float value)
 void VideoPlayer::SetAudioPan(float value)
 {
     value = Math::Clamp(value, -1.0f, 1.0f);
-    if (_pan == value)
+    if (Math::NearEqual(_pan, value))
         return;
     _pan = value;
     UpdateInfo();
@@ -60,7 +60,7 @@ void VideoPlayer::SetAudioPan(float value)
 void VideoPlayer::SetAudioMinDistance(float value)
 {
     value = Math::Max(0.0f, value);
-    if (_minDistance == value)
+    if (Math::NearEqual(_minDistance, value))
         return;
     _minDistance = value;
     UpdateInfo();
@@ -69,7 +69,7 @@ void VideoPlayer::SetAudioMinDistance(float value)
 void VideoPlayer::SetAudioAttenuation(float value)
 {
     value = Math::Max(0.0f, value);
-    if (_attenuation == value)
+    if (Math::NearEqual(_attenuation, value))
         return;
     _attenuation = value;
     UpdateInfo();

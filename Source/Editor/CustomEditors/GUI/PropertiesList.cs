@@ -38,7 +38,7 @@ namespace FlaxEditor.CustomEditors.GUI
             set
             {
                 value = Mathf.Clamp(value, 0.05f, 0.95f);
-                if (_splitterValue != value)
+                if (!Mathf.NearEqual(_splitterValue, value))
                 {
                     _splitterValue = value;
                     UpdateSplitRect();

@@ -140,7 +140,7 @@ namespace FlaxEngine.GUI
             set
             {
                 value = Mathf.Clamp(value, _minimum, _maximum);
-                if (value != _value)
+                if (!Mathf.NearEqual(value, _value))
                 {
                     _value = value;
                     if (!UseSmoothing || _firstUpdate)

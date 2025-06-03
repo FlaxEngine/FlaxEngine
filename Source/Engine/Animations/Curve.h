@@ -58,7 +58,7 @@ public:
     
     bool operator==(const StepCurveKeyframe& other) const
     {
-        return Time == other.Time && Value == other.Value;
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value);
     }
 } PACK_END();
 
@@ -113,7 +113,7 @@ public:
 
     bool operator==(const LinearCurveKeyframe& other) const
     {
-        return Time == other.Time && Value == other.Value;
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value);
     }
 } PACK_END();
 
@@ -188,7 +188,7 @@ public:
     
     bool operator==(const HermiteCurveKeyframe& other) const
     {
-        return Time == other.Time && Value == other.Value && TangentIn == other.TangentIn && TangentOut == other.TangentOut;
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value) && Math::NearEqual(TangentIn, other.TangentIn) && Math::NearEqual(TangentOut, other.TangentOut);
     }
 } PACK_END();
 
@@ -276,7 +276,7 @@ public:
 
     bool operator==(const BezierCurveKeyframe& other) const
     {
-        return Time == other.Time && Value == other.Value && TangentIn == other.TangentIn && TangentOut == other.TangentOut;
+        return Math::NearEqual(Time, other.Time) && Math::NearEqual(Value, other.Value) && Math::NearEqual(TangentIn, other.TangentIn) && Math::NearEqual(TangentOut, other.TangentOut);
     }
 } PACK_END();
 

@@ -132,7 +132,7 @@ namespace FlaxEngine.GUI
             get => _scaleFactor;
             set
             {
-                if (_scaleFactor == value)
+                if (Mathf.NearEqual(_scaleFactor, value))
                     return;
                 _scaleFactor = value;
                 PerformLayout();
@@ -175,7 +175,7 @@ namespace FlaxEngine.GUI
             get => _physicalUnitSize;
             set
             {
-                if (_physicalUnitSize == value)
+                if (Mathf.NearEqual(_physicalUnitSize, value))
                     return;
                 _physicalUnitSize = value;
                 PerformLayout();
@@ -212,7 +212,7 @@ namespace FlaxEngine.GUI
             set
             {
                 value = Float2.Max(value, Float2.One);
-                if (_resolutionMin == value)
+                if (Float2.NearEqual(ref _resolutionMin, ref value))
                     return;
                 _resolutionMin = value;
                 PerformLayout();
@@ -231,7 +231,7 @@ namespace FlaxEngine.GUI
             set
             {
                 value = Float2.Max(value, Float2.One);
-                if (_resolutionMax == value)
+                if (Float2.NearEqual(ref _resolutionMax, ref value))
                     return;
                 _resolutionMax = value;
                 PerformLayout();

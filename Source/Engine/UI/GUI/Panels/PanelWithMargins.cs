@@ -44,7 +44,7 @@ namespace FlaxEngine.GUI
             get => _margin.Left;
             set
             {
-                if (_margin.Left != value)
+                if (!Mathf.NearEqual(_margin.Left, value))
                 {
                     _margin.Left = value;
                     PerformLayout();
@@ -61,7 +61,7 @@ namespace FlaxEngine.GUI
             get => _margin.Right;
             set
             {
-                if (_margin.Right != value)
+                if (!Mathf.NearEqual(_margin.Right, value))
                 {
                     _margin.Right = value;
                     PerformLayout();
@@ -78,7 +78,7 @@ namespace FlaxEngine.GUI
             get => _margin.Top;
             set
             {
-                if (_margin.Top != value)
+                if (!Mathf.NearEqual(_margin.Top, value))
                 {
                     _margin.Top = value;
                     PerformLayout();
@@ -95,7 +95,7 @@ namespace FlaxEngine.GUI
             get => _margin.Bottom;
             set
             {
-                if (_margin.Bottom != value)
+                if (!Mathf.NearEqual(_margin.Bottom, value))
                 {
                     _margin.Bottom = value;
                     PerformLayout();
@@ -112,7 +112,7 @@ namespace FlaxEngine.GUI
             get => _spacing;
             set
             {
-                if (_spacing != value)
+                if (!Mathf.NearEqual(_spacing, value))
                 {
                     _spacing = value;
                     PerformLayout();
@@ -129,7 +129,7 @@ namespace FlaxEngine.GUI
             get => _offset;
             set
             {
-                if (_offset != value)
+                if (!Float2.NearEqual(ref _offset, ref value))
                 {
                     _offset = value;
                     PerformLayout();

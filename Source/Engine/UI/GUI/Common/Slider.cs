@@ -114,7 +114,7 @@ public class Slider : ContainerControl
             value = Mathf.Clamp(value, Minimum, Maximum);
             if (WholeNumbers)
                 value = Mathf.RoundToInt(value);
-            if (value != _value)
+            if (!Mathf.NearEqual(value, _value))
             {
                 _value = value;
 

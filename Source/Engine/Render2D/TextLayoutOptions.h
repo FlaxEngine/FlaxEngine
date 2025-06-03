@@ -108,8 +108,8 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(TextLayoutOptions);
                 && HorizontalAlignment == other.HorizontalAlignment
                 && VerticalAlignment == other.VerticalAlignment
                 && TextWrapping == other.TextWrapping
-                && Scale == other.Scale
-                && BaseLinesGapScale == other.BaseLinesGapScale;
+                && Math::NearEqual(Scale, other.Scale)
+                && Math::NearEqual(BaseLinesGapScale, other.BaseLinesGapScale);
     }
 
     FORCE_INLINE bool operator!=(const TextLayoutOptions& other) const

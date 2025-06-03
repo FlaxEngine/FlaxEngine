@@ -1013,7 +1013,7 @@ bool UpdateFoliageDensityScaling(Actor* actor)
 void Foliage::SetGlobalDensityScale(float value)
 {
     value = Math::Saturate(value);
-    if (value == GlobalDensityScale)
+    if (Math::NearEqual(value, GlobalDensityScale))
         return;
 
     PROFILE_CPU();

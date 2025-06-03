@@ -20,7 +20,7 @@ namespace
     template<typename T>
     ShaderGraphNode<>* AddValueNode(MaterialLayer* layer, const float& value, const float& defaultValue)
     {
-        if (value == defaultValue)
+        if (Math::NearEqual(value, defaultValue))
             return nullptr;
         auto& node = layer->Graph.Nodes.AddOne();
         node.ID = layer->Graph.Nodes.Count();
