@@ -324,7 +324,7 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
         lod.Link(this, lodIndex);
         lod.ScreenSize = 1.0f;
         const int32 meshesCount = meshesCountPerLod[lodIndex];
-        if (meshesCount <= 0 || meshesCount > MODEL_MAX_MESHES)
+        if (meshesCount < 0 || meshesCount > MODEL_MAX_MESHES)
             return true;
 
         lod.Meshes.Resize(meshesCount);
@@ -362,7 +362,7 @@ bool Model::LoadHeader(ReadStream& stream, byte& headerVersion)
         // Meshes
         uint16 meshesCount;
         stream.ReadUint16(&meshesCount);
-        if (meshesCount == 0 || meshesCount > MODEL_MAX_MESHES)
+        if (meshesCount > MODEL_MAX_MESHES)
             return true;
         ASSERT(lodIndex == 0 || LODs[0].Meshes.Count() >= meshesCount);
         lod.Meshes.Resize(meshesCount, false);

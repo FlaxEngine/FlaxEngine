@@ -476,7 +476,7 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
         lod._lodIndex = lodIndex;
         lod.ScreenSize = 1.0f;
         const int32 meshesCount = meshesCountPerLod[lodIndex];
-        if (meshesCount <= 0 || meshesCount > MODEL_MAX_MESHES)
+        if (meshesCount < 0 || meshesCount > MODEL_MAX_MESHES)
             return true;
 
         lod.Meshes.Resize(meshesCount);

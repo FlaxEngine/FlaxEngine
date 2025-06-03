@@ -254,7 +254,8 @@ namespace FlaxEditor.Windows.Assets
                             if (lodIndex >= countLODs - loadedLODs)
                             {
                                 var mesh = lod.GetMesh(0);
-                                vertexLayout = mesh.VertexLayout;
+                                if (mesh != null)
+                                    vertexLayout = mesh.VertexLayout;
                                 if (vertexLayout != null && vertexLayout.Elements.Length != 0)
                                     break;
                                 vertexLayout = null;
