@@ -36,8 +36,6 @@
 #define CHECK_EXECUTE_IN_EDITOR
 #endif
 
-#define ACTOR_ORIENTATION_EPSILON 0.000000001f
-
 // Start loop over actor children/scripts from the beginning to account for any newly added or removed actors.
 #define ACTOR_LOOP_START_MODIFIED_HIERARCHY() _isHierarchyDirty = false
 #define ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY() if (_isHierarchyDirty) { _isHierarchyDirty = false; i = -1; }
@@ -660,7 +658,7 @@ void Actor::SetStaticFlags(StaticFlags value)
 void Actor::SetTransform(const Transform& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (_transform.Translation != value.Translation && _transform.Orientation != value.Orientation && _transform.Scale != value.Scale)
+    if (_transform.Translation != value.Translation || _transform.Orientation != value.Orientation || _transform.Scale != value.Scale)
     {
         if (_parent)
             _parent->_transform.WorldToLocal(value, _localTransform);
