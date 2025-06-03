@@ -541,7 +541,7 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged += OnEditorOptionsChanged;
             OnEditorOptionsChanged(Editor.Options.Options);
 
-            InputActions.Add(inputOptions.Search, _searchBox.Focus);
+            InputActions.Add([new(InputOptionName.Search, _searchBox.Focus)]);
 
             GameCooker.Event += OnGameCookerEvent;
             ScriptsBuilder.CompilationFailed += OnScriptsCompilationFailed;

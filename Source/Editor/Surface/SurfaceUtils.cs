@@ -587,9 +587,14 @@ namespace FlaxEditor.Surface
             surface.GridSnappingSize = interfaceOptions.SurfaceGridSnappingSize;
 
             // Setup input actions
-            window.InputActions.Add(inputOptions.Undo, undo.PerformUndo);
-            window.InputActions.Add(inputOptions.Redo, undo.PerformRedo);
-            window.InputActions.Add(inputOptions.Search, showSearch);
+            window.InputActions.Add
+            (
+                [
+                    new(InputOptionName.Undo, undo.PerformUndo),
+                    new(InputOptionName.Redo, undo.PerformRedo),
+                    new(InputOptionName.Search, showSearch)
+                ]
+            );
         }
     }
 }

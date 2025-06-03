@@ -194,35 +194,38 @@ namespace FlaxEditor.Content.GUI
         {
             // Setup input actions
             InputOptions options = Editor.Instance.Options.Options.Input;
-            InputBindings = new InputBindingList(
-            (options.Delete, () =>
-                {
-                    if (HasSelection)
-                        OnDelete?.Invoke(_selection);
-                }
-            ),
-            (options.SelectAll, SelectAll),
-            (options.DeselectAll, DeselectAll),
-            (options.Rename, () =>
-                {
-                    if (HasSelection && _selection[0].CanRename)
-                    {
-                        if (_selection.Count > 1)
-                            Select(_selection[0]);
-                        OnRename?.Invoke(_selection[0]);
-                    }
-                }
-            ),
-            (options.Copy, Copy),
-            (options.Paste, Paste),
-            (options.Cut, Cut),
-            (options.Undo, () =>
-                {
-                    if (_isCutting)
-                        UpdateContentItemCut(false);
-                }
-            ),
-            (options.Duplicate, Duplicate)
+            InputBindings = new InputBindingList
+            (
+                [
+                    new(InputOptionName.Delete,
+                        () => {
+                            if (HasSelection)
+                                OnDelete?.Invoke(_selection);
+                        }
+                    ),
+                    new(InputOptionName.SelectAll, SelectAll),
+                    new(InputOptionName.DeselectAll, DeselectAll),
+                    new(InputOptionName.Rename,
+                        () => {
+                            if (HasSelection && _selection[0].CanRename)
+                            {
+                                if (_selection.Count > 1)
+                                    Select(_selection[0]);
+                                OnRename?.Invoke(_selection[0]);
+                            }
+                        }
+                    ),
+                    new(InputOptionName.Copy, Copy),
+                    new(InputOptionName.Paste, Paste),
+                    new(InputOptionName.Cut, Cut),
+                    new(InputOptionName.Undo,
+                        () => {
+                            if (_isCutting)
+                                UpdateContentItemCut(false);
+                        }
+                    ),
+                    new(InputOptionName.Duplicate, Duplicate)
+                ]
             );
         }
 

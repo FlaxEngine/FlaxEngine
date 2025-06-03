@@ -108,7 +108,7 @@ namespace FlaxEditor.GUI.Docking
         /// <summary>
         /// The input actions collection to processed during user input.
         /// </summary>
-        public InputBindingList InputActions = new InputBindingList();
+        public InputBindingList InputActions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DockWindow"/> class.
@@ -126,26 +126,29 @@ namespace FlaxEditor.GUI.Docking
 
             InputOptions inputOptions = Editor.Instance.Options.Options.Input;
             // Bind navigation shortcuts
-            InputActions.Add(
-                (inputOptions.CloseTab, () => Close(ClosingReason.User)),
-                (inputOptions.PreviousTab, () =>
-                {
-                    if (_dockedTo != null)
+            InputActions = new InputBindingList
+            (
+                [
+                    new(InputOptionName.CloseTab, () => Close(ClosingReason.User)),
+                    new(InputOptionName.PreviousTab, () =>
                     {
-                        var index = _dockedTo.SelectedTabIndex;
-                        index = index == 0 ? _dockedTo.TabsCount - 1 : index - 1;
-                        _dockedTo.SelectedTabIndex = index;
-                    }
-                }),
-                (inputOptions.NextTab, () =>
-                {
-                    if (_dockedTo != null)
+                        if (_dockedTo != null)
+                        {
+                            var index = _dockedTo.SelectedTabIndex;
+                            index = index == 0 ? _dockedTo.TabsCount - 1 : index - 1;
+                            _dockedTo.SelectedTabIndex = index;
+                        }
+                    }                    ),
+                    new(InputOptionName.NextTab, () =>
                     {
-                        var index = _dockedTo.SelectedTabIndex;
-                        index = (index + 1) % _dockedTo.TabsCount;
-                        _dockedTo.SelectedTabIndex = index;
-                    }
-                })
+                        if (_dockedTo != null)
+                        {
+                            var index = _dockedTo.SelectedTabIndex;
+                            index = (index + 1) % _dockedTo.TabsCount;
+                            _dockedTo.SelectedTabIndex = index;
+                        }
+                    })
+                ]
             );
 
             // Link to the master panel

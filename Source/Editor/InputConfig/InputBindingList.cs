@@ -1,17 +1,61 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FlaxEditor.Options;
 using FlaxEngine.GUI;
 
 #pragma warning disable 1591
 namespace FlaxEditor.InputConfig
 {
+    public struct BindingAction : IEquatable<BindingAction>
+    {
+        public InputOptionName Name;
+        public Action Callback;
+        public Action Clear;
+
+        public void ClearState()
+        {
+            Clear?.Invoke();
+        }
+
+        public BindingAction(InputOptionName name, Action callback, Action clear)
+        {
+            Name = name;
+            Callback = callback;
+            Clear = clear;
+        }
+        public BindingAction(InputOptionName name, Action callback)
+        {
+            Name = name;
+            Callback = callback;
+        }
+
+        public bool Equals(BindingAction other)
+        {
+            return Name == other.Name;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is BindingAction other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return Name.GetHashCode();
+        }
+
+        public static bool operator ==(BindingAction left, BindingAction right) => left.Equals(right);
+        public static bool operator !=(BindingAction left, BindingAction right) => !left.Equals(right);
+    }
     /// <summary>
     /// The input actions processing helper that handles input bindings configuration layer.
     /// </summary>
     public class InputBindingList
     {
-        public List<InputBinding> List = new List<InputBinding>();
+
+
+        public List<BindingAction> List = new List<BindingAction>();
 
         public void Remove(Action callback)
         {
@@ -24,135 +68,72 @@ namespace FlaxEditor.InputConfig
             }
         }
 
-        public InputBinding? Get(InputBinding binding)
+        public void Add(BindingAction bindingAction)
         {
-            foreach (var item in List)
+            if (List.Contains(bindingAction))
             {
-                if (item.ToString().Equals(binding.ToString()))
-                {
-                    return item;
-                }
+                List.Remove(bindingAction);
             }
-
-            return null; // Or throw, or handle however you want if not found
+            List.Add(bindingAction);
+            return;
         }
 
-        public void Add(InputBinding binding)
+        public void Add(BindingAction[] bindings)
         {
-            if (!List.Contains(binding))
+            foreach (var binding in bindings)
             {
-                InputBinding newBinding = new InputBinding(binding.ToString());
-                List.Add(newBinding);
+                this.Add(binding);
             }
         }
 
-        public void Add(InputBinding binding, Action callback)
+        public InputBindingList(BindingAction[] bindings)
         {
-            if (!List.Contains(binding))
+            foreach (var binding in bindings)
             {
-                InputBinding newBinding = new InputBinding(binding.ToString());
-                newBinding.Callback = callback;
-                List.Add(newBinding);
-                return;
-            }
-
-            var foundBinding = List.FirstOrDefault(b => b == binding);
-            foundBinding.Callback = callback;
-        }
-
-#nullable enable annotations
-        public void Add(InputBinding binding, Action callback, Action? clear)
-        {
-            if (!List.Contains(binding))
-            {
-                InputBinding newBinding = new InputBinding(binding.ToString());
-                newBinding.Callback = callback;
-                newBinding.Clear = clear;
-                List.Add(newBinding);
-                return;
-            }
-
-            var foundBinding = List.FirstOrDefault(b => b == binding);
-            foundBinding.Callback = callback;
-        }
-
-        public void Add(params (InputBinding binding, Action callback)[] bindings)
-        {
-            foreach (var (binding, callback) in bindings)
-            {
-                this.Add(binding, callback);
+                this.Add(binding);
             }
         }
-
-#nullable enable annotations
-        public void Add(List<(InputBinding, Action, Action?)> bindings)
-        {
-            foreach (var (binding, callback, clear) in bindings)
-            {
-                this.Add(binding, callback, clear);
-            }
-        }
-
-        public InputBindingList(params (InputBinding binding, Action callback)[] bindings)
-        {
-            foreach (var (binding, callback) in bindings)
-            {
-                this.Add(binding, callback);
-            }
-        }
-
-        public void SetCallback(params (InputBinding match, Action callback)[] bindings)
-        {
-            foreach (var (match, callback) in bindings)
-            {
-                var binding = List.FirstOrDefault(b => b == match);
-                if (binding != null)
-                    binding.Callback = callback;
-            }
-        }
-
 
         /// <summary>
         /// Processes the specified key input and tries to invoke first matching callback for the current user input state.
         /// </summary>
         /// <param name="control">The input providing control.</param>
         /// <returns>The InputBinding if event has been handled, otherwise null.</returns>
-        public InputBinding? Process(Control control)
+        public BindingAction? Process(Control control)
         {
-            InputBinding? bestMatch = null;
+            BindingAction? bestMatch = null;
             int maxTriggerCount = -1;
 
-            for (int i = 0; i < List.Count; i++)
+            foreach (var action in List)
             {
-                if (List[i].Process(control, false))
+                var binding = InputOptions.Dictionary[action.Name];
+                if (binding.Process(control))
                 {
-                    int triggerCount = List[i].InputTriggers.Count;
+                    int triggerCount = binding.InputTriggers.Count;
                     if (triggerCount > maxTriggerCount)
                     {
                         maxTriggerCount = triggerCount;
-                        bestMatch = List[i];
+                        bestMatch = action;
                     }
                 }
             }
 
-            bestMatch?.Process(control);
+            bestMatch?.Callback.Invoke();
             return bestMatch;
         }
 
         /// <summary>
         /// Invokes a specific binding.
         /// </summary>
-        /// <param name="binding">The binding to execute.</param>
+        /// <param InputOptionName="name">The binding to execute.</param>
         /// <returns>True if event has been handled, otherwise false.</returns>
-        public bool Invoke(InputBinding binding)
+        public bool Invoke(InputOptionName name)
         {
-            if (binding == new InputBinding())
-                return false;
-            for (int i = 0; i < List.Count; i++)
+            foreach (var action in List)
             {
-                if (List[i] == binding)
+                if (action.Name == name)
                 {
-                    List[i].Callback();
+                    action.Callback?.Invoke();
                     return true;
                 }
             }

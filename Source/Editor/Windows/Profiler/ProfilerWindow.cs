@@ -126,7 +126,7 @@ namespace FlaxEditor.Windows.Profiler
 
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
             InputActions.Remove(this.FocusOrShow);
-            InputActions.Add(inputOptions.ProfilerWindow, Hide);
+            InputActions.Add([new(InputOptionName.ProfilerWindow, Hide)]);
 #endif
         }
 

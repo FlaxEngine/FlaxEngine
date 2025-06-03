@@ -2,6 +2,7 @@
 
 using System;
 using FlaxEditor.Content;
+using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using DockWindow = FlaxEditor.GUI.Docking.DockWindow;
@@ -43,13 +44,19 @@ namespace FlaxEditor.Windows
             AutoFocus = true;
             Editor = editor;
 
-            InputActions.Add(inputOptions.ContentFinder, () =>
-            {
-                if (CanOpenContentFinder)
-                {
-                    Editor.ContentFinding.ShowFinder(RootWindow);
-                }
-            });
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.ContentFinder,
+                        () => {
+                            if (CanOpenContentFinder)
+                            {
+                                Editor.ContentFinding.ShowFinder(RootWindow);
+                            }
+                        }
+                    )
+                ]
+            );
 
             // Register
             Editor.Windows.OnWindowAdd(this);

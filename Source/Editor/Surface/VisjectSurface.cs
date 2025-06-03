@@ -398,14 +398,17 @@ namespace FlaxEditor.Surface
 
             // Setup input actions
             var inputOptions = Editor.Instance.Options.Options.Input;
-            InputActions = new InputBindingList(
-                (inputOptions.Delete, Delete),
-                (inputOptions.SelectAll, SelectAll),
-                (inputOptions.DeselectAll, DeselectAll),
-                (inputOptions.Copy, Copy),
-                (inputOptions.Paste, Paste),
-                (inputOptions.Cut, Cut),
-                (inputOptions.Duplicate, Duplicate)
+            InputActions = new InputBindingList
+            (
+                [
+                    new(InputOptionName.Delete, Delete),
+                    new(InputOptionName.SelectAll, SelectAll),
+                    new(InputOptionName.DeselectAll, DeselectAll),
+                    new(InputOptionName.Copy, Copy),
+                    new(InputOptionName.Paste, Paste),
+                    new(InputOptionName.Cut, Cut),
+                    new(InputOptionName.Duplicate, Duplicate)
+                ]
             );
 
             Context.ControlSpawned += OnSurfaceControlSpawned;

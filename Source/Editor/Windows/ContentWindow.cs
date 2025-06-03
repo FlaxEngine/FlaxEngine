@@ -265,8 +265,13 @@ namespace FlaxEditor.Windows
 
             InputOptions inputOptions = Editor.Instance.Options.Options.Input;
 
-            _view.InputBindings.Add(inputOptions.Search, () => _itemsSearchBox.Focus());
-            InputActions.Add(inputOptions.Search, () => _itemsSearchBox.Focus());
+            _view.InputBindings.Add
+            (
+                [
+                    new(InputOptionName.Search, () => _itemsSearchBox.Focus()),
+                    new(InputOptionName.Search, () => _itemsSearchBox.Focus())
+                ]
+            );
         }
 
         private ContextMenu OnViewDropdownPopupCreate(ComboBox comboBox)

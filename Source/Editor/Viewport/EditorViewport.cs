@@ -22,13 +22,15 @@ namespace FlaxEditor.Viewport
 
         private bool _orbit;
         public bool Orbit { get => _orbit; set => _orbit = value; }
+
         private bool _rotate;
         public bool Rotate { get => _rotate; set => _rotate = value; }
+
         private bool _move;
         public bool Move { get => _move; set => _move = value; }
+
         private bool _zoom;
         public bool Zoom { get => _zoom; set => _zoom = value; }
-
 
         private float _mouseSensitivity;
         public float MouseSensitivity { get => _mouseSensitivity; set => _mouseSensitivity = value; }
@@ -45,12 +47,12 @@ namespace FlaxEditor.Viewport
         private int _mouseFilteringFrames;
         public int MouseFilteringFrames { get => _mouseFilteringFrames; set => _mouseFilteringFrames = value; }
 
-
         private bool _mouseAcceleration;
         public bool UseMouseAcceleration { get => _mouseAcceleration; set => _mouseAcceleration = value; }
 
         private float _mouseWheelDelta;
         public float MouseWheelDelta { get => _mouseWheelDelta; set => _mouseWheelDelta = value; }
+
         private bool _isControllingMouse;
         public bool IsControllingMouse
         {
@@ -89,7 +91,6 @@ namespace FlaxEditor.Viewport
 
         private bool _invertMouseYAxisRotation;
         public bool InvertMouseYAxisRotation { get => _invertMouseYAxisRotation; set => _invertMouseYAxisRotation = value; }
-
 
         //todo im just making these public consts until i figure out what to do with them
         public const float MaxAllowedSpeed = 1000f;
@@ -237,8 +238,7 @@ namespace FlaxEditor.Viewport
             }
         }
 
-        public InputBindingList InputBindingList = new InputBindingList();
-
+        public InputBindingList InputBindingList;
 
         public void GetViewportOptions()
         {
@@ -262,47 +262,52 @@ namespace FlaxEditor.Viewport
             _nearPlane = ViewportOptions.NearPlane;
             _farPlane = ViewportOptions.FarPlane;
         }
+
         private void SetBindings()
         {
             InputOptions InputOptions = Editor.Instance.Options.Options.Input;
-            InputBindingList.Add(
+            InputBindingList = new InputBindingList
+            (
                 [
-                (InputOptions.Forward, () => {Move = true; _moveDelta = Vector3.Forward * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
-                (InputOptions.Backward, () => {Move = true; _moveDelta = Vector3.Backward * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
-                (InputOptions.Left, () => {Move = true; _moveDelta = Vector3.Left * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
-                (InputOptions.Right, () => {Move = true; _moveDelta = Vector3.Right * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
-                (InputOptions.Up, () => {Move = true; _moveDelta = Vector3.Up * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
-                (InputOptions.Down, () => {Move = true; _moveDelta = Vector3.Down * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
-                (InputOptions.Orbit, () => {Orbit = true; CenterMouse = true; }, () => {Orbit = false; CenterMouse = false; }),
-                (InputOptions.Pan, () => {Pan = true; CenterMouse = true; }, () => {Pan = false; CenterMouse = false; }),
-                (InputOptions.Rotate, () => {Rotate = true; CenterMouse = true; }, () => {Rotate = false; CenterMouse = false; }),
-                (InputOptions.ZoomIn, () =>
-                {
-                    Zoom = true;
-                    if (OrthographicProjection)
+                    //todo fix snapping when using mouse movement while Move=true
+                    new(InputOptionName.Forward, () => {Move = true; _moveDelta = Vector3.Forward * MovementSpeed; }, () => {Move = false; _startPos = Vector2.Zero;}),
+                    new(InputOptionName.Backward, () => {Move = true; _moveDelta = Vector3.Backward * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
+                    new(InputOptionName.Left, () => {Move = true; _moveDelta = Vector3.Left * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
+                    new(InputOptionName.Right, () => {Move = true; _moveDelta = Vector3.Right * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
+                    new(InputOptionName.Up, () => {Move = true; _moveDelta = Vector3.Up * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
+                    new(InputOptionName.Down, () => {Move = true; _moveDelta = Vector3.Down * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
+                    new(InputOptionName.Orbit, () => {Orbit = true; CenterMouse = true; }, () => {Orbit = false; CenterMouse = false; }),
+                    new(InputOptionName.Pan, () => {Pan = true; CenterMouse = true; }, () => {Pan = false; CenterMouse = false; }),
+                    new(InputOptionName.Rotate, () => {Rotate = true; CenterMouse = true; }, () => {Rotate = false; CenterMouse = false; }),
+                    new(InputOptionName.ZoomIn, () =>
                     {
-                        OrthographicScale -= MouseWheelDelta * MouseWheelSensitivity * 0.2f * OrthographicScale;
-                    }
-                }, () => Zoom = false),
-                (InputOptions.ZoomOut, () =>
-                {
-                    Zoom = true;
-                    if (OrthographicProjection)
+                        Zoom = true;
+                        MouseWheelDelta += MouseWheelSensitivity;
+                        if (OrthographicProjection)
+                        {
+                            OrthographicScale -= MouseWheelDelta * MouseWheelSensitivity * 0.2f * OrthographicScale;
+                        }
+                    }, () => Zoom = false),
+                    new(InputOptionName.ZoomOut, () =>
                     {
-                        OrthographicScale -= MouseWheelDelta * MouseWheelSensitivity * 0.2f * OrthographicScale;
-                    }
-                }, () => Zoom = false),
-                (InputOptions.CameraIncreaseMoveSpeed, () => MovementSpeed += MouseWheelDelta * MouseWheelSensitivity, null),
-                (InputOptions.CameraDecreaseMoveSpeed, () => MovementSpeed += MouseWheelDelta * MouseWheelSensitivity, null),
-                (InputOptions.ViewpointTop, () => OrientViewport(CameraViewpoints[Viewpoint.Front]), null),
-                (InputOptions.ViewpointBottom, () => OrientViewport(CameraViewpoints[Viewpoint.Back]), null),
-                (InputOptions.ViewpointFront, () => OrientViewport(CameraViewpoints[Viewpoint.Left]), null),
-                (InputOptions.ViewpointBack, () => OrientViewport(CameraViewpoints[Viewpoint.Right]), null),
-                (InputOptions.ViewpointRight, () => OrientViewport(CameraViewpoints[Viewpoint.Top]), null),
-                (InputOptions.ViewpointLeft, () => OrientViewport(CameraViewpoints[Viewpoint.Bottom]), null),
-                //todo no idea, we need to hold down mouse buttons for trackpads so they dont have to deal with holding it and moving 
-                // (InputOptions.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown),
-                (InputOptions.ToggleOrthographic, () => OrthographicProjection = !OrthographicProjection, null)
+                        Zoom = true;
+                        MouseWheelDelta -= MouseWheelSensitivity;
+                        if (OrthographicProjection)
+                        {
+                            OrthographicScale -= MouseWheelDelta * MouseWheelSensitivity * 0.2f * OrthographicScale;
+                        }
+                    }, () => Zoom = false),
+                    new(InputOptionName.CameraIncreaseMoveSpeed, () => MovementSpeed += MouseWheelDelta * MouseWheelSensitivity, null),
+                    new(InputOptionName.CameraDecreaseMoveSpeed, () => MovementSpeed += MouseWheelDelta * MouseWheelSensitivity, null),
+                    new(InputOptionName.ViewpointTop, () => OrientViewport(CameraViewpoints[Viewpoint.Front]), null),
+                    new(InputOptionName.ViewpointBottom, () => OrientViewport(CameraViewpoints[Viewpoint.Back]), null),
+                    new(InputOptionName.ViewpointFront, () => OrientViewport(CameraViewpoints[Viewpoint.Left]), null),
+                    new(InputOptionName.ViewpointBack, () => OrientViewport(CameraViewpoints[Viewpoint.Right]), null),
+                    new(InputOptionName.ViewpointRight, () => OrientViewport(CameraViewpoints[Viewpoint.Top]), null),
+                    new(InputOptionName.ViewpointLeft, () => OrientViewport(CameraViewpoints[Viewpoint.Bottom]), null),
+                    //todo no idea, we need to hold down mouse buttons for trackpads so they dont have to deal with holding it and moving 
+                    // (InputOptions.CameraToggleRotation, () => _isVirtualMouseRightDown = !_isVirtualMouseRightDown),
+                    new(InputOptionName.ToggleOrthographic, () => OrthographicProjection = !OrthographicProjection, null)
                 ]
             );
         }
@@ -317,9 +322,6 @@ namespace FlaxEditor.Viewport
             { Viewpoint.Top, Quaternion.Euler(90, 0, 0) },
             { Viewpoint.Bottom, Quaternion.Euler(-90, 0, 0) }
         };
-
-
-        // Input
 
         internal bool _disableInputUpdate;
         private int _deltaFilteringStep;
@@ -469,8 +471,6 @@ namespace FlaxEditor.Viewport
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
 
-
-
             // Link for task event
             task.Begin += OnRenderBegin;
         }
@@ -619,47 +619,51 @@ namespace FlaxEditor.Viewport
 
         private void UpdateView()
         {
-            var offset = _viewMousePos - _startPos;
-            if (UseMouseFiltering)
+            //ignore mouse when moving
+            //todo would be cool to be able to rotate while moving forward...
+            if (!Move)
             {
-                // Calculate smooth mouse delta not dependant on viewport size
+                var offset = _viewMousePos - _startPos;
+                if (UseMouseFiltering)
+                {
+                    // Calculate smooth mouse delta not dependant on viewport size
 
-                offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
-                offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
-                _mouseDelta = offset;
+                    offset.X = offset.X > 0 ? Mathf.Floor(offset.X) : Mathf.Ceil(offset.X);
+                    offset.Y = offset.Y > 0 ? Mathf.Floor(offset.Y) : Mathf.Ceil(offset.Y);
+                    _mouseDelta = offset;
 
-                // Update delta filtering buffer
-                _deltaFilteringBuffer[_deltaFilteringStep] = _mouseDelta;
-                _deltaFilteringStep++;
+                    // Update delta filtering buffer
+                    _deltaFilteringBuffer[_deltaFilteringStep] = _mouseDelta;
+                    _deltaFilteringStep++;
 
-                // If the step is too far, zero
-                if (_deltaFilteringStep == MouseFilteringFrames)
-                    _deltaFilteringStep = 0;
+                    // If the step is too far, zero
+                    if (_deltaFilteringStep == MouseFilteringFrames)
+                        _deltaFilteringStep = 0;
 
-                // Calculate filtered delta (avg)
-                for (int i = 0; i < MouseFilteringFrames; i++)
-                    _mouseDelta += _deltaFilteringBuffer[i];
+                    // Calculate filtered delta (avg)
+                    for (int i = 0; i < MouseFilteringFrames; i++)
+                        _mouseDelta += _deltaFilteringBuffer[i];
 
-                _mouseDelta /= MouseFilteringFrames;
+                    _mouseDelta /= MouseFilteringFrames;
+                }
+                else
+                {
+                    _mouseDelta = offset;
+                }
+                if (UseMouseAcceleration)
+                {
+                    // Accelerate the delta
+                    var currentDelta = _mouseDelta;
+                    _mouseDelta += _mouseDeltaLast * MouseAccelerationScale;
+                    _mouseDeltaLast = currentDelta;
+                }
+
+                // Update
+                _mouseDelta *= 0.1833f * MouseSpeed * MouseSensitivity;
+                if (InvertMouseYAxisRotation)
+                    _mouseDelta *= new Float2(1, -1);
             }
-            else
-            {
-                _mouseDelta = offset;
-            }
-            if (UseMouseAcceleration)
-            {
-                // Accelerate the delta
-                var currentDelta = _mouseDelta;
-                _mouseDelta += _mouseDeltaLast * MouseAccelerationScale;
-                _mouseDeltaLast = currentDelta;
-            }
-
-            // Update
             _moveDelta *= _deltaTime * (60.0f * 4.0f);
-            _mouseDelta *= 0.1833f * MouseSpeed * MouseSensitivity;
-            if (InvertMouseYAxisRotation)
-                _mouseDelta *= new Float2(1, -1);
-
             ViewportCamera?.UpdateView(_deltaTime, ref _moveDelta, ref _mouseDelta, out bool centerMouse);
             // Move mouse back to the root position
             //todo this should be in the cameras
@@ -678,7 +682,7 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         float _deltaTime = 0;
         //bindings are always bools, they can just be set to false
-        InputBinding? _lastBinding;
+        BindingAction? _lastBinding;
         Window _rootWindow;
         WindowRootControl _rootControl;
 
@@ -687,10 +691,9 @@ namespace FlaxEditor.Viewport
             get
             {
 
-                return _rootWindow != null && _rootWindow.IsFocused && _rootWindow.IsForegroundWindow;
+                return _rootWindow != null && _rootWindow.IsFocused && _rootWindow.IsForegroundWindow && ContainsFocus;
             }
         }
-
 
         public override void Update(float deltaTime)
         {
@@ -702,6 +705,7 @@ namespace FlaxEditor.Viewport
             _deltaTime = Math.Min(Time.UnscaledDeltaTime, 1.0f);
             _moveDelta = Vector3.Zero;
             _mouseDelta = Float2.Zero;
+            MouseWheelDelta = 0;
             base.Update(deltaTime);
             ViewportCamera?.Update(deltaTime);
             InitViewMousePos();
@@ -712,16 +716,15 @@ namespace FlaxEditor.Viewport
             //check for inputs and fire events if necessary
             InputBindingListProcess();
 
-            if (_canUseInput && ContainsFocus)
+            if (_canUseInput)
             {
                 UpdateView();
             }
-            MouseWheelDelta = 0;
         }
 
         private void InputBindingListProcess()
         {
-            InputBinding? newBinding = InputBindingList.Process(this);
+            BindingAction? newBinding = InputBindingList.Process(this);
             if (newBinding != null && _lastBinding == null)
             {
                 _lastBinding = newBinding;
@@ -773,7 +776,6 @@ namespace FlaxEditor.Viewport
         public override void OnChildResized(Control control)
         {
             base.OnChildResized(control);
-
             PerformLayout();
         }
 
@@ -781,7 +783,6 @@ namespace FlaxEditor.Viewport
         protected override void PerformLayoutBeforeChildren()
         {
             base.PerformLayoutBeforeChildren();
-
             ViewportWidgetsContainer.ArrangeWidgets(this);
         }
 

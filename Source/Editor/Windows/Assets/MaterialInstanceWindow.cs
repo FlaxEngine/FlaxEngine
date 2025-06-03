@@ -10,6 +10,7 @@ using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Options;
 using FlaxEditor.Surface;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
@@ -416,8 +417,13 @@ namespace FlaxEditor.Windows.Assets
             _editor.Modified += OnMaterialPropertyEdited;
 
             // Setup input actions
-            InputActions.Add(inputOptions.Undo, _undo.PerformUndo);
-            InputActions.Add(inputOptions.Redo, _undo.PerformRedo);
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.Undo, _undo.PerformUndo),
+                    new(InputOptionName.Redo, _undo.PerformRedo)
+                ]
+            );
         }
 
         private void OnRevertAllParameters()

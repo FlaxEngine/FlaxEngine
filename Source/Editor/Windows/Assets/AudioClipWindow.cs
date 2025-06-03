@@ -6,6 +6,7 @@ using FlaxEditor.Content.Import;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
+using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
@@ -213,8 +214,13 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/audio/audio-clip.html")).LinkTooltip("See documentation to learn more");
 
             var inputOptions = Editor.Options.Options.Input;
-            InputActions.Add(inputOptions.Play, OnPlay);
-            InputActions.Add(inputOptions.Pause, OnPause);
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.Play, OnPlay),
+                    new(InputOptionName.Pause, OnPause)
+                ]
+            );
         }
 
         private void OnPlay()

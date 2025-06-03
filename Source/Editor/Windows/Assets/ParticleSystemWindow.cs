@@ -10,6 +10,7 @@ using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Timeline;
 using FlaxEditor.GUI.Timeline.Tracks;
+using FlaxEditor.Options;
 using FlaxEditor.Surface;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
@@ -367,8 +368,13 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/particles/index.html")).LinkTooltip("See documentation to learn more");
 
             // Setup input actions
-            InputActions.Add(inputOptions.Undo, _undo.PerformUndo);
-            InputActions.Add(inputOptions.Redo, _undo.PerformRedo);
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.Undo, _undo.PerformUndo),
+                    new(InputOptionName.Redo, _undo.PerformRedo)
+                ]
+            );
         }
 
         private void OnUndoRedo(IUndoAction action)

@@ -21,16 +21,6 @@ namespace FlaxEditor.InputConfig
     public struct InputBinding : IEquatable<InputBinding>
     {
         /// <summary>
-        /// The action callback.
-        /// </summary>
-        public Action Callback;
-
-        /// <summary>
-        /// This is called to clear up the state of the callback when it is no longer triggered
-        /// </summary>
-        public Action? Clear;
-
-        /// <summary>
         /// The <see cref="InputTrigger"/> list to bind.
         /// </summary>
         public List<InputTrigger> InputTriggers;
@@ -42,11 +32,6 @@ namespace FlaxEditor.InputConfig
         public InputBinding()
         {
             InputTriggers = new List<InputTrigger>();
-        }
-
-        public void ClearState()
-        {
-            Clear?.Invoke();
         }
 
         /// <summary>
@@ -122,21 +107,6 @@ namespace FlaxEditor.InputConfig
         /// <summary>
         /// Initializes using input <see cref="string"/> separated by +
         /// <para>Example: "Left+Control+R" = MouseButton.Left, KeyboardKeys.Control, KeyboardKeys.R</para>
-        /// <param name="bindingString">The string to parse and set the binding.</param>
-        /// <param name="callback">The callback.</param>
-        /// </summary>
-        public InputBinding(string bindingString, Action callback)
-        {
-            if (!TryParse(bindingString, out var result))
-                throw new ArgumentException($"Invalid binding string: {bindingString}");
-
-            this = result;
-            Callback = callback;
-        }
-
-        /// <summary>
-        /// Initializes using input <see cref="string"/> separated by +
-        /// <para>Example: "Left+Control+R" = MouseButton.Left, KeyboardKeys.Control, KeyboardKeys.R</para>
         /// </summary>
         public InputBinding(string bindingString)
         {
@@ -181,12 +151,12 @@ namespace FlaxEditor.InputConfig
         /// </summary>
         /// <param name="control">The input providing control.</param>
         /// <returns>True if input has been processed, otherwise false.</returns>
-        public bool Process(Control control, bool fireCallback = true)
+        public bool Process(Control control)
         {
             if (control?.Root == null)
                 return false;
 
-            return Process(control.Root.GetKey, control.Root.GetMouseButton, control.Root.GetMouseScrollDelta(), fireCallback);
+            return Process(control.Root.GetKey, control.Root.GetMouseButton, control.Root.GetMouseScrollDelta());
         }
 
         /// <summary>
@@ -207,7 +177,7 @@ namespace FlaxEditor.InputConfig
         /// <param name="getMouse">Function to check if a mouse button is currently pressed.</param>
         /// <param name="scrollDelta">The mouse scroll delta over the last frame</param>
         /// <returns>True if all input triggers are currently pressed; otherwise, false.</returns>
-        private bool Process(Func<KeyboardKeys, bool> getKey, Func<MouseButton, bool> getMouse, float scrollDelta, bool fireCallback = true)
+        private bool Process(Func<KeyboardKeys, bool> getKey, Func<MouseButton, bool> getMouse, float scrollDelta)
         {
             if (InputTriggers == null || InputTriggers.Count == 0)
                 return false;
@@ -217,8 +187,6 @@ namespace FlaxEditor.InputConfig
                 if (!trigger.IsPressed(getKey, getMouse, scrollDelta))
                     return false;
             }
-            if(fireCallback)
-                Callback?.Invoke();
             return true;
         }
 

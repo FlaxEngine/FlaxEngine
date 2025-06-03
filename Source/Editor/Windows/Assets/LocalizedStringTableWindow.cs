@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.GUI;
+using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -156,8 +157,13 @@ namespace FlaxEditor.Windows.Assets
             _presenter.Modified += MarkAsEdited;
 
             // Setup input actions
-            InputActions.Add(inputOptions.Undo, _undo.PerformUndo);
-            InputActions.Add(inputOptions.Redo, _undo.PerformRedo);
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.Undo, _undo.PerformUndo),
+                    new(InputOptionName.Redo, _undo.PerformRedo)
+                ]
+            );
         }
 
         private void OnUndoRedo(IUndoAction action)

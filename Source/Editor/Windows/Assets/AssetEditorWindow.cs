@@ -4,6 +4,7 @@ using System;
 using FlaxEditor.Content;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -57,7 +58,7 @@ namespace FlaxEditor.Windows.Assets
             };
             _toolstrip.AddButton(editor.Icons.Search64, () => Editor.Windows.ContentWin.Select(_item)).LinkTooltip("Show and select in Content Window");
 
-            InputActions.Add(inputOptions.Save, Save);
+            InputActions.Add([new(InputOptionName.Save, Save)]);
 
             UpdateTitle();
 

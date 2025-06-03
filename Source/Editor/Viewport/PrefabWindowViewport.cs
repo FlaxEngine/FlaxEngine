@@ -6,6 +6,7 @@ using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Options;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Cameras;
@@ -220,7 +221,7 @@ namespace FlaxEditor.Viewport
             EditorGizmoViewport.AddGizmoViewportWidgets(this, TransformGizmo);
 
             // Setup input actions
-            Viewport.InputOptions.FocusSelection.Callback = ShowSelectedActors;
+            Viewport.InputBindingList.Add([new(InputOptionName.FocusSelection, ShowSelectedActors)]);
 
             SetUpdate(ref _update, OnUpdate);
         }

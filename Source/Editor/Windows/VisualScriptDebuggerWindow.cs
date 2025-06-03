@@ -7,6 +7,7 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.GUI.Tree;
+using FlaxEditor.Options;
 using FlaxEditor.Surface;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
@@ -434,7 +435,7 @@ namespace FlaxEditor.Windows
             foreach (var tab in _tabs)
                 tabs.AddTab(tab);
 
-            InputActions.Add(inputOptions.DebuggerContinue, OnDebuggerContinue);
+            InputActions.Add([new(InputOptionName.DebuggerContinue, OnDebuggerContinue)]);
 
             Editor.Simulation.BreakpointHangBegin += OnBreakpointHangBegin;
             Editor.Simulation.BreakpointHangEnd += OnBreakpointHangEnd;

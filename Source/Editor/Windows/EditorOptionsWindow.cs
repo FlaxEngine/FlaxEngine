@@ -69,10 +69,13 @@ namespace FlaxEditor.Windows
             CreateTab("Theme", () => _options.Theme);
 
             // Setup input actions
-            InputActions.Add(
-                (inputOptions.Undo, _undo.PerformUndo),
-                (inputOptions.Redo, _undo.PerformRedo),
-                (inputOptions.Save, SaveData)
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.Undo, _undo.PerformUndo),
+                    new(InputOptionName.Redo, _undo.PerformRedo),
+                    new(InputOptionName.Save, SaveData)
+                ]
             );
 
             _tabs.SelectedTabIndex = 0;

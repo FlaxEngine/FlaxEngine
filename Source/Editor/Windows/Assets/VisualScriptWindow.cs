@@ -11,6 +11,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface;
 using FlaxEngine;
@@ -637,11 +638,14 @@ namespace FlaxEditor.Windows.Assets
             debugObjectPickerContainer.Parent = _toolstrip;
 
             // Setup input actions
-            InputActions.Add(
-                (inputOptions.DebuggerContinue, OnDebuggerContinue),
-                (inputOptions.DebuggerStepOver, OnDebuggerStepOver),
-                (inputOptions.DebuggerStepOut, OnDebuggerStepOut),
-                (inputOptions.DebuggerStepInto, OnDebuggerStepInto)
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.DebuggerContinue, OnDebuggerContinue),
+                    new(InputOptionName.DebuggerStepOver, OnDebuggerStepOver),
+                    new(InputOptionName.DebuggerStepOut, OnDebuggerStepOut),
+                    new(InputOptionName.DebuggerStepInto, OnDebuggerStepInto)
+                ]
             );
 
             SetCanEdit(!isPlayMode);

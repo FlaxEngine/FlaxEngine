@@ -23,6 +23,7 @@ using FlaxEngine.Json;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
 using FlaxEditor.Windows;
+using FlaxEditor.Options;
 
 namespace FlaxEngine
 {
@@ -1465,68 +1466,71 @@ namespace FlaxEditor.Utilities
             var inputActions = window.InputActions;
             var inputOptions = Editor.Instance.Options.Options.Input;
             // Setup input actions
-            inputActions.Add(
-                (inputOptions.Save, Editor.Instance.SaveAll),
-            (inputOptions.Undo, () =>
-            {
-                Editor.Instance.PerformUndo();
-                window.Focus();
-            }
-            ),
-            (inputOptions.Redo, () =>
-            {
-                Editor.Instance.PerformRedo();
-                window.Focus();
-            }
-            ),
-            (inputOptions.Cut, Editor.Instance.SceneEditing.Cut),
-            (inputOptions.Copy, Editor.Instance.SceneEditing.Copy),
-            (inputOptions.Paste, Editor.Instance.SceneEditing.Paste),
-            (inputOptions.Duplicate, Editor.Instance.SceneEditing.Duplicate),
-            (inputOptions.SelectAll, Editor.Instance.SceneEditing.SelectAllScenes),
-            (inputOptions.DeselectAll, Editor.Instance.SceneEditing.DeselectAllScenes),
-            (inputOptions.Delete, Editor.Instance.SceneEditing.Delete),
-            (inputOptions.GroupSelectedActors, Editor.Instance.SceneEditing.CreateParentForSelectedActors),
-            (inputOptions.Search, () => Editor.Instance.Windows.SceneWin.Search()),
-            (inputOptions.MoveActorToViewport, Editor.Instance.UI.MoveActorToViewport),
-            (inputOptions.AlignActorWithViewport, Editor.Instance.UI.AlignActorWithViewport),
-            (inputOptions.AlignViewportWithActor, Editor.Instance.UI.AlignViewportWithActor),
-            (inputOptions.PilotActor, Editor.Instance.UI.PilotActor),
-            (inputOptions.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor),
-            (inputOptions.PlayCurrentScenes, Editor.Instance.Simulation.RequestPlayScenesOrStopPlay),
-            (inputOptions.Pause, Editor.Instance.Simulation.RequestResumeOrPause),
-            (inputOptions.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame),
-            (inputOptions.CookAndRun, () => Editor.Instance.Windows.GameCookerWin.BuildAndRun()),
-            (inputOptions.RunCookedGame, () => Editor.Instance.Windows.GameCookerWin.RunCooked()),
-            (inputOptions.BuildScenesData, Editor.Instance.BuildScenesOrCancel),
-            (inputOptions.BakeLightmaps, Editor.Instance.BakeLightmapsOrCancel),
-            (inputOptions.ClearLightmaps, Editor.Instance.ClearLightmaps),
-            (inputOptions.BakeEnvProbes, Editor.Instance.BakeAllEnvProbes),
-            (inputOptions.BuildCSG, Editor.Instance.BuildCSG),
-            (inputOptions.BuildNav, Editor.Instance.BuildNavMesh),
-            (inputOptions.BuildSDF, Editor.Instance.BuildAllMeshesSDF),
-            (inputOptions.TakeScreenshot, Editor.Instance.Windows.TakeScreenshot),
-            (inputOptions.ProfilerWindow, () => Editor.Instance.Windows.ProfilerWin.FocusOrShow()),
+            inputActions.Add
+            (
+                [
+                    new(InputOptionName.Save, Editor.Instance.SaveAll),
+                    new(InputOptionName.Undo,
+                        () => {
+                            Editor.Instance.PerformUndo();
+                            window.Focus();
+                        }
+                    ),
+                    new(InputOptionName.Redo,
+                        () => {
+                            Editor.Instance.PerformRedo();
+                            window.Focus();
+                        }
+                    ),
+                    new(InputOptionName.Cut, Editor.Instance.SceneEditing.Cut),
+                    new(InputOptionName.Copy, Editor.Instance.SceneEditing.Copy),
+                    new(InputOptionName.Paste, Editor.Instance.SceneEditing.Paste),
+                    new(InputOptionName.Duplicate, Editor.Instance.SceneEditing.Duplicate),
+                    new(InputOptionName.SelectAll, Editor.Instance.SceneEditing.SelectAllScenes),
+                    new(InputOptionName.DeselectAll, Editor.Instance.SceneEditing.DeselectAllScenes),
+                    new(InputOptionName.Delete, Editor.Instance.SceneEditing.Delete),
+                    new(InputOptionName.GroupSelectedActors, Editor.Instance.SceneEditing.CreateParentForSelectedActors),
+                    new(InputOptionName.Search, () => Editor.Instance.Windows.SceneWin.Search()),
+                    new(InputOptionName.MoveActorToViewport, Editor.Instance.UI.MoveActorToViewport),
+                    new(InputOptionName.AlignActorWithViewport, Editor.Instance.UI.AlignActorWithViewport),
+                    new(InputOptionName.AlignViewportWithActor, Editor.Instance.UI.AlignViewportWithActor),
+                    new(InputOptionName.PilotActor, Editor.Instance.UI.PilotActor),
+                    new(InputOptionName.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor),
+                    new(InputOptionName.PlayCurrentScenes, Editor.Instance.Simulation.RequestPlayScenesOrStopPlay),
+                    new(InputOptionName.Pause, Editor.Instance.Simulation.RequestResumeOrPause),
+                    new(InputOptionName.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame),
+                    new(InputOptionName.CookAndRun, () => Editor.Instance.Windows.GameCookerWin.BuildAndRun()),
+                    new(InputOptionName.RunCookedGame, () => Editor.Instance.Windows.GameCookerWin.RunCooked()),
+                    new(InputOptionName.BuildScenesData, Editor.Instance.BuildScenesOrCancel),
+                    new(InputOptionName.BakeLightmaps, Editor.Instance.BakeLightmapsOrCancel),
+                    new(InputOptionName.ClearLightmaps, Editor.Instance.ClearLightmaps),
+                    new(InputOptionName.BakeEnvProbes, Editor.Instance.BakeAllEnvProbes),
+                    new(InputOptionName.BuildCSG, Editor.Instance.BuildCSG),
+                    new(InputOptionName.BuildNav, Editor.Instance.BuildNavMesh),
+                    new(InputOptionName.BuildSDF, Editor.Instance.BuildAllMeshesSDF),
+                    new(InputOptionName.TakeScreenshot, Editor.Instance.Windows.TakeScreenshot),
+                    new(InputOptionName.ProfilerWindow, () => Editor.Instance.Windows.ProfilerWin.FocusOrShow()),
 #if USE_PROFILER
-            (inputOptions.ProfilerStartStop, () =>
-            {
-                bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
-                Editor.Instance.Windows.ProfilerWin.LiveRecording = recording;
-                Editor.Instance.UI.AddStatusMessage($"Profiling {(recording ? "started" : "stopped")}.");
-            }
-            ),
-            (inputOptions.ProfilerClear, () =>
-            {
-                Editor.Instance.Windows.ProfilerWin.Clear();
-                Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
-            }
-            ),
+                    new(InputOptionName.ProfilerStartStop,
+                        () => {
+                            bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
+                            Editor.Instance.Windows.ProfilerWin.LiveRecording = recording;
+                            Editor.Instance.UI.AddStatusMessage($"Profiling {(recording ? "started" : "stopped")}.");
+                        }
+                    ),
+                    new(InputOptionName.ProfilerClear,
+                        () => {
+                            Editor.Instance.Windows.ProfilerWin.Clear();
+                            Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
+                        }
+                    ),
 #endif
-            (inputOptions.SaveScenes, () => Editor.Instance.Scene.SaveScenes()),
-            (inputOptions.CloseScenes, () => Editor.Instance.Scene.CloseAllScenes()),
-            (inputOptions.OpenScriptsProject, () => Editor.Instance.CodeEditing.OpenSolution()),
-            (inputOptions.GenerateScriptsProject, () => Editor.Instance.ProgressReporting.GenerateScriptsProjectFiles.RunAsync()),
-            (inputOptions.RecompileScripts, ScriptsBuilder.Compile)
+                    new(InputOptionName.SaveScenes, () => Editor.Instance.Scene.SaveScenes()),
+                    new(InputOptionName.CloseScenes, () => Editor.Instance.Scene.CloseAllScenes()),
+                    new(InputOptionName.OpenScriptsProject, () => Editor.Instance.CodeEditing.OpenSolution()),
+                    new(InputOptionName.GenerateScriptsProject, () => Editor.Instance.ProgressReporting.GenerateScriptsProjectFiles.RunAsync()),
+                    new(InputOptionName.RecompileScripts, ScriptsBuilder.Compile)
+                ]
             );
         }
 

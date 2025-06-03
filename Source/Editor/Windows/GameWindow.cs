@@ -337,86 +337,89 @@ namespace FlaxEditor.Windows
             Editor.Options.OptionsChanged += OnOptionsChanged;
             OnOptionsChanged(Editor.Options.Options);
 
-            InputActions.Add(
-                (inputOptions.TakeScreenshot, () => Screenshot.Capture(string.Empty)),
-                (inputOptions.DebuggerUnlockMouse, UnlockMouseInPlay),
-                (inputOptions.ToggleFullscreen, () => { if (Editor.IsPlayMode) IsMaximized = !IsMaximized; }),
-                (inputOptions.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor),
-                (inputOptions.Pause, Editor.Instance.Simulation.RequestResumeOrPause),
-                (inputOptions.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame),
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.TakeScreenshot, () => Screenshot.Capture(string.Empty)),
+                    new(InputOptionName.DebuggerUnlockMouse, UnlockMouseInPlay),
+                    new(InputOptionName.ToggleFullscreen, () => { if (Editor.IsPlayMode) IsMaximized = !IsMaximized; }),
+                    new(InputOptionName.Play, Editor.Instance.Simulation.DelegatePlayOrStopPlayInEditor),
+                    new(InputOptionName.Pause, Editor.Instance.Simulation.RequestResumeOrPause),
+                    new(InputOptionName.StepFrame, Editor.Instance.Simulation.RequestPlayOneFrame),
 #if USE_PROFILER
-                (inputOptions.ProfilerStartStop, () =>
-                {
-                    bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
-                    Editor.Instance.Windows.ProfilerWin.LiveRecording = recording;
-                    Editor.Instance.UI.AddStatusMessage($"Profiling {(recording ? "started" : "stopped")}.");
-                }
-                ),
-                (inputOptions.ProfilerClear, () =>
-                {
-                    Editor.Instance.Windows.ProfilerWin.Clear();
-                    Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
-                }
-                ),
+                    new(InputOptionName.ProfilerStartStop,
+                        () => {
+                            bool recording = !Editor.Instance.Windows.ProfilerWin.LiveRecording;
+                            Editor.Instance.Windows.ProfilerWin.LiveRecording = recording;
+                            Editor.Instance.UI.AddStatusMessage($"Profiling {(recording ? "started" : "stopped")}.");
+                        }
+                    ),
+                    new(InputOptionName.ProfilerClear,
+                        () => {
+                            Editor.Instance.Windows.ProfilerWin.Clear();
+                            Editor.Instance.UI.AddStatusMessage("Profiling results cleared.");
+                        }
+                    ),
 #endif
-                (inputOptions.Save, () =>
-                {
-                    if (Editor.IsPlayMode)
-                        return;
-                    Editor.Instance.SaveAll();
-                }
-                ),
-                (inputOptions.Undo, () =>
-                {
-                    if (Editor.IsPlayMode)
-                        return;
-                    Editor.Instance.PerformUndo();
-                    Focus();
-                }
-                ),
-                (inputOptions.Redo, () =>
-                {
-                    if (Editor.IsPlayMode)
-                        return;
-                    Editor.Instance.PerformRedo();
-                    Focus();
-                }
-                ),
-                (inputOptions.Cut, () =>
-                {
-                    if (Editor.IsPlayMode)
-                        return;
-                    Editor.Instance.SceneEditing.Cut();
-                }
-                ),
-                (inputOptions.Copy, () =>
-                {
-                    if (Editor.IsPlayMode)
-                        return;
-                    Editor.Instance.SceneEditing.Copy();
-                }
-                ),
-                (inputOptions.Paste, () =>
-                {
-                    if (Editor.IsPlayMode)
-                        return;
-                    Editor.Instance.SceneEditing.Paste();
-                }
-                ),
-                (inputOptions.Duplicate, () =>
-                {
-                    if (Editor.IsPlayMode)
-                        return;
-                    Editor.Instance.SceneEditing.Duplicate();
-                }
-                ),
-                (inputOptions.Delete, () =>
-                {
-                    if (Editor.IsPlayMode)
-                        return;
-                    Editor.Instance.SceneEditing.Delete();
-                }
-                )
+                    new(InputOptionName.Save,
+                        () => {
+                            if (Editor.IsPlayMode)
+                                return;
+                            Editor.Instance.SaveAll();
+                        }
+                    ),
+                    new(InputOptionName.Undo,
+                        () => {
+                            if (Editor.IsPlayMode)
+                                return;
+                            Editor.Instance.PerformUndo();
+                            Focus();
+                        }
+                    ),
+                    new(InputOptionName.Redo,
+                        () => {
+                            if (Editor.IsPlayMode)
+                                return;
+                            Editor.Instance.PerformRedo();
+                            Focus();
+                        }
+                    ),
+                    new(InputOptionName.Cut,
+                        () => {
+                            if (Editor.IsPlayMode)
+                                return;
+                            Editor.Instance.SceneEditing.Cut();
+                        }
+                    ),
+                    new(InputOptionName.Copy,
+                        () => {
+                            if (Editor.IsPlayMode)
+                                return;
+                            Editor.Instance.SceneEditing.Copy();
+                        }
+                    ),
+                    new(InputOptionName.Paste,
+                        () => {
+                            if (Editor.IsPlayMode)
+                                return;
+                            Editor.Instance.SceneEditing.Paste();
+                        }
+                    ),
+                    new(InputOptionName.Duplicate,
+                        () => {
+                            if (Editor.IsPlayMode)
+                                return;
+                            Editor.Instance.SceneEditing.Duplicate();
+                        }
+                    ),
+                    new(InputOptionName.Delete,
+                        () => {
+                            if (Editor.IsPlayMode)
+                                return;
+                            Editor.Instance.SceneEditing.Delete();
+                        }
+                    )
+                ]
             );
         }
 

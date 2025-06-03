@@ -8,6 +8,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Input;
+using FlaxEditor.Options;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Viewport;
 using FlaxEngine;
@@ -214,26 +215,29 @@ namespace FlaxEditor.Windows.Assets
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
 
             // Setup input actions
-            InputActions.Add(
-                (inputOptions.Undo, () =>
-            {
-                _undo.PerformUndo();
-                Focus();
-            }
-            ),
-            (inputOptions.Redo, () =>
-            {
-                _undo.PerformRedo();
-                Focus();
-            }
-            ),
-            (inputOptions.Cut, Cut),
-            (inputOptions.Copy, Copy),
-            (inputOptions.Paste, Paste),
-            (inputOptions.Duplicate, Duplicate),
-            (inputOptions.Delete, Delete),
-            (inputOptions.Rename, RenameSelection),
-            (inputOptions.FocusSelection, FocusSelection)
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.Undo,
+                        () => {
+                            _undo.PerformUndo();
+                            Focus();
+                        }
+                    ),
+                    new(InputOptionName.Redo,
+                        () => {
+                            _undo.PerformRedo();
+                            Focus();
+                        }
+                    ),
+                    new(InputOptionName.Cut, Cut),
+                    new(InputOptionName.Copy, Copy),
+                    new(InputOptionName.Paste, Paste),
+                    new(InputOptionName.Duplicate, Duplicate),
+                    new(InputOptionName.Delete, Delete),
+                    new(InputOptionName.Rename, RenameSelection),
+                    new(InputOptionName.FocusSelection, FocusSelection)
+                ]
             );
         }
 

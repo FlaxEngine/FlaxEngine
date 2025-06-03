@@ -8,6 +8,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.GUI;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -429,10 +430,13 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddSeparator();
             _resetButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Rotate32, Reset).LinkTooltip("Resets the variables values to the default values");
 
-            InputActions.Add(
-                (inputOptions.Save, Save),
-                (inputOptions.Undo, _undo.PerformUndo),
-                (inputOptions.Redo, _undo.PerformRedo)
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.Save, Save),
+                    new(InputOptionName.Undo, _undo.PerformUndo),
+                    new(InputOptionName.Redo, _undo.PerformRedo)
+                ]
             );
         }
 

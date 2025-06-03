@@ -10,6 +10,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Timeline;
+using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -699,9 +700,12 @@ namespace FlaxEditor.Windows.Assets
             _previewPlayerPicker.ValueChanged += OnPreviewPlayerPickerChanged;
 
             // Setup input actions
-            InputActions.Add(
-                (inputOptions.Undo, _undo.PerformUndo),
-                (inputOptions.Redo, _undo.PerformRedo)
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.Undo, _undo.PerformUndo),
+                    new(InputOptionName.Redo, _undo.PerformRedo)
+                ]
             );
         }
 

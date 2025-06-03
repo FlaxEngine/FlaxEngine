@@ -95,13 +95,16 @@ namespace FlaxEditor.Windows
             headerPanel.Parent = this;
 
             // Setup input actions
-            InputActions.Add(
-                (inputOptions.TranslateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate),
-                (inputOptions.RotateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate),
-                (inputOptions.ScaleMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale),
-                (inputOptions.FocusSelection, () => Editor.Windows.EditWin.Viewport.FocusSelection()),
-                (inputOptions.LockFocusSelection, () => Editor.Windows.EditWin.Viewport.LockFocusSelection()),
-                (inputOptions.Rename, RenameSelection)
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.TranslateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate),
+                    new(InputOptionName.RotateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate),
+                    new(InputOptionName.ScaleMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale),
+                    new(InputOptionName.FocusSelection, () => Editor.Windows.EditWin.Viewport.FocusSelection()),
+                    new(InputOptionName.LockFocusSelection, () => Editor.Windows.EditWin.Viewport.LockFocusSelection()),
+                    new(InputOptionName.Rename, RenameSelection)
+                ]
             );
         }
 

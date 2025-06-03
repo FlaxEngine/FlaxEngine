@@ -11,6 +11,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Timeline;
+using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
@@ -313,9 +314,12 @@ namespace FlaxEditor.Windows.Assets
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/animation/animation/index.html")).LinkTooltip("See documentation to learn more");
 
             // Setup input actions
-            InputActions.Add(
-                (inputOptions.Undo, _undo.PerformUndo),
-                (inputOptions.Redo, _undo.PerformRedo)
+            InputActions.Add
+            (
+                [
+                    new(InputOptionName.Undo, _undo.PerformUndo),
+                    new(InputOptionName.Redo, _undo.PerformRedo)
+                ]
             );
         }
 

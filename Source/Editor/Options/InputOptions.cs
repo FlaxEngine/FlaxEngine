@@ -1,5 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using FlaxEditor.InputConfig;
 using FlaxEngine;
@@ -8,6 +10,108 @@ using FlaxEngine;
 
 namespace FlaxEditor.Options
 {
+    public enum InputOptionName
+    {
+        None,
+        // Common
+        Save,
+        Rename,
+        Copy,
+        Cut,
+        Paste,
+        Duplicate,
+        Delete,
+        Undo,
+        Redo,
+        SelectAll,
+        DeselectAll,
+        FocusSelection,
+        LockFocusSelection,
+        Search,
+        ContentFinder,
+        RotateSelection,
+        ToggleFullscreen,
+
+        // File
+        SaveScenes,
+        CloseScenes,
+        OpenScriptsProject,
+        GenerateScriptsProject,
+        RecompileScripts,
+
+        // Scene
+        SnapToGround,
+        SnapToVertex,
+        Play,
+        PlayCurrentScenes,
+        Pause,
+        StepFrame,
+        CookAndRun,
+        RunCookedGame,
+        MoveActorToViewport,
+        AlignActorWithViewport,
+        AlignViewportWithActor,
+        PilotActor,
+        GroupSelectedActors,
+
+        // Tools
+        BuildScenesData,
+        BakeLightmaps,
+        ClearLightmaps,
+        BakeEnvProbes,
+        BuildCSG,
+        BuildNav,
+        BuildSDF,
+        TakeScreenshot,
+
+        // Profiler
+        ProfilerWindow,
+        ProfilerStartStop,
+        ProfilerClear,
+
+        // Debugger
+        DebuggerContinue,
+        DebuggerUnlockMouse,
+        DebuggerStepOver,
+        DebuggerStepInto,
+        DebuggerStepOut,
+
+        // Gizmo
+        TranslateMode,
+        RotateMode,
+        ScaleMode,
+        ToggleTransformSpace,
+
+        // Viewport
+        Forward,
+        Backward,
+        Left,
+        Right,
+        Up,
+        Down,
+        Orbit,
+        Pan,
+        Rotate,
+        ZoomIn,
+        ZoomOut,
+        CameraToggleRotation,
+        CameraIncreaseMoveSpeed,
+        CameraDecreaseMoveSpeed,
+        ViewpointFront,
+        ViewpointBack,
+        ViewpointLeft,
+        ViewpointRight,
+        ViewpointTop,
+        ViewpointBottom,
+        ToggleOrthographic,
+
+        // Interface
+        CloseTab,
+        NextTab,
+        PreviousTab,
+        DoubleClickSceneNode
+    }
+
     /// <summary>
     /// Action to perform when a Scene Node receive a double mouse left click.
     /// </summary>
@@ -41,8 +145,8 @@ namespace FlaxEditor.Options
     [HideInEditor]
     public sealed class InputOptions
     {
+        public static Dictionary<InputOptionName, InputBinding> Dictionary = new();
         #region Common
-
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.S)]
         [EditorDisplay("Common"), EditorOrder(100)]
         public InputBinding Save = new InputBinding(KeyboardKeys.S + "+" + KeyboardKeys.Control);
@@ -396,5 +500,24 @@ namespace FlaxEditor.Options
         public SceneNodeDoubleClick DoubleClickSceneNode = SceneNodeDoubleClick.Expand;
 
         #endregion
+
+        //populate the dictionary for our ground truth inputs
+        public InputOptions()
+        {
+            var type = typeof(InputOptions);
+            foreach (InputOptionName name in Enum.GetValues(typeof(InputOptionName)))
+            {
+                var field = type.GetField(name.ToString());
+                if (field != null && field.FieldType == typeof(InputBinding))
+                {
+                    var binding = (InputBinding)field.GetValue(this);
+                    Dictionary[name] = binding;
+                }
+                else
+                {
+                    Debug.LogWarning($"InputOptionName '{name}' does not match any InputBinding field.");
+                }
+            }
+        }
     }
 }
