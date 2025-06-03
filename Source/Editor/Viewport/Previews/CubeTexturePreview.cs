@@ -95,7 +95,7 @@ namespace FlaxEditor.Viewport.Previews
             get => _mipLevel;
             set
             {
-                if (!Mathf.NearEqual(_mipLevel, value))
+                if (_mipLevel == value)
                 {
                     _mipLevel = value;
                     _previewMaterial.SetParameterValue("Mip", value);

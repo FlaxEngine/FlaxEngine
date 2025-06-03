@@ -65,7 +65,7 @@ void BoxBrush::SetMode(BrushMode value)
 
 void BoxBrush::SetCenter(const Vector3& value)
 {
-    if (Vector3::NearEqual(value, _center))
+    if (value == _center)
         return;
 
     _center = value;
@@ -77,7 +77,7 @@ void BoxBrush::SetCenter(const Vector3& value)
 
 void BoxBrush::SetSize(const Vector3& value)
 {
-    if (Vector3::NearEqual(value, _size))
+    if (value == _size)
         return;
 
     _size = value;

@@ -130,7 +130,7 @@ namespace FlaxEngine.GUI
             get => _scrollBarsSize;
             set
             {
-                if (Mathf.NearEqual(_scrollBarsSize, value))
+                if (_scrollBarsSize == value)
                     return;
                 _scrollBarsSize = value;
                 PerformLayout();

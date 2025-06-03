@@ -397,7 +397,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref OrientedBoundingBox value)
         {
-            return (Extents == value.Extents) && (Transformation == value.Transformation);
+            return Extents == value.Extents && Transformation == value.Transformation;
         }
 
         /// <summary>

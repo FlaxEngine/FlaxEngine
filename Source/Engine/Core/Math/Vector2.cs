@@ -1654,7 +1654,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Vector2 left, Vector2 right)
         {
-            return Mathr.NearEqual(left.X, right.X) && Mathr.NearEqual(left.Y, right.Y);
+            return left.Equals(ref right);
         }
 
         /// <summary>
@@ -1666,7 +1666,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator !=(Vector2 left, Vector2 right)
         {
-            return !Mathr.NearEqual(left.X, right.X) || !Mathr.NearEqual(left.Y, right.Y);
+            return !left.Equals(ref right);
         }
 
         /// <summary>
@@ -1782,7 +1782,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Vector2 other)
         {
-            return Mathr.NearEqual(other.X, X) && Mathr.NearEqual(other.Y, Y);
+            return X == other.X && Y == other.Y;
         }
 
         /// <summary>
@@ -1790,7 +1790,7 @@ namespace FlaxEngine
         /// </summary>
         public static bool Equals(ref Vector2 a, ref Vector2 b)
         {
-            return Mathr.NearEqual(a.X, b.X) && Mathr.NearEqual(a.Y, b.Y);
+            return a.Equals(ref b);
         }
 
         /// <summary>
@@ -1801,7 +1801,7 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector2 other)
         {
-            return Mathr.NearEqual(other.X, X) && Mathr.NearEqual(other.Y, Y);
+            return Equals(ref other);
         }
 
         /// <summary>
@@ -1811,7 +1811,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            return value is Vector2 other && Mathr.NearEqual(other.X, X) && Mathr.NearEqual(other.Y, Y);
+            return value is Vector2 other && Equals(ref other);
         }
     }
 }

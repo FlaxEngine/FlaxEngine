@@ -3236,22 +3236,22 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="Matrix" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public bool Equals(ref Matrix other)
         {
-            return Mathf.NearEqual(other.M11, M11) &&
-                   Mathf.NearEqual(other.M12, M12) &&
-                   Mathf.NearEqual(other.M13, M13) &&
-                   Mathf.NearEqual(other.M14, M14) &&
-                   Mathf.NearEqual(other.M21, M21) &&
-                   Mathf.NearEqual(other.M22, M22) &&
-                   Mathf.NearEqual(other.M23, M23) &&
-                   Mathf.NearEqual(other.M24, M24) &&
-                   Mathf.NearEqual(other.M31, M31) &&
-                   Mathf.NearEqual(other.M32, M32) &&
-                   Mathf.NearEqual(other.M33, M33) &&
-                   Mathf.NearEqual(other.M34, M34) &&
-                   Mathf.NearEqual(other.M41, M41) &&
-                   Mathf.NearEqual(other.M42, M42) &&
-                   Mathf.NearEqual(other.M43, M43) &&
-                   Mathf.NearEqual(other.M44, M44);
+            return other.M11 == M11 &&
+                   other.M12 == M12 &&
+                   other.M13 == M13 &&
+                   other.M14 == M14 &&
+                   other.M21 == M21 &&
+                   other.M22 == M22 &&
+                   other.M23 == M23 &&
+                   other.M24 == M24 &&
+                   other.M31 == M31 &&
+                   other.M32 == M32 &&
+                   other.M33 == M33 &&
+                   other.M34 == M34 &&
+                   other.M41 == M41 &&
+                   other.M42 == M42 &&
+                   other.M43 == M43 &&
+                   other.M44 == M44;
         }
 
         /// <summary>
@@ -3272,10 +3272,7 @@ namespace FlaxEngine
         /// <returns><c>true</c> if the specified <see cref="System.Object" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public override bool Equals(object value)
         {
-            if (!(value is Matrix))
-                return false;
-            var v = (Matrix)value;
-            return Equals(ref v);
+            return value is Matrix other && Equals(ref other);
         }
     }
 }

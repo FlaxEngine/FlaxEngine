@@ -251,10 +251,10 @@ namespace FlaxEngine.GUI
         /// <returns><c>true</c> if the specified <see cref="Margin" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         public bool Equals(ref Margin other)
         {
-            return Mathf.NearEqual(other.Left, Left) &&
-                   Mathf.NearEqual(other.Right, Right) &&
-                   Mathf.NearEqual(other.Top, Top) &&
-                   Mathf.NearEqual(other.Bottom, Bottom);
+            return other.Left == Left &&
+                   other.Right == Right &&
+                   other.Top == Top &&
+                   other.Bottom == Bottom;
         }
 
         /// <summary>
