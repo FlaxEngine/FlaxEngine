@@ -442,6 +442,15 @@ bool Engine::IsEditor()
 #endif
 }
 
+bool Engine::IsPlayMode()
+{
+#if USE_EDITOR
+    return Editor::IsPlayMode;
+#else
+    return true;
+#endif
+}
+
 int32 Engine::GetFramesPerSecond()
 {
     return EngineImpl::Fps;

@@ -10,11 +10,9 @@ using FlaxEngine;
 namespace FlaxEditor.Content
 {
     /// <summary>
-    /// Context proxy object for shader source files (represented by <see cref="ShaderSourceItem"/>).
+    /// Base class for shader source files.
     /// </summary>
-    /// <seealso cref="FlaxEditor.Content.ContentProxy" />
-    [ContentContextMenu("New/Shader Source")]
-    public class ShaderSourceProxy : ContentProxy
+    public abstract class ShaderBaseProxy : ContentProxy
     {
         /// <inheritdoc />
         public override bool CanCreate(ContentFolder targetLocation)
@@ -29,6 +27,21 @@ namespace FlaxEditor.Content
             return targetLocation.ShortName == "Source" && prevTargetLocation.ShortName == "Shaders";
         }
 
+        /// <inheritdoc />
+        public override EditorWindow Open(Editor editor, ContentItem item)
+        {
+            Editor.Instance.CodeEditing.OpenFile(item.Path);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Context proxy object for shader source files (represented by <see cref="ShaderSourceItem"/>).
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.ContentProxy" />
+    [ContentContextMenu("New/Shader Source (.shader)")]
+    public class ShaderSourceProxy : ShaderBaseProxy
+    {
         /// <inheritdoc />
         public override void Create(string outputPath, object arg)
         {
@@ -45,13 +58,6 @@ namespace FlaxEditor.Content
         }
 
         /// <inheritdoc />
-        public override EditorWindow Open(Editor editor, ContentItem item)
-        {
-            Editor.Instance.CodeEditing.OpenFile(item.Path);
-            return null;
-        }
-
-        /// <inheritdoc />
         public override Color AccentColor => Color.FromRGB(0x7542f5);
 
         /// <inheritdoc />
@@ -64,6 +70,35 @@ namespace FlaxEditor.Content
         public override bool IsProxyFor(ContentItem item)
         {
             return item is ShaderSourceItem;
+        }
+    }
+
+    /// <summary>
+    /// Context proxy object for shader header files.
+    /// </summary>
+    /// <seealso cref="FlaxEditor.Content.ContentProxy" />
+    [ContentContextMenu("New/Shader Header (.hlsl)")]
+    public class ShaderHeaderProxy : ShaderBaseProxy
+    {
+        /// <inheritdoc />
+        public override void Create(string outputPath, object arg)
+        {
+            File.WriteAllText(outputPath, "\n", Encoding.UTF8);
+        }
+
+        /// <inheritdoc />
+        public override Color AccentColor => Color.FromRGB(0x2545a5);
+
+        /// <inheritdoc />
+        public override string FileExtension => "hlsl";
+
+        /// <inheritdoc />
+        public override string Name => "Shader Header";
+
+        /// <inheritdoc />
+        public override bool IsProxyFor(ContentItem item)
+        {
+            return false;
         }
     }
 }

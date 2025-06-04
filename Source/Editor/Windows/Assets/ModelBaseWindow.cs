@@ -254,7 +254,8 @@ namespace FlaxEditor.Windows.Assets
                             if (lodIndex >= countLODs - loadedLODs)
                             {
                                 var mesh = lod.GetMesh(0);
-                                vertexLayout = mesh.VertexLayout;
+                                if (mesh != null)
+                                    vertexLayout = mesh.VertexLayout;
                                 if (vertexLayout != null && vertexLayout.Elements.Length != 0)
                                     break;
                                 vertexLayout = null;
@@ -759,7 +760,6 @@ namespace FlaxEditor.Windows.Assets
                     var importSettingsField = typeof(ImportPropertiesProxyBase).GetField(nameof(ImportSettings), BindingFlags.NonPublic | BindingFlags.Instance);
                     var importSettingsValues = new ValueContainer(new ScriptMemberInfo(importSettingsField)) { proxy.ImportSettings };
                     importSettingsGroup.Object(importSettingsValues);
-                    importSettingsGroup.Space(3);
 
                     // Creates the import path UI
                     var group = layout.Group("Import Path");

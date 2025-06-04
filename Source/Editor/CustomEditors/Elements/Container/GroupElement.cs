@@ -22,7 +22,8 @@ namespace FlaxEditor.CustomEditors.Elements
             ArrowImageClosed = new SpriteBrush(Style.Current.ArrowRight),
             ArrowImageOpened = new SpriteBrush(Style.Current.ArrowDown),
             EnableDropDownIcon = true,
-            ItemsMargin = new Margin(7, 7, 3, 3),
+            ItemsMargin = new Margin(Utilities.Constants.UIMargin),
+            ItemsSpacing = Utilities.Constants.UIMargin,
             HeaderHeight = 18.0f,
             EnableContainmentLines = true,
         };

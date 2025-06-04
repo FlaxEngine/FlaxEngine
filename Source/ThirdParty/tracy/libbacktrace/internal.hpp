@@ -133,6 +133,11 @@ typedef void (*syminfo) (struct backtrace_state *state, uintptr_t pc,
 			 backtrace_syminfo_callback callback,
 			 backtrace_error_callback error_callback, void *data);
 
+/* The type of the function that will trigger an known address range refresh
+ (if pc passed in is for an address whichs lies ourtisde of known ranges) */
+typedef int (*request_known_address_ranges_refresh)(struct backtrace_state *state,
+             uintptr_t pc);
+
 /* What the backtrace state pointer points to.  */
 
 struct backtrace_state
@@ -159,6 +164,8 @@ struct backtrace_state
   int lock_alloc;
   /* The freelist when using mmap.  */
   struct backtrace_freelist_struct *freelist;
+  /* Trigger an known address range refresh */
+  request_known_address_ranges_refresh request_known_address_ranges_refresh_fn;
 };
 
 /* Open a file for reading.  Returns -1 on error.  If DOES_NOT_EXIST
@@ -326,10 +333,44 @@ struct dwarf_sections
 
 struct dwarf_data;
 
+/* The load address mapping.  */
+
+#if defined(__FDPIC__) && defined(HAVE_DL_ITERATE_PHDR) && (defined(HAVE_LINK_H) || defined(HAVE_SYS_LINK_H))
+
+#ifdef HAVE_LINK_H
+ #include <link.h>
+#endif
+#ifdef HAVE_SYS_LINK_H
+ #include <sys/link.h>
+#endif
+
+#define libbacktrace_using_fdpic() (1)
+
+struct libbacktrace_base_address
+{
+  struct elf32_fdpic_loadaddr m;
+};
+
+#define libbacktrace_add_base(pc, base) \
+  ((uintptr_t) (__RELOC_POINTER ((pc), (base).m)))
+
+#else /* not _FDPIC__ */
+
+#define libbacktrace_using_fdpic() (0)
+
+struct libbacktrace_base_address
+{
+  uintptr_t m;
+};
+
+#define libbacktrace_add_base(pc, base) ((pc) + (base).m)
+
+#endif /* not _FDPIC__ */
+
 /* Add file/line information for a DWARF module.  */
 
 extern int backtrace_dwarf_add (struct backtrace_state *state,
-				uintptr_t base_address,
+				struct libbacktrace_base_address base_address,
 				const struct dwarf_sections *dwarf_sections,
 				int is_bigendian,
 				struct dwarf_data *fileline_altlink,

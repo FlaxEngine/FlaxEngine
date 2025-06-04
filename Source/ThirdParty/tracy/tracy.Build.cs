@@ -47,7 +47,7 @@ public class tracy : ThirdPartyModule
         switch (options.Platform.Target)
         {
         case TargetPlatform.Windows:
-            options.PrivateDefinitions.Add("TRACY_DBGHELP_LOCK=DbgHelp");
+            options.PrivateDefinitions.Add("TRACY_DBGHELP_LOCK=FlaxDbgHelp");
             break;
         case TargetPlatform.Switch:
             options.PrivateDefinitions.Add("TRACY_USE_MALLOC");

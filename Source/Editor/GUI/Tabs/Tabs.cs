@@ -47,6 +47,7 @@ namespace FlaxEditor.GUI.Tabs
                 if (EnabledInHierarchy && Tab.Enabled)
                 {
                     Tabs.SelectedTab = Tab;
+                    Tab.PerformLayout(true);
                     Tabs.Focus();
                 }
                 return true;

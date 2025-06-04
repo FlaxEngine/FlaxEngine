@@ -49,6 +49,8 @@ private:
 #endif
 #if USE_EDITOR
     Array<Vector3> _collisionTriangles; // TODO: large-worlds
+    class GPUBuffer* _collisionTrianglesBuffer = nullptr;
+    bool _collisionTrianglesBufferDirty = true;
 #endif
     Array<Float3> _collisionVertices; // TODO: large-worlds
 

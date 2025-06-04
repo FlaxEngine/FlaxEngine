@@ -48,6 +48,7 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.None)
         {
             Title = "Scene";
+            Icon = editor.Icons.Globe32;
 
             // Scene searching query input box
             var headerPanel = new ContainerControl
@@ -84,6 +85,7 @@ namespace FlaxEditor.Windows
             {
                 Margin = new Margin(0.0f, 0.0f, -16.0f, _sceneTreePanel.ScrollBarsSize), // Hide root node
                 IsScrollable = true,
+                DrawRootTreeLine = false,
             };
             _tree.AddChild(root.TreeNode);
             _tree.SelectedChanged += Tree_OnSelectedChanged;

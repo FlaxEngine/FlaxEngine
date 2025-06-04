@@ -185,7 +185,7 @@ namespace FlaxEditor.Viewport.Previews
             {
                 UseTimeScale = false,
                 UpdateWhenOffscreen = true,
-                BoundsScale = 100.0f,
+                BoundsScale = 1.0f,
                 UpdateMode = AnimatedModel.AnimationUpdateMode.Manual,
             };
             Task.AddCustomActor(_previewModel);
