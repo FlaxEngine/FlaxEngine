@@ -534,7 +534,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Tangent Vector",
                 Description = "World space tangent vector",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(160, 40),
+                Size = new Float2(160, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "Tangent", typeof(Float3), 0),
@@ -546,7 +546,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Bitangent Vector",
                 Description = "World space bitangent vector",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(160, 40),
+                Size = new Float2(160, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "Bitangent", typeof(Float3), 0),
@@ -558,7 +558,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Camera Position",
                 Description = "World space camera location",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(160, 40),
+                Size = new Float2(160, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "XYZ", typeof(Float3), 0),
@@ -570,7 +570,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Per Instance Random",
                 Description = "Per object instance random value (normalized to range 0-1)",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(200, 40),
+                Size = new Float2(200, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "", typeof(float), 0),

@@ -296,6 +296,17 @@ namespace FlaxEditor.GUI.ContextMenu
             }
         }
 
+        private static void ForceDefocus(ContainerControl c)
+        {
+            foreach (var cc in c.Children)
+            {
+                if (cc.ContainsFocus)
+                    cc.Defocus();
+                if (cc is ContainerControl ccc)
+                    ForceDefocus(ccc);
+            }
+        }
+
         /// <summary>
         /// Hide popup menu and all child menus.
         /// </summary>
@@ -309,6 +320,9 @@ namespace FlaxEditor.GUI.ContextMenu
 
             // Close child
             HideChild();
+
+            // Force defocus
+            ForceDefocus(this);
 
             // Unlink from window
             Parent = null;

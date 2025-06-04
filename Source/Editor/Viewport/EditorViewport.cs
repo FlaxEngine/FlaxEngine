@@ -1008,6 +1008,18 @@ namespace FlaxEditor.Viewport
                     ViewWidgetButtonMenu.VisibleChanged += control => resolutionValue.Value = ResolutionScale;
                 }
 
+                // Icons Scale
+                {
+                    var icons = ViewWidgetButtonMenu.AddButton("Icons");
+                    icons.CloseMenuOnClick = false;
+                    var iconsValue = new FloatValueBox(ViewportIconsRenderer.Scale, xLocationForExtras, 2, 70.0f, 0.01f, 100.0f, 0.001f)
+                    {
+                        Parent = icons
+                    };
+                    iconsValue.ValueChanged += () => ViewportIconsRenderer.Scale = iconsValue.Value;
+                    ViewWidgetButtonMenu.VisibleChanged += control => iconsValue.Value = ViewportIconsRenderer.Scale;
+                }
+
                 #endregion View mode widget
             }
 

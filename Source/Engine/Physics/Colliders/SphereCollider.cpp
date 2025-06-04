@@ -10,7 +10,7 @@ SphereCollider::SphereCollider(const SpawnParams& params)
 
 void SphereCollider::SetRadius(const float value)
 {
-    if (Math::NearEqual(value, _radius))
+    if (value == _radius)
         return;
 
     _radius = value;

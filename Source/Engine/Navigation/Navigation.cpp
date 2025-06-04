@@ -107,7 +107,7 @@ Color NavMeshRuntime::NavAreasColors[64];
 
 bool NavAgentProperties::operator==(const NavAgentProperties& other) const
 {
-    return Math::NearEqual(Radius, other.Radius) && Math::NearEqual(Height, other.Height) && Math::NearEqual(StepHeight, other.StepHeight) && Math::NearEqual(MaxSlopeAngle, other.MaxSlopeAngle) && Math::NearEqual(MaxSpeed, other.MaxSpeed) && Math::NearEqual(CrowdSeparationWeight, other.CrowdSeparationWeight);
+    return Radius == other.Radius && Height == other.Height && StepHeight == other.StepHeight && MaxSlopeAngle == other.MaxSlopeAngle && MaxSpeed == other.MaxSpeed && CrowdSeparationWeight == other.CrowdSeparationWeight;
 }
 
 bool NavAgentMask::IsAgentSupported(int32 agentIndex) const
@@ -148,12 +148,12 @@ bool NavAgentMask::operator==(const NavAgentMask& other) const
 
 bool NavAreaProperties::operator==(const NavAreaProperties& other) const
 {
-    return Name == other.Name && Id == other.Id && Math::NearEqual(Cost, other.Cost);
+    return Name == other.Name && Id == other.Id && Cost == other.Cost;
 }
 
 bool NavMeshProperties::operator==(const NavMeshProperties& other) const
 {
-    return Name == other.Name && Quaternion::NearEqual(Rotation, other.Rotation, 0.001f) && Agent == other.Agent && Vector3::NearEqual(DefaultQueryExtent, other.DefaultQueryExtent);
+    return Name == other.Name && Rotation == other.Rotation && Agent == other.Agent && DefaultQueryExtent == other.DefaultQueryExtent;
 }
 
 class NavigationService : public EngineService

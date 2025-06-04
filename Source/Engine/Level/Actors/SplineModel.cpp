@@ -59,7 +59,7 @@ float SplineModel::GetQuality() const
 void SplineModel::SetQuality(float value)
 {
     value = Math::Clamp(value, 0.0f, 100.0f);
-    if (Math::NearEqual(value, _quality))
+    if (value == _quality)
         return;
     _quality = value;
     OnSplineUpdated();
@@ -72,7 +72,7 @@ float SplineModel::GetBoundsScale() const
 
 void SplineModel::SetBoundsScale(float value)
 {
-    if (Math::NearEqual(_boundsScale, value))
+    if (_boundsScale == value)
         return;
     _boundsScale = value;
     OnSplineUpdated();

@@ -499,21 +499,19 @@ namespace FlaxEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(ref Rectangle other)
         {
-            return Location.Equals(ref other.Location) && Size.Equals(ref other.Size);
+            return Location == other.Location && Size == other.Size;
         }
 
         /// <inheritdoc />
         public bool Equals(Rectangle other)
         {
-            return Location.Equals(ref other.Location) && Size.Equals(ref other.Size);
+            return Equals(ref other);
         }
 
         /// <inheritdoc />
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj))
-                return false;
-            return obj is Rectangle && Equals((Rectangle)obj);
+            return obj is Rectangle other && Equals(ref other);
         }
 
         /// <inheritdoc />

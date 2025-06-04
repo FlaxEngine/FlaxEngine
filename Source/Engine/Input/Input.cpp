@@ -1236,7 +1236,7 @@ void InputService::Update()
     {
         for (auto i = Axes.Begin(); i.IsNotEnd(); ++i)
         {
-            if (Math::NotNearEqual(i->Value.Value, i->Value.PrevValue))
+            if (i->Value.Value != i->Value.PrevValue)
             {
                 Input::AxisValueChanged(i->Key);
             }
