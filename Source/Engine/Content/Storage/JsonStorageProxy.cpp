@@ -9,6 +9,10 @@
 #include "Engine/Level/Types.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#if USE_EDITOR
+#include "Engine/Core/Collections/HashSet.h"
+#include "Engine/Core/Collections/Dictionary.h"
+#endif
 #include <ThirdParty/rapidjson/document.h>
 
 bool JsonStorageProxy::IsValidExtension(const StringView& extension)
@@ -56,27 +60,31 @@ bool JsonStorageProxy::GetAssetInfo(const StringView& path, Guid& resultId, Stri
 
 #if USE_EDITOR
 
-void ChangeIds(rapidjson_flax::Value& obj, rapidjson_flax::Document& document, const StringAnsi& srcId, const StringAnsi& dstId)
+void FindObjectIds(const rapidjson_flax::Value& obj, const rapidjson_flax::Document& document, HashSet<Guid>& ids, const char* parentName = nullptr)
 {
     if (obj.IsObject())
     {
-        for (rapidjson_flax::Value::MemberIterator i = obj.MemberBegin(); i != obj.MemberEnd(); ++i)
+        for (rapidjson_flax::Value::ConstMemberIterator i = obj.MemberBegin(); i != obj.MemberEnd(); ++i)
         {
-            ChangeIds(i->value, document, srcId, dstId);
+            FindObjectIds(i->value, document, ids, i->name.GetString());
         }
     }
     else if (obj.IsArray())
     {
         for (rapidjson::SizeType i = 0; i < obj.Size(); i++)
         {
-            ChangeIds(obj[i], document, srcId, dstId);
+            FindObjectIds(obj[i], document, ids, parentName);
         }
     }
-    else if (obj.IsString())
+    else if (obj.IsString() && obj.GetStringLength() == 32)
     {
-        if (StringUtils::Compare(srcId.Get(), obj.GetString()) == 0)
+        if (parentName && StringUtils::Compare(parentName, "ID") == 0)
         {
-            obj.SetString(dstId.Get(), document.GetAllocator());
+            auto value = JsonTools::GetGuid(obj);
+            if (value.IsValid())
+            {
+                ids.Add(value);
+            }
         }
     }
 }
@@ -91,9 +99,7 @@ bool JsonStorageProxy::ChangeId(const StringView& path, const Guid& newId)
     // Load file
     Array<byte> fileData;
     if (File::ReadAllBytes(path, fileData))
-    {
         return false;
-    }
 
     // Parse data
     rapidjson_flax::Document document;
@@ -107,33 +113,35 @@ bool JsonStorageProxy::ChangeId(const StringView& path, const Guid& newId)
         return false;
     }
 
-    // Try get asset metadata
+    // Get all IDs inside the file
+    HashSet<Guid> ids;
+    FindObjectIds(document, document, ids);
+
+    // Remap into a unique IDs
+    Dictionary<Guid, Guid> remap;
+    remap.EnsureCapacity(ids.Count());
+    for (const auto& id : ids)
+        remap.Add(id.Item, Guid::New());
+
+    // Remap asset ID using the provided value
     auto idNode = document.FindMember("ID");
     if (idNode == document.MemberEnd())
-    {
         return true;
-    }
+    remap[JsonTools::GetGuid(idNode->value)] = newId;
 
-    // Change IDs
-    auto oldIdStr = idNode->value.GetString();
-    auto newIdStr = newId.ToString(Guid::FormatType::N).ToStringAnsi();
-    ChangeIds(document, document, oldIdStr, newIdStr);
+    // Change IDs of asset and objects inside asset
+    JsonTools::ChangeIds(document, remap);
 
     // Save to file
     rapidjson_flax::StringBuffer buffer;
     PrettyJsonWriter writer(buffer);
     document.Accept(writer.GetWriter());
     if (File::WriteAllBytes(path, (byte*)buffer.GetString(), (int32)buffer.GetSize()))
-    {
         return true;
-    }
 
     return false;
-
 #else
-
 	LOG(Warning, "Editing cooked content is invalid.");
 	return true;
-
 #endif
 }
