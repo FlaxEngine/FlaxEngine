@@ -47,17 +47,18 @@ public:
     ScopedZone& operator=( const ScopedZone& ) = delete;
     ScopedZone& operator=( ScopedZone&& ) = delete;
 
-    ScopedZone( const SourceLocationData* srcloc, bool is_active = true );
-    ScopedZone( const SourceLocationData* srcloc, int depth, bool is_active = true );
-    ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, bool is_active = true );
-    ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int depth, bool is_active = true );
+    ScopedZone( const SourceLocationData* srcloc, int32_t depth = -1, bool is_active = true );
+    ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, uint32_t color, int32_t depth = -1, bool is_active = true );
+    ScopedZone( uint32_t line, const char* source, size_t sourceSz, const char* function, size_t functionSz, const char* name, size_t nameSz, int32_t depth, bool is_active = true );
 
     ~ScopedZone();
 
     void Text( const char* txt, size_t size );
     void Text( const Char* txt, size_t size );
+    void TextFmt( const char* fmt, ... );
     void Name( const char* txt, size_t size );
     void Name( const Char* txt, size_t size );
+    void NameFmt( const char* fmt, ... );
     void Color( uint32_t color );
     void Value( uint64_t value );
 
@@ -75,6 +76,16 @@ TRACY_API uint32_t GetThreadHandleImpl();
 }
 
 #ifdef TRACY_ENABLE
+struct ThreadNameData
+{
+    uint32_t id;
+    int32_t groupHint;
+    const char* name;
+    ThreadNameData* next;
+};
+
+ThreadNameData* GetThreadNameData( uint32_t id );
+
 TRACY_API uint32_t GetThreadHandle();
 #else
 static inline uint32_t GetThreadHandle()
@@ -84,9 +95,10 @@ static inline uint32_t GetThreadHandle()
 #endif
 
 TRACY_API void SetThreadName( const char* name );
+TRACY_API void SetThreadNameWithHint( const char* name, int32_t groupHint );
 TRACY_API const char* GetThreadName( uint32_t id );
 
-TRACY_API const char* GetEnvVar(const char* name);
+TRACY_API const char* GetEnvVar( const char* name );
 
 }
 
