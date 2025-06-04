@@ -335,7 +335,15 @@ namespace FlaxEditor.Windows
                         if (isWhitespaceOnly)
                             DebugCommands.GetAllCommands(out commands);
 
-                        ShowPopup(ref _searchPopup, isWhitespaceOnly ? commands : matches, isWhitespaceOnly ? commands[0] : text);
+                        ShowPopup(ref _searchPopup, isWhitespaceOnly ? commands : matches, text);
+                        
+                        if (isWhitespaceOnly)
+                        {
+                            // Scroll to and select first item for consistent behaviour
+                            var firstItem = _searchPopup.ItemsPanel.Children[0] as Item;
+                            _searchPopup.ScrollToAndHighlightItemByName(firstItem.Name);
+                        }
+
                         return;
                     }
                 }
