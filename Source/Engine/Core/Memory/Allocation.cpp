@@ -11,7 +11,7 @@ void ArenaAllocator::Free()
     while (page)
     {
 #if COMPILE_WITH_PROFILER
-        ProfilerMemory::OnGroupUpdate(ProfilerMemory::Groups::MallocArena, -page->Size, -1);
+        ProfilerMemory::OnGroupUpdate(ProfilerMemory::Groups::MallocArena, -(int64)page->Size, -1);
 #endif
         Allocator::Free(page->Memory);
         Page* next = page->Next;
@@ -35,7 +35,7 @@ void* ArenaAllocator::Allocate(uint64 size, uint64 alignment)
     {
         uint64 pageSize = Math::Max<uint64>(_pageSize, size);
 #if COMPILE_WITH_PROFILER
-        ProfilerMemory::OnGroupUpdate(ProfilerMemory::Groups::MallocArena, pageSize, 1);
+        ProfilerMemory::OnGroupUpdate(ProfilerMemory::Groups::MallocArena, (int64)pageSize, 1);
 #endif
         page = (Page*)Allocator::Allocate(sizeof(Page));
         page->Memory = Allocator::Allocate(pageSize);

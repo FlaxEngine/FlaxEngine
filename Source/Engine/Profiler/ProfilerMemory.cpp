@@ -35,7 +35,7 @@ struct GroupNameBuffer
         char prev = 0;
         for (int32 i = 0; i < max && dst < ARRAY_COUNT(Buffer) - 2; i++)
         {
-            char cur = str[i];
+            char cur = (char)str[i];
             if (autoFormat && StringUtils::IsUpper(cur) && StringUtils::IsLower(prev))
             {
                 Ansi[dst] = '/';
@@ -422,7 +422,7 @@ void ProfilerMemory::OnMemoryAlloc(void* ptr, uint64 size)
 
     // Register pointer
     PointerData ptrData;
-    ptrData.Size = size;
+    ptrData.Size = (uint32)size;
     ptrData.Group = (uint8)stack.Peek();
     PointersLocker.Lock();
     Pointers[ptr] = ptrData;
