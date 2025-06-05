@@ -292,6 +292,21 @@ RigidBody* CharacterController::GetAttachedRigidBody() const
     return nullptr;
 }
 
+void CharacterController::SetCenter(const Vector3& value)
+{
+    if (value == _center)
+        return;
+    Vector3 delta = value - _center;
+    _center = value;
+    if (_controller)
+    {
+        // Change physics position while maintaining actor placement
+        Vector3 position = PhysicsBackend::GetControllerPosition(_controller);
+        position += _upDirection * delta;
+        PhysicsBackend::SetControllerPosition(_controller, position);
+    }
+}
+
 void CharacterController::OnActiveTransformChanged()
 {
     if (!_shape)
