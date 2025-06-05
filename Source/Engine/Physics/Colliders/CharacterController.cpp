@@ -96,15 +96,11 @@ void CharacterController::SetStepOffset(float value)
 {
     if (value == _stepOffset)
         return;
-
     _stepOffset = value;
-
     if (_controller)
     {
-        const float scaling = _cachedScale.GetAbsolute().MaxValue();
-        const float contactOffset = Math::Max(_contactOffset, ZeroTolerance);
-        const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
-        const float radius = Math::Max(Math::Abs(_radius) * scaling - contactOffset, CC_MIN_SIZE);
+        float height, radius;
+        GetControllerSize(height, radius);
         PhysicsBackend::SetControllerStepOffset(_controller, Math::Min(value, height + radius * 2.0f - CC_MIN_SIZE));
     }
 }
@@ -180,6 +176,37 @@ CharacterController::CollisionFlags CharacterController::Move(const Vector3& dis
     return result;
 }
 
+void CharacterController::Resize(float height, float radius)
+{
+    const float heightDiff = height - _height;
+    const float radiusDiff = radius - _radius;
+    if (Math::IsZero(heightDiff) && Math::IsZero(radiusDiff))
+        return;
+    _height = height;
+    _radius = radius;
+    if (_controller)
+    {
+        float centerDiff = heightDiff * 0.5f + radiusDiff;
+
+        // Change physics size
+        GetControllerSize(height, radius);
+        PhysicsBackend::SetControllerSize(_controller, radius, height);
+        Vector3 positionDelta = _upDirection * centerDiff;
+
+        // Change physics position to maintain feet placement (base)
+        Vector3 position = PhysicsBackend::GetControllerPosition(_controller);
+        position += positionDelta;
+        _center += positionDelta;
+        PhysicsBackend::SetControllerPosition(_controller, position);
+
+        // Change actor position
+        _isUpdatingTransform = true;
+        SetPosition(position - _center);
+        _isUpdatingTransform = false;
+    }
+    UpdateBounds();
+}
+
 #if USE_EDITOR
 
 #include "Engine/Debug/DebugDraw.h"
@@ -187,23 +214,45 @@ CharacterController::CollisionFlags CharacterController::Move(const Vector3& dis
 
 void CharacterController::DrawPhysicsDebug(RenderView& view)
 {
-    const float scaling = _cachedScale.GetAbsolute().MaxValue();
-    const float radius = Math::Max(Math::Abs(_radius) * scaling, CC_MIN_SIZE);
-    const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
+    Quaternion rotation = Quaternion::Euler(90, 0, 0);
     const Vector3 position = _transform.LocalToWorld(_center);
     if (view.Mode == ViewMode::PhysicsColliders)
-        DEBUG_DRAW_CAPSULE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::LightYellow, 0, true);
+        DEBUG_DRAW_CAPSULE(position, rotation, _radius, _height, Color::LightYellow, 0, true);
     else
-        DEBUG_DRAW_WIRE_CAPSULE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::GreenYellow * 0.8f, 0, true);
+        DEBUG_DRAW_WIRE_CAPSULE(position, rotation, _radius, _height, Color::GreenYellow * 0.8f, 0, true);
 }
 
 void CharacterController::OnDebugDrawSelected()
 {
-    const float scaling = _cachedScale.GetAbsolute().MaxValue();
-    const float radius = Math::Max(Math::Abs(_radius) * scaling, CC_MIN_SIZE);
-    const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
+    Quaternion rotation = Quaternion::Euler(90, 0, 0);
     const Vector3 position = _transform.LocalToWorld(_center);
-    DEBUG_DRAW_WIRE_CAPSULE(position, Quaternion::Euler(90, 0, 0), radius, height, Color::GreenYellow, 0, false);
+    DEBUG_DRAW_WIRE_CAPSULE(position, rotation, _radius, _height, Color::GreenYellow, 0, false);
+    if (_contactOffset > 0)
+        DEBUG_DRAW_WIRE_CAPSULE(position, rotation, _radius - _contactOffset, _height, Color::Blue.AlphaMultiplied(0.4f), 0, false);
+#if 0
+    // More technical visuals debugging
+    if (_controller)
+    {
+        float height, radius;
+        GetControllerSize(height, radius);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(PhysicsBackend::GetControllerBasePosition(_controller), 5.0f), Color::Red, 0, false);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(PhysicsBackend::GetControllerPosition(_controller), 4.0f), Color::Red, 0, false);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(PhysicsBackend::GetControllerPosition(_controller) + Vector3(0, height * 0.5f, 0), 2.0f), Color::Red, 0, false);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(PhysicsBackend::GetControllerPosition(_controller) - Vector3(0, height * 0.5f, 0), 2.0f), Color::Red, 0, false);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(PhysicsBackend::GetControllerPosition(_controller) + Vector3(0, height * 0.5f, 0), radius), Color::Red.AlphaMultiplied(0.5f), 0, false);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(PhysicsBackend::GetControllerPosition(_controller) - Vector3(0, height * 0.5f, 0), radius), Color::Red.AlphaMultiplied(0.5f), 0, false);
+        DEBUG_DRAW_WIRE_CYLINDER(PhysicsBackend::GetControllerPosition(_controller), Quaternion::Identity, radius, height, Color::Red.AlphaMultiplied(0.2f), 0, false);
+    }
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(position, 3.0f), Color::GreenYellow, 0, false);
+#else
+    if (_controller)
+    {
+        // Physics backend capsule shape
+        float height, radius;
+        GetControllerSize(height, radius);
+        DEBUG_DRAW_WIRE_CAPSULE(PhysicsBackend::GetControllerPosition(_controller), rotation, radius, height, Color::Blue.AlphaMultiplied(0.2f), 0, false);
+    }
+#endif
 
     // Base
     Collider::OnDebugDrawSelected();
@@ -216,8 +265,10 @@ void CharacterController::CreateController()
     // Create controller
     ASSERT(_controller == nullptr && _shape == nullptr);
     _cachedScale = GetScale().GetAbsolute().MaxValue();
+    float height, radius;
+    GetControllerSize(height, radius);
     const Vector3 position = _transform.LocalToWorld(_center);
-    _controller = PhysicsBackend::CreateController(GetPhysicsScene()->GetPhysicsScene(), this, this, _contactOffset, position, _slopeLimit, (int32)_nonWalkableMode, Material, Math::Abs(_radius) * scaling, Math::Abs(_height) * scaling, _stepOffset, _shape);
+    _controller = PhysicsBackend::CreateController(GetPhysicsScene()->GetPhysicsScene(), this, this, _contactOffset, position, _slopeLimit, (int32)_nonWalkableMode, Material, radius, height, _stepOffset, _shape);
 
     // Setup
     PhysicsBackend::SetControllerUpDirection(_controller, _upDirection);
@@ -240,11 +291,22 @@ void CharacterController::UpdateSize() const
 {
     if (_controller)
     {
-        const float scaling = _cachedScale.GetAbsolute().MaxValue();
-        const float radius = Math::Max(Math::Abs(_radius) * scaling - Math::Max(_contactOffset, ZeroTolerance), CC_MIN_SIZE);
-        const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
+        float height, radius;
+        GetControllerSize(height, radius);
         PhysicsBackend::SetControllerSize(_controller, radius, height);
     }
+}
+
+void CharacterController::GetControllerSize(float& height, float& radius) const
+{
+    height = Math::Abs(_height) * _cachedScale;
+    radius = Math::Abs(_radius) * _cachedScale;
+    {
+        // Exclude contact offset around the capsule (otherwise character floats in the air)
+        radius = radius - Math::Max(_contactOffset, 0.0f);
+    }
+    height = Math::Max(height, CC_MIN_SIZE);
+    radius = Math::Max(radius, CC_MIN_SIZE);
 }
 
 void CharacterController::CreateShape()
@@ -254,9 +316,9 @@ void CharacterController::CreateShape()
 
 void CharacterController::UpdateBounds()
 {
-    const float scaling = GetScale().GetAbsolute().MaxValue();
-    const float radius = Math::Max(Math::Abs(_radius) * scaling, CC_MIN_SIZE);
-    const float height = Math::Max(Math::Abs(_height) * scaling, CC_MIN_SIZE);
+    _cachedScale = GetScale().GetAbsolute().MaxValue();
+    float height, radius;
+    GetControllerSize(height, radius);
     const Vector3 position = _transform.LocalToWorld(_center);
     const Vector3 extent(radius, height * 0.5f + radius, radius);
     _box = BoundingBox(position - extent, position + extent);

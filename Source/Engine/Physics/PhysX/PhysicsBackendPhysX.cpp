@@ -3157,7 +3157,7 @@ void* PhysicsBackend::CreateController(void* scene, IPhysicsActor* actor, Physic
         desc.material = DefaultMaterial;
     const float minSize = 0.001f;
     desc.height = Math::Max(height, minSize);
-    desc.radius = Math::Max(radius - Math::Max(contactOffset, 0.0f), minSize);
+    desc.radius = Math::Max(radius, minSize);
     desc.stepOffset = Math::Min(stepOffset, desc.height + desc.radius * 2.0f - minSize);
     auto controllerPhysX = (PxCapsuleController*)scenePhysX->ControllerManager->createController(desc);
     PxRigidActor* actorPhysX = controllerPhysX->getActor();
@@ -3183,7 +3183,7 @@ void PhysicsBackend::SetControllerSize(void* controller, float radius, float hei
 {
     auto controllerPhysX = (PxCapsuleController*)controller;
     controllerPhysX->setRadius(radius);
-    controllerPhysX->resize(height);
+    controllerPhysX->setHeight(height);
 }
 
 void PhysicsBackend::SetControllerSlopeLimit(void* controller, float value)
@@ -3202,6 +3202,12 @@ void PhysicsBackend::SetControllerStepOffset(void* controller, float value)
 {
     auto controllerPhysX = (PxCapsuleController*)controller;
     controllerPhysX->setStepOffset(value);
+}
+
+Vector3 PhysicsBackend::GetControllerBasePosition(void* controller)
+{
+    auto controllerPhysX = (PxCapsuleController*)controller;
+    return P2C(controllerPhysX->getFootPosition());
 }
 
 Vector3 PhysicsBackend::GetControllerUpDirection(void* controller)
