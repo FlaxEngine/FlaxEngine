@@ -322,7 +322,7 @@ namespace FlaxEditor.Windows.Assets
                     Before = name,
                     After = renamePopup.Text,
                 };
-                // _proxy.Window.Undo.AddAction(action);
+                _proxy.Window.Undo.AddAction(action);
                 action.Do();
             }
 
@@ -334,7 +334,7 @@ namespace FlaxEditor.Windows.Assets
                     IsAdd = false,
                     Name = name,
                 };
-                // _proxy.Window.Undo.AddAction(action);
+                _proxy.Window.Undo.AddAction(action);
                 action.Do();
             }
         }
@@ -348,9 +348,158 @@ namespace FlaxEditor.Windows.Assets
         private ToolStripButton _resetButton;
         private Undo _undo;
 
-        public AudioMixerWindow(Editor editor, AssetItem item) : base(editor, item)
+        /// <summary>
+        /// Gets the undo for asset editing actions.
+        /// </summary>
+        public Undo Undo => _undo;
+
+        /// <inheritdoc />
+        public AudioMixerWindow(Editor editor, AssetItem item) 
+        : base(editor, item)
         {
             var inputOptions = Editor.Options.Options.Input;
+
+            _undo = new Undo();
+            _undo.ActionDone += OnUndo;
+            _undo.UndoDone += OnUndo;
+            _undo.RedoDone += OnUndo;
+
+            var panel = new Panel(ScrollBars.Vertical)
+            {
+                AnchorPreset = AnchorPresets.StretchAll,
+                Offsets = new Margin(0, 0, _toolstrip.Bottom, 0),
+                Parent = this,
+            };
+            _propertiesEditor = new CustomEditorPresenter(_undo);
+            _propertiesEditor.Panel.Parent = panel;
+            _propertiesEditor.Modified += OnPropertiesEditorModified;
+
+            _proxy = new PropertiesProxy();
+            _propertiesEditor.Select(_proxy);
+
+            _saveButton = _toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
+            _toolstrip.AddSeparator();
+            _undoButton = _toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo", ref inputOptions.Undo);
+            _redoButton = _toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
+            _toolstrip.AddSeparator();
+            _resetButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Rotate32, Reset).LinkTooltip("Resets the audio mixer variables values to the default values");
+            
+            InputActions.Add(options => options.Save, Save);
+            InputActions.Add(options => options.Undo, _undo.PerformUndo);
+            InputActions.Add(options => options.Redo, _undo.PerformRedo);
+        }
+
+        private void OnPropertiesEditorModified()
+        {
+            if (_proxy.Window.Editor.StateMachine.IsPlayMode)
+                return;
+
+            MarkAsEdited();
+        }
+
+        private void OnUndo(IUndoAction action)
+        {
+            if (_proxy.Window.Editor.StateMachine.IsPlayMode)
+                return;
+
+            UpdateToolstrip();
+            MarkAsEdited();
+        }
+
+        private void Reset()
+        {
+            _asset.ResetValues();
+        }
+
+        /// <inheritdoc />
+        protected override void OnAssetLoaded()
+        {
+            _undo.Clear();
+            _proxy.Init(this);
+            _propertiesEditor.BuildLayoutOnUpdate();
+            UpdateToolstrip();
+
+            base.OnAssetLoaded();
+        }
+
+        /// <inheritdoc />
+        protected override void UnlinkItem()
+        {
+            _undo.Dispose();
+
+            base.UnlinkItem();
+        }
+
+        /// <inheritdoc />
+        protected override void UpdateToolstrip()
+        {
+            _saveButton.Enabled = IsEdited;
+            _undoButton.Enabled = _undo.CanUndo;
+            _redoButton.Enabled = _undo.CanRedo;
+            _resetButton.Enabled = _asset is not null;
+
+            base.UpdateToolstrip();
+        }
+
+        /// <inheritdoc />
+        public override void OnPlayBegin()
+        {
+            base.OnPlayBegin();
+
+            if (IsEdited)
+            {
+                if (MessageBox.Show("Gameplay Globals asset has been modified. Save it before entering the play mode?", "Save gameplay globals?", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    Save();
+                }
+            }
+
+            ClearEditedFlag();
+            _undo.Enabled = false;
+            _undo.Clear();
+            _propertiesEditor.BuildLayoutOnUpdate();
+            UpdateToolstrip();
+        }
+
+        /// <inheritdoc />
+        public override void OnPlayEnd()
+        {
+            base.OnPlayEnd();
+
+            _undo.Enabled = true;
+            _undo.Clear();
+            _propertiesEditor.BuildLayoutOnUpdate();
+            UpdateToolstrip();
+        }
+
+        /// <inheritdoc />
+        public override void Save()
+        {
+            if (!IsEdited)
+                return;
+
+            Asset.DefaultValues = _proxy.DefaultValues;
+            if (Asset.Save())
+            {
+                Editor.LogError("Cannot save asset.");
+                return;
+            }
+
+            ClearEditedFlag();
+        }
+
+        /// <inheritdoc />
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+
+            _undo = null;
+            _propertiesEditor = null;
+            _proxy = null;
+            _saveButton = null;
+            _undoButton = null;
+            _redoButton = null;
+            _resetButton = null;
         }
     }
 }
