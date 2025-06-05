@@ -301,7 +301,7 @@ namespace FlaxEngine.GUI
             else
             {
                 text = _watermarkText;
-                if (text.Length > 0)
+                if (text?.Length > 0)
                 {
                     Render2D.DrawText(font, _watermarkText, WatermarkTextColor, ref _layout, TextMaterial);
                 }

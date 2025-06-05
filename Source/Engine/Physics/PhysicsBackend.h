@@ -248,6 +248,8 @@ public:
     static void SetControllerSlopeLimit(void* controller, float value);
     static void SetControllerNonWalkableMode(void* controller, int32 value);
     static void SetControllerStepOffset(void* controller, float value);
+    static Vector3 GetControllerBasePosition(void* controller);
+    static void SetControllerBasePosition(void* controller, const Vector3& value);
     static Vector3 GetControllerUpDirection(void* controller);
     static void SetControllerUpDirection(void* controller, const Vector3& value);
     static Vector3 GetControllerPosition(void* controller);

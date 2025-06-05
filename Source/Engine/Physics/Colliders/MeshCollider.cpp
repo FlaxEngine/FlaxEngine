@@ -131,7 +131,7 @@ void MeshCollider::UpdateBounds()
 void MeshCollider::GetGeometry(CollisionShape& collision)
 {
     // Prepare scale
-    Float3 scale = _cachedScale;
+    Float3 scale = _transform.Scale;
     const float minSize = 0.001f;
     Float3 scaleAbs = scale.GetAbsolute();
     if (scaleAbs.X < minSize)
