@@ -45,7 +45,7 @@ namespace FlaxEditor.Windows
         /// <summary>
         /// Indication of if the properties window is locked on specific objects.
         /// </summary>
-        public bool LockObjects
+        public bool LockSelection
         {
             get => _lockObjects;
             set
@@ -66,6 +66,7 @@ namespace FlaxEditor.Windows
         : base(editor, true, ScrollBars.Vertical)
         {
             Title = "Properties";
+            Icon = editor.Icons.Build64;
             AutoFocus = true;
 
             Presenter = new CustomEditorPresenter(editor.Undo, null, this);
@@ -86,9 +87,9 @@ namespace FlaxEditor.Windows
             if (Level.ScenesCount > 1)
                 return;
             _actorScrollValues.Clear();
-            if (LockObjects)
+            if (LockSelection)
             {
-                LockObjects = false;
+                LockSelection = false;
                 Presenter.Deselect();
             }
         }
@@ -121,7 +122,7 @@ namespace FlaxEditor.Windows
 
         private void OnSelectionChanged()
         {
-            if (LockObjects)
+            if (LockSelection)
                 return;
 
             // Update selected objects

@@ -49,7 +49,7 @@ void Collider::SetIsTrigger(bool value)
 
 void Collider::SetCenter(const Vector3& value)
 {
-    if (Vector3::NearEqual(value, _center))
+    if (value == _center)
         return;
     _center = value;
     if (_staticActor)
@@ -62,7 +62,7 @@ void Collider::SetCenter(const Vector3& value)
 void Collider::SetContactOffset(float value)
 {
     value = Math::Clamp(value, 0.0f, 100.0f);
-    if (Math::NearEqual(value, _contactOffset))
+    if (value == _contactOffset)
         return;
     _contactOffset = value;
     if (_shape)
@@ -205,7 +205,7 @@ void Collider::CreateShape()
     ASSERT(_shape == nullptr);
 
     // Setup shape geometry
-    _cachedScale = GetScale();
+    _cachedScale = GetScale().GetAbsolute().MaxValue();
     CollisionShape shape;
     GetGeometry(shape);
 
@@ -222,7 +222,7 @@ void Collider::UpdateGeometry()
         return;
 
     // Setup shape geometry
-    _cachedScale = GetScale();
+    _cachedScale = GetScale().GetAbsolute().MaxValue();
     CollisionShape shape;
     GetGeometry(shape);
 
@@ -427,8 +427,8 @@ void Collider::OnTransformChanged()
         }
     }
 
-    const Float3 scale = GetScale();
-    if (!Float3::NearEqual(_cachedScale, scale))
+    const float scale = GetScale().GetAbsolute().MaxValue();
+    if (_cachedScale != scale)
         UpdateGeometry();
     UpdateBounds();
 }

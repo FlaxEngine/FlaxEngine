@@ -223,7 +223,7 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
 #endif
         }
 #endif
-        ASSERT(!isnan(sphere.Radius) && !isinf(sphere.Radius) && !sphere.Center.IsNanOrInfinity());
+        CHECK_RETURN(!isnan(sphere.Radius) && !isinf(sphere.Radius) && !sphere.Center.IsNanOrInfinity(), false);
 
         // Expand sphere based on the render modules rules (sprite or mesh size)
         for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.RenderModules.Count(); moduleIndex++)
@@ -244,7 +244,7 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
                         Vector2::Max(*((Vector2*)spriteSize), maxSpriteSize, maxSpriteSize);
                         spriteSize += stride;
                     }
-                    ASSERT(!maxSpriteSize.IsNanOrInfinity());
+                    CHECK_RETURN(!maxSpriteSize.IsNanOrInfinity(), false);
 
                     // Enlarge the emitter bounds sphere
                     sphere.Radius += maxSpriteSize.MaxValue();
@@ -267,7 +267,7 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
                     if (radius > maxRadius)
                         maxRadius = radius;
                 }
-                ASSERT(!isnan(maxRadius) && !isinf(maxRadius));
+                CHECK_RETURN(!isnan(maxRadius) && !isinf(maxRadius), false);
 
                 // Enlarge the emitter bounds sphere
                 sphere.Radius += maxRadius;
@@ -315,7 +315,7 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
                         maxRibbonWidth = Math::Max(*((float*)ribbonWidth), maxRibbonWidth);
                         ribbonWidth += stride;
                     }
-                    ASSERT(!isnan(maxRibbonWidth) && !isinf(maxRibbonWidth));
+                    CHECK_RETURN(!isnan(maxRibbonWidth) && !isinf(maxRibbonWidth), false);
 
                     // Enlarge the emitter bounds sphere
                     sphere.Radius += maxRibbonWidth * 0.5f;
@@ -335,7 +335,7 @@ bool ParticleEmitterGraphCPUExecutor::ComputeBounds(ParticleEmitter* emitter, Pa
                         maxRadius = Math::Max(*((float*)radius), maxRadius);
                         radius += stride;
                     }
-                    ASSERT(!isnan(maxRadius) && !isinf(maxRadius));
+                    CHECK_RETURN(!isnan(maxRadius) && !isinf(maxRadius), false);
                 }
                 else
                 {

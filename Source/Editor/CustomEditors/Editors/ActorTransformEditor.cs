@@ -41,13 +41,9 @@ namespace FlaxEditor.CustomEditors.Editors
             public override void Initialize(LayoutElementsContainer layout)
             {
                 base.Initialize(layout);
-                
+
                 if (XElement.ValueBox.Parent is UniformGridPanel ug)
-                {
-                    ug.Height += 2;
-                    ug.SlotSpacing = new Float2(4);
-                    ug.SlotPadding = new Margin(0, 0, 1, 1);
-                }
+                    CheckLayout(ug);
 
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
@@ -75,11 +71,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 base.Initialize(layout);
                 
                 if (XElement.ValueBox.Parent is UniformGridPanel ug)
-                {
-                    ug.Height += 2;
-                    ug.SlotSpacing = new Float2(4);
-                    ug.SlotPadding = new Margin(0, 0, 1, 1);
-                }
+                    CheckLayout(ug);
 
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
@@ -136,13 +128,9 @@ namespace FlaxEditor.CustomEditors.Editors
                             menu.AddButton("Link", ToggleLink).LinkTooltip("Links scale components for uniform scaling");
                     };
                 }
-                
+
                 if (XElement.ValueBox.Parent is UniformGridPanel ug)
-                {
-                    ug.Height += 2;
-                    ug.SlotSpacing = new Float2(4);
-                    ug.SlotPadding = new Margin(0, 0, 1, 1);
-                }
+                    CheckLayout(ug);
 
                 // Override colors
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
@@ -202,6 +190,14 @@ namespace FlaxEditor.CustomEditors.Editors
                 _linkButton.BorderColor = _linkButton.BorderColorSelected = _linkButton.BorderColorHighlighted = Color.Transparent;
                 _linkButton.TooltipText = LinkValues ? "Unlinks scale components from uniform scaling" : "Links scale components for uniform scaling";
             }
+        }
+
+        private static void CheckLayout(UniformGridPanel ug)
+        {
+            // Enlarge to fix border visibility
+            ug.Height += 2;
+            ug.SlotSpacing += new Float2(2);
+            ug.SlotPadding += new Margin(0, 0, 1, 1);
         }
     }
 }

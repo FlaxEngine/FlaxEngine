@@ -14,6 +14,7 @@ namespace FlaxEditor.Content.Create
     /// <seealso cref="FlaxEditor.Content.Create.CreateFileEntry" />
     public class PrefabCreateEntry : CreateFileEntry
     {
+        /// <inheritdoc />
         public override bool CanBeCreated => _options.RootActorType != null;
 
         /// <summary>

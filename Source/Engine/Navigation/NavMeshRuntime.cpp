@@ -293,7 +293,7 @@ void NavMeshRuntime::SetTileSize(float tileSize)
     ScopeLock lock(Locker);
 
     // Skip if the same or invalid
-    if (Math::NearEqual(_tileSize, tileSize) || tileSize < 1)
+    if (_tileSize == tileSize || tileSize < 1)
         return;
 
     // Dispose the existing mesh (its invalid)

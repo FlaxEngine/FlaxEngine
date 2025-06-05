@@ -59,7 +59,7 @@ API_CLASS(sealed, Namespace="FlaxEditor.Content.Settings", NoConstructor) class 
 
 public:
     /// <summary>
-    /// The default gravity force value (in cm^2/s).
+    /// The default gravity value (in cm/(s^2)).
     /// </summary>
     API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Simulation\")")
     Vector3 DefaultGravity = Vector3(0, -981.0f, 0);

@@ -78,7 +78,7 @@ namespace FlaxEditor.Windows.Assets
         /// <summary>
         /// Indication of if the prefab window selection is locked on specific objects.
         /// </summary>
-        public bool LockSelectedObjects
+        public bool LockSelection
         {
             get => _lockSelection;
             set

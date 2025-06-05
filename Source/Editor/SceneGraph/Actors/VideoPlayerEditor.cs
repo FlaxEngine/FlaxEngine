@@ -28,7 +28,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 _infoLabel = playbackGroup.Label(string.Empty).Label;
                 _infoLabel.AutoHeight = true;
 
-                var grid = playbackGroup.CustomContainer<UniformGridPanel>();
+                var grid = layout.UniformGrid();
                 var gridControl = grid.CustomControl;
                 gridControl.ClipChildren = false;
                 gridControl.Height = Button.DefaultHeight;

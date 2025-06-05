@@ -40,7 +40,7 @@ void Task::Cancel()
 bool Task::Wait(double timeoutMilliseconds) const
 {
     PROFILE_CPU();
-    double startTime = Platform::GetTimeSeconds() * 0.001;
+    const double startTime = Platform::GetTimeSeconds();
 
     // TODO: no active waiting! use a semaphore!
 
@@ -54,7 +54,7 @@ bool Task::Wait(double timeoutMilliseconds) const
             // Wait for child if has
             if (_continueWith)
             {
-                auto spendTime = Platform::GetTimeSeconds() * 0.001 - startTime;
+                const auto spendTime = (Platform::GetTimeSeconds() - startTime) * 1000.0;
                 return _continueWith->Wait(timeoutMilliseconds - spendTime);
             }
 
@@ -66,7 +66,7 @@ bool Task::Wait(double timeoutMilliseconds) const
             return true;
 
         Platform::Sleep(1);
-    } while (timeoutMilliseconds <= 0.0 || Platform::GetTimeSeconds() * 0.001 - startTime < timeoutMilliseconds);
+    } while (timeoutMilliseconds <= 0.0 || (Platform::GetTimeSeconds() - startTime) * 1000.0 < timeoutMilliseconds);
 
     // Timeout reached!
     LOG(Warning, "\'{0}\' has timed out. Wait time: {1} ms", ToString(), timeoutMilliseconds);

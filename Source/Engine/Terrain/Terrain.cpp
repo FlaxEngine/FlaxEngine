@@ -240,6 +240,7 @@ void Terrain::DrawChunk(const RenderContext& renderContext, const Int2& patchCoo
 
 void Terrain::DrawPhysicsDebug(RenderView& view)
 {
+    PROFILE_CPU();
     for (int32 pathIndex = 0; pathIndex < _patches.Count(); pathIndex++)
     {
         _patches[pathIndex]->DrawPhysicsDebug(view);
@@ -260,7 +261,7 @@ void Terrain::SetScaleInLightmap(float value)
 
 void Terrain::SetBoundsExtent(const Vector3& value)
 {
-    if (Vector3::NearEqual(_boundsExtent, value))
+    if (_boundsExtent == value)
         return;
 
     _boundsExtent = value;
@@ -891,7 +892,7 @@ void Terrain::OnTransformChanged()
         auto patch = _patches[i];
         patch->UpdateTransform();
     }
-    if (!Float3::NearEqual(_cachedScale, _transform.Scale))
+    if (_cachedScale != _transform.Scale)
     {
         _cachedScale = _transform.Scale;
         for (int32 i = 0; i < _patches.Count(); i++)

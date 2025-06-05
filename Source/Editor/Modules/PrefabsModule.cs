@@ -255,12 +255,17 @@ namespace FlaxEditor.Modules
 
             // When applying changes to prefab from actor in level ignore it's root transformation (see ActorEditor.ProcessDiff)
             var originalTransform = instance.LocalTransform;
+            var originalName = instance.Name;
             if (instance.IsPrefabRoot && instance.HasScene)
+            {
                 instance.LocalTransform = prefab.GetDefaultInstance().Transform;
+                instance.Name = prefab.GetDefaultInstance().Name;
+            }
 
             // Call backend
             var failed = PrefabManager.Internal_ApplyAll(FlaxEngine.Object.GetUnmanagedPtr(instance));
             instance.LocalTransform = originalTransform;
+            instance.Name = originalName;
             if (failed)
                 throw new Exception("Failed to apply the prefab. See log to learn more.");
 

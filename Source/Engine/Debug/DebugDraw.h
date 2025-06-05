@@ -74,7 +74,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     API_FUNCTION() static bool CanClear(void* context = nullptr);
 #endif
 
-    // Gets the last view position when rendering the current context. Can be sued for custom culling or LODing when drawing more complex shapes.
+    // Gets the last view position when rendering the current context. Can be used for custom culling or LODing when drawing more complex shapes.
     static Vector3 GetViewPos();
 
     /// <summary>
@@ -296,11 +296,20 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// Draws the triangles.
     /// </summary>
     /// <param name="vertices">The triangle vertices list (must have multiple of 3 elements).</param>
-    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="transform">The custom matrix used to transform all triangle vertices.</param>
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
     API_FUNCTION() static void DrawTriangles(const Span<Float3>& vertices, const Matrix& transform, const Color& color = Color::White, float duration = 0.0f, bool depthTest = true);
+
+    /// <summary>
+    /// Draws the triangles using the provided vertex buffer that contains groups of 3 Vertex elements per-triangle.
+    /// </summary>
+    /// <param name="triangles">The GPU buffer with vertices for triangles (must have multiple of 3 elements).</param>
+    /// <param name="transform">The custom matrix used to transform all triangle vertices.</param>
+    /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
+    /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
+    API_FUNCTION() static void DrawTriangles(GPUBuffer* triangles, const Matrix& transform, float duration = 0.0f, bool depthTest = true);
 
     /// <summary>
     /// Draws the triangles.
@@ -315,7 +324,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// Draws the triangles.
     /// </summary>
     /// <param name="vertices">The triangle vertices list (must have multiple of 3 elements).</param>
-    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="transform">The custom matrix used to transform all triangle vertices.</param>
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
@@ -336,7 +345,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// </summary>
     /// <param name="vertices">The triangle vertices list.</param>
     /// <param name="indices">The triangle indices list (must have multiple of 3 elements).</param>
-    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="transform">The custom matrix used to transform all triangle vertices.</param>
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
@@ -357,7 +366,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// </summary>
     /// <param name="vertices">The triangle vertices list.</param>
     /// <param name="indices">The triangle indices list (must have multiple of 3 elements).</param>
-    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="transform">The custom matrix used to transform all triangle vertices.</param>
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
@@ -376,7 +385,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// Draws the triangles.
     /// </summary>
     /// <param name="vertices">The triangle vertices list (must have multiple of 3 elements).</param>
-    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="transform">The custom matrix used to transform all triangle vertices.</param>
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
@@ -395,7 +404,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// Draws the triangles.
     /// </summary>
     /// <param name="vertices">The triangle vertices list (must have multiple of 3 elements).</param>
-    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="transform">The custom matrix used to transform all triangle vertices.</param>
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
@@ -416,7 +425,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// </summary>
     /// <param name="vertices">The triangle vertices list.</param>
     /// <param name="indices">The triangle indices list (must have multiple of 3 elements).</param>
-    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="transform">The custom matrix used to transform all triangle vertices.</param>
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>
@@ -437,7 +446,7 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
     /// </summary>
     /// <param name="vertices">The triangle vertices list.</param>
     /// <param name="indices">The triangle indices list (must have multiple of 3 elements).</param>
-    /// <param name="transform">The custom matrix used to transform all line vertices.</param>
+    /// <param name="transform">The custom matrix used to transform all triangle vertices.</param>
     /// <param name="color">The color.</param>
     /// <param name="duration">The duration (in seconds). Use 0 to draw it only once.</param>
     /// <param name="depthTest">If set to <c>true</c> depth test will be performed, otherwise depth will be ignored.</param>

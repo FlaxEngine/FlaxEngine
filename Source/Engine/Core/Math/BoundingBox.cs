@@ -673,23 +673,23 @@ namespace FlaxEngine
         /// <summary>
         /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
         /// </summary>
-        /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
+        /// <param name="other">The <see cref="Vector4" /> to compare with this instance.</param>
         /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(ref BoundingBox value)
+        public bool Equals(ref BoundingBox other)
         {
-            return Minimum == value.Minimum && Maximum == value.Maximum;
+            return Minimum == other.Minimum && Maximum == other.Maximum;
         }
 
         /// <summary>
         /// Determines whether the specified <see cref="Vector4" /> is equal to this instance.
         /// </summary>
-        /// <param name="value">The <see cref="Vector4" /> to compare with this instance.</param>
+        /// <param name="other">The <see cref="Vector4" /> to compare with this instance.</param>
         /// <returns><c>true</c> if the specified <see cref="Vector4" /> is equal to this instance; otherwise, <c>false</c>.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(BoundingBox value)
+        public bool Equals(BoundingBox other)
         {
-            return Equals(ref value);
+            return Equals(ref other);
         }
 
         /// <summary>

@@ -369,24 +369,14 @@ namespace FlaxEditor.Surface
             }
 
             // Change scale (disable scaling during selecting nodes)
-            if (IsMouseOver && !_leftMouseDown && !IsPrimaryMenuOpened)
+            if (IsMouseOver && !_leftMouseDown && !_rightMouseDown && !IsPrimaryMenuOpened)
             {
                 var nextViewScale = ViewScale + delta * 0.1f;
 
-                if (delta > 0 && !_rightMouseDown)
-                {
-                    // Scale towards mouse when zooming in
-                    var nextCenterPosition = ViewPosition + location / ViewScale;
-                    ViewScale = nextViewScale;
-                    ViewPosition = nextCenterPosition - (location / ViewScale);
-                }
-                else
-                {
-                    // Scale while keeping center position when zooming out or when dragging view
-                    var viewCenter = ViewCenterPosition;
-                    ViewScale = nextViewScale;
-                    ViewCenterPosition = viewCenter;
-                }
+                // Scale towards/ away from mouse when zooming in/ out
+                var nextCenterPosition = ViewPosition + location / ViewScale;
+                ViewScale = nextViewScale;
+                ViewPosition = nextCenterPosition - (location / ViewScale);
 
                 return true;
             }
@@ -498,11 +488,9 @@ namespace FlaxEditor.Surface
                     // Check if user is pressing control
                     if (Root.GetKey(KeyboardKeys.Control))
                     {
-                        // Add to selection
-                        if (!controlUnderMouse.IsSelected)
-                        {
-                            AddToSelection(controlUnderMouse);
-                        }
+                        // Add/remove from selection
+                        controlUnderMouse.IsSelected = !controlUnderMouse.IsSelected;
+                        SelectionChanged?.Invoke();
                     }
                     // Check if node isn't selected
                     else if (!controlUnderMouse.IsSelected)

@@ -76,29 +76,29 @@ namespace FlaxEditor.Windows.Assets
 
             // Transparency
 
-            [EditorOrder(200), DefaultValue(MaterialTransparentLightingMode.Surface), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Transparent material lighting mode.")]
+            [EditorOrder(200), DefaultValue(MaterialTransparentLightingMode.Surface), VisibleIf(nameof(IsForward)), EditorDisplay("Transparency"), Tooltip("Transparent material lighting mode.")]
             public MaterialTransparentLightingMode TransparentLightingMode;
 
-            [EditorOrder(205), DefaultValue(true), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Enables reflections when rendering material.")]
+            [EditorOrder(205), DefaultValue(true), VisibleIf(nameof(IsForward)), EditorDisplay("Transparency"), Tooltip("Enables reflections when rendering material.")]
             public bool EnableReflections;
 
             [VisibleIf(nameof(EnableReflections))]
-            [EditorOrder(210), DefaultValue(false), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Enables Screen Space Reflections when rendering material.")]
+            [EditorOrder(210), DefaultValue(false), VisibleIf(nameof(IsForward)), EditorDisplay("Transparency"), Tooltip("Enables Screen Space Reflections when rendering material.")]
             public bool EnableScreenSpaceReflections;
 
-            [EditorOrder(210), DefaultValue(true), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Enables fog effects when rendering material.")]
+            [EditorOrder(210), DefaultValue(true), VisibleIf(nameof(IsForward)), EditorDisplay("Transparency"), Tooltip("Enables fog effects when rendering material.")]
             public bool EnableFog;
 
-            [EditorOrder(220), DefaultValue(true), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Enables distortion effect when rendering.")]
+            [EditorOrder(220), DefaultValue(true), VisibleIf(nameof(IsForward)), EditorDisplay("Transparency"), Tooltip("Enables distortion effect when rendering.")]
             public bool EnableDistortion;
 
-            [EditorOrder(224), DefaultValue(false), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Enables sampling Global Illumination in material (eg. light probes or volumetric lightmap).")]
+            [EditorOrder(224), DefaultValue(false), VisibleIf(nameof(IsForward)), EditorDisplay("Transparency"), Tooltip("Enables sampling Global Illumination in material (eg. light probes or volumetric lightmap).")]
             public bool EnableGlobalIllumination;
 
-            [EditorOrder(225), DefaultValue(false), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Enables refraction offset based on the difference between the per-pixel normal and the per-vertex normal. Useful for large water-like surfaces.")]
+            [EditorOrder(225), DefaultValue(false), VisibleIf(nameof(IsForward)), EditorDisplay("Transparency"), Tooltip("Enables refraction offset based on the difference between the per-pixel normal and the per-vertex normal. Useful for large water-like surfaces.")]
             public bool PixelNormalOffsetRefraction;
 
-            [EditorOrder(230), DefaultValue(0.12f), VisibleIf(nameof(IsStandard)), EditorDisplay("Transparency"), Tooltip("Controls opacity values clipping point."), Limit(0.0f, 1.0f, 0.01f)]
+            [EditorOrder(230), DefaultValue(0.12f), VisibleIf(nameof(IsForward)), EditorDisplay("Transparency"), Tooltip("Controls opacity values clipping point."), Limit(0.0f, 1.0f, 0.01f)]
             public float OpacityThreshold;
 
             // Tessellation
@@ -146,6 +146,7 @@ namespace FlaxEditor.Windows.Assets
             private bool IsDecal => Domain == MaterialDomain.Decal;
             private bool IsGUI => Domain == MaterialDomain.GUI;
             private bool IsStandard => Domain == MaterialDomain.Surface || Domain == MaterialDomain.Terrain || Domain == MaterialDomain.Particle || Domain == MaterialDomain.Deformable;
+            private bool IsForward => Domain == MaterialDomain.Particle || ((Domain == MaterialDomain.Deformable || Domain == MaterialDomain.Surface) && BlendMode != MaterialBlendMode.Opaque);
             private bool IsStandardOrGUI => IsStandard || IsGUI;
 
             /// <summary>

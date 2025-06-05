@@ -52,6 +52,11 @@ namespace FlaxEngine.GUI
         protected float _cachedHeight = 16.0f;
 
         /// <summary>
+        /// The items spacing.
+        /// </summary>
+        protected float _itemsSpacing = 2.0f;
+
+        /// <summary>
         /// The items margin.
         /// </summary>
         protected Margin _itemsMargin = new Margin(2.0f, 2.0f, 2.0f, 2.0f);
@@ -168,9 +173,9 @@ namespace FlaxEngine.GUI
         }
 
         /// <summary>
-        /// Gets or sets the item slots margin (the space between items).
+        /// Gets or sets the item slots margin (the space around items).
         /// </summary>
-        [EditorOrder(10), Tooltip("The item slots margin (the space between items).")]
+        [EditorOrder(10)]
         public Margin ItemsMargin
         {
             get => _itemsMargin;
@@ -179,6 +184,23 @@ namespace FlaxEngine.GUI
                 if (_itemsMargin != value)
                 {
                     _itemsMargin = value;
+                    PerformLayout();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the item slots spacing (the margin between items).
+        /// </summary>
+        [EditorOrder(11)]
+        public float ItemsSpacing
+        {
+            get => _itemsSpacing;
+            set
+            {
+                if (!Mathf.NearEqual(_itemsSpacing, value))
+                {
+                    _itemsSpacing = value;
                     PerformLayout();
                 }
             }
@@ -563,25 +585,27 @@ namespace FlaxEngine.GUI
             var slotsLeft = clientArea.Left + slotsMargin.Left;
             var slotsWidth = clientArea.Width - slotsMargin.Width;
             float minHeight = HeaderHeight;
-            float y = clientArea.Top;
-            float height = clientArea.Top + dropOffset;
+            float y = clientArea.Top + slotsMargin.Top;
+            bool anyAdded = false;
             for (int i = 0; i < _children.Count; i++)
             {
                 Control c = _children[i];
                 if (c.IsScrollable && c.Visible)
                 {
                     var h = c.Height;
-                    y += slotsMargin.Top;
-
                     c.Bounds = new Rectangle(slotsLeft, y, slotsWidth, h);
-
-                    h += slotsMargin.Bottom;
+                    h += _itemsSpacing;
                     y += h;
-                    height += h + slotsMargin.Top;
+                    anyAdded = true;
                 }
             }
 
             // Update panel height
+            if (anyAdded)
+                y -= _itemsSpacing;
+            if (anyAdded)
+                y += slotsMargin.Bottom;
+            float height = dropOffset + y;
             _cachedHeight = height;
             if (_animationProgress >= 1.0f && _isClosed)
                 y = minHeight;

@@ -24,7 +24,7 @@ protected:
     bool _isTrigger;
     void* _shape;
     void* _staticActor;
-    Float3 _cachedScale;
+    float _cachedScale;
     float _contactOffset;
     Vector3 _cachedLocalPosePos;
     Quaternion _cachedLocalPoseRot;
@@ -61,7 +61,7 @@ public:
     /// <summary>
     /// Sets the center of the collider, measured in the object's local space.
     /// </summary>
-    API_PROPERTY() void SetCenter(const Vector3& value);
+    API_PROPERTY() virtual void SetCenter(const Vector3& value);
 
     /// <summary>
     /// Gets the contact offset. Colliders whose distance is less than the sum of their ContactOffset values will generate contacts. The contact offset must be positive. Contact offset allows the collision detection system to predictively enforce the contact constraint even when the objects are slightly separated.

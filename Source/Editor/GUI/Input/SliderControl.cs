@@ -54,7 +54,7 @@ namespace FlaxEditor.GUI.Input
                 set
                 {
                     value = Mathf.Clamp(value, Minimum, Maximum);
-                    if (!Mathf.NearEqual(value, _value))
+                    if (value != _value)
                     {
                         _value = value;
 
@@ -311,7 +311,7 @@ namespace FlaxEditor.GUI.Input
             get => _min;
             set
             {
-                if (!Mathf.NearEqual(_min, value))
+                if (_min != value)
                 {
                     if (value > _max)
                         throw new ArgumentException();
@@ -330,7 +330,7 @@ namespace FlaxEditor.GUI.Input
             get => _max;
             set
             {
-                if (!Mathf.NearEqual(_max, value))
+                if (_max != value)
                 {
                     if (value < _min)
                         throw new ArgumentException();

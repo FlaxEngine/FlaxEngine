@@ -39,7 +39,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (ragdoll.Parent is AnimatedModel animatedModel && animatedModel.SkinnedModel)
             {
                 // Builder
-                var grid = editorGroup.CustomContainer<UniformGridPanel>();
+                var grid = editorGroup.UniformGrid();
                 var gridControl = grid.CustomControl;
                 gridControl.ClipChildren = false;
                 gridControl.Height = Button.DefaultHeight;
@@ -53,7 +53,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (Presenter.Owner != null)
             {
                 // Selection
-                var grid = editorGroup.CustomContainer<UniformGridPanel>();
+                var grid = editorGroup.UniformGrid();
                 var gridControl = grid.CustomControl;
                 gridControl.ClipChildren = false;
                 gridControl.Height = Button.DefaultHeight;

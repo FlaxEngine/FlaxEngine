@@ -24,8 +24,6 @@
 #include "Engine/Level/Actors/SpotLight.h"
 #include "Engine/Video/VideoPlayer.h"
 
-#define ICON_RADIUS 7.0f
-
 enum class IconTypes
 {
     PointLight,
@@ -67,6 +65,16 @@ public:
 };
 
 ViewportIconsRendererService ViewportIconsRendererServiceInstance;
+float ViewportIconsRenderer::Scale = 1.0f;
+
+void ViewportIconsRenderer::GetBounds(const Vector3& position, const Vector3& viewPosition, BoundingSphere& bounds)
+{
+    constexpr Real minSize = 7.0;
+    constexpr Real maxSize = 30.0;
+    Real scale = Math::Square(Vector3::Distance(position, viewPosition) / 1000.0f);
+    Real radius = minSize + Math::Min<Real>(scale, 1.0f) * (maxSize - minSize);
+    bounds = BoundingSphere(position, radius * Scale);
+}
 
 void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Actor* actor)
 {
@@ -134,7 +142,8 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene
     AssetReference<Texture> texture;
     for (Actor* icon : icons)
     {
-        BoundingSphere sphere(icon->GetPosition() - renderContext.View.Origin, ICON_RADIUS);
+        BoundingSphere sphere;
+        ViewportIconsRenderer::GetBounds(icon->GetPosition() - renderContext.View.Origin, renderContext.View.Position, sphere);
         if (!frustum.Intersects(sphere))
             continue;
         IconTypes iconType;
@@ -174,7 +183,7 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Scene
         if (draw.Buffer)
         {
             // Create world matrix
-            Matrix::Scaling(ICON_RADIUS * 2.0f, m2);
+            Matrix::Scaling((float)sphere.Radius * 2.0f, m2);
             Matrix::RotationY(PI, world);
             Matrix::Multiply(m2, world, m1);
             Matrix::Billboard(sphere.Center, view.Position, Vector3::Up, view.Direction, m2);
@@ -194,14 +203,15 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
     auto& view = renderContext.View;
     const BoundingFrustum frustum = view.Frustum;
     Matrix m1, m2, world;
-    BoundingSphere sphere(actor->GetPosition() - renderContext.View.Origin, ICON_RADIUS);
+    BoundingSphere sphere;
+    ViewportIconsRenderer::GetBounds(actor->GetPosition() - renderContext.View.Origin, renderContext.View.Position, sphere);
     IconTypes iconType;
     AssetReference<Texture> texture;
 
     if (frustum.Intersects(sphere) && ActorTypeToIconType.TryGet(actor->GetTypeHandle(), iconType))
     {
         // Create world matrix
-        Matrix::Scaling(ICON_RADIUS * 2.0f, m2);
+        Matrix::Scaling((float)sphere.Radius * 2.0f, m2);
         Matrix::RotationY(PI, world);
         Matrix::Multiply(m2, world, m1);
         Matrix::Billboard(sphere.Center, view.Position, Vector3::Up, view.Direction, m2);

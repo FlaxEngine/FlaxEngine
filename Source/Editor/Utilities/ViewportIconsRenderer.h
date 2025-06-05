@@ -18,6 +18,19 @@ API_CLASS(Static, Namespace="FlaxEditor") class FLAXENGINE_API ViewportIconsRend
 
 public:
     /// <summary>
+    /// Global scale of the icons.
+    /// </summary>
+    API_FIELD() static float Scale;
+
+    /// <summary>
+    /// Draws the icons for the actors in the given scene (or actor tree).
+    /// </summary>
+    /// <param name="position">The icon position.</param>
+    /// <param name="viewPosition">The viewer position.</param>
+    /// <param name="bounds">The computed bounds for the icon.</param>
+    API_FUNCTION() static void GetBounds(API_PARAM(Ref) const Vector3& position, API_PARAM(Ref) const Vector3& viewPosition, API_PARAM(Out) BoundingSphere& bounds);
+
+    /// <summary>
     /// Draws the icons for the actors in the given scene (or actor tree).
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>

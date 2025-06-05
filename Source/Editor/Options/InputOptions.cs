@@ -34,12 +34,41 @@ namespace FlaxEditor.Options
     }
 
     /// <summary>
+    /// Shortcut availability in play mode.
+    /// </summary>
+    public enum PlayModeShortcutAvailability
+    {
+        /// <summary>
+        /// None of the window shortcuts will be available in play mode.
+        /// </summary>
+        None,
+        /// <summary>
+        /// Only the profiler window shortcut will be available in play mode.
+        /// </summary>
+        ProfilerOnly,
+        /// <summary>
+        /// All window shortcuts will be available in play mode.
+        /// </summary>
+        All,
+    }
+
+    /// <summary>
     /// Input editor options data container.
     /// </summary>
     [CustomEditor(typeof(Editor<InputOptions>))]
     [HideInEditor]
     public sealed class InputOptions
     {
+        /// <summary>
+        /// Gets a value based on the current settings that indicates wether window shortcuts will be avaliable during play mode.
+        /// </summary>
+        public static bool WindowShortcutsAvaliable => !Editor.IsPlayMode || Editor.Instance.Options.Options.Input.PlayModeWindowShortcutAvaliability == PlayModeShortcutAvailability.All;
+
+        /// <summary>
+        /// Gets a value based on the current settings that indicates wether the profiler window shortcut will be avaliable during play mode.
+        /// </summary>
+        public static bool ProfilerShortcutAvaliable => WindowShortcutsAvaliable || Editor.Instance.Options.Options.Input.PlayModeWindowShortcutAvaliability == PlayModeShortcutAvailability.ProfilerOnly;
+
         #region Common
 
         [DefaultValue(typeof(InputBinding), "Ctrl+S")]
@@ -230,9 +259,9 @@ namespace FlaxEditor.Options
 
         #region Profiler
 
-        [DefaultValue(typeof(InputBinding), "None")]
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha7")]
         [EditorDisplay("Profiler", "Open Profiler Window"), EditorOrder(630)]
-        public InputBinding ProfilerWindow = new InputBinding(KeyboardKeys.None);
+        public InputBinding ProfilerWindow = new InputBinding(KeyboardKeys.Alpha7, KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("Profiler", "Start/Stop Profiler"), EditorOrder(631)]
@@ -356,23 +385,266 @@ namespace FlaxEditor.Options
 
         #endregion
 
+        #region Debug Views
+
+        [DefaultValue(typeof(InputBinding), "Alt+Alpha4")]
+        [EditorDisplay("Debug Views"), EditorOrder(2000)]
+        public InputBinding Default = new InputBinding(KeyboardKeys.Alpha4, KeyboardKeys.Alt);
+
+        [DefaultValue(typeof(InputBinding), "Alt+Alpha3")]
+        [EditorDisplay("Debug Views"), EditorOrder(2010)]
+        public InputBinding Unlit = new InputBinding(KeyboardKeys.Alpha3, KeyboardKeys.Alt);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Debug Views"), EditorOrder(2020)]
+        public InputBinding NoPostFX = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "Alt+Alpha2")]
+        [EditorDisplay("Debug Views"), EditorOrder(2030)]
+        public InputBinding Wireframe = new InputBinding(KeyboardKeys.Alpha2, KeyboardKeys.Alt);
+
+        [DefaultValue(typeof(InputBinding), "Alt+Alpha5")]
+        [EditorDisplay("Debug Views"), EditorOrder(2040)]
+        public InputBinding LightBuffer = new InputBinding(KeyboardKeys.Alpha5, KeyboardKeys.Alt);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Debug Views"), EditorOrder(2050)]
+        public InputBinding ReflectionsBuffer = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Debug Views"), EditorOrder(2060)]
+        public InputBinding DepthBuffer = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Debug Views"), EditorOrder(2070)]
+        public InputBinding MotionVectors = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Debug Views"), EditorOrder(2080)]
+        public InputBinding LightmapUVDensity = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Debug Views"), EditorOrder(2090)]
+        public InputBinding VertexColors = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "Alt+Alpha1")]
+        [EditorDisplay("Debug Views"), EditorOrder(2100)]
+        public InputBinding PhysicsColliders = new InputBinding(KeyboardKeys.Alpha1, KeyboardKeys.Alt);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Debug Views"), EditorOrder(2110)]
+        public InputBinding LODPreview = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Debug Views"), EditorOrder(2120)]
+        public InputBinding MaterialComplexity = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Debug Views"), EditorOrder(2130)]
+        public InputBinding QuadOverdraw = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Debug Views"), EditorOrder(2140)]
+        public InputBinding GloablSDF = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Debug Views"), EditorOrder(2150)]
+        public InputBinding GlobalSurfaceAtlas = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Debug Views"), EditorOrder(2160)]
+        public InputBinding GlobalIllumination = new InputBinding(KeyboardKeys.None);
+
+        #endregion
+
+        #region View Flags
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3000)]
+        public InputBinding AntiAliasing = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3010)]
+        public InputBinding Shadows = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha7")]
+        [EditorDisplay("View Flags"), EditorOrder(3020)]
+        public InputBinding EditorSprites = new InputBinding(KeyboardKeys.Alpha7, KeyboardKeys.Control, KeyboardKeys.Shift);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3030)]
+        public InputBinding Reflections = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3040)]
+        public InputBinding ScreenSpaceReflections = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3050)]
+        public InputBinding AmbientOcclusion = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha6")]
+        [EditorDisplay("View Flags", "Global Illumination"), EditorOrder(3060)]
+        public InputBinding GlobalIlluminationViewFlag = new InputBinding(KeyboardKeys.Alpha6, KeyboardKeys.Control, KeyboardKeys.Shift);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3070)]
+        public InputBinding DirectionalLights = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3080)]
+        public InputBinding PointLights = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3090)]
+        public InputBinding SpotLights = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3100)]
+        public InputBinding SkyLights = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3110)]
+        public InputBinding Sky = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3120)]
+        public InputBinding Fog = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3130)]
+        public InputBinding SpecularLight = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3140)]
+        public InputBinding Decals = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha3")]
+        [EditorDisplay("View Flags"), EditorOrder(3150)]
+        public InputBinding CustomPostProcess = new InputBinding(KeyboardKeys.Alpha3, KeyboardKeys.Control, KeyboardKeys.Shift);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3160)]
+        public InputBinding Bloom = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3170)]
+        public InputBinding ToneMapping = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha2")]
+        [EditorDisplay("View Flags"), EditorOrder(3180)]
+        public InputBinding EyeAdaptation = new InputBinding(KeyboardKeys.Alpha2, KeyboardKeys.Control, KeyboardKeys.Shift);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3190)]
+        public InputBinding CameraArtifacts = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3200)]
+        public InputBinding LensFlares = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3210)]
+        public InputBinding DepthOfField = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3220)]
+        public InputBinding MotionBlur = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("View Flags"), EditorOrder(3230)]
+        public InputBinding ContactShadows = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha1")]
+        [EditorDisplay("View Flags"), EditorOrder(3240)]
+        public InputBinding PhysicsDebug = new InputBinding(KeyboardKeys.Alpha1, KeyboardKeys.Control, KeyboardKeys.Shift);
+
+        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha5")]
+        [EditorDisplay("View Flags"), EditorOrder(3250)]
+        public InputBinding LightsDebug = new InputBinding(KeyboardKeys.Alpha5, KeyboardKeys.Control, KeyboardKeys.Shift);
+
+        [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Alpha4")]
+        [EditorDisplay("View Flags"), EditorOrder(3260)]
+        public InputBinding DebugDraw = new InputBinding(KeyboardKeys.Alpha4, KeyboardKeys.Control, KeyboardKeys.Shift);
+
+        #endregion
+
         #region Interface
 
         [DefaultValue(typeof(InputBinding), "Ctrl+W")]
-        [EditorDisplay("Interface"), EditorOrder(2000)]
+        [EditorDisplay("Interface"), EditorOrder(3500)]
         public InputBinding CloseTab = new InputBinding(KeyboardKeys.W, KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), "Ctrl+Tab")]
-        [EditorDisplay("Interface"), EditorOrder(2010)]
+        [EditorDisplay("Interface"), EditorOrder(3510)]
         public InputBinding NextTab = new InputBinding(KeyboardKeys.Tab, KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), "Shift+Ctrl+Tab")]
-        [EditorDisplay("Interface"), EditorOrder(2020)]
+        [EditorDisplay("Interface"), EditorOrder(3520)]
         public InputBinding PreviousTab = new InputBinding(KeyboardKeys.Tab, KeyboardKeys.Control, KeyboardKeys.Shift);
 
         [DefaultValue(SceneNodeDoubleClick.Expand)]
-        [EditorDisplay("Interface"), EditorOrder(2030)]
+        [EditorDisplay("Interface"), EditorOrder(3530)]
         public SceneNodeDoubleClick DoubleClickSceneNode = SceneNodeDoubleClick.Expand;
+
+        #endregion
+
+        #region Windows
+
+        /// <summary>
+        /// Gets or sets a value indicating what window shortcuts will be available during play mode.
+        /// </summary>
+        [DefaultValue(PlayModeShortcutAvailability.ProfilerOnly)]
+        [EditorDisplay("Windows", "Avaliability in Play Mode"), EditorOrder(3000)]
+        public PlayModeShortcutAvailability PlayModeWindowShortcutAvaliability { get; set; } = PlayModeShortcutAvailability.ProfilerOnly;
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha5")]
+        [EditorDisplay("Windows"), EditorOrder(3010)]
+        public InputBinding ContentWindow = new InputBinding(KeyboardKeys.Alpha5, KeyboardKeys.Control);
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha4")]
+        [EditorDisplay("Windows"), EditorOrder(3020)]
+        public InputBinding SceneWindow = new InputBinding(KeyboardKeys.Alpha4, KeyboardKeys.Control);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(3030)]
+        public InputBinding ToolboxWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha3")]
+        [EditorDisplay("Windows"), EditorOrder(3040)]
+        public InputBinding PropertiesWindow = new InputBinding(KeyboardKeys.Alpha3, KeyboardKeys.Control);
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha2")]
+        [EditorDisplay("Windows"), EditorOrder(3050)]
+        public InputBinding GameWindow = new InputBinding(KeyboardKeys.Alpha2, KeyboardKeys.Control);
+
+        [DefaultValue(typeof(InputBinding), "Ctrl+Alpha1")]
+        [EditorDisplay("Windows"), EditorOrder(3060)]
+        public InputBinding EditorWindow = new InputBinding(KeyboardKeys.Alpha1, KeyboardKeys.Control);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(3070)]
+        public InputBinding DebugLogWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(3080)]
+        public InputBinding OutputLogWindow = new InputBinding(KeyboardKeys.C, KeyboardKeys.Control, KeyboardKeys.Shift);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(3090)]
+        public InputBinding GraphicsQualityWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(4000)]
+        public InputBinding GameCookerWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(4010)]
+        public InputBinding ContentSearchWindow = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Windows"), EditorOrder(4020)]
+        public InputBinding VisualScriptDebuggerWindow = new InputBinding(KeyboardKeys.None);
 
         #endregion
     }

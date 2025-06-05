@@ -35,7 +35,8 @@ namespace FlaxEditor.SceneGraph
                 return false;
             }
 
-            BoundingSphere sphere = new BoundingSphere(Transform.Translation, 7.0f);
+            var center = _actor.Transform.Translation;
+            ViewportIconsRenderer.GetBounds(ref center, ref ray.Ray.Position, out var sphere);
             return CollisionsHelper.RayIntersectsSphere(ref ray.Ray, ref sphere, out distance);
         }
     }

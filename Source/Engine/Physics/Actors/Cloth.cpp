@@ -340,6 +340,7 @@ void Cloth::DrawPhysicsDebug(RenderView& view)
 #if WITH_CLOTH && COMPILE_WITH_DEBUG_DRAW
     if (_cloth)
     {
+        PROFILE_CPU();
         const ModelInstanceActor::MeshReference mesh = GetMesh();
         if (mesh.Actor == nullptr)
             return;

@@ -415,13 +415,10 @@ namespace FlaxEditor.Utilities
         /// </summary>
         /// <param name="parentLayout">The parent layout element.</param>
         /// <param name="path">The import path.</param>
-        /// <param name="useInitialSpacing">Whether to use an initial layout space of 5 for separation.</param>
-        public static void CreateImportPathUI(CustomEditors.LayoutElementsContainer parentLayout, string path, bool useInitialSpacing = true)
+        public static void CreateImportPathUI(CustomEditors.LayoutElementsContainer parentLayout, string path)
         {
             if (!string.IsNullOrEmpty(path))
             {
-                if (useInitialSpacing)
-                    parentLayout.Space(0);
                 var textBox = parentLayout.TextBox().TextBox;
                 textBox.TooltipText = "Source asset path. Can be relative or absolute to the project. Path is not editable here.";
                 textBox.IsReadOnly = true;
@@ -1503,7 +1500,6 @@ namespace FlaxEditor.Utilities
             inputActions.Add(options => options.BuildNav, Editor.Instance.BuildNavMesh);
             inputActions.Add(options => options.BuildSDF, Editor.Instance.BuildAllMeshesSDF);
             inputActions.Add(options => options.TakeScreenshot, Editor.Instance.Windows.TakeScreenshot);
-            inputActions.Add(options => options.ProfilerWindow, () => Editor.Instance.Windows.ProfilerWin.FocusOrShow());
 #if USE_PROFILER
             inputActions.Add(options => options.ProfilerStartStop, () =>
             {

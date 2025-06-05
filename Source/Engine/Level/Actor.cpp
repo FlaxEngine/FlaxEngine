@@ -36,8 +36,6 @@
 #define CHECK_EXECUTE_IN_EDITOR
 #endif
 
-#define ACTOR_ORIENTATION_EPSILON 0.000000001f
-
 // Start loop over actor children/scripts from the beginning to account for any newly added or removed actors.
 #define ACTOR_LOOP_START_MODIFIED_HIERARCHY() _isHierarchyDirty = false
 #define ACTOR_LOOP_CHECK_MODIFIED_HIERARCHY() if (_isHierarchyDirty) { _isHierarchyDirty = false; i = -1; }
@@ -660,7 +658,7 @@ void Actor::SetStaticFlags(StaticFlags value)
 void Actor::SetTransform(const Transform& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!(Vector3::NearEqual(_transform.Translation, value.Translation) && Quaternion::NearEqual(_transform.Orientation, value.Orientation, ACTOR_ORIENTATION_EPSILON) && Float3::NearEqual(_transform.Scale, value.Scale)))
+    if (_transform.Translation != value.Translation || _transform.Orientation != value.Orientation || _transform.Scale != value.Scale)
     {
         if (_parent)
             _parent->_transform.WorldToLocal(value, _localTransform);
@@ -673,7 +671,7 @@ void Actor::SetTransform(const Transform& value)
 void Actor::SetPosition(const Vector3& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Vector3::NearEqual(_transform.Translation, value))
+    if (_transform.Translation != value)
     {
         if (_parent)
             _localTransform.Translation = _parent->_transform.WorldToLocal(value);
@@ -686,7 +684,7 @@ void Actor::SetPosition(const Vector3& value)
 void Actor::SetOrientation(const Quaternion& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Quaternion::NearEqual(_transform.Orientation, value, ACTOR_ORIENTATION_EPSILON))
+    if (_transform.Orientation != value)
     {
         if (_parent)
             _parent->_transform.WorldToLocal(value, _localTransform.Orientation);
@@ -699,7 +697,7 @@ void Actor::SetOrientation(const Quaternion& value)
 void Actor::SetScale(const Float3& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Float3::NearEqual(_transform.Scale, value))
+    if (_transform.Scale != value)
     {
         if (_parent)
             Float3::Divide(value, _parent->_transform.Scale, _localTransform.Scale);
@@ -748,7 +746,7 @@ void Actor::ResetLocalTransform()
 void Actor::SetLocalTransform(const Transform& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!(Vector3::NearEqual(_localTransform.Translation, value.Translation) && Quaternion::NearEqual(_localTransform.Orientation, value.Orientation, ACTOR_ORIENTATION_EPSILON) && Float3::NearEqual(_localTransform.Scale, value.Scale)))
+    if (_localTransform.Translation != value.Translation || _localTransform.Orientation != value.Orientation || _localTransform.Scale != value.Scale)
     {
         _localTransform = value;
         OnTransformChanged();
@@ -758,7 +756,7 @@ void Actor::SetLocalTransform(const Transform& value)
 void Actor::SetLocalPosition(const Vector3& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Vector3::NearEqual(_localTransform.Translation, value))
+    if (_localTransform.Translation != value)
     {
         _localTransform.Translation = value;
         OnTransformChanged();
@@ -770,7 +768,7 @@ void Actor::SetLocalOrientation(const Quaternion& value)
     CHECK(!value.IsNanOrInfinity());
     Quaternion v = value;
     v.Normalize();
-    if (!Quaternion::NearEqual(_localTransform.Orientation, v, ACTOR_ORIENTATION_EPSILON))
+    if (_localTransform.Orientation != value)
     {
         _localTransform.Orientation = v;
         OnTransformChanged();
@@ -780,7 +778,7 @@ void Actor::SetLocalOrientation(const Quaternion& value)
 void Actor::SetLocalScale(const Float3& value)
 {
     CHECK(!value.IsNanOrInfinity());
-    if (!Float3::NearEqual(_localTransform.Scale, value))
+    if (_localTransform.Scale != value)
     {
         _localTransform.Scale = value;
         OnTransformChanged();
