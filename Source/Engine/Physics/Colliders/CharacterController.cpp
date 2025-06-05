@@ -215,8 +215,7 @@ void CharacterController::CreateController()
 {
     // Create controller
     ASSERT(_controller == nullptr && _shape == nullptr);
-    _cachedScale = GetScale();
-    const float scaling = _cachedScale.GetAbsolute().MaxValue();
+    _cachedScale = GetScale().GetAbsolute().MaxValue();
     const Vector3 position = _transform.LocalToWorld(_center);
     _controller = PhysicsBackend::CreateController(GetPhysicsScene()->GetPhysicsScene(), this, this, _contactOffset, position, _slopeLimit, (int32)_nonWalkableMode, Material, Math::Abs(_radius) * scaling, Math::Abs(_height) * scaling, _stepOffset, _shape);
 
@@ -334,7 +333,7 @@ void CharacterController::UpdateGeometry()
         return;
 
     // Setup shape geometry
-    _cachedScale = GetScale();
+    _cachedScale = GetScale().GetAbsolute().MaxValue();
     UpdateSize();
 }
 
@@ -398,7 +397,7 @@ void CharacterController::OnTransformChanged()
     if (!_isUpdatingTransform && _controller)
     {
         PhysicsBackend::SetControllerPosition(_controller, position);
-        const Float3 scale = GetScale();
+        const float scale = GetScale().GetAbsolute().MaxValue();
         if (_cachedScale != scale)
             UpdateGeometry();
         UpdateBounds();

@@ -24,7 +24,7 @@ protected:
     bool _isTrigger;
     void* _shape;
     void* _staticActor;
-    Float3 _cachedScale;
+    float _cachedScale;
     float _contactOffset;
     Vector3 _cachedLocalPosePos;
     Quaternion _cachedLocalPoseRot;
