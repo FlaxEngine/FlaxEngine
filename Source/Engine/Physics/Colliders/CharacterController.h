@@ -42,6 +42,22 @@ public:
     };
 
     /// <summary>
+    /// Specifies how a character controller capsule placement.
+    /// </summary>
+    API_ENUM() enum class OriginModes
+    {
+        /// <summary>
+        /// Character origin starts at capsule center (including Center offset properly).
+        /// </summary>
+        CapsuleCenter,
+
+        /// <summary>
+        /// Character origin starts at capsule base position aka character feet placement.
+        /// </summary>
+        Base,
+    };
+
+    /// <summary>
     /// Specifies how a character controller interacts with non-walkable parts.
     /// </summary>
     API_ENUM() enum class NonWalkableModes
@@ -69,6 +85,7 @@ private:
     Vector3 _upDirection;
     Vector3 _gravityDisplacement;
     NonWalkableModes _nonWalkableMode;
+    OriginModes _originMode;
     CollisionFlags _lastFlags;
 
 public:
@@ -115,6 +132,17 @@ public:
     /// Sets the non-walkable mode for the character controller.
     /// </summary>
     API_PROPERTY() void SetNonWalkableMode(NonWalkableModes value);
+
+    /// <summary>
+    /// Gets the position origin placement mode.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(216), DefaultValue(OriginModes.CapsuleCenter), EditorDisplay(\"Character Controller\")")
+    OriginModes GetOriginMode() const;
+
+    /// <summary>
+    /// Sets the position origin placement mode.
+    /// </summary>
+    API_PROPERTY() void SetOriginMode(OriginModes value);
 
     /// <summary>
     /// Gets the step height. The character will step up a stair only if it is closer to the ground than the indicated value. This should not be greater than the Character Controller’s height or it will generate an error.
@@ -218,6 +246,7 @@ protected:
     void UpdateSize() const;
 
 private:
+    Vector3 GetControllerPosition() const;
     void GetControllerSize(float& height, float& radius) const;
 
 public:

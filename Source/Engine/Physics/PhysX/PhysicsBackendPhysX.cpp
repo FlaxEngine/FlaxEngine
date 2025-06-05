@@ -3155,10 +3155,9 @@ void* PhysicsBackend::CreateController(void* scene, IPhysicsActor* actor, Physic
         desc.material = (PxMaterial*)((PhysicalMaterial*)material->Instance)->GetPhysicsMaterial();
     else
         desc.material = DefaultMaterial;
-    const float minSize = 0.001f;
-    desc.height = Math::Max(height, minSize);
-    desc.radius = Math::Max(radius, minSize);
-    desc.stepOffset = Math::Min(stepOffset, desc.height + desc.radius * 2.0f - minSize);
+    desc.height = height;
+    desc.radius = radius;
+    desc.stepOffset = Math::Min(stepOffset, desc.height + desc.radius * 2.0f - 0.001f);
     auto controllerPhysX = (PxCapsuleController*)scenePhysX->ControllerManager->createController(desc);
     PxRigidActor* actorPhysX = controllerPhysX->getActor();
     ASSERT(actorPhysX && actorPhysX->getNbShapes() == 1);
@@ -3207,7 +3206,15 @@ void PhysicsBackend::SetControllerStepOffset(void* controller, float value)
 Vector3 PhysicsBackend::GetControllerBasePosition(void* controller)
 {
     auto controllerPhysX = (PxCapsuleController*)controller;
-    return P2C(controllerPhysX->getFootPosition());
+    const Vector3 origin = SceneOrigins[controllerPhysX->getScene()];
+    return P2C(controllerPhysX->getFootPosition()) + origin;
+}
+
+void PhysicsBackend::SetControllerBasePosition(void* controller, const Vector3& value)
+{
+    auto controllerPhysX = (PxCapsuleController*)controller;
+    const Vector3 sceneOrigin = SceneOrigins[controllerPhysX->getScene()];
+    controllerPhysX->setFootPosition(PxExtendedVec3(value.X - sceneOrigin.X, value.Y - sceneOrigin.Y, value.Z - sceneOrigin.Z));
 }
 
 Vector3 PhysicsBackend::GetControllerUpDirection(void* controller)
