@@ -142,7 +142,6 @@ namespace FlaxEngine.Windows.Search
             /// <inheritdoc />
             public override bool OnKeyDown(KeyboardKeys key)
             {
-                InputOptions options = FlaxEditor.Editor.Instance.Options.Options.Input;
                 if (IsFocused)
                 {
                     if (key == KeyboardKeys.Return && Navigate != null)
@@ -150,7 +149,7 @@ namespace FlaxEngine.Windows.Search
                         Navigate.Invoke(this);
                         return true;
                     }
-                    if (options.Copy.Process(this))
+                    if (InputOptions.Copy.Process(this))
                     {
                         Clipboard.Text = Text;
                         return true;

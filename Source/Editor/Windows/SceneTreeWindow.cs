@@ -48,8 +48,6 @@ namespace FlaxEditor.Windows
         public SceneTreeWindow(Editor editor)
         : base(editor, true, ScrollBars.None)
         {
-            InputOptions inputOptions = Editor.Instance.Options.Options.Input;
-
             Title = "Scene";
 
             // Scene searching query input box

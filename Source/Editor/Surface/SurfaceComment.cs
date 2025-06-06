@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
+using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Utilities;
@@ -184,7 +185,7 @@ namespace FlaxEditor.Surface
             else
             {
                 // Rename on F2
-                if (IsSelected && Editor.Instance.Options.Options.Input.Rename.Process(this))
+                if (IsSelected && InputOptions.Rename.Process(this))
                 {
                     StartRenaming();
                 }

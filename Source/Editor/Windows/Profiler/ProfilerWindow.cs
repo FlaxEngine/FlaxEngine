@@ -88,8 +88,6 @@ namespace FlaxEditor.Windows.Profiler
         public ProfilerWindow(Editor editor)
         : base(editor, true, ScrollBars.None)
         {
-            InputOptions inputOptions = Editor.Instance.Options.Options.Input;
-
             Title = "Profiler";
 
 #if USE_PROFILER

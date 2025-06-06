@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Options;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEngine;
@@ -279,13 +280,12 @@ namespace FlaxEditor.Viewport.Previews
                 return true;
             }
 
-            var inputOptions = Editor.Instance.Options.Options.Input;
-            if (inputOptions.Play.Process(this))
+            if (InputOptions.Play.Process(this))
             {
                 PlaySimulation = true;
                 return true;
             }
-            if (inputOptions.Pause.Process(this))
+            if (InputOptions.Pause.Process(this))
             {
                 PlaySimulation = false;
                 return true;

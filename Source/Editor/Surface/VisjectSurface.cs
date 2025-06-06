@@ -397,7 +397,6 @@ namespace FlaxEditor.Surface
             RootContext.Modified += OnRootContextModified;
 
             // Setup input actions
-            var inputOptions = Editor.Instance.Options.Options.Input;
             InputActions = new InputBindingList
             (
                 [

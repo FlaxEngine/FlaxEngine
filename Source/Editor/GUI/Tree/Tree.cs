@@ -487,15 +487,14 @@ namespace FlaxEditor.GUI.Tree
             // Check if can use multi selection
             if (_supportMultiSelect)
             {
-                InputOptions options = Editor.Instance.Options.Options.Input;
 
                 // Select all expanded nodes
-                if (options.SelectAll.Process(this))
+                if (InputOptions.SelectAll.Process(this))
                 {
                     SelectAllExpanded();
                     return true;
                 }
-                else if (options.DeselectAll.Process(this))
+                else if (InputOptions.DeselectAll.Process(this))
                 {
                     DeselectAll();
                     return true;

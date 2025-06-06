@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Input;
+using FlaxEditor.Options;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Widgets;
@@ -71,10 +72,10 @@ namespace FlaxEditor.Viewport
         public bool IsControlDown => Root?.GetKey(KeyboardKeys.Control) ?? false;
 
         /// <inheritdoc />
-        public bool SnapToGround => ContainsFocus && Editor.Instance.Options.Options.Input.SnapToGround.Process(Root);
+        public bool SnapToGround => ContainsFocus && InputOptions.SnapToGround.Process(Root);
 
         /// <inheritdoc />
-        public bool SnapToVertex => ContainsFocus && Editor.Instance.Options.Options.Input.SnapToVertex.Process(Root);
+        public bool SnapToVertex => ContainsFocus && InputOptions.SnapToVertex.Process(Root);
 
         /// <inheritdoc />
         public Float2 MouseDelta => _mouseDelta;
@@ -133,7 +134,6 @@ namespace FlaxEditor.Viewport
         internal static void AddGizmoViewportWidgets(EditorViewport viewport, TransformGizmo transformGizmo, bool useProjectCache = false)
         {
             var editor = Editor.Instance;
-            var inputOptions = editor.Options.Options.Input;
 
             if (useProjectCache)
             {
@@ -161,7 +161,7 @@ namespace FlaxEditor.Viewport
             var transformSpaceToggle = new ViewportWidgetButton(string.Empty, editor.Icons.Globe32, null, true)
             {
                 Checked = transformGizmo.ActiveTransformSpace == TransformGizmoBase.TransformSpace.World,
-                TooltipText = $"Gizmo transform space (world or local) ({inputOptions.ToggleTransformSpace})",
+                TooltipText = $"Gizmo transform space (world or local) ({InputOptions.ToggleTransformSpace})",
                 Parent = transformSpaceWidget
             };
             transformSpaceWidget.Parent = viewport;
@@ -376,7 +376,7 @@ namespace FlaxEditor.Viewport
             var gizmoModeTranslate = new ViewportWidgetButton(string.Empty, editor.Icons.Translate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Translate,
-                TooltipText = $"Translate gizmo mode ({inputOptions.TranslateMode})",
+                TooltipText = $"Translate gizmo mode ({InputOptions.TranslateMode})",
                 Checked = true,
                 Parent = gizmoMode
             };
@@ -384,14 +384,14 @@ namespace FlaxEditor.Viewport
             var gizmoModeRotate = new ViewportWidgetButton(string.Empty, editor.Icons.Rotate32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Rotate,
-                TooltipText = $"Rotate gizmo mode ({inputOptions.RotateMode})",
+                TooltipText = $"Rotate gizmo mode ({InputOptions.RotateMode})",
                 Parent = gizmoMode
             };
             gizmoModeRotate.Toggled += _ => transformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate;
             var gizmoModeScale = new ViewportWidgetButton(string.Empty, editor.Icons.Scale32, null, true)
             {
                 Tag = TransformGizmoBase.Mode.Scale,
-                TooltipText = $"Scale gizmo mode ({inputOptions.ScaleMode})",
+                TooltipText = $"Scale gizmo mode ({InputOptions.ScaleMode})",
                 Parent = gizmoMode
             };
             gizmoModeScale.Toggled += _ => transformGizmo.ActiveMode = TransformGizmoBase.Mode.Scale;

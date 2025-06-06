@@ -5,6 +5,7 @@ using FlaxEditor.GUI.Input;
 using FlaxEngine;
 using FlaxEditor.Viewport.Widgets;
 using FlaxEngine.GUI;
+using FlaxEditor.Options;
 
 namespace FlaxEditor.Viewport.Previews
 {
@@ -110,13 +111,12 @@ namespace FlaxEditor.Viewport.Previews
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
-            var inputOptions = Editor.Instance.Options.Options.Input;
-            if (inputOptions.Play.Process(this))
+            if (InputOptions.Play.Process(this))
             {
                 PlayAnimation = true;
                 return true;
             }
-            if (inputOptions.Pause.Process(this))
+            if (InputOptions.Pause.Process(this))
             {
                 PlayAnimation = false;
                 return true;

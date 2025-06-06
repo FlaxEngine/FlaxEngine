@@ -1327,33 +1327,32 @@ namespace FlaxEngine.GUI
 
             // Handle controls that have bindings
 #if FLAX_EDITOR
-            InputOptions options = FlaxEditor.Editor.Instance.Options.Options.Input;
-            if (options.Copy.Process(this))
+            if (InputOptions.Copy.Process(this))
             {
                 Copy();
                 return true;
             }
-            else if (options.Paste.Process(this))
+            else if (InputOptions.Paste.Process(this))
             {
                 Paste();
                 return true;
             }
-            else if (options.Duplicate.Process(this))
+            else if (InputOptions.Duplicate.Process(this))
             {
                 Duplicate();
                 return true;
             }
-            else if (options.Cut.Process(this))
+            else if (InputOptions.Cut.Process(this))
             {
                 Cut();
                 return true;
             }
-            else if (options.SelectAll.Process(this))
+            else if (InputOptions.SelectAll.Process(this))
             {
                 SelectAll();
                 return true;
             }
-            else if (options.DeselectAll.Process(this))
+            else if (InputOptions.DeselectAll.Process(this))
             {
                 Deselect();
                 return true;

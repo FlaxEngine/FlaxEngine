@@ -124,7 +124,6 @@ namespace FlaxEditor.GUI.Docking
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
 
-            InputOptions inputOptions = Editor.Instance.Options.Options.Input;
             // Bind navigation shortcuts
             InputActions = new InputBindingList
             (

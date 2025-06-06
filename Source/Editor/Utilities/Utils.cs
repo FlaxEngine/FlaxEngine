@@ -1464,7 +1464,6 @@ namespace FlaxEditor.Utilities
         public static void SetupCommonInputActions(EditorWindow window)
         {
             var inputActions = window.InputActions;
-            var inputOptions = Editor.Instance.Options.Options.Input;
             // Setup input actions
             inputActions.Add
             (

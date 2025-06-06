@@ -201,8 +201,6 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public float MouseWheelSensitivity { get => _mouseWheelSensitivity; set => _mouseWheelSensitivity = value; }
 
-        public InputOptions InputOptions = Editor.Instance.Options.Options.Input;
-
         private readonly Editor _editor;
 
         private float _yaw;
@@ -265,11 +263,9 @@ namespace FlaxEditor.Viewport
 
         private void SetBindings()
         {
-            InputOptions InputOptions = Editor.Instance.Options.Options.Input;
             InputBindingList = new InputBindingList
             (
                 [
-                    //todo fix snapping when using mouse movement while Move=true
                     new(InputOptionName.Forward, () => {Move = true; _moveDelta = Vector3.Forward * MovementSpeed; }, () => {Move = false; _startPos = Vector2.Zero;}),
                     new(InputOptionName.Backward, () => {Move = true; _moveDelta = Vector3.Backward * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
                     new(InputOptionName.Left, () => {Move = true; _moveDelta = Vector3.Left * MovementSpeed; }, () => {Move = false; _moveDelta = Vector3.Zero; }),
@@ -279,24 +275,28 @@ namespace FlaxEditor.Viewport
                     new(InputOptionName.Orbit, () => {Orbit = true; CenterMouse = true; }, () => {Orbit = false; CenterMouse = false; }),
                     new(InputOptionName.Pan, () => {Pan = true; CenterMouse = true; }, () => {Pan = false; CenterMouse = false; }),
                     new(InputOptionName.Rotate, () => {Rotate = true; CenterMouse = true; }, () => {Rotate = false; CenterMouse = false; }),
-                    new(InputOptionName.ZoomIn, () =>
-                    {
-                        Zoom = true;
-                        MouseWheelDelta += MouseWheelSensitivity;
-                        if (OrthographicProjection)
-                        {
-                            OrthographicScale -= MouseWheelDelta * MouseWheelSensitivity * 0.2f * OrthographicScale;
-                        }
-                    }, () => Zoom = false),
-                    new(InputOptionName.ZoomOut, () =>
-                    {
-                        Zoom = true;
-                        MouseWheelDelta -= MouseWheelSensitivity;
-                        if (OrthographicProjection)
-                        {
-                            OrthographicScale -= MouseWheelDelta * MouseWheelSensitivity * 0.2f * OrthographicScale;
-                        }
-                    }, () => Zoom = false),
+                    new(InputOptionName.ZoomIn,
+                        () => {
+                            Zoom = true;
+                            MouseWheelDelta += MouseWheelSensitivity;
+                            if (OrthographicProjection)
+                            {
+                                OrthographicScale -= MouseWheelDelta * MouseWheelSensitivity * 0.2f * OrthographicScale;
+                            }
+                        },
+                        () => Zoom = false
+                    ),
+                    new(InputOptionName.ZoomOut, 
+                        () => {
+                            Zoom = true;
+                            MouseWheelDelta -= MouseWheelSensitivity;
+                            if (OrthographicProjection)
+                            {
+                                OrthographicScale -= MouseWheelDelta * MouseWheelSensitivity * 0.2f * OrthographicScale;
+                            }
+                        },
+                        () => Zoom = false
+                    ),
                     new(InputOptionName.CameraIncreaseMoveSpeed, () => MovementSpeed += MouseWheelDelta * MouseWheelSensitivity, null),
                     new(InputOptionName.CameraDecreaseMoveSpeed, () => MovementSpeed += MouseWheelDelta * MouseWheelSensitivity, null),
                     new(InputOptionName.ViewpointTop, () => OrientViewport(CameraViewpoints[Viewpoint.Front]), null),

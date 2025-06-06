@@ -177,8 +177,6 @@ namespace FlaxEditor.Windows
             /// <inheritdoc />
             public override bool OnKeyDown(KeyboardKeys key)
             {
-                InputOptions options = FlaxEditor.Editor.Instance.Options.Options.Input;
-
                 // Up
                 if (key == KeyboardKeys.ArrowUp)
                 {
@@ -209,7 +207,7 @@ namespace FlaxEditor.Windows
                     Open();
                 }
                 // Ctrl+C
-                else if (options.Copy.Process(this))
+                else if (InputOptions.Copy.Process(this))
                 {
                     Copy();
                     return true;

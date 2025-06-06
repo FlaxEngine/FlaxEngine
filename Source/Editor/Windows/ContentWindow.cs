@@ -263,8 +263,6 @@ namespace FlaxEditor.Windows
             _view.OnDuplicate += Duplicate;
             _view.OnPaste += Paste;
 
-            InputOptions inputOptions = Editor.Instance.Options.Options.Input;
-
             _view.InputBindings.Add
             (
                 [

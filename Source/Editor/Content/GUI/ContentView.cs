@@ -193,7 +193,6 @@ namespace FlaxEditor.Content.GUI
         public ContentView()
         {
             // Setup input actions
-            InputOptions options = Editor.Instance.Options.Options.Input;
             InputBindings = new InputBindingList
             (
                 [

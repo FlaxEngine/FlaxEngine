@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Security.Cryptography.X509Certificates;
 using FlaxEditor.InputConfig;
 using FlaxEngine;
 
@@ -145,75 +146,76 @@ namespace FlaxEditor.Options
     [HideInEditor]
     public sealed class InputOptions
     {
-        public static Dictionary<InputOptionName, InputBinding> Dictionary = new();
+        public static Dictionary<InputOptionName, InputBinding> Dictionary = [];
+
         #region Common
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.S)]
         [EditorDisplay("Common"), EditorOrder(100)]
-        public InputBinding Save = new InputBinding(KeyboardKeys.S + "+" + KeyboardKeys.Control);
+        public static InputBinding Save { get; set; } = new InputBinding(KeyboardKeys.S + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.F2)]
         [EditorDisplay("Common"), EditorOrder(110)]
-        public InputBinding Rename = new InputBinding(KeyboardKeys.F2);
+        public static InputBinding Rename { get; set; } = new InputBinding(KeyboardKeys.F2);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.C)]
         [EditorDisplay("Common"), EditorOrder(120)]
-        public InputBinding Copy = new InputBinding(KeyboardKeys.C + "+" + KeyboardKeys.Control);
+        public static InputBinding Copy { get; set; } = new InputBinding(KeyboardKeys.C + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.X)]
         [EditorDisplay("Common"), EditorOrder(130)]
-        public InputBinding Cut = new InputBinding(KeyboardKeys.X + "+" + KeyboardKeys.Control);
+        public static InputBinding Cut { get; set; } = new InputBinding(KeyboardKeys.X + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.V)]
         [EditorDisplay("Common"), EditorOrder(140)]
-        public InputBinding Paste = new InputBinding(KeyboardKeys.V + "+" + KeyboardKeys.Control);
+        public static InputBinding Paste { get; set; } = new InputBinding(KeyboardKeys.V + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.D)]
         [EditorDisplay("Common"), EditorOrder(150)]
-        public InputBinding Duplicate = new InputBinding(KeyboardKeys.D + "+" + KeyboardKeys.Control);
+        public static InputBinding Duplicate { get; set; } = new InputBinding(KeyboardKeys.D + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Delete)]
         [EditorDisplay("Common"), EditorOrder(160)]
-        public InputBinding Delete = new InputBinding(KeyboardKeys.Delete);
+        public static InputBinding Delete { get; set; } = new InputBinding(KeyboardKeys.Delete);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.Z)]
         [EditorDisplay("Common"), EditorOrder(170)]
-        public InputBinding Undo = new InputBinding(KeyboardKeys.Z + "+" + KeyboardKeys.Control);
+        public static InputBinding Undo { get; set; } = new InputBinding(KeyboardKeys.Z + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.Y)]
         [EditorDisplay("Common"), EditorOrder(180)]
-        public InputBinding Redo = new InputBinding(KeyboardKeys.Y + "+" + KeyboardKeys.Control);
+        public static InputBinding Redo { get; set; } = new InputBinding(KeyboardKeys.Y + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.A)]
         [EditorDisplay("Common"), EditorOrder(190)]
-        public InputBinding SelectAll = new InputBinding(KeyboardKeys.A + "+" + KeyboardKeys.Control);
+        public static InputBinding SelectAll { get; set; } = new InputBinding(KeyboardKeys.A + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.Shift + "+" + KeyboardKeysString.A)]
         [EditorDisplay("Common"), EditorOrder(195)]
-        public InputBinding DeselectAll = new InputBinding(KeyboardKeys.A + "+" + KeyboardKeys.Shift + "+" + KeyboardKeys.Control);
+        public static InputBinding DeselectAll { get; set; } = new InputBinding(KeyboardKeys.A + "+" + KeyboardKeys.Shift + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.F)]
         [EditorDisplay("Common"), EditorOrder(200)]
-        public InputBinding FocusSelection = new InputBinding(KeyboardKeys.F);
+        public static InputBinding FocusSelection { get; set; } = new InputBinding(KeyboardKeys.F);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Shift + "+" + KeyboardKeysString.F)]
         [EditorDisplay("Common"), EditorOrder(200)]
-        public InputBinding LockFocusSelection = new InputBinding(KeyboardKeys.F + "+" + KeyboardKeys.Shift);
+        public static InputBinding LockFocusSelection { get; set; } = new InputBinding(KeyboardKeys.F + "+" + KeyboardKeys.Shift);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.F)]
         [EditorDisplay("Common"), EditorOrder(210)]
-        public InputBinding Search = new InputBinding(KeyboardKeys.F + "+" + KeyboardKeys.Control);
+        public static InputBinding Search { get; set; } = new InputBinding(KeyboardKeys.F + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.O)]
         [EditorDisplay("Common"), EditorOrder(220)]
-        public InputBinding ContentFinder = new InputBinding(KeyboardKeys.O + "+" + KeyboardKeys.Control);
+        public static InputBinding ContentFinder { get; set; } = new InputBinding(KeyboardKeys.O + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.R)]
         [EditorDisplay("Common"), EditorOrder(230)]
-        public InputBinding RotateSelection = new InputBinding(KeyboardKeys.R);
+        public static InputBinding RotateSelection { get; set; } = new InputBinding(KeyboardKeys.R);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.F11)]
         [EditorDisplay("Common"), EditorOrder(240)]
-        public InputBinding ToggleFullscreen = new InputBinding(KeyboardKeys.F11);
+        public static InputBinding ToggleFullscreen { get; set; } = new InputBinding(KeyboardKeys.F11);
 
         #endregion
 
@@ -221,23 +223,23 @@ namespace FlaxEditor.Options
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("File"), EditorOrder(300)]
-        public InputBinding SaveScenes = new InputBinding(KeyboardKeys.None);
+        public static InputBinding SaveScenes { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("File"), EditorOrder(310)]
-        public InputBinding CloseScenes = new InputBinding(KeyboardKeys.None);
+        public static InputBinding CloseScenes { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("File"), EditorOrder(320)]
-        public InputBinding OpenScriptsProject = new InputBinding(KeyboardKeys.None);
+        public static InputBinding OpenScriptsProject { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("File"), EditorOrder(330)]
-        public InputBinding GenerateScriptsProject = new InputBinding(KeyboardKeys.None);
+        public static InputBinding GenerateScriptsProject { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("File"), EditorOrder(340)]
-        public InputBinding RecompileScripts = new InputBinding(KeyboardKeys.None);
+        public static InputBinding RecompileScripts { get; set; } = new InputBinding(KeyboardKeys.None);
 
         #endregion
 
@@ -245,55 +247,55 @@ namespace FlaxEditor.Options
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.End)]
         [EditorDisplay("Scene", "Snap To Ground"), EditorOrder(500)]
-        public InputBinding SnapToGround = new InputBinding(KeyboardKeys.End);
+        public static InputBinding SnapToGround { get; set; } = new InputBinding(KeyboardKeys.End);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.V)]
         [EditorDisplay("Scene", "Vertex Snapping"), EditorOrder(550)]
-        public InputBinding SnapToVertex = new InputBinding(KeyboardKeys.V);
+        public static InputBinding SnapToVertex { get; set; } = new InputBinding(KeyboardKeys.V);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.F5)]
         [EditorDisplay("Scene", "Play/Stop"), EditorOrder(510)]
-        public InputBinding Play = new InputBinding(KeyboardKeys.F5);
+        public static InputBinding Play { get; set; } = new InputBinding(KeyboardKeys.F5);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene", "Play Current Scenes/Stop"), EditorOrder(520)]
-        public InputBinding PlayCurrentScenes = new InputBinding(KeyboardKeys.None);
+        public static InputBinding PlayCurrentScenes { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.F6)]
         [EditorDisplay("Scene"), EditorOrder(530)]
-        public InputBinding Pause = new InputBinding(KeyboardKeys.F6);
+        public static InputBinding Pause { get; set; } = new InputBinding(KeyboardKeys.F6);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.F11)]
         [EditorDisplay("Scene"), EditorOrder(540)]
-        public InputBinding StepFrame = new InputBinding(KeyboardKeys.F11);
+        public static InputBinding StepFrame { get; set; } = new InputBinding(KeyboardKeys.F11);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene", "Cook & Run"), EditorOrder(550)]
-        public InputBinding CookAndRun = new InputBinding(KeyboardKeys.None);
+        public static InputBinding CookAndRun { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene", "Run cooked game"), EditorOrder(560)]
-        public InputBinding RunCookedGame = new InputBinding(KeyboardKeys.None);
+        public static InputBinding RunCookedGame { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene", "Move actor to viewport"), EditorOrder(570)]
-        public InputBinding MoveActorToViewport = new InputBinding(KeyboardKeys.None);
+        public static InputBinding MoveActorToViewport { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene", "Align actor with viewport"), EditorOrder(571)]
-        public InputBinding AlignActorWithViewport = new InputBinding(KeyboardKeys.None);
+        public static InputBinding AlignActorWithViewport { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene", "Align viewport with actor"), EditorOrder(572)]
-        public InputBinding AlignViewportWithActor = new InputBinding(KeyboardKeys.None);
+        public static InputBinding AlignViewportWithActor { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Scene"), EditorOrder(573)]
-        public InputBinding PilotActor = new InputBinding(KeyboardKeys.None);
+        public static InputBinding PilotActor { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.G)]
         [EditorDisplay("Scene"), EditorOrder(574)]
-        public InputBinding GroupSelectedActors = new InputBinding(KeyboardKeys.G + "+" + KeyboardKeys.Control);
+        public static InputBinding GroupSelectedActors { get; set; } = new InputBinding(KeyboardKeys.G + "+" + KeyboardKeys.Control);
 
         #endregion
 
@@ -301,35 +303,35 @@ namespace FlaxEditor.Options
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.F10)]
         [EditorDisplay("Tools", "Build scenes data"), EditorOrder(600)]
-        public InputBinding BuildScenesData = new InputBinding(KeyboardKeys.F10 + "+" + KeyboardKeys.Control);
+        public static InputBinding BuildScenesData { get; set; } = new InputBinding(KeyboardKeys.F10 + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Tools", "Bake lightmaps"), EditorOrder(601)]
-        public InputBinding BakeLightmaps = new InputBinding(KeyboardKeys.None);
+        public static InputBinding BakeLightmaps { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Tools", "Clear lightmaps data"), EditorOrder(602)]
-        public InputBinding ClearLightmaps = new InputBinding(KeyboardKeys.None);
+        public static InputBinding ClearLightmaps { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Tools", "Bake all env probes"), EditorOrder(603)]
-        public InputBinding BakeEnvProbes = new InputBinding(KeyboardKeys.None);
+        public static InputBinding BakeEnvProbes { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Tools", "Build CSG mesh"), EditorOrder(604)]
-        public InputBinding BuildCSG = new InputBinding(KeyboardKeys.None);
+        public static InputBinding BuildCSG { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Tools", "Build Nav Mesh"), EditorOrder(605)]
-        public InputBinding BuildNav = new InputBinding(KeyboardKeys.None);
+        public static InputBinding BuildNav { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Tools", "Build all meshes SDF"), EditorOrder(606)]
-        public InputBinding BuildSDF = new InputBinding(KeyboardKeys.None);
+        public static InputBinding BuildSDF { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.F12)]
         [EditorDisplay("Tools", "Take screenshot"), EditorOrder(607)]
-        public InputBinding TakeScreenshot = new InputBinding(KeyboardKeys.F12);
+        public static InputBinding TakeScreenshot { get; set; } = new InputBinding(KeyboardKeys.F12);
 
         #endregion
 
@@ -337,15 +339,15 @@ namespace FlaxEditor.Options
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Profiler", "Open Profiler Window"), EditorOrder(630)]
-        public InputBinding ProfilerWindow = new InputBinding(KeyboardKeys.None);
+        public static InputBinding ProfilerWindow { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Profiler", "Start/Stop Profiler"), EditorOrder(631)]
-        public InputBinding ProfilerStartStop = new InputBinding(KeyboardKeys.None);
+        public static InputBinding ProfilerStartStop { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Profiler", "Clear Profiler data"), EditorOrder(632)]
-        public InputBinding ProfilerClear = new InputBinding(KeyboardKeys.None);
+        public static InputBinding ProfilerClear { get; set; } = new InputBinding(KeyboardKeys.None);
 
         #endregion
 
@@ -353,23 +355,23 @@ namespace FlaxEditor.Options
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.F5)]
         [EditorDisplay("Debugger", "Continue"), EditorOrder(810)]
-        public InputBinding DebuggerContinue = new InputBinding(KeyboardKeys.F5);
+        public static InputBinding DebuggerContinue { get; set; } = new InputBinding(KeyboardKeys.F5);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Shift + "+" + KeyboardKeysString.F11)]
         [EditorDisplay("Debugger", "Unlock mouse in Play Mode"), EditorOrder(820)]
-        public InputBinding DebuggerUnlockMouse = new InputBinding(KeyboardKeys.F11 + "+" + KeyboardKeys.Shift);
+        public static InputBinding DebuggerUnlockMouse { get; set; } = new InputBinding(KeyboardKeys.F11 + "+" + KeyboardKeys.Shift);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.F10)]
         [EditorDisplay("Debugger", "Step Over"), EditorOrder(830)]
-        public InputBinding DebuggerStepOver = new InputBinding(KeyboardKeys.F10);
+        public static InputBinding DebuggerStepOver { get; set; } = new InputBinding(KeyboardKeys.F10);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.F11)]
         [EditorDisplay("Debugger", "Step Into"), EditorOrder(840)]
-        public InputBinding DebuggerStepInto = new InputBinding(KeyboardKeys.F11);
+        public static InputBinding DebuggerStepInto { get; set; } = new InputBinding(KeyboardKeys.F11);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Shift + "+" + KeyboardKeysString.F11)]
         [EditorDisplay("Debugger", "Step Out"), EditorOrder(850)]
-        public InputBinding DebuggerStepOut = new InputBinding(KeyboardKeys.F11 + "+" + KeyboardKeys.Shift);
+        public static InputBinding DebuggerStepOut { get; set; } = new InputBinding(KeyboardKeys.F11 + "+" + KeyboardKeys.Shift);
 
         #endregion
 
@@ -377,19 +379,19 @@ namespace FlaxEditor.Options
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Alpha1)]
         [EditorDisplay("Gizmo"), EditorOrder(1000)]
-        public InputBinding TranslateMode = new InputBinding(KeyboardKeys.Alpha1);
+        public static InputBinding TranslateMode { get; set; } = new InputBinding(KeyboardKeys.Alpha1);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Alpha2)]
         [EditorDisplay("Gizmo"), EditorOrder(1010)]
-        public InputBinding RotateMode = new InputBinding(KeyboardKeys.Alpha2);
+        public static InputBinding RotateMode { get; set; } = new InputBinding(KeyboardKeys.Alpha2);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Alpha3)]
         [EditorDisplay("Gizmo"), EditorOrder(1020)]
-        public InputBinding ScaleMode = new InputBinding(KeyboardKeys.Alpha3);
+        public static InputBinding ScaleMode { get; set; } = new InputBinding(KeyboardKeys.Alpha3);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Alpha4)]
         [EditorDisplay("Gizmo"), EditorOrder(1030)]
-        public InputBinding ToggleTransformSpace = new InputBinding(KeyboardKeys.Alpha4);
+        public static InputBinding ToggleTransformSpace { get; set; } = new InputBinding(KeyboardKeys.Alpha4);
 
         #endregion
 
@@ -397,87 +399,87 @@ namespace FlaxEditor.Options
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.W)]
         [EditorDisplay("Viewport"), EditorOrder(1500)]
-        public InputBinding Forward = new InputBinding(KeyboardKeys.W);
+        public static InputBinding Forward { get; set; } = new InputBinding(KeyboardKeys.W);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.S)]
         [EditorDisplay("Viewport"), EditorOrder(1510)]
-        public InputBinding Backward = new InputBinding(KeyboardKeys.S);
+        public static InputBinding Backward { get; set; } = new InputBinding(KeyboardKeys.S);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.A)]
         [EditorDisplay("Viewport"), EditorOrder(1520)]
-        public InputBinding Left = new InputBinding(KeyboardKeys.A);
+        public static InputBinding Left { get; set; } = new InputBinding(KeyboardKeys.A);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.D)]
         [EditorDisplay("Viewport"), EditorOrder(1530)]
-        public InputBinding Right = new InputBinding(KeyboardKeys.D);
+        public static InputBinding Right { get; set; } = new InputBinding(KeyboardKeys.D);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.E)]
         [EditorDisplay("Viewport"), EditorOrder(1540)]
-        public InputBinding Up = new InputBinding(KeyboardKeys.E);
+        public static InputBinding Up { get; set; } = new InputBinding(KeyboardKeys.E);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Q)]
         [EditorDisplay("Viewport"), EditorOrder(1550)]
-        public InputBinding Down = new InputBinding(KeyboardKeys.Q);
+        public static InputBinding Down { get; set; } = new InputBinding(KeyboardKeys.Q);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Alt + "+" + MouseButtonString.Left)]
         [EditorDisplay("Viewport"), EditorOrder(1551)]
-        public InputBinding Orbit = new InputBinding(MouseButton.Middle + "+" + KeyboardKeys.Alt);
+        public static InputBinding Orbit { get; set; } = new InputBinding(MouseButton.Middle + "+" + KeyboardKeys.Alt);
 
         [DefaultValue(typeof(InputBinding), MouseButtonString.Middle)]
         [EditorDisplay("Viewport"), EditorOrder(1551)]
-        public InputBinding Pan = new InputBinding(MouseButton.Middle);
+        public static InputBinding Pan { get; set; } = new InputBinding(MouseButton.Middle);
 
         [DefaultValue(typeof(InputBinding), MouseButtonString.Right)]
         [EditorDisplay("Viewport"), EditorOrder(1551)]
-        public InputBinding Rotate = new InputBinding(MouseButton.Right);
+        public static InputBinding Rotate { get; set; } = new InputBinding(MouseButton.Right);
 
         [DefaultValue(typeof(InputBinding), MouseScrollString.Up)]
         [EditorDisplay("Viewport"), EditorOrder(1551)]
-        public InputBinding ZoomIn = new InputBinding(MouseScroll.ScrollUp);
+        public static InputBinding ZoomIn { get; set; } = new InputBinding(MouseScroll.ScrollUp);
 
         [DefaultValue(typeof(InputBinding), MouseScrollString.Down)]
         [EditorDisplay("Viewport"), EditorOrder(1551)]
-        public InputBinding ZoomOut = new InputBinding(MouseScroll.ScrollDown);
+        public static InputBinding ZoomOut { get; set; } = new InputBinding(MouseScroll.ScrollDown);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Viewport", "Toggle Camera Rotation"), EditorOrder(1560)]
-        public InputBinding CameraToggleRotation = new InputBinding(KeyboardKeys.None);
+        public static InputBinding CameraToggleRotation { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Viewport", "Increase Camera Move Speed"), EditorOrder(1570)]
-        public InputBinding CameraIncreaseMoveSpeed = new InputBinding(KeyboardKeys.None);
+        public static InputBinding CameraIncreaseMoveSpeed { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), "")]
         [EditorDisplay("Viewport", "Decrease Camera Move Speed"), EditorOrder(1571)]
-        public InputBinding CameraDecreaseMoveSpeed = new InputBinding(KeyboardKeys.None);
+        public static InputBinding CameraDecreaseMoveSpeed { get; set; } = new InputBinding(KeyboardKeys.None);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Numpad0)]
         [EditorDisplay("Viewport"), EditorOrder(1700)]
-        public InputBinding ViewpointFront = new InputBinding(KeyboardKeys.Numpad0);
+        public static InputBinding ViewpointFront { get; set; } = new InputBinding(KeyboardKeys.Numpad0);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Numpad5)]
         [EditorDisplay("Viewport"), EditorOrder(1710)]
-        public InputBinding ViewpointBack = new InputBinding(KeyboardKeys.Numpad5);
+        public static InputBinding ViewpointBack { get; set; } = new InputBinding(KeyboardKeys.Numpad5);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Numpad4)]
         [EditorDisplay("Viewport"), EditorOrder(1720)]
-        public InputBinding ViewpointLeft = new InputBinding(KeyboardKeys.Numpad4);
+        public static InputBinding ViewpointLeft { get; set; } = new InputBinding(KeyboardKeys.Numpad4);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Numpad6)]
         [EditorDisplay("Viewport"), EditorOrder(1730)]
-        public InputBinding ViewpointRight = new InputBinding(KeyboardKeys.Numpad6);
+        public static InputBinding ViewpointRight { get; set; } = new InputBinding(KeyboardKeys.Numpad6);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Numpad8)]
         [EditorDisplay("Viewport"), EditorOrder(1740)]
-        public InputBinding ViewpointTop = new InputBinding(KeyboardKeys.Numpad8);
+        public static InputBinding ViewpointTop { get; set; } = new InputBinding(KeyboardKeys.Numpad8);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Numpad2)]
         [EditorDisplay("Viewport"), EditorOrder(1750)]
-        public InputBinding ViewpointBottom = new InputBinding(KeyboardKeys.Numpad2);
+        public static InputBinding ViewpointBottom { get; set; } = new InputBinding(KeyboardKeys.Numpad2);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.NumpadDecimal)]
         [EditorDisplay("Viewport"), EditorOrder(1760)]
-        public InputBinding ToggleOrthographic = new InputBinding(KeyboardKeys.NumpadDecimal);
+        public static InputBinding ToggleOrthographic { get; set; } = new InputBinding(KeyboardKeys.NumpadDecimal);
 
         #endregion
 
@@ -485,15 +487,15 @@ namespace FlaxEditor.Options
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.W)]
         [EditorDisplay("Interface"), EditorOrder(2000)]
-        public InputBinding CloseTab = new InputBinding(KeyboardKeys.W + "+" + KeyboardKeys.Control);
+        public static InputBinding CloseTab { get; set; } = new InputBinding(KeyboardKeys.W + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.Tab)]
         [EditorDisplay("Interface"), EditorOrder(2010)]
-        public InputBinding NextTab = new InputBinding(KeyboardKeys.Tab + "+" + KeyboardKeys.Control);
+        public static InputBinding NextTab { get; set; } = new InputBinding(KeyboardKeys.Tab + "+" + KeyboardKeys.Control);
 
         [DefaultValue(typeof(InputBinding), KeyboardKeysString.Control + "+" + KeyboardKeysString.Shift + "+" + KeyboardKeysString.Tab)]
         [EditorDisplay("Interface"), EditorOrder(2020)]
-        public InputBinding PreviousTab = new InputBinding(KeyboardKeys.Tab + "+" + KeyboardKeys.Control + "+" + KeyboardKeys.Shift);
+        public static InputBinding PreviousTab { get; set; } = new InputBinding(KeyboardKeys.Tab + "+" + KeyboardKeys.Control + "+" + KeyboardKeys.Shift);
 
         [DefaultValue(SceneNodeDoubleClick.Expand)]
         [EditorDisplay("Interface"), EditorOrder(2030)]

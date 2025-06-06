@@ -1282,28 +1282,27 @@ namespace FlaxEditor.GUI
             if (base.OnKeyDown(key))
                 return true;
 
-            InputOptions options = Editor.Instance.Options.Options.Input;
-            if (options.SelectAll.Process(this))
+            if (InputOptions.SelectAll.Process(this))
             {
                 SelectAll();
                 return true;
             }
-            else if (options.DeselectAll.Process(this))
+            else if (InputOptions.DeselectAll.Process(this))
             {
                 DeselectAll();
                 return true;
             }
-            else if (options.Delete.Process(this))
+            else if (InputOptions.Delete.Process(this))
             {
                 RemoveKeyframes();
                 return true;
             }
-            else if (options.Copy.Process(this))
+            else if (InputOptions.Copy.Process(this))
             {
                 CopyKeyframes();
                 return true;
             }
-            else if (options.Paste.Process(this))
+            else if (InputOptions.Paste.Process(this))
             {
                 KeyframesEditorUtils.Paste(this);
                 return true;
