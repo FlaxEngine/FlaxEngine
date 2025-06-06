@@ -27,6 +27,7 @@ namespace FlaxEditor.Windows
         private Panel _sceneTreePanel;
         private bool _isUpdatingSelection;
         private bool _isMouseDown;
+        private bool _isPlayStateChanging = false;
 
         private DragAssets _dragAssets;
         private DragActorType _dragActorType;
@@ -92,6 +93,11 @@ namespace FlaxEditor.Windows
             _tree.RightClick += OnTreeRightClick;
             _tree.Parent = _sceneTreePanel;
             headerPanel.Parent = this;
+
+            Editor.PlayModeBeginning += () => _isPlayStateChanging = true;
+            Editor.PlayModeBegin += () => _isPlayStateChanging = false;
+            Editor.PlayModeEnding += () => _isPlayStateChanging = true;
+            Editor.PlayModeEnd += () => _isPlayStateChanging = false;
 
             // Setup input actions
             InputActions.Add(options => options.TranslateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
@@ -250,7 +256,7 @@ namespace FlaxEditor.Windows
                 _tree.Select(nodes);
 
                 // For single node selected scroll view so user can see it
-                if (nodes.Count == 1)
+                if (nodes.Count == 1 && !_isPlayStateChanging)
                 {
                     nodes[0].ExpandAllParents(true);
                     _sceneTreePanel.ScrollViewTo(nodes[0]);
