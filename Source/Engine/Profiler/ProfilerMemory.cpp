@@ -106,7 +106,13 @@ namespace
     alignas(16) volatile uint32 GroupTracyPlotEnable[(GROUPS_COUNT + 31) / 32] = {};
 #endif
     uint8 GroupParents[GROUPS_COUNT] = {};
+#if 0
     ThreadLocal<GroupStackData> GroupStack;
+#define GetGroupStack() GroupStack.Get();
+#else
+    THREADLOCAL GroupStackData GroupStack;
+#define GetGroupStack() GroupStack
+#endif
     GroupNameBuffer GroupNames[GROUPS_COUNT];
     CriticalSection PointersLocker;
     Dictionary<void*, PointerData> Pointers;
@@ -347,13 +353,13 @@ void ProfilerMemory::DecrementGroup(Groups group, uint64 size)
 
 void ProfilerMemory::BeginGroup(Groups group)
 {
-    auto& stack = GroupStack.Get();
+    auto& stack = GetGroupStack();
     stack.Push(group);
 }
 
 void ProfilerMemory::EndGroup()
 {
-    auto& stack = GroupStack.Get();
+    auto& stack = GetGroupStack();
     stack.Pop();
 }
 
@@ -417,7 +423,7 @@ void ProfilerMemory::Dump(const StringView& options)
 void ProfilerMemory::OnMemoryAlloc(void* ptr, uint64 size)
 {
     ASSERT_LOW_LAYER(Enabled && ptr);
-    auto& stack = GroupStack.Get();
+    auto& stack = GetGroupStack();
     if (stack.SkipRecursion)
         return;
     stack.SkipRecursion = true;
@@ -443,7 +449,7 @@ void ProfilerMemory::OnMemoryAlloc(void* ptr, uint64 size)
 void ProfilerMemory::OnMemoryFree(void* ptr)
 {
     ASSERT_LOW_LAYER(Enabled && ptr);
-    auto& stack = GroupStack.Get();
+    auto& stack = GetGroupStack();
     if (stack.SkipRecursion)
         return;
     stack.SkipRecursion = true;
