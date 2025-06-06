@@ -240,6 +240,12 @@ public:
     static void MemoryBarrier() = delete;
 
     /// <summary>
+    /// Indicates to the processor that a cache line will be needed in the near future.
+    /// </summary>
+    /// <param name="ptr">The address of the cache line to be loaded. This address is not required to be on a cache line boundary.</param>
+    static void Prefetch(void const* ptr) = delete;
+
+    /// <summary>
     /// Sets a 64-bit variable to the specified value as an atomic operation. The function prevents more than one thread from using the same variable simultaneously.
     /// </summary>
     /// <param name="dst">A pointer to the first operand. This value will be replaced with the result of the operation.</param>
@@ -316,12 +322,6 @@ public:
     /// <param name="dst">A pointer to the value to be exchanged.</param>
     /// <param name="value">The value to be set.</param>
     static void AtomicStore(int64 volatile* dst, int64 value) = delete;
-
-    /// <summary>
-    /// Indicates to the processor that a cache line will be needed in the near future.
-    /// </summary>
-    /// <param name="ptr">The address of the cache line to be loaded. This address is not required to be on a cache line boundary.</param>
-    static void Prefetch(void const* ptr) = delete;
 
 #if COMPILE_WITH_PROFILER
     static void OnMemoryAlloc(void* ptr, uint64 size);

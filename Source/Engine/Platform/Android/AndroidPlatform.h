@@ -30,6 +30,10 @@ public:
     {
         __sync_synchronize();
     }
+    FORCE_INLINE static void MemoryPrefetch(void const* ptr)
+    {
+        __builtin_prefetch(static_cast<char const*>(ptr));
+    }
     FORCE_INLINE static int64 InterlockedExchange(int64 volatile* dst, int64 exchange)
     {
         return __sync_lock_test_and_set(dst, exchange);
@@ -73,10 +77,6 @@ public:
     FORCE_INLINE static void AtomicStore(int64 volatile* dst, int64 value)
     {
         __atomic_store(dst, &value, __ATOMIC_RELAXED);
-    }
-    FORCE_INLINE static void Prefetch(void const* ptr)
-    {
-        __builtin_prefetch(static_cast<char const*>(ptr));
     }
     static bool Is64BitPlatform();
     static String GetSystemName();

@@ -251,7 +251,7 @@ void Win32Platform::MemoryBarrier()
 #endif
 }
 
-void Win32Platform::Prefetch(void const* ptr)
+void Win32Platform::MemoryPrefetch(void const* ptr)
 {
 #if _M_ARM64
     __prefetch((char const*)ptr);
