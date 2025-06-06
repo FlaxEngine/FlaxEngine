@@ -16,6 +16,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/Scripting.h"
+#include "Engine/Threading/Threading.h"
 
 float NetworkManager::NetworkFPS = 60.0f;
 NetworkPeer* NetworkManager::Peer = nullptr;

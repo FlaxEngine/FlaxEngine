@@ -9,6 +9,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Audio/Audio.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 #if PLATFORM_WINDOWS
 // Tweak Win ver
@@ -232,6 +233,7 @@ void AudioBackendXAudio2::Listener_ReinitializeAll()
 
 uint32 AudioBackendXAudio2::Source_Add(const AudioDataInfo& format, const Vector3& position, const Quaternion& orientation, float volume, float pitch, float pan, bool loop, bool spatial, float attenuation, float minDistance, float doppler)
 {
+    PROFILE_MEM(Audio);
     ScopeLock lock(XAudio2::Locker);
 
     // Get first free source
@@ -580,6 +582,7 @@ void AudioBackendXAudio2::Source_DequeueProcessedBuffers(uint32 sourceID)
 
 uint32 AudioBackendXAudio2::Buffer_Create()
 {
+    PROFILE_MEM(Audio);
     uint32 bufferID;
     ScopeLock lock(XAudio2::Locker);
 
@@ -618,6 +621,7 @@ void AudioBackendXAudio2::Buffer_Delete(uint32 bufferID)
 
 void AudioBackendXAudio2::Buffer_Write(uint32 bufferID, byte* samples, const AudioDataInfo& info)
 {
+    PROFILE_MEM(Audio);
     CHECK(info.NumChannels <= MAX_INPUT_CHANNELS);
 
     XAudio2::Locker.Lock();

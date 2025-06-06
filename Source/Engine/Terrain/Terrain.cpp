@@ -4,6 +4,7 @@
 #include "TerrainPatch.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Ray.h"
+#include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Physics/Physics.h"

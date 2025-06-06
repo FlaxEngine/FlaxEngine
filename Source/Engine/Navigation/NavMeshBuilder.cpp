@@ -18,6 +18,7 @@
 #include "Engine/Physics/Colliders/MeshCollider.h"
 #include "Engine/Physics/Colliders/SplineCollider.h"
 #include "Engine/Threading/ThreadPoolTask.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Terrain/TerrainPatch.h"
 #include "Engine/Terrain/Terrain.h"
 #include "Engine/Profiler/ProfilerCPU.h"

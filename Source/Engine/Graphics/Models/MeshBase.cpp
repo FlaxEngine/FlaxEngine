@@ -16,6 +16,7 @@
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Task.h"
+#include "Engine/Threading/Threading.h"
 
 static_assert(MODEL_MAX_VB == 3, "Update code in mesh to match amount of vertex buffers.");
 

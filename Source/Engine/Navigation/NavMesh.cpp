@@ -4,6 +4,7 @@
 #include "NavMeshRuntime.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Threading/Threading.h"
 #if COMPILE_WITH_ASSETS_IMPORTER
 #include "Engine/Core/Log.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"

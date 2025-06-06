@@ -10,6 +10,7 @@
 #include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
+#include "Engine/Threading/Threading.h"
 #if GPU_ENABLE_ASYNC_RESOURCES_CREATION
 #include "Engine/Threading/ThreadPoolTask.h"
 #define STREAM_TASK_BASE ThreadPoolTask

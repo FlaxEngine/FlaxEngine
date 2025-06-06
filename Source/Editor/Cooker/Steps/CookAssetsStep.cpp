@@ -36,6 +36,7 @@
 #include "Engine/Engine/Base/GameBase.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Enums.h"
 #if PLATFORM_TOOLS_WINDOWS
