@@ -87,8 +87,6 @@ namespace FlaxEditor.Windows.Assets
         public JsonAssetWindow(Editor editor, AssetItem item)
         : base(editor, item)
         {
-            var inputOptions = Editor.Options.Options.Input;
-
             // Undo
             _undo = new Undo();
             _undo.UndoDone += OnUndoRedo;
@@ -96,10 +94,10 @@ namespace FlaxEditor.Windows.Assets
             _undo.ActionDone += OnUndoRedo;
 
             // Toolstrip
-            _saveButton = _toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
+            _saveButton = _toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save", InputOptions.Save);
             _toolstrip.AddSeparator();
-            _undoButton = _toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo", ref inputOptions.Undo);
-            _redoButton = _toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
+            _undoButton = _toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo", InputOptions.Undo);
+            _redoButton = _toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo", InputOptions.Redo);
 
             // Panel
             var panel = new Panel(ScrollBars.Vertical)

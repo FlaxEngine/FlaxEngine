@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using FlaxEditor.InputConfig;
 using FlaxEngine;
@@ -509,15 +510,15 @@ namespace FlaxEditor.Options
             var type = typeof(InputOptions);
             foreach (InputOptionName name in Enum.GetValues(typeof(InputOptionName)))
             {
-                var field = type.GetField(name.ToString());
-                if (field != null && field.FieldType == typeof(InputBinding))
+                var field = type.GetProperty(name.ToString(), BindingFlags.Public | BindingFlags.Static);
+                if (field != null && field.PropertyType == typeof(InputBinding))
                 {
-                    var binding = (InputBinding)field.GetValue(this);
+                    var binding = (InputBinding)field.GetValue(null); // null for static
                     Dictionary[name] = binding;
                 }
                 else
                 {
-                    Debug.LogWarning($"InputOptionName '{name}' does not match any InputBinding field.");
+                    Debug.LogWarning($"InputOptionName '{name}' does not match any static InputBinding property.");
                 }
             }
         }

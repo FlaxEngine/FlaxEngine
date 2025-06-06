@@ -481,8 +481,6 @@ namespace FlaxEditor.Windows
         public OutputLogWindow(Editor editor)
         : base(editor, true, ScrollBars.None)
         {
-            var inputOptions = editor.Options.Options.Input;
-
             Title = "Output Log";
             ClipChildren = false;
             FlaxEditor.Utilities.Utils.SetupCommonInputActions(this);
@@ -793,8 +791,7 @@ namespace FlaxEditor.Windows
         /// <inheritdoc />
         public override bool OnKeyDown(KeyboardKeys key)
         {
-            var input = Editor.Options.Options.Input;
-            if (input.Search.Process(this))
+            if (InputOptions.Search.Process(this))
             {
                 if (!_searchBox.ContainsFocus)
                 {

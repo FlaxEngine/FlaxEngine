@@ -10,6 +10,7 @@ using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI;
 using FlaxEditor.GUI.Tabs;
+using FlaxEditor.Options;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -787,10 +788,8 @@ namespace FlaxEditor.Windows.Assets
         protected ModelBaseWindow(Editor editor, AssetItem item)
         : base(editor, item)
         {
-            var inputOptions = Editor.Options.Options.Input;
-
             // Toolstrip
-            _saveButton = _toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
+            _saveButton = _toolstrip.AddButton(editor.Icons.Save64, Save).LinkTooltip("Save", InputOptions.Save);
 
             // Split Panel
             _split = new SplitPanel(Orientation.Horizontal, ScrollBars.None, ScrollBars.None)

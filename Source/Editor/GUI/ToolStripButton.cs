@@ -114,7 +114,7 @@ namespace FlaxEditor.GUI
         /// <param name="text">The text.</param>
         /// <param name="inputBinding">The input key binding.</param>
         /// <returns>This tooltip.</returns>
-        public ToolStripButton LinkTooltip(string text, ref InputBinding inputBinding)
+        public ToolStripButton LinkTooltip(string text, InputBinding inputBinding)
         {
             var input = inputBinding.ToString();
             if (input.Length != 0)

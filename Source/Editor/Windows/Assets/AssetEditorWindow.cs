@@ -47,8 +47,6 @@ namespace FlaxEditor.Windows.Assets
         protected AssetEditorWindow(Editor editor, AssetItem item)
         : base(editor, false, ScrollBars.None)
         {
-            var inputOptions = Editor.Options.Options.Input;
-
             _item = item ?? throw new ArgumentNullException(nameof(item));
             _item.AddReference(this);
 

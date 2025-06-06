@@ -304,8 +304,6 @@ namespace FlaxEditor.Windows
         public GameWindow(Editor editor)
         : base(editor, true, ScrollBars.None)
         {
-            var inputOptions = editor.Options.Options.Input;
-
             Title = "Game";
             AutoFocus = true;
 
@@ -1043,7 +1041,7 @@ namespace FlaxEditor.Windows
                 {
                     var alpha = Mathf.Saturate(-animTime / fadeOutTime);
                     var rect = new Rectangle(new Float2(6), Size - 12);
-                    var text = $"Press {Editor.Options.Options.Input.DebuggerUnlockMouse} to unlock the mouse";
+                    var text = $"Press {InputOptions.DebuggerUnlockMouse} to unlock the mouse";
                     Render2D.DrawText(style.FontSmall, text, rect + new Float2(1.0f), style.Background * alpha, TextAlignment.Near, TextAlignment.Far);
                     Render2D.DrawText(style.FontSmall, text, rect, style.Foreground * alpha, TextAlignment.Near, TextAlignment.Far);
                 }
@@ -1152,7 +1150,7 @@ namespace FlaxEditor.Windows
         public override bool OnKeyDown(KeyboardKeys key)
         {
             // Prevent closing the game window tab during a play session
-            if (Editor.StateMachine.IsPlayMode && Editor.Options.Options.Input.CloseTab.Process(this))
+            if (Editor.StateMachine.IsPlayMode && InputOptions.CloseTab.Process(this))
             {
                 return true;
             }

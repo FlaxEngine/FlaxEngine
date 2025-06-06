@@ -33,8 +33,6 @@ namespace FlaxEditor.Windows
         public EditorOptionsWindow(Editor editor)
         : base(editor, true, ScrollBars.None)
         {
-            var inputOptions = editor.Options.Options.Input;
-
             Title = "Editor Options";
 
             // Undo

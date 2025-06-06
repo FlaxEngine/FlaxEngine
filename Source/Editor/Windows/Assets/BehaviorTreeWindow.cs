@@ -130,8 +130,6 @@ namespace FlaxEditor.Windows.Assets
         public BehaviorTreeWindow(Editor editor, BinaryAssetItem item)
         : base(editor, item)
         {
-            var inputOptions = Editor.Options.Options.Input;
-
             // Undo
             _undo = new Undo();
             _undo.UndoDone += OnUndoRedo;

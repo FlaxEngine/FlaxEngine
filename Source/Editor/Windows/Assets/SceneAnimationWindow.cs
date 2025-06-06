@@ -639,8 +639,6 @@ namespace FlaxEditor.Windows.Assets
         public SceneAnimationWindow(Editor editor, AssetItem item)
         : base(editor, item)
         {
-            var inputOptions = Editor.Options.Options.Input;
-
             // Undo
             _undo = new Undo();
             _undo.UndoDone += OnUndoRedo;
@@ -664,10 +662,10 @@ namespace FlaxEditor.Windows.Assets
             _timeline.SetNoTracksText("Loading...");
 
             // Toolstrip
-            _saveButton = _toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save", ref inputOptions.Save);
+            _saveButton = _toolstrip.AddButton(Editor.Icons.Save64, Save).LinkTooltip("Save", InputOptions.Save);
             _toolstrip.AddSeparator();
-            _undoButton = _toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo", ref inputOptions.Undo);
-            _redoButton = _toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
+            _undoButton = _toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo", InputOptions.Undo);
+            _redoButton = _toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo", InputOptions.Redo);
             _toolstrip.AddSeparator();
             _previewButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Refresh64, OnPreviewButtonClicked).SetAutoCheck(true).LinkTooltip("If checked, enables live-preview of the animation on a scene while editing");
             _renderButton = (ToolStripButton)_toolstrip.AddButton(Editor.Icons.Build64, OnRenderButtonClicked).LinkTooltip("Open the scene animation rendering utility...");
