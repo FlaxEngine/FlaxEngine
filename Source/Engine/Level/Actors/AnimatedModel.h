@@ -214,6 +214,12 @@ public:
     API_FUNCTION() void GetCurrentPose(API_PARAM(Out) Array<Matrix>& nodesTransformation, bool worldSpace = false) const;
 
     /// <summary>
+    /// Gets the per-node final transformations (skeleton pose).
+    /// </summary>
+    /// <param name="nodesTransformation">The output per-node final transformation matrices.</param>
+    void GetCurrentPose(Span<Matrix>& nodesTransformation) const;
+
+    /// <summary>
     /// Sets the per-node final transformations (skeleton pose).
     /// </summary>
     /// <param name="nodesTransformation">The per-node final transformation matrices.</param>

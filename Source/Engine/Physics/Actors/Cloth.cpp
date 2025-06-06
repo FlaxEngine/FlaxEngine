@@ -815,8 +815,7 @@ bool Cloth::OnPreUpdate()
         Array<Float4> particlesSkinned;
         particlesSkinned.Set(particles.Get(), particles.Length());
 
-        // TODO: optimize memory allocs (eg. get pose as Span<Matrix> for readonly)
-        Array<Matrix> pose;
+        Span<Matrix> pose;
         animatedModel->GetCurrentPose(pose);
         const SkeletonData& skeleton = animatedModel->SkinnedModel->Skeleton;
         const SkeletonBone* bones = skeleton.Bones.Get();
@@ -999,8 +998,7 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
             return;
         }
 
-        // TODO: optimize memory allocs (eg. get pose as Span<Matrix> for readonly)
-        Array<Matrix> pose;
+        Span<Matrix> pose;
         animatedModel->GetCurrentPose(pose);
         const SkeletonData& skeleton = animatedModel->SkinnedModel->Skeleton;
 

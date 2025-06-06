@@ -140,6 +140,13 @@ void AnimatedModel::GetCurrentPose(Array<Matrix>& nodesTransformation, bool worl
     }
 }
 
+void AnimatedModel::GetCurrentPose(Span<Matrix>& nodesTransformation) const
+{
+    if (GraphInstance.NodesPose.IsEmpty())
+        const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
+    nodesTransformation = ToSpan(GraphInstance.NodesPose);
+}
+
 void AnimatedModel::SetCurrentPose(const Array<Matrix>& nodesTransformation, bool worldSpace)
 {
     if (GraphInstance.NodesPose.IsEmpty())
