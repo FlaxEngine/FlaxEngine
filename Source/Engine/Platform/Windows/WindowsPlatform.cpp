@@ -1054,8 +1054,10 @@ void ReadPipe(HANDLE pipe, Array<char>& rawData, Array<Char>& logData, LogType l
             int32 tmp;
             StringUtils::ConvertANSI2UTF16(rawData.Get(), logData.Get(), rawData.Count(), tmp);
             logData.Last() = '\0';
+#if LOG_ENABLE
             if (settings.LogOutput)
                 Log::Logger::Write(logType, StringView(logData.Get(), rawData.Count()));
+#endif
             if (settings.SaveOutput)
                 settings.Output.Add(logData.Get(), rawData.Count());
         }

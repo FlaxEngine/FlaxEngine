@@ -485,15 +485,15 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                       String line((const char*)data.bytes, data.length);
                       if (settings.SaveOutput)
                         settings.Output.Add(line.Get(), line.Length());
+#if LOG_ENABLE
                       if (settings.LogOutput)
                       {
                         StringView lineView(line);
                         if (line[line.Length() - 1] == '\n')
                             lineView = StringView(line.Get(), line.Length() - 1);
-#if LOG_ENABLE
                         Log::Logger::Write(LogType::Info, lineView);
-#endif
                       }
+#endif
                     [[stdoutPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
                 }
             }
@@ -514,15 +514,15 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                       String line((const char*)data.bytes, data.length);
                       if (settings.SaveOutput)
                         settings.Output.Add(line.Get(), line.Length());
+#if LOG_ENABLE
                       if (settings.LogOutput)
                       {
                         StringView lineView(line);
                         if (line[line.Length() - 1] == '\n')
                             lineView = StringView(line.Get(), line.Length() - 1);
-#if LOG_ENABLE
                         Log::Logger::Write(LogType::Error, lineView);
-#endif
                       }
+#endif
                     [[stderrPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
                 }
             }

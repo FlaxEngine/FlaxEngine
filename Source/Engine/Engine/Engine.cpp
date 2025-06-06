@@ -170,10 +170,8 @@ int32 Engine::Main(const Char* cmdLine)
 #if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX || PLATFORM_MAC)
     EngineImpl::RunInBackground = PlatformSettings::Get()->RunInBackground;
 #endif
-#if LOG_ENABLE
-    Log::Logger::WriteFloor();
+    LOG_FLOOR();
     LOG_FLUSH();
-#endif
     Time::Synchronize();
     EngineImpl::IsReady = true;
     PROFILE_MEM_END();
@@ -557,6 +555,7 @@ void Engine::OnExit()
 #if COMPILE_WITH_PROFILER
     ProfilerCPU::Dispose();
     ProfilerGPU::Dispose();
+    ProfilerMemory::Enabled = false;
 #endif
 
 #if LOG_ENABLE

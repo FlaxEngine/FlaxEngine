@@ -310,12 +310,12 @@ void TickProfilerMemory()
 
     // Update profiler memory
     PointersLocker.Lock();
-    GroupMemory[(int32)ProfilerMemory::Groups::Profiler] = 
-        sizeof(GroupMemory) + sizeof(GroupNames) + sizeof(GroupStack) + 
+    GroupMemory[(int32)ProfilerMemory::Groups::Profiler] =
+            sizeof(GroupMemory) + sizeof(GroupNames) + sizeof(GroupStack) +
 #ifdef USE_TRACY_MEMORY_PLOTS
-        sizeof(GroupTracyPlotEnable) +
+            sizeof(GroupTracyPlotEnable) +
 #endif
-        Pointers.Capacity() * sizeof(Dictionary<void*, PointerData>::Bucket);
+            Pointers.Capacity() * sizeof(Dictionary<void*, PointerData>::Bucket);
     PointersLocker.Unlock();
 
     // Get total system memory and update untracked amount
@@ -431,8 +431,8 @@ void ProfilerMemory::OnMemoryAlloc(void* ptr, uint64 size)
     // Update group memory
     const int64 add = (int64)size;
     AddGroupMemory((Groups)ptrData.Group, add);
-    Platform::InterlockedAdd(&GroupMemory[(int32)ProfilerMemory::Groups::Malloc], add);
-    Platform::InterlockedIncrement(&GroupMemoryCount[(int32)ProfilerMemory::Groups::Malloc]);
+    Platform::InterlockedAdd(&GroupMemory[(int32)Groups::Malloc], add);
+    Platform::InterlockedIncrement(&GroupMemoryCount[(int32)Groups::Malloc]);
     UPDATE_PEEK(ProfilerMemory::Groups::Malloc);
 
     stack.SkipRecursion = false;
@@ -453,16 +453,16 @@ void ProfilerMemory::OnMemoryFree(void* ptr)
     bool found = it.IsNotEnd();
     if (found)
         ptrData = it->Value;
-    Pointers.Remove(it); 
-    PointersLocker.Unlock(); 
+    Pointers.Remove(it);
+    PointersLocker.Unlock();
 
     if (found)
     {
         // Update group memory
         const int64 add = -(int64)ptrData.Size;
         SubGroupMemory((Groups)ptrData.Group, add);
-        Platform::InterlockedAdd(&GroupMemory[(int32)ProfilerMemory::Groups::Malloc], add);
-        Platform::InterlockedDecrement(&GroupMemoryCount[(int32)ProfilerMemory::Groups::Malloc]);
+        Platform::InterlockedAdd(&GroupMemory[(int32)Groups::Malloc], add);
+        Platform::InterlockedDecrement(&GroupMemoryCount[(int32)Groups::Malloc]);
     }
 
     stack.SkipRecursion = false;

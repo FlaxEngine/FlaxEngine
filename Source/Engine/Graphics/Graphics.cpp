@@ -101,10 +101,8 @@ bool GraphicsService::Init()
     PROFILE_MEM(Graphics);
 
     // Create and initialize graphics device
-#if LOG_ENABLE
-    Log::Logger::WriteFloor();
+    LOG_FLOOR();
     LOG(Info, "Creating Graphics Device...");
-#endif
     PixelFormatExtensions::Init();
     GPUDevice* device = nullptr;
 
@@ -218,9 +216,7 @@ bool GraphicsService::Init()
     {
         return true;
     }
-#if LOG_ENABLE
-    Log::Logger::WriteFloor();
-#endif
+    LOG_FLOOR();
 
     return false;
 }

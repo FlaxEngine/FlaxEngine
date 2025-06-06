@@ -248,11 +248,13 @@ void RenderToolsVulkan::LogVkResult(VkResult result, const char* file, uint32 li
         errorType = FatalErrorType::GPUHang;
     else if (result == VK_ERROR_DEVICE_LOST || result == VK_ERROR_SURFACE_LOST_KHR || result == VK_ERROR_MEMORY_MAP_FAILED)
         errorType = FatalErrorType::GPUCrash;
+    else if (fatal)
+        errorType = FatalErrorType::Unknown;
     if (errorType != FatalErrorType::None)
         Platform::Fatal(msg, nullptr, errorType);
 #if LOG_ENABLE
     else
-        Log::Logger::Write(fatal ? LogType::Fatal : LogType::Error, msg);
+        Log::Logger::Write(LogType::Error, msg);
 #endif
 }
 

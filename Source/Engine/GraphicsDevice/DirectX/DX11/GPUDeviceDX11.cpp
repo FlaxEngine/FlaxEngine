@@ -765,7 +765,7 @@ void GPUDeviceDX11::DrawEnd()
 {
     GPUDeviceDX::DrawEnd();
 
-#if GPU_ENABLE_DIAGNOSTICS
+#if GPU_ENABLE_DIAGNOSTICS && LOG_ENABLE
     // Flush debug messages queue
     ComPtr<ID3D11InfoQueue> infoQueue;
     VALIDATE_DIRECTX_CALL(_device->QueryInterface(IID_PPV_ARGS(&infoQueue)));

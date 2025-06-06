@@ -387,10 +387,14 @@ void RenderToolsDX::LogD3DResult(HRESULT result, const char* file, uint32 line, 
         if (removedReason == DXGI_ERROR_DEVICE_HUNG)
             errorType = FatalErrorType::GPUHang;
     }
+    else if (fatal)
+        errorType = FatalErrorType::Unknown;
     if (errorType != FatalErrorType::None)
         Platform::Fatal(msg, nullptr, errorType);
+#if LOG_ENABLE
     else
-        Log::Logger::Write(fatal ? LogType::Fatal : LogType::Error, msg);
+        Log::Logger::Write(LogType::Error, msg);
+#endif
 }
 
 LPCSTR RenderToolsDX::GetVertexInputSemantic(VertexElement::Types type, UINT& semanticIndex)

@@ -314,7 +314,7 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
     {
         // Log separation for crash info
         LOG_FLUSH();
-        Log::Logger::WriteFloor();
+        LOG_FLOOR();
         LOG(Error, "");
         LOG(Error, "Critical error! Reason: {0}", msg);
         LOG(Error, "");
@@ -400,12 +400,12 @@ void PlatformBase::Fatal(const StringView& msg, void* context, FatalErrorType er
 
         // Capture the original log file
         LOG(Error, "");
-        Log::Logger::WriteFloor();
+        LOG_FLOOR();
         LOG_FLUSH();
         FileSystem::CopyFile(crashDataFolder / TEXT("Log.txt"), Log::Logger::LogFilePath);
 
         LOG(Error, "Crash info collected.");
-        Log::Logger::WriteFloor();
+        LOG_FLOOR();
     }
 #endif
 

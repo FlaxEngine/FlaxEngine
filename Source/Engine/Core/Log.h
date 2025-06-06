@@ -56,6 +56,8 @@ API_ENUM() enum class LogType
 #define LOG_FLUSH() Log::Logger::Flush()
 #endif
 
+#define LOG_FLOOR() Log::Logger::WriteFloor()
+
 extern const Char* ToString(LogType e);
 
 namespace Log
@@ -191,8 +193,9 @@ namespace Log
 
 #else
 
-#define LOG(messageType, format, ...)
-#define LOG_STR(messageType, str)
-#define LOG_FLUSH()
+#define LOG(messageType, format, ...) {}
+#define LOG_STR(messageType, str) {}
+#define LOG_FLUSH() {}
+#define LOG_FLOOR() {}
 
 #endif

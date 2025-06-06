@@ -3029,8 +3029,10 @@ int32 LinuxPlatform::CreateProcess(CreateProcessSettings& settings)
                     String line(lineBuffer);
                     if (settings.SaveOutput)
                         settings.Output.Add(line.Get(), line.Length());
+#if LOG_ENABLE
                     if (settings.LogOutput)
                         Log::Logger::Write(LogType::Info, line);
+#endif
 				}
 			}
 			int stat_loc;
