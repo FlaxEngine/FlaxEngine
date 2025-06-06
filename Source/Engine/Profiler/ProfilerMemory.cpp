@@ -234,6 +234,8 @@ void InitProfilerMemory(const Char* cmdLine, int32 stage)
 
     // Init hierarchy
 #define INIT_PARENT(parent, child) GroupParents[(int32)ProfilerMemory::Groups::child] = (uint8)ProfilerMemory::Groups::parent
+    INIT_PARENT(Engine, EngineThreading);
+    INIT_PARENT(Engine, EngineDelegate);
     INIT_PARENT(Malloc, MallocArena);
     INIT_PARENT(Graphics, GraphicsTextures);
     INIT_PARENT(Graphics, GraphicsRenderTargets);

@@ -628,6 +628,7 @@ GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipInde
 GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipIndex, int32 rowPitch, int32 slicePitch, bool copyData)
 {
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
     ASSERT(IsAllocated());
     ASSERT(mipIndex < MipLevels() && data.IsValid());
     ASSERT(data.Length() >= slicePitch);
@@ -720,6 +721,7 @@ bool GPUTexture::DownloadData(TextureData& result)
         MISSING_CODE("support volume texture data downloading.");
     }
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
 
     // Use faster path for staging resources
     if (IsStaging()) // TODO: what about chips with unified memory? if rendering is not active then we can access GPU memory from CPU directly (eg. mobile, integrated GPUs and some consoles)
@@ -806,6 +808,7 @@ Task* GPUTexture::DownloadDataAsync(TextureData& result)
         MISSING_CODE("support volume texture data downloading.");
     }
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsTextures);
 
     // Use faster path for staging resources
     if (IsStaging())

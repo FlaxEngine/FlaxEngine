@@ -30,8 +30,6 @@ public:
         TotalUntracked,
         // Initial memory used by program upon startup (eg. executable size, static variables).
         ProgramSize,
-        // General purpose engine memory.
-        Engine,
         // Profiling tool memory overhead.
         Profiler,
 
@@ -39,6 +37,13 @@ public:
         Malloc,
         // Total memory allocated via arena allocators (all pages).
         MallocArena,
+
+        // General purpose engine memory.
+        Engine,
+        // Memory used by the threads (and relevant systems such as Job System).
+        EngineThreading,
+        // Memory used by Delegate (engine events system to store all references).
+        EngineDelegate,
 
         // Total graphics memory usage.
         Graphics,

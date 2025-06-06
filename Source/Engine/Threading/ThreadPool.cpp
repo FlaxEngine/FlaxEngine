@@ -14,6 +14,7 @@
 #include "Engine/Platform/ConditionVariable.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/Thread.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 FLAXENGINE_API bool IsInMainThread()
 {
@@ -36,6 +37,7 @@ String ThreadPoolTask::ToString() const
 
 void ThreadPoolTask::Enqueue()
 {
+    PROFILE_MEM(EngineThreading);
     ThreadPoolImpl::Jobs.Add(this);
     ThreadPoolImpl::JobsSignal.NotifyOne();
 }
@@ -58,6 +60,8 @@ ThreadPoolService ThreadPoolServiceInstance;
 
 bool ThreadPoolService::Init()
 {
+    PROFILE_MEM(EngineThreading);
+
     // Spawn threads
     const int32 numThreads = Math::Clamp<int32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 2, PLATFORM_THREADS_LIMIT / 2);
     LOG(Info, "Spawning {0} Thread Pool workers", numThreads);

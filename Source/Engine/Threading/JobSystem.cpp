@@ -12,6 +12,7 @@
 #include "Engine/Core/Collections/RingBuffer.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_CSHARP
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #endif
@@ -118,17 +119,22 @@ void* JobSystemAllocation::Allocate(uintptr size)
         }
     }
     if (!result)
+    {
+        PROFILE_MEM(EngineThreading);
         result = Platform::Allocate(size, 16);
+    }
     return result;
 }
 
 void JobSystemAllocation::Free(void* ptr, uintptr size)
 {
+    PROFILE_MEM(EngineThreading);
     MemPool.Add({ ptr, size });
 }
 
 bool JobSystemService::Init()
 {
+    PROFILE_MEM(EngineThreading);
     ThreadsCount = Math::Min<int32>(Platform::GetCPUInfo().LogicalProcessorCount, ARRAY_COUNT(Threads));
     for (int32 i = 0; i < ThreadsCount; i++)
     {

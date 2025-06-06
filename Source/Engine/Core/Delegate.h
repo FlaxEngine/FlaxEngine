@@ -12,6 +12,9 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Core/Collections/HashSet.h"
 #endif
+#if COMPILE_WITH_PROFILER
+#include "Engine/Profiler/ProfilerMemory.h"
+#endif
 
 /// <summary>
 /// The function object that supports binding static, member and lambda functions.
@@ -457,6 +460,7 @@ public:
     /// <param name="f">The function to bind.</param>
     void Bind(const FunctionType& f)
     {
+        PROFILE_MEM(EngineDelegate);
 #if DELEGATE_USE_ATOMIC
         const intptr size = Platform::AtomicRead(&_size);
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead(&_ptr);

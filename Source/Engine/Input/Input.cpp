@@ -169,6 +169,7 @@ void Mouse::OnMouseMoved(const Float2& newPosition)
 
 void Mouse::OnMouseDown(const Float2& position, const MouseButton button, Window* target)
 {
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseDown;
     e.Target = target;
@@ -187,6 +188,7 @@ bool Mouse::IsAnyButtonDown() const
 
 void Mouse::OnMouseUp(const Float2& position, const MouseButton button, Window* target)
 {
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseUp;
     e.Target = target;
@@ -196,6 +198,7 @@ void Mouse::OnMouseUp(const Float2& position, const MouseButton button, Window* 
 
 void Mouse::OnMouseDoubleClick(const Float2& position, const MouseButton button, Window* target)
 {
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseDoubleClick;
     e.Target = target;
@@ -205,6 +208,7 @@ void Mouse::OnMouseDoubleClick(const Float2& position, const MouseButton button,
 
 void Mouse::OnMouseMove(const Float2& position, Window* target)
 {
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseMove;
     e.Target = target;
@@ -213,6 +217,7 @@ void Mouse::OnMouseMove(const Float2& position, Window* target)
 
 void Mouse::OnMouseLeave(Window* target)
 {
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseLeave;
     e.Target = target;
@@ -220,6 +225,7 @@ void Mouse::OnMouseLeave(Window* target)
 
 void Mouse::OnMouseWheel(const Float2& position, float delta, Window* target)
 {
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::MouseWheel;
     e.Target = target;
@@ -316,6 +322,7 @@ void Keyboard::OnCharInput(Char c, Window* target)
     if (c < 32)
         return;
 
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::Char;
     e.Target = target;
@@ -326,6 +333,7 @@ void Keyboard::OnKeyUp(KeyboardKeys key, Window* target)
 {
     if (key >= KeyboardKeys::MAX)
         return;
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::KeyUp;
     e.Target = target;
@@ -336,6 +344,7 @@ void Keyboard::OnKeyDown(KeyboardKeys key, Window* target)
 {
     if (key >= KeyboardKeys::MAX)
         return;
+    PROFILE_MEM(Input);
     Event& e = _queue.AddOne();
     e.Type = EventType::KeyDown;
     e.Target = target;

@@ -1425,6 +1425,7 @@ bool FlaxStorage::CloseFileHandles()
         return false;
     }
     PROFILE_CPU();
+    PROFILE_MEM(ContentFiles);
 
     // Note: this is usually called by the content manager when this file is not used or on exit
     // In those situations all the async tasks using this storage should be cancelled externally

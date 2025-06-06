@@ -3,10 +3,11 @@
 #include "ThreadRegistry.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/CriticalSection.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 namespace ThreadRegistryImpl
 {
-    Dictionary<uint64, Thread*> Registry(64);
+    Dictionary<uint64, Thread*> Registry;
     CriticalSection Locker;
 }
 
@@ -46,6 +47,7 @@ void ThreadRegistry::KillEmAll()
 
 void ThreadRegistry::Add(Thread* thread)
 {
+    PROFILE_MEM(EngineThreading);
     ASSERT(thread && thread->GetID() != 0);
     Locker.Lock();
     ASSERT(!Registry.ContainsKey(thread->GetID()) && !Registry.ContainsValue(thread));
