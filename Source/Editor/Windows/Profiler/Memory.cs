@@ -232,7 +232,7 @@ namespace FlaxEditor.Windows.Profiler
             Array.Sort(_groupOrder, (x, y) =>
             {
                 var tmp = _frames.Get(selectedFrame);
-                return (int)(tmp.Usage.Values0[y] - tmp.Usage.Values0[x]);
+                return tmp.Usage.Values0[y].CompareTo(tmp.Usage.Values0[x]);
             });
 
             // Add rows

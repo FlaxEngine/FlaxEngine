@@ -61,7 +61,7 @@ public:
         GraphicsVertexBuffers,
         // Total index buffers memory usage.
         GraphicsIndexBuffers,
-        // Total meshes memory usage (vertex and idnex buffers allocated by models).
+        // Total meshes memory usage (vertex and index buffers allocated by models).
         GraphicsMeshes,
         // Totoal shaders memory usage (shaders bytecode, PSOs data).
         GraphicsShaders,
@@ -78,7 +78,7 @@ public:
         // Total animation data memory usage (curves, events, keyframes, graphs, etc.).
         AnimationsData,
 
-        // Total autio system memory.
+        // Total audio system memory.
         Audio,
 
         // Total content system memory usage.
@@ -90,11 +90,15 @@ public:
         // Total memory used by content streaming system (internals).
         ContentStreaming,
 
-        // Total memory allocated by input system.
-        Input,
-
         // Total memory allocated by scene objects.
         Level,
+        // Total memory allocated by the foliage system (quad-tree, foliage instances data). Excluding foliage models data.
+        LevelFoliage,
+        // Total memory allocated by the terrain system (patches).
+        LevelTerrain,
+
+        // Total memory allocated by input system.
+        Input,
 
         // Total localization system memory.
         Localization,
@@ -148,7 +152,7 @@ public:
         CustomGame8,
         // Custom game-specific memory tracking.
         CustomGame9,
-    
+
         // Custom plugin-specific memory tracking.
         CustomPlugin0,
         // Custom plugin-specific memory tracking.
@@ -186,7 +190,7 @@ public:
     };
 
     /// <summary>
-    /// The memory groups array wraper to avoid dynamic memory allocation.
+    /// The memory groups array wrapper to avoid dynamic memory allocation.
     /// </summary>
     API_STRUCT(NoDefault) struct GroupsArray
     {
@@ -254,7 +258,7 @@ public:
 
     static void OnMemoryAlloc(void* ptr, uint64 size);
     static void OnMemoryFree(void* ptr);
-    static void OnGroupUpdate(Groups group, int64 sizeDelta, int64 countDetla);
+    static void OnGroupUpdate(Groups group, int64 sizeDelta, int64 countDelta);
 
 public:
     /// <summary>

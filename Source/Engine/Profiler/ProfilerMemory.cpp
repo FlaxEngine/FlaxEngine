@@ -21,6 +21,7 @@
 #define USE_TRACY_MEMORY_PLOTS (defined(TRACY_ENABLE))
 
 static_assert(GROUPS_COUNT <= MAX_uint8, "Fix memory profiler groups to fit a single byte.");
+static_assert(sizeof(ProfilerMemory::Groups) == sizeof(uint8), "Fix memory profiler groups to fit a single byte.");
 
 // Compact name storage.
 struct GroupNameBuffer
@@ -32,17 +33,17 @@ struct GroupNameBuffer
     void Set(const T* str, bool autoFormat = false)
     {
         int32 max = StringUtils::Length(str), dst = 0;
-        char prev = 0;
+        T prev = 0;
         for (int32 i = 0; i < max && dst < ARRAY_COUNT(Buffer) - 2; i++)
         {
-            char cur = (char)str[i];
+            T cur = (T)str[i];
             if (autoFormat && StringUtils::IsUpper(cur) && StringUtils::IsLower(prev))
             {
                 Ansi[dst] = '/';
                 Buffer[dst++] = '/';
             }
-            Ansi[dst] = cur;
-            Buffer[dst++] = cur;
+            Ansi[dst] = (char)cur;
+            Buffer[dst++] = (Char)cur;
             prev = cur;
         }
         Buffer[dst] = 0;
@@ -257,6 +258,8 @@ void InitProfilerMemory(const Char* cmdLine, int32 stage)
     INIT_PARENT(Animations, AnimationsData);
     INIT_PARENT(Content, ContentAssets);
     INIT_PARENT(Content, ContentFiles);
+    INIT_PARENT(Level, LevelFoliage);
+    INIT_PARENT(Level, LevelTerrain);
     INIT_PARENT(Scripting, ScriptingVisual);
     INIT_PARENT(Scripting, ScriptingCSharp);
     INIT_PARENT(ScriptingCSharp, ScriptingCSharpGCCommitted);
@@ -403,10 +406,10 @@ ProfilerMemory::GroupsArray ProfilerMemory::GetGroups(int32 mode)
 void ProfilerMemory::Dump(const StringView& options)
 {
 #if LOG_ENABLE
-    bool file = options.Contains(TEXT("file"));
+    bool file = options.Contains(TEXT("file"), StringSearchCase::IgnoreCase);
     StringBuilder output;
     int32 maxCount = 20;
-    if (file || options.Contains(TEXT("all")))
+    if (file || options.Contains(TEXT("all"), StringSearchCase::IgnoreCase))
         maxCount = MAX_int32;
     ::Dump(output, maxCount);
     if (file)
@@ -476,10 +479,10 @@ void ProfilerMemory::OnMemoryFree(void* ptr)
     stack.SkipRecursion = false;
 }
 
-void ProfilerMemory::OnGroupUpdate(Groups group, int64 sizeDelta, int64 countDetla)
+void ProfilerMemory::OnGroupUpdate(Groups group, int64 sizeDelta, int64 countDelta)
 {
     Platform::InterlockedAdd(&GroupMemory[(int32)group], sizeDelta);
-    Platform::InterlockedAdd(&GroupMemoryCount[(int32)group], countDetla);
+    Platform::InterlockedAdd(&GroupMemoryCount[(int32)group], countDelta);
     UPDATE_PEEK(group);
 }
 

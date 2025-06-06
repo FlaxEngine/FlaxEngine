@@ -16,6 +16,7 @@
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Renderer/GI/GlobalSurfaceAtlasPass.h"
 
@@ -290,6 +291,7 @@ void Terrain::SetCollisionLOD(int32 value)
 
 void Terrain::SetPhysicalMaterials(const Array<JsonAssetReference<PhysicalMaterial>, FixedAllocation<8>>& value)
 {
+    PROFILE_MEM(LevelTerrain);
     _physicalMaterials = value;
     _physicalMaterials.Resize(8);
     JsonAsset* materials[8];
@@ -431,6 +433,7 @@ void Terrain::Setup(int32 lodCount, int32 chunkSize)
 
 void Terrain::AddPatches(const Int2& numberOfPatches)
 {
+    PROFILE_MEM(LevelTerrain);
     if (_chunkSize == 0)
         Setup();
     _patches.ClearDelete();
@@ -470,6 +473,7 @@ void Terrain::AddPatch(const Int2& patchCoord)
         LOG(Warning, "Cannot add patch at {0}x{1}. The patch at the given location already exists.", patchCoord.X, patchCoord.Y);
         return;
     }
+    PROFILE_MEM(LevelTerrain);
     if (_chunkSize == 0)
         Setup();
 
@@ -726,6 +730,8 @@ void Terrain::Serialize(SerializeStream& stream, const void* otherObj)
 
 void Terrain::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
+    PROFILE_MEM(LevelTerrain);
+
     // Base
     Actor::Deserialize(stream, modifier);
 
