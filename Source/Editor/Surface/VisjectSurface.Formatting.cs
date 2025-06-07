@@ -324,5 +324,80 @@ namespace FlaxEditor.Surface
             MarkAsEdited(false);
             Undo?.AddAction(new MultiUndoAction(undoActions, $"Align nodes ({alignmentType})"));
         }
+
+        /// <summary>
+        /// Distribute the given nodes as equally as possible inside the bounding box, if no fit can be done it will use a default pad of 10 pixels between nodes.
+        /// </summary>
+        /// <param name="nodes">List of nodes</param>
+        /// <param name="vertically">If false will be done horizontally, if true will be done vertically</param>
+        public void DistributeNodes(List<SurfaceNode> nodes, bool vertically)
+        {
+            if(nodes.Count <= 1)
+                return;
+
+            var undoActions = new List<MoveNodesAction>();
+            var boundingBox = GetNodesBounds(nodes);
+            float padding = 10;
+            float totalSize = 0;
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                if (vertically)
+                {
+                    totalSize += nodes[i].Height;
+                }
+                else
+                {
+                    totalSize += nodes[i].Width;
+                }
+            }
+
+            if(vertically)
+            {
+                nodes.Sort((leftValue, rightValue) => { return leftValue.Y.CompareTo(rightValue.Y); });
+
+                float position = boundingBox.Top; 
+                if(totalSize < boundingBox.Height)
+                {
+                    padding = (boundingBox.Height - totalSize) / nodes.Count;
+                }
+
+                for(int i = 0; i < nodes.Count; i++)
+                {
+                    var newLocation = new Float2(nodes[i].X, position);
+                    var locationDelta = newLocation - nodes[i].Location;
+                    nodes[i].Location = newLocation;
+
+                    position += nodes[i].Height + padding;
+
+                    if (Undo != null)
+                        undoActions.Add(new MoveNodesAction(Context, new[] { nodes[i].ID }, locationDelta));
+                }
+            }
+            else
+            {
+                nodes.Sort((leftValue, rightValue) => { return leftValue.X.CompareTo(rightValue.X); });
+
+                float position = boundingBox.Left; 
+                if(totalSize < boundingBox.Width)
+                {
+                    padding = (boundingBox.Width - totalSize) / nodes.Count;
+                }
+
+                for(int i = 0; i < nodes.Count; i++)
+                {
+                    var newLocation = new Float2(position, nodes[i].Y);
+                    var locationDelta = newLocation - nodes[i].Location;
+                    nodes[i].Location = newLocation;
+
+                    position += nodes[i].Width + padding;
+
+                    if (Undo != null)
+                        undoActions.Add(new MoveNodesAction(Context, new[] { nodes[i].ID }, locationDelta));
+                }
+            }
+
+            MarkAsEdited(false);
+            Undo?.AddAction(new MultiUndoAction(undoActions, vertically ? "Distribute nodes vertically" : "Distribute nodes horizontally"));
+        }
     }
 }

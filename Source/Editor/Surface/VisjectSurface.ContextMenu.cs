@@ -199,6 +199,8 @@ namespace FlaxEditor.Surface
         private ContextMenuButton _cmAlignNodesLeftButton;
         private ContextMenuButton _cmAlignNodesCenterButton;
         private ContextMenuButton _cmAlignNodesRightButton;
+        private ContextMenuButton _cmDistributeNodesHorizontallyButton;
+        private ContextMenuButton _cmDistributeNodesVerticallyButton;
         private ContextMenuButton _cmRemoveNodeConnectionsButton;
         private ContextMenuButton _cmRemoveBoxConnectionsButton;
         private readonly Float2 ContextMenuOffset = new Float2(5);
@@ -420,6 +422,10 @@ namespace FlaxEditor.Surface
             _cmAlignNodesLeftButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align left", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Left); });
             _cmAlignNodesCenterButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align center", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Center); });
             _cmAlignNodesRightButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align right", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Right); });
+
+            _cmFormatNodesMenu.ContextMenu.AddSeparator();
+            _cmDistributeNodesHorizontallyButton = _cmFormatNodesMenu.ContextMenu.AddButton("Distribute horizontally", () => { DistributeNodes(SelectedNodes, false); });
+            _cmDistributeNodesVerticallyButton = _cmFormatNodesMenu.ContextMenu.AddButton("Distribute vertically", () => { DistributeNodes(SelectedNodes, true); });
 
             _cmRemoveNodeConnectionsButton = menu.AddButton("Remove all connections to that node(s)", () =>
             {
