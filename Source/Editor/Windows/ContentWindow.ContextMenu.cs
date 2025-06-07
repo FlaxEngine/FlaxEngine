@@ -10,6 +10,7 @@ using FlaxEngine;
 using FlaxEngine.Assertions;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.Windows
 {
@@ -119,6 +120,14 @@ namespace FlaxEditor.Windows
                     {
                         if (assetItem.IsLoaded)
                             cm.AddButton("Reload", assetItem.Reload);
+
+                        var scriptItem = TypeUtils.GetType(assetItem.TypeName).ContentItem;
+                        if(scriptItem != null)
+                        {
+                            cm.AddButton("Edit asset code", () => { Editor.Instance.ContentEditing.Open(scriptItem); });
+                            cm.AddButton("Show asset code item in content window", () => { Editor.Instance.Windows.ContentWin.Select(scriptItem); });
+                        }
+                        
                         cm.AddButton("Copy asset ID", () => Clipboard.Text = JsonSerializer.GetStringID(assetItem.ID));
                         cm.AddButton("Select actors using this asset", () => Editor.SceneEditing.SelectActorsUsingAsset(assetItem.ID));
                         cm.AddButton("Show asset references graph", () => Editor.Windows.Open(new AssetReferencesGraphWindow(Editor, assetItem)));
