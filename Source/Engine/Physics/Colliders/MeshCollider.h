@@ -42,4 +42,6 @@ protected:
 #endif
     void UpdateBounds() override;
     void GetGeometry(CollisionShape& collision) override;
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
 };

@@ -30,7 +30,6 @@ GPU_CB_STRUCT(Data {
 
 Sky::Sky(const SpawnParams& params)
     : Actor(params)
-    , _shader(nullptr)
     , _psSky(nullptr)
     , _psFog(nullptr)
 {

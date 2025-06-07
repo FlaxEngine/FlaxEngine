@@ -16,12 +16,10 @@ ParticleEffect::ParticleEffect(const SpawnParams& params)
     : Actor(params)
     , _lastUpdateFrame(0)
     , _lastMinDstSqr(MAX_Real)
+    , ParticleSystem(this)
 {
     _box = BoundingBox(_transform.Translation);
     BoundingSphere::FromBox(_box, _sphere);
-
-    ParticleSystem.Changed.Bind<ParticleEffect, &ParticleEffect::OnParticleSystemModified>(this);
-    ParticleSystem.Loaded.Bind<ParticleEffect, &ParticleEffect::OnParticleSystemLoaded>(this);
 }
 
 void ParticleEffectParameter::Init(ParticleEffect* effect, int32 emitterIndex, int32 paramIndex)
@@ -542,16 +540,20 @@ void ParticleEffect::ApplyModifiedParameters()
     }
 }
 
-void ParticleEffect::OnParticleSystemModified()
+void ParticleEffect::OnAssetChanged(Asset* asset, void* caller)
 {
     Instance.ClearState();
     _parameters.Resize(0);
     _parametersVersion = 0;
 }
 
-void ParticleEffect::OnParticleSystemLoaded()
+void ParticleEffect::OnAssetLoaded(Asset* asset, void* caller)
 {
     ApplyModifiedParameters();
+}
+
+void ParticleEffect::OnAssetUnloaded(Asset* asset, void* caller)
+{
 }
 
 bool ParticleEffect::HasContentLoaded() const

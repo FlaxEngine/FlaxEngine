@@ -17,8 +17,8 @@
 NavMesh::NavMesh(const SpawnParams& params)
     : Actor(params)
     , IsDataDirty(false)
+    , DataAsset(this)
 {
-    DataAsset.Loaded.Bind<NavMesh, &NavMesh::OnDataAssetLoaded>(this);
 }
 
 void NavMesh::SaveNavMesh()
@@ -100,7 +100,11 @@ void NavMesh::RemoveTiles()
         navMesh->RemoveTiles(this);
 }
 
-void NavMesh::OnDataAssetLoaded()
+void NavMesh::OnAssetChanged(Asset* asset, void* caller)
+{
+}
+
+void NavMesh::OnAssetLoaded(Asset* asset, void* caller)
 {
     // Skip if already has data (prevent reloading navmesh on saving)
     if (Data.Tiles.HasItems())
@@ -124,6 +128,10 @@ void NavMesh::OnDataAssetLoaded()
     {
         AddTiles();
     }
+}
+
+void NavMesh::OnAssetUnloaded(Asset* asset, void* caller)
+{
 }
 
 void NavMesh::Serialize(SerializeStream& stream, const void* otherObj)

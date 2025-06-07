@@ -118,7 +118,7 @@ public:
 /// The particle system instance that plays the particles simulation in the game.
 /// </summary>
 API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Particle Effect\"), ActorToolbox(\"Visuals\")")
-class FLAXENGINE_API ParticleEffect : public Actor
+class FLAXENGINE_API ParticleEffect : public Actor, IAssetReference
 {
     DECLARE_SCENE_OBJECT(ParticleEffect);
 public:
@@ -387,6 +387,11 @@ private:
     void ApplyModifiedParameters();
     void OnParticleSystemModified();
     void OnParticleSystemLoaded();
+
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
 
 public:
     // [Actor]

@@ -21,9 +21,8 @@ AudioSource::AudioSource(const SpawnParams& params)
     , _playOnStart(false)
     , _startTime(0.0f)
     , _allowSpatialization(true)
+    , Clip(this)
 {
-    Clip.Changed.Bind<AudioSource, &AudioSource::OnClipChanged>(this);
-    Clip.Loaded.Bind<AudioSource, &AudioSource::OnClipLoaded>(this);
 }
 
 void AudioSource::SetVolume(float value)
@@ -264,7 +263,7 @@ void AudioSource::RequestStreamingBuffersUpdate()
     _needToUpdateStreamingBuffers = true;
 }
 
-void AudioSource::OnClipChanged()
+void AudioSource::OnAssetChanged(Asset* asset, void* caller)
 {
     Stop();
 
@@ -276,7 +275,7 @@ void AudioSource::OnClipChanged()
     }
 }
 
-void AudioSource::OnClipLoaded()
+void AudioSource::OnAssetLoaded(Asset* asset, void* caller)
 {
     if (!SourceID)
         return;
@@ -300,6 +299,10 @@ void AudioSource::OnClipLoaded()
             PlayInternal();
         }
     }
+}
+
+void AudioSource::OnAssetUnloaded(Asset* asset, void* caller)
+{
 }
 
 bool AudioSource::UseStreaming() const

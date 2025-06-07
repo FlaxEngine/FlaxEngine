@@ -19,7 +19,6 @@ int32 VolumetricFogGridInjectionGroupSize = 4;
 int32 VolumetricFogIntegrationGroupSize = 8;
 
 VolumetricFogPass::VolumetricFogPass()
-    : _shader(nullptr)
 {
 }
 

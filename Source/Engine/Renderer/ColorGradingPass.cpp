@@ -39,7 +39,6 @@ GPU_CB_STRUCT(Data {
 ColorGradingPass::ColorGradingPass()
     : _useVolumeTexture(false)
     , _lutFormat()
-    , _shader(nullptr)
 {
 }
 

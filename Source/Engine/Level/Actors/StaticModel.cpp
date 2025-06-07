@@ -29,10 +29,9 @@ StaticModel::StaticModel(const SpawnParams& params)
     , _vertexColorsDirty(false)
     , _vertexColorsCount(0)
     , _sortOrder(0)
+    , Model(this)
 {
     _drawCategory = SceneRendering::SceneDrawAsync;
-    Model.Changed.Bind<StaticModel, &StaticModel::OnModelChanged>(this);
-    Model.Loaded.Bind<StaticModel, &StaticModel::OnModelLoaded>(this);
 }
 
 StaticModel::~StaticModel()
@@ -224,7 +223,7 @@ void StaticModel::RemoveVertexColors()
     _vertexColorsDirty = false;
 }
 
-void StaticModel::OnModelChanged()
+void StaticModel::OnAssetChanged(Asset* asset, void* caller)
 {
     if (_residencyChangedModel)
     {
@@ -241,7 +240,7 @@ void StaticModel::OnModelChanged()
         GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 }
 
-void StaticModel::OnModelLoaded()
+void StaticModel::OnAssetLoaded(Asset* asset, void* caller)
 {
     Entries.SetupIfInvalid(Model);
     UpdateBounds();
@@ -314,6 +313,10 @@ void StaticModel::FlushVertexColors()
         }
     }
     RenderContext::GPULocker.Unlock();
+}
+
+void StaticModel::OnAssetUnloaded(Asset* asset, void* caller)
+{
 }
 
 bool StaticModel::HasContentLoaded() const

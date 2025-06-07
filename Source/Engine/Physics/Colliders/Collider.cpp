@@ -20,10 +20,8 @@ Collider::Collider(const SpawnParams& params)
     , _staticActor(nullptr)
     , _cachedScale(1.0f)
     , _contactOffset(2.0f)
+    , Material(this)
 {
-    Material.Loaded.Bind<Collider, &Collider::OnMaterialChanged>(this);
-    Material.Unload.Bind<Collider, &Collider::OnMaterialChanged>(this);
-    Material.Changed.Bind<Collider, &Collider::OnMaterialChanged>(this);
 }
 
 void* Collider::GetPhysicsShape() const
@@ -294,13 +292,6 @@ void Collider::DrawPhysicsDebug(RenderView& view)
 
 #endif
 
-void Collider::OnMaterialChanged()
-{
-    // Update the shape material
-    if (_shape)
-        PhysicsBackend::SetShapeMaterial(_shape, Material);
-}
-
 void Collider::BeginPlay(SceneBeginData* data)
 {
     // Check if has no shape created (it means no rigidbody requested it but also collider may be spawned at runtime)
@@ -465,4 +456,21 @@ void Collider::OnPhysicsSceneChanged(PhysicsScene* previous)
         void* scene = GetPhysicsScene()->GetPhysicsScene();
         PhysicsBackend::AddSceneActor(scene, _staticActor);
     }
+}
+
+void Collider::OnAssetChanged(Asset* asset, void* caller)
+{
+    // Update the shape material
+    if (_shape && caller == &Material)
+        PhysicsBackend::SetShapeMaterial(_shape, Material);
+}
+
+void Collider::OnAssetLoaded(Asset* asset, void* caller)
+{
+    Collider::OnAssetChanged(asset, caller);
+}
+
+void Collider::OnAssetUnloaded(Asset* asset, void* caller)
+{
+    Collider::OnAssetChanged(asset, caller);
 }

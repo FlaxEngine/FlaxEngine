@@ -15,7 +15,7 @@ class NavMeshRuntime;
 /// The navigation mesh actor that holds a navigation data for a scene.
 /// </summary>
 API_CLASS(Attributes="ActorContextMenu(\"New/Navigation/Nav Mesh\")") 
-class FLAXENGINE_API NavMesh : public Actor
+class FLAXENGINE_API NavMesh : public Actor, IAssetReference
 {
     DECLARE_SCENE_OBJECT(NavMesh);
 public:
@@ -67,7 +67,11 @@ public:
 private:
     void AddTiles();
     void RemoveTiles();
-    void OnDataAssetLoaded();
+
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
 
 private:
     bool _navMeshActive = false;

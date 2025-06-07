@@ -13,7 +13,7 @@
 /// Whether or not an audio source is spatial is controlled by the assigned AudioClip.The volume and the pitch of a spatial audio source is controlled by its position and the AudioListener's position/direction/velocity.
 /// </remarks>
 API_CLASS(Attributes="ActorContextMenu(\"New/Audio/Audio Source\"), ActorToolbox(\"Other\")")
-class FLAXENGINE_API AudioSource : public Actor
+class FLAXENGINE_API AudioSource : public Actor, IAssetReference
 {
     DECLARE_SCENE_OBJECT(AudioSource);
     friend class AudioStreamingHandler;
@@ -293,8 +293,10 @@ public:
     void RequestStreamingBuffersUpdate();
 
 private:
-    void OnClipChanged();
-    void OnClipLoaded();
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
 
     /// <summary>
     /// Plays the audio source. Should have buffer(s) binded before.

@@ -7,7 +7,7 @@
 /// <summary>
 /// The asset soft reference. Asset gets referenced (loaded) on actual use (ID reference is resolving it).
 /// </summary>
-class FLAXENGINE_API SoftAssetReferenceBase
+class FLAXENGINE_API SoftAssetReferenceBase : public IAssetReference
 {
 protected:
     Asset* _asset = nullptr;
@@ -46,11 +46,16 @@ public:
     /// </summary>
     String ToString() const;
 
+public:
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
+
 protected:
     void OnSet(Asset* asset);
     void OnSet(const Guid& id);
     void OnResolve(const ScriptingTypeHandle& type);
-    void OnUnloaded(Asset* asset);
 };
 
 /// <summary>
@@ -68,6 +73,13 @@ public:
     /// Initializes a new instance of the <see cref="SoftAssetReference"/> class.
     /// </summary>
     SoftAssetReference()
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SoftAssetReference"/> class.
+    /// </summary>
+    explicit SoftAssetReference(decltype(__nullptr))
     {
     }
 

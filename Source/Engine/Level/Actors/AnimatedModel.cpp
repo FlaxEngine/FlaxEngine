@@ -27,16 +27,13 @@ AnimatedModel::AnimatedModel(const SpawnParams& params)
     , _counter(0)
     , _lastMinDstSqr(MAX_Real)
     , _lastUpdateFrame(0)
+    , SkinnedModel(this)
+    , AnimationGraph(this)
 {
     _drawCategory = SceneRendering::SceneDrawAsync;
     GraphInstance.Object = this;
     _box = BoundingBox(Vector3::Zero);
     _sphere = BoundingSphere(Vector3::Zero, 0.0f);
-
-    SkinnedModel.Changed.Bind<AnimatedModel, &AnimatedModel::OnSkinnedModelChanged>(this);
-    SkinnedModel.Loaded.Bind<AnimatedModel, &AnimatedModel::OnSkinnedModelLoaded>(this);
-    AnimationGraph.Changed.Bind<AnimatedModel, &AnimatedModel::OnGraphChanged>(this);
-    AnimationGraph.Loaded.Bind<AnimatedModel, &AnimatedModel::OnGraphLoaded>(this);
 }
 
 AnimatedModel::~AnimatedModel()
@@ -887,6 +884,26 @@ void AnimatedModel::OnGraphLoaded()
     // Prepare parameters and instance data
     GraphInstance.ClearState();
     SyncParameters();
+}
+
+void AnimatedModel::OnAssetChanged(Asset* asset, void* caller)
+{
+    if (caller == &SkinnedModel)
+        OnSkinnedModelChanged();
+    else if (caller == &AnimationGraph)
+        OnGraphChanged();
+}
+
+void AnimatedModel::OnAssetLoaded(Asset* asset, void* caller)
+{
+    if (caller == &SkinnedModel)
+        OnSkinnedModelLoaded();
+    else if (caller == &AnimationGraph)
+        OnGraphLoaded();
+}
+
+void AnimatedModel::OnAssetUnloaded(Asset* asset, void* caller)
+{
 }
 
 bool AnimatedModel::HasContentLoaded() const

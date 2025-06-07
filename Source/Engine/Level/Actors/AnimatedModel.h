@@ -13,7 +13,7 @@
 /// Performs an animation and renders a skinned model.
 /// </summary>
 API_CLASS(Attributes="ActorContextMenu(\"New/Animation/Animated Model\"), ActorToolbox(\"Visuals\")")
-class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
+class FLAXENGINE_API AnimatedModel : public ModelInstanceActor, IAssetReference
 {
     DECLARE_SCENE_OBJECT(AnimatedModel);
     friend class AnimationsSystem;
@@ -421,6 +421,11 @@ private:
 
     void OnGraphChanged();
     void OnGraphLoaded();
+
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
 
 public:
     // [ModelInstanceActor]

@@ -73,9 +73,9 @@ void BehaviorService::Dispose()
 
 Behavior::Behavior(const SpawnParams& params)
     : Script(params)
+    , Tree(this)
 {
     _knowledge.Behavior = this;
-    Tree.Changed.Bind<Behavior, &Behavior::ResetLogic>(this);
 }
 
 void Behavior::UpdateAsync()
@@ -173,6 +173,19 @@ void Behavior::OnEnable()
 void Behavior::OnDisable()
 {
     BehaviorServiceInstance.UpdateList.Remove(this);
+}
+
+void Behavior::OnAssetChanged(Asset* asset, void* caller)
+{
+    ResetLogic();
+}
+
+void Behavior::OnAssetLoaded(Asset* asset, void* caller)
+{
+}
+
+void Behavior::OnAssetUnloaded(Asset* asset, void* caller)
+{
 }
 
 #if USE_EDITOR
