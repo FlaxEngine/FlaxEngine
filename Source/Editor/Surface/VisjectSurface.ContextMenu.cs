@@ -191,7 +191,14 @@ namespace FlaxEditor.Surface
 
         private ContextMenuButton _cmCopyButton;
         private ContextMenuButton _cmDuplicateButton;
+        private ContextMenuChildMenu _cmFormatNodesMenu;
         private ContextMenuButton _cmFormatNodesConnectionButton;
+        private ContextMenuButton _cmAlignNodesTopButton;
+        private ContextMenuButton _cmAlignNodesMiddleButton;
+        private ContextMenuButton _cmAlignNodesBottomButton;
+        private ContextMenuButton _cmAlignNodesLeftButton;
+        private ContextMenuButton _cmAlignNodesCenterButton;
+        private ContextMenuButton _cmAlignNodesRightButton;
         private ContextMenuButton _cmRemoveNodeConnectionsButton;
         private ContextMenuButton _cmRemoveBoxConnectionsButton;
         private readonly Float2 ContextMenuOffset = new Float2(5);
@@ -399,8 +406,20 @@ namespace FlaxEditor.Surface
             }
             menu.AddSeparator();
 
-            _cmFormatNodesConnectionButton = menu.AddButton("Format node(s)", () => { FormatGraph(SelectedNodes); });
-            _cmFormatNodesConnectionButton.Enabled = CanEdit && HasNodesSelection;
+            _cmFormatNodesMenu = menu.AddChildMenu("Format node(s)");
+            _cmFormatNodesMenu.Enabled = CanEdit && HasNodesSelection;
+
+            _cmFormatNodesConnectionButton = _cmFormatNodesMenu.ContextMenu.AddButton("Auto format", () => { FormatGraph(SelectedNodes); });
+
+            _cmFormatNodesMenu.ContextMenu.AddSeparator();
+            _cmAlignNodesTopButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align top", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Top); });
+            _cmAlignNodesMiddleButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align middle", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Middle); });
+            _cmAlignNodesBottomButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align bottom", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Bottom); });
+
+            _cmFormatNodesMenu.ContextMenu.AddSeparator();
+            _cmAlignNodesLeftButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align left", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Left); });
+            _cmAlignNodesCenterButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align center", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Center); });
+            _cmAlignNodesRightButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align right", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Right); });
 
             _cmRemoveNodeConnectionsButton = menu.AddButton("Remove all connections to that node(s)", () =>
             {
