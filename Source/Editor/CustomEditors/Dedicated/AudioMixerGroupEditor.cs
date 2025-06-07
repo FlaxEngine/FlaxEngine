@@ -4,6 +4,7 @@ using FlaxEditor.Content.Settings;
 using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEngine;
+using FlaxEngine.Utilities;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -23,14 +24,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             _element = layout.ComboBox();
             _element.ComboBox.SelectedIndexChanged += OnSelectedIndexChanged;
-            _element.ComboBox.AddItem("None");
+            _element.ComboBox.AddItem("Master");
             var groups = GameSettings.Load<AudioSettings>();
             if (groups?.AudioMixerGroups != null)
             {
-                foreach (var mixer in groups.AudioMixerGroups)
-                {
-                    _element.ComboBox.AddItem(mixer.Name);
-                }
+                groups.AudioMixerGroups.ForEach(mixer => _element.ComboBox.AddItem(mixer.Name));
             }
         }
 
@@ -44,9 +42,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         public override void Refresh()
         {
             base.Refresh();
-
-           AudioMixerIndex = (int)Values[0];
-            _element.ComboBox.SelectedIndex = AudioMixerIndex + 1;
+            _element.ComboBox.SelectedIndex = (AudioMixerIndex = (int)Values[0]) + 1;
         }
     }
 }
