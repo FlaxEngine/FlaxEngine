@@ -92,6 +92,13 @@ namespace FlaxEditor.Windows
             _tree.SelectedChanged += Tree_OnSelectedChanged;
             _tree.RightClick += OnTreeRightClick;
             _tree.Parent = _sceneTreePanel;
+            _tree.OnDeferedLayout += () => {
+                if(_tree.Selection.Count != 0 && _forceScrollNodeToView)
+                {
+                    _forceScrollNodeToView = false;
+                    ScrollToSelectedNode();
+                }
+            };
             headerPanel.Parent = this;
 
             // Setup input actions
@@ -154,18 +161,6 @@ namespace FlaxEditor.Windows
 
             PerformLayout();
             PerformLayout();
-        }
-
-        /// <inheritdoc />
-        public override void Update(float deltaTime)
-        {
-            base.Update(deltaTime);
-
-            if(_tree.Selection.Count != 0 && _forceScrollNodeToView)
-            {
-                _forceScrollNodeToView = false;
-                ScrollToSelectedNode();
-            }
         }
 
         private void Spawn(Type type)
