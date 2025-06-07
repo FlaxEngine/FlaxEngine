@@ -34,6 +34,7 @@ namespace FlaxEditor.Windows
         private DragScriptItems _dragScriptItems;
         private DragHandlers _dragHandlers;
         private bool _isDropping = false;
+        private bool _forceScrollNodeToView = false;
 
         /// <summary>
         /// Scene tree panel.
@@ -148,13 +149,21 @@ namespace FlaxEditor.Windows
             {
                 var node = nodeSelection[nodeSelection.Count - 1];
                 node.Expand(true);
+                _forceScrollNodeToView = true;
             }
 
             PerformLayout();
             PerformLayout();
+        }
 
-            if(nodeSelection.Count != 0)
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            if(_tree.Selection.Count != 0 && _forceScrollNodeToView)
             {
+                _forceScrollNodeToView = false;
                 ScrollToSelectedNode();
             }
         }
