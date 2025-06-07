@@ -93,12 +93,13 @@ namespace FlaxEditor.Windows
             _tree.RightClick += OnTreeRightClick;
             _tree.Parent = _sceneTreePanel;
             _tree.OnDeferedLayout += () => {
-                if(_tree.Selection.Count != 0 && _forceScrollNodeToView)
+                if(_forceScrollNodeToView)
                 {
                     _forceScrollNodeToView = false;
                     ScrollToSelectedNode();
                 }
             };
+            
             headerPanel.Parent = this;
 
             // Setup input actions
