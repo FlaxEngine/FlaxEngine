@@ -14,7 +14,7 @@ namespace FlaxEngine
 #if FLAX_EDITOR
     [System.ComponentModel.TypeConverter(typeof(TypeConverters.Int2Converter))]
 #endif
-    partial struct Int2 : IEquatable<Int2>, IFormattable
+    partial struct Int2 : IEquatable<Int2>, IFormattable, IComparable, IComparable<Int2>
     {
         private static readonly string _formatString = "X:{0} Y:{1}";
 
@@ -978,6 +978,25 @@ namespace FlaxEngine
         public override bool Equals(object value)
         {
             return value is Int2 other && Equals(ref other);
+        }
+
+        /// <inheritdoc/>
+        public int CompareTo(object obj)
+        {
+            if (obj == null)
+                return 1;
+
+            if (obj is not Int2 other)
+                throw new ArgumentException("Object is not a Int2.", nameof(obj));
+
+            return LengthSquared.CompareTo(other.LengthSquared);
+        }
+
+        /// <inheritdoc/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int CompareTo(Int2 other)
+        {
+            return LengthSquared.CompareTo(other.LengthSquared);
         }
     }
 }
