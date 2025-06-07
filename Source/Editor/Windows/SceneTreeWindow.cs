@@ -142,9 +142,21 @@ namespace FlaxEditor.Windows
             root.TreeNode.UpdateFilter(query);
 
             _tree.UnlockChildrenRecursive();
+            
+            var nodeSelection = _tree.Selection;
+            if(nodeSelection.Count != 0)
+            {
+                var node = nodeSelection[nodeSelection.Count - 1];
+                node.Expand(true);
+            }
+
             PerformLayout();
             PerformLayout();
-            ScrollToSelectedNode();
+
+            if(nodeSelection.Count != 0)
+            {
+                ScrollToSelectedNode();
+            }
         }
 
         private void Spawn(Type type)
