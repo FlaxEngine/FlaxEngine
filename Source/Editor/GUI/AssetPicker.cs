@@ -299,6 +299,7 @@ namespace FlaxEditor.GUI
                     {
                         // Select asset
                         Editor.Instance.Windows.ContentWin.Select(Validator.SelectedItem);
+                        Editor.Instance.Windows.ContentWin.ClearItemsSearch();
                     }
                 }
                 else if (Button1Rect.Contains(location))
@@ -312,6 +313,7 @@ namespace FlaxEditor.GUI
                     {
                         // Select asset
                         Editor.Instance.Windows.ContentWin.Select(Validator.SelectedItem);
+                        Editor.Instance.Windows.ContentWin.ClearItemsSearch();
                     }
                     else if (Button3Rect.Contains(location))
                     {
