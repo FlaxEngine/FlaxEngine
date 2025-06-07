@@ -282,5 +282,47 @@ namespace FlaxEditor.Surface
 
             return maxOffset;
         }
+
+        /// <summary>
+        /// Align given nodes on a graph using the given alignment type.
+        /// Ignores any potential overlap.
+        /// </summary>
+        /// <param name="nodes">List of nodes</param>
+        /// <param name="alignmentType">Alignemnt type</param>
+        public void AlignNodes(List<SurfaceNode> nodes, NodeAlignmentType alignmentType)
+        {
+            if(nodes.Count <= 1)
+                return;
+
+            var undoActions = new List<MoveNodesAction>();
+            var boundingBox = GetNodesBounds(nodes);
+            for(int i = 0; i < nodes.Count; i++)
+            {
+                var centerY = boundingBox.Center.Y - (nodes[i].Height / 2);
+                var centerX = boundingBox.Center.X - (nodes[i].Width / 2);
+                
+                var newLocation = alignmentType switch
+                {
+                    NodeAlignmentType.Top    => new Float2(nodes[i].Location.X, boundingBox.Top),
+                    NodeAlignmentType.Middle => new Float2(nodes[i].Location.X, centerY),
+                    NodeAlignmentType.Bottom => new Float2(nodes[i].Location.X, boundingBox.Bottom - nodes[i].Height),
+
+                    NodeAlignmentType.Left   => new Float2(boundingBox.Left, nodes[i].Location.Y),
+                    NodeAlignmentType.Center => new Float2(centerX, nodes[i].Location.Y),
+                    NodeAlignmentType.Right  => new Float2(boundingBox.Right - nodes[i].Width, nodes[i].Location.Y),
+
+                    _ => throw new NotImplementedException($"Unsupported node alignment type: {alignmentType}"),
+                };
+
+                var locationDelta = newLocation - nodes[i].Location;
+                nodes[i].Location = newLocation;
+
+                if(Undo != null)
+                    undoActions.Add(new MoveNodesAction(Context, new[] { nodes[i].ID }, locationDelta));
+            }
+
+            MarkAsEdited(false);
+            Undo?.AddAction(new MultiUndoAction(undoActions, $"Align nodes ({alignmentType})"));
+        }
     }
 }
