@@ -448,7 +448,7 @@ namespace FlaxEditor.Windows.Assets
 
             if (IsEdited)
             {
-                if (MessageBox.Show("Gameplay Globals asset has been modified. Save it before entering the play mode?", "Save gameplay globals?", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                if (MessageBox.Show("Audio Mixer asset has been modified. Save it before entering the play mode?", "Save Audio Mixer?", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                 {
                     Save();
                 }
