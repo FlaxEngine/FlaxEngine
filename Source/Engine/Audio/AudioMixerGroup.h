@@ -23,7 +23,7 @@ API_STRUCT() struct AudioMixerGroup : ISerializable
     ///  Volume of the volume.
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(20), Limit(0, 1)")
-    float MixerVolume = .5f;
+    float MixerVolume = 1;
 
 };
 
