@@ -11,7 +11,7 @@ namespace FlaxEngine
         {
             Position = new Float2(100, 100),
             Size = new Float2(640, 480),
-            MinimumSize = new Float2(24, 24),
+            MinimumSize = new Float2(8, 8),
             MaximumSize = Float2.Zero, // Unlimited size
             StartPosition = WindowStartPosition.CenterParent,
             HasBorder = true,
