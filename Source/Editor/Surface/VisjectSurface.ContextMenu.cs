@@ -411,21 +411,21 @@ namespace FlaxEditor.Surface
             _cmFormatNodesMenu = menu.AddChildMenu("Format node(s)");
             _cmFormatNodesMenu.Enabled = CanEdit && HasNodesSelection;
 
-            _cmFormatNodesConnectionButton = _cmFormatNodesMenu.ContextMenu.AddButton("Auto format", () => { FormatGraph(SelectedNodes); });
+            _cmFormatNodesConnectionButton = _cmFormatNodesMenu.ContextMenu.AddButton("Auto format", Editor.Instance.Options.Options.Input.NodesAutoFormat, () => { FormatGraph(SelectedNodes); });
 
             _cmFormatNodesMenu.ContextMenu.AddSeparator();
-            _cmAlignNodesTopButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align top", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Top); });
-            _cmAlignNodesMiddleButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align middle", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Middle); });
-            _cmAlignNodesBottomButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align bottom", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Bottom); });
+            _cmAlignNodesTopButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align top", Editor.Instance.Options.Options.Input.NodesAlignTop, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Top); });
+            _cmAlignNodesMiddleButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align middle", Editor.Instance.Options.Options.Input.NodesAlignMiddle, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Middle); });
+            _cmAlignNodesBottomButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align bottom", Editor.Instance.Options.Options.Input.NodesAlignBottom, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Bottom); });
 
             _cmFormatNodesMenu.ContextMenu.AddSeparator();
-            _cmAlignNodesLeftButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align left", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Left); });
-            _cmAlignNodesCenterButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align center", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Center); });
-            _cmAlignNodesRightButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align right", () => { AlignNodes(SelectedNodes, NodeAlignmentType.Right); });
+            _cmAlignNodesLeftButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align left", Editor.Instance.Options.Options.Input.NodesAlignLeft, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Left); });
+            _cmAlignNodesCenterButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align center", Editor.Instance.Options.Options.Input.NodesAlignCenter, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Center); });
+            _cmAlignNodesRightButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align right", Editor.Instance.Options.Options.Input.NodesAlignRight, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Right); });
 
             _cmFormatNodesMenu.ContextMenu.AddSeparator();
-            _cmDistributeNodesHorizontallyButton = _cmFormatNodesMenu.ContextMenu.AddButton("Distribute horizontally", () => { DistributeNodes(SelectedNodes, false); });
-            _cmDistributeNodesVerticallyButton = _cmFormatNodesMenu.ContextMenu.AddButton("Distribute vertically", () => { DistributeNodes(SelectedNodes, true); });
+            _cmDistributeNodesHorizontallyButton = _cmFormatNodesMenu.ContextMenu.AddButton("Distribute horizontally", Editor.Instance.Options.Options.Input.NodesDistributeHorizontal, () => { DistributeNodes(SelectedNodes, false); });
+            _cmDistributeNodesVerticallyButton = _cmFormatNodesMenu.ContextMenu.AddButton("Distribute vertically", Editor.Instance.Options.Options.Input.NodesDistributeVertical, () => { DistributeNodes(SelectedNodes, true); });
 
             _cmRemoveNodeConnectionsButton = menu.AddButton("Remove all connections to that node(s)", () =>
             {
