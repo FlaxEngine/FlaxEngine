@@ -63,11 +63,11 @@ public:
         GraphicsIndexBuffers,
         // Total meshes memory usage (vertex and index buffers allocated by models).
         GraphicsMeshes,
-        // Totoal shaders memory usage (shaders bytecode, PSOs data).
+        // Total shaders memory usage (shaders bytecode, PSOs data).
         GraphicsShaders,
-        // Totoal materials memory usage (constant buffers, parameters data).
+        // Total materials memory usage (constant buffers, parameters data).
         GraphicsMaterials,
-        // Totoal command buffers memory usage (draw lists, constants uploads, ring buffer allocators).
+        // Total command buffers memory usage (draw lists, constants uploads, ring buffer allocators).
         GraphicsCommands,
 
         // Total Artificial Intelligence systems memory usage (eg. Behavior Trees).
@@ -245,7 +245,7 @@ public:
     API_FUNCTION() static GroupsArray GetGroups(int32 mode = 0);
 
     /// <summary>
-    /// Dumps the memory allocations stats (groupped).
+    /// Dumps the memory allocations stats (grouped).
     /// </summary>
     /// <param name="options">'all' to dump all groups, 'file' to dump info to a file (in Logs folder)</param>
     API_FUNCTION(Attributes="DebugCommand") static void Dump(const StringView& options = StringView::Empty);
