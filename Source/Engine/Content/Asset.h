@@ -22,6 +22,8 @@
 class FLAXENGINE_API IAssetReference
 {
 public:
+    virtual ~IAssetReference() = default;
+
     // Asset reference got changed.
     virtual void OnAssetChanged(Asset* asset, void* caller) = 0;
     // Asset got loaded.
