@@ -618,8 +618,8 @@ void SDLWindow::SetClientBounds(const Rectangle& clientArea)
     int newW = static_cast<int>(clientArea.GetWidth());
     int newH = static_cast<int>(clientArea.GetHeight());
 
-    SetSDLWindowScreenPosition(this, newPos);
     SDL_SetWindowSize(_window, newW, newH);
+    SetSDLWindowScreenPosition(this, newPos);
 }
 
 void GetRelativeWindowOffset(WindowType type, SDLWindow* parentWindow, Int2& positionOffset)
