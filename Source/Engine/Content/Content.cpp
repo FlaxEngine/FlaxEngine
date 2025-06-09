@@ -800,6 +800,23 @@ void Content::deleteFileSafety(const StringView& path, const Guid& id)
 #endif
 }
 
+#if !COMPILE_WITHOUT_CSHARP
+
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
+
+void* Content::GetAssetsInternal()
+{
+    AssetsLocker.Lock();
+    MArray* result = MCore::Array::New(Asset::TypeInitializer.GetClass(), Assets.Count());
+    int32 i = 0;
+    for (const auto& e : Assets)
+        MCore::GC::WriteArrayRef(result, e.Value->GetOrCreateManagedInstance(), i++);
+    AssetsLocker.Unlock();
+    return result;
+}
+
+#endif
+
 #if USE_EDITOR
 
 bool Content::RenameAsset(const StringView& oldPath, const StringView& newPath)

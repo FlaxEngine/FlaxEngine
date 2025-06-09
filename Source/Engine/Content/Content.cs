@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using FlaxEngine.Interop;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -7,6 +8,19 @@ namespace FlaxEngine
 {
     partial class Content
     {
+        /// <summary>
+        /// Gets the assets (loaded or during load).
+        /// </summary>
+        public static Asset[] Assets
+        {
+            get
+            {
+                IntPtr ptr = Internal_GetAssetsInternal();
+                ManagedArray array = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(ptr).Target);
+                return NativeInterop.GCHandleArrayToManagedArray<Asset>(array);
+            }
+        }
+
         /// <summary>
         /// Loads asset to the Content Pool and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
         /// </summary>

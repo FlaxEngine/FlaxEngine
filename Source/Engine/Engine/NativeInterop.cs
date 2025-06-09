@@ -201,7 +201,10 @@ namespace FlaxEngine.Interop
             Span<IntPtr> span = ptrArray.ToSpan<IntPtr>();
             T[] managedArray = new T[ptrArray.Length];
             for (int i = 0; i < managedArray.Length; i++)
-                managedArray[i] = span[i] != IntPtr.Zero ? (T)ManagedHandle.FromIntPtr(span[i]).Target : default;
+            {
+                IntPtr ptr = span[i];
+                managedArray[i] = ptr != IntPtr.Zero ? (T)ManagedHandle.FromIntPtr(ptr).Target : default;
+            }
             return managedArray;
         }
 

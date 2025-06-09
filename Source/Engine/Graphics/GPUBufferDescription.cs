@@ -1,9 +1,27 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Runtime.CompilerServices;
+using FlaxEngine.Interop;
 
 namespace FlaxEngine
 {
+    partial class GPUDevice
+    {
+        /// <summary>
+        /// Gets the list with all active GPU resources.
+        /// </summary>
+        public GPUResource[] Resources
+        {
+            get
+            {
+                IntPtr ptr = Internal_GetResourcesInternal(__unmanagedPtr);
+                ManagedArray array = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(ptr).Target);
+                return NativeInterop.GCHandleArrayToManagedArray<GPUResource>(array);
+            }
+        }
+    }
+
     partial struct GPUBufferDescription : IEquatable<GPUBufferDescription>
     {
         /// <summary>

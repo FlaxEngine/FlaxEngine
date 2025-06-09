@@ -648,6 +648,23 @@ GPUTasksExecutor* GPUDevice::CreateTasksExecutor()
     return New<DefaultGPUTasksExecutor>();
 }
 
+#if !COMPILE_WITHOUT_CSHARP
+
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
+
+void* GPUDevice::GetResourcesInternal()
+{
+    _resourcesLock.Lock();
+    MArray* result = MCore::Array::New(GPUResource::TypeInitializer.GetClass(), _resources.Count());
+    int32 i = 0;
+    for (const auto& e : _resources)
+        MCore::GC::WriteArrayRef(result, e->GetOrCreateManagedInstance(), i++);
+    _resourcesLock.Unlock();
+    return result;
+}
+
+#endif
+
 void GPUDevice::Draw()
 {
     PROFILE_MEM(Graphics);
