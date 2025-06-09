@@ -20,6 +20,20 @@ namespace FlaxEngine
                 return NativeInterop.GCHandleArrayToManagedArray<GPUResource>(array);
             }
         }
+
+        /// <summary>
+        /// Gets the list with all active GPU resources.
+        /// </summary>
+        /// <param name="buffer">Output buffer to fill with resource pointers. Can be provided by a user to avoid memory allocation. Buffer might be larger than actual list size. Use <paramref name="count"/> for actual item count.></param>
+        /// <param name="count">Amount of valid items inside <paramref name="buffer"/>.</param>
+        public void GetResources(ref GPUResource[] buffer, out int count)
+        {
+            count = 0;
+            IntPtr ptr = Internal_GetResourcesInternal(__unmanagedPtr);
+            ManagedArray array = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(ptr).Target);
+            buffer = NativeInterop.GCHandleArrayToManagedArray<GPUResource>(array, buffer);
+            count = buffer.Length;
+        }
     }
 
     partial struct GPUBufferDescription : IEquatable<GPUBufferDescription>
