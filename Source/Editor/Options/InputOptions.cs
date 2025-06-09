@@ -139,6 +139,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("Common"), EditorOrder(240)]
         public InputBinding ToggleFullscreen = new InputBinding(KeyboardKeys.F11);
 
+        [DefaultValue(typeof(InputBinding), "Ctrl+BackQuote")]
+        [EditorDisplay("Common"), EditorOrder(250)]
+        public InputBinding FocusConsoleCommand = new InputBinding(KeyboardKeys.BackQuote, KeyboardKeys.Control);
+
         #endregion
 
         #region File
