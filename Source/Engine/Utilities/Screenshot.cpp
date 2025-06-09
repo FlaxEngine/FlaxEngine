@@ -13,6 +13,7 @@
 #include "Engine/Graphics/GPUSwapChain.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if COMPILE_WITH_TEXTURE_TOOL
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #endif

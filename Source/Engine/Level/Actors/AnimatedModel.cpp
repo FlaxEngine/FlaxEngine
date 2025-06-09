@@ -19,6 +19,7 @@
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/SceneObjectsFactory.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
 
 AnimatedModel::AnimatedModel(const SpawnParams& params)

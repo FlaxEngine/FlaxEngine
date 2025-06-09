@@ -460,7 +460,9 @@ public:
     /// <param name="f">The function to bind.</param>
     void Bind(const FunctionType& f)
     {
+#if COMPILE_WITH_PROFILER
         PROFILE_MEM(EngineDelegate);
+#endif
 #if DELEGATE_USE_ATOMIC
         const intptr size = Platform::AtomicRead(&_size);
         FunctionType* bindings = (FunctionType*)Platform::AtomicRead(&_ptr);
