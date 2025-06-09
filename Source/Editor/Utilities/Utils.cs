@@ -1518,6 +1518,7 @@ namespace FlaxEditor.Utilities
             inputActions.Add(options => options.OpenScriptsProject, () => Editor.Instance.CodeEditing.OpenSolution());
             inputActions.Add(options => options.GenerateScriptsProject, () => Editor.Instance.ProgressReporting.GenerateScriptsProjectFiles.RunAsync());
             inputActions.Add(options => options.RecompileScripts, ScriptsBuilder.Compile);
+            inputActions.Add(options => options.FocusConsoleCommand, () => Editor.Instance.Windows.OutputLogWin.FocusCommand());
         }
 
         internal static string ToPathProject(string path)

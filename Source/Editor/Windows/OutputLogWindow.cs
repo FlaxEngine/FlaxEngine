@@ -830,6 +830,15 @@ namespace FlaxEditor.Windows
             OnOutputTextChanged();
         }
 
+        /// <summary>
+        /// Focus the debug command line and ensure that the output log window is visible.
+        /// </summary>
+        public void FocusCommand()
+        {
+            FocusOrShow();
+            _commandLineBox.Focus();
+        }
+
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
