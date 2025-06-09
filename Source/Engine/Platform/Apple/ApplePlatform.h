@@ -65,7 +65,6 @@ public:
     {
         __atomic_store_n((volatile int64*)dst, value, __ATOMIC_RELAXED);
     }
-    FORCE_INLINE static void Prefetch(void const* ptr)
     static bool Is64BitPlatform();
     static String GetSystemName();
     static Version GetSystemVersion();

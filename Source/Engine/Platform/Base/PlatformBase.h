@@ -186,7 +186,7 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(PlatformBase);
     static void BeforeExit();
 
     /// <summary>
-    /// Called after engine exit to shutdown platform service.
+    /// Called after engine exit to shut down platform service.
     /// </summary>
     static void Exit();
 
@@ -243,7 +243,7 @@ public:
     /// Indicates to the processor that a cache line will be needed in the near future.
     /// </summary>
     /// <param name="ptr">The address of the cache line to be loaded. This address is not required to be on a cache line boundary.</param>
-    static void Prefetch(void const* ptr) = delete;
+    static void MemoryPrefetch(void const* ptr) = delete;
 
     /// <summary>
     /// Sets a 64-bit variable to the specified value as an atomic operation. The function prevents more than one thread from using the same variable simultaneously.
@@ -256,7 +256,7 @@ public:
     /// <summary>
     /// Performs an atomic compare-and-exchange operation on the specified values. The function compares two specified 32-bit values and exchanges with another 32-bit value based on the outcome of the comparison.
     /// </summary>
-    /// <remarks>The function compares the dst value with the comperand value. If the dst value is equal to the comperand value, the value value is stored in the address specified by dst. Otherwise, no operation is performed.</remarks>
+    /// <remarks>The function compares the dst value with the comperand value. If the dst value is equal to the comperand value, the value is stored in the address specified by dst. Otherwise, no operation is performed.</remarks>
     /// <param name="dst">A pointer to the first operand. This value will be replaced with the result of the operation.</param>
     /// <param name="exchange">The value to exchange.</param>
     /// <param name="comperand">The value to compare to destination.</param>
@@ -266,7 +266,7 @@ public:
     /// <summary>
     /// Performs an atomic compare-and-exchange operation on the specified values. The function compares two specified 64-bit values and exchanges with another 64-bit value based on the outcome of the comparison.
     /// </summary>
-    /// <remarks>The function compares the dst value with the comperand value. If the dst value is equal to the comperand value, the value value is stored in the address specified by dst. Otherwise, no operation is performed.</remarks>
+    /// <remarks>The function compares the dst value with the comperand value. If the dst value is equal to the comperand value, the value is stored in the address specified by dst. Otherwise, no operation is performed.</remarks>
     /// <param name="dst">A pointer to the first operand. This value will be replaced with the result of the operation.</param>
     /// <param name="exchange">The value to exchange.</param>
     /// <param name="comperand">The value to compare to destination.</param>
