@@ -18,6 +18,7 @@
 #include "Engine/Tools/AudioTool/OggVorbisDecoder.h"
 #include "Engine/Tools/AudioTool/OggVorbisEncoder.h"
 #include "Engine/Serialization/JsonWriters.h"
+#include "Engine/Platform/MessageBox.h"
 
 bool ImportAudio::TryGetImportOptions(const StringView& path, Options& options)
 {
@@ -118,6 +119,7 @@ CreateAssetResult ImportAudio::Import(CreateAssetContext& context, AudioDecoder&
     }
 #else
 #define HANDLE_VORBIS(chunkIndex, dataPtr, dataSize) \
+    MessageBox::Show(TEXT("Vorbis format is not supported."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
 	LOG(Warning, "Vorbis format is not supported."); \
 	return CreateAssetResult::Error;
 #endif
@@ -140,6 +142,7 @@ CreateAssetResult ImportAudio::Import(CreateAssetContext& context, AudioDecoder&
     break; \
     default: \
     { \
+        MessageBox::Show(TEXT("Unknown audio format."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning); \
         LOG(Warning, "Unknown audio format."); \
         return CreateAssetResult::Error; \
     } \

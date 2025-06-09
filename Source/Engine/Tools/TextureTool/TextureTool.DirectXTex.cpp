@@ -13,6 +13,7 @@
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #if USE_EDITOR
+#include "Engine/Platform/MessageBox.h"
 #include "Engine/Graphics/GPUDevice.h"
 #endif
 #include "Engine/Utilities/AnsiPathTempFile.h"
@@ -358,6 +359,9 @@ HRESULT LoadFromEXRFile(const StringView& path, DirectX::ScratchImage& image)
     free(pixels);
     return result;
 #else
+#if USE_EDITOR
+    MessageBox::Show(TEXT("EXR format is not supported."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
+#endif
     LOG(Warning, "EXR format is not supported.");
     return E_FAIL;
 #endif

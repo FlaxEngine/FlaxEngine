@@ -12,6 +12,7 @@
 #include "Engine/Tools/ModelTool/VertexTriangleAdjacency.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Platform/Platform.h"
+#include "Engine/Platform/MessageBox.h"
 #define USE_MIKKTSPACE 1
 #include "ThirdParty/MikkTSpace/mikktspace.h"
 #if USE_ASSIMP
@@ -181,6 +182,7 @@ bool MeshData::GenerateLightmapUVs()
     for (int32 i = 0; i < (int32)vb.size(); i++)
         lightmapChannel.Get()[i] = *(Float2*)&vb[i].uv;
 #else
+    MessageBox::Show(TEXT("Model lightmap UVs generation is not supported on this platform."), TEXT("Import error"), MessageBoxButtons::OK, MessageBoxIcon::Error);
     LOG(Error, "Model lightmap UVs generation is not supported on this platform.");
 #endif
 
