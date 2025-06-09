@@ -120,7 +120,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = IntegerValue.Get(box.ParentNode, box.Archetype, box.Value);
-            var width = 40;
+            var width = 50;
             var control = new IntValueBox(value, bounds.X, bounds.Y, width + 12, int.MinValue, int.MaxValue, 0.01f)
             {
                 Height = bounds.Height,
@@ -166,7 +166,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = UnsignedIntegerValue.Get(box.ParentNode, box.Archetype, box.Value);
-            var width = 40;
+            var width = 50;
             var control = new UIntValueBox(value, bounds.X, bounds.Y, width + 12, uint.MinValue, uint.MaxValue, 0.01f)
             {
                 Height = bounds.Height,
@@ -212,7 +212,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = FloatValue.Get(box.ParentNode, box.Archetype, box.Value);
-            var width = 40;
+            var width = 50;
             var control = new FloatValueBox(value, bounds.X, bounds.Y, width + 12, float.MinValue, float.MaxValue, 0.01f)
             {
                 Height = bounds.Height,
@@ -303,7 +303,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var width = 30;
+            var width = 50;
             var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 2 - 2, bounds.Height)
             {
                 ClipChildren = false,
@@ -377,7 +377,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var width = 30;
+            var width = 50;
             var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 3 - 2, bounds.Height)
             {
                 ClipChildren = false,
@@ -460,7 +460,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var width = 20;
+            var width = 50;
             var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 4 - 2, bounds.Height)
             {
                 ClipChildren = false,
@@ -553,7 +553,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var width = 30;
+            var width = 50;
             var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 2 - 2, bounds.Height)
             {
                 ClipChildren = false,
@@ -627,7 +627,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var width = 30;
+            var width = 50;
             var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 3 - 2, bounds.Height)
             {
                 ClipChildren = false,
@@ -710,7 +710,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var width = 20;
+            var width = 50;
             var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 4 - 2, bounds.Height)
             {
                 ClipChildren = false,
@@ -803,7 +803,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var width = 30;
+            var width = 50;
             var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 2 - 2, bounds.Height)
             {
                 ClipChildren = false,
@@ -877,7 +877,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var width = 30;
+            var width = 50;
             var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 3 - 2, bounds.Height)
             {
                 ClipChildren = false,
@@ -960,7 +960,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box);
-            var width = 20;
+            var width = 50;
             var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 4 - 2, bounds.Height)
             {
                 ClipChildren = false,
@@ -1053,7 +1053,7 @@ namespace FlaxEditor.Surface.Elements
         public Control Create(InputBox box, ref Rectangle bounds)
         {
             var value = GetValue(box).EulerAngles;
-            var width = 20;
+            var width = 50;
             var control = new ContainerControl(bounds.X, bounds.Y, (width + 2) * 3 - 2, bounds.Height)
             {
                 ClipChildren = false,
