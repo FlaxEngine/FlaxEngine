@@ -238,17 +238,18 @@ namespace FlaxEditor.Windows.Assets
 
             // Toolstrip
             _toolstrip.AddSeparator();
-            _showCurrentLODButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Info64, () => _preview.ShowCurrentLOD = !_preview.ShowCurrentLOD).LinkTooltip("Show LOD statistics");
-            _toolstrip.AddButton(editor.Icons.CenterView64, () => _preview.ResetCamera()).LinkTooltip("Show whole model");
+            _showCurrentLODButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Info64, () => _preview.ShowCurrentLOD = !_preview.ShowCurrentLOD).LinkTooltip("Show LOD statistics.");
+            _toolstrip.AddButton(editor.Icons.CenterView64, () => _preview.ResetCamera()).LinkTooltip("Show whole model.");
             _toolstrip.AddSeparator();
-            _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/graphics/models/index.html")).LinkTooltip("See documentation to learn more");
+            _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/graphics/models/index.html")).LinkTooltip("See documentation to learn more.");
 
             // Model preview
             _preview = new Preview(this)
             {
                 ViewportCamera = new FPSCamera(),
                 ScaleToFit = false,
-                Parent = _split.Panel1
+                Parent = _split.Panel1,
+                ShowCurrentLOD = true,
             };
 
             // Properties tabs
