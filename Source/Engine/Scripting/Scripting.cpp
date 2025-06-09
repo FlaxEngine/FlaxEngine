@@ -21,6 +21,7 @@
 #include "ManagedCLR/MCore.h"
 #include "ManagedCLR/MException.h"
 #include "Internal/StdTypesContainer.h"
+#include "Internal/ManagedDictionary.h"
 #include "Engine/Core/LogContext.h"
 #include "Engine/Core/ObjectsRemovalService.h"
 #include "Engine/Core/Types/TimeSpan.h"
@@ -720,6 +721,7 @@ void Scripting::Reload(bool canTriggerSceneReload)
     modules.Clear();
     _nonNativeModules.ClearDelete();
     _hasGameModulesLoaded = false;
+    ManagedDictionary::CachedTypes.Clear();
 
     // Release and create a new assembly load context for user assemblies
     MCore::UnloadScriptingAssemblyLoadContext();
