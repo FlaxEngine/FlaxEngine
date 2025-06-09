@@ -180,39 +180,17 @@ namespace FlaxEditor.Windows.Search
             switch (key)
             {
             case KeyboardKeys.ArrowDown:
-            {
-                if (_matchedItems.Count == 0)
-                    return true;
-                int currentPos;
-                if (_selectedItem != null)
-                {
-                    currentPos = _matchedItems.IndexOf(_selectedItem) + 1;
-                    if (currentPos >= _matchedItems.Count)
-                        currentPos--;
-                }
-                else
-                {
-                    currentPos = 0;
-                }
-                SelectedItem = _matchedItems[currentPos];
-                return true;
-            }
             case KeyboardKeys.ArrowUp:
             {
                 if (_matchedItems.Count == 0)
                     return true;
-                int currentPos;
-                if (_selectedItem != null)
-                {
-                    currentPos = _matchedItems.IndexOf(_selectedItem) - 1;
-                    if (currentPos < 0)
-                        currentPos = 0;
-                }
-                else
-                {
-                    currentPos = 0;
-                }
-                SelectedItem = _matchedItems[currentPos];
+
+                var focusedIndex = _matchedItems.IndexOf(_selectedItem);
+                int delta = key == KeyboardKeys.ArrowDown ? -1 : 1;
+                int nextIndex = Mathf.Wrap(focusedIndex - delta, 0, _matchedItems.Count - 1);
+                var nextItem = _matchedItems[nextIndex];
+
+                SelectedItem = nextItem;
                 return true;
             }
             case KeyboardKeys.Return:
@@ -233,6 +211,17 @@ namespace FlaxEditor.Windows.Search
             {
                 Hide();
                 return true;
+            }
+            case KeyboardKeys.Backspace:
+            { 
+                // Alow the user to quickly focus the searchbar
+                if (_searchBox != null && !_searchBox.IsFocused)
+                {
+                    _searchBox.Focus();
+                    _searchBox.SelectAll();
+                    return true;
+                }
+                break;
             }
             }
 
