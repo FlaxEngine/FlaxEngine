@@ -42,6 +42,7 @@ namespace FlaxEditor.Windows.Search
                 if (value == _selectedItem || (value != null && !_matchedItems.Contains(value)))
                     return;
 
+                // Restore the previous selected item to the non-selected color
                 if (_selectedItem != null)
                 {
                     _selectedItem.BackgroundColor = Color.Transparent;
@@ -54,6 +55,7 @@ namespace FlaxEditor.Windows.Search
                     _selectedItem.BackgroundColor = Style.Current.BackgroundSelected;
                     if (_matchedItems.Count > VisibleItemCount)
                     {
+                        _selectedItem.Focus();
                         _resultPanel.ScrollViewTo(_selectedItem, true);
                     }
                 }
