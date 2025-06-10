@@ -1,6 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
 using System.Collections.Generic;
 using FlaxEditor.Content.Settings;
 using FlaxEngine;
@@ -163,11 +162,17 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <inheritdoc />
         public override void Refresh()
         {
-            _horizontalHighlight.Visible = false;
-            _verticalHighlight.Visible = false;
             int selectedColumn = -1;
             int selectedRow = -1;
             var style = FlaxEngine.GUI.Style.Current;
+            bool mouseOverGrid = _grid.IsMouseOver;
+
+            // Only hide highlights if mouse is not over the grid to reduce flickering
+            if (!mouseOverGrid)
+            {
+                _horizontalHighlight.Visible = false;
+                _verticalHighlight.Visible = false;
+            }
 
             // Sync check boxes
             for (int i = 0; i < _checkBoxes.Count; i++)
@@ -176,9 +181,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 int column = (int)((Float2)box.Tag).X;
                 int row = (int)((Float2)box.Tag).Y;
                 box.Checked = GetBit(column, row);
-                box.ImageColor = style.BorderSelected * 1.2f;
-
-                if(box.IsMouseOver)
+                                
+                if (box.IsMouseOver)
                 {
                     selectedColumn = column;
                     selectedRow = row;
@@ -197,17 +201,18 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 }
             }
 
-            if(selectedColumn > -1 && selectedRow > -1)
+            for (int i = 0; i < _checkBoxes.Count; i++)
             {
-                for (int i = 0; i < _checkBoxes.Count; i++)
-                {
-                    var box = _checkBoxes[i];
-                    int column = (int)((Float2)box.Tag).X;
-                    int row = (int)((Float2)box.Tag).Y;
-                    if(column == selectedColumn || row == selectedRow)
-                        continue;
+                var box = _checkBoxes[i];
+                int column = (int)((Float2)box.Tag).X;
+                int row = (int)((Float2)box.Tag).Y;
 
-                    box.ImageColor = style.BorderSelected * 0.75f;
+                if (!mouseOverGrid)
+                    box.ImageColor = style.BorderSelected;
+                else if (selectedColumn > -1 && selectedRow > -1)
+                {
+                    bool isRowOrColumn = column == selectedColumn || row == selectedRow;
+                    box.ImageColor = style.BorderSelected * (isRowOrColumn ? 1.2f : 0.75f);
                 }
             }
         }
