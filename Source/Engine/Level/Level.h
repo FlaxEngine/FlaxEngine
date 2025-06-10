@@ -48,7 +48,12 @@ public:
     /// <summary>
     /// True if game objects (actors and scripts) can receive a tick during engine Update/LateUpdate/FixedUpdate events. Can be used to temporarily disable gameplay logic updating.
     /// </summary>
-    API_FIELD() static bool TickEnabled;
+    API_FIELD(Attributes="DebugCommand") static bool TickEnabled;
+
+    /// <summary>
+    /// Fraction of the frame budget to limit time spent on levels streaming. For example, value of 0.3 means that 30% of frame time can be spent on levels loading within a single frame (eg. 0.3 at 60fps is 4.8ms budget).
+    /// </summary>
+    API_FIELD(Attributes="DebugCommand") static float StreamingFrameBudget;
 
 public:
     /// <summary>
@@ -547,10 +552,4 @@ private:
     };
 
     static void callActorEvent(ActorEventType eventType, Actor* a, Actor* b);
-
-    // All loadScene assume that ScenesLock has been taken by the calling thread
-    static bool loadScene(JsonAsset* sceneAsset);
-    static bool loadScene(const BytesContainer& sceneData, Scene** outScene = nullptr);
-    static bool loadScene(rapidjson_flax::Document& document, Scene** outScene = nullptr);
-    static bool loadScene(rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene = nullptr, const String* assetPath = nullptr);
 };

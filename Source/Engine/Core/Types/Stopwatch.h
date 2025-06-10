@@ -43,7 +43,7 @@ public:
     /// <summary>
     /// Gets the total number of milliseconds.
     /// </summary>
-    FORCE_INLINE double GetTotalMilliseconds() const
+    FORCE_INLINE float GetTotalMilliseconds() const
     {
         return (float)((_end - _start) * 1000.0);
     }
