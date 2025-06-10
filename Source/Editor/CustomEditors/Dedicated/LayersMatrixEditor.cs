@@ -1,6 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
 using System.Collections.Generic;
 using FlaxEditor.Content.Settings;
 using FlaxEngine;
@@ -16,6 +15,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
     {
         private int _layersCount;
         private List<CheckBox> _checkBoxes;
+        private VerticalPanel _upperRightCell;
+        private VerticalPanel _bottomLeftCell;
+        private UniformGridPanel _grid;
+        private Border _horizontalHighlight;
+        private Border _verticalHighlight;
 
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.InlineIntoParent;
@@ -37,12 +41,29 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 Parent = panel,
             };
 
+            var style = FlaxEngine.GUI.Style.Current;
+            _horizontalHighlight = new Border()
+            {
+                Parent = panel,
+                BorderColor = style.Foreground,
+                BorderWidth = 1.0f,
+                Visible = false,
+            };
+
+            _verticalHighlight = new Border()
+            {
+                Parent = panel,
+                BorderColor = style.Foreground,
+                BorderWidth = 1.0f,
+                Visible = false,
+            };
+
             var upperLeftCell = new Label
             {
                 Parent = gridPanel,
             };
 
-            var upperRightCell = new VerticalPanel
+            _upperRightCell = new VerticalPanel
             {
                 ClipChildren = false,
                 Pivot = new Float2(0.00001f, 0.0f),
@@ -54,7 +75,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 Parent = gridPanel,
             };
 
-            var bottomLeftCell = new VerticalPanel
+            _bottomLeftCell = new VerticalPanel
             {
                 Pivot = Float2.Zero,
                 Spacing = 0,
@@ -63,7 +84,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 Parent = gridPanel,
             };
 
-            var grid = new UniformGridPanel(0)
+            _grid = new UniformGridPanel(0)
             {
                 SlotsHorizontally = layersCount,
                 SlotsVertically = layersCount,
@@ -74,13 +95,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
             int layerIndex = 0;
             for (; layerIndex < layerNames.Length; layerIndex++)
             {
-                upperRightCell.AddChild(new Label
+                _upperRightCell.AddChild(new Label
                 {
                     Height = labelsHeight,
                     Text = layerNames[layerNames.Length - layerIndex - 1],
                     HorizontalAlignment = TextAlignment.Near,
                 });
-                bottomLeftCell.AddChild(new Label
+                _bottomLeftCell.AddChild(new Label
                 {
                     Height = labelsHeight,
                     Text = layerNames[layerIndex],
@@ -90,13 +111,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
             for (; layerIndex < layersCount; layerIndex++)
             {
                 string name = "Layer " + layerIndex;
-                upperRightCell.AddChild(new Label
+                _upperRightCell.AddChild(new Label
                 {
                     Height = labelsHeight,
                     Text = name,
                     HorizontalAlignment = TextAlignment.Near,
                 });
-                bottomLeftCell.AddChild(new Label
+                _bottomLeftCell.AddChild(new Label
                 {
                     Height = labelsHeight,
                     Text = name,
@@ -118,7 +139,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     var box = new CheckBox(0, 0, true)
                     {
                         Tag = new Float2(_layersCount - column - 1, row),
-                        Parent = grid,
+                        Parent = _grid,
                         Checked = GetBit(column, row),
                     };
                     box.StateChanged += OnCheckBoxChanged;
@@ -126,7 +147,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 }
                 for (; column < layersCount; column++)
                 {
-                    grid.AddChild(new Label());
+                    _grid.AddChild(new Label());
                 }
             }
         }
@@ -141,6 +162,18 @@ namespace FlaxEditor.CustomEditors.Dedicated
         /// <inheritdoc />
         public override void Refresh()
         {
+            int selectedColumn = -1;
+            int selectedRow = -1;
+            var style = FlaxEngine.GUI.Style.Current;
+            bool mouseOverGrid = _grid.IsMouseOver;
+
+            // Only hide highlights if mouse is not over the grid to reduce flickering
+            if (!mouseOverGrid)
+            {
+                _horizontalHighlight.Visible = false;
+                _verticalHighlight.Visible = false;
+            }
+
             // Sync check boxes
             for (int i = 0; i < _checkBoxes.Count; i++)
             {
@@ -148,6 +181,39 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 int column = (int)((Float2)box.Tag).X;
                 int row = (int)((Float2)box.Tag).Y;
                 box.Checked = GetBit(column, row);
+                                
+                if (box.IsMouseOver)
+                {
+                    selectedColumn = column;
+                    selectedRow = row;
+
+                    _horizontalHighlight.X = _grid.X - _bottomLeftCell.Width;
+                    _horizontalHighlight.Y = _grid.Y + box.Y;
+                    _horizontalHighlight.Width = _bottomLeftCell.Width + box.Width + box.X;
+                    _horizontalHighlight.Height = box.Height;
+                    _horizontalHighlight.Visible = true;
+
+                    _verticalHighlight.X = _grid.X + box.X;
+                    _verticalHighlight.Y = _grid.Y - _upperRightCell.Height;
+                    _verticalHighlight.Width = box.Width;
+                    _verticalHighlight.Height = _upperRightCell.Height + box.Height + box.Y;
+                    _verticalHighlight.Visible = true;
+                }
+            }
+
+            for (int i = 0; i < _checkBoxes.Count; i++)
+            {
+                var box = _checkBoxes[i];
+                int column = (int)((Float2)box.Tag).X;
+                int row = (int)((Float2)box.Tag).Y;
+
+                if (!mouseOverGrid)
+                    box.ImageColor = style.BorderSelected;
+                else if (selectedColumn > -1 && selectedRow > -1)
+                {
+                    bool isRowOrColumn = column == selectedColumn || row == selectedRow;
+                    box.ImageColor = style.BorderSelected * (isRowOrColumn ? 1.2f : 0.75f);
+                }
             }
         }
 
