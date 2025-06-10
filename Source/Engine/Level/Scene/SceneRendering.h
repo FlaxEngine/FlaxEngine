@@ -100,6 +100,7 @@ public:
     };
 
     Array<DrawActor> Actors[MAX];
+    Array<int32> FreeActors[MAX];
     Array<IPostFxSettingsProvider*> PostFxProviders;
     CriticalSection Locker;
 

@@ -136,6 +136,8 @@ void SceneRendering::Clear()
     _listeners.Clear();
     for (auto& e : Actors)
         e.Clear();
+    for (auto& e : FreeActors)
+        e.Clear();
 #if USE_EDITOR
     PhysicsDebug.Clear();
 #endif
@@ -149,15 +151,17 @@ void SceneRendering::AddActor(Actor* a, int32& key)
     const int32 category = a->_drawCategory;
     ScopeLock lock(Locker);
     auto& list = Actors[category];
-    // TODO: track removedCount and skip searching for free entry if there is none
-    key = 0;
-    for (; key < list.Count(); key++)
+    if (FreeActors[category].HasItems())
     {
-        if (list.Get()[key].Actor == nullptr)
-            break;
+        // Use existing item
+        key = FreeActors[category].Pop();
     }
-    if (key == list.Count())
+    else
+    {
+        // Add a new item
+        key = list.Count();
         list.AddOne();
+    }
     auto& e = list[key];
     e.Actor = a;
     e.LayerMask = a->GetLayerMask();
@@ -200,6 +204,7 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
                 listener->OnSceneRenderingRemoveActor(a);
             e.Actor = nullptr;
             e.LayerMask = 0;
+            FreeActors[category].Add(key);
         }
     }
     key = -1;
