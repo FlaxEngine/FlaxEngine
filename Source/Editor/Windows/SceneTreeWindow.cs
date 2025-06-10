@@ -27,7 +27,7 @@ namespace FlaxEditor.Windows
         private Panel _sceneTreePanel;
         private bool _isUpdatingSelection;
         private bool _isMouseDown;
-        private bool _isPlayStateChanging = false;
+        private bool _blockSceneTreeScroll = false;
 
         private DragAssets _dragAssets;
         private DragActorType _dragActorType;
@@ -94,10 +94,10 @@ namespace FlaxEditor.Windows
             _tree.Parent = _sceneTreePanel;
             headerPanel.Parent = this;
 
-            Editor.PlayModeBeginning += () => _isPlayStateChanging = true;
-            Editor.PlayModeBegin += () => _isPlayStateChanging = false;
-            Editor.PlayModeEnding += () => _isPlayStateChanging = true;
-            Editor.PlayModeEnd += () => _isPlayStateChanging = false;
+            Editor.PlayModeBeginning += () => _blockSceneTreeScroll = true;
+            Editor.PlayModeBegin += () => _blockSceneTreeScroll = false;
+            Editor.PlayModeEnding += () => _blockSceneTreeScroll = true;
+            Editor.PlayModeEnd += () => _blockSceneTreeScroll = false;
 
             // Setup input actions
             InputActions.Add(options => options.TranslateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
@@ -256,7 +256,7 @@ namespace FlaxEditor.Windows
                 _tree.Select(nodes);
 
                 // For single node selected scroll view so user can see it
-                if (nodes.Count == 1 && !_isPlayStateChanging)
+                if (nodes.Count == 1 && !_blockSceneTreeScroll)
                 {
                     nodes[0].ExpandAllParents(true);
                     _sceneTreePanel.ScrollViewTo(nodes[0]);
@@ -264,6 +264,12 @@ namespace FlaxEditor.Windows
             }
 
             _isUpdatingSelection = false;
+        }
+
+        /// <inheritdoc />
+        public override void OnEditorStateChanged()
+        {
+            _blockSceneTreeScroll = Editor.StateMachine.ReloadingScriptsState.IsActive;
         }
 
         private bool ValidateDragAsset(AssetItem assetItem)
