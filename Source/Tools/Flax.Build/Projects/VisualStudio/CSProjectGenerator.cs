@@ -175,6 +175,19 @@ namespace Flax.Build.Projects.VisualStudio
                 csProjectFileContent.AppendLine("  </PropertyGroup>");
             }
 
+            // Nuget
+            if (project.CSharp.NugetPackageReferences.Any())
+            {
+                csProjectFileContent.AppendLine("  <ItemGroup>");
+            
+                foreach (var reference in project.CSharp.NugetPackageReferences)
+                {
+                    csProjectFileContent.AppendLine(string.Format("    <PackageReference Include=\"{0}\" Version=\"{1}\" />", reference.Name, reference.Version));
+                }
+
+                csProjectFileContent.AppendLine("  </ItemGroup>");
+            }
+
             // References
 
             csProjectFileContent.AppendLine("  <ItemGroup>");
