@@ -6,6 +6,7 @@
 #include "GPUContextDX12.h"
 #include "../IncludeDirectXHeaders.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 
 void BackBufferDX12::Setup(GPUSwapChainDX12* window, ID3D12Resource* backbuffer)
@@ -364,6 +365,8 @@ void GPUSwapChainDX12::End(RenderTask* task)
 
 void GPUSwapChainDX12::Present(bool vsync)
 {
+    PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
 #if PLATFORM_XBOX_SCARLETT || PLATFORM_XBOX_ONE
     ID3D12Resource* backBuffer = _backBuffers[_currentFrameIndex].GetResource();
     D3D12XBOX_PRESENT_PLANE_PARAMETERS planeParameters = {};

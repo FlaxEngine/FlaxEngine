@@ -494,6 +494,9 @@ bool Asset::WaitForLoaded(double timeoutInMilliseconds) const
     }
 
     PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
+    const StringView path(GetPath());
+    ZoneText(*path, path.Length());
 
     Content::WaitForTask(loadingTask, timeoutInMilliseconds);
 

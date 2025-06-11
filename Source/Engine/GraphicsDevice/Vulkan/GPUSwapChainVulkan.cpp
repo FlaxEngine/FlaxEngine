@@ -553,6 +553,7 @@ void GPUSwapChainVulkan::Present(bool vsync)
     if (_acquiredImageIndex == -1)
         return;
     PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
 
     // Ensure that backbuffer has been acquired before presenting it to the window
     const auto backBuffer = (GPUTextureViewVulkan*)GetBackBufferView();

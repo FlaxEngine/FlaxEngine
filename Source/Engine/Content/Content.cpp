@@ -1128,6 +1128,8 @@ void Content::WaitForTask(ContentLoadTask* loadingTask, double timeoutInMillisec
                             localQueue.Clear();
                         }
 
+                        PROFILE_CPU_NAMED("Inline");
+                        ZoneColor(0xffaaaaaa);
                         thread->Run(tmp);
                     }
                     else

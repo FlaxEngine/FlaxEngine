@@ -3,11 +3,12 @@
 #if GRAPHICS_API_DIRECTX11
 
 #include "GPUSwapChainDX11.h"
+#include "GPUContextDX11.h"
 #include "Engine/Platform/Window.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
-#include "GPUContextDX11.h"
 
 GPUSwapChainDX11::GPUSwapChainDX11(GPUDeviceDX11* device, Window* window)
     : GPUResourceDX11(device, StringView::Empty)
@@ -140,6 +141,9 @@ GPUTextureView* GPUSwapChainDX11::GetBackBufferView()
 
 void GPUSwapChainDX11::Present(bool vsync)
 {
+    PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
+
     // Present frame
     ASSERT(_swapChain);
     UINT presentFlags = 0;

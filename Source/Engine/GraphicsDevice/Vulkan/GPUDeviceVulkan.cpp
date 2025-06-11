@@ -2094,6 +2094,7 @@ void GPUDeviceVulkan::WaitForGPU()
     if (Device != VK_NULL_HANDLE)
     {
         PROFILE_CPU();
+        ZoneColor(TracyWaitZoneColor);
         VALIDATE_VULKAN_RESULT(vkDeviceWaitIdle(Device));
     }
 }

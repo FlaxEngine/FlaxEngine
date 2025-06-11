@@ -40,6 +40,7 @@ void Task::Cancel()
 bool Task::Wait(double timeoutMilliseconds) const
 {
     PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
     const double startTime = Platform::GetTimeSeconds();
 
     // TODO: no active waiting! use a semaphore!
@@ -76,6 +77,7 @@ bool Task::Wait(double timeoutMilliseconds) const
 bool Task::WaitAll(const Span<Task*>& tasks, double timeoutMilliseconds)
 {
     PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
     for (int32 i = 0; i < tasks.Length(); i++)
     {
         if (tasks[i]->Wait())

@@ -385,6 +385,7 @@ void JobSystem::Wait(int64 label)
 {
 #if JOB_SYSTEM_ENABLED
     PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
 
     while (Platform::AtomicRead(&ExitFlag) == 0)
     {
