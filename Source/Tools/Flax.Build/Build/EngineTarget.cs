@@ -220,6 +220,7 @@ namespace Flax.Build
             exeBuildOptions.LinkEnv.InputLibraries.Add(Path.Combine(buildOptions.OutputFolder, buildOptions.Platform.GetLinkOutputFileName(LibraryName, engineLibraryType)));
             exeBuildOptions.LinkEnv.InputFiles.AddRange(mainModuleOptions.OutputFiles);
             exeBuildOptions.DependencyFiles.AddRange(mainModuleOptions.DependencyFiles);
+            exeBuildOptions.NugetPackageReferences.AddRange(mainModuleOptions.NugetPackageReferences);
             exeBuildOptions.OptionalDependencyFiles.AddRange(mainModuleOptions.OptionalDependencyFiles);
             exeBuildOptions.Libraries.AddRange(mainModuleOptions.Libraries);
             exeBuildOptions.DelayLoadLibraries.AddRange(mainModuleOptions.DelayLoadLibraries);
