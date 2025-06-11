@@ -225,7 +225,7 @@ namespace FlaxEditor.Surface
 
             _rootControl.DrawComments();
 
-            if (IsSelecting)
+            if (IsBoxSelecting)
             {
                 DrawSelection();
             }
