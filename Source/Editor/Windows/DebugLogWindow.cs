@@ -352,24 +352,12 @@ namespace FlaxEditor.Windows
                 editor.Options.Apply(editor.Options.Options);
             }).SetAutoCheck(true).LinkTooltip("Performs auto pause on error");
             toolstrip.AddSeparator();
-            _groupButtons[0] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Error32, () =>
-            {
-                UpdateLogTypeVisibility(LogGroup.Error, _groupButtons[0].Checked);
-                editor.Options.Options.Interface.DebugLogShowErrorMessages = _groupButtons[0].Checked;
-                editor.Options.Apply(editor.Options.Options);
-            }).SetAutoCheck(true).LinkTooltip("Shows/hides error messages");
-            _groupButtons[1] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Warning32, () =>
-            {
-                UpdateLogTypeVisibility(LogGroup.Warning, _groupButtons[1].Checked);
-                editor.Options.Options.Interface.DebugLogShowWarningMessages = _groupButtons[1].Checked;
-                editor.Options.Apply(editor.Options.Options);
-            }).SetAutoCheck(true).LinkTooltip("Shows/hides warning messages");
-            _groupButtons[2] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Info32, () =>
-            {
-                UpdateLogTypeVisibility(LogGroup.Info, _groupButtons[2].Checked);
-                editor.Options.Options.Interface.DebugLogShowInfoMessages = _groupButtons[2].Checked;
-                editor.Options.Apply(editor.Options.Options);
-            }).SetAutoCheck(true).LinkTooltip("Shows/hides info messages");
+            _groupButtons[0] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Error32, () => { OnGroupButtonPressed(0); })
+                .SetAutoCheck(true).LinkTooltip("Shows/hides error messages");
+            _groupButtons[1] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Warning32, () => { OnGroupButtonPressed(1); })
+                .SetAutoCheck(true).LinkTooltip("Shows/hides warning messages");
+            _groupButtons[2] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Info32, () => { OnGroupButtonPressed(2); })
+                .SetAutoCheck(true).LinkTooltip("Shows/hides info messages");
             UpdateCount();
 
             // Split panel
@@ -416,6 +404,27 @@ namespace FlaxEditor.Windows
 
             // Init editor options
             OnEditorOptionsChanged(Editor.Options.Options);
+        }
+
+        private void OnGroupButtonPressed(int index)
+        {
+            UpdateLogTypeVisibility((LogGroup)index, _groupButtons[index].Checked);
+            if(Input.GetKey(KeyboardKeys.Shift))
+            {
+                for(int i = 0; i < (int)LogGroup.Max; i++)
+                {
+                    if(i == index)
+                        continue;
+                    
+                    _groupButtons[i].Checked = !_groupButtons[index].Checked;
+                    UpdateLogTypeVisibility((LogGroup)i, _groupButtons[i].Checked);
+                }
+            }
+
+            Editor.Options.Options.Interface.DebugLogShowErrorMessages = _groupButtons[0].Checked;
+            Editor.Options.Options.Interface.DebugLogShowWarningMessages = _groupButtons[1].Checked;
+            Editor.Options.Options.Interface.DebugLogShowInfoMessages = _groupButtons[2].Checked;
+            Editor.Options.Apply(Editor.Options.Options);
         }
 
         private void OnEditorOptionsChanged(EditorOptions options)
