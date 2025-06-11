@@ -56,7 +56,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 Proxy.DefaultValues[Name] = DefaultValue;
 
-                // Proxy.Window._propertiesEditor.BuildLayoutOnUpdate();
+                Proxy.Window._propertiesEditor.BuildLayoutOnUpdate();
             }
 
             private void Remove()
@@ -65,7 +65,7 @@ namespace FlaxEditor.Windows.Assets
 
                 Proxy.DefaultValues.Remove(Name);
 
-                // Proxy.Window._propertiesEditor.BuildLayoutOnUpdate();
+                Proxy.Window._propertiesEditor.BuildLayoutOnUpdate();
             }
 
             /// <inheritdoc />
@@ -104,7 +104,7 @@ namespace FlaxEditor.Windows.Assets
                 Proxy.DefaultValues.Remove(from);
                 Proxy.DefaultValues[to] = defaultValue;
 
-                // Proxy.Window._propertiesEditor.BuildLayoutOnUpdate();
+                Proxy.Window._propertiesEditor.BuildLayoutOnUpdate();
             }
 
             /// <inheritdoc />
@@ -481,7 +481,7 @@ namespace FlaxEditor.Windows.Assets
             Asset.DefaultValues = _proxy.DefaultValues;
             if (Asset.Save())
             {
-                Editor.LogError("Cannot save asset.");
+                Editor.LogError("Cannot save audio mixer asset.");
                 return;
             }
 
