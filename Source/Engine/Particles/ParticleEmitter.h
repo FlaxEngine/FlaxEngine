@@ -173,6 +173,12 @@ public:
 #if USE_EDITOR
     void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
     bool Save(const StringView& path = StringView::Empty) override;
+
+    /// <summary>
+    /// Determine if the particle emitter has valid shader code present.
+    /// </summary>
+    /// <returns>True if particle emitter has shader code, otherwise false.</returns>
+    API_FUNCTION() bool HasShaderCode();
 #endif
 
 protected:
