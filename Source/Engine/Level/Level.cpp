@@ -114,6 +114,19 @@ struct ScriptsReloadObject
 
 #endif
 
+// Small utility for dividing the iterative work over data set that can run in equal slicer limited by time.
+struct TimeSlicer
+{
+    int32 Index = -1;
+    int32 Count = 0;
+    double TimeBudget;
+    double StartTime;
+
+    void BeginSync(float timeBudget, int32 count, int32 startIndex = 0);
+    bool StepSync();
+    SceneResult End();
+};
+
 // Async map loading utility for state tracking and synchronization of various load stages.
 class SceneLoader
 {
@@ -154,6 +167,7 @@ public:
     Array<Actor*> InjectedSceneChildren;
     SceneObjectsFactory::Context Context;
     SceneObjectsFactory::PrefabSyncData* PrefabSyncData = nullptr;
+    TimeSlicer StageSlicer;
 
     SceneLoader(bool asyncLoad = false)
         : AsyncLoad(asyncLoad)
@@ -1002,6 +1016,38 @@ SceneResult LevelImpl::loadScene(SceneLoader& loader, rapidjson_flax::Value& dat
     return result;
 }
 
+void TimeSlicer::BeginSync(float timeBudget, int32 count, int32 startIndex)
+{
+    if (Index == -1)
+    {
+        // Starting
+        Index = startIndex;
+        Count = count;
+    }
+    TimeBudget = (double)timeBudget;
+    StartTime = Platform::GetTimeSeconds();
+}
+
+bool TimeSlicer::StepSync()
+{
+    Index++;
+    double time = Platform::GetTimeSeconds();
+    double dt = time - StartTime;
+    return dt >= TimeBudget;
+}
+
+SceneResult TimeSlicer::End()
+{
+    if (Index >= Count)
+    {
+        // Finished
+        *this = TimeSlicer();
+        return SceneResult::Success;
+    }
+
+    return SceneResult::Wait;
+}
+
 SceneResult SceneLoader::Tick(Args& args)
 {
     switch (Stage)
@@ -1216,19 +1262,24 @@ SceneResult SceneLoader::OnDeserialize(Args& args)
     else
     {
         Scripting::ObjectsLookupIdMapping.Set(&Modifier->IdsMapping);
-        for (int32 i = 1; i < dataCount; i++) // start from 1. at index [0] was scene
+        StageSlicer.BeginSync(args.TimeBudget, dataCount, 1); // start from 1. at index [0] was scene
+        while (StageSlicer.Index < StageSlicer.Count)
         {
-            auto& objData = args.Data[i];
-            auto obj = objects[i];
+            auto& objData = args.Data[StageSlicer.Index];
+            auto obj = objects[StageSlicer.Index];
             if (obj)
                 SceneObjectsFactory::Deserialize(Context, obj, objData);
+            if (StageSlicer.StepSync())
+                break;
         }
         Scripting::ObjectsLookupIdMapping.Set(nullptr);
     }
     Context.Async = wasAsync;
 
-    NextStage();
-    return SceneResult::Success;
+    auto result = StageSlicer.End();
+    if (result != SceneResult::Wait)
+        NextStage();
+    return result;
 }
 
 SceneResult SceneLoader::OnSyncPrefabs(Args& args)
