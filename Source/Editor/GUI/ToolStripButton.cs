@@ -216,6 +216,22 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
+        public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
+        {
+            if(button == MouseButton.Left)
+            {
+                if (AutoCheck)
+                    Checked = !Checked;
+                Clicked?.Invoke();
+                (Parent as ToolStrip)?.OnButtonClicked(this);
+
+                return true;
+            }
+            
+            return false;
+        }
+
+        /// <inheritdoc />
         public override void OnMouseLeave()
         {
             _primaryMouseDown = false;
