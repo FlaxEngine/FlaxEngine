@@ -76,6 +76,7 @@ FatalErrorType Engine::FatalError = FatalErrorType::None;
 bool Engine::IsRequestingExit = false;
 int32 Engine::ExitCode = 0;
 Window* Engine::MainWindow = nullptr;
+double EngineIdleTime = 0;
 
 int32 Engine::Main(const Char* cmdLine)
 {
@@ -190,7 +191,10 @@ int32 Engine::Main(const Char* cmdLine)
             if (timeToTick > 0.002)
             {
                 PROFILE_CPU_NAMED("Idle");
+                auto sleepStart = Platform::GetTimeSeconds();
                 Platform::Sleep(1);
+                auto sleepEnd = Platform::GetTimeSeconds();
+                EngineIdleTime += sleepEnd - sleepStart;
             }
         }
 
@@ -227,6 +231,7 @@ int32 Engine::Main(const Char* cmdLine)
             OnUpdate();
             OnLateUpdate();
             Time::OnEndUpdate();
+            EngineIdleTime = 0;
         }
 
         // Start physics simulation

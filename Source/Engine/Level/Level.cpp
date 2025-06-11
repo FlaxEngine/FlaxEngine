@@ -251,6 +251,7 @@ public:
 };
 
 LevelService LevelServiceInstanceService;
+extern double EngineIdleTime;
 
 CriticalSection Level::ScenesLock;
 Array<Scene*> Level::Scenes;
@@ -863,6 +864,8 @@ void LevelImpl::flushActions()
     else if (Engine::GetFramesPerSecond() > 0)
         targetFps = (float)Engine::GetFramesPerSecond();
     context.TimeBudget = Level::StreamingFrameBudget / targetFps;
+    if (EngineIdleTime > 0.001)
+        context.TimeBudget += (float)(EngineIdleTime * 0.5); // Increase time budget if engine has some idle time for spare
 #if USE_EDITOR
     // Throttle up in Editor
     context.TimeBudget *= Editor::IsPlayMode ? 1.2f : 2.0f;
@@ -871,8 +874,9 @@ void LevelImpl::flushActions()
     // Throttle up in Debug
     context.TimeBudget *= 1.2f;
 #endif
-    if (context.TimeBudget <= ZeroTolerance)
-        context.TimeBudget = MAX_float;
+    if (context.TimeBudget <= 0.0f)
+        context.TimeBudget = MAX_float; // Unlimited if 0
+    context.TimeBudget = Math::Max(context.TimeBudget, 0.001f); // Minimum 1ms
 
     // Runs actions in order
     ScopeLock lock(_sceneActionsLocker);
