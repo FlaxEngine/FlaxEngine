@@ -79,6 +79,10 @@ namespace Flax.Build
                 options.CompileEnv.PreprocessorDefinitions.Add("USE_LARGE_WORLDS");
                 options.ScriptingAPI.Defines.Add("USE_LARGE_WORLDS");
             }
+            if (!EngineConfiguration.UseLogInRelease && !IsEditor)
+            {
+                options.CompileEnv.PreprocessorDefinitions.Add("LOG_ENABLE=0");
+            }
 
             // Add include paths for this and all referenced projects sources
             foreach (var project in Project.GetAllProjects())
