@@ -912,7 +912,7 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         public override bool OnTestTooltipOverControl(ref Float2 location)
         {
-            return _headerRect.Contains(ref location) && ShowTooltip;
+            return _headerRect.Contains(ref location) && ShowTooltip && !Surface.IsConnecting && !Surface.IsBoxSelecting;
         }
 
         /// <inheritdoc />
@@ -1070,7 +1070,7 @@ namespace FlaxEditor.Surface
 
             // Header
             var headerColor = style.BackgroundHighlighted;
-            if (_headerRect.Contains(ref _mousePosition))
+            if (_headerRect.Contains(ref _mousePosition) && !Surface.IsConnecting && !Surface.IsBoxSelecting)
                 headerColor *= 1.07f;
             Render2D.FillRectangle(_headerRect, headerColor);
             Render2D.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
@@ -1078,7 +1078,8 @@ namespace FlaxEditor.Surface
             // Close button
             if ((Archetype.Flags & NodeFlags.NoCloseButton) == 0 && Surface.CanEdit)
             {
-                Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) ? style.Foreground : style.ForegroundGrey);
+                bool highlightClose = _closeButtonRect.Contains(_mousePosition) && !Surface.IsConnecting && !Surface.IsBoxSelecting;
+                Render2D.DrawSprite(style.Cross, _closeButtonRect, highlightClose ? style.Foreground : style.ForegroundGrey);
             }
 
             // Footer
@@ -1123,8 +1124,9 @@ namespace FlaxEditor.Surface
             if (base.OnMouseUp(location, button))
                 return true;
 
-            // Close
-            if (button == MouseButton.Left && (Archetype.Flags & NodeFlags.NoCloseButton) == 0 && _closeButtonRect.Contains(ref location))
+            // Close/ delete
+            bool canDelete = !Surface.IsConnecting && !Surface.WasBoxSelecting && !Surface.WasMovingSelection;
+            if (button == MouseButton.Left && canDelete && (Archetype.Flags & NodeFlags.NoCloseButton) == 0 && _closeButtonRect.Contains(ref location))
             {
                 Surface.Delete(this);
                 return true;
