@@ -81,6 +81,7 @@ namespace FlaxEditor.Windows.Assets
                     }
 
                     var resolution = group.FloatValue("Resolution Scale", Window.Editor.CodeDocs.GetTooltip(typeof(ModelTool.Options), nameof(ModelImportSettings.Settings.SDFResolution)));
+                    resolution.ValueBox.SlideSpeed = 0.001f;
                     resolution.ValueBox.MinValue = 0.0001f;
                     resolution.ValueBox.MaxValue = 100.0f;
                     resolution.ValueBox.Value = sdf.Texture != null ? sdf.ResolutionScale : 1.0f;
