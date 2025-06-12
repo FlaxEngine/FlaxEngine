@@ -41,6 +41,11 @@ namespace FlaxEditor.Surface
     public class SurfaceNode : SurfaceControl
     {
         /// <summary>
+        /// The box to draw a highlight around. Drawing will be skipped if null.
+        /// </summary>
+        internal Box highlightBox;
+
+        /// <summary>
         /// Flag used to discard node values setting during event sending for node UI flushing.
         /// </summary>
         protected bool _isDuringValuesEditing;
@@ -1101,6 +1106,9 @@ namespace FlaxEditor.Surface
                 Render2D.DrawSprite(icon, new Rectangle(-7, -7, 16, 16), new Color(0.9f, 0.9f, 0.9f));
                 Render2D.DrawSprite(icon, new Rectangle(-6, -6, 14, 14), new Color(0.894117647f, 0.0784313725f, 0.0f));
             }
+
+            if (highlightBox != null)
+                Render2D.DrawRectangle(highlightBox.Bounds, style.BorderHighlighted, 2f);
         }
 
         /// <inheritdoc />
