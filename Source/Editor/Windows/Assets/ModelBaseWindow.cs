@@ -236,6 +236,7 @@ namespace FlaxEditor.Windows.Assets
                         var group = layout.Group("General");
 
                         var minScreenSize = group.FloatValue("Min Screen Size", "The minimum screen size to draw model (the bottom limit). Used to cull small models. Set to 0 to disable this feature.");
+                        minScreenSize.ValueBox.SlideSpeed = 0.005f;
                         minScreenSize.ValueBox.MinValue = 0.0f;
                         minScreenSize.ValueBox.MaxValue = 1.0f;
                         minScreenSize.ValueBox.Value = proxy.Asset.MinScreenSize;
@@ -476,12 +477,12 @@ namespace FlaxEditor.Windows.Assets
                 }
             }
 
-            [EditorOrder(1), EditorDisplay(null, "LOD"), Limit(0, Model.MaxLODs), VisibleIf("ShowUVs")]
-            [Tooltip("Level Of Detail index to preview UVs layout.")]
+            [EditorOrder(1), EditorDisplay(null, "LOD"), Limit(0, Model.MaxLODs, 0.01f), VisibleIf("ShowUVs")]
+            [Tooltip("Level Of Detail index to preview UVs layout at.")]
             public int LOD = 0;
 
-            [EditorOrder(2), EditorDisplay(null, "Mesh"), Limit(-1, 1000000), VisibleIf("ShowUVs")]
-            [Tooltip("Mesh index to preview UVs layout. Use -1 for all meshes")]
+            [EditorOrder(2), EditorDisplay(null, "Mesh"), Limit(-1, 1000000, 0.01f), VisibleIf("ShowUVs")]
+            [Tooltip("Mesh index to show UVs layout for. Use -1 to display all UVs of all meshes")]
             public int Mesh = -1;
 
             private bool ShowUVs => _uvChannel != UVChannel.None;
