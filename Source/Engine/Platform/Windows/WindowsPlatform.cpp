@@ -556,14 +556,8 @@ void WindowsPlatform::PreInit(void* hInstance)
     FlaxDbgHelpUnlock();
 #endif
 
+    // Get system version
     GetWindowsVersion(WindowsName, VersionMajor, VersionMinor, VersionBuild);
-
-    // Validate platform
-    if (VersionMajor < 6)
-    {
-        Error(TEXT("Not supported operating system version."));
-        exit(-1);
-    }
 }
 
 bool WindowsPlatform::IsWindows10()
@@ -640,25 +634,25 @@ bool WindowsPlatform::Init()
 
     // Check if can run Engine on current platform
 #if WINVER >= 0x0A00
-    if (!IsWindows10OrGreater() && !IsWindowsServer())
+    if (VersionMajor < 10 && !IsWindowsServer())
     {
         Platform::Fatal(TEXT("Flax Engine requires Windows 10 or higher."));
         return true;
     }
 #elif WINVER >= 0x0603
-    if (!IsWindows8Point1OrGreater() && !IsWindowsServer())
+    if ((VersionMajor < 8 || (VersionMajor == 8 && VersionMinor == 0)) && !IsWindowsServer())
     {
         Platform::Fatal(TEXT("Flax Engine requires Windows 8.1 or higher."));
         return true;
     }
 #elif WINVER >= 0x0602
-    if (!IsWindows8OrGreater() && !IsWindowsServer())
+    if (VersionMajor < 8 && !IsWindowsServer())
     {
         Platform::Fatal(TEXT("Flax Engine requires Windows 8 or higher."));
         return true;
     }
 #else
-    if (!IsWindows7OrGreater() && !IsWindowsServer())
+    if (VersionMajor < 7 && !IsWindowsServer())
     {
         Platform::Fatal(TEXT("Flax Engine requires Windows 7 or higher."));
         return true;

@@ -14,7 +14,7 @@ namespace Flax.Build
         /// Specifies the minimum Windows version to use (eg. 10).
         /// </summary>
         [CommandLine("winMinVer", "<version>", "Specifies the minimum Windows version to use (eg. 10).")]
-        public static string WindowsMinVer = "7";
+        public static string WindowsMinVer = "10";
     }
 }
 
