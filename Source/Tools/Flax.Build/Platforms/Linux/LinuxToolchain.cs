@@ -1,9 +1,10 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System.Collections.Generic;
-using System.IO;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
+using System;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Flax.Build
 {
@@ -34,6 +35,10 @@ namespace Flax.Build.Platforms
         public LinuxToolchain(LinuxPlatform platform, TargetArchitecture architecture)
         : base(platform, architecture, platform.ToolchainRoot, platform.Compiler)
         {
+            // Check version
+            if (Utilities.ParseVersion(Configuration.LinuxClangMinVer, out var minClangVer) && ClangVersion < minClangVer)
+                Log.Error($"Old Clang version {ClangVersion}. Minimum supported is {minClangVer}.");
+
             // Setup system paths
             var includePath = Path.Combine(ToolsetRoot, "usr", "include");
             if (Directory.Exists(includePath))

@@ -44,13 +44,8 @@ namespace Flax.Build.Platforms
         : base(platform, architecture, WindowsPlatformToolset.Latest, WindowsPlatformSDK.Latest)
         {
             // Select minimum Windows version
-            if (!Version.TryParse(Configuration.WindowsMinVer, out _minVersion))
-            {
-                if (int.TryParse(Configuration.WindowsMinVer, out var winMinVerMajor))
-                    _minVersion = new Version(winMinVerMajor, 0);
-                else
-                    _minVersion = new Version(7, 0);
-            }
+            if (!Utilities.ParseVersion(Configuration.WindowsMinVer, out _minVersion))
+                _minVersion = new Version(7, 0);
         }
 
         /// <inheritdoc />
