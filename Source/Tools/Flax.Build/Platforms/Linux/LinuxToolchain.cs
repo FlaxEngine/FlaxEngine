@@ -5,6 +5,18 @@ using System.IO;
 using Flax.Build.Graph;
 using Flax.Build.NativeCpp;
 
+namespace Flax.Build
+{
+    partial class Configuration
+    {
+        /// <summary>
+        /// Specifies the minimum Clang compiler version to use on Linux (eg. 10).
+        /// </summary>
+        [CommandLine("linuxClangMinVer", "<version>", "Specifies the minimum Clang compiler version to use on Linux (eg. 10).")]
+        public static string LinuxClangMinVer = "13";
+    }
+}
+
 namespace Flax.Build.Platforms
 {
     /// <summary>
