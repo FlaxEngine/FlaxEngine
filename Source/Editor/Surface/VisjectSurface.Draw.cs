@@ -137,7 +137,7 @@ namespace FlaxEditor.Surface
                 IConnectionInstigator currentInstigator = instigators[i];
                 Float2 currentStartPosition = currentInstigator.ConnectionOrigin;
 
-                // Check if mouse is over any of box
+                // Check if mouse is over any box
                 if (_lastInstigatorUnderMouse != null && !cmVisible)
                 {
                     // Check if can connect objects

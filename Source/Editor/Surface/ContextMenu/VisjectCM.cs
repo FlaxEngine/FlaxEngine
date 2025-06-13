@@ -594,7 +594,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
             // Update groups
             LockChildrenRecursive();
-            var contextSensitiveSelectedBox = _contextSensitiveSearchEnabled ? _selectedBoxes[0] : null;
+            var contextSensitiveSelectedBox = _contextSensitiveSearchEnabled && _selectedBoxes.Count > 0 ? _selectedBoxes[0] : null;
             for (int i = 0; i < _groups.Count; i++)
             {
                 _groups[i].UpdateFilter(_searchBox.Text, contextSensitiveSelectedBox);
