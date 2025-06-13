@@ -131,7 +131,7 @@ namespace FlaxEditor.Surface
             var endPos = cmVisible ? _rootControl.PointFromParent(ref _cmStartPos) : _rootControl.PointFromParent(ref _mousePos);
             Color lineColor = Style.Colors.Connecting;
 
-            List<IConnectionInstigator> instigators = new List<IConnectionInstigator>(_connectionInstigator);
+            List<IConnectionInstigator> instigators = new List<IConnectionInstigator>(_connectionInstigators);
             for (int i = 0; i < instigators.Count; i++)
             {
                 IConnectionInstigator currentInstigator = instigators[i];

@@ -237,12 +237,12 @@ namespace FlaxEditor.Surface
         /// <param name="additive">If the instigator should be added to the list of instigators.</param>
         public void ConnectingStart(IConnectionInstigator instigator, bool additive = false)
         {
-            if (instigator != null && instigator != _connectionInstigator)
+            if (instigator != null && instigator != _connectionInstigators)
             {
                 if (!additive)
-                    _connectionInstigator.Clear();
+                    _connectionInstigators.Clear();
                 
-                _connectionInstigator.Add(instigator);
+                _connectionInstigators.Add(instigator);
                 StartMouseCapture();
             }
         }
@@ -263,13 +263,13 @@ namespace FlaxEditor.Surface
         public void ConnectingEnd(IConnectionInstigator end)
         {
             // Ensure that there is at least one connection instigator
-            if (_connectionInstigator.Count == 0)
+            if (_connectionInstigators.Count == 0)
                 return;
 
-            List<IConnectionInstigator> instigators = new List<IConnectionInstigator>(_connectionInstigator);
+            List<IConnectionInstigator> instigators = new List<IConnectionInstigator>(_connectionInstigators);
             for (int i = 0; i < instigators.Count; i++)
             {
-                var start = _connectionInstigator[i];
+                var start = _connectionInstigators[i];
 
                 // Check if boxes are different and end box is specified
                 if (start == end || end == null)
@@ -281,7 +281,7 @@ namespace FlaxEditor.Surface
             }
 
             // Reset instigator list
-            _connectionInstigator.Clear();
+            _connectionInstigators.Clear();
         }
     }
 }

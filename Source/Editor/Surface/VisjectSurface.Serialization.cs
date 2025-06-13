@@ -33,7 +33,7 @@ namespace FlaxEditor.Surface
             Enabled = false;
 
             // Clean data
-            _connectionInstigator.Clear();
+            _connectionInstigators.Clear();
             _lastInstigatorUnderMouse = null;
 
             var failed = RootContext.Load();
