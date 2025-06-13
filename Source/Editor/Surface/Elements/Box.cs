@@ -552,7 +552,17 @@ namespace FlaxEditor.Surface.Elements
                 _isMouseDown = false;
                 if (Surface.CanEdit)
                 {
-                    if (!IsOutput && HasSingleConnection)
+                    if (Input.GetKey(KeyboardKeys.Control))
+                    {
+                        List<Box> connectedBoxes = new List<Box>(Connections);
+
+                        for (int i = 0; i < connectedBoxes.Count; i++)
+                        {
+                            BreakConnection(connectedBoxes[i]);
+                            Surface.ConnectingStart(connectedBoxes[i], true);
+                        }
+                    }
+                    else if (!IsOutput && HasSingleConnection)
                     {
                         var connectedBox = Connections[0];
                         if (Surface.Undo != null && Surface.Undo.Enabled)

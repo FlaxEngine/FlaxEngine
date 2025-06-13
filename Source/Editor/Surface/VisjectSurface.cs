@@ -121,7 +121,7 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// The connection start.
         /// </summary>
-        protected IConnectionInstigator _connectionInstigator;
+        protected List<IConnectionInstigator> _connectionInstigator = new List<IConnectionInstigator>();
 
         /// <summary>
         /// The last connection instigator under mouse.
@@ -234,17 +234,17 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Gets a value indicating whether user is selecting nodes.
         /// </summary>
-        public bool IsSelecting => _leftMouseDown && !_isMovingSelection && _connectionInstigator == null;
+        public bool IsSelecting => _leftMouseDown && !_isMovingSelection && _connectionInstigator.Count == 0;
 
         /// <summary>
         /// Gets a value indicating whether user is moving selected nodes.
         /// </summary>
-        public bool IsMovingSelection => _leftMouseDown && _isMovingSelection && _connectionInstigator == null;
+        public bool IsMovingSelection => _leftMouseDown && _isMovingSelection && _connectionInstigator.Count == 0;
 
         /// <summary>
         /// Gets a value indicating whether user is connecting nodes.
         /// </summary>
-        public bool IsConnecting => _connectionInstigator != null;
+        public bool IsConnecting => _connectionInstigator.Count > 0;
 
         /// <summary>
         /// Gets a value indicating whether the left mouse button is down.

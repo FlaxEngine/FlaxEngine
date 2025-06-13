@@ -290,7 +290,7 @@ namespace FlaxEditor.Surface
             _cmStartPos = location;
 
             // Offset added in case the user doesn't like the box and wants to quickly get rid of it by clicking
-            OnShowPrimaryMenu(_activeVisjectCM, _cmStartPos + ContextMenuOffset, _connectionInstigator as Box);
+            OnShowPrimaryMenu(_activeVisjectCM, _cmStartPos + ContextMenuOffset, _connectionInstigator[0] as Box);
 
             if (!string.IsNullOrEmpty(input))
             {
@@ -475,9 +475,7 @@ namespace FlaxEditor.Surface
         private void OnPrimaryMenuVisibleChanged(Control primaryMenu)
         {
             if (!primaryMenu.Visible)
-            {
-                _connectionInstigator = null;
-            }
+                _connectionInstigator.Clear();
         }
 
         /// <summary>
@@ -555,8 +553,7 @@ namespace FlaxEditor.Surface
             }
 
             // If the user is patiently waiting for his box to get connected to the newly created one fulfill his wish!
-
-            _connectionInstigator = startBox;
+            _connectionInstigator[0] = startBox;
 
             if (!IsConnecting)
             {

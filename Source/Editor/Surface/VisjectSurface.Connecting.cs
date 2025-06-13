@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 
@@ -233,11 +234,15 @@ namespace FlaxEditor.Surface
         /// Begins connecting surface objects action.
         /// </summary>
         /// <param name="instigator">The connection instigator (eg. start box).</param>
-        public void ConnectingStart(IConnectionInstigator instigator)
+        /// <param name="additive">If the instigator should be added to the list of instigators.</param>
+        public void ConnectingStart(IConnectionInstigator instigator, bool additive = false)
         {
             if (instigator != null && instigator != _connectionInstigator)
             {
-                _connectionInstigator = instigator;
+                if (!additive)
+                    _connectionInstigator.Clear();
+                
+                _connectionInstigator.Add(instigator);
                 StartMouseCapture();
             }
         }
@@ -257,22 +262,26 @@ namespace FlaxEditor.Surface
         /// <param name="end">The end object (eg. end box).</param>
         public void ConnectingEnd(IConnectionInstigator end)
         {
-            // Ensure that there was a proper start box
-            if (_connectionInstigator == null)
+            // Ensure that there is at least one connection instigator
+            if (_connectionInstigator.Count == 0)
                 return;
 
-            var start = _connectionInstigator;
-            _connectionInstigator = null;
-
-            // Check if boxes are different and end box is specified
-            if (start == end || end == null)
-                return;
-
-            // Connect them
-            if (start.CanConnectWith(end))
+            List<IConnectionInstigator> instigators = new List<IConnectionInstigator>(_connectionInstigator);
+            for (int i = 0; i < instigators.Count; i++)
             {
-                start.Connect(end);
+                var start = _connectionInstigator[i];
+
+                // Check if boxes are different and end box is specified
+                if (start == end || end == null)
+                    return;
+
+                // Connect them
+                if (start.CanConnectWith(end))
+                    start.Connect(end);
             }
+
+            // Reset instigator list
+            _connectionInstigator.Clear();
         }
     }
 }
