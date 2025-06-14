@@ -544,15 +544,13 @@ namespace FlaxEditor.Surface.Elements
         public override void OnMouseLeave()
         {
             if (_originalTooltipText != null)
-            {
                 TooltipText = _originalTooltipText;
-            }
             if (_isMouseDown)
             {
                 _isMouseDown = false;
                 if (Surface.CanEdit)
                 {
-                    if (Input.GetKey(KeyboardKeys.Control))
+                    if (IsOutput && Input.GetKey(KeyboardKeys.Control))
                     {
                         List<Box> connectedBoxes = new List<Box>(Connections);
 
@@ -564,25 +562,21 @@ namespace FlaxEditor.Surface.Elements
                     }
                     else if (!IsOutput && HasSingleConnection)
                     {
-                        var connectedBox = Connections[0];
+                        var otherBox = Connections[0];
                         if (Surface.Undo != null && Surface.Undo.Enabled)
                         {
-                            var action = new ConnectBoxesAction((InputBox)this, (OutputBox)connectedBox, false);
-                            BreakConnection(connectedBox);
+                            var action = new ConnectBoxesAction((InputBox)this, (OutputBox)otherBox, false);
+                            BreakConnection(otherBox);
                             action.End();
                             Surface.AddBatchedUndoAction(action);
                             Surface.MarkAsEdited();
                         }
                         else
-                        {
-                            BreakConnection(connectedBox);
-                        }
-                        Surface.ConnectingStart(connectedBox);
+                            BreakConnection(otherBox);
+                        Surface.ConnectingStart(otherBox);
                     }
                     else
-                    {
                         Surface.ConnectingStart(this);
-                    }
                 }
             }
             base.OnMouseLeave();

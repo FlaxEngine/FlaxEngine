@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using FlaxEditor.Scripting;
+using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 
 namespace FlaxEditor.Surface
@@ -269,11 +270,15 @@ namespace FlaxEditor.Surface
             List<IConnectionInstigator> instigators = new List<IConnectionInstigator>(_connectionInstigators);
             for (int i = 0; i < instigators.Count; i++)
             {
-                var start = _connectionInstigators[i];
+                var start = instigators[i];
 
                 // Check if boxes are different and end box is specified
                 if (start == end || end == null)
                     return;
+                
+                // Properly handle connecting to a socket that already has a connection
+                if (end is Box e && !e.IsOutput && start is Box s && e.AreConnected(s))
+                    e.BreakConnection(s);
 
                 // Connect them
                 if (start.CanConnectWith(end))
