@@ -318,7 +318,7 @@ namespace FlaxEditor.Windows
         private Color _colorWarning;
         private Color _colorError;
         private bool _colorDebugLogText;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="DebugLogWindow"/> class.
         /// </summary>
@@ -353,11 +353,11 @@ namespace FlaxEditor.Windows
             }).SetAutoCheck(true).LinkTooltip("Performs auto pause on error");
             toolstrip.AddSeparator();
             _groupButtons[0] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Error32, () => { OnGroupButtonPressed(0); })
-                .SetAutoCheck(true).LinkTooltip("Shows/hides error messages");
+                                                         .SetAutoCheck(true).LinkTooltip("Shows/hides error messages");
             _groupButtons[1] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Warning32, () => { OnGroupButtonPressed(1); })
-                .SetAutoCheck(true).LinkTooltip("Shows/hides warning messages");
+                                                         .SetAutoCheck(true).LinkTooltip("Shows/hides warning messages");
             _groupButtons[2] = (ToolStripButton)toolstrip.AddButton(editor.Icons.Info32, () => { OnGroupButtonPressed(2); })
-                .SetAutoCheck(true).LinkTooltip("Shows/hides info messages");
+                                                         .SetAutoCheck(true).LinkTooltip("Shows/hides info messages");
             UpdateCount();
 
             // Split panel
@@ -409,21 +409,21 @@ namespace FlaxEditor.Windows
         private void OnGroupButtonPressed(int index)
         {
             UpdateLogTypeVisibility((LogGroup)index, _groupButtons[index].Checked);
-            if(Input.GetKey(KeyboardKeys.Shift))
+            if (Input.GetKey(KeyboardKeys.Shift))
             {
-                for(int i = 0; i < (int)LogGroup.Max; i++)
+                for (int i = 0; i < (int)LogGroup.Max; i++)
                 {
-                    if(i == index)
+                    if (i == index)
                         continue;
-                    
                     _groupButtons[i].Checked = !_groupButtons[index].Checked;
                     UpdateLogTypeVisibility((LogGroup)i, _groupButtons[i].Checked);
                 }
             }
 
-            Editor.Options.Options.Interface.DebugLogShowErrorMessages = _groupButtons[0].Checked;
-            Editor.Options.Options.Interface.DebugLogShowWarningMessages = _groupButtons[1].Checked;
-            Editor.Options.Options.Interface.DebugLogShowInfoMessages = _groupButtons[2].Checked;
+            var options = Editor.Options.Options.Interface;
+            options.DebugLogShowErrorMessages = _groupButtons[0].Checked;
+            options.DebugLogShowWarningMessages = _groupButtons[1].Checked;
+            options.DebugLogShowInfoMessages = _groupButtons[2].Checked;
             Editor.Options.Apply(Editor.Options.Options);
         }
 
@@ -464,15 +464,9 @@ namespace FlaxEditor.Windows
             // Create new entry
             switch (_timestampsFormats)
             {
-            case InterfaceOptions.TimestampsFormats.Utc:
-                desc.Title = $"[{DateTime.UtcNow}] {desc.Title}";
-                break;
-            case InterfaceOptions.TimestampsFormats.LocalTime:
-                desc.Title = $"[{DateTime.Now}] {desc.Title}";
-                break;
-            case InterfaceOptions.TimestampsFormats.TimeSinceStartup:
-                desc.Title = string.Format("[{0:g}] ", TimeSpan.FromSeconds(Time.TimeSinceStartup)) + desc.Title;
-                break;
+            case InterfaceOptions.TimestampsFormats.Utc: desc.Title = $"[{DateTime.UtcNow}] {desc.Title}"; break;
+            case InterfaceOptions.TimestampsFormats.LocalTime: desc.Title = $"[{DateTime.Now}] {desc.Title}"; break;
+            case InterfaceOptions.TimestampsFormats.TimeSinceStartup: desc.Title = string.Format("[{0:g}] ", TimeSpan.FromSeconds(Time.TimeSinceStartup)) + desc.Title; break;
             }
             var newEntry = new LogEntry(this, ref desc);
 

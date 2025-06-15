@@ -122,6 +122,14 @@ namespace FlaxEditor.GUI
             return this;
         }
 
+        private void OnClicked()
+        {
+            if (AutoCheck)
+                Checked = !Checked;
+            Clicked?.Invoke();
+            (Parent as ToolStrip)?.OnButtonClicked(this);
+        }
+
         /// <inheritdoc />
         public override void Draw()
         {
@@ -196,11 +204,7 @@ namespace FlaxEditor.GUI
             if (button == MouseButton.Left && _primaryMouseDown)
             {
                 _primaryMouseDown = false;
-                if (AutoCheck)
-                    Checked = !Checked;
-                Clicked?.Invoke();
-                (Parent as ToolStrip)?.OnButtonClicked(this);
-
+                OnClicked();
                 return true;
             }
             if (button == MouseButton.Right && _secondaryMouseDown)
@@ -218,16 +222,12 @@ namespace FlaxEditor.GUI
         /// <inheritdoc />
         public override bool OnMouseDoubleClick(Float2 location, MouseButton button)
         {
-            if(button == MouseButton.Left)
+            if (button == MouseButton.Left)
             {
-                if (AutoCheck)
-                    Checked = !Checked;
-                Clicked?.Invoke();
-                (Parent as ToolStrip)?.OnButtonClicked(this);
-
+                OnClicked();
                 return true;
             }
-            
+
             return false;
         }
 
