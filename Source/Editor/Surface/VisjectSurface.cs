@@ -711,6 +711,18 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
+        /// Removes the specified control from the selection.
+        /// </summary>
+        /// <param name="control">The control.</param>
+        public void RemoveFromSelection(SurfaceControl control)
+        {
+            if (!control.IsSelected)
+                return;
+            control.IsSelected = false;
+            SelectionChanged?.Invoke();
+        }
+
+        /// <summary>
         /// Selects the specified control.
         /// </summary>
         /// <param name="control">The control.</param>
