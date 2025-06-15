@@ -124,8 +124,8 @@ namespace FlaxEditor.Windows
                         var scriptItem = TypeUtils.GetType(assetItem.TypeName).ContentItem;
                         if(scriptItem != null)
                         {
-                            cm.AddButton("Edit asset code", () => { Editor.Instance.ContentEditing.Open(scriptItem); });
-                            cm.AddButton("Show asset code item in content window", () => { Editor.Instance.Windows.ContentWin.Select(scriptItem); });
+                            cm.AddButton("Edit asset type", () => { Editor.Instance.ContentEditing.Open(scriptItem); });
+                            cm.AddButton("Show asset type item in content window", () => { Editor.Instance.Windows.ContentWin.Select(scriptItem); });
                         }
                         
                         cm.AddButton("Copy asset ID", () => Clipboard.Text = JsonSerializer.GetStringID(assetItem.ID));
