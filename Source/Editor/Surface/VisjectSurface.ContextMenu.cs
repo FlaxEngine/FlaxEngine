@@ -289,7 +289,7 @@ namespace FlaxEditor.Surface
 
             _cmStartPos = location;
 
-            List<Box> startBoxes = new List<Box>(_connectionInstigators.Cast<Box>());
+            List<Box> startBoxes = new List<Box>(_connectionInstigators.Where(c => c is Box).Cast<Box>());
 
             // Position offset added so the user can quickly close the menu by clicking
             OnShowPrimaryMenu(_activeVisjectCM, _cmStartPos + ContextMenuOffset, startBoxes);
