@@ -71,6 +71,40 @@ namespace Flax.Build.NativeCpp
     }
 
     /// <summary>
+    /// Defines a Nuget Package
+    /// </summary>
+    public struct NugetPackage
+    {
+        /// <summary>
+        /// The name of the nuget package.
+        /// </summary>
+        public string Name;
+            
+        /// <summary>
+        /// The version of the nuget package.
+        /// </summary>
+        public string Version;
+            
+        /// <summary>
+        /// The target framework. ex. net8.0, netstandard2.1
+        /// </summary>
+        public string Framework;
+
+        /// <summary>
+        /// Initialize the nuget package.
+        /// </summary>
+        /// <param name="name">The name of the package.</param>
+        /// <param name="version">The version of the package.</param>
+        /// <param name="framework">The target framework. ex. net8.0, netstandard2.1, etc.</param>
+        public NugetPackage(string name, string version, string framework)
+        {
+            Name = name;
+            Version = version;
+            Framework = framework;
+        }
+    }
+
+    /// <summary>
     /// The native C++ module build settings container.
     /// </summary>
     public sealed class BuildOptions
@@ -129,6 +163,11 @@ namespace Flax.Build.NativeCpp
         /// The collection of the modules that are required by this module (for linking).
         /// </summary>
         public List<string> PrivateDependencies = new List<string>();
+        
+        /// <summary>
+        /// The nuget package references.
+        /// </summary>
+        public List<NugetPackage> NugetPackageReferences = new List<NugetPackage>();
 
         /// <summary>
         /// The collection of defines with preprocessing symbol for a source files of this module. Inherited by the modules that include it.
