@@ -288,16 +288,15 @@ namespace FlaxEditor.Windows.Assets
 
         /// <inheritdoc />
         public SearchAssetTypes AssetType => SearchAssetTypes.ParticleEmitter;
-    
+
         /// <inheritdoc />
         public override void Update(float deltaTime)
         {
             base.Update(deltaTime);
 
-            if(_asset == null)
+            if (_asset == null)
                 return;
-
-            _showSourceCodeButton.Enabled = _asset.HasShaderCode();
+            _showSourceCodeButton.Enabled = _asset.HasShaderCode;
         }
     }
 }

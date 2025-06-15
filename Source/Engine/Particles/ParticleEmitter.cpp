@@ -440,20 +440,17 @@ bool ParticleEmitter::Save(const StringView& path)
     return SaveSurface(data);
 }
 
-bool ParticleEmitter::HasShaderCode()
+bool ParticleEmitter::HasShaderCode() const
 {
-    if(SimulationMode != ParticlesSimulationMode::GPU)
-    {
+    if (SimulationMode != ParticlesSimulationMode::GPU)
         return false;
-    }
 
-    #if COMPILE_WITH_PARTICLE_GPU_GRAPH && COMPILE_WITH_SHADER_COMPILER
-    if(_shaderHeader.ParticleEmitter.GraphVersion == PARTICLE_GPU_GRAPH_VERSION
+#if COMPILE_WITH_PARTICLE_GPU_GRAPH && COMPILE_WITH_SHADER_COMPILER
+    if (_shaderHeader.ParticleEmitter.GraphVersion == PARTICLE_GPU_GRAPH_VERSION
         && HasChunk(SHADER_FILE_CHUNK_SOURCE)
         && !HasDependenciesModified())
         return true;
-    #endif
-
+#endif
     return false;
 }
 

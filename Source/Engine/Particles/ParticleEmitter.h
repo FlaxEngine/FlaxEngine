@@ -175,10 +175,9 @@ public:
     bool Save(const StringView& path = StringView::Empty) override;
 
     /// <summary>
-    /// Determine if the particle emitter has valid shader code present.
+    /// Checks if the particle emitter has valid shader code present.
     /// </summary>
-    /// <returns>True if particle emitter has shader code, otherwise false.</returns>
-    API_FUNCTION() bool HasShaderCode();
+    API_PROPERTY() bool HasShaderCode() const;
 #endif
 
 protected:
