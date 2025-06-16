@@ -522,7 +522,7 @@ namespace FlaxEditor.GUI
                 for (int i = 0; i < _categoryPanels.Count; i++)
                 {
                     var category = _categoryPanels[i];
-                    if (!category.Visible)
+                    if (!category.Visible || (category is DropPanel panel && panel.IsClosed))
                         continue;
                     for (int j = 0; j < category.Children.Count; j++)
                     {
