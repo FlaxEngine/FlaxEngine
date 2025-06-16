@@ -32,7 +32,8 @@
  * There is also a simple .bmp loader, SDL_LoadBMP(). SDL itself does not
  * provide loaders for various other file formats, but there are several
  * excellent external libraries that do, including its own satellite library,
- * SDL_image:
+ * [SDL_image](https://wiki.libsdl.org/SDL3_image)
+ * :
  *
  * https://github.com/libsdl-org/SDL_image
  */
@@ -83,8 +84,9 @@ typedef Uint32 SDL_SurfaceFlags;
 typedef enum SDL_ScaleMode
 {
     SDL_SCALEMODE_INVALID = -1,
-    SDL_SCALEMODE_NEAREST, /**< nearest pixel sampling */
-    SDL_SCALEMODE_LINEAR   /**< linear filtering */
+    SDL_SCALEMODE_NEAREST,  /**< nearest pixel sampling */
+    SDL_SCALEMODE_LINEAR,   /**< linear filtering */
+    SDL_SCALEMODE_PIXELART  /**< nearest pixel sampling with improved scaling for pixel art */
 } SDL_ScaleMode;
 
 /**

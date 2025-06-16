@@ -118,6 +118,7 @@ typedef enum SDL_GamepadType
     SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_LEFT,
     SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT,
     SDL_GAMEPAD_TYPE_NINTENDO_SWITCH_JOYCON_PAIR,
+    SDL_GAMEPAD_TYPE_GAMECUBE,
     SDL_GAMEPAD_TYPE_COUNT
 } SDL_GamepadType;
 
@@ -127,8 +128,9 @@ typedef enum SDL_GamepadType
  * For controllers that use a diamond pattern for the face buttons, the
  * south/east/west/north buttons below correspond to the locations in the
  * diamond pattern. For Xbox controllers, this would be A/B/X/Y, for Nintendo
- * Switch controllers, this would be B/A/Y/X, for PlayStation controllers this
- * would be Cross/Circle/Square/Triangle.
+ * Switch controllers, this would be B/A/Y/X, for GameCube controllers this
+ * would be A/X/B/Y, for PlayStation controllers this would be
+ * Cross/Circle/Square/Triangle.
  *
  * For controllers that don't use a diamond pattern for the face buttons, the
  * south/east/west/north buttons indicate the buttons labeled A, B, C, D, or
@@ -1156,10 +1158,12 @@ extern SDL_DECLSPEC bool SDLCALL SDL_GamepadHasAxis(SDL_Gamepad *gamepad, SDL_Ga
  * return a negative value. Note that this differs from the value reported by
  * the lower-level SDL_GetJoystickAxis(), which normally uses the full range.
  *
+ * Note that for invalid gamepads or axes, this will return 0. Zero is also a
+ * valid value in normal operation; usually it means a centered axis.
+ *
  * \param gamepad a gamepad.
  * \param axis an axis index (one of the SDL_GamepadAxis values).
- * \returns axis state (including 0) on success or 0 (also) on failure; call
- *          SDL_GetError() for more information.
+ * \returns axis state.
  *
  * \since This function is available since SDL 3.2.0.
  *
