@@ -17,6 +17,7 @@ namespace Flax.Build
         private static Platform _buildPlatform;
         private static Platform[] _platforms;
         private Dictionary<TargetArchitecture, Toolchain> _toolchains;
+        private uint _failedArchitectures = 0;
 
         /// <summary>
         /// Gets the current target platform that build tool runs on.
@@ -251,7 +252,8 @@ namespace Flax.Build
         public Toolchain TryGetToolchain(TargetArchitecture targetArchitecture)
         {
             Toolchain result = null;
-            if (HasRequiredSDKsInstalled)
+            uint failedMask = 1u << (int)targetArchitecture; // Skip retrying if it already failed once on this arch
+            if (HasRequiredSDKsInstalled && (_failedArchitectures & failedMask) != failedMask)
             {
                 try
                 {
@@ -259,6 +261,7 @@ namespace Flax.Build
                 }
                 catch (Exception ex)
                 {
+                    _failedArchitectures |= failedMask;
                     Log.Exception(ex);
                 }
             }
