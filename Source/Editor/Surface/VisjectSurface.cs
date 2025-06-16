@@ -405,6 +405,15 @@ namespace FlaxEditor.Surface
                 new InputActionsContainer.Binding(options => options.Paste, Paste),
                 new InputActionsContainer.Binding(options => options.Cut, Cut),
                 new InputActionsContainer.Binding(options => options.Duplicate, Duplicate),
+                new InputActionsContainer.Binding(options => options.NodesAutoFormat, () => { FormatGraph(SelectedNodes); }),
+                new InputActionsContainer.Binding(options => options.NodesAlignTop, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Top); }),
+                new InputActionsContainer.Binding(options => options.NodesAlignMiddle, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Middle); }),
+                new InputActionsContainer.Binding(options => options.NodesAlignBottom, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Bottom); }),
+                new InputActionsContainer.Binding(options => options.NodesAlignLeft, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Left); }),
+                new InputActionsContainer.Binding(options => options.NodesAlignCenter, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Center); }),
+                new InputActionsContainer.Binding(options => options.NodesAlignRight, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Right); }),
+                new InputActionsContainer.Binding(options => options.NodesDistributeHorizontal, () => {  DistributeNodes(SelectedNodes, false); }),
+                new InputActionsContainer.Binding(options => options.NodesDistributeVertical, () => {  DistributeNodes(SelectedNodes, true); }),
             });
 
             Context.ControlSpawned += OnSurfaceControlSpawned;
@@ -707,6 +716,18 @@ namespace FlaxEditor.Surface
             if (control.IsSelected)
                 return;
             control.IsSelected = true;
+            SelectionChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Removes the specified control from the selection.
+        /// </summary>
+        /// <param name="control">The control.</param>
+        public void RemoveFromSelection(SurfaceControl control)
+        {
+            if (!control.IsSelected)
+                return;
+            control.IsSelected = false;
             SelectionChanged?.Invoke();
         }
 

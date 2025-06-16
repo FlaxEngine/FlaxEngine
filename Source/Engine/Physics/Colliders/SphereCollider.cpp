@@ -67,8 +67,7 @@ void SphereCollider::UpdateBounds()
 
 void SphereCollider::GetGeometry(CollisionShape& collision)
 {
-    const float scaling = _cachedScale.GetAbsolute().MaxValue();
-    const float radius = Math::Abs(_radius) * scaling;
+    const float radius = Math::Abs(_radius) * _cachedScale;
     const float minSize = 0.001f;
     collision.SetSphere(Math::Max(radius, minSize));
 }
