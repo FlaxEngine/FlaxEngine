@@ -590,6 +590,9 @@ namespace FlaxEditor.Surface
             // Cache flags and state
             if (_leftMouseDown && button == MouseButton.Left)
             {
+                WasBoxSelecting = IsBoxSelecting;
+                WasMovingSelection = _isMovingSelection;
+
                 _leftMouseDown = false;
                 EndMouseCapture();
                 Cursor = CursorType.Default;
