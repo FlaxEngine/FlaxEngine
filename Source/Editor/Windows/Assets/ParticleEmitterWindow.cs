@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
+using FlaxEditor.GUI;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface;
 using FlaxEditor.Viewport.Previews;
@@ -114,6 +115,7 @@ namespace FlaxEditor.Windows.Assets
 
         private readonly PropertiesProxy _properties;
         private Tab _previewTab;
+        private ToolStripButton _showSourceCodeButton;
 
         /// <inheritdoc />
         public ParticleEmitterWindow(Editor editor, AssetItem item)
@@ -146,7 +148,8 @@ namespace FlaxEditor.Windows.Assets
 
             // Toolstrip
             SurfaceUtils.PerformCommonSetup(this, _toolstrip, _surface, out _saveButton, out _undoButton, out _redoButton);
-            _toolstrip.AddButton(editor.Icons.Code64, ShowSourceCode).LinkTooltip("Show generated shader source code");
+            _showSourceCodeButton = _toolstrip.AddButton(editor.Icons.Code64, ShowSourceCode);
+            _showSourceCodeButton.LinkTooltip("Show generated shader source code");
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/particles/index.html")).LinkTooltip("See documentation to learn more");
         }
@@ -285,5 +288,15 @@ namespace FlaxEditor.Windows.Assets
 
         /// <inheritdoc />
         public SearchAssetTypes AssetType => SearchAssetTypes.ParticleEmitter;
+
+        /// <inheritdoc />
+        public override void Update(float deltaTime)
+        {
+            base.Update(deltaTime);
+
+            if (_asset == null)
+                return;
+            _showSourceCodeButton.Enabled = _asset.HasShaderCode;
+        }
     }
 }

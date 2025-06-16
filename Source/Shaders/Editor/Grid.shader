@@ -3,7 +3,7 @@
 // Ben Golus
 // https://bgolus.medium.com/the-best-darn-grid-shader-yet-727f9278b9d8#3e73
 
-#define USE_FORWARD true;
+#define MIN_DERIV 0.00001f
 
 #include "./Flax/Common.hlsl"
 
@@ -61,11 +61,6 @@ float remap(float origFrom, float origTo, float targetFrom, float targetTo, floa
     return lerp(targetFrom, targetTo, rel);
 }
 
-float ddLength(float a)
-{
-    return length(float2(ddx(a), ddy(a)));
-}
-
 float GetLine(float pos, float scale, float thickness)
 {
     float lineWidth = thickness;
@@ -73,7 +68,7 @@ float GetLine(float pos, float scale, float thickness)
 
     float2 uvDDXY = float2(ddx(coord), ddy(coord));
 
-    float deriv = float(length(uvDDXY.xy));
+    float deriv = max(float(length(uvDDXY.xy)), MIN_DERIV);
     float drawWidth = clamp(lineWidth, deriv, 0.5);
     float lineAA = deriv * 1.5;
     float gridUV = abs(coord);
@@ -92,7 +87,7 @@ float GetGrid(float3 pos, float scale, float thickness)
 
     float4 uvDDXY = float4(ddx(coord), ddy(coord));
 
-    float2 deriv = float2(length(uvDDXY.xz), length(uvDDXY.yw));
+    float2 deriv = max(float2(length(uvDDXY.xz), length(uvDDXY.yw)), float2(MIN_DERIV, MIN_DERIV));
     float2 drawWidth = clamp(lineWidth, deriv, 0.5);
     float2 lineAA = deriv * 1.5;
     float2 gridUV = 1.0 - abs(frac(coord) * 2.0 - 1.0);

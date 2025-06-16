@@ -262,16 +262,16 @@ void CharacterController::OnDebugDrawSelected()
     Quaternion rotation = Quaternion::Euler(90, 0, 0);
     const Vector3 position = GetControllerPosition();
     DEBUG_DRAW_WIRE_CAPSULE(position, rotation, _radius, _height, Color::GreenYellow, 0, false);
-    if (_contactOffset > 0)
-        DEBUG_DRAW_WIRE_CAPSULE(position, rotation, _radius - _contactOffset, _height, Color::Blue.AlphaMultiplied(0.4f), 0, false);
-#if 1
-    // More technical visuals debugging
     if (_controller)
     {
+        // Physics backend capsule shape
         float height, radius;
         GetControllerSize(height, radius);
-        Vector3 base = PhysicsBackend::GetControllerBasePosition(_controller);
         Vector3 pos = PhysicsBackend::GetControllerPosition(_controller);
+        DEBUG_DRAW_WIRE_CAPSULE(pos, rotation, radius, height, Color::Blue.AlphaMultiplied(0.2f), 0, false);
+#if 0
+        // More technical visuals debugging
+        Vector3 base = PhysicsBackend::GetControllerBasePosition(_controller);
         DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(base, 5.0f), Color::Red, 0, false);
         DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(pos, 4.0f), Color::Red, 0, false);
         DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(pos + Vector3(0, height * 0.5f, 0), 2.0f), Color::Red, 0, false);
@@ -279,17 +279,8 @@ void CharacterController::OnDebugDrawSelected()
         DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(pos + Vector3(0, height * 0.5f, 0), radius), Color::Red.AlphaMultiplied(0.5f), 0, false);
         DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(pos - Vector3(0, height * 0.5f, 0), radius), Color::Red.AlphaMultiplied(0.5f), 0, false);
         DEBUG_DRAW_WIRE_CYLINDER(pos, Quaternion::Identity, radius, height, Color::Red.AlphaMultiplied(0.2f), 0, false);
-    }
-    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(position, 3.0f), Color::GreenYellow, 0, false);
-#else
-    if (_controller)
-    {
-        // Physics backend capsule shape
-        float height, radius;
-        GetControllerSize(height, radius);
-        DEBUG_DRAW_WIRE_CAPSULE(PhysicsBackend::GetControllerPosition(_controller), rotation, radius, height, Color::Blue.AlphaMultiplied(0.2f), 0, false);
-    }
 #endif
+    }
 
     // Base
     Collider::OnDebugDrawSelected();

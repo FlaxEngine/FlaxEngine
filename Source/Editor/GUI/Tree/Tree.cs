@@ -74,6 +74,11 @@ namespace FlaxEditor.GUI.Tree
         public bool DrawRootTreeLine = true;
 
         /// <summary>
+        /// Occurs when the deferred layout operation was performed.
+        /// </summary>
+        public event Action AfterDeferredLayout;
+
+        /// <summary>
         /// Gets or sets the margin for the child tree nodes.
         /// </summary>
         [EditorOrder(0), Tooltip("The margin applied to the child tree nodes.")]
@@ -375,6 +380,7 @@ namespace FlaxEditor.GUI.Tree
             if (_deferLayoutUpdate)
             {
                 base.PerformLayout();
+                AfterDeferredLayout?.Invoke();
                 _deferLayoutUpdate = false;
             }
 

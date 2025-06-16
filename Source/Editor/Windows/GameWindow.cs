@@ -405,6 +405,7 @@ namespace FlaxEditor.Windows
                     return;
                 Editor.Instance.SceneEditing.Delete();
             });
+            InputActions.Add(options => options.FocusConsoleCommand, () => Editor.Instance.Windows.OutputLogWin.FocusCommand());
         }
 
         private void ChangeViewportRatio(ViewportScaleOptions v)

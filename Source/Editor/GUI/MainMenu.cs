@@ -267,6 +267,19 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
+        /// Gets or adds a button.
+        /// </summary>
+        /// <param name="text">The button text</param>
+        /// <returns>The existing or created button control.</returns>
+        public MainMenuButton GetOrAddButton(string text)
+        {
+            MainMenuButton result = GetButton(text);
+            if (result == null)
+                result = AddButton(text);
+            return result;
+        }
+
+        /// <summary>
         /// Gets the button.
         /// </summary>
         /// <param name="text">The button text.</param>
