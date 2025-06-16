@@ -227,9 +227,8 @@ namespace FlaxEditor.GUI
                 {
                     int order = -1 * SortScore.CompareTo(otherItem.SortScore);
                     if (order == 0)
-                    {
                         order = string.Compare(Name, otherItem.Name, StringComparison.Ordinal);
-                    }
+
                     return order;
                 }
                 return base.Compare(other);
@@ -535,6 +534,12 @@ namespace FlaxEditor.GUI
             return result;
         }
 
+        private void ExpandToItem(Item item)
+        {
+            if (item.Parent is DropPanel dropPanel)
+                dropPanel.Open(false);
+        }
+
         /// <inheritdoc />
         protected override void OnShow()
         {
@@ -564,7 +569,7 @@ namespace FlaxEditor.GUI
                 Hide();
                 return true;
             case KeyboardKeys.Backspace:
-                // Alow the user to quickly focus the searchbar
+                // Allow the user to quickly focus the searchbar
                 if (_searchBox != null && !_searchBox.IsFocused)
                 {
                     _searchBox.Focus();
@@ -590,6 +595,11 @@ namespace FlaxEditor.GUI
 
                 // Focus the next item
                 nextItem.Focus();
+            
+                // Allow the user to expand groups while scrolling
+                if (Root.GetKey(KeyboardKeys.Control))
+                    ExpandToItem(nextItem);
+                
                 _scrollPanel.ScrollViewTo(nextItem);
                 return true;
             case KeyboardKeys.Return:
