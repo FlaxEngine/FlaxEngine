@@ -508,7 +508,7 @@ namespace FlaxEditor.GUI
                 OnSearchFilterChanged();
         }
 
-        private List<Item> GetVisibleItems()
+        private List<Item> GetVisibleItems(bool ignoreFoldedCategories)
         {
             var result = new List<Item>();
             var items = ItemsPanel.Children;
@@ -522,7 +522,7 @@ namespace FlaxEditor.GUI
                 for (int i = 0; i < _categoryPanels.Count; i++)
                 {
                     var category = _categoryPanels[i];
-                    if (!category.Visible || (category is DropPanel panel && panel.IsClosed))
+                    if (!category.Visible || (ignoreFoldedCategories && category is DropPanel panel && panel.IsClosed))
                         continue;
                     for (int j = 0; j < category.Children.Count; j++)
                     {
@@ -587,8 +587,14 @@ namespace FlaxEditor.GUI
                 }
 
                 // Get the next item
-                var items = GetVisibleItems();
+                bool controlDown = Root.GetKey(KeyboardKeys.Control);
+                var items = GetVisibleItems(!controlDown);
                 var focusedIndex = items.IndexOf(focusedItem);
+
+                // If the user hasn't selected anything yet and is holding control, focus first folded item
+                if (focusedIndex == -1 && controlDown)
+                    focusedIndex = GetVisibleItems(true).Count - 1;
+
                 int delta = key == KeyboardKeys.ArrowDown ? -1 : 1;
                 int nextIndex = Mathf.Wrap(focusedIndex - delta, 0, items.Count - 1);
                 var nextItem = items[nextIndex];
@@ -597,7 +603,7 @@ namespace FlaxEditor.GUI
                 nextItem.Focus();
             
                 // Allow the user to expand groups while scrolling
-                if (Root.GetKey(KeyboardKeys.Control))
+                if (controlDown)
                     ExpandToItem(nextItem);
                 
                 _scrollPanel.ScrollViewTo(nextItem);
@@ -611,7 +617,7 @@ namespace FlaxEditor.GUI
                 else
                 {
                     // Select first item if no item is focused (most likely to be the best result), saves the user from pressing arrow down first
-                    var visibleItems = GetVisibleItems();
+                    var visibleItems = GetVisibleItems(true);
                     if (visibleItems.Count > 0)
                     {
                         OnClickItem(visibleItems[0]);
