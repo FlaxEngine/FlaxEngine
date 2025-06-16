@@ -160,7 +160,7 @@ namespace
 
         // Warn that data might be missing due to inactive profiler
         if (!ProfilerMemory::Enabled)
-            output.AppendLine(TEXT("Detailed memory profiling is disabled. Run with command line: -mem"));
+            output.AppendLine(TEXT("Detailed memory profiling is disabled. Run with command line '-mem'"));
     }
 
 #ifdef USE_TRACY_MEMORY_PLOTS

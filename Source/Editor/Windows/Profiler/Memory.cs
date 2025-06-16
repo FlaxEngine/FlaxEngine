@@ -71,7 +71,7 @@ namespace FlaxEditor.Windows.Profiler
             {
                 _warningText = new Label
                 {
-                    Text = "Detailed memory profiling is disabled. Run with command line: -mem",
+                    Text = "Detailed memory profiling is disabled. Run with command line '-mem'",
                     TextColor = Color.Red,
                     Visible = false,
                     Parent = layout,
