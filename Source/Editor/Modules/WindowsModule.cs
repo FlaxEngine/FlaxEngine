@@ -1227,6 +1227,13 @@ namespace FlaxEditor.Modules
         }
 
         /// <inheritdoc />
+        public override void OnPlayEnding()
+        {
+            for (int i = 0; i < Windows.Count; i++)
+                Windows[i].OnPlayEnding();
+        }
+
+        /// <inheritdoc />
         public override void OnPlayEnd()
         {
             for (int i = 0; i < Windows.Count; i++)
