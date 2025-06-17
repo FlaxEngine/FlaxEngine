@@ -10,6 +10,7 @@
 #include "NavModifierVolume.h"
 #include "NavMeshRuntime.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/ScopeExit.h"
 #include "Engine/Core/Math/BoundingBox.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Physics/Colliders/BoxCollider.h"
@@ -422,6 +423,7 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
         LOG(Warning, "Could not generate navmesh: Out of memory for heightfield.");
         return true;
     }
+    SCOPE_EXIT{ rcFreeHeightField(heightfield); };
     if (!rcCreateHeightfield(&context, *heightfield, config.width, config.height, config.bmin, config.bmax, config.cs, config.ch))
     {
         LOG(Warning, "Could not generate navmesh: Could not create solid heightfield.");
@@ -475,6 +477,7 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
         LOG(Warning, "Could not generate navmesh: Out of memory compact heightfield.");
         return true;
     }
+    SCOPE_EXIT{ rcFreeCompactHeightfield(compactHeightfield); };
     {
         PROFILE_CPU_NAMED("CompactHeightfield");
         if (!rcBuildCompactHeightfield(&context, config.walkableHeight, config.walkableClimb, *heightfield, *compactHeightfield))
@@ -483,7 +486,6 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
             return true;
         }
     }
-    rcFreeHeightField(heightfield);
     {
         PROFILE_CPU_NAMED("ErodeWalkableArea");
         if (!rcErodeWalkableArea(&context, config.walkableRadius, *compactHeightfield))
@@ -528,6 +530,7 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
         LOG(Warning, "Could not generate navmesh: Out of memory for contour set.");
         return true;
     }
+    SCOPE_EXIT{ rcFreeContourSet(contourSet); };
     {
         PROFILE_CPU_NAMED("BuildContours");
         if (!rcBuildContours(&context, *compactHeightfield, config.maxSimplificationError, config.maxEdgeLen, *contourSet))
@@ -543,6 +546,7 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
         LOG(Warning, "Could not generate navmesh: Out of memory for poly mesh.");
         return true;
     }
+    SCOPE_EXIT{ rcFreePolyMesh(polyMesh); };
     {
         PROFILE_CPU_NAMED("BuildPolyMesh");
         if (!rcBuildPolyMesh(&context, *contourSet, config.maxVertsPerPoly, *polyMesh))
@@ -558,6 +562,7 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
         LOG(Warning, "Could not generate navmesh: Out of memory for detail mesh.");
         return true;
     }
+    SCOPE_EXIT{ rcFreePolyMeshDetail(detailMesh); };
     {
         PROFILE_CPU_NAMED("BuildPolyMeshDetail");
         if (!rcBuildPolyMeshDetail(&context, *polyMesh, *compactHeightfield, config.detailSampleDist, config.detailSampleMaxError, *detailMesh))
@@ -566,9 +571,6 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
             return true;
         }
     }
-
-    rcFreeCompactHeightfield(compactHeightfield);
-    rcFreeContourSet(contourSet);
 
     for (int i = 0; i < polyMesh->npolys; i++)
         polyMesh->flags[i] = polyMesh->areas[i] != RC_NULL_AREA ? 1 : 0;
@@ -661,7 +663,6 @@ bool GenerateTile(NavMesh* navMesh, NavMeshRuntime* runtime, int32 x, int32 y, B
 
     {
         PROFILE_CPU_NAMED("CreateTiles");
-
         ScopeLock lock(runtime->Locker);
 
         navMesh->IsDataDirty = true;
