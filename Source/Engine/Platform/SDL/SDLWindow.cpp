@@ -750,6 +750,11 @@ Float2 SDLWindow::ClientToScreen(const Float2& clientPos) const
 
 void SDLWindow::FlashWindow()
 {
+#if PLATFORM_LINUX
+    // Flashing brings the window on top of other windows, disable it for now
+    if (SDLPlatform::UsesWayland())
+        return;
+#endif
     SDL_FlashWindow(_window, SDL_FLASH_UNTIL_FOCUSED);
 }
 
