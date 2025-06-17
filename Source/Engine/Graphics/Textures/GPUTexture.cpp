@@ -630,6 +630,23 @@ GPUTask* GPUTexture::UploadMipMapAsync(const BytesContainer& data, int32 mipInde
     return task;
 }
 
+bool GPUTexture::UploadData(TextureData& data, bool copyData)
+{
+    if (!IsAllocated())
+        return true;
+    if (data.Width != Width() || data.Height != Height() || data.Depth != Depth() || data.GetArraySize() != ArraySize() || data.Format != Format())
+        return true;
+    for (int32 arrayIndex = 0; arrayIndex < ArraySize(); arrayIndex++)
+    {
+        for (int32 mipLevel = 0; mipLevel < MipLevels(); mipLevel++)
+        {
+            TextureMipData* mip = data.GetData(arrayIndex, mipLevel);
+            UploadMipMapAsync(mip->Data, mipLevel, mip->RowPitch, mip->DepthPitch, copyData);
+        }
+    }
+    return false;
+}
+
 class TextureDownloadDataTask : public ThreadPoolTask
 {
 private:

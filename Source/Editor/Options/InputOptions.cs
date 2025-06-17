@@ -139,6 +139,10 @@ namespace FlaxEditor.Options
         [EditorDisplay("Common"), EditorOrder(240)]
         public InputBinding ToggleFullscreen = new InputBinding(KeyboardKeys.F11);
 
+        [DefaultValue(typeof(InputBinding), "Ctrl+BackQuote")]
+        [EditorDisplay("Common"), EditorOrder(250)]
+        public InputBinding FocusConsoleCommand = new InputBinding(KeyboardKeys.BackQuote, KeyboardKeys.Control);
+
         #endregion
 
         #region File
@@ -645,6 +649,46 @@ namespace FlaxEditor.Options
         [DefaultValue(typeof(InputBinding), "None")]
         [EditorDisplay("Windows"), EditorOrder(4020)]
         public InputBinding VisualScriptDebuggerWindow = new InputBinding(KeyboardKeys.None);
+
+        #endregion
+
+        #region Node editors
+
+        [DefaultValue(typeof(InputBinding), "Shift+W")]
+        [EditorDisplay("Node editors"), EditorOrder(4500)]
+        public InputBinding NodesAlignTop = new InputBinding(KeyboardKeys.W, KeyboardKeys.Shift);
+
+        [DefaultValue(typeof(InputBinding), "Shift+A")]
+        [EditorDisplay("Node editors"), EditorOrder(4510)]
+        public InputBinding NodesAlignLeft = new InputBinding(KeyboardKeys.A, KeyboardKeys.Shift);
+
+        [DefaultValue(typeof(InputBinding), "Shift+S")]
+        [EditorDisplay("Node editors"), EditorOrder(4520)]
+        public InputBinding NodesAlignBottom = new InputBinding(KeyboardKeys.S, KeyboardKeys.Shift);
+
+        [DefaultValue(typeof(InputBinding), "Shift+D")]
+        [EditorDisplay("Node editors"), EditorOrder(4530)]
+        public InputBinding NodesAlignRight = new InputBinding(KeyboardKeys.D, KeyboardKeys.Shift);
+
+        [DefaultValue(typeof(InputBinding), "Alt+Shift+W")]
+        [EditorDisplay("Node editors"), EditorOrder(4540)]
+        public InputBinding NodesAlignMiddle = new InputBinding(KeyboardKeys.W, KeyboardKeys.Shift, KeyboardKeys.Alt);
+
+        [DefaultValue(typeof(InputBinding), "Alt+Shift+S")]
+        [EditorDisplay("Node editors"), EditorOrder(4550)]
+        public InputBinding NodesAlignCenter = new InputBinding(KeyboardKeys.S, KeyboardKeys.Shift, KeyboardKeys.Alt);
+
+        [DefaultValue(typeof(InputBinding), "Q")]
+        [EditorDisplay("Node editors"), EditorOrder(4560)]
+        public InputBinding NodesAutoFormat = new InputBinding(KeyboardKeys.Q);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Node editors"), EditorOrder(4570)]
+        public InputBinding NodesDistributeHorizontal = new InputBinding(KeyboardKeys.None);
+
+        [DefaultValue(typeof(InputBinding), "None")]
+        [EditorDisplay("Node editors"), EditorOrder(4580)]
+        public InputBinding NodesDistributeVertical = new InputBinding(KeyboardKeys.None);
 
         #endregion
     }
