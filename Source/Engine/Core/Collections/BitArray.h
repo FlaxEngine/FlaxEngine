@@ -16,7 +16,6 @@ API_CLASS(InBuild) class BitArray
 public:
     using ItemType = uint64;
     using AllocationData = typename AllocationType::template Data<ItemType>;
-    static constexpr int32 ItemBitCount = 64;
 
 private:
     int32 _count;
@@ -210,8 +209,8 @@ public:
     bool Get(const int32 index) const
     {
         ASSERT(index >= 0 && index < _count);
-        const ItemType offset = index / ItemBitCount;
-        const ItemType bitMask = (ItemType)(1 << (index & (ItemBitCount - 1)));
+        const ItemType offset = index / 64;
+        const ItemType bitMask = 1ull << (index & 63ull);
         const ItemType item = ((ItemType*)_allocation.Get())[offset];
         return (item & bitMask) != 0;
     }
@@ -224,8 +223,8 @@ public:
     void Set(const int32 index, const bool value)
     {
         ASSERT(index >= 0 && index < _count);
-        const ItemType offset = index / ItemBitCount;
-        const ItemType bitMask = (ItemType)(1 << (index & (ItemBitCount - 1)));
+        const ItemType offset = index / 64;
+        const ItemType bitMask = 1ull << (index & 63ull);
         ItemType& item = ((ItemType*)_allocation.Get())[offset];
         if (value)
             item |= bitMask; // Set the bit

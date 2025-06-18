@@ -709,7 +709,7 @@ public:
         --_count;
         T* data = _allocation.Get();
         if (_count)
-            data[index] = data[_count];
+            data[index] = MoveTemp(data[_count]);
         Memory::DestructItems(data + _count, 1);
     }
 
