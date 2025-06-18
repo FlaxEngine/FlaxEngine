@@ -110,6 +110,7 @@ void NavMesh::OnAssetLoaded(Asset* asset, void* caller)
     if (Data.Tiles.HasItems())
         return;
     ScopeLock lock(DataAsset->Locker);
+    PROFILE_MEM(Navigation);
 
     // Remove added tiles
     if (_navMeshActive)
