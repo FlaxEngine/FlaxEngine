@@ -31,6 +31,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var audioMixerGroup = new AudioMixerGroupEditor();
             audioMixerGroup.Initialize(gridPanel);
 
+
             // Show playback options during simulation
             if (Editor.IsPlayMode)
             {
@@ -57,6 +58,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
         public override void Refresh()
         {
             base.Refresh();
+
+            // Assigns the AudioSource the type of Audio Mixer Group
 
             if (_infoLabel != null)
             {

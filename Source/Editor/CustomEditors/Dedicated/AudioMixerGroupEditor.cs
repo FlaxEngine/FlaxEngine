@@ -38,6 +38,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             SetValue(AudioMixerIndex);
         }
 
+        public void GetAudioMixerGroup() => _element.ComboBox.Items[AudioMixerIndex].ToString();
+
         /// <inheritdoc />
         public override void Refresh()
         {
