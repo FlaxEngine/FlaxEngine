@@ -1901,6 +1901,23 @@ void PhysicsBackend::StartSimulateScene(void* scene, float dt)
     scenePhysX->Stepper.renderDone();
 }
 
+PxActor** CachedActiveActors;
+int64 CachedActiveActorsCount;
+volatile int64 CachedActiveActorIndex;
+
+void FlushActiveTransforms(int32 i)
+{
+    PROFILE_CPU();
+    int64 index;
+    while ((index = Platform::InterlockedIncrement(&CachedActiveActorIndex)) < CachedActiveActorsCount)
+    {
+        const auto pxActor = (PxRigidActor*)CachedActiveActors[index];
+        auto actor = static_cast<IPhysicsActor*>(pxActor->userData);
+        if (actor)
+            actor->OnActiveTransformChanged();
+    }
+}
+
 void PhysicsBackend::EndSimulateScene(void* scene)
 {
     PROFILE_MEM(Physics);
@@ -1919,10 +1936,18 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         // Gather change info
         PxU32 activeActorsCount;
         PxActor** activeActors = scenePhysX->Scene->getActiveActors(activeActorsCount);
-        if (activeActorsCount > 0)
+
+        // Update changed transformations
+        if (activeActorsCount > 50 && JobSystem::GetThreadsCount() > 1)
         {
-            // Update changed transformations
-            // TODO: use jobs system if amount if huge
+            // Run in async via job system
+            CachedActiveActors = activeActors;
+            CachedActiveActorsCount = activeActorsCount;
+            CachedActiveActorIndex = -1;
+            JobSystem::Execute(FlushActiveTransforms, JobSystem::GetThreadsCount());
+        }
+        else
+        {
             for (uint32 i = 0; i < activeActorsCount; i++)
             {
                 const auto pxActor = (PxRigidActor*)*activeActors++;
