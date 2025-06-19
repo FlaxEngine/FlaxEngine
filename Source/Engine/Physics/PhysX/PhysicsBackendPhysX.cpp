@@ -82,7 +82,6 @@ struct ActionDataPhysX
 struct ScenePhysX
 {
     PxScene* Scene = nullptr;
-    PxCpuDispatcher* CpuDispatcher = nullptr;
     PxControllerManager* ControllerManager = nullptr;
     void* ScratchMemory = nullptr;
     Vector3 Origin = Vector3::Zero;
@@ -542,6 +541,7 @@ namespace
 {
     PxFoundation* Foundation = nullptr;
     PxPhysics* PhysX = nullptr;
+    PxDefaultCpuDispatcher* CpuDispatcher = nullptr;
 #if WITH_PVD
     PxPvd* PVD = nullptr;
 #endif
@@ -1734,6 +1734,7 @@ void PhysicsBackend::Shutdown()
 #if WITH_PVD
     RELEASE_PHYSX(PVD);
 #endif
+    RELEASE_PHYSX(CpuDispatcher);
     RELEASE_PHYSX(Foundation);
     SceneOrigins.Clear();
 }
@@ -1791,9 +1792,13 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     }
     if (sceneDesc.cpuDispatcher == nullptr)
     {
-        scenePhysX->CpuDispatcher = PxDefaultCpuDispatcherCreate(Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 4));
-        CHECK_INIT(scenePhysX->CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
-        sceneDesc.cpuDispatcher = scenePhysX->CpuDispatcher;
+        if (CpuDispatcher == nullptr)
+        {
+            uint32 threads = Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 4);
+            CpuDispatcher = PxDefaultCpuDispatcherCreate(threads);
+            CHECK_INIT(CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
+        }
+        sceneDesc.cpuDispatcher = CpuDispatcher;
     }
     switch (settings.BroadPhaseType)
     {
@@ -1855,7 +1860,6 @@ void PhysicsBackend::DestroyScene(void* scene)
     }
 #endif
     RELEASE_PHYSX(scenePhysX->ControllerManager);
-    SAFE_DELETE(scenePhysX->CpuDispatcher);
     Allocator::Free(scenePhysX->ScratchMemory);
     scenePhysX->Scene->release();
 
