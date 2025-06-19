@@ -42,8 +42,6 @@ bool Task::Wait(double timeoutMilliseconds) const
     PROFILE_CPU();
     const double startTime = Platform::GetTimeSeconds();
 
-    // TODO: no active waiting! use a semaphore!
-
     do
     {
         auto state = GetState();
@@ -209,7 +207,7 @@ void Task::OnCancel()
     {
         // Wait for it a little bit
         constexpr double timeout = 10000.0; // 10s
-        LOG(Warning, "Cannot cancel \'{0}\' because it's still running, waiting for end with timeout: {1}ms", ToString(), timeout);
+        //LOG(Warning, "Cannot cancel \'{0}\' because it's still running, waiting for end with timeout: {1}ms", ToString(), timeout);
         Wait(timeout);
     }
 
