@@ -18,7 +18,7 @@ RETRY:
     {
         // Someone else is doing opposite operation so wait for it's end
         // TODO: use ConditionVariable+CriticalSection to prevent active-waiting
-        Platform::Sleep(1);
+        Platform::Sleep(0);
         goto RETRY;
     }
 
