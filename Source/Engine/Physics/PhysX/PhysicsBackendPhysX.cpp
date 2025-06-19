@@ -1794,7 +1794,7 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     {
         if (CpuDispatcher == nullptr)
         {
-            uint32 threads = Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 4);
+            uint32 threads = Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 8);
             CpuDispatcher = PxDefaultCpuDispatcherCreate(threads);
             CHECK_INIT(CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
         }
