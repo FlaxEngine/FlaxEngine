@@ -1065,7 +1065,7 @@ namespace Flax.Build
                         {
                             var path = Path.Combine(nugetPath, reference.Name, reference.Version, "lib", reference.Framework, $"{reference.Name}.dll");
                             if (!File.Exists(path))
-                                Utilities.AddNugetPackage(graph, target, reference);
+                                Utilities.RestoreNugetPackages(graph, target);
                             var dstFile = Path.Combine(outputPath, Path.GetFileName(path));
                             graph.AddCopyFile(dstFile, path);
                         }
@@ -1278,7 +1278,7 @@ namespace Flax.Build
                         {
                             var path = Path.Combine(nugetPath, reference.Name, reference.Version, "lib", reference.Framework, $"{reference.Name}.dll");
                             if (!File.Exists(path))
-                                Utilities.AddNugetPackage(graph, target, reference);
+                                Utilities.RestoreNugetPackages(graph, target);
                             var dstFile = Path.Combine(outputPath, Path.GetFileName(path));
                             graph.AddCopyFile(dstFile, path);
                         }

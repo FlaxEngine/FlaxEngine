@@ -42,18 +42,17 @@ namespace Flax.Build
         }
 
         /// <summary>
-        /// Downloads a nuget package.
+        /// Restores a targets nuget packages.
         /// </summary>
         /// <param name="graph">The task graph.</param>
         /// <param name="target">The target.</param>
         /// <param name="dotNetPath">The dotnet path.</param>
-        /// <param name="package"></param>
-        public static void AddNugetPackage(Graph.TaskGraph graph, Target target, NativeCpp.NugetPackage package)
+        public static void RestoreNugetPackages(Graph.TaskGraph graph, Target target)
         {
             var dotNetPath = GetDotNetPath();
             var task = graph.Add<Graph.Task>();
             task.WorkingDirectory = target.FolderPath;
-            task.InfoMessage = $"Add Nuget Package: {package.Name}, Version {package.Version}";
+            task.InfoMessage = $"Restoring Nuget Packages for {target.Name}";
             task.CommandPath = dotNetPath;
             task.CommandArguments = $"restore";
         }
