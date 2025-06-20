@@ -173,7 +173,7 @@ namespace FlaxEngine.GUI
             // Delete children
             while (_children.Count > 0)
             {
-                _children[0].Dispose();
+                _children[^1].Dispose();
             }
 
             _isLayoutLocked = wasLayoutLocked;
