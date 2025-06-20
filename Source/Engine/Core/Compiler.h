@@ -26,6 +26,8 @@
     _Pragma("clang diagnostic ignored \"-Wdeprecated-declarations\"")
 #define PRAGMA_ENABLE_DEPRECATION_WARNINGS \
     _Pragma("clang diagnostic pop")
+#define PRAGMA_DISABLE_OPTIMIZATION
+#define PRAGMA_ENABLE_OPTIMIZATION
 
 #pragma clang diagnostic ignored "-Wswitch"
 #pragma clang diagnostic ignored "-Wmacro-redefined"
@@ -54,6 +56,8 @@
 #define OFFSET_OF(X, Y) __builtin_offsetof(X, Y)
 #define PRAGMA_DISABLE_DEPRECATION_WARNINGS
 #define PRAGMA_ENABLE_DEPRECATION_WARNINGS
+#define PRAGMA_DISABLE_OPTIMIZATION
+#define PRAGMA_ENABLE_OPTIMIZATION
 
 #elif defined(_MSC_VER)
 
@@ -86,6 +90,8 @@
 			__pragma(warning(disable: 4996))
 #define PRAGMA_ENABLE_DEPRECATION_WARNINGS \
 			__pragma (warning(pop))
+#define PRAGMA_DISABLE_OPTIMIZATION __pragma(optimize("", off))
+#define PRAGMA_ENABLE_OPTIMIZATION __pragma(optimize("", on))
 
 #pragma warning(disable: 4251)
 

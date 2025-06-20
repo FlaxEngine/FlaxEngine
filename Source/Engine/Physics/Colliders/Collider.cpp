@@ -205,7 +205,7 @@ void Collider::CreateShape()
     ASSERT(_shape == nullptr);
 
     // Setup shape geometry
-    _cachedScale = GetScale();
+    _cachedScale = GetScale().GetAbsolute().MaxValue();
     CollisionShape shape;
     GetGeometry(shape);
 
@@ -222,7 +222,7 @@ void Collider::UpdateGeometry()
         return;
 
     // Setup shape geometry
-    _cachedScale = GetScale();
+    _cachedScale = GetScale().GetAbsolute().MaxValue();
     CollisionShape shape;
     GetGeometry(shape);
 
@@ -427,7 +427,7 @@ void Collider::OnTransformChanged()
         }
     }
 
-    const Float3 scale = GetScale();
+    const float scale = GetScale().GetAbsolute().MaxValue();
     if (_cachedScale != scale)
         UpdateGeometry();
     UpdateBounds();

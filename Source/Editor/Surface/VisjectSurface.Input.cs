@@ -27,6 +27,7 @@ namespace FlaxEditor.Surface
         private Float2 _movingNodesDelta;
         private Float2 _gridRoundingDelta;
         private HashSet<SurfaceNode> _movingNodes;
+        private HashSet<SurfaceNode> _temporarySelectedNodes;
         private readonly Stack<InputBracket> _inputBrackets = new Stack<InputBracket>();
 
         private class InputBracket
@@ -130,13 +131,34 @@ namespace FlaxEditor.Surface
                 if (_rootControl.Children[i] is SurfaceControl control)
                 {
                     var select = control.IsSelectionIntersecting(ref selectionRect);
-                    if (select != control.IsSelected)
+
+                    if (Root.GetKey(KeyboardKeys.Shift))
                     {
-                        control.IsSelected = select;
-                        selectionChanged = true;
+                        if (select == control.IsSelected && _temporarySelectedNodes.Contains(control))
+                        {
+                            control.IsSelected = !select;
+                            selectionChanged = true;
+                        }
+                    }
+                    else if (Root.GetKey(KeyboardKeys.Control))
+                    {
+                        if (select != control.IsSelected && !_temporarySelectedNodes.Contains(control))
+                        {
+                            control.IsSelected = select;
+                            selectionChanged = true;
+                        }
+                    }
+                    else
+                    {
+                        if (select != control.IsSelected)
+                        {
+                            control.IsSelected = select;
+                            selectionChanged = true;
+                        }
                     }
                 }
             }
+
             if (selectionChanged)
                 SelectionChanged?.Invoke();
         }
@@ -461,6 +483,19 @@ namespace FlaxEditor.Surface
             // Cache data
             _isMovingSelection = false;
             _mousePos = location;
+            if(_temporarySelectedNodes == null)
+                _temporarySelectedNodes = new HashSet<SurfaceNode>();
+            else
+                _temporarySelectedNodes.Clear();
+
+            for (int i = 0; i < _rootControl.Children.Count; i++)
+            {
+                if (_rootControl.Children[i] is SurfaceNode node && node.IsSelected)
+                {
+                    _temporarySelectedNodes.Add(node);
+                }
+            }
+
             if (button == MouseButton.Left)
             {
                 _leftMouseDown = true;
@@ -488,9 +523,11 @@ namespace FlaxEditor.Surface
                     // Check if user is pressing control
                     if (Root.GetKey(KeyboardKeys.Control))
                     {
-                        // Add/remove from selection
-                        controlUnderMouse.IsSelected = !controlUnderMouse.IsSelected;
-                        SelectionChanged?.Invoke();
+                        AddToSelection(controlUnderMouse);
+                    }
+                    else if (Root.GetKey(KeyboardKeys.Shift))
+                    {
+                        RemoveFromSelection(controlUnderMouse);
                     }
                     // Check if node isn't selected
                     else if (!controlUnderMouse.IsSelected)
@@ -500,10 +537,14 @@ namespace FlaxEditor.Surface
                     }
 
                     // Start moving selected nodes
-                    StartMouseCapture();
-                    _movingSelectionViewPos = _rootControl.Location;
-                    _movingNodesDelta = Float2.Zero;
-                    OnGetNodesToMove();
+                    if (!Root.GetKey(KeyboardKeys.Shift))
+                    {
+                        StartMouseCapture();
+                        _movingSelectionViewPos = _rootControl.Location;
+                        _movingNodesDelta = Float2.Zero;
+                        OnGetNodesToMove();
+                    }
+
                     Focus();
                     return true;
                 }
@@ -515,7 +556,12 @@ namespace FlaxEditor.Surface
                 {
                     // Start selecting or commenting
                     StartMouseCapture();
-                    ClearSelection();
+
+                    if (!Root.GetKey(KeyboardKeys.Control) && !Root.GetKey(KeyboardKeys.Shift))
+                    {
+                        ClearSelection();
+                    }
+
                     Focus();
                     return true;
                 }
@@ -544,6 +590,9 @@ namespace FlaxEditor.Surface
             // Cache flags and state
             if (_leftMouseDown && button == MouseButton.Left)
             {
+                WasBoxSelecting = IsBoxSelecting;
+                WasMovingSelection = _isMovingSelection;
+
                 _leftMouseDown = false;
                 EndMouseCapture();
                 Cursor = CursorType.Default;

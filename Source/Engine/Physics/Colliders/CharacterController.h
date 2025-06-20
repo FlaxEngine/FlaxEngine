@@ -42,6 +42,22 @@ public:
     };
 
     /// <summary>
+    /// Specifies how a character controller capsule placement.
+    /// </summary>
+    API_ENUM() enum class OriginModes
+    {
+        /// <summary>
+        /// Character origin starts at capsule center (including Center offset properly).
+        /// </summary>
+        CapsuleCenter,
+
+        /// <summary>
+        /// Character origin starts at capsule base position aka character feet placement.
+        /// </summary>
+        Base,
+    };
+
+    /// <summary>
     /// Specifies how a character controller interacts with non-walkable parts.
     /// </summary>
     API_ENUM() enum class NonWalkableModes
@@ -69,6 +85,7 @@ private:
     Vector3 _upDirection;
     Vector3 _gravityDisplacement;
     NonWalkableModes _nonWalkableMode;
+    OriginModes _originMode;
     CollisionFlags _lastFlags;
 
 public:
@@ -84,13 +101,13 @@ public:
     API_PROPERTY() void SetRadius(float value);
 
     /// <summary>
-    /// Gets the height of the capsule, measured in the object's local space. The capsule height will be scaled by the actor's world scale.
+    /// Gets the height of the capsule as a distance between the two sphere centers at the end of the capsule. The capsule height is measured in the object's local space and will be scaled by the actor's world scale.
     /// </summary>
     API_PROPERTY(Attributes="EditorOrder(110), DefaultValue(150.0f), EditorDisplay(\"Collider\"), ValueCategory(Utils.ValueCategory.Distance)")
     float GetHeight() const;
 
     /// <summary>
-    /// Sets the height of the capsule, measured in the object's local space. The capsule height will be scaled by the actor's world scale.
+    /// Sets the height of the capsule as a distance between the two sphere centers at the end of the capsule. The capsule height is measured in the object's local space and will be scaled by the actor's world scale.
     /// </summary>
     API_PROPERTY() void SetHeight(float value);
 
@@ -115,6 +132,17 @@ public:
     /// Sets the non-walkable mode for the character controller.
     /// </summary>
     API_PROPERTY() void SetNonWalkableMode(NonWalkableModes value);
+
+    /// <summary>
+    /// Gets the position origin placement mode.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(216), DefaultValue(OriginModes.CapsuleCenter), EditorDisplay(\"Character Controller\")")
+    OriginModes GetOriginMode() const;
+
+    /// <summary>
+    /// Sets the position origin placement mode.
+    /// </summary>
+    API_PROPERTY() void SetOriginMode(OriginModes value);
 
     /// <summary>
     /// Gets the step height. The character will step up a stair only if it is closer to the ground than the indicated value. This should not be greater than the Character Controller’s height or it will generate an error.
@@ -194,6 +222,13 @@ public:
     /// <returns>The collision flags. It can be used to trigger various character animations.</returns>
     API_FUNCTION() CollisionFlags Move(const Vector3& displacement);
 
+    /// <summary>
+    /// Updates the character height and center position to ensure its feet position stays the same. This can be used to implement a 'crouch' functionality for example. Maintains the same actor position to stay in the middle of capsule by adjusting center of collider accordingly to height difference.
+    /// </summary>
+    /// <param name="height">The height of the capsule, measured in the object's local space.</param>
+    /// <param name="radius">The radius of the capsule, measured in the object's local space.</param>
+    API_FUNCTION() void Resize(float height, float radius);
+
 protected:
     /// <summary>
     /// Creates the physics actor.
@@ -210,6 +245,10 @@ protected:
     /// </summary>
     void UpdateSize() const;
 
+private:
+    Vector3 GetControllerPosition() const;
+    void GetControllerSize(float& height, float& radius) const;
+
 public:
     // [Collider]
 #if USE_EDITOR
@@ -220,6 +259,7 @@ public:
     void AddMovement(const Vector3& translation, const Quaternion& rotation) override;
     bool CanAttach(RigidBody* rigidBody) const override;
     RigidBody* GetAttachedRigidBody() const override;
+    void SetCenter(const Vector3& value) override;
 
     // [IPhysicsActor]
     void OnActiveTransformChanged() override;

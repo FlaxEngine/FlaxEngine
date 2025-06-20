@@ -499,7 +499,7 @@ public:
     /// <summary>
     /// Uploads mip map data to the GPU. Creates async GPU task.
     /// </summary>
-    /// <param name="data">Data to upload (it must be valid for the next a few frames due to GPU latency and async works executing)</param>
+    /// <param name="data">Data to upload, it must match texture dimensions. It must be valid for the next couple of frames due to GPU async task latency or use data copy.</param>
     /// <param name="mipIndex">Mip level index.</param>
     /// <param name="copyData">If true, the data will be copied to the async execution task instead of using the input pointer provided.</param>
     /// <returns>Created async task or null if cannot.</returns>
@@ -508,13 +508,21 @@ public:
     /// <summary>
     /// Uploads mip map data to the GPU. Creates async GPU task.
     /// </summary>
-    /// <param name="data">Data to upload (it must be valid for the next a few frames due to GPU latency and async works executing)</param>
+    /// <param name="data">Data to upload, it must match texture dimensions. It must be valid for the next couple of frames due to GPU async task latency or use data copy.</param>
     /// <param name="mipIndex">Mip level index.</param>
     /// <param name="rowPitch">The data row pitch.</param>
     /// <param name="slicePitch">The data slice pitch.</param>
     /// <param name="copyData">If true, the data will be copied to the async execution task instead of using the input pointer provided.</param>
     /// <returns>Created async task or null if cannot.</returns>
     GPUTask* UploadMipMapAsync(const BytesContainer& data, int32 mipIndex, int32 rowPitch, int32 slicePitch, bool copyData = false);
+
+    /// <summary>
+    /// Uploads texture data to the GPU. Actual data copy to the GPU memory is performed via async task.
+    /// </summary>
+    /// <param name="data">Data to upload, it must match texture dimensions. It must be valid for the next couple of frames due to GPU async task latency or use data copy.</param>
+    /// <param name="copyData">If true, the data will be copied to the async execution task instead of using the input pointer provided.</param>
+    /// <returns>True if cannot upload data, otherwise false.</returns>
+    API_FUNCTION() bool UploadData(TextureData& data, bool copyData = false);
 
     /// <summary>
     /// Downloads the texture data to be accessible from CPU. For frequent access, use staging textures, otherwise current thread will be stalled to wait for the GPU frame to copy data into staging buffer.

@@ -209,8 +209,8 @@ public:
     bool Get(const int32 index) const
     {
         ASSERT(index >= 0 && index < _count);
-        const ItemType offset = index / sizeof(ItemType);
-        const ItemType bitMask = (ItemType)(int32)(1 << (index & ((int32)sizeof(ItemType) - 1)));
+        const ItemType offset = index / 64;
+        const ItemType bitMask = 1ull << (index & 63ull);
         const ItemType item = ((ItemType*)_allocation.Get())[offset];
         return (item & bitMask) != 0;
     }
@@ -223,13 +223,13 @@ public:
     void Set(const int32 index, const bool value)
     {
         ASSERT(index >= 0 && index < _count);
-        const ItemType offset = index / sizeof(ItemType);
-        const ItemType bitMask = (ItemType)(int32)(1 << (index & ((int32)sizeof(ItemType) - 1)));
+        const ItemType offset = index / 64;
+        const ItemType bitMask = 1ull << (index & 63ull);
         ItemType& item = ((ItemType*)_allocation.Get())[offset];
         if (value)
-            item |= bitMask;
+            item |= bitMask; // Set the bit
         else
-            item &= ~bitMask;  // Clear the bit
+            item &= ~bitMask; // Unset the bit
     }
 
 public:

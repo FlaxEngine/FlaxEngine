@@ -220,6 +220,13 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
+        /// Called when Editor will leave the play mode.
+        /// </summary>
+        public virtual void OnPlayEnding()
+        {
+        }
+
+        /// <summary>
         /// Called when Editor leaves the play mode.
         /// </summary>
         public virtual void OnPlayEnd()
