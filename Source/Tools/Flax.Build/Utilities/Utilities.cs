@@ -55,7 +55,6 @@ namespace Flax.Build
             task.WorkingDirectory = target.FolderPath;
             task.InfoMessage = $"Add Nuget Package: {package.Name}, Version {package.Version}";
             task.CommandPath = dotNetPath;
-            //task.CommandArguments = $"add package {package.Name} --version {package.Version}";
             task.CommandArguments = $"restore";
         }
         
