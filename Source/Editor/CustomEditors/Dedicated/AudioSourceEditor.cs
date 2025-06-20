@@ -13,6 +13,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     public class AudioSourceEditor : ActorEditor
     {
         private Label _infoLabel;
+        AudioMixerGroupEditor _audioMixerGroup;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -28,8 +29,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             gridAudioMixerControl.Height = Button.DefaultHeight;
             gridAudioMixerControl.SlotsHorizontally = 3;
             gridAudioMixerControl.SlotsVertically = 1;
-            var audioMixerGroup = new AudioMixerGroupEditor();
-            audioMixerGroup.Initialize(gridPanel);
+            _audioMixerGroup = new AudioMixerGroupEditor();
+            _audioMixerGroup.Initialize(gridPanel);
 
 
             // Show playback options during simulation
@@ -59,9 +60,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             base.Refresh();
 
-            // Assigns the AudioSource the type of Audio Mixer Group
+            foreach (var value in Values)
+            {
+                if (value is AudioSource audioSource)
+                {
 
-            if (_infoLabel != null)
+                }
+            }
+
+                if (_infoLabel != null)
             {
                 var text = string.Empty;
                 foreach (var value in Values)

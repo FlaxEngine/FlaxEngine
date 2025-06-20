@@ -115,7 +115,7 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
-        // [CustomEditor(typeof(PropertiesProxyEditor))]
+        [CustomEditor(typeof(PropertiesProxyEditor))]
         private sealed class PropertiesProxy
         {
             [NoSerialize]
