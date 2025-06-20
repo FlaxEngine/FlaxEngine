@@ -104,11 +104,6 @@ namespace FlaxEditor.Windows
 
             headerPanel.Parent = this;
 
-            Editor.PlayModeBeginning += () => _blockSceneTreeScroll = true;
-            Editor.PlayModeBegin += () => _blockSceneTreeScroll = false;
-            Editor.PlayModeEnding += () => _blockSceneTreeScroll = true;
-            Editor.PlayModeEnd += () => _blockSceneTreeScroll = false;
-
             // Setup input actions
             InputActions.Add(options => options.TranslateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Translate);
             InputActions.Add(options => options.RotateMode, () => Editor.MainTransformGizmo.ActiveMode = TransformGizmoBase.Mode.Rotate);
@@ -116,6 +111,34 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.FocusSelection, () => Editor.Windows.EditWin.Viewport.FocusSelection());
             InputActions.Add(options => options.LockFocusSelection, () => Editor.Windows.EditWin.Viewport.LockFocusSelection());
             InputActions.Add(options => options.Rename, RenameSelection);
+        }
+        
+        /// <inheritdoc />
+        public override void OnPlayBeginning()
+        {
+            base.OnPlayBeginning();
+            _blockSceneTreeScroll = true;
+        }
+
+        /// <inheritdoc />
+        public override void OnPlayBegin()
+        {
+            base.OnPlayBegin();
+            _blockSceneTreeScroll = false;
+        }
+
+        /// <inheritdoc />
+        public override void OnPlayEnding()
+        {
+            base.OnPlayEnding();
+            _blockSceneTreeScroll = true;
+        }
+
+        /// <inheritdoc />
+        public override void OnPlayEnd()
+        {
+            base.OnPlayEnd();
+            _blockSceneTreeScroll = true;
         }
 
         /// <summary>
