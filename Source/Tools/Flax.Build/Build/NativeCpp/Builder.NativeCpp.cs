@@ -1057,36 +1057,15 @@ namespace Flax.Build
                         var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
                         graph.AddCopyFile(dstFile, srcFile);
                     }
+
                     if (targetBuildOptions.NugetPackageReferences.Any())
                     {
-                        var buildPlatform = Platform.BuildTargetPlatform;
-                        var dotnetSdk = DotNetSdk.Instance;
-                        if (!dotnetSdk.IsValid)
-                            throw new DotNetSdk.MissingException();
-                        var dotnetPath = "dotnet";
-                        switch (buildPlatform)
-                        {
-                        case TargetPlatform.Windows:
-                            dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet.exe");
-                            break;
-                        case TargetPlatform.Linux: break;
-                        case TargetPlatform.Mac:
-                            dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet");
-                            break;
-                        default: throw new InvalidPlatformException(buildPlatform);
-                        }
                         var nugetPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
                         foreach (var reference in targetBuildOptions.NugetPackageReferences)
                         {
                             var path = Path.Combine(nugetPath, reference.Name, reference.Version, "lib", reference.Framework, $"{reference.Name}.dll");
                             if (!File.Exists(path))
-                            {
-                                var task = graph.Add<Task>();
-                                task.WorkingDirectory = target.FolderPath;
-                                task.InfoMessage = $"Adding Nuget Package: {reference.Name}, Version {reference.Version}";
-                                task.CommandPath = dotnetPath;
-                                task.CommandArguments = $"add package {reference.Name} --version {reference.Version}";
-                            }
+                                Utilities.AddNugetPackage(graph, target, reference);
                             var dstFile = Path.Combine(outputPath, Path.GetFileName(path));
                             graph.AddCopyFile(dstFile, path);
                         }
@@ -1291,37 +1270,15 @@ namespace Flax.Build
                         var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
                         graph.AddCopyFile(dstFile, srcFile);
                     }
-                    
+
                     if (targetBuildOptions.NugetPackageReferences.Any())
                     {
-                        var buildPlatform = Platform.BuildTargetPlatform;
-                        var dotnetSdk = DotNetSdk.Instance;
-                        if (!dotnetSdk.IsValid)
-                            throw new DotNetSdk.MissingException();
-                        var dotnetPath = "dotnet";
-                        switch (buildPlatform)
-                        {
-                        case TargetPlatform.Windows:
-                            dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet.exe");
-                            break;
-                        case TargetPlatform.Linux: break;
-                        case TargetPlatform.Mac:
-                            dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet");
-                            break;
-                        default: throw new InvalidPlatformException(buildPlatform);
-                        }
                         var nugetPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
                         foreach (var reference in targetBuildOptions.NugetPackageReferences)
                         {
                             var path = Path.Combine(nugetPath, reference.Name, reference.Version, "lib", reference.Framework, $"{reference.Name}.dll");
                             if (!File.Exists(path))
-                            {
-                                var task = graph.Add<Task>();
-                                task.WorkingDirectory = target.FolderPath;
-                                task.InfoMessage = $"Adding Nuget Package: {reference.Name}, Version {reference.Version}";
-                                task.CommandPath = dotnetPath;
-                                task.CommandArguments = $"add package {reference.Name} --version {reference.Version}";
-                            }
+                                Utilities.AddNugetPackage(graph, target, reference);
                             var dstFile = Path.Combine(outputPath, Path.GetFileName(path));
                             graph.AddCopyFile(dstFile, path);
                         }

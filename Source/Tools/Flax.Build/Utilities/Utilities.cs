@@ -17,6 +17,49 @@ namespace Flax.Build
     public static class Utilities
     {
         /// <summary>
+        /// Gets the .Net SDK path.
+        /// </summary>
+        /// <returns>The path.</returns>
+        public static string GetDotNetPath()
+        {
+            var buildPlatform = Platform.BuildTargetPlatform;
+            var dotnetSdk = DotNetSdk.Instance;
+            if (!dotnetSdk.IsValid)
+                throw new DotNetSdk.MissingException();
+            var dotnetPath = "dotnet";
+            switch (buildPlatform)
+            {
+            case TargetPlatform.Windows:
+                dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet.exe");
+                break;
+            case TargetPlatform.Linux: break;
+            case TargetPlatform.Mac:
+                dotnetPath = Path.Combine(dotnetSdk.RootPath, "dotnet");
+                break;
+            default: throw new InvalidPlatformException(buildPlatform);
+            }
+            return dotnetPath;
+        }
+
+        /// <summary>
+        /// Downloads a nuget package.
+        /// </summary>
+        /// <param name="graph">The task graph.</param>
+        /// <param name="target">The target.</param>
+        /// <param name="dotNetPath">The dotnet path.</param>
+        /// <param name="package"></param>
+        public static void AddNugetPackage(Graph.TaskGraph graph, Target target, NativeCpp.NugetPackage package)
+        {
+            var dotNetPath = GetDotNetPath();
+            var task = graph.Add<Graph.Task>();
+            task.WorkingDirectory = target.FolderPath;
+            task.InfoMessage = $"Add Nuget Package: {package.Name}, Version {package.Version}";
+            task.CommandPath = dotNetPath;
+            //task.CommandArguments = $"add package {package.Name} --version {package.Version}";
+            task.CommandArguments = $"restore";
+        }
+        
+        /// <summary>
         /// Gets the hash code for the string (the same for all platforms). Matches Engine algorithm for string hashing.
         /// </summary>
         /// <param name="str">The input string.</param>
