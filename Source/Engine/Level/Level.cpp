@@ -263,6 +263,9 @@ Delegate<Actor*, Actor*> Level::ActorParentChanged;
 Delegate<Actor*> Level::ActorOrderInParentChanged;
 Delegate<Actor*> Level::ActorNameChanged;
 Delegate<Actor*> Level::ActorActiveChanged;
+#if USE_EDITOR
+Delegate<Actor*> Level::ActorDestroyChildren;
+#endif
 Delegate<Scene*, const Guid&> Level::SceneSaving;
 Delegate<Scene*, const Guid&> Level::SceneSaved;
 Delegate<Scene*, const Guid&> Level::SceneSaveError;
@@ -851,6 +854,11 @@ void Level::callActorEvent(ActorEventType eventType, Actor* a, Actor* b)
     case ActorEventType::OnActorActiveChanged:
         ActorActiveChanged(a);
         break;
+#if USE_EDITOR
+    case ActorEventType::OnActorDestroyChildren:
+        ActorDestroyChildren(a);
+        break;
+#endif
     }
 }
 

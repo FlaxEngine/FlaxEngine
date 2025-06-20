@@ -549,7 +549,13 @@ private:
         OnActorOrderInParentChanged = 3,
         OnActorNameChanged = 4,
         OnActorActiveChanged = 5,
+#if USE_EDITOR
+        OnActorDestroyChildren = 6,
+#endif
     };
 
     static void callActorEvent(ActorEventType eventType, Actor* a, Actor* b);
+#if USE_EDITOR
+    API_EVENT(Internal) static Delegate<Actor*> ActorDestroyChildren;
+#endif
 };
