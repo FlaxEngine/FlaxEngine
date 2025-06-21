@@ -735,11 +735,15 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
-        public override void OnPlayBegin()
+        public override void OnPlayBeginning()
         {
             // Clear on Play
-            if (_clearOnPlayButton.Checked)
+            if (Editor.Options.Options.Interface.DebugLogClearOnPlay)
             {
+                lock (_locker)
+                {
+                    _pendingEntries?.Clear();
+                }
                 Clear();
             }
         }
