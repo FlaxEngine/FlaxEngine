@@ -54,6 +54,7 @@ private:
     bool _playOnStart;
     float _startTime;
     bool _allowSpatialization;
+    String _audioMixerGroupName;
 
     bool _isActuallyPlayingSth = false;
     bool _startingToPlay = false;
@@ -223,6 +224,20 @@ public:
     /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
     /// </summary>
     API_PROPERTY() void SetAllowSpatialization(bool value);
+
+    /// <summary>
+    /// 
+    /// </summary>
+    API_PROPERTY(Attributes = "EditorOrder(90), DefaultValue(true), EditorDisplay(\"Audio Source\")")
+    FORCE_INLINE String GetAudioMixerGroupName() const
+    {
+        return _audioMixerGroupName;
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    API_PROPERTY() void SetAudioMixerGroupName(String groupName);
 
 public:
     /// <summary>

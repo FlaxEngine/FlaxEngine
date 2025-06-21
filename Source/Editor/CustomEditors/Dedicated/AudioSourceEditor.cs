@@ -62,9 +62,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             foreach (var value in Values)
             {
-                if (value is AudioSource audioSource)
+                if (value is AudioSource audioSource && audioSource.AudioMixerGroupName != _audioMixerGroup.GetAudioMixerGroup())
                 {
-
+                    audioSource.AudioMixerGroupName = _audioMixerGroup.GetAudioMixerGroup();
                 }
             }
 
