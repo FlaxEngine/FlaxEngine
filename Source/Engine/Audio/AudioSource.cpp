@@ -9,6 +9,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "AudioBackend.h"
+#include "AudioMixerGroup.h"
 #include "Audio.h"
 
 AudioSource::AudioSource(const SpawnParams& params)
@@ -114,6 +115,13 @@ void AudioSource::SetAllowSpatialization(bool value)
     _allowSpatialization = value;
     if (SourceID)
         AudioBackend::Source::SpatialSetupChanged(SourceID, Is3D(), _attenuation, _minDistance, _dopplerFactor);
+}
+
+void AudioSource::SetAudioMixerGroupName(String groupName)
+{
+    if (_audioMixerGroupName == groupName)
+        return;
+    _audioMixerGroupName = groupName;
 }
 
 void AudioSource::Play()
