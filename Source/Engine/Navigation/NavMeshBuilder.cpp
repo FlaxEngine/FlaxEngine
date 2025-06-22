@@ -23,6 +23,7 @@
 #include "Engine/Terrain/TerrainPatch.h"
 #include "Engine/Terrain/Terrain.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Level.h"
 #include <ThirdParty/recastnavigation/Recast.h>

@@ -480,8 +480,10 @@ void Actor::DestroyChildren(float timeLeft)
     // Get all actors
     Array<Actor*> children = Children;
 
+#if USE_EDITOR
     // Inform Editor beforehand
     Level::callActorEvent(Level::ActorEventType::OnActorDestroyChildren, this, nullptr);
+#endif
 
     if (_scene && IsActiveInHierarchy())
     {
