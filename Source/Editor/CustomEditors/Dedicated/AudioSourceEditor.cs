@@ -62,13 +62,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             foreach (var value in Values)
             {
-                if (value is AudioSource audioSource && audioSource.AudioMixerGroupName != _audioMixerGroup.GetAudioMixerGroup())
+                if (value is AudioSource audioSource && audioSource.AudioMixerGroup != _audioMixerGroup.GetAudioMixerGroup())
                 {
-                    audioSource.AudioMixerGroupName = _audioMixerGroup.GetAudioMixerGroup();
+                    audioSource.AudioMixerGroup = _audioMixerGroup.GetAudioMixerGroup();
                 }
             }
 
-                if (_infoLabel != null)
+            if (_infoLabel != null)
             {
                 var text = string.Empty;
                 foreach (var value in Values)
