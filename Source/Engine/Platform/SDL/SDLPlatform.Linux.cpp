@@ -1389,7 +1389,6 @@ bool SDLPlatform::InitX11(void* display)
     SDL_SetX11EventHook((SDL_X11EventHook)&X11EventHook, nullptr);
     X11::XSetErrorHandler(X11ErrorHandler);
 
-    xDisplay = X11::XOpenDisplay(nullptr);
     xAtomDeleteWindow = X11::XInternAtom(xDisplay, "WM_DELETE_WINDOW", 0);
     xAtomXdndEnter = X11::XInternAtom(xDisplay, "XdndEnter", 0);
     xAtomXdndPosition = X11::XInternAtom(xDisplay, "XdndPosition", 0);
