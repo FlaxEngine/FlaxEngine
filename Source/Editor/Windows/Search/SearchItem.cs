@@ -21,6 +21,11 @@ namespace FlaxEditor.Windows.Search
         protected Image _icon;
 
         /// <summary>
+        /// The color of the accent strip.
+        /// </summary>
+        protected Color _accentColor;
+
+        /// <summary>
         /// The item name.
         /// </summary>
         public string Name;
@@ -56,7 +61,7 @@ namespace FlaxEditor.Windows.Search
             var icon = new Image
             {
                 Size = new Float2(logoSize),
-                Location = new Float2(5, (height - logoSize) / 2)
+                Location = new Float2(7, (height - logoSize) / 2)
             };
             _icon = icon;
 
@@ -146,6 +151,7 @@ namespace FlaxEditor.Windows.Search
         {
             _asset = item;
             _asset.AddReference(this);
+            _accentColor = Editor.Instance.ContentDatabase.GetProxy(item).AccentColor;
         }
 
         /// <inheritdoc />
@@ -228,6 +234,10 @@ namespace FlaxEditor.Windows.Search
             // Draw icon
             var iconRect = _icon.Bounds;
             _asset.DrawThumbnail(ref iconRect);
+
+            // Draw icon color strip
+            var rect = iconRect with { Width = 2, Height = Height, Location = Float2.Zero };
+            Render2D.FillRectangle(rect, _accentColor);
         }
 
         /// <inheritdoc />
