@@ -5,16 +5,23 @@
 #include "SDLWindow.h"
 #include "SDLInput.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Math/Math.h"
 #include "Engine/Core/Math/Rectangle.h"
-#include "Engine/Engine/Engine.h"
+#include "Engine/Engine/Globals.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUSwapChain.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Keyboard.h"
 #include "Engine/Input/Mouse.h"
+#include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/WindowsManager.h"
+#if PLATFORM_LINUX
+#define COMPILE_WITH_TEXTURE_TOOL 1 // FIXME
+#include "Engine/Tools/TextureTool/TextureTool.h"
+#endif
 
 #define NOGDI
 #include <SDL3/SDL_events.h>
@@ -211,6 +218,27 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     // Window focus changes breaks the text input for some reason, just keep it enabled for good
     if (SDLPlatform::UsesX11() && _settings.AllowInput)
         SDL_StartTextInput(_window);
+#endif
+
+#if PLATFORM_LINUX && COMPILE_WITH_TEXTURE_TOOL
+    // Ensure windows other than the main window have some kind of icon
+    static SDL_Surface* surface = nullptr;
+    static Array<Color32> colorData;
+    if (surface == nullptr)
+    {
+        const String iconPath = Globals::BinariesFolder / TEXT("Logo.png");
+        if (FileSystem::FileExists(iconPath))
+        {
+            TextureData icon;
+            if (!TextureTool::ImportTexture(iconPath, icon))
+            {
+                icon.GetPixels(colorData);
+                surface = SDL_CreateSurfaceFrom(icon.Width, icon.Height, SDL_PIXELFORMAT_ABGR8888, colorData.Get(), sizeof(Color32) * icon.Width);
+            }
+        }
+    }
+    if (surface != nullptr)
+        SDL_SetWindowIcon(_window, surface);
 #endif
 }
 
@@ -964,6 +992,16 @@ void SDLWindow::UpdateCursor()
     if (Cursors[index] == nullptr)
         Cursors[index] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(index));
     SDL_SetCursor(Cursors[index]);
+}
+
+void SDLWindow::SetIcon(TextureData& icon)
+{
+    Array<Color32> colorData;
+    icon.GetPixels(colorData);
+    SDL_Surface* surface = SDL_CreateSurfaceFrom(icon.Width, icon.Height, SDL_PIXELFORMAT_ABGR8888, colorData.Get(), sizeof(Color32) * icon.Width);
+
+    SDL_SetWindowIcon(_window, surface);
+    SDL_free(surface);
 }
 
 #endif

@@ -50,10 +50,12 @@ bool SDLPlatform::Init()
 #endif
 
 #if PLATFORM_LINUX
-    // TODO: This should be read from the platform configuration (needed for desktop icon handling)
+    // The name follows the .desktop entry specification, this is used to get a fallback icon on Wayland:
+    // https://specifications.freedesktop.org/desktop-entry-spec/latest/file-naming.html
 #if USE_EDITOR
     SDL_SetHint(SDL_HINT_APP_ID, StringAnsi("com.FlaxEngine.FlaxEditor").Get());
 #else
+    // TODO: This should be read from the platform configuration (needed for desktop icon handling)
     SDL_SetHint(SDL_HINT_APP_ID, StringAnsi("com.FlaxEngine.FlaxGame").Get());
 #endif
 #else

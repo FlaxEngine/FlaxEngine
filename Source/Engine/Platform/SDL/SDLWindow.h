@@ -106,6 +106,7 @@ public:
     void EndClippingCursor() override;
     void SetMousePosition(const Float2& position) const override;
     void SetCursor(CursorType type) override;
+    void SetIcon(TextureData& icon) override;
 
 #if USE_EDITOR && PLATFORM_WINDOWS
     // [IUnknown]
