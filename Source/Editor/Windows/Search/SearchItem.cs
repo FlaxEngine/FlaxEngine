@@ -75,6 +75,20 @@ namespace FlaxEditor.Windows.Search
         }
 
         /// <inheritdoc />
+        public override bool OnMouseDown(Float2 location, MouseButton button)
+        {
+            // Select and focus the item on right click to prevent the search from being cleared
+            if (button == MouseButton.Right)
+            {
+                _finder.SelectedItem = this;
+                _finder.Hand = true;
+                Focus();
+                return true;
+            }
+            return base.OnMouseUp(location, button);
+        }
+
+        /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
             if (button == MouseButton.Left)
@@ -87,18 +101,22 @@ namespace FlaxEditor.Windows.Search
         }
 
         /// <inheritdoc />
+        public override void Draw()
+        {
+            if (IsMouseOver)
+                Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), Style.Current.BackgroundHighlighted);
+
+            base.Draw();
+        }
+
+        /// <inheritdoc />
         public override void OnMouseEnter(Float2 location)
         {
             base.OnMouseEnter(location);
 
             var root = RootWindow;
             if (root != null)
-            {
                 root.Cursor = CursorType.Hand;
-            }
-
-            _finder.SelectedItem = this;
-            _finder.Hand = true;
         }
 
         /// <inheritdoc />
@@ -176,9 +194,7 @@ namespace FlaxEditor.Windows.Search
                     {
                         string importLocation = System.IO.Path.GetDirectoryName(importPath);
                         if (!string.IsNullOrEmpty(importLocation) && System.IO.Directory.Exists(importLocation))
-                        {
                             cm.AddButton("Show import location", () => FileSystem.ShowFileExplorer(importLocation));
-                        }
                     }
                 }
                 cm.AddSeparator();
