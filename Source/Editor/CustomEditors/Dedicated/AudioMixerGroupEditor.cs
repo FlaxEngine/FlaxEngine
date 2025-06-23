@@ -30,12 +30,16 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 groups.AudioMixerGroups.ForEach(mixer => _element.ComboBox.AddItem(mixer.Name));
             }
+            _element.ComboBox.SelectedIndex = AudioMixerIndex;
         }
 
         private void OnSelectedIndexChanged(ComboBox comboBox)
         {
-            AudioMixerIndex = comboBox.HasSelection ? comboBox.SelectedIndex : 0;
-            SetValue(AudioMixerIndex);
+            if (comboBox.HasSelection)
+            {
+                AudioMixerIndex= comboBox.SelectedIndex;
+                SetValue(AudioMixerIndex);
+            }
         }
 
         public string GetAudioMixerGroup() => _element.ComboBox.SelectedItem;
