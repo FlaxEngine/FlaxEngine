@@ -15,6 +15,19 @@
 #define USE_DATA_LINK 0
 #define USE_NAV_MESH_ALLOC 0
 
+#if USE_NAV_MESH_ALLOC
+#define GET_NAV_TILE_DATA(tile) \
+    const int32 dataSize = (tile).Data.Length(); \
+    const auto flags = DT_TILE_FREE_DATA; \
+    const auto data = (byte*)dtAlloc(dataSize, DT_ALLOC_PERM); \
+    Platform::MemoryCopy(data, (tile).Data.Get(), dataSize)
+#else
+#define GET_NAV_TILE_DATA(tile) \
+    const int32 dataSize = (tile).Data.Length(); \
+    const auto flags = 0; \
+    const auto data = (tile).Data.Get()
+#endif
+
 namespace
 {
     FORCE_INLINE void InitFilter(dtQueryFilter& filter)
@@ -353,15 +366,7 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
     // Restore previous tiles
     for (auto& tile : _tiles)
     {
-        const int32 dataSize = tile.Data.Length();
-#if USE_NAV_MESH_ALLOC
-        const auto flags = DT_TILE_FREE_DATA;
-        const auto data = (byte*)dtAlloc(dataSize, DT_ALLOC_PERM);
-        Platform::MemoryCopy(data, tile.Data.Get(), dataSize);
-#else
-		const auto flags = 0;
-		const auto data = tile.Data.Get();
-#endif
+        GET_NAV_TILE_DATA(tile);
         const auto result = _navMesh->addTile(data, dataSize, flags, 0, nullptr);
         if (dtStatusFailed(result))
         {
@@ -661,15 +666,7 @@ void NavMeshRuntime::AddTileInternal(NavMesh* navMesh, NavMeshTileData& tileData
 #endif
 
     // Add tile to navmesh
-    const int32 dataSize = tile->Data.Length();
-#if USE_NAV_MESH_ALLOC
-    const auto flags = DT_TILE_FREE_DATA;
-    const auto data = (byte*)dtAlloc(dataSize, DT_ALLOC_PERM);
-    Platform::MemoryCopy(data, tile->Data.Get(), dataSize);
-#else
-	const auto flags = 0;
-	const auto data = tile->Data.Get();
-#endif
+    GET_NAV_TILE_DATA(*tile);
     const auto result = _navMesh->addTile(data, dataSize, flags, 0, nullptr);
     if (dtStatusFailed(result))
     {
