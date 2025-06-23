@@ -168,6 +168,9 @@ public:
     /// <returns>The spawned effect.</returns>
     API_FUNCTION() ParticleEffect* Spawn(Actor* parent, const Transform& transform, float duration = MAX_float, bool autoDestroy = false);
 
+private:
+    void WaitForAsset(Asset* asset);
+
 public:
     // [BinaryAsset]
 #if USE_EDITOR
