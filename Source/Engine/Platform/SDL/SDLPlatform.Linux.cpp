@@ -1233,6 +1233,30 @@ void SDLClipboard::SetRawData(const Span<byte>& data)
     }
     else
     {
+        if (data.Length() == 0)
+            return;
+
+        const char* uriList = "flaxengine/raw";
+        Array<byte>* buffer = New<Array<byte>>(data.Get(), data.Length());
+        
+        SDL_SetClipboardData([](void* userdata, const char* mime_type, size_t* size) -> const void*
+        {
+            // Clipboard data is requested
+            Array<byte>* buffer = static_cast<Array<byte>*>(userdata);
+            if (StringUtils::Compare(mime_type, "flaxengine/raw") == 0)
+            {
+                *size = buffer->Count();
+                return buffer->Get();
+            }
+            *size = 0;
+            return nullptr;
+        },
+        [](void* userdata)
+        {
+            // Cleanup previous clipboard data
+            Array<byte>* buffer = static_cast<Array<byte>*>(userdata);
+            Delete(buffer);
+        }, buffer, &uriList, 1);
     }
 }
 
@@ -1259,6 +1283,36 @@ void SDLClipboard::SetFiles(const Array<String>& files)
     }
     else
     {
+        if (files.Count() == 0)
+            return;
+
+        const char* uriList = "text/uri-list";
+        StringAnsi* buffer = New<StringAnsi>();
+        for (auto file : files)
+        {
+            buffer->Append("file://");
+            buffer->Append(StringAnsi(file));
+            buffer->Append("\n");
+        }
+        
+        SDL_SetClipboardData([](void* userdata, const char* mime_type, size_t* size) -> const void*
+        {
+            // Clipboard data is requested
+            StringAnsi* buffer = (StringAnsi*)userdata;
+            if (StringUtils::Compare(mime_type, "text/uri-list") == 0)
+            {
+                *size = buffer->Length();
+                return buffer->Get();
+            }
+            *size = 0;
+            return nullptr;
+        },
+        [](void* userdata)
+        {
+            // Cleanup previous clipboard data
+            StringAnsi* buffer = (StringAnsi*)userdata;
+            Delete(buffer);
+        }, buffer, &uriList, 1);
     }
 }
 
@@ -1306,7 +1360,10 @@ Array<byte> SDLClipboard::GetRawData()
     }
     else
     {
-        return Array<byte>();
+        size_t length = 0;
+        byte* data = static_cast<byte*>(SDL_GetClipboardData("flaxengine/raw", &length));
+        Array<byte> rawData(data, length);
+        return rawData;
     }
 }
 
@@ -1327,7 +1384,18 @@ Array<String> SDLClipboard::GetFiles()
     }
     else
     {
-        return Array<String>();
+        size_t length = 0;
+        const char* data = static_cast<const char*>(SDL_GetClipboardData("text/uri-list", &length));
+        String stringBuffer = String(StringAnsi(data, length));
+        Array<String> files;
+        stringBuffer.Split('\n', files);
+        for (auto& file : files)
+        {
+            if (file.StartsWith(TEXT("file://")))
+                file = file.Substring(7);
+            file = file.TrimTrailing(); // Trim '\r'
+        }
+        return files;
     }
 }
 
