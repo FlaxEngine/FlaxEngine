@@ -237,7 +237,7 @@ public:
     /// <summary>
     /// 
     /// </summary>
-    API_PROPERTY() void SetAudioMixerGroup(String groupName);
+    API_PROPERTY() void SetAudioMixerGroup(StringView& groupName);
 
 public:
     /// <summary>

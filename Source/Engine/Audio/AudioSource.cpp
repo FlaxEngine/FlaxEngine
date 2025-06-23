@@ -117,7 +117,7 @@ void AudioSource::SetAllowSpatialization(bool value)
         AudioBackend::Source::SpatialSetupChanged(SourceID, Is3D(), _attenuation, _minDistance, _dopplerFactor);
 }
 
-void AudioSource::SetAudioMixerGroup(String groupName)
+void AudioSource::SetAudioMixerGroup(StringView& groupName)
 {
     if (_audioMixerGroup == groupName)
         return;
