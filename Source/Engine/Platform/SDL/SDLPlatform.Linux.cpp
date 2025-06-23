@@ -407,6 +407,8 @@ namespace X11Impl
     X11::Atom xAtomText;
     X11::Atom xAtomString;
     X11::Atom xAtomUTF8String;
+    X11::Atom xAtomFlaxRaw;
+    X11::Atom xAtomUriList;
     X11::Atom xAtomXselData;
     
     X11::Atom xDnDRequested = 0;
@@ -417,6 +419,8 @@ namespace X11Impl
     int32 XFixesSelectionNotifyEvent = 0;
     
     StringAnsi ClipboardText;
+    Array<byte> ClipboardData;
+    Array<StringAnsi> ClipboardFiles;
     
     void ClipboardGetText(String& result, X11::Atom source, X11::Atom atom, X11::Window window)
     {
@@ -447,11 +451,99 @@ namespace X11Impl
                 return;
             if (event.xselection.property)
             {
-                X11::XGetWindowProperty(event.xselection.display, event.xselection.requestor, event.xselection.property, 0L,(~0L), 0, AnyPropertyType, &target, &format, &size, &N,(unsigned char**)&data);
+                X11::XGetWindowProperty(event.xselection.display, event.xselection.requestor, event.xselection.property, 0L, (~0L), 0, AnyPropertyType, &target, &format, &size, &N, (unsigned char**)&data);
                 if (target == xAtomUTF8String || target == xAtomString)
                 {
-                    // Got text to paste
-                    result.Set(data , size);
+                    result.Set(data, size);
+                    X11::XFree(data);
+                }
+                X11::XDeleteProperty(event.xselection.display, event.xselection.requestor, event.xselection.property);
+            }
+        }
+    }
+
+    void ClipboardGetData(Array<byte>& result, X11::Atom source, X11::Atom atom, X11::Window window)
+    {
+        X11::Window selectionOwner = X11::XGetSelectionOwner(xDisplay, source);
+        if (selectionOwner == 0)
+        {
+            // No copy owner
+            return;
+        }
+        if (selectionOwner == window)
+        {
+            // Copy/paste from self
+            result.Set(ClipboardData.Get(), ClipboardData.Count());
+            return;
+        }
+
+        // Send event to get data from the owner
+        int format;
+        unsigned long N, size;
+        byte* data;
+        X11::Atom target;
+        X11::XEvent event;
+        X11::XConvertSelection(xDisplay, xAtomClipboard, atom, xAtomXselData, window, CurrentTime);
+        X11::XSync(xDisplay, 0);
+        if (X11::XCheckTypedEvent(xDisplay, SelectionNotify, &event))
+        {
+            if (event.xselection.selection != xAtomClipboard)
+                return;
+            if (event.xselection.property)
+            {
+                X11::XGetWindowProperty(event.xselection.display, event.xselection.requestor, event.xselection.property, 0L,(~0L), 0, AnyPropertyType, &target, &format, &size, &N, (byte**)&data);
+                if (target == atom)
+                {
+                    result.Set(data, size);
+                    X11::XFree(data);
+                }
+                X11::XDeleteProperty(event.xselection.display, event.xselection.requestor, event.xselection.property);
+            }
+        }
+    }
+
+    void ClipboardGetFiles(Array<String>& result, X11::Atom source, X11::Atom atom, X11::Window window)
+    {
+        X11::Window selectionOwner = X11::XGetSelectionOwner(xDisplay, source);
+        if (selectionOwner == 0)
+        {
+            // No copy owner
+            return;
+        }
+        if (selectionOwner == window)
+        {
+            // Copy/paste from self
+            result.Clear();
+            for (auto file : ClipboardFiles)
+                result.Add(String(file));
+            return;
+        }
+
+        // Send event to get data from the owner
+        int format;
+        unsigned long N, size;
+        char* data;
+        X11::Atom target;
+        X11::XEvent event;
+        X11::XConvertSelection(xDisplay, xAtomClipboard, atom, xAtomXselData, window, CurrentTime);
+        X11::XSync(xDisplay, 0);
+        if (X11::XCheckTypedEvent(xDisplay, SelectionNotify, &event))
+        {
+            if (event.xselection.selection != xAtomClipboard)
+                return;
+            if (event.xselection.property)
+            {
+                X11::XGetWindowProperty(event.xselection.display, event.xselection.requestor, event.xselection.property, 0L, (~0L), 0, AnyPropertyType, &target, &format, &size, &N, (unsigned char**)&data);
+                if (target == atom)
+                {
+                    String filesString(StringAnsi(data, size));
+                    filesString.Split('\n', result);
+                    for (auto& file : result)
+                    {
+                        if (file.StartsWith(TEXT("file://")))
+                            file = file.Substring(7);
+                        file = file.TrimTrailing(); // Trim '\r'
+                    }
                     X11::XFree(data);
                 }
                 X11::XDeleteProperty(event.xselection.display, event.xselection.requestor, event.xselection.property);
@@ -1105,24 +1197,69 @@ void SDLClipboard::SetText(const StringView& text)
 
     if (X11Impl::xDisplay)
     {
-        X11::Window window = (X11::Window)(mainWindow->GetNativePtr());
         X11Impl::ClipboardText.Set(text.Get(), text.Length());
+        X11Impl::ClipboardData.Clear();
+        X11Impl::ClipboardFiles.Clear();
+        
+        X11::Window window = (X11::Window)(mainWindow->GetNativePtr());
         X11::XSetSelectionOwner(X11Impl::xDisplay, X11Impl::xAtomClipboard, window, CurrentTime); // CLIPBOARD
         //X11::XSetSelectionOwner(xDisplay, xAtomPrimary, window, CurrentTime); // XA_PRIMARY
         X11::XFlush(X11Impl::xDisplay);
-        X11::XGetSelectionOwner(X11Impl::xDisplay, X11Impl::xAtomClipboard);
-        //X11::XGetSelectionOwner(xDisplay, xAtomPrimary);
     }
     else
+    {
         SDL_SetClipboardText(StringAnsi(text).GetText());
+    }
 }
 
 void SDLClipboard::SetRawData(const Span<byte>& data)
 {
+    if (CommandLine::Options.Headless.IsTrue())
+        return;
+    auto mainWindow = Engine::MainWindow;
+    if (!mainWindow)
+        return;
+
+    if (X11Impl::xDisplay)
+    {
+        X11Impl::ClipboardData.Set(data.Get(), data.Length());
+        X11Impl::ClipboardText.Clear();
+        X11Impl::ClipboardFiles.Clear();
+        
+        X11::Window window = (X11::Window)(mainWindow->GetNativePtr());
+        X11::XSetSelectionOwner(X11Impl::xDisplay, X11Impl::xAtomClipboard, window, CurrentTime); // CLIPBOARD
+        //X11::XSetSelectionOwner(xDisplay, xAtomPrimary, window, CurrentTime); // XA_PRIMARY
+        X11::XFlush(X11Impl::xDisplay);
+    }
+    else
+    {
+    }
 }
 
 void SDLClipboard::SetFiles(const Array<String>& files)
 {
+    if (CommandLine::Options.Headless.IsTrue())
+        return;
+    auto mainWindow = Engine::MainWindow;
+    if (!mainWindow)
+        return;
+
+    if (X11Impl::xDisplay)
+    {
+        X11Impl::ClipboardFiles.Clear();
+        for (auto file : files)
+            X11Impl::ClipboardFiles.Add(StringAnsi(file));
+        X11Impl::ClipboardText.Clear();
+        X11Impl::ClipboardData.Clear();
+        
+        X11::Window window = (X11::Window)(mainWindow->GetNativePtr());
+        X11::XSetSelectionOwner(X11Impl::xDisplay, X11Impl::xAtomClipboard, window, CurrentTime); // CLIPBOARD
+        //X11::XSetSelectionOwner(xDisplay, xAtomPrimary, window, CurrentTime); // XA_PRIMARY
+        X11::XFlush(X11Impl::xDisplay);
+    }
+    else
+    {
+    }
 }
 
 String SDLClipboard::GetText()
@@ -1136,7 +1273,6 @@ String SDLClipboard::GetText()
     if (X11Impl::xDisplay)
     {
         X11::Window window = reinterpret_cast<X11::Window>(mainWindow->GetNativePtr());
-
         X11Impl::ClipboardGetText(result, X11Impl::xAtomClipboard, X11Impl::xAtomUTF8String, window);
         if (result.HasChars())
             return result;
@@ -1157,12 +1293,42 @@ String SDLClipboard::GetText()
 
 Array<byte> SDLClipboard::GetRawData()
 {
-    return Array<byte>();
+    auto mainWindow = Engine::MainWindow;
+    if (!mainWindow)
+        return Array<byte>();
+    
+    if (X11Impl::xDisplay)
+    {
+        X11::Window window = reinterpret_cast<X11::Window>(mainWindow->GetNativePtr());
+        Array<byte> array;
+        X11Impl::ClipboardGetData(array, X11Impl::xAtomClipboard, X11Impl::xAtomFlaxRaw, window);
+        return array;
+    }
+    else
+    {
+        return Array<byte>();
+    }
 }
 
 Array<String> SDLClipboard::GetFiles()
 {
-    return Array<String>();
+    auto mainWindow = Engine::MainWindow;
+    if (!mainWindow)
+        return Array<String>();
+
+    if (X11Impl::xDisplay)
+    {
+        X11::Window window = reinterpret_cast<X11::Window>(mainWindow->GetNativePtr());
+        Array<String> array;
+        X11Impl::ClipboardGetFiles(array, X11Impl::xAtomClipboard, X11Impl::xAtomUriList, window);
+        if (array.Count() > 0)
+            return array;
+        return Array<String>();
+    }
+    else
+    {
+        return Array<String>();
+    }
 }
 
 bool SDLCALL SDLPlatform::X11EventHook(void* userdata, _XEvent* xevent)
@@ -1307,6 +1473,7 @@ bool SDLCALL SDLPlatform::X11EventHook(void* userdata, _XEvent* xevent)
     }
     else if (event.type == SelectionRequest)
     {
+        // Clipboard request
         if (event.xselectionrequest.selection != xAtomClipboard)
             return false;
         
@@ -1323,15 +1490,35 @@ bool SDLCALL SDLPlatform::X11EventHook(void* userdata, _XEvent* xevent)
         int result = 0;
         if (ev.target == xAtomTargets)
         {
+            // Request supported targets for clipboard content
             Array<X11::Atom, FixedAllocation<2>> types(2);
             types.Add(xAtomTargets);
-            types.Add(xAtomUTF8String);
+            if (X11Impl::ClipboardData.Count() > 0)
+                types.Add(xAtomFlaxRaw);
+            else if (X11Impl::ClipboardFiles.Count() > 0)
+                types.Add(xAtomUriList);
+            else
+                types.Add(xAtomUTF8String);
             result = X11::XChangeProperty(xDisplay, ev.requestor, ev.property, xAtomAtom, 32, PropModeReplace, (unsigned char*)types.Get(), types.Count());
         }
+        // Request target type
         else if (ev.target == xAtomString || ev.target == xAtomText)
             result = X11::XChangeProperty(xDisplay, ev.requestor, ev.property, xAtomString, 8, PropModeReplace, (unsigned char*)X11Impl::ClipboardText.Get(), X11Impl::ClipboardText.Length());
         else if (ev.target == xAtomUTF8String)
             result = X11::XChangeProperty(xDisplay, ev.requestor, ev.property, xAtomUTF8String, 8, PropModeReplace, (unsigned char*)X11Impl::ClipboardText.Get(), X11Impl::ClipboardText.Length());
+        else if (ev.target == xAtomFlaxRaw)
+            result = X11::XChangeProperty(xDisplay, ev.requestor, ev.property, xAtomFlaxRaw, 8, PropModeReplace, X11Impl::ClipboardData.Get(), X11Impl::ClipboardData.Count());
+        else if (ev.target == xAtomUriList)
+        {
+            StringAnsi fileString;
+            for (auto file : X11Impl::ClipboardFiles)
+            {
+                fileString.Append("file://");
+                fileString.Append(file);
+                fileString.Append("\n");
+            }
+            result = X11::XChangeProperty(xDisplay, ev.requestor, ev.property, xAtomUriList, 8, PropModeReplace, (unsigned char*)fileString.Get(), fileString.Length());
+        }
         else
             ev.property = 0;
         if ((result & 2) == 0)
@@ -1413,6 +1600,8 @@ bool SDLPlatform::InitX11(void* display)
     xAtomUTF8String = X11::XInternAtom(xDisplay, "UTF8_STRING", 1);
     if (xAtomUTF8String == 0)
         xAtomUTF8String = xAtomString;
+    xAtomFlaxRaw = X11::XInternAtom(xDisplay, "flaxengine/raw", 0);
+    xAtomUriList = X11::XInternAtom(xDisplay, "text/uri-list", 0);
     xAtomXselData = X11::XInternAtom(xDisplay, "XSEL_DATA", 0);
 
     // We need to override handling of the XFixes selection tracking events from SDL
