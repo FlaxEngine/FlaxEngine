@@ -63,7 +63,12 @@ AudioMixer::AudioMixer(const SpawnParams& params, const AssetInfo* info)
 
 void AudioMixer::MixerInit()
 {
-    for (auto& audioMixerGroup : AudioSettings::Get()->AudioMixerGroups)
+    auto audioMixerGroups = AudioSettings::Get()->AudioMixerGroups;
+
+    if (audioMixerGroups.Count() == 0)
+        return;
+
+    for (auto& audioMixerGroup : audioMixerGroups)
     {
         auto& var = AudioMixerVariables[audioMixerGroup.Name];
         var.DefaultValue = audioMixerGroup.MixerVolume;
