@@ -27,7 +27,7 @@ namespace FlaxEditor.Content
         public override Color AccentColor => Color.FromRGB(0xccff33);
 
         /// <inheritdoc />
-        public override Type AssetType => typeof(GameplayGlobals);
+        public override Type AssetType => typeof(AudioMixer);
 
         /// <inheritdoc />
         public override bool CanCreate(ContentFolder targetLocation)
