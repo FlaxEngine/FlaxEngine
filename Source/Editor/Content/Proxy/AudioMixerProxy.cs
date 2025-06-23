@@ -20,7 +20,7 @@ namespace FlaxEditor.Content
         /// <inheritdoc />
         public override EditorWindow Open(Editor editor, ContentItem item)
         {
-            return new AudioMixerWindow(editor, (AssetItem)item);
+            return new AudioMixerWindow(editor, item as AssetItem);
         }
 
         /// <inheritdoc />
