@@ -226,7 +226,7 @@ public:
     API_PROPERTY() void SetAllowSpatialization(bool value);
 
     /// <summary>
-    /// 
+    /// Displays the type of audio group that will be handled by the Audio Mixer
     /// </summary>
     API_PROPERTY(Attributes = "EditorOrder(90), DefaultValue(true), EditorDisplay(\"Audio Source\")")
     FORCE_INLINE String GetAudioMixerGroup() const
@@ -235,7 +235,7 @@ public:
     }
 
     /// <summary>
-    /// 
+    /// Displays the type of audio group that will be handled by the Audio Mixer
     /// </summary>
     API_PROPERTY() void SetAudioMixerGroup(StringView& groupName);
 
