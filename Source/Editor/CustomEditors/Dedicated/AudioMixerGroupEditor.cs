@@ -5,6 +5,7 @@ using FlaxEditor.CustomEditors.Elements;
 using FlaxEditor.GUI;
 using FlaxEngine;
 using FlaxEngine.Utilities;
+using System.Linq;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -44,10 +45,25 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         public string GetAudioMixerGroup() => _element.ComboBox.SelectedItem;
 
+        void UpdateAudioMixerGroup()
+        {
+            var groups = GameSettings.Load<AudioSettings>();
+            if (_element.ComboBox.Items.Count == groups?.AudioMixerGroups.Count()) return;
+            if (groups?.AudioMixerGroups != null)
+            {
+                foreach (string NameGroup in _element.ComboBox.Items)
+                {
+                    groups.AudioMixerGroups.Where(groupElement => groupElement.Name != NameGroup).ForEach(mixerName => _element.ComboBox.AddItem(mixerName.Name));
+                }
+            }
+        }
+
         /// <inheritdoc />
         public override void Refresh()
         {
             base.Refresh();
+
+            UpdateAudioMixerGroup();
             _element.ComboBox.SelectedIndex = (AudioMixerIndex = (int)Values[0]) + 1;
         }
     }
