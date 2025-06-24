@@ -12,11 +12,14 @@
 #include "Engine/Platform/Linux/LinuxPlatform.h"
 #include "Engine/Platform/Linux/IncludeX11.h"
 
+#if PLATFORM_SDL
 #include <libportal/portal-enums.h>
 #include <libportal/screenshot.h>
+#endif
 
 Delegate<Color32> ScreenUtilitiesBase::PickColorDone;
 
+#if PLATFORM_SDL
 namespace PortalImpl
 {
     XdpPortal* Portal = nullptr;
@@ -25,6 +28,7 @@ namespace PortalImpl
     gpointer GLibMainLoop(gpointer data);
     void PickColorCallback(GObject* source, GAsyncResult* result, gpointer data);
 }
+#endif
 
 Color32 LinuxScreenUtilities::GetColorAt(const Float2& pos)
 {
@@ -93,7 +97,7 @@ void LinuxScreenUtilities::PickColor()
         LinuxPlatform::xEventReceived.Bind(OnScreenUtilsXEventCallback);
         return;
     }
-    
+#if PLATFORM_SDL
     if (PortalImpl::MainLoopReady == 0)
     {
         // Initialize portal
@@ -117,8 +121,10 @@ void LinuxScreenUtilities::PickColor()
         // Enter color picking mode, the callback receives the final color
         xdp_portal_pick_color(PortalImpl::Portal, nullptr, nullptr, PortalImpl::PickColorCallback, nullptr);
     }
+#endif
 }
 
+#if PLATFORM_SDL
 gpointer PortalImpl::GLibMainLoop(gpointer data)
 {
     GMainContext* mainContext = g_main_context_get_thread_default();
@@ -154,5 +160,6 @@ void PortalImpl::PickColorCallback(GObject* source, GAsyncResult* result, gpoint
 
     ScreenUtilities::PickColorDone(color);
 }
+#endif
 
 #endif

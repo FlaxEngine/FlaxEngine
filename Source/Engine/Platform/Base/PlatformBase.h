@@ -372,7 +372,7 @@ public:
     /// <summary>
     /// Returns the display server name on Linux.
     /// </summary>
-    API_PROPERTY() static String GetDisplayServer() = delete;
+    API_PROPERTY() static String GetDisplayServer();
 
     /// <summary>
     /// Returns true if is running 64 bit application (otherwise 32 bit). It's compile-time constant.

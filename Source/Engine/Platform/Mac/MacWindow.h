@@ -55,6 +55,7 @@ public:
     void Focus() override;
     void SetTitle(const StringView& title) override;
 	DragDropEffect DoDragDrop(const StringView& data) override;
+    using WindowBase::DoDragDrop;
     void StartTrackingMouse(bool useMouseScreenOffset) override;
     void EndTrackingMouse() override;
 	void SetCursor(CursorType type) override;
