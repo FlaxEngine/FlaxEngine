@@ -54,7 +54,7 @@ private:
 };
 #endif
 
-REGISTER_BINARY_ASSET_WITH_UPGRADER(AudioMixer,"FlaxEngine.Audio.AudioMixer", AudioMixerUpgrader, true);
+REGISTER_BINARY_ASSET_WITH_UPGRADER(AudioMixer,"FlaxEngine.AudioMixer", AudioMixerUpgrader, true);
 
 AudioMixer::AudioMixer(const SpawnParams& params, const AssetInfo* info)
     : BinaryAsset(params, info)
