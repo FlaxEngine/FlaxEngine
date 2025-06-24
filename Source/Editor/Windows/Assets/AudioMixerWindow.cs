@@ -25,7 +25,7 @@ namespace FlaxEditor.Windows.Assets
             public PropertiesProxy Proxy;
             public bool IsAdd;
             public string Name;
-            public float DefaultValue;
+            public object DefaultValue;
 
             /// <inheritdoc />
             public string ActionString => IsAdd ? "Add parameter" : "Remove parameter";
@@ -120,7 +120,7 @@ namespace FlaxEditor.Windows.Assets
             [NoSerialize]
             public AudioMixer Asset;
 
-            public Dictionary<string, float> DefaultValues;
+            public Dictionary<string, object> DefaultValues;
 
             public void Init(AudioMixerWindow window)
             {
@@ -147,14 +147,14 @@ namespace FlaxEditor.Windows.Assets
                 Add(value);
             }
 
-            private float Getter(object instance, int index)
+            private object Getter(object instance, int index)
             {
                 if (_isDefault)
                     return _proxy.DefaultValues[_name];
                 return _proxy.Asset.GetMixerVolumeValue(_name);
             }
 
-            private void Setter(object instance, int index, float value)
+            private void Setter(object instance, int index, object value)
             {
                 if (_isDefault)
                     _proxy.DefaultValues[_name] = value;

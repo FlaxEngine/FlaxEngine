@@ -75,16 +75,16 @@ void AudioMixer::MixerInit()
     }
 }
 
-Dictionary<String, float> AudioMixer::GetMixerValues() const
+Dictionary<String, Variant> AudioMixer::GetMixerValues() const
 {
     ScopeLock lock(Locker);
-    Dictionary<String,float> result;
+    Dictionary<String, Variant> result;
     for (auto& e : AudioMixerVariables)
         result.Add(e.Key, e.Value.Value);
     return result;
 }
 
-void AudioMixer::SetMixerValues(const Dictionary<String, float>& values)
+void AudioMixer::SetMixerValues(const Dictionary<String, Variant>& values)
 {
     ScopeLock lock(Locker);
     for (auto it = AudioMixerVariables.Begin(); it.IsNotEnd(); ++it)
@@ -106,16 +106,16 @@ void AudioMixer::SetMixerValues(const Dictionary<String, float>& values)
     }
 }
 
-Dictionary<String, float> AudioMixer::GetDefaultValues() const 
+Dictionary<String, Variant> AudioMixer::GetDefaultValues() const
 {
     ScopeLock lock(Locker);
-    Dictionary<String, float> result;
+    Dictionary<String, Variant> result;
     for (auto& e : AudioMixerVariables)
         result.Add(e.Key, e.Value.DefaultValue);
     return result;
 }
 
-void AudioMixer::SetDefaultValues(const Dictionary<String, float>& values) 
+void AudioMixer::SetDefaultValues(const Dictionary<String, Variant>& values)
 {
     ScopeLock lock(Locker);
     for (auto it = AudioMixerVariables.Begin(); it.IsNotEnd(); ++it)
@@ -137,14 +137,14 @@ void AudioMixer::SetDefaultValues(const Dictionary<String, float>& values)
     }
 }
 
-const float& AudioMixer::GetMixerVolumeValue(const StringView& nameChannel) const
+const Variant& AudioMixer::GetMixerVolumeValue(const StringView& nameChannel) const
 {
     ScopeLock lock(Locker);
     auto e = AudioMixerVariables.TryGet(nameChannel);
     return e ? e->Value : Variant::Zero.AsFloat;
 }
 
-void AudioMixer::SetMixerVolumeValue(const StringView& nameChannel, const float& value)
+void AudioMixer::SetMixerVolumeValue(const StringView& nameChannel, const Variant& value)
 {
     ScopeLock lock(Locker);
     auto e = AudioMixerVariables.TryGet(nameChannel);
