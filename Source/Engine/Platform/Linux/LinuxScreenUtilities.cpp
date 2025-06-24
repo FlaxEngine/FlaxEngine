@@ -7,11 +7,24 @@
 #include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Delegate.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/Math/Vector4.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Platform/Linux/LinuxPlatform.h"
 #include "Engine/Platform/Linux/IncludeX11.h"
 
+#include <libportal/portal-enums.h>
+#include <libportal/screenshot.h>
+
 Delegate<Color32> ScreenUtilitiesBase::PickColorDone;
+
+namespace PortalImpl
+{
+    XdpPortal* Portal = nullptr;
+    int64 MainLoopReady = 0;
+
+    gpointer GLibMainLoop(gpointer data);
+    void PickColorCallback(GObject* source, GAsyncResult* result, gpointer data);
+}
 
 Color32 LinuxScreenUtilities::GetColorAt(const Float2& pos)
 {
@@ -38,16 +51,11 @@ Color32 LinuxScreenUtilities::GetColorAt(const Float2& pos)
         }
         else
         {
-            // XWayland doesn't support XGetImage...
-            // TODO: Fallback to Wayland implementation here?
-            return Color32::Black;
+            // XWayland doesn't support XGetImage
         }
     }
-    else
-    {
-        // TODO: Wayland
-        ASSERT(false);
-    }
+
+    return Color32::Transparent;
 }
 
 void OnScreenUtilsXEventCallback(void* eventPtr)
@@ -83,12 +91,68 @@ void LinuxScreenUtilities::PickColor()
 
         X11::XFreeCursor(display, cursor);
         LinuxPlatform::xEventReceived.Bind(OnScreenUtilsXEventCallback);
+        return;
     }
-    else
+    
+    if (PortalImpl::MainLoopReady == 0)
     {
-        // TODO: Wayland
-        ASSERT(false);
+        // Initialize portal
+        GError* error = nullptr;
+        PortalImpl::Portal = xdp_portal_initable_new(&error);
+        if (error != nullptr)
+        {
+            PortalImpl::MainLoopReady = 2;
+            LOG(Error, "Failed to initialize XDP Portal");
+            return;
+        }
+
+        // Run the GLib main loop in other thread in order to process asynchronous callbacks
+        g_thread_new(nullptr, PortalImpl::GLibMainLoop, nullptr);
+        while (Platform::AtomicRead(&PortalImpl::MainLoopReady) != 1)
+            Platform::Sleep(1);
     }
+    
+    if (PortalImpl::Portal != nullptr)
+    {
+        // Enter color picking mode, the callback receives the final color
+        xdp_portal_pick_color(PortalImpl::Portal, nullptr, nullptr, PortalImpl::PickColorCallback, nullptr);
+    }
+}
+
+gpointer PortalImpl::GLibMainLoop(gpointer data)
+{
+    GMainContext* mainContext = g_main_context_get_thread_default();
+    GMainLoop* mainLoop = g_main_loop_new(mainContext, false);
+
+    Platform::AtomicStore(&PortalImpl::MainLoopReady, 1);
+    
+    g_main_loop_run(mainLoop);
+    g_main_loop_unref(mainLoop);
+    return nullptr;
+}
+
+void PortalImpl::PickColorCallback(GObject* source, GAsyncResult* result, gpointer data)
+{
+    GError* error = nullptr;
+    GVariant* variant = xdp_portal_pick_color_finish(PortalImpl::Portal, result, &error);
+    if (error)
+    {
+        if (g_error_matches(error, G_IO_ERROR, G_IO_ERROR_CANCELLED))
+            LOG(Info, "XDP Portal pick color cancelled");
+        else
+            LOG(Error, "XDP Portal pick color failed: {}", String(error->message));
+        return;
+    }
+
+    // The color is stored in a triple double variant, extract the values
+    Double4 colorDouble;
+    g_variant_get(variant, "(ddd)", &colorDouble.X, &colorDouble.Y, &colorDouble.Z);
+    g_variant_unref(variant);
+    colorDouble.W = 1.0f;
+    Vector4 colorVector = colorDouble;
+    Color32 color = Color32(colorVector);
+
+    ScreenUtilities::PickColorDone(color);
 }
 
 #endif

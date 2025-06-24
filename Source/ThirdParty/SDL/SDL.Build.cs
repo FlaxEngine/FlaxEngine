@@ -42,6 +42,9 @@ public class SDL : DepsModule
 
             break;
         case TargetPlatform.Linux:
+            options.OutputFiles.Add(Path.Combine(depsRoot, "libSDL3.a"));
+            options.PublicDependencies.Add("libportal");
+            break;
         case TargetPlatform.Mac:
             options.OutputFiles.Add(Path.Combine(depsRoot, "libSDL3.a"));
             break;

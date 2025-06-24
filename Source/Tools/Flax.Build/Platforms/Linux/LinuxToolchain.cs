@@ -126,7 +126,16 @@ namespace Flax.Build.Platforms
             args.Add("-lXcursor");
             args.Add("-lXinerama");
             args.Add("-lXfixes");
-            args.Add("-lwayland-client");
+
+            if (EngineConfiguration.WithSDL(options))
+            {
+                // Link Wayland
+                args.Add("-lwayland-client");
+
+                // Link GLib for libportal
+                args.Add("-lglib-2.0");
+                args.Add("-lgio-2.0");
+            }
         }
 
         /// <inheritdoc />

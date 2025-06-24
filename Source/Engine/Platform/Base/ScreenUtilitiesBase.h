@@ -22,7 +22,7 @@ public:
     /// Gets the pixel color at the specified coordinates.
     /// </summary>
     /// <param name="pos">Screen-space coordinate to read.</param>
-    /// <returns>Pixel color at the specified coordinates.</returns>
+    /// <returns>Pixel color at the specified coordinates, or transparent color when color couldn't be picked up.</returns>
     API_FUNCTION() static Color32 GetColorAt(const Float2& pos)
     {
         return Color32::Transparent;
