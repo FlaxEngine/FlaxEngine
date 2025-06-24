@@ -1,7 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
-using System.Collections.Generic;
 using FlaxEditor.Content;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.GUI;
@@ -10,6 +8,9 @@ using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -231,6 +232,15 @@ namespace FlaxEditor.Windows.Assets
         {
             private PropertiesProxy _proxy;
 
+            private static readonly Type[] AllowedTypes =
+            {
+                typeof(float),
+                typeof(double),
+                typeof(int),
+                typeof(short),
+                typeof(long),
+            };
+
             public override void Initialize(LayoutElementsContainer layout)
             {
                 _proxy = (PropertiesProxy)Values[0];
@@ -286,6 +296,10 @@ namespace FlaxEditor.Windows.Assets
                 foreach (var e in _proxy.DefaultValues)
                     lastValue = e.Value;
 
+                var allowedTypes = AllowedTypes.Select(CustomEditorsUtil.GetTypeNameUI).ToList();
+                int index = 0;
+                if (lastValue != null)
+                    index = allowedTypes.FindIndex(x => x.Equals(CustomEditorsUtil.GetTypeNameUI(lastValue.GetType()), StringComparison.Ordinal));
             }
 
             private void OnPropertyLabelSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
