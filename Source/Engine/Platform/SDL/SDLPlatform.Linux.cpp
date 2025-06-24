@@ -35,11 +35,6 @@
 #include <wayland/xdg-shell.h>
 #include <wayland/xdg-toplevel-drag-v1.h>
 
-// Missing Wayland features:
-// - Application icon (xdg-toplevel-icon-v1) https://github.com/libsdl-org/SDL/pull/9584
-// - Color picker (xdg-desktop-portal?) https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Screenshot.html
-// -
-
 class LinuxDropFilesData : public IGuiData
 {
 public:

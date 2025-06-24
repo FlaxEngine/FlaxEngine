@@ -48,7 +48,7 @@ namespace Flax.Deps.Dependencies
         {
             string root = options.IntermediateFolder;
             string configuration = "Release";
-            const bool buildStatic = true;
+            bool buildStatic = true;
             var configs = new string[]
             {
                 "-DSDL_TEST_LIBRARY=OFF",
@@ -94,6 +94,7 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
+                BuildStarted(platform);
                 switch (platform)
                 {
                 case TargetPlatform.Windows:

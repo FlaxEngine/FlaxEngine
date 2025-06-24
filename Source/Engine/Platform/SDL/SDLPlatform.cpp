@@ -236,15 +236,10 @@ Float2 SDLPlatform::GetMousePosition()
         // use the last known reported position we got from received window events.
         return Input::GetMouseScreenPosition();
     }
-    if (UsesX11())
-#elif PLATFORM_LINUX || PLATFORM_MAC
-    {
-        Float2 pos;
-        SDL_GetGlobalMouseState(&pos.X, &pos.Y);
-        return pos;
-    }
 #endif
-    return Input::GetMouseScreenPosition();
+    Float2 pos;
+    SDL_GetGlobalMouseState(&pos.X, &pos.Y);
+    return pos;
 }
 
 void SDLPlatform::SetMousePosition(const Float2& pos)
