@@ -22,7 +22,7 @@ AudioSource::AudioSource(const SpawnParams& params)
     , _playOnStart(false)
     , _startTime(0.0f)
     , _allowSpatialization(true)
-    , _audioMixerGroup("Master")
+    , _mixerGroupID(0)
 {
     Clip.Changed.Bind<AudioSource, &AudioSource::OnClipChanged>(this);
     Clip.Loaded.Bind<AudioSource, &AudioSource::OnClipLoaded>(this);
@@ -118,13 +118,13 @@ void AudioSource::SetAllowSpatialization(bool value)
         AudioBackend::Source::SpatialSetupChanged(SourceID, Is3D(), _attenuation, _minDistance, _dopplerFactor);
 }
 
-void AudioSource::SetAudioMixerGroup(StringView& groupName)
+void AudioSource::SetMixerGroupID(int groupID)
 {
-    if (_audioMixerGroup == groupName)
+    if (_mixerGroupID == groupID)
         return;
-    _audioMixerGroup = groupName;
+    _mixerGroupID = groupID;
     if (SourceID)
-        LOG(Info, "Audio Mixer Group Changed ({0})", _audioMixerGroup);
+        LOG(Info, "Audio Mixer Group Changed ({0})", _mixerGroupID);
 }
 
 void AudioSource::Play()
@@ -361,7 +361,7 @@ void AudioSource::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(PlayOnStart, _playOnStart);
     SERIALIZE_MEMBER(StartTime, _startTime);
     SERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);
-    SERIALIZE_MEMBER(MixerGroup, _audioMixerGroup);
+    SERIALIZE_MEMBER(MixerGroupID, _mixerGroupID);
 }
 
 void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -379,7 +379,7 @@ void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(PlayOnStart, _playOnStart);
     DESERIALIZE_MEMBER(StartTime, _startTime);
     DESERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);
-    DESERIALIZE_MEMBER(MixerGroup, _audioMixerGroup);
+    DESERIALIZE_MEMBER(MixerGroupID, _mixerGroupID);
     DESERIALIZE(Clip);
 }
 

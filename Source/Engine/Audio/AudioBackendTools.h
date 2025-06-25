@@ -39,6 +39,7 @@ public:
         float MinDistance;
         float Attenuation;
         float DopplerFactor;
+        int MixerGroupID;
         Vector3 Velocity;
         Vector3 Position;
         Quaternion Orientation;

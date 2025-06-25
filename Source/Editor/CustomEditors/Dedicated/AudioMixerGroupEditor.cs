@@ -15,8 +15,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     internal class AudioMixerGroupEditor : CustomEditor
     {
         private ComboBoxElement _element;
-        private int AudioMixerIndex;
-        public string AudioMixerName;
+        public int AudioMixerIndex;
 
         /// <inheritdoc />
         public override DisplayStyle Style => DisplayStyle.Inline;
@@ -32,15 +31,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 groups.AudioMixerGroups.ForEach(mixer => _element.ComboBox.AddItem(mixer.Name));
             }
-
-            if (AudioMixerName == string.Empty)
-            {
-                Debug.Log("Test");
-                _element.ComboBox.SelectedIndex = AudioMixerIndex = 0;
-                return;
-            }
-
-            _element.ComboBox.SelectedIndex = AudioMixerIndex = _element.ComboBox.Items.FindIndex(item => item == AudioMixerName);
+            _element.ComboBox.SelectedIndex = AudioMixerIndex;
         }
 
         private void OnSelectedIndexChanged(ComboBox comboBox)
