@@ -5,6 +5,7 @@
 #include "Config.h"
 #include "Types.h"
 #include "Engine/Core/Types/BaseTypes.h"
+#include "Engine/Core/Types/String.h"
 
 /// <summary>
 /// The helper class for that handles active audio backend operations.
@@ -41,7 +42,7 @@ private:
     virtual void Source_PanChanged(uint32 sourceID, float pan) = 0;
     virtual void Source_IsLoopingChanged(uint32 sourceID, bool loop) = 0;
     virtual void Source_SpatialSetupChanged(uint32 sourceID, bool spatial, float attenuation, float minDistance, float doppler) = 0;
-    virtual void Source_MixerGroupIDChanged(uint32 sourceID, int mixerGroupID) = 0;
+    virtual void Source_MixerGroupChannelChanged(uint32 sourceID, String mixerGroupChannel) = 0;
     virtual void Source_Play(uint32 sourceID) = 0;
     virtual void Source_Pause(uint32 sourceID) = 0;
     virtual void Source_Stop(uint32 sourceID) = 0;
@@ -146,9 +147,9 @@ public:
             Instance->Source_SpatialSetupChanged(sourceID, spatial, attenuation, minDistance, doppler);
         }
 
-        FORCE_INLINE static void MixerGroupIDChanged(uint32 sourceID, int mixerGroupID) 
+        FORCE_INLINE static void MixerGroupIDChanged(uint32 sourceID, String mixerGroupChannel)
         {
-            Instance->Source_MixerGroupIDChanged(sourceID, mixerGroupID);
+            Instance->Source_MixerGroupChannelChanged(sourceID, mixerGroupChannel);
         }
 
         FORCE_INLINE static void Play(uint32 sourceID)

@@ -431,12 +431,12 @@ void AudioBackendXAudio2::Source_SpatialSetupChanged(uint32 sourceID, bool spati
     }
 }
 
-void AudioBackendXAudio2::Source_MixerGroupIDChanged(uint32 sourceID, int mixerGroupID)
+void AudioBackendXAudio2::Source_MixerGroupChannelChanged(uint32 sourceID, String mixerGroupChannel)
 {
     auto aSource = XAudio2::GetSource(sourceID);
     if (aSource) 
     {
-        aSource->MixerGroupID = mixerGroupID;
+        aSource->MixerGroupChannel = mixerGroupChannel;
     }
 }
 

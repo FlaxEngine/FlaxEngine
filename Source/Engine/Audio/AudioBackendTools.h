@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Math/Transform.h"
+#include "Engine/Core/Types/String.h"
 
 /// <summary>
 /// The helper class for that handles active audio backend operations.
@@ -39,7 +40,7 @@ public:
         float MinDistance;
         float Attenuation;
         float DopplerFactor;
-        int MixerGroupID;
+        String MixerGroupChannel;
         Vector3 Velocity;
         Vector3 Position;
         Quaternion Orientation;
