@@ -49,7 +49,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         void UpdateAudioMixerGroup()
         {
             var groups = GameSettings.Load<AudioSettings>();
-            if (_element.ComboBox.Items.Count == groups?.AudioMixerGroups.Count()) return;
+            if ((_element.ComboBox.Items.Count - 1) == groups?.AudioMixerGroups.Length) return;
             if (groups?.AudioMixerGroups != null)
             {
                 foreach (string NameGroup in _element.ComboBox.Items)
