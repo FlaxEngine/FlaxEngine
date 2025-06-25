@@ -9,7 +9,9 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Graphics/Shaders/Cache/ShaderCacheManager.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Level/Level.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Threading/Threading.h"
@@ -58,6 +60,35 @@ ParticleEffect* ParticleEmitter::Spawn(Actor* parent, const Transform& transform
         effect->DeleteObject(duration, true);
 
     return effect;
+}
+
+void ParticleEmitter::WaitForAsset(Asset* asset)
+{
+    // TODO: make a tool for it?
+    if (auto* texture = Cast<TextureBase>(asset))
+    {
+        // Wait for asset to be loaded
+        if (!texture->WaitForLoaded() && !IsInMainThread() && texture->GetTexture())
+        {
+            PROFILE_CPU_NAMED("WaitForTexture");
+
+            // Mark as used by rendering and wait for streaming to load it in
+            double waitTimeSeconds = 10000;
+            double now = Platform::GetTimeSeconds();
+            double end = now + waitTimeSeconds;
+            const int32 mipLevels = texture->GetMipLevels();
+            constexpr float requestedResidency = 0.7f;
+            const int32 minMipLevels = Math::Max(Math::Min(mipLevels, 7), (int32)(requestedResidency * (float)mipLevels));
+            while (texture->GetResidentMipLevels() < minMipLevels &&
+                now < end &&
+                !texture->HasStreamingError())
+            {
+                texture->GetTexture()->LastRenderTime = now;
+                Platform::Sleep(1);
+                now = Platform::GetTimeSeconds();
+            }
+        }
+    }
 }
 
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH && COMPILE_WITH_SHADER_COMPILER
@@ -296,6 +327,40 @@ Asset::LoadResult ParticleEmitter::load()
 	// Downgrade to CPU simulation if no support in build
 	SimulationMode = ParticlesSimulationMode::CPU;
 #endif
+
+    // Wait for resources used by the emitter to be loaded
+    // eg. texture used to place particles on spawn needs to be available
+    bool waitForAsset = false;
+    for (const auto& node : Graph.Nodes)
+    {
+        if ((node.Type == GRAPH_NODE_MAKE_TYPE(5, 1) || node.Type == GRAPH_NODE_MAKE_TYPE(5, 2)) && node.Assets.Count() > 0)
+        {
+            const auto texture = node.Assets[0].As<TextureBase>();
+            if (texture)
+            {
+                if (!waitForAsset)
+                {
+                    waitForAsset = true;
+                    Particles::SystemLocker.End(true);
+                }
+                WaitForAsset(texture);
+            }
+        }
+    }
+    for (const auto& parameter : Graph.Parameters)
+    {
+        if (parameter.Type.Type == VariantType::Asset)
+        {
+            if (!waitForAsset)
+            {
+                waitForAsset = true;
+                Particles::SystemLocker.End(true);
+            }
+            WaitForAsset((Asset*)parameter.Value);
+        }
+    }
+    if (waitForAsset)
+        Particles::SystemLocker.Begin(true);
 
     return LoadResult::Ok;
 }
