@@ -414,6 +414,11 @@ void AudioBackendOAL::Source_SpatialSetupChanged(uint32 sourceID, bool spatial, 
     ALC::Source::SetupSpatial(sourceID, pan, spatial);
 }
 
+void AudioBackendOAL::Source_MixerGroupIDChanged(uint32 sourceID, int mixerGroupID)
+{
+    // alSourcei(sourceID, , mixerGroupID);
+}
+
 void AudioBackendOAL::Source_Play(uint32 sourceID)
 {
     alSourcePlay(sourceID);

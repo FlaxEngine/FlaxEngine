@@ -26,6 +26,7 @@ public:
     void Source_PanChanged(uint32 sourceID, float pan) override;
     void Source_IsLoopingChanged(uint32 sourceID, bool loop) override;
     void Source_SpatialSetupChanged(uint32 sourceID, bool spatial, float attenuation, float minDistance, float doppler) override;
+    void Source_MixerGroupIDChanged(uint32 sourceID, int mixerGroupID) override;
     void Source_Play(uint32 sourceID) override;
     void Source_Pause(uint32 sourceID) override;
     void Source_Stop(uint32 sourceID) override;
