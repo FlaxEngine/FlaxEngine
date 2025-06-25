@@ -123,6 +123,8 @@ void AudioSource::SetAudioMixerGroup(StringView& groupName)
     if (_audioMixerGroup == groupName)
         return;
     _audioMixerGroup = groupName;
+    if (SourceID)
+        LOG(Info, "Audio Mixer Group Changed ({0})", _audioMixerGroup);
 }
 
 void AudioSource::Play()
