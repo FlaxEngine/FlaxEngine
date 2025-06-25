@@ -228,7 +228,7 @@ public:
     /// <summary>
     /// Displays the type of audio group that will be handled by the Audio Mixer
     /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(90), DefaultValue(true)")
+    API_PROPERTY(Attributes = "HideInEditor")
     FORCE_INLINE String GetAudioMixerGroup() const
     {
         return _audioMixerGroup;

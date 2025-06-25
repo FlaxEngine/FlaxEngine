@@ -22,6 +22,7 @@ AudioSource::AudioSource(const SpawnParams& params)
     , _playOnStart(false)
     , _startTime(0.0f)
     , _allowSpatialization(true)
+    , _audioMixerGroup("Master")
 {
     Clip.Changed.Bind<AudioSource, &AudioSource::OnClipChanged>(this);
     Clip.Loaded.Bind<AudioSource, &AudioSource::OnClipLoaded>(this);
@@ -358,6 +359,7 @@ void AudioSource::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(PlayOnStart, _playOnStart);
     SERIALIZE_MEMBER(StartTime, _startTime);
     SERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);
+    SERIALIZE_MEMBER(MixerGroup, _audioMixerGroup);
 }
 
 void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
@@ -375,6 +377,7 @@ void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(PlayOnStart, _playOnStart);
     DESERIALIZE_MEMBER(StartTime, _startTime);
     DESERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);
+    DESERIALIZE_MEMBER(MixerGroup, _audioMixerGroup);
     DESERIALIZE(Clip);
 }
 

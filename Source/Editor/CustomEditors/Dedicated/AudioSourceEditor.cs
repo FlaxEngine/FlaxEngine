@@ -30,6 +30,13 @@ namespace FlaxEditor.CustomEditors.Dedicated
             gridAudioMixerControl.SlotsHorizontally = 3;
             gridAudioMixerControl.SlotsVertically = 1;
             _audioMixerGroup = new AudioMixerGroupEditor();
+            foreach (var value in Values)
+            {
+                if (value is AudioSource audioSource)
+                {
+                    _audioMixerGroup.AudioMixerName = audioSource.AudioMixerGroup;
+                }
+            }
             _audioMixerGroup.Initialize(gridPanel);
 
 
