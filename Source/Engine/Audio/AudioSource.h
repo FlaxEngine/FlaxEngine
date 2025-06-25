@@ -54,7 +54,7 @@ private:
     bool _playOnStart;
     float _startTime;
     bool _allowSpatialization;
-    int _mixerGroupID;
+    String _mixerGroupChannel;
 
     bool _isActuallyPlayingSth = false;
     bool _startingToPlay = false;
@@ -229,15 +229,15 @@ public:
     /// Displays the type of audio group that will be handled by the Audio Mixer
     /// </summary>
     API_PROPERTY(Attributes = "EditorOrder(80), DefaultValue(true)")
-    FORCE_INLINE int GetMixerGroupID() const
+    FORCE_INLINE String GetMixerGroupChannel() const
     {
-        return _mixerGroupID;
+        return _mixerGroupChannel;
     }
 
     /// <summary>
     /// Displays the type of audio group that will be handled by the Audio Mixer
     /// </summary>
-    API_PROPERTY() void SetMixerGroupID(int groupID);
+    API_PROPERTY() void SetMixerGroupChannel(String groupChannel);
 
 public:
     /// <summary>

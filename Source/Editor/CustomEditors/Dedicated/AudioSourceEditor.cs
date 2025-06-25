@@ -34,7 +34,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 if (value is AudioSource audioSource)
                 {
-                    _audioMixerGroup.AudioMixerIndex = audioSource.MixerGroupID;
+                    _audioMixerGroup.MixerChannel = audioSource.MixerGroupChannel;
                 }
             }
             _audioMixerGroup.Initialize(gridPanel);
@@ -69,9 +69,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             foreach (var value in Values)
             {
-                if (value is AudioSource audioSource && audioSource.MixerGroupID != _audioMixerGroup.AudioMixerIndex)
+                if (value is AudioSource audioSource && audioSource.MixerGroupChannel != _audioMixerGroup.GetAudioMixerGroup())
                 {
-                    audioSource.MixerGroupID = _audioMixerGroup.AudioMixerIndex;
+                    audioSource.MixerGroupChannel = _audioMixerGroup.GetAudioMixerGroup();
                 }
             }
 
