@@ -197,6 +197,7 @@ void EnvironmentProbe::Draw(RenderContext& renderContext)
             data.Position = position;
             data.Radius = radius;
             data.Brightness = Brightness;
+            data.SortOrder = SortOrder;
             data.HashID = GetHash(_id);
             renderContext.List->EnvironmentProbes.Add(data);
         }
@@ -234,6 +235,7 @@ void EnvironmentProbe::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(Radius, _radius);
     SERIALIZE(CubemapResolution);
     SERIALIZE(Brightness);
+    SERIALIZE(SortOrder);
     SERIALIZE(UpdateMode);
     SERIALIZE(CaptureNearPlane);
     SERIALIZE_MEMBER(IsCustomProbe, _isUsingCustomProbe);
@@ -248,6 +250,7 @@ void EnvironmentProbe::Deserialize(DeserializeStream& stream, ISerializeModifier
     DESERIALIZE_MEMBER(Radius, _radius);
     DESERIALIZE(CubemapResolution);
     DESERIALIZE(Brightness);
+    DESERIALIZE(SortOrder);
     DESERIALIZE(UpdateMode);
     DESERIALIZE(CaptureNearPlane);
     DESERIALIZE_MEMBER(IsCustomProbe, _isUsingCustomProbe);

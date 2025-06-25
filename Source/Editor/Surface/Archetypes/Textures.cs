@@ -459,7 +459,7 @@ namespace FlaxEditor.Surface.Archetypes
                 AlternativeTitles = new string[] { "Lightmap TexCoord" }, 
                 Description = "Lightmap UVs",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(110, 30),
+                Size = new Float2(110, 20),
                 Elements = new []
                 {
                     NodeElementArchetype.Factory.Output(0, "UVs", typeof(Float2), 0)
@@ -491,6 +491,19 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.ComboBox(50, Surface.Constants.LayoutOffsetY * 4 - 1, 100, 3, typeof(CommonSamplerType)),
                     NodeElementArchetype.Factory.Text(155, Surface.Constants.LayoutOffsetY * 4, "Local"),
                     NodeElementArchetype.Factory.Bool(190, Surface.Constants.LayoutOffsetY * 4, 4),
+                }
+            },
+            new NodeArchetype
+            {
+                TypeID = 24,
+                Title = "Texture Size",
+                Description = "Gets the size of the texture (in pixels). If texture is during streaming, then returns size of the highest resident mip.",
+                Flags = NodeFlags.ParticleEmitterGraph,
+                Size = new Float2(160, 20),
+                Elements = new[]
+                {
+                    NodeElementArchetype.Factory.Input(0, "Texture", true, typeof(FlaxEngine.Object), 0),
+                    NodeElementArchetype.Factory.Output(0, "Size", typeof(Float3), 1),
                 }
             },
         };

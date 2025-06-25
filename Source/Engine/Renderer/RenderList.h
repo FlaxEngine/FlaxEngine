@@ -155,6 +155,7 @@ struct RenderEnvironmentProbeData
     Float3 Position;
     float Radius;
     float Brightness;
+    int32 SortOrder;
     uint32 HashID;
 
     void SetShaderData(ShaderEnvProbeData& data) const;

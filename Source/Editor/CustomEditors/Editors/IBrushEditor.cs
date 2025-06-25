@@ -26,6 +26,7 @@ namespace FlaxEditor.CustomEditors.Editors
             new OptionType("Texture 9-Slicing", typeof(Texture9SlicingBrush)),
             new OptionType("Sprite 9-Slicing", typeof(Sprite9SlicingBrush)),
             new OptionType("Video", typeof(VideoBrush)),
+            new OptionType("UI Brush", typeof(UIBrush)),
         };
     }
 }
