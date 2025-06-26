@@ -417,7 +417,7 @@ void AudioBackendOAL::Source_SpatialSetupChanged(uint32 sourceID, bool spatial, 
 void AudioBackendOAL::Source_MixerGroupChannelChanged(uint32 sourceID, String mixerGroupChannel)
 {
     auto mixerGroups = AudioSettings::Get()->AudioMixerGroups;
-    int mixerGroupID;
+    int mixerGroupID = 0;
 
     for (int i = 0; i < mixerGroups.Count(); i++)
     {
