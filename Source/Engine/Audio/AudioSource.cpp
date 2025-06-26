@@ -123,8 +123,6 @@ void AudioSource::SetMixerGroupChannel(String groupChannel)
     if (_mixerGroupChannel == groupChannel)
         return;
     _mixerGroupChannel = groupChannel;
-    if (SourceID)
-        AudioBackend::Source::MixerGroupChannelChanged(SourceID, _mixerGroupChannel);
 }
 
 void AudioSource::Play()

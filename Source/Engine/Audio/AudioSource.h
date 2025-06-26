@@ -212,23 +212,9 @@ public:
     API_PROPERTY() void SetDopplerFactor(float value);
 
     /// <summary>
-    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
-    /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(80), DefaultValue(true), EditorDisplay(\"Audio Source\")")
-    FORCE_INLINE bool GetAllowSpatialization() const
-    {
-        return _allowSpatialization;
-    }
-
-    /// <summary>
-    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
-    /// </summary>
-    API_PROPERTY() void SetAllowSpatialization(bool value);
-
-    /// <summary>
     /// Displays the type of audio group that will be handled by the Audio Mixer
     /// </summary>
-    API_PROPERTY(Attributes = "EditorOrder(80), DefaultValue(true)")
+    API_PROPERTY(Attributes = "EditorOrder(80), DefaultValue(true), Serialize")
     FORCE_INLINE String GetMixerGroupChannel() const
     {
         return _mixerGroupChannel;
@@ -238,6 +224,20 @@ public:
     /// Displays the type of audio group that will be handled by the Audio Mixer
     /// </summary>
     API_PROPERTY() void SetMixerGroupChannel(String groupChannel);
+
+    /// <summary>
+    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
+    /// </summary>
+    API_PROPERTY(Attributes="EditorOrder(90), DefaultValue(true), EditorDisplay(\"Audio Source\")")
+    FORCE_INLINE bool GetAllowSpatialization() const
+    {
+        return _allowSpatialization;
+    }
+
+    /// <summary>
+    /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
+    /// </summary>
+    API_PROPERTY() void SetAllowSpatialization(bool value);
 
 public:
     /// <summary>

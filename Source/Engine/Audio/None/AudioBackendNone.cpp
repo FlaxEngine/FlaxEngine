@@ -59,10 +59,6 @@ void AudioBackendNone::Source_SpatialSetupChanged(uint32 sourceID, bool spatial,
 {
 }
 
-void AudioBackendNone::Source_MixerGroupChannelChanged(uint32 sourceID, String mixerGroupChannel)
-{
-}
-
 void AudioBackendNone::Source_Play(uint32 sourceID)
 {
 }
