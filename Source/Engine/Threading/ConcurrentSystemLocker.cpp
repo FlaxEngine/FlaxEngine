@@ -22,6 +22,14 @@ RETRY:
         goto RETRY;
     }
 
+    // Writers have to check themselves to (one write at the same time - just like a mutex)
+    if (write && Platform::AtomicRead(thisCounter) != 0)
+    {
+        // Someone else is doing opposite operation so wait for it's end
+        Platform::Sleep(0);
+        goto RETRY;
+    }
+
     // Mark that we entered this section
     Platform::InterlockedIncrement(thisCounter);
 
