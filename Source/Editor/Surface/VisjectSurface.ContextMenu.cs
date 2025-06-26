@@ -427,7 +427,7 @@ namespace FlaxEditor.Surface
             _cmDistributeNodesHorizontallyButton = _cmFormatNodesMenu.ContextMenu.AddButton("Distribute horizontally", Editor.Instance.Options.Options.Input.NodesDistributeHorizontal, () => { DistributeNodes(SelectedNodes, false); });
             _cmDistributeNodesVerticallyButton = _cmFormatNodesMenu.ContextMenu.AddButton("Distribute vertically", Editor.Instance.Options.Options.Input.NodesDistributeVertical, () => { DistributeNodes(SelectedNodes, true); });
 
-            _cmRemoveNodeConnectionsButton = menu.AddButton("Remove all connections to that node(s)", () =>
+            _cmRemoveNodeConnectionsButton = menu.AddButton("Remove all connections", () =>
             {
                 var nodes = ((List<SurfaceNode>)menu.Tag);
 
@@ -453,8 +453,10 @@ namespace FlaxEditor.Surface
 
                 MarkAsEdited();
             });
-            _cmRemoveNodeConnectionsButton.Enabled = CanEdit;
-            _cmRemoveBoxConnectionsButton = menu.AddButton("Remove all connections to that box", () =>
+            bool anyConnection = SelectedNodes.Any(n => n.GetBoxes().Any(b => b.HasAnyConnection));
+            _cmRemoveNodeConnectionsButton.Enabled = CanEdit && anyConnection;
+
+            _cmRemoveBoxConnectionsButton = menu.AddButton("Remove all socket connections", () =>
             {
                 var boxUnderMouse = (Box)_cmRemoveBoxConnectionsButton.Tag;
                 if (Undo != null)
@@ -475,6 +477,16 @@ namespace FlaxEditor.Surface
                 var boxUnderMouse = GetChildAtRecursive(location) as Box;
                 _cmRemoveBoxConnectionsButton.Enabled = boxUnderMouse != null && boxUnderMouse.HasAnyConnection;
                 _cmRemoveBoxConnectionsButton.Tag = boxUnderMouse;
+
+                if (boxUnderMouse != null)
+                {
+                    boxUnderMouse.ParentNode.highlightBox = boxUnderMouse; 
+                    menu.VisibleChanged += (c) =>
+                    {
+                        if (!c.Visible)
+                            boxUnderMouse.ParentNode.highlightBox = null;
+                    };
+                }
             }
 
             controlUnderMouse?.OnShowSecondaryContextMenu(menu, controlUnderMouse.PointFromParent(location));
