@@ -426,6 +426,7 @@ void AudioBackendOAL::Source_MixerGroupChannelChanged(uint32 sourceID, String mi
             mixerGroupID = i + 1;
         }
     }
+    LOG(Info, "Mixer Group Index ({0})", mixerGroupID);
     // alSourcei(sourceID, , mixerGroupID);
 }
 

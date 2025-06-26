@@ -124,8 +124,7 @@ void AudioSource::SetMixerGroupChannel(String groupChannel)
         return;
     _mixerGroupChannel = groupChannel;
     if (SourceID)
-        LOG(Info, "Audio Mixer Group Changed ({0})", _mixerGroupChannel);
-    // AudioBackend::Source::MixerGroupIDChanged(SourceID, _mixerGroupID);
+        AudioBackend::Source::MixerGroupChannelChanged(SourceID, _mixerGroupChannel);
 }
 
 void AudioSource::Play()

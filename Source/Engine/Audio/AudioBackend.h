@@ -147,7 +147,7 @@ public:
             Instance->Source_SpatialSetupChanged(sourceID, spatial, attenuation, minDistance, doppler);
         }
 
-        FORCE_INLINE static void MixerGroupIDChanged(uint32 sourceID, String mixerGroupChannel)
+        FORCE_INLINE static void MixerGroupChannelChanged(uint32 sourceID, String mixerGroupChannel)
         {
             Instance->Source_MixerGroupChannelChanged(sourceID, mixerGroupChannel);
         }
