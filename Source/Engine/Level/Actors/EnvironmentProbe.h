@@ -52,6 +52,12 @@ public:
     float Brightness = 1.0f;
 
     /// <summary>
+    /// The probe rendering order. The higher values are render later (on top).
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(25), EditorDisplay(\"Probe\")")
+    int32 SortOrder = 0;
+
+    /// <summary>
     /// The probe update mode.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(30), EditorDisplay(\"Probe\")")
