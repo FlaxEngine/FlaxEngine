@@ -135,6 +135,7 @@ namespace Flax.Build.Platforms
                 // Link GLib for libportal
                 args.Add("-lglib-2.0");
                 args.Add("-lgio-2.0");
+                args.Add("-lgobject-2.0");
             }
         }
 
