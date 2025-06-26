@@ -235,8 +235,8 @@ namespace FlaxEditor.Windows.Search
             var iconRect = _icon.Bounds;
             _asset.DrawThumbnail(ref iconRect);
 
-            // Draw icon color strip
-            var rect = iconRect with { Width = 2, Height = Height, Location = Float2.Zero };
+            // Draw color strip
+            var rect = iconRect with { Width = 2, Height = Height, Location = new Float2(2, 0) };
             Render2D.FillRectangle(rect, _accentColor);
         }
 
