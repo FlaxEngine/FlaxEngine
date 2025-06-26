@@ -416,6 +416,16 @@ void AudioBackendOAL::Source_SpatialSetupChanged(uint32 sourceID, bool spatial, 
 
 void AudioBackendOAL::Source_MixerGroupChannelChanged(uint32 sourceID, String mixerGroupChannel)
 {
+    auto aS = AudioSettings::Get();
+    int mixerGroupID;
+
+    for (int i = 0; i < aS->AudioMixerGroups.Count(); i++)
+    {
+        if (aS->AudioMixerGroups[i].Name == mixerGroupChannel) 
+        {
+            mixerGroupID = i + 1;
+        }
+    }
     // alSourcei(sourceID, , mixerGroupID);
 }
 
