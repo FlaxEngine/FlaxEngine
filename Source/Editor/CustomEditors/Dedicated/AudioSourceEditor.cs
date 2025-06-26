@@ -13,32 +13,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
     public class AudioSourceEditor : ActorEditor
     {
         private Label _infoLabel;
-        AudioMixerGroupEditor _audioMixerGroup;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
         {
             base.Initialize(layout);
-
-            // Show audio mixer name channel
-            var audioMixerProperties = layout.Group("Audio Mixer properties");
-            audioMixerProperties.Panel.Open();
-            var gridPanel = audioMixerProperties.CustomContainer<UniformGridPanel>();
-            var gridAudioMixerControl = gridPanel.CustomControl;
-            gridAudioMixerControl.ClipChildren = false;
-            gridAudioMixerControl.Height = Button.DefaultHeight;
-            gridAudioMixerControl.SlotsHorizontally = 3;
-            gridAudioMixerControl.SlotsVertically = 1;
-            _audioMixerGroup = new AudioMixerGroupEditor();
-            foreach (var value in Values)
-            {
-                if (value is AudioSource audioSource)
-                {
-                    _audioMixerGroup.MixerChannel = audioSource.MixerGroupChannel;
-                }
-            }
-            _audioMixerGroup.Initialize(gridPanel);
-
 
             // Show playback options during simulation
             if (Editor.IsPlayMode)
@@ -66,14 +45,6 @@ namespace FlaxEditor.CustomEditors.Dedicated
         public override void Refresh()
         {
             base.Refresh();
-
-            foreach (var value in Values)
-            {
-                if (value is AudioSource audioSource && audioSource.MixerGroupChannel != _audioMixerGroup.GetAudioMixerGroup())
-                {
-                    audioSource.MixerGroupChannel = _audioMixerGroup.GetAudioMixerGroup();
-                }
-            }
 
             if (_infoLabel != null)
             {
