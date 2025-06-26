@@ -267,7 +267,7 @@ void GPUContextDX11::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPU
     auto depthBufferDX11 = static_cast<GPUTextureViewDX11*>(depthBuffer);
     ID3D11DepthStencilView* dsv = depthBufferDX11 ? depthBufferDX11->DSV() : nullptr;
 
-    ID3D11RenderTargetView* rtvs[GPU_MAX_RT_BINDED];
+    __declspec(align(16)) ID3D11RenderTargetView* rtvs[GPU_MAX_RT_BINDED];
     for (int32 i = 0; i < rts.Length(); i++)
     {
         auto rtDX11 = reinterpret_cast<GPUTextureViewDX11*>(rts[i]);
