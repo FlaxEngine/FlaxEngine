@@ -1,11 +1,13 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Linq;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.Surface.Archetypes
 {
@@ -260,6 +262,148 @@ namespace FlaxEditor.Surface.Archetypes
             }
         }
 
+        internal sealed class CustomCodeNode : SurfaceNode
+        {
+            private Rectangle _resizeButtonRect;
+            private Float2 _startResizingSize;
+            private Float2 _startResizingCornerOffset;
+            private bool _isResizing;
+
+            private int SizeValueIndex => Archetype.TypeID == 8 ? 1 : 3; // Index of the Size stored in Values array
+
+            private Float2 SizeValue
+            {
+                get => (Float2)Values[SizeValueIndex];
+                set => SetValue(SizeValueIndex, value, false);
+            }
+
+            public CustomCodeNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+            }
+
+            public override bool CanSelect(ref Float2 location)
+            {
+                return base.CanSelect(ref location) && !_resizeButtonRect.MakeOffsetted(Location).Contains(ref location);
+            }
+
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
+            {
+                base.OnSurfaceLoaded(action);
+
+                var textBox = (TextBox)Children.First(x => x is TextBox);
+                textBox.AnchorMax = Float2.One;
+
+                var size = SizeValue;
+                if (Surface != null && Surface.GridSnappingEnabled)
+                    size = Surface.SnapToGrid(size, true);
+                Resize(size.X, size.Y);
+            }
+
+            public override void OnValuesChanged()
+            {
+                base.OnValuesChanged();
+
+                var size = SizeValue;
+                Resize(size.X, size.Y);
+            }
+
+            protected override void UpdateRectangles()
+            {
+                base.UpdateRectangles();
+
+                const float buttonMargin = FlaxEditor.Surface.Constants.NodeCloseButtonMargin;
+                const float buttonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize;
+                _resizeButtonRect = new Rectangle(_closeButtonRect.Left, Height - buttonSize - buttonMargin - 4, buttonSize, buttonSize);
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+
+                var style = Style.Current;
+                if (_isResizing)
+                {
+                    Render2D.FillRectangle(_resizeButtonRect, style.Selection);
+                    Render2D.DrawRectangle(_resizeButtonRect, style.SelectionBorder);
+                }
+                Render2D.DrawSprite(style.Scale, _resizeButtonRect, _resizeButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
+            }
+
+            public override void OnLostFocus()
+            {
+                if (_isResizing)
+                    EndResizing();
+
+                base.OnLostFocus();
+            }
+
+            public override void OnEndMouseCapture()
+            {
+                if (_isResizing)
+                    EndResizing();
+
+                base.OnEndMouseCapture();
+            }
+
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (base.OnMouseDown(location, button))
+                    return true;
+
+                if (button == MouseButton.Left && _resizeButtonRect.Contains(ref location) && Surface.CanEdit)
+                {
+                    // Start sliding
+                    _isResizing = true;
+                    _startResizingSize = Size;
+                    _startResizingCornerOffset = Size - location;
+                    StartMouseCapture();
+                    Cursor = CursorType.SizeNWSE;
+                    return true;
+                }
+
+                return false;
+            }
+
+            public override void OnMouseMove(Float2 location)
+            {
+                if (_isResizing)
+                {
+                    var emptySize = CalculateNodeSize(0, 0);
+                    var size = Float2.Max(location - emptySize + _startResizingCornerOffset, new Float2(240, 160));
+                    Resize(size.X, size.Y);
+                }
+                else
+                {
+                    base.OnMouseMove(location);
+                }
+            }
+
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _isResizing)
+                {
+                    EndResizing();
+                    return true;
+                }
+
+                return base.OnMouseUp(location, button);
+            }
+
+            private void EndResizing()
+            {
+                Cursor = CursorType.Default;
+                EndMouseCapture();
+                _isResizing = false;
+                if (_startResizingSize != Size)
+                {
+                    var emptySize = CalculateNodeSize(0, 0);
+                    SizeValue = Size - emptySize;
+                    Surface.MarkAsEdited(false);
+                }
+            }
+        }
+
         internal enum MaterialTemplateInputsMapping
         {
             /// <summary>
@@ -410,13 +554,15 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 8,
+                Create = (id, context, arch, groupArch) => new CustomCodeNode(id, context, arch, groupArch),
                 Title = "Custom Code",
                 Description = "Custom HLSL shader code expression",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(300, 200),
                 DefaultValues = new object[]
                 {
-                    "// Here you can add HLSL code\nOutput0 = Input0;"
+                    "// Here you can add HLSL code\nOutput0 = Input0;",
+                    new Float2(300, 200),
                 },
                 Elements = new[]
                 {
@@ -874,6 +1020,7 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 38,
+                Create = (id, context, arch, groupArch) => new CustomCodeNode(id, context, arch, groupArch),
                 Title = "Custom Global Code",
                 Description = "Custom global HLSL shader code expression (placed before material shader code). Can contain includes to shader utilities or declare functions to reuse later.",
                 Flags = NodeFlags.MaterialGraph,
@@ -883,6 +1030,7 @@ namespace FlaxEditor.Surface.Archetypes
                     "// Here you can add HLSL code\nfloat4 GetCustomColor()\n{\n\treturn float4(1, 0, 0, 1);\n}",
                     true,
                     (int)MaterialTemplateInputsMapping.Utilities,
+                    new Float2(300, 240),
                 },
                 Elements = new[]
                 {
