@@ -189,12 +189,24 @@ public:
     API_FUNCTION() virtual void Clear(GPUTextureView* rt, const Color& color) = 0;
 
     /// <summary>
-    /// Clears depth buffer.
+    /// Clears depth buffer with custom value.
     /// </summary>
     /// <param name="depthBuffer">The depth buffer to clear.</param>
     /// <param name="depthValue">The clear depth value.</param>
-    /// <param name="stencilValue">The clear stencil value.</param>
-    API_FUNCTION() virtual void ClearDepth(GPUTextureView* depthBuffer, float depthValue = 1.0f, uint8 stencilValue = 0) = 0;
+    API_FUNCTION() virtual void ClearDepthCustom(GPUTextureView* depthBuffer, float depthValue, uint8 stencilValue = 0) = 0;
+
+    /// <summary>
+    /// Clears depth buffer with default value, inorder to handle different default depth values for normal and reversed z.
+    /// </summary>
+    /// <param name="depthBuffer">The depth buffer to clear.</param>
+    /// <param name="depthValue">The clear depth value.</param>
+    API_FUNCTION() FORCE_INLINE void ClearDepth(GPUTextureView* depthBuffer, uint8 stencilValue = 0) {
+#if FLAX_REVERSE_Z
+        ClearDepthCustom(depthBuffer, 0.0f, stencilValue);
+#else
+        ClearDepthCustom(depthBuffer, 1.0f, stencilValue);
+#endif
+    }
 
     /// <summary>
     /// Clears an unordered access buffer with a float value.
