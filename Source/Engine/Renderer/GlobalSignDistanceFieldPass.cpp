@@ -197,6 +197,7 @@ public:
     GPUTexture* Texture = nullptr;
     GPUTexture* TextureMip = nullptr;
     Vector3 Origin = Vector3::Zero;
+    ConcurrentSystemLocker Locker;
     Array<CascadeData, FixedAllocation<4>> Cascades;
     HashSet<ScriptingTypeHandle> ObjectTypes;
     HashSet<GPUTexture*> SDFTextures;
@@ -395,6 +396,7 @@ public:
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
+            ConcurrentSystemLocker::WriteScope lock(Locker);
             OnSceneRenderingDirty(a->GetBox());
         }
     }
@@ -403,6 +405,7 @@ public:
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
+            ConcurrentSystemLocker::WriteScope lock(Locker);
             OnSceneRenderingDirty(BoundingBox::FromSphere(prevBounds));
             OnSceneRenderingDirty(a->GetBox());
         }
@@ -412,6 +415,7 @@ public:
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
+            ConcurrentSystemLocker::WriteScope lock(Locker);
             OnSceneRenderingDirty(a->GetBox());
         }
     }
