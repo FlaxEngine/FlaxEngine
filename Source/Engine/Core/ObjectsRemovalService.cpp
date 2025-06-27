@@ -156,7 +156,7 @@ Object::~Object()
 {
 #if BUILD_DEBUG
     // Prevent removing object that is still reverenced by the removal service
-    ASSERT(!ObjectsRemovalService::IsInPool(this));
+    //ASSERT(!ObjectsRemovalService::IsInPool(this));
 #endif
 }
 

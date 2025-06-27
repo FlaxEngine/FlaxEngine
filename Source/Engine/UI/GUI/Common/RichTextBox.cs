@@ -57,7 +57,7 @@ namespace FlaxEngine.GUI
         {
             base.OnSizeChanged();
 
-            // Refresh textblocks since thos emight depend on control size (eg. align right)
+            // Refresh textblocks since those might depend on control size (eg. align right)
             UpdateTextBlocks();
         }
     }
