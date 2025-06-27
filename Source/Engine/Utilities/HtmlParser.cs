@@ -177,6 +177,8 @@ namespace FlaxEngine.Utilities
             // Get name of this tag
             int start = _pos;
             string s = ParseTagName();
+            if (s == string.Empty)
+                return false;
 
             // Special handling
             bool doctype = _scriptBegin = false;
