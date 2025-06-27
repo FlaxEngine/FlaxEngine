@@ -507,13 +507,7 @@ bool ShadowsPass::setupResources()
     if (!_sphereModel->CanBeRendered() || !_shader->IsLoaded())
         return true;
     auto shader = _shader->GetShader();
-
-    // Validate shader constant buffers sizes
-    if (shader->GetCB(0)->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc;

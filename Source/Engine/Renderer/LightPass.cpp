@@ -65,18 +65,8 @@ bool LightPass::setupResources()
     if (!_sphereModel->CanBeRendered() || !_shader->IsLoaded())
         return true;
     auto shader = _shader->GetShader();
-
-    // Validate shader constant buffers sizes
-    if (shader->GetCB(0)->GetSize() != sizeof(PerLight))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, PerLight);
-        return true;
-    }
-    if (shader->GetCB(1)->GetSize() != sizeof(PerFrame))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 1, PerFrame);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, PerLight);
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 1, PerFrame);
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc;

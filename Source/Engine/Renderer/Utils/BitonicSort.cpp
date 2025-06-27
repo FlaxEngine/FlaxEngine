@@ -59,14 +59,8 @@ bool BitonicSort::setupResources()
     if (!_shader->IsLoaded())
         return true;
     const auto shader = _shader->GetShader();
-
-    // Validate shader constant buffer size
     _cb = shader->GetCB(0);
-    if (_cb->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Cache compute shaders
     _indirectArgsCS = shader->GetCS("CS_IndirectArgs");

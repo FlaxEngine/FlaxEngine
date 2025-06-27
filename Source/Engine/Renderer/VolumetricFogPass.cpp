@@ -53,19 +53,9 @@ bool VolumetricFogPass::setupResources()
     if (!_shader->IsLoaded())
         return true;
     auto shader = _shader->GetShader();
-
-    // Validate shader constant buffers sizes
-    if (shader->GetCB(0)->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
     // CB1 is used for per-draw info (ObjectIndex)
-    if (shader->GetCB(2)->GetSize() != sizeof(PerLight))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 2, PerLight);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 2, PerLight);
 
     // Cache compute shaders
     _csInitialize = shader->GetCS("CS_Initialize");
