@@ -70,14 +70,14 @@ public:
     /// </summary>
     /// <param name="nameChannel">The mixer channel name.</param>
     /// <returns>The value.</returns>
-    API_FUNCTION() const Variant& GetMixerVolumeValue(const StringView& nameChannel) const;
+    API_FUNCTION() const Variant& GetMixerChannelVolume(const StringView& nameChannel) const;
 
     // <summary>
     /// Sets the value of the global variable (it must be added first).
     /// </summary>
     /// <param name="nameChannel">The mixer channel name.</param>
     /// <param name="value">The mixer volume value.</param>
-    API_FUNCTION() void SetMixerVolumeValue(const StringView& nameChannel, const Variant& value);
+    API_FUNCTION() void SetMixerChannelVolume(const StringView& nameChannel, const Variant& value);
 
     /// <summary>
    /// Resets the variables values to default values.

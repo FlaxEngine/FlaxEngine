@@ -137,21 +137,18 @@ void AudioMixer::SetDefaultValues(const Dictionary<String, Variant>& values)
     }
 }
 
-const Variant& AudioMixer::GetMixerVolumeValue(const StringView& nameChannel) const
+const Variant& AudioMixer::GetMixerChannelVolume(const StringView& nameChannel) const
 {
     ScopeLock lock(Locker);
     auto e = AudioMixerVariables.TryGet(nameChannel);
     return e ? e->Value : Variant::Zero.AsFloat;
 }
 
-void AudioMixer::SetMixerVolumeValue(const StringView& nameChannel, const Variant& value)
+void AudioMixer::SetMixerChannelVolume(const StringView& nameChannel, const Variant& value)
 {
     ScopeLock lock(Locker);
     auto e = AudioMixerVariables.TryGet(nameChannel);
-    if (e) 
-    {
-        e->Value = value;
-    }
+    if (e) e->Value = value;
 }
 
 

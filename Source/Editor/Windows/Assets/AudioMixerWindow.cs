@@ -152,7 +152,7 @@ namespace FlaxEditor.Windows.Assets
             {
                 if (_isDefault)
                     return _proxy.DefaultValues[_name];
-                return _proxy.Asset.GetMixerVolumeValue(_name);
+                return _proxy.Asset.GetMixerChannelVolume(_name);
             }
 
             private void Setter(object instance, int index, object value)
@@ -160,7 +160,7 @@ namespace FlaxEditor.Windows.Assets
                 if (_isDefault)
                     _proxy.DefaultValues[_name] = value;
                 else
-                    _proxy.Asset.SetMixerVolumeValue(_name, value);
+                    _proxy.Asset.SetMixerChannelVolume(_name, value);
             }
 
             /// <inheritdoc />
@@ -261,7 +261,7 @@ namespace FlaxEditor.Windows.Assets
                     foreach(var e in _proxy.DefaultValues)
                     {
                         var name = e.Key;
-                        var value = _proxy.Asset.GetMixerVolumeValue(name);
+                        var value = _proxy.Asset.GetMixerChannelVolume(name);
                         var valueContainer = new VariableValueContainer(_proxy, name, value, false);
                         var propertyLabel = new PropertyNameLabel(name)
                         {
@@ -273,6 +273,7 @@ namespace FlaxEditor.Windows.Assets
                         layout.Object(propertyLabel, valueContainer, null, tooltip);
                     }
 
+                    MixerData(layout);
                     return;
                 }
 
@@ -287,9 +288,15 @@ namespace FlaxEditor.Windows.Assets
                     };
                     propertyLabel.MouseLeftDoubleClick += (label, location) => StartParameterRenaming(name, label);
                     propertyLabel.SetupContextMenu += OnPropertyLabelSetupContextMenu;
-                    layout.Object(propertyLabel,valueContainer, null, "Type: " + CustomEditorsUtil.GetTypeNameUI(value.GetType()));
+                    layout.Object(propertyLabel, valueContainer, null, "Type: " + CustomEditorsUtil.GetTypeNameUI(value.GetType()));
                 }
 
+                MixerData(layout);
+            }
+
+
+            void MixerData(LayoutElementsContainer layout)
+            {
                 // TODO: improve the UI
                 layout.Space(40);
                 object lastValue = null;
@@ -301,6 +308,7 @@ namespace FlaxEditor.Windows.Assets
                 if (lastValue != null)
                     index = allowedTypes.FindIndex(x => x.Equals(CustomEditorsUtil.GetTypeNameUI(lastValue.GetType()), StringComparison.Ordinal));
             }
+
 
             private void OnPropertyLabelSetupContextMenu(PropertyNameLabel label, ContextMenu menu, CustomEditor linkedEditor)
             {
