@@ -508,10 +508,17 @@ namespace FlaxEditor.Viewport
             {
                 if (int.TryParse(defaultData, out var index))
                 {
-                    _defaultScaleActiveIndex = index;
-                    if (index != -1)
+                    var options = Editor.Instance.UI.DefaultViewportScaleOptions;
+                    if (options.Count > index)
                     {
-                        ChangeUIView(Editor.Instance.UI.DefaultViewportScaleOptions[index]);
+                        _defaultScaleActiveIndex = index;
+                        if (index != -1)
+                            ChangeUIView(Editor.Instance.UI.DefaultViewportScaleOptions[index]);
+                    }
+                    // Assume option does not exist anymore so move to default.
+                    else if (index != -1)
+                    {
+                        _defaultScaleActiveIndex = 0;
                     }
                 }
             }
@@ -521,10 +528,18 @@ namespace FlaxEditor.Viewport
             {
                 if (int.TryParse(data, out var index))
                 {
-                    _customScaleActiveIndex = index;
-                    if (index != -1)
+                    var options = Editor.Instance.UI.CustomViewportScaleOptions;
+                    if (options.Count > index)
                     {
-                        ChangeUIView(Editor.Instance.UI.CustomViewportScaleOptions[index]);
+                        _customScaleActiveIndex = index;
+                        if (index != -1)
+                            ChangeUIView(options[index]);
+                    }
+                    // Assume option does not exist anymore so move to default.
+                    else if (index != -1)
+                    {
+                        _defaultScaleActiveIndex = 0;
+                        _customScaleActiveIndex = -1;
                     }
                 }
             }

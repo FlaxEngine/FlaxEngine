@@ -1199,13 +1199,22 @@ namespace FlaxEditor.Windows
             if (_defaultScaleActiveIndex != -1)
             {
                 var options = Editor.UI.DefaultViewportScaleOptions;
-                ChangeViewportRatio(options[_defaultScaleActiveIndex]);
+                if (options.Count > _defaultScaleActiveIndex)
+                    ChangeViewportRatio(options[_defaultScaleActiveIndex]);
+                else
+                    _defaultScaleActiveIndex = 0;
             }
             
             if (_customScaleActiveIndex != -1)
             {
                 var options = Editor.UI.CustomViewportScaleOptions;
-                ChangeViewportRatio(options[_customScaleActiveIndex]);
+                if (options.Count > _customScaleActiveIndex)
+                    ChangeViewportRatio(options[_customScaleActiveIndex]);
+                else
+                {
+                    _defaultScaleActiveIndex = 0;
+                    _customScaleActiveIndex = -1;
+                }
             }
         }
 
