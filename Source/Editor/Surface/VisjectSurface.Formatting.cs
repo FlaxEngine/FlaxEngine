@@ -213,7 +213,9 @@ namespace FlaxEditor.Surface
                 }
             }
 
-            Undo?.AddAction(new MultiUndoAction(undoActions, "Straightned "));
+            if (undoActions.Count > 0)
+                Undo?.AddAction(new MultiUndoAction(undoActions, "Straightned "));
+
             MarkAsEdited(false);
         }
 
