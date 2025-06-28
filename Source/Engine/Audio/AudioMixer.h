@@ -44,13 +44,13 @@ public:
     /// Gets the values (run-time).
     /// </summary>
     /// <returns>The values (run-time).</returns>
-    API_PROPERTY() Dictionary<String, Variant> GetMixerValues() const;
+    API_PROPERTY() Dictionary<String, Variant> GetMixerVariablesValues() const;
 
     /// <summary>
     /// Sets the values (run-time).
     /// </summary>
     /// <param name="values">The values (run-time).</param>
-    API_PROPERTY() void SetMixerValues(const Dictionary<String, Variant>& values);
+    API_PROPERTY() void SetMixerVariablesValues(const Dictionary<String, Variant>& values);
 
     /// <summary>
     /// Gets the default values (edit-time).

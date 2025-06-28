@@ -75,7 +75,7 @@ void AudioMixer::MixerInit()
     }
 }
 
-Dictionary<String, Variant> AudioMixer::GetMixerValues() const
+Dictionary<String, Variant> AudioMixer::GetMixerVariablesValues() const
 {
     ScopeLock lock(Locker);
     Dictionary<String, Variant> result;
@@ -84,7 +84,7 @@ Dictionary<String, Variant> AudioMixer::GetMixerValues() const
     return result;
 }
 
-void AudioMixer::SetMixerValues(const Dictionary<String, Variant>& values)
+void AudioMixer::SetMixerVariablesValues(const Dictionary<String, Variant>& values)
 {
     ScopeLock lock(Locker);
     for (auto it = AudioMixerVariables.Begin(); it.IsNotEnd(); ++it)
