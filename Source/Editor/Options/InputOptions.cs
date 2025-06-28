@@ -686,13 +686,13 @@ namespace FlaxEditor.Options
         [EditorDisplay("Node Editors"), EditorOrder(4560)]
         public InputBinding NodesStraightenConnections = new InputBinding(KeyboardKeys.Q, KeyboardKeys.Shift);
 
-        [DefaultValue(typeof(InputBinding), "None")]
+        [DefaultValue(typeof(InputBinding), "Alt+W")]
         [EditorDisplay("Node Editors"), EditorOrder(4570)]
-        public InputBinding NodesDistributeHorizontal = new InputBinding(KeyboardKeys.None);
+        public InputBinding NodesDistributeHorizontal = new InputBinding(KeyboardKeys.W, KeyboardKeys.Alt);
 
-        [DefaultValue(typeof(InputBinding), "None")]
+        [DefaultValue(typeof(InputBinding), "Alt+A")]
         [EditorDisplay("Node Editors"), EditorOrder(4580)]
-        public InputBinding NodesDistributeVertical = new InputBinding(KeyboardKeys.None);
+        public InputBinding NodesDistributeVertical = new InputBinding(KeyboardKeys.A, KeyboardKeys.Alt);
 
         #endregion
     }
