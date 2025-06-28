@@ -77,7 +77,6 @@ namespace FlaxEditor.Viewport
         private int _defaultScaleActiveIndex = 0;
         private int _customScaleActiveIndex = -1;
         private ContextMenuButton _uiModeButton;
-        private ContextMenu _uiViewCM;
 
         /// <summary>
         /// Event fired when the UI Mode is toggled.
