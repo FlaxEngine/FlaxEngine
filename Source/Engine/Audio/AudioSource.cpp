@@ -9,6 +9,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "AudioBackend.h"
+#include "AudioMixerGroup.h"
 #include "Audio.h"
 
 AudioSource::AudioSource(const SpawnParams& params)
@@ -21,6 +22,7 @@ AudioSource::AudioSource(const SpawnParams& params)
     , _playOnStart(false)
     , _startTime(0.0f)
     , _allowSpatialization(true)
+    , MixerGroupChannel("Master")
 {
     Clip.Changed.Bind<AudioSource, &AudioSource::OnClipChanged>(this);
     Clip.Loaded.Bind<AudioSource, &AudioSource::OnClipLoaded>(this);
@@ -340,6 +342,7 @@ void AudioSource::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_GET_OTHER_OBJ(AudioSource);
 
     SERIALIZE(Clip);
+    SERIALIZE(MixerGroupChannel);
     SERIALIZE_MEMBER(Volume, _volume);
     SERIALIZE_MEMBER(Pitch, _pitch);
     SERIALIZE_MEMBER(Pan, _pan);
@@ -367,6 +370,7 @@ void AudioSource::Deserialize(DeserializeStream& stream, ISerializeModifier* mod
     DESERIALIZE_MEMBER(PlayOnStart, _playOnStart);
     DESERIALIZE_MEMBER(StartTime, _startTime);
     DESERIALIZE_MEMBER(AllowSpatialization, _allowSpatialization);
+    DESERIALIZE(MixerGroupChannel);
     DESERIALIZE(Clip);
 }
 
