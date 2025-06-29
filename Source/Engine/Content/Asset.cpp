@@ -242,9 +242,8 @@ void Asset::AddReference(IAssetReference* ref, bool week)
     if (ref)
     {
         //PROFILE_MEM(EngineDelegate); // Include references tracking memory within Delegate memory
-        Locker.Lock();
+        ScopeLock lock(_referencesLocker);
         _references.Add(ref);
-        Locker.Unlock();
     }
 }
 
@@ -257,9 +256,8 @@ void Asset::RemoveReference(IAssetReference* ref, bool week)
 {
     if (ref)
     {
-        Locker.Lock();
+        ScopeLock lock(_referencesLocker);
         _references.Remove(ref);
-        Locker.Unlock();
     }
     if (!week)
         Platform::InterlockedDecrement(&_refCount);
@@ -681,6 +679,7 @@ void Asset::onLoaded_MainThread()
     ASSERT(IsInMainThread());
 
     // Send event
+    ScopeLock lock(_referencesLocker);
     for (const auto& e : _references)
         e.Item->OnAssetLoaded(this, this);
     OnLoaded(this);
@@ -696,6 +695,7 @@ void Asset::onUnload_MainThread()
     CancelStreaming();
 
     // Send event
+    ScopeLock lock(_referencesLocker);
     for (const auto& e : _references)
         e.Item->OnAssetUnloaded(this, this);
     OnUnloaded(this);
