@@ -1044,6 +1044,20 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Performs a linear interpolation between two vectors.
+        /// </summary>
+        /// <param name="start">Start vector.</param>
+        /// <param name="end">End vector.</param>
+        /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+        /// <returns>The linear interpolation of the two vectors.</returns>
+        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        public static Vector3 ArcLerp(Vector3 start, Vector3 end, float amount)
+        {
+            Lerp(ref start, ref end, amount, out var result);
+            return result;
+        }
+
+        /// <summary>
         /// Performs a gradual change of a vector towards a specified target over time
         /// </summary>
         /// <param name="current">Current vector.</param>
