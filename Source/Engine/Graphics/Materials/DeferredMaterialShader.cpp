@@ -29,7 +29,7 @@ bool DeferredMaterialShader::CanUseLightmap() const
 bool DeferredMaterialShader::CanUseInstancing(InstancingHandler& handler) const
 {
     handler = { SurfaceDrawCallHandler::GetHash, SurfaceDrawCallHandler::CanBatch, };
-    return true;
+    return _instanced;
 }
 
 void DeferredMaterialShader::Bind(BindParameters& params)
@@ -114,6 +114,9 @@ void DeferredMaterialShader::Unload()
 
 bool DeferredMaterialShader::Load()
 {
+    // TODO: support instancing when using ForwardShadingFeature
+    _instanced = _info.BlendMode == MaterialBlendMode::Opaque && _info.ShadingModel != MaterialShadingModel::CustomLit;
+
     bool failed = false;
     auto psDesc = GPUPipelineState::Description::Default;
     psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == MaterialFeaturesFlags::None;
