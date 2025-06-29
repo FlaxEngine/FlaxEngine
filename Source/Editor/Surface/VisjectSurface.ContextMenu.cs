@@ -28,7 +28,7 @@ namespace FlaxEditor.Surface
             /// </summary>
             /// <param name="scriptType">The input type to process.</param>
             /// <param name="cache">Node groups cache that can be used for reusing groups for different nodes.</param>
-            /// <param name="version">The cache version number. Can be used to reject any cached data after <see cref="NodesCache"/> rebuilt.</param>
+            /// <param name="version">The cache version number. Can be used to reject any cached data after.<see cref="NodesCache"/> rebuilt.</param>
             public delegate void IterateType(ScriptType scriptType, Dictionary<KeyValuePair<string, ushort>, GroupArchetype> cache, int version);
 
             internal static readonly List<NodesCache> Caches = new List<NodesCache>(8);
@@ -412,6 +412,7 @@ namespace FlaxEditor.Surface
             _cmFormatNodesMenu.Enabled = CanEdit && HasNodesSelection;
 
             _cmFormatNodesConnectionButton = _cmFormatNodesMenu.ContextMenu.AddButton("Auto format", Editor.Instance.Options.Options.Input.NodesAutoFormat, () => { FormatGraph(SelectedNodes); });
+            _cmFormatNodesConnectionButton = _cmFormatNodesMenu.ContextMenu.AddButton("Straighten connections", Editor.Instance.Options.Options.Input.NodesStraightenConnections, () => { StraightenGraphConnections(SelectedNodes); });
 
             _cmFormatNodesMenu.ContextMenu.AddSeparator();
             _cmAlignNodesTopButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align top", Editor.Instance.Options.Options.Input.NodesAlignTop, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Top); });
