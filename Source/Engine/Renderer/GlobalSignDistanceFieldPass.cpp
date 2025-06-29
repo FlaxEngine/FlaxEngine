@@ -396,7 +396,7 @@ public:
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
-            ConcurrentSystemLocker::WriteScope lock(Locker);
+            ConcurrentSystemLocker::WriteScope lock(Locker, true);
             OnSceneRenderingDirty(a->GetBox());
         }
     }
@@ -405,7 +405,7 @@ public:
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
-            ConcurrentSystemLocker::WriteScope lock(Locker);
+            ConcurrentSystemLocker::WriteScope lock(Locker, true);
             OnSceneRenderingDirty(BoundingBox::FromSphere(prevBounds));
             OnSceneRenderingDirty(a->GetBox());
         }
@@ -415,13 +415,14 @@ public:
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
-            ConcurrentSystemLocker::WriteScope lock(Locker);
+            ConcurrentSystemLocker::WriteScope lock(Locker, true);
             OnSceneRenderingDirty(a->GetBox());
         }
     }
 
     void OnSceneRenderingClear(SceneRendering* scene) override
     {
+        ConcurrentSystemLocker::WriteScope lock(Locker, true);
         for (auto& cascade : Cascades)
             cascade.StaticChunks.Clear();
     }
@@ -719,6 +720,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     }
     sdfData.LastFrameUsed = currentFrame;
     PROFILE_GPU_CPU("Global SDF");
+    ConcurrentSystemLocker::WriteScope lock(sdfData.Locker);
 
     // Setup options
     int32 resolution, cascadesCount, resolutionMip;

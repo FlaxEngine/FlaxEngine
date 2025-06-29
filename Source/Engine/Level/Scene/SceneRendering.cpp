@@ -127,7 +127,7 @@ void SceneRendering::CollectPostFxVolumes(RenderContext& renderContext)
 
 void SceneRendering::Clear()
 {
-    ConcurrentSystemLocker::WriteScope lock(Locker);
+    ConcurrentSystemLocker::WriteScope lock(Locker, true);
     for (auto* listener : _listeners)
     {
         listener->OnSceneRenderingClear(this);
@@ -149,7 +149,7 @@ void SceneRendering::AddActor(Actor* a, int32& key)
         return;
     PROFILE_MEM(Graphics);
     const int32 category = a->_drawCategory;
-    ConcurrentSystemLocker::WriteScope lock(Locker);
+    ConcurrentSystemLocker::WriteScope lock(Locker, true);
     auto& list = Actors[category];
     if (FreeActors[category].HasItems())
     {
@@ -193,7 +193,7 @@ void SceneRendering::UpdateActor(Actor* a, int32& key, ISceneRenderingListener::
 void SceneRendering::RemoveActor(Actor* a, int32& key)
 {
     const int32 category = a->_drawCategory;
-    ConcurrentSystemLocker::WriteScope lock(Locker);
+    ConcurrentSystemLocker::WriteScope lock(Locker, true);
     auto& list = Actors[category];
     if (list.Count() > key) // Ignore invalid key softly (eg. list after batch clear during scene unload)
     {

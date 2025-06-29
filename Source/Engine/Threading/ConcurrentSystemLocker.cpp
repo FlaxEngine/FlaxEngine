@@ -8,7 +8,7 @@ ConcurrentSystemLocker::ConcurrentSystemLocker()
     _counters[0] = _counters[1] = 0;
 }
 
-void ConcurrentSystemLocker::Begin(bool write)
+void ConcurrentSystemLocker::Begin(bool write, bool exclusively)
 {
     volatile int64* thisCounter = &_counters[write];
     volatile int64* otherCounter = &_counters[!write];
@@ -22,8 +22,8 @@ RETRY:
         goto RETRY;
     }
 
-    // Writers have to check themselves to (one write at the same time - just like a mutex)
-    if (write && Platform::AtomicRead(thisCounter) != 0)
+    // Writers might want to check themselves for a single writer at the same time - just like a mutex
+    if (exclusively && Platform::AtomicRead(thisCounter) != 0)
     {
         // Someone else is doing opposite operation so wait for it's end
         Platform::Sleep(0);

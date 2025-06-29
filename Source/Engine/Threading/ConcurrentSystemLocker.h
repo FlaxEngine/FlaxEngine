@@ -17,7 +17,7 @@ public:
     NON_COPYABLE(ConcurrentSystemLocker);
     ConcurrentSystemLocker();
 
-    void Begin(bool write);
+    void Begin(bool write, bool exclusively = false);
     void End(bool write);
 
 public:
@@ -26,10 +26,10 @@ public:
     {
         NON_COPYABLE(Scope);
 
-        Scope(ConcurrentSystemLocker& locker)
+        Scope(ConcurrentSystemLocker& locker, bool exclusively = false)
             : _locker(locker)
         {
-            _locker.Begin(Write);
+            _locker.Begin(Write, exclusively);
         }
 
         ~Scope()
