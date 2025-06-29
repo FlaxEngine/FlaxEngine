@@ -42,6 +42,8 @@ void DeferredMaterialShader::Bind(BindParameters& params)
 
     // Setup features
     const bool useLightmap = _info.BlendMode == MaterialBlendMode::Opaque && LightmapFeature::Bind(params, cb, srv);
+    if (_info.ShadingModel == MaterialShadingModel::CustomLit)
+        ForwardShadingFeature::Bind(params, cb, srv);
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;

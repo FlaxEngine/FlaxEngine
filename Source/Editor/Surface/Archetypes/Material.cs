@@ -124,7 +124,8 @@ namespace FlaxEditor.Surface.Archetypes
                 case MaterialDomain.Particle:
                 case MaterialDomain.Deformable:
                 {
-                    bool isNotUnlit = info.ShadingModel != MaterialShadingModel.Unlit;
+                    bool isNotUnlit = info.ShadingModel != MaterialShadingModel.Unlit && info.ShadingModel != MaterialShadingModel.CustomLit;
+                    bool isOpaque = info.BlendMode == MaterialBlendMode.Opaque;
                     bool withTess = info.TessellationMode != TessellationMethod.None;
 
                     GetBox(MaterialNodeBoxes.Color).IsActive = isNotUnlit;
@@ -135,8 +136,8 @@ namespace FlaxEditor.Surface.Archetypes
                     GetBox(MaterialNodeBoxes.Roughness).IsActive = isNotUnlit;
                     GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = isNotUnlit;
                     GetBox(MaterialNodeBoxes.Normal).IsActive = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.Opacity).IsActive = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage || info.BlendMode != MaterialBlendMode.Opaque;
-                    GetBox(MaterialNodeBoxes.Refraction).IsActive = info.BlendMode != MaterialBlendMode.Opaque;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage || !isOpaque;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = !isOpaque;
                     GetBox(MaterialNodeBoxes.PositionOffset).IsActive = true;
                     GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = withTess;
                     GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = withTess;
