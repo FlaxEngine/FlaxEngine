@@ -41,11 +41,10 @@ void ExponentialHeightFog::Draw(RenderContext& renderContext)
         && _shader->IsLoaded()
         && renderContext.View.IsPerspectiveProjection())
     {
-        // Prepare
         if (_psFog.States[0] == nullptr)
-        {
-            // Create pipeline states
             _psFog.CreatePipelineStates();
+        if (!_psFog.States[0]->IsValid())
+        {
             GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
             psDesc.DepthWriteEnable = false;
             psDesc.BlendMode.BlendEnable = true;
@@ -59,6 +58,7 @@ void ExponentialHeightFog::Draw(RenderContext& renderContext)
             if (_psFog.Create(psDesc, _shader->GetShader(), "PS_Fog"))
             {
                 LOG(Warning, "Cannot create graphics pipeline state object for '{0}'.", ToString());
+                return;
             }
         }
 
@@ -160,7 +160,7 @@ void ExponentialHeightFog::GetExponentialHeightFogData(const RenderView& view, S
     result.FogAtViewPosition = density * Math::Pow(2.0f, Math::Clamp(-heightFalloff * (viewHeight - height), -125.f, 126.f));
     result.StartDistance = StartDistance;
     result.FogMinOpacity = 1.0f - FogMaxOpacity;
-    result.FogCutoffDistance = FogCutoffDistance;
+    result.FogCutoffDistance = FogCutoffDistance >= 0 ? FogCutoffDistance : view.Far + FogCutoffDistance;
     if (useDirectionalLightInscattering)
     {
         result.InscatteringLightDirection = -DirectionalInscatteringLight->GetDirection();

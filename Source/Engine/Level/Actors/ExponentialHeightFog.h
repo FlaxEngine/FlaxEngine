@@ -55,9 +55,9 @@ public:
     float StartDistance = 0.0f;
 
     /// <summary>
-    /// Scene elements past this distance will not have fog applied. This is useful for excluding skyboxes which already have fog baked in. Setting this value to 0 disables it.
+    /// Scene elements past this distance will not have fog applied. This is useful for excluding skyboxes which already have fog baked in. Setting this value to 0 disables it. Negative value sets the cutoff distance relative to the far plane of the camera.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(60), DefaultValue(0.0f), Limit(0), EditorDisplay(\"Exponential Height Fog\")")
+    API_FIELD(Attributes="EditorOrder(60), DefaultValue(0.0f), EditorDisplay(\"Exponential Height Fog\")")
     float FogCutoffDistance = 0.0f;
 
 public:

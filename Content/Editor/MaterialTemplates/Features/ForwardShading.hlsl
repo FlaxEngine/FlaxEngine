@@ -151,7 +151,7 @@ void PS_Forward(
 
 #if USE_FOG
 	// Calculate exponential height fog
-	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, 0);
+	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, 0, gBuffer.ViewPos.z);
 
 	// Apply fog to the output color
 #if MATERIAL_BLEND == MATERIAL_BLEND_OPAQUE
