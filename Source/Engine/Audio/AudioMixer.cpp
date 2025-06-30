@@ -63,7 +63,7 @@ AudioMixer::AudioMixer(const SpawnParams& params, const AssetInfo* info)
 
 void AudioMixer::MixerInit()
 {
-    auto audioMixerGroups = AudioSettings::Get()->AudioMixerGroups;
+    auto audioMixerGroups = AudioSettings::Get()->MixerGroupChannels;
 
     if (audioMixerGroups.Count() == 0)
         return;
