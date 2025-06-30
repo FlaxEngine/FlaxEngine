@@ -5,7 +5,7 @@
 #include "Engine/Content/BinaryAsset.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Types/Variant.h"
-#include "AudioMixerGroup.h"
+#include "MixerGroupChannels.h"
 
 /// <summary>
 /// 

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Config/Settings.h"
-#include "AudioMixerGroup.h"
+#include "MixerGroupChannels.h"
 
 /// <summary>
 /// Audio settings container.
@@ -43,7 +43,7 @@ public:
     /// Audio Mixer configuration (per-group).
     /// </summary>
     API_FIELD(Attributes = "EditorOrder(400), EditorDisplay(\"Audio Mixer\")")
-    Array<AudioMixerGroup,InlinedAllocation<32>> MixerGroupChannels;
+    Array<MixerGroupChannels,InlinedAllocation<32>> MixerGroupChannels;
 
 public:
     /// <summary>

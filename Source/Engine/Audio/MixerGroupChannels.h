@@ -8,10 +8,10 @@
 /// <summary>
 ///  Settings container for a group of audio mixer settings. Defines the data audio mixer options.
 /// </summary>
-API_STRUCT() struct AudioMixerGroup : ISerializable
+API_STRUCT() struct MixerGroupChannels : ISerializable
 {
     API_AUTO_SERIALIZATION();
-    DECLARE_SCRIPTING_TYPE_MINIMAL(AudioMixerGroup);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(MixerGroupChannels);
 
     /// <summary>
     /// The name of the group.
