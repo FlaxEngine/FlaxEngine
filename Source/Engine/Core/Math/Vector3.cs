@@ -1054,8 +1054,8 @@ namespace FlaxEngine
         public static Vector3 ArcLerp(Vector3 start, Vector3 end, float amount, float height)
         {
             Lerp(ref start, ref end, amount, out var result);
-            float t = Mathr.InverseLerp(start, end, end - start)
-            result.Y += height * 4 * t * (1 - t)
+            float t = Mathr.InverseLerp(start.Length,end.Length,(start-end).Length);
+            result.Y += height * 4 * t * (1 - t);
             return result;
         }
 
