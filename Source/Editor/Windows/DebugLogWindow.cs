@@ -447,6 +447,10 @@ namespace FlaxEditor.Windows
         /// </summary>
         public void Clear()
         {
+            lock (_locker)
+            {
+                _pendingEntries.Clear();
+            }
             if (_entriesPanel == null)
                 return;
             RemoveEntries();
@@ -740,10 +744,6 @@ namespace FlaxEditor.Windows
             // Clear on Play
             if (Editor.Options.Options.Interface.DebugLogClearOnPlay)
             {
-                lock (_locker)
-                {
-                    _pendingEntries?.Clear();
-                }
                 Clear();
             }
         }
