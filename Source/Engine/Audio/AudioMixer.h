@@ -35,7 +35,7 @@ public:
     /// <summary>
     /// The collection of audio mixer variables identified by the name.
     /// </summary>
-    Dictionary<String, MixerVariable> AudioMixerVariables;
+    Dictionary<String, MixerVariable> MixerGroupsVariables;
 
 public:
     API_FUNCTION() void MixerInit();
