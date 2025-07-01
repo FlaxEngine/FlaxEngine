@@ -604,6 +604,9 @@ namespace FlaxEditor.CustomEditors.Editors
             root.SortChildrenRecursive();
             root.Expand(true);
 
+            if (Input.GetKey(KeyboardKeys.Shift))
+                root.ExpandAll(true);
+
             return menu;
         }
     }
