@@ -84,7 +84,7 @@ public:
     bool EnableGlobalSDF = false;
 
     /// <summary>
-    /// Draw distance of the Global SDF. Actual value can be large when using DDGI.
+    /// Draw distance of the Global SDF. Actual value can be larger when using DDGI.
     /// </summary>
     API_FIELD(Attributes="EditorOrder(2001), EditorDisplay(\"Global SDF\"), Limit(1000), ValueCategory(Utils.ValueCategory.Distance)")
     float GlobalSDFDistance = 15000.0f;
