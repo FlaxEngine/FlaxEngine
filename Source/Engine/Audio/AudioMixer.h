@@ -24,6 +24,11 @@ public:
         /// The current value.
         /// </summary>
         Variant Value;
+
+        /// <summary>
+       /// The default value.
+       /// </summary>
+        Variant DefaultValue;
     };
 
 public:
@@ -77,7 +82,7 @@ public:
     /// <summary>
     /// 
     /// </summary>
-    API_FUNCTION() void Reset();
+    API_FUNCTION() void ResetMixer();
 
 public:
     // [BinaryAsset]

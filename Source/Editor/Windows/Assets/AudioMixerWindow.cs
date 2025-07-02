@@ -427,7 +427,7 @@ namespace FlaxEditor.Windows.Assets
 
         private void Reset()
         {
-            _asset.Reset();
+            _asset.ResetMixer();
         }
 
         /// <inheritdoc />

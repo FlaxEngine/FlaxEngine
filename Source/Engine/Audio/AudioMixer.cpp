@@ -71,7 +71,7 @@ void AudioMixer::MixerInit()
     for (auto& audioMixerGroup : audioMixerGroups)
     {
         auto& var = MixerGroupsVariables[audioMixerGroup.Name];
-        var.Value = audioMixerGroup.MixerVolume;
+        var.DefaultValue = audioMixerGroup.MixerVolume;
     }
 }
 
@@ -100,7 +100,7 @@ void AudioMixer::SetMixerVariablesValues(const Dictionary<String, Variant>& valu
         if (!e) 
         {
             e = &MixerGroupsVariables[i->Key];
-            e->Value = i->Value;
+            e->DefaultValue = i->Value;
         }
         e->Value = i->Value;
     }
@@ -111,7 +111,7 @@ Dictionary<String, Variant> AudioMixer::GetDefaultValues() const
     ScopeLock lock(Locker);
     Dictionary<String, Variant> result;
     for (auto& e : MixerGroupsVariables)
-        result.Add(e.Key, e.Value.Value);
+        result.Add(e.Key, e.Value.DefaultValue);
     return result;
 }
 
@@ -133,7 +133,7 @@ void AudioMixer::SetDefaultValues(const Dictionary<String, Variant>& values)
             e = &MixerGroupsVariables[i->Key];
             e->Value = i->Value;
         }
-        e->Value = i->Value;
+        e->DefaultValue = i->Value;
     }
 }
 
@@ -151,18 +151,12 @@ void AudioMixer::SetMixerChannelVolume(const StringView& nameChannel, const Vari
     if (e) e->Value = value;
 }
 
-void AudioMixer::Reset() 
+void AudioMixer::ResetMixer() 
 {
     ScopeLock lock(Locker);
-    auto audioMixerGroups = AudioSettings::Get()->MixerGroupChannels;
-
-    if (audioMixerGroups.Count() == 0)
-        return;
-
-    for (auto& audioMixerGroup : audioMixerGroups)
+    for (auto& e : MixerGroupsVariables)
     {
-        auto var = MixerGroupsVariables.TryGet(audioMixerGroup.Name);
-        if (var) var->Value = audioMixerGroup.MixerVolume;
+        e.Value.Value = e.Value.DefaultValue;
     }
 }
 
@@ -180,7 +174,7 @@ void AudioMixer::Reset()
         for (auto& e : MixerGroupsVariables)
         {
             stream.Write(e.Key, 71);
-            stream.Write(e.Value.Value);
+            stream.Write(e.Value.DefaultValue);
         }
 
         // Set chunk data
@@ -239,6 +233,7 @@ Asset::LoadResult AudioMixer::load()
         stream.Read(Name, 71);
         auto& e = MixerGroupsVariables[Name];
         stream.Read(e.Value);
+        e.Value = e.DefaultValue;
     }
     if(stream.HasError())
     {
