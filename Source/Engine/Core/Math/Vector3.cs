@@ -1057,7 +1057,7 @@ namespace FlaxEngine
         {
             Lerp(ref start, ref end, amount, out var result);
             float t = Mathf.InverseLerp(start.Length, end.Length, (start-end).Length);
-            result.Y += Mathf.Sqrt(height * 4 * t * (1 - t));
+            result.Y += height * 0.125f * t * (1 - t);
             return result;
         }
 
