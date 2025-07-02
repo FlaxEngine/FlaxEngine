@@ -11,6 +11,7 @@ using FlaxEngine.GUI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace FlaxEditor.Windows.Assets
 {
@@ -400,8 +401,8 @@ namespace FlaxEditor.Windows.Assets
             _undoButton = _toolstrip.AddButton(Editor.Icons.Undo64, _undo.PerformUndo).LinkTooltip("Undo", ref inputOptions.Undo);
             _redoButton = _toolstrip.AddButton(Editor.Icons.Redo64, _undo.PerformRedo).LinkTooltip("Redo", ref inputOptions.Redo);
             _toolstrip.AddSeparator();
-            _resetButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Rotate32, Reset).LinkTooltip("Resets the audio mixer variables values to the default values");
-            
+            _resetButton= (ToolStripButton)_toolstrip.AddButton(editor.Icons.Rotate32, Reset).LinkTooltip("Resets the variables values to the default values");
+
             InputActions.Add(options => options.Save, Save);
             InputActions.Add(options => options.Undo, _undo.PerformUndo);
             InputActions.Add(options => options.Redo, _undo.PerformRedo);
@@ -426,7 +427,7 @@ namespace FlaxEditor.Windows.Assets
 
         private void Reset()
         {
-            _asset.ResetValues();
+            _asset.Reset();
         }
 
         /// <inheritdoc />
@@ -454,7 +455,6 @@ namespace FlaxEditor.Windows.Assets
             _saveButton.Enabled = IsEdited;
             _undoButton.Enabled = _undo.CanUndo;
             _redoButton.Enabled = _undo.CanRedo;
-            _resetButton.Enabled = _asset is not null;
 
             base.UpdateToolstrip();
         }
@@ -517,7 +517,6 @@ namespace FlaxEditor.Windows.Assets
             _saveButton = null;
             _undoButton = null;
             _redoButton = null;
-            _resetButton = null;
         }
     }
 }

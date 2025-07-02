@@ -24,11 +24,6 @@ public:
         /// The current value.
         /// </summary>
         Variant Value;
-
-        /// <summary>
-        /// The default value.
-        /// </summary>
-        Variant DefaultValue;
     };
 
 public:
@@ -80,9 +75,9 @@ public:
     API_FUNCTION() void SetMixerChannelVolume(const StringView& nameChannel, const Variant& value);
 
     /// <summary>
-   /// Resets the variables values to default values.
-   /// </summary>
-    API_FUNCTION() void ResetValues();
+    /// 
+    /// </summary>
+    API_FUNCTION() void Reset();
 
 public:
     // [BinaryAsset]
