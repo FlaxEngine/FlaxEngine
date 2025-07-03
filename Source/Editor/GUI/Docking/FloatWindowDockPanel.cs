@@ -11,6 +11,42 @@ namespace FlaxEditor.GUI.Docking
     /// <seealso cref="DockPanel" />
     public class FloatWindowDockPanel : DockPanel
     {
+        private class FloatWindowDecorations : WindowDecorations
+        {
+            private FloatWindowDockPanel _panel;
+            
+            public FloatWindowDecorations(FloatWindowDockPanel panel)
+            : base(panel.RootWindow)
+            {
+                _panel = panel;
+            }
+            
+            /// <inheritdoc />
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (Title.Bounds.Contains(location) && button == MouseButton.Left)
+                {
+                    _panel.BeginDrag();
+                    return true;
+                }
+                return base.OnMouseDown(location, button);
+            }
+
+#if !PLATFORM_WINDOWS
+            /// <inheritdoc />
+            protected override WindowHitCodes OnHitTest(ref Float2 mouse)
+            {
+                var hit = base.OnHitTest(ref mouse);
+                if (hit == WindowHitCodes.Caption)
+                {
+                    // Override the system behaviour when interacting with the caption area
+                    hit = WindowHitCodes.Client;
+                }
+                return hit;
+            }
+#endif
+        }
+
         private MasterDockPanel _masterPanel;
         private WindowRootControl _window;
 
@@ -40,6 +76,26 @@ namespace FlaxEditor.GUI.Docking
             Parent = window;
             _window.Window.Closing += OnClosing;
             _window.Window.LeftButtonHit += OnLeftButtonHit;
+            
+            if (Utilities.Utils.UseCustomWindowDecorations())
+            {
+                var decorations = Parent.AddChild(new FloatWindowDecorations(this));
+                decorations.SetAnchorPreset(AnchorPresets.HorizontalStretchTop, false);
+            }
+        }
+        
+        /// <inheritdoc />
+        protected override void PerformLayoutBeforeChildren()
+        {
+            base.PerformLayoutBeforeChildren();
+            
+            var decorations = Parent.GetChild<FloatWindowDecorations>();
+            if (decorations != null)
+            {
+                // Apply offset for the title bar
+                foreach (var child in Children)
+                    child.Bounds = child.Bounds with { Y = decorations.Height, Height = Parent.Height - decorations.Height };
+            }
         }
 
         /// <summary>
@@ -87,6 +143,12 @@ namespace FlaxEditor.GUI.Docking
             settings.ShowAfterFirstPaint = false;
             settings.ShowInTaskbar = true;
             settings.StartPosition = startPosition;
+            
+            if (Utilities.Utils.UseCustomWindowDecorations())
+            {
+                settings.HasBorder = false;
+                //settings.HasSizingFrame = false;
+            }
 
             // Create window
             return Platform.CreateWindow(ref settings);

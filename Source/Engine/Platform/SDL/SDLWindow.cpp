@@ -25,7 +25,6 @@
 
 #define NOGDI
 #include <SDL3/SDL_events.h>
-#include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_video.h>
 #undef CreateWindow
@@ -45,12 +44,12 @@ static_assert(false, "Unsupported Platform");
 
 #define DefaultDPI 96
 
-namespace WindowImpl
+namespace SDLImpl
 {
     SDLWindow* LastEventWindow = nullptr;
-    static SDL_Cursor* Cursors[SDL_SYSTEM_CURSOR_COUNT] = { nullptr };
+    SDL_Cursor* Cursors[SDL_SYSTEM_CURSOR_COUNT] = { nullptr };
+    extern String XDGCurrentDesktop;
 }
-using namespace WindowImpl;
 
 SDL_HitTestResult OnWindowHitTest(SDL_Window* win, const SDL_Point* area, void* data);
 void GetRelativeWindowOffset(WindowType type, SDLWindow* parentWindow, Int2& positionOffset);
@@ -208,7 +207,7 @@ SDLWindow::SDLWindow(const CreateWindowSettings& settings)
     }
 #endif
 
-    LastEventWindow = this;
+    SDLImpl::LastEventWindow = this;
 
 #if PLATFORM_LINUX
     // Initialize using the shared Display instance from SDL
@@ -263,8 +262,8 @@ void* SDLWindow::GetX11Display() const
 
 SDLWindow::~SDLWindow()
 {
-    if (LastEventWindow == this)
-        LastEventWindow = nullptr;
+    if (SDLImpl::LastEventWindow == this)
+        SDLImpl::LastEventWindow = nullptr;
 
     if (_window == nullptr)
         return;
@@ -281,45 +280,48 @@ SDLWindow::~SDLWindow()
     _visible = false;
 }
 
+WindowHitCodes SDLWindow::OnWindowHit(const Float2 point)
+{
+    WindowHitCodes hit = WindowHitCodes::Client;
+    if (!IsFullscreen())
+    {
+        Float2 screenPosition = ClientToScreen(point);
+        bool handled = false;
+        OnHitTest(screenPosition, hit, handled);
+        if (!handled)
+        {
+            int margin = _settings.HasBorder ? 0 : 0;
+            auto size = GetClientSize();
+            //if (point.Y < 0)
+            //    hit = WindowHitCodes::Caption;
+            if (point.Y < margin && point.X < margin)
+                hit = WindowHitCodes::TopLeft;
+            else if (point.Y < margin && point.X > size.X - margin)
+                hit = WindowHitCodes::TopRight;
+            else if (point.Y < margin)
+                hit = WindowHitCodes::Top;
+            else if (point.X < margin && point.Y > size.Y - margin)
+                hit = WindowHitCodes::BottomLeft;
+            else if (point.X < margin)
+                hit = WindowHitCodes::Left;
+            else if (point.X > size.X - margin && point.Y > size.Y - margin)
+                hit = WindowHitCodes::BottomRight;
+            else if (point.X > size.X - margin)
+                hit = WindowHitCodes::Right;
+            else if (point.Y > size.Y - margin)
+                hit = WindowHitCodes::Bottom;
+            else
+                hit = WindowHitCodes::Client;
+        }
+    }
+    return hit;
+}
+
 SDL_HitTestResult OnWindowHitTest(SDL_Window* win, const SDL_Point* area, void* data)
 {
-    SDLWindow* window = (SDLWindow*)data;
-    if (window->IsFullscreen())
-        return SDL_HITTEST_NORMAL;
-
-    Float2 clientPosition = Float2(static_cast<float>(area->x), static_cast<float>(area->y));
-    Float2 screenPosition = window->ClientToScreen(clientPosition);
-
-    WindowHitCodes hit = WindowHitCodes::Client;
-    bool handled = false;
-    window->OnHitTest(screenPosition, hit, handled);
-
-    if (!handled)
-    {
-        int margin = window->GetSettings().HasBorder ? 0 : 0;
-        auto size = window->GetClientSize();
-        //if (clientPosition.Y < 0)
-        //    return SDL_HITTEST_DRAGGABLE;
-        if (clientPosition.Y < margin && clientPosition.X < margin)
-            return SDL_HITTEST_RESIZE_TOPLEFT;
-        else if (clientPosition.Y < margin && clientPosition.X > size.X - margin)
-            return SDL_HITTEST_RESIZE_TOPRIGHT;
-        else if (clientPosition.Y < margin)
-            return SDL_HITTEST_RESIZE_TOP;
-        else if (clientPosition.X < margin && clientPosition.Y > size.Y - margin)
-            return SDL_HITTEST_RESIZE_BOTTOMLEFT;
-        else if (clientPosition.X < margin)
-            return SDL_HITTEST_RESIZE_LEFT;
-        else if (clientPosition.X > size.X - margin && clientPosition.Y > size.Y - margin)
-            return SDL_HITTEST_RESIZE_BOTTOMRIGHT;
-        else if (clientPosition.X > size.X - margin)
-            return SDL_HITTEST_RESIZE_RIGHT;
-        else if (clientPosition.Y > size.Y - margin)
-            return SDL_HITTEST_RESIZE_BOTTOM;
-        else
-            return SDL_HITTEST_NORMAL;
-    }
-
+    SDLWindow* window = static_cast<SDLWindow*>(data);
+    const Float2 point(static_cast<float>(area->x), static_cast<float>(area->y));
+    WindowHitCodes hit = window->OnWindowHit(point);
     switch (hit)
     {
     case WindowHitCodes::Caption:
@@ -350,9 +352,9 @@ SDLWindow* SDLWindow::GetWindowFromEvent(const SDL_Event& event)
     SDL_Window* window = SDL_GetWindowFromEvent(&event);
     if (window == nullptr)
         return nullptr;
-    if (LastEventWindow == nullptr || window != LastEventWindow->_window)
-        LastEventWindow = GetWindowWithSDLWindow(window);
-    return LastEventWindow;
+    if (SDLImpl::LastEventWindow == nullptr || window != SDLImpl::LastEventWindow->_window)
+        SDLImpl::LastEventWindow = GetWindowWithSDLWindow(window);
+    return SDLImpl::LastEventWindow;
 }
 
 SDLWindow* SDLWindow::GetWindowWithSDLWindow(SDL_Window* window)
@@ -779,8 +781,8 @@ Float2 SDLWindow::ClientToScreen(const Float2& clientPos) const
 void SDLWindow::FlashWindow()
 {
 #if PLATFORM_LINUX
-    // Flashing brings the window on top of other windows, disable it for now
-    if (SDLPlatform::UsesWayland())
+    // KDE bug: flashing brings the window on top of other windows, disable it for now...
+    if (SDLPlatform::UsesWayland() && SDLImpl::XDGCurrentDesktop.Compare(String("KDE"), StringSearchCase::IgnoreCase) == 0)
         return;
 #endif
     SDL_FlashWindow(_window, SDL_FLASH_UNTIL_FOCUSED);
@@ -989,9 +991,9 @@ void SDLWindow::UpdateCursor()
         break;
     }
 
-    if (Cursors[index] == nullptr)
-        Cursors[index] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(index));
-    SDL_SetCursor(Cursors[index]);
+    if (SDLImpl::Cursors[index] == nullptr)
+        SDLImpl::Cursors[index] = SDL_CreateSystemCursor(static_cast<SDL_SystemCursor>(index));
+    SDL_SetCursor(SDLImpl::Cursors[index]);
 }
 
 void SDLWindow::SetIcon(TextureData& icon)

@@ -375,6 +375,11 @@ public:
     API_PROPERTY() static String GetDisplayServer();
 
     /// <summary>
+    /// Returns true if system provides decorations for windows.
+    /// </summary>
+    API_PROPERTY() static bool SupportsNativeDecorations();
+
+    /// <summary>
     /// Returns true if is running 64 bit application (otherwise 32 bit). It's compile-time constant.
     /// </summary>
     API_PROPERTY() static bool Is64BitApp();

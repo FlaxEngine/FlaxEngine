@@ -1559,5 +1559,17 @@ namespace FlaxEditor.Utilities
                 c = c.Parent;
             return c as ISceneEditingContext;
         }
+
+        internal static bool UseCustomWindowDecorations(bool isMainWindow = false)
+        {
+            return Editor.Instance.Options.Options.Interface.WindowDecorations switch
+            {
+                Options.InterfaceOptions.WindowDecorationsType.Auto => !Platform.SupportsNativeDecorations,
+                Options.InterfaceOptions.WindowDecorationsType.AutoChildOnly => !isMainWindow ? !Platform.SupportsNativeDecorations : true,
+                Options.InterfaceOptions.WindowDecorationsType.Native => false,
+                Options.InterfaceOptions.WindowDecorationsType.ClientSide => true,
+                _ => throw new ArgumentOutOfRangeException()
+            };
+        }
     }
 }

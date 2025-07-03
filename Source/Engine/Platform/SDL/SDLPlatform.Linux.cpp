@@ -35,6 +35,12 @@
 #include <wayland/xdg-shell.h>
 #include <wayland/xdg-toplevel-drag-v1.h>
 
+namespace SDLImpl
+{
+    extern String WaylandDisplayEnv;
+    extern String XDGCurrentDesktop;
+}
+
 class LinuxDropFilesData : public IGuiData
 {
 public:
@@ -1611,8 +1617,7 @@ bool SDLPlatform::InitInternal()
     if (!CommandLine::Options.Headless.IsTrue() && waylandRequested)
     {
         // Ignore in X11 session
-        String waylandDisplayEnv;
-        if (!GetEnvironmentVariable(String("WAYLAND_DISPLAY"), waylandDisplayEnv))
+        if (!SDLImpl::WaylandDisplayEnv.IsEmpty())
         {
             WaylandImpl::WaylandDisplay = (wl_display*)SDL_GetPointerProperty(SDL_GetGlobalProperties(), SDL_PROP_GLOBAL_VIDEO_WAYLAND_WL_DISPLAY_POINTER, nullptr);
             if (WaylandImpl::WaylandDisplay != nullptr)
@@ -1721,11 +1726,15 @@ DragDropEffect SDLWindow::DoDragDrop(const StringView& data, const Float2& offse
     if (SDLPlatform::UsesWayland())
     {
         Float2 dragOffset = offset;
-        if (_settings.HasBorder && dragSourceWindow == this)
+        if (SDLPlatform::SupportsNativeDecorations() && _settings.HasBorder && dragSourceWindow == this)
         {
             // Wayland includes the decorations in the client-space coordinates, adjust the offset for it.
-            // Assume the title decoration is 25px thick...
+            // Assume the title decoration based on the current desktop environment...
             float topOffset = 25.0f;
+            if (SDLImpl::XDGCurrentDesktop.Compare(String("KDE"), StringSearchCase::IgnoreCase) == 0)
+                topOffset = 25.0f;
+            else if (SDLImpl::XDGCurrentDesktop.Compare(String("GNOME"), StringSearchCase::IgnoreCase) == 0)
+                topOffset = 48.0f;
             dragOffset += Float2(0.0f, topOffset);
         }
 

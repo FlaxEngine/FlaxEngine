@@ -16,7 +16,6 @@ using FlaxEditor.Windows;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
-using WindowDragHelper = FlaxEditor.GUI.Docking.WindowDragHelper;
 using MasterDockPanel = FlaxEditor.GUI.Docking.MasterDockPanel;
 using FlaxEditor.Content.Settings;
 using FlaxEditor.Options;
@@ -29,6 +28,40 @@ namespace FlaxEditor.Modules
     /// <seealso cref="FlaxEditor.Modules.EditorModule" />
     public sealed class UIModule : EditorModule
     {
+        private class MainWindowDecorations : WindowDecorations
+        {
+            public MainWindowDecorations(RootControl window, bool iconOnly) 
+            : base(window, iconOnly)
+            {
+            }
+
+            /// <inheritdoc />
+            public override bool OnKeyDown(KeyboardKeys key)
+            {
+                if (base.OnKeyDown(key))
+                    return true;
+
+                // Fallback to the edit window for shortcuts
+                var editor = Editor.Instance;
+                return editor.Windows.EditWin.InputActions.Process(editor, this, key);
+            }
+            
+            /// <inheritdoc />
+            public override void DrawBorders()
+            {
+                // Draw main window borders if using a custom style
+                var win = RootWindow.Window;
+                if (win.IsMaximized)
+                    return;
+
+                var color = Editor.Instance.UI.StatusBar.StatusColor;
+                var rect = new Rectangle(0.5f, 0.5f, Parent.Width - 1.0f, Parent.Height - 1.0f - StatusBar.DefaultHeight);
+                Render2D.DrawLine(rect.UpperLeft, rect.UpperRight, color);
+                Render2D.DrawLine(rect.UpperLeft, rect.BottomLeft, color);
+                Render2D.DrawLine(rect.UpperRight, rect.BottomRight, color);
+            }
+        }
+        
         private Label _progressLabel;
         private ProgressBar _progressBar;
         private Button _outputLogButton;
@@ -96,6 +129,11 @@ namespace FlaxEditor.Modules
         /// The main menu control.
         /// </summary>
         public MainMenu MainMenu;
+
+        /// <summary>
+        /// The window decorations (title bar with buttons)
+        /// </summary>
+        public WindowDecorations WindowDecorations;
 
         /// <summary>
         /// The tool strip control.
@@ -377,19 +415,11 @@ namespace FlaxEditor.Modules
             InitToolstrip(mainWindow);
             InitStatusBar(mainWindow);
             InitDockPanel(mainWindow);
+            InitWindowDecorations(mainWindow);
 
             Editor.Options.OptionsChanged += OnOptionsChanged;
-
-            // Add dummy control for drawing the main window borders if using a custom style
-#if PLATFORM_WINDOWS || PLATFORM_SDL
-            if (!Editor.Options.Options.Interface.UseNativeWindowSystem)
-#endif
-            {
-                mainWindow.AddChild(new CustomWindowBorderControl
-                {
-                    Size = Float2.Zero,
-                });
-            }
+            
+            mainWindow.PerformLayout(true);
         }
 
         /// <inheritdoc />
@@ -407,23 +437,6 @@ namespace FlaxEditor.Modules
             else if (ProgressVisible)
             {
                 UpdateStatusBar();
-            }
-        }
-
-        private class CustomWindowBorderControl : Control
-        {
-            /// <inheritdoc />
-            public override void Draw()
-            {
-                var win = RootWindow.Window;
-                if (win.IsMaximized)
-                    return;
-
-                var color = Editor.Instance.UI.StatusBar.StatusColor;
-                var rect = new Rectangle(0.5f, 0.5f, Parent.Width - 1.0f, Parent.Height - 1.0f - StatusBar.DefaultHeight);
-                Render2D.DrawLine(rect.UpperLeft, rect.UpperRight, color);
-                Render2D.DrawLine(rect.UpperLeft, rect.BottomLeft, color);
-                Render2D.DrawLine(rect.UpperRight, rect.BottomRight, color);
             }
         }
 
@@ -511,10 +524,12 @@ namespace FlaxEditor.Modules
 
         private void InitMainMenu(RootControl mainWindow)
         {
-            MainMenu = new MainMenu(mainWindow)
+            MainMenu = new MainMenu()
             {
                 Parent = mainWindow
             };
+            if (Utilities.Utils.UseCustomWindowDecorations(isMainWindow: true))
+                MainMenu.Height = 28;
 
             var inputOptions = Editor.Options.Options.Input;
 
@@ -654,6 +669,20 @@ namespace FlaxEditor.Modules
             cm.AddButton("Information about Flax", () => new AboutDialog().Show());
         }
 
+        private void InitWindowDecorations(RootControl mainWindow)
+        {
+            ScriptsBuilder.GetBinariesConfiguration(out _, out _, out _, out var configuration);
+            var driver = Platform.DisplayServer;
+            if (!string.IsNullOrEmpty(driver))
+                driver = $" ({driver})";
+            
+            WindowDecorations = new MainWindowDecorations(mainWindow, !Utilities.Utils.UseCustomWindowDecorations(isMainWindow: true))
+            {
+                Parent = mainWindow,
+                IconTooltipText = $"{mainWindow.RootWindow.Title}\nVersion {Globals.EngineVersion}\nConfiguration {configuration}\nGraphics {GPUDevice.Instance.RendererType}{driver}",
+            };
+        }
+        
         private void OnOptionsChanged(EditorOptions options)
         {
             var inputOptions = options.Input;
@@ -1063,6 +1092,7 @@ namespace FlaxEditor.Modules
         {
             // Clear UI references (GUI cannot be used after window closing)
             MainMenu = null;
+            WindowDecorations = null;
             ToolStrip = null;
             MasterPanel = null;
             StatusBar = null;

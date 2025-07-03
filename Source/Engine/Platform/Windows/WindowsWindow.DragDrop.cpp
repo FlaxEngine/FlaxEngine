@@ -10,13 +10,16 @@
 
 #if USE_EDITOR
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Platform/IGuiData.h"
 #include "Engine/Platform/Base/DragDropHelper.h"
 #include "Engine/Input/Input.h"
 #include "Engine/Input/Mouse.h"
 #endif
-#include "../Win32/IncludeWindowsHeaders.h"
+
+#include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
 #include <propidl.h>
+
 #if USE_EDITOR
 #include <oleidl.h>
 #include <shellapi.h>

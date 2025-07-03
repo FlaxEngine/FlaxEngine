@@ -269,6 +269,11 @@ String PlatformBase::GetDisplayServer()
     return String::Empty;
 }
 
+bool PlatformBase::SupportsNativeDecorations()
+{
+    return true;
+}
+
 #endif
 
 bool PlatformBase::Is64BitApp()

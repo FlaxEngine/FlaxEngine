@@ -161,20 +161,46 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
+        /// Options for type of window decorations to use.
+        /// </summary>
+        public enum WindowDecorationsType
+        {
+            /// <summary>
+            /// Determined automatically based on the system and any known compatibility issues with native decorations.
+            /// </summary>
+            Auto,
+            
+            /// <summary>
+            /// Automatically choose most compatible window decorations for child windows, prefer custom decorations on main window.
+            /// </summary>
+            [EditorDisplay(Name = "Auto (Child Only)")]
+            AutoChildOnly,
+            
+            /// <summary>
+            /// Use native system window decorations on all windows.
+            /// </summary>
+            Native,
+            
+            /// <summary>
+            /// Use custom client-side window decorations on all windows.
+            /// </summary>
+            [EditorDisplay(Name = "Client-side")]
+            ClientSide,
+        }
+
+        /// <summary>
         /// Gets or sets the Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.
         /// </summary>
         [DefaultValue(1.0f), Limit(0.1f, 10.0f)]
         [EditorDisplay("Interface"), EditorOrder(10), Tooltip("Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.")]
         public float InterfaceScale { get; set; } = 1.0f;
-
-#if PLATFORM_WINDOWS || PLATFORM_SDL
+        
         /// <summary>
-        /// Gets or sets a value indicating whether use native window title bar. Editor restart required.
+        /// Gets or sets a value indicating whether use native window title bar decorations in child windows. Editor restart required.
         /// </summary>
-        [DefaultValue(false)]
-        [EditorDisplay("Interface"), EditorOrder(70), Tooltip("Determines whether use native window title bar. Editor restart required.")]
-        public bool UseNativeWindowSystem { get; set; } = false;
-#endif
+        [DefaultValue(WindowDecorationsType.AutoChildOnly)]
+        [EditorDisplay("Interface"), EditorOrder(70), Tooltip("Determines whether use native window title bar decorations. Editor restart required.")]
+        public WindowDecorationsType WindowDecorations { get; set; } = WindowDecorationsType.AutoChildOnly;
 
         /// <summary>
         /// Gets or sets a value indicating whether show selected camera preview in the editor window.

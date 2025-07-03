@@ -27,25 +27,41 @@
 
 #define DefaultDPI 96
 
-namespace
+namespace SDLImpl
 {
     int32 SystemDpi = 96;
     String UserLocale("en");
+    bool WindowDecorationsSupported = true;
+    String WaylandDisplayEnv;
+    String XDGCurrentDesktop;
 }
 
 bool SDLPlatform::Init()
 {
 #if PLATFORM_LINUX
+    bool waylandSession = false;
+    if (!GetEnvironmentVariable(String("WAYLAND_DISPLAY"), SDLImpl::WaylandDisplayEnv))
+        waylandSession = true;
+    GetEnvironmentVariable(String("XDG_CURRENT_DESKTOP"), SDLImpl::XDGCurrentDesktop);
+    
     if (CommandLine::Options.X11.IsTrue())
+    {
         SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "x11", SDL_HINT_OVERRIDE);
+        waylandSession = false;
+    }
     else if (CommandLine::Options.Wayland.IsTrue())
         SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "wayland", SDL_HINT_OVERRIDE);
-    else
+    else if (waylandSession)
     {
         // Override the X11 preference when running in Wayland session
-        String waylandDisplayEnv;
-        if (!GetEnvironmentVariable(String("WAYLAND_DISPLAY"), waylandDisplayEnv))
-            SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "wayland", SDL_HINT_OVERRIDE);
+        SDL_SetHintWithPriority(SDL_HINT_VIDEO_DRIVER, "wayland", SDL_HINT_OVERRIDE);
+    }
+
+    // Workaround for libdecor in Gnome+Wayland causing freezes when interacting with the native decorations
+    if (waylandSession && SDLImpl::XDGCurrentDesktop.Compare(String("GNOME"), StringSearchCase::IgnoreCase) == 0)
+    {
+        SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_ALLOW_LIBDECOR, "0");
+        SDLImpl::WindowDecorationsSupported = false;
     }
 #endif
 
@@ -95,9 +111,9 @@ bool SDLPlatform::Init()
         if (language.StartsWith("en"))
         {
             if (country != nullptr)
-                UserLocale = String::Format(TEXT("{0}-{1}"), String(language), String(locales[i]->country));
+                SDLImpl::UserLocale = String::Format(TEXT("{0}-{1}"), String(language), String(locales[i]->country));
             else
-                UserLocale = String(language);
+                SDLImpl::UserLocale = String(language);
             break;
         }
     }
@@ -124,7 +140,7 @@ bool SDLPlatform::Init()
     SDLInput::Init();
     SDLWindow::Init();
 
-    SystemDpi = (int)(SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay()) * DefaultDPI);
+    SDLImpl::SystemDpi = (int)(SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay()) * DefaultDPI);
 
     //SDL_StartTextInput(); // TODO: Call this only when text input is expected (shows virtual keyboard in some cases)
 
@@ -183,6 +199,11 @@ String SDLPlatform::GetDisplayServer()
 #endif
 }
 
+bool SDLPlatform::SupportsNativeDecorations()
+{
+    return SDLImpl::WindowDecorationsSupported;
+}
+
 BatteryInfo SDLPlatform::GetBatteryInfo()
 {
     BatteryInfo info;
@@ -213,12 +234,12 @@ BatteryInfo SDLPlatform::GetBatteryInfo()
 
 int32 SDLPlatform::GetDpi()
 {
-    return SystemDpi;
+    return SDLImpl::SystemDpi;
 }
 
 String SDLPlatform::GetUserLocaleName()
 {
-    return UserLocale;
+    return SDLImpl::UserLocale;
 }
 
 void SDLPlatform::OpenUrl(const StringView& url)

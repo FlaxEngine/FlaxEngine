@@ -69,6 +69,7 @@ public:
     void* GetWaylandDisplay() const;
     void* GetX11Display() const;
 #endif
+    WindowHitCodes OnWindowHit(const Float2 point);
 
     // [WindowBase]
     void* GetNativePtr() const override;

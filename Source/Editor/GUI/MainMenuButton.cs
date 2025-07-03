@@ -42,14 +42,12 @@ namespace FlaxEditor.GUI
             Text = text;
 
             var style = Style.Current;
-#if PLATFORM_WINDOWS || PLATFORM_SDL
-            if (Editor.Instance.Options.Options.Interface.UseNativeWindowSystem)
+            if (!Utilities.Utils.UseCustomWindowDecorations())
             {
                 BackgroundColorMouseOver = style.BackgroundHighlighted;
                 BackgroundColorMouseOverOpened = style.Background;
             }
             else
-#endif
             {
                 BackgroundColorMouseOver = BackgroundColorMouseOverOpened = style.LightBackground * 1.3f;
             }
