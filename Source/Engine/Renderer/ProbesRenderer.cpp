@@ -4,8 +4,8 @@
 #include "Renderer.h"
 #include "ReflectionsPass.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
-#include "Engine/Threading/ThreadPoolTask.h"
-#include "Engine/Content/Content.h"
+#include "Engine/Engine/Time.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Level/Actors/PointLight.h"
 #include "Engine/Level/Actors/EnvironmentProbe.h"
@@ -14,28 +14,49 @@
 #include "Engine/Level/LargeWorlds.h"
 #include "Engine/ContentExporters/AssetExporters.h"
 #include "Engine/Serialization/FileWriteStream.h"
-#include "Engine/Engine/Time.h"
+#include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/AssetReference.h"
 #include "Engine/Graphics/Graphics.h"
+#include "Engine/Graphics/PixelFormat.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Graphics/RenderTask.h"
-#include "Engine/Engine/Engine.h"
+#include "Engine/Scripting/ScriptingObjectReference.h"
+#include "Engine/Threading/ThreadPoolTask.h"
 
-/// <summary>
-/// Custom task called after downloading probe texture data to save it.
-/// </summary>
+// Amount of frames to wait for data from probe update job
+#define PROBES_RENDERER_LATENCY_FRAMES 1
+
+struct ProbeEntry
+{
+    enum class Types
+    {
+        Invalid = 0,
+        EnvProbe = 1,
+        SkyLight = 2,
+    };
+
+    Types Type = Types::Invalid;
+    float Timeout = 0.0f;
+    ScriptingObjectReference<Actor> Actor;
+
+    bool UseTextureData() const;
+    int32 GetResolution() const;
+    PixelFormat GetFormat() const;
+};
+
+// Custom task called after downloading probe texture data to save it.
 class DownloadProbeTask : public ThreadPoolTask
 {
 private:
     GPUTexture* _texture;
     TextureData _data;
-    ProbesRenderer::Entry _entry;
+    ProbeEntry _entry;
 
 public:
-    DownloadProbeTask(GPUTexture* target, const ProbesRenderer::Entry& entry)
+    DownloadProbeTask(GPUTexture* target, const ProbeEntry& entry)
         : _texture(target)
         , _entry(entry)
     {
@@ -48,23 +69,23 @@ public:
 
     bool Run() override
     {
-        if (_entry.Type == ProbesRenderer::EntryType::EnvProbe)
+        Actor* actor = _entry.Actor.Get();
+        if (_entry.Type == ProbeEntry::Types::EnvProbe)
         {
-            if (_entry.Actor)
-                ((EnvironmentProbe*)_entry.Actor.Get())->SetProbeData(_data);
+            if (actor)
+                ((EnvironmentProbe*)actor)->SetProbeData(_data);
         }
-        else if (_entry.Type == ProbesRenderer::EntryType::SkyLight)
+        else if (_entry.Type == ProbeEntry::Types::SkyLight)
         {
-            if (_entry.Actor)
-                ((SkyLight*)_entry.Actor.Get())->SetProbeData(_data);
+            if (actor)
+                ((SkyLight*)actor)->SetProbeData(_data);
         }
         else
         {
             return true;
         }
 
-        ProbesRenderer::OnFinishBake(_entry);
-
+        ProbesRenderer::OnFinishBake(actor);
         return false;
     }
 };
@@ -75,14 +96,17 @@ GPU_CB_STRUCT(Data {
     float SourceMipIndex;
     });
 
-namespace ProbesRendererImpl
+class ProbesRendererService : public EngineService
 {
-    TimeSpan _lastProbeUpdate(0);
-    Array<ProbesRenderer::Entry> _probesToBake;
+private:
+    bool _initDone = false;
+    bool _initFailed = false;
 
-    ProbesRenderer::Entry _current;
+    TimeSpan _lastProbeUpdate = TimeSpan(0);
+    Array<ProbeEntry> _probesToBake;
 
-    bool _isReady = false;
+    ProbeEntry _current;
+
     AssetReference<Shader> _shader;
     GPUPipelineState* _psFilterFace = nullptr;
     SceneRenderTask* _task = nullptr;
@@ -92,91 +116,52 @@ namespace ProbesRendererImpl
     GPUTexture* _skySHIrradianceMap = nullptr;
     uint64 _updateFrameNumber = 0;
 
-    FORCE_INLINE bool isUpdateSynced()
-    {
-        return _updateFrameNumber > 0 && _updateFrameNumber + PROBES_RENDERER_LATENCY_FRAMES <= Engine::FrameCount;
-    }
-}
-
-using namespace ProbesRendererImpl;
-
-class ProbesRendererService : public EngineService
-{
 public:
     ProbesRendererService()
         : EngineService(TEXT("Probes Renderer"), 500)
     {
     }
 
+    bool LazyInit();
     void Update() override;
     void Dispose() override;
+
+    void Bake(const ProbeEntry& e);
+    void OnRender(RenderTask* task, GPUContext* context);
 };
 
 ProbesRendererService ProbesRendererServiceInstance;
 
-TimeSpan ProbesRenderer::ProbesUpdatedBreak(0, 0, 0, 0, 500);
-TimeSpan ProbesRenderer::ProbesReleaseDataTime(0, 0, 0, 60);
-Delegate<const ProbesRenderer::Entry&> ProbesRenderer::OnRegisterBake;
-Delegate<const ProbesRenderer::Entry&> ProbesRenderer::OnFinishBake;
+TimeSpan ProbesRenderer::UpdateDelay(0, 0, 0, 0, 100);
+TimeSpan ProbesRenderer::ReleaseTimeout(0, 0, 0, 30);
+Delegate<Actor*> ProbesRenderer::OnRegisterBake;
+Delegate<Actor*> ProbesRenderer::OnFinishBake;
 
 void ProbesRenderer::Bake(EnvironmentProbe* probe, float timeout)
 {
     if (!probe || probe->IsUsingCustomProbe())
         return;
-
-    // Check if already registered for bake
-    for (int32 i = 0; i < _probesToBake.Count(); i++)
-    {
-        auto& p = _probesToBake[i];
-        if (p.Type == EntryType::EnvProbe && p.Actor == probe)
-        {
-            p.Timeout = timeout;
-            return;
-        }
-    }
-
-    // Register probe
-    Entry e;
-    e.Type = EntryType::EnvProbe;
+    ProbeEntry e;
+    e.Type = ProbeEntry::Types::EnvProbe;
     e.Actor = probe;
     e.Timeout = timeout;
-    _probesToBake.Add(e);
-
-    // Fire event
-    if (e.UseTextureData())
-        OnRegisterBake(e);
+    ProbesRendererServiceInstance.Bake(e);
 }
 
 void ProbesRenderer::Bake(SkyLight* probe, float timeout)
 {
-    ASSERT(probe && dynamic_cast<SkyLight*>(probe));
-
-    // Check if already registered for bake
-    for (int32 i = 0; i < _probesToBake.Count(); i++)
-    {
-        auto& p = _probesToBake[i];
-        if (p.Type == EntryType::SkyLight && p.Actor == probe)
-        {
-            p.Timeout = timeout;
-            return;
-        }
-    }
-
-    // Register probe
-    Entry e;
-    e.Type = EntryType::SkyLight;
+    if (!probe)
+        return;
+    ProbeEntry e;
+    e.Type = ProbeEntry::Types::SkyLight;
     e.Actor = probe;
     e.Timeout = timeout;
-    _probesToBake.Add(e);
-
-    // Fire event
-    if (e.UseTextureData())
-        OnRegisterBake(e);
+    ProbesRendererServiceInstance.Bake(e);
 }
 
-bool ProbesRenderer::Entry::UseTextureData() const
+bool ProbeEntry::UseTextureData() const
 {
-    if (Type == EntryType::EnvProbe && Actor)
+    if (Type == Types::EnvProbe && Actor)
     {
         switch (Actor.As<EnvironmentProbe>()->UpdateMode)
         {
@@ -187,12 +172,12 @@ bool ProbesRenderer::Entry::UseTextureData() const
     return true;
 }
 
-int32 ProbesRenderer::Entry::GetResolution() const
+int32 ProbeEntry::GetResolution() const
 {
     auto resolution = ProbeCubemapResolution::UseGraphicsSettings;
-    if (Type == EntryType::EnvProbe && Actor)
+    if (Type == Types::EnvProbe && Actor)
         resolution = ((EnvironmentProbe*)Actor.Get())->CubemapResolution;
-    else if (Type == EntryType::SkyLight)
+    else if (Type == Types::SkyLight)
         resolution = ProbeCubemapResolution::_128;
     if (resolution == ProbeCubemapResolution::UseGraphicsSettings)
         resolution = GraphicsSettings::Get()->DefaultProbeResolution;
@@ -201,116 +186,83 @@ int32 ProbesRenderer::Entry::GetResolution() const
     return (int32)resolution;
 }
 
-PixelFormat ProbesRenderer::Entry::GetFormat() const
+PixelFormat ProbeEntry::GetFormat() const
 {
     return GraphicsSettings::Get()->UseHDRProbes ? PixelFormat::R11G11B10_Float : PixelFormat::R8G8B8A8_UNorm;
 }
 
-int32 ProbesRenderer::GetBakeQueueSize()
+bool ProbesRendererService::LazyInit()
 {
-    return _probesToBake.Count();
-}
-
-bool ProbesRenderer::HasReadyResources()
-{
-    return _isReady && _shader->IsLoaded();
-}
-
-bool ProbesRenderer::Init()
-{
-    if (_isReady)
+    if (_initDone || _initFailed)
         return false;
 
     // Load shader
     if (_shader == nullptr)
     {
         _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/ProbesFilter"));
-        if (_shader == nullptr)
-            return true;
+        _initFailed = _shader == nullptr;
+        if (_initFailed)
+            return false;
     }
     if (!_shader->IsLoaded())
-        return false;
+        return true;
     const auto shader = _shader->GetShader();
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stages
     _psFilterFace = GPUDevice::Instance->CreatePipelineState();
-    GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+    auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
     {
         psDesc.PS = shader->GetPS("PS_FilterFace");
-        if (_psFilterFace->Init(psDesc))
-            return true;
+        _initFailed |= _psFilterFace->Init(psDesc);
     }
 
     // Init rendering pipeline
-    _output = GPUDevice::Instance->CreateTexture(TEXT("Output"));
+    _output = GPUDevice::Instance->CreateTexture(TEXT("ProbesRenderer.Output"));
     const int32 probeResolution = _current.GetResolution();
     const PixelFormat probeFormat = _current.GetFormat();
-    if (_output->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, probeFormat)))
-        return true;
+    _initFailed |= _output->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, probeFormat));
     _task = New<SceneRenderTask>();
     auto task = _task;
+    task->Order = -100; // Run before main view rendering (realtime probes will get smaller latency)
     task->Enabled = false;
     task->IsCustomRendering = true;
     task->Output = _output;
     auto& view = task->View;
     view.Flags =
-            ViewFlags::AO |
-            ViewFlags::GI |
-            ViewFlags::DirectionalLights |
-            ViewFlags::PointLights |
-            ViewFlags::SpotLights |
-            ViewFlags::SkyLights |
-            ViewFlags::Decals |
-            ViewFlags::Shadows |
-            ViewFlags::Sky |
-            ViewFlags::Fog;
+        ViewFlags::AO |
+        ViewFlags::GI |
+        ViewFlags::DirectionalLights |
+        ViewFlags::PointLights |
+        ViewFlags::SpotLights |
+        ViewFlags::SkyLights |
+        ViewFlags::Decals |
+        ViewFlags::Shadows |
+        ViewFlags::Sky |
+        ViewFlags::Fog;
     view.Mode = ViewMode::NoPostFx;
     view.IsOfflinePass = true;
     view.IsSingleFrame = true;
     view.StaticFlagsMask = view.StaticFlagsCompare = StaticFlags::ReflectionProbe;
-    view.MaxShadowsQuality = Quality::Low;
     task->IsCameraCut = true;
     task->Resize(probeResolution, probeResolution);
-    task->Render.Bind(OnRender);
+    task->Render.Bind<ProbesRendererService, &ProbesRendererService::OnRender>(this);
 
     // Init render targets
-    _probe = GPUDevice::Instance->CreateTexture(TEXT("ProbesUpdate.Probe"));
-    if (_probe->Init(GPUTextureDescription::NewCube(probeResolution, probeFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews, 0)))
-        return true;
-    _tmpFace = GPUDevice::Instance->CreateTexture(TEXT("ProbesUpdate.TmpFace"));
-    if (_tmpFace->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, 0, probeFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews)))
-        return true;
+    _probe = GPUDevice::Instance->CreateTexture(TEXT("ProbesRenderer.Probe"));
+    _initFailed |= _probe->Init(GPUTextureDescription::NewCube(probeResolution, probeFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews, 0));
+    _tmpFace = GPUDevice::Instance->CreateTexture(TEXT("ProbesRenderer.TmpFace"));
+    _initFailed |= _tmpFace->Init(GPUTextureDescription::New2D(probeResolution, probeResolution, 0, probeFormat, GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews));
 
     // Mark as ready
-    _isReady = true;
+    _initDone = true;
     return false;
-}
-
-void ProbesRenderer::Release()
-{
-    if (!_isReady)
-        return;
-    ASSERT(_updateFrameNumber == 0);
-
-    // Release GPU data
-    if (_output)
-        _output->ReleaseGPU();
-
-    // Release data
-    SAFE_DELETE_GPU_RESOURCE(_psFilterFace);
-    _shader = nullptr;
-    SAFE_DELETE_GPU_RESOURCE(_output);
-    SAFE_DELETE(_task);
-    SAFE_DELETE_GPU_RESOURCE(_probe);
-    SAFE_DELETE_GPU_RESOURCE(_tmpFace);
-    SAFE_DELETE_GPU_RESOURCE(_skySHIrradianceMap);
-
-    _isReady = false;
 }
 
 void ProbesRendererService::Update()
 {
+    PROFILE_MEM(Graphics);
+
     // Calculate time delta since last update
     auto timeNow = Time::Update.UnscaledTime;
     auto timeSinceUpdate = timeNow - _lastProbeUpdate;
@@ -321,35 +273,32 @@ void ProbesRendererService::Update()
     }
 
     // Check if render job is done
-    if (isUpdateSynced())
+    if (_updateFrameNumber > 0 && _updateFrameNumber + PROBES_RENDERER_LATENCY_FRAMES <= Engine::FrameCount)
     {
         // Create async job to gather probe data from the GPU
         GPUTexture* texture = nullptr;
         switch (_current.Type)
         {
-        case ProbesRenderer::EntryType::SkyLight:
-        case ProbesRenderer::EntryType::EnvProbe:
+        case ProbeEntry::Types::SkyLight:
+        case ProbeEntry::Types::EnvProbe:
             texture = _probe;
             break;
         }
         ASSERT(texture && _current.UseTextureData());
         auto taskB = New<DownloadProbeTask>(texture, _current);
         auto taskA = texture->DownloadDataAsync(taskB->GetData());
-        if (taskA == nullptr)
-        {
-            LOG(Fatal, "Failed to create async tsk to download env probe texture data fro mthe GPU.");
-        }
+        ASSERT(taskA);
         taskA->ContinueWith(taskB);
         taskA->Start();
 
         // Clear flag
         _updateFrameNumber = 0;
-        _current.Type = ProbesRenderer::EntryType::Invalid;
+        _current.Type = ProbeEntry::Types::Invalid;
     }
-    else if (_current.Type == ProbesRenderer::EntryType::Invalid)
+    else if (_current.Type == ProbeEntry::Types::Invalid && timeSinceUpdate > ProbesRenderer::UpdateDelay)
     {
         int32 firstValidEntryIndex = -1;
-        auto dt = (float)Time::Update.UnscaledDeltaTime.GetTotalSeconds();
+        auto dt = Time::Update.UnscaledDeltaTime.GetTotalSeconds();
         for (int32 i = 0; i < _probesToBake.Count(); i++)
         {
             auto& e = _probesToBake[i];
@@ -362,40 +311,65 @@ void ProbesRendererService::Update()
         }
 
         // Check if need to update probe
-        if (firstValidEntryIndex >= 0 && timeSinceUpdate > ProbesRenderer::ProbesUpdatedBreak)
+        if (firstValidEntryIndex >= 0 && timeSinceUpdate > ProbesRenderer::UpdateDelay)
         {
-            // Init service
-            if (ProbesRenderer::Init())
-            {
-                LOG(Fatal, "Cannot setup Probes Renderer!");
-            }
-            if (ProbesRenderer::HasReadyResources() == false)
-                return;
+            if (LazyInit())
+                return; // Shader is not yet loaded so try the next frame
 
             // Mark probe to update
             _current = _probesToBake[firstValidEntryIndex];
             _probesToBake.RemoveAtKeepOrder(firstValidEntryIndex);
             _task->Enabled = true;
             _updateFrameNumber = 0;
-
-            // Store time of the last probe update
             _lastProbeUpdate = timeNow;
         }
         // Check if need to release data
-        else if (_isReady && timeSinceUpdate > ProbesRenderer::ProbesReleaseDataTime)
+        else if (_initDone && timeSinceUpdate > ProbesRenderer::ReleaseTimeout)
         {
-            // Release service
-            ProbesRenderer::Release();
+            // Release resources
+            Dispose();
         }
     }
 }
 
 void ProbesRendererService::Dispose()
 {
-    ProbesRenderer::Release();
+    if (!_initDone && !_initFailed)
+        return;
+    ASSERT(_updateFrameNumber == 0);
+    if (_output)
+        _output->ReleaseGPU();
+    SAFE_DELETE_GPU_RESOURCE(_psFilterFace);
+    SAFE_DELETE_GPU_RESOURCE(_output);
+    SAFE_DELETE_GPU_RESOURCE(_probe);
+    SAFE_DELETE_GPU_RESOURCE(_tmpFace);
+    SAFE_DELETE_GPU_RESOURCE(_skySHIrradianceMap);
+    SAFE_DELETE(_task);
+    _shader = nullptr;
+    _initDone = false;
+    _initFailed = false;
 }
 
-bool fixFarPlaneTreeExecute(Actor* actor, const Vector3& position, float& farPlane)
+void ProbesRendererService::Bake(const ProbeEntry& e)
+{
+    // Check if already registered for bake
+    for (ProbeEntry& p : _probesToBake)
+    {
+        if (p.Type == e.Type && p.Actor == e.Actor)
+        {
+            p.Timeout = e.Timeout;
+            return;
+        }
+    }
+
+    _probesToBake.Add(e);
+
+    // Fire event
+    if (e.UseTextureData())
+        ProbesRenderer::OnRegisterBake(e.Actor);
+}
+
+static bool FixFarPlane(Actor* actor, const Vector3& position, float& farPlane)
 {
     if (auto* pointLight = dynamic_cast<PointLight*>(actor))
     {
@@ -408,20 +382,19 @@ bool fixFarPlaneTreeExecute(Actor* actor, const Vector3& position, float& farPla
     return true;
 }
 
-void ProbesRenderer::OnRender(RenderTask* task, GPUContext* context)
+void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
 {
-    ASSERT(_current.Type != EntryType::Invalid && _updateFrameNumber == 0);
     switch (_current.Type)
     {
-    case EntryType::EnvProbe:
-    case EntryType::SkyLight:
+    case ProbeEntry::Types::EnvProbe:
+    case ProbeEntry::Types::SkyLight:
     {
         if (_current.Actor == nullptr)
         {
             // Probe has been unlinked (or deleted)
             _task->Enabled = false;
             _updateFrameNumber = 0;
-            _current.Type = EntryType::Invalid;
+            _current.Type = ProbeEntry::Types::Invalid;
             return;
         }
         break;
@@ -430,7 +403,7 @@ void ProbesRenderer::OnRender(RenderTask* task, GPUContext* context)
         // Canceled
         return;
     }
-
+    ASSERT(_updateFrameNumber == 0);
     auto shader = _shader->GetShader();
     PROFILE_GPU("Render Probe");
 
@@ -438,7 +411,7 @@ void ProbesRenderer::OnRender(RenderTask* task, GPUContext* context)
     float customCullingNear = -1;
     const int32 probeResolution = _current.GetResolution();
     const PixelFormat probeFormat = _current.GetFormat();
-    if (_current.Type == EntryType::EnvProbe)
+    if (_current.Type == ProbeEntry::Types::EnvProbe)
     {
         auto envProbe = (EnvironmentProbe*)_current.Actor.Get();
         Vector3 position = envProbe->GetPosition();
@@ -448,14 +421,14 @@ void ProbesRenderer::OnRender(RenderTask* task, GPUContext* context)
         // Adjust far plane distance
         float farPlane = Math::Max(radius, nearPlane + 100.0f);
         farPlane *= farPlane < 10000 ? 10 : 4;
-        Function<bool(Actor*, const Vector3&, float&)> f(&fixFarPlaneTreeExecute);
+        Function<bool(Actor*, const Vector3&, float&)> f(&FixFarPlane);
         SceneQuery::TreeExecute<const Vector3&, float&>(f, position, farPlane);
 
         // Setup view
         LargeWorlds::UpdateOrigin(_task->View.Origin, position);
         _task->View.SetUpCube(nearPlane, farPlane, position - _task->View.Origin);
     }
-    else if (_current.Type == EntryType::SkyLight)
+    else if (_current.Type == ProbeEntry::Types::SkyLight)
     {
         auto skyLight = (SkyLight*)_current.Actor.Get();
         Vector3 position = skyLight->GetPosition();
@@ -480,6 +453,9 @@ void ProbesRenderer::OnRender(RenderTask* task, GPUContext* context)
     // Disable actor during baking (it cannot influence own results)
     const bool isActorActive = _current.Actor->GetIsActive();
     _current.Actor->SetIsActive(false);
+
+    // Lower quality when rendering probes in-game to gain performance
+    _task->View.MaxShadowsQuality = Engine::IsPlayMode() ? Quality::Low : Quality::Ultra;
 
     // Render scene for all faces
     for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
@@ -556,13 +532,13 @@ void ProbesRenderer::OnRender(RenderTask* task, GPUContext* context)
     // Real-time probes don't use TextureData (for streaming) but copy generated probe directly to GPU memory
     if (!_current.UseTextureData())
     {
-        if (_current.Type == EntryType::EnvProbe && _current.Actor)
+        if (_current.Type == ProbeEntry::Types::EnvProbe && _current.Actor)
         {
             _current.Actor.As<EnvironmentProbe>()->SetProbeData(context, _probe);
         }
 
         // Clear flag
         _updateFrameNumber = 0;
-        _current.Type = EntryType::Invalid;
+        _current.Type = ProbeEntry::Types::Invalid;
     }
 }

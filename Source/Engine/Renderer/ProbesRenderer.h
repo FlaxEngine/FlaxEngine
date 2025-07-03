@@ -2,16 +2,10 @@
 
 #pragma once
 
-#include "Engine/Graphics/PixelFormat.h"
-#include "Engine/Scripting/ScriptingObjectReference.h"
-#include "Engine/Level/Actor.h"
+#include "Engine/Core/Delegate.h"
+#include "Engine/Core/Types/TimeSpan.h"
 
-// Amount of frames to wait for data from probe update job
-#define PROBES_RENDERER_LATENCY_FRAMES 1
-
-class EnvironmentProbe;
-class SkyLight;
-class RenderTask;
+class Actor;
 
 /// <summary>
 /// Probes rendering service
@@ -19,58 +13,19 @@ class RenderTask;
 class ProbesRenderer
 {
 public:
-    enum class EntryType
-    {
-        Invalid = 0,
-        EnvProbe = 1,
-        SkyLight = 2,
-    };
-
-    struct Entry
-    {
-        EntryType Type = EntryType::Invalid;
-        ScriptingObjectReference<Actor> Actor;
-        float Timeout = 0.0f;
-
-        bool UseTextureData() const;
-        int32 GetResolution() const;
-        PixelFormat GetFormat() const;
-    };
-
-public:
     /// <summary>
-    /// Minimum amount of time between two updated of probes
+    /// Time delay between probe updates. Can be used to improve performance by rendering probes less often.
     /// </summary>
-    static TimeSpan ProbesUpdatedBreak;
+    static TimeSpan UpdateDelay;
 
     /// <summary>
-    ///  Time after last probe update when probes updating content will be released
+    /// Timeout after the last probe rendered when resources used to render it should be released.
     /// </summary>
-    static TimeSpan ProbesReleaseDataTime;
+    static TimeSpan ReleaseTimeout;
 
-    int32 GetBakeQueueSize();
+    static Delegate<Actor*> OnRegisterBake;
 
-    static Delegate<const Entry&> OnRegisterBake;
-
-    static Delegate<const Entry&> OnFinishBake;
-
-public:
-    /// <summary>
-    /// Checks if resources are ready to render probes (shaders or textures may be during loading).
-    /// </summary>
-    /// <returns>True if is ready, otherwise false.</returns>
-    static bool HasReadyResources();
-
-    /// <summary>
-    /// Init probes content
-    /// </summary>
-    /// <returns>True if cannot init service</returns>
-    static bool Init();
-
-    /// <summary>
-    /// Release probes content
-    /// </summary>
-    static void Release();
+    static Delegate<Actor*> OnFinishBake;
 
 public:
     /// <summary>
@@ -78,15 +33,12 @@ public:
     /// </summary>
     /// <param name="probe">Probe to bake</param>
     /// <param name="timeout">Timeout in seconds left to bake it.</param>
-    static void Bake(EnvironmentProbe* probe, float timeout = 0);
+    static void Bake(class EnvironmentProbe* probe, float timeout = 0);
 
     /// <summary>
     /// Register probe to baking service.
     /// </summary>
     /// <param name="probe">Probe to bake</param>
     /// <param name="timeout">Timeout in seconds left to bake it.</param>
-    static void Bake(SkyLight* probe, float timeout = 0);
-
-private:
-    static void OnRender(RenderTask* task, GPUContext* context);
+    static void Bake(class SkyLight* probe, float timeout = 0);
 };
