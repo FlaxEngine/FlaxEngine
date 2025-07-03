@@ -23,6 +23,11 @@ public:
     /// </summary>
     static TimeSpan ReleaseTimeout;
 
+    /// <summary>
+    /// Maximum amount of cubemap faces or filtering passes that can be performed per-frame (in total). Set it to 7 to perform whole cubemap capture within a single frame, lower values spread the work across multiple frames.
+    /// </summary>
+    static int32 MaxWorkPerFrame;
+
     static Delegate<Actor*> OnRegisterBake;
 
     static Delegate<Actor*> OnFinishBake;

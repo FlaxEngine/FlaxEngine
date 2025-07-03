@@ -106,6 +106,8 @@ private:
     Array<ProbeEntry> _probesToBake;
 
     ProbeEntry _current;
+    int32 _workStep;
+    float _customCullingNear;
 
     AssetReference<Shader> _shader;
     GPUPipelineState* _psFilterFace = nullptr;
@@ -134,6 +136,7 @@ ProbesRendererService ProbesRendererServiceInstance;
 
 TimeSpan ProbesRenderer::UpdateDelay(0, 0, 0, 0, 100);
 TimeSpan ProbesRenderer::ReleaseTimeout(0, 0, 0, 30);
+int32 ProbesRenderer::MaxWorkPerFrame = 1;
 Delegate<Actor*> ProbesRenderer::OnRegisterBake;
 Delegate<Actor*> ProbesRenderer::OnFinishBake;
 
@@ -293,6 +296,7 @@ void ProbesRendererService::Update()
 
         // Clear flag
         _updateFrameNumber = 0;
+        _workStep = 0;
         _current.Type = ProbeEntry::Types::Invalid;
     }
     else if (_current.Type == ProbeEntry::Types::Invalid && timeSinceUpdate > ProbesRenderer::UpdateDelay)
@@ -321,6 +325,7 @@ void ProbesRendererService::Update()
             _probesToBake.RemoveAtKeepOrder(firstValidEntryIndex);
             _task->Enabled = true;
             _updateFrameNumber = 0;
+            _workStep = 0;
             _lastProbeUpdate = timeNow;
         }
         // Check if need to release data
@@ -408,72 +413,76 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
     PROFILE_GPU("Render Probe");
 
     // Init
-    float customCullingNear = -1;
     const int32 probeResolution = _current.GetResolution();
     const PixelFormat probeFormat = _current.GetFormat();
-    if (_current.Type == ProbeEntry::Types::EnvProbe)
+    if (_workStep == 0)
     {
-        auto envProbe = (EnvironmentProbe*)_current.Actor.Get();
-        Vector3 position = envProbe->GetPosition();
-        float radius = envProbe->GetScaledRadius();
-        float nearPlane = Math::Max(0.1f, envProbe->CaptureNearPlane);
+        _customCullingNear = -1;
+        if (_current.Type == ProbeEntry::Types::EnvProbe)
+        {
+            auto envProbe = (EnvironmentProbe*)_current.Actor.Get();
+            Vector3 position = envProbe->GetPosition();
+            float radius = envProbe->GetScaledRadius();
+            float nearPlane = Math::Max(0.1f, envProbe->CaptureNearPlane);
 
-        // Adjust far plane distance
-        float farPlane = Math::Max(radius, nearPlane + 100.0f);
-        farPlane *= farPlane < 10000 ? 10 : 4;
-        Function<bool(Actor*, const Vector3&, float&)> f(&FixFarPlane);
-        SceneQuery::TreeExecute<const Vector3&, float&>(f, position, farPlane);
+            // Adjust far plane distance
+            float farPlane = Math::Max(radius, nearPlane + 100.0f);
+            farPlane *= farPlane < 10000 ? 10 : 4;
+            Function<bool(Actor*, const Vector3&, float&)> f(&FixFarPlane);
+            SceneQuery::TreeExecute<const Vector3&, float&>(f, position, farPlane);
 
-        // Setup view
-        LargeWorlds::UpdateOrigin(_task->View.Origin, position);
-        _task->View.SetUpCube(nearPlane, farPlane, position - _task->View.Origin);
+            // Setup view
+            LargeWorlds::UpdateOrigin(_task->View.Origin, position);
+            _task->View.SetUpCube(nearPlane, farPlane, position - _task->View.Origin);
+        }
+        else if (_current.Type == ProbeEntry::Types::SkyLight)
+        {
+            auto skyLight = (SkyLight*)_current.Actor.Get();
+            Vector3 position = skyLight->GetPosition();
+            float nearPlane = 10.0f;
+            float farPlane = Math::Max(nearPlane + 1000.0f, skyLight->SkyDistanceThreshold * 2.0f);
+            _customCullingNear = skyLight->SkyDistanceThreshold;
+
+            // Setup view
+            LargeWorlds::UpdateOrigin(_task->View.Origin, position);
+            _task->View.SetUpCube(nearPlane, farPlane, position - _task->View.Origin);
+        }
+
+        // Resize buffers
+        bool resizeFailed = _output->Resize(probeResolution, probeResolution, probeFormat);
+        resizeFailed |= _probe->Resize(probeResolution, probeResolution, probeFormat);
+        resizeFailed |= _tmpFace->Resize(probeResolution, probeResolution, probeFormat);
+        resizeFailed |= _task->Resize(probeResolution, probeResolution);
+        if (resizeFailed)
+            LOG(Error, "Failed to resize probe");
     }
-    else if (_current.Type == ProbeEntry::Types::SkyLight)
-    {
-        auto skyLight = (SkyLight*)_current.Actor.Get();
-        Vector3 position = skyLight->GetPosition();
-        float nearPlane = 10.0f;
-        float farPlane = Math::Max(nearPlane + 1000.0f, skyLight->SkyDistanceThreshold * 2.0f);
-        customCullingNear = skyLight->SkyDistanceThreshold;
-
-        // Setup view
-        LargeWorlds::UpdateOrigin(_task->View.Origin, position);
-        _task->View.SetUpCube(nearPlane, farPlane, position - _task->View.Origin);
-    }
-    _task->CameraCut();
-
-    // Resize buffers
-    bool resizeFailed = _output->Resize(probeResolution, probeResolution, probeFormat);
-    resizeFailed |= _probe->Resize(probeResolution, probeResolution, probeFormat);
-    resizeFailed |= _tmpFace->Resize(probeResolution, probeResolution, probeFormat);
-    resizeFailed |= _task->Resize(probeResolution, probeResolution);
-    if (resizeFailed)
-        LOG(Error, "Failed to resize probe");
 
     // Disable actor during baking (it cannot influence own results)
     const bool isActorActive = _current.Actor->GetIsActive();
     _current.Actor->SetIsActive(false);
 
     // Lower quality when rendering probes in-game to gain performance
-    _task->View.MaxShadowsQuality = Engine::IsPlayMode() ? Quality::Low : Quality::Ultra;
+    _task->View.MaxShadowsQuality = Engine::IsPlayMode() || probeResolution <= 128 ? Quality::Low : Quality::Ultra;
 
     // Render scene for all faces
-    for (int32 faceIndex = 0; faceIndex < 6; faceIndex++)
+    int32 workLeft = ProbesRenderer::MaxWorkPerFrame;
+    const int32 lastFace = Math::Min(_workStep + workLeft, 6);
+    for (int32 faceIndex = _workStep; faceIndex < lastFace; faceIndex++)
     {
+        _task->CameraCut();
         _task->View.SetFace(faceIndex);
 
         // Handle custom frustum for the culling (used to skip objects near the camera)
-        if (customCullingNear > 0)
+        if (_customCullingNear > 0)
         {
             Matrix p;
-            Matrix::PerspectiveFov(PI_OVER_2, 1.0f, customCullingNear, _task->View.Far, p);
+            Matrix::PerspectiveFov(PI_OVER_2, 1.0f, _customCullingNear, _task->View.Far, p);
             _task->View.CullingFrustum.SetMatrix(_task->View.View, p);
         }
 
         // Render frame
         Renderer::Render(_task);
         context->ClearState();
-        _task->CameraCut();
 
         // Copy frame to cube face
         {
@@ -483,12 +492,17 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
             context->Draw(_output->View());
             context->ResetRenderTarget();
         }
+
+        // Move to the next face
+        _workStep++;
+        workLeft--;
     }
 
     // Enable actor back
     _current.Actor->SetIsActive(isActorActive);
 
     // Filter all lower mip levels
+    if (workLeft > 0)
     {
         PROFILE_GPU("Filtering");
         Data data;
@@ -520,10 +534,17 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
                 context->Draw(_tmpFace->View(0, mipIndex));
             }
         }
+
+        // End
+        workLeft--;
+        _workStep++;
     }
 
     // Cleanup
     context->ClearState();
+
+    if (_workStep < 7)
+        return; // Continue rendering next frame
 
     // Mark as rendered
     _updateFrameNumber = Engine::FrameCount;
