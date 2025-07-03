@@ -863,6 +863,7 @@ void SDLWindow::EndTrackingMouse()
     }
 
     Input::Mouse->SetRelativeMode(false, this);
+    _restoreRelativeMode = false;
 }
 
 void SDLWindow::StartClippingCursor(const Rectangle& bounds)
