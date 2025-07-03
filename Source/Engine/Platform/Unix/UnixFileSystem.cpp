@@ -348,7 +348,9 @@ bool UnixFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char
             // Validate with filter
             const int32 fullPathLength = StringUtils::Length(fullPath);
             const int32 searchPatternLength = StringUtils::Length(searchPattern);
-            if (searchPatternLength == 0 || StringUtils::Compare(searchPattern, "*") == 0)
+            if (searchPatternLength == 0 ||
+                StringUtils::Compare(searchPattern, "*") == 0 ||
+                StringUtils::Compare(searchPattern, "*.*") == 0)
             {
                 // All files
             }
@@ -356,9 +358,26 @@ bool UnixFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char
             {
                 // Path ending
             }
+            else if (searchPattern[0] == '*' && searchPatternLength > 2 && searchPattern[searchPatternLength-1] == '*')
+            {
+                // Contains pattern
+                bool match = false;
+                for (int32 i = 0; i < pathLength - searchPatternLength - 1; i++)
+                {
+                    int32 len = Math::Min(searchPatternLength - 2, pathLength - i);
+                    if (StringUtils::Compare(&entry->d_name[i], &searchPattern[1], len) == 0)
+                    {
+                        match = true;
+                        break;
+                    }
+                }
+                if (!match)
+                    continue;
+            }
             else
             {
                 // TODO: implement all cases in a generic way
+                LOG(Warning, "DirectoryGetFiles: Wildcard filter is not implemented");
                 continue;
             }
 
