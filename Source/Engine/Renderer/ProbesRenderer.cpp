@@ -125,11 +125,21 @@ public:
     }
 
     bool LazyInit();
+    bool InitShader();
     void Update() override;
     void Dispose() override;
-
     void Bake(const ProbeEntry& e);
+
+private:
     void OnRender(RenderTask* task, GPUContext* context);
+#if COMPILE_WITH_DEV_ENV
+    bool _initShader = false;
+    void OnShaderReloading(Asset* obj)
+    {
+        _initShader = true;
+        SAFE_DELETE_GPU_RESOURCE(_psFilterFace);
+    }
+#endif
 };
 
 ProbesRendererService ProbesRendererServiceInstance;
@@ -206,19 +216,13 @@ bool ProbesRendererService::LazyInit()
         _initFailed = _shader == nullptr;
         if (_initFailed)
             return false;
+#if COMPILE_WITH_DEV_ENV
+        _shader->OnReloading.Bind<ProbesRendererService, &ProbesRendererService::OnShaderReloading>(this);
+#endif
     }
     if (!_shader->IsLoaded())
         return true;
-    const auto shader = _shader->GetShader();
-    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-
-    // Create pipeline stages
-    _psFilterFace = GPUDevice::Instance->CreatePipelineState();
-    auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    {
-        psDesc.PS = shader->GetPS("PS_FilterFace");
-        _initFailed |= _psFilterFace->Init(psDesc);
-    }
+    _initFailed |= InitShader();
 
     // Init rendering pipeline
     _output = GPUDevice::Instance->CreateTexture(TEXT("ProbesRenderer.Output"));
@@ -260,6 +264,16 @@ bool ProbesRendererService::LazyInit()
     // Mark as ready
     _initDone = true;
     return false;
+}
+
+bool ProbesRendererService::InitShader()
+{
+    const auto shader = _shader->GetShader();
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
+    _psFilterFace = GPUDevice::Instance->CreatePipelineState();
+    auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+    psDesc.PS = shader->GetPS("PS_FilterFace");
+    return _psFilterFace->Init(psDesc);
 }
 
 void ProbesRendererService::Update()
@@ -411,6 +425,18 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
     ASSERT(_updateFrameNumber == 0);
     auto shader = _shader->GetShader();
     PROFILE_GPU("Render Probe");
+
+#if COMPILE_WITH_DEV_ENV
+    // handle shader hot-reload
+    if (_initShader)
+    {
+        if (_shader->WaitForLoaded())
+            return;
+        _initShader = false;
+        if (InitShader())
+            return;
+    }
+#endif
 
     // Init
     const int32 probeResolution = _current.GetResolution();
