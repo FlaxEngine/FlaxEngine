@@ -1050,14 +1050,13 @@ namespace FlaxEngine
         /// <param name="start">Start vector.</param>
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <param name="height">The maximum height of the Arc.</param>
+        /// <param name="height">The maximum height of the Arc at the value of <paramref name="amount" /> being 0.5.</param>
         /// <returns>The linear interpolation of the two vectors with a parabolic curve to create the arc.</returns>
         /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
         public static Vector3 ArcLerp(Vector3 start, Vector3 end, float amount, float height)
         {
             Lerp(ref start, ref end, amount, out var result);
-            float t = Mathf.InverseLerp(start.Length, end.Length, (start-end).Length);
-            result.Y += height * 0.125f * t * (1 - t);
+            result.Y += height * 4 * amount * (1 - amount);
             return result;
         }
 
