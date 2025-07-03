@@ -318,6 +318,9 @@ public class WindowDecorations : ContainerControl
         var win = RootWindow.Window;
         if (win.IsMaximized)
             return;
+
+        if (Editor.Instance.UI.StatusBar == null)
+            return;
         
         const float thickness = 1.0f;
         Color color = Editor.Instance.UI.StatusBar.StatusColor;
