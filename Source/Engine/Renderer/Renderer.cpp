@@ -379,6 +379,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         setup.UseGlobalSDF = (graphicsSettings->EnableGlobalSDF && EnumHasAnyFlags(view.Flags, ViewFlags::GlobalSDF)) ||
                 renderContext.View.Mode == ViewMode::GlobalSDF ||
                 setup.UseGlobalSurfaceAtlas;
+        setup.UseVolumetricFog = (view.Flags & ViewFlags::Fog) != ViewFlags::None;
 
         // Disable TAA jitter in debug modes
         switch (renderContext.View.Mode)

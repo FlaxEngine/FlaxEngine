@@ -2,6 +2,7 @@
 
 #include "ProbesRenderer.h"
 #include "Renderer.h"
+#include "RenderList.h"
 #include "ReflectionsPass.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Engine/Time.h"
@@ -17,7 +18,6 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Shader.h"
 #include "Engine/Content/AssetReference.h"
-#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/PixelFormat.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
@@ -115,7 +115,6 @@ private:
     GPUTexture* _output = nullptr;
     GPUTexture* _probe = nullptr;
     GPUTexture* _tmpFace = nullptr;
-    GPUTexture* _skySHIrradianceMap = nullptr;
     uint64 _updateFrameNumber = 0;
 
 public:
@@ -132,6 +131,7 @@ public:
 
 private:
     void OnRender(RenderTask* task, GPUContext* context);
+    void OnSetupRender(RenderContext& renderContext);
 #if COMPILE_WITH_DEV_ENV
     bool _initShader = false;
     void OnShaderReloading(Asset* obj)
@@ -234,6 +234,7 @@ bool ProbesRendererService::LazyInit()
     task->Order = -100; // Run before main view rendering (realtime probes will get smaller latency)
     task->Enabled = false;
     task->IsCustomRendering = true;
+    task->ActorsSource = ActorsSources::ScenesAndCustomActors;
     task->Output = _output;
     auto& view = task->View;
     view.Flags =
@@ -254,6 +255,7 @@ bool ProbesRendererService::LazyInit()
     task->IsCameraCut = true;
     task->Resize(probeResolution, probeResolution);
     task->Render.Bind<ProbesRendererService, &ProbesRendererService::OnRender>(this);
+    task->SetupRender.Bind<ProbesRendererService, &ProbesRendererService::OnSetupRender>(this);
 
     // Init render targets
     _probe = GPUDevice::Instance->CreateTexture(TEXT("ProbesRenderer.Probe"));
@@ -362,7 +364,6 @@ void ProbesRendererService::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_output);
     SAFE_DELETE_GPU_RESOURCE(_probe);
     SAFE_DELETE_GPU_RESOURCE(_tmpFace);
-    SAFE_DELETE_GPU_RESOURCE(_skySHIrradianceMap);
     SAFE_DELETE(_task);
     _shader = nullptr;
     _initDone = false;
@@ -588,4 +589,10 @@ void ProbesRendererService::OnRender(RenderTask* task, GPUContext* context)
         _updateFrameNumber = 0;
         _current.Type = ProbeEntry::Types::Invalid;
     }
+}
+
+void ProbesRendererService::OnSetupRender(RenderContext& renderContext)
+{
+    // Disable Volumetric Fog in reflection as it causes seams on cubemap face edges
+    renderContext.List->Setup.UseVolumetricFog = false;
 }
