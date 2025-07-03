@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_LINUX
 
@@ -15,11 +15,7 @@
 #if PLATFORM_SDL
 #include <libportal/portal-enums.h>
 #include <libportal/screenshot.h>
-#endif
 
-Delegate<Color32> ScreenUtilitiesBase::PickColorDone;
-
-#if PLATFORM_SDL
 namespace PortalImpl
 {
     XdpPortal* Portal = nullptr;
@@ -29,6 +25,8 @@ namespace PortalImpl
     void PickColorCallback(GObject* source, GAsyncResult* result, gpointer data);
 }
 #endif
+
+Delegate<Color32> ScreenUtilitiesBase::PickColorDone;
 
 Color32 LinuxScreenUtilities::GetColorAt(const Float2& pos)
 {
@@ -125,6 +123,7 @@ void LinuxScreenUtilities::PickColor()
 }
 
 #if PLATFORM_SDL
+
 gpointer PortalImpl::GLibMainLoop(gpointer data)
 {
     GMainContext* mainContext = g_main_context_get_thread_default();

@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #pragma once
 
@@ -7,7 +7,6 @@
 #include "Engine/Platform/Base/ScreenUtilitiesBase.h"
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Math/Color32.h"
-#include "Engine/Core/Math/Vector2.h"
 #include "Engine/Core/Delegate.h"
 
 /// <summary>

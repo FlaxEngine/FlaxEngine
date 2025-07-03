@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2024 Wojciech Figat. All rights reserved.
+// Copyright (c) Wojciech Figat. All rights reserved.
 
 #if PLATFORM_SDL && PLATFORM_WINDOWS
 
@@ -111,29 +111,30 @@ bool SDLPlatform::EventFilterCallback(void* userdata, SDL_Event* event)
     else if (event->type == SDL_EVENT_WINDOW_MOVED)
     {
         if (window)
+        {
             window->HandleEvent(*event);
 
-        if (WinImpl::DraggedWindowSize != window->GetClientSize())
-        {
-            // The window size changed while dragging, most likely due to maximized window restoring back to previous size.
-            WinImpl::DraggedWindowMousePosition = WinImpl::DraggedWindowStartPosition + WinImpl::DraggedWindowMousePosition - window->GetClientPosition();
-            WinImpl::DraggedWindowStartPosition = window->GetClientPosition();
-            WinImpl::DraggedWindowSize = window->GetClientSize();
-        }
-        Float2 windowPosition = Float2(static_cast<float>(event->window.data1), static_cast<float>(event->window.data2));
-        Float2 mousePosition = WinImpl::DraggedWindowMousePosition;
+            Float2 windowSize = window->GetClientSize();
+            if (WinImpl::DraggedWindowSize != windowSize)
+            {
+                // The window size changed while dragging, most likely due to maximized window restoring back to previous size.
+                WinImpl::DraggedWindowMousePosition = WinImpl::DraggedWindowStartPosition + WinImpl::DraggedWindowMousePosition - window->GetClientPosition();
+                WinImpl::DraggedWindowStartPosition = window->GetClientPosition();
+                WinImpl::DraggedWindowSize = windowSize;
+            }
+            Float2 windowPosition = Float2(static_cast<float>(event->window.data1), static_cast<float>(event->window.data2));
+            Float2 mousePosition = WinImpl::DraggedWindowMousePosition;
 
-        // Generate mouse movement events while dragging the window around
-        SDL_Event mouseMovedEvent { 0 };
-        mouseMovedEvent.motion.type = SDL_EVENT_MOUSE_MOTION;
-        mouseMovedEvent.motion.windowID = SDL_GetWindowID(WinImpl::DraggedWindow->GetSDLWindow());
-        mouseMovedEvent.motion.timestamp = SDL_GetTicksNS();
-        mouseMovedEvent.motion.state = SDL_BUTTON_LEFT;
-        mouseMovedEvent.motion.x = mousePosition.X;
-        mouseMovedEvent.motion.y = mousePosition.Y;
-        if (window)
+            // Generate mouse movement events while dragging the window around
+            SDL_Event mouseMovedEvent{ 0 };
+            mouseMovedEvent.motion.type = SDL_EVENT_MOUSE_MOTION;
+            mouseMovedEvent.motion.windowID = SDL_GetWindowID(WinImpl::DraggedWindow->GetSDLWindow());
+            mouseMovedEvent.motion.timestamp = SDL_GetTicksNS();
+            mouseMovedEvent.motion.state = SDL_BUTTON_LEFT;
+            mouseMovedEvent.motion.x = mousePosition.X;
+            mouseMovedEvent.motion.y = mousePosition.Y;
             window->HandleEvent(mouseMovedEvent);
-
+        }
         return false;
     }
     if (window)
