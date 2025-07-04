@@ -513,6 +513,7 @@ namespace Flax.Build
                             // Combine build options from this module
                             project.CSharp.SystemReferences.AddRange(moduleBuildOptions.ScriptingAPI.SystemReferences);
                             project.CSharp.FileReferences.AddRange(moduleBuildOptions.ScriptingAPI.FileReferences);
+                            project.CSharp.NugetPackageReferences.AddRange(moduleBuildOptions.NugetPackageReferences);
 
                             // Find references based on the modules dependencies (external or from projects)
                             foreach (var dependencyName in moduleBuildOptions.PublicDependencies.Concat(moduleBuildOptions.PrivateDependencies))
