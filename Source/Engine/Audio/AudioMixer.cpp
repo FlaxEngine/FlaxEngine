@@ -65,8 +65,22 @@ void AudioMixer::MixerInit()
 {
     auto audioMixerGroups = AudioSettings::Get()->MixerGroupChannels;
 
-    if (audioMixerGroups.Count() == 0)
+    if (audioMixerGroups.Count() == 0) 
+    {
+        if (!MixerGroupsVariables.IsEmpty()) MixerGroupsVariables.Clear();
         return;
+    }
+
+    HashSet<String> currentGroupNames;
+    for (auto& group : audioMixerGroups)
+        currentGroupNames.Add(group.Name);
+
+    Array<String> keysToRemove;
+    for (auto& pair : MixerGroupsVariables)
+        if (!currentGroupNames.Contains(pair.Key))
+            keysToRemove.Add(pair.Key);
+
+    for (auto& key : keysToRemove) MixerGroupsVariables.Remove(key);
 
     for (auto& audioMixerGroup : audioMixerGroups)
     {
