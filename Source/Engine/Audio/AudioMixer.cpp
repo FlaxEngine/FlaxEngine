@@ -87,7 +87,7 @@ void AudioMixer::MixerInit()
         if (!MixerGroupsVariables.ContainsKey(audioMixerGroup.Name)) 
         {
             auto& var = MixerGroupsVariables[audioMixerGroup.Name];
-            var.DefaultValue = audioMixerGroup.MixerVolume;
+            var.Value = var.DefaultValue = audioMixerGroup.MixerVolume;
         }
     }
 }
@@ -158,7 +158,7 @@ const Variant& AudioMixer::GetMixerChannelVolume(const StringView& nameChannel) 
 {
     ScopeLock lock(Locker);
     auto e = MixerGroupsVariables.TryGet(nameChannel);
-    return e ? e->Value : Variant::Zero.AsFloat;
+    return e ? e->Value : Variant::Zero;
 }
 
 void AudioMixer::SetMixerChannelVolume(const StringView& nameChannel, const Variant& value)
