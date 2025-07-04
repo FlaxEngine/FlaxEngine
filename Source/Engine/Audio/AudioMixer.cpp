@@ -70,8 +70,11 @@ void AudioMixer::MixerInit()
 
     for (auto& audioMixerGroup : audioMixerGroups)
     {
-        auto& var = MixerGroupsVariables[audioMixerGroup.Name];
-        var.DefaultValue = audioMixerGroup.MixerVolume;
+        if (!MixerGroupsVariables.ContainsKey(audioMixerGroup.Name)) 
+        {
+            auto& var = MixerGroupsVariables[audioMixerGroup.Name];
+            var.DefaultValue = audioMixerGroup.MixerVolume;
+        }
     }
 }
 
