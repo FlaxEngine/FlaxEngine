@@ -139,6 +139,11 @@ public:
     /// </summary>
     API_FUNCTION() void RemoveAllInstances();
 
+    /// <summary>
+    /// Removes the lightmap data from the foliage instances.
+    /// </summary>
+    API_FUNCTION() void RemoveLightmap();
+
 public:
     /// <summary>
     /// Gets the global density scale for all foliage instances. The default value is 1. Use values from range 0-1. Lower values decrease amount of foliage instances in-game. Use it to tweak game performance for slower devices.

@@ -286,7 +286,7 @@ void ShaderGenerator::ProcessGroupMath(Box* box, Node* node, Value& value)
     case 29:
     {
         Value inXY = tryGetValue(node->GetBox(0), Value::Zero).AsFloat2();
-        value = writeLocal(ValueType::Float3, String::Format(TEXT("float3({0}, sqrt(saturate(1.0 - dot({0}.xy, {0}.xy))))"), inXY.Value), node);
+        value = writeLocal(ValueType::Float3, String::Format(TEXT("float3({0}, sqrt(saturate(1.0 - dot({0}, {0}))))"), inXY.Value), node);
         break;
     }
     // Mad

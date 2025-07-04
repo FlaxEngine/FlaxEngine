@@ -10,6 +10,10 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 {
     switch (node->TypeID)
     {
+    // Material
+    case 1:
+        value = tryGetValue(box, Value::Zero);
+        break;
     // World Position
     case 2:
         value = Value(VariantType::Float3, TEXT("input.WorldPosition.xyz"));

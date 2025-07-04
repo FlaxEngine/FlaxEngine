@@ -998,6 +998,12 @@ void Foliage::RemoveAllInstances()
     RebuildClusters();
 }
 
+void Foliage::RemoveLightmap()
+{
+    for (auto& e : Instances)
+        e.RemoveLightmap();
+}
+
 static float GlobalDensityScale = 1.0f;
 
 float Foliage::GetGlobalDensityScale()
