@@ -38,6 +38,9 @@ public:
     Dictionary<String, MixerVariable> MixerGroupsVariables;
 
 public:
+    /// <summary>
+    /// Initialise which adds the AudioSettings data to the dictionary.
+    /// </summary>
     API_FUNCTION() void MixerInit();
 
     /// <summary>
@@ -80,7 +83,7 @@ public:
     API_FUNCTION() void SetMixerChannelVolume(const StringView& nameChannel, const Variant& value);
 
     /// <summary>
-    /// 
+    /// Resets the variables values to default values.
     /// </summary>
     API_FUNCTION() void ResetMixer();
 

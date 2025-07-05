@@ -72,13 +72,11 @@ void AudioMixer::MixerInit()
     }
 
     HashSet<String> currentGroupNames;
-    for (auto& group : audioMixerGroups)
-        currentGroupNames.Add(group.Name);
+    for (auto& group : audioMixerGroups) currentGroupNames.Add(group.Name);
 
     Array<String> keysToRemove;
     for (auto& pair : MixerGroupsVariables)
-        if (!currentGroupNames.Contains(pair.Key))
-            keysToRemove.Add(pair.Key);
+        if (!currentGroupNames.Contains(pair.Key)) keysToRemove.Add(pair.Key);
 
     for (auto& key : keysToRemove) MixerGroupsVariables.Remove(key);
 
