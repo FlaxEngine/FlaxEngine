@@ -5,6 +5,7 @@
 #include "Config.h"
 #include "Types.h"
 #include "Engine/Core/Types/BaseTypes.h"
+#include "Engine/Core/Types/String.h"
 
 /// <summary>
 /// The helper class for that handles active audio backend operations.
