@@ -431,8 +431,6 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
             GET_VERTEX(1, 1);
 #undef GET_VERTEX
 
-            // TODO: use SIMD for those calculations
-
             // Calculate normals for quad two vertices
             Float3 n0 = Float3::Normalize((v00 - v01) ^ (v01 - v10));
             Float3 n1 = Float3::Normalize((v11 - v10) ^ (v10 - v01));
@@ -446,6 +444,7 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
         }
     }
 
+#if 0
     // Smooth normals
     for (int32 z = 1; z < normalsSize.Y - 1; z++)
     {
@@ -466,8 +465,6 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
             GET_NORMAL(2, 2);
 #undef GET_VERTEX
 
-            // TODO: use SIMD for those calculations
-
             /*
              * The current vertex is (11). Calculate average for the nearby vertices.
              * 00   01   02
@@ -481,6 +478,7 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
             normalsPerVertex[i11] = Float3::Lerp(n11, avg, 0.6f);
         }
     }
+#endif
 
     // Write back to the data container
     const auto ptr = (Color32*)data;
@@ -525,10 +523,9 @@ void UpdateNormalsAndHoles(const TerrainDataUpdateInfo& info, const float* heigh
                 const int32 textureIndex = tz + tx;
                 const int32 heightmapIndex = hz + hx;
                 const int32 normalIndex = sz + sx;
-#if BUILD_DEBUG
-                ASSERT(normalIndex >= 0 && normalIndex < normalsLength);
-#endif
-                Float3 normal = Float3::NormalizeFast(normalsPerVertex[normalIndex]) * 0.5f + 0.5f;
+                ASSERT_LOW_LAYER(normalIndex >= 0 && normalIndex < normalsLength);
+                Float3 normal = Float3::NormalizeFast(normalsPerVertex[normalIndex]);
+                normal = normal * 0.5f + 0.5f;
 
                 if (holesMask && !holesMask[heightmapIndex])
                     normal = Float3::One;
@@ -1247,6 +1244,11 @@ void TerrainPatch::ClearCache()
 
 void TerrainPatch::CacheHeightData()
 {
+    if (Heightmap == nullptr)
+    {
+        LOG(Error, "Missing heightmap.");
+        return;
+    }
     PROFILE_CPU_NAMED("Terrain.CacheHeightData");
     const TerrainDataUpdateInfo info(this);
 
@@ -1745,7 +1747,7 @@ bool TerrainPatch::UpdateHeightData(TerrainDataUpdateInfo& info, const Int2& mod
     // Prepare data for the uploading to GPU
     ASSERT(Heightmap);
     auto texture = Heightmap->GetTexture();
-    ASSERT(texture->ResidentMipLevels() > 0);
+    ASSERT(texture->IsAllocated());
     const int32 textureSize = texture->Width();
     const PixelFormat pixelFormat = texture->Format();
     const int32 pixelStride = PixelFormatExtensions::SizeInBytes(pixelFormat);

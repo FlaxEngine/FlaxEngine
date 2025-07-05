@@ -604,10 +604,11 @@ int32 MaterialParams::GetVersionHash() const
 void MaterialParams::Bind(MaterialParamsLink* link, MaterialParameter::BindMeta& meta)
 {
     ASSERT(link && link->This);
-    for (int32 i = 0; i < link->This->Count(); i++)
+    const int32 count = link->This->Count();
+    for (int32 i = 0; i < count; i++)
     {
         MaterialParamsLink* l = link;
-        while (l->Down && !l->This->At(i).IsOverride())
+        while (l->Down && !l->This->At(i).IsOverride() && l->Down->This->Count() == count)
         {
             l = l->Down;
         }
