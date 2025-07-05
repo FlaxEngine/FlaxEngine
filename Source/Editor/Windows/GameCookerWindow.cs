@@ -974,7 +974,7 @@ namespace FlaxEditor.Windows
         public void BuildAndRun()
         {
             Editor.Log("Building and running");
-            GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out var buildConfiguration);
+            GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out _);
             var numberOfClients = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
             var buildConfig = Editor.Options.Options.General.CookAndRunBuildConfiguration;
             for (int i = 0; i < numberOfClients; i++)
@@ -1002,7 +1002,7 @@ namespace FlaxEditor.Windows
         public void RunCooked()
         {
             Editor.Log("Running cooked build");
-            GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out var buildConfiguration);
+            GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out _);
             var numberOfClients = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
             var buildConfig = Editor.Options.Options.General.CookAndRunBuildConfiguration;
             for (int i = 0; i < numberOfClients; i++)
