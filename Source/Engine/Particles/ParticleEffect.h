@@ -387,6 +387,7 @@ private:
     void ApplyModifiedParameters();
     void OnParticleSystemModified();
     void OnParticleSystemLoaded();
+    void OnParticleEmitterLoaded();
 
 public:
     // [Actor]
