@@ -98,7 +98,11 @@ bool LightPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psLightPoint.Create(psDesc, shader, "PS_Point"))
             return true;
+#if FLAX_REVERSE_Z
+        psDesc.DepthFunc = ComparisonFunc::Less;
+#else
         psDesc.DepthFunc = ComparisonFunc::Greater;
+#endif
         psDesc.CullMode = CullMode::Inverted;
         if (_psLightPointInside.Create(psDesc, shader, "PS_Point"))
             return true;
@@ -113,7 +117,11 @@ bool LightPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psLightSpot.Create(psDesc, shader, "PS_Spot"))
             return true;
+#if FLAX_REVERSE_Z
+        psDesc.DepthFunc = ComparisonFunc::Less;
+#else
         psDesc.DepthFunc = ComparisonFunc::Greater;
+#endif
         psDesc.CullMode = CullMode::Inverted;
         if (_psLightSpotInside.Create(psDesc, shader, "PS_Spot"))
             return true;
@@ -129,7 +137,11 @@ bool LightPass::setupResources()
         psDesc.CullMode = CullMode::Normal;
         if (_psLightSky->Init(psDesc))
             return true;
+#if FLAX_REVERSE_Z
+        psDesc.DepthFunc = ComparisonFunc::Less;
+#else
         psDesc.DepthFunc = ComparisonFunc::Greater;
+#endif
         psDesc.CullMode = CullMode::Inverted;
         if (_psLightSkyInside->Init(psDesc))
             return true;

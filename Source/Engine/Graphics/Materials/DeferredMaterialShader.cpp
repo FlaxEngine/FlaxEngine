@@ -172,7 +172,11 @@ bool DeferredMaterialShader::Load()
     // Motion Vectors pass
     psDesc.DepthWriteEnable = false;
     psDesc.DepthEnable = true;
+#if FLAX_REVERSE_Z
+    psDesc.DepthFunc = ComparisonFunc::GreaterEqual;
+#else
     psDesc.DepthFunc = ComparisonFunc::LessEqual;
+#endif
     psDesc.VS = _shader->GetVS("VS");
     psDesc.PS = _shader->GetPS("PS_MotionVectors");
     _cache.MotionVectors.Init(psDesc);
@@ -190,7 +194,11 @@ bool DeferredMaterialShader::Load()
     psDesc.DepthClipEnable = false;
     psDesc.DepthWriteEnable = true;
     psDesc.DepthEnable = true;
+#if FLAX_REVERSE_Z
+    psDesc.DepthFunc = ComparisonFunc::Greater;
+#else
     psDesc.DepthFunc = ComparisonFunc::Less;
+#endif
     psDesc.HS = nullptr;
     psDesc.DS = nullptr;
     GPUShaderProgramVS* instancedDepthPassVS;

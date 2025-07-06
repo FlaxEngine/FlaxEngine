@@ -4,20 +4,24 @@
 #define __COMMON__
 
 // Platform macros
-#if !defined(DIRECTX)
+#ifndef DIRECTX
 #define DIRECTX 0
 #endif
-#if !defined(OPENGL)
+#ifndef OPENGL
 #define OPENGL 0
 #endif
-#if !defined(VULKAN)
+#ifndef VULKAN
 #define VULKAN 0
 #endif
-#if defined(PLATFORM_PS4)
+#ifdef PLATFORM_PS4
 #include "./FlaxPlatforms/PS4/Shaders/PS4Common.hlsl"
 #endif
-#if defined(PLATFORM_PS5)
+#ifdef PLATFORM_PS5
 #include "./FlaxPlatforms/PS5/Shaders/PS5Common.hlsl"
+#endif
+
+#ifndef FLAX_REVERSE_Z
+#define FLAX_REVERSE_Z 0
 #endif
 
 // Feature levels
@@ -126,7 +130,11 @@ SamplerComparisonState ShadowSamplerLinear : register(s5);
 // Structure that contains information about GBuffer
 struct GBufferData
 {
-    float4 ViewInfo; // x-1/Projection[0,0], y-1/Projection[1,1], z-(Far / (Far - Near), w-(-Far * Near) / (Far - Near) / Far)
+    // If reverse Z enabled:
+    // x-1/Projection[0,0], y-1/Projection[1,1], z-(-Near / (Far - Near)), w-((Far * Near) / (Far - Near) / Far)
+    // Otherwise: 
+    // x-1/Projection[0,0], y-1/Projection[1,1], z-(Far / (Far - Near)), w-(-(Far * Near) / (Far - Near) / Far)
+    float4 ViewInfo; 
     float4 ScreenSize; // x-Width, y-Height, z-1/Width, w-1/Height
     float3 ViewPos; // view position (in world space)
     float ViewFar; // view far plane distance (in world space)

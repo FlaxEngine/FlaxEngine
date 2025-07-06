@@ -98,7 +98,11 @@ float3 TraceScreenSpaceReflection(float2 uv, GBufferSample gBuffer, Texture2D de
     {
         // Sample depth buffer and calculate depth difference
         currSample = SAMPLE_RT(depthBuffer, currOffset.xy).r;
+#if FLAX_REVERSE_Z
+        depthDiff = currSample - currOffset.z;
+#else
         depthDiff = currOffset.z - currSample;
+#endif
 
         // Check intersection
         if (depthDiff >= 0)

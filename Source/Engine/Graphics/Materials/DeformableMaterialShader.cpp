@@ -173,7 +173,11 @@ bool DeformableMaterialShader::Load()
     psDesc.DepthClipEnable = false;
     psDesc.DepthWriteEnable = true;
     psDesc.DepthEnable = true;
+#if FLAX_REVERSE_Z
+    psDesc.DepthFunc = ComparisonFunc::Greater;
+#else
     psDesc.DepthFunc = ComparisonFunc::Less;
+#endif
     psDesc.HS = nullptr;
     psDesc.DS = nullptr;
     _cache.Depth.Init(psDesc);

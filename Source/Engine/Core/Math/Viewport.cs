@@ -296,15 +296,13 @@ namespace FlaxEngine
         /// <summary>
         /// Converts a screen space point into a corresponding point in world space.
         /// </summary>
-        /// <param name="source">The vector to project.</param>
+        /// <param name="source">The vector to project, screen uv and device depth.</param>
         /// <param name="projection">The projection matrix.</param>
         /// <param name="view">The view matrix.</param>
-        /// <param name="world">The world matrix.</param>
         /// <returns>The unprojected Vector.</returns>
-        public Vector3 Unproject(Vector3 source, Matrix projection, Matrix view, Matrix world)
+        public Vector3 Unproject(Vector3 source, Matrix projection, Matrix view)
         {
-            Matrix.Multiply(ref world, ref view, out Matrix matrix);
-            Matrix.Multiply(ref matrix, ref projection, out matrix);
+            Matrix.Multiply(ref view, ref projection, out Matrix matrix);
             Matrix.Invert(ref matrix, out matrix);
 
             Unproject(ref source, ref matrix, out Vector3 vector);
@@ -314,8 +312,8 @@ namespace FlaxEngine
         /// <summary>
         /// Converts a screen space point into a corresponding point in world space.
         /// </summary>
-        /// <param name="source">The vector to project.</param>
-        /// <param name="matrix">An inverted combined WorldViewProjection matrix.</param>
+        /// <param name="source">The vector to project, screen uv and device depth.</param>
+        /// <param name="matrix">An inverted combined ViewProjection matrix.</param>
         /// <param name="vector">The unprojected vector.</param>
         public void Unproject(ref Vector3 source, ref Matrix matrix, out Vector3 vector)
         {
