@@ -276,7 +276,7 @@ namespace FlaxEditor.SceneGraph.Actors
                 Transform = actor.Transform,
                 Position = actor.Box.Center,
 
-                // Size the sphere to best fit the actor
+                // Size the capsule to best fit the actor
                 Radius = (float)actor.Sphere.Radius / Mathf.Max((float)actor.Scale.MaxValue, 0.0001f) * 0.707f,
                 Height = 100f,
             };
