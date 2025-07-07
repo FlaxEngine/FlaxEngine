@@ -20,15 +20,8 @@ public:
     /// </summary>
     struct MixerVariable
     {
-        /// <summary>
-        /// The current value.
-        /// </summary>
-        Variant Value;
-
-        /// <summary>
-       /// The default value.
-       /// </summary>
-        Variant DefaultValue;
+        Variant Volume;
+        bool isMuted;
     };
 
 public:

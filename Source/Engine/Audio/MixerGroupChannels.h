@@ -20,16 +20,16 @@ API_STRUCT() struct MixerGroupChannels : ISerializable
     String Name;
 
     /// <summary>
-    ///  Volume of the volume.
-    /// </summary>
-    API_FIELD(Attributes = "EditorOrder(20), Limit(0, 1)")
-    float MixerVolume = 1;
-
-    /// <summary>
     /// If Source is muted or not
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(30)")
+    API_FIELD(Attributes = "EditorOrder(20)")
     bool isMuted;
+
+    /// <summary>
+    ///  Volume of the volume.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(30), Limit(0, 1)")
+    float MixerVolume = 1;
 
 };
 
