@@ -164,6 +164,15 @@ public:
     }
 
     /// <summary>
+    /// Initializes an empty <see cref="Dictionary"/> without reserving any space.
+    /// </summary>
+    /// <param name="tag">The custom allocation tag.</param>
+    Dictionary(typename Base::AllocationTag tag)
+        : Base(tag)
+    {
+    }
+
+    /// <summary>
     /// Initializes <see cref="Dictionary"/> by reserving space.
     /// </summary>
     /// <param name="capacity">The number of elements that can be added without a need to allocate more memory.</param>

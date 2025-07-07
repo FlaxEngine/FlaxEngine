@@ -138,7 +138,7 @@ public:
         FORCE_INLINE void Swap(Data& other)
         {
             ::Swap(_data, other._data);
-            ::Swap(_arena, other._arena);
+            _arena = other._arena; // TODO: find a better way to move allocation with AllocationUtils::MoveToEmpty to preserve/maintain allocation tag ownership
         }
     };
 };
