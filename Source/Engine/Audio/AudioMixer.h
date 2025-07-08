@@ -5,7 +5,7 @@
 #include "Engine/Content/BinaryAsset.h"
 #include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Core/Types/Variant.h"
-#include "MixerGroupChannels.h"
+#include "BusGroups.h"
 
 /// <summary>
 /// 
@@ -16,19 +16,9 @@ API_CLASS(NoSpawn) class FLAXENGINE_API AudioMixer : public BinaryAsset
 
 public:
     /// <summary>
-    /// The mixer variable data.
-    /// </summary>
-    struct MixerVariable
-    {
-        Variant Volume;
-        bool isMuted;
-    };
-
-public:
-    /// <summary>
     /// The collection of audio mixer variables identified by the name.
     /// </summary>
-    Dictionary<String, MixerVariable> MixerGroupsVariables;
+    Dictionary<String, BusGroups> MasterBuses;
 
 public:
     /// <summary>
@@ -36,29 +26,13 @@ public:
     /// </summary>
     API_FUNCTION() void MixerInit();
 
-    /// <summary>
-    /// Gets the values (run-time).
-    /// </summary>
-    /// <returns>The values (run-time).</returns>
-    API_PROPERTY() Dictionary<String, Variant> GetMixerVariablesValues() const;
+    API_PROPERTY()
+    FORCE_INLINE Dictionary<String, BusGroups> GetMasterBuses() 
+    {
+        return MasterBuses;
+    }
 
-    /// <summary>
-    /// Sets the values (run-time).
-    /// </summary>
-    /// <param name="values">The values (run-time).</param>
-    API_PROPERTY() void SetMixerVariablesValues(const Dictionary<String, Variant>& values);
-
-    /// <summary>
-    /// Gets the default values (edit-time).
-    /// </summary>
-    /// <returns>The default values (edit-time).</returns>
-    API_PROPERTY() Dictionary<String, Variant> GetDefaultValues() const;
-
-    /// <summary>
-    /// Sets the default values (edit-time).
-    /// </summary>
-    /// <param name="values">The default values (edit-time).</param>
-    API_PROPERTY() void SetDefaultValues(const Dictionary<String, Variant>& values);
+    API_PROPERTY() void SetMasterBuses(Dictionary<String, BusGroups>& Value);
 
 public:
     /// <summary>

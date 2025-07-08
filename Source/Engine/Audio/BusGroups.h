@@ -8,10 +8,10 @@
 /// <summary>
 ///  Settings container for a group of audio mixer settings. Defines the data audio mixer options.
 /// </summary>
-API_STRUCT() struct MixerGroupChannels : ISerializable
+API_STRUCT() struct BusGroups : ISerializable
 {
     API_AUTO_SERIALIZATION();
-    DECLARE_SCRIPTING_TYPE_MINIMAL(MixerGroupChannels);
+    DECLARE_SCRIPTING_TYPE_MINIMAL(BusGroups);
 
     /// <summary>
     /// The name of the group.
@@ -20,16 +20,15 @@ API_STRUCT() struct MixerGroupChannels : ISerializable
     String Name;
 
     /// <summary>
-    /// If Source is muted or not
+    ///  Volume of the mixer group.
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(20)")
-    bool isMuted;
-
-    /// <summary>
-    ///  Volume of the volume.
-    /// </summary>
-    API_FIELD(Attributes = "EditorOrder(30), Limit(0, 1)")
+    API_FIELD(Attributes = "EditorOrder(20), Limit(0, 1)")
     float MixerVolume = 1;
 
+    /// <summary>
+    /// If Source is muted or not
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(30)")
+    bool isMuted;
 };
 

@@ -63,11 +63,11 @@ AudioMixer::AudioMixer(const SpawnParams& params, const AssetInfo* info)
 
 void AudioMixer::MixerInit()
 {
-    auto audioMixerGroups = AudioSettings::Get()->MixerGroupChannels;
+    auto audioMixerGroups = AudioSettings::Get()->AudioBuses;
 
     if (audioMixerGroups.Count() == 0) 
     {
-        if (!MixerGroupsVariables.IsEmpty()) MixerGroupsVariables.Clear();
+        if (!MasterBuses.IsEmpty()) MasterBuses.Clear();
         return;
     }
 
@@ -75,107 +75,50 @@ void AudioMixer::MixerInit()
     for (auto& group : audioMixerGroups) currentGroupNames.Add(group.Name);
 
     Array<String> keysToRemove;
-    for (auto& pair : MixerGroupsVariables)
+    for (auto& pair : MasterBuses)
         if (!currentGroupNames.Contains(pair.Key)) keysToRemove.Add(pair.Key);
 
-    for (auto& key : keysToRemove) MixerGroupsVariables.Remove(key);
+    for (auto& key : keysToRemove) MasterBuses.Remove(key);
 
     for (auto& audioMixerGroup : audioMixerGroups)
     {
-        if (!MixerGroupsVariables.ContainsKey(audioMixerGroup.Name)) 
+        if (!MasterBuses.ContainsKey(audioMixerGroup.Name))
         {
-            auto& var = MixerGroupsVariables[audioMixerGroup.Name];
-            var.Volume = audioMixerGroup.MixerVolume; var.isMuted = audioMixerGroup.isMuted;
+            auto& var = MasterBuses[audioMixerGroup.Name];
+            var.MixerVolume = audioMixerGroup.MixerVolume; var.isMuted = audioMixerGroup.isMuted;
         }
     }
 }
 
-Dictionary<String, Variant> AudioMixer::GetMixerVariablesValues() const
+void AudioMixer::SetMasterBuses(Dictionary<String, BusGroups>& Value)
 {
     ScopeLock lock(Locker);
-    Dictionary<String, Variant> result;
-    for (auto& e : MixerGroupsVariables)
-        result.Add(e.Key, e.Value.Volume);
-    return result;
-}
-
-void AudioMixer::SetMixerVariablesValues(const Dictionary<String, Variant>& values)
-{
-    ScopeLock lock(Locker);
-    for (auto it = MixerGroupsVariables.Begin(); it.IsNotEnd(); ++it)
-    {
-        if (!values.ContainsKey(it->Key)) 
-        {
-            MixerGroupsVariables.Remove(it);
-        }
-    }
-    for (auto i = values.Begin(); i.IsNotEnd(); ++i) 
-    {
-        auto e = MixerGroupsVariables.TryGet(i->Key);
-        if (!e) 
-        {
-            e = &MixerGroupsVariables[i->Key];
-            e->Volume = i->Value;
-        }
-        e->Volume = i->Value;
-    }
-}
-
-Dictionary<String, Variant> AudioMixer::GetDefaultValues() const
-{
-    ScopeLock lock(Locker);
-    Dictionary<String, Variant> result;
-    for (auto& e : MixerGroupsVariables)
-        result.Add(e.Key, e.Value.Volume);
-    return result;
-}
-
-void AudioMixer::SetDefaultValues(const Dictionary<String, Variant>& values)
-{
-    ScopeLock lock(Locker);
-    for (auto it = MixerGroupsVariables.Begin(); it.IsNotEnd(); ++it)
-    {
-        if (!values.ContainsKey(it->Key))
-        {
-            MixerGroupsVariables.Remove(it);
-        }
-    }
-    for (auto i = values.Begin(); i.IsNotEnd(); ++i)
-    {
-        auto e = MixerGroupsVariables.TryGet(i->Key);
-        if (!e)
-        {
-            e = &MixerGroupsVariables[i->Key];
-            e->Volume = i->Value;
-        }
-        e->Volume = i->Value;
-    }
 }
 
 const Variant& AudioMixer::GetMixerChannelVolume(const StringView& nameChannel) const
 {
     ScopeLock lock(Locker);
-    auto e = MixerGroupsVariables.TryGet(nameChannel);
-    return e ? e->Volume : Variant::Zero;
+    auto e = MasterBuses.TryGet(nameChannel);
+    return e ? e->MixerVolume : Variant::Zero;
 }
 
 void AudioMixer::SetMixerChannelVolume(const StringView& nameChannel, const Variant& value)
 {
     ScopeLock lock(Locker);
-    auto e = MixerGroupsVariables.TryGet(nameChannel);
-    if (e) e->Volume = value;
+    auto e = MasterBuses.TryGet(nameChannel);
+    if (e) e->MixerVolume = (float)value;
 }
 
 void AudioMixer::ResetMixer() 
 {
     ScopeLock lock(Locker);
 
-    auto audioMixerGroups = AudioSettings::Get()->MixerGroupChannels;
+    auto audioMixerGroups = AudioSettings::Get()->AudioBuses;
 
     for (auto& group : audioMixerGroups) 
     {
-        auto mixerGroup = MixerGroupsVariables.TryGet(group.Name);
-        mixerGroup->Volume = group.MixerVolume;
+        auto mixerGroup = MasterBuses.TryGet(group.Name);
+        mixerGroup->MixerVolume = group.MixerVolume;
         mixerGroup->isMuted = group.isMuted;
     }
 }
@@ -190,11 +133,11 @@ void AudioMixer::ResetMixer()
 
         // Save to bytes
         MemoryWriteStream stream(1024);
-        stream.Write(MixerGroupsVariables.Count());
-        for (auto& e : MixerGroupsVariables)
+        stream.Write(MasterBuses.Count());
+        for (auto& e : MasterBuses)
         {
             stream.Write(e.Key, 71);
-            stream.Write(e.Value.Volume);
+            stream.Write(e.Value.MixerVolume);
             stream.Write(e.Value.isMuted);
         }
 
@@ -233,7 +176,7 @@ void AudioMixer::InitAsVirtual()
 {
     BinaryAsset::InitAsVirtual();
 
-    MixerGroupsVariables.Clear();
+    MasterBuses.Clear();
 }
 
 Asset::LoadResult AudioMixer::load() 
@@ -247,21 +190,21 @@ Asset::LoadResult AudioMixer::load()
     // Load all variables
     int32 count;
     stream.Read(count);
-    MixerGroupsVariables.EnsureCapacity(count);
+    MasterBuses.EnsureCapacity(count);
     String Name;
     for (int i = 0; i < count; i++) 
     {
         stream.Read(Name, 71);
-        auto& e = MixerGroupsVariables[Name];
-        stream.Read(e.Volume);
-        e.Volume = e.Volume;
+        auto& e = MasterBuses[Name];
+        stream.Read(e.MixerVolume);
+        e.MixerVolume = e.MixerVolume;
         stream.Read(e.isMuted);
         e.isMuted = e.isMuted;
     }
     if(stream.HasError())
     {
         // Failed to load data
-        MixerGroupsVariables.Clear();
+        MasterBuses.Clear();
         return LoadResult::InvalidData;
     }
 
@@ -270,7 +213,7 @@ Asset::LoadResult AudioMixer::load()
 
 void AudioMixer::unload(bool isReloading)
 {
-    MixerGroupsVariables.Clear();
+    MasterBuses.Clear();
 }
 
 AssetChunksFlag AudioMixer::getChunksToPreload() const
