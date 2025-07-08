@@ -103,17 +103,17 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
     for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)
     {
         auto& drawCall = drawCallsLists[lod][meshIndex];
-        if (!drawCall.DrawCall.Material)
+        if (!drawCall.Material)
             continue;
 
         DrawKey key;
-        key.Mat = drawCall.DrawCall.Material;
+        key.Mat = drawCall.Material;
         key.Geo = &meshes.Get()[meshIndex];
         key.Lightmap = instance.Lightmap.TextureIndex;
         auto* e = result.TryGet(key);
         if (!e)
         {
-            e = &result[key];
+            e = &result.Add(key, BatchedDrawCall(renderContext.List))->Value;
             ASSERT_LOW_LAYER(key.Mat);
             e->DrawCall.Material = key.Mat;
             e->DrawCall.Surface.Lightmap = EnumHasAnyFlags(_staticFlags, StaticFlags::Lightmap) && _scene ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
@@ -127,7 +127,7 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
         const Float3 translation = transform.Translation - renderContext.View.Origin;
         Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
         constexpr float worldDeterminantSign = 1.0f;
-        instanceData.Store(world, world, instance.Lightmap.UVsArea, drawCall.DrawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
+        instanceData.Store(world, world, instance.Lightmap.UVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
     }
 }
 
@@ -430,7 +430,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
         {
             const auto& mesh = meshes.Get()[meshIndex];
             auto& drawCall = drawCallsList.Get()[meshIndex];
-            drawCall.DrawCall.Material = nullptr;
+            drawCall.Material = nullptr; // DrawInstance skips draw calls from meshes with unset material
 
             // Check entry visibility
             const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
@@ -455,13 +455,13 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
             if (drawModes == DrawPass::None)
                 continue;
 
-            drawCall.DrawCall.Material = material;
-            drawCall.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
+            drawCall.Material = material;
+            drawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
         }
     }
 
     // Draw instances of the foliage type
-    BatchedDrawCalls result;
+    BatchedDrawCalls result(&renderContext.List->Memory);
     DrawCluster(renderContext, type.Root, type, drawCallsLists, result);
 
     // Submit draw calls with valid instances added

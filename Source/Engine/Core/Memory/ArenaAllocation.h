@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Allocation.h"
+#include "Engine/Platform/CriticalSection.h"
 
 /// <summary>
 /// Allocator that uses pages for stack-based allocs without freeing memory during it's lifetime.
@@ -67,20 +68,93 @@ public:
 };
 
 /// <summary>
+/// Allocator that uses pages for stack-based allocs without freeing memory during it's lifetime. Thread-safe to allocate memory from multiple threads at once.
+/// </summary>
+class ConcurrentArenaAllocator
+{
+private:
+    struct Page
+    {
+        void* Memory;
+        Page* Next;
+        volatile int64 Offset;
+        int64 Size;
+    };
+
+    int32 _pageSize;
+    volatile int64 _first = 0;
+#if !BUILD_RELEASE
+    volatile int64 _totalBytes = 0;
+#endif
+    void*(*_allocate1)(uint64 size, uint64 alignment) = nullptr;
+    void(*_free1)(void* ptr) = nullptr;
+    void*(*_allocate2)(uint64 size) = nullptr;
+    void(*_free2)(void* ptr, uint64 size) = nullptr;
+    CriticalSection _locker;
+
+public:
+    ConcurrentArenaAllocator(int32 pageSizeBytes, void* (*customAllocate)(uint64 size, uint64 alignment), void(*customFree)(void* ptr))
+        : _pageSize(pageSizeBytes)
+        , _allocate1(customAllocate)
+        , _free1(customFree)
+    {
+    }
+
+    ConcurrentArenaAllocator(int32 pageSizeBytes, void* (*customAllocate)(uint64 size), void(*customFree)(void* ptr, uint64 size))
+        : _pageSize(pageSizeBytes)
+        , _allocate2(customAllocate)
+        , _free2(customFree)
+    {
+    }
+
+    ConcurrentArenaAllocator(int32 pageSizeBytes = 1024 * 1024) // 1 MB by default
+        : ConcurrentArenaAllocator(pageSizeBytes, Allocator::Allocate, Allocator::Free)
+    {
+    }
+
+    ~ConcurrentArenaAllocator()
+    {
+        Free();
+    }
+
+    // Gets the total amount of bytes allocated in arena (excluding alignment).
+    int64 GetTotalBytes() const
+    {
+        return Platform::AtomicRead(&_totalBytes);
+    }
+
+    // Allocates a chunk of unitialized memory.
+    void* Allocate(uint64 size, uint64 alignment = 1);
+
+    // Frees all memory allocations within allocator.
+    void Free();
+
+    // Creates a new object within the arena allocator.
+    template<class T, class... Args>
+    inline T* New(Args&&...args)
+    {
+        T* ptr = (T*)Allocate(sizeof(T));
+        new(ptr) T(Forward<Args>(args)...);
+        return ptr;
+    }
+};
+
+/// <summary>
 /// The memory allocation policy that uses a part of shared page allocator. Allocations are performed in stack-manner, and free is no-op.
 /// </summary>
-class ArenaAllocation
+template<typename ArenaType>
+class ArenaAllocationBase
 {
 public:
     enum { HasSwap = true };
-    typedef ArenaAllocator* Tag;
+    typedef ArenaType* Tag;
 
     template<typename T>
     class Data
     {
     private:
         T* _data = nullptr;
-        ArenaAllocator* _arena = nullptr;
+        ArenaType* _arena = nullptr;
 
     public:
         FORCE_INLINE Data()
@@ -142,3 +216,13 @@ public:
         }
     };
 };
+
+/// <summary>
+/// The memory allocation policy that uses a part of shared page allocator. Allocations are performed in stack-manner, and free is no-op.
+/// </summary>
+typedef ArenaAllocationBase<ArenaAllocator> ArenaAllocation;
+
+/// <summary>
+/// The memory allocation policy that uses a part of shared page allocator. Allocations are performed in stack-manner, and free is no-op.
+/// </summary>
+typedef ArenaAllocationBase<ConcurrentArenaAllocator> ConcurrentArenaAllocation;

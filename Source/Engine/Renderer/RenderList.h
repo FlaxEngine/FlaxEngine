@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Memory/ArenaAllocation.h"
 #include "Engine/Core/Math/Half.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 #include "Engine/Graphics/DynamicBuffer.h"
@@ -241,7 +242,11 @@ struct BatchedDrawCall
 {
     DrawCall DrawCall;
     uint16 ObjectsStartIndex = 0; // Index of the instances start in the ObjectsBuffer (set internally).
-    Array<struct ShaderObjectData, RendererAllocation> Instances;
+    Array<struct ShaderObjectData, ConcurrentArenaAllocation> Instances;
+
+    BatchedDrawCall() { CRASH; } // Don't use it
+    BatchedDrawCall(RenderList* list);
+    BatchedDrawCall(BatchedDrawCall&& other) noexcept;
 };
 
 /// <summary>
@@ -298,6 +303,11 @@ API_CLASS(Sealed) class FLAXENGINE_API RenderList : public ScriptingObject
     static void CleanupCache();
 
 public:
+    /// <summary>
+    /// Memory storage with all draw-related data that lives during a single frame rendering time. Thread-safe to allocate memory during rendering jobs.
+    /// </summary>
+    ConcurrentArenaAllocator Memory;
+
     /// <summary>
     /// All scenes for rendering.
     /// </summary>
