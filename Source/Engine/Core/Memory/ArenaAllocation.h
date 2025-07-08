@@ -13,7 +13,6 @@ class ArenaAllocator
 private:
     struct Page
     {
-        void* Memory;
         Page* Next;
         uint32 Offset, Size;
     };
@@ -75,7 +74,6 @@ class ConcurrentArenaAllocator
 private:
     struct Page
     {
-        void* Memory;
         Page* Next;
         volatile int64 Offset;
         int64 Size;
