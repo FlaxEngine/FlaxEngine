@@ -81,9 +81,7 @@ private:
 
     int32 _pageSize;
     volatile int64 _first = 0;
-#if !BUILD_RELEASE
     volatile int64 _totalBytes = 0;
-#endif
     void*(*_allocate1)(uint64 size, uint64 alignment) = nullptr;
     void(*_free1)(void* ptr) = nullptr;
     void*(*_allocate2)(uint64 size) = nullptr;
