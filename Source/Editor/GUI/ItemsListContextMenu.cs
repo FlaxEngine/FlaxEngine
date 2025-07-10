@@ -514,15 +514,15 @@ namespace FlaxEditor.GUI
             var items = ItemsPanel.Children;
             for (int i = 0; i < items.Count; i++)
             {
-                var item = items[i];
-                if (item is Item item1 && item1.Visible)
-                    result.Add(item1);
-                else if (!ignoreFoldedCategories && item is DropPanel panel && item.Visible)
+                var currentItem = items[i];
+                if (currentItem is Item item && item.Visible)
+                    result.Add(item);
+                else if (currentItem is DropPanel category && (!ignoreFoldedCategories || !category.IsClosed) && currentItem.Visible)
                 {
-                    for (int j = 0; j < panel.Children.Count; j++)
+                    for (int j = 0; j < category.Children.Count; j++)
                     {
-                        if (panel.Children[j] is Item item2 && item2.Visible)
-                            result.Add(item2);
+                        if (category.Children[j] is Item categoryItem && categoryItem.Visible)
+                            result.Add(categoryItem);
                     }
                 }
             }
