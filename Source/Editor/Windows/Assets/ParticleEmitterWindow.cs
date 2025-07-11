@@ -127,6 +127,8 @@ namespace FlaxEditor.Windows.Assets
                 PlaySimulation = true,
                 Parent = _split2.Panel1
             };
+            _preview.PreviewActor.ShowDebugDraw = true;
+            _preview.ShowDebugDraw = true;
 
             // Asset properties proxy
             _properties = new PropertiesProxy();

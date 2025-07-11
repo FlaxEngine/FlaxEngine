@@ -933,6 +933,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
     const DrawPass drawModes = view.Pass & effect->DrawModes;
     if (drawModes == DrawPass::None || SpriteRenderer.Init())
         return;
+    ConcurrentSystemLocker::ReadScope systemScope(SystemLocker);
     Matrix worlds[2];
     Matrix::Translation(-renderContext.View.Origin, worlds[0]); // World
     renderContext.View.GetWorldMatrix(effect->GetTransform(), worlds[1]); // Local
@@ -1064,6 +1065,28 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
         }
     }
 }
+
+#if USE_EDITOR
+
+void Particles::DebugDraw(ParticleEffect* effect)
+{
+    PROFILE_CPU_NAMED("Particles.DrawDebug");
+    ConcurrentSystemLocker::ReadScope systemScope(SystemLocker);
+
+    // Draw all emitters
+    for (auto& emitterData : effect->Instance.Emitters)
+    {
+        const auto buffer = emitterData.Buffer;
+        if (!buffer)
+            continue;
+        auto emitter = buffer->Emitter;
+        if (!emitter || !emitter->IsLoaded())
+            continue;
+        emitter->GraphExecutorCPU.DrawDebug(emitter, effect, emitterData);
+    }
+}
+
+#endif
 
 #if COMPILE_WITH_GPU_PARTICLES
 

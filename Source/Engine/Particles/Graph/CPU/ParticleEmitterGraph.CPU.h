@@ -162,6 +162,16 @@ public:
     /// <param name="transform">The effect transform matrix.</param>
     void Draw(ParticleEmitter* emitter, ParticleEffect* effect, ParticleEmitterInstance& data, RenderContext& renderContext, Matrix& transform);
 
+#if USE_EDITOR
+    /// <summary>
+    /// Draws the particles debug shapes.
+    /// </summary>
+    /// <param name="emitter">The owning emitter.</param>
+    /// <param name="effect">The instance effect.</param>
+    /// <param name="data">The instance data.</param>
+    void DrawDebug(ParticleEmitter* emitter, ParticleEffect* effect, ParticleEmitterInstance& data);
+#endif
+
     /// <summary>
     /// Updates the particles simulation (the CPU simulation).
     /// </summary>
@@ -195,6 +205,9 @@ private:
 
     int32 ProcessSpawnModule(int32 index);
     void ProcessModule(ParticleEmitterGraphCPUNode* node, int32 particlesStart, int32 particlesEnd);
+#if USE_EDITOR
+    void DebugDrawModule(ParticleEmitterGraphCPUNode* node, const Transform& transform);
+#endif
 
     FORCE_INLINE Value GetValue(Box* box, int32 defaultValueBoxIndex)
     {
