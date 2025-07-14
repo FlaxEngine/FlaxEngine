@@ -643,14 +643,7 @@ namespace FlaxEditor.Viewport
                 if (selectedParents[i].IsActiveInHierarchy)
                     selectedParents[i].OnDebugDraw(_debugDrawData);
             }
-
-            unsafe
-            {
-                fixed (IntPtr* actors = _debugDrawData.ActorsPtrs)
-                {
-                    DebugDraw.DrawActors(new IntPtr(actors), _debugDrawData.ActorsCount, false);
-                }
-            }
+            _debugDrawData.DrawActors();
 
             // Debug draw all actors in prefab and collect actors
             var view = Task.View;

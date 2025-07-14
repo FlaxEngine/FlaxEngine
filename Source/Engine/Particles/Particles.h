@@ -52,6 +52,14 @@ public:
     /// <param name="effect">The owning actor.</param>
     static void DrawParticles(RenderContext& renderContext, ParticleEffect* effect);
 
+#if USE_EDITOR
+    /// <summary>
+    /// Draws the particles debug shapes.
+    /// </summary>
+    /// <param name="effect">The owning actor.</param>
+    static void DebugDraw(ParticleEffect* effect);
+#endif
+
 public:
     /// <summary>
     /// Enables or disables particle buffer pooling.
