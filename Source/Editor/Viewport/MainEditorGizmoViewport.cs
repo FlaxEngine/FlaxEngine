@@ -374,7 +374,7 @@ namespace FlaxEditor.Viewport
             // Draw selected objects debug shapes and visuals
             if (DrawDebugDraw && (renderContext.View.Flags & ViewFlags.DebugDraw) == ViewFlags.DebugDraw)
             {
-                _debugDrawData.DrawActors();
+                _debugDrawData.DrawActors(true);
                 DebugDraw.Draw(ref renderContext, target.View(), targetDepth.View(), true);
             }
         }
