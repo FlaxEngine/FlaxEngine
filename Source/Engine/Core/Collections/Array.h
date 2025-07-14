@@ -658,13 +658,7 @@ public:
         --_count;
         T* data = _allocation.Get();
         if (index < _count)
-        {
-            T* dst = data + index;
-            T* src = data + (index + 1);
-            const int32 count = _count - index;
-            for (int32 i = 0; i < count; ++i)
-                dst[i] = MoveTemp(src[i]);
-        }
+            Memory::MoveAssignItems(data + index, data + (index + 1), _count - index);
         Memory::DestructItems(data + _count, 1);
     }
 
