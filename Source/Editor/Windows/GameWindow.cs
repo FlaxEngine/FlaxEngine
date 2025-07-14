@@ -510,13 +510,7 @@ namespace FlaxEditor.Windows
                                 selectedParents[i].OnDebugDraw(drawDebugData);
                         }
                     }
-                    unsafe
-                    {
-                        fixed (IntPtr* actors = drawDebugData.ActorsPtrs)
-                        {
-                            DebugDraw.DrawActors(new IntPtr(actors), drawDebugData.ActorsCount, true);
-                        }
-                    }
+                    drawDebugData.DrawActors(true);
                 }
 
                 DebugDraw.Draw(ref renderContext, task.OutputView);

@@ -113,8 +113,55 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
+        private sealed class LayoutTabProxy
+        {
+            [EditorDisplay("Layout"), CustomEditor(typeof(Editor)), NoSerialize]
+            // ReSharper disable once UnusedAutoPropertyAccessor.Local
+            public ParticleEmitterWindow Window;
+
+            private class Editor : CustomEditor
+            {
+                public override DisplayStyle Style => DisplayStyle.InlineIntoParent;
+
+                public override void Initialize(LayoutElementsContainer layout)
+                {
+                    var window = (ParticleEmitterWindow)Values[0];
+                    var emitter = window.Preview.Emitter;
+                    if (emitter == null || !emitter.IsLoaded)
+                        return;
+                    var attributes = emitter.Layout;
+                    var size = 0;
+                    var height = 14;
+                    foreach (var attribute in attributes)
+                    {
+                        layout.Label($" - {GetAttributeType(attribute.Format)} {attribute.Name}").Label.Height = height;
+                        size += PixelFormatExtensions.SizeInBytes(attribute.Format);
+                    }
+                    var capacity = 0;
+                    if (window.Surface != null && window.Surface.RootNode != null && window.Surface.RootNode.Values.Length > 0)
+                        capacity = (int)window.Surface.RootNode.Values[0];
+                    layout.Space(10);
+                    layout.Label($"Particle size: {size} bytes\nParticle buffer size: {Utilities.Utils.FormatBytesCount((ulong)(size * capacity))}").Label.Height = height * 2;
+                }
+
+                private static string GetAttributeType(PixelFormat format)
+                {
+                    switch (format)
+                    {
+                    case PixelFormat.R32_Float: return "float";
+                    case PixelFormat.R32G32_Float: return "Float2";
+                    case PixelFormat.R32G32B32_Float: return "Float3";
+                    case PixelFormat.R32G32B32A32_Float: return "Float4";
+                    case PixelFormat.R32_SInt: return "int";
+                    case PixelFormat.R32_UInt: return "uint";
+                    default: return format.ToString();
+                    }
+                }
+            }
+        }
+
         private readonly PropertiesProxy _properties;
-        private Tab _previewTab;
+        private Tab _previewTab, _layoutTab;
         private ToolStripButton _showSourceCodeButton;
 
         /// <inheritdoc />
@@ -127,17 +174,21 @@ namespace FlaxEditor.Windows.Assets
                 PlaySimulation = true,
                 Parent = _split2.Panel1
             };
+            _preview.PreviewActor.ShowDebugDraw = true;
+            _preview.ShowDebugDraw = true;
 
             // Asset properties proxy
             _properties = new PropertiesProxy();
 
             // Preview properties editor
             _previewTab = new Tab("Preview");
-            _previewTab.Presenter.Select(new PreviewProxy
-            {
-                Window = this,
-            });
+            _previewTab.Presenter.Select(new PreviewProxy { Window = this });
             _tabs.AddTab(_previewTab);
+
+            // Particle data layout
+            _layoutTab = new Tab("Layout");
+            _layoutTab.Presenter.Select(new LayoutTabProxy { Window = this });
+            _tabs.AddTab(_layoutTab);
 
             // Surface
             _surface = new ParticleEmitterSurface(this, Save, _undo)
@@ -237,6 +288,7 @@ namespace FlaxEditor.Windows.Assets
                 _asset.WaitForLoaded();
                 _preview.PreviewActor.ResetSimulation();
                 _previewTab.Presenter.BuildLayoutOnUpdate();
+                _layoutTab.Presenter.BuildLayoutOnUpdate();
             }
         }
 
@@ -253,6 +305,7 @@ namespace FlaxEditor.Windows.Assets
             // Init asset properties and parameters proxy
             _properties.OnLoad(this);
             _previewTab.Presenter.BuildLayoutOnUpdate();
+            _layoutTab.Presenter.BuildLayoutOnUpdate();
 
             return false;
         }

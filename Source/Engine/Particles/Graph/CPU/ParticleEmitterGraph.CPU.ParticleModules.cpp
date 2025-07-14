@@ -2,8 +2,16 @@
 
 #include "ParticleEmitterGraph.CPU.h"
 #include "Engine/Core/Random.h"
+#include "Engine/Core/Math/Vector2.h"
+#include "Engine/Core/Math/Vector3.h"
+#include "Engine/Core/Math/Vector4.h"
+#include "Engine/Core/Math/Matrix.h"
+#include "Engine/Core/Math/Quaternion.h"
+#include "Engine/Core/Math/BoundingBox.h"
+#include "Engine/Core/Math/BoundingSphere.h"
+#include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Utilities/Noise.h"
-#include "Engine/Core/Types/CommonValue.h"
+#include "Engine/Debug/DebugDraw.h"
 
 // ReSharper disable CppCStyleCast
 // ReSharper disable CppClangTidyClangDiagnosticCastAlign
@@ -1468,3 +1476,89 @@ void ParticleEmitterGraphCPUExecutor::ProcessModule(ParticleEmitterGraphCPUNode*
 #undef COLLISION_LOGIC
     }
 }
+
+#if USE_EDITOR
+
+void ParticleEmitterGraphCPUExecutor::DebugDrawModule(ParticleEmitterGraphCPUNode* node, const Transform& transform)
+{
+    // Skip modules that rely on particle data
+    if (node->UsePerParticleDataResolve())
+        return;
+
+    const Color color = Color::White;
+    switch (node->TypeID)
+    {
+    case 202: // Position (sphere surface)
+    case 211: // Position (sphere volume)
+    {
+        const Float3 center = transform.LocalToWorld((Float3)GetValue(node->GetBox(0), 2));
+        const float radius = (float)GetValue(node->GetBox(1), 3);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(center, radius), color, 0.0f, true);
+        break;
+    }
+    case 203: // Position (plane)
+    {
+        const Float3 center = (Float3)GetValue(node->GetBox(0), 2);
+        const Float2 size = (Float2)GetValue(node->GetBox(1), 3);
+        const Float3 halfExtent = Float3(size.X * 0.5f, 0.0f, size.Y * 0.5f);
+        OrientedBoundingBox box(halfExtent, Transform(center));
+        box.Transform(transform);
+        DEBUG_DRAW_WIRE_BOX(box, color, 0.0f, true);
+        break;
+    }
+    case 204: // Position (circle)
+    case 205: // Position (disc)
+    {
+        const Float3 center = transform.LocalToWorld((Float3)GetValue(node->GetBox(0), 2));
+        const float radius = (float)GetValue(node->GetBox(1), 3);
+        DEBUG_DRAW_WIRE_CYLINDER(center, transform.Orientation * Quaternion::Euler(90, 0, 0), radius, 0.0f, color, 0.0f, true);
+        break;
+    }
+    case 206: // Position (box surface)
+    case 207: // Position (box volume)
+    {
+        const Float3 center = (Float3)GetValue(node->GetBox(0), 2);
+        const Float3 size = (Float3)GetValue(node->GetBox(1), 3);
+        OrientedBoundingBox box(size * 0.5f, Transform(center));
+        box.Transform(transform);
+        DEBUG_DRAW_WIRE_BOX(box, color, 0.0f, true);
+        break;
+    }
+    // Position (cylinder)
+    case 208:
+    {
+        const float height = (float)GetValue(node->GetBox(2), 4);
+        const Float3 center = transform.LocalToWorld((Float3)GetValue(node->GetBox(0), 2) + Float3(0, 0, height * 0.5f));
+        const float radius = (float)GetValue(node->GetBox(1), 3);
+        DEBUG_DRAW_WIRE_CYLINDER(center, transform.Orientation * Quaternion::Euler(90, 0, 0), radius, height, color, 0.0f, true);
+        break;
+    }
+    // Position (line)
+    case 209:
+    {
+        const Float3 start = transform.LocalToWorld((Float3)GetValue(node->GetBox(0), 2));
+        const Float3 end = transform.LocalToWorld((Float3)GetValue(node->GetBox(1), 3));
+        DEBUG_DRAW_LINE(start, end, color, 0.0f, true);
+        break;
+    }
+    // Position (torus)
+    case 210:
+    {
+        const Float3 center = transform.LocalToWorld((Float3)GetValue(node->GetBox(0), 2));
+        const float radius = Math::Max((float)GetValue(node->GetBox(1), 3), ZeroTolerance);
+        const float thickness = (float)GetValue(node->GetBox(2), 4);
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(center, radius + thickness), color, 0.0f, true);
+        break;
+    }
+    
+    // Position (spiral)
+    case 214:
+    {
+        const Float3 center = transform.LocalToWorld((Float3)GetValue(node->GetBox(0), 2));
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(center, 5.0f), color, 0.0f, true);
+        break;
+    }
+    }
+}
+
+#endif
