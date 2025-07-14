@@ -264,6 +264,7 @@ namespace FlaxEditor.Viewport.Previews
             {
                 DebugDraw.SetContext(_debugDrawContext);
                 DebugDraw.UpdateContext(_debugDrawContext, 1.0f / Mathf.Max(Engine.FramesPerSecond, 1));
+                DebugDraw.SetView(ref renderContext.View);
                 CustomDebugDraw?.Invoke(context, ref renderContext);
                 OnDebugDraw(context, ref renderContext);
                 DebugDraw.Draw(ref renderContext, target.View(), targetDepth.View(), true);

@@ -357,7 +357,8 @@ struct DebugDrawContext
     DebugDrawData DebugDrawDefault;
     DebugDrawData DebugDrawDepthTest;
     Float3 LastViewPos = Float3::Zero;
-    Matrix LastViewProj = Matrix::Identity;
+    Matrix LastViewProjection = Matrix::Identity;
+    BoundingFrustum LastViewFrustum;
 
     inline int32 Count() const
     {
@@ -779,9 +780,23 @@ Vector3 DebugDraw::GetViewPos()
     return Context->LastViewPos;
 }
 
+BoundingFrustum DebugDraw::GetViewFrustum()
+{
+    return Context->LastViewFrustum;
+}
+
+void DebugDraw::SetView(const RenderView& view)
+{
+    Context->LastViewPos = view.Position;
+    Context->LastViewProjection = view.Projection;
+    Context->LastViewFrustum = view.Frustum;
+}
+
 void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTextureView* depthBuffer, bool enableDepthTest)
 {
     PROFILE_GPU_CPU("Debug Draw");
+    const RenderView& view = renderContext.View;
+    SetView(view);
 
     // Ensure to have shader loaded and any lines to render
     const int32 debugDrawDepthTestCount = Context->DebugDrawDepthTest.Count();
@@ -791,7 +806,6 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     if (renderContext.Buffers == nullptr || !DebugDrawVB)
         return;
     auto context = GPUDevice::Instance->GetMainContext();
-    const RenderView& view = renderContext.View;
     if (Context->Origin != view.Origin)
     {
         // Teleport existing debug shapes to maintain their location
@@ -800,8 +814,6 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
         Context->DebugDrawDepthTest.Teleport(delta);
         Context->Origin = view.Origin;
     }
-    Context->LastViewPos = view.Position;
-    Context->LastViewProj = view.Projection;
     TaaJitterRemoveContext taaJitterRemove(view);
 
     // Fallback to task buffers
@@ -1383,7 +1395,7 @@ void DebugDraw::DrawWireSphere(const BoundingSphere& sphere, const Color& color,
     int32 index;
     const Float3 centerF = sphere.Center - Context->Origin;
     const float radiusF = (float)sphere.Radius;
-    const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(centerF, radiusF, Context->LastViewPos, Context->LastViewProj);
+    const float screenRadiusSquared = RenderTools::ComputeBoundsScreenRadiusSquared(centerF, radiusF, Context->LastViewPos, Context->LastViewProjection);
     if (screenRadiusSquared > DEBUG_DRAW_SPHERE_LOD0_SCREEN_SIZE * DEBUG_DRAW_SPHERE_LOD0_SCREEN_SIZE * 0.25f)
         index = 0;
     else if (screenRadiusSquared > DEBUG_DRAW_SPHERE_LOD1_SCREEN_SIZE * DEBUG_DRAW_SPHERE_LOD1_SCREEN_SIZE * 0.25f)

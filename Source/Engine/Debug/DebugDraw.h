@@ -76,6 +76,11 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 
     // Gets the last view position when rendering the current context. Can be used for custom culling or LODing when drawing more complex shapes.
     static Vector3 GetViewPos();
+    // Gets the last view frustum when rendering the current context. Can be used for custom culling or LODing when drawing more complex shapes.
+    static BoundingFrustum GetViewFrustum();
+
+    // Sets the rendering view information beforehand.
+    API_FUNCTION() static void SetView(API_PARAM(ref) const RenderView& view);
 
     /// <summary>
     /// Draws the collected debug shapes to the output.

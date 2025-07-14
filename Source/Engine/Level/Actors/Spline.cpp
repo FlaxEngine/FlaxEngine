@@ -3,6 +3,7 @@
 #include "Spline.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Animations/CurveSerialization.h"
+#include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 
@@ -520,7 +521,8 @@ namespace
 
 void Spline::OnDebugDraw()
 {
-    DrawSpline(this, GetSplineColor().AlphaMultiplied(0.7f), _transform, true);
+    if (DebugDraw::GetViewFrustum().Intersects(_sphere))
+        DrawSpline(this, GetSplineColor().AlphaMultiplied(0.7f), _transform, true);
 
     // Base
     Actor::OnDebugDraw();
