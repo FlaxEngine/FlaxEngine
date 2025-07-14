@@ -177,10 +177,16 @@ public:
     void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
     bool Save(const StringView& path = StringView::Empty) override;
 
-    /// <summary>
-    /// Checks if the particle emitter has valid shader code present.
-    /// </summary>
-    API_PROPERTY() bool HasShaderCode() const;
+    API_STRUCT(Internal) struct Attribute
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(Attribute);
+        API_FIELD() PixelFormat Format;
+        API_FIELD() String Name;
+    };
+
+private:
+    API_PROPERTY(Internal) bool HasShaderCode() const;
+    API_PROPERTY(Internal) Array<Attribute> GetLayout() const;
 #endif
 
 protected:

@@ -519,4 +519,39 @@ bool ParticleEmitter::HasShaderCode() const
     return false;
 }
 
+Array<ParticleEmitter::Attribute> ParticleEmitter::GetLayout() const
+{
+    Array<Attribute> result;
+    ScopeLock lock(Locker);
+    result.Resize(Graph.Layout.Attributes.Count());
+    for (int32 i = 0; i < result.Count(); i++)
+    {
+        auto& dst = result[i];
+        const auto& src = Graph.Layout.Attributes[i];
+        dst.Name = src.Name;
+        switch (src.ValueType)
+        {
+        case ParticleAttribute::ValueTypes::Float:
+            dst.Format = PixelFormat::R32_Float;
+            break;
+        case ParticleAttribute::ValueTypes::Float2:
+            dst.Format = PixelFormat::R32G32_Float;
+            break;
+        case ParticleAttribute::ValueTypes::Float3:
+            dst.Format = PixelFormat::R32G32B32_Float;
+            break;
+        case ParticleAttribute::ValueTypes::Float4:
+            dst.Format = PixelFormat::R32G32B32A32_Float;
+            break;
+        case ParticleAttribute::ValueTypes::Int:
+            dst.Format = PixelFormat::R32_SInt;
+            break;
+        case ParticleAttribute::ValueTypes::Uint:
+            dst.Format = PixelFormat::R32_UInt;
+            break;
+        }
+    }
+    return result;
+}
+
 #endif
