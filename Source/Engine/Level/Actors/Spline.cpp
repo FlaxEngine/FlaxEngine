@@ -465,6 +465,7 @@ void Spline::UpdateSpline()
     Matrix world;
     GetLocalToWorldMatrix(world);
     BoundingBox::Transform(_localBounds, world, _box);
+    BoundingSphere::FromBox(_box, _sphere);
 
     SplineUpdated();
 }
@@ -564,6 +565,7 @@ void Spline::Initialize()
     Matrix world;
     GetLocalToWorldMatrix(world);
     BoundingBox::Transform(_localBounds, world, _box);
+    BoundingSphere::FromBox(_box, _sphere);
 }
 
 void Spline::Serialize(SerializeStream& stream, const void* otherObj)
