@@ -1176,6 +1176,12 @@ namespace FlaxEditor.Windows
                 if (!_cursorVisible)
                     Screen.CursorVisible = true;
             }
+
+            if (Editor.IsPlayMode && IsDocked && IsSelected && RootWindow.FocusedControl == null)
+            {
+                // Game UI cleared focus so regain it to maintain UI navigation just like game window does
+                FlaxEngine.Scripting.InvokeOnUpdate(Focus);
+            }
         }
 
         /// <inheritdoc />
