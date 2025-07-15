@@ -47,11 +47,15 @@ public class tracy : ThirdPartyModule
         switch (options.Platform.Target)
         {
         case TargetPlatform.Windows:
+        case TargetPlatform.XboxOne:
+        case TargetPlatform.XboxScarlett:
             options.PrivateDefinitions.Add("TRACY_DBGHELP_LOCK=FlaxDbgHelp");
+            options.PrivateDefinitions.Add("TRACY_NO_PIPE");
             break;
         case TargetPlatform.Switch:
             options.PrivateDefinitions.Add("TRACY_USE_MALLOC");
             options.PrivateDefinitions.Add("TRACY_ONLY_IPV4");
+            options.PrivateDefinitions.Add("TRACY_NO_PIPE");
             break;
         }
     }
