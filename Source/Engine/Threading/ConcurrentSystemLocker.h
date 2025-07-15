@@ -19,6 +19,7 @@ public:
 
     void Begin(bool write, bool exclusively = false);
     void End(bool write);
+    bool HasLock(bool write) const;
 
 public:
     template<bool Write>
