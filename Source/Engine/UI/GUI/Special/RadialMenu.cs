@@ -165,6 +165,8 @@ namespace FlaxEngine.GUI
         public RadialMenu(float x, float y, float width = 100, float height = 100)
         : base(x, y, width, height)
         {
+            AutoFocus = true;
+
             var style = Style.Current;
             if (style != null)
             {

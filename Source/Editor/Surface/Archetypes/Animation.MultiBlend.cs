@@ -233,6 +233,8 @@ namespace FlaxEditor.Surface.Archetypes
         public BlendPointsEditor(Animation.MultiBlend node, bool is2D, float x, float y, float width, float height)
         : base(x, y, width, height)
         {
+            AutoFocus = true;
+
             _node = node;
             _is2D = is2D;
         }
