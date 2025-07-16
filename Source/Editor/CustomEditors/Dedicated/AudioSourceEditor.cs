@@ -38,6 +38,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 grid.Button("Pause").Button.Clicked += () => Foreach(x => x.Pause());
                 grid.Button("Stop").Button.Clicked += () => Foreach(x => x.Stop());
             }
+
         }
 
         /// <inheritdoc />
