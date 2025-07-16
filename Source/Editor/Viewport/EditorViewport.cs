@@ -1292,6 +1292,11 @@ namespace FlaxEditor.Viewport
             _mouseSensitivity = options.Viewport.MouseSensitivity;
             _maxSpeedSteps = options.Viewport.TotalCameraSpeedSteps;
             _cameraEasingDegree = options.Viewport.CameraEasingDegree;
+
+            ViewportIconsRenderer.MinSize = options.Viewport.IconsMinimumSize;
+            ViewportIconsRenderer.MaxSize = options.Viewport.IconsMaximumSize;
+            ViewportIconsRenderer.MaxSizeDistance = options.Viewport.MaxSizeDistance;
+
             OnCameraMovementProgressChanged();
         }
 
