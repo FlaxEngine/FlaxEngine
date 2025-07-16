@@ -109,6 +109,7 @@ namespace Flax.Build
                         // Merge module into target environment
                         buildData.TargetOptions.LinkEnv.InputFiles.AddRange(moduleOptions.OutputFiles);
                         buildData.TargetOptions.DependencyFiles.AddRange(moduleOptions.DependencyFiles);
+                        buildData.TargetOptions.NugetPackageReferences.AddRange(moduleOptions.NugetPackageReferences);
                         buildData.TargetOptions.OptionalDependencyFiles.AddRange(moduleOptions.OptionalDependencyFiles);
                         buildData.TargetOptions.Libraries.AddRange(moduleOptions.Libraries);
                         buildData.TargetOptions.DelayLoadLibraries.AddRange(moduleOptions.DelayLoadLibraries);
@@ -140,6 +141,19 @@ namespace Flax.Build
                     {
                         var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
                         graph.AddCopyFile(dstFile, srcFile);
+                    }
+
+                    if (targetBuildOptions.NugetPackageReferences.Any())
+                    {
+                        var nugetPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+                        foreach (var reference in targetBuildOptions.NugetPackageReferences)
+                        {
+                            var path = Path.Combine(nugetPath, reference.Name, reference.Version, "lib", reference.Framework, $"{reference.Name}.dll");
+                            if (!File.Exists(path))
+                                Utilities.RestoreNugetPackages(graph, target);
+                            var dstFile = Path.Combine(outputPath, Path.GetFileName(path));
+                            graph.AddCopyFile(dstFile, path);
+                        }
                     }
                 }
             }
@@ -283,6 +297,18 @@ namespace Flax.Build
                 args.Add(string.Format("/reference:\"{0}{1}.dll\"", referenceAssemblies, reference));
             foreach (var reference in fileReferences)
                 args.Add(string.Format("/reference:\"{0}\"", reference));
+
+            // Reference Nuget package
+            if (buildData.TargetOptions.NugetPackageReferences.Any())
+            {
+                var nugetPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+                foreach (var reference in buildOptions.NugetPackageReferences)
+                {
+                    var path = Path.Combine(nugetPath, reference.Name, reference.Version, "lib", reference.Framework, $"{reference.Name}.dll");
+                    args.Add(string.Format("/reference:\"{0}\"", path));
+                }
+            }
+
 #if USE_NETCORE
             foreach (var systemAnalyzer in buildOptions.ScriptingAPI.SystemAnalyzers)
                 args.Add(string.Format("/analyzer:\"{0}{1}.dll\"", referenceAnalyzers, systemAnalyzer));

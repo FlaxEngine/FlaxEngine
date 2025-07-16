@@ -425,6 +425,7 @@ namespace Flax.Build
                     moduleOptions.LinkEnv.InputFiles.AddRange(dependencyOptions.OutputFiles);
                     moduleOptions.DependencyFiles.AddRange(dependencyOptions.DependencyFiles);
                     moduleOptions.OptionalDependencyFiles.AddRange(dependencyOptions.OptionalDependencyFiles);
+                    moduleOptions.NugetPackageReferences.AddRange(dependencyOptions.NugetPackageReferences);
                     moduleOptions.PrivateIncludePaths.AddRange(dependencyOptions.PublicIncludePaths);
                     moduleOptions.Libraries.AddRange(dependencyOptions.Libraries);
                     moduleOptions.DelayLoadLibraries.AddRange(dependencyOptions.DelayLoadLibraries);
@@ -440,6 +441,7 @@ namespace Flax.Build
                     moduleOptions.LinkEnv.InputFiles.AddRange(dependencyOptions.OutputFiles);
                     moduleOptions.DependencyFiles.AddRange(dependencyOptions.DependencyFiles);
                     moduleOptions.OptionalDependencyFiles.AddRange(dependencyOptions.OptionalDependencyFiles);
+                    moduleOptions.NugetPackageReferences.AddRange(dependencyOptions.NugetPackageReferences);
                     moduleOptions.PublicIncludePaths.AddRange(dependencyOptions.PublicIncludePaths);
                     moduleOptions.Libraries.AddRange(dependencyOptions.Libraries);
                     moduleOptions.DelayLoadLibraries.AddRange(dependencyOptions.DelayLoadLibraries);
@@ -934,6 +936,7 @@ namespace Flax.Build
                         buildData.TargetOptions.LinkEnv.InputFiles.AddRange(moduleOptions.OutputFiles);
                         buildData.TargetOptions.DependencyFiles.AddRange(moduleOptions.DependencyFiles);
                         buildData.TargetOptions.OptionalDependencyFiles.AddRange(moduleOptions.OptionalDependencyFiles);
+                        buildData.TargetOptions.NugetPackageReferences.AddRange(moduleOptions.NugetPackageReferences);
                         buildData.TargetOptions.Libraries.AddRange(moduleOptions.Libraries);
                         buildData.TargetOptions.DelayLoadLibraries.AddRange(moduleOptions.DelayLoadLibraries);
                         buildData.TargetOptions.ScriptingAPI.Add(moduleOptions.ScriptingAPI);
@@ -1053,6 +1056,19 @@ namespace Flax.Build
                     {
                         var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
                         graph.AddCopyFile(dstFile, srcFile);
+                    }
+
+                    if (targetBuildOptions.NugetPackageReferences.Any())
+                    {
+                        var nugetPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+                        foreach (var reference in targetBuildOptions.NugetPackageReferences)
+                        {
+                            var path = Path.Combine(nugetPath, reference.Name, reference.Version, "lib", reference.Framework, $"{reference.Name}.dll");
+                            if (!File.Exists(path))
+                                Utilities.RestoreNugetPackages(graph, target);
+                            var dstFile = Path.Combine(outputPath, Path.GetFileName(path));
+                            graph.AddCopyFile(dstFile, path);
+                        }
                     }
                 }
             }
@@ -1192,6 +1208,7 @@ namespace Flax.Build
                             buildData.TargetOptions.ExternalModules.AddRange(moduleOptions.ExternalModules);
                             buildData.TargetOptions.DependencyFiles.AddRange(moduleOptions.DependencyFiles);
                             buildData.TargetOptions.OptionalDependencyFiles.AddRange(moduleOptions.OptionalDependencyFiles);
+                            buildData.TargetOptions.NugetPackageReferences.AddRange(moduleOptions.NugetPackageReferences);
                         }
                     }
                 }
@@ -1252,6 +1269,19 @@ namespace Flax.Build
                     {
                         var dstFile = Path.Combine(outputPath, Path.GetFileName(srcFile));
                         graph.AddCopyFile(dstFile, srcFile);
+                    }
+
+                    if (targetBuildOptions.NugetPackageReferences.Any())
+                    {
+                        var nugetPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages");
+                        foreach (var reference in targetBuildOptions.NugetPackageReferences)
+                        {
+                            var path = Path.Combine(nugetPath, reference.Name, reference.Version, "lib", reference.Framework, $"{reference.Name}.dll");
+                            if (!File.Exists(path))
+                                Utilities.RestoreNugetPackages(graph, target);
+                            var dstFile = Path.Combine(outputPath, Path.GetFileName(path));
+                            graph.AddCopyFile(dstFile, path);
+                        }
                     }
                 }
             }
