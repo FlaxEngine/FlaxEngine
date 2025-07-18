@@ -128,6 +128,12 @@ namespace FlaxEditor.Options
         };
 
         /// <summary>
+        /// Gets or sets the build configuration to use when using Cook and Run option in the editor.
+        /// </summary>
+        [EditorDisplay("General"), EditorOrder(201), ExpandGroups, Tooltip("The build configuration to use when using Cook and Run option in the editor.")]
+        public BuildConfiguration CookAndRunBuildConfiguration { get; set; } = BuildConfiguration.Development;
+
+        /// <summary>
         /// Gets or sets a value indicating whether perform automatic scripts reload on main window focus.
         /// </summary>
         [DefaultValue(true)]
