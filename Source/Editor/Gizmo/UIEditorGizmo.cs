@@ -156,6 +156,16 @@ namespace FlaxEditor
         private Widget _activeWidget;
 
         /// <summary>
+        /// Sets the view size.
+        /// </summary>
+        /// <param name="size">The new size.</param>
+        public void SetViewSize(Float2 size)
+        {
+            _view.Size = size;
+            _view.PerformLayout();
+        }
+
+        /// <summary>
         /// True if enable displaying UI editing background and grid elements.
         /// </summary>
         public virtual bool EnableBackground => false;
