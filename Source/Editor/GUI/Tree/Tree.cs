@@ -41,6 +41,7 @@ namespace FlaxEditor.GUI.Tree
         private Margin _margin;
         private bool _autoSize = true;
         private bool _deferLayoutUpdate = false;
+        private TreeNode _lastSelectedNode;
 
         /// <summary>
         /// The TreeNode that is being dragged over. This could have a value when not dragging.
@@ -383,20 +384,27 @@ namespace FlaxEditor.GUI.Tree
                 AfterDeferredLayout?.Invoke();
                 _deferLayoutUpdate = false;
             }
+            var window = Root;
+            bool shiftDown = window.GetKey(KeyboardKeys.Shift);
+            bool keyUpArrow = window.GetKey(KeyboardKeys.ArrowUp);
+            bool keyDownArrow = window.GetKey(KeyboardKeys.ArrowDown);
+            
+            // Use last selection for last selected node if sift is down
+            if (shiftDown)
+                _lastSelectedNode ??= Selection[^1];
+            
+            var node = _lastSelectedNode ?? SelectedNode;
 
-            var node = SelectedNode;
+            if (Selection.Count == 0)
+                _lastSelectedNode = null;
 
             // Check if has focus and if any node is focused and it isn't a root
             if (ContainsFocus && node != null && node.AutoFocus)
             {
-                var window = Root;
                 if (window.GetKeyDown(KeyboardKeys.ArrowUp) || window.GetKeyDown(KeyboardKeys.ArrowDown))
                     _keyUpdateTime = KeyUpdateTimeout;
                 if (_keyUpdateTime >= KeyUpdateTimeout && window is WindowRootControl windowRoot && windowRoot.Window.IsFocused)
                 {
-                    bool keyUpArrow = window.GetKey(KeyboardKeys.ArrowUp);
-                    bool keyDownArrow = window.GetKey(KeyboardKeys.ArrowDown);
-
                     // Check if arrow flags are different
                     if (keyDownArrow != keyUpArrow)
                     {
@@ -406,24 +414,39 @@ namespace FlaxEditor.GUI.Tree
                         Assert.AreNotEqual(-1, myIndex);
 
                         // Up
-                        TreeNode toSelect = null;
+                        List<TreeNode> toSelect = new List<TreeNode>();
+                        if (shiftDown)
+                        {
+                            toSelect.AddRange(Selection);
+                        }
+                        //TreeNode toSelect = null;
                         if (keyUpArrow)
                         {
                             if (myIndex == 0)
                             {
                                 // Select parent
-                                toSelect = parentNode;
+                                if (toSelect.Contains(parentNode))
+                                    toSelect.Remove(node);
+                                else
+                                    toSelect.Add(parentNode);
+                                _lastSelectedNode = parentNode;
                             }
                             else
                             {
                                 // Select previous parent child
-                                toSelect = nodeParent.GetChild(myIndex - 1) as TreeNode;
+                                var select = nodeParent.GetChild(myIndex - 1) as TreeNode;
 
                                 // Select last child if is valid and expanded and has any children
-                                if (toSelect != null && toSelect.IsExpanded && toSelect.HasAnyVisibleChild)
+                                if (select != null && select.IsExpanded && select.HasAnyVisibleChild)
                                 {
-                                    toSelect = toSelect.GetChild(toSelect.ChildrenCount - 1) as TreeNode;
+                                    select = select.GetChild(select.ChildrenCount - 1) as TreeNode;
                                 }
+                                
+                                if (toSelect.Contains(select))
+                                    toSelect.Remove(node);
+                                else
+                                    toSelect.Add(select);
+                                _lastSelectedNode = select;
                             }
                         }
                         // Down
@@ -432,32 +455,48 @@ namespace FlaxEditor.GUI.Tree
                             if (node.IsExpanded && node.HasAnyVisibleChild)
                             {
                                 // Select the first child
-                                toSelect = node.GetChild(0) as TreeNode;
+                                var select = node.GetChild(0) as TreeNode;
+                                if (toSelect.Contains(select))
+                                    toSelect.Remove(node);
+                                else
+                                    toSelect.Add(select);
+                                _lastSelectedNode = select;
                             }
                             else if (myIndex == nodeParent.ChildrenCount - 1)
                             {
                                 // Select next node after parent
-                                while (parentNode != null && toSelect == null)
+                                TreeNode select = null;
+                                while (parentNode != null && select == null)
                                 {
                                     int parentIndex = parentNode.IndexInParent;
                                     if (parentIndex != -1 && parentIndex < parentNode.Parent.ChildrenCount - 1)
                                     {
-                                        toSelect = parentNode.Parent.GetChild(parentIndex + 1) as TreeNode;
+                                        select = parentNode.Parent.GetChild(parentIndex + 1) as TreeNode;
                                     }
                                     parentNode = parentNode.Parent as TreeNode;
                                 }
+                                if (toSelect.Contains(select))
+                                    toSelect.Remove(node);
+                                else
+                                    toSelect.Add(select);
+                                _lastSelectedNode = select;
                             }
                             else
                             {
                                 // Select next parent child
-                                toSelect = nodeParent.GetChild(myIndex + 1) as TreeNode;
+                                var select = nodeParent.GetChild(myIndex + 1) as TreeNode;
+                                if (toSelect.Contains(select))
+                                    toSelect.Remove(node);
+                                else
+                                    toSelect.Add(select);
+                                _lastSelectedNode = select;
                             }
                         }
-                        if (toSelect != null && toSelect.AutoFocus)
+                        if (toSelect.Count > 0)
                         {
                             // Select
                             Select(toSelect);
-                            toSelect.Focus();
+                            _lastSelectedNode?.Focus();
                         }
 
                         // Reset time
