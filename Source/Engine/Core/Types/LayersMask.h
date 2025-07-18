@@ -27,12 +27,29 @@ public:
     {
     }
 
+    /// <summary>
+    /// Determines whether the specified layer index is set in the mask.
+    /// </summary>
+    /// <param name="layerIndex">Index of the layer (zero-based).</param>
+    /// <returns><c>true</c> if the specified layer is set; otherwise, <c>false</c>.</returns>
     FORCE_INLINE bool HasLayer(int32 layerIndex) const
     {
         return (Mask & (1 << layerIndex)) != 0;
     }
 
-    bool HasLayer(const StringView& layerName) const;
+    /// <summary>
+    /// Determines whether the specified layer name is set in the mask.
+    /// </summary>
+    /// <param name="layerName">Name of the layer (from layers settings).</param>
+    /// <returns><c>true</c> if the specified layer is set; otherwise, <c>false</c>.</returns>
+    bool HasLayer(const StringView& layerName);
+
+    /// <summary>
+    /// Gets a layers mask from a specific layer name.
+    /// </summary>
+    /// <param name="layerNames">The layer names.</param>
+    /// <returns>A layers mask with the Mask set to the same Mask as the layer name passed in. Returns a LayersMask with a mask of 0 if no layer found.</returns>
+    static LayersMask GetMask(StringView layerNames[]);
 
     operator uint32() const
     {
