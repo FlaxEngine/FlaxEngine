@@ -415,7 +415,7 @@ namespace FlaxEditor.GUI.Tree
 
                         // Up
                         List<TreeNode> toSelect = new List<TreeNode>();
-                        if (shiftDown)
+                        if (shiftDown && _supportMultiSelect)
                         {
                             toSelect.AddRange(Selection);
                         }
