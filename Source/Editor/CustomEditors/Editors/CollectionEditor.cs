@@ -70,7 +70,9 @@ namespace FlaxEditor.CustomEditors.Editors
                 menu.ItemsContainer.RemoveChildren();
 
                 menu.AddButton("Copy", linkedEditor.Copy);
-                var b = menu.AddButton("Paste", linkedEditor.Paste);
+                var b = menu.AddButton("Duplicate", () => Editor.Duplicate(Index));
+                b.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
+                b = menu.AddButton("Paste", linkedEditor.Paste);
                 b.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
 
                 menu.AddSeparator();
@@ -404,8 +406,10 @@ namespace FlaxEditor.CustomEditors.Editors
                 var menu = new ContextMenu();
 
                 menu.AddButton("Copy", linkedEditor.Copy);
+                var b = menu.AddButton("Duplicate", () => Editor.Duplicate(Index));
+                b.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
                 var paste = menu.AddButton("Paste", linkedEditor.Paste);
-                paste.Enabled = linkedEditor.CanPaste;
+                paste.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
 
                 if (_canReorder)
                 {
@@ -739,6 +743,25 @@ namespace FlaxEditor.CustomEditors.Editors
             var tmp = cloned[dstIndex];
             cloned[dstIndex] = cloned[srcIndex];
             cloned[srcIndex] = tmp;
+            SetValue(cloned);
+        }
+        
+        /// <summary>
+        /// Duplicates the list item.
+        /// </summary>
+        /// <param name="index">The index to duplicate.</param>
+        public void Duplicate(int index)
+        {
+            if (IsSetBlocked)
+                return;
+
+            var count = Count;
+            Resize(count + 1);
+            RefreshInternal(); // Force update values.
+            Shift(count, index + 1);
+            RefreshInternal(); // Force update values.
+            var cloned = CloneValues();
+            cloned[index + 1] = Utilities.Utils.CloneValue(cloned[index]);
             SetValue(cloned);
         }
 
