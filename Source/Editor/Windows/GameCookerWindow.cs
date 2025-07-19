@@ -976,7 +976,7 @@ namespace FlaxEditor.Windows
             Editor.Log("Building and running");
             GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out _);
             var numberOfClients = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
-            var buildConfig = Editor.Options.Options.General.CookAndRunBuildConfiguration;
+            var buildConfig = Editor.Options.Options.Interface.CookAndRunBuildConfiguration;
             for (int i = 0; i < numberOfClients; i++)
             {
                 var buildOptions = BuildOptions.AutoRun;
@@ -1004,7 +1004,7 @@ namespace FlaxEditor.Windows
             Editor.Log("Running cooked build");
             GameCooker.GetCurrentPlatform(out var platform, out var buildPlatform, out _);
             var numberOfClients = Editor.Options.Options.Interface.NumberOfGameClientsToLaunch;
-            var buildConfig = Editor.Options.Options.General.CookAndRunBuildConfiguration;
+            var buildConfig = Editor.Options.Options.Interface.CookAndRunBuildConfiguration;
             for (int i = 0; i < numberOfClients; i++)
             {
                 _buildingQueue.Enqueue(new QueueItem
