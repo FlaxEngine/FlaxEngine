@@ -1003,7 +1003,7 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
             FileSystem::DeleteFile(tmpPath);
 
             // Reload storage
-            if (auto storage = ContentStorageManager::GetStorage(dstPath))
+            if (auto storage = ContentStorageManager::GetStorage(dstPath, false))
             {
                 storage->Reload();
             }

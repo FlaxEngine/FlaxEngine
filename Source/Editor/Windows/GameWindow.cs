@@ -405,6 +405,7 @@ namespace FlaxEditor.Windows
                     return;
                 Editor.Instance.SceneEditing.Delete();
             });
+            InputActions.Add(options => options.FocusConsoleCommand, () => Editor.Instance.Windows.OutputLogWin.FocusCommand());
         }
 
         private void ChangeViewportRatio(ViewportScaleOptions v)
@@ -509,13 +510,7 @@ namespace FlaxEditor.Windows
                                 selectedParents[i].OnDebugDraw(drawDebugData);
                         }
                     }
-                    unsafe
-                    {
-                        fixed (IntPtr* actors = drawDebugData.ActorsPtrs)
-                        {
-                            DebugDraw.DrawActors(new IntPtr(actors), drawDebugData.ActorsCount, true);
-                        }
-                    }
+                    drawDebugData.DrawActors(true);
                 }
 
                 DebugDraw.Draw(ref renderContext, task.OutputView);
@@ -1180,6 +1175,12 @@ namespace FlaxEditor.Windows
                 // Restore cursor visibility (could be hidden by the game)
                 if (!_cursorVisible)
                     Screen.CursorVisible = true;
+            }
+
+            if (Editor.IsPlayMode && IsDocked && IsSelected && RootWindow.FocusedControl == null)
+            {
+                // Game UI cleared focus so regain it to maintain UI navigation just like game window does
+                FlaxEngine.Scripting.InvokeOnUpdate(Focus);
             }
         }
 

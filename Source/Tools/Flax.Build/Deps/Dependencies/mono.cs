@@ -546,8 +546,8 @@ namespace Flax.Deps.Dependencies
                 {
                     var envVars = new Dictionary<string, string>
                     {
-                        { "CC", "clang-7" },
-                        { "CXX", "clang++-7" }
+                        { "CC", "clang-" + Configuration.LinuxClangMinVer },
+                        { "CXX", "clang++-" + Configuration.LinuxClangMinVer }
                     };
                     var monoOptions = new[]
                     {

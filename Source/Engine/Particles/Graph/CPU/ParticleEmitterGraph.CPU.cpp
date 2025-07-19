@@ -7,6 +7,7 @@
 #include "Engine/Particles/ParticleEffect.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Debug/DebugDraw.h"
 
 ThreadLocal<ParticleEmitterGraphCPUContext*> ParticleEmitterGraphCPUExecutor::Context;
 
@@ -422,6 +423,23 @@ void ParticleEmitterGraphCPUExecutor::Draw(ParticleEmitter* emitter, ParticleEff
         }
     }
 }
+
+#if USE_EDITOR
+
+void ParticleEmitterGraphCPUExecutor::DrawDebug(ParticleEmitter* emitter, ParticleEffect* effect, ParticleEmitterInstance& data)
+{
+    // Prepare graph data
+    Init(emitter, effect, data);
+    Transform transform = emitter->SimulationSpace == ParticlesSimulationSpace::Local ? effect->GetTransform() : Transform::Identity;
+
+    // Draw modules
+    for (auto module : emitter->Graph.SpawnModules)
+        DebugDrawModule(module, transform);
+    for (auto module : emitter->Graph.InitModules)
+        DebugDrawModule(module, transform);
+}
+
+#endif
 
 void ParticleEmitterGraphCPUExecutor::Update(ParticleEmitter* emitter, ParticleEffect* effect, ParticleEmitterInstance& data, float dt, bool canSpawn)
 {

@@ -166,11 +166,7 @@ bool init()
     }
     auto shader = _shader->GetShader();
     ASSERT(shader->GetCB(0) != nullptr);
-    if (shader->GetCB(0)->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stages
     _psTransmittance = GPUDevice::Instance->CreatePipelineState();

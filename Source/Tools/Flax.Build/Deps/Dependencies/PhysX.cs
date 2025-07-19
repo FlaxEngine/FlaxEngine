@@ -7,7 +7,6 @@ using System.Linq;
 using System.Xml;
 using Flax.Build;
 using Flax.Build.Platforms;
-using Flax.Build.Projects.VisualStudio;
 using Flax.Deploy;
 
 namespace Flax.Deps.Dependencies
@@ -237,8 +236,8 @@ namespace Flax.Deps.Dependencies
                 break;
             }
             case TargetPlatform.Linux:
-                envVars.Add("CC", "clang-7");
-                envVars.Add("CC_FOR_BUILD", "clang-7");
+                envVars.Add("CC", "clang-" + Configuration.LinuxClangMinVer);
+                envVars.Add("CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer);
                 break;
             case TargetPlatform.Mac: break;
             default: throw new InvalidPlatformException(BuildPlatform);

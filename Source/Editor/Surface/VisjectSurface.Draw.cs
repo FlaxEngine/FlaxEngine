@@ -225,7 +225,11 @@ namespace FlaxEditor.Surface
 
             _rootControl.DrawComments();
 
-            if (IsSelecting)
+            // Reset input flags here because this is the closest to Update we have
+            WasBoxSelecting = IsBoxSelecting;
+            WasMovingSelection = IsMovingSelection;
+
+            if (IsBoxSelecting)
             {
                 DrawSelection();
             }

@@ -89,6 +89,18 @@ namespace FlaxEditor
         }
 
         /// <summary>
+        /// Draws the collected actors via <see cref="DebugDraw"/>.
+        /// </summary>
+        /// <param name="drawScenes">True if draw all loaded scenes too, otherwise will draw only provided actors.</param>
+        public unsafe void DrawActors(bool drawScenes = false)
+        {
+            fixed (IntPtr* actors = ActorsPtrs)
+            {
+                DebugDraw.DrawActors(new IntPtr(actors), _actors.Count, drawScenes);
+            }
+        }
+
+        /// <summary>
         /// Called when task calls <see cref="SceneRenderTask.CollectDrawCalls" /> event.
         /// </summary>
         /// <param name="renderContext">The rendering context.</param>

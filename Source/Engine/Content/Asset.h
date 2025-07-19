@@ -7,6 +7,7 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Scripting/ScriptingObject.h"
+#include "Engine/Threading/ConcurrentSystemLocker.h"
 #include "Config.h"
 #include "Types.h"
 
@@ -63,6 +64,7 @@ protected:
     int8 _isVirtual : 1; // Indicates that asset is pure virtual (generated or temporary, has no storage so won't be saved)
 
     HashSet<IAssetReference*> _references;
+    CriticalSection _referencesLocker; // TODO: convert into a single interlocked exchange for the current thread owning lock
 
 public:
     /// <summary>

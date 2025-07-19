@@ -13,6 +13,7 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Utilities/AnsiPathTempFile.h"
 #include "Engine/Platform/File.h"
+#include "Engine/Platform/MessageBox.h"
 
 #define STBI_ASSERT(x) ASSERT(x)
 #define STBI_MALLOC(sz) Allocator::Allocate(sz)
@@ -286,21 +287,27 @@ bool TextureTool::ExportTextureStb(ImageType type, const StringView& path, const
         break;
     }
     case ImageType::GIF:
+        MessageBox::Show(TEXT("GIF format is not supported."), TEXT("Export warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "GIF format is not supported.");
         break;
     case ImageType::TIFF:
+        MessageBox::Show(TEXT("TIFF format is not supported."), TEXT("Export warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "GIF format is not supported.");
         break;
     case ImageType::DDS:
+        MessageBox::Show(TEXT("DDS format is not supported."), TEXT("Export warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "DDS format is not supported.");
         break;
     case ImageType::RAW:
+        MessageBox::Show(TEXT("RAW format is not supported."), TEXT("Export warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "RAW format is not supported.");
         break;
     case ImageType::EXR:
+        MessageBox::Show(TEXT("EXR format is not supported."), TEXT("Export warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "EXR format is not supported.");
         break;
     default:
+        MessageBox::Show(TEXT("Unknown format."), TEXT("Export warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "Unknown format.");
         break;
     }
@@ -434,17 +441,21 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
 
         free(pixels);
 #else
+        MessageBox::Show(TEXT("EXR format is not supported."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "EXR format is not supported.");
 #endif
         break;
     }
     case ImageType::DDS:
+        MessageBox::Show(TEXT("DDS format is not supported."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "DDS format is not supported.");
         break;
     case ImageType::TIFF:
+        MessageBox::Show(TEXT("TIFF format is not supported."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "TIFF format is not supported.");
         break;
     default:
+        MessageBox::Show(TEXT("Unknown format."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "Unknown format.");
         return true;
     }

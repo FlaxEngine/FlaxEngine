@@ -141,6 +141,15 @@ public:
     }
 
     /// <summary>
+    /// Initializes an empty <see cref="HashSet"/> without reserving any space.
+    /// </summary>
+    /// <param name="tag">The custom allocation tag.</param>
+    HashSet(typename Base::AllocationTag tag)
+        : Base(tag)
+    {
+    }
+
+    /// <summary>
     /// Initializes <see cref="HashSet"/> by reserving space.
     /// </summary>
     /// <param name="capacity">The number of elements that can be added without a need to allocate more memory.</param>

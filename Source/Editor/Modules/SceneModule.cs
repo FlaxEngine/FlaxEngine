@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
 using FlaxEngine;
@@ -658,6 +659,48 @@ namespace FlaxEditor.Modules
             //node?.TreeNode.OnActiveChanged();
         }
 
+        private void OnActorDestroyChildren(Actor actor)
+        {
+            // Instead of doing OnActorParentChanged for every child lets remove all of them at once from that actor
+            ActorNode node = GetActorNode(actor);
+            if (node != null)
+            {
+                if (Editor.SceneEditing.HasSthSelected)
+                {
+                    // Clear selection if one of the removed actors is selected
+                    var selection = new HashSet<Actor>();
+                    foreach (var e in Editor.SceneEditing.Selection)
+                    {
+                        if (e is ActorNode q && q.Actor)
+                            selection.Add(q.Actor);
+                    }
+                    var count = actor.ChildrenCount;
+                    for (int i = 0; i < count; i++)
+                    {
+                        var child = actor.GetChild(i);
+                        if (selection.Contains(child))
+                        {
+                            Editor.SceneEditing.Deselect();
+                            break;
+                        }
+                    }
+                }
+
+                // Remove all child nodes (upfront remove all nodes to run faster)
+                for (int i = 0; i < node.ChildNodes.Count; i++)
+                {
+                    if (node.ChildNodes[i] is ActorNode child)
+                        child.parentNode = null;
+                }
+                node.TreeNode.DisposeChildren();
+                for (int i = 0; i < node.ChildNodes.Count; i++)
+                {
+                    node.ChildNodes[i].Dispose();
+                }
+                node.ChildNodes.Clear();
+            }
+        }
+
         /// <summary>
         /// Gets the actor node.
         /// </summary>
@@ -709,6 +752,7 @@ namespace FlaxEditor.Modules
             Level.ActorOrderInParentChanged += OnActorOrderInParentChanged;
             Level.ActorNameChanged += OnActorNameChanged;
             Level.ActorActiveChanged += OnActorActiveChanged;
+            Level.ActorDestroyChildren += OnActorDestroyChildren;
         }
 
         /// <inheritdoc />
@@ -726,6 +770,7 @@ namespace FlaxEditor.Modules
             Level.ActorOrderInParentChanged -= OnActorOrderInParentChanged;
             Level.ActorNameChanged -= OnActorNameChanged;
             Level.ActorActiveChanged -= OnActorActiveChanged;
+            Level.ActorDestroyChildren -= OnActorDestroyChildren;
 
             // Cleanup graph
             Root.Dispose();

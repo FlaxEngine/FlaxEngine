@@ -1179,23 +1179,57 @@ GPUDevice* GPUDeviceVulkan::Create()
         Array<VkExtensionProperties> properties;
         properties.Resize(propertyCount);
         vkEnumerateInstanceExtensionProperties(nullptr, &propertyCount, properties.Get());
+        String missingExtension;
         for (const char* extension : InstanceExtensions)
         {
-            bool found = false;
             for (uint32_t propertyIndex = 0; propertyIndex < propertyCount; propertyIndex++)
             {
                 if (!StringUtils::Compare(properties[propertyIndex].extensionName, extension))
                 {
-                    found = true;
+                    if (missingExtension.IsEmpty())
+                        missingExtension = extension;
+                    else
+                        missingExtension += TEXT(", ") + String(extension);
                     break;
                 }
             }
-            if (!found)
+        }
+        LOG(Warning, "Extensions found:");
+        for (const VkExtensionProperties& property : properties)
+            LOG(Warning, " > {}", String(property.extensionName));
+        auto error = String::Format(TEXT("Vulkan driver doesn't contain specified extensions:\n{0}\nPlease make sure your layers path is set appropriately."), missingExtension);
+        LOG_STR(Error, error);
+        Platform::Error(*error);
+        return nullptr;
+    }
+    if (result == VK_ERROR_LAYER_NOT_PRESENT)
+    {
+        // Layers error
+        uint32_t propertyCount;
+        vkEnumerateInstanceLayerProperties(&propertyCount, nullptr);
+        Array<VkLayerProperties> properties;
+        properties.Resize(propertyCount);
+        vkEnumerateInstanceLayerProperties(&propertyCount, properties.Get());
+        String missingLayers;
+        for (const char* layer : InstanceLayers)
+        {
+            for (uint32_t propertyIndex = 0; propertyIndex < propertyCount; propertyIndex++)
             {
-                LOG(Warning, "Missing required Vulkan extension: {0}", String(extension));
+                if (!StringUtils::Compare(properties[propertyIndex].layerName, layer))
+                {
+                    if (missingLayers.IsEmpty())
+                        missingLayers = layer;
+                    else
+                        missingLayers += TEXT(", ") + String(layer);
+                    break;
+                }
             }
         }
-        auto error = String::Format(TEXT("Vulkan driver doesn't contain specified extensions:\n{0}\nPlease make sure your layers path is set appropriately."));
+        LOG(Warning, "Layers found:");
+        for (const VkLayerProperties& property : properties)
+            LOG(Warning, " > {}", String(property.layerName));
+        auto error = String::Format(TEXT("Vulkan driver doesn't contain specified layers:\n{0}\nPlease make sure your layers path is set appropriately."), missingLayers);
+        LOG_STR(Error, error);
         Platform::Error(*error);
         return nullptr;
     }

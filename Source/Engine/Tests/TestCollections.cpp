@@ -78,6 +78,32 @@ TEST_CASE("Array")
 
 TEST_CASE("BitArray")
 {
+    SECTION("Test Access")
+    {
+        BitArray<> a1;
+        CHECK(a1.Count() == 0);
+        for (int32 i = 0; i < 310; i++)
+        {
+            a1.Add(false);
+        }
+        CHECK(a1.Count() == 310);
+        a1.Resize(300);
+        CHECK(a1.Count() == 300);
+        CHECK(a1.Capacity() >= 300);
+        a1.SetAll(true);
+        a1.SetAll(false);
+        for (int32 i = 0; i < 300; i++)
+        {
+            a1.Set(i, true);
+            for (int32 j = 0; j < 300; j++)
+            {
+                bool expected = j == i;
+                CHECK(a1.Get(j) == expected);
+            }
+            a1.Set(i, false);
+        }
+    }
+
     SECTION("Test Allocators")
     {
         BitArray<> a1;
@@ -142,7 +168,7 @@ TEST_CASE("BitArray")
 
     // Generate some random data for testing
     BitArray<> testData;
-    testData.Resize(32);
+    testData.Resize(128);
     RandomStream rand(101);
     for (int32 i = 0; i < testData.Count(); i++)
         testData.Set(i, rand.GetBool());
@@ -151,8 +177,8 @@ TEST_CASE("BitArray")
     {
         const BitArray<> a1(testData);
         const BitArray<InlinedAllocation<8>> a2(testData);
-        const BitArray<InlinedAllocation<64>> a3(testData);
-        const BitArray<FixedAllocation<64>> a4(testData);
+        const BitArray<InlinedAllocation<256>> a3(testData);
+        const BitArray<FixedAllocation<256>> a4(testData);
         CHECK(a1 == testData);
         CHECK(a2 == testData);
         CHECK(a3 == testData);

@@ -281,13 +281,7 @@ bool ReflectionsPass::setupResources()
     if (!_sphereModel->CanBeRendered() || !_preIntegratedGF->IsLoaded() || !_shader->IsLoaded())
         return true;
     const auto shader = _shader->GetShader();
-
-    // Validate shader constant buffer size
-    if (shader->GetCB(0)->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc;
@@ -335,12 +329,17 @@ void ReflectionsPass::Dispose()
 
 bool SortProbes(RenderEnvironmentProbeData const& p1, RenderEnvironmentProbeData const& p2)
 {
-    // Compare by radius
-    int32 res = static_cast<int32>(p2.Radius - p1.Radius);
+    // Compare by Sort Order
+    int32 res = p1.SortOrder - p2.SortOrder;
     if (res == 0)
     {
-        // Compare by ID to prevent flickering
-        res = p2.HashID - p1.HashID;
+        // Compare by radius
+        res = static_cast<int32>(p2.Radius - p1.Radius);
+        if (res == 0)
+        {
+            // Compare by ID to prevent flickering
+            res = p2.HashID - p1.HashID;
+        }
     }
     return res < 0;
 }

@@ -9,7 +9,9 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Graphics/Shaders/Cache/ShaderCacheManager.h"
+#include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Level/Level.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Threading/Threading.h"
@@ -58,6 +60,35 @@ ParticleEffect* ParticleEmitter::Spawn(Actor* parent, const Transform& transform
         effect->DeleteObject(duration, true);
 
     return effect;
+}
+
+void ParticleEmitter::WaitForAsset(Asset* asset)
+{
+    // TODO: make a tool for it?
+    if (auto* texture = Cast<TextureBase>(asset))
+    {
+        // Wait for asset to be loaded
+        if (!texture->WaitForLoaded() && !IsInMainThread() && texture->GetTexture())
+        {
+            PROFILE_CPU_NAMED("WaitForTexture");
+
+            // Mark as used by rendering and wait for streaming to load it in
+            double waitTimeSeconds = 10000;
+            double now = Platform::GetTimeSeconds();
+            double end = now + waitTimeSeconds;
+            const int32 mipLevels = texture->GetMipLevels();
+            constexpr float requestedResidency = 0.7f;
+            const int32 minMipLevels = Math::Max(Math::Min(mipLevels, 7), (int32)(requestedResidency * (float)mipLevels));
+            while (texture->GetResidentMipLevels() < minMipLevels &&
+                now < end &&
+                !texture->HasStreamingError())
+            {
+                texture->GetTexture()->LastRenderTime = now;
+                Platform::Sleep(1);
+                now = Platform::GetTimeSeconds();
+            }
+        }
+    }
 }
 
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH && COMPILE_WITH_SHADER_COMPILER
@@ -297,6 +328,40 @@ Asset::LoadResult ParticleEmitter::load()
 	SimulationMode = ParticlesSimulationMode::CPU;
 #endif
 
+    // Wait for resources used by the emitter to be loaded
+    // eg. texture used to place particles on spawn needs to be available
+    bool waitForAsset = false;
+    for (const auto& node : Graph.Nodes)
+    {
+        if ((node.Type == GRAPH_NODE_MAKE_TYPE(5, 1) || node.Type == GRAPH_NODE_MAKE_TYPE(5, 2)) && node.Assets.Count() > 0)
+        {
+            const auto texture = node.Assets[0].As<TextureBase>();
+            if (texture)
+            {
+                if (!waitForAsset)
+                {
+                    waitForAsset = true;
+                    Particles::SystemLocker.End(true);
+                }
+                WaitForAsset(texture);
+            }
+        }
+    }
+    for (const auto& parameter : Graph.Parameters)
+    {
+        if (parameter.Type.Type == VariantType::Asset)
+        {
+            if (!waitForAsset)
+            {
+                waitForAsset = true;
+                Particles::SystemLocker.End(true);
+            }
+            WaitForAsset((Asset*)parameter.Value);
+        }
+    }
+    if (waitForAsset)
+        Particles::SystemLocker.Begin(true);
+
     return LoadResult::Ok;
 }
 
@@ -441,6 +506,55 @@ bool ParticleEmitter::Save(const StringView& path)
     BytesContainer data;
     data.Link(ToSpan(writeStream));
     return SaveSurface(data);
+}
+
+bool ParticleEmitter::HasShaderCode() const
+{
+    if (SimulationMode != ParticlesSimulationMode::GPU)
+        return false;
+
+#if COMPILE_WITH_PARTICLE_GPU_GRAPH && COMPILE_WITH_SHADER_COMPILER
+    if (_shaderHeader.ParticleEmitter.GraphVersion == PARTICLE_GPU_GRAPH_VERSION
+        && HasChunk(SHADER_FILE_CHUNK_SOURCE)
+        && !HasDependenciesModified())
+        return true;
+#endif
+    return false;
+}
+
+Array<ParticleEmitter::Attribute> ParticleEmitter::GetLayout() const
+{
+    Array<Attribute> result;
+    ScopeLock lock(Locker);
+    result.Resize(Graph.Layout.Attributes.Count());
+    for (int32 i = 0; i < result.Count(); i++)
+    {
+        auto& dst = result[i];
+        const auto& src = Graph.Layout.Attributes[i];
+        dst.Name = src.Name;
+        switch (src.ValueType)
+        {
+        case ParticleAttribute::ValueTypes::Float:
+            dst.Format = PixelFormat::R32_Float;
+            break;
+        case ParticleAttribute::ValueTypes::Float2:
+            dst.Format = PixelFormat::R32G32_Float;
+            break;
+        case ParticleAttribute::ValueTypes::Float3:
+            dst.Format = PixelFormat::R32G32B32_Float;
+            break;
+        case ParticleAttribute::ValueTypes::Float4:
+            dst.Format = PixelFormat::R32G32B32A32_Float;
+            break;
+        case ParticleAttribute::ValueTypes::Int:
+            dst.Format = PixelFormat::R32_SInt;
+            break;
+        case ParticleAttribute::ValueTypes::Uint:
+            dst.Format = PixelFormat::R32_UInt;
+            break;
+        }
+    }
+    return result;
 }
 
 #endif

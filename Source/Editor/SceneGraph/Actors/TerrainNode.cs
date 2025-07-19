@@ -76,9 +76,13 @@ namespace FlaxEditor.SceneGraph.Actors
                     // Skip removing this terrain file sif it's still referenced
                     var sceneReferences = Editor.GetAssetReferences(e.SceneId);
                     if (sceneReferences != null && sceneReferences.Contains(e.TerrainId))
+                    {
+                        Debug.Log($"Skip removing files used by terrain {e.TerrainId} on scene {e.SceneId} as it's still in use");
                         continue;
+                    }
 
                     // Delete files
+                    Debug.Log($"Removing files used by removed terrain {e.TerrainId} on scene {e.SceneId}");
                     foreach (var file in e.Files)
                     {
                         if (file != null && File.Exists(file))

@@ -340,6 +340,13 @@ namespace FlaxEditor.Viewport
         {
             _debugDrawData.Clear();
 
+            if (task is SceneRenderTask sceneRenderTask)
+            {
+                // Sync debug view to avoid lag on culling/LODing
+                var view = sceneRenderTask.View;
+                DebugDraw.SetView(ref view);
+            }
+
             // Collect selected objects debug shapes and visuals
             var selectedParents = TransformGizmo.SelectedParents;
             if (selectedParents.Count > 0)
@@ -374,14 +381,7 @@ namespace FlaxEditor.Viewport
             // Draw selected objects debug shapes and visuals
             if (DrawDebugDraw && (renderContext.View.Flags & ViewFlags.DebugDraw) == ViewFlags.DebugDraw)
             {
-                unsafe
-                {
-                    fixed (IntPtr* actors = _debugDrawData.ActorsPtrs)
-                    {
-                        DebugDraw.DrawActors(new IntPtr(actors), _debugDrawData.ActorsCount, true);
-                    }
-                }
-
+                _debugDrawData.DrawActors(true);
                 DebugDraw.Draw(ref renderContext, target.View(), targetDepth.View(), true);
             }
         }

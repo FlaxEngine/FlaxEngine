@@ -1480,7 +1480,7 @@ Profiler::Profiler()
 
     m_safeSendBuffer = (char*)tracy_malloc( SafeSendBufferSize );
 
-#ifndef _WIN32
+#ifndef TRACY_NO_PIPE
     pipe(m_pipe);
 #  if defined __APPLE__ || defined BSD
     // FreeBSD/XNU don't have F_SETPIPE_SZ, so use the default
@@ -1642,7 +1642,7 @@ Profiler::~Profiler()
     tracy_free( m_kcore );
 #endif
 
-#ifndef _WIN32
+#ifndef TRACY_NO_PIPE
     close( m_pipe[0] );
     close( m_pipe[1] );
 #endif
@@ -3139,6 +3139,8 @@ char* Profiler::SafeCopyProlog( const char* data, size_t size )
     {
         success = false;
     }
+#elif !defined(TRACY_NO_PIPE)
+    memcpy(buf, data, size);
 #else
     // Send through the pipe to ensure safe reads
     for( size_t offset = 0; offset != size; /*in loop*/ )

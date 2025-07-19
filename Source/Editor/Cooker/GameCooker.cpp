@@ -312,6 +312,14 @@ void CookingData::GetBuildPlatformName(const Char*& platform, const Char*& archi
     }
 }
 
+String CookingData::GetDotnetCommandArg() const
+{
+    int32 version = Tools->GetDotnetVersion();
+    if (version == 0)
+        return String::Empty;
+    return String::Format(TEXT("-dotnet={}"), version);
+}
+
 void CookingData::StepProgress(const String& info, const float stepProgress) const
 {
     const float singleStepProgress = 1.0f / (StepsCount + 1);

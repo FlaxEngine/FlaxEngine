@@ -154,9 +154,9 @@ void ObjectsRemoval::Dispose()
 
 Object::~Object()
 {
-#if BUILD_DEBUG
+#if BUILD_DEBUG && 0
     // Prevent removing object that is still reverenced by the removal service
-    ASSERT(!ObjectsRemovalService::IsInPool(this));
+    //ASSERT(!ObjectsRemovalService::IsInPool(this));
 #endif
 }
 

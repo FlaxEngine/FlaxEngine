@@ -587,8 +587,17 @@ void ParticleEffect::OnDebugDrawSelected()
 {
     DEBUG_DRAW_WIRE_BOX(_box, Color::Violet * 0.7f, 0, true);
 
-    // Base
     Actor::OnDebugDrawSelected();
+}
+
+void ParticleEffect::OnDebugDraw()
+{
+    if (ShowDebugDraw)
+    {
+        Particles::DebugDraw(this);
+    }
+
+    Actor::OnDebugDraw();
 }
 
 #endif

@@ -200,12 +200,19 @@ void SceneRenderTask::RemoveGlobalCustomPostFx(PostProcessEffect* fx)
 
 void SceneRenderTask::CollectPostFxVolumes(RenderContext& renderContext)
 {
+    PROFILE_CPU();
+
     // Cache WorldPosition used for PostFx volumes blending (RenderView caches it later on)
     renderContext.View.WorldPosition = renderContext.View.Origin + renderContext.View.Position;
 
     if (EnumHasAllFlags(ActorsSource, ActorsSources::Scenes))
     {
-        Level::CollectPostFxVolumes(renderContext);
+        //ScopeLock lock(Level::ScenesLock);
+        for (Scene* scene : Level::Scenes)
+        {
+            if (scene->IsActiveInHierarchy())
+                scene->Rendering.CollectPostFxVolumes(renderContext);
+        }
     }
     if (EnumHasAllFlags(ActorsSource, ActorsSources::CustomActors))
     {

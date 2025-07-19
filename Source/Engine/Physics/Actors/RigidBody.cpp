@@ -468,6 +468,14 @@ void RigidBody::OnActiveTransformChanged()
 
 void RigidBody::BeginPlay(SceneBeginData* data)
 {
+#if USE_EDITOR || !BUILD_RELEASE
+    // FlushActiveTransforms runs in async for each separate actor thus we don't support two rigidbodies that transformations depend on each other
+    if (Cast<RigidBody>(GetParent()))
+    {
+        LOG(Warning, "Rigid Body '{0}' is attached to other Rigid Body which is not unsupported and might cause physical simulation instability.", GetNamePath());
+    }
+#endif
+
     // Create rigid body
     ASSERT(_actor == nullptr);
     void* scene = GetPhysicsScene()->GetPhysicsScene();

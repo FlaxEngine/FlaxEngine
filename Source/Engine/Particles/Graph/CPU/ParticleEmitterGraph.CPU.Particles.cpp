@@ -162,6 +162,13 @@ void ParticleEmitterGraphCPUExecutor::ProcessGroupTextures(Box* box, Node* node,
         value = Value::Zero;
         break;
     }
+    // Texture Size
+    case 24:
+    {
+        // TODO: support sampling textures in CPU particles
+        value = Value::Zero;
+        break;
+    }
     default:
         break;
     }

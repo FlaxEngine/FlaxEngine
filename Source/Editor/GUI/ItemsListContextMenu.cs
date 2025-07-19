@@ -227,9 +227,8 @@ namespace FlaxEditor.GUI
                 {
                     int order = -1 * SortScore.CompareTo(otherItem.SortScore);
                     if (order == 0)
-                    {
                         order = string.Compare(Name, otherItem.Name, StringComparison.Ordinal);
-                    }
+
                     return order;
                 }
                 return base.Compare(other);
@@ -509,7 +508,7 @@ namespace FlaxEditor.GUI
                 OnSearchFilterChanged();
         }
 
-        private List<Item> GetVisibleItems()
+        private List<Item> GetVisibleItems(bool ignoreFoldedCategories)
         {
             var result = new List<Item>();
             var items = ItemsPanel.Children;
@@ -523,7 +522,7 @@ namespace FlaxEditor.GUI
                 for (int i = 0; i < _categoryPanels.Count; i++)
                 {
                     var category = _categoryPanels[i];
-                    if (!category.Visible)
+                    if (!category.Visible || (ignoreFoldedCategories && category is DropPanel panel && panel.IsClosed))
                         continue;
                     for (int j = 0; j < category.Children.Count; j++)
                     {
@@ -533,6 +532,12 @@ namespace FlaxEditor.GUI
                 }
             }
             return result;
+        }
+
+        private void ExpandToItem(Item item)
+        {
+            if (item.Parent is DropPanel dropPanel)
+                dropPanel.Open(false);
         }
 
         /// <inheritdoc />
@@ -563,8 +568,17 @@ namespace FlaxEditor.GUI
             case KeyboardKeys.Escape:
                 Hide();
                 return true;
+            case KeyboardKeys.Backspace:
+                // Allow the user to quickly focus the searchbar
+                if (_searchBox != null && !_searchBox.IsFocused)
+                {
+                    _searchBox.Focus();
+                    _searchBox.SelectAll();
+                    return true;
+                }
+                break;
             case KeyboardKeys.ArrowDown:
-            {
+            case KeyboardKeys.ArrowUp:
                 if (RootWindow.FocusedControl == null)
                 {
                     // Focus search box if nothing is focused
@@ -572,39 +586,28 @@ namespace FlaxEditor.GUI
                     return true;
                 }
 
-                //  Focus the first visible item or then next one
-                var items = GetVisibleItems();
+                // Get the next item
+                bool controlDown = Root.GetKey(KeyboardKeys.Control);
+                var items = GetVisibleItems(!controlDown);
                 var focusedIndex = items.IndexOf(focusedItem);
-                if (focusedIndex == -1)
-                    focusedIndex = -1;
-                if (focusedIndex + 1 < items.Count)
-                {
-                    var item = items[focusedIndex + 1];
-                    item.Focus();
-                    _scrollPanel.ScrollViewTo(item);
-                    return true;
-                }
-                break;
-            }
-            case KeyboardKeys.ArrowUp:
-                if (focusedItem != null)
-                {
-                    //  Focus the previous visible item or the search box
-                    var items = GetVisibleItems();
-                    var focusedIndex = items.IndexOf(focusedItem);
-                    if (focusedIndex == 0)
-                    {
-                        _searchBox?.Focus();
-                    }
-                    else if (focusedIndex > 0)
-                    {
-                        var item = items[focusedIndex - 1];
-                        item.Focus();
-                        _scrollPanel.ScrollViewTo(item);
-                        return true;
-                    }
-                }
-                break;
+
+                // If the user hasn't selected anything yet and is holding control, focus first folded item
+                if (focusedIndex == -1 && controlDown)
+                    focusedIndex = GetVisibleItems(true).Count - 1;
+
+                int delta = key == KeyboardKeys.ArrowDown ? -1 : 1;
+                int nextIndex = Mathf.Wrap(focusedIndex - delta, 0, items.Count - 1);
+                var nextItem = items[nextIndex];
+
+                // Focus the next item
+                nextItem.Focus();
+            
+                // Allow the user to expand groups while scrolling
+                if (controlDown)
+                    ExpandToItem(nextItem);
+                
+                _scrollPanel.ScrollViewTo(nextItem);
+                return true;
             case KeyboardKeys.Return:
                 if (focusedItem != null)
                 {
@@ -614,7 +617,7 @@ namespace FlaxEditor.GUI
                 else
                 {
                     // Select first item if no item is focused (most likely to be the best result), saves the user from pressing arrow down first
-                    var visibleItems = GetVisibleItems();
+                    var visibleItems = GetVisibleItems(true);
                     if (visibleItems.Count > 0)
                     {
                         OnClickItem(visibleItems[0]);

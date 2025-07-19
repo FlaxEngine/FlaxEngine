@@ -7,6 +7,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
+#include "Engine/Foliage/Foliage.h"
 #include "Engine/Physics/Colliders/MeshCollider.h"
 #include "Engine/Level/Actors/StaticModel.h"
 #include "Engine/Level/ActorsCache.h"
@@ -15,6 +16,7 @@
 #include "Engine/Navigation/NavMesh.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Terrain/Terrain.h"
 #if USE_EDITOR
 #include "Engine/Engine/Globals.h"
 #endif
@@ -98,6 +100,19 @@ void Scene::SetLightmapSettings(const LightmapSettings& value)
 void Scene::ClearLightmaps()
 {
     LightmapsData.ClearLightmaps();
+
+    // Unlink any actors from lightmap
+    Function<bool(Actor*)> function = [this](Actor* actor)
+    {
+        if (auto* staticModel = Cast<StaticModel>(actor))
+            staticModel->RemoveLightmap();
+        else if (auto* terrain = Cast<Terrain>(actor))
+            terrain->RemoveLightmap();
+        else if (auto* foliage = Cast<Foliage>(actor))
+            foliage->RemoveLightmap();
+        return true;
+    };
+    TreeExecute(function);
 }
 
 void Scene::BuildCSG(float timeoutMs)

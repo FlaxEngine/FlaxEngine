@@ -110,7 +110,7 @@ public:
     /// <summary>
     /// The animation update delta timescale. Can be used to speed up animation playback or create slow motion effect.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(45), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(45), Limit(0, float.MaxValue, 0.025f), EditorDisplay(\"Skinned Model\")")
     float UpdateSpeed = 1.0f;
 
     /// <summary>
@@ -122,7 +122,7 @@ public:
     /// <summary>
     /// The master scale parameter for the actor bounding box. Helps to reduce mesh flickering effect on screen edges.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(60), DefaultValue(1.5f), Limit(0), EditorDisplay(\"Skinned Model\")")
+    API_FIELD(Attributes="EditorOrder(60), DefaultValue(1.5f), Limit(0, float.MaxValue, 0.025f), EditorDisplay(\"Skinned Model\")")
     float BoundsScale = 1.5f;
 
     /// <summary>

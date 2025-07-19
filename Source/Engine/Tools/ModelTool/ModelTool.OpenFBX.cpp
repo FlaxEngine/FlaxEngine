@@ -692,8 +692,12 @@ int Triangulate(OpenFbxImporterData& data, const ofbx::GeometryData& geom, const
         triangulatedIndices[i] = polygon.from_vertex + (earIndices[i] % polygon.vertex_count);
 
     // Ensure that we've written enough ears
-    ASSERT(earIndices.Count() == 3 * (polygon.vertex_count - 2));
-    return earIndices.Count();
+    const int32 indexCount = 3 * (polygon.vertex_count - 2);
+    if (indexCount != earIndices.Count())
+    {
+        LOG(Error, "Invalid amount of vertices after triangulation. Expected {} but got {}. Use proper mesh triangulation when exporting source asset to the engine.", earIndices.Count(), indexCount);
+    }
+    return indexCount;
 }
 
 bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh* aMesh, MeshData& mesh, String& errorMsg, int partitionIndex)
@@ -729,7 +733,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
                 mesh.Positions.Get()[j] = ToFloat3(positions.get(triangulatedIndices[j]));
             numIndicesTotal += numIndices;
         }
-        ASSERT(numIndicesTotal == vertexCount);
+        ASSERT_LOW_LAYER(numIndicesTotal == vertexCount);
     }
 
     // Indices (dummy index buffer)

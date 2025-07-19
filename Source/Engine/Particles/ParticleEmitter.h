@@ -168,11 +168,25 @@ public:
     /// <returns>The spawned effect.</returns>
     API_FUNCTION() ParticleEffect* Spawn(Actor* parent, const Transform& transform, float duration = MAX_float, bool autoDestroy = false);
 
+private:
+    void WaitForAsset(Asset* asset);
+
 public:
     // [BinaryAsset]
 #if USE_EDITOR
     void GetReferences(Array<Guid>& assets, Array<String>& files) const override;
     bool Save(const StringView& path = StringView::Empty) override;
+
+    API_STRUCT(Internal) struct Attribute
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(Attribute);
+        API_FIELD() PixelFormat Format;
+        API_FIELD() String Name;
+    };
+
+private:
+    API_PROPERTY(Internal) bool HasShaderCode() const;
+    API_PROPERTY(Internal) Array<Attribute> GetLayout() const;
 #endif
 
 protected:

@@ -977,7 +977,7 @@ void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
 {
     ASSERT(vertexBuffers.Length() >= 0 && vertexBuffers.Length() <= GPU_MAX_VB_BINDED);
     bool vbEdited = _vbCount != vertexBuffers.Length();
-    D3D12_VERTEX_BUFFER_VIEW views[GPU_MAX_VB_BINDED];
+    __declspec(align(16)) D3D12_VERTEX_BUFFER_VIEW views[GPU_MAX_VB_BINDED];
     for (int32 i = 0; i < vertexBuffers.Length(); i++)
     {
         const auto vbDX12 = static_cast<GPUBufferDX12*>(vertexBuffers[i]);

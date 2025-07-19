@@ -34,8 +34,8 @@ bool ParticleEmitterGPUGenerator::loadTexture(Node* caller, Box* box, const Seri
     Value location = tryGetValue(locationBox, Value::InitForZero(VariantType::Float2));
 
     // Convert into a proper type
-    if (isCubemap || isVolume || isArray)
-        location = Value::Cast(location, VariantType::Float3);
+    if (isVolume || isArray)
+        location = Value::Cast(location, VariantType::Float4);
     else
         location = Value::Cast(location, VariantType::Float3);
 
@@ -330,6 +330,21 @@ void ParticleEmitterGPUGenerator::ProcessGroupTextures(Box* box, Node* node, Val
         gradientBox->Cache = gradient;
         distanceBox->Cache = distance;
         value = box == gradientBox ? gradient : distance;
+        break;
+    }
+    // Texture Size
+    case 24:
+    {
+        value = Value::Zero;
+        auto textureBox = node->GetBox(0);
+        if (!textureBox->HasConnection())
+            break;
+        const auto texture = eatBox(textureBox->GetParent<Node>(), textureBox->FirstConnection());
+        const auto textureParam = findParam(texture.Value);
+        if (!textureParam)
+            break;
+        value = writeLocal(VariantType::Float2, node);
+        _writer.Write(TEXT("\t{0}.GetDimensions({1}.x, {1}.y);\n"), textureParam->ShaderName, value.Value);
         break;
     }
     default:

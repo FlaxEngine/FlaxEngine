@@ -169,6 +169,7 @@ void RenderEnvironmentProbeData::SetShaderData(ShaderEnvProbeData& data) const
 
 void* RendererAllocation::Allocate(uintptr size)
 {
+    PROFILE_CPU();
     void* result = nullptr;
     MemPoolLocker.Lock();
     for (int32 i = 0; i < MemPool.Count(); i++)
@@ -188,6 +189,7 @@ void* RendererAllocation::Allocate(uintptr size)
 
 void RendererAllocation::Free(void* ptr, uintptr size)
 {
+    PROFILE_CPU();
     MemPoolLocker.Lock();
     MemPool.Add({ ptr, size });
     MemPoolLocker.Unlock();
@@ -418,6 +420,18 @@ bool RenderList::HasAnyPostFx(const RenderContext& renderContext, MaterialPostFx
     return false;
 }
 
+BatchedDrawCall::BatchedDrawCall(RenderList* list)
+    : Instances(&list->Memory)
+{
+}
+
+BatchedDrawCall::BatchedDrawCall(BatchedDrawCall&& other) noexcept
+    : DrawCall(other.DrawCall)
+    , ObjectsStartIndex(other.ObjectsStartIndex)
+    , Instances(MoveTemp(other.Instances))
+{
+}
+
 void DrawCallsList::Clear()
 {
     Indices.Clear();
@@ -433,6 +447,7 @@ bool DrawCallsList::IsEmpty() const
 
 RenderList::RenderList(const SpawnParams& params)
     : ScriptingObject(params)
+    , Memory(4 * 1024 * 1024, RendererAllocation::Allocate, RendererAllocation::Free) // 4MB pages, use page pooling via RendererAllocation
     , DirectionalLights(4)
     , PointLights(32)
     , SpotLights(32)
@@ -443,8 +458,8 @@ RenderList::RenderList(const SpawnParams& params)
     , AtmosphericFog(nullptr)
     , Fog(nullptr)
     , Blendable(32)
-    , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Bufffer"))
-    , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Bufffer"))
+    , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
+    , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
     , _instanceBuffer(0, sizeof(ShaderObjectDrawInstanceData), TEXT("Instance Buffer"), GPUVertexLayout::Get({ { VertexElement::Types::Attribute0, 3, 0, 1, PixelFormat::R32_UInt } }))
 {
 }
@@ -480,6 +495,7 @@ void RenderList::Clear()
     _instanceBuffer.Clear();
     ObjectBuffer.Clear();
     TempObjectBuffer.Clear();
+    Memory.Free();
 }
 
 struct PackedSortKey

@@ -244,6 +244,13 @@ public:
     API_FIELD(Attributes="EditorDisplay(\"Particle Effect\"), EditorOrder(80), DefaultValue(0)")
     int8 SortOrder = 0;
 
+#if USE_EDITOR
+    /// <summary>
+    /// If checked, the particle emitter debug shapes will be shawn during debug drawing. This includes particle spawn location shapes display.
+    /// </summary>
+    API_FIELD(Attributes = "EditorDisplay(\"Particle Effect\"), EditorOrder(200)") bool ShowDebugDraw = false;
+#endif
+
 public:
     /// <summary>
     /// Gets the effect parameters collection. Those parameters are instanced from the <see cref="ParticleSystem"/> that contains a linear list of emitters and every emitter has a list of own parameters.
@@ -399,6 +406,7 @@ public:
     void Draw(RenderContext& renderContext) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
+    void OnDebugDraw() override;
 #endif
     void OnLayerChanged() override;
     void Serialize(SerializeStream& stream, const void* otherObj) override;

@@ -381,6 +381,8 @@ namespace FlaxEngine.GUI
         public Dropdown()
         : base(0, 0, 120, 18.0f)
         {
+            AutoFocus = true;
+
             var style = Style.Current;
             Font = new FontReference(style.FontMedium);
             TextColor = style.Foreground;

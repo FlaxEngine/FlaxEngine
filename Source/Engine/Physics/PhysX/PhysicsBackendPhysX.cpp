@@ -82,7 +82,6 @@ struct ActionDataPhysX
 struct ScenePhysX
 {
     PxScene* Scene = nullptr;
-    PxCpuDispatcher* CpuDispatcher = nullptr;
     PxControllerManager* ControllerManager = nullptr;
     void* ScratchMemory = nullptr;
     Vector3 Origin = Vector3::Zero;
@@ -542,6 +541,7 @@ namespace
 {
     PxFoundation* Foundation = nullptr;
     PxPhysics* PhysX = nullptr;
+    PxDefaultCpuDispatcher* CpuDispatcher = nullptr;
 #if WITH_PVD
     PxPvd* PVD = nullptr;
 #endif
@@ -1734,6 +1734,7 @@ void PhysicsBackend::Shutdown()
 #if WITH_PVD
     RELEASE_PHYSX(PVD);
 #endif
+    RELEASE_PHYSX(CpuDispatcher);
     RELEASE_PHYSX(Foundation);
     SceneOrigins.Clear();
 }
@@ -1791,9 +1792,13 @@ void* PhysicsBackend::CreateScene(const PhysicsSettings& settings)
     }
     if (sceneDesc.cpuDispatcher == nullptr)
     {
-        scenePhysX->CpuDispatcher = PxDefaultCpuDispatcherCreate(Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 4));
-        CHECK_INIT(scenePhysX->CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
-        sceneDesc.cpuDispatcher = scenePhysX->CpuDispatcher;
+        if (CpuDispatcher == nullptr)
+        {
+            uint32 threads = Math::Clamp<uint32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 1, 8);
+            CpuDispatcher = PxDefaultCpuDispatcherCreate(threads);
+            CHECK_INIT(CpuDispatcher, "PxDefaultCpuDispatcherCreate failed!");
+        }
+        sceneDesc.cpuDispatcher = CpuDispatcher;
     }
     switch (settings.BroadPhaseType)
     {
@@ -1855,7 +1860,6 @@ void PhysicsBackend::DestroyScene(void* scene)
     }
 #endif
     RELEASE_PHYSX(scenePhysX->ControllerManager);
-    SAFE_DELETE(scenePhysX->CpuDispatcher);
     Allocator::Free(scenePhysX->ScratchMemory);
     scenePhysX->Scene->release();
 
@@ -1897,6 +1901,23 @@ void PhysicsBackend::StartSimulateScene(void* scene, float dt)
     scenePhysX->Stepper.renderDone();
 }
 
+PxActor** CachedActiveActors;
+int64 CachedActiveActorsCount;
+volatile int64 CachedActiveActorIndex;
+
+void FlushActiveTransforms(int32 i)
+{
+    PROFILE_CPU();
+    int64 index;
+    while ((index = Platform::InterlockedIncrement(&CachedActiveActorIndex)) < CachedActiveActorsCount)
+    {
+        const auto pxActor = (PxRigidActor*)CachedActiveActors[index];
+        auto actor = static_cast<IPhysicsActor*>(pxActor->userData);
+        if (actor)
+            actor->OnActiveTransformChanged();
+    }
+}
+
 void PhysicsBackend::EndSimulateScene(void* scene)
 {
     PROFILE_MEM(Physics);
@@ -1915,10 +1936,18 @@ void PhysicsBackend::EndSimulateScene(void* scene)
         // Gather change info
         PxU32 activeActorsCount;
         PxActor** activeActors = scenePhysX->Scene->getActiveActors(activeActorsCount);
-        if (activeActorsCount > 0)
+
+        // Update changed transformations
+        if (activeActorsCount > 50 && JobSystem::GetThreadsCount() > 1)
         {
-            // Update changed transformations
-            // TODO: use jobs system if amount if huge
+            // Run in async via job system
+            CachedActiveActors = activeActors;
+            CachedActiveActorsCount = activeActorsCount;
+            CachedActiveActorIndex = -1;
+            JobSystem::Execute(FlushActiveTransforms, JobSystem::GetThreadsCount());
+        }
+        else
+        {
             for (uint32 i = 0; i < activeActorsCount; i++)
             {
                 const auto pxActor = (PxRigidActor*)*activeActors++;

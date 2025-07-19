@@ -191,7 +191,16 @@ namespace FlaxEditor.Surface
 
         private ContextMenuButton _cmCopyButton;
         private ContextMenuButton _cmDuplicateButton;
+        private ContextMenuChildMenu _cmFormatNodesMenu;
         private ContextMenuButton _cmFormatNodesConnectionButton;
+        private ContextMenuButton _cmAlignNodesTopButton;
+        private ContextMenuButton _cmAlignNodesMiddleButton;
+        private ContextMenuButton _cmAlignNodesBottomButton;
+        private ContextMenuButton _cmAlignNodesLeftButton;
+        private ContextMenuButton _cmAlignNodesCenterButton;
+        private ContextMenuButton _cmAlignNodesRightButton;
+        private ContextMenuButton _cmDistributeNodesHorizontallyButton;
+        private ContextMenuButton _cmDistributeNodesVerticallyButton;
         private ContextMenuButton _cmRemoveNodeConnectionsButton;
         private ContextMenuButton _cmRemoveBoxConnectionsButton;
         private readonly Float2 ContextMenuOffset = new Float2(5);
@@ -399,10 +408,26 @@ namespace FlaxEditor.Surface
             }
             menu.AddSeparator();
 
-            _cmFormatNodesConnectionButton = menu.AddButton("Format node(s)", () => { FormatGraph(SelectedNodes); });
-            _cmFormatNodesConnectionButton.Enabled = CanEdit && HasNodesSelection;
+            _cmFormatNodesMenu = menu.AddChildMenu("Format node(s)");
+            _cmFormatNodesMenu.Enabled = CanEdit && HasNodesSelection;
 
-            _cmRemoveNodeConnectionsButton = menu.AddButton("Remove all connections to that node(s)", () =>
+            _cmFormatNodesConnectionButton = _cmFormatNodesMenu.ContextMenu.AddButton("Auto format", Editor.Instance.Options.Options.Input.NodesAutoFormat, () => { FormatGraph(SelectedNodes); });
+
+            _cmFormatNodesMenu.ContextMenu.AddSeparator();
+            _cmAlignNodesTopButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align top", Editor.Instance.Options.Options.Input.NodesAlignTop, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Top); });
+            _cmAlignNodesMiddleButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align middle", Editor.Instance.Options.Options.Input.NodesAlignMiddle, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Middle); });
+            _cmAlignNodesBottomButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align bottom", Editor.Instance.Options.Options.Input.NodesAlignBottom, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Bottom); });
+
+            _cmFormatNodesMenu.ContextMenu.AddSeparator();
+            _cmAlignNodesLeftButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align left", Editor.Instance.Options.Options.Input.NodesAlignLeft, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Left); });
+            _cmAlignNodesCenterButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align center", Editor.Instance.Options.Options.Input.NodesAlignCenter, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Center); });
+            _cmAlignNodesRightButton = _cmFormatNodesMenu.ContextMenu.AddButton("Align right", Editor.Instance.Options.Options.Input.NodesAlignRight, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Right); });
+
+            _cmFormatNodesMenu.ContextMenu.AddSeparator();
+            _cmDistributeNodesHorizontallyButton = _cmFormatNodesMenu.ContextMenu.AddButton("Distribute horizontally", Editor.Instance.Options.Options.Input.NodesDistributeHorizontal, () => { DistributeNodes(SelectedNodes, false); });
+            _cmDistributeNodesVerticallyButton = _cmFormatNodesMenu.ContextMenu.AddButton("Distribute vertically", Editor.Instance.Options.Options.Input.NodesDistributeVertical, () => { DistributeNodes(SelectedNodes, true); });
+
+            _cmRemoveNodeConnectionsButton = menu.AddButton("Remove all connections", () =>
             {
                 var nodes = ((List<SurfaceNode>)menu.Tag);
 
@@ -428,8 +453,10 @@ namespace FlaxEditor.Surface
 
                 MarkAsEdited();
             });
-            _cmRemoveNodeConnectionsButton.Enabled = CanEdit;
-            _cmRemoveBoxConnectionsButton = menu.AddButton("Remove all connections to that box", () =>
+            bool anyConnection = SelectedNodes.Any(n => n.GetBoxes().Any(b => b.HasAnyConnection));
+            _cmRemoveNodeConnectionsButton.Enabled = CanEdit && anyConnection;
+
+            _cmRemoveBoxConnectionsButton = menu.AddButton("Remove all socket connections", () =>
             {
                 var boxUnderMouse = (Box)_cmRemoveBoxConnectionsButton.Tag;
                 if (Undo != null)
@@ -450,6 +477,16 @@ namespace FlaxEditor.Surface
                 var boxUnderMouse = GetChildAtRecursive(location) as Box;
                 _cmRemoveBoxConnectionsButton.Enabled = boxUnderMouse != null && boxUnderMouse.HasAnyConnection;
                 _cmRemoveBoxConnectionsButton.Tag = boxUnderMouse;
+
+                if (boxUnderMouse != null)
+                {
+                    boxUnderMouse.ParentNode.highlightBox = boxUnderMouse; 
+                    menu.VisibleChanged += (c) =>
+                    {
+                        if (!c.Visible)
+                            boxUnderMouse.ParentNode.highlightBox = null;
+                    };
+                }
             }
 
             controlUnderMouse?.OnShowSecondaryContextMenu(menu, controlUnderMouse.PointFromParent(location));

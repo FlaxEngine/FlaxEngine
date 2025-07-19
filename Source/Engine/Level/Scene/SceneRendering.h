@@ -7,7 +7,7 @@
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Level/Actor.h"
-#include "Engine/Platform/CriticalSection.h"
+#include "Engine/Threading/ConcurrentSystemLocker.h"
 
 class SceneRenderTask;
 class SceneRendering;
@@ -102,7 +102,7 @@ public:
     Array<DrawActor> Actors[MAX];
     Array<int32> FreeActors[MAX];
     Array<IPostFxSettingsProvider*> PostFxProviders;
-    CriticalSection Locker;
+    ConcurrentSystemLocker Locker;
 
 private:
 #if USE_EDITOR

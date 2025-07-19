@@ -25,7 +25,7 @@ DrawPass ForwardMaterialShader::GetDrawModes() const
 bool ForwardMaterialShader::CanUseInstancing(InstancingHandler& handler) const
 {
     handler = { SurfaceDrawCallHandler::GetHash, SurfaceDrawCallHandler::CanBatch, };
-    return true;
+    return false; // TODO: support instancing when using ForwardShadingFeature
 }
 
 void ForwardMaterialShader::Bind(BindParameters& params)

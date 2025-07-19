@@ -146,6 +146,8 @@ namespace FlaxEditor.Windows.Profiler
             {
                 var gpuResource = _gpuResourcesCached[i];
                 ref var resource = ref resources[i];
+                if (!gpuResource)
+                    continue;
 
                 // Try to reuse cached resource info
                 var gpuResourceId = gpuResource.ID;

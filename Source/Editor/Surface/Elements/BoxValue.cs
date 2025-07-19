@@ -64,6 +64,7 @@ namespace FlaxEditor.Surface.Elements
         {
             ParentNode = parentNode;
             Archetype = archetype;
+            AutoFocus = true;
 
             var back = Style.Current.TextBoxBackground;
             var grayOutFactor = 0.6f;

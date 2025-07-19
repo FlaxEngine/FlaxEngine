@@ -5,6 +5,7 @@
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if COMPILE_WITH_ASSETS_IMPORTER
 #include "Engine/Core/Log.h"
 #include "Engine/ContentImporters/AssetsImportingManager.h"
@@ -110,6 +111,7 @@ void NavMesh::OnAssetLoaded(Asset* asset, void* caller)
     if (Data.Tiles.HasItems())
         return;
     ScopeLock lock(DataAsset->Locker);
+    PROFILE_MEM(Navigation);
 
     // Remove added tiles
     if (_navMeshActive)

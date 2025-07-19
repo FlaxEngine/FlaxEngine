@@ -97,13 +97,16 @@ namespace FlaxEditor.SceneGraph
         /// <returns>Hit object or null if there is no intersection at all.</returns>
         public SceneGraphNode RayCast(ref Ray ray, ref Ray view, out Real distance, RayCastData.FlagTypes flags = RayCastData.FlagTypes.None)
         {
+            Profiler.BeginEvent("RayCastScene");
             var data = new RayCastData
             {
                 Ray = ray,
                 View = view,
                 Flags = flags
             };
-            return RayCast(ref data, out distance, out _);
+            var result = RayCast(ref data, out distance, out _);
+            Profiler.EndEvent();
+            return result;
         }
 
         /// <summary>
@@ -117,13 +120,16 @@ namespace FlaxEditor.SceneGraph
         /// <returns>Hit object or null if there is no intersection at all.</returns>
         public SceneGraphNode RayCast(ref Ray ray, ref Ray view, out Real distance, out Vector3 normal, RayCastData.FlagTypes flags = RayCastData.FlagTypes.None)
         {
+            Profiler.BeginEvent("RayCastScene");
             var data = new RayCastData
             {
                 Ray = ray,
                 View = view,
                 Flags = flags
             };
-            return RayCast(ref data, out distance, out normal);
+            var result = RayCast(ref data, out distance, out normal);
+            Profiler.EndEvent();
+            return result;
         }
 
         internal static Quaternion RaycastNormalRotation(ref Vector3 normal)

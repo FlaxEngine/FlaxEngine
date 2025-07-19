@@ -53,19 +53,9 @@ bool VolumetricFogPass::setupResources()
     if (!_shader->IsLoaded())
         return true;
     auto shader = _shader->GetShader();
-
-    // Validate shader constant buffers sizes
-    if (shader->GetCB(0)->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
     // CB1 is used for per-draw info (ObjectIndex)
-    if (shader->GetCB(2)->GetSize() != sizeof(PerLight))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 2, PerLight);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 2, PerLight);
 
     // Cache compute shaders
     _csInitialize = shader->GetCS("CS_Initialize");
@@ -109,7 +99,6 @@ float ComputeZSliceFromDepth(float sceneDepth, const VolumetricFogOptions& optio
 
 bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, VolumetricFogOptions& options)
 {
-    auto& view = renderContext.View;
     const auto fog = renderContext.List->Fog;
 
     // Check if already prepared for this frame
@@ -121,7 +110,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     }
 
     // Check if skip rendering
-    if (fog == nullptr || (view.Flags & ViewFlags::Fog) == ViewFlags::None || !_isSupported || checkIfSkipPass())
+    if (fog == nullptr || !renderContext.List->Setup.UseVolumetricFog || !_isSupported || checkIfSkipPass())
     {
         RenderTargetPool::Release(renderContext.Buffers->VolumetricFog);
         renderContext.Buffers->VolumetricFog = nullptr;
@@ -194,7 +183,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
     _cache.Data.PhaseG = options.ScatteringDistribution;
     _cache.Data.VolumetricFogMaxDistance = options.Distance;
     _cache.Data.MissedHistorySamplesCount = Math::Clamp(_cache.MissedHistorySamplesCount, 1, (int32)ARRAY_COUNT(_cache.Data.FrameJitterOffsets));
-    Matrix::Transpose(view.PrevViewProjection, _cache.Data.PrevWorldToClip);
+    Matrix::Transpose(renderContext.View.PrevViewProjection, _cache.Data.PrevWorldToClip);
     _cache.Data.SkyLight.VolumetricScatteringIntensity = 0;
 
     // Fill frame jitter history
