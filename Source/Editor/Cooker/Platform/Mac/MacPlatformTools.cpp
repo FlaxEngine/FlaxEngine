@@ -231,6 +231,8 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
     LOG(Info, "Building app package...");
     {
         const String dmgPath = data.OriginalOutputPath / appName + TEXT(".dmg");
+        if (FileSystem::FileExists(dmgPath))
+            FileSystem::DeleteFile(dmgPath);
         CreateProcessSettings procSettings;
         procSettings.HiddenWindow = true;
         procSettings.WorkingDirectory = data.OriginalOutputPath;

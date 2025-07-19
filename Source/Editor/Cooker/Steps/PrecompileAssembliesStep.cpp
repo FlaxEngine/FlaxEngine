@@ -12,7 +12,7 @@
 void PrecompileAssembliesStep::OnBuildStarted(CookingData& data)
 {
     const DotNetAOTModes aotMode = data.Tools->UseAOT();
-    if (aotMode == DotNetAOTModes::None)
+    if (aotMode == DotNetAOTModes::None || EnumHasAllFlags(data.Options, BuildOptions::NoCook))
         return;
     const auto& buildSettings = *BuildSettings::Get();
 

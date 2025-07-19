@@ -683,8 +683,7 @@ bool GameCookerImpl::Build()
 
     MCore::Thread::Attach();
 
-    // Build Started
-    if (!EnumHasAnyFlags(data.Options, BuildOptions::NoCook))
+    // Build start
     {
         CallEvent(GameCooker::EventType::BuildStarted);
         data.Tools->OnBuildStarted(data);
@@ -757,8 +756,8 @@ bool GameCookerImpl::Build()
     }
     IsRunning = false;
     CancelFlag = 0;
-    if (!EnumHasAnyFlags(data.Options, BuildOptions::NoCook))
     {
+        // Build end
         for (int32 stepIndex = 0; stepIndex < Steps.Count(); stepIndex++)
             Steps[stepIndex]->OnBuildEnded(data, failed);
         data.Tools->OnBuildEnded(data, failed);
