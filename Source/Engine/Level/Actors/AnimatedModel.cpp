@@ -174,9 +174,9 @@ void AnimatedModel::GetNodeTransformation(const StringView& nodeName, Matrix& no
     GetNodeTransformation(SkinnedModel ? SkinnedModel->FindNode(nodeName) : -1, nodeTransformation, worldSpace);
 }
 
-void AnimatedModel::GetNodeTransformation(Array<ModelBoneNode>& modelBoneNodes, bool worldSpace) const
+void AnimatedModel::GetNodeTransformation(Array<NodeTransformation>& nodeTransformations, bool worldSpace) const
 {
-    for (ModelBoneNode& item : modelBoneNodes)
+    for (NodeTransformation& item : nodeTransformations)
     {
         GetNodeTransformation(item.NodeIndex, item.NodeMatrix, worldSpace);
     }
@@ -199,7 +199,7 @@ void AnimatedModel::SetNodeTransformation(int32 nodeIndex, const Matrix& nodeTra
     OnAnimationUpdated();
 }
 
-void AnimatedModel::SetNodeTransformation(Array<ModelBoneNode>& modelBoneNodes, bool worldSpace)
+void AnimatedModel::SetNodeTransformation(const Array<NodeTransformation>& nodeTransformations, bool worldSpace)
 {
     if (GraphInstance.NodesPose.IsEmpty())
         const_cast<AnimatedModel*>(this)->PreInitSkinningData(); // Ensure to have valid nodes pose to return
@@ -213,11 +213,11 @@ void AnimatedModel::SetNodeTransformation(Array<ModelBoneNode>& modelBoneNodes, 
         Matrix::Invert(world, invWorld);
     }
 
-    for (int i = 0; i < modelBoneNodes.Count(); i++)
+    for (int i = 0; i < nodeTransformations.Count(); i++)
     {
-        int nodeIndex = modelBoneNodes[i].NodeIndex;
+        int nodeIndex = nodeTransformations[i].NodeIndex;
         CHECK(nodeIndex >= 0 && nodeIndex < GraphInstance.NodesPose.Count());
-        GraphInstance.NodesPose[nodeIndex] = modelBoneNodes[i].NodeMatrix;
+        GraphInstance.NodesPose[nodeIndex] = nodeTransformations[i].NodeMatrix;
         if (worldSpace)
         {
             GraphInstance.NodesPose[nodeIndex] = GraphInstance.NodesPose[nodeIndex] * invWorld;

@@ -9,14 +9,6 @@
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Core/Delegate.h"
 
-API_STRUCT() struct ModelBoneNode
-{
-    DECLARE_SCRIPTING_TYPE_MINIMAL(ModelBoneNode);
-
-    API_FIELD() uint32 NodeIndex;
-    API_FIELD() Matrix NodeMatrix;
-};
-
 /// <summary>
 /// Performs an animation and renders a skinned model.
 /// </summary>
@@ -25,6 +17,24 @@ class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
 {
     DECLARE_SCENE_OBJECT(AnimatedModel);
     friend class AnimationsSystem;
+
+    /// <summary>
+    /// Keeps the data of a Node and its relevant Transform Matrix together when passing it between functions.
+    /// </summary>
+    API_STRUCT() struct NodeTransformation
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(NodeTransformation);
+
+        /// <summary>
+        /// The index of the node in the node hierarchy.
+        /// </summary>
+        API_FIELD() uint32 NodeIndex;
+
+        /// <summary>
+        /// The transformation matrix of the node
+        /// </summary>
+        API_FIELD() Matrix NodeMatrix;
+    };
 
     /// <summary>
     /// Describes the animation graph updates frequency for the animated model.
@@ -247,10 +257,10 @@ public:
     /// <summary>
     /// Gets the node final transformation for a series of nodes.
     /// </summary>
-    /// <param name="modelBoneNodes">The series of nodes that will be returned</param>
+    /// <param name="nodeTransformations">The series of nodes that will be returned</param>
     /// <param name="worldSpace">True if convert matrices into world-space, otherwise returned values will be in local-space of the actor.</param>
     /// <returns></returns>
-    API_FUNCTION() void GetNodeTransformation(API_PARAM(Out) Array<ModelBoneNode>& modelBoneNodes, bool worldSpace = false) const;
+    API_FUNCTION() void GetNodeTransformation(API_PARAM(Ref) Array<NodeTransformation>& nodeTransformations, bool worldSpace = false) const;
 
     /// <summary>
     /// Sets the node final transformation. If multiple nodes are to be set within a frame, do not use set worldSpace to true, and do the conversion yourself to avoid recalculation of inv matrices. 
@@ -271,10 +281,10 @@ public:
     /// <summary>
     /// Sets a group of nodes final transformation.
     /// </summary>
-    /// <param name="modelBoneNodes">Array of the final node transformation matrix.</param>
+    /// <param name="nodeTransformations">Array of the final node transformation matrix.</param>
     /// <param name="worldSpace">True if convert matrices from world-space, otherwise values will be in local-space of the actor.</param>
     /// <returns></returns>
-    API_FUNCTION() void SetNodeTransformation(Array<ModelBoneNode>& modelBoneNodes, bool worldSpace = false);
+    API_FUNCTION() void SetNodeTransformation(const Array<NodeTransformation>& nodeTransformations, bool worldSpace = false);
 
     /// <summary>
     /// Finds the closest node to a given location.
