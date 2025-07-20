@@ -229,18 +229,12 @@ void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float 
     auto& context = *Context.Get();
     float eventTimeMin = animPrevPos;
     float eventTimeMax = animPos;
-    if (loop && context.DeltaTime * speed < 0)
+
+    if (eventTimeMin > eventTimeMax)
     {
-        // Check if animation looped (for anim events shooting during backwards playback)
-        //const float posNotLooped = startTimePos + oldTimePos;
-        //if (posNotLooped < 0.0f || posNotLooped > length)
-        //const int32 animPosCycle = Math::CeilToInt(animPos / anim->GetDuration());
-        //const int32 animPrevPosCycle = Math::CeilToInt(animPrevPos / anim->GetDuration());
-        //if (animPosCycle != animPrevPosCycle)
-        {
-            Swap(eventTimeMin, eventTimeMax);
-        }
+        Swap(eventTimeMin, eventTimeMax);
     }
+
     const float eventTime = (float)(animPos / anim->Data.FramesPerSecond);
     const float eventDeltaTime = (float)((animPos - animPrevPos) / anim->Data.FramesPerSecond);
     for (const auto& track : anim->Events)
@@ -251,7 +245,13 @@ void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float 
                 continue;
             const float duration = k.Value.Duration > 1 ? k.Value.Duration : 0.0f;
 #define ADD_OUTGOING_EVENT(type) context.Data->OutgoingEvents.Add({ k.Value.Instance, (AnimatedModel*)context.Data->Object, anim, eventTime, eventDeltaTime, AnimGraphInstanceData::OutgoingEvent::type })
-            if (k.Time <= eventTimeMax && eventTimeMin <= k.Time + duration)
+            if ((k.Time <= eventTimeMax && eventTimeMin <= k.Time + duration
+                && (Math::FloorToInt(animPos) != 0 && Math::FloorToInt(animPrevPos) < Math::FloorToInt(anim->GetDuration()) && Math::FloorToInt(animPrevPos) != 0 && Math::FloorToInt(animPos) < Math::FloorToInt(anim->GetDuration())))
+                // Handle the edge case of an event on 0 or on max animation duration during looping
+                || (loop && duration == 0.0f && Math::CeilToInt(animPos) == Math::CeilToInt(anim->GetDuration()) && k.Time == anim->GetDuration())
+                || (loop && Math::FloorToInt(animPos) == 0 && Math::CeilToInt(animPrevPos) == Math::CeilToInt(anim->GetDuration()) && k.Time == 0.0f)
+                || (loop && Math::FloorToInt(animPrevPos) == 0 && Math::CeilToInt(animPos) == Math::CeilToInt(anim->GetDuration()) && k.Time == 0.0f)
+                )
             {
                 int32 stateIndex = -1;
                 if (duration > 1)
