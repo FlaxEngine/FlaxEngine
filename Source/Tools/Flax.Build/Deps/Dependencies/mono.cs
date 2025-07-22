@@ -19,6 +19,9 @@ namespace Flax.Deps.Dependencies
     class mono : Dependency
     {
         /// <inheritdoc />
+        public override bool BuildByDefault => false; // Unused in favor of nethost
+
+        /// <inheritdoc />
         public override TargetPlatform[] Platforms
         {
             get
