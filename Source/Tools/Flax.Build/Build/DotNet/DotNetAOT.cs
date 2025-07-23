@@ -351,10 +351,10 @@ namespace Flax.Build
                 }
 
                 // Run compilation
-                bool failed = false;
-                bool validCache = true;
+                bool failed = false, validCache = true, coreLibDirty = false;
                 string platformToolsPath;
                 {
+                    // Get platform tools
                     var options = new Toolchain.CSharpOptions
                     {
                         Action = Toolchain.CSharpOptions.ActionTypes.GetPlatformTools,
@@ -365,6 +365,21 @@ namespace Flax.Build
                     buildToolchain.CompileCSharp(ref options);
                     platformToolsPath = options.PlatformToolsPath;
                 }
+                {
+                    // Check if core library has been modified
+                    var options = new Toolchain.CSharpOptions
+                    {
+                        Action = Toolchain.CSharpOptions.ActionTypes.GetOutputFiles,
+                        InputFiles = new List<string>() { coreLibPaths[0] },
+                        OutputFiles = new List<string>(),
+                        AssembliesPath = aotAssembliesPath,
+                        ClassLibraryPath = dotnetLibPath,
+                        PlatformToolsPath = platformToolsPath,
+                        EnableDebugSymbols = false,
+                        EnableToolDebug = dotnetAotDebug,
+                    };
+                    buildToolchain.CompileCSharp(ref options);
+                    coreLibDirty = File.GetLastWriteTime(options.InputFiles[0]) > File.GetLastWriteTime(options.OutputFiles[0]);
                 if (!Directory.Exists(platformToolsPath))
                     throw new Exception("Missing platform tools " + platformToolsPath);
                 Log.Info("Platform tools found in: " + platformToolsPath);
@@ -393,7 +408,8 @@ namespace Flax.Build
                     buildToolchain.CompileCSharp(ref options);
 
                     // Skip if output is already generated and is newer than a source assembly
-                    if (!File.Exists(options.OutputFiles[0]) || File.GetLastWriteTime(assemblyPath) > File.GetLastWriteTime(options.OutputFiles[0]))
+                    // Force run AOT if corelib has been modified (all libs depend on its GUID)
+                    if (!File.Exists(options.OutputFiles[0]) || File.GetLastWriteTime(assemblyPath) > File.GetLastWriteTime(options.OutputFiles[0]) || coreLibDirty)
                     {
                         if (dotnetAotDebug)
                         {
