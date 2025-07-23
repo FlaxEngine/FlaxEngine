@@ -40,7 +40,7 @@ namespace FlaxEngine
         {
             if (message == null)
                 return;
-#if BUILD_RELEASE
+#if BUILD_RELEASE || !FLAX_EDITOR
             string stackTrace = null;
 #else
             string stackTrace = Environment.StackTrace;

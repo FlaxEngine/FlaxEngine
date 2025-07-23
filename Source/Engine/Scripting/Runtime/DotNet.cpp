@@ -525,16 +525,12 @@ void MCore::GCHandle::Free(const MGCHandle& handle)
 
 void MCore::GC::Collect()
 {
-    PROFILE_CPU();
-    static void* GCCollectPtr = GetStaticMethodPointer(TEXT("GCCollect"));
-    CallStaticMethod<void, int, int, bool, bool>(GCCollectPtr, MaxGeneration(), (int)MGCCollectionMode::Default, true, false);
+    Collect(MaxGeneration(), MGCCollectionMode::Default, true, false);
 }
 
 void MCore::GC::Collect(int32 generation)
 {
-    PROFILE_CPU();
-    static void* GCCollectPtr = GetStaticMethodPointer(TEXT("GCCollect"));
-    CallStaticMethod<void, int, int, bool, bool>(GCCollectPtr, generation, (int)MGCCollectionMode::Default, true, false);
+    Collect(generation, MGCCollectionMode::Default, true, false);
 }
 
 void MCore::GC::Collect(int32 generation, MGCCollectionMode collectionMode, bool blocking, bool compacting)
