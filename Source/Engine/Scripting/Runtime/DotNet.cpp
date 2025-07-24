@@ -708,6 +708,13 @@ void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, v
 #if PLATFORM_DESKTOP && !USE_MONO_AOT
     static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectSetInternalValues"));
     CallStaticMethod<void, MObject*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, object, unmanagedPtr, id);
+#elif !USE_EDITOR
+    static MField* monoUnmanagedPtrField = ::ScriptingObject::GetStaticClass()->GetField("__unmanagedPtr");
+    static MField* monoIdField = ::ScriptingObject::GetStaticClass()->GetField("__internalId");
+    if (monoUnmanagedPtrField)
+        monoUnmanagedPtrField->SetValue(object, &unmanagedPtr);
+    if (id != nullptr && monoIdField)
+        monoIdField->SetValue(object, (void*)id);
 #else
     const MField* monoUnmanagedPtrField = klass->GetField("__unmanagedPtr");
     if (monoUnmanagedPtrField)
