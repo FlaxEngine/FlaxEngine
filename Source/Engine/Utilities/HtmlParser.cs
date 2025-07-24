@@ -204,6 +204,10 @@ namespace FlaxEngine.Utilities
             SkipWhitespace();
             while (Peek() != '>')
             {
+                // Return false if start of new html tag is detected.
+                if (Peek() == '<')
+                    return false;
+                
                 if (Peek() == '/')
                 {
                     // Handle trailing forward slash
