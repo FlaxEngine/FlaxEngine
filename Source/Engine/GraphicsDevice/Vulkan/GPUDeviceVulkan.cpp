@@ -1498,6 +1498,8 @@ PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, 
     return format;
 }
 
+#if VULKAN_USE_PIPELINE_CACHE
+
 void GetPipelineCachePath(String& path)
 {
 #if USE_EDITOR
@@ -1507,8 +1509,11 @@ void GetPipelineCachePath(String& path)
 #endif
 }
 
+#endif
+
 bool GPUDeviceVulkan::SavePipelineCache()
 {
+#if VULKAN_USE_PIPELINE_CACHE
     if (PipelineCache == VK_NULL_HANDLE || !vkGetPipelineCacheData)
         return false;
 
@@ -1529,6 +1534,9 @@ bool GPUDeviceVulkan::SavePipelineCache()
     String path;
     GetPipelineCachePath(path);
     return File::WriteAllBytes(path, data);
+#else
+    return false;
+#endif
 }
 
 #if VULKAN_USE_VALIDATION_CACHE
@@ -1975,6 +1983,7 @@ bool GPUDeviceVulkan::Init()
     UniformBufferUploader = New<UniformBufferUploaderVulkan>(this);
     DescriptorPoolsManager = New<DescriptorPoolsManagerVulkan>(this);
     MainContext = New<GPUContextVulkan>(this, GraphicsQueue);
+#if VULKAN_USE_PIPELINE_CACHE
     if (vkCreatePipelineCache)
     {
         Array<uint8> data;
@@ -1992,6 +2001,7 @@ bool GPUDeviceVulkan::Init()
         const VkResult result = vkCreatePipelineCache(Device, &pipelineCacheCreateInfo, nullptr, &PipelineCache);
         LOG_VULKAN_RESULT(result);
     }
+#endif
 #if VULKAN_USE_VALIDATION_CACHE
     if (OptionalDeviceExtensions.HasEXTValidationCache && vkCreateValidationCacheEXT && vkDestroyValidationCacheEXT)
     {
@@ -2088,6 +2098,7 @@ void GPUDeviceVulkan::Dispose()
     DeferredDeletionQueue.ReleaseResources(true);
     vmaDestroyAllocator(Allocator);
     Allocator = VK_NULL_HANDLE;
+#if VULKAN_USE_PIPELINE_CACHE
     if (PipelineCache != VK_NULL_HANDLE)
     {
         if (SavePipelineCache())
@@ -2095,6 +2106,7 @@ void GPUDeviceVulkan::Dispose()
         vkDestroyPipelineCache(Device, PipelineCache, nullptr);
         PipelineCache = VK_NULL_HANDLE;
     }
+#endif
 #if VULKAN_USE_VALIDATION_CACHE
     if (ValidationCache != VK_NULL_HANDLE)
     {
