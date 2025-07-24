@@ -380,6 +380,7 @@ namespace Flax.Build
                     };
                     buildToolchain.CompileCSharp(ref options);
                     coreLibDirty = File.GetLastWriteTime(options.InputFiles[0]) > File.GetLastWriteTime(options.OutputFiles[0]);
+                }
                 if (!Directory.Exists(platformToolsPath))
                     throw new Exception("Missing platform tools " + platformToolsPath);
                 Log.Info("Platform tools found in: " + platformToolsPath);
