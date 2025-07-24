@@ -134,6 +134,10 @@ namespace FlaxEngine.Utilities
                     if (isLeadingSlash)
                         Move();
 
+                    // Dont process if wrong slash is used.
+                    if (c =='\\')
+                        return false;
+
                     // Parse tag
                     bool result = ParseTag(ref tag, name);
 
