@@ -176,6 +176,12 @@ public:
     }
 
     template<class T>
+    const T* FindLinkedBuffer(const StringView& name) const
+    {
+        return LinkedCustomBuffers ? (const T*)LinkedCustomBuffers->FindCustomBuffer(name, true) : nullptr;
+    }
+
+    template<class T>
     T* GetCustomBuffer(const StringView& name, bool withLinked = true)
     {
         if (LinkedCustomBuffers && withLinked)
