@@ -9,7 +9,7 @@ StringView StringBuilder::ToStringView() const
     return StringView(_data.Get(), _data.Count());
 }
 
-StringView StringView::Empty;
+const StringView StringView::Empty;
 
 StringView::StringView(const String& str)
     : StringViewBase<Char>(str.Get(), str.Length())
