@@ -6,14 +6,23 @@
 #include "./Flax/LightingCommon.hlsl"
 
 
-ShadowSample GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask, float NoL)
+ShadowSample GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask, float NoL, bool isDirectional)
 {
     ShadowSample shadow;
     float rawShadow = shadowMask.r;
     
-    // Reduce shadow strength at grazing angles to hide artifacts
-    float shadowFade = saturate(NoL * 6.0f - 1.0f);
-    shadow.SurfaceShadow = gBuffer.AO * lerp(1.0, rawShadow, shadowFade);
+    if (isDirectional)
+    {
+        // For directional lights: fade shadows at grazing angles to hide artifacts
+        float shadowFade = saturate(NoL * 6.0f - 0.2f);
+        shadow.SurfaceShadow = gBuffer.AO * lerp(1.0, rawShadow, shadowFade);
+    }
+    else
+    {
+        // For point/spot lights: use shadows as-is or with different artifact handling
+        shadow.SurfaceShadow = gBuffer.AO * rawShadow;
+    }
+    
     shadow.TransmissionShadow = shadowMask.g;
     return shadow;
 }
@@ -28,8 +37,8 @@ LightSample StandardShading(GBufferSample gBuffer, float energy, float3 L, float
     float VoH = saturate(dot(V, H));
 
     LightSample lighting;
-    // just do the energy conservation in line, as it wasn't actually lambert math
     lighting.Diffuse = diffuseColor * (1 / PI) * NoL;
+
 #if LIGHTING_NO_SPECULAR
     lighting.Specular = 0;
 #else
@@ -125,9 +134,11 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
     float3 L = lightData.Direction; // no need to normalize
     float NoL = saturate(dot(N, L));
     float3 toLight = lightData.Direction;
-
-    // Calculate shadow
-    ShadowSample shadow = GetShadow(lightData, gBuffer, shadowMask, NoL);
+    
+    // Calculate shadow - pass isDirectional flag
+    bool isDirectional = !isRadial; // Directional lights are non-radial
+    ShadowSample shadow = GetShadow(lightData, gBuffer, shadowMask, NoL, isDirectional);
+    
 
     // Calculate attenuation
     if (isRadial)
