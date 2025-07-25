@@ -2009,6 +2009,9 @@ void OnPrintErrorCallback(const char* string, mono_bool isStdout)
 
 static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
 {
+    PROFILE_CPU();
+    ZoneText(aname, StringUtils::Length(aname));
+
     // Find assembly file
     const String name(aname);
 #if DOTNET_HOST_MONO_DEBUG
@@ -2080,6 +2083,8 @@ static void OnMonoFreeAOT(MonoAssembly* assembly, int size, void* user_data, voi
 
 static void* OnMonoDlFallbackLoad(const char* name, int flags, char** err, void* user_data)
 {
+    PROFILE_CPU();
+    ZoneText(name, StringUtils::Length(name));
     const String fileName = StringUtils::GetFileName(String(name));
 #if DOTNET_HOST_MONO_DEBUG
     LOG(Info, "Loading dynamic library {0}", fileName);
