@@ -134,6 +134,10 @@ namespace FlaxEngine.Utilities
                     if (isLeadingSlash)
                         Move();
 
+                    // Dont process if wrong slash is used.
+                    if (c =='\\')
+                        return false;
+
                     // Parse tag
                     bool result = ParseTag(ref tag, name);
 
@@ -204,6 +208,10 @@ namespace FlaxEngine.Utilities
             SkipWhitespace();
             while (Peek() != '>')
             {
+                // Return false if start of new html tag is detected.
+                if (Peek() == '<')
+                    return false;
+                
                 if (Peek() == '/')
                 {
                     // Handle trailing forward slash
