@@ -1070,26 +1070,26 @@ void ShadowsPass::SetupShadows(RenderContext& renderContext, RenderContextBatch&
     // Early out and skip shadows setup if no lights is actively casting shadows
     // RenderBuffers will automatically free any old ShadowsCustomBuffer after a few frames if we don't update LastFrameUsed
     Array<RenderLightData*, RendererAllocation> shadowedLights;
-    for (auto& light : renderContext.List->DirectionalLights)
+    if (_shadowMapFormat != PixelFormat::Unknown && EnumHasAllFlags(renderContext.View.Flags, ViewFlags::Shadows) && !checkIfSkipPass())
     {
-        if (light.CanRenderShadow(renderContext.View))
-            shadowedLights.Add(&light);
-    }
-    for (auto& light : renderContext.List->SpotLights)
-    {
-        if (light.CanRenderShadow(renderContext.View))
-            shadowedLights.Add(&light);
-    }
-    for (auto& light : renderContext.List->PointLights)
-    {
-        if (light.CanRenderShadow(renderContext.View))
-            shadowedLights.Add(&light);
+        for (auto& light : renderContext.List->DirectionalLights)
+        {
+            if (light.CanRenderShadow(renderContext.View))
+                shadowedLights.Add(&light);
+        }
+        for (auto& light : renderContext.List->SpotLights)
+        {
+            if (light.CanRenderShadow(renderContext.View))
+                shadowedLights.Add(&light);
+        }
+        for (auto& light : renderContext.List->PointLights)
+        {
+            if (light.CanRenderShadow(renderContext.View))
+                shadowedLights.Add(&light);
+        }
     }
     const auto currentFrame = Engine::FrameCount;
-    if (_shadowMapFormat == PixelFormat::Unknown ||
-        EnumHasNoneFlags(renderContext.View.Flags, ViewFlags::Shadows) || 
-        checkIfSkipPass() || 
-        shadowedLights.IsEmpty())
+    if (shadowedLights.IsEmpty())
     {
         // Invalidate any existing custom buffer that could have been used by the same task (eg. when rendering 6 sides of env probe)
         if (auto* old = (ShadowsCustomBuffer*)renderContext.Buffers->FindCustomBuffer<ShadowsCustomBuffer>(TEXT("Shadows"), false))
