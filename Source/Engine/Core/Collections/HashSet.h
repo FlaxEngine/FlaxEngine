@@ -451,7 +451,7 @@ public:
     /// Removes the specified element from the collection.
     /// </summary>
     /// <param name="item">The element to remove.</param>
-    /// <returns>True if cannot remove item from the collection because cannot find it, otherwise false.</returns>
+    /// <returns>True if item was removed from collection, otherwise false.</returns>
     template<typename ItemType>
     bool Remove(const ItemType& item)
     {
@@ -471,7 +471,7 @@ public:
     /// Removes an element at specified iterator position.
     /// </summary>
     /// <param name="i">The element iterator to remove.</param>
-    /// <returns>True if cannot remove item from the collection because cannot find it, otherwise false.</returns>
+    /// <returns>True if item was removed from collection, otherwise false.</returns>
     bool Remove(const Iterator& i)
     {
         ASSERT(i._collection == this);
