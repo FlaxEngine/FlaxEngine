@@ -206,12 +206,27 @@ void PlatformBase::Exit()
 
 #if COMPILE_WITH_PROFILER
 
+#define TEST_MALLOC 0
+#if TEST_MALLOC
+#include "Engine/Utilities/MallocTester.h"
+MallocTester& GetMallocTester()
+{
+    static MallocTester MallocTest;
+    return MallocTest;
+}
+#endif
+
 #define TRACY_ENABLE_MEMORY (TRACY_ENABLE)
 
 void PlatformBase::OnMemoryAlloc(void* ptr, uint64 size)
 {
     if (!ptr)
         return;
+
+#if TEST_MALLOC
+    if (GetMallocTester().OnMalloc(ptr, size))
+        LOG(Fatal, "Invalid mallloc detected for pointer 0x{0:x} ({1} bytes)!\n{2}", (uintptr)ptr, size, Platform::GetStackTrace(3));
+#endif
 
 #if TRACY_ENABLE_MEMORY
     // Track memory allocation in Tracy
@@ -247,6 +262,11 @@ void PlatformBase::OnMemoryFree(void* ptr)
 #if TRACY_ENABLE_MEMORY
     // Track memory allocation in Tracy
     tracy::Profiler::MemFree(ptr, false);
+#endif
+
+#if TEST_MALLOC
+    if (GetMallocTester().OnFree(ptr))
+        LOG(Fatal, "Invalid free detected for pointer 0x{0:x}!\n{1}", (uintptr)ptr, Platform::GetStackTrace(3));
 #endif
 }
 
