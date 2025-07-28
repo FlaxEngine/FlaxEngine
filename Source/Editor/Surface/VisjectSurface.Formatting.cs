@@ -1,9 +1,9 @@
+using FlaxEditor.Surface.Elements;
+using FlaxEditor.Surface.Undo;
+using FlaxEngine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using FlaxEngine;
-using FlaxEditor.Surface.Elements;
-using FlaxEditor.Surface.Undo;
 
 namespace FlaxEditor.Surface
 {
@@ -14,26 +14,26 @@ namespace FlaxEditor.Surface
         private class NodeFormattingData
         {
             /// <summary>
-            /// Starting from 0 at the main nodes
+            /// Starting from 0 at the main nodes.
             /// </summary>
             public int Layer;
 
             /// <summary>
-            /// Position in the layer
+            /// Position in the layer.
             /// </summary>
             public int Offset;
 
             /// <summary>
-            /// How far the subtree needs to be moved additionally
+            /// How far the subtree needs to be moved additionally.
             /// </summary>
             public int SubtreeOffset;
         }
 
         /// <summary>
         /// Formats a graph where the nodes can be disjointed.
-        /// Uses the Sugiyama method
+        /// Uses the Sugiyama method.
         /// </summary>
-        /// <param name="nodes">List of nodes</param>
+        /// <param name="nodes">List of nodes.</param>
         public void FormatGraph(List<SurfaceNode> nodes)
         {
             if (nodes.Count <= 1)
@@ -78,9 +78,9 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
-        /// Formats a graph where all nodes are connected
+        /// Formats a graph where all nodes are connected.
         /// </summary>
-        /// <param name="nodes">List of connected nodes</param>
+        /// <param name="nodes">List of connected nodes.</param>
         protected void FormatConnectedGraph(List<SurfaceNode> nodes)
         {
             if (nodes.Count <= 1)
@@ -160,11 +160,71 @@ namespace FlaxEditor.Surface
         }
 
         /// <summary>
-        /// Assigns a layer to every node
+        /// Straightens every connection between nodes in <paramref name="nodes"/>.
         /// </summary>
-        /// <param name="nodeData">The exta node data</param>
-        /// <param name="endNodes">The end nodes</param>
-        /// <returns>The number of the maximum layer</returns>
+        /// <param name="nodes">List of nodes.</param>
+        public void StraightenGraphConnections(List<SurfaceNode> nodes)
+        {
+            if (nodes.Count <= 1)
+                return;
+
+            List<MoveNodesAction> undoActions = new List<MoveNodesAction>();
+
+            // Only process nodes that have any connection
+            List<SurfaceNode> connectedNodes = nodes.Where(n => n.GetBoxes().Any(b => b.HasAnyConnection)).ToList();
+
+            if (connectedNodes.Count == 0)
+                return;
+
+            for (int i = 0; i < connectedNodes.Count - 1; i++)
+            {
+                SurfaceNode nodeA = connectedNodes[i];
+                List<Box> connectedOutputBoxes = nodeA.GetBoxes().Where(b => b.IsOutput && b.HasAnyConnection).ToList();
+
+                for (int j = 0; j < connectedOutputBoxes.Count; j++)
+                {
+                    Box boxA = connectedOutputBoxes[j];
+
+                    for (int b = 0; b < boxA.Connections.Count; b++)
+                    {
+                        Box boxB = boxA.Connections[b];
+
+                        // Ensure the other node is selected
+                        if (!connectedNodes.Contains(boxB.ParentNode))
+                            continue;
+
+                        // Node with no outgoing connections reached. Advance to next node in list
+                        if (boxA == null || boxB == null)
+                            continue;
+
+                        SurfaceNode nodeB = boxB.ParentNode;
+
+                        // Calculate the Y offset needed for nodeB to align boxB's Y to boxA's Y
+                        float boxASurfaceY = boxA.PointToParent(this, Float2.Zero).Y;
+                        float boxBSurfaceY = boxB.PointToParent(this, Float2.Zero).Y;
+                        float deltaY = (boxASurfaceY - boxBSurfaceY) / ViewScale;
+                        Float2 delta = new Float2(0f, deltaY);
+
+                        nodeB.Location += delta;
+
+                        if (Undo != null)
+                            undoActions.Add(new MoveNodesAction(Context, new[] { nodeB.ID }, delta));
+                    }
+                }
+            }
+
+            if (undoActions.Count > 0)
+                Undo?.AddAction(new MultiUndoAction(undoActions, "Straightned "));
+
+            MarkAsEdited(false);
+        }
+
+        /// <summary>
+        /// Assigns a layer to every node.
+        /// </summary>
+        /// <param name="nodeData">The exta node data.</param>
+        /// <param name="endNodes">The end nodes.</param>
+        /// <returns>The number of the maximum layer.</returns>
         private int SetLayers(Dictionary<SurfaceNode, NodeFormattingData> nodeData, List<SurfaceNode> endNodes)
         {
             // Longest path layering
@@ -201,12 +261,12 @@ namespace FlaxEditor.Surface
 
 
         /// <summary>
-        /// Sets the node offsets
+        /// Sets the node offsets.
         /// </summary>
-        /// <param name="nodeData">The exta node data</param>
-        /// <param name="endNodes">The end nodes</param>
-        /// <param name="maxLayer">The number of the maximum layer</param>
-        /// <returns>The number of the maximum offset</returns>
+        /// <param name="nodeData">The exta node data.</param>
+        /// <param name="endNodes">The end nodes.</param>
+        /// <param name="maxLayer">The number of the maximum layer.</param>
+        /// <returns>The number of the maximum offset.</returns>
         private int SetOffsets(Dictionary<SurfaceNode, NodeFormattingData> nodeData, List<SurfaceNode> endNodes, int maxLayer)
         {
             int maxOffset = 0;
@@ -287,10 +347,10 @@ namespace FlaxEditor.Surface
         /// Align given nodes on a graph using the given alignment type.
         /// Ignores any potential overlap.
         /// </summary>
-        /// <param name="nodes">List of nodes</param>
-        /// <param name="alignmentType">Alignemnt type</param>
+        /// <param name="nodes">List of nodes.</param>
+        /// <param name="alignmentType">Alignemnt type.</param>
         public void AlignNodes(List<SurfaceNode> nodes, NodeAlignmentType alignmentType)
-        {
+        {  
             if(nodes.Count <= 1)
                 return;
 
@@ -328,8 +388,8 @@ namespace FlaxEditor.Surface
         /// <summary>
         /// Distribute the given nodes as equally as possible inside the bounding box, if no fit can be done it will use a default pad of 10 pixels between nodes.
         /// </summary>
-        /// <param name="nodes">List of nodes</param>
-        /// <param name="vertically">If false will be done horizontally, if true will be done vertically</param>
+        /// <param name="nodes">List of nodes.</param>
+        /// <param name="vertically">If false will be done horizontally, if true will be done vertically.</param>
         public void DistributeNodes(List<SurfaceNode> nodes, bool vertically)
         {
             if(nodes.Count <= 1)
