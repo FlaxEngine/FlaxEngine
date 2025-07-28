@@ -400,6 +400,11 @@ void Win32Platform::Sleep(int32 milliseconds)
     WaitForSingleObject(timer, INFINITE);
 }
 
+void Win32Platform::Yield()
+{
+    SwitchToThread();
+}
+
 double Win32Platform::GetTimeSeconds()
 {
     LARGE_INTEGER counter;

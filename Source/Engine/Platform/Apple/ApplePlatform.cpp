@@ -293,6 +293,11 @@ void ApplePlatform::Sleep(int32 milliseconds)
     usleep(milliseconds * 1000);
 }
 
+void ApplePlatform::Yield()
+{
+    pthread_yield();
+}
+
 double ApplePlatform::GetTimeSeconds()
 {
     return SecondsPerCycle * mach_absolute_time();

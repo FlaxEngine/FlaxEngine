@@ -1836,6 +1836,11 @@ void LinuxPlatform::Sleep(int32 milliseconds)
     usleep(milliseconds * 1000);
 }
 
+void LinuxPlatform::Yield()
+{
+    pthread_yield();
+}
+
 double LinuxPlatform::GetTimeSeconds()
 {
     struct timespec ts;

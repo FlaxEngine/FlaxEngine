@@ -436,10 +436,15 @@ public:
     static void SetThreadAffinityMask(uint64 affinityMask) = delete;
 
     /// <summary>
-    /// Suspends the execution of the current thread until the time-out interval elapses
+    /// Suspends the execution of the current thread until the time-out interval elapses.
     /// </summary>
     /// <param name="milliseconds">The time interval for which execution is to be suspended, in milliseconds.</param>
     static void Sleep(int32 milliseconds) = delete;
+
+    /// <summary>
+    /// Yields the execution of the current thread to another thread that is ready to run on the current processor.
+    /// </summary>
+    static void Yield() = delete;
 
 public:
     /// <summary>

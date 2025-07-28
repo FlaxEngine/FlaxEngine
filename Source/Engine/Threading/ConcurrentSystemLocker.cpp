@@ -39,7 +39,7 @@ RETRY:
     {
         // Someone else is doing opposite operation so wait for it's end
         // TODO: use ConditionVariable+CriticalSection to prevent active-waiting
-        Platform::Sleep(0);
+        Platform::Yield();
         goto RETRY;
     }
 
@@ -47,7 +47,7 @@ RETRY:
     if (exclusively && Platform::AtomicRead(thisCounter) != 0)
     {
         // Someone else is doing opposite operation so wait for it's end
-        Platform::Sleep(0);
+        Platform::Yield();
         goto RETRY;
     }
 
