@@ -26,6 +26,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/WriteStream.h"
+#include "Engine/Threading/JobSystem.h"
 #include <ThirdParty/PhysX/PxPhysicsAPI.h>
 #include <ThirdParty/PhysX/PxQueryFiltering.h>
 #include <ThirdParty/PhysX/extensions/PxFixedJoint.h>
@@ -45,7 +46,6 @@
 #endif
 #if WITH_CLOTH
 #include "Engine/Physics/Actors/Cloth.h"
-#include "Engine/Threading/JobSystem.h"
 #include "Engine/Threading/Threading.h"
 #include <ThirdParty/NvCloth/Callbacks.h>
 #include <ThirdParty/NvCloth/Factory.h>
