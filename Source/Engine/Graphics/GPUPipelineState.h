@@ -172,11 +172,14 @@ protected:
     GPUPipelineState();
 
 public:
-#if BUILD_DEBUG
+#if !BUILD_RELEASE
     /// <summary>
     /// The description of the pipeline state cached on creation in debug builds. Can be used to help with rendering crashes or issues and validation.
     /// </summary>
     Description DebugDesc;
+
+    typedef Array<char, InlinedAllocation<200>> DebugName;
+    void GetDebugName(DebugName& name) const;
 #endif
 #if USE_EDITOR
     int32 Complexity;

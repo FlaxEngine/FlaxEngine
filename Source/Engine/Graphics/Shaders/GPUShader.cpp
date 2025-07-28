@@ -25,6 +25,25 @@ void GPUShaderProgram::Init(const GPUShaderProgramInitializer& initializer)
 #endif
 }
 
+#if !BUILD_RELEASE
+
+void GPUShaderProgram::GetDebugName(DebugName& name) const
+{
+    StringView ownerName = StringUtils::GetFileNameWithoutExtension(_owner->GetName());
+    name.AddUninitialized(ownerName.Length() + _name.Length() + 2);
+    char* dst = name.Get();
+    for (int32 i = 0; i < ownerName.Length(); i++)
+        dst[i] = (char)ownerName.Get()[i];
+    dst += ownerName.Length();
+    *dst = ':';
+    dst++;
+    for (int32 i = 0; i < _name.Length(); i++)
+        dst[i] = _name.Get()[i];
+    dst[_name.Length()] = 0;
+}
+
+#endif
+
 GPUShader::GPUShader()
     : GPUResource(SpawnParams(Guid::New(), TypeInitializer))
 {

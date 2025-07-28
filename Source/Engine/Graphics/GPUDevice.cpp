@@ -75,10 +75,39 @@ GPUPipelineState::GPUPipelineState()
 {
 }
 
+#if !BUILD_RELEASE
+
+void GPUPipelineState::GetDebugName(DebugName& name) const
+{
+#define GET_NAME(e) \
+    if (DebugDesc.e) \
+    { \
+        GPUShaderProgram::DebugName n; \
+        DebugDesc.e->GetDebugName(n); \
+        name.Add(n.Get(), n.Count() - 1); \
+        name.Add('+'); \
+    }
+    GET_NAME(VS);
+#if GPU_ALLOW_TESSELLATION_SHADERS
+    GET_NAME(HS);
+    GET_NAME(DS);
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
+    GET_NAME(GS);
+#endif
+    GET_NAME(PS);
+#undef GET_NAME
+    if (name.Count() != 0 && name[name.Count() - 1] == '+')
+        name.RemoveLast();
+    name.Add('\0');
+}
+
+#endif
+
 bool GPUPipelineState::Init(const Description& desc)
 {
-    // Cache description in debug builds
-#if BUILD_DEBUG
+    // Cache description in development builds
+#if !BUILD_RELEASE
     DebugDesc = desc;
 #endif
 
