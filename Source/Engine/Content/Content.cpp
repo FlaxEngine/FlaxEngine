@@ -1107,11 +1107,21 @@ void Content::WaitForTask(ContentLoadTask* loadingTask, double timeoutInMillisec
 
         const double timeoutInSeconds = timeoutInMilliseconds * 0.001;
         const double startTime = Platform::GetTimeSeconds();
+        int32 loopCounter = 0;
         Task* task = loadingTask;
         Array<ContentLoadTask*, InlinedAllocation<64>> localQueue;
 #define CHECK_CONDITIONS() (!Engine::ShouldExit() && (timeoutInSeconds <= 0.0 || Platform::GetTimeSeconds() - startTime < timeoutInSeconds))
         do
         {
+            // Give opportunity for other threads to use the current core
+            if (loopCounter == 0)
+                ; // First run is fast
+            else if (loopCounter < 10)
+                Platform::Yield();
+            else
+                Platform::Sleep(1);
+            loopCounter++;
+
             // Try to execute content tasks
             while (task->IsQueued() && CHECK_CONDITIONS())
             {
