@@ -19,6 +19,7 @@
 
 void AssetsCache::Init()
 {
+    PROFILE_CPU();
     Entry e;
     int32 count;
     Stopwatch stopwatch;

@@ -206,12 +206,12 @@ bool ScriptingService::Init()
     // Load assemblies
     if (Scripting::Load())
     {
-        LOG(Fatal, "Scripting Engine initialization failed.");
+        LOG(Fatal, "Scripting initialization failed.");
         return true;
     }
 
     stopwatch.Stop();
-    LOG(Info, "Scripting Engine initializated! (time: {0}ms)", stopwatch.GetMilliseconds());
+    LOG(Info, "Scripting initializated! (time: {0}ms)", stopwatch.GetMilliseconds());
     return false;
 }
 

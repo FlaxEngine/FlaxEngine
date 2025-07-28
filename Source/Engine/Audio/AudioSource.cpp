@@ -120,6 +120,7 @@ void AudioSource::Play()
     auto state = _state;
     if (state == States::Playing)
         return;
+    PROFILE_CPU();
     if (Clip == nullptr || Clip->WaitForLoaded())
     {
         LOG(Warning, "Cannot play audio source without a clip ({0})", GetNamePath());
@@ -188,6 +189,7 @@ void AudioSource::Stop()
 {
     if (_state == States::Stopped)
         return;
+    PROFILE_CPU();
 
     _state = States::Stopped;
     _isActuallyPlayingSth = false;
@@ -386,6 +388,7 @@ bool AudioSource::IntersectsItself(const Ray& ray, Real& distance, Vector3& norm
 void AudioSource::Update()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Audio);
 
     // Update the velocity
     const Vector3 pos = GetPosition();
