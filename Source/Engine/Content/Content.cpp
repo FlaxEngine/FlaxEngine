@@ -129,17 +129,17 @@ bool ContentService::Init()
     LOG(Info, "Creating {0} content loading threads...", count);
     MainLoadThread = New<LoadingThread>();
     ThisLoadThread = MainLoadThread;
-    LoadThreads.EnsureCapacity(count);
+    LoadThreads.Resize(count);
     for (int32 i = 0; i < count; i++)
     {
         auto thread = New<LoadingThread>();
+        LoadThreads[i] = thread;
         if (thread->Start(String::Format(TEXT("Load Thread {0}"), i)))
         {
             LOG(Fatal, "Cannot spawn content thread {0}/{1}", i, count);
             Delete(thread);
             return true;
         }
-        LoadThreads.Add(thread);
     }
 
     return false;
@@ -338,6 +338,9 @@ int32 LoadingThread::Run()
         LOG(Error, "Failed to init COM for WIC texture importing! Result: {0:x}", static_cast<uint32>(result));
         return -1;
     }
+#endif
+#ifdef LOADING_THREAD_AFFINITY_MASK
+    Platform::SetThreadAffinityMask(LOADING_THREAD_AFFINITY_MASK(LoadThreads.Find(this)));
 #endif
 
     ContentLoadTask* task;
