@@ -33,8 +33,8 @@ void* GPUBufferDX11::Map(GPUResourceMapMode mode)
     {
     case GPUResourceMapMode::Read:
         mapType = D3D11_MAP_READ;
-        if (_desc.Usage == GPUResourceUsage::StagingReadback && isMainThread)
-            mapFlags = D3D11_MAP_FLAG_DO_NOT_WAIT;
+        //if (_desc.Usage == GPUResourceUsage::StagingReadback && isMainThread)
+        //    mapFlags = D3D11_MAP_FLAG_DO_NOT_WAIT;
         break;
     case GPUResourceMapMode::Write:
         mapType = D3D11_MAP_WRITE_DISCARD;
