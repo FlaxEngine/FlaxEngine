@@ -60,6 +60,8 @@ private:
     static void SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderDirectionalLightData& light, ShadowAtlasLight& atlasLight);
     static void SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderPointLightData& light, ShadowAtlasLight& atlasLight);
     static void SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderSpotLightData& light, ShadowAtlasLight& atlasLight);
+    void ClearShadowMapTile(GPUContext* context, GPUConstantBuffer* quadShaderCB, struct QuadShaderData& quadShaderData) const;
+    void CopyShadowMapTile(GPUContext* context, GPUConstantBuffer* quadShaderCB, struct QuadShaderData& quadShaderData, const GPUTexture* srcShadowMap, const struct ShadowsAtlasRectTile* srcTile) const;
 
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
