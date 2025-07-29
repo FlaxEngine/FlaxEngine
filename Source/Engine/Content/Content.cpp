@@ -521,7 +521,7 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
 #endif
 }
 
-String Content::GetEditorAssetPath(const Guid& id)
+StringView Content::GetEditorAssetPath(const Guid& id)
 {
     return Cache.GetEditorAssetPath(id);
 }
@@ -749,6 +749,7 @@ void Content::DeleteAsset(const StringView& path)
         return;
     }
 
+#if USE_EDITOR
     ScopeLock locker(AssetsLocker);
 
     // Remove from registry
@@ -765,6 +766,7 @@ void Content::DeleteAsset(const StringView& path)
 
     // Delete file
     deleteFileSafety(path, info.ID);
+#endif
 }
 
 void Content::deleteFileSafety(const StringView& path, const Guid& id)

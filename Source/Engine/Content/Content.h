@@ -75,7 +75,7 @@ public:
     /// </summary>
     /// <param name="id">The asset id.</param>
     /// <returns>The asset path, or empty if failed to find.</returns>
-    API_FUNCTION() static String GetEditorAssetPath(const Guid& id);
+    API_FUNCTION() static StringView GetEditorAssetPath(const Guid& id);
 
     /// <summary>
     /// Finds all the asset IDs. Uses asset registry.

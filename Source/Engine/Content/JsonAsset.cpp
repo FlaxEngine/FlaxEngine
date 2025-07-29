@@ -91,7 +91,7 @@ void JsonAssetBase::OnGetData(rapidjson_flax::StringBuffer& buffer) const
     Data->Accept(writerObj.GetWriter());
 }
 
-const String& JsonAssetBase::GetPath() const
+StringView JsonAssetBase::GetPath() const
 {
 #if USE_EDITOR
     return _path;

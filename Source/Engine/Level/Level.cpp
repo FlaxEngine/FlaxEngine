@@ -134,7 +134,7 @@ public:
     struct Args
     {
         rapidjson_flax::Value& Data;
-        const String* AssetPath;
+        StringView AssetPath;
         int32 EngineBuild;
         float TimeBudget;
     };
@@ -222,7 +222,7 @@ namespace LevelImpl
     SceneResult loadScene(SceneLoader& loader, JsonAsset* sceneAsset, float* timeBudget = nullptr);
     SceneResult loadScene(SceneLoader& loader, const BytesContainer& sceneData, Scene** outScene = nullptr, float* timeBudget = nullptr);
     SceneResult loadScene(SceneLoader& loader, rapidjson_flax::Document& document, Scene** outScene = nullptr, float* timeBudget = nullptr);
-    SceneResult loadScene(SceneLoader& loader, rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene = nullptr, const String* assetPath = nullptr, float* timeBudget = nullptr);
+    SceneResult loadScene(SceneLoader& loader, rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene = nullptr, StringView assetPath = StringView(), float* timeBudget = nullptr);
     bool unloadScene(Scene* scene);
     bool unloadScenes();
     bool saveScene(Scene* scene);
@@ -959,7 +959,7 @@ SceneResult LevelImpl::loadScene(SceneLoader& loader, JsonAsset* sceneAsset, flo
         return SceneResult::Failed;
     }
 
-    return loadScene(loader, *sceneAsset->Data, sceneAsset->DataEngineBuild, nullptr, &sceneAsset->GetPath(), timeBudget);
+    return loadScene(loader, *sceneAsset->Data, sceneAsset->DataEngineBuild, nullptr, sceneAsset->GetPath(), timeBudget);
 }
 
 SceneResult LevelImpl::loadScene(SceneLoader& loader, const BytesContainer& sceneData, Scene** outScene, float* timeBudget)
@@ -999,7 +999,7 @@ SceneResult LevelImpl::loadScene(SceneLoader& loader, rapidjson_flax::Document& 
     return loadScene(loader, data->value, saveEngineBuild, outScene, nullptr, timeBudget);
 }
 
-SceneResult LevelImpl::loadScene(SceneLoader& loader, rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene, const String* assetPath, float* timeBudget)
+SceneResult LevelImpl::loadScene(SceneLoader& loader, rapidjson_flax::Value& data, int32 engineBuild, Scene** outScene, StringView assetPath, float* timeBudget)
 {
     PROFILE_CPU_NAMED("Level.LoadScene");
     PROFILE_MEM(Level);
@@ -1401,12 +1401,12 @@ SceneResult SceneLoader::OnEnd(Args& args)
             LOG(Error, "Failed to resave asset '{}'", prefab->GetPath());
         }
     }
-    if (ContentDeprecated::Clear() && args.AssetPath)
+    if (ContentDeprecated::Clear() && args.AssetPath != StringView())
     {
-        LOG(Info, "Resaving asset '{}' that uses deprecated data format", *args.AssetPath);
-        if (saveScene(Scene, *args.AssetPath))
+        LOG(Info, "Resaving asset '{}' that uses deprecated data format", args.AssetPath);
+        if (saveScene(Scene, args.AssetPath))
         {
-            LOG(Error, "Failed to resave asset '{}'", *args.AssetPath);
+            LOG(Error, "Failed to resave asset '{}'", args.AssetPath);
         }
     }
 #endif

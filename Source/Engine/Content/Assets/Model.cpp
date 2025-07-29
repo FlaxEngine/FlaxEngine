@@ -619,7 +619,7 @@ Asset::LoadResult Model::load()
             {
                 String name;
 #if !BUILD_RELEASE
-                name = GetPath() + TEXT(".SDF");
+                name = String(GetPath()) + TEXT(".SDF");
 #endif
                 SDF.Texture = GPUDevice::Instance->CreateTexture(name);
             }
