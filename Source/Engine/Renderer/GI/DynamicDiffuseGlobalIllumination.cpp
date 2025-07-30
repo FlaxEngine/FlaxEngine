@@ -649,7 +649,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         // Update stats
         {
             StatsData stats;
-            if (void* mapped = ddgiData.StatsRead->Map(GPUResourceMapMode::Read))
+            if (void* mapped = ddgiData.StatsRead->Map(GPUResourceMapMode::Read | GPUResourceMapMode::NoWait))
             {
                 Platform::MemoryCopy(&stats, mapped, sizeof(stats));
                 ddgiData.StatsRead->Unmap();
