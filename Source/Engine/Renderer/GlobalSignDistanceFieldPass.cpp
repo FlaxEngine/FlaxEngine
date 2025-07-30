@@ -237,6 +237,7 @@ public:
             OnSDFTextureDeleted(texture);
 
             // Clear static chunks cache
+            ConcurrentSystemLocker::WriteScope lock(Locker, true);
             for (auto& cascade : Cascades)
                 cascade.StaticChunks.Clear();
         }
@@ -581,6 +582,7 @@ void GlobalSignDistanceFieldCustomBuffer::DrawCascadeJob(int32 cascadeIndex)
     if (!cascade.Dirty)
         return;
     PROFILE_CPU();
+    ConcurrentSystemLocker::ReadScope lock(Locker);
     CurrentCascade.Set(&cascade);
     DrawCascadeActors(cascade);
     UpdateCascadeChunks(cascade);
@@ -720,7 +722,6 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     }
     sdfData.LastFrameUsed = currentFrame;
     PROFILE_GPU_CPU("Global SDF");
-    ConcurrentSystemLocker::WriteScope lock(sdfData.Locker);
 
     // Setup options
     int32 resolution, cascadesCount, resolutionMip;
@@ -796,6 +797,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     Current = &sdfData;
     sdfData.StartDrawing(renderContext, false, reset); // (ignored if not started earlier this frame)
     sdfData.WaitForDrawing();
+    ConcurrentSystemLocker::WriteScope lock(sdfData.Locker);
 
     // Rasterize world geometry into Global SDF
     bool anyDraw = false;
