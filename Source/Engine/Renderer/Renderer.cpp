@@ -370,7 +370,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
             setup.UseMotionVectors =
                     (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::MotionBlur) && motionBlurSettings.Enabled && motionBlurSettings.Scale > ZeroTolerance) ||
                     renderContext.View.Mode == ViewMode::MotionVectors ||
-                    (ssrSettings.TemporalEffect && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::SSR)) ||
+                    (ssrSettings.Intensity > ZeroTolerance && ssrSettings.TemporalEffect && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::SSR)) ||
                     renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing;
         }
         setup.UseTemporalAAJitter = aaMode == AntialiasingMode::TemporalAntialiasing;
