@@ -750,7 +750,7 @@ void AndroidPlatform::Sleep(int32 milliseconds)
 
 void AndroidPlatform::Yield()
 {
-    pthread_yield();
+    sched_yield();
 }
 
 double AndroidPlatform::GetTimeSeconds()
