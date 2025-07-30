@@ -52,6 +52,9 @@ bool SupportsDebugUtilsExt = false;
 #if VK_EXT_debug_utils
 VkDebugUtilsMessengerEXT Messenger = VK_NULL_HANDLE;
 #endif
+#if PLATFORM_SWITCH
+VkInstance SwitchVkInstance = VK_NULL_HANDLE;
+#endif
 
 bool SupportsDebugCallbackExt = false;
 VkDebugReportCallbackEXT MsgCallback = VK_NULL_HANDLE;
@@ -1241,7 +1244,9 @@ GPUDevice* GPUDeviceVulkan::Create()
         return nullptr;
     }
 
-#if !PLATFORM_SWITCH
+#if PLATFORM_SWITCH
+    SwitchVkInstance = Instance;
+#else
     // Setup bindings
     volkLoadInstance(Instance);
 #endif

@@ -111,7 +111,7 @@ GPUContextVulkan::GPUContextVulkan(GPUDeviceVulkan* device, QueueVulkan* queue)
 #endif
 
 #if GPU_ENABLE_TRACY
-#if VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
+#if VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset && !PLATFORM_SWITCH
     // Use calibrated timestamps extension
     if (vkResetQueryPoolEXT && vkGetCalibratedTimestampsEXT)
     {
@@ -120,7 +120,7 @@ GPUContextVulkan::GPUContextVulkan(GPUDeviceVulkan* device, QueueVulkan* queue)
     else
 #endif
     {
-        // Use immediate command buffer for Tracy initialization
+        // Use immediate command buffer for timestamps calibration
         VkCommandBufferAllocateInfo cmdInfo;
         RenderToolsVulkan::ZeroStruct(cmdInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
         cmdInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -1021,9 +1021,7 @@ void GPUContextVulkan::ResetCB()
 void GPUContextVulkan::BindCB(int32 slot, GPUConstantBuffer* cb)
 {
     ASSERT(slot >= 0 && slot < GPU_MAX_CB_BINDED);
-
     const auto cbVulkan = static_cast<GPUConstantBufferVulkan*>(cb);
-
     if (_cbHandles[slot] != cbVulkan)
     {
         _cbDirtyFlag = true;
@@ -1110,7 +1108,6 @@ void GPUContextVulkan::UpdateCB(GPUConstantBuffer* cb, const void* data)
     const uint32 size = cbVulkan->GetSize();
     if (size == 0)
         return;
-    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
 
     // Allocate bytes for the buffer
     const auto allocation = _device->UniformBufferUploader->Allocate(size, 0, this);
