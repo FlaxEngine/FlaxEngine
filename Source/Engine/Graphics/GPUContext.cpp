@@ -69,6 +69,10 @@ void GPUContext::FrameEnd()
     FlushState();
 }
 
+void GPUContext::OnPresent()
+{
+}
+
 void GPUContext::BindSR(int32 slot, GPUTexture* t)
 {
     ASSERT_LOW_LAYER(t == nullptr || t->ResidentMipLevels() == 0 || t->IsShaderResource());

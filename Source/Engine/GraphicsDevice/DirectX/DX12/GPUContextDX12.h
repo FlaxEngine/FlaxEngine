@@ -6,6 +6,7 @@
 #include "IShaderResourceDX12.h"
 #include "DescriptorHeapDX12.h"
 #include "../IncludeDirectXHeaders.h"
+#include <ThirdParty/tracy/tracy/TracyD3D12.hpp>
 
 #if GRAPHICS_API_DIRECTX12
 
@@ -70,6 +71,12 @@ private:
     D3D12_RESOURCE_BARRIER _rbBuffer[DX12_RB_BUFFER_SIZE];
     GPUConstantBufferDX12* _cbHandles[GPU_MAX_CB_BINDED];
     GPUSamplerDX12* _samplers[GPU_MAX_SAMPLER_BINDED - GPU_STATIC_SAMPLERS_COUNT];
+
+#if COMPILE_WITH_PROFILER
+    void* _tracyContext;
+    struct TracyZone { byte Data[TracyD3D12ZoneSize]; };
+    Array<TracyZone, InlinedAllocation<32>> _tracyZones;
+#endif
 
 public:
 
@@ -154,6 +161,7 @@ public:
     // [GPUContext]
     void FrameBegin() override;
     void FrameEnd() override;
+    void OnPresent() override;
 #if GPU_ALLOW_PROFILE_EVENTS
     void EventBegin(const Char* name) override;
     void EventEnd() override;

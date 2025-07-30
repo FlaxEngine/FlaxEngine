@@ -99,10 +99,16 @@ GPUContextDX12::GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE ty
 #if GPU_ENABLE_RESOURCE_NAMING
     _commandList->SetName(TEXT("GPUContextDX12::CommandList"));
 #endif
+#if GPU_ENABLE_TRACY
+    _tracyContext = tracy::CreateD3D12Context(device->GetDevice(), _device->GetCommandQueue()->GetCommandQueue());
+#endif
 }
 
 GPUContextDX12::~GPUContextDX12()
 {
+#if GPU_ENABLE_TRACY
+    tracy::DestroyD3D12Context(_tracyContext);
+#endif
     DX_SAFE_RELEASE_CHECK(_commandList, 0);
 }
 
@@ -706,6 +712,15 @@ void GPUContextDX12::FrameEnd()
     FrameFenceValues[0] = Execute(false);
 }
 
+void GPUContextDX12::OnPresent()
+{
+    GPUContext::OnPresent();
+
+#if GPU_ENABLE_TRACY
+    tracy::CollectD3D12Context(_tracyContext);
+#endif
+}
+
 #if GPU_ALLOW_PROFILE_EVENTS
 
 void GPUContextDX12::EventBegin(const Char* name)
@@ -713,10 +728,22 @@ void GPUContextDX12::EventBegin(const Char* name)
 #if USE_PIX
     PIXBeginEvent(_commandList, 0, name);
 #endif
+
+#if GPU_ENABLE_TRACY
+    char buffer[60];
+    int32 bufferSize = StringUtils::Copy(buffer, name, sizeof(buffer));
+    auto& zone = _tracyZones.AddOne();
+    tracy::BeginD3D12ZoneScope(zone.Data, _tracyContext, _commandList, buffer, bufferSize);
+#endif
 }
 
 void GPUContextDX12::EventEnd()
 {
+#if GPU_ENABLE_TRACY
+    tracy::EndD3D12ZoneScope(_tracyZones.Last().Data);
+    _tracyZones.RemoveLast();
+#endif
+
 #if USE_PIX
     PIXEndEvent(_commandList);
 #endif

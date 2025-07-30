@@ -94,6 +94,9 @@ private:
 #if ENABLE_ASSERTION
     uint32 _handlesSizes[(int32)SpirvShaderResourceBindingType::MAX];
 #endif
+#if COMPILE_WITH_PROFILER
+    void* _tracyContext;
+#endif
 
     typedef Array<DescriptorPoolVulkan*> DescriptorPoolArray;
     Dictionary<uint32, DescriptorPoolArray> _descriptorPools;

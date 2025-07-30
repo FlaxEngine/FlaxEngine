@@ -424,6 +424,7 @@ GPUSwapChainVulkan::Status GPUSwapChainVulkan::Present(QueueVulkan* presentQueue
 {
     if (_currentImageIndex == -1)
         return Status::Ok;
+    PROFILE_CPU_NAMED("vkQueuePresentKHR");
 
     VkPresentInfoKHR presentInfo;
     RenderToolsVulkan::ZeroStruct(presentInfo, VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
@@ -506,7 +507,7 @@ int32 GPUSwapChainVulkan::TryPresent(Function<int32(GPUSwapChainVulkan*, void*)>
 
 int32 GPUSwapChainVulkan::AcquireNextImage(SemaphoreVulkan*& outSemaphore)
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("vkAcquireNextImageKHR");
     ASSERT(_swapChain && _backBuffers.HasItems());
 
     uint32 imageIndex = _currentImageIndex;
@@ -514,13 +515,7 @@ int32 GPUSwapChainVulkan::AcquireNextImage(SemaphoreVulkan*& outSemaphore)
     _semaphoreIndex = (_semaphoreIndex + 1) % _backBuffers.Count();
     const auto semaphore = _backBuffers[_semaphoreIndex].ImageAcquiredSemaphore;
 
-    const VkResult result = vkAcquireNextImageKHR(
-        _device->Device,
-        _swapChain,
-        UINT64_MAX,
-        semaphore->GetHandle(),
-        VK_NULL_HANDLE,
-        &imageIndex);
+    const VkResult result = vkAcquireNextImageKHR(_device->Device, _swapChain, UINT64_MAX, semaphore->GetHandle(), VK_NULL_HANDLE, &imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR)
     {
         _semaphoreIndex = prevSemaphoreIndex;

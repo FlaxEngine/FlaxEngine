@@ -65,10 +65,17 @@ GPUContextDX11::GPUContextDX11(GPUDeviceDX11* device, ID3D11DeviceContext* conte
     _maxUASlots = GPU_MAX_UA_BINDED;
     if (_device->GetRendererType() != RendererType::DirectX11)
         _maxUASlots = 1;
+
+#if GPU_ENABLE_TRACY
+    _tracyContext = tracy::CreateD3D11Context(device->GetDevice(), context);
+#endif
 }
 
 GPUContextDX11::~GPUContextDX11()
 {
+#if GPU_ENABLE_TRACY
+    tracy::DestroyD3D11Context(_tracyContext);
+#endif
 #if GPU_ALLOW_PROFILE_EVENTS
     SAFE_RELEASE(_userDefinedAnnotations);
 #endif
@@ -139,16 +146,35 @@ void GPUContextDX11::FrameBegin()
     _context->CSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
 }
 
+void GPUContextDX11::OnPresent()
+{
+    GPUContext::OnPresent();
+
+#if GPU_ENABLE_TRACY
+    tracy::CollectD3D11Context(_tracyContext);
+#endif
+}
+
 #if GPU_ALLOW_PROFILE_EVENTS
 
 void GPUContextDX11::EventBegin(const Char* name)
 {
     if (_userDefinedAnnotations)
         _userDefinedAnnotations->BeginEvent(name);
+
+#if GPU_ENABLE_TRACY
+    char buffer[60];
+    int32 bufferSize = StringUtils::Copy(buffer, name, sizeof(buffer));
+    tracy::BeginD3D11ZoneScope(_tracyZone, _tracyContext, buffer, bufferSize);
+#endif
 }
 
 void GPUContextDX11::EventEnd()
 {
+#if GPU_ENABLE_TRACY
+    tracy::EndD3D11ZoneScope(_tracyZone);
+#endif
+
     if (_userDefinedAnnotations)
         _userDefinedAnnotations->EndEvent();
 }

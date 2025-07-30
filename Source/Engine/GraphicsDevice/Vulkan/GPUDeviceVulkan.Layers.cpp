@@ -63,6 +63,10 @@ static const char* GDeviceExtensions[] =
 #if VK_KHR_sampler_mirror_clamp_to_edge
     VK_KHR_SAMPLER_MIRROR_CLAMP_TO_EDGE_EXTENSION_NAME,
 #endif
+#if GPU_ENABLE_TRACY && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
+    VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME,
+    VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME,
+#endif
     nullptr
 };
 

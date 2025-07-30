@@ -247,7 +247,6 @@ int32 Engine::Main(const Char* cmdLine)
         {
             OnDraw();
             Time::OnEndDraw();
-            FrameMark;
         }
     }
 
@@ -397,6 +396,11 @@ void Engine::OnLateUpdate()
 
 void Engine::OnDraw()
 {
+#if COMPILE_WITH_PROFILER
+    // Auto-enable GPU events when Tracy got connected
+    if (!ProfilerGPU::EventsEnabled && TracyIsConnected)
+        ProfilerGPU::EventsEnabled = true;
+#endif
     PROFILE_CPU_NAMED("Draw");
 
     // Begin frame rendering
@@ -411,6 +415,7 @@ void Engine::OnDraw()
     device->Draw();
 
     // End frame rendering
+    FrameMark;
 #if COMPILE_WITH_PROFILER
     ProfilerGPU::EndFrame();
 #endif

@@ -6,6 +6,7 @@
 #include "GPUDeviceDX11.h"
 #include "GPUPipelineStateDX11.h"
 #include "../IncludeDirectXHeaders.h"
+#include <ThirdParty/tracy/tracy/TracyD3D11.hpp>
 
 #if GRAPHICS_API_DIRECTX11
 
@@ -23,6 +24,10 @@ private:
     ID3D11DeviceContext* _context;
 #if GPU_ALLOW_PROFILE_EVENTS
     ID3DUserDefinedAnnotation* _userDefinedAnnotations;
+#endif
+#if COMPILE_WITH_PROFILER
+    void* _tracyContext;
+    byte _tracyZone[TracyD3D11ZoneSize];
 #endif
     int32 _maxUASlots;
 
@@ -110,6 +115,7 @@ public:
 
     // [GPUContext]
     void FrameBegin() override;
+    void OnPresent() override;
 #if GPU_ALLOW_PROFILE_EVENTS
     void EventBegin(const Char* name) override;
     void EventEnd() override;

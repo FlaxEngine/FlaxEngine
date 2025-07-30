@@ -148,6 +148,11 @@ public:
     /// </summary>
     virtual void FrameEnd();
 
+    /// <summary>
+    /// Called after performing final swapchain presentation and submitting all GPU commands.
+    /// </summary>
+    virtual void OnPresent();
+
 public:
 #if GPU_ALLOW_PROFILE_EVENTS
     /// <summary>

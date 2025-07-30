@@ -646,6 +646,7 @@ void GPUDevice::DrawEnd()
     const double presentEnd = Platform::GetTimeSeconds();
     ProfilerGPU::OnPresentTime((float)((presentEnd - presentStart) * 1000.0));
 #endif
+    GetMainContext()->OnPresent();
 
     _wasVSyncUsed = anyVSync;
     _isRendering = false;

@@ -351,3 +351,20 @@ TRACY_API void ___tracy_set_thread_name( const char* name ) { tracy::SetThreadNa
 #ifdef __cplusplus
 }
 #endif
+
+// Inset graphics integration (within Tracy module)
+#define TRACY_GPU_IMPL 1
+#if TRACY_GPU_D3D11
+#include <ThirdParty/tracy/tracy/TracyD3D11.hpp>
+static_assert(sizeof(tracy::D3D11ZoneScope) <= TracyD3D11ZoneSize, "Invalid zone size");
+#endif
+#if TRACY_GPU_D3D12
+#include <ThirdParty/tracy/tracy/TracyD3D12.hpp>
+static_assert(sizeof(tracy::D3D12ZoneScope) <= TracyD3D12ZoneSize, "Invalid zone size");
+#endif
+#if TRACY_GPU_VULKAN
+#define GRAPHICS_API_VULKAN 1
+#include "Engine/GraphicsDevice/Vulkan/IncludeVulkanHeaders.h"
+#include <ThirdParty/tracy/tracy/TracyVulkan.hpp>
+static_assert(sizeof(tracy::VkCtxScope) <= TracyVulkanZoneSize, "Invalid zone size");
+#endif

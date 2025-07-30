@@ -4,6 +4,7 @@
 
 #include "GPUContextVulkan.h"
 #include "CmdBufferVulkan.h"
+#include "GPUAdapterVulkan.h"
 #include "RenderToolsVulkan.h"
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Rectangle.h"
@@ -15,6 +16,7 @@
 #include "Engine/Profiler/RenderStats.h"
 #include "GPUShaderProgramVulkan.h"
 #include "GPUTextureVulkan.h"
+#include "QueueVulkan.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Debug/Exceptions/NotImplementedException.h"
 
@@ -107,10 +109,37 @@ GPUContextVulkan::GPUContextVulkan(GPUDeviceVulkan* device, QueueVulkan* queue)
     _handlesSizes[(int32)SpirvShaderResourceBindingType::SRV] = GPU_MAX_SR_BINDED;
     _handlesSizes[(int32)SpirvShaderResourceBindingType::UAV] = GPU_MAX_UA_BINDED;
 #endif
+
+#if GPU_ENABLE_TRACY
+#if VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
+    // Use calibrated timestamps extension
+    if (vkResetQueryPoolEXT && vkGetCalibratedTimestampsEXT)
+    {
+        _tracyContext = tracy::CreateVkContext(_device->Adapter->Gpu, _device->Device, vkResetQueryPoolEXT, vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, vkGetCalibratedTimestampsEXT);
+    }
+    else
+#endif
+    {
+        // Use immediate command buffer for Tracy initialization
+        VkCommandBufferAllocateInfo cmdInfo;
+        RenderToolsVulkan::ZeroStruct(cmdInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+        cmdInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        cmdInfo.commandPool = _cmdBufferManager->GetHandle();
+        cmdInfo.commandBufferCount = 1;
+        VkCommandBuffer tracyCmdBuffer;
+        vkAllocateCommandBuffers(_device->Device, &cmdInfo, &tracyCmdBuffer);
+        _tracyContext = tracy::CreateVkContext(_device->Adapter->Gpu, _device->Device, _queue->GetHandle(), tracyCmdBuffer, vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, vkGetCalibratedTimestampsEXT);
+        vkQueueWaitIdle(_queue->GetHandle());
+        vkFreeCommandBuffers(_device->Device, _cmdBufferManager->GetHandle(), 1, &tracyCmdBuffer);
+    }
+#endif
 }
 
 GPUContextVulkan::~GPUContextVulkan()
 {
+#if GPU_ENABLE_TRACY
+    tracy::DestroyVkContext(_tracyContext);
+#endif
     for (int32 i = 0; i < _descriptorPools.Count(); i++)
     {
         _descriptorPools[i].ClearDelete();
@@ -679,15 +708,9 @@ void GPUContextVulkan::OnDrawCall()
     // Bind descriptors sets to the graphics pipeline
     if (pipelineState->HasDescriptorsPerStageMask)
     {
-        vkCmdBindDescriptorSets(
-            cmdBuffer->GetHandle(),
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            pipelineState->GetLayout()->Handle,
-            0,
-            pipelineState->DescriptorSetHandles.Count(),
-            pipelineState->DescriptorSetHandles.Get(),
-            pipelineState->DynamicOffsets.Count(),
-            pipelineState->DynamicOffsets.Get());
+        auto& descriptorSets = pipelineState->DescriptorSetHandles;
+        auto& dynamicOffsets = pipelineState->DynamicOffsets;
+        vkCmdBindDescriptorSets(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineState->GetLayout()->Handle, 0, descriptorSets.Count(), descriptorSets.Get(), dynamicOffsets.Count(), dynamicOffsets.Get());
     }
 
     _rtDirtyFlag = false;
@@ -748,6 +771,11 @@ void GPUContextVulkan::FrameEnd()
     // Execute any queued layout transitions that weren't already handled by the render pass
     FlushBarriers();
 
+#if GPU_ENABLE_TRACY
+    if (cmdBuffer)
+        tracy::CollectVkContext(_tracyContext, cmdBuffer->GetHandle());
+#endif
+
     // Base
     GPUContext::FrameEnd();
 }
@@ -757,7 +785,12 @@ void GPUContextVulkan::FrameEnd()
 void GPUContextVulkan::EventBegin(const Char* name)
 {
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    cmdBuffer->BeginEvent(name);
+#if COMPILE_WITH_PROFILER
+    void* tracyContext = _tracyContext;
+#else
+    void* tracyContext = nullptr;
+#endif
+    cmdBuffer->BeginEvent(name, tracyContext);
 }
 
 void GPUContextVulkan::EventEnd()
