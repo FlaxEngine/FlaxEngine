@@ -344,8 +344,8 @@ namespace FlaxEditor.Windows
                     // Update history buffer
                     if (_window._commandHistory == null)
                         _window._commandHistory = new List<string>();
-                    else if (_window._commandHistory.Count != 0 && _window._commandHistory.Last() == command)
-                        _window._commandHistory.RemoveAt(_window._commandHistory.Count - 1);
+                    else if (_window._commandHistory.Count != 0 && _window._commandHistory.Contains(command))
+                        _window._commandHistory.Remove(command);
                     _window._commandHistory.Add(command);
                     if (_window._commandHistory.Count > CommandHistoryLimit)
                         _window._commandHistory.RemoveAt(0);
