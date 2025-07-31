@@ -270,8 +270,8 @@ namespace Flax.Build.Bindings
                     {
                         if (string.Equals(token.Value, ApiTokens.Class, StringComparison.Ordinal))
                         {
-                            if (!(context.ScopeInfo is FileInfo))
-                                throw new NotImplementedException("TODO: add support for nested classes in scripting API");
+                            if (!(context.ScopeInfo is FileInfo) && !(context.ScopeInfo is ClassInfo))
+                                throw new Exception($"Not supported nested class at line {tokenizer.CurrentLine}. Classes can be nested only in other classes (or in global scope).");
 
                             var classInfo = ParseClass(ref context);
                             scopeType = classInfo;
