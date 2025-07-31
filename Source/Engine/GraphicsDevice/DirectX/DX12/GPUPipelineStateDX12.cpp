@@ -135,7 +135,8 @@ void GPUPipelineStateDX12::OnReleaseGPU()
 
 bool GPUPipelineStateDX12::Init(const Description& desc)
 {
-    ASSERT(!IsValid());
+    if (IsValid())
+        OnReleaseGPU();
 
     // Create description
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psDesc;

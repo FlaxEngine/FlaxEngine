@@ -355,7 +355,8 @@ bool GPUPipelineStateVulkan::IsValid() const
 
 bool GPUPipelineStateVulkan::Init(const Description& desc)
 {
-    ASSERT(!IsValid());
+    if (IsValid())
+        OnReleaseGPU();
 
     // Reset description
     RenderToolsVulkan::ZeroStruct(_desc, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
