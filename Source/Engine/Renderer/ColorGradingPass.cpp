@@ -5,6 +5,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPULimits.h"
+#include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTask.h"
 
@@ -36,12 +37,6 @@ GPU_CB_STRUCT(Data {
     float LutWeight;
     });
 
-ColorGradingPass::ColorGradingPass()
-    : _useVolumeTexture(false)
-    , _lutFormat()
-{
-}
-
 String ColorGradingPass::ToString() const
 {
     return TEXT("ColorGradingPass");
@@ -49,103 +44,87 @@ String ColorGradingPass::ToString() const
 
 bool ColorGradingPass::Init()
 {
-    // Detect if can use volume texture (3d) for a LUT (faster, requires geometry shader)
-    const auto device = GPUDevice::Instance;
-#if GPU_ALLOW_GEOMETRY_SHADERS
-    _useVolumeTexture = device->Limits.HasGeometryShaders && device->Limits.HasVolumeTextureRendering;
-#endif
-
-    // Pick a proper LUT pixels format
-    _lutFormat = PixelFormat::R10G10B10A2_UNorm;
-    const auto formatSupport = device->GetFormatFeatures(_lutFormat).Support;
-    FormatSupport formatSupportFlags = FormatSupport::ShaderSample | FormatSupport::RenderTarget;
-    if (_useVolumeTexture)
-        formatSupportFlags |= FormatSupport::Texture3D;
-    else
-        formatSupportFlags |= FormatSupport::Texture2D;
-    if (EnumHasNoneFlags(formatSupport, formatSupportFlags))
-    {
-        // Fallback to format that is supported on every washing machine
-        _lutFormat = PixelFormat::R8G8B8A8_UNorm;
-    }
-
-    // Create pipeline state
     _psLut.CreatePipelineStates();
-
-    // Load shader
     _shader = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/ColorGrading"));
     if (_shader == nullptr)
         return true;
 #if COMPILE_WITH_DEV_ENV
     _shader.Get()->OnReloading.Bind<ColorGradingPass, &ColorGradingPass::OnShaderReloading>(this);
 #endif
-
     return false;
 }
 
 bool ColorGradingPass::setupResources()
 {
-    // Wait for shader
     if (!_shader || !_shader->IsLoaded())
         return true;
     const auto shader = _shader->GetShader();
     CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
-    // Create pipeline stages
-    GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
-    if (!_psLut.IsValid())
-    {
-        StringAnsiView psName;
+    // Create pipeline stage
+    auto psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
+    StringAnsiView psName;
 #if GPU_ALLOW_GEOMETRY_SHADERS
-        if (_useVolumeTexture)
-        {
-            psDesc.VS = shader->GetVS("VS_WriteToSlice");
-            psDesc.GS = shader->GetGS("GS_WriteToSlice");
-            psName = "PS_Lut3D";
-        }
-        else
-#endif
-        {
-            psName = "PS_Lut2D";
-        }
-        if (_psLut.Create(psDesc, shader, psName))
-            return true;
+    if (_use3D == 1)
+    {
+        psDesc.VS = shader->GetVS("VS_WriteToSlice");
+        psDesc.GS = shader->GetGS("GS_WriteToSlice");
+        psName = "PS_Lut3D";
     }
+    else
+#endif
+    {
+        psName = "PS_Lut2D";
+    }
+    if (_psLut.Create(psDesc, shader, psName))
+        return true;
 
     return false;
 }
 
 void ColorGradingPass::Dispose()
 {
-    // Base
     RendererPass::Dispose();
 
-    // Cleanup
     _psLut.Delete();
     _shader = nullptr;
 }
 
 GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
 {
+    // Check if can use volume texture (3D) for a LUT (faster on modern platforms, requires geometry shader)
+    const auto device = GPUDevice::Instance;
+    bool use3D = GPU_ALLOW_GEOMETRY_SHADERS && Graphics::PostProcessing::ColorGradingVolumeLUT;
+    use3D &= device->Limits.HasGeometryShaders && device->Limits.HasVolumeTextureRendering;
+    use3D &= !PLATFORM_SWITCH; // TODO: move this in future to platform-specific configs
+
+    // Rebuild PSO on change
+    if (_use3D != (int32)use3D)
+    {
+        invalidateResources();
+        _use3D = use3D;
+    }
+
     // Ensure to have valid data
     if (checkIfSkipPass())
         return nullptr;
-
     PROFILE_GPU_CPU("Color Grading LUT");
 
-    // For a 3D texture, the viewport is 16x16 (per slice), for a 2D texture, it's unwrapped to 256x16
-    const int32 LutSize = 32; // this must match value in shader (see ColorGrading.shader and PostProcessing.shader)
+    // Pick a proper LUT pixels format
+    auto lutFormat = PixelFormat::R10G10B10A2_UNorm;
+    const auto formatSupport = device->GetFormatFeatures(lutFormat).Support;
+    FormatSupport formatSupportFlags = FormatSupport::ShaderSample | FormatSupport::RenderTarget;
+    formatSupportFlags |= use3D ? FormatSupport::Texture3D : FormatSupport::Texture2D;
+    if (EnumHasNoneFlags(formatSupport, formatSupportFlags))
+        lutFormat = PixelFormat::R8G8B8A8_UNorm;
+
+    // For a 3D texture, the viewport is 32x32 (per slice), for a 2D texture, it's unwrapped to 1024x32
+    constexpr int32 lutSize = 32; // this must match value in shader (see ColorGrading.shader and PostProcessing.shader)
     GPUTextureDescription lutDesc;
-#if GPU_ALLOW_GEOMETRY_SHADERS
-    if (_useVolumeTexture)
-    {
-        lutDesc = GPUTextureDescription::New3D(LutSize, LutSize, LutSize, 1, _lutFormat);
-    }
+    if (use3D)
+        lutDesc = GPUTextureDescription::New3D(lutSize, lutSize, lutSize, 1, lutFormat);
     else
-#endif
-    {
-        lutDesc = GPUTextureDescription::New2D(LutSize * LutSize, LutSize, 1, _lutFormat);
-    }
+        lutDesc = GPUTextureDescription::New2D(lutSize * lutSize, lutSize, 1, lutFormat);
     const auto lut = RenderTargetPool::Get(lutDesc);
     RENDER_TARGET_POOL_SET_NAME(lut, "ColorGrading.LUT");
 
@@ -181,7 +160,6 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     data.LutWeight = useLut ? colorGrading.LutWeight : 0.0f;
 
     // Prepare
-    auto device = GPUDevice::Instance;
     auto context = device->GetMainContext();
     const auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
@@ -192,7 +170,7 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
 
     // Draw
 #if GPU_ALLOW_GEOMETRY_SHADERS
-    if (_useVolumeTexture)
+    if (use3D)
     {
         context->SetRenderTarget(lut->ViewVolume());
 
