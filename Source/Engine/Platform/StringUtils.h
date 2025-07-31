@@ -128,6 +128,9 @@ public:
     // Copies the string (count is maximum amount of characters to copy). Returns amount of copied elements (excluding null terminator character).
     static int32 Copy(char* dst, const Char* src, int32 count);
 
+    // Copies the string (count is maximum amount of characters to copy). Returns amount of copied elements (excluding null terminator character).
+    static int32 Copy(Char* dst, const char* src, int32 count);
+
     // Finds specific sub-string in the input string. Returns the first found position in the input string or nulll if failed.
     static const Char* Find(const Char* str, const Char* toFind);
 

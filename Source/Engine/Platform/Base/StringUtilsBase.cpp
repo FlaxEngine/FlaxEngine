@@ -28,6 +28,18 @@ int32 StringUtils::Copy(char* dst, const Char* src, int32 count)
     return i;
 }
 
+int32 StringUtils::Copy(Char* dst, const char* src, int32 count)
+{
+    int32 i = 0;
+    while (i < count && src[i])
+    {
+        dst[i] = (Char)src[i];
+        i++;
+    }
+    dst[i] = 0;
+    return i;
+}
+
 const Char* StringUtils::FindIgnoreCase(const Char* str, const Char* toFind)
 {
     if (toFind == nullptr || str == nullptr)
