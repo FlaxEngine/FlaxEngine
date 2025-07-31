@@ -43,7 +43,7 @@
 #endif
 
 GPUDeviceVulkan::OptionalVulkanDeviceExtensions GPUDeviceVulkan::OptionalDeviceExtensions;
-VkInstance GPUDeviceVulkan::Instance;
+VkInstance GPUDeviceVulkan::Instance = VK_NULL_HANDLE;
 Array<const char*> GPUDeviceVulkan::InstanceExtensions;
 Array<const char*> GPUDeviceVulkan::InstanceLayers;
 
@@ -51,9 +51,6 @@ bool SupportsDebugUtilsExt = false;
 #if VULKAN_USE_DEBUG_LAYER
 #if VK_EXT_debug_utils
 VkDebugUtilsMessengerEXT Messenger = VK_NULL_HANDLE;
-#endif
-#if PLATFORM_SWITCH
-VkInstance SwitchVkInstance = VK_NULL_HANDLE;
 #endif
 
 bool SupportsDebugCallbackExt = false;
@@ -1244,9 +1241,7 @@ GPUDevice* GPUDeviceVulkan::Create()
         return nullptr;
     }
 
-#if PLATFORM_SWITCH
-    SwitchVkInstance = Instance;
-#else
+#if !PLATFORM_SWITCH
     // Setup bindings
     volkLoadInstance(Instance);
 #endif
