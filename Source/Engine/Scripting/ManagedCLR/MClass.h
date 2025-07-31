@@ -91,7 +91,7 @@ public:
     /// </summary>
     FORCE_INLINE StringAnsiView GetNamespace() const
     {
-        return _name;
+        return _namespace;
     }
 
 #if USE_MONO
