@@ -235,6 +235,8 @@ namespace FlaxEditor.Windows
 
                 // Add items
                 ItemsListContextMenu.Item lastItem = null;
+                var itemFont = Style.Current.FontSmall;
+                var maxWidth = 0.0f;
                 foreach (var command in commands)
                 {
                     cm.AddItem(lastItem = new Item
@@ -252,6 +254,7 @@ namespace FlaxEditor.Windows
                         // Set command
                         Set(item.Name);
                     };
+                    maxWidth = Mathf.Max(maxWidth, itemFont.MeasureText(command).X);
                 }
                 cm.ItemClicked += item =>
                 {
@@ -265,6 +268,9 @@ namespace FlaxEditor.Windows
                 cm.Height = 220;
                 if (cm.Height > totalHeight)
                     cm.Height = totalHeight; // Limit popup height if list is small
+                maxWidth += 8.0f + ScrollBar.DefaultSize; // Margin
+                if (cm.Width < maxWidth)
+                    cm.Width = maxWidth;
                 if (searchText != null)
                 {
                     cm.SortItems();
