@@ -395,14 +395,14 @@ void AudioSource::Update()
         AudioBackend::Source::VelocityChanged(SourceID, _velocity);
     }
 
-    if (Math::NearEqual(GetTime(), _startTime) && _isActuallyPlayingSth && _startingToPlay)
-        ClipStarted();
-
     // Reset starting to play value once time is greater than zero
     if (_startingToPlay && GetTime() > 0.0f)
     {
         _startingToPlay = false;
     }
+
+    if (Math::NearEqual(GetTime(), _startTime) && _isActuallyPlayingSth && _startingToPlay)
+        ClipStarted();
 
     if (!UseStreaming() && Math::NearEqual(GetTime(), 0.0f) && _isActuallyPlayingSth && !_startingToPlay)
     {
