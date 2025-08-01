@@ -168,7 +168,7 @@ void AudioSource::Play()
     else
     {
         // Source was nt properly added to the Audio Backend
-        LOG(Warning, "Cannot play unitialized audio source.");
+        LOG(Warning, "Cannot play uninitialized audio source.");
     }
 }
 
@@ -395,6 +395,9 @@ void AudioSource::Update()
         AudioBackend::Source::VelocityChanged(SourceID, _velocity);
     }
 
+    if (Math::NearEqual(GetTime(), _startTime) && _isActuallyPlayingSth && _startingToPlay)
+        ClipStarted();
+
     // Reset starting to play value once time is greater than zero
     if (_startingToPlay && GetTime() > 0.0f)
     {
@@ -416,6 +419,7 @@ void AudioSource::Update()
             {
                 Stop();
             }
+            ClipFinished();
         }
     }
 
@@ -486,6 +490,7 @@ void AudioSource::Update()
                 {
                     Stop();
                 }
+                ClipFinished();
             }
             ASSERT(_streamingFirstChunk < clip->Buffers.Count());
 
@@ -582,4 +587,12 @@ void AudioSource::BeginPlay(SceneBeginData* data)
         if (GetStartTime() > 0)
             SetTime(GetStartTime());
     }
+}
+
+void AudioSource::EndPlay()
+{
+    Actor::EndPlay();
+
+    ClipStarted.UnbindAll();
+    ClipFinished.UnbindAll();
 }
