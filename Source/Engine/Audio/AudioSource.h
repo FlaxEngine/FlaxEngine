@@ -77,6 +77,16 @@ public:
     AssetReference<AudioClip> Clip;
 
     /// <summary>
+    /// Event fired when the audio clip starts.
+    /// </summary>
+    API_EVENT() Delegate<> ClipStarted;
+
+    /// <summary>
+    /// Event fired when the audio clip finishes.
+    /// </summary>
+    API_EVENT() Delegate<> ClipFinished;
+
+    /// <summary>
     /// Gets the velocity of the source. Determines pitch in relation to AudioListener's position. Only relevant for spatial (3D) sources.
     /// </summary>
     API_PROPERTY() FORCE_INLINE const Vector3& GetVelocity() const
@@ -326,4 +336,5 @@ protected:
     void OnDisable() override;
     void OnTransformChanged() override;
     void BeginPlay(SceneBeginData* data) override;
+    void EndPlay() override;
 };
