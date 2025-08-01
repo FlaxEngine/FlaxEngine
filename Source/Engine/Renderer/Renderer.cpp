@@ -624,7 +624,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         RENDER_TARGET_POOL_SET_NAME(tempBuffer, "TempBuffer");
         EyeAdaptationPass::Instance()->Render(renderContext, lightBuffer);
         PostProcessingPass::Instance()->Render(renderContext, lightBuffer, tempBuffer, colorGradingLUT);
-        RenderTargetPool::Release(colorGradingLUT);
         context->ResetRenderTarget();
         if (aaMode == AntialiasingMode::TemporalAntialiasing)
         {
@@ -745,7 +744,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Post-processing
     EyeAdaptationPass::Instance()->Render(renderContext, frameBuffer);
     PostProcessingPass::Instance()->Render(renderContext, frameBuffer, tempBuffer, colorGradingLUT);
-    RenderTargetPool::Release(colorGradingLUT);
     Swap(frameBuffer, tempBuffer);
 
     // Cleanup

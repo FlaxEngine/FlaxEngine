@@ -3,11 +3,13 @@
 #include "ColorGradingPass.h"
 #include "RenderList.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPULimits.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderBuffers.h"
 
 GPU_CB_STRUCT(Data {
     Float4 ColorSaturationShadows;
@@ -36,6 +38,21 @@ GPU_CB_STRUCT(Data {
     Float3 Dummy;
     float LutWeight;
     });
+
+// Custom render buffer for caching Color Grading LUT.
+class ColorGradingCustomBuffer : public RenderBuffers::CustomBuffer
+{
+public:
+    GPUTexture* LUT = nullptr;
+    Data CachedData;
+    ToneMappingMode Mode = ToneMappingMode::None;
+    Texture* LutTexture = nullptr;
+
+    ~ColorGradingCustomBuffer()
+    {
+        RenderTargetPool::Release(LUT);
+    }
+};
 
 String ColorGradingPass::ToString() const
 {
@@ -92,6 +109,8 @@ void ColorGradingPass::Dispose()
 
 GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
 {
+    PROFILE_CPU();
+
     // Check if can use volume texture (3D) for a LUT (faster on modern platforms, requires geometry shader)
     const auto device = GPUDevice::Instance;
     bool use3D = GPU_ALLOW_GEOMETRY_SHADERS && Graphics::PostProcessing::ColorGradingVolumeLUT;
@@ -108,7 +127,6 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     // Ensure to have valid data
     if (checkIfSkipPass())
         return nullptr;
-    PROFILE_GPU_CPU("Color Grading LUT");
 
     // Pick a proper LUT pixels format
     auto lutFormat = PixelFormat::R10G10B10A2_UNorm;
@@ -125,11 +143,24 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
         lutDesc = GPUTextureDescription::New3D(lutSize, lutSize, lutSize, 1, lutFormat);
     else
         lutDesc = GPUTextureDescription::New2D(lutSize * lutSize, lutSize, 1, lutFormat);
-    const auto lut = RenderTargetPool::Get(lutDesc);
-    RENDER_TARGET_POOL_SET_NAME(lut, "ColorGrading.LUT");
+
+    // Use existing texture or allocate a new one
+    auto& colorGradingBuffer = *renderContext.Buffers->GetCustomBuffer<ColorGradingCustomBuffer>(TEXT("ColorGrading"));
+    colorGradingBuffer.LastFrameUsed = Engine::FrameCount;
+    if (colorGradingBuffer.LUT && colorGradingBuffer.LUT->Width() != lutDesc.Width)
+    {
+        RenderTargetPool::Release(colorGradingBuffer.LUT);
+        colorGradingBuffer.LUT = nullptr;
+    }
+    if (!colorGradingBuffer.LUT)
+    {
+        colorGradingBuffer.LUT = RenderTargetPool::Get(lutDesc);
+        RENDER_TARGET_POOL_SET_NAME(colorGradingBuffer.LUT, "ColorGrading.LUT");
+    }
 
     // Prepare the parameters
     Data data;
+    data.Dummy = Float2::Zero;
     auto& toneMapping = renderContext.List->Settings.ToneMapping;
     auto& colorGrading = renderContext.List->Settings.ColorGrading;
     // White Balance
@@ -156,23 +187,35 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     data.ColorOffsetHighlights = colorGrading.ColorOffsetHighlights + colorGrading.ColorOffset;
     data.ColorCorrectionHighlightsMin = colorGrading.HighlightsMin;
     //
-    const bool useLut = colorGrading.LutTexture && colorGrading.LutTexture->IsLoaded() && colorGrading.LutTexture->GetResidentMipLevels() > 0 && colorGrading.LutWeight > ZeroTolerance;
+    Texture* lutTexture = colorGrading.LutTexture.Get();
+    const bool useLut = lutTexture && lutTexture->IsLoaded() && lutTexture->GetResidentMipLevels() > 0 && colorGrading.LutWeight > ZeroTolerance;
     data.LutWeight = useLut ? colorGrading.LutWeight : 0.0f;
 
-    // Prepare
+    // Check if LUT parameter hasn't been changed since the last time
+    if (Platform::MemoryCompare(&colorGradingBuffer.CachedData , &data, sizeof(Data)) == 0 &&
+        colorGradingBuffer.Mode == toneMapping.Mode &&
+        colorGradingBuffer.LutTexture == lutTexture)
+    {
+        // Resue existing texture
+        return colorGradingBuffer.LUT;
+    }
+    colorGradingBuffer.CachedData = data;
+    colorGradingBuffer.Mode = toneMapping.Mode;
+    colorGradingBuffer.LutTexture = lutTexture;
+
+    // Render LUT
+    PROFILE_GPU("Color Grading LUT");
     auto context = device->GetMainContext();
     const auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
     context->SetViewportAndScissors((float)lutDesc.Width, (float)lutDesc.Height);
     context->SetState(_psLut.Get((int32)toneMapping.Mode));
-    context->BindSR(0, useLut ? colorGrading.LutTexture->GetTexture() : nullptr);
-
-    // Draw
+    context->BindSR(0, useLut ? lutTexture->GetTexture() : nullptr);
 #if GPU_ALLOW_GEOMETRY_SHADERS
     if (use3D)
     {
-        context->SetRenderTarget(lut->ViewVolume());
+        context->SetRenderTarget(colorGradingBuffer.LUT->ViewVolume());
 
         // Render one fullscreen-triangle per slice intersecting the bounds
         const int32 numInstances = lutDesc.Depth;
@@ -181,10 +224,10 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     else
 #endif
     {
-        context->SetRenderTarget(lut->View());
+        context->SetRenderTarget(colorGradingBuffer.LUT->View());
         context->DrawFullscreenTriangle();
     }
     context->UnBindSR(0);
 
-    return lut;
+    return colorGradingBuffer.LUT;
 }
