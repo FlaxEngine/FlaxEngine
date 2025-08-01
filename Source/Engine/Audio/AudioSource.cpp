@@ -167,7 +167,7 @@ void AudioSource::Play()
     }
     else
     {
-        // Source was nt properly added to the Audio Backend
+        // Source was not properly added to the Audio Backend
         LOG(Warning, "Cannot play uninitialized audio source.");
     }
 }
