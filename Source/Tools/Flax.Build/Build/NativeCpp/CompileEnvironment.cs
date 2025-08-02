@@ -56,6 +56,16 @@ namespace Flax.Build.NativeCpp
         /// Undefined behavior (UB) detector.
         /// </summary>
         Undefined = 8,
+
+        /// <summary>
+        /// Thread stack memory checks.
+        /// </summary>
+        Stack = 16,
+
+        /// <summary>
+        /// Enables all available sanitizers for full compiler security.
+        /// </summary>
+        All = Address | Thread | Memory | Undefined | Stack,
     }
 
     /// <summary>
