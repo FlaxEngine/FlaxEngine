@@ -29,15 +29,7 @@ public class Profiler : EngineModule
         options.PublicDefinitions.Add("COMPILE_WITH_PROFILER");
 
         // Tracy profiling tools
-        switch (options.Platform.Target)
-        {
-        case TargetPlatform.Android:
-        case TargetPlatform.Linux:
-        case TargetPlatform.Windows:
-        case TargetPlatform.Switch:
-        case TargetPlatform.Mac:
+        if (tracy.Use(options))
             options.PublicDependencies.Add("tracy");
-            break;
-        }
     }
 }

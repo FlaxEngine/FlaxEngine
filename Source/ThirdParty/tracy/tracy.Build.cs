@@ -20,6 +20,26 @@ public class tracy : ThirdPartyModule
     /// </summary>
     public static bool GPU = true;
 
+    /// <summary>
+    /// Determinates whenever performance Tracy supports a given platform.
+    /// </summary>
+    /// <param name="options">The options.</param>
+    /// <returns>True if use profiler, otherwise false.</returns>
+    public static bool Use(BuildOptions options)
+    {
+        switch (options.Platform.Target)
+        {
+            case TargetPlatform.Android:
+            case TargetPlatform.Linux:
+            case TargetPlatform.Windows:
+            case TargetPlatform.Switch:
+            case TargetPlatform.Mac:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     /// <inheritdoc />
     public override void Init()
     {

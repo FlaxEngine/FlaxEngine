@@ -21,7 +21,7 @@ public abstract class GraphicsDeviceBaseModule : EngineModule
             options.PublicDefinitions.Add("GPU_ENABLE_DIAGNOSTICS");
         }
 
-        if (Profiler.Use(options) && tracy.GPU && true)
+        if (Profiler.Use(options) && tracy.Use(options) && tracy.GPU && true)
         {
             // Enables GPU profiling with Tracy
             options.PrivateDefinitions.Add("GPU_ENABLE_TRACY");
