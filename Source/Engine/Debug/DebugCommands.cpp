@@ -209,7 +209,7 @@ namespace
         *bufferPtr++ = '.';
         StringUtils::Copy(bufferPtr, itemName.Get(), itemName.Length());
         bufferPtr += itemName.Length();
-        *bufferPtr++ = 0;
+        *bufferPtr = 0;
 
         cmd.Name.Set(buffer.Get(), (int32)(bufferPtr - buffer.Get()));
     }
