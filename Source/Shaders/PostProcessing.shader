@@ -619,6 +619,7 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 	float4 color;
 
 	// Chromatic Abberation
+    BRANCH
 	if (ChromaticDistortion > 0)
 	{
 		const float MAX_DIST_PX = 24.0;

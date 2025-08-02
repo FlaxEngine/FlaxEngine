@@ -368,6 +368,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     // Check if no need to render reflection environment
     if (!useReflections || !(renderProbes || useSSR))
         return;
+    PROFILE_GPU_CPU("Reflections");
 
     // Setup data
     Data data;

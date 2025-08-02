@@ -176,6 +176,7 @@ void Sky::DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureV
     AtmosphereCache cache;
     if (!AtmospherePreCompute::GetCache(&cache))
         return;
+    PROFILE_GPU_CPU("Sky Fog");
     context->BindSR(4, cache.Transmittance);
     context->BindSR(5, cache.Irradiance);
     context->BindSR(6, cache.Inscatter->ViewVolume());

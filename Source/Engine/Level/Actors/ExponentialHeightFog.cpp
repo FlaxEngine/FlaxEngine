@@ -186,6 +186,7 @@ GPU_CB_STRUCT(Data {
 
 void ExponentialHeightFog::DrawFog(GPUContext* context, RenderContext& renderContext, GPUTextureView* output)
 {
+    PROFILE_GPU_CPU("Exponential Height Fog");
     auto integratedLightScattering = renderContext.Buffers->VolumetricFog;
     bool useVolumetricFog = integratedLightScattering != nullptr;
 
