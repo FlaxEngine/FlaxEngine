@@ -279,7 +279,7 @@ void Asset::OnDeleteObject()
 
     const bool wasMarkedToDelete = _deleteFileOnUnload != 0;
 #if USE_EDITOR
-    const String path = wasMarkedToDelete ? GetPath() : String::Empty;
+    const String path = wasMarkedToDelete ? GetPath() : StringView::Empty;
 #endif
     const Guid id = GetID();
 

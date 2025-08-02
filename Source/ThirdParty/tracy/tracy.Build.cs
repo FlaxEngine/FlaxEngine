@@ -78,7 +78,11 @@ public class tracy : ThirdPartyModule
             if (graphicsOptions.PrivateDependencies.Contains("GraphicsDeviceDX12"))
                 options.PrivateDefinitions.Add("TRACY_GPU_D3D12");
             if (graphicsOptions.PrivateDependencies.Contains("GraphicsDeviceVulkan"))
+            {
                 options.PrivateDefinitions.Add("TRACY_GPU_VULKAN");
+                if (VulkanSdk.Instance.TryGetIncludePath(options.Platform.Target, out var includesFolderPath))
+                    options.PrivateIncludePaths.Add(includesFolderPath);
+            }
         }
     }
 

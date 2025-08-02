@@ -467,7 +467,7 @@ void BinaryAsset::OnDeleteObject()
 StringView BinaryAsset::GetPath() const
 {
 #if USE_EDITOR
-    return Storage ? Storage->GetPath() : StringView::Empty;
+    return Storage ? StringView(Storage->GetPath()) : StringView::Empty;
 #else
     // In build all assets are packed into packages so use ID for original path lookup
     return Content::GetRegistry()->GetEditorAssetPath(_id);

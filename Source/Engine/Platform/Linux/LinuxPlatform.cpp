@@ -1838,7 +1838,7 @@ void LinuxPlatform::Sleep(int32 milliseconds)
 
 void LinuxPlatform::Yield()
 {
-    pthread_yield();
+    sched_yield();
 }
 
 double LinuxPlatform::GetTimeSeconds()
