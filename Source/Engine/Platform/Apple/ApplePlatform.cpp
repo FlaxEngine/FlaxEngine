@@ -295,7 +295,11 @@ void ApplePlatform::Sleep(int32 milliseconds)
 
 void ApplePlatform::Yield()
 {
-    pthread_yield();
+#if PLATFORM_ARCH_ARM64
+    __builtin_arm_yield();
+#else
+    _mm_pause();
+#endif
 }
 
 double ApplePlatform::GetTimeSeconds()

@@ -380,6 +380,7 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
 
     if (useBloom)
     {
+        PROFILE_GPU("Bloom");
         context->SetRenderTarget(bloomBuffer1->View(0, 0));
         context->SetViewportAndScissors((float)w2, (float)h2);
         context->BindSR(0, input->View());
@@ -440,6 +441,8 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     // Check if use lens flares
     if (useLensFlares)
     {
+        PROFILE_GPU("Lens Flares");
+
         // Prepare lens flares helper textures
         context->BindSR(5, GetCustomOrDefault(settings.LensFlares.LensStar, _defaultLensStar, TEXT("Engine/Textures/DefaultLensStarburst")));
         context->BindSR(6, GetCustomOrDefault(settings.LensFlares.LensColor, _defaultLensColor, TEXT("Engine/Textures/DefaultLensColor")));

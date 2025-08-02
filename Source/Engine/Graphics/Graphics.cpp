@@ -10,7 +10,9 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerGPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
+#if !USE_EDITOR
 #include "Engine/Render2D/Font.h"
+#endif
 
 bool Graphics::UseVSync = false;
 Quality Graphics::AAQuality = Quality::Medium;
@@ -39,12 +41,6 @@ extern GPUDevice* CreateGPUDeviceDX11();
 #endif
 #if GRAPHICS_API_DIRECTX12
 extern GPUDevice* CreateGPUDeviceDX12();
-#endif
-#if GRAPHICS_API_PS4
-extern GPUDevice* CreateGPUDevicePS4();
-#endif
-#if GRAPHICS_API_PS5
-extern GPUDevice* CreateGPUDevicePS5();
 #endif
 
 class GraphicsService : public EngineService
@@ -166,10 +162,12 @@ bool GraphicsService::Init()
             device = CreateGPUDeviceVulkan();
 #endif
 #if GRAPHICS_API_PS4
+        extern GPUDevice* CreateGPUDevicePS4();
         if (!device)
             device = CreateGPUDevicePS4();
 #endif
 #if GRAPHICS_API_PS5
+        extern GPUDevice* CreateGPUDevicePS5();
         if (!device)
             device = CreateGPUDevicePS5();
 #endif

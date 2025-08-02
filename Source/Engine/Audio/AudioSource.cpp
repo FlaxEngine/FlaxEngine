@@ -8,6 +8,7 @@
 #include "Engine/Engine/Time.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "AudioBackend.h"
 #include "Audio.h"
 

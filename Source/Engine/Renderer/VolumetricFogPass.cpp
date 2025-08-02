@@ -152,7 +152,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         break;
     case Quality::Ultra:
         _cache.GridPixelSize = 8;
-        _cache.GridSizeZ = 256;
+        _cache.GridSizeZ = 128;
         _cache.FogJitter = true;
         _cache.MissedHistorySamplesCount = 8;
         break;
