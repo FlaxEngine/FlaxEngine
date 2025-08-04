@@ -362,9 +362,10 @@ public:
         uint32 histogram[RADIXSORT_HISTOGRAM_SIZE];
         uint16 shift = 0;
         int32 pass = 0;
-        for (; pass < 6; pass++)
+        constexpr int32 passCount = sizeof(T) >= sizeof(uint64) ? 6 : 3;
+        for (; pass < passCount; pass++)
         {
-            Platform::MemoryClear(histogram, sizeof(uint32) * RADIXSORT_HISTOGRAM_SIZE);
+            Platform::MemoryClear(histogram, sizeof(histogram));
 
             bool sorted = true;
             T key = keys[0];
@@ -372,16 +373,14 @@ public:
             for (int32 i = 0; i < count; i++)
             {
                 key = keys[i];
-                const uint16 index = (key >> shift) & RADIXSORT_BIT_MASK;
+                const uint16 index = (key >> (T)shift) & RADIXSORT_BIT_MASK;
                 ++histogram[index];
                 sorted &= prevKey <= key;
                 prevKey = key;
             }
 
             if (sorted)
-            {
                 goto end;
-            }
 
             uint32 offset = 0;
             for (int32 i = 0; i < RADIXSORT_HISTOGRAM_SIZE; ++i)
@@ -394,7 +393,7 @@ public:
             for (int32 i = 0; i < count; i++)
             {
                 const T k = keys[i];
-                const uint16 index = (k >> shift) & RADIXSORT_BIT_MASK;
+                const uint16 index = (k >> (T)shift) & RADIXSORT_BIT_MASK;
                 const uint32 dest = histogram[index]++;
                 tempKeys[dest] = k;
                 tempValues[dest] = values[i];

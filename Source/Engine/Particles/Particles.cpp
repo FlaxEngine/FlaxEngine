@@ -4,7 +4,6 @@
 #include "ParticleEffect.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Core/Collections/Sorting.h"
-#include "Engine/Core/Collections/HashSet.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/Engine.h"
@@ -216,14 +215,17 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             {
             case ParticleSortMode::ViewDepth:
             {
+                const int32 positionOffset = emitter->Graph.GetPositionAttributeOffset();
+                if (positionOffset == -1)
+                    break;
                 const Matrix viewProjection = renderContext.View.ViewProjection();
-                byte* positionPtr = buffer->CPU.Buffer.Get() + emitter->Graph.GetPositionAttributeOffset();
+                const byte* positionPtr = buffer->CPU.Buffer.Get() + positionOffset;
                 if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
                 {
                     for (int32 i = 0; i < buffer->CPU.Count; i++)
                     {
                         // TODO: use SIMD
-                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey(Matrix::TransformPosition(viewProjection, Matrix::TransformPosition(drawCall.World, *(Float3*)positionPtr)).W) ^ sortKeyXor;
+                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey(Matrix::TransformPosition(viewProjection, Matrix::TransformPosition(drawCall.World, *(const Float3*)positionPtr)).W) ^ sortKeyXor;
                         positionPtr += stride;
                     }
                 }
@@ -231,7 +233,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                 {
                     for (int32 i = 0; i < buffer->CPU.Count; i++)
                     {
-                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey(Matrix::TransformPosition(viewProjection, *(Float3*)positionPtr).W) ^ sortKeyXor;
+                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey(Matrix::TransformPosition(viewProjection, *(const Float3*)positionPtr).W) ^ sortKeyXor;
                         positionPtr += stride;
                     }
                 }
@@ -239,14 +241,17 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             }
             case ParticleSortMode::ViewDistance:
             {
+                const int32 positionOffset = emitter->Graph.GetPositionAttributeOffset();
+                if (positionOffset == -1)
+                    break;
                 const Float3 viewPosition = renderContext.View.Position;
-                byte* positionPtr = buffer->CPU.Buffer.Get() + emitter->Graph.GetPositionAttributeOffset();
+                const byte* positionPtr = buffer->CPU.Buffer.Get() + positionOffset;
                 if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
                 {
                     for (int32 i = 0; i < buffer->CPU.Count; i++)
                     {
                         // TODO: use SIMD
-                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey((viewPosition - Float3::Transform(*(Float3*)positionPtr, drawCall.World)).LengthSquared()) ^ sortKeyXor;
+                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey((viewPosition - Float3::Transform(*(const Float3*)positionPtr, drawCall.World)).LengthSquared()) ^ sortKeyXor;
                         positionPtr += stride;
                     }
                 }
@@ -255,7 +260,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                     for (int32 i = 0; i < buffer->CPU.Count; i++)
                     {
                         // TODO: use SIMD
-                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey((viewPosition - *(Float3*)positionPtr).LengthSquared()) ^ sortKeyXor;
+                        sortedKeys[i] = RenderTools::ComputeDistanceSortKey((viewPosition - *(const Float3*)positionPtr).LengthSquared()) ^ sortKeyXor;
                         positionPtr += stride;
                     }
                 }
@@ -264,13 +269,16 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             case ParticleSortMode::CustomAscending:
             case ParticleSortMode::CustomDescending:
             {
-                int32 attributeIdx = module->Attributes[0];
+                const int32 attributeIdx = module->Attributes[0];
                 if (attributeIdx == -1)
                     break;
-                byte* attributePtr = buffer->CPU.Buffer.Get() + emitter->Graph.Layout.Attributes[attributeIdx].Offset;
+                const int32 attributeOffset = emitter->Graph.Layout.Attributes[attributeIdx].Offset;
+                if (attributeOffset == -1)
+                    break;
+                const byte* attributePtr = buffer->CPU.Buffer.Get() + attributeOffset;
                 for (int32 i = 0; i < buffer->CPU.Count; i++)
                 {
-                    sortedKeys[i] = RenderTools::ComputeDistanceSortKey(*(float*)attributePtr) ^ sortKeyXor;
+                    sortedKeys[i] = RenderTools::ComputeDistanceSortKey(*(const float*)attributePtr) ^ sortKeyXor;
                     attributePtr += stride;
                 }
                 break;
@@ -286,7 +294,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             {
                 ParticlesDrawCPU::SortedIndices.Resize(listSize);
                 sortedIndices = ParticlesDrawCPU::SortedIndices.Get();
-                for (int i = 0; i < listSize; i++)
+                for (int32 i = 0; i < listSize; i++)
                     sortedIndices[i] = i;
             }
 
