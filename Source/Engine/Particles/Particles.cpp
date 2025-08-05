@@ -178,7 +178,7 @@ void Particles::OnEffectDestroy(ParticleEffect* effect)
 #endif
 }
 
-typedef Array<int32, FixedAllocation<PARTICLE_EMITTER_MAX_MODULES>> RenderModulesIndices;
+typedef Array<uint8, FixedAllocation<PARTICLE_EMITTER_MAX_MODULES>> RenderModulesIndices;
 
 void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, ParticleEmitterInstance& emitterData, const RenderModulesIndices& renderModulesIndices, int8 sortOrder)
 {
@@ -1013,7 +1013,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
 
         // Check if need to render any module
         RenderModulesIndices renderModulesIndices;
-        for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.RenderModules.Count(); moduleIndex++)
+        for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.RenderModules.Count() && renderModulesIndices.Count() < PARTICLE_EMITTER_MAX_MODULES; moduleIndex++)
         {
             auto module = emitter->Graph.RenderModules[moduleIndex];
 
