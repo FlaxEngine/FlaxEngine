@@ -91,7 +91,7 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
         // Run in async via Job System
         Function<void(int32)> func;
         func.Bind<SceneRendering, &SceneRendering::DrawActorsJob>(this);
-        const uint64 waitLabel = JobSystem::Dispatch(func, JobSystem::GetThreadsCount());
+        const int64 waitLabel = JobSystem::Dispatch(func, JobSystem::GetThreadsCount());
         renderContextBatch.WaitLabels.Add(waitLabel);
     }
     else

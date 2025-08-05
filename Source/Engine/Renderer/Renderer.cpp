@@ -454,7 +454,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
         // Wait for async jobs to finish
         JobSystem::SetJobStartingOnDispatch(true);
-        for (const uint64 label : renderContextBatch.WaitLabels)
+        for (const int64 label : renderContextBatch.WaitLabels)
             JobSystem::Wait(label);
         renderContextBatch.WaitLabels.Clear();
 

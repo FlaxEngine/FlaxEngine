@@ -1233,7 +1233,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
         _renderContextBatch = &renderContextBatch;
         Function<void(int32)> func;
         func.Bind<Foliage, &Foliage::DrawFoliageJob>(this);
-        const uint64 waitLabel = JobSystem::Dispatch(func, FoliageTypes.Count());
+        const int64 waitLabel = JobSystem::Dispatch(func, FoliageTypes.Count());
         renderContextBatch.WaitLabels.Add(waitLabel);
         return;
     }
