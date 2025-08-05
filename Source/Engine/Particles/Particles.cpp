@@ -486,7 +486,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             const auto material = (MaterialBase*)module->Assets[0].Get();
             const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
             auto dp = drawModes & moduleDrawModes & material->GetDrawModes();
-            if (dp == DrawPass::None)
+            if (dp == DrawPass::None || SpriteRenderer.Init())
                 break;
             drawCall.Material = material;
 
@@ -895,18 +895,19 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         {
             const auto material = (MaterialBase*)module->Assets[0].Get();
             const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
+            drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
+            indirectDrawCallIndex++;
             auto dp = drawModes & moduleDrawModes & material->GetDrawModes();
+            if (dp == DrawPass::None || SpriteRenderer.Init())
+                break;
             drawCall.Material = material;
 
             // Submit draw call
             SpriteRenderer.SetupDrawCall(drawCall);
             drawCall.InstanceCount = 0;
             drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
-            drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
             if (dp != DrawPass::None)
                 renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false, sortOrder);
-            indirectDrawCallIndex++;
-
             break;
         }
         // Model Rendering
@@ -937,7 +938,6 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                     renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false, sortOrder);
                 indirectDrawCallIndex++;
             }
-
             break;
         }
         // Ribbon Rendering
@@ -963,7 +963,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
     // Setup
     auto& view = renderContext.View;
     const DrawPass drawModes = view.Pass & effect->DrawModes;
-    if (drawModes == DrawPass::None || SpriteRenderer.Init())
+    if (drawModes == DrawPass::None)
         return;
     PROFILE_MEM(Particles);
     ConcurrentSystemLocker::ReadScope systemScope(SystemLocker);
