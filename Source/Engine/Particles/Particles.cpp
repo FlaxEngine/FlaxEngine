@@ -783,8 +783,8 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
     int32 drawCalls = 0;
     for (int32 index = 0; index < renderModulesIndices.Count(); index++)
     {
-        int32 moduleIndex = renderModulesIndices[index];
-        auto module = emitter->Graph.RenderModules[moduleIndex];
+        int32 moduleIndex = renderModulesIndices.Get()[index];
+        auto module = emitter->Graph.RenderModules.Get()[moduleIndex];
         switch (module->TypeID)
         {
         // Sprite Rendering
@@ -832,76 +832,15 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
     // Ensure to have enough space for indirect draw arguments
     const uint32 minSize = drawCalls * sizeof(GPUDrawIndexedIndirectArgs);
     if (buffer->GPU.IndirectDrawArgsBuffer->GetSize() < minSize)
-    {
         buffer->GPU.IndirectDrawArgsBuffer->Init(GPUBufferDescription::Argument(minSize));
-    }
 
-    // Initialize indirect draw arguments contents (do it before drawing to reduce memory barriers amount when updating arguments buffer)
+    // Execute all rendering modules using indirect draw arguments
     int32 indirectDrawCallIndex = 0;
     for (int32 index = 0; index < renderModulesIndices.Count(); index++)
     {
-        int32 moduleIndex = renderModulesIndices[index];
-        auto module = emitter->Graph.RenderModules[moduleIndex];
-        switch (module->TypeID)
-        {
-        // Sprite Rendering
-        case 400:
-        {
-            GPUDrawIndexedIndirectArgs indirectArgsBufferInitData{ SpriteParticleRenderer::IndexCount, 1, 0, 0, 0 };
-            const uint32 offset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
-            context->UpdateBuffer(buffer->GPU.IndirectDrawArgsBuffer, &indirectArgsBufferInitData, sizeof(indirectArgsBufferInitData), offset);
-            const uint32 counterOffset = buffer->GPU.ParticleCounterOffset;
-            context->CopyBuffer(buffer->GPU.IndirectDrawArgsBuffer, buffer->GPU.Buffer, 4, offset + 4, counterOffset);
-            indirectDrawCallIndex++;
-            break;
-        }
-        // Model Rendering
-        case 403:
-        {
-            const auto model = (Model*)module->Assets[0].Get();
-
-            // TODO: model LOD picking for particles?
-            int32 lodIndex = 0;
-            ModelLOD& lod = model->LODs[lodIndex];
-            for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
-            {
-                Mesh& mesh = lod.Meshes[meshIndex];
-                if (!mesh.IsInitialized())
-                    continue;
-
-                GPUDrawIndexedIndirectArgs indirectArgsBufferInitData = { (uint32)mesh.GetTriangleCount() * 3, 1, 0, 0, 0 };
-                const uint32 offset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
-                context->UpdateBuffer(buffer->GPU.IndirectDrawArgsBuffer, &indirectArgsBufferInitData, sizeof(indirectArgsBufferInitData), offset);
-                const uint32 counterOffset = buffer->GPU.ParticleCounterOffset;
-                context->CopyBuffer(buffer->GPU.IndirectDrawArgsBuffer, buffer->GPU.Buffer, 4, offset + 4, counterOffset);
-                indirectDrawCallIndex++;
-            }
-
-            break;
-        }
-        // Ribbon Rendering
-        case 404:
-        {
-            // Not supported
-            break;
-        }
-        // Volumetric Fog Rendering
-        case 405:
-        {
-            // Not supported
-            break;
-        }
-        }
-    }
-
-    // Execute all rendering modules
-    indirectDrawCallIndex = 0;
-    for (int32 index = 0; index < renderModulesIndices.Count(); index++)
-    {
-        int32 moduleIndex = renderModulesIndices[index];
-        auto module = emitter->Graph.RenderModules[moduleIndex];
+        int32 moduleIndex = renderModulesIndices.Get()[index];
+        auto module = emitter->Graph.RenderModules.Get()[moduleIndex];
         drawCall.Particle.Module = module;
-
         switch (module->TypeID)
         {
         // Sprite Rendering
@@ -909,19 +848,24 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         {
             const auto material = (MaterialBase*)module->Assets[0].Get();
             const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
-            drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
-            indirectDrawCallIndex++;
             auto dp = drawModes & moduleDrawModes & material->GetDrawModes();
             if (dp == DrawPass::None || SpriteRenderer.Init())
                 break;
             drawCall.Material = material;
 
+            // Initialize indirect draw arguments
+            GPUDrawIndexedIndirectArgs args { SpriteParticleRenderer::IndexCount, 1, 0, 0, 0 };
+            const uint32 argsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
+            context->UpdateBuffer(buffer->GPU.IndirectDrawArgsBuffer, &args, sizeof(args), argsOffset);
+            context->CopyBuffer(buffer->GPU.IndirectDrawArgsBuffer, buffer->GPU.Buffer, 4, argsOffset + 4, buffer->GPU.ParticleCounterOffset);
+
             // Submit draw call
             SpriteRenderer.SetupDrawCall(drawCall);
             drawCall.InstanceCount = 0;
             drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
-            if (dp != DrawPass::None)
-                renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false, sortOrder);
+            drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
+            renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false, sortOrder);
+            indirectDrawCallIndex++;
             break;
         }
         // Model Rendering
@@ -943,13 +887,18 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
                     continue;
                 // TODO: include mesh entry transformation, visibility and shadows mode?
 
+                // Initialize indirect draw arguments
+                GPUDrawIndexedIndirectArgs args = { (uint32)mesh.GetTriangleCount() * 3, 1, 0, 0, 0 };
+                const uint32 argsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
+                context->UpdateBuffer(buffer->GPU.IndirectDrawArgsBuffer, &args, sizeof(args), argsOffset);
+                context->CopyBuffer(buffer->GPU.IndirectDrawArgsBuffer, buffer->GPU.Buffer, 4, argsOffset + 4, buffer->GPU.ParticleCounterOffset);
+
                 // Execute draw call
                 mesh.GetDrawCallGeometry(drawCall);
                 drawCall.InstanceCount = 0;
                 drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
                 drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
-                if (dp != DrawPass::None)
-                    renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false, sortOrder);
+                renderContext.List->AddDrawCall(renderContext, dp, staticFlags, drawCall, false, sortOrder);
                 indirectDrawCallIndex++;
             }
             break;
