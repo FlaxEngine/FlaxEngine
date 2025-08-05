@@ -20,6 +20,7 @@ ParticleEffect::ParticleEffect(const SpawnParams& params)
 {
     _box = BoundingBox(_transform.Translation);
     BoundingSphere::FromBox(_box, _sphere);
+    _drawCategory = SceneRendering::SceneDrawAsync;
 }
 
 void ParticleEffectParameter::Init(ParticleEffect* effect, int32 emitterIndex, int32 paramIndex)

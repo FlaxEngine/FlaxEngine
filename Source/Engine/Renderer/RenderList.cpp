@@ -255,6 +255,20 @@ void RenderList::AddSettingsBlend(IPostFxSettingsProvider* provider, float weigh
     Blendable.Add(blend);
 }
 
+void RenderList::AddDelayedDraw(DelayedDraw&& func)
+{
+    MemPoolLocker.Lock(); // TODO: convert _delayedDraws into RenderListBuffer with usage of arena Memory for fast alloc
+    _delayedDraws.Add(MoveTemp(func));
+    MemPoolLocker.Unlock();
+}
+
+void RenderList::DrainDelayedDraws(RenderContext& renderContext)
+{
+    for (DelayedDraw& e : _delayedDraws)
+        e(renderContext);
+    _delayedDraws.SetCapacity(0);
+}
+
 void RenderList::BlendSettings()
 {
     PROFILE_CPU();
@@ -459,6 +473,7 @@ RenderList::RenderList(const SpawnParams& params)
     , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
     , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
     , _instanceBuffer(0, sizeof(ShaderObjectDrawInstanceData), TEXT("Instance Buffer"), GPUVertexLayout::Get({ { VertexElement::Types::Attribute0, 3, 0, 1, PixelFormat::R32_UInt } }))
+    , _delayedDraws(&Memory)
 {
 }
 
@@ -490,6 +505,7 @@ void RenderList::Clear()
     PostFx.Clear();
     Settings = PostProcessSettings();
     Blendable.Clear();
+    _delayedDraws.Clear();
     _instanceBuffer.Clear();
     ObjectBuffer.Clear();
     TempObjectBuffer.Clear();

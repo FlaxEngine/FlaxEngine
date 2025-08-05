@@ -649,8 +649,22 @@ void CleanupGPUParticlesSorting()
     GPUParticlesSorting = nullptr;
 }
 
-void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, ParticleEmitterInstance& emitterData, const RenderModulesIndices& renderModulesIndices, int8 sortOrder)
+void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, const RenderModulesIndices& renderModulesIndices, int8 sortOrder)
 {
+    if (!IsInMainThread())
+    {
+        // Clone draw call data the hard way
+        byte drawCallCopy[sizeof(DrawCall)];
+        Platform::MemoryCopy(&drawCallCopy, &drawCall, sizeof(DrawCall));
+
+        // When rendering in async, delay GPU particles drawing to be in sync by moving drawing into delayed callback post scene drawing to use GPUContext safely
+        // Move drawing into delayed callback post scene drawing to use GPUContext safely
+        renderContext.List->AddDelayedDraw([buffer, drawCallCopy, drawModes, staticFlags, renderModulesIndices, sortOrder](RenderContext& renderContext)
+        {
+            DrawEmitterGPU(renderContext, buffer, *(DrawCall*)drawCallCopy, drawModes, staticFlags, renderModulesIndices, sortOrder);
+        });
+        return;
+    }
     const auto context = GPUDevice::Instance->GetMainContext();
     auto emitter = buffer->Emitter;
 
@@ -1092,7 +1106,7 @@ void Particles::DrawParticles(RenderContext& renderContext, ParticleEffect* effe
             break;
 #if COMPILE_WITH_GPU_PARTICLES
         case ParticlesSimulationMode::GPU:
-            DrawEmitterGPU(renderContext, buffer, drawCall, drawModes, staticFlags, emitterData, renderModulesIndices, sortOrder);
+            DrawEmitterGPU(renderContext, buffer, drawCall, drawModes, staticFlags, renderModulesIndices, sortOrder);
             break;
 #endif
         }
