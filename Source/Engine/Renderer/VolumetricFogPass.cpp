@@ -384,7 +384,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     }
 
     // Render local fog particles
-    if (renderContext.List->VolumetricFogParticles.HasItems())
+    if (renderContext.List->VolumetricFogParticles.Count() != 0)
     {
         PROFILE_GPU_CPU_NAMED("Local Fog");
 
@@ -404,7 +404,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
         customData.VolumetricFogMaxDistance = cache.Data.VolumetricFogMaxDistance;
         bindParams.CustomData = &customData;
         bindParams.BindViewData();
-        bindParams.DrawCall = &renderContext.List->VolumetricFogParticles.First();
+        bindParams.DrawCall = renderContext.List->VolumetricFogParticles.begin();
         bindParams.BindDrawData();
 
         for (auto& drawCall : renderContext.List->VolumetricFogParticles)

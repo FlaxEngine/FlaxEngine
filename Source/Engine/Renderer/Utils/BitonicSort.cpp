@@ -91,16 +91,9 @@ void BitonicSort::Dispose()
 void BitonicSort::Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuffer* countBuffer, uint32 counterOffset, bool sortAscending, GPUBuffer* sortedIndicesBuffer)
 {
     ASSERT(context && sortingKeysBuffer && countBuffer);
-
-    PROFILE_GPU_CPU("Bitonic Sort");
-
-    // Check if has missing resources
     if (checkIfSkipPass())
-    {
         return;
-    }
-
-    // Prepare
+    PROFILE_GPU_CPU("Bitonic Sort");
     const uint32 elementSizeBytes = sizeof(uint64);
     const uint32 maxNumElements = sortingKeysBuffer->GetSize() / elementSizeBytes;
     const uint32 alignedMaxNumElements = Math::RoundUpToPowerOf2(maxNumElements);

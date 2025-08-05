@@ -341,12 +341,12 @@ public:
     /// <summary>
     /// Light pass members - point lights
     /// </summary>
-    Array<RenderPointLightData> PointLights;
+    RenderListBuffer<RenderPointLightData> PointLights;
 
     /// <summary>
     /// Light pass members - spot lights
     /// </summary>
-    Array<RenderSpotLightData> SpotLights;
+    RenderListBuffer<RenderSpotLightData> SpotLights;
 
     /// <summary>
     /// Light pass members - sky lights
@@ -366,7 +366,7 @@ public:
     /// <summary>
     /// Local volumetric fog particles registered for the rendering.
     /// </summary>
-    Array<DrawCall> VolumetricFogParticles;
+    RenderListBuffer<DrawCall> VolumetricFogParticles;
 
     /// <summary>
     /// Sky/skybox renderer proxy to use (only one per frame)

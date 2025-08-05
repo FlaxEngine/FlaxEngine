@@ -40,6 +40,7 @@ PACK_STRUCT(struct SpriteParticleVertex
 class SpriteParticleRenderer
 {
 public:
+    volatile int64 Ready = 0;
     GPUBuffer* VB = nullptr;
     GPUBuffer* IB = nullptr;
     const static int32 VertexCount = 4;
@@ -48,7 +49,10 @@ public:
 public:
     bool Init()
     {
-        if (VB)
+        if (Platform::AtomicRead(&Ready))
+            return false;
+        ScopeLock lock(RenderContext::GPULocker);
+        if (Platform::AtomicRead(&Ready))
             return false;
         VB = GPUDevice::Instance->CreateBuffer(TEXT("SpriteParticleRenderer.VB"));
         IB = GPUDevice::Instance->CreateBuffer(TEXT("SpriteParticleRenderer.IB"));
@@ -64,8 +68,10 @@ public:
             { VertexElement::Types::Position, 0, 0, 0, PixelFormat::R32G32_Float },
             { VertexElement::Types::TexCoord, 0, 0, 0, PixelFormat::R32G32_Float },
         });
-        return VB->Init(GPUBufferDescription::Vertex(layout, sizeof(SpriteParticleVertex), VertexCount, vertexBuffer)) ||
-               IB->Init(GPUBufferDescription::Index(sizeof(uint16), IndexCount, indexBuffer));
+        bool result = VB->Init(GPUBufferDescription::Vertex(layout, sizeof(SpriteParticleVertex), VertexCount, vertexBuffer)) ||
+                      IB->Init(GPUBufferDescription::Index(sizeof(uint16), IndexCount, indexBuffer));
+        Platform::AtomicStore(&Ready, 1);
+        return result;
     }
 
     void Dispose()
@@ -133,13 +139,6 @@ float Particles::ParticleBufferRecycleTimeout = 10.0f;
 
 SpriteParticleRenderer SpriteRenderer;
 
-namespace ParticlesDrawCPU
-{
-    Array<uint32> SortingKeys[2];
-    Array<int32> SortingIndices;
-    Array<int32> SortedIndices;
-}
-
 class ParticleManagerService : public EngineService
 {
 public:
@@ -190,7 +189,7 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
     auto emitter = buffer->Emitter;
 
     // Check if need to perform any particles sorting
-    if (emitter->Graph.SortModules.HasItems() && renderContext.View.Pass != DrawPass::Depth)
+    if (emitter->Graph.SortModules.HasItems() && renderContext.View.Pass != DrawPass::Depth && (buffer->CPU.Count != 0 || buffer->GPU.SortedIndices))
     {
         // Prepare sorting data
         if (!buffer->GPU.SortedIndices)
@@ -204,12 +203,31 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             const auto sortMode = static_cast<ParticleSortMode>(module->Values[2].AsInt);
             const int32 stride = buffer->Stride;
             const int32 listSize = buffer->CPU.Count;
-#define PREPARE_CACHE(list) (ParticlesDrawCPU::list).Clear(); (ParticlesDrawCPU::list).Resize(listSize)
-            PREPARE_CACHE(SortingKeys[0]);
-            PREPARE_CACHE(SortingKeys[1]);
-            PREPARE_CACHE(SortingIndices);
-#undef PREPARE_CACHE
-            uint32* sortedKeys = ParticlesDrawCPU::SortingKeys[0].Get();
+            Array<uint32, RendererAllocation> sortingKeysList[4];
+            Array<int32, RendererAllocation> sortingIndicesList[2];
+            uint32* sortingKeys[2];
+            int32* sortingIndices[2];
+            if (listSize < 500)
+            {
+                // Use fast stack allocator from RenderList
+                sortingKeys[0] = renderContext.List->Memory.Allocate<uint32>(listSize);
+                sortingKeys[1] = renderContext.List->Memory.Allocate<uint32>(listSize);
+                sortingIndices[0] = renderContext.List->Memory.Allocate<int32>(listSize);
+                sortingIndices[1] = renderContext.List->Memory.Allocate<int32>(listSize);
+            }
+            else
+            {
+                // Use shared pooled memory from RendererAllocation
+                sortingKeysList[0].Resize(listSize);
+                sortingKeysList[1].Resize(listSize);
+                sortingIndicesList[0].Resize(listSize);
+                sortingIndicesList[1].Resize(listSize);
+                sortingKeys[0] = sortingKeysList[0].Get();
+                sortingKeys[1] = sortingKeysList[1].Get();
+                sortingIndices[0] = sortingIndicesList[0].Get();
+                sortingIndices[1] = sortingIndicesList[1].Get();
+            }
+            uint32* sortedKeys = sortingKeys[0];
             const uint32 sortKeyXor = sortMode != ParticleSortMode::CustomAscending ? MAX_uint32 : 0;
             switch (sortMode)
             {
@@ -290,29 +308,31 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             }
 
             // Generate sorting indices
-            int32* sortedIndices;
+            int32* sortedIndices = sortingIndices[0];
             {
-                ParticlesDrawCPU::SortedIndices.Resize(listSize);
-                sortedIndices = ParticlesDrawCPU::SortedIndices.Get();
                 for (int32 i = 0; i < listSize; i++)
                     sortedIndices[i] = i;
             }
 
             // Sort keys with indices
             {
-                Sorting::RadixSort(sortedKeys, sortedIndices, ParticlesDrawCPU::SortingKeys[1].Get(), ParticlesDrawCPU::SortingIndices.Get(), listSize);
+                Sorting::RadixSort(sortedKeys, sortedIndices, sortingKeys[1], sortingIndices[1], listSize);
             }
 
             // Upload CPU particles indices
             {
-                context->UpdateBuffer(buffer->GPU.SortedIndices, sortedIndices, listSize * sizeof(int32), sortedIndicesOffset);
+                RenderContext::GPULocker.Lock();
+                context->UpdateBuffer(buffer->GPU.SortedIndices, sortedIndices, listSize * sizeof(uint32), sortedIndicesOffset);
+                RenderContext::GPULocker.Unlock();
             }
         }
     }
 
     // Upload CPU particles data to GPU
     {
+        RenderContext::GPULocker.Lock();
         context->UpdateBuffer(buffer->GPU.Buffer, buffer->CPU.Buffer.Get(), buffer->CPU.Count * buffer->Stride);
+        RenderContext::GPULocker.Unlock();
     }
 
     // Check if need to setup ribbon modules
@@ -443,8 +463,10 @@ void DrawEmitterCPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
         if (ribbonModuleIndex != 0)
         {
             // Upload data to the GPU buffer
+            RenderContext::GPULocker.Lock();
             buffer->GPU.RibbonIndexBufferDynamic->Flush(context);
             buffer->GPU.RibbonVertexBufferDynamic->Flush(context);
+            RenderContext::GPULocker.Unlock();
         }
     }
 
@@ -1266,10 +1288,6 @@ void ParticleManagerService::Dispose()
     }
     CleanupGPUParticlesSorting();
 #endif
-    ParticlesDrawCPU::SortingKeys[0].SetCapacity(0);
-    ParticlesDrawCPU::SortingKeys[1].SetCapacity(0);
-    ParticlesDrawCPU::SortingIndices.SetCapacity(0);
-    ParticlesDrawCPU::SortedIndices.SetCapacity(0);
 
     PoolLocker.Lock();
     for (auto i = Pool.Begin(); i.IsNotEnd(); ++i)

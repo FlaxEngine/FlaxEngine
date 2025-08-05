@@ -449,8 +449,6 @@ RenderList::RenderList(const SpawnParams& params)
     : ScriptingObject(params)
     , Memory(4 * 1024 * 1024, RendererAllocation::Allocate, RendererAllocation::Free) // 4MB pages, use page pooling via RendererAllocation
     , DirectionalLights(4)
-    , PointLights(32)
-    , SpotLights(32)
     , SkyLights(4)
     , EnvironmentProbes(32)
     , Decals(64)

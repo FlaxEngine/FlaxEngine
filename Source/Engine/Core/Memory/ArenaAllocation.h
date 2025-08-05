@@ -125,6 +125,13 @@ public:
     // Frees all memory allocations within allocator.
     void Free();
 
+    // Allocates a chunk of unitialized memory.
+    template<class T>
+    inline T* Allocate(uint64 count)
+    {
+        return (T*)Allocate(count * sizeof(T), alignof(T));
+    }
+
     // Creates a new object within the arena allocator.
     template<class T, class... Args>
     inline T* New(Args&&...args)

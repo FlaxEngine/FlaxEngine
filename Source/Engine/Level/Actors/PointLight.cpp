@@ -19,6 +19,7 @@ PointLight::PointLight(const SpawnParams& params)
     _direction = Float3::Forward;
     _sphere = BoundingSphere(Vector3::Zero, _radius);
     BoundingBox::FromSphere(_sphere, _box);
+    _drawCategory = SceneRendering::SceneDrawAsync;
 }
 
 float PointLight::ComputeBrightness() const
