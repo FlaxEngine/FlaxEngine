@@ -632,6 +632,7 @@ Variant::Variant(ScriptingObject* v)
     AsObject = v;
     if (v)
     {
+        // TODO: optimize VariantType to support statically linked typename of ScriptingType (via 1 bit flag within Types enum, only in game as editor might hot-reload types)
         Type.SetTypeName(v->GetType().Fullname);
         v->Deleted.Bind<Variant, &Variant::OnObjectDeleted>(this);
     }
@@ -643,6 +644,7 @@ Variant::Variant(Asset* v)
     AsAsset = v;
     if (v)
     {
+        // TODO: optimize VariantType to support statically linked typename of ScriptingType (via 1 bit flag within Types enum, only in game as editor might hot-reload types)
         Type.SetTypeName(v->GetType().Fullname);
         v->AddReference();
         v->OnUnloaded.Bind<Variant, &Variant::OnAssetUnloaded>(this);

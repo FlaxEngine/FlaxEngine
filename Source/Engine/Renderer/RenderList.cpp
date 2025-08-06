@@ -264,6 +264,7 @@ void RenderList::AddDelayedDraw(DelayedDraw&& func)
 
 void RenderList::DrainDelayedDraws(RenderContext& renderContext)
 {
+    PROFILE_GPU_CPU_NAMED("DelayedDraws");
     for (DelayedDraw& e : _delayedDraws)
         e(renderContext);
     _delayedDraws.SetCapacity(0);

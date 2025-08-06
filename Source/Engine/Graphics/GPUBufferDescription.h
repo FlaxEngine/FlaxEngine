@@ -334,11 +334,12 @@ public:
     /// Creates argument buffer description.
     /// </summary>
     /// <param name="size">The size (in bytes).</param>
+    /// <param name="additionalFlags">The additional bindings (for example, to use as UAV, pass <see cref="GPUBufferFlags::UnorderedAccess" />).</param>
     /// <param name="usage">The usage.</param>
     /// <returns>The buffer description.</returns>
-    static GPUBufferDescription Argument(int32 size, GPUResourceUsage usage = GPUResourceUsage::Default)
+    static GPUBufferDescription Argument(int32 size, GPUResourceUsage usage = GPUResourceUsage::Default, GPUBufferFlags additionalFlags = GPUBufferFlags::None)
     {
-        return Buffer(size, GPUBufferFlags::Argument, PixelFormat::Unknown, nullptr, 0, usage);
+        return Buffer(size, GPUBufferFlags::Argument | additionalFlags, PixelFormat::R32_UInt, nullptr, sizeof(uint32), usage);
     }
 
     /// <summary>

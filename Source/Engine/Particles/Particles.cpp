@@ -770,7 +770,6 @@ void DrawEmitterGPU(RenderContext& renderContext, ParticleBuffer* buffer, DrawCa
             context->BindCB(0, GPUParticlesSortingCB);
             context->BindSR(0, buffer->GPU.Buffer->View());
             context->BindUA(0, buffer->GPU.SortingKeysBuffer->View());
-            // TODO: optimize it by using DispatchIndirect with shared invoke args generated after particles update
             const int32 threadGroupSize = 1024;
             context->Dispatch(GPUParticlesSortingCS[permutationIndex], Math::DivideAndRoundUp(buffer->GPU.ParticlesCountMax, threadGroupSize), 1, 1);
 

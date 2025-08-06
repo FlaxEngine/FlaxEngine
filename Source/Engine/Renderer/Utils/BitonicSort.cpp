@@ -6,8 +6,6 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPULimits.h"
 
-#define INDIRECT_ARGS_STRIDE 12
-
 // The sorting keys buffer item structure template. Matches the shader type.
 struct Item
 {
@@ -39,7 +37,7 @@ bool BitonicSort::Init()
 
     // Create indirect dispatch arguments buffer
     _dispatchArgsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("BitonicSortDispatchArgs"));
-    if (_dispatchArgsBuffer->Init(GPUBufferDescription::Raw(22 * 23 / 2 * INDIRECT_ARGS_STRIDE, GPUBufferFlags::Argument | GPUBufferFlags::UnorderedAccess)))
+    if (_dispatchArgsBuffer->Init(GPUBufferDescription::Raw(22 * 23 / 2 * sizeof(GPUDispatchIndirectArgs), GPUBufferFlags::Argument | GPUBufferFlags::UnorderedAccess)))
         return true;
 
     // Load asset
@@ -122,7 +120,7 @@ void BitonicSort::Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuf
 
     // We have already pre-sorted up through k = 2048 when first writing our list, so we continue sorting with k = 4096
     // For really large values of k, these indirect dispatches will be skipped over with thread counts of 0
-    uint32 indirectArgsOffset = INDIRECT_ARGS_STRIDE;
+    uint32 indirectArgsOffset = sizeof(GPUDispatchIndirectArgs);
     for (uint32 k = 4096; k <= alignedMaxNumElements; k *= 2)
     {
         for (uint32 j = k / 2; j >= 2048; j /= 2)
@@ -133,11 +131,11 @@ void BitonicSort::Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuf
             context->BindCB(0, _cb);
 
             context->DispatchIndirect(_outerSortCS, _dispatchArgsBuffer, indirectArgsOffset);
-            indirectArgsOffset += INDIRECT_ARGS_STRIDE;
+            indirectArgsOffset += sizeof(GPUDispatchIndirectArgs);
         }
 
         context->DispatchIndirect(_innerSortCS, _dispatchArgsBuffer, indirectArgsOffset);
-        indirectArgsOffset += INDIRECT_ARGS_STRIDE;
+        indirectArgsOffset += sizeof(GPUDispatchIndirectArgs);
     }
 
     context->ResetUA();

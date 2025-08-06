@@ -68,6 +68,7 @@ void CS_IndirectArgs(uint groupIndex : SV_GroupIndex)
 	uint offset = 12 * prevDispatches;
 
 	// Generate outer sort dispatch arguments
+	UNROLL
 	for (uint j = k / 2; j > 1024; j /= 2)
 	{
 		// All of the groups of size 2j that are full

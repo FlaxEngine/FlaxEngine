@@ -51,8 +51,6 @@ void CS_Sort(uint3 dispatchThreadId : SV_DispatchThreadID)
 	if (index >= particlesCount)
 		return;
 
-	// TODO: maybe process more than 1 particle at once and pre-sort them?
-
 #if SORT_MODE == 0
 
 	// Sort particles by depth to the view's near plane

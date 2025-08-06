@@ -12,6 +12,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Graphics/Shaders/GPUConstantBuffer.h"
+#include "Engine/Profiler/Profiler.h"
 
 GPU_CB_STRUCT(GPUParticlesData {
     Matrix ViewProjectionMatrix;
@@ -131,6 +132,8 @@ void GPUParticles::CopyParticlesCount(GPUContext* context, ParticleEmitter* emit
 
 void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, ParticleEffect* effect, int32 emitterIndex, ParticleEmitterInstance& data)
 {
+    PROFILE_CPU_ASSET(emitter);
+    PROFILE_GPU("GPUParticles");
     ASSERT(emitter->Graph.Version == data.Version);
     ASSERT(emitter->Graph.Version == data.Buffer->Version);
     uint32 counterDefaultValue = 0;

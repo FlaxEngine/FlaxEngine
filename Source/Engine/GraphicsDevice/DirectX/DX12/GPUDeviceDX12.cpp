@@ -359,7 +359,8 @@ bool GPUDeviceDX12::Init()
     // Debug Layer
 #if GPU_ENABLE_DIAGNOSTICS
     ComPtr<ID3D12InfoQueue> infoQueue;
-    VALIDATE_DIRECTX_CALL(_device->QueryInterface(IID_PPV_ARGS(&infoQueue)));
+    HRESULT result = _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
+    LOG_DIRECTX_RESULT(result);
     if (infoQueue)
     {
         D3D12_INFO_QUEUE_FILTER filter;
