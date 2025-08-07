@@ -266,7 +266,6 @@ void RenderList::DrainDelayedDraws(RenderContext& renderContext)
 {
     if (_delayedDraws.IsEmpty())
         return;
-    PROFILE_GPU_CPU_NAMED("DelayedDraws");
     for (DelayedDraw& e : _delayedDraws)
         e(renderContext);
     _delayedDraws.SetCapacity(0);

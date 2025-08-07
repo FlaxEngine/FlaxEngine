@@ -635,6 +635,22 @@ AssetReference<Shader> GPUParticlesSorting;
 GPUConstantBuffer* GPUParticlesSortingCB;
 GPUShaderProgramCS* GPUParticlesSortingCS[3];
 
+// GPU emitters drawing is batched for efficiency
+struct GPUEmitterDraw
+{
+    ParticleBuffer* Buffer;
+    DrawCall DrawCall;
+    DrawPass DrawModes;
+    StaticFlags StaticFlags;
+    BoundingSphere Bounds;
+    uint32 RenderModulesIndices;
+    uint32 IndirectArgsSize;
+    int8 SortOrder;
+    bool Sorting;
+};
+Array<GPUEmitterDraw> GPUEmitterDraws;
+GPUBuffer* GPUIndirectArgsBuffer = nullptr;
+
 #if COMPILE_WITH_DEV_ENV
 
 void OnShaderReloading(Asset* obj)
@@ -648,277 +664,347 @@ void OnShaderReloading(Asset* obj)
 void CleanupGPUParticlesSorting()
 {
     GPUParticlesSorting = nullptr;
+    GPUEmitterDraws.Resize(0);
+    SAFE_DELETE_GPU_RESOURCE(GPUIndirectArgsBuffer);
+}
+
+void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
+{
+    PROFILE_GPU_CPU_NAMED("DrawEmittersGPU");
+    ConcurrentSystemLocker::ReadScope systemScope(Particles::SystemLocker);
+    GPUContext* context = GPUDevice::Instance->GetMainContext();
+
+    // Count draws and sorting passes needed for resources allocation
+    uint32 indirectArgsSize = 0;
+    bool sorting = false;
+    for (const GPUEmitterDraw& draw : GPUEmitterDraws)
+    {
+        indirectArgsSize += draw.IndirectArgsSize;
+        sorting |= draw.Sorting;
+    }
+
+    // Prepare pipeline
+    if (sorting && GPUParticlesSorting == nullptr)
+    {
+        // TODO: preload shader if platform supports GPU particles (eg. inside ParticleEmitter::load if it's GPU sim with any sort module)
+        GPUParticlesSorting = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GPUParticlesSorting"));
+#if COMPILE_WITH_DEV_ENV
+        if (GPUParticlesSorting)
+            GPUParticlesSorting.Get()->OnReloading.Bind<OnShaderReloading>();
+#endif
+    }
+    if (GPUParticlesSorting == nullptr || !GPUParticlesSorting->IsLoaded())
+    {
+        // Skip sorting until shader is ready
+        sorting = false;
+    }
+    else if (!GPUParticlesSortingCB)
+    {
+        const auto shader = GPUParticlesSorting->GetShader();
+        const StringAnsiView CS_Sort("CS_Sort");
+        GPUParticlesSortingCS[0] = shader->GetCS(CS_Sort, 0);
+        GPUParticlesSortingCS[1] = shader->GetCS(CS_Sort, 1);
+        GPUParticlesSortingCS[2] = shader->GetCS(CS_Sort, 2);
+        GPUParticlesSortingCB = shader->GetCB(0);
+        ASSERT_LOW_LAYER(GPUParticlesSortingCB);
+    }
+    const uint32 indirectArgsCapacity = Math::RoundUpToPowerOf2(indirectArgsSize);
+    if (GPUIndirectArgsBuffer == nullptr)
+        GPUIndirectArgsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("ParticleIndirectDrawArgsBuffer"));
+    if (GPUIndirectArgsBuffer->GetSize() < indirectArgsCapacity)
+        GPUIndirectArgsBuffer->Init(GPUBufferDescription::Argument(indirectArgsCapacity));
+
+    // Build indirect arguments
+    uint32 indirectArgsOffset = 0;
+    for (GPUEmitterDraw& draw : GPUEmitterDraws)
+    {
+        ParticleEmitter* emitter = draw.Buffer->Emitter;
+        for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.RenderModules.Count(); moduleIndex++)
+        {
+            if ((draw.RenderModulesIndices & (1u << moduleIndex)) == 0)
+                continue;
+            auto module = emitter->Graph.RenderModules.Get()[moduleIndex];
+            draw.DrawCall.Particle.Module = module;
+            switch (module->TypeID)
+            {
+                // Sprite Rendering
+            case 400:
+            {
+                const auto material = (MaterialBase*)module->Assets[0].Get();
+                const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
+                auto dp = draw.DrawModes & moduleDrawModes & material->GetDrawModes();
+                if (dp == DrawPass::None || SpriteRenderer.Init())
+                    break;
+
+                // Draw sprite for each particle
+                GPUDrawIndexedIndirectArgs args { SpriteParticleRenderer::IndexCount, 1, 0, 0, 0 };
+                context->UpdateBuffer(GPUIndirectArgsBuffer, &args, sizeof(args), indirectArgsOffset);
+                context->CopyBuffer(GPUIndirectArgsBuffer, draw.Buffer->GPU.Buffer, 4, indirectArgsOffset + 4, draw.Buffer->GPU.ParticleCounterOffset);
+                indirectArgsOffset += sizeof(GPUDrawIndexedIndirectArgs);
+                break;
+            }
+            // Model Rendering
+            case 403:
+            {
+                const auto model = (Model*)module->Assets[0].Get();
+                const auto material = (MaterialBase*)module->Assets[1].Get();
+                const auto moduleDrawModes = module->Values.Count() > 4 ? (DrawPass)module->Values[4].AsInt : DrawPass::Default;
+                auto dp = draw.DrawModes & moduleDrawModes & material->GetDrawModes();
+                if (dp == DrawPass::None)
+                    break;
+                // TODO: model LOD picking for particles?
+                int32 lodIndex = 0;
+                ModelLOD& lod = model->LODs[lodIndex];
+                for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
+                {
+                    Mesh& mesh = lod.Meshes[meshIndex];
+                    if (!mesh.IsInitialized())
+                        continue;
+
+                    // Draw mesh for each particle
+                    GPUDrawIndexedIndirectArgs args { (uint32)mesh.GetTriangleCount() * 3, 1, 0, 0, 0 };
+                    context->UpdateBuffer(GPUIndirectArgsBuffer, &args, sizeof(args), indirectArgsOffset);
+                    context->CopyBuffer(GPUIndirectArgsBuffer, draw.Buffer->GPU.Buffer, 4, indirectArgsOffset + 4, draw.Buffer->GPU.ParticleCounterOffset);
+                    indirectArgsOffset += sizeof(GPUDrawIndexedIndirectArgs);
+                }
+                break;
+            }
+            // Ribbon Rendering
+            case 404:
+            {
+                // Not supported
+                break;
+            }
+            // Volumetric Fog Rendering
+            case 405:
+            {
+                // Not supported
+                break;
+            }
+            }
+        }
+    }
+    indirectArgsOffset = 0;
+
+    // Sort particles
+    if (sorting)
+    {
+        PROFILE_GPU_CPU_NAMED("Sort Particles");
+        for (const GPUEmitterDraw& draw : GPUEmitterDraws)
+        {
+            if (!draw.Sorting)
+                continue;
+            ASSERT(draw.Buffer->GPU.SortingKeysBuffer);
+
+            // Execute all sorting modules
+            ParticleEmitter* emitter = draw.Buffer->Emitter;
+            for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.SortModules.Count(); moduleIndex++)
+            {
+                auto module = emitter->Graph.SortModules[moduleIndex];
+                const auto sortMode = (ParticleSortMode)module->Values[2].AsInt;
+
+                // Generate sorting keys based on sorting mode
+                GPUParticlesSortingData data;
+                data.ParticleCounterOffset = draw.Buffer->GPU.ParticleCounterOffset;
+                data.ParticleStride = draw.Buffer->Stride;
+                data.ParticleCapacity = draw.Buffer->Capacity;
+                int32 permutationIndex;
+                bool sortAscending;
+                switch (sortMode)
+                {
+                case ParticleSortMode::ViewDepth:
+                {
+                    permutationIndex = 0;
+                    sortAscending = false;
+                    data.PositionOffset = emitter->Graph.GetPositionAttributeOffset();
+                    const Matrix viewProjection = renderContextBatch.GetMainContext().View.ViewProjection();
+                    if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
+                    {
+                        Matrix matrix;
+                        Matrix::Multiply(draw.DrawCall.World, viewProjection, matrix);
+                        Matrix::Transpose(matrix, data.PositionTransform);
+                    }
+                    else
+                    {
+                        Matrix::Transpose(viewProjection, data.PositionTransform);
+                    }
+                    break;
+                }
+                case ParticleSortMode::ViewDistance:
+                {
+                    permutationIndex = 1;
+                    sortAscending = false;
+                    data.PositionOffset = emitter->Graph.GetPositionAttributeOffset();
+                    data.ViewPosition = renderContextBatch.GetMainContext().View.Position;
+                    if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
+                    {
+                        Matrix::Transpose(draw.DrawCall.World, data.PositionTransform);
+                    }
+                    else
+                    {
+                        Matrix::Transpose(Matrix::Identity, data.PositionTransform);
+                    }
+                    break;
+                }
+                case ParticleSortMode::CustomAscending:
+                case ParticleSortMode::CustomDescending:
+                {
+                    permutationIndex = 2;
+                    sortAscending = sortMode == ParticleSortMode::CustomAscending;
+                    int32 attributeIdx = module->Attributes[0];
+                    if (attributeIdx == -1)
+                        break;
+                    data.CustomOffset = emitter->Graph.Layout.Attributes[attributeIdx].Offset;
+                    break;
+                }
+#if !BUILD_RELEASE
+                default:
+                    CRASH;
+                    return;
+#endif
+                }
+                context->UpdateCB(GPUParticlesSortingCB, &data);
+                context->BindCB(0, GPUParticlesSortingCB);
+                context->BindSR(0, draw.Buffer->GPU.Buffer->View());
+                context->BindUA(0, draw.Buffer->GPU.SortingKeysBuffer->View());
+                const int32 threadGroupSize = 1024;
+                context->Dispatch(GPUParticlesSortingCS[permutationIndex], Math::DivideAndRoundUp(draw.Buffer->GPU.ParticlesCountMax, threadGroupSize), 1, 1);
+
+                // Perform sorting
+                BitonicSort::Instance()->Sort(context, draw.Buffer->GPU.SortingKeysBuffer, draw.Buffer->GPU.Buffer, data.ParticleCounterOffset, sortAscending, draw.Buffer->GPU.SortedIndices);
+            }
+        }
+    }
+
+    // Submit draw calls
+    for (GPUEmitterDraw& draw : GPUEmitterDraws)
+    {
+        // Execute all rendering modules using indirect draw arguments
+        ParticleEmitter* emitter = draw.Buffer->Emitter;
+        for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.RenderModules.Count(); moduleIndex++)
+        {
+            if ((draw.RenderModulesIndices & (1u << moduleIndex)) == 0)
+                continue;
+            auto module = emitter->Graph.RenderModules.Get()[moduleIndex];
+            draw.DrawCall.Particle.Module = module;
+            switch (module->TypeID)
+            {
+                // Sprite Rendering
+            case 400:
+            {
+                const auto material = (MaterialBase*)module->Assets[0].Get();
+                const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
+                auto dp = draw.DrawModes & moduleDrawModes & material->GetDrawModes();
+                if (dp == DrawPass::None || SpriteRenderer.Init())
+                    break;
+                draw.DrawCall.Material = material;
+
+                // Submit draw call
+                SpriteRenderer.SetupDrawCall(draw.DrawCall);
+                draw.DrawCall.InstanceCount = 0;
+                draw.DrawCall.Draw.IndirectArgsBuffer = GPUIndirectArgsBuffer;
+                draw.DrawCall.Draw.IndirectArgsOffset = indirectArgsOffset;
+                renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, dp, draw.StaticFlags, ShadowsCastingMode::DynamicOnly, draw.Bounds, draw.DrawCall, false, draw.SortOrder);
+                indirectArgsOffset += sizeof(GPUDrawIndexedIndirectArgs);
+                break;
+            }
+            // Model Rendering
+            case 403:
+            {
+                const auto model = (Model*)module->Assets[0].Get();
+                const auto material = (MaterialBase*)module->Assets[1].Get();
+                const auto moduleDrawModes = module->Values.Count() > 4 ? (DrawPass)module->Values[4].AsInt : DrawPass::Default;
+                auto dp = draw.DrawModes & moduleDrawModes & material->GetDrawModes();
+                if (dp == DrawPass::None)
+                    break;
+                draw.DrawCall.Material = material;
+
+                // TODO: model LOD picking for particles?
+                int32 lodIndex = 0;
+                ModelLOD& lod = model->LODs[lodIndex];
+                for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
+                {
+                    Mesh& mesh = lod.Meshes[meshIndex];
+                    if (!mesh.IsInitialized())
+                        continue;
+                    // TODO: include mesh entry transformation, visibility and shadows mode?
+
+                    // Execute draw call
+                    mesh.GetDrawCallGeometry(draw.DrawCall);
+                    draw.DrawCall.InstanceCount = 0;
+                    draw.DrawCall.Draw.IndirectArgsBuffer = GPUIndirectArgsBuffer;
+                    draw.DrawCall.Draw.IndirectArgsOffset = indirectArgsOffset;
+                    renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, dp, draw.StaticFlags, ShadowsCastingMode::DynamicOnly, draw.Bounds, draw.DrawCall, false, draw.SortOrder);
+                    indirectArgsOffset += sizeof(GPUDrawIndexedIndirectArgs);
+                }
+                break;
+            }
+            // Ribbon Rendering
+            case 404:
+            {
+                // Not supported
+                break;
+            }
+            // Volumetric Fog Rendering
+            case 405:
+            {
+                // Not supported
+                break;
+            }
+            }
+        }
+    }
+
+    GPUEmitterDraws.Clear();
 }
 
 void DrawEmitterGPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, const BoundingSphere& bounds, uint32 renderModulesIndices, int8 sortOrder)
 {
-    if (!IsInMainThread())
+    // Setup drawing data
+    uint32 indirectArgsSize = 0;
+    ParticleEmitter* emitter = buffer->Emitter;
+    for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.RenderModules.Count(); moduleIndex++)
     {
-        // Clone draw call data the hard way
-        byte drawCallCopy[sizeof(DrawCall)];
-        Platform::MemoryCopy(&drawCallCopy, &drawCall, sizeof(DrawCall));
-
-        // When rendering in async, delay GPU particles drawing to be in sync by moving drawing into delayed callback post scene drawing to use GPUContext safely
-        // Move drawing into delayed callback post scene drawing to use GPUContext safely
-        renderContextBatch.GetMainContext().List->AddDelayedDraw([&renderContextBatch, buffer, drawCallCopy, drawModes, staticFlags, bounds, renderModulesIndices, sortOrder](RenderContext& renderContext)
+        if ((renderModulesIndices & (1u << moduleIndex)) == 0)
+            continue;
+        auto module = emitter->Graph.RenderModules.Get()[moduleIndex];
+        switch (module->TypeID)
         {
-            DrawEmitterGPU(renderContextBatch, buffer, *(DrawCall*)drawCallCopy, drawModes, staticFlags, bounds, renderModulesIndices, sortOrder);
+            // Sprite Rendering
+        case 400:
+            indirectArgsSize += sizeof(GPUDrawIndexedIndirectArgs);
+            break;
+        // Model Rendering
+        case 403:
+        {
+            const auto model = (Model*)module->Assets[0].Get();
+            // TODO: model LOD picking for particles?
+            int32 lodIndex = 0;
+            ModelLOD& lod = model->LODs[lodIndex];
+            indirectArgsSize += sizeof(GPUDrawIndexedIndirectArgs) * lod.Meshes.Count();
+            break;
+        }
+        }
+    }
+    if (indirectArgsSize == 0)
+        return;
+    bool sorting = buffer->Emitter->Graph.SortModules.HasItems() && renderContextBatch.GetMainContext().View.Pass != DrawPass::Depth && buffer->GPU.ParticlesCountMax != 0;
+    if (sorting && !buffer->GPU.SortedIndices)
+        buffer->AllocateSortBuffer();
+
+    // When rendering in async, delay GPU particles drawing to be in sync by moving drawing into delayed callback post scene drawing to use GPUContext safely
+    // Also, batch rendering all GPU emitters together for more efficient usage of GPU memory barriers and indirect arguments buffers allocation
+    RenderContext::GPULocker.Lock();
+    if (GPUEmitterDraws.Count() == 0)
+    {
+        // The first emitter schedules the drawing of all batched draws
+        renderContextBatch.GetMainContext().List->AddDelayedDraw([&renderContextBatch](RenderContext& renderContext)
+        {
+            DrawEmittersGPU(renderContextBatch);
         });
-        return;
     }
-    const auto context = GPUDevice::Instance->GetMainContext();
-    auto emitter = buffer->Emitter;
-
-    // Check if need to perform any particles sorting
-    if (emitter->Graph.SortModules.HasItems() && renderContextBatch.GetMainContext().View.Pass != DrawPass::Depth && buffer->GPU.ParticlesCountMax != 0)
-    {
-        PROFILE_GPU_CPU_NAMED("Sort Particles");
-
-        // Prepare pipeline
-        if (GPUParticlesSorting == nullptr)
-        {
-            // TODO: preload shader if platform supports GPU particles
-            GPUParticlesSorting = Content::LoadAsyncInternal<Shader>(TEXT("Shaders/GPUParticlesSorting"));
-            if (GPUParticlesSorting == nullptr || GPUParticlesSorting->WaitForLoaded())
-                return;
-#if COMPILE_WITH_DEV_ENV
-            GPUParticlesSorting.Get()->OnReloading.Bind<OnShaderReloading>();
-#endif
-        }
-        if (!GPUParticlesSortingCB)
-        {
-            const auto shader = GPUParticlesSorting->GetShader();
-            const StringAnsiView CS_Sort("CS_Sort");
-            GPUParticlesSortingCS[0] = shader->GetCS(CS_Sort, 0);
-            GPUParticlesSortingCS[1] = shader->GetCS(CS_Sort, 1);
-            GPUParticlesSortingCS[2] = shader->GetCS(CS_Sort, 2);
-            GPUParticlesSortingCB = shader->GetCB(0);
-            ASSERT(GPUParticlesSortingCB);
-        }
-
-        // Prepare sorting data
-        if (!buffer->GPU.SortedIndices)
-            buffer->AllocateSortBuffer();
-        ASSERT(buffer->GPU.SortingKeysBuffer);
-
-        // Execute all sorting modules
-        for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.SortModules.Count(); moduleIndex++)
-        {
-            auto module = emitter->Graph.SortModules[moduleIndex];
-            const auto sortMode = static_cast<ParticleSortMode>(module->Values[2].AsInt);
-
-            // Generate sorting keys based on sorting mode
-            GPUParticlesSortingData data;
-            data.ParticleCounterOffset = buffer->GPU.ParticleCounterOffset;
-            data.ParticleStride = buffer->Stride;
-            data.ParticleCapacity = buffer->Capacity;
-            int32 permutationIndex;
-            bool sortAscending;
-            switch (sortMode)
-            {
-            case ParticleSortMode::ViewDepth:
-            {
-                permutationIndex = 0;
-                sortAscending = false;
-                data.PositionOffset = emitter->Graph.GetPositionAttributeOffset();
-                const Matrix viewProjection = renderContextBatch.GetMainContext().View.ViewProjection();
-                if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
-                {
-                    Matrix matrix;
-                    Matrix::Multiply(drawCall.World, viewProjection, matrix);
-                    Matrix::Transpose(matrix, data.PositionTransform);
-                }
-                else
-                {
-                    Matrix::Transpose(viewProjection, data.PositionTransform);
-                }
-                break;
-            }
-            case ParticleSortMode::ViewDistance:
-            {
-                permutationIndex = 1;
-                sortAscending = false;
-                data.PositionOffset = emitter->Graph.GetPositionAttributeOffset();
-                data.ViewPosition = renderContextBatch.GetMainContext().View.Position;
-                if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
-                {
-                    Matrix::Transpose(drawCall.World, data.PositionTransform);
-                }
-                else
-                {
-                    Matrix::Transpose(Matrix::Identity, data.PositionTransform);
-                }
-                break;
-            }
-            case ParticleSortMode::CustomAscending:
-            case ParticleSortMode::CustomDescending:
-            {
-                permutationIndex = 2;
-                sortAscending = sortMode == ParticleSortMode::CustomAscending;
-                int32 attributeIdx = module->Attributes[0];
-                if (attributeIdx == -1)
-                    break;
-                data.CustomOffset = emitter->Graph.Layout.Attributes[attributeIdx].Offset;
-                break;
-            }
-#if !BUILD_RELEASE
-            default:
-                CRASH;
-                return;
-#endif
-            }
-            context->UpdateCB(GPUParticlesSortingCB, &data);
-            context->BindCB(0, GPUParticlesSortingCB);
-            context->BindSR(0, buffer->GPU.Buffer->View());
-            context->BindUA(0, buffer->GPU.SortingKeysBuffer->View());
-            const int32 threadGroupSize = 1024;
-            context->Dispatch(GPUParticlesSortingCS[permutationIndex], Math::DivideAndRoundUp(buffer->GPU.ParticlesCountMax, threadGroupSize), 1, 1);
-
-            // Perform sorting
-            BitonicSort::Instance()->Sort(context, buffer->GPU.SortingKeysBuffer, buffer->GPU.Buffer, data.ParticleCounterOffset, sortAscending, buffer->GPU.SortedIndices);
-        }
-    }
-
-    // Count draw calls to perform during this emitter rendering
-    int32 drawCalls = 0;
-    for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.RenderModules.Count(); moduleIndex++)
-    {
-        if ((renderModulesIndices & (1u << moduleIndex)) == 0)
-            continue;
-        auto module = emitter->Graph.RenderModules.Get()[moduleIndex];
-        switch (module->TypeID)
-        {
-        // Sprite Rendering
-        case 400:
-        {
-            drawCalls++;
-            break;
-        }
-        // Model Rendering
-        case 403:
-        {
-            const auto model = (Model*)module->Assets[0].Get();
-
-            // TODO: model LOD picking for particles?
-            int32 lodIndex = 0;
-            ModelLOD& lod = model->LODs[lodIndex];
-            for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
-            {
-                Mesh& mesh = lod.Meshes[meshIndex];
-                if (!mesh.IsInitialized())
-                    continue;
-
-                drawCalls++;
-            }
-
-            break;
-        }
-        // Ribbon Rendering
-        case 404:
-        {
-            // Not supported
-            break;
-        }
-        // Volumetric Fog Rendering
-        case 405:
-        {
-            // Not supported
-            break;
-        }
-        }
-    }
-    if (drawCalls == 0)
-        return;
-
-    // Ensure to have enough space for indirect draw arguments
-    const uint32 minSize = drawCalls * sizeof(GPUDrawIndexedIndirectArgs);
-    if (buffer->GPU.IndirectDrawArgsBuffer->GetSize() < minSize)
-        buffer->GPU.IndirectDrawArgsBuffer->Init(GPUBufferDescription::Argument(minSize));
-
-    // Execute all rendering modules using indirect draw arguments
-    int32 indirectDrawCallIndex = 0;
-    for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.RenderModules.Count(); moduleIndex++)
-    {
-        if ((renderModulesIndices & (1u << moduleIndex)) == 0)
-            continue;
-        auto module = emitter->Graph.RenderModules.Get()[moduleIndex];
-        drawCall.Particle.Module = module;
-        switch (module->TypeID)
-        {
-        // Sprite Rendering
-        case 400:
-        {
-            const auto material = (MaterialBase*)module->Assets[0].Get();
-            const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
-            auto dp = drawModes & moduleDrawModes & material->GetDrawModes();
-            if (dp == DrawPass::None || SpriteRenderer.Init())
-                break;
-            drawCall.Material = material;
-
-            // Initialize indirect draw arguments
-            GPUDrawIndexedIndirectArgs args { SpriteParticleRenderer::IndexCount, 1, 0, 0, 0 };
-            const uint32 argsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
-            context->UpdateBuffer(buffer->GPU.IndirectDrawArgsBuffer, &args, sizeof(args), argsOffset);
-            context->CopyBuffer(buffer->GPU.IndirectDrawArgsBuffer, buffer->GPU.Buffer, 4, argsOffset + 4, buffer->GPU.ParticleCounterOffset);
-
-            // Submit draw call
-            SpriteRenderer.SetupDrawCall(drawCall);
-            drawCall.InstanceCount = 0;
-            drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
-            drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
-            renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, dp, staticFlags, ShadowsCastingMode::DynamicOnly, bounds, drawCall, false, sortOrder);
-            indirectDrawCallIndex++;
-            break;
-        }
-        // Model Rendering
-        case 403:
-        {
-            const auto model = (Model*)module->Assets[0].Get();
-            const auto material = (MaterialBase*)module->Assets[1].Get();
-            const auto moduleDrawModes = module->Values.Count() > 4 ? (DrawPass)module->Values[4].AsInt : DrawPass::Default;
-            auto dp = drawModes & moduleDrawModes & material->GetDrawModes();
-            drawCall.Material = material;
-
-            // TODO: model LOD picking for particles?
-            int32 lodIndex = 0;
-            ModelLOD& lod = model->LODs[lodIndex];
-            for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
-            {
-                Mesh& mesh = lod.Meshes[meshIndex];
-                if (!mesh.IsInitialized())
-                    continue;
-                // TODO: include mesh entry transformation, visibility and shadows mode?
-
-                // Initialize indirect draw arguments
-                GPUDrawIndexedIndirectArgs args = { (uint32)mesh.GetTriangleCount() * 3, 1, 0, 0, 0 };
-                const uint32 argsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
-                context->UpdateBuffer(buffer->GPU.IndirectDrawArgsBuffer, &args, sizeof(args), argsOffset);
-                context->CopyBuffer(buffer->GPU.IndirectDrawArgsBuffer, buffer->GPU.Buffer, 4, argsOffset + 4, buffer->GPU.ParticleCounterOffset);
-
-                // Execute draw call
-                mesh.GetDrawCallGeometry(drawCall);
-                drawCall.InstanceCount = 0;
-                drawCall.Draw.IndirectArgsBuffer = buffer->GPU.IndirectDrawArgsBuffer;
-                drawCall.Draw.IndirectArgsOffset = indirectDrawCallIndex * sizeof(GPUDrawIndexedIndirectArgs);
-                renderContextBatch.GetMainContext().List->AddDrawCall(renderContextBatch, dp, staticFlags, ShadowsCastingMode::DynamicOnly, bounds, drawCall, false, sortOrder);
-                indirectDrawCallIndex++;
-            }
-            break;
-        }
-        // Ribbon Rendering
-        case 404:
-        {
-            // Not supported
-            break;
-        }
-        // Volumetric Fog Rendering
-        case 405:
-        {
-            // Not supported
-            break;
-        }
-        }
-    }
+    GPUEmitterDraws.Add({ buffer, drawCall, drawModes, staticFlags, bounds, renderModulesIndices, indirectArgsSize, sortOrder, sorting });
+    RenderContext::GPULocker.Unlock();
 }
 
 #endif
@@ -1119,6 +1205,7 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
     PROFILE_CPU_NAMED("GPUParticles");
     PROFILE_GPU("GPU Particles");
     PROFILE_MEM(Particles);
+    ConcurrentSystemLocker::ReadScope systemScope(Particles::SystemLocker);
 
     for (ParticleEffect* effect : GpuUpdateList)
     {

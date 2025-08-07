@@ -98,7 +98,6 @@ ParticleBuffer::~ParticleBuffer()
 {
     SAFE_DELETE_GPU_RESOURCE(GPU.Buffer);
     SAFE_DELETE_GPU_RESOURCE(GPU.BufferSecondary);
-    SAFE_DELETE_GPU_RESOURCE(GPU.IndirectDrawArgsBuffer);
     SAFE_DELETE_GPU_RESOURCE(GPU.SortingKeysBuffer);
     SAFE_DELETE_GPU_RESOURCE(GPU.SortedIndices);
     SAFE_DELETE(GPU.RibbonIndexBufferDynamic);
@@ -146,7 +145,6 @@ bool ParticleBuffer::Init(ParticleEmitter* emitter)
         GPU.BufferSecondary = GPUDevice::Instance->CreateBuffer(TEXT("ParticleBuffer B"));
         if (GPU.BufferSecondary->Init(GPU.Buffer->GetDescription()))
             return true;
-        GPU.IndirectDrawArgsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("ParticleIndirectDrawArgsBuffer"));
         GPU.PendingClear = true;
         GPU.HasValidCount = false;
         GPU.ParticleCounterOffset = size;
