@@ -6,7 +6,7 @@
 #include "Engine/Threading/ConcurrentSystemLocker.h"
 
 class TaskGraphSystem;
-struct RenderContext;
+struct RenderContextBatch;
 struct RenderView;
 class ParticleEmitter;
 class ParticleSystemInstance;
@@ -48,9 +48,9 @@ public:
     /// <summary>
     /// Draws the particles.
     /// </summary>
-    /// <param name="renderContext">The rendering context.</param>
+    /// <param name="renderContextBatch">The rendering context.</param>
     /// <param name="effect">The owning actor.</param>
-    static void DrawParticles(RenderContext& renderContext, ParticleEffect* effect);
+    static void DrawParticles(RenderContextBatch& renderContextBatch, ParticleEffect* effect);
 
 #if USE_EDITOR
     /// <summary>

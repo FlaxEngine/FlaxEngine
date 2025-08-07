@@ -133,7 +133,6 @@ void GPUParticles::CopyParticlesCount(GPUContext* context, ParticleEmitter* emit
 void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, ParticleEffect* effect, int32 emitterIndex, ParticleEmitterInstance& data)
 {
     PROFILE_CPU_ASSET(emitter);
-    PROFILE_GPU("GPUParticles");
     ASSERT(emitter->Graph.Version == data.Version);
     ASSERT(emitter->Graph.Version == data.Buffer->Version);
     uint32 counterDefaultValue = 0;

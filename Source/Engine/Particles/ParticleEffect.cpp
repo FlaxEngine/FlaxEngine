@@ -576,8 +576,21 @@ void ParticleEffect::Draw(RenderContext& renderContext)
 {
     if (renderContext.View.Pass == DrawPass::GlobalSDF || renderContext.View.Pass == DrawPass::GlobalSurfaceAtlas)
         return;
-    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(GetPosition(), renderContext.View.Position));
-    Particles::DrawParticles(renderContext, this);
+    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(GetPosition(), renderContext.View.WorldPosition));
+    RenderContextBatch renderContextBatch(renderContext);
+    Particles::DrawParticles(renderContextBatch, this);
+}
+
+void ParticleEffect::Draw(RenderContextBatch& renderContextBatch)
+{
+    Particles::DrawParticles(renderContextBatch, this);
+
+    // Cull again against the main context (if using multiple ones) to skip caching draw distance from shadow projections
+    const RenderView& mainView = renderContextBatch.GetMainContext().View;
+    const BoundingSphere bounds(_sphere.Center - mainView.Origin, _sphere.Radius);
+    if (renderContextBatch.Contexts.Count() > 1 && !mainView.CullingFrustum.Intersects(bounds))
+        return;
+    _lastMinDstSqr = Math::Min(_lastMinDstSqr, Vector3::DistanceSquared(bounds.Center, mainView.Position));
 }
 
 #if USE_EDITOR
