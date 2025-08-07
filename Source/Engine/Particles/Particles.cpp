@@ -725,6 +725,9 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
     uint32 indirectArgsOffset = 0;
     {
         PROFILE_GPU_CPU_NAMED("Init Indirect Args");
+
+        // Init default arguments
+        byte* indirectArgsMemory = (byte*)renderContextBatch.GetMainContext().List->Memory.Allocate(indirectArgsSize, GPU_SHADER_DATA_ALIGNMENT);
         for (GPUEmitterDraw& draw : GPUEmitterDraws)
         {
             ParticleEmitter* emitter = draw.Buffer->Emitter;
@@ -733,7 +736,6 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
                 if ((draw.RenderModulesIndices & (1u << moduleIndex)) == 0)
                     continue;
                 auto module = emitter->Graph.RenderModules.Get()[moduleIndex];
-                draw.DrawCall.Particle.Module = module;
                 switch (module->TypeID)
                 {
                 // Sprite Rendering
@@ -746,8 +748,65 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
                         break;
 
                     // Draw sprite for each particle
-                    GPUDrawIndexedIndirectArgs args{ SpriteParticleRenderer::IndexCount, 1, 0, 0, 0 };
-                    context->UpdateBuffer(GPUIndirectArgsBuffer, &args, sizeof(args), indirectArgsOffset);
+                    GPUDrawIndexedIndirectArgs args = { SpriteParticleRenderer::IndexCount, 1, 0, 0, 0 };
+                    Platform::MemoryCopy(indirectArgsMemory + indirectArgsOffset, &args, sizeof(args));
+                    indirectArgsOffset += sizeof(args);
+                    break;
+                }
+                // Model Rendering
+                case 403:
+                {
+                    const auto model = (Model*)module->Assets[0].Get();
+                    const auto material = (MaterialBase*)module->Assets[1].Get();
+                    const auto moduleDrawModes = module->Values.Count() > 4 ? (DrawPass)module->Values[4].AsInt : DrawPass::Default;
+                    auto dp = draw.DrawModes & moduleDrawModes & material->GetDrawModes();
+                    if (dp == DrawPass::None)
+                        break;
+                    // TODO: model LOD picking for particles?
+                    int32 lodIndex = 0;
+                    ModelLOD& lod = model->LODs[lodIndex];
+                    for (int32 meshIndex = 0; meshIndex < lod.Meshes.Count(); meshIndex++)
+                    {
+                        Mesh& mesh = lod.Meshes[meshIndex];
+                        if (!mesh.IsInitialized())
+                            continue;
+
+                        // Draw mesh for each particle
+                        GPUDrawIndexedIndirectArgs args = { (uint32)mesh.GetTriangleCount() * 3, 1, 0, 0, 0 };
+                        Platform::MemoryCopy(indirectArgsMemory + indirectArgsOffset, &args, sizeof(args));
+                        indirectArgsOffset += sizeof(args);
+                    }
+                    break;
+                }
+                }
+            }
+        }
+
+        // Upload default arguments
+        context->UpdateBuffer(GPUIndirectArgsBuffer, indirectArgsMemory, indirectArgsOffset);
+
+        // Copy particle counts into draw commands
+        indirectArgsOffset = 0;
+        for (GPUEmitterDraw& draw : GPUEmitterDraws)
+        {
+            ParticleEmitter* emitter = draw.Buffer->Emitter;
+            for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.RenderModules.Count(); moduleIndex++)
+            {
+                if ((draw.RenderModulesIndices & (1u << moduleIndex)) == 0)
+                    continue;
+                auto module = emitter->Graph.RenderModules.Get()[moduleIndex];
+                switch (module->TypeID)
+                {
+                // Sprite Rendering
+                case 400:
+                {
+                    const auto material = (MaterialBase*)module->Assets[0].Get();
+                    const auto moduleDrawModes = module->Values.Count() > 3 ? (DrawPass)module->Values[3].AsInt : DrawPass::Default;
+                    auto dp = draw.DrawModes & moduleDrawModes & material->GetDrawModes();
+                    if (dp == DrawPass::None || SpriteRenderer.Init())
+                        break;
+
+                    // Draw sprite for each particle
                     context->CopyBuffer(GPUIndirectArgsBuffer, draw.Buffer->GPU.Buffer, 4, indirectArgsOffset + 4, draw.Buffer->GPU.ParticleCounterOffset);
                     indirectArgsOffset += sizeof(GPUDrawIndexedIndirectArgs);
                     break;
@@ -771,23 +830,9 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
                             continue;
 
                         // Draw mesh for each particle
-                        GPUDrawIndexedIndirectArgs args{ (uint32)mesh.GetTriangleCount() * 3, 1, 0, 0, 0 };
-                        context->UpdateBuffer(GPUIndirectArgsBuffer, &args, sizeof(args), indirectArgsOffset);
                         context->CopyBuffer(GPUIndirectArgsBuffer, draw.Buffer->GPU.Buffer, 4, indirectArgsOffset + 4, draw.Buffer->GPU.ParticleCounterOffset);
                         indirectArgsOffset += sizeof(GPUDrawIndexedIndirectArgs);
                     }
-                    break;
-                }
-                // Ribbon Rendering
-                case 404:
-                {
-                    // Not supported
-                    break;
-                }
-                // Volumetric Fog Rendering
-                case 405:
-                {
-                    // Not supported
                     break;
                 }
                 }
