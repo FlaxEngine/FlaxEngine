@@ -178,6 +178,13 @@ void Particles::OnEffectDestroy(ParticleEffect* effect)
 #endif
 }
 
+bool EmitterUseSorting(RenderContextBatch& renderContextBatch, ParticleBuffer* buffer, DrawPass drawModes, const BoundingSphere& bounds)
+{
+    const RenderView& mainView = renderContextBatch.GetMainContext().View;
+    drawModes &= mainView.Pass;
+    return buffer->Emitter->Graph.SortModules.HasItems() && EnumHasAnyFlags(drawModes, DrawPass::Forward) && (mainView.IsCullingDisabled || mainView.CullingFrustum.Intersects(bounds));
+}
+
 void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buffer, DrawCall& drawCall, DrawPass drawModes, StaticFlags staticFlags, const BoundingSphere& bounds, uint32 renderModulesIndices, int8 sortOrder)
 {
     // Skip if CPU buffer is empty
@@ -187,7 +194,7 @@ void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
     auto emitter = buffer->Emitter;
 
     // Check if need to perform any particles sorting
-    if (emitter->Graph.SortModules.HasItems() && EnumHasAnyFlags(drawModes, DrawPass::Forward) && (buffer->CPU.Count != 0 || buffer->GPU.SortedIndices))
+    if (EmitterUseSorting(renderContextBatch, buffer, drawModes, bounds) && (buffer->CPU.Count != 0 || buffer->GPU.SortedIndices))
     {
         // Prepare sorting data
         if (!buffer->GPU.SortedIndices)
@@ -1006,7 +1013,7 @@ void DrawEmitterGPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
     }
     if (indirectArgsSize == 0)
         return;
-    bool sorting = buffer->Emitter->Graph.SortModules.HasItems() && renderContextBatch.GetMainContext().View.Pass != DrawPass::Depth && buffer->GPU.ParticlesCountMax != 0;
+    bool sorting = EmitterUseSorting(renderContextBatch, buffer, drawModes, bounds) && (buffer->GPU.ParticlesCountMax != 0 || buffer->GPU.SortedIndices);
     if (sorting && !buffer->GPU.SortedIndices)
         buffer->AllocateSortBuffer();
 
@@ -1016,7 +1023,7 @@ void DrawEmitterGPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
     if (GPUEmitterDraws.Count() == 0)
     {
         // The first emitter schedules the drawing of all batched draws
-        renderContextBatch.GetMainContext().List->AddDelayedDraw([&renderContextBatch](RenderContext& renderContext)
+        renderContextBatch.GetMainContext().List->AddDelayedDraw([](RenderContextBatch& renderContextBatch, int32 contextIndex)
         {
             DrawEmittersGPU(renderContextBatch);
         });
@@ -1046,8 +1053,10 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
         const RenderView& view = renderContextBatch.Contexts.Get()[i].View;
         const bool visible = (view.Pass & effect->DrawModes) != DrawPass::None && (view.IsCullingDisabled || view.CullingFrustum.Intersects(bounds));
         if (visible)
+        {
             viewsMask |= 1ull << (uint64)i;
-        viewsDrawModes |= view.Pass;
+            viewsDrawModes |= view.Pass;
+        }
     }
     if (viewsMask == 0)
         return;

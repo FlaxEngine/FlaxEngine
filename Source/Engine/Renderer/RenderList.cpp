@@ -262,12 +262,12 @@ void RenderList::AddDelayedDraw(DelayedDraw&& func)
     MemPoolLocker.Unlock();
 }
 
-void RenderList::DrainDelayedDraws(RenderContext& renderContext)
+void RenderList::DrainDelayedDraws(RenderContextBatch& renderContextBatch, int32 contextIndex)
 {
     if (_delayedDraws.IsEmpty())
         return;
     for (DelayedDraw& e : _delayedDraws)
-        e(renderContext);
+        e(renderContextBatch, contextIndex);
     _delayedDraws.SetCapacity(0);
 }
 

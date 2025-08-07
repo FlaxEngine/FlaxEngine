@@ -435,9 +435,9 @@ public:
     /// </summary>
     DynamicTypedBuffer TempObjectBuffer;
 
-    typedef Function<void(RenderContext& renderContext)> DelayedDraw;
+    typedef Function<void(RenderContextBatch& renderContextBatch, int32 contextIndex)> DelayedDraw;
     void AddDelayedDraw(DelayedDraw&& func);
-    void DrainDelayedDraws(RenderContext& renderContext);
+    void DrainDelayedDraws(RenderContextBatch& renderContextBatch, int32 contextIndex);
 
     /// <summary>
     /// Adds custom callback (eg. lambda) to invoke after scene draw calls are collected on a main thread (some async draw tasks might be active). Allows for safe usage of GPUContext for draw preparations or to perform GPU-driven drawing.
