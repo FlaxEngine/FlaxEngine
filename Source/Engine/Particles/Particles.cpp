@@ -793,13 +793,15 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
     if (sorting)
     {
         PROFILE_GPU_CPU_NAMED("Sort Particles");
+
+        // Generate sort keys for each particle
         for (const GPUEmitterDraw& draw : GPUEmitterDraws)
         {
             if (!draw.Sorting)
                 continue;
             ASSERT(draw.Buffer->GPU.SortingKeysBuffer);
 
-            // Execute all sorting modules
+            // Generate sort keys for particles
             ParticleEmitter* emitter = draw.Buffer->Emitter;
             for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.SortModules.Count(); moduleIndex++)
             {
@@ -812,13 +814,11 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
                 data.ParticleStride = draw.Buffer->Stride;
                 data.ParticleCapacity = draw.Buffer->Capacity;
                 int32 permutationIndex;
-                bool sortAscending;
                 switch (sortMode)
                 {
                 case ParticleSortMode::ViewDepth:
                 {
                     permutationIndex = 0;
-                    sortAscending = false;
                     data.PositionOffset = emitter->Graph.GetPositionAttributeOffset();
                     const Matrix viewProjection = renderContextBatch.GetMainContext().View.ViewProjection();
                     if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
@@ -836,7 +836,6 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
                 case ParticleSortMode::ViewDistance:
                 {
                     permutationIndex = 1;
-                    sortAscending = false;
                     data.PositionOffset = emitter->Graph.GetPositionAttributeOffset();
                     data.ViewPosition = renderContextBatch.GetMainContext().View.Position;
                     if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
@@ -853,7 +852,6 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
                 case ParticleSortMode::CustomDescending:
                 {
                     permutationIndex = 2;
-                    sortAscending = sortMode == ParticleSortMode::CustomAscending;
                     int32 attributeIdx = module->Attributes[0];
                     if (attributeIdx == -1)
                         break;
@@ -872,9 +870,26 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
                 context->BindUA(0, draw.Buffer->GPU.SortingKeysBuffer->View());
                 const int32 threadGroupSize = 1024;
                 context->Dispatch(GPUParticlesSortingCS[permutationIndex], Math::DivideAndRoundUp(draw.Buffer->GPU.ParticlesCountMax, threadGroupSize), 1, 1);
+            }
+        }
 
-                // Perform sorting
-                BitonicSort::Instance()->Sort(context, draw.Buffer->GPU.SortingKeysBuffer, draw.Buffer->GPU.Buffer, data.ParticleCounterOffset, sortAscending, draw.Buffer->GPU.SortedIndices);
+        // Run sorting
+        for (const GPUEmitterDraw& draw : GPUEmitterDraws)
+        {
+            if (!draw.Sorting)
+                continue;
+            ASSERT(draw.Buffer->GPU.SortingKeysBuffer);
+
+            // Execute all sorting modules
+            ParticleEmitter* emitter = draw.Buffer->Emitter;
+            for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.SortModules.Count(); moduleIndex++)
+            {
+                auto module = emitter->Graph.SortModules[moduleIndex];
+                const auto sortMode = (ParticleSortMode)module->Values[2].AsInt;
+                bool sortAscending = sortMode == ParticleSortMode::CustomAscending;
+                BitonicSort::Instance()->Sort(context, draw.Buffer->GPU.SortingKeysBuffer, draw.Buffer->GPU.Buffer, draw.Buffer->GPU.ParticleCounterOffset, sortAscending, draw.Buffer->GPU.SortedIndices);
+                // TODO: split sorted keys copy with another loop to give time for UAV transition
+                // TODO: use args buffer from GPUIndirectArgsBuffer instead of internal from BitonicSort to get rid of UAV barrier
             }
         }
     }
