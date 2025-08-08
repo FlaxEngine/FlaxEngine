@@ -176,18 +176,13 @@ struct CoordSystem
     {
         Matrix fbxMatrix = getMatrixFromAxis(fbxSystem);
 
-        Matrix flaxMatrix {
-            1.0f, 0.0f, 0.0f, 0.0f,  
-            0.0f, 1.0f, 0.0f, 0.0f, 
-            0.0f, 0.0f, 1.0f, 0.0f,  
-            0.0f, 0.0f, 0.0f, 1.0f
-        };
-        
-        // If Coordinate Systems are different, transform matrix is reassigned
+        // Flax uses a left-handed coordinate system with identity basis
+        // If FBX system differs, set matrix conversion
+        Matrix flaxMatrix = Matrix::Identity;            
         if (fbxMatrix != flaxMatrix)
         {
-            ToFlax = Matrix::Invert(flaxMatrix) * fbxMatrix;
-            // ToFlax = Matrix::Transpose(fbxMatrix);
+            //ToFlax = Matrix::Invert(flaxMatrix) * fbxMatrix;
+            ToFlax = fbxMatrix;
         }
     }
 
@@ -216,7 +211,6 @@ struct OpenFbxImporterData
     CoordSystem fbxCoords;
     bool ConvertRH;
     Matrix ToFlax;
-    // Quaternion RootConvertRotation = Quaternion::Identity;
 #else
     static constexpr bool ConvertRH = false;
 #endif
@@ -580,17 +574,6 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
                 {
                     bone.OffsetMatrix = data.ToFlax * bone.OffsetMatrix;
                 }
-
-                /* 
-                // Convert bone matrix if scene uses root transform
-                if (!data.RootConvertRotation.IsIdentity())
-                {
-                    Matrix m;
-                    Matrix::RotationQuaternion(data.RootConvertRotation, m);
-                    m.Invert();
-                    bone.OffsetMatrix = m * bone.OffsetMatrix;
-                }
-                */
             }
         }
     }
@@ -838,9 +821,6 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             for (int32 i = 0; i < vertexCount; i++)
             {
                 mesh.Normals.Get()[i].Z *= -1.0f;
-                // Float3 normal = mesh.Normals.Get()[i];
-                // Float3::TransformNormal(normal, data.ToFlax, normal);
-                // mesh.Normals.Get()[i] = normal;
             }
         }
     }
@@ -1313,21 +1293,6 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
     }
 }
 
-static Float3 FbxVectorFromAxisAndSign(int axis, int sign)
-{
-    switch (axis)
-    {
-    case 0:
-        return { sign ? 1.f : -1.f, 0.f, 0.f };
-    case 1:
-        return { 0.f, sign ? 1.f : -1.f, 0.f };
-    case 2:
-        return { 0.f, 0.f, sign ? 1.f : -1.f };
-    }
-
-    return { 0.f, 0.f, 0.f };
-}
-
 void ExtractEmbeddedTextures(const String& path, OpenFbxImporterData& data)
 {
     String outputPath;
@@ -1463,58 +1428,10 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
 
     // Extract embedded textures
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Textures))
+    {
         ExtractEmbeddedTextures(path, context);
-
-
-#if OPEN_FBX_CONVERT_SPACE
-    /*
-    // Transform nodes to match the engine coordinates system - DirectX (UpVector = +Y, FrontVector = +Z, CoordSystem = -X (LeftHanded))
-    if (context.fbxSystem.Up == Float3(1, 0, 0) && context.fbxSystem.Front == Float3(0, 0, 1) && context.fbxSystem.Right == Float3(0, 1, 0))
-    {
-        context.RootConvertRotation = Quaternion::Euler(0, 180, 0);
     }
-    else if (context.fbxSystem.Up == Float3(0, 1, 0) && context.fbxSystem.Front == Float3(-1, 0, 0) && context.fbxSystem.Right == Float3(0, 0, 1))
-    {
-        context.RootConvertRotation = Quaternion::Euler(90, -90, 0);
-    }
-    */
-    /*
-    Float3 engineUp(0, 1, 0);
-    Float3 engineFront(0, 0, 1);
-    Float3 engineRight(-1, 0, 0);
-
-    Float3 engineUp(1, 0, 0);
-    Float3 engineFront(0, 0, 1);
-    Float3 engineRight(0, 1, 0);
-    if (context.Up != engineUp || context.Front != engineFront || context.Right != engineRight)
-    {
-        LOG(Info, "Converting imported scene nodes to match engine coordinates system");
-        context.RootConvertRotation = Quaternion::GetRotationFromTo(context.Up, engineUp, engineUp);
-        //context.RootConvertRotation *= Quaternion::GetRotationFromTo(rotation * context.Right, engineRight, engineRight);
-        //context.RootConvertRotation *= Quaternion::GetRotationFromTo(rotation * context.Front, engineFront, engineFront);
-    }
-
-    Float3 hackUp = FbxVectorFromAxisAndSign(globalSettings.UpAxis, globalSettings.UpAxisSign);
-    if (hackUp == Float3::UnitX)
-        context.RootConvertRotation = Quaternion::Euler(-90, 0, 0);
-    else if (hackUp == Float3::UnitZ)
-        context.RootConvertRotation = Quaternion::Euler(90, 0, 0);
-    */
-   /*
-    if (!context.RootConvertRotation.IsIdentity())
-    {
-        for (auto& node : context.Nodes)
-        {
-            if (node.ParentIndex == -1)
-            {
-                node.LocalTransform.Orientation = context.RootConvertRotation * node.LocalTransform.Orientation;
-                break;
-            }
-        }
-    }
-    */
-#endif
-
+        
     // Build final skeleton bones hierarchy before importing meshes
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
