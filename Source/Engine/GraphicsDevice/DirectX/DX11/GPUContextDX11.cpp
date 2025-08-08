@@ -95,6 +95,7 @@ void GPUContextDX11::FrameBegin()
     _srMaskDirtyCompute = 0;
     _rtCount = 0;
     _vertexLayout = nullptr;
+    _currentCompute = nullptr;
     _currentState = nullptr;
     _rtDepth = nullptr;
     Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
@@ -497,7 +498,12 @@ void GPUContextDX11::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCoun
     flushOM();
 
     // Dispatch
-    _context->CSSetShader((ID3D11ComputeShader*)shader->GetBufferHandle(), nullptr, 0);
+    auto compute = (ID3D11ComputeShader*)shader->GetBufferHandle();
+    if (_currentCompute != compute)
+    {
+        _currentCompute = compute;
+        _context->CSSetShader(compute, nullptr, 0);
+    }
     _context->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
     RENDER_STAT_DISPATCH_CALL();
 
@@ -518,7 +524,12 @@ void GPUContextDX11::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* buf
     flushOM();
 
     // Dispatch
-    _context->CSSetShader((ID3D11ComputeShader*)shader->GetBufferHandle(), nullptr, 0);
+    auto compute = (ID3D11ComputeShader*)shader->GetBufferHandle();
+    if (_currentCompute != compute)
+    {
+        _currentCompute = compute;
+        _context->CSSetShader(compute, nullptr, 0);
+    }
     _context->DispatchIndirect(bufferForArgsDX11->GetBuffer(), offsetForArgs);
     RENDER_STAT_DISPATCH_CALL();
 

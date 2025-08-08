@@ -59,6 +59,7 @@ private:
     bool _iaInputLayoutDirtyFlag;
 
     // Pipeline State
+    ID3D11ComputeShader* _currentCompute;
     GPUPipelineStateDX11* _currentState;
     ID3D11BlendState* CurrentBlendState;
     ID3D11RasterizerState* CurrentRasterizerState;
