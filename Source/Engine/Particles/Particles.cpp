@@ -1279,6 +1279,16 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
     PROFILE_MEM(Particles);
     ConcurrentSystemLocker::ReadScope systemScope(Particles::SystemLocker);
 
+    // Collect valid emitter tracks to update
+    struct GPUSim
+    {
+        ParticleEffect* Effect;
+        ParticleEmitter* Emitter;
+        int32 EmitterIndex;
+        ParticleEmitterInstance& Data;
+    };
+    Array<GPUSim, RendererAllocation> sims;
+    sims.EnsureCapacity(Math::AlignUp(GpuUpdateList.Count(), 64)); // Preallocate with some slack
     for (ParticleEffect* effect : GpuUpdateList)
     {
         auto& instance = effect->Instance;
@@ -1286,7 +1296,6 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
         if (!particleSystem || !particleSystem->IsLoaded())
             continue;
 
-        // Update all emitter tracks
         for (int32 j = 0; j < particleSystem->Tracks.Count(); j++)
         {
             const auto& track = particleSystem->Tracks[j];
@@ -1297,15 +1306,40 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
             if (!emitter || !emitter->IsLoaded() || emitter->SimulationMode != ParticlesSimulationMode::GPU || instance.Emitters.Count() <= emitterIndex)
                 continue;
             ParticleEmitterInstance& data = instance.Emitters[emitterIndex];
-            if (!data.Buffer)
+            if (!data.Buffer || !emitter->GPU.CanSim(emitter, data))
                 continue;
             ASSERT(emitter->Capacity != 0 && emitter->Graph.Layout.Size != 0);
-
-            // TODO: use async context for particles to update them on compute during GBuffer rendering
-            emitter->GPU.Execute(context, emitter, effect, emitterIndex, data);
+            sims.Add({ effect, emitter, emitterIndex, data });
         }
     }
     GpuUpdateList.Clear();
+
+    // Pre-pass with buffers setup
+    {
+        PROFILE_CPU_NAMED("PreSim");
+        for (GPUSim& sim : sims)
+        {
+            sim.Emitter->GPU.PreSim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, sim.Data);
+        }
+    }
+
+    // Pre-pass with buffers setup
+    {
+        PROFILE_GPU_CPU("Sim");
+        for (GPUSim& sim : sims)
+        {
+            sim.Emitter->GPU.Sim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, sim.Data);
+        }
+    }
+
+    // Post-pass with buffers setup
+    {
+        PROFILE_CPU_NAMED("PostSim");
+        for (GPUSim& sim : sims)
+        {
+            sim.Emitter->GPU.PostSim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, sim.Data);
+        }
+    }
 
     context->ResetSR();
     context->ResetUA();

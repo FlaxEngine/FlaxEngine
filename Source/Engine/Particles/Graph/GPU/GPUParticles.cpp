@@ -130,14 +130,20 @@ void GPUParticles::CopyParticlesCount(GPUContext* context, ParticleEmitter* emit
     }
 }
 
-void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, ParticleEffect* effect, int32 emitterIndex, ParticleEmitterInstance& data)
+bool GPUParticles::CanSim(const ParticleEmitter* emitter, const ParticleEmitterInstance& data) const
 {
-    PROFILE_CPU_ASSET(emitter);
-    ASSERT(emitter->Graph.Version == data.Version);
-    ASSERT(emitter->Graph.Version == data.Buffer->Version);
+    const int32 threads = data.Buffer->GPU.ParticlesCountMax + data.GPU.SpawnCount;
+    return data.GPU.DeltaTime > 0.0f &&
+        emitter->Graph.Version == data.Version &&
+        emitter->Graph.Version == data.Buffer->Version &&
+        threads != 0 && 
+        _mainCS;
+}
+
+void GPUParticles::PreSim(GPUContext* context, ParticleEmitter* emitter, ParticleEffect* effect, int32 emitterIndex, ParticleEmitterInstance& data)
+{
     uint32 counterDefaultValue = 0;
     const uint32 counterOffset = data.Buffer->GPU.ParticleCounterOffset;
-    const bool hasCB = _cbData.HasItems();
 
     // Clear buffers if need to
     if (data.Buffer->GPU.PendingClear)
@@ -156,14 +162,17 @@ void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, Partic
         }
     }
 
-    // Skip if can
-    SceneRenderTask* viewTask = effect->GetRenderTask();
-    const int32 threads = data.Buffer->GPU.ParticlesCountMax + data.GPU.SpawnCount;
-    if (data.GPU.DeltaTime <= 0.0f || threads == 0 || !_mainCS)
-        return;
-
     // Clear destination buffer counter
     context->UpdateBuffer(data.Buffer->GPU.BufferSecondary, &counterDefaultValue, sizeof(counterDefaultValue), counterOffset);
+}
+
+void GPUParticles::Sim(GPUContext* context, ParticleEmitter* emitter, ParticleEffect* effect, int32 emitterIndex, ParticleEmitterInstance& data)
+{
+    PROFILE_CPU_ASSET(emitter);
+    const bool hasCB = _cbData.HasItems();
+    const int32 threads = data.Buffer->GPU.ParticlesCountMax + data.GPU.SpawnCount;
+    const uint32 counterOffset = data.Buffer->GPU.ParticleCounterOffset;
+    SceneRenderTask* viewTask = effect->GetRenderTask();
 
     // Setup parameters
     MaterialParameter::BindMeta bindMeta;
@@ -265,6 +274,11 @@ void GPUParticles::Execute(GPUContext* context, ParticleEmitter* emitter, Partic
     // Invoke Compute shader
     const int32 threadGroupSize = 1024;
     context->Dispatch(_mainCS, Math::Min(Math::DivideAndRoundUp(threads, threadGroupSize), GPU_MAX_CS_DISPATCH_THREAD_GROUPS), 1, 1);
+}
+
+void GPUParticles::PostSim(GPUContext* context, ParticleEmitter* emitter, ParticleEffect* effect, int32 emitterIndex, ParticleEmitterInstance& data)
+{
+    const uint32 counterOffset = data.Buffer->GPU.ParticleCounterOffset;
 
     // Copy custom data
     for (int32 i = 0; i < CustomDataSize; i += 4)
