@@ -24,10 +24,10 @@ namespace FlaxEditor.Viewport.Cameras
         private EditorViewport _viewport;
 
         private static Quaternion viewportOrientation = new(0.424f, -0.094f, 0.044f, 0.899f);
-        // private static Quaternion viewportOrientation = Quaternion.Euler(-4, 59, 0);
+        //private static Quaternion viewportOrientation = Quaternion.Euler(-4f, 59f, 0f);
 
         // private static Quaternion arcBallOrientation = new(-0.08f, -0.92f, 0.31f, -0.23f);
-        private static Quaternion arcBallOrientation = Quaternion.Euler(15, -45, 0);
+        private static Quaternion arcBallOrientation = Quaternion.Euler(15f, -45f, 0f);
 
         /// <summary>
         /// Gets the parent viewport.

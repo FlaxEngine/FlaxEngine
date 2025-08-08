@@ -903,9 +903,9 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         data.BlendIndicesCache.SetAll(Int4::Zero);
         data.BlendWeightsCache.SetAll(Float4::Zero);
 
-        for (int clusterIndex = 0, clusterCount = skin->getClusterCount(); clusterIndex < clusterCount; clusterIndex++)
+        for (int32 i = 0; i < skin->getClusterCount(); i++)
         {
-            const ofbx::Cluster* cluster = skin->getCluster(clusterIndex);
+            const ofbx::Cluster* cluster = skin->getCluster(i);
             if (cluster->getIndicesCount() == 0)
                 continue;
             const auto link = cluster->getLink();

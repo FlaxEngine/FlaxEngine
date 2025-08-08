@@ -83,6 +83,7 @@ namespace FlaxEditor.Viewport.Previews
 
             StaticModel.Transform = new Transform(position, StaticModel.Orientation, scale);
             AnimatedModel.Transform = new Transform(position, AnimatedModel.Orientation, scale);
+            ResetCamera();
         }
 
         /// <inheritdoc />
