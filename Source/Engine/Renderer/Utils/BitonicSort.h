@@ -34,7 +34,8 @@ public:
     /// <param name="counterOffset">The offset into counter buffer to find count for this list. Must be a multiple of 4 bytes.</param>
     /// <param name="sortAscending">True to sort in ascending order (smallest to largest), otherwise false to sort in descending order.</param>
     /// <param name="sortedIndicesBuffer">The output buffer for sorted values extracted from the sorted sortingKeysBuffer after algorithm run. Valid for uint value types - used as RWBuffer.</param>
-    void Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuffer* countBuffer, uint32 counterOffset, bool sortAscending, GPUBuffer* sortedIndicesBuffer);
+    /// <param name="maxElements">Optional upper limit of elements to sort. Cna be used to optimize indirect dispatches allocation. If non-zero, then it gets calculated based on the input item buffer size.</param>
+    void Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuffer* countBuffer, uint32 counterOffset, bool sortAscending, GPUBuffer* sortedIndicesBuffer, uint32 maxElements = 0);
 
 public:
 

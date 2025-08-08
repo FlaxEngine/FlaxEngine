@@ -6,15 +6,9 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPULimits.h"
 
-// The sorting keys buffer item structure template. Matches the shader type.
-struct Item
-{
-    float Key;
-    uint32 Value;
-};
-
 GPU_CB_STRUCT(Data {
-    Item NullItem;
+    float NullItemKey;
+    uint32 NullItemValue;
     uint32 CounterOffset;
     uint32 MaxIterations;
     uint32 LoopK;
@@ -86,22 +80,22 @@ void BitonicSort::Dispose()
     _shader = nullptr;
 }
 
-void BitonicSort::Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuffer* countBuffer, uint32 counterOffset, bool sortAscending, GPUBuffer* sortedIndicesBuffer)
+void BitonicSort::Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuffer* countBuffer, uint32 counterOffset, bool sortAscending, GPUBuffer* sortedIndicesBuffer, uint32 maxElements)
 {
     ASSERT(context && sortingKeysBuffer && countBuffer);
     if (checkIfSkipPass())
         return;
     PROFILE_GPU_CPU("Bitonic Sort");
     const uint32 elementSizeBytes = sizeof(uint64);
-    const uint32 maxNumElements = sortingKeysBuffer->GetSize() / elementSizeBytes;
+    const uint32 maxNumElements = maxElements != 0 ? maxElements : sortingKeysBuffer->GetSize() / elementSizeBytes;
     const uint32 alignedMaxNumElements = Math::RoundUpToPowerOf2(maxNumElements);
     const uint32 maxIterations = (uint32)Math::Log2((float)Math::Max(2048u, alignedMaxNumElements)) - 10;
 
     // Setup constants buffer
     Data data;
     data.CounterOffset = counterOffset;
-    data.NullItem.Key = sortAscending ? MAX_float : -MAX_float;
-    data.NullItem.Value = 0;
+    data.NullItemKey = sortAscending ? MAX_float : -MAX_float;
+    data.NullItemValue = 0;
     data.KeySign = sortAscending ? -1.0f : 1.0f;
     data.MaxIterations = maxIterations;
     data.LoopK = 0;
@@ -128,7 +122,6 @@ void BitonicSort::Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuf
             data.LoopK = k;
             data.LoopJ = j;
             context->UpdateCB(_cb, &data);
-            context->BindCB(0, _cb);
 
             context->DispatchIndirect(_outerSortCS, _dispatchArgsBuffer, indirectArgsOffset);
             indirectArgsOffset += sizeof(GPUDispatchIndirectArgs);

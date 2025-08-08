@@ -36,14 +36,14 @@ uint InsertOneBit(uint value, uint oneBitMask)
 // (effectively a negation) or leave the value alone. When the KeySign is
 // 1, we are sorting descending, so when A < B, they should swap. For an
 // ascending sort, -A < -B should swap.
-bool ShouldSwap(Item a, Item b)
+bool ShouldSwap(Item a, Item b, float keySign)
 {
 	//return (a ^ NullItem) < (b ^ NullItem);
 
 	//return (a.Key) < (b.Key);
-	return (a.Key * KeySign) < (b.Key * KeySign);
+	return (a.Key * keySign) < (b.Key * keySign);
 	//return asfloat(a) < asfloat(b);
-	//return (asfloat(a) * KeySign) < (asfloat(b) * KeySign);
+	//return (asfloat(a) * keySign) < (asfloat(b) * keySign);
 }
 
 #ifdef _CS_IndirectArgs
@@ -136,6 +136,7 @@ void CS_PreSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 
 	GroupMemoryBarrierWithGroupSync();
 
+    float keySign = KeySign;
 	UNROLL
 	for (uint k = 2; k <= 2048; k <<= 1)
 	{
@@ -144,14 +145,14 @@ void CS_PreSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 			uint index2 = InsertOneBit(groupIndex, j);
 			uint index1 = index2 ^ (k == 2 * j ? k - 1 : j);
 
-			Item A = SortData[index1];
-			Item B = SortData[index2];
+			Item a = SortData[index1];
+			Item b = SortData[index2];
 
-			if (ShouldSwap(A, B))
+			if (ShouldSwap(a, b, keySign))
 			{
 				// Swap the items
-				SortData[index1] = B;
-				SortData[index2] = A;
+				SortData[index1] = b;
+				SortData[index2] = a;
 			}
 
 			GroupMemoryBarrierWithGroupSync();
@@ -182,20 +183,21 @@ void CS_InnerSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 
 	GroupMemoryBarrierWithGroupSync();
 
+    float keySign = KeySign;
 	UNROLL
 	for (uint j = 1024; j > 0; j /= 2)
 	{
 		uint index2 = InsertOneBit(groupIndex, j);
 		uint index1 = index2 ^ j;
 
-		Item A = SortData[index1];
-		Item B = SortData[index2];
+		Item a = SortData[index1];
+		Item b = SortData[index2];
 
-		if (ShouldSwap(A, B))
+		if (ShouldSwap(a, b, keySign))
 		{
 			// Swap the items
-			SortData[index1] = B;
-			SortData[index2] = A;
+			SortData[index1] = b;
+			SortData[index2] = a;
 		}
 
 		GroupMemoryBarrierWithGroupSync();
@@ -224,14 +226,15 @@ void CS_OuterSort(uint3 dispatchThreadId : SV_DispatchThreadID)
 	if (index2 >= count)
 		return;
 
-	Item A = SortBuffer[index1];
-	Item B = SortBuffer[index2];
+	Item a = SortBuffer[index1];
+	Item b = SortBuffer[index2];
 
-	if (ShouldSwap(A, B))
+    float keySign = KeySign;
+	if (ShouldSwap(a, b, keySign))
 	{
 		// Swap the items
-		SortBuffer[index1] = B;
-		SortBuffer[index2] = A;
+		SortBuffer[index1] = b;
+		SortBuffer[index2] = a;
 	}
 }
 
@@ -248,12 +251,10 @@ void CS_CopyIndices(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
 	const uint count = CounterBuffer.Load(CounterOffset);
 	uint index = dispatchThreadId.x;
-
 	if (index >= count)
 		return;
 
 	Item element = SortBuffer[index];
-
 	SortedIndices[index] = element.Value;
 }
 
