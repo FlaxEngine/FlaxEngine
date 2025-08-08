@@ -940,8 +940,7 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
                 const auto sortMode = (ParticleSortMode)module->Values[2].AsInt;
                 bool sortAscending = sortMode == ParticleSortMode::CustomAscending;
                 BitonicSort::Instance()->Sort(context, draw.Buffer->GPU.SortingKeysBuffer, draw.Buffer->GPU.Buffer, draw.Buffer->GPU.ParticleCounterOffset, sortAscending, draw.Buffer->GPU.SortedIndices, draw.Buffer->GPU.ParticlesCountMax);
-                // TODO: split sorted keys copy with another loop to give time for UAV transition
-                // TODO: use args buffer from GPUIndirectArgsBuffer instead of internal from BitonicSort to get rid of UAV barrier
+                // TODO: use args buffer from GPUIndirectArgsBuffer instead of internal from BitonicSort to get rid of UAV barrier (run all sorting in parallel)
             }
         }
     }

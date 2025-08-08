@@ -18,7 +18,7 @@ private:
     GPUBuffer* _dispatchArgsBuffer = nullptr;
     GPUConstantBuffer* _cb;
     GPUShaderProgramCS* _indirectArgsCS;
-    GPUShaderProgramCS* _preSortCS;
+    ComputeShaderPermutation<2> _preSortCS;
     GPUShaderProgramCS* _innerSortCS;
     GPUShaderProgramCS* _outerSortCS;
     GPUShaderProgramCS* _copyIndicesCS;
@@ -46,7 +46,7 @@ public:
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
-        _preSortCS = nullptr;
+        _preSortCS.Clear();
         _innerSortCS = nullptr;
         _outerSortCS = nullptr;
         invalidateResources();

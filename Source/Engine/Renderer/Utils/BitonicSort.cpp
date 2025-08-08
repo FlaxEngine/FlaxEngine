@@ -56,7 +56,7 @@ bool BitonicSort::setupResources()
 
     // Cache compute shaders
     _indirectArgsCS = shader->GetCS("CS_IndirectArgs");
-    _preSortCS = shader->GetCS("CS_PreSort");
+    _preSortCS.Get(shader, "CS_PreSort");
     _innerSortCS = shader->GetCS("CS_InnerSort");
     _outerSortCS = shader->GetCS("CS_OuterSort");
     _copyIndicesCS = shader->GetCS("CS_CopyIndices");
@@ -73,7 +73,7 @@ void BitonicSort::Dispose()
     SAFE_DELETE_GPU_RESOURCE(_dispatchArgsBuffer);
     _cb = nullptr;
     _indirectArgsCS = nullptr;
-    _preSortCS = nullptr;
+    _preSortCS.Clear();
     _innerSortCS = nullptr;
     _outerSortCS = nullptr;
     _copyIndicesCS = nullptr;
@@ -86,8 +86,9 @@ void BitonicSort::Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuf
     if (checkIfSkipPass())
         return;
     PROFILE_GPU_CPU("Bitonic Sort");
-    const uint32 elementSizeBytes = sizeof(uint64);
-    const uint32 maxNumElements = maxElements != 0 ? maxElements : sortingKeysBuffer->GetSize() / elementSizeBytes;
+    uint32 maxNumElements = sortingKeysBuffer->GetSize() / sizeof(uint64);
+    if (maxElements > 0 && maxElements < maxNumElements)
+        maxNumElements = maxElements;
     const uint32 alignedMaxNumElements = Math::RoundUpToPowerOf2(maxNumElements);
     const uint32 maxIterations = (uint32)Math::Log2((float)Math::Max(2048u, alignedMaxNumElements)) - 10;
 
@@ -102,33 +103,44 @@ void BitonicSort::Sort(GPUContext* context, GPUBuffer* sortingKeysBuffer, GPUBuf
     data.LoopJ = 0;
     context->UpdateCB(_cb, &data);
     context->BindCB(0, _cb);
-
-    // Generate execute indirect arguments
     context->BindSR(0, countBuffer->View());
-    context->BindUA(0, _dispatchArgsBuffer->View());
-    context->Dispatch(_indirectArgsCS, 1, 1, 1);
 
-    // Pre-Sort the buffer up to k = 2048 (this also pads the list with invalid indices that will drift to the end of the sorted list)
-    context->BindUA(0, sortingKeysBuffer->View());
-    context->DispatchIndirect(_preSortCS, _dispatchArgsBuffer, 0);
-
-    // We have already pre-sorted up through k = 2048 when first writing our list, so we continue sorting with k = 4096
-    // For really large values of k, these indirect dispatches will be skipped over with thread counts of 0
-    uint32 indirectArgsOffset = sizeof(GPUDispatchIndirectArgs);
-    for (uint32 k = 4096; k <= alignedMaxNumElements; k *= 2)
+    // If item count is small we can do only presorting within a single dispatch thread group
+    if (maxNumElements <= 2048)
     {
-        for (uint32 j = k / 2; j >= 2048; j /= 2)
-        {
-            data.LoopK = k;
-            data.LoopJ = j;
-            context->UpdateCB(_cb, &data);
+        // Use pre-sort with smaller thread group size (eg. for small particle emitters sorting)
+        const int32 permutation = maxNumElements < 128 ? 1 : 0;
+        context->BindUA(0, sortingKeysBuffer->View());
+        context->Dispatch(_preSortCS.Get(permutation), 1, 1, 1);
+    }
+    else
+    {
+        // Generate execute indirect arguments
+        context->BindUA(0, _dispatchArgsBuffer->View());
+        context->Dispatch(_indirectArgsCS, 1, 1, 1);
 
-            context->DispatchIndirect(_outerSortCS, _dispatchArgsBuffer, indirectArgsOffset);
+        // Pre-Sort the buffer up to k = 2048 (this also pads the list with invalid indices that will drift to the end of the sorted list)
+        context->BindUA(0, sortingKeysBuffer->View());
+        context->DispatchIndirect(_preSortCS.Get(0), _dispatchArgsBuffer, 0);
+
+        // We have already pre-sorted up through k = 2048 when first writing our list, so we continue sorting with k = 4096
+        // For really large values of k, these indirect dispatches will be skipped over with thread counts of 0
+        uint32 indirectArgsOffset = sizeof(GPUDispatchIndirectArgs);
+        for (uint32 k = 4096; k <= alignedMaxNumElements; k *= 2)
+        {
+            for (uint32 j = k / 2; j >= 2048; j /= 2)
+            {
+                data.LoopK = k;
+                data.LoopJ = j;
+                context->UpdateCB(_cb, &data);
+
+                context->DispatchIndirect(_outerSortCS, _dispatchArgsBuffer, indirectArgsOffset);
+                indirectArgsOffset += sizeof(GPUDispatchIndirectArgs);
+            }
+
+            context->DispatchIndirect(_innerSortCS, _dispatchArgsBuffer, indirectArgsOffset);
             indirectArgsOffset += sizeof(GPUDispatchIndirectArgs);
         }
-
-        context->DispatchIndirect(_innerSortCS, _dispatchArgsBuffer, indirectArgsOffset);
-        indirectArgsOffset += sizeof(GPUDispatchIndirectArgs);
     }
 
     context->ResetUA();

@@ -3,6 +3,10 @@
 #include "./Flax/Common.hlsl"
 #include "./Flax/Math.hlsl"
 
+#ifndef THREAD_GROUP_SIZE
+#define THREAD_GROUP_SIZE 1024
+#endif
+
 struct Item
 {
 	float Key;
@@ -36,14 +40,14 @@ uint InsertOneBit(uint value, uint oneBitMask)
 // (effectively a negation) or leave the value alone. When the KeySign is
 // 1, we are sorting descending, so when A < B, they should swap. For an
 // ascending sort, -A < -B should swap.
-bool ShouldSwap(Item a, Item b, float keySign)
+bool ShouldSwap(Item a, Item b)
 {
 	//return (a ^ NullItem) < (b ^ NullItem);
 
 	//return (a.Key) < (b.Key);
-	return (a.Key * keySign) < (b.Key * keySign);
+	return (a.Key * KeySign) < (b.Key * KeySign);
 	//return asfloat(a) < asfloat(b);
-	//return (asfloat(a) * keySign) < (asfloat(b) * keySign);
+	//return (asfloat(a) * KeySign) < (asfloat(b) * KeySign);
 }
 
 #ifdef _CS_IndirectArgs
@@ -91,7 +95,7 @@ void CS_IndirectArgs(uint groupIndex : SV_GroupIndex)
 
 RWStructuredBuffer<Item> SortBuffer : register(u0);
 
-groupshared Item SortData[2048];
+groupshared Item SortData[THREAD_GROUP_SIZE * 2];
 
 void LoadItem(uint element, uint count)
 {
@@ -106,7 +110,7 @@ void LoadItem(uint element, uint count)
 		item.Key = NullItemKey;
 		item.Value = NullItemValue;
 	}
-	SortData[element & 2047] = item;
+	SortData[element & (THREAD_GROUP_SIZE * 2 - 1)] = item;
 }
 
 void StoreItem(uint element, uint count)
@@ -122,23 +126,24 @@ void StoreItem(uint element, uint count)
 #ifdef _CS_PreSort
 
 META_CS(true, FEATURE_LEVEL_SM5)
-[numthreads(1024, 1, 1)]
+META_PERMUTATION_1(THREAD_GROUP_SIZE=1024)
+META_PERMUTATION_1(THREAD_GROUP_SIZE=64)
+[numthreads(THREAD_GROUP_SIZE, 1, 1)]
 void CS_PreSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
 	// Item index of the start of this group
-	const uint groupStart = groupID.x * 2048;
+	const uint groupStart = groupID.x * (THREAD_GROUP_SIZE * 2);
 
 	// Actual number of items that need sorting
 	const uint count = CounterBuffer.Load(CounterOffset);
 
 	LoadItem(groupStart + groupIndex, count);
-	LoadItem(groupStart + groupIndex + 1024, count);
+	LoadItem(groupStart + groupIndex + THREAD_GROUP_SIZE, count);
 
 	GroupMemoryBarrierWithGroupSync();
 
-    float keySign = KeySign;
 	UNROLL
-	for (uint k = 2; k <= 2048; k <<= 1)
+	for (uint k = 2; k <= THREAD_GROUP_SIZE * 2; k <<= 1)
 	{
 		for (uint j = k / 2; j > 0; j /= 2)
 		{
@@ -148,7 +153,7 @@ void CS_PreSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 			Item a = SortData[index1];
 			Item b = SortData[index2];
 
-			if (ShouldSwap(a, b, keySign))
+			if (ShouldSwap(a, b))
 			{
 				// Swap the items
 				SortData[index1] = b;
@@ -161,7 +166,7 @@ void CS_PreSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 
 	// Write sorted results to memory
 	StoreItem(groupStart + groupIndex, count);
-	StoreItem(groupStart + groupIndex + 1024, count);
+	StoreItem(groupStart + groupIndex + THREAD_GROUP_SIZE, count);
 }
 
 #endif
@@ -169,23 +174,22 @@ void CS_PreSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 #ifdef _CS_InnerSort
 
 META_CS(true, FEATURE_LEVEL_SM5)
-[numthreads(1024, 1, 1)]
+[numthreads(THREAD_GROUP_SIZE, 1, 1)]
 void CS_InnerSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 {
 	const uint count = CounterBuffer.Load(CounterOffset);
 
 	// Item index of the start of this group
-	const uint groupStart = groupID.x * 2048;
+	const uint groupStart = groupID.x * (THREAD_GROUP_SIZE * 2);
 
 	// Load from memory into LDS to prepare sort
 	LoadItem(groupStart + groupIndex, count);
-	LoadItem(groupStart + groupIndex + 1024, count);
+	LoadItem(groupStart + groupIndex + THREAD_GROUP_SIZE, count);
 
 	GroupMemoryBarrierWithGroupSync();
 
-    float keySign = KeySign;
 	UNROLL
-	for (uint j = 1024; j > 0; j /= 2)
+	for (uint j = THREAD_GROUP_SIZE; j > 0; j /= 2)
 	{
 		uint index2 = InsertOneBit(groupIndex, j);
 		uint index1 = index2 ^ j;
@@ -193,7 +197,7 @@ void CS_InnerSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 		Item a = SortData[index1];
 		Item b = SortData[index2];
 
-		if (ShouldSwap(a, b, keySign))
+		if (ShouldSwap(a, b))
 		{
 			// Swap the items
 			SortData[index1] = b;
@@ -204,7 +208,7 @@ void CS_InnerSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 	}
 
 	StoreItem(groupStart + groupIndex, count);
-	StoreItem(groupStart + groupIndex + 1024, count);
+	StoreItem(groupStart + groupIndex + THREAD_GROUP_SIZE, count);
 }
 
 #endif
@@ -229,8 +233,7 @@ void CS_OuterSort(uint3 dispatchThreadId : SV_DispatchThreadID)
 	Item a = SortBuffer[index1];
 	Item b = SortBuffer[index2];
 
-    float keySign = KeySign;
-	if (ShouldSwap(a, b, keySign))
+	if (ShouldSwap(a, b))
 	{
 		// Swap the items
 		SortBuffer[index1] = b;
