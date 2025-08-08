@@ -208,26 +208,27 @@ void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
             const auto sortMode = static_cast<ParticleSortMode>(module->Values[2].AsInt);
             const int32 stride = buffer->Stride;
             const int32 listSize = buffer->CPU.Count;
+            const int32 indicesByteSize = listSize * buffer->GPU.SortedIndices->GetStride();
             Array<uint32, RendererAllocation> sortingKeysList[4];
-            Array<int32, RendererAllocation> sortingIndicesList[2];
+            Array<byte, RendererAllocation> sortingIndicesList[2];
             uint32* sortingKeys[2];
-            int32* sortingIndices[2];
+            void* sortingIndices[2];
             if (listSize < 500)
             {
                 // Use fast stack allocator from RenderList
                 auto& memory = renderContextBatch.GetMainContext().List->Memory;
                 sortingKeys[0] = memory.Allocate<uint32>(listSize);
                 sortingKeys[1] = memory.Allocate<uint32>(listSize);
-                sortingIndices[0] = memory.Allocate<int32>(listSize);
-                sortingIndices[1] = memory.Allocate<int32>(listSize);
+                sortingIndices[0] = memory.Allocate(indicesByteSize, GPU_SHADER_DATA_ALIGNMENT);
+                sortingIndices[1] = memory.Allocate(indicesByteSize, GPU_SHADER_DATA_ALIGNMENT);
             }
             else
             {
                 // Use shared pooled memory from RendererAllocation
                 sortingKeysList[0].Resize(listSize);
                 sortingKeysList[1].Resize(listSize);
-                sortingIndicesList[0].Resize(listSize);
-                sortingIndicesList[1].Resize(listSize);
+                sortingIndicesList[0].Resize(indicesByteSize);
+                sortingIndicesList[1].Resize(indicesByteSize);
                 sortingKeys[0] = sortingKeysList[0].Get();
                 sortingKeys[1] = sortingKeysList[1].Get();
                 sortingIndices[0] = sortingIndicesList[0].Get();
@@ -314,21 +315,42 @@ void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
             }
 
             // Generate sorting indices
-            int32* sortedIndices = sortingIndices[0];
+            void* sortedIndices = sortingIndices[0];
+            switch (buffer->GPU.SortedIndices->GetFormat())
             {
+            case PixelFormat::R16_UInt:
                 for (int32 i = 0; i < listSize; i++)
-                    sortedIndices[i] = i;
+                    ((uint16*)sortedIndices)[i] = i;
+                break;
+            case PixelFormat::R32_UInt:
+                for (int32 i = 0; i < listSize; i++)
+                    ((uint32*)sortedIndices)[i] = i;
+                break;
             }
 
             // Sort keys with indices
+            switch (buffer->GPU.SortedIndices->GetFormat())
             {
-                Sorting::RadixSort(sortedKeys, sortedIndices, sortingKeys[1], sortingIndices[1], listSize);
+            case PixelFormat::R16_UInt:
+            {
+                uint16* sortedIndicesTyped = (uint16*)sortedIndices;
+                Sorting::RadixSort(sortedKeys, sortedIndicesTyped, sortingKeys[1], (uint16*)sortingIndices[1], listSize);
+                sortedIndices = sortedIndicesTyped;
+                break;
+            }
+            case PixelFormat::R32_UInt:
+            {
+                uint32* sortedIndicesTyped = (uint32*)sortedIndices;
+                Sorting::RadixSort(sortedKeys, sortedIndicesTyped, sortingKeys[1], (uint32*)sortingIndices[1], listSize);
+                sortedIndices = sortedIndicesTyped;
+                break;
+            }
             }
 
             // Upload CPU particles indices
             {
                 RenderContext::GPULocker.Lock();
-                context->UpdateBuffer(buffer->GPU.SortedIndices, sortedIndices, listSize * sizeof(uint32), sortedIndicesOffset);
+                context->UpdateBuffer(buffer->GPU.SortedIndices, sortedIndices, indicesByteSize, sortedIndicesOffset);
                 RenderContext::GPULocker.Unlock();
             }
         }
@@ -1312,7 +1334,7 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
 
     // Pre-pass with buffers setup
     {
-        PROFILE_GPU_CPU("Sim");
+        PROFILE_GPU_CPU_NAMED("Sim");
         for (GPUSim& sim : sims)
         {
             sim.Emitter->GPU.Sim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, sim.Data);
