@@ -206,7 +206,7 @@ public:
         /// <summary>
         /// The GPU particles sorting buffer. Contains structure of particle index and the sorting key for every particle. Used to sort particles.
         /// </summary>
-        GPUBuffer* SortingKeysBuffer = nullptr;
+        GPUBuffer* SortingKeys = nullptr;
 
         /// <summary>
         /// The particles indices buffer (GPU side).

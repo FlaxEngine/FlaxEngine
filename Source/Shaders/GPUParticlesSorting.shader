@@ -20,13 +20,9 @@ META_CB_END
 // Particles data buffer
 ByteAddressBuffer ParticlesData : register(t0);
 
-// Output sorting keys buffer (index + key)
-struct Item
-{
-	float Key;
-	uint Value;
-};
-RWStructuredBuffer<Item> SortingKeys : register(u0);
+// Sorting data (per-particle)
+RWBuffer<uint> SortedIndices : register(u0);
+RWBuffer<float> SortingKeys : register(u1);
 
 float GetParticleFloat(uint particleIndex, int offset)
 {
@@ -78,8 +74,6 @@ void CS_Sort(uint3 dispatchThreadId : SV_DispatchThreadID)
 #endif
 
 	// Write sorting index-key pair
-	Item item;
-	item.Key = sortKey;
-	item.Value = index;
-	SortingKeys[index] = item;
+	SortedIndices[index] = index;
+	SortingKeys[index] = sortKey;
 }

@@ -10,12 +10,12 @@
 struct Item
 {
 	float Key;
-	uint Value;
+	uint Index;
 };
 
 META_CB_BEGIN(0, Data)
 float NullItemKey;
-uint NullItemValue;
+uint NullItemIndex;
 uint CounterOffset;
 uint MaxIterations;
 uint LoopK;
@@ -40,12 +40,12 @@ uint InsertOneBit(uint value, uint oneBitMask)
 // (effectively a negation) or leave the value alone. When the KeySign is
 // 1, we are sorting descending, so when A < B, they should swap. For an
 // ascending sort, -A < -B should swap.
-bool ShouldSwap(Item a, Item b)
+bool ShouldSwap(float a, float b)
 {
 	//return (a ^ NullItem) < (b ^ NullItem);
 
-	//return (a.Key) < (b.Key);
-	return (a.Key * KeySign) < (b.Key * KeySign);
+	//return (a) < (b);
+	return (a * KeySign) < (b * KeySign);
 	//return asfloat(a) < asfloat(b);
 	//return (asfloat(a) * KeySign) < (asfloat(b) * KeySign);
 }
@@ -93,7 +93,8 @@ void CS_IndirectArgs(uint groupIndex : SV_GroupIndex)
 
 #if defined(_CS_PreSort) || defined(_CS_InnerSort)
 
-RWStructuredBuffer<Item> SortBuffer : register(u0);
+RWBuffer<uint> SortedIndices : register(u0);
+RWBuffer<float> SortingKeys : register(u1);
 
 groupshared Item SortData[THREAD_GROUP_SIZE * 2];
 
@@ -103,12 +104,13 @@ void LoadItem(uint element, uint count)
 	Item item;
 	if (element < count)
 	{
-		item = SortBuffer[element];
+		item.Key = SortingKeys[element];
+		item.Index = SortedIndices[element];
 	}
 	else
 	{
 		item.Key = NullItemKey;
-		item.Value = NullItemValue;
+		item.Index = NullItemIndex;
 	}
 	SortData[element & (THREAD_GROUP_SIZE * 2 - 1)] = item;
 }
@@ -117,7 +119,9 @@ void StoreItem(uint element, uint count)
 {
 	if (element < count)
 	{
-		SortBuffer[element] = SortData[element & 2047];
+        Item item = SortData[element & ((THREAD_GROUP_SIZE * 2 - 1))];
+		SortingKeys[element] = item.Key;
+		SortedIndices[element] = item.Index;
 	}
 }
 
@@ -153,7 +157,7 @@ void CS_PreSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 			Item a = SortData[index1];
 			Item b = SortData[index2];
 
-			if (ShouldSwap(a, b))
+			if (ShouldSwap(a.Key, b.Key))
 			{
 				// Swap the items
 				SortData[index1] = b;
@@ -197,7 +201,7 @@ void CS_InnerSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 		Item a = SortData[index1];
 		Item b = SortData[index2];
 
-		if (ShouldSwap(a, b))
+		if (ShouldSwap(a.Key, b.Key))
 		{
 			// Swap the items
 			SortData[index1] = b;
@@ -215,7 +219,8 @@ void CS_InnerSort(uint3 groupID : SV_GroupID, uint groupIndex : SV_GroupIndex)
 
 #ifdef _CS_OuterSort
 
-RWStructuredBuffer<Item> SortBuffer : register(u0);
+RWBuffer<uint> SortedIndices : register(u0);
+RWBuffer<float> SortingKeys : register(u1);
 
 META_CS(true, FEATURE_LEVEL_SM5)
 [numthreads(1024, 1, 1)]
@@ -230,35 +235,19 @@ void CS_OuterSort(uint3 dispatchThreadId : SV_DispatchThreadID)
 	if (index2 >= count)
 		return;
 
-	Item a = SortBuffer[index1];
-	Item b = SortBuffer[index2];
+	float aKey = SortingKeys[index1];
+	float bKey = SortingKeys[index2];
 
-	if (ShouldSwap(a, b))
+	if (ShouldSwap(aKey, bKey))
 	{
 		// Swap the items
-		SortBuffer[index1] = b;
-		SortBuffer[index2] = a;
+		SortingKeys[index1] = bKey;
+		SortingKeys[index2] = aKey;
+        uint aIndex = SortedIndices[index1];
+        uint bIndex = SortedIndices[index2];
+		SortedIndices[index1] = bIndex;
+		SortedIndices[index2] = aIndex;
 	}
-}
-
-#endif
-
-#ifdef _CS_CopyIndices
-
-StructuredBuffer<Item> SortBuffer : register(t1);
-RWBuffer<uint> SortedIndices : register(u0);
-
-META_CS(true, FEATURE_LEVEL_SM5)
-[numthreads(1024, 1, 1)]
-void CS_CopyIndices(uint3 dispatchThreadId : SV_DispatchThreadID)
-{
-	const uint count = CounterBuffer.Load(CounterOffset);
-	uint index = dispatchThreadId.x;
-	if (index >= count)
-		return;
-
-	Item element = SortBuffer[index];
-	SortedIndices[index] = element.Value;
 }
 
 #endif

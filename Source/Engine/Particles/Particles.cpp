@@ -848,81 +848,68 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
         context->BindCB(0, GPUParticlesSortingCB);
 
         // Generate sort keys for each particle
-        for (const GPUEmitterDraw& draw : GPUEmitterDraws)
         {
-            if (!draw.Sorting)
-                continue;
-            ASSERT(draw.Buffer->GPU.SortingKeysBuffer);
-
-            // Generate sort keys for particles
-            ParticleEmitter* emitter = draw.Buffer->Emitter;
-            for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.SortModules.Count(); moduleIndex++)
+            PROFILE_GPU("Gen Sort Keys");
+            for (const GPUEmitterDraw& draw : GPUEmitterDraws)
             {
-                auto module = emitter->Graph.SortModules[moduleIndex];
-                const auto sortMode = (ParticleSortMode)module->Values[2].AsInt;
-
-                // Generate sorting keys based on sorting mode
-                GPUParticlesSortingData data;
-                data.ParticleCounterOffset = draw.Buffer->GPU.ParticleCounterOffset;
-                data.ParticleStride = draw.Buffer->Stride;
-                data.ParticleCapacity = draw.Buffer->Capacity;
-                int32 permutationIndex;
-                switch (sortMode)
+                if (!draw.Sorting)
+                    continue;
+                ASSERT(draw.Buffer->GPU.SortingKeys);
+                ParticleEmitter* emitter = draw.Buffer->Emitter;
+                for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.SortModules.Count(); moduleIndex++)
                 {
-                case ParticleSortMode::ViewDepth:
-                {
-                    permutationIndex = 0;
-                    data.PositionOffset = emitter->Graph.GetPositionAttributeOffset();
-                    const Matrix viewProjection = renderContextBatch.GetMainContext().View.ViewProjection();
-                    if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
+                    auto module = emitter->Graph.SortModules[moduleIndex];
+                    // TODO: add support for module->SortedIndicesOffset (multiple sort modules)
+                    const auto sortMode = (ParticleSortMode)module->Values[2].AsInt;
+                    GPUParticlesSortingData data;
+                    data.ParticleCounterOffset = draw.Buffer->GPU.ParticleCounterOffset;
+                    data.ParticleStride = draw.Buffer->Stride;
+                    data.ParticleCapacity = draw.Buffer->Capacity;
+                    int32 permutationIndex;
+                    switch (sortMode)
                     {
-                        Matrix matrix;
-                        Matrix::Multiply(draw.DrawCall.World, viewProjection, matrix);
-                        Matrix::Transpose(matrix, data.PositionTransform);
-                    }
-                    else
+                    case ParticleSortMode::ViewDepth:
                     {
-                        Matrix::Transpose(viewProjection, data.PositionTransform);
-                    }
-                    break;
-                }
-                case ParticleSortMode::ViewDistance:
-                {
-                    permutationIndex = 1;
-                    data.PositionOffset = emitter->Graph.GetPositionAttributeOffset();
-                    data.ViewPosition = renderContextBatch.GetMainContext().View.Position;
-                    if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
-                    {
-                        Matrix::Transpose(draw.DrawCall.World, data.PositionTransform);
-                    }
-                    else
-                    {
-                        Matrix::Transpose(Matrix::Identity, data.PositionTransform);
-                    }
-                    break;
-                }
-                case ParticleSortMode::CustomAscending:
-                case ParticleSortMode::CustomDescending:
-                {
-                    permutationIndex = 2;
-                    int32 attributeIdx = module->Attributes[0];
-                    if (attributeIdx == -1)
+                        permutationIndex = 0;
+                        data.PositionOffset = emitter->Graph.GetPositionAttributeOffset();
+                        const Matrix viewProjection = renderContextBatch.GetMainContext().View.ViewProjection();
+                        if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
+                            Matrix::Transpose(draw.DrawCall.World * viewProjection, data.PositionTransform);
+                        else
+                            Matrix::Transpose(viewProjection, data.PositionTransform);
                         break;
-                    data.CustomOffset = emitter->Graph.Layout.Attributes[attributeIdx].Offset;
-                    break;
+                    }
+                    case ParticleSortMode::ViewDistance:
+                    {
+                        permutationIndex = 1;
+                        data.PositionOffset = emitter->Graph.GetPositionAttributeOffset();
+                        data.ViewPosition = renderContextBatch.GetMainContext().View.Position;
+                        if (emitter->SimulationSpace == ParticlesSimulationSpace::Local)
+                            Matrix::Transpose(draw.DrawCall.World, data.PositionTransform);
+                        else
+                            Matrix::Transpose(Matrix::Identity, data.PositionTransform);
+                        break;
+                    }
+                    case ParticleSortMode::CustomAscending:
+                    case ParticleSortMode::CustomDescending:
+                    {
+                        permutationIndex = 2;
+                        int32 attributeIdx = module->Attributes[0];
+                        if (attributeIdx == -1)
+                            break;
+                        data.CustomOffset = emitter->Graph.Layout.Attributes[attributeIdx].Offset;
+                        break;
+                    }
+                    }
+                    context->UpdateCB(GPUParticlesSortingCB, &data);
+                    context->BindSR(0, draw.Buffer->GPU.Buffer->View());
+                    context->BindUA(0, draw.Buffer->GPU.SortedIndices->View());
+                    context->BindUA(1, draw.Buffer->GPU.SortingKeys->View());
+                    const int32 threadGroupSize = 1024;
+                    context->Dispatch(GPUParticlesSortingCS[permutationIndex], Math::DivideAndRoundUp(draw.Buffer->GPU.ParticlesCountMax, threadGroupSize), 1, 1);
                 }
-#if !BUILD_RELEASE
-                default:
-                    CRASH;
-                    return;
-#endif
-                }
-                context->UpdateCB(GPUParticlesSortingCB, &data);
-                context->BindSR(0, draw.Buffer->GPU.Buffer->View());
-                context->BindUA(0, draw.Buffer->GPU.SortingKeysBuffer->View());
-                const int32 threadGroupSize = 1024;
-                context->Dispatch(GPUParticlesSortingCS[permutationIndex], Math::DivideAndRoundUp(draw.Buffer->GPU.ParticlesCountMax, threadGroupSize), 1, 1);
             }
+            context->ResetUA();
         }
 
         // Run sorting
@@ -930,17 +917,18 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
         {
             if (!draw.Sorting)
                 continue;
-            ASSERT(draw.Buffer->GPU.SortingKeysBuffer);
 
             // Execute all sorting modules
             ParticleEmitter* emitter = draw.Buffer->Emitter;
             for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.SortModules.Count(); moduleIndex++)
             {
                 auto module = emitter->Graph.SortModules[moduleIndex];
+                // TODO: add support for module->SortedIndicesOffset (multiple sort modules)
                 const auto sortMode = (ParticleSortMode)module->Values[2].AsInt;
                 bool sortAscending = sortMode == ParticleSortMode::CustomAscending;
-                BitonicSort::Instance()->Sort(context, draw.Buffer->GPU.SortingKeysBuffer, draw.Buffer->GPU.Buffer, draw.Buffer->GPU.ParticleCounterOffset, sortAscending, draw.Buffer->GPU.SortedIndices, draw.Buffer->GPU.ParticlesCountMax);
-                // TODO: use args buffer from GPUIndirectArgsBuffer instead of internal from BitonicSort to get rid of UAV barrier (run all sorting in parallel)
+                BitonicSort::Instance()->Sort(context, draw.Buffer->GPU.SortedIndices, draw.Buffer->GPU.SortingKeys, draw.Buffer->GPU.Buffer, draw.Buffer->GPU.ParticleCounterOffset, sortAscending, draw.Buffer->GPU.ParticlesCountMax);
+                // TODO: use args buffer from GPUIndirectArgsBuffer instead of internal from BitonicSort to get rid of UAV barrier (all sorting in parallel)
+                // TODO: run small emitters sorting (less than 2k particles) sorting in separate loop as pass without UAV barriers (all sorting in parallel)
             }
         }
     }
