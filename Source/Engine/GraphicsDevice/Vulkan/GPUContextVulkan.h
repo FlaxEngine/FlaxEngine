@@ -16,6 +16,7 @@ class GPUTextureViewVulkan;
 class GPUBufferVulkan;
 class GPUVertexLayoutVulkan;
 class GPUPipelineStateVulkan;
+class GPUShaderProgramCSVulkan;
 class ComputePipelineStateVulkan;
 class GPUConstantBufferVulkan;
 class DescriptorPoolVulkan;
@@ -84,6 +85,7 @@ private:
 
     RenderPassVulkan* _renderPass;
     GPUPipelineStateVulkan* _currentState;
+    GPUShaderProgramCSVulkan* _currentCompute;
     GPUVertexLayoutVulkan* _vertexLayout;
     GPUTextureViewVulkan* _rtDepth;
     GPUTextureViewVulkan* _rtHandles[GPU_MAX_RT_BINDED];

@@ -746,6 +746,7 @@ void GPUContextVulkan::FrameBegin()
     _stencilRef = 0;
     _renderPass = nullptr;
     _currentState = nullptr;
+    _currentCompute = nullptr;
     _vertexLayout = nullptr;
     _rtDepth = nullptr;
     Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
@@ -1157,8 +1158,12 @@ void GPUContextVulkan::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCo
     FlushBarriers();
 
     // Bind pipeline
-    vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, pipelineState->GetHandle());
-    RENDER_STAT_PS_STATE_CHANGE();
+    if (_currentCompute != shaderVulkan)
+    {
+        _currentCompute = shaderVulkan;
+        vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, pipelineState->GetHandle());
+        RENDER_STAT_PS_STATE_CHANGE();
+    }
 
     // Bind descriptors sets to the compute pipeline
     pipelineState->Bind(cmdBuffer);
@@ -1193,8 +1198,12 @@ void GPUContextVulkan::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* b
     FlushBarriers();
 
     // Bind pipeline
-    vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, pipelineState->GetHandle());
-    RENDER_STAT_PS_STATE_CHANGE();
+    if (_currentCompute != shaderVulkan)
+    {
+        _currentCompute = shaderVulkan;
+        vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, pipelineState->GetHandle());
+        RENDER_STAT_PS_STATE_CHANGE();
+    }
 
     // Bind descriptors sets to the compute pipeline
     pipelineState->Bind(cmdBuffer);
@@ -1346,6 +1355,7 @@ void GPUContextVulkan::Flush()
     // Flush remaining and buffered commands
     FlushState();
     _currentState = nullptr;
+    _currentCompute = nullptr;
 
     // Execute commands
     _cmdBufferManager->SubmitActiveCmdBuffer();

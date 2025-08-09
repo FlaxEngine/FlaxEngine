@@ -384,7 +384,7 @@ void GPUContextDX12::flushSRVs()
     ASSERT(srCount <= GPU_MAX_SR_BINDED);
 
     // Fill table with source descriptors
-    DxShaderHeader& header = _currentCompute ? ((GPUShaderProgramCSDX12*)_currentCompute)->Header : _currentState->Header;
+    DxShaderHeader& header = _isCompute ? ((GPUShaderProgramCSDX12*)_currentCompute)->Header : _currentState->Header;
     D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptorRangeStarts[GPU_MAX_SR_BINDED];
     for (uint32 i = 0; i < srCount; i++)
     {
@@ -1141,6 +1141,7 @@ void GPUContextDX12::UpdateCB(GPUConstantBuffer* cb, const void* data)
 
 void GPUContextDX12::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ)
 {
+    bool bindPipelineState = _currentCompute != shader;
     _isCompute = 1;
     _currentCompute = shader;
 
@@ -1153,14 +1154,16 @@ void GPUContextDX12::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCoun
     auto shaderDX12 = (GPUShaderProgramCSDX12*)shader;
     auto computeState = shaderDX12->GetOrCreateState();
 
-    _commandList->SetPipelineState(computeState);
-    RENDER_STAT_PS_STATE_CHANGE();
+    if (bindPipelineState)
+    {
+        _commandList->SetPipelineState(computeState);
+        RENDER_STAT_PS_STATE_CHANGE();
+    }
 
     _commandList->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
     RENDER_STAT_DISPATCH_CALL();
 
     _isCompute = 0;
-    _currentCompute = nullptr;
 
     // Restore previous state on next draw call
     _psDirtyFlag = true;
@@ -1172,6 +1175,7 @@ void GPUContextDX12::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCoun
 
 void GPUContextDX12::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
+    bool bindPipelineState = _currentCompute != shader;
     _isCompute = 1;
     _currentCompute = shader;
 
@@ -1187,15 +1191,17 @@ void GPUContextDX12::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* buf
     auto shaderDX12 = (GPUShaderProgramCSDX12*)shader;
     auto computeState = shaderDX12->GetOrCreateState();
 
-    _commandList->SetPipelineState(computeState);
-    RENDER_STAT_PS_STATE_CHANGE();
+    if (bindPipelineState)
+    {
+        _commandList->SetPipelineState(computeState);
+        RENDER_STAT_PS_STATE_CHANGE();
+    }
 
     auto signature = _device->DispatchIndirectCommandSignature->GetSignature();
     _commandList->ExecuteIndirect(signature, 1, bufferForArgsDX12->GetResource(), (UINT64)offsetForArgs, nullptr, 0);
     RENDER_STAT_DISPATCH_CALL();
 
     _isCompute = 0;
-    _currentCompute = nullptr;
 
     // Restore previous state on next draw call
     _psDirtyFlag = true;
