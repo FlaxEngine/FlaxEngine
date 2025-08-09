@@ -12,6 +12,7 @@
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/DynamicBuffer.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -748,6 +749,11 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
     {
         PROFILE_GPU_CPU_NAMED("Init Indirect Args");
 
+        GPUMemoryPass pass(context);
+        pass.Transition(GPUIndirectArgsBuffer, GPUResourceAccess::CopyWrite);
+        for (GPUEmitterDraw& draw : GPUEmitterDraws)
+            pass.Transition(draw.Buffer->GPU.Buffer, GPUResourceAccess::CopyRead);
+
         // Init default arguments
         byte* indirectArgsMemory = (byte*)renderContextBatch.GetMainContext().List->Memory.Allocate(indirectArgsSize, GPU_SHADER_DATA_ALIGNMENT);
         for (GPUEmitterDraw& draw : GPUEmitterDraws)
@@ -872,6 +878,18 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
         // Generate sort keys for each particle
         {
             PROFILE_GPU("Gen Sort Keys");
+
+            GPUComputePass pass(context);
+            for (const GPUEmitterDraw& draw : GPUEmitterDraws)
+            {
+                if (draw.Sorting)
+                {
+                    pass.Transition(draw.Buffer->GPU.Buffer, GPUResourceAccess::ShaderReadCompute);
+                    pass.Transition(draw.Buffer->GPU.SortedIndices, GPUResourceAccess::UnorderedAccess);
+                    pass.Transition(draw.Buffer->GPU.SortingKeys, GPUResourceAccess::UnorderedAccess);
+                }
+            }
+
             for (const GPUEmitterDraw& draw : GPUEmitterDraws)
             {
                 if (!draw.Sorting)
@@ -935,12 +953,29 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
         }
 
         // Run sorting
+        constexpr int32 inplaceSortSizeLimit = 2048;
+        {
+            // Small emitters can be sorted in-place with a single independent dispatch (simultaneously)
+            GPUComputePass pass(context);
+            for (const GPUEmitterDraw& draw : GPUEmitterDraws)
+            {
+                if (!draw.Sorting || draw.Buffer->GPU.ParticlesCountMax > inplaceSortSizeLimit)
+                    continue;
+                ParticleEmitter* emitter = draw.Buffer->Emitter;
+                for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.SortModules.Count(); moduleIndex++)
+                {
+                    auto module = emitter->Graph.SortModules[moduleIndex];
+                    // TODO: add support for module->SortedIndicesOffset (multiple sort modules)
+                    const auto sortMode = (ParticleSortMode)module->Values[2].AsInt;
+                    bool sortAscending = sortMode == ParticleSortMode::CustomAscending;
+                    BitonicSort::Instance()->Sort(context, draw.Buffer->GPU.SortedIndices, draw.Buffer->GPU.SortingKeys, draw.Buffer->GPU.Buffer, draw.Buffer->GPU.ParticleCounterOffset, sortAscending, draw.Buffer->GPU.ParticlesCountMax);
+                }
+            }
+        }
         for (const GPUEmitterDraw& draw : GPUEmitterDraws)
         {
-            if (!draw.Sorting)
+            if (!draw.Sorting || draw.Buffer->GPU.ParticlesCountMax <= inplaceSortSizeLimit)
                 continue;
-
-            // Execute all sorting modules
             ParticleEmitter* emitter = draw.Buffer->Emitter;
             for (int32 moduleIndex = 0; moduleIndex < emitter->Graph.SortModules.Count(); moduleIndex++)
             {
@@ -950,10 +985,11 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
                 bool sortAscending = sortMode == ParticleSortMode::CustomAscending;
                 BitonicSort::Instance()->Sort(context, draw.Buffer->GPU.SortedIndices, draw.Buffer->GPU.SortingKeys, draw.Buffer->GPU.Buffer, draw.Buffer->GPU.ParticleCounterOffset, sortAscending, draw.Buffer->GPU.ParticlesCountMax);
                 // TODO: use args buffer from GPUIndirectArgsBuffer instead of internal from BitonicSort to get rid of UAV barrier (all sorting in parallel)
-                // TODO: run small emitters sorting (less than 2k particles) sorting in separate loop as pass without UAV barriers (all sorting in parallel)
             }
         }
     }
+
+    // TODO: transition here SortedIndices into ShaderReadNonPixel and Buffer into ShaderReadGraphics to reduce barriers during particles rendering
 
     // Submit draw calls
     for (GPUEmitterDraw& draw : GPUEmitterDraws)
@@ -1326,6 +1362,15 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
     // Pre-pass with buffers setup
     {
         PROFILE_CPU_NAMED("PreSim");
+
+        GPUMemoryPass pass(context);
+        for (GPUSim& sim : sims)
+        {
+            if (sim.Data.Buffer->GPU.PendingClear)
+                pass.Transition(sim.Data.Buffer->GPU.Buffer, GPUResourceAccess::CopyWrite);
+            pass.Transition(sim.Data.Buffer->GPU.BufferSecondary, GPUResourceAccess::CopyWrite);
+        }
+
         for (GPUSim& sim : sims)
         {
             sim.Emitter->GPU.PreSim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, sim.Data);
@@ -1335,6 +1380,14 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
     // Pre-pass with buffers setup
     {
         PROFILE_GPU_CPU_NAMED("Sim");
+
+        GPUComputePass pass(context);
+        for (GPUSim& sim : sims)
+        {
+            pass.Transition(sim.Data.Buffer->GPU.Buffer, GPUResourceAccess::ShaderReadCompute);
+            pass.Transition(sim.Data.Buffer->GPU.BufferSecondary, GPUResourceAccess::UnorderedAccess);
+        }
+
         for (GPUSim& sim : sims)
         {
             sim.Emitter->GPU.Sim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, sim.Data);
@@ -1344,6 +1397,17 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
     // Post-pass with buffers setup
     {
         PROFILE_CPU_NAMED("PostSim");
+
+        GPUMemoryPass pass(context);
+        for (GPUSim& sim : sims)
+        {
+            if (sim.Data.CustomData.HasItems())
+            {
+                pass.Transition(sim.Data.Buffer->GPU.BufferSecondary, GPUResourceAccess::CopyRead);
+                pass.Transition(sim.Data.Buffer->GPU.Buffer, GPUResourceAccess::CopyWrite);
+            }
+        }
+
         for (GPUSim& sim : sims)
         {
             sim.Emitter->GPU.PostSim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, sim.Data);
