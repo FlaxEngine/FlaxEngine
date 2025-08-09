@@ -335,10 +335,10 @@ bool GPUDeviceDX12::Init()
         IsDebugToolAttached = true;
         unknown->Release();
     }
-    if (!IsDebugToolAttached && GetModuleHandleA("renderdoc.dll") != nullptr)
-    {
+    if (!IsDebugToolAttached && GetModuleHandleA("renderdoc.dll"))
         IsDebugToolAttached = true;
-    }
+    if (!IsDebugToolAttached && (GetModuleHandleA("Nvda.Graphics.Interception.dll") || GetModuleHandleA("WarpViz.Injection.dll") || GetModuleHandleA("nvperf_grfx_target.dll")))
+        IsDebugToolAttached = true;
 #endif
 
     // Check if can use screen tearing on a swapchain
