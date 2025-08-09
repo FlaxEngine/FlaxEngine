@@ -297,7 +297,7 @@ void GPUContextDX11::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPU
     __declspec(align(16)) ID3D11RenderTargetView* rtvs[GPU_MAX_RT_BINDED];
     for (int32 i = 0; i < rts.Length(); i++)
     {
-        auto rtDX11 = reinterpret_cast<GPUTextureViewDX11*>(rts[i]);
+        auto rtDX11 = reinterpret_cast<GPUTextureViewDX11*>(rts.Get()[i]);
         rtvs[i] = rtDX11 ? rtDX11->RTV() : nullptr;
     }
     int32 rtvsSize = sizeof(ID3D11RenderTargetView*) * rts.Length();
@@ -431,7 +431,7 @@ void GPUContextDX11::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
     bool vbEdited = false;
     for (int32 i = 0; i < vertexBuffers.Length(); i++)
     {
-        const auto vbDX11 = static_cast<GPUBufferDX11*>(vertexBuffers[i]);
+        const auto vbDX11 = static_cast<GPUBufferDX11*>(vertexBuffers.Get()[i]);
         const auto vb = vbDX11 ? vbDX11->GetBuffer() : nullptr;
         vbEdited |= vb != _vbHandles[i];
         _vbHandles[i] = vb;

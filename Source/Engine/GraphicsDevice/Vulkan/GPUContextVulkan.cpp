@@ -78,13 +78,14 @@ const Char* ToString(VkImageLayout layout)
 void PipelineBarrierVulkan::Execute(const CmdBufferVulkan* cmdBuffer)
 {
     ASSERT(cmdBuffer->IsOutsideRenderPass());
-    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), SourceStage, DestStage, 0, 0, nullptr, BufferBarriers.Count(), BufferBarriers.Get(), ImageBarriers.Count(), ImageBarriers.Get());
+    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), SourceStage, DestStage, 0, MemoryBarriers.Count(), MemoryBarriers.Get(), BufferBarriers.Count(), BufferBarriers.Get(), ImageBarriers.Count(), ImageBarriers.Get());
 
     // Reset
     SourceStage = 0;
     DestStage = 0;
     ImageBarriers.Clear();
     BufferBarriers.Clear();
+    MemoryBarriers.Clear();
 #if VK_ENABLE_BARRIERS_DEBUG
 	ImageBarriersDebug.Clear();
 #endif
@@ -153,12 +154,7 @@ void GPUContextVulkan::AddImageBarrier(VkImage image, VkImageLayout srcLayout, V
 #if VK_ENABLE_BARRIERS_BATCHING
     // Auto-flush on overflow
     if (_barriers.IsFull())
-    {
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-        if (cmdBuffer->IsInsideRenderPass())
-            EndRenderPass();
-        _barriers.Execute(cmdBuffer);
-    }
+        FlushBarriers();
 #endif
 
     // Insert barrier
@@ -190,10 +186,7 @@ void GPUContextVulkan::AddImageBarrier(VkImage image, VkImageLayout srcLayout, V
 
 #if !VK_ENABLE_BARRIERS_BATCHING
     // Auto-flush without batching
-    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    if (cmdBuffer->IsInsideRenderPass())
-        EndRenderPass();
-    _barriers.Execute(cmdBuffer);
+    FlushBarriers();
 #endif
 }
 
@@ -315,12 +308,7 @@ void GPUContextVulkan::AddBufferBarrier(GPUBufferVulkan* buffer, VkAccessFlags d
 #if VK_ENABLE_BARRIERS_BATCHING
     // Auto-flush on overflow
     if (_barriers.IsFull())
-    {
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-        if (cmdBuffer->IsInsideRenderPass())
-            EndRenderPass();
-        _barriers.Execute(cmdBuffer);
-    }
+        FlushBarriers();
 #endif
 
     // Insert barrier
@@ -339,11 +327,36 @@ void GPUContextVulkan::AddBufferBarrier(GPUBufferVulkan* buffer, VkAccessFlags d
 
 #if !VK_ENABLE_BARRIERS_BATCHING
     // Auto-flush without batching
-    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    if (cmdBuffer->IsInsideRenderPass())
-        EndRenderPass();
-    _barriers.Execute(cmdBuffer);
+    FlushBarriers();
 #endif
+}
+
+void GPUContextVulkan::AddMemoryBarrier()
+{
+#if VK_ENABLE_BARRIERS_BATCHING
+    // Auto-flush on overflow
+    if (_barriers.IsFull())
+        FlushBarriers();
+#endif
+
+    // Insert barrier
+    VkMemoryBarrier& memoryBarrier = _barriers.MemoryBarriers.AddOne();
+    RenderToolsVulkan::ZeroStruct(memoryBarrier, VK_STRUCTURE_TYPE_MEMORY_BARRIER);
+    memoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    _barriers.SourceStage |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+    _barriers.DestStage |= VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+#if !VK_ENABLE_BARRIERS_BATCHING
+    // Auto-flush without batching
+    FlushBarriers();
+#endif
+}
+
+void GPUContextVulkan::AddUABarrier()
+{
+    _barriers.SourceStage |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    _barriers.DestStage |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 }
 
 void GPUContextVulkan::FlushBarriers()
@@ -475,7 +488,7 @@ void GPUContextVulkan::EndRenderPass()
     cmdBuffer->EndRenderPass();
     _renderPass = nullptr;
 
-    // Place a barrier between RenderPasses, so that color / depth outputs can be read in subsequent passes
+    // Place a barrier between RenderPasses, so that color/depth outputs can be read in subsequent passes
     // TODO: remove it in future and use proper barriers without whole pipeline stalls
     vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
 }
@@ -1155,8 +1168,8 @@ void GPUContextVulkan::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCo
     RENDER_STAT_DISPATCH_CALL();
 
     // Place a barrier between dispatches, so that UAVs can be read+write in subsequent passes
-    // TODO: optimize it by moving inputs/outputs into higher-layer so eg. Global SDF can manually optimize it
-    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+    if (_pass == 0)
+        AddUABarrier();
 
 #if VK_ENABLE_BARRIERS_DEBUG
     LOG(Warning, "Dispatch");
@@ -1191,8 +1204,8 @@ void GPUContextVulkan::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* b
     RENDER_STAT_DISPATCH_CALL();
 
     // Place a barrier between dispatches, so that UAVs can be read+write in subsequent passes
-    // TODO: optimize it by moving inputs/outputs into higher-layer so eg. Global SDF can manually optimize it
-    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+    if (_pass == 0)
+        AddUABarrier();
 
 #if VK_ENABLE_BARRIERS_DEBUG
     LOG(Warning, "DispatchIndirect");
@@ -1351,18 +1364,14 @@ void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
 
     const auto bufferVulkan = static_cast<GPUBufferVulkan*>(buffer);
 
-    // Memory transfer barrier
-    // TODO: batch pipeline barriers
-    const VkMemoryBarrier barrierBefore = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT };
-    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &barrierBefore, 0, nullptr, 0, nullptr);
+    // Transition resource
+    AddBufferBarrier(bufferVulkan, VK_ACCESS_TRANSFER_WRITE_BIT);
+    FlushBarriers();
 
     // Use direct update for small buffers
     const uint32 alignedSize = Math::AlignUp<uint32>(size, 4);
     if (size <= 4 * 1024 && alignedSize <= buffer->GetSize())
     {
-        //AddBufferBarrier(bufferVulkan, VK_ACCESS_TRANSFER_WRITE_BIT);
-        //FlushBarriers();
-
         vkCmdUpdateBuffer(cmdBuffer->GetHandle(), bufferVulkan->GetHandle(), offset, alignedSize, data);
     }
     else
@@ -1379,10 +1388,9 @@ void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
         _device->StagingManager.ReleaseBuffer(cmdBuffer, staging);
     }
 
-    // Memory transfer barrier
-    // TODO: batch pipeline barriers
-    const VkMemoryBarrier barrierAfter = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT };
-    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 1, &barrierAfter, 0, nullptr, 0, nullptr);
+    // Memory transfer barrier to ensure buffer is ready to read (eg. by Draw or Dispatch)
+    if (_pass == 0)
+        AddMemoryBarrier();
 }
 
 void GPUContextVulkan::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset, uint32 srcOffset)
@@ -1407,6 +1415,10 @@ void GPUContextVulkan::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, ui
     bufferCopy.dstOffset = dstOffset;
     bufferCopy.size = size;
     vkCmdCopyBuffer(cmdBuffer->GetHandle(), srcBufferVulkan->GetHandle(), dstBufferVulkan->GetHandle(), 1, &bufferCopy);
+
+    // Memory transfer barrier to ensure buffer is ready to read (eg. by Draw or Dispatch)
+    if (_pass == 0)
+        AddMemoryBarrier();
 }
 
 void GPUContextVulkan::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int32 mipIndex, const void* data, uint32 rowPitch, uint32 slicePitch)
@@ -1814,6 +1826,29 @@ void GPUContextVulkan::CopySubresource(GPUResource* dstResource, uint32 dstSubre
     {
         Log::NotImplementedException(TEXT("Cannot copy data between buffer and texture."));
     }
+}
+
+void GPUContextVulkan::Transition(GPUResource* resource, GPUResourceAccess access)
+{
+    if (auto buffer = dynamic_cast<GPUBufferVulkan*>(resource))
+    {
+        AddBufferBarrier(buffer, RenderToolsVulkan::GetAccess(access));
+    }
+    else if (auto texture = dynamic_cast<GPUTextureVulkan*>(resource))
+    {
+        AddImageBarrier(texture, RenderToolsVulkan::GetImageLayout(access));
+    }
+}
+
+void GPUContextVulkan::MemoryBarrier()
+{
+    AddMemoryBarrier();
+}
+
+void GPUContextVulkan::OverlapUA(bool end)
+{
+    if (end)
+        AddUABarrier();
 }
 
 #endif

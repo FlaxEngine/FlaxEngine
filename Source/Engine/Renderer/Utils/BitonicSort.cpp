@@ -82,7 +82,7 @@ void BitonicSort::Sort(GPUContext* context, GPUBuffer* indicesBuffer, GPUBuffer*
     if (checkIfSkipPass())
         return;
     PROFILE_GPU_CPU("Bitonic Sort");
-    uint32 maxNumElements = indicesBuffer->GetElementsCount();
+    int32 maxNumElements = (int32)indicesBuffer->GetElementsCount();
     if (maxElements > 0 && maxElements < maxNumElements)
         maxNumElements = maxElements;
     const uint32 alignedMaxNumElements = Math::RoundUpToPowerOf2(maxNumElements);

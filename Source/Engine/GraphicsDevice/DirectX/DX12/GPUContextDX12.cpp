@@ -35,6 +35,7 @@
 #include "GPUShaderProgramDX12.h"
 #include "CommandSignatureDX12.h"
 #include "Engine/Profiler/RenderStats.h"
+#include "Engine/Graphics/GPUResourceAccess.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Threading/Threading.h"
 
@@ -49,6 +50,47 @@ inline bool operator!=(const D3D12_VERTEX_BUFFER_VIEW& l, const D3D12_VERTEX_BUF
 inline bool operator!=(const D3D12_INDEX_BUFFER_VIEW& l, const D3D12_INDEX_BUFFER_VIEW& r)
 {
     return l.SizeInBytes != r.SizeInBytes || l.Format != r.Format || l.BufferLocation != r.BufferLocation;
+}
+
+FORCE_INLINE D3D12_RESOURCE_STATES GetResourceState(GPUResourceAccess access)
+{
+    switch (access)
+    {
+    case GPUResourceAccess::None:
+        return D3D12_RESOURCE_STATE_COMMON;
+    case GPUResourceAccess::CopyRead:
+        return D3D12_RESOURCE_STATE_COPY_SOURCE;
+    case GPUResourceAccess::CopyWrite:
+        return D3D12_RESOURCE_STATE_COPY_DEST;
+    case GPUResourceAccess::CpuRead:
+        return D3D12_RESOURCE_STATE_GENERIC_READ;
+    case GPUResourceAccess::CpuWrite:
+        return D3D12_RESOURCE_STATE_COMMON;
+    case GPUResourceAccess::DepthRead:
+        return D3D12_RESOURCE_STATE_DEPTH_READ;
+    case GPUResourceAccess::DepthWrite:
+        return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    case GPUResourceAccess::DepthBuffer:
+        return D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    case GPUResourceAccess::RenderTarget:
+        return D3D12_RESOURCE_STATE_RENDER_TARGET;
+    case GPUResourceAccess::UnorderedAccess:
+        return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+    case GPUResourceAccess::IndirectArgs:
+        return D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+    case GPUResourceAccess::ShaderReadPixel:
+        //return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; // TODO: optimize SRV states in flushSRVs to be based on current binding usage slots
+    case GPUResourceAccess::ShaderReadCompute:
+    case GPUResourceAccess::ShaderReadNonPixel:
+        //return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE; // TODO: optimize SRV states in flushSRVs to be based on current binding usage slots
+    case GPUResourceAccess::ShaderReadGraphics:
+        return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+#if !BUILD_RELEASE
+    default:
+        LOG(Error, "Unsupported GPU Resource Access: {}", (uint32)access);
+#endif
+    }
+    return D3D12_RESOURCE_STATE_COMMON;
 }
 
 // Ensure to match the indirect commands arguments layout
@@ -1124,7 +1166,8 @@ void GPUContextDX12::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCoun
     _psDirtyFlag = true;
 
     // Insert UAV barrier to ensure proper memory access for multiple sequential dispatches
-    AddUAVBarrier();
+    if (_pass == 0)
+        AddUAVBarrier();
 }
 
 void GPUContextDX12::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs)
@@ -1158,7 +1201,8 @@ void GPUContextDX12::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* buf
     _psDirtyFlag = true;
 
     // Insert UAV barrier to ensure proper memory access for multiple sequential dispatches
-    AddUAVBarrier();
+    if (_pass == 0)
+        AddUAVBarrier();
 }
 
 void GPUContextDX12::ResolveMultisample(GPUTexture* sourceMultisampleTexture, GPUTexture* destTexture, int32 sourceSubResource, int32 destSubResource, PixelFormat format)
@@ -1547,6 +1591,17 @@ void GPUContextDX12::ForceRebindDescriptors()
     // Bind heaps
     ID3D12DescriptorHeap* ppHeaps[] = { _device->RingHeap_CBV_SRV_UAV.GetHeap(), _device->RingHeap_Sampler.GetHeap() };
     _commandList->SetDescriptorHeaps(ARRAY_COUNT(ppHeaps), ppHeaps);
+}
+
+void GPUContextDX12::Transition(GPUResource* resource, GPUResourceAccess access)
+{
+    SetResourceState(dynamic_cast<ResourceOwnerDX12*>(resource), GetResourceState(access));
+}
+
+void GPUContextDX12::OverlapUA(bool end)
+{
+    if (end)
+        AddUAVBarrier();
 }
 
 #endif

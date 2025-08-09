@@ -21,7 +21,7 @@ class GPUVertexLayoutDX12;
 /// <summary>
 /// Size of the resource barriers buffer size (will be flushed on overflow)
 /// </summary>
-#define DX12_RB_BUFFER_SIZE 16
+#define DX12_RB_BUFFER_SIZE 64
 
 /// <summary>
 /// GPU Commands Context implementation for DirectX 12
@@ -214,6 +214,8 @@ public:
     void CopySubresource(GPUResource* dstResource, uint32 dstSubresource, GPUResource* srcResource, uint32 srcSubresource) override;
     void SetResourceState(GPUResource* resource, uint64 state, int32 subresource) override;
     void ForceRebindDescriptors() override;
+    void Transition(GPUResource* resource, GPUResourceAccess access) override;
+    void OverlapUA(bool end) override;
 };
 
 #endif
