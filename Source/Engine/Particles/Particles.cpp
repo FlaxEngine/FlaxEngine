@@ -1354,9 +1354,16 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
             if (!emitter || !emitter->IsLoaded() || emitter->SimulationMode != ParticlesSimulationMode::GPU || instance.Emitters.Count() <= emitterIndex)
                 continue;
             ParticleEmitterInstance& data = instance.Emitters[emitterIndex];
-            if (!data.Buffer || !emitter->GPU.CanSim(emitter, data))
+            if (!data.Buffer)
                 continue;
             ASSERT(emitter->Capacity != 0 && emitter->Graph.Layout.Size != 0);
+            if (!emitter->GPU.CanSim(emitter, data))
+            {
+                // Emitters that are culled still might need to clear the particle counter (used for indirect draws)
+                if (data.Buffer->GPU.PendingClear)
+                    emitter->GPU.PreSim(context, emitter, effect, emitterIndex, data);
+                continue;
+            }
             sims.Add({ effect, emitter, emitterIndex, data });
         }
     }
