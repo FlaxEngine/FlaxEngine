@@ -813,6 +813,9 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
         // Upload default arguments
         context->UpdateBuffer(GPUIndirectArgsBuffer, indirectArgsMemory, indirectArgsOffset);
 
+        // Wait for whole buffer write end before submitting buffer copies
+        pass.MemoryBarrier();
+
         // Copy particle counts into draw commands
         indirectArgsOffset = 0;
         for (GPUEmitterDraw& draw : GPUEmitterDraws)
