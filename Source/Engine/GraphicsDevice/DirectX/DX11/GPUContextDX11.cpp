@@ -18,6 +18,10 @@
 #include <ThirdParty/nvapi/nvapi.h>
 extern bool EnableNvapi;
 #endif
+#if COMPILE_WITH_AGS
+#include <ThirdParty/AGS/amd_ags.h>
+extern AGSContext* AgsContext;
+#endif
 
 #define DX11_CLEAR_SR_ON_STAGE_DISABLE 0
 
@@ -920,7 +924,16 @@ void GPUContextDX11::OverlapUA(bool end)
         return;
     }
 #endif
-    // TODO: add support for AMD extensions to overlap UAV writes (agsDriverExtensionsDX11_BeginUAVOverlap/agsDriverExtensionsDX11_EndUAVOverlap)
+#if COMPILE_WITH_AGS
+    if (AgsContext)
+    {
+        if (end)
+            agsDriverExtensionsDX11_EndUAVOverlap(AgsContext, _context);
+        else
+            agsDriverExtensionsDX11_BeginUAVOverlap(AgsContext, _context);
+        return;
+    }
+#endif
     // TODO: add support for Intel extensions to overlap UAV writes (INTC_D3D11_BeginUAVOverlap/INTC_D3D11_EndUAVOverlap)
 }
 

@@ -24,6 +24,10 @@
 #include <ThirdParty/nvapi/nvapi.h>
 bool EnableNvapi = false;
 #endif
+#if COMPILE_WITH_AGS
+#include <ThirdParty/AGS/amd_ags.h>
+AGSContext* AgsContext = nullptr;
+#endif
 #if !USE_EDITOR && PLATFORM_WINDOWS
 #include "Engine/Core/Config/PlatformSettings.h"
 #endif
@@ -436,7 +440,7 @@ bool GPUDeviceDX11::Init()
             NvAPI_ShortString buildBranch("");
             if (NvAPI_SYS_GetDriverAndBranchVersion(&driverVersion, buildBranch) == NVAPI_OK)
             {
-                LOG(Info, "NvApi driver version: {}, {}", driverVersion, StringAsUTF16<>(buildBranch).Get());
+                LOG(Info, "NvApi driver version: {}, {}", driverVersion, TO_UTF16(buildBranch));
             }
         }
         else
@@ -444,6 +448,44 @@ bool GPUDeviceDX11::Init()
             NvAPI_ShortString desc;
             NvAPI_GetErrorMessage(status, desc);
             LOG(Warning, "NvAPI_Initialize failed with result {} ({})", (int32)status, String(desc));
+        }
+    }
+#endif
+#if COMPILE_WITH_AGS
+    if (_adapter->IsAMD())
+    {
+        AGSGPUInfo gpuInfo = {};
+        AGSConfiguration config = {};
+        AGSReturnCode returnCode = agsInitialize(AGS_CURRENT_VERSION, &config, &AgsContext, &gpuInfo);
+        if (returnCode == AGS_SUCCESS)
+        {
+            LOG(Info, "AMD driver version: {}, Radeon Software Version {}", TO_UTF16(gpuInfo.driverVersion), TO_UTF16(gpuInfo.radeonSoftwareVersion));
+            for (int32 i = 0; i < gpuInfo.numDevices; i++)
+            {
+                AGSDeviceInfo& deviceInfo = gpuInfo.devices[i];
+                const Char* asicFamily[] =
+                {
+                    TEXT("Unknown"),
+                    TEXT("Pre GCN"),
+                    TEXT("GCN Gen1"),
+                    TEXT("GCN Gen2"),
+                    TEXT("GCN Gen3"),
+                    TEXT("GCN Gen4"),
+                    TEXT("Vega"),
+                    TEXT("RDNA"),
+                    TEXT("RDNA2"),
+                    TEXT("RDNA3"),
+                    TEXT("RDNA4"),
+                };
+                LOG(Info, " > GPU {}: {} ({})", i, TO_UTF16(deviceInfo.adapterString), asicFamily[deviceInfo.asicFamily <= AGSAsicFamily_RDNA4 ? deviceInfo.asicFamily : 0]);
+                LOG(Info, "   CUs: {}, WGPs: {}, ROPs: {}", deviceInfo.numCUs, deviceInfo.numWGPs, deviceInfo.numROPs);
+                LOG(Info, "   Core clock: {} MHz, Memory clock: {} MHz, {:.2f} Tflops", deviceInfo.coreClock, deviceInfo.memoryClock, deviceInfo.teraFlops);
+                LOG(Info, "   Local memory: {} MB ({:.2f} GB/s), Shared memory: {} MB", (int32)(deviceInfo.localMemoryInBytes / (1024ull * 1024ull)), (float)deviceInfo.memoryBandwidth / 1024.0f, (int32)(deviceInfo.sharedMemoryInBytes / (1024ull * 1024ull)));
+            }
+        }
+        else
+        {
+            LOG(Warning, "agsInitialize failed with result {} ({})", (int32)returnCode);
         }
     }
 #endif
