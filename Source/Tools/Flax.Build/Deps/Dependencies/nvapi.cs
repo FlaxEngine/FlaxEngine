@@ -36,7 +36,7 @@ namespace Flax.Deps.Dependencies
             }
 
             // Copy license and header files
-            Utilities.FileCopy(Path.Combine(root, "License.txt"), Path.Combine(moduleFolder, "LICENSE.txt"));
+            Utilities.FileCopy(Path.Combine(root, "License.txt"), Path.Combine(moduleFolder, "License.txt"));
             var files = new[]
             {
                 "nvHLSLExtns.h",
