@@ -46,6 +46,12 @@ struct FLAXENGINE_API GPUMemoryPass : GPUPass
     {
         Context->MemoryBarrier();
     }
+
+    // Inserts a global memory barrier on data copies between resources. Use to ensure all writes and before submitting another commands.
+    void MemoryBarrier()
+    {
+        Context->MemoryBarrier();
+    }
 };
 
 /// <summary>

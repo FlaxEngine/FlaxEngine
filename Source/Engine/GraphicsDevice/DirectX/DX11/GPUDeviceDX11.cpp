@@ -20,7 +20,10 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Profiler/ProfilerMemory.h"
-
+#if COMPILE_WITH_NVAPI
+#include <ThirdParty/nvapi/nvapi.h>
+bool EnableNvapi = false;
+#endif
 #if !USE_EDITOR && PLATFORM_WINDOWS
 #include "Engine/Core/Config/PlatformSettings.h"
 #endif
@@ -419,6 +422,31 @@ GPUBuffer* GPUDeviceDX11::GetDummyVB()
 bool GPUDeviceDX11::Init()
 {
     HRESULT result;
+
+    // Driver extensions
+#if COMPILE_WITH_NVAPI
+    if (_adapter->IsNVIDIA())
+    {
+        NvAPI_Status status = NvAPI_Initialize();
+        if (status == NVAPI_OK)
+        {
+            EnableNvapi = true;
+
+            NvU32 driverVersion;
+            NvAPI_ShortString buildBranch("");
+            if (NvAPI_SYS_GetDriverAndBranchVersion(&driverVersion, buildBranch) == NVAPI_OK)
+            {
+                LOG(Info, "NvApi driver version: {}, {}", driverVersion, StringAsUTF16<>(buildBranch).Get());
+            }
+        }
+        else
+        {
+            NvAPI_ShortString desc;
+            NvAPI_GetErrorMessage(status, desc);
+            LOG(Warning, "NvAPI_Initialize failed with result {} ({})", (int32)status, String(desc));
+        }
+    }
+#endif
 
     // Get DXGI adapter
     ComPtr<IDXGIAdapter> adapter;

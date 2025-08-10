@@ -14,6 +14,10 @@
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Profiler/RenderStats.h"
+#if COMPILE_WITH_NVAPI
+#include <ThirdParty/nvapi/nvapi.h>
+extern bool EnableNvapi;
+#endif
 
 #define DX11_CLEAR_SR_ON_STAGE_DISABLE 0
 
@@ -901,6 +905,23 @@ void GPUContextDX11::CopySubresource(GPUResource* dstResource, uint32 dstSubreso
     auto srcResourceDX11 = dynamic_cast<IGPUResourceDX11*>(srcResource);
 
     _context->CopySubresourceRegion(dstResourceDX11->GetResource(), dstSubresource, 0, 0, 0, srcResourceDX11->GetResource(), srcSubresource, nullptr);
+}
+
+void GPUContextDX11::OverlapUA(bool end)
+{
+    // DirectX 11 doesn't support UAV barriers control but custom GPU driver extensions allow to manually specify overlap sections.
+#if COMPILE_WITH_NVAPI
+    if (EnableNvapi)
+    {
+        if (end)
+            NvAPI_D3D11_EndUAVOverlap(_context);
+        else
+            NvAPI_D3D11_BeginUAVOverlap(_context);
+        return;
+    }
+#endif
+    // TODO: add support for AMD extensions to overlap UAV writes (agsDriverExtensionsDX11_BeginUAVOverlap/agsDriverExtensionsDX11_EndUAVOverlap)
+    // TODO: add support for Intel extensions to overlap UAV writes (INTC_D3D11_BeginUAVOverlap/INTC_D3D11_EndUAVOverlap)
 }
 
 void GPUContextDX11::flushSRVs()
