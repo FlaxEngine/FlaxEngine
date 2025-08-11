@@ -1333,7 +1333,19 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
         ParticleEffect* Effect;
         ParticleEmitter* Emitter;
         int32 EmitterIndex;
-        ParticleEmitterInstance& Data;
+        ParticleEmitterInstance* Data;
+
+        bool operator<(const GPUSim& other) const
+        {
+            // Sort by particle count (larger effects start first)
+            if (Data->Buffer->GPU.ParticlesCountMax != other.Data->Buffer->GPU.ParticlesCountMax)
+                return Data->Buffer->GPU.ParticlesCountMax > other.Data->Buffer->GPU.ParticlesCountMax;
+            if (Emitter->Capacity != other.Emitter->Capacity)
+                return Emitter->Capacity > other.Emitter->Capacity;
+
+            // Merge emitters together (compute pipeline switches)
+            return (uintptr)Emitter < (uintptr)other.Emitter;
+        }
     };
     Array<GPUSim, RendererAllocation> sims;
     sims.EnsureCapacity(Math::AlignUp(GpuUpdateList.Count(), 64)); // Preallocate with some slack
@@ -1364,10 +1376,13 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
                     emitter->GPU.PreSim(context, emitter, effect, emitterIndex, data);
                 continue;
             }
-            sims.Add({ effect, emitter, emitterIndex, data });
+            sims.Add({ effect, emitter, emitterIndex, &data });
         }
     }
     GpuUpdateList.Clear();
+
+    // Sort particles by emitter type to reduce compute pipeline switches
+    Sorting::QuickSort(sims);
 
     // Pre-pass with buffers setup
     {
@@ -1376,14 +1391,14 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
         GPUMemoryPass pass(context);
         for (GPUSim& sim : sims)
         {
-            if (sim.Data.Buffer->GPU.PendingClear)
-                pass.Transition(sim.Data.Buffer->GPU.Buffer, GPUResourceAccess::CopyWrite);
-            pass.Transition(sim.Data.Buffer->GPU.BufferSecondary, GPUResourceAccess::CopyWrite);
+            if (sim.Data->Buffer->GPU.PendingClear)
+                pass.Transition(sim.Data->Buffer->GPU.Buffer, GPUResourceAccess::CopyWrite);
+            pass.Transition(sim.Data->Buffer->GPU.BufferSecondary, GPUResourceAccess::CopyWrite);
         }
 
         for (GPUSim& sim : sims)
         {
-            sim.Emitter->GPU.PreSim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, sim.Data);
+            sim.Emitter->GPU.PreSim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, *sim.Data);
         }
     }
 
@@ -1394,13 +1409,13 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
         GPUComputePass pass(context);
         for (GPUSim& sim : sims)
         {
-            pass.Transition(sim.Data.Buffer->GPU.Buffer, GPUResourceAccess::ShaderReadCompute);
-            pass.Transition(sim.Data.Buffer->GPU.BufferSecondary, GPUResourceAccess::UnorderedAccess);
+            pass.Transition(sim.Data->Buffer->GPU.Buffer, GPUResourceAccess::ShaderReadCompute);
+            pass.Transition(sim.Data->Buffer->GPU.BufferSecondary, GPUResourceAccess::UnorderedAccess);
         }
 
         for (GPUSim& sim : sims)
         {
-            sim.Emitter->GPU.Sim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, sim.Data);
+            sim.Emitter->GPU.Sim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, *sim.Data);
         }
     }
 
@@ -1411,16 +1426,16 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
         GPUMemoryPass pass(context);
         for (GPUSim& sim : sims)
         {
-            if (sim.Data.CustomData.HasItems())
+            if (sim.Data->CustomData.HasItems())
             {
-                pass.Transition(sim.Data.Buffer->GPU.BufferSecondary, GPUResourceAccess::CopyRead);
-                pass.Transition(sim.Data.Buffer->GPU.Buffer, GPUResourceAccess::CopyWrite);
+                pass.Transition(sim.Data->Buffer->GPU.BufferSecondary, GPUResourceAccess::CopyRead);
+                pass.Transition(sim.Data->Buffer->GPU.Buffer, GPUResourceAccess::CopyWrite);
             }
         }
 
         for (GPUSim& sim : sims)
         {
-            sim.Emitter->GPU.PostSim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, sim.Data);
+            sim.Emitter->GPU.PostSim(context, sim.Emitter, sim.Effect, sim.EmitterIndex, *sim.Data);
         }
     }
 
