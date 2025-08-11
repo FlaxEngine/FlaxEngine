@@ -171,10 +171,12 @@ void AnimationsSystem::PostExecute(TaskGraph* graph)
 
 void Animations::AddToUpdate(AnimatedModel* obj)
 {
+    ConcurrentSystemLocker::WriteScope lock(SystemLocker, true);
     AnimationManagerInstance.UpdateList.Add(obj);
 }
 
 void Animations::RemoveFromUpdate(AnimatedModel* obj)
 {
+    ConcurrentSystemLocker::WriteScope lock(SystemLocker, true);
     AnimationManagerInstance.UpdateList.Remove(obj);
 }

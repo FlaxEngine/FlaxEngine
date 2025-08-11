@@ -15,14 +15,9 @@
 namespace
 {
     CriticalSection Locker;
-#if USE_EDITOR
-    Array<FlaxFile*> Files(1024);
-    Array<FlaxPackage*> Packages;
-#else
     Array<FlaxFile*> Files;
-    Array<FlaxPackage*> Packages(64);
-#endif
-    Dictionary<String, FlaxStorage*> StorageMap(2048);
+    Array<FlaxPackage*> Packages;
+    Dictionary<String, FlaxStorage*> StorageMap;
 }
 
 class ContentStorageService : public EngineService
@@ -231,6 +226,12 @@ void ContentStorageManager::GetStorage(Array<FlaxStorage*>& result)
 
 bool ContentStorageService::Init()
 {
+#if USE_EDITOR
+    Files.EnsureCapacity(1024);
+#else
+    Packages.EnsureCapacity(64);
+#endif
+    StorageMap.EnsureCapacity(2048);
     System = New<ContentStorageSystem>();
     Engine::UpdateGraph->AddSystem(System);
     return false;

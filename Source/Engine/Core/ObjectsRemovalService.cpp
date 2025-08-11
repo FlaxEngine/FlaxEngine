@@ -19,7 +19,7 @@ namespace
     CriticalSection PoolLocker;
     double LastUpdate;
     float LastUpdateGameTime;
-    Dictionary<Object*, float> Pool(8192);
+    Dictionary<Object*, float> Pool;
     uint64 PoolCounter = 0;
 }
 
@@ -114,6 +114,7 @@ void ObjectsRemovalService::Flush(float dt, float gameDelta)
 
 bool ObjectsRemoval::Init()
 {
+    Pool.EnsureCapacity(8192);
     LastUpdate = Platform::GetTimeSeconds();
     LastUpdateGameTime = 0;
     return false;

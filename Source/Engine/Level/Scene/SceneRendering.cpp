@@ -191,7 +191,7 @@ void SceneRendering::UpdateActor(Actor* a, int32& key, ISceneRenderingListener::
     const int32 category = a->_drawCategory;
     ConcurrentSystemLocker::ReadScope lock(Locker); // Read-access only as list doesn't get resized (like Add/Remove do) so allow updating actors from different threads at once
     auto& list = Actors[category];
-    if (list.Count() <= key) // Ignore invalid key softly
+    if (list.Count() <= key || key < 0) // Ignore invalid key softly
         return;
     auto& e = list[key];
     if (e.Actor == a)
@@ -211,7 +211,7 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
     const int32 category = a->_drawCategory;
     ConcurrentSystemLocker::WriteScope lock(Locker, true);
     auto& list = Actors[category];
-    if (list.Count() > key) // Ignore invalid key softly (eg. list after batch clear during scene unload)
+    if (list.Count() > key || key < 0) // Ignore invalid key softly (eg. list after batch clear during scene unload)
     {
         auto& e = list.Get()[key];
         if (e.Actor == a)
