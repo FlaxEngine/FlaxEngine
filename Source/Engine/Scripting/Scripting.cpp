@@ -245,7 +245,7 @@ void ScriptingService::Update()
     PROFILE_CPU_NAMED("Scripting::Update");
     INVOKE_EVENT(Update);
 
-#ifdef USE_NETCORE
+#if defined(USE_NETCORE) && !USE_EDITOR
     // Force GC to run in background periodically to avoid large blocking collections causing hitches
     if (Time::Update.TicksCount % 60 == 0)
     {
