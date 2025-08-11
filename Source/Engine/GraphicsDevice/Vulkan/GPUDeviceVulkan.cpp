@@ -1498,17 +1498,28 @@ PixelFormat GPUDeviceVulkan::GetClosestSupportedPixelFormat(PixelFormat format, 
     return format;
 }
 
-#if VULKAN_USE_PIPELINE_CACHE
-
-void GetPipelineCachePath(String& path)
+bool VulkanPlatformBase::LoadCache(const String& folder, const Char* filename, Array<byte>& data)
 {
-#if USE_EDITOR
-    path = Globals::ProjectCacheFolder / TEXT("VulkanPipeline.cache");
-#else
-    path = Globals::ProductLocalFolder / TEXT("VulkanPipeline.cache");
-#endif
+    String path = folder / filename;
+    if (FileSystem::FileExists(path))
+    {
+        LOG(Info, "Loading Vulkan cache from file '{}'", path);
+        return File::ReadAllBytes(path, data);
+    }
+    return false;
 }
 
+bool VulkanPlatformBase::SaveCache(const String& folder, const Char* filename, const Array<byte>& data)
+{
+    String path = folder / filename;
+    LOG(Info, "Saving Vulkan cache to file '{}' ({} kB)", path, data.Count() / 1024);
+    return File::WriteAllBytes(path, data);
+}
+
+#if USE_EDITOR
+#define CACHE_FOLDER Globals::ProjectCacheFolder
+#else
+#define CACHE_FOLDER Globals::ProductLocalFolder
 #endif
 
 bool GPUDeviceVulkan::SavePipelineCache()
@@ -1516,6 +1527,8 @@ bool GPUDeviceVulkan::SavePipelineCache()
 #if VULKAN_USE_PIPELINE_CACHE
     if (PipelineCache == VK_NULL_HANDLE || !vkGetPipelineCacheData)
         return false;
+    PROFILE_CPU();
+    PROFILE_MEM(Graphics);
 
     // Query data size
     size_t dataSize = 0;
@@ -1531,9 +1544,7 @@ bool GPUDeviceVulkan::SavePipelineCache()
     LOG_VULKAN_RESULT_WITH_RETURN(result);
 
     // Save data
-    String path;
-    GetPipelineCachePath(path);
-    return File::WriteAllBytes(path, data);
+    return VulkanPlatform::SaveCache(CACHE_FOLDER, TEXT("VulkanPipeline.cache"), data);
 #else
     return false;
 #endif
@@ -1541,19 +1552,12 @@ bool GPUDeviceVulkan::SavePipelineCache()
 
 #if VULKAN_USE_VALIDATION_CACHE
 
-void GetValidationCachePath(String& path)
-{
-#if USE_EDITOR
-    path = Globals::ProjectCacheFolder / TEXT("VulkanValidation.cache");
-#else
-    path = Globals::ProductLocalFolder / TEXT("VulkanValidation.cache");
-#endif
-}
-
 bool GPUDeviceVulkan::SaveValidationCache()
 {
     if (ValidationCache == VK_NULL_HANDLE || !vkGetValidationCacheDataEXT)
         return false;
+    PROFILE_CPU();
+    PROFILE_MEM(Graphics);
 
     // Query data size
     size_t dataSize = 0;
@@ -1569,9 +1573,7 @@ bool GPUDeviceVulkan::SaveValidationCache()
     LOG_VULKAN_RESULT_WITH_RETURN(result);
 
     // Save data
-    String path;
-    GetValidationCachePath(path);
-    return File::WriteAllBytes(path, data);
+    return VulkanPlatform::SaveCache(CACHE_FOLDER, TEXT("VulkanValidation.cache"), data);
 }
 
 #endif
@@ -1987,13 +1989,7 @@ bool GPUDeviceVulkan::Init()
     if (vkCreatePipelineCache)
     {
         Array<uint8> data;
-        String path;
-        GetPipelineCachePath(path);
-        if (FileSystem::FileExists(path))
-        {
-            LOG(Info, "Trying to load Vulkan pipeline cache file {0}", path);
-            File::ReadAllBytes(path, data);
-        }
+        VulkanPlatform::LoadCache(CACHE_FOLDER, TEXT("VulkanPipeline.cache"), data);
         VkPipelineCacheCreateInfo pipelineCacheCreateInfo;
         RenderToolsVulkan::ZeroStruct(pipelineCacheCreateInfo, VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO);
         pipelineCacheCreateInfo.initialDataSize = data.Count();
@@ -2006,35 +2002,29 @@ bool GPUDeviceVulkan::Init()
     if (OptionalDeviceExtensions.HasEXTValidationCache && vkCreateValidationCacheEXT && vkDestroyValidationCacheEXT)
     {
         Array<uint8> data;
-        String path;
-        GetValidationCachePath(path);
-        if (FileSystem::FileExists(path))
+        VulkanPlatform::LoadCache(CACHE_FOLDER, TEXT("VulkanValidation.cache"), data);
+        if (data.HasItems())
         {
-            LOG(Info, "Trying to load Vulkan validation cache file {0}", path);
-            File::ReadAllBytes(path, data);
-            if (data.HasItems())
+            int32* dataPtr = (int32*)data.Get();
+            if (*dataPtr > 0)
             {
-                int32* dataPtr = (int32*)data.Get();
-                if (*dataPtr > 0)
+                const int32 cacheSize = *dataPtr++;
+                const int32 cacheVersion = *dataPtr++;
+                const int32 cacheVersionExpected = VK_PIPELINE_CACHE_HEADER_VERSION_ONE;
+                if (cacheVersion == cacheVersionExpected)
                 {
-                    const int32 cacheSize = *dataPtr++;
-                    const int32 cacheVersion = *dataPtr++;
-                    const int32 cacheVersionExpected = VK_PIPELINE_CACHE_HEADER_VERSION_ONE;
-                    if (cacheVersion == cacheVersionExpected)
-                    {
-                        dataPtr += VK_UUID_SIZE / sizeof(int32);
-                    }
-                    else
-                    {
-                        LOG(Warning, "Bad validation cache file, version: {0}, expected: {1}", cacheVersion, cacheVersionExpected);
-                        data.Clear();
-                    }
+                    dataPtr += VK_UUID_SIZE / sizeof(int32);
                 }
                 else
                 {
-                    LOG(Warning, "Bad validation cache file, header size: {0}", *dataPtr);
+                    LOG(Warning, "Bad validation cache file, version: {0}, expected: {1}", cacheVersion, cacheVersionExpected);
                     data.Clear();
                 }
+            }
+            else
+            {
+                LOG(Warning, "Bad validation cache file, header size: {0}", *dataPtr);
+                data.Clear();
             }
         }
         VkValidationCacheCreateInfoEXT validationCreateInfo;
