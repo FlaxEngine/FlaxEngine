@@ -7,6 +7,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Content/Upgraders/AudioClipUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Streaming/StreamingGroup.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -19,10 +20,15 @@ REGISTER_BINARY_ASSET_WITH_UPGRADER(AudioClip, "FlaxEngine.AudioClip", AudioClip
 
 bool AudioClip::StreamingTask::Run()
 {
+    PROFILE_CPU_NAMED("AudioStreaming");
     PROFILE_MEM(Audio);
     AssetReference<AudioClip> ref = _asset.Get();
     if (ref == nullptr || AudioBackend::Instance == nullptr)
         return true;
+#if TRACY_ENABLE
+    const StringView name(ref->GetPath());
+    ZoneName(*name, name.Length());
+#endif
     ScopeLock lock(ref->Locker);
     const auto& queue = ref->StreamingQueue;
     if (queue.Count() == 0)
@@ -421,6 +427,8 @@ bool AudioClip::WriteBuffer(int32 chunkIndex)
     // Ensure audio backend exists
     if (AudioBackend::Instance == nullptr)
         return true;
+    PROFILE_CPU();
+    PROFILE_MEM(Audio);
 
     const auto chunk = GetChunk(chunkIndex);
     if (chunk == nullptr || chunk->IsMissing())
@@ -432,6 +440,7 @@ bool AudioClip::WriteBuffer(int32 chunkIndex)
     Array<byte> tmp1, tmp2;
     AudioDataInfo info = AudioHeader.Info;
     const uint32 bytesPerSample = info.BitDepth / 8;
+    ZoneValue(chunk->Size() / 1024); // Audio data size (in kB)
 
     // Get raw data or decompress it
     switch (Format())
@@ -439,6 +448,7 @@ bool AudioClip::WriteBuffer(int32 chunkIndex)
     case AudioFormat::Vorbis:
     {
 #if COMPILE_WITH_OGG_VORBIS
+        PROFILE_CPU_NAMED("OggVorbisDecode");
         OggVorbisDecoder decoder;
         MemoryReadStream stream(chunk->Get(), chunk->Size());
         AudioDataInfo tmpInfo;

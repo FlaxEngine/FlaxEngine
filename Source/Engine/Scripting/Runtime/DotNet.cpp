@@ -535,7 +535,8 @@ void MCore::GC::Collect(int32 generation)
 
 void MCore::GC::Collect(int32 generation, MGCCollectionMode collectionMode, bool blocking, bool compacting)
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("GC Collect");
+    ZoneColor(0xe3c349);
     static void* GCCollectPtr = GetStaticMethodPointer(TEXT("GCCollect"));
     CallStaticMethod<void, int, int, bool, bool>(GCCollectPtr, generation, (int)collectionMode, blocking, compacting);
 }
@@ -554,7 +555,8 @@ void MCore::GC::MemoryInfo(int64& totalCommitted, int64& heapSize)
 
 void MCore::GC::WaitForPendingFinalizers()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("GC WaitForPendingFinalizers");
+    ZoneColor(TracyWaitZoneColor);
     static void* GCWaitForPendingFinalizersPtr = GetStaticMethodPointer(TEXT("GCWaitForPendingFinalizers"));
     CallStaticMethod<void>(GCWaitForPendingFinalizersPtr);
 }
