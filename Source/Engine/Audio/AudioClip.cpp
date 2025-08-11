@@ -18,47 +18,56 @@
 
 REGISTER_BINARY_ASSET_WITH_UPGRADER(AudioClip, "FlaxEngine.AudioClip", AudioClipUpgrader, false);
 
+AudioClip::StreamingTask::StreamingTask(AudioClip* asset)
+    : _asset(asset)
+    , _dataLock(asset->Storage->Lock())
+{
+}
+
+bool AudioClip::StreamingTask::HasReference(Object* resource) const
+{
+    return _asset == resource;
+}
+
 bool AudioClip::StreamingTask::Run()
 {
     PROFILE_CPU_NAMED("AudioStreaming");
     PROFILE_MEM(Audio);
-    AssetReference<AudioClip> ref = _asset.Get();
-    if (ref == nullptr || AudioBackend::Instance == nullptr)
+    AssetReference<AudioClip> clip = _asset.Get();
+    if (clip == nullptr || AudioBackend::Instance == nullptr)
         return true;
 #if TRACY_ENABLE
-    const StringView name(ref->GetPath());
+    const StringView name(clip->GetPath());
     ZoneName(*name, name.Length());
 #endif
-    ScopeLock lock(ref->Locker);
-    const auto& queue = ref->StreamingQueue;
-    if (queue.Count() == 0)
-        return false;
-    auto clip = ref.Get();
 
-    // Update the buffers
+    // Process the loading queue (hold the asset lock)
+    clip->Locker.Lock();
+    const auto& queue = clip->StreamingQueue;
+    Array<int32, FixedAllocation<ASSET_FILE_DATA_CHUNKS>> loadQueue;
     for (int32 i = 0; i < queue.Count(); i++)
     {
-        const auto idx = queue[i];
+        const int32 idx = queue[i];
         uint32& bufferID = clip->Buffers[idx];
         if (bufferID == 0)
         {
-            bufferID = AudioBackend::Buffer::Create();
+            // Load buffers outside the asset lock to prevent lock contention
+            loadQueue.Add(idx);
         }
         else
         {
-            // Release unused data
+            // Release unused buffer
             AudioBackend::Buffer::Delete(bufferID);
             bufferID = 0;
         }
     }
+    clip->Locker.Unlock();
 
     // Load missing buffers data (from asset chunks)
-    for (int32 i = 0; i < queue.Count(); i++)
+    for (int32 i = 0; i < loadQueue.Count(); i++)
     {
-        if (clip->WriteBuffer(queue[i]))
-        {
+        if (clip->WriteBuffer(loadQueue[i]))
             return true;
-        }
     }
 
     // Update the sources
@@ -419,11 +428,6 @@ void AudioClip::unload(bool isReloading)
 
 bool AudioClip::WriteBuffer(int32 chunkIndex)
 {
-    // Ignore if buffer is not created
-    const uint32 bufferID = Buffers[chunkIndex];
-    if (bufferID == 0)
-        return false;
-
     // Ensure audio backend exists
     if (AudioBackend::Instance == nullptr)
         return true;
@@ -485,7 +489,13 @@ bool AudioClip::WriteBuffer(int32 chunkIndex)
         data = Span<byte>(tmp2.Get(), tmp2.Count());
     }
 
-    // Write samples to the audio buffer
+    // Write samples to the audio buffer (create one if missing)
+    Locker.Lock(); // StreamingTask loads buffers without lock so do it here
+    uint32& bufferID = Buffers[chunkIndex];
+    if (bufferID == 0)
+        bufferID = AudioBackend::Buffer::Create();
     AudioBackend::Buffer::Write(bufferID, data.Get(), info);
+    Locker.Unlock();
+
     return false;
 }
