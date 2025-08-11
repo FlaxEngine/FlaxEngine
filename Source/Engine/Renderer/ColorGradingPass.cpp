@@ -194,6 +194,7 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     // Check if LUT parameter hasn't been changed since the last time
     if (Platform::MemoryCompare(&colorGradingBuffer.CachedData , &data, sizeof(Data)) == 0 &&
         colorGradingBuffer.Mode == toneMapping.Mode &&
+        Engine::FrameCount > 30 && // Skip caching when engine is starting TODO: find why this hack is needed
         colorGradingBuffer.LutTexture == lutTexture)
     {
         // Resue existing texture

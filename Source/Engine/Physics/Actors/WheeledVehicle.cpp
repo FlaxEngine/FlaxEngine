@@ -191,7 +191,7 @@ void WheeledVehicle::SetThrottle(float value)
     _throttle = Math::Clamp(value, -1.0f, 1.0f);
 }
 
-float WheeledVehicle::GetThrottle()
+float WheeledVehicle::GetThrottle() const
 {
     return _throttle;
 }

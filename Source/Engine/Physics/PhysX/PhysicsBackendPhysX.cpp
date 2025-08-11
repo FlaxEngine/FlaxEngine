@@ -496,7 +496,9 @@ protected:
 #define PxHitFlagEmpty (PxHitFlags)0
 #define SCENE_QUERY_FLAGS (PxHitFlag::ePOSITION | PxHitFlag::eNORMAL | PxHitFlag::eFACE_INDEX | PxHitFlag::eUV)
 
-#define SCENE_QUERY_SETUP(blockSingle) auto scenePhysX = (ScenePhysX*)scene; if (scene == nullptr) return false; \
+#define SCENE_QUERY_SETUP(blockSingle) PROFILE_CPU(); \
+        auto scenePhysX = (ScenePhysX*)scene; \
+        if (scene == nullptr) return false; \
 		PxQueryFilterData filterData; \
 		filterData.flags |=  PxQueryFlag::ePREFILTER; \
 		filterData.data.word0 = layerMask; \

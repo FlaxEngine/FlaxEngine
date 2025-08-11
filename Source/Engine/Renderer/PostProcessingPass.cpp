@@ -367,15 +367,19 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     // Bloom
 
     auto tempDesc = GPUTextureDescription::New2D(w2, h2, bloomMipCount, output->Format(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
-    auto bloomBuffer1 = RenderTargetPool::Get(tempDesc);
-    RENDER_TARGET_POOL_SET_NAME(bloomBuffer1, "PostProcessing.Bloom");
-    auto bloomBuffer2 = RenderTargetPool::Get(tempDesc);
-    RENDER_TARGET_POOL_SET_NAME(bloomBuffer2, "PostProcessing.Bloom");
-
-    for (int32 mip = 0; mip < bloomMipCount; mip++)
+    GPUTexture* bloomBuffer1 = nullptr, *bloomBuffer2 = nullptr;
+    if (useBloom || useLensFlares)
     {
-        context->Clear(bloomBuffer1->View(0, mip), Color::Transparent);
-        context->Clear(bloomBuffer2->View(0, mip), Color::Transparent);
+        bloomBuffer1 = RenderTargetPool::Get(tempDesc);
+        bloomBuffer2 = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(bloomBuffer1, "PostProcessing.Bloom");
+        RENDER_TARGET_POOL_SET_NAME(bloomBuffer2, "PostProcessing.Bloom");
+
+        for (int32 mip = 0; mip < bloomMipCount; mip++)
+        {
+            context->Clear(bloomBuffer1->View(0, mip), Color::Transparent);
+            context->Clear(bloomBuffer2->View(0, mip), Color::Transparent);
+        }
     }
 
     if (useBloom)
