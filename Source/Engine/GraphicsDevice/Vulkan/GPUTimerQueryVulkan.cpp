@@ -58,7 +58,7 @@ bool GPUTimerQueryVulkan::GetResult(Query& query)
 
 void GPUTimerQueryVulkan::WriteTimestamp(CmdBufferVulkan* cmdBuffer, Query& query, VkPipelineStageFlagBits stage) const
 {
-    auto pool = _device->FindAvailableTimestampQueryPool();
+    auto pool = _device->FindAvailableQueryPool(VK_QUERY_TYPE_TIMESTAMP);
     uint32 index;
     if (pool->AcquireQuery(cmdBuffer, index))
     {

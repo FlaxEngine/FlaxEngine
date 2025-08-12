@@ -531,37 +531,13 @@ public:
     VkPhysicalDeviceFeatures PhysicalDeviceFeatures;
 
     Array<BufferedQueryPoolVulkan*> TimestampQueryPools;
+    Array<BufferedQueryPoolVulkan*> OcclusionQueryPools;
 
 #if VULKAN_RESET_QUERY_POOLS
     Array<QueryPoolVulkan*> QueriesToReset;
 #endif
 
-    inline BufferedQueryPoolVulkan* FindAvailableQueryPool(Array<BufferedQueryPoolVulkan*>& pools, VkQueryType queryType)
-    {
-        // Try to use pool with available space inside
-        for (int32 i = 0; i < pools.Count(); i++)
-        {
-            auto pool = pools.Get()[i];
-            if (pool->HasRoom())
-                return pool;
-        }
-
-        // Create new pool
-        enum
-        {
-            NUM_OCCLUSION_QUERIES_PER_POOL = 4096,
-            NUM_TIMESTAMP_QUERIES_PER_POOL = 1024,
-        };
-        const auto pool = New<BufferedQueryPoolVulkan>(this, queryType == VK_QUERY_TYPE_OCCLUSION ? NUM_OCCLUSION_QUERIES_PER_POOL : NUM_TIMESTAMP_QUERIES_PER_POOL, queryType);
-        pools.Add(pool);
-        return pool;
-    }
-
-    inline BufferedQueryPoolVulkan* FindAvailableTimestampQueryPool()
-    {
-        return FindAvailableQueryPool(TimestampQueryPools, VK_QUERY_TYPE_TIMESTAMP);
-    }
-
+    BufferedQueryPoolVulkan* FindAvailableQueryPool(VkQueryType queryType);
     RenderPassVulkan* GetOrCreateRenderPass(RenderTargetLayoutVulkan& layout);
     FramebufferVulkan* GetOrCreateFramebuffer(FramebufferVulkan::Key& key, VkExtent2D& extent, uint32 layers);
     PipelineLayoutVulkan* GetOrCreateLayout(DescriptorSetLayoutInfoVulkan& key);

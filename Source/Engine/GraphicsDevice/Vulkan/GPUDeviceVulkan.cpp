@@ -1349,6 +1349,24 @@ GPUDeviceVulkan::~GPUDeviceVulkan()
     GPUDeviceVulkan::Dispose();
 }
 
+BufferedQueryPoolVulkan* GPUDeviceVulkan::FindAvailableQueryPool(VkQueryType queryType)
+{
+    auto& pools = queryType == VK_QUERY_TYPE_OCCLUSION ? OcclusionQueryPools : TimestampQueryPools;
+
+    // Try to use pool with available space inside
+    for (int32 i = 0; i < pools.Count(); i++)
+    {
+        auto pool = pools.Get()[i];
+        if (pool->HasRoom())
+            return pool;
+    }
+
+    // Create new pool
+    const auto pool = New<BufferedQueryPoolVulkan>(this, queryType == VK_QUERY_TYPE_OCCLUSION ? 4096 : 1024, queryType);
+    pools.Add(pool);
+    return pool;
+}
+
 RenderPassVulkan* GPUDeviceVulkan::GetOrCreateRenderPass(RenderTargetLayoutVulkan& layout)
 {
     RenderPassVulkan* renderPass;
@@ -2075,6 +2093,7 @@ void GPUDeviceVulkan::Dispose()
     HelperResources.Dispose();
     StagingManager.Dispose();
     TimestampQueryPools.ClearDelete();
+    OcclusionQueryPools.ClearDelete();
     SAFE_DELETE_GPU_RESOURCE(UniformBufferUploader);
     Delete(DescriptorPoolsManager);
     SAFE_DELETE(MainContext);
