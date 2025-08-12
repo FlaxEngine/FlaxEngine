@@ -48,6 +48,9 @@
 #include <ThirdParty/stb/stb_dxt.h>
 
 #if USE_EDITOR
+// Import ddspp library
+#include <ThirdParty/ddspp/ddspp.h>
+
 // Compression libs for Editor
 #include <ThirdParty/detex/detex.h>
 #include <ThirdParty/bc7enc16/bc7enc16.h>
@@ -77,6 +80,7 @@ static TextureData const* stbDecompress(const TextureData& textureData, TextureD
 {
     if (!PixelFormatExtensions::IsCompressed(textureData.Format))
         return &textureData;
+
     const bool srgb = PixelFormatExtensions::IsSRGB(textureData.Format);
     switch (textureData.Format)
     {
@@ -92,90 +96,104 @@ static TextureData const* stbDecompress(const TextureData& textureData, TextureD
         decompressed.Format = srgb ? PixelFormat::R8G8B8A8_UNorm_sRGB : PixelFormat::R8G8B8A8_UNorm;
         break;
     }
+
     decompressed.Width = textureData.Width;
     decompressed.Height = textureData.Height;
     decompressed.Depth = textureData.Depth;
-    decompressed.Items.Resize(1);
-    decompressed.Items[0].Mips.Resize(1);
-
-    TextureMipData* decompressedData = decompressed.GetData(0, 0);
-    decompressedData->RowPitch = textureData.Width * PixelFormatExtensions::SizeInBytes(decompressed.Format);
-    decompressedData->Lines = textureData.Height;
-    decompressedData->DepthPitch = decompressedData->RowPitch * decompressedData->Lines;
-    decompressedData->Data.Allocate(decompressedData->DepthPitch);
-    byte* decompressedBytes = decompressedData->Data.Get();
-
-    Color32 colors[16];
-    int32 blocksWidth = textureData.Width / 4;
-    int32 blocksHeight = textureData.Height / 4;
-    const TextureMipData* blocksData = textureData.GetData(0, 0);
-    const byte* blocksBytes = blocksData->Data.Get();
+    decompressed.Items.Resize(textureData.Items.Count());
 
     typedef bool (*detexDecompressBlockFuncType)(const uint8_t* bitstring, uint32_t mode_mask, uint32_t flags, uint8_t* pixel_buffer);
     detexDecompressBlockFuncType detexDecompressBlockFunc;
     int32 pixelSize, blockSize;
     switch (textureData.Format)
     {
-    case PixelFormat::BC1_UNorm:
-    case PixelFormat::BC1_UNorm_sRGB:
-        detexDecompressBlockFunc = detexDecompressBlockBC1;
-        pixelSize = 4;
-        blockSize = 8;
-        break;
-    case PixelFormat::BC2_UNorm:
-    case PixelFormat::BC2_UNorm_sRGB:
-        detexDecompressBlockFunc = detexDecompressBlockBC2;
-        pixelSize = 4;
-        blockSize = 16;
-        break;
-    case PixelFormat::BC3_UNorm:
-    case PixelFormat::BC3_UNorm_sRGB:
-        detexDecompressBlockFunc = detexDecompressBlockBC3;
-        pixelSize = 4;
-        blockSize = 16;
-        break;
-    case PixelFormat::BC4_UNorm:
-        detexDecompressBlockFunc = detexDecompressBlockRGTC1;
-        pixelSize = 1;
-        blockSize = 8;
-        break;
-    case PixelFormat::BC5_UNorm:
-        detexDecompressBlockFunc = detexDecompressBlockRGTC2;
-        pixelSize = 2;
-        blockSize = 16;
-        break;
-    case PixelFormat::BC7_UNorm:
-    case PixelFormat::BC7_UNorm_sRGB:
-        detexDecompressBlockFunc = detexDecompressBlockBPTC;
-        pixelSize = 4;
-        blockSize = 16;
-        break;
-    default:
-        LOG(Warning, "Texture data format {0} is not supported by detex library.", (int32)textureData.Format);
-        return nullptr;
+        case PixelFormat::BC1_UNorm:
+        case PixelFormat::BC1_UNorm_sRGB:
+            detexDecompressBlockFunc = detexDecompressBlockBC1;
+            pixelSize = 4;
+            blockSize = 8;
+            break;
+        case PixelFormat::BC2_UNorm:
+        case PixelFormat::BC2_UNorm_sRGB:
+            detexDecompressBlockFunc = detexDecompressBlockBC2;
+            pixelSize = 4;
+            blockSize = 16;
+            break;
+        case PixelFormat::BC3_UNorm:
+        case PixelFormat::BC3_UNorm_sRGB:
+            detexDecompressBlockFunc = detexDecompressBlockBC3;
+            pixelSize = 4;
+            blockSize = 16;
+            break;
+        case PixelFormat::BC4_UNorm:
+            detexDecompressBlockFunc = detexDecompressBlockRGTC1;
+            pixelSize = 1;
+            blockSize = 8;
+            break;
+        case PixelFormat::BC5_UNorm:
+            detexDecompressBlockFunc = detexDecompressBlockRGTC2;
+            pixelSize = 2;
+            blockSize = 16;
+            break;
+        case PixelFormat::BC7_UNorm:
+        case PixelFormat::BC7_UNorm_sRGB:
+            detexDecompressBlockFunc = detexDecompressBlockBPTC;
+            pixelSize = 4;
+            blockSize = 16;
+            break;
+        default:
+            LOG(Warning, "Texture data format {0} is not supported by detex library.", (int32)textureData.Format);
+            return nullptr;
     }
 
     uint8 blockBuffer[DETEX_MAX_BLOCK_SIZE];
-    for (int32 y = 0; y < blocksHeight; y++)
+
+    for (int32 arrayIndex = 0; arrayIndex < textureData.Items.Count(); arrayIndex++)
     {
-        int32 rows;
-        if (y * 4 + 3 >= textureData.Height)
-            rows = textureData.Height - y * 4;
-        else
-            rows = 4;
-        for (int32 x = 0; x < blocksWidth; x++)
+        const auto& srcItem = textureData.Items[arrayIndex];
+        auto& dstItem = decompressed.Items[arrayIndex];
+        dstItem.Mips.Resize(srcItem.Mips.Count());
+
+        for (int32 mipIndex = 0; mipIndex < srcItem.Mips.Count(); mipIndex++)
         {
-            const byte* block = blocksBytes + y * blocksData->RowPitch + x * blockSize;
-            if (!detexDecompressBlockFunc(block, DETEX_MODE_MASK_ALL, 0, blockBuffer))
-                memset(blockBuffer, 0, DETEX_MAX_BLOCK_SIZE);
-            uint8* pixels = decompressedBytes + y * 4 * textureData.Width * pixelSize + x * 4 * pixelSize;
-            int32 columns;
-            if (x * 4 + 3  >= textureData.Width)
-                columns = textureData.Width - x * 4;
-            else
-                columns = 4;
-            for (int32 row = 0; row < rows; row++)
-                memcpy(pixels + row * textureData.Width * pixelSize, blockBuffer + row * 4 * pixelSize, columns * pixelSize);
+            const auto& srcMip = srcItem.Mips[mipIndex];
+            auto& dstMip = dstItem.Mips[mipIndex];
+
+            int mipWidth = Math::Max(1, textureData.Width  >> mipIndex);
+            int mipHeight = Math::Max(1, textureData.Height >> mipIndex);
+
+            int blocksWidth = (mipWidth  + 3) / 4;
+            int blocksHeight = (mipHeight + 3) / 4;
+
+            dstMip.RowPitch = mipWidth * pixelSize;
+            dstMip.Lines = mipHeight;
+            dstMip.DepthPitch = dstMip.RowPitch * mipHeight;
+            dstMip.Data.Allocate(dstMip.DepthPitch);
+            byte* decompressedBytes = dstMip.Data.Get();
+
+            const byte* blocksBytes = srcMip.Data.Get();
+
+            // Descompress block by block
+            for (int32 by = 0; by < blocksHeight; by++)
+            {
+                int32 rows = (by * 4 + 3 >= mipHeight) ? (mipHeight - by * 4) : 4;
+
+                for (int32 bx = 0; bx < blocksWidth; bx++)
+                {
+                    int32 columns = (bx * 4 + 3 >= mipWidth) ? (mipWidth - bx * 4) : 4;
+
+                    const byte* block = blocksBytes + by * srcMip.RowPitch + bx * blockSize;
+
+                    if (!detexDecompressBlockFunc(block, DETEX_MODE_MASK_ALL, 0, blockBuffer))
+                        memset(blockBuffer, 0, DETEX_MAX_BLOCK_SIZE);
+
+                    uint8* pixels = decompressedBytes + (by * 4) * mipWidth * pixelSize + (bx * 4) * pixelSize;
+
+                    for (int32 row = 0; row < rows; row++)
+                        memcpy(pixels + row * mipWidth * pixelSize,blockBuffer + row * 4 * pixelSize,
+                            columns * pixelSize);
+                }
+            }
         }
     }
 
@@ -375,9 +393,7 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
             }
         }
 #endif
-
         stbi_image_free(stbData);
-
         break;
     }
     case ImageType::RAW:
@@ -447,9 +463,96 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         break;
     }
     case ImageType::DDS:
+    {
+#if USE_EDITOR
+        // Load image as stream of bytes
+        const unsigned char* ddsData = static_cast<const unsigned char*>(fileData.Get());
+        
+        // Decode header and get pointer to initial data
+        ddspp::Descriptor desc;
+        
+        if (ddspp::decode_header(ddsData, desc) != ddspp::Success)
+        {
+            MessageBox::Show(TEXT("Failed to decode DDS file."), TEXT("Import warning"), 
+                MessageBoxButtons::OK, MessageBoxIcon::Warning);
+            LOG(Warning, "Failed to decode DDS file.");
+            return true;
+        }
+            
+        const unsigned char* initialData = ddsData + desc.headerSize;
+
+        // Setup texture data
+        textureData.Width = desc.width;
+        textureData.Height = desc.height;
+        textureData.Depth = desc.depth;
+        
+        switch(desc.format)
+        {
+            case ddspp::BC1_UNORM:
+                textureData.Format = PixelFormat::BC1_UNorm;
+                break;
+            case ddspp::BC1_UNORM_SRGB:
+                textureData.Format = PixelFormat::BC1_UNorm_sRGB;
+                break;
+            case ddspp::BC2_UNORM:
+                textureData.Format = PixelFormat::BC2_UNorm;
+                break;
+            case ddspp::BC2_UNORM_SRGB:
+                textureData.Format = PixelFormat::BC2_UNorm_sRGB;
+                break;
+            case ddspp::BC3_UNORM:
+                textureData.Format = PixelFormat::BC3_UNorm;
+                break;
+            case ddspp::BC3_UNORM_SRGB:
+                textureData.Format = PixelFormat::BC3_UNorm_sRGB;
+                break;
+            case ddspp::BC4_UNORM:
+                textureData.Format = PixelFormat::BC4_UNorm;
+                break;
+            case ddspp::BC5_UNORM:
+                textureData.Format = PixelFormat::BC5_UNorm;
+                break;
+            case ddspp::BC7_UNORM:
+                textureData.Format = PixelFormat::BC7_UNorm;
+                break;
+            case ddspp::BC7_UNORM_SRGB:
+                textureData.Format = PixelFormat::BC7_UNorm_sRGB;
+                break;
+            case ddspp::R8G8B8A8_UNORM:
+                textureData.Format = PixelFormat::R8G8B8A8_UNorm;
+                break;
+            case ddspp::R8G8B8A8_UNORM_SRGB:
+                textureData.Format = PixelFormat::R8G8B8A8_UNorm_sRGB;
+                break;
+            default:
+                LOG(Warning, "Unsupported DDS format.");
+                return true;
+        }
+
+        textureData.Items.Resize(desc.arraySize);
+        for (int32 arrayIndex = 0; arrayIndex < (int32)desc.arraySize; arrayIndex++)
+        {
+            auto& item = textureData.Items[arrayIndex];
+            item.Mips.Resize(desc.numMips);
+
+            for (int32 mipIndex = 0; mipIndex < (int32)desc.numMips; mipIndex++)
+            {
+                auto& mip = item.Mips[mipIndex];
+
+                mip.RowPitch = ddspp::get_row_pitch(desc, mipIndex);
+                mip.Lines = ddspp::get_height_pixels_blocks(desc, mipIndex);
+                mip.DepthPitch = mip.RowPitch * mip.Lines;
+
+                int32 offset = ddspp::get_offset(desc, mipIndex, arrayIndex);
+                mip.Data.Copy(initialData + offset, mip.DepthPitch);
+            }
+        }
+#else
         MessageBox::Show(TEXT("DDS format is not supported."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "DDS format is not supported.");
-        break;
+#endif
+        break;        
+    }
     case ImageType::TIFF:
         MessageBox::Show(TEXT("TIFF format is not supported."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "TIFF format is not supported.");
@@ -531,8 +634,9 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     // Check mip levels
     int32 sourceMipLevels = textureDataSrc->GetMipLevels();
     bool hasSourceMipLevels = isPowerOfTwo && sourceMipLevels > 1;
-    bool useMipLevels = isPowerOfTwo && (options.GenerateMipMaps || hasSourceMipLevels) && (width > 1 || height > 1);
-    int32 arraySize = (int32)textureDataSrc->GetArraySize();
+    bool useMipLevels = isPowerOfTwo && (options.GenerateMipMaps || 
+        hasSourceMipLevels) && (width > 1 || height > 1);
+    
     int32 mipLevels = MipLevelsCount(width, height, useMipLevels);
     if (useMipLevels && !options.GenerateMipMaps && mipLevels != sourceMipLevels)
     {
@@ -540,12 +644,28 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         return true;
     }
 
-    // Decompress if texture is compressed (next steps need decompressed input data, for eg. mip maps generation or format changing)
-    if (PixelFormatExtensions::IsCompressed(textureDataSrc->Format))
+    bool keepAsIs = false;
+    if (//!options.FlipY && !options.FlipX &&
+        //!options.InvertGreenChannel &&
+        //!options.InvertRedChannel &&
+        //!options.InvertAlphaChannel &&
+        //!options.InvertBlueChannel &&
+        //!options.ReconstructZChannel &&
+        //options.Compress && 
+        type == ImageType::DDS && 
+        //mipLevels == sourceMipLevels && 
+        PixelFormatExtensions::IsCompressed(textureDataSrc->Format) && 
+        //!PixelFormatExtensions::IsSRGB(textureDataSrc->Format) &&  
+        width >= 4 && height >= 4)
     {
-        // TODO: implement texture decompression
-        errorMsg = String::Format(TEXT("Imported texture used compressed format {0}. Not supported for importing on this platform.."), (int32)textureDataSrc->Format);
-        return true;
+        // Keep image in the current compressed format (artist choice) so we don't have to run the slow mipmap generation
+        keepAsIs = true;
+    }
+
+    // Decompress if texture is compressed (next steps need decompressed input data, for eg. mip maps generation or format changing)
+    if (!keepAsIs && PixelFormatExtensions::IsCompressed(textureDataSrc->Format))
+    {   
+        //stbDecompress(*textureDataSrc, *textureDataDst);
     }
 
     if (options.FlipX)
@@ -565,6 +685,7 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     }
 
     // Generate mip maps chain
+    int32 arraySize = (int32)textureDataSrc->GetArraySize();
     if (useMipLevels && options.GenerateMipMaps)
     {
         for (int32 arrayIndex = 0; arrayIndex < arraySize; arrayIndex++)
