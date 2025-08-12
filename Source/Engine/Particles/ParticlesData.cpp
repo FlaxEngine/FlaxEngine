@@ -6,6 +6,89 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/DynamicBuffer.h"
 
+int32 ParticleAttribute::GetSize() const
+{
+    switch (ValueType)
+    {
+    case ValueTypes::Float2:
+        return 8;
+    case ValueTypes::Float3:
+        return 12;
+    case ValueTypes::Float4:
+        return 16;
+    case ValueTypes::Float:
+    case ValueTypes::Int:
+    case ValueTypes::Uint:
+        return 4;
+    default:
+        return 0;
+    }
+}
+
+void ParticleLayout::Clear()
+{
+    Size = 0;
+    Attributes.Clear();
+}
+
+void ParticleLayout::UpdateLayout()
+{
+    Size = 0;
+    for (int32 i = 0; i < Attributes.Count(); i++)
+    {
+        Attributes[i].Offset = Size;
+        Size += Attributes[i].GetSize();
+    }
+}
+
+int32 ParticleLayout::FindAttribute(const StringView& name) const
+{
+    for (int32 i = 0; i < Attributes.Count(); i++)
+    {
+        if (name == Attributes[i].Name)
+            return i;
+    }
+    return -1;
+}
+
+int32 ParticleLayout::FindAttribute(const StringView& name, ParticleAttribute::ValueTypes valueType) const
+{
+    for (int32 i = 0; i < Attributes.Count(); i++)
+    {
+        if (Attributes[i].ValueType == valueType && name == Attributes[i].Name)
+            return i;
+    }
+    return -1;
+}
+
+int32 ParticleLayout::FindAttributeOffset(const StringView& name, int32 fallbackValue) const
+{
+    for (int32 i = 0; i < Attributes.Count(); i++)
+    {
+        if (name == Attributes[i].Name)
+            return Attributes[i].Offset;
+    }
+    return fallbackValue;
+}
+
+int32 ParticleLayout::FindAttributeOffset(const StringView& name, ParticleAttribute::ValueTypes valueType, int32 fallbackValue) const
+{
+    for (int32 i = 0; i < Attributes.Count(); i++)
+    {
+        if (Attributes[i].ValueType == valueType && name == Attributes[i].Name)
+            return Attributes[i].Offset;
+    }
+    return fallbackValue;
+}
+
+int32 ParticleLayout::AddAttribute(const StringView& name, ParticleAttribute::ValueTypes valueType)
+{
+    auto& a = Attributes.AddOne();
+    a.Name = String(*name, name.Length());
+    a.ValueType = valueType;
+    return Attributes.Count() - 1;
+}
+
 ParticleBuffer::ParticleBuffer()
 {
 }

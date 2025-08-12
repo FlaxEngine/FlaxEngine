@@ -15,6 +15,7 @@
 #include "./Flax/Common.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
+#include "./Flax/TerrainCommon.hlsl"
 @7
 // Primary constant buffer (with additional material parameters)
 META_CB_BEGIN(0, Data)
@@ -334,7 +335,7 @@ VertexOutput VS(TerrainVertexInput input)
 	float lodValue = CurrentLOD;
 	float morphAlpha = lodCalculated - CurrentLOD;
 
-	// Sample heightmap
+	// Sample heightmap and splatmaps
 	float2 heightmapUVs = input.TexCoord * HeightmapUVScaleBias.xy + HeightmapUVScaleBias.zw;
 #if USE_SMOOTH_LOD_TRANSITION
 	float4 heightmapValueThisLOD = Heightmap.SampleLevel(SamplerPointClamp, heightmapUVs, lodValue);
@@ -342,7 +343,6 @@ VertexOutput VS(TerrainVertexInput input)
 	float2 heightmapUVsNextLOD = nextLODPos * HeightmapUVScaleBias.xy + HeightmapUVScaleBias.zw;
 	float4 heightmapValueNextLOD = Heightmap.SampleLevel(SamplerPointClamp, heightmapUVsNextLOD, lodValue + 1);
 	float4 heightmapValue = lerp(heightmapValueThisLOD, heightmapValueNextLOD, morphAlpha);
-	bool isHole = max(heightmapValueThisLOD.b + heightmapValueThisLOD.a, heightmapValueNextLOD.b + heightmapValueNextLOD.a) >= 1.9f;
 #if USE_TERRAIN_LAYERS
 	float4 splatmapValueThisLOD = Splatmap0.SampleLevel(SamplerPointClamp, heightmapUVs, lodValue);
 	float4 splatmapValueNextLOD = Splatmap0.SampleLevel(SamplerPointClamp, heightmapUVsNextLOD, lodValue + 1);
@@ -355,7 +355,6 @@ VertexOutput VS(TerrainVertexInput input)
 #endif
 #else
 	float4 heightmapValue = Heightmap.SampleLevel(SamplerPointClamp, heightmapUVs, lodValue);
-	bool isHole = (heightmapValue.b + heightmapValue.a) >= 1.9f;
 #if USE_TERRAIN_LAYERS
 	float4 splatmap0Value = Splatmap0.SampleLevel(SamplerPointClamp, heightmapUVs, lodValue);
 #if TERRAIN_LAYERS_DATA_SIZE > 1
@@ -363,12 +362,11 @@ VertexOutput VS(TerrainVertexInput input)
 #endif
 #endif
 #endif
-	float height = (float)((int)(heightmapValue.x * 255.0) + ((int)(heightmapValue.y * 255) << 8)) / 65535.0;
+	float height = DecodeHeightmapHeight(heightmapValue);
 
 	// Extract normal and the holes mask
-	float2 normalTemp = float2(heightmapValue.b, heightmapValue.a) * 2.0f - 1.0f;
-	float3 normal = float3(normalTemp.x, sqrt(1.0 - saturate(dot(normalTemp, normalTemp))), normalTemp.y);
-	normal = normalize(normal);
+	bool isHole;
+	float3 normal = DecodeHeightmapNormal(heightmapValue, isHole);
 	output.Geometry.HolesMask = isHole ? 0 : 1;
 	if (isHole)
 	{
