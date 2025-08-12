@@ -113,6 +113,7 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
     // Create pipeline object
     VkPipeline pipeline;
     VkResult result = vkCreateComputePipelines(_device->Device, _device->PipelineCache, 1, &desc, nullptr, &pipeline);
+    _device->PipelineCacheUsage++;
     LOG_VULKAN_RESULT(result);
     if (result != VK_SUCCESS)
         return nullptr;
@@ -313,6 +314,7 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
     auto depthWrite = _descDepthStencil.depthWriteEnable;
     _descDepthStencil.depthWriteEnable &= renderPass->CanDepthWrite ? 1 : 0;
     const VkResult result = vkCreateGraphicsPipelines(_device->Device, _device->PipelineCache, 1, &_desc, nullptr, &pipeline);
+    _device->PipelineCacheUsage++;
     _descDepthStencil.depthWriteEnable = depthWrite;
     LOG_VULKAN_RESULT(result);
     if (result != VK_SUCCESS)

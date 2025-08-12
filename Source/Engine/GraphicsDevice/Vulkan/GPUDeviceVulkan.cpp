@@ -36,6 +36,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Scripting/Enums.h"
 
 #if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX)
@@ -1540,29 +1541,50 @@ bool VulkanPlatformBase::SaveCache(const String& folder, const Char* filename, c
 #define CACHE_FOLDER Globals::ProductLocalFolder
 #endif
 
-bool GPUDeviceVulkan::SavePipelineCache()
+#if VULKAN_USE_PIPELINE_CACHE
+bool SavePipelineCacheAsync()
+{
+    PROFILE_CPU();
+    ((GPUDeviceVulkan*)GPUDevice::Instance)->SavePipelineCache(false, true);
+    return false;
+}
+#endif
+
+bool GPUDeviceVulkan::SavePipelineCache(bool async, bool cached)
 {
 #if VULKAN_USE_PIPELINE_CACHE
-    if (PipelineCache == VK_NULL_HANDLE || !vkGetPipelineCacheData)
+    if (PipelineCache == VK_NULL_HANDLE || !vkGetPipelineCacheData || PipelineCacheUsage == 0)
         return false;
     PROFILE_CPU();
     PROFILE_MEM(Graphics);
 
-    // Query data size
-    size_t dataSize = 0;
-    VkResult result = vkGetPipelineCacheData(Device, PipelineCache, &dataSize, nullptr);
-    LOG_VULKAN_RESULT_WITH_RETURN(result);
-    if (dataSize <= 0)
-        return false;
+    if (!cached)
+    {
+        // Query data size
+        size_t dataSize = 0;
+        VkResult result = vkGetPipelineCacheData(Device, PipelineCache, &dataSize, nullptr);
+        LOG_VULKAN_RESULT_WITH_RETURN(result);
+        if (dataSize <= 0)
+            return false;
 
-    // Query data
-    Array<byte> data;
-    data.Resize((int32)dataSize);
-    result = vkGetPipelineCacheData(Device, PipelineCache, &dataSize, data.Get());
-    LOG_VULKAN_RESULT_WITH_RETURN(result);
+        // Query data
+        PipelineCacheSaveData.Resize((int32)dataSize);
+        result = vkGetPipelineCacheData(Device, PipelineCache, &dataSize, PipelineCacheSaveData.Get());
+        LOG_VULKAN_RESULT_WITH_RETURN(result);
+    }
+
+    if (async)
+    {
+        // Kick off the async job that will save the cached bytes
+        Function<bool()> action(SavePipelineCacheAsync);
+        return Task::StartNew(action) != nullptr;
+    }
+
+    // Reset usage counter
+    PipelineCacheUsage = 0;
 
     // Save data
-    return VulkanPlatform::SaveCache(CACHE_FOLDER, TEXT("VulkanPipeline.cache"), data);
+    return VulkanPlatform::SaveCache(CACHE_FOLDER, TEXT("VulkanPipeline.cache"), PipelineCacheSaveData);
 #else
     return false;
 #endif
@@ -2014,6 +2036,7 @@ bool GPUDeviceVulkan::Init()
         pipelineCacheCreateInfo.pInitialData = data.Count() > 0 ? data.Get() : nullptr;
         const VkResult result = vkCreatePipelineCache(Device, &pipelineCacheCreateInfo, nullptr, &PipelineCache);
         LOG_VULKAN_RESULT(result);
+        PipelineCacheSaveTime = Platform::GetTimeSeconds();
     }
 #endif
 #if VULKAN_USE_VALIDATION_CACHE
@@ -2067,6 +2090,17 @@ void GPUDeviceVulkan::DrawBegin()
     DeferredDeletionQueue.ReleaseResources();
     StagingManager.ProcessPendingFree();
     DescriptorPoolsManager->GC();
+
+#if VULKAN_USE_PIPELINE_CACHE
+    // Serialize pipeline cache periodically for less PSO hitches on next app run
+    const double time = Platform::GetTimeSeconds();
+    const double saveTimeFrequency = Engine::FrameCount < 60 * Math::Clamp(Engine::GetFramesPerSecond(), 30, 60) ? 10 : 180; // More frequent saves during the first 1min of gameplay
+    if (Engine::HasFocus && time - PipelineCacheSaveTime >= saveTimeFrequency)
+    {
+        SavePipelineCache(true);
+        PipelineCacheSaveTime = time;
+    }
+#endif
 }
 
 void GPUDeviceVulkan::Dispose()

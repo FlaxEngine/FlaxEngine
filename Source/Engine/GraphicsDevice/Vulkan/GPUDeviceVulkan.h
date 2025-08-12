@@ -502,6 +502,11 @@ public:
     /// The pipeline cache.
     /// </summary>
     VkPipelineCache PipelineCache = VK_NULL_HANDLE;
+#if VULKAN_USE_PIPELINE_CACHE
+    uint32 PipelineCacheUsage = 0;
+    double PipelineCacheSaveTime = 0.0f;
+    Array<byte> PipelineCacheSaveData;
+#endif
 
 #if VULKAN_USE_VALIDATION_CACHE
     /// <summary>
@@ -562,7 +567,9 @@ public:
     /// <summary>
     /// Saves the pipeline cache.
     /// </summary>
-    bool SavePipelineCache();
+    /// <param name="async">Enables async writing to file to reduce stuttering of main thread.</param>
+    /// <param name="cached">Uses cached results from the last call to vkGetPipelineCacheData, used to just save cached data when running in async.</param>
+    bool SavePipelineCache(bool async = false, bool cached = false);
 
 #if VK_EXT_validation_cache
     /// <summary>
