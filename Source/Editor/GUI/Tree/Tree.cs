@@ -364,6 +364,19 @@ namespace FlaxEditor.GUI.Tree
             BulkSelectUpdateExpanded(false);
         }
 
+        /// <summary>
+        /// Flushes any pending layout perming action that has been delayed until next update to optimize performance of the complex tree hierarchy.
+        /// </summary>
+        public void FlushPendingPerformLayout()
+        {
+            if (_deferLayoutUpdate)
+            {
+                base.PerformLayout();
+                AfterDeferredLayout?.Invoke();
+                _deferLayoutUpdate = false;
+            }
+        }
+
         /// <inheritdoc />
         public override void PerformLayout(bool force = false)
         {
@@ -378,11 +391,7 @@ namespace FlaxEditor.GUI.Tree
         public override void Update(float deltaTime)
         {
             if (_deferLayoutUpdate)
-            {
-                base.PerformLayout();
-                AfterDeferredLayout?.Invoke();
-                _deferLayoutUpdate = false;
-            }
+                FlushPendingPerformLayout();
 
             var node = SelectedNode;
 
