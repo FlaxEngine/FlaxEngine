@@ -942,7 +942,7 @@ typedef enum SDL_InitStatus
  * Here is an example of using this:
  *
  * ```c
- *    static SDL_InitState init;
+ *    static SDL_AtomicInitState init;
  *
  *    bool InitSystem(void)
  *    {
