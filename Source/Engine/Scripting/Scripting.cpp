@@ -106,6 +106,7 @@ namespace
     MMethod* _method_LateFixedUpdate = nullptr;
     MMethod* _method_Draw = nullptr;
     MMethod* _method_Exit = nullptr;
+    Array<Function<void()>> UpdateActions;
     Dictionary<StringAnsi, BinaryModule*, InlinedAllocation<64>> _nonNativeModules;
 #if USE_EDITOR
     bool LastBinariesLoadTriggeredCompilation = false;
@@ -242,6 +243,27 @@ void ScriptingService::Update()
     PROFILE_CPU_NAMED("Scripting::Update");
     INVOKE_EVENT(Update);
 
+    // Flush update actions
+    _objectsLocker.Lock();
+    int32 count = UpdateActions.Count();
+    for (int32 i = 0; i < count; i++)
+    {
+        UpdateActions[i]();
+    }
+    int32 newlyAdded = UpdateActions.Count() - count;
+    if (newlyAdded == 0)
+        UpdateActions.Clear();
+    else
+    {
+        // Someone added another action within current callback
+        Array<Function<void()>> tmp;
+        for (int32 i = newlyAdded; i < UpdateActions.Count(); i++)
+            tmp.Add(UpdateActions[i]);
+        UpdateActions.Clear();
+        UpdateActions.Add(tmp);
+    }
+    _objectsLocker.Unlock();
+
 #ifdef USE_NETCORE
     // Force GC to run in background periodically to avoid large blocking collections causing hitches
     if (Time::Update.TicksCount % 60 == 0)
@@ -301,6 +323,13 @@ void Scripting::ProcessBuildInfoPath(String& path, const String& projectFolderPa
         path = projectFolderPath / path.Substring(14);
     else if (FileSystem::IsRelative(path))
         path = projectFolderPath / path;
+}
+
+void Scripting::InvokeOnUpdate(const Function<void()>& action)
+{
+    _objectsLocker.Lock();
+    UpdateActions.Add(action);
+    _objectsLocker.Unlock();
 }
 
 bool Scripting::LoadBinaryModules(const String& path, const String& projectFolderPath)
