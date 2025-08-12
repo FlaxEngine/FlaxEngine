@@ -174,6 +174,9 @@ API_ENUM() enum class ArchitectureType
 #ifndef PLATFORM_DESKTOP
 #define PLATFORM_DESKTOP 0
 #endif
+#ifndef PLATFORM_CONSOLE
+#define PLATFORM_CONSOLE 0
+#endif
 #ifndef PLATFORM_ARCH_X64
 #define PLATFORM_ARCH_X64 0
 #endif
