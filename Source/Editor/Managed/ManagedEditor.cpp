@@ -11,6 +11,7 @@
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/Internal/MainThreadManagedInvokeAction.h"
+#include "Engine/Platform/WindowsManager.h"
 #include "Engine/Content/Assets/VisualScript.h"
 #include "Engine/Content/Content.h"
 #include "Engine/CSG/CSGBuilder.h"
@@ -620,6 +621,14 @@ void ManagedEditor::WipeOutLeftoverSceneObjects()
     }
     if (removedAny)
         ObjectsRemovalService::Flush();
+}
+
+Array<Window*> ManagedEditor::GetWindows()
+{
+    WindowsManager::WindowsLocker.Lock();
+    auto result = WindowsManager::Windows;
+    WindowsManager::WindowsLocker.Unlock();
+    return result;
 }
 
 void ManagedEditor::OnEditorAssemblyLoaded(MAssembly* assembly)
