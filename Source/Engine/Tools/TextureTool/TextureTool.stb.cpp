@@ -172,7 +172,7 @@ static TextureData const* stbDecompress(const TextureData& textureData, TextureD
 
             const byte* blocksBytes = srcMip.Data.Get();
 
-            // Descompress block by block
+            // Decompress block by block
             for (int32 by = 0; by < blocksHeight; by++)
             {
                 int32 rows = (by * 4 + 3 >= mipHeight) ? (mipHeight - by * 4) : 4;
@@ -643,12 +643,12 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         return true;
     }
 
-    // Decompress if mip maps generation or format changing is needed
-    if (!PixelFormatExtensions::IsCompressed(textureDataSrc->Format))
+    // Decompress if texture is compressed (next steps need decompressed input data, for eg. mip maps generation or format changing)
+    if (PixelFormatExtensions::IsCompressed(textureDataSrc->Format))
     {   
         if (!stbDecompress(*textureDataSrc, *textureDataSrc))
         {
-            errorMsg = String::Format(TEXT("Cannot decompress texture."));
+            errorMsg = String::Format(TEXT("Imported texture used compressed format {0}. Not supported for importing on this platform.."), (int32)textureDataSrc->Format);
             return true;
         }
     }
