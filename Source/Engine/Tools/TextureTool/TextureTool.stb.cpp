@@ -75,7 +75,6 @@ static void stbWrite(void* context, void* data, int size)
 }
 
 #if USE_EDITOR
-
 static TextureData const* stbDecompress(const TextureData& textureData, TextureData& decompressed)
 {
     if (!PixelFormatExtensions::IsCompressed(textureData.Format))
@@ -644,28 +643,14 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         return true;
     }
 
-    bool keepAsIs = false;
-    if (//!options.FlipY && !options.FlipX &&
-        //!options.InvertGreenChannel &&
-        //!options.InvertRedChannel &&
-        //!options.InvertAlphaChannel &&
-        //!options.InvertBlueChannel &&
-        //!options.ReconstructZChannel &&
-        //options.Compress && 
-        type == ImageType::DDS && 
-        //mipLevels == sourceMipLevels && 
-        PixelFormatExtensions::IsCompressed(textureDataSrc->Format) && 
-        //!PixelFormatExtensions::IsSRGB(textureDataSrc->Format) &&  
-        width >= 4 && height >= 4)
-    {
-        // Keep image in the current compressed format (artist choice) so we don't have to run the slow mipmap generation
-        keepAsIs = true;
-    }
-
-    // Decompress if texture is compressed (next steps need decompressed input data, for eg. mip maps generation or format changing)
-    if (!keepAsIs && PixelFormatExtensions::IsCompressed(textureDataSrc->Format))
+    // Decompress if mip maps generation or format changing is needed
+    if (!PixelFormatExtensions::IsCompressed(textureDataSrc->Format))
     {   
-        //stbDecompress(*textureDataSrc, *textureDataDst);
+        if (!stbDecompress(*textureDataSrc, *textureDataSrc))
+        {
+            errorMsg = String::Format(TEXT("Cannot decompress texture."));
+            return true;
+        }
     }
 
     if (options.FlipX)
