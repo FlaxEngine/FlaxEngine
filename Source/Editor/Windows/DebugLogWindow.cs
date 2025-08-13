@@ -488,7 +488,7 @@ namespace FlaxEditor.Windows
             // Pause on Error (we should do it as fast as possible)
             if (newEntry.Group == LogGroup.Error && _pauseOnErrorButton.Checked && Editor.StateMachine.CurrentState == Editor.StateMachine.PlayingState)
             {
-                Debug.Write(LogType.Info, "Pause Play mode on error (toggle this behaviour in the Debug Log panel)");
+                Editor.Log("Pause Play mode on error (toggle this behaviour in the Debug Log panel)");
                 Editor.Simulation.RequestPausePlay();
             }
         }
