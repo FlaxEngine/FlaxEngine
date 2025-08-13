@@ -514,45 +514,61 @@ void RenderList::Clear()
     Memory.Free();
 }
 
-struct PackedSortKey
+// Sorting order: By Sort Order -> By Material -> By Geometry -> By Distance
+PACK_STRUCT(struct PackedSortKey
 {
-    union
-    {
-        uint64 Data;
+    uint32 DistanceKey;
+    uint8 DrawKey;
+    uint16 BatchKey;
+    uint8 SortKey;
+});
 
-        PACK_BEGIN()
+// Sorting order: By Sort Order -> By Material -> By Geometry -> By Distance
+PACK_STRUCT(struct PackedSortKeyDistance
+{
+    uint8 DrawKey;
+    uint16 BatchKey;
+    uint32 DistanceKey;
+    uint8 SortKey;
+});
 
-        struct
-        {
-            // Sorting order: By Sort Order -> By Distance -> By Material -> By Geometry
-            uint8 DrawKey;
-            uint16 BatchKey;
-            uint32 DistanceKey;
-            uint8 SortKey;
-        } PACK_END();
-    };
-};
+static_assert(sizeof(PackedSortKey) == sizeof(uint64), "Invalid sort key size");
+static_assert(sizeof(PackedSortKeyDistance) == sizeof(uint64), "Invalid sort key size");
 
-FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall, int8 sortOrder)
+FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall, DrawPass drawModes, int8 sortOrder)
 {
     const Float3 planeNormal = renderContext.View.Direction;
     const float planePoint = -Float3::Dot(planeNormal, renderContext.View.Position);
     const float distance = Float3::Dot(planeNormal, drawCall.ObjectPosition) - planePoint;
-    PackedSortKey key;
-    key.DistanceKey = RenderTools::ComputeDistanceSortKey(distance);
+    uint32 distanceKey = RenderTools::ComputeDistanceSortKey(distance);
     uint32 batchKey = GetHash(drawCall.Material);
     IMaterial::InstancingHandler handler;
     if (drawCall.Material->CanUseInstancing(handler))
         handler.GetHash(drawCall, batchKey);
-    key.BatchKey = (uint16)batchKey;
     uint32 drawKey = (uint32)(471 * drawCall.WorldDeterminantSign);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
-    key.DrawKey = (uint8)drawKey;
-    key.SortKey = (uint8)(sortOrder - MIN_int8);
-    drawCall.SortKey = key.Data;
+    if ((drawModes & DrawPass::Forward) != DrawPass::None)
+    {
+        // Distance takes precedence over batching efficiency
+        PackedSortKeyDistance key;
+        key.BatchKey = (uint16)batchKey;
+        key.DistanceKey = distanceKey;
+        key.DrawKey = (uint8)drawKey;
+        key.SortKey = (uint8)(sortOrder - MIN_int8);
+        drawCall.SortKey = *(uint64*)&key;
+    }
+    else
+    {
+        PackedSortKey key;
+        key.BatchKey = (uint16)batchKey;
+        key.DistanceKey = distanceKey;
+        key.DrawKey = (uint8)drawKey;
+        key.SortKey = (uint8)(sortOrder - MIN_int8);
+        drawCall.SortKey = *(uint64*)&key;
+    }
 }
 
 void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals, int8 sortOrder)
@@ -564,7 +580,7 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
 #endif
 
     // Append draw call data
-    CalculateSortKey(renderContext, drawCall, sortOrder);
+    CalculateSortKey(renderContext, drawCall, drawModes, sortOrder);
     const int32 index = DrawCalls.Add(drawCall);
 
     // Add draw call to proper draw lists
@@ -603,7 +619,7 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
     const RenderContext& mainRenderContext = renderContextBatch.Contexts.Get()[0];
 
     // Append draw call data
-    CalculateSortKey(mainRenderContext, drawCall, sortOrder);
+    CalculateSortKey(mainRenderContext, drawCall, drawModes, sortOrder);
     const int32 index = DrawCalls.Add(drawCall);
 
     // Add draw call to proper draw lists
@@ -678,7 +694,7 @@ void RenderList::BuildObjectsBuffer()
     ZoneValue(ObjectBuffer.Data.Count() / 1024); // Objects Buffer size in kB
 }
 
-void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass, bool stable)
+void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawCallsListType listType, DrawPass pass)
 {
     PROFILE_CPU();
     PROFILE_MEM(GraphicsCommands);
@@ -698,14 +714,27 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     // Setup sort keys
     if (reverseDistance)
     {
-        for (int32 i = 0; i < listSize; i++)
+        if (listType == DrawCallsListType::Forward) // Transparency uses distance over batching for correct draw order
         {
-            const DrawCall& drawCall = drawCallsData[listData[i]];
-            PackedSortKey key;
-            key.Data = drawCall.SortKey;
-            key.DistanceKey ^= MAX_uint32; // Reverse depth
-            key.SortKey ^= MAX_uint8; // Reverse sort order
-            sortedKeys[i] = key.Data;
+            for (int32 i = 0; i < listSize; i++)
+            {
+                const DrawCall& drawCall = drawCallsData[listData[i]];
+                PackedSortKeyDistance key = *(PackedSortKeyDistance*)&drawCall.SortKey;
+                key.DistanceKey ^= MAX_uint32; // Reverse depth
+                key.SortKey ^= MAX_uint8; // Reverse sort order
+                sortedKeys[i] = *(uint64*)&key;
+            }
+        }
+        else
+        {
+            for (int32 i = 0; i < listSize; i++)
+            {
+                const DrawCall& drawCall = drawCallsData[listData[i]];
+                PackedSortKey key = *(PackedSortKey*)&drawCall.SortKey;
+                key.DistanceKey ^= MAX_uint32; // Reverse depth
+                key.SortKey ^= MAX_uint8; // Reverse sort order
+                sortedKeys[i] = *(uint64*)&key;
+            }
         }
     }
     else
@@ -762,7 +791,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     }
 
     // When using depth buffer draw calls are already almost ideally sorted by Radix Sort but transparency needs more stability to prevent flickering
-    if (stable)
+    if (listType == DrawCallsListType::Forward)
     {
         // Sort draw calls batches by depth
         Array<DrawBatch, RendererAllocation> sortingBatches;

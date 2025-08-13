@@ -569,8 +569,7 @@ public:
     /// <param name="pass">The draw pass (optional).</param>
     API_FUNCTION() FORCE_INLINE void SortDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, bool reverseDistance, DrawCallsListType listType, DrawPass pass = DrawPass::All)
     {
-        const bool stable = listType == DrawCallsListType::Forward;
-        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, pass, stable);
+        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, listType);
     }
 
     /// <summary>
@@ -580,9 +579,9 @@ public:
     /// <param name="reverseDistance">If set to <c>true</c> reverse draw call distance to the view. Results in back to front sorting.</param>
     /// <param name="list">The collected draw calls indices list.</param>
     /// <param name="drawCalls">The collected draw calls list.</param>
+    /// <param name="listType">The hint about draw calls list type (optional).</param>
     /// <param name="pass">The draw pass (optional).</param>
-    /// <param name="stable">If set to <c>true</c> draw batches will be additionally sorted to prevent any flickering, otherwise Depth Buffer will smooth out any non-stability in sorting.</param>
-    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass = DrawPass::All, bool stable = false);
+    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawCallsListType listType = DrawCallsListType::GBuffer, DrawPass pass = DrawPass::All);
 
     /// <summary>
     /// Executes the collected draw calls.

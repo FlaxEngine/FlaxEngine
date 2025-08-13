@@ -507,7 +507,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
                     // Shadow context sorting
                     auto& shadowContext = RenderContextBatch.Contexts[index - ARRAY_COUNT(MainContextSorting)];
                     shadowContext.List->SortDrawCalls(shadowContext, false, DrawCallsListType::Depth, DrawPass::Depth);
-                    shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, DrawPass::Depth);
+                    shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, DrawCallsListType::Depth, DrawPass::Depth);
                 }
             }
         } processor = { renderContextBatch };
