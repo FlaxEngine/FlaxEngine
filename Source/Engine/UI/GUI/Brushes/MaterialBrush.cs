@@ -29,6 +29,14 @@ namespace FlaxEngine.GUI
         {
             Material = material;
         }
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MaterialBrush"/> struct.
+        /// </summary>
+        /// <param name="material">The material.</param>
+        public MaterialBrush(MaterialInstance material)
+        {
+            Material = material;
+        }
 
         /// <inheritdoc />
         public Float2 Size => Float2.One;
