@@ -148,7 +148,7 @@ public:
         const ::DrawCall* DrawCall = nullptr;
         MaterialParamsLink* ParamsLink = nullptr;
         void* CustomData = nullptr;
-        float TimeParam;
+        float Time, UnscaledTime;
         bool Instanced = false;
 
         /// <summary>
