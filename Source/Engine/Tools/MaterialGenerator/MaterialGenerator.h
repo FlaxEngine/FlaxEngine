@@ -209,8 +209,8 @@ private:
 public:
 
     static MaterialValue getUVs;
+    static MaterialValue getTime;
     static MaterialValue getUnscaledTime;
-    static MaterialValue getScaledTime;
     static MaterialValue getNormal;
     static MaterialValue getNormalZero;
     static MaterialValue getVertexColor;

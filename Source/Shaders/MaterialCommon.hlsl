@@ -170,13 +170,14 @@ cbuffer ViewData : register(b1)
     float3 ViewPos;
     float ViewFar;
     float3 ViewDir;
-    float UnscaledTimeParam;
-    float ScaledTimeParam;
+    float TimeParam;
     float4 ViewInfo;
     float4 ScreenSize;
     float4 TemporalAAJitter;
     float3 LargeWorldsChunkIndex;
     float LargeWorldsChunkSize;
+    float3 ViewPadding0;
+    float UnscaledTimeParam;
 };
 #endif
 
