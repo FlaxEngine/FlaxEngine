@@ -13,7 +13,7 @@
 META_CB_BEGIN(0, Data)
 float4x4 WorldMatrix;
 float4x4 InvWorld;
-float4x4 SVPositionToWorld;
+float4x4 SvPositionToWorld;
 @1META_CB_END
 
 // Use depth buffer for per-pixel decal layering
@@ -27,11 +27,62 @@ struct MaterialInput
 	float3 WorldPosition;
 	float TwoSidedSign;
 	float2 TexCoord;
+	float4 TexCoord_DDX_DDY;
 	float3x3 TBN;
 	float4 SvPosition;
 	float3 PreSkinnedPosition;
 	float3 PreSkinnedNormal;
 };
+
+// Calculates decal texcoords for a given pixel position (sampels depth buffer and projects value to decal space).
+float2 SvPositionToDecalUV(float4 svPosition)
+{
+	float2 screenUV = svPosition.xy * ScreenSize.zw;
+	svPosition.z = SAMPLE_RT(DepthBuffer, screenUV).r;
+	float4 positionHS = mul(float4(svPosition.xyz, 1), SvPositionToWorld);
+	float3 positionWS = positionHS.xyz / positionHS.w;
+	float3 positionOS = mul(float4(positionWS, 1), InvWorld).xyz;
+	return positionOS.xz + 0.5f;
+}
+
+// Manually compute ddx/ddy for decal texture cooordinates to avoid the 2x2 pixels artifacts on the edges of geometry under decal
+// [Reference: https://www.humus.name/index.php?page=3D&ID=84]
+float4 CalculateTextureDerivatives(float4 svPosition, float2 texCoord)
+{
+	float4 svDiffX = float4(1, 0, 0, 0);
+	float2 uvDiffX0 = texCoord - SvPositionToDecalUV(svPosition - svDiffX);
+	float2 uvDiffX1 = SvPositionToDecalUV(svPosition + svDiffX) - texCoord;
+	float2 dx = dot(uvDiffX0, uvDiffX0) < dot(uvDiffX1, uvDiffX1) ? uvDiffX0 : uvDiffX1;
+
+	float4 svDiffY = float4(0, 1, 0, 0);
+	float2 uvDiffY0 = texCoord - SvPositionToDecalUV(svPosition - svDiffY);
+	float2 uvDiffY1 = SvPositionToDecalUV(svPosition + svDiffY) - texCoord;
+	float2 dy = dot(uvDiffY0, uvDiffY0) < dot(uvDiffY1, uvDiffY1) ? uvDiffY0 : uvDiffY1;
+
+	return float4(dx, dy);
+}
+
+// Computes the mipmap level for a specific texture dimensions to be sampled at decal texture cooordinates.
+// [Reference: https://hugi.scene.org/online/coding/hugi%2014%20-%20comipmap.htm]
+float CalculateTextureMipmap(MaterialInput input, float2 textureSize)
+{
+	float2 dx = input.TexCoord_DDX_DDY.xy * textureSize;
+	float2 dy = input.TexCoord_DDX_DDY.zw * textureSize;
+	float d = max(dot(dx, dx), dot(dy, dy));
+	return (0.5 * 0.5) * log2(d); // Hardcoded half-mip rate reduction to avoid artifacts when decal is moved over dither texture
+}
+float CalculateTextureMipmap(MaterialInput input, Texture2D t)
+{
+	float2 textureSize;
+	t.GetDimensions(textureSize.x, textureSize.y);
+	return CalculateTextureMipmap(input, textureSize);
+}
+float CalculateTextureMipmap(MaterialInput input, TextureCube t)
+{
+	float2 textureSize;
+	t.GetDimensions(textureSize.x, textureSize.y);
+	return CalculateTextureMipmap(input, textureSize);
+}
 
 // Transforms a vector from tangent space to world space
 float3 TransformTangentVectorToWorld(MaterialInput input, float3 tangentVector)
@@ -116,7 +167,6 @@ Material GetMaterialPS(MaterialInput input)
 }
 
 // Input macro specified by the material: DECAL_BLEND_MODE
-
 #define DECAL_BLEND_MODE_TRANSLUCENT 0
 #define DECAL_BLEND_MODE_STAIN       1
 #define DECAL_BLEND_MODE_NORMAL      2
@@ -153,7 +203,7 @@ void PS_Decal(
 	float2 screenUV = SvPosition.xy * ScreenSize.zw;
 	SvPosition.z = SAMPLE_RT(DepthBuffer, screenUV).r;
 
-	float4 positionHS = mul(float4(SvPosition.xyz, 1), SVPositionToWorld);
+	float4 positionHS = mul(float4(SvPosition.xyz, 1), SvPositionToWorld);
 	float3 positionWS = positionHS.xyz / positionHS.w;
 	float3 positionOS = mul(float4(positionWS, 1), InvWorld).xyz;
 
@@ -166,8 +216,9 @@ void PS_Decal(
 	materialInput.TexCoord = decalUVs;
 	materialInput.TwoSidedSign = 1;
 	materialInput.SvPosition = SvPosition;
-	
-	// Build tangent to world transformation matrix
+	materialInput.TexCoord_DDX_DDY = CalculateTextureDerivatives(materialInput.SvPosition, materialInput.TexCoord);
+
+	// Calculate tangent-space
 	float3 ddxWp = ddx(positionWS);
 	float3 ddyWp = ddy(positionWS);
 	materialInput.TBN[0] = normalize(ddyWp);

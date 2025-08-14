@@ -34,7 +34,6 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
     const bool isArray = texture->Type == MaterialParameterType::GPUTextureArray;
     const bool isVolume = texture->Type == MaterialParameterType::GPUTextureVolume;
     const bool isNormalMap = texture->Type == MaterialParameterType::NormalMap;
-    const bool canUseSample = CanUseSample(_treeType);
     MaterialGraphBox* valueBox = parent->GetBox(1);
 
     // Check if has variable assigned
@@ -63,6 +62,16 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
     // Check if hasn't been sampled during that tree eating
     if (valueBox->Cache.IsInvalid())
     {
+        bool canUseSample = CanUseSample(_treeType);
+        String mipLevel = TEXT("0");
+        const auto layer = GetRootLayer();
+        if (layer && layer->Domain == MaterialDomain::Decal && _treeType == MaterialTreeType::PixelShader)
+        {
+            // Decals use computed mip level due to ddx/ddy being unreliable
+            canUseSample = false;
+            mipLevel = String::Format(TEXT("CalculateTextureMipmap(input, {})"), texture->ShaderName);
+        }
+
         // Check if use custom UVs
         String uv;
         MaterialGraphBox* uvBox = parent->GetBox(0);
@@ -94,10 +103,10 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
         // Sample texture
         if (isNormalMap)
         {
-            const Char* format = canUseSample ? TEXT("{0}.Sample({1}, {2}).xyz") : TEXT("{0}.SampleLevel({1}, {2}, 0).xyz");
+            const Char* format = canUseSample ? TEXT("{0}.Sample({1}, {2}).xyz") : TEXT("{0}.SampleLevel({1}, {2}, {3}).xyz");
 
             // Sample encoded normal map
-            const String sampledValue = String::Format(format, texture->ShaderName, sampler, uv);
+            const String sampledValue = String::Format(format, texture->ShaderName, sampler, uv, mipLevel);
             const auto normalVector = writeLocal(VariantType::Float3, sampledValue, parent);
 
             // Decode normal vector
@@ -123,12 +132,12 @@ MaterialValue* MaterialGenerator::sampleTextureRaw(Node* caller, Value& value, B
                 }
                 else*/
                 {
-                    format = canUseSample ? TEXT("{0}.Sample({1}, {2})") : TEXT("{0}.SampleLevel({1}, {2}, 0)");
+                    format = canUseSample ? TEXT("{0}.Sample({1}, {2})") : TEXT("{0}.SampleLevel({1}, {2}, {3})");
                 }
             }
 
             // Sample texture
-            String sampledValue = String::Format(format, texture->ShaderName, sampler, uv, _ddx.Value, _ddy.Value);
+            String sampledValue = String::Format(format, texture->ShaderName, sampler, uv, mipLevel);
             valueBox->Cache = writeLocal(VariantType::Float4, sampledValue, parent);
         }
     }

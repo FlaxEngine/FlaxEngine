@@ -16,7 +16,7 @@
 PACK_STRUCT(struct DecalMaterialShaderData {
     Matrix WorldMatrix;
     Matrix InvWorld;
-    Matrix SVPositionToWorld;
+    Matrix SvPositionToWorld;
     });
 
 DrawPass DecalMaterialShader::GetDrawModes() const
@@ -67,7 +67,7 @@ void DecalMaterialShader::Bind(BindParameters& params)
             0, 0, 1, 0,
             -1.0f, 1.0f, 0, 1);
         const Matrix svPositionToWorld = offsetMatrix * view.IVP;
-        Matrix::Transpose(svPositionToWorld, materialData->SVPositionToWorld);
+        Matrix::Transpose(svPositionToWorld, materialData->SvPositionToWorld);
     }
 
     // Bind constants
