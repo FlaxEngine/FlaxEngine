@@ -4,7 +4,7 @@
 #include "StringView.h"
 #include "Engine/Core/Collections/Array.h"
 
-String String::Empty;
+const String String::Empty;
 
 String::String(const StringAnsi& str)
 {

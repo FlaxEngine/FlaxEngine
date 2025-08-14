@@ -548,7 +548,7 @@ public:
     /// <summary>
     /// Instance of the empty string.
     /// </summary>
-    static String Empty;
+    static const String Empty;
 
 public:
     /// <summary>
