@@ -51,7 +51,7 @@ void PostFxMaterialShader::Bind(BindParameters& params)
         materialData->ViewPos = view.Position;
         materialData->ViewFar = view.Far;
         materialData->ViewDir = view.Direction;
-        materialData->TimeParam = params.TimeParam;
+        materialData->TimeParam = params.UnscaledTimeParam;
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
         materialData->TemporalAAJitter = view.TemporalAAJitter;
