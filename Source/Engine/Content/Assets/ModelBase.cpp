@@ -329,7 +329,7 @@ bool ModelBase::LoadHeader(ReadStream& stream, byte& headerVersion)
         stream.Read(slot.Name, 11);
     }
 
-    return false;
+    return stream.HasError();
 }
 
 bool ModelBase::LoadMesh(MemoryReadStream& stream, byte meshVersion, MeshBase* mesh, MeshData* dataIfReadOnly)

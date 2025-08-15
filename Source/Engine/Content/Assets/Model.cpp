@@ -395,7 +395,7 @@ bool Model::LoadHeader(ReadStream& stream, byte& headerVersion)
         }
     }
 
-    return false;
+    return stream.HasError();
 }
 
 #if USE_EDITOR
@@ -454,7 +454,7 @@ bool Model::SaveHeader(WriteStream& stream, const ModelData& modelData)
         }
     }
 
-    return false;
+    return stream.HasError();
 }
 
 bool Model::Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk) const

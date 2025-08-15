@@ -656,7 +656,7 @@ bool SkinnedModel::LoadHeader(ReadStream& stream, byte& headerVersion)
         }
     }
 
-    return false;
+    return stream.HasError();
 }
 
 #if USE_EDITOR
