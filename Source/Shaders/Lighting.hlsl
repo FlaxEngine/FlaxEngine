@@ -5,10 +5,24 @@
 
 #include "./Flax/LightingCommon.hlsl"
 
-ShadowSample GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask)
+
+ShadowSample GetShadow(LightData lightData, GBufferSample gBuffer, float4 shadowMask, float NoL, bool isDirectional)
 {
     ShadowSample shadow;
-    shadow.SurfaceShadow = gBuffer.AO * shadowMask.r;
+    float rawShadow = shadowMask.r;
+    
+    if (isDirectional)
+    {
+        // For directional lights: fade shadows at grazing angles to hide artifacts
+        float shadowFade = saturate(NoL * 6.0f - 0.2f);
+        shadow.SurfaceShadow = gBuffer.AO * lerp(1.0, rawShadow, shadowFade);
+    }
+    else
+    {
+        // For point/spot lights: use shadows as-is or with different artifact handling
+        shadow.SurfaceShadow = gBuffer.AO * rawShadow;
+    }
+    
     shadow.TransmissionShadow = shadowMask.g;
     return shadow;
 }
@@ -23,7 +37,8 @@ LightSample StandardShading(GBufferSample gBuffer, float energy, float3 L, float
     float VoH = saturate(dot(V, H));
 
     LightSample lighting;
-    lighting.Diffuse = Diffuse_Lambert(diffuseColor);
+    lighting.Diffuse = diffuseColor * (1 / PI) * NoL;
+
 #if LIGHTING_NO_SPECULAR
     lighting.Specular = 0;
 #else
@@ -119,9 +134,11 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
     float3 L = lightData.Direction; // no need to normalize
     float NoL = saturate(dot(N, L));
     float3 toLight = lightData.Direction;
-
-    // Calculate shadow
-    ShadowSample shadow = GetShadow(lightData, gBuffer, shadowMask);
+    
+    // Calculate shadow - pass isDirectional flag
+    bool isDirectional = !isRadial; // Directional lights are non-radial
+    ShadowSample shadow = GetShadow(lightData, gBuffer, shadowMask, NoL, isDirectional);
+    
 
     // Calculate attenuation
     if (isRadial)
@@ -134,11 +151,6 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
         shadow.SurfaceShadow *= attenuation;
         shadow.TransmissionShadow *= attenuation;
     }
-
-#if !LIGHTING_NO_DIRECTIONAL
-    // Reduce shadow mapping artifacts
-    shadow.SurfaceShadow *= saturate(NoL * 6.0f - 0.2f) * NoL;
-#endif
 
     BRANCH
     if (shadow.SurfaceShadow + shadow.TransmissionShadow > 0)
