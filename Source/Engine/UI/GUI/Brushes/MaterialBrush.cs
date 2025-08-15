@@ -25,15 +25,7 @@ namespace FlaxEngine.GUI
         /// Initializes a new instance of the <see cref="MaterialBrush"/> struct.
         /// </summary>
         /// <param name="material">The material.</param>
-        public MaterialBrush(Material material)
-        {
-            Material = material;
-        }
-        /// <summary>
-        /// Initializes a new instance of the <see cref="MaterialBrush"/> struct.
-        /// </summary>
-        /// <param name="material">The material.</param>
-        public MaterialBrush(MaterialInstance material)
+        public MaterialBrush(MaterialBase material)
         {
             Material = material;
         }
