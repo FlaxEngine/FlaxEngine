@@ -124,10 +124,8 @@ namespace FlaxEditor.Windows.Assets
             UpdateToolstrip();
         }
 
-        /// <inheritdoc />
-        protected override void OnScriptsReloadBegin()
+        private void OnScriptsReloadBegin()
         {
-            base.OnScriptsReloadBegin();
             Close();
         }
 
