@@ -18,6 +18,7 @@
 
 #define NO_GBUFFER_SAMPLING
 
+#include "./Flax/Math.hlsl"
 #include "./Flax/Common.hlsl"
 #include "./Flax/Gather.hlsl"
 #include "./Flax/GBuffer.hlsl"
@@ -28,19 +29,23 @@
 #define INTELSSAO_MAIN_DISK_SAMPLE_COUNT (32)
 static const float4 g_samplePatternMain[INTELSSAO_MAIN_DISK_SAMPLE_COUNT] =
 {
-    float4( 0.78488064,  0.56661671,  1.500000, -0.126083),    float4( 0.26022232, -0.29575172,  1.500000, -1.064030),    float4( 0.10459357,  0.08372527,  1.110000, -2.730563),    float4(-0.68286800,  0.04963045,  1.090000, -0.498827),
-    float4(-0.13570161, -0.64190155,  1.250000, -0.532765),    float4(-0.26193795, -0.08205118,  0.670000, -1.783245),    float4(-0.61177456,  0.66664219,  0.710000, -0.044234),    float4( 0.43675563,  0.25119025,  0.610000, -1.167283),
-    float4( 0.07884444,  0.86618668,  0.640000, -0.459002),    float4(-0.12790935, -0.29869005,  0.600000, -1.729424),    float4(-0.04031125,  0.02413622,  0.600000, -4.792042),    float4( 0.16201244, -0.52851415,  0.790000, -1.067055),
-    float4(-0.70991218,  0.47301072,  0.640000, -0.335236),    float4( 0.03277707, -0.22349690,  0.600000, -1.982384),    float4( 0.68921727,  0.36800742,  0.630000, -0.266718),    float4( 0.29251814,  0.37775412,  0.610000, -1.422520),
-    float4(-0.12224089,  0.96582592,  0.600000, -0.426142),    float4( 0.11071457, -0.16131058,  0.600000, -2.165947),    float4( 0.46562141, -0.59747696,  0.600000, -0.189760),    float4(-0.51548797,  0.11804193,  0.600000, -1.246800),
-    float4( 0.89141309, -0.42090443,  0.600000,  0.028192),    float4(-0.32402530, -0.01591529,  0.600000, -1.543018),    float4( 0.60771245,  0.41635221,  0.600000, -0.605411),    float4( 0.02379565, -0.08239821,  0.600000, -3.809046),
-    float4( 0.48951152, -0.23657045,  0.600000, -1.189011),    float4(-0.17611565, -0.81696892,  0.600000, -0.513724),    float4(-0.33930185, -0.20732205,  0.600000, -1.698047),    float4(-0.91974425,  0.05403209,  0.600000,  0.062246),
-    float4(-0.15064627, -0.14949332,  0.600000, -1.896062),    float4( 0.53180975, -0.35210401,  0.600000, -0.758838),    float4( 0.41487166,  0.81442589,  0.600000, -0.505648),    float4(-0.24106961, -0.32721516,  0.600000, -1.665244)
+	float4( 0.78488064,  0.56661671,  1.500000, -0.126083),    float4( 0.26022232, -0.29575172,  1.500000, -1.064030),    float4( 0.10459357,  0.08372527,  1.110000, -2.730563),    float4(-0.68286800,  0.04963045,  1.090000, -0.498827),
+	float4(-0.13570161, -0.64190155,  1.250000, -0.532765),    float4(-0.26193795, -0.08205118,  0.670000, -1.783245),    float4(-0.61177456,  0.66664219,  0.710000, -0.044234),    float4( 0.43675563,  0.25119025,  0.610000, -1.167283),
+	float4( 0.07884444,  0.86618668,  0.640000, -0.459002),    float4(-0.12790935, -0.29869005,  0.600000, -1.729424),    float4(-0.04031125,  0.02413622,  0.600000, -4.792042),    float4( 0.16201244, -0.52851415,  0.790000, -1.067055),
+	float4(-0.70991218,  0.47301072,  0.640000, -0.335236),    float4( 0.03277707, -0.22349690,  0.600000, -1.982384),    float4( 0.68921727,  0.36800742,  0.630000, -0.266718),    float4( 0.29251814,  0.37775412,  0.610000, -1.422520),
+	float4(-0.12224089,  0.96582592,  0.600000, -0.426142),    float4( 0.11071457, -0.16131058,  0.600000, -2.165947),    float4( 0.46562141, -0.59747696,  0.600000, -0.189760),    float4(-0.51548797,  0.11804193,  0.600000, -1.246800),
+	float4( 0.89141309, -0.42090443,  0.600000,  0.028192),    float4(-0.32402530, -0.01591529,  0.600000, -1.543018),    float4( 0.60771245,  0.41635221,  0.600000, -0.605411),    float4( 0.02379565, -0.08239821,  0.600000, -3.809046),
+	float4( 0.48951152, -0.23657045,  0.600000, -1.189011),    float4(-0.17611565, -0.81696892,  0.600000, -0.513724),    float4(-0.33930185, -0.20732205,  0.600000, -1.698047),    float4(-0.91974425,  0.05403209,  0.600000,  0.062246),
+	float4(-0.15064627, -0.14949332,  0.600000, -1.896062),    float4( 0.53180975, -0.35210401,  0.600000, -0.758838),    float4( 0.41487166,  0.81442589,  0.600000, -0.505648),    float4(-0.24106961, -0.32721516,  0.600000, -1.665244)
 };
 
 // These values can be changed with no changes required elsewhere;
 // The actual number of texture samples is two times this value (each "tap" has two symmetrical depth texture samples)
-static const uint g_numTaps[4] = { 3, 5, 8, 12 };
+static const uint g_assaoNumTaps[4] = { 3, 5, 8, 12 };
+static const uint g_gtaoNumTaps[4] = { 2, 3, 5, 8 };
+static const uint g_gtaoNumSlices[4] = { 2, 4, 5, 6 };
+
+#define GTAO_MAX_PIXEL_SCREEN_RADIUS 256.0f
 
 //
 // Optional parts that can be enabled for a required quality preset level and above (0 == Low, 1 == Medium, 2 == High, 3 == Highest)
@@ -99,10 +104,13 @@ float NegRecEffectRadius;               // -1.0 / EffectRadius
 float InvSharpness;
 float DetailAOStrength;
 
+float GTAOThickness;  
+float GTAOAdjustedRadius;  // GTAO Radius adjusted by FOV scale
+float GTAOAttenFactor;
+float GTAOReserved;
+
 float4 PatternRotScaleMatrices[5];
-
 float4x4 ViewMatrix;
-
 META_CB_END
 
 DECLARE_GBUFFERDATA_ACCESS(GBuffer)
@@ -160,11 +168,22 @@ float2 ScreenSpaceToClipSpacePositionXY(float2 screenPos)
 	return screenPos * Viewport2xPixelSize.xy - float2(1.0f, 1.0f);
 }
 
-float3 NDCToViewspace(float2 pos, float viewspaceDepth)
+// Get vector (viewspace x, viewspace y, linear z) from ndc pos and linear depth
+float3 NDCToViewspace(float2 pos, float linearDepth)
 {
 	GBufferData gBufferData = GetGBufferData();
-	float deviceDepth = LinearZ2DeviceDepth(gBufferData, viewspaceDepth / gBufferData.ViewFar);
+	float deviceDepth = LinearZ2DeviceDepth(gBufferData, linearDepth / gBufferData.ViewFar);
 	float4 clipPos = float4(pos * float2(2.0, -2.0) + float2(-1.0, 1.0), deviceDepth, 1.0);
+	float4 viewPos = mul(clipPos, gBufferData.InvProjectionMatrix);
+	return viewPos.xyz / viewPos.w;
+}
+
+// Get viewspace position of pixel from ndc pos and linear depth
+float3 GetViewspacePos(float2 ndcPos, float linearDepth)
+{
+	GBufferData gBufferData = GetGBufferData();
+	float deviceDepth = LinearZ2DeviceDepth(gBufferData, linearDepth);
+	float4 clipPos = float4(ndcPos * float2(2.0, -2.0) + float2(-1.0, 1.0), deviceDepth, 1.0);
 	float4 viewPos = mul(clipPos, gBufferData.InvProjectionMatrix);
 	return viewPos.xyz / viewPos.w;
 }
@@ -411,13 +430,146 @@ void SSAOTap(const int qualityLevel, inout float obscuranceSum, inout float weig
 	SSAOTapInner(qualityLevel, obscuranceSum, weightSum, samplingMirroredUV, mipLevel, pixCenterPos, negViewspaceDir, pixelNormal, falloffCalcMulSq, weightMod, tapIndex * 2 + 1);
 }
 
+void ASSAOImpl(const int qualityLevel, inout float obscuranceSum, inout float weightSum, const float2x2 rotScale, const float3 pixCenterPos, float3 pixelNormal, const float2 normalizedScreenPos, const float mipOffset, const float falloffCalcMulSq, float weightMod){
+	const int numberOfTaps = g_assaoNumTaps[qualityLevel];
+	
+	// Used to tilt the second set of samples so that the disk is effectively rotated by the normal
+	// effective at removing one set of artifacts, but too expensive for lower quality settings
+	float2 normXY = float2(pixelNormal.x, pixelNormal.y);
+	float normXYLength = length(normXY);
+	normXY /= float2(normXYLength, -normXYLength);
+	normXYLength *= SSAO_TILT_SAMPLES_AMOUNT;
+	
+	const float3 negViewspaceDir = -normalize(pixCenterPos);
+	
+	// UNROLL // <- doesn't seem to help on any platform, although the compilers seem to unroll anyway if const number of tap used!
+	for (int i = 0; i < numberOfTaps; i++)
+	{
+		SSAOTap(qualityLevel, obscuranceSum, weightSum, i, rotScale, pixCenterPos, negViewspaceDir, pixelNormal, normalizedScreenPos, mipOffset, falloffCalcMulSq, 1.0, normXY, normXYLength);
+	}
+
+	// Strength
+	obscuranceSum *= EffectShadowStrength;
+}
+
+float2 SearchForLargestAngleDual(const int numberOfTaps, const float2 sliceDir, const float3 viewDir, const float3 positionVS, const float2 normalizedScreenPos){
+	const float pixelRadius = max(min(GTAOAdjustedRadius / positionVS.z, GTAO_MAX_PIXEL_SCREEN_RADIUS), (float)numberOfTaps);
+	
+	const float stepRadius = pixelRadius / ((float)numberOfTaps + 1);
+	
+	float2 bestAng = float2(-1, -1);
+
+	// UNROLL
+	for(int i = 1; i <= numberOfTaps; i++)
+	{
+		float fi = (float)i;
+		float2 uvOffset = sliceDir * max(stepRadius * (fi + 1), fi + 1) * HalfViewportPixelSize;
+		uvOffset.y *= -1;
+		float4 sampleUV = normalizedScreenPos.xyxy + float4(uvOffset.xy, -uvOffset.xy);
+
+		float mipLevel = 0;
+		if(i == 2){
+			mipLevel += 1;
+		}
+		if(i > 3){
+			mipLevel += 2;
+		}
+
+		// Positive direction
+		float2 sceneDepths;
+		sceneDepths.x = g_ViewspaceDepthSource.SampleLevel(SamplerPointClamp, sampleUV.xy, mipLevel).x;
+		sceneDepths.y = g_ViewspaceDepthSource.SampleLevel(SamplerPointClamp, sampleUV.zw, mipLevel).x;
+
+		float3 h = GetViewspacePos(sampleUV.xy, sceneDepths.x).xyz - positionVS;
+		float lenSq = dot(h, h);
+		float ooLen = rsqrt(lenSq + 0.0001);
+		float ang = dot(h, viewDir) * ooLen;
+
+		float falloff = saturate(lenSq * GTAOAttenFactor);  
+		ang = lerp(ang, bestAng.x, falloff);
+
+		bestAng.x = (ang > bestAng.x) ? ang : lerp(ang, bestAng.x, GTAOThickness);  
+
+		// Negative direction
+		h = GetViewspacePos(sampleUV.zw, sceneDepths.y).xyz - positionVS;
+		lenSq = dot(h, h);
+		ooLen = rsqrt(lenSq + 0.0001);
+		ang = dot(h, viewDir) * ooLen;
+
+		falloff = saturate(lenSq * GTAOAttenFactor);  
+		ang = lerp(ang, bestAng.y, falloff);
+
+		bestAng.y = (ang > bestAng.y) ? ang : lerp(ang, bestAng.y, GTAOThickness);
+	}
+
+	bestAng.x = AcosFast(clamp(bestAng.x, -1.0, 1.0));
+	bestAng.y = AcosFast(clamp(bestAng.y, -1.0, 1.0));
+
+	return bestAng;
+}
+
+float ComputeInnerIntegral(float2 angles, const float2 sliceDir, const float3 viewDir, const float3 normalVS)
+{
+	// Given the angles found in the search plane we need to project the View Space Normal onto the plane defined by the search axis and the View Direction and perform the inner integrate
+	float3 planeNormal = normalize(cross(float3(sliceDir.xy, 0), viewDir));
+	float3 perp = cross(viewDir, planeNormal);
+	float3 projNormal = normalVS - planeNormal * dot(normalVS, planeNormal);
+
+	float lenProjNormal = length(projNormal) + 0.000001f;
+	float recipMag = 1.0f / lenProjNormal;
+
+	float cosAng = dot(projNormal, perp) * recipMag;    
+	float gamma = AcosFast(cosAng) - PI_HALF;                
+	float cosGamma = dot(projNormal, viewDir) * recipMag;
+	float sinGamma = cosAng * -2.0f;                    
+
+	// clamp to normal hemisphere 
+	angles.x = gamma + max(-angles.x - gamma, -PI_HALF);
+	angles.y = gamma + min( angles.y - gamma,  PI_HALF);
+
+	float ao = (lenProjNormal * 0.25 * 
+						((angles.x * sinGamma + cosGamma - cos((2.0 * angles.x) - gamma)) +
+							(angles.y * sinGamma + cosGamma - cos((2.0 * angles.y) - gamma))));
+	return ao;
+}
+
+void GTAOImpl(const int qualityLevel, inout float obscuranceSum, inout float weightSum, const float3 positionVS, float3 pixelNormal, const float2 normalizedScreenPos, float weightMod){	
+	const int numberOfTaps = g_gtaoNumTaps[qualityLevel];
+	const int numberOfSlices = g_gtaoNumSlices[qualityLevel];
+	
+	const float3 viewDir = normalize(-positionVS);
+	const float deltaAngle = PI / numberOfSlices;
+	const float sinDeltaAngle = sin(deltaAngle), cosDeltaAngle = cos(deltaAngle);
+	
+	// Slice direction, always normalized
+	float2 sliceDir = float2(1, 0);
+
+	// Norm coeficient used in the original paper and the Unreal implementation, however it makes the scene look dark, so we comment it out now
+	const float PI_2 = 2.0 / PI;
+	for(int slice = 0; slice < numberOfSlices; slice++){
+		float2 bestAng = SearchForLargestAngleDual(numberOfTaps, sliceDir, viewDir, positionVS, normalizedScreenPos);
+		float visibility = ComputeInnerIntegral(bestAng, sliceDir, viewDir, pixelNormal);
+
+		// Obscurance = 1 - Visibility
+		obscuranceSum += 1.0 - min(1.0, /* PI_2* */ visibility);
+		weightSum += 1.0;
+
+		// Unreal speedup
+		float2 tmpDir = sliceDir;
+		sliceDir.x = tmpDir.x * cosDeltaAngle - tmpDir.y * sinDeltaAngle;
+		sliceDir.y = tmpDir.x * sinDeltaAngle + tmpDir.y * cosDeltaAngle;
+	}
+
+	// Strength, coeficient is to make SSAO and GTAO look roughly equally bright under same strength
+	obscuranceSum *= 0.25 * EffectShadowStrength;
+}
+
 // This function is designed to only work with half/half depth at the moment - there's a couple of hardcoded paths that expect pixel/texel size, so it will not work for full res
 void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, out float outWeight, const float2 SVPos/*, const float2 normalizedScreenPos*/, int qualityLevel)
 {
 	float2 SVPosRounded = trunc(SVPos);
 	uint2 SVPosui = uint2(SVPosRounded); // same as uint2(SVPos)
 	
-	const int numberOfTaps = g_numTaps[qualityLevel];
 	float pixZ, pixLZ, pixTZ, pixRZ, pixBZ;
 
 	float4 valuesUL = TextureGatherRed(g_ViewspaceDepthSource, SamplerPointWrap, SVPosRounded * HalfViewportPixelSize);
@@ -442,6 +594,7 @@ void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 	pixBZ = valuesBR.x;
 	
 	float2 normalizedScreenPos = SVPosRounded * Viewport2xPixelSize + Viewport2xPixelSize_x_025;
+	// Viewspace pos of the pixel center, with 01 linear depth
 	float3 pixCenterPos = NDCToViewspace(normalizedScreenPos, pixZ); // g
 	
 	// Load this pixel's viewspace normal
@@ -531,24 +684,19 @@ void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 		edgesLRTB *= normalEdgesLRTB;
 	}
 	
+#if SSAO_USE_GTAO
+	// GTAO
+	float3 positionVS = GetViewspacePos(normalizedScreenPos, pixZ);
+
+	GTAOImpl(qualityLevel, obscuranceSum, weightSum, positionVS, pixelNormal, normalizedScreenPos, 1.0);
+#else
+	// ASSAO
 	const float globalMipOffset = SSAO_DEPTH_MIPS_GLOBAL_OFFSET;
 	float mipOffset = (qualityLevel < SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET) ? (0) : (log2(pixLookupRadiusMod) + globalMipOffset);
 	
-	// Used to tilt the second set of samples so that the disk is effectively rotated by the normal
-	// effective at removing one set of artifacts, but too expensive for lower quality settings
-	float2 normXY = float2(pixelNormal.x, pixelNormal.y);
-	float normXYLength = length(normXY);
-	normXY /= float2(normXYLength, -normXYLength);
-	normXYLength *= SSAO_TILT_SAMPLES_AMOUNT;
-	
-	const float3 negViewspaceDir = -normalize(pixCenterPos);
-	
-	// UNROLL // <- doesn't seem to help on any platform, although the compilers seem to unroll anyway if const number of tap used!
-	for (int i = 0; i < numberOfTaps; i++)
-	{
-		SSAOTap(qualityLevel, obscuranceSum, weightSum, i, rotScale, pixCenterPos, negViewspaceDir, pixelNormal, normalizedScreenPos, mipOffset, falloffCalcMulSq, 1.0, normXY, normXYLength);
-	}
-	
+	ASSAOImpl(qualityLevel, obscuranceSum, weightSum, rotScale, pixCenterPos, pixelNormal, normalizedScreenPos, mipOffset, falloffCalcMulSq, 1.0);
+#endif
+
 	// Calculate weighted average
 	float obscurance = obscuranceSum / weightSum;
 	
@@ -575,15 +723,12 @@ void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 	// Same as a bove, but a lot more conservative version
 	//fadeOut *= saturate(dot(edgesLRTB, float4(0.9, 0.9, 0.9, 0.9)) - 2.6);
 	
-	// Strength
-	obscurance *= EffectShadowStrength;
-	
 	// Clamp
 	obscurance = min(obscurance, 0.98f);
-	
+
 	// Apply fadeout
 	obscurance *= fadeOut;
-	
+
 	// Conceptually switch to occlusion with the meaning being visibility (grows with visibility, occlusion == 1 implies full visibility), to be in line with what is more commonly used.
 	float occlusion = 1.0 - obscurance;
 	
@@ -598,6 +743,8 @@ void GenerateSSAOShadowsInternal(out float outShadowTerm, out float4 outEdges, o
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(SSAO_USE_GTAO=0)
+META_PERMUTATION_1(SSAO_USE_GTAO=1)
 void PS_GenerateQ0(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/, out float2 out0 : SV_Target0)
 {
 	float outShadowTerm;
@@ -609,6 +756,8 @@ void PS_GenerateQ0(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(SSAO_USE_GTAO=0)
+META_PERMUTATION_1(SSAO_USE_GTAO=1)
 void PS_GenerateQ1(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/, out float2 out0 : SV_Target0)
 {
 	float outShadowTerm;
@@ -620,6 +769,8 @@ void PS_GenerateQ1(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(SSAO_USE_GTAO=0)
+META_PERMUTATION_1(SSAO_USE_GTAO=1)
 void PS_GenerateQ2(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/, out float2 out0 : SV_Target0)
 {
 	float outShadowTerm;
@@ -631,6 +782,8 @@ void PS_GenerateQ2(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/
 }
 
 META_PS(true, FEATURE_LEVEL_ES2)
+META_PERMUTATION_1(SSAO_USE_GTAO=0)
+META_PERMUTATION_1(SSAO_USE_GTAO=1)
 void PS_GenerateQ3(in float4 inPos : SV_POSITION/*, in float2 inUV : TEXCOORD0*/, out float2 out0 : SV_Target0)
 {
 	float outShadowTerm;
