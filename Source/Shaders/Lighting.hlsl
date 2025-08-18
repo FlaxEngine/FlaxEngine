@@ -122,6 +122,10 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
 
     // Calculate shadow
     ShadowSample shadow = GetShadow(lightData, gBuffer, shadowMask);
+#if !LIGHTING_NO_DIRECTIONAL
+    // Directional shadowing
+    shadow.SurfaceShadow *= NoL;
+#endif
 
     // Calculate attenuation
     if (isRadial)
@@ -134,11 +138,6 @@ float4 GetLighting(float3 viewPos, LightData lightData, GBufferSample gBuffer, f
         shadow.SurfaceShadow *= attenuation;
         shadow.TransmissionShadow *= attenuation;
     }
-
-#if !LIGHTING_NO_DIRECTIONAL
-    // Reduce shadow mapping artifacts
-    shadow.SurfaceShadow *= saturate(NoL * 6.0f - 0.2f) * NoL;
-#endif
 
     BRANCH
     if (shadow.SurfaceShadow + shadow.TransmissionShadow > 0)
