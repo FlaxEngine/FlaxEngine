@@ -199,7 +199,7 @@ namespace FlaxEditor.Surface.Archetypes
             private Label _labelValue;
             private FloatValueBox _timeValue;
             private ColorValueBox _colorValue;
-            private const int MaxStops = 8;
+            private const int MaxStops = 12;
 
             /// <inheritdoc />
             public ColorGradientNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
@@ -1507,7 +1507,11 @@ namespace FlaxEditor.Surface.Archetypes
                     0.95f,
                     Color.White,
 
-                    // Empty stops 2-7
+                    // Empty stops 2-11
+                    0.0f, Color.Black,
+                    0.0f, Color.Black,
+                    0.0f, Color.Black,
+                    0.0f, Color.Black,
                     0.0f, Color.Black,
                     0.0f, Color.Black,
                     0.0f, Color.Black,
