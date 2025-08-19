@@ -420,6 +420,12 @@ namespace FlaxEditor.Options
         [DefaultValue(1), Range(1, 4)]
         [EditorDisplay("Cook & Run"), EditorOrder(600)]
         public int NumberOfGameClientsToLaunch = 1;
+        
+        /// <summary>
+        /// Gets or sets the build configuration to use when using Cook and Run option in the editor.
+        /// </summary>
+        [EditorDisplay("Cook & Run"), EditorOrder(601), ExpandGroups, Tooltip("The build configuration to use when using Cook and Run option in the editor.")]
+        public BuildConfiguration CookAndRunBuildConfiguration { get; set; } = BuildConfiguration.Development;
 
         /// <summary>
         /// Gets or sets the curvature of the line connecting to connected visject nodes.
