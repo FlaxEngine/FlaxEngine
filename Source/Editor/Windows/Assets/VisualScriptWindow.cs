@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Xml;
@@ -471,7 +470,7 @@ namespace FlaxEditor.Windows.Assets
 
             private void OnOverrideMethodClicked()
             {
-                var cm = new ContextMenu();
+                var cm = new ItemsListContextMenu(235);
                 var window = (VisualScriptWindow)Values[0];
                 var scriptMeta = window.Asset.Meta;
                 var baseType = TypeUtils.GetType(scriptMeta.BaseTypename);
@@ -499,27 +498,39 @@ namespace FlaxEditor.Windows.Assets
                         if (isAlreadyAdded)
                             continue;
 
-                        var cmButton = cm.AddButton($"{name} (in {member.DeclaringType.Name})");
-                        cmButton.TooltipText = Editor.Instance.CodeDocs.GetTooltip(member);
-                        cmButton.Clicked += () =>
+                        var item = new ItemsListContextMenu.Item
                         {
-                            var surface = ((VisualScriptWindow)Values[0]).Surface;
-                            var surfaceBounds = surface.AllNodesBounds;
-                            surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Float2(200, 150)).MakeExpanded(400.0f));
-                            var node = surface.Context.SpawnNode(16, 3, surfaceBounds.BottomLeft + new Float2(0, 50), new object[]
-                            {
-                                name,
-                                parameters.Length,
-                                Utils.GetEmptyArray<byte>()
-                            });
-                            surface.Select(node);
+                            Name = $"{name} (in {member.DeclaringType.Name})",
+                            TooltipText = Editor.Instance.CodeDocs.GetTooltip(member),
+                            Tag = new object[] { name, parameters.Length, Utils.GetEmptyArray<byte>() },
+                            // Do some basic sorting based on if the method is defined directly in the script base class
+                            SortScore = member.DeclaringType == member.Type.ReflectedType ? 1 : 0,
                         };
+                        cm.AddItem(item);
                     }
                 }
-                if (!cm.Items.Any())
+
+                cm.ItemClicked += (item) =>
                 {
-                    cm.AddButton("Nothing to override");
+                    var surface = ((VisualScriptWindow)Values[0]).Surface;
+                    var surfaceBounds = surface.AllNodesBounds;
+                    surface.ShowArea(new Rectangle(surfaceBounds.BottomLeft, new Float2(200, 150)).MakeExpanded(400.0f));
+                    var node = surface.Context.SpawnNode(16, 3, surfaceBounds.BottomLeft + new Float2(0, 50), item.Tag as object[]);
+                    surface.Select(node);
+                };
+
+                if (cm.ItemsPanel.ChildrenCount == 0)
+                {
+                    var item = new ItemsListContextMenu.Item
+                    {
+                        Name = "Nothing to override"
+                    };
+                    item.Enabled = false;
+
+                    cm.AddItem(item);
                 }
+
+                cm.SortItems();
                 cm.Show(_overrideButton, new Float2(0, _overrideButton.Height));
             }
         }
