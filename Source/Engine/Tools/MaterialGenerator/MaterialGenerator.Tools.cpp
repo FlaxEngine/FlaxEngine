@@ -48,10 +48,8 @@ void MaterialGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
     }
     // Time
     case 3:
-    {
-        value = getTime;
+        value = box->ID == 1 ? getUnscaledTime : getTime;
         break;
-    }
     // Panner
     case 6:
     {

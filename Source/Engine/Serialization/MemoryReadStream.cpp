@@ -61,7 +61,11 @@ void MemoryReadStream::ReadBytes(void* data, uint32 bytes)
 {
     if (bytes > 0)
     {
-        ASSERT(data && GetLength() - GetPosition() >= bytes);
+        if (!data || GetLength() - GetPosition() < bytes)
+        {
+            _hasError = true;
+            return;
+        }
         Platform::MemoryCopy(data, _position, bytes);
         _position += bytes;
     }
