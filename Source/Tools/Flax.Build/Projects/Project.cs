@@ -229,6 +229,11 @@ namespace Flax.Build.Projects
             /// The .Net libraries references (dll or exe files paths).
             /// </summary>
             public HashSet<string> FileReferences;
+            
+            /// <summary>
+            /// The nuget references.
+            /// </summary>
+            public HashSet<NugetPackage> NugetPackageReferences;
 
             /// <summary>
             /// The output folder path (optional).
@@ -248,6 +253,7 @@ namespace Flax.Build.Projects
         {
             SystemReferences = new HashSet<string>(),
             FileReferences = new HashSet<string>(),
+            NugetPackageReferences = new HashSet<NugetPackage>(),
         };
 
         /// <summary>
