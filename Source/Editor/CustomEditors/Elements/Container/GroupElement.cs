@@ -26,6 +26,7 @@ namespace FlaxEditor.CustomEditors.Elements
             ItemsSpacing = Utilities.Constants.UIMargin,
             HeaderHeight = 18.0f,
             EnableContainmentLines = true,
+            CloseAnimationTime = Editor.Instance.Options.Options.Interface.PropertiesDopdownAnimationTime,
         };
 
         /// <summary>
@@ -35,6 +36,12 @@ namespace FlaxEditor.CustomEditors.Elements
 
         /// <inheritdoc />
         public override ContainerControl ContainerControl => Panel;
+
+        /// <inheritdoc />
+        public GroupElement()
+        {
+            Editor.Instance.Options.OptionsChanged += options => { Panel.CloseAnimationTime = options.Interface.PropertiesDopdownAnimationTime; };
+        }
 
         /// <summary>
         /// Adds utility settings button to the group header.
