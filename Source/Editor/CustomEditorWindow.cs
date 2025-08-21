@@ -18,8 +18,8 @@ namespace FlaxEditor
             private readonly CustomEditorPresenter _presenter;
             private CustomEditorWindow _customEditor;
 
-            public Win(CustomEditorWindow customEditor)
-            : base(Editor.Instance, false, ScrollBars.Vertical)
+            public Win(CustomEditorWindow customEditor, bool hideOnClose, ScrollBars scrollBars)
+            : base(Editor.Instance, hideOnClose, scrollBars)
             {
                 Title = customEditor.GetType().Name;
                 _customEditor = customEditor;
@@ -64,9 +64,9 @@ namespace FlaxEditor
         /// <summary>
         /// Initializes a new instance of the <see cref="CustomEditorWindow"/> class.
         /// </summary>
-        protected CustomEditorWindow()
+        protected CustomEditorWindow(bool hideOnClose = false, ScrollBars scrollBars = ScrollBars.Vertical)
         {
-            _win = new Win(this);
+            _win = new Win(this, hideOnClose, scrollBars);
             ScriptsBuilder.ScriptsReloadBegin += OnScriptsReloadBegin;
         }
 
