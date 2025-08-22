@@ -548,6 +548,16 @@ void ParticleEffect::OnParticleSystemModified()
 void ParticleEffect::OnParticleSystemLoaded()
 {
     ApplyModifiedParameters();
+    auto& emitters = ParticleSystem.Get()->Emitters;
+    for (auto& emitter : emitters)
+    {
+        emitter.Loaded.BindUnique<ParticleEffect, &ParticleEffect::OnParticleEmitterLoaded>(this);
+    }
+}
+
+void ParticleEffect::OnParticleEmitterLoaded()
+{
+    ApplyModifiedParameters();
 }
 
 bool ParticleEffect::HasContentLoaded() const
@@ -822,6 +832,10 @@ void ParticleEffect::OnActiveInTreeChanged()
         // Invalidate the simulation
         CacheModifiedParameters();
         Instance.ClearState();
+    }
+    else
+    {
+        ApplyModifiedParameters();
     }
 }
 
