@@ -39,6 +39,7 @@ namespace FlaxEditor
         public SpriteHandle Globe32;
         public SpriteHandle CamSpeed32;
         public SpriteHandle Link32;
+        public SpriteHandle BrokenLink32;
         public SpriteHandle Add32;
         public SpriteHandle Left32;
         public SpriteHandle Right32;
@@ -94,6 +95,7 @@ namespace FlaxEditor
         public SpriteHandle Search64;
         public SpriteHandle Bone64;
         public SpriteHandle Link64;
+        public SpriteHandle BrokenLink64;
         public SpriteHandle Build64;
         public SpriteHandle Add64;
         public SpriteHandle ShipIt64;
