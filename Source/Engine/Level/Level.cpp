@@ -60,27 +60,22 @@ void LargeWorlds::UpdateOrigin(Vector3& origin, const Vector3& position)
     }
 }
 
-bool LayersMask::HasLayer(const StringView& layerName)
+bool LayersMask::HasLayer(const StringView& layerName) const
 {
     return HasLayer(Level::GetLayerIndex(layerName));
 }
 
-LayersMask LayersMask::GetMask(StringView layerNames[])
+LayersMask LayersMask::GetMask(Span<StringView> layerNames)
 {
     LayersMask mask(0);
-    if (layerNames == nullptr)
-        return mask;
-    for (int i = 0; i < layerNames->Length(); i++)
+    for (StringView& layerName : layerNames)
     {
-        StringView& layerName = layerNames[i];
         // Ignore blank entries
         if (layerName.Length() == 0)
             continue;
-        int index = Level::GetLayerIndex(layerName);
-        if (index != -1 && !mask.HasLayer(index))
-        {
-            mask.Mask |= static_cast<uint32>(1 << index);
-        }
+        int32 index = Level::GetLayerIndex(layerName);
+        if (index != -1)
+            mask.Mask |= (uint32)(1 << index);
     }
     return mask;
 }

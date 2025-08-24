@@ -40,16 +40,16 @@ public:
     /// <summary>
     /// Determines whether the specified layer name is set in the mask.
     /// </summary>
-    /// <param name="layerName">Name of the layer (from layers settings).</param>
+    /// <param name="layerName">Name of the layer (from Layers settings).</param>
     /// <returns><c>true</c> if the specified layer is set; otherwise, <c>false</c>.</returns>
-    bool HasLayer(const StringView& layerName);
+    bool HasLayer(const StringView& layerName) const;
 
     /// <summary>
     /// Gets a layers mask from a specific layer name.
     /// </summary>
-    /// <param name="layerNames">The layer names.</param>
+    /// <param name="layerNames">The names of the layers (from Layers settings).</param>
     /// <returns>A layers mask with the Mask set to the same Mask as the layer name passed in. Returns a LayersMask with a mask of 0 if no layer found.</returns>
-    static LayersMask GetMask(StringView layerNames[]);
+    static LayersMask GetMask(Span<StringView> layerNames);
 
     operator uint32() const
     {
