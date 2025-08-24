@@ -64,6 +64,16 @@ namespace FlaxEditor.Windows
         };
 
         /// <summary>
+        /// Fired when the game window audio is muted.
+        /// </summary>
+        public event Action MuteAudio;
+
+        /// <summary>
+        /// Fired when the game window master audio volume is changed.
+        /// </summary>
+        public event Action<float> MasterVolumeChanged;
+
+        /// <summary>
         /// Gets the viewport.
         /// </summary>
         public RenderOutputControl Viewport => _viewport;
@@ -120,6 +130,7 @@ namespace FlaxEditor.Windows
             {
                 Audio.MasterVolume = value ? 0 : AudioVolume;
                 _audioMuted = value;
+                MuteAudio?.Invoke();
             }
         }
 
@@ -134,6 +145,7 @@ namespace FlaxEditor.Windows
                 if (!AudioMuted)
                     Audio.MasterVolume = value;
                 _audioVolume = value;
+                MasterVolumeChanged?.Invoke(value);
             }
         }
 

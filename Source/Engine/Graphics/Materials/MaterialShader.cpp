@@ -36,12 +36,15 @@ GPU_CB_STRUCT(MaterialShaderDataPerView {
     Float4 TemporalAAJitter;
     Float3 LargeWorldsChunkIndex;
     float LargeWorldsChunkSize;
+    Float3 ViewPadding0;
+    float UnscaledTimeParam;
     });
 
 IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext)
     : GPUContext(context)
     , RenderContext(renderContext)
-    , TimeParam(Time::Draw.UnscaledTime.GetTotalSeconds())
+    , Time(Time::Draw.Time.GetTotalSeconds())
+    , UnscaledTime(Time::Draw.UnscaledTime.GetTotalSeconds())
 {
 }
 
@@ -49,7 +52,8 @@ IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderC
     : GPUContext(context)
     , RenderContext(renderContext)
     , DrawCall(&drawCall)
-    , TimeParam(Time::Draw.UnscaledTime.GetTotalSeconds())
+    , Time(Time::Draw.Time.GetTotalSeconds())
+    , UnscaledTime(Time::Draw.UnscaledTime.GetTotalSeconds())
     , Instanced(instanced)
 {
 }
@@ -77,7 +81,8 @@ void IMaterial::BindParameters::BindViewData()
     cb.ViewPos = view.Position;
     cb.ViewFar = view.Far;
     cb.ViewDir = view.Direction;
-    cb.TimeParam = TimeParam;
+    cb.TimeParam = Time;
+    cb.UnscaledTimeParam = UnscaledTime;
     cb.ViewInfo = view.ViewInfo;
     cb.ScreenSize = view.ScreenSize;
     cb.TemporalAAJitter = view.TemporalAAJitter;

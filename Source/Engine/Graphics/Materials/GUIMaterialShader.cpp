@@ -23,6 +23,8 @@ PACK_STRUCT(struct GUIMaterialShaderData {
     Float4 ViewInfo;
     Float4 ScreenSize;
     Float4 ViewSize;
+    Float3 ViewPadding0;
+    float UnscaledTimeParam;
     });
 
 void GUIMaterialShader::Bind(BindParameters& params)
@@ -55,7 +57,8 @@ void GUIMaterialShader::Bind(BindParameters& params)
         materialData->ViewPos = Float3::Zero;
         materialData->ViewFar = 0.0f;
         materialData->ViewDir = Float3::Forward;
-        materialData->TimeParam = params.TimeParam;
+        materialData->TimeParam = params.Time;
+        materialData->UnscaledTimeParam = params.UnscaledTime;
         materialData->ViewInfo = Float4::Zero;
         auto& viewport = Render2D::GetViewport();
         materialData->ScreenSize = Float4(viewport.Width, viewport.Height, 1.0f / viewport.Width, 1.0f / viewport.Height);

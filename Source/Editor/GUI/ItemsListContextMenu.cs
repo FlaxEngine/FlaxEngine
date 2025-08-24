@@ -514,20 +514,15 @@ namespace FlaxEditor.GUI
             var items = ItemsPanel.Children;
             for (int i = 0; i < items.Count; i++)
             {
-                if (items[i] is Item item && item.Visible)
+                var currentItem = items[i];
+                if (currentItem is Item item && item.Visible)
                     result.Add(item);
-            }
-            if (_categoryPanels != null)
-            {
-                for (int i = 0; i < _categoryPanels.Count; i++)
+                else if (currentItem is DropPanel category && (!ignoreFoldedCategories || !category.IsClosed) && currentItem.Visible)
                 {
-                    var category = _categoryPanels[i];
-                    if (!category.Visible || (ignoreFoldedCategories && category is DropPanel panel && panel.IsClosed))
-                        continue;
                     for (int j = 0; j < category.Children.Count; j++)
                     {
-                        if (category.Children[j] is Item item2 && item2.Visible)
-                            result.Add(item2);
+                        if (category.Children[j] is Item categoryItem && categoryItem.Visible)
+                            result.Add(categoryItem);
                     }
                 }
             }
@@ -590,10 +585,6 @@ namespace FlaxEditor.GUI
                 bool controlDown = Root.GetKey(KeyboardKeys.Control);
                 var items = GetVisibleItems(!controlDown);
                 var focusedIndex = items.IndexOf(focusedItem);
-
-                // If the user hasn't selected anything yet and is holding control, focus first folded item
-                if (focusedIndex == -1 && controlDown)
-                    focusedIndex = GetVisibleItems(true).Count - 1;
 
                 int delta = key == KeyboardKeys.ArrowDown ? -1 : 1;
                 int nextIndex = Mathf.Wrap(focusedIndex - delta, 0, items.Count - 1);

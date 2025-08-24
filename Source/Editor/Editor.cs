@@ -528,7 +528,11 @@ namespace FlaxEditor
                 var timeSinceLastSave = Time.UnscaledGameTime - _lastAutoSaveTimer;
                 var timeToNextSave = options.AutoSaveFrequency * 60.0f - timeSinceLastSave;
 
-                if (timeToNextSave <= 0.0f || _autoSaveNow)
+                if (timeToNextSave <= 0.0f && GetWindows().Any(x => x.GUI.Children.Any(c => c is GUI.ContextMenu.ContextMenuBase)))
+                {
+                    // Skip aut-save if any context menu is opened to wait for user to end interaction
+                }
+                else if (timeToNextSave <= 0.0f || _autoSaveNow)
                 {
                     Log("Auto save");
                     _lastAutoSaveTimer = Time.UnscaledGameTime;

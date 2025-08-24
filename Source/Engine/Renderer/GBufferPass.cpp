@@ -434,6 +434,7 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
     PROFILE_GPU_CPU("Decals");
     auto context = GPUDevice::Instance->GetMainContext();
     auto buffers = renderContext.Buffers;
+    GPUTextureView* depthBuffer = EnumHasAnyFlags(buffers->DepthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) ? buffers->DepthBuffer->ViewReadOnlyDepth() : nullptr;
 
     // Sort decals from the lowest order to the highest order
     Sorting::QuickSort(decals.Get(), decals.Count(), &SortDecal);
@@ -484,22 +485,22 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
                     count++;
                     targetBuffers[2] = buffers->GBuffer1->View();
                 }
-                context->SetRenderTarget(nullptr, ToSpan(targetBuffers, count));
+                context->SetRenderTarget(depthBuffer, ToSpan(targetBuffers, count));
                 break;
             }
             case MaterialDecalBlendingMode::Stain:
             {
-                context->SetRenderTarget(buffers->GBuffer0->View());
+                context->SetRenderTarget(depthBuffer, buffers->GBuffer0->View());
                 break;
             }
             case MaterialDecalBlendingMode::Normal:
             {
-                context->SetRenderTarget(buffers->GBuffer1->View());
+                context->SetRenderTarget(depthBuffer, buffers->GBuffer1->View());
                 break;
             }
             case MaterialDecalBlendingMode::Emissive:
             {
-                context->SetRenderTarget(lightBuffer);
+                context->SetRenderTarget(depthBuffer, lightBuffer);
                 break;
             }
             }

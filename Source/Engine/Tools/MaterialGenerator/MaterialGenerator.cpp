@@ -107,6 +107,7 @@ bool FeatureData::Init()
 
 MaterialValue MaterialGenerator::getUVs(VariantType::Float2, TEXT("input.TexCoord"));
 MaterialValue MaterialGenerator::getTime(VariantType::Float, TEXT("TimeParam"));
+MaterialValue MaterialGenerator::getUnscaledTime(VariantType::Float, TEXT("UnscaledTimeParam"));
 MaterialValue MaterialGenerator::getNormal(VariantType::Float3, TEXT("input.TBN[2]"));
 MaterialValue MaterialGenerator::getNormalZero(VariantType::Float3, TEXT("float3(0, 0, 1)"));
 MaterialValue MaterialGenerator::getVertexColor(VariantType::Float4, TEXT("GetVertexColor(input)"));

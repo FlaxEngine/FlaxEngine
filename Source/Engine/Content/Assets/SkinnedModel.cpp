@@ -656,7 +656,7 @@ bool SkinnedModel::LoadHeader(ReadStream& stream, byte& headerVersion)
         }
     }
 
-    return false;
+    return stream.HasError();
 }
 
 #if USE_EDITOR
@@ -686,7 +686,7 @@ bool SkinnedModel::SaveHeader(WriteStream& stream) const
             const int32 blendShapes = mesh.BlendShapes.Count();
             stream.Write((uint16)blendShapes);
             for (const auto& blendShape : mesh.BlendShapes)
-                blendShape.Save(stream);
+                blendShape.SaveHeader(stream);
         }
     }
 

@@ -19,6 +19,8 @@ float4 ViewInfo;
 float4 ScreenSize;
 float4 TemporalAAJitter;
 float4x4 InverseViewProjectionMatrix;
+float3 ViewPadding0;
+float UnscaledTimeParam;
 @1META_CB_END
 
 // Shader resources

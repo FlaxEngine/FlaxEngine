@@ -16,7 +16,7 @@
 PACK_STRUCT(struct DecalMaterialShaderData {
     Matrix WorldMatrix;
     Matrix InvWorld;
-    Matrix SVPositionToWorld;
+    Matrix SvPositionToWorld;
     });
 
 DrawPass DecalMaterialShader::GetDrawModes() const
@@ -47,7 +47,9 @@ void DecalMaterialShader::Bind(BindParameters& params)
     MaterialParams::Bind(params.ParamsLink, bindMeta);
 
     // Decals use depth buffer to draw on top of the objects
-    context->BindSR(0, GET_TEXTURE_VIEW_SAFE(params.RenderContext.Buffers->DepthBuffer));
+    GPUTexture* depthBuffer = params.RenderContext.Buffers->DepthBuffer;
+    GPUTextureView* depthBufferView = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
+    context->BindSR(0, depthBufferView);
 
     // Setup material constants
     {
@@ -65,7 +67,7 @@ void DecalMaterialShader::Bind(BindParameters& params)
             0, 0, 1, 0,
             -1.0f, 1.0f, 0, 1);
         const Matrix svPositionToWorld = offsetMatrix * view.IVP;
-        Matrix::Transpose(svPositionToWorld, materialData->SVPositionToWorld);
+        Matrix::Transpose(svPositionToWorld, materialData->SvPositionToWorld);
     }
 
     // Bind constants
@@ -90,16 +92,20 @@ void DecalMaterialShader::Unload()
 bool DecalMaterialShader::Load()
 {
     GPUPipelineState::Description psDesc0 = GPUPipelineState::Description::DefaultNoDepth;
-    psDesc0.VS = _shader->GetVS("VS_Decal");
+    psDesc0.VS = _shader->GetVS("VS_Decal"); // TODO: move VS_Decal to be shared (eg. in GBuffer.shader)
     if (psDesc0.VS == nullptr)
         return true;
     psDesc0.PS = _shader->GetPS("PS_Decal");
     psDesc0.CullMode = CullMode::Normal;
+    if (GPUDevice::Instance->Limits.HasReadOnlyDepth)
+    {
+        psDesc0.DepthEnable = true;
+        psDesc0.DepthWriteEnable = false;
+    }
 
     switch (_info.DecalBlendingMode)
     {
     case MaterialDecalBlendingMode::Translucent:
-    {
         psDesc0.BlendMode.BlendEnable = true;
         psDesc0.BlendMode.SrcBlend = BlendingMode::Blend::SrcAlpha;
         psDesc0.BlendMode.DestBlend = BlendingMode::Blend::InvSrcAlpha;
@@ -107,9 +113,7 @@ bool DecalMaterialShader::Load()
         psDesc0.BlendMode.DestBlendAlpha = BlendingMode::Blend::One;
         psDesc0.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
         break;
-    }
     case MaterialDecalBlendingMode::Stain:
-    {
         psDesc0.BlendMode.BlendEnable = true;
         psDesc0.BlendMode.SrcBlend = BlendingMode::Blend::DestColor;
         psDesc0.BlendMode.DestBlend = BlendingMode::Blend::InvSrcAlpha;
@@ -117,9 +121,7 @@ bool DecalMaterialShader::Load()
         psDesc0.BlendMode.DestBlendAlpha = BlendingMode::Blend::One;
         psDesc0.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
         break;
-    }
     case MaterialDecalBlendingMode::Normal:
-    {
         psDesc0.BlendMode.BlendEnable = true;
         psDesc0.BlendMode.SrcBlend = BlendingMode::Blend::SrcAlpha;
         psDesc0.BlendMode.DestBlend = BlendingMode::Blend::InvSrcAlpha;
@@ -127,12 +129,9 @@ bool DecalMaterialShader::Load()
         psDesc0.BlendMode.DestBlendAlpha = BlendingMode::Blend::One;
         psDesc0.BlendMode.RenderTargetWriteMask = BlendingMode::ColorWrite::RGB;
         break;
-    }
     case MaterialDecalBlendingMode::Emissive:
-    {
         psDesc0.BlendMode = BlendingMode::Additive;
         break;
-    }
     }
 
     _cache.Outside = GPUDevice::Instance->CreatePipelineState();
@@ -143,6 +142,7 @@ bool DecalMaterialShader::Load()
     }
 
     psDesc0.CullMode = CullMode::Inverted;
+    psDesc0.DepthEnable = false;
     _cache.Inside = GPUDevice::Instance->CreatePipelineState();
     if (_cache.Inside->Init(psDesc0))
     {

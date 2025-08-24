@@ -531,7 +531,7 @@ bool Animation::SaveHeader(const ModelData& modelData, WriteStream& stream, int3
     // Nested animations
     stream.WriteInt32(0); // Empty list
 
-    return false;
+    return stream.HasError();
 }
 
 void Animation::GetReferences(Array<Guid>& assets, Array<String>& files) const
