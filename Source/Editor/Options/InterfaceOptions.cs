@@ -229,6 +229,13 @@ namespace FlaxEditor.Options
         public bool SeparateValueAndUnit { get; set; }
 
         /// <summary>
+        /// Gets or sets the option to auto size the Properties panel splitter based on the longest property name. Editor restart recommended.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Interface"), EditorOrder(311)]
+        public bool AutoSizePropertiesPanelSplitter { get; set; }
+
+        /// <summary>
         /// Gets or sets tree line visibility.
         /// </summary>
         [DefaultValue(true)]
