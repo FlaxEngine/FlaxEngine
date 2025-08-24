@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Content/Assets/Texture.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Platform/Window.h"
 
@@ -18,6 +19,7 @@ private:
     Window* _window = nullptr;
     Font* _titleFont = nullptr;
     Font* _subtitleFont = nullptr;
+    Texture* _splashTexture = nullptr;
     String _title;
     DateTime _startTime;
     String _infoText;
@@ -78,4 +80,5 @@ private:
     void OnDraw();
     bool HasLoadedFonts() const;
     void OnFontLoaded(Asset* asset);
+    void OnTextureLoaded(Asset* asset);
 };
