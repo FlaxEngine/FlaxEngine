@@ -9,6 +9,7 @@
 #include "Engine/Render2D/Font.h"
 #include "Engine/Render2D/TextLayoutOptions.h"
 #include "Engine/Render2D/Render2D.h"
+#include "Engine/Platform/FileSystem.h"
 #include "Engine/Content/Content.h"
 #include "FlaxEngine.Gen.h"
 
@@ -188,8 +189,7 @@ void SplashScreen::Show()
 
     // Setup
     _dpiScale = dpiScale;
-    _width = settings.Size.X;
-    _height = settings.Size.Y;
+    _size = settings.Size;
     _startTime = DateTime::NowUTC();
     auto str = Globals::ProjectFolder;
 #if PLATFORM_WIN32
@@ -214,26 +214,11 @@ void SplashScreen::Show()
             font->OnLoaded.Bind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
     }
 
-    // Load Splash image
-    String splashImagePath = String::Format(TEXT("{0}/{1}"), Globals::ProjectContentFolder, TEXT("SplashImage/SplashImage.flax"));
-#if PLATFORM_WIN32
-    splashImagePath.Replace('/', '\\');
-#else
-    splashImagePath.Replace('\\', '/');
-#endif
-
-    auto texture = Content::LoadAsync<Texture>(*splashImagePath);
-    if (texture == nullptr)
-    {
-        LOG(Info, "Cannot load splash Texture at {0}", splashImagePath);
-    }
-    else
-    {
-        if (texture->IsLoaded())
-            OnTextureLoaded(texture);
-        else
-            texture->OnLoaded.Bind<SplashScreen, &SplashScreen::OnTextureLoaded>(this);
-    }
+    // Load custom image
+    _splashTexture.Loaded.Bind<SplashScreen, &SplashScreen::OnSplashLoaded>(this);
+    String splashImagePath = Globals::ProjectContentFolder / TEXT("SplashImage.flax");
+    if (FileSystem::FileExists(splashImagePath))
+        _splashTexture = Content::LoadAsync<Texture>(splashImagePath);
     
     _window->Show();
 }
@@ -248,6 +233,10 @@ void SplashScreen::Close()
     // Close window
     _window->Close(ClosingReason::CloseEvent);
     _window = nullptr;
+
+    _titleFont = nullptr;
+    _subtitleFont = nullptr;
+    _splashTexture = nullptr;
 }
 
 void SplashScreen::OnShown()
@@ -260,8 +249,8 @@ void SplashScreen::OnShown()
 void SplashScreen::OnDraw()
 {
     const float s = _dpiScale;
-    const float width = _width;
-    const float height = _height;
+    const float width = _size.X;
+    const float height = _size.Y;
 
     // Peek time
     const float time = static_cast<float>((DateTime::NowUTC() - _startTime).GetTotalSeconds());
@@ -354,21 +343,13 @@ void SplashScreen::OnFontLoaded(Asset* asset)
     _subtitleFont = font->CreateFont(9 * s);
 }
 
-void SplashScreen::OnTextureLoaded(Asset* asset)
+void SplashScreen::OnSplashLoaded()
 {
-    ASSERT(asset && asset->IsLoaded());
-    auto texture = (Texture*)asset;
-
-    texture->OnLoaded.Unbind<SplashScreen, &SplashScreen::OnTextureLoaded>(this);
-    _splashTexture = texture;
-
-    // Resize window to be larger if texture is being used.
+    // Resize window to be larger if texture is being used
     auto desktopSize = Platform::GetDesktopSize();
     auto xSize = (desktopSize.X / (600.0f * 3.0f)) * 600.0f;
     auto ySize = (desktopSize.Y / (200.0f * 3.0f)) * 200.0f;
-    
     _window->SetClientSize(Float2(xSize, ySize));
-    _width = _window->GetSize().X;
-    _height = _window->GetSize().Y;
-    _window->SetPosition((Platform::GetDesktopSize() - _window->GetSize()) / 2.0f);
+    _size = _window->GetSize();
+    _window->SetPosition((desktopSize - _size) * 0.5f);
 }
