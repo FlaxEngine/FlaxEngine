@@ -99,11 +99,14 @@ namespace FlaxEditor.Windows
             }
         }
 
+        [Flags]
         private enum SearchFilter
         {
-            Ui = 1,
+            UI = 1,
             Actors = 2,
             Primitives = 4,
+            [HideInEditor]
+            Default = UI | Actors | Primitives,
         }
 
         private TextBox _searchBox;
@@ -111,8 +114,7 @@ namespace FlaxEditor.Windows
         private Tabs _actorGroups;
         private ContainerControl groupPrimitives;
         private Button _viewDropdown;
-
-        private int _searchFilterMask = (int)SearchFilter.Ui | (int)SearchFilter.Actors | (int)SearchFilter.Primitives;
+        private int _searchFilterMask = (int)SearchFilter.Default;
 
         /// <summary>
         /// The editor instance.
@@ -168,29 +170,22 @@ namespace FlaxEditor.Windows
         private void OnViewButtonClicked()
         {
             var menu = new ContextMenu();
-
-            var uiFilterButton = menu.AddButton("Ui");
-            uiFilterButton.AutoCheck = true;
-            uiFilterButton.Checked = (_searchFilterMask & (int)SearchFilter.Ui) != 0;
-            uiFilterButton.Clicked += () => ToggleSearchFilter(SearchFilter.Ui);
-
-            var actorFilterButton = menu.AddButton("Actors");
-            actorFilterButton.AutoCheck = true;
-            actorFilterButton.Checked = (_searchFilterMask & (int)SearchFilter.Actors) != 0;
-            actorFilterButton.Clicked += () => ToggleSearchFilter(SearchFilter.Actors);
-
-            var primitiveFilterButton = menu.AddButton("Primitives");
-            primitiveFilterButton.AutoCheck = true;
-            primitiveFilterButton.Checked = (_searchFilterMask & (int)SearchFilter.Primitives) != 0;
-            primitiveFilterButton.Clicked += () => ToggleSearchFilter(SearchFilter.Primitives);
-
+            AddSearchFilterButton(menu, SearchFilter.UI, "UI");
+            AddSearchFilterButton(menu, SearchFilter.Actors, "Actors");
+            AddSearchFilterButton(menu, SearchFilter.Primitives, "Primitives");
             menu.Show(_viewDropdown.Parent, _viewDropdown.BottomLeft);
         }
 
-        private void ToggleSearchFilter(SearchFilter type)
+        private void AddSearchFilterButton(ContextMenu menu, SearchFilter value, string name)
         {
-            _searchFilterMask ^= (int)type;
-            OnSearchBoxTextChanged();
+            var button = menu.AddButton(name);
+            button.AutoCheck = true;
+            button.Checked = (_searchFilterMask & (int)value) != 0;
+            button.Clicked += () =>
+            {
+                _searchFilterMask ^= (int)value;
+                OnSearchBoxTextChanged();
+            };
         }
 
         /// <inheritdoc/>
@@ -428,7 +423,7 @@ namespace FlaxEditor.Windows
                 }
             }
 
-            if (((int)SearchFilter.Ui & _searchFilterMask) != 0)
+            if (((int)SearchFilter.UI & _searchFilterMask) != 0)
             { 
                 foreach (var controlType in Editor.Instance.CodeEditing.Controls.Get())
                 {
@@ -474,15 +469,10 @@ namespace FlaxEditor.Windows
 
             // Show a text to hint the user that either no filter is active or the search does not return any results
             bool noSearchResults = _groupSearch.Children.Count == 0 && !string.IsNullOrEmpty(_searchBox.Text);
-            bool showHint = (((int)SearchFilter.Actors & _searchFilterMask) == 0 &&
-                ((int)SearchFilter.Primitives & _searchFilterMask) == 0 &&
-                ((int)SearchFilter.Ui & _searchFilterMask) == 0) ||
-                noSearchResults;
-
-            String hint = noSearchResults ? "No results." : "No search filter active, please enable at least one filter.";
-
+            bool showHint = _searchFilterMask == 0 || noSearchResults;
             if (showHint)
             {
+                string hint = noSearchResults ? "No results" : "No search filter active, please enable at least one filter";
                 var textRect = _groupSearch.Parent.Parent.Bounds;
                 var style = Style.Current;
                 Render2D.DrawText(style.FontMedium, hint, textRect, style.ForegroundGrey, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords);
