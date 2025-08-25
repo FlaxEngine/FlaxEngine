@@ -227,7 +227,7 @@ public:
     /// <summary>
     /// Instance of the empty string.
     /// </summary>
-    static StringView Empty;
+    static const StringView Empty;
 
 public:
     /// <summary>

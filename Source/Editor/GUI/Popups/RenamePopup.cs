@@ -130,6 +130,10 @@ namespace FlaxEditor.GUI
         /// <returns>Created popup.</returns>
         public static RenamePopup Show(Control control, Rectangle area, string value, bool isMultiline)
         {
+            // hardcoded flushing layout for tree controls
+            if (control is Tree.TreeNode treeNode && treeNode.ParentTree != null)
+                treeNode.ParentTree.FlushPendingPerformLayout();
+
             // Calculate the control size in the window space to handle scaled controls
             var upperLeft = control.PointToWindow(area.UpperLeft);
             var bottomRight = control.PointToWindow(area.BottomRight);

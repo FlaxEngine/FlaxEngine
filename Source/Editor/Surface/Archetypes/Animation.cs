@@ -810,7 +810,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Create = (id, context, arch, groupArch) => new StateMachineState(id, context, arch, groupArch),
                 Title = "State",
                 Description = "The animation states machine state node",
-                Flags = NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI | NodeFlags.NoSpawnViaPaste,
+                Flags = NodeFlags.AnimGraph | NodeFlags.NoSpawnViaGUI,
                 Size = new Float2(100, 0),
                 DefaultValues = new object[]
                 {

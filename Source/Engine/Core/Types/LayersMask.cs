@@ -32,11 +32,51 @@ namespace FlaxEngine
         /// <summary>
         /// Determines whether the specified layer is set in the mask.
         /// </summary>
-        /// <param name="layerName">Name of the layer (from layers settings).</param>
+        /// <param name="layerName">Name of the layer (from Layers settings).</param>
         /// <returns><c>true</c> if the specified layer is set; otherwise, <c>false</c>.</returns>
         public bool HasLayer(string layerName)
         {
             return HasLayer(Level.GetLayerIndex(layerName));
+        }
+
+        /// <summary>
+        /// Gets a layer mask based on a specific layer names.
+        /// </summary>
+        /// <param name="layerNames">The names of the layers (from Layers settings).</param>
+        /// <returns>A layer mask with the mask set to the layers found. Returns a mask with 0 if not found.</returns>
+        public static LayersMask GetMask(params string[] layerNames)
+        {
+            LayersMask mask = new LayersMask();
+            foreach (var layerName in layerNames)
+            {
+                // Ignore blank entries
+                if (string.IsNullOrEmpty(layerName))
+                    continue;
+                int index = Level.GetLayerIndex(layerName);
+                if (index != -1)
+                    mask.Mask |= (uint)(1 << index);
+            }
+            return mask;
+        }
+        
+        /// <summary>
+        /// Gets the layer index based on the layer name.
+        /// </summary>
+        /// <param name="layerName">The name of the layer.</param>
+        /// <returns>The index if found, otherwise, returns -1.</returns>
+        public static int GetLayerIndex(string layerName)
+        {
+            return Level.GetLayerIndex(layerName);
+        }
+
+        /// <summary>
+        /// Gets the layer name based on the layer index.
+        /// </summary>
+        /// <param name="layerIndex">The index of the layer.</param>
+        /// <returns>The name of the layer if found, otherwise, a blank string.</returns>
+        public static string GetLayerName(int layerIndex)
+        {
+            return Level.GetLayerName(layerIndex);
         }
 
         /// <summary>

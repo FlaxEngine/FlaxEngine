@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "Engine/Content/Assets/Texture.h"
+#include "Engine/Content/AssetReference.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Platform/Window.h"
 
@@ -18,10 +20,12 @@ private:
     Window* _window = nullptr;
     Font* _titleFont = nullptr;
     Font* _subtitleFont = nullptr;
+    AssetReference<Texture> _splashTexture;
     String _title;
     DateTime _startTime;
     String _infoText;
-    float _dpiScale, _width, _height;
+    float _dpiScale;
+    Float2 _size;
     StringView _quote;
 
 public:
@@ -78,4 +82,5 @@ private:
     void OnDraw();
     bool HasLoadedFonts() const;
     void OnFontLoaded(Asset* asset);
+    void OnSplashLoaded();
 };

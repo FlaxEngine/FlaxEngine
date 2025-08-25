@@ -13,15 +13,7 @@ namespace FlaxEditor.GUI
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     public class ToolStrip : ContainerControl
     {
-        /// <summary>
-        /// The default margin vertically.
-        /// </summary>
-        public const int DefaultMarginV = 1;
-
-        /// <summary>
-        /// The default margin horizontally.
-        /// </summary>
-        public const int DefaultMarginH = 2;
+        private Margin _itemsMargin;
 
         /// <summary>
         /// Event fired when button gets clicked with the primary mouse button.
@@ -67,9 +59,25 @@ namespace FlaxEditor.GUI
         }
 
         /// <summary>
+        /// Gets or sets the space around items.
+        /// </summary>
+        public Margin ItemsMargin
+        {
+            get => _itemsMargin;
+            set
+            {
+                if (_itemsMargin != value)
+                {
+                    _itemsMargin = value;
+                    PerformLayout();
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets the height for the items.
         /// </summary>
-        public float ItemsHeight => Height - 2 * DefaultMarginV;
+        public float ItemsHeight => Height - _itemsMargin.Height;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ToolStrip"/> class.
@@ -82,6 +90,7 @@ namespace FlaxEditor.GUI
             AnchorPreset = AnchorPresets.HorizontalStretchTop;
             BackgroundColor = Style.Current.LightBackground;
             Offsets = new Margin(0, 0, y, height * Editor.Instance.Options.Options.Interface.IconsScale);
+            _itemsMargin = new Margin(2, 2, 1, 1);
         }
 
         /// <summary>
@@ -161,7 +170,7 @@ namespace FlaxEditor.GUI
         protected override void PerformLayoutBeforeChildren()
         {
             // Arrange controls
-            float x = DefaultMarginH;
+            float x = _itemsMargin.Left;
             float h = ItemsHeight;
             for (int i = 0; i < _children.Count; i++)
             {
@@ -169,8 +178,8 @@ namespace FlaxEditor.GUI
                 if (c.Visible)
                 {
                     var w = c.Width;
-                    c.Bounds = new Rectangle(x, DefaultMarginV, w, h);
-                    x += w + DefaultMarginH;
+                    c.Bounds = new Rectangle(x, _itemsMargin.Top, w, h);
+                    x += w + _itemsMargin.Width;
                 }
             }
         }

@@ -394,6 +394,7 @@ private:
     void ApplyModifiedParameters();
     void OnParticleSystemModified();
     void OnParticleSystemLoaded();
+    void OnParticleEmitterLoaded();
 
     // [IAssetReference]
     void OnAssetChanged(Asset* asset, void* caller) override;

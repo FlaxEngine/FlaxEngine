@@ -56,7 +56,7 @@ static const uint g_numTaps[4] = { 3, 5, 8, 12 };
 #define SSAO_NORMAL_BASED_EDGES_ENABLE_AT_QUALITY_PRESET                (2)         // to disable simply set to 99 or similar
 #define SSAO_NORMAL_BASED_EDGES_DOT_THRESHOLD                           (0.5)       // use 0-0.1 for super-sharp normal-based edges
 //
-#define SSAO_DETAIL_AO_ENABLE_AT_QUALITY_PRESET                         (1)         // whether to use DetailAOStrength; to disable simply set to 99 or similar
+#define SSAO_DETAIL_AO_ENABLE_AT_QUALITY_PRESET                         (99)         // whether to use DetailAOStrength; to disable simply set to 99 or similar
 //
 #define SSAO_DEPTH_MIPS_ENABLE_AT_QUALITY_PRESET                        (99)         // !!warning!! the MIP generation on the C++ side will be enabled on quality preset 2 regardless of this value, so if changing here, change the C++ side too
 #define SSAO_DEPTH_MIPS_GLOBAL_OFFSET                                   (-4.3)      // best noise/quality/performance tradeoff, found empirically

@@ -199,7 +199,7 @@ namespace FlaxEditor.Surface.Archetypes
             private Label _labelValue;
             private FloatValueBox _timeValue;
             private ColorValueBox _colorValue;
-            private const int MaxStops = 8;
+            private const int MaxStops = 12;
 
             /// <inheritdoc />
             public ColorGradientNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
@@ -1386,10 +1386,11 @@ namespace FlaxEditor.Surface.Archetypes
                 Title = "Time",
                 Description = "Game time constant",
                 Flags = NodeFlags.MaterialGraph,
-                Size = new Float2(110, 20),
+                Size = new Float2(110, 40),
                 Elements = new[]
                 {
-                    NodeElementArchetype.Factory.Output(0, "", typeof(float), 0),
+                    NodeElementArchetype.Factory.Output(0, "Time", typeof(float), 0),
+                    NodeElementArchetype.Factory.Output(1, "Unscaled Time", typeof(float), 1),
                 }
             },
             new NodeArchetype
@@ -1506,7 +1507,11 @@ namespace FlaxEditor.Surface.Archetypes
                     0.95f,
                     Color.White,
 
-                    // Empty stops 2-7
+                    // Empty stops 2-11
+                    0.0f, Color.Black,
+                    0.0f, Color.Black,
+                    0.0f, Color.Black,
+                    0.0f, Color.Black,
                     0.0f, Color.Black,
                     0.0f, Color.Black,
                     0.0f, Color.Black,

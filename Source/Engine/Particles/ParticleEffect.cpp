@@ -551,6 +551,19 @@ void ParticleEffect::OnAssetChanged(Asset* asset, void* caller)
 void ParticleEffect::OnAssetLoaded(Asset* asset, void* caller)
 {
     ApplyModifiedParameters();
+#if USE_EDITOR
+    // When one of the emitters gets edited, cached parameters need to be applied
+    auto& emitters = ParticleSystem.Get()->Emitters;
+    for (auto& emitter : emitters)
+    {
+        emitter.Loaded.BindUnique<ParticleEffect, &ParticleEffect::OnParticleEmitterLoaded>(this);
+    }
+#endif
+}
+
+void ParticleEffect::OnParticleEmitterLoaded()
+{
+    ApplyModifiedParameters();
 }
 
 void ParticleEffect::OnAssetUnloaded(Asset* asset, void* caller)
@@ -843,6 +856,10 @@ void ParticleEffect::OnActiveInTreeChanged()
         // Invalidate the simulation
         CacheModifiedParameters();
         Instance.ClearState();
+    }
+    else
+    {
+        ApplyModifiedParameters();
     }
 }
 

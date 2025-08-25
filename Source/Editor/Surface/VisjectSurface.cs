@@ -416,6 +416,7 @@ namespace FlaxEditor.Surface
                 new InputActionsContainer.Binding(options => options.Cut, Cut),
                 new InputActionsContainer.Binding(options => options.Duplicate, Duplicate),
                 new InputActionsContainer.Binding(options => options.NodesAutoFormat, () => { FormatGraph(SelectedNodes); }),
+                new InputActionsContainer.Binding(options => options.NodesStraightenConnections, () => { StraightenGraphConnections(SelectedNodes); }),
                 new InputActionsContainer.Binding(options => options.NodesAlignTop, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Top); }),
                 new InputActionsContainer.Binding(options => options.NodesAlignMiddle, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Middle); }),
                 new InputActionsContainer.Binding(options => options.NodesAlignBottom, () => { AlignNodes(SelectedNodes, NodeAlignmentType.Bottom); }),
@@ -542,11 +543,12 @@ namespace FlaxEditor.Surface
                 nodes.Add(context);
                 context = context.Parent;
             }
+            float margin = 1;
             float x = NavigationBar.DefaultButtonsMargin;
-            float h = toolStrip.ItemsHeight - 2 * ToolStrip.DefaultMarginV;
+            float h = toolStrip.ItemsHeight - 2 * margin;
             for (int i = nodes.Count - 1; i >= 0; i--)
             {
-                var button = new VisjectContextNavigationButton(this, nodes[i].Context, x, ToolStrip.DefaultMarginV, h);
+                var button = new VisjectContextNavigationButton(this, nodes[i].Context, x, margin, h);
                 button.PerformLayout();
                 x += button.Width + NavigationBar.DefaultButtonsMargin;
                 navigationBar.AddChild(button);
