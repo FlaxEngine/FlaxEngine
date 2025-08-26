@@ -61,6 +61,7 @@ namespace FlaxEditor.Utilities
         /// <param name="value">The value.</param>
         public void SetMemberValue(object instance, object value)
         {
+            var originalInstance = instance;
             var finalMember = MemberPath.GetLastMember(ref instance);
 
             var type = finalMember.Type;
@@ -92,6 +93,12 @@ namespace FlaxEditor.Utilities
             }
 
             finalMember.SetValue(instance, value);
+
+            if (instance != originalInstance && finalMember.Index != null)
+            {
+                // Set collection back to the parent object (in case of properties that always return a new object like 'Spline.SplineKeyframes')
+                finalMember.Member.SetValue(originalInstance, instance);
+            }
         }
 
         /// <inheritdoc />
