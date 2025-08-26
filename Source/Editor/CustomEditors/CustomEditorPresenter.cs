@@ -338,6 +338,7 @@ namespace FlaxEditor.CustomEditors
         }
 
         private bool _buildOnUpdate;
+        private bool _initialized;
         private bool _readOnly;
 
         /// <summary>
@@ -425,6 +426,7 @@ namespace FlaxEditor.CustomEditors
 
             ClearLayout();
             _buildOnUpdate = false;
+            _initialized = true;
             Editor.Setup(this);
 
             Panel.IsLayoutLocked = false;
@@ -501,7 +503,11 @@ namespace FlaxEditor.CustomEditors
         /// </summary>
         protected virtual void OnSelectionChanged()
         {
-            BuildLayout();
+            // Defer building the layout after we have initialized to improve initial loading times
+            if (!_initialized)
+                _buildOnUpdate = true;
+            else
+                BuildLayout();
             SelectionChanged?.Invoke();
         }
 
