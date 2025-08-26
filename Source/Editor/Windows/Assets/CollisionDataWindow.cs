@@ -206,7 +206,7 @@ namespace FlaxEditor.Windows.Assets
 
                 if (ShowCollisionData)
                 {
-                    var text = string.Format("\nTriangles: {0:N0}\nVertices: {1:N0}\nMemory Size: {2:N0} bytes", _trianglesCount, _verticesCount, Asset.MemoryUsage);
+                    var text = string.Format("\nTriangles: {0:N0}\nVertices: {1:N0}\nMemory Size: {2}", _trianglesCount, _verticesCount, Utilities.Utils.FormatBytesCount(Asset.MemoryUsage));
                     var font = Style.Current.FontMedium;
                     var pos = new Float2(10, 50);
                     Render2D.DrawText(font, text, new Rectangle(pos + Float2.One, Size), Color.Black);
