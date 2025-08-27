@@ -756,13 +756,22 @@ namespace FlaxEditor.CustomEditors.Editors
                 return;
 
             var count = Count;
-            Resize(count + 1);
-            RefreshInternal(); // Force update values.
-            Shift(count, index + 1);
-            RefreshInternal(); // Force update values.
-            var cloned = CloneValues();
-            cloned[index + 1] = Utilities.Utils.CloneValue(cloned[index]);
-            SetValue(cloned);
+            var newValues = Allocate(count + 1);
+            var oldValues = (IList)Values[0];
+   
+            for (int i = 0; i <= index; i++)
+            {
+                newValues[i] = oldValues[i];
+            }
+
+            newValues[index + 1] = Utilities.Utils.CloneValue(oldValues[index]);
+
+            for (int i = index + 1; i < count; i++)
+            {
+                newValues[i + 1] = oldValues[i];
+            }
+
+            SetValue(newValues);
         }
 
         /// <summary>
