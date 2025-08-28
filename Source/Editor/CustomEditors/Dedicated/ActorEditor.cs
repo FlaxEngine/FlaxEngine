@@ -10,8 +10,6 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Scripting;
-using FlaxEditor.Windows;
-using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
@@ -304,7 +302,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             // Skip if no change detected
             var isRefEdited = editor.Values.IsReferenceValueModified;
-            if (!isRefEdited && skipIfNotModified)
+            if (!isRefEdited && skipIfNotModified && editor is not ScriptsEditor)
                 return null;
 
             TreeNode result = null;
@@ -438,6 +436,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
             Presenter.BuildLayoutOnUpdate();
         }
 
+        private static void GetAllPrefabObjects(List<object> objects, Actor actor)
+        {
+            objects.Add(actor);
+            objects.AddRange(actor.Scripts);
+            var children = actor.Children;
+            foreach (var child in children)
+                GetAllPrefabObjects(objects, child);
+        }
+
         private void OnDiffRevert(CustomEditor editor)
         {
             // Special case for removed Script from actor
@@ -471,7 +478,23 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 return;
             }
 
-            editor.RevertToReferenceValue();
+            if (Presenter.Undo != null && Presenter.Undo.Enabled)
+            {
+                var thisActor = (Actor)Values[0];
+                var rootActor = thisActor.IsPrefabRoot ? thisActor : thisActor.GetPrefabRoot();
+                var prefabObjects = new List<object>();
+                GetAllPrefabObjects(prefabObjects, rootActor);
+                using (new UndoMultiBlock(Presenter.Undo, prefabObjects, "Revert to Prefab"))
+                {
+                    editor.RevertToReferenceValue();
+                    editor.RefreshInternal();
+                }
+            }
+            else
+            {
+                editor.RevertToReferenceValue();
+                editor.RefreshInternal();
+            }
         }
     }
 }
