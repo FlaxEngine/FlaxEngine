@@ -167,7 +167,7 @@ void TextRender::UpdateLayout()
 
     // Pick a font (remove DPI text scale as the text is being placed in the world)
     auto font = Font->CreateFont(_size);
-    float scale = 1.0f / FontManager::FontScale;
+    float scale = _layoutOptions.Scale / FontManager::FontScale;
 
     // Prepare
     FontTextureAtlas* fontAtlas = nullptr;
