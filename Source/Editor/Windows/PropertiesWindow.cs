@@ -58,6 +58,9 @@ namespace FlaxEditor.Windows
             }
         }
 
+        /// <inheritdoc />
+        public ISceneEditingContext SceneContext => Editor.Windows.EditWin;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PropertiesWindow"/> class.
         /// </summary>

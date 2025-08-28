@@ -63,6 +63,11 @@ namespace FlaxEditor.CustomEditors
         /// Indication of if the properties window is locked on specific objects.
         /// </summary>
         public bool LockSelection { get; set; }
+
+        /// <summary>
+        /// Gets the scene editing context.
+        /// </summary>
+        public ISceneEditingContext SceneContext { get; }
     }
 
     /// <summary>
