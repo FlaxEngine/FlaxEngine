@@ -1,8 +1,9 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System.Collections.Generic;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Viewport;
+using FlaxEngine;
+using System.Collections.Generic;
 
 namespace FlaxEditor
 {
@@ -40,8 +41,22 @@ namespace FlaxEditor
         void RenameSelection();
 
         /// <summary>
+        /// Deletes selected objects.
+        /// </summary>
+        void DeleteSelection();
+
+        /// <summary>
         /// Focuses selected objects.
         /// </summary>
         void FocusSelection();
+
+        /// <summary>
+        /// Spawns the specified actor to the game (with undo).
+        /// </summary>
+        /// <param name="actor">The actor.</param>
+        /// <param name="parent">The parent actor. Set null as default.</param>
+        /// <param name="orderInParent">The order under the parent to put the spawned actor.</param>
+        /// <param name="autoSelect">True if automatically select the spawned actor, otherwise false.</param>
+        void Spawn(Actor actor, Actor parent = null, int orderInParent = -1, bool autoSelect = true);
     }
 }

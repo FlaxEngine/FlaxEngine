@@ -27,9 +27,21 @@ namespace FlaxEditor.Windows
         }
 
         /// <inheritdoc />
+        public void DeleteSelection()
+        {
+            Editor.SceneEditing.Delete();
+        }
+
+        /// <inheritdoc />
         public void FocusSelection()
         {
             Editor.Windows.EditWin.Viewport.FocusSelection();
+        }
+
+        /// <inheritdoc />
+        public void Spawn(Actor actor, Actor parent = null, int orderInParent = -1, bool autoSelect = true)
+        {
+            Editor.SceneEditing.Spawn(actor, parent, orderInParent, autoSelect);
         }
 
         /// <inheritdoc />

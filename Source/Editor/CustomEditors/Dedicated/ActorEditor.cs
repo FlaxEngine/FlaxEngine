@@ -1,8 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using FlaxEditor.Actions;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.CustomEditors.Elements;
@@ -10,10 +7,14 @@ using FlaxEditor.GUI;
 using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tree;
 using FlaxEditor.Scripting;
+using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
 using FlaxEngine.Json;
 using FlaxEngine.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -542,10 +543,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var prefabObjectId = removedActor.PrefabObject.PrefabObjectID;
                 string data = JsonSerializer.Serialize(removedActor.PrefabObject);
                 JsonSerializer.Deserialize(restored, data);
-                if (Presenter.Owner is PropertiesWindow propertiesWindow)
-                    Editor.Instance.SceneEditing.Spawn(restored, parentActor, removedActor.OrderInParent);
-                else if (Presenter.Owner is PrefabWindow prefabWindow)
-                    prefabWindow.Spawn(restored, parentActor, removedActor.OrderInParent);
+                Presenter.Owner.SceneContext.Spawn(restored, parentActor, removedActor.OrderInParent);
                 Actor.Internal_LinkPrefab(FlaxEngine.Object.GetUnmanagedPtr(restored), ref prefabId, ref prefabObjectId);
                 return;
             }
@@ -568,17 +566,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 Editor.Log("Reverting added actor changes to prefab (removing it)");
 
                 // TODO: Keep previous selection.
-                if (Presenter.Owner is PropertiesWindow propertiesWindow)
-                {
-                    var editorInstance = Editor.Instance.SceneEditing;
-                    editorInstance.Select(a);
-                    editorInstance.Delete();
-                }
-                else if (Presenter.Owner is PrefabWindow prefabWindow)
-                {
-                    prefabWindow.Select(prefabWindow.Graph.Root.Find(a));
-                    prefabWindow.Delete();
-                }
+                var context = Presenter.Owner.SceneContext;
+                context.Select(SceneGraph.SceneGraphFactory.FindNode(a.ID));
+                context.DeleteSelection();
 
                 return;
             }
