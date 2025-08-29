@@ -538,7 +538,7 @@ namespace Flax.Build.Bindings
                     if (token.Type == TokenType.Preprocessor)
                     {
                         OnPreProcessorToken(ref context, ref token);
-                        while (token.Type == TokenType.Newline)
+                        while (token.Type == TokenType.Newline || token.Value == "endif")
                             token = context.Tokenizer.NextToken();
                     }
                     if (token.Type == TokenType.Colon)
