@@ -749,6 +749,15 @@ namespace FlaxEditor.CustomEditors
             }
         }
 
+        private Actor FindActor(CustomEditor editor)
+        {
+            if (editor.Values[0] is Actor actor)
+                return actor;
+            if (editor.ParentEditor != null)
+                return FindActor(editor.ParentEditor);
+            return null;
+        }
+
         private Actor FindPrefabRoot(CustomEditor editor)
         {
             if (editor.Values[0] is Actor actor)
@@ -767,32 +776,35 @@ namespace FlaxEditor.CustomEditors
             return FindPrefabRoot(actor.Parent);
         }
 
-        private SceneObject FindObjectWithPrefabObjectId(Actor actor, ref Guid prefabObjectId)
+        private SceneObject FindObjectWithPrefabObjectId(Actor actor, ref Guid prefabObjectId, Actor endPoint)
         {
+            var visited = new HashSet<Actor>();
+            return FindObjectWithPrefabObjectId(actor, ref prefabObjectId, endPoint, visited);
+        }
+
+        private SceneObject FindObjectWithPrefabObjectId(Actor actor, ref Guid prefabObjectId, Actor endPoint, HashSet<Actor> visited)
+        {
+            if (visited.Contains(actor) || actor is Scene || actor == endPoint)
+                return null;
             if (actor.PrefabObjectID == prefabObjectId)
                 return actor;
 
             for (int i = 0; i < actor.ScriptsCount; i++)
             {
-                if (actor.GetScript(i).PrefabObjectID == prefabObjectId)
-                {
-                    var a = actor.GetScript(i);
-                    if (a != null)
-                        return a;
-                }
+                var script = actor.GetScript(i);
+                if (script != null && script.PrefabObjectID == prefabObjectId)
+                    return script;
             }
 
             for (int i = 0; i < actor.ChildrenCount; i++)
             {
-                if (actor.GetChild(i).PrefabObjectID == prefabObjectId)
-                {
-                    var a = actor.GetChild(i);
-                    if (a != null)
-                        return a;
-                }
+                var child = actor.GetChild(i);
+                if (child != null && child.PrefabObjectID == prefabObjectId)
+                    return child;
             }
 
-            return null;
+            // Go up in the hierarchy
+            return FindObjectWithPrefabObjectId(actor.Parent, ref prefabObjectId, endPoint, visited);
         }
 
         /// <summary>
@@ -826,7 +838,7 @@ namespace FlaxEditor.CustomEditors
                 }
 
                 var prefabObjectId = referenceSceneObject.PrefabObjectID;
-                var prefabInstanceRef = FindObjectWithPrefabObjectId(prefabInstanceRoot, ref prefabObjectId);
+                var prefabInstanceRef = FindObjectWithPrefabObjectId(FindActor(this), ref prefabObjectId, prefabInstanceRoot);
                 if (prefabInstanceRef == null)
                 {
                     Editor.LogWarning("Missing prefab instance reference in the prefab instance. Cannot revert to it.");
