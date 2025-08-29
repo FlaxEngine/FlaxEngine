@@ -423,6 +423,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 }
             }
 
+            if (editor is ScriptsEditor && result != null && result.ChildrenCount == 0)
+                return null;
+
             return result;
         }
 
