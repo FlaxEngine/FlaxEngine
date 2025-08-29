@@ -371,6 +371,7 @@ namespace FlaxEditor.Windows.Assets
             else
                 _viewport.SetInitialUIMode(_viewport._hasUILinked);
             _viewport.UIModeToggled += OnUIModeToggled;
+            _viewport.CreateViewScalingOptions();
             Graph.MainActor = _viewport.Instance;
             Selection.Clear();
             Select(Graph.Main);
@@ -565,6 +566,15 @@ namespace FlaxEditor.Windows.Assets
 
             _undo.Dispose();
             Graph.Dispose();
+        }
+
+        /// <inheritdoc />
+        protected override void OnClose()
+        {
+            // Save current UI view size state.
+            _viewport.SaveActiveUIScalingOption();
+   
+            base.OnClose();
         }
 
         /// <inheritdoc />
