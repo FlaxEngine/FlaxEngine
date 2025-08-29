@@ -4,6 +4,7 @@
 
 #include "Engine/Level/Actor.h"
 #include "Engine/Level/Actors/ModelInstanceActor.h"
+#include "IPhysicsDebug.h"
 
 // Used internally to validate cloth data against invalid nan/inf values
 #define USE_CLOTH_SANITY_CHECKS 0
@@ -12,6 +13,9 @@
 /// Physical simulation actor for cloth objects made of vertices that are simulated as cloth particles with physical properties, forces, and constraints to affect cloth behavior. 
 /// </summary>
 API_CLASS(Attributes="ActorContextMenu(\"New/Physics/Cloth\"), ActorToolbox(\"Physics\")") class FLAXENGINE_API Cloth : public Actor
+#if USE_EDITOR
+    , public IPhysicsDebug
+#endif
 {
     DECLARE_SCENE_OBJECT(Cloth);
 
@@ -364,9 +368,7 @@ protected:
     void OnPhysicsSceneChanged(PhysicsScene* previous) override;
 
 private:
-#if USE_EDITOR
-    void DrawPhysicsDebug(RenderView& view);
-#endif
+    ImplementPhysicsDebug;
     bool CreateCloth();
     void DestroyCloth();
     void CalculateInvMasses(Array<float>& invMasses);

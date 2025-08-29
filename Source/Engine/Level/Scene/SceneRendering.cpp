@@ -9,6 +9,7 @@
 #include "Engine/Threading/JobSystem.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Physics/Actors/IPhysicsDebug.h"
 
 ISceneRenderingListener::~ISceneRenderingListener()
 {
@@ -91,10 +92,10 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
         if (EnumHasAnyFlags(view.Flags, ViewFlags::PhysicsDebug) || view.Mode == ViewMode::PhysicsColliders)
         {
             PROFILE_CPU_NAMED("PhysicsDebug");
-            const PhysicsDebugCallback* physicsDebugData = PhysicsDebug.Get();
+            const auto* physicsDebugData = PhysicsDebug.Get();
             for (int32 i = 0; i < PhysicsDebug.Count(); i++)
             {
-                physicsDebugData[i](view);
+                physicsDebugData[i]->DrawPhysicsDebug(view);
             }
         }
 
