@@ -19,6 +19,7 @@
 #include "Engine/Animations/AnimEvent.h"
 #include "Engine/Level/Actors/EmptyActor.h"
 #include "Engine/Level/Actors/StaticModel.h"
+#include "Engine/Level/Actors/AnimatedModel.h"
 #include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Level/Scripts/ModelPrefab.h"
@@ -84,6 +85,7 @@ struct PrefabObject
     int32 NodeIndex;
     String Name;
     String AssetPath;
+    bool IsSkinned = false;
 };
 
 void RepackMeshLightmapUVs(ModelData& data)
@@ -320,8 +322,10 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
 
             return AssetsImportingManager::Import(context.InputPath, outputPath, &splitOptions);
         };
+
         auto splitOptions = options;
         LOG(Info, "Splitting imported {0} meshes", meshesByName.Count());
+        
         PrefabObject prefabObject;
         for (int32 groupIndex = 0; groupIndex < meshesByName.Count(); groupIndex++)
         {
@@ -331,7 +335,17 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
             prefabObject.NodeIndex = group.First()->NodeIndex;
             prefabObject.Name = group.First()->Name;
 
+            // Defaul value for ModelType
             splitOptions.Type = ModelTool::ModelType::Model;
+
+            // Search for Skinned Model
+            if (group.First()->BlendShapes.HasItems())
+            {
+                LOG(Info, "Mesh {0} is Skinned", prefabObject.Name);
+                splitOptions.Type = ModelTool::ModelType::SkinnedModel;
+                prefabObject.IsSkinned = true;
+            }
+            
             splitOptions.ObjectIndex = groupIndex;
             if (!splitImport(splitOptions, group.GetKey(), prefabObject.AssetPath, group.First()))
             {
@@ -594,8 +608,8 @@ CreateAssetResult ImportModel::Create(CreateAssetContext& context)
 CreateAssetResult ImportModel::CreateModel(CreateAssetContext& context, const ModelData& modelData, const Options* options)
 {
     PROFILE_CPU();
-    IMPORT_SETUP(Model, Model::SerializedVersion);
-    static_assert(Model::SerializedVersion == 30, "Update code.");
+        IMPORT_SETUP(Model, Model::SerializedVersion);
+        static_assert(Model::SerializedVersion == 30, "Update code.");
 
     // Save model header
     MemoryWriteStream stream(4096);
@@ -722,22 +736,30 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, const M
         {
             if (e.NodeIndex == nodeIndex)
             {
-                auto* actor = New<StaticModel>();
-                actor->SetName(e.Name);
-                if (auto* model = Content::LoadAsync<Model>(e.AssetPath))
+                if(e.IsSkinned)
                 {
-                    actor->Model = model;
+                    LOG(Info,"Model {0} is Animated", e.Name);
+                    auto* actor = New<AnimatedModel>();    
+                    actor->SetName(e.Name);  
+                    if (auto* skinnedModel = Content::LoadAsync<SkinnedModel>(e.AssetPath))
+                        actor->SkinnedModel = skinnedModel;
+                    nodeActors.Add(actor);   
                 }
-                nodeActors.Add(actor);
+                else
+                {
+                    auto* actor = New<StaticModel>();
+                    actor->SetName(e.Name);
+                    if (auto* model = Content::LoadAsync<Model>(e.AssetPath))
+                        actor->Model = model;
+                    nodeActors.Add(actor);
+                }
             }
         }
         Actor* nodeActor = nodeActors.Count() == 1 ? nodeActors[0] : New<EmptyActor>();
         if (nodeActors.Count() > 1)
         {
             for (Actor* e : nodeActors)
-            {
                 e->SetParent(nodeActor);
-            }
         }
         if (nodeActors.Count() != 1)
         {
