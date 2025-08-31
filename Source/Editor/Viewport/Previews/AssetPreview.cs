@@ -164,7 +164,7 @@ namespace FlaxEditor.Viewport.Previews
             Real orbitRadius = 200.0f;
             if (camera is ArcBallCamera arcBallCamera)
                 orbitRadius = arcBallCamera.OrbitRadius;
-            camera.SetArcBallView(orbitRadius);
+            camera.SetArcBallView(Quaternion.Euler(15f, -45f, 0f), Vector3.Zero, orbitRadius);
 
             if (useWidgets)
             {
