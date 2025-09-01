@@ -149,7 +149,7 @@ namespace FlaxEditor.Viewport.Cameras
         /// Sets view orientation and position to match the arc ball camera style view for the given orbit radius.
         /// </summary>
         /// <param name="orbitRadius">The orbit radius.</param>
-        public void SetArcBallView(float orbitRadius)
+        public void SetArcBallView(Real orbitRadius)
         {
             SetArcBallView(arcBallOrientation, Vector3.Zero, orbitRadius);
         }
