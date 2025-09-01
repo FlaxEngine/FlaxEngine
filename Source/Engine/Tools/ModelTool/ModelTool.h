@@ -108,14 +108,14 @@ public:
     /// </summary>
     API_ENUM(Attributes="HideInEditor") enum class ModelType : int32
     {
-        // The prefab scene.
-        Prefab = 0,
         // The model asset.
-        Model = 1,
+        Model = 0,
         // The skinned model asset.
-        SkinnedModel = 2,
+        SkinnedModel = 1,
         // The animation asset.
-        Animation = 3,
+        Animation = 2,
+        // The prefab scene.
+        Prefab = 3,
     };
 
     /// <summary>
@@ -173,7 +173,7 @@ public:
 
         // Type of the imported asset.
         API_FIELD(Attributes="EditorOrder(0)")
-        ModelType Type = ModelType::Prefab;
+        ModelType Type = ModelType::Model;
 
     public: // Geometry
 
