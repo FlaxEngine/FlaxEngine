@@ -535,7 +535,7 @@ PACK_STRUCT(struct PackedSortKeyDistance
 static_assert(sizeof(PackedSortKey) == sizeof(uint64), "Invalid sort key size");
 static_assert(sizeof(PackedSortKeyDistance) == sizeof(uint64), "Invalid sort key size");
 
-FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall, DrawPass drawModes, int8 sortOrder)
+FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall, int8 sortOrder)
 {
     const Float3 planeNormal = renderContext.View.Direction;
     const float planePoint = -Float3::Dot(planeNormal, renderContext.View.Position);
@@ -550,25 +550,13 @@ FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall&
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
-    if ((drawModes & DrawPass::Forward) != DrawPass::None)
-    {
-        // Distance takes precedence over batching efficiency
-        PackedSortKeyDistance key;
-        key.BatchKey = (uint16)batchKey;
-        key.DistanceKey = distanceKey;
-        key.DrawKey = (uint8)drawKey;
-        key.SortKey = (uint8)(sortOrder - MIN_int8);
-        drawCall.SortKey = *(uint64*)&key;
-    }
-    else
-    {
-        PackedSortKey key;
-        key.BatchKey = (uint16)batchKey;
-        key.DistanceKey = distanceKey;
-        key.DrawKey = (uint8)drawKey;
-        key.SortKey = (uint8)(sortOrder - MIN_int8);
-        drawCall.SortKey = *(uint64*)&key;
-    }
+
+    PackedSortKey key;
+    key.BatchKey = (uint16)batchKey;
+    key.DistanceKey = distanceKey;
+    key.DrawKey = (uint8)drawKey;
+    key.SortKey = (uint8)(sortOrder - MIN_int8);
+    drawCall.SortKey = *(uint64*)&key;
 }
 
 void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals, int8 sortOrder)
@@ -580,7 +568,7 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
 #endif
 
     // Append draw call data
-    CalculateSortKey(renderContext, drawCall, drawModes, sortOrder);
+    CalculateSortKey(renderContext, drawCall, sortOrder);
     const int32 index = DrawCalls.Add(drawCall);
 
     // Add draw call to proper draw lists
@@ -619,7 +607,7 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
     const RenderContext& mainRenderContext = renderContextBatch.Contexts.Get()[0];
 
     // Append draw call data
-    CalculateSortKey(mainRenderContext, drawCall, drawModes, sortOrder);
+    CalculateSortKey(mainRenderContext, drawCall, sortOrder);
     const int32 index = DrawCalls.Add(drawCall);
 
     // Add draw call to proper draw lists
@@ -714,15 +702,19 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     // Setup sort keys
     if (reverseDistance)
     {
-        if (listType == DrawCallsListType::Forward) // Transparency uses distance over batching for correct draw order
+        if (listType == DrawCallsListType::Forward)
         {
+            // Transparency uses distance to take precedence over batching efficiency for correct draw order
             for (int32 i = 0; i < listSize; i++)
             {
                 const DrawCall& drawCall = drawCallsData[listData[i]];
-                PackedSortKeyDistance key = *(PackedSortKeyDistance*)&drawCall.SortKey;
-                key.DistanceKey ^= MAX_uint32; // Reverse depth
-                key.SortKey ^= MAX_uint8; // Reverse sort order
-                sortedKeys[i] = *(uint64*)&key;
+                PackedSortKey key = *(PackedSortKey*)&drawCall.SortKey;
+                PackedSortKeyDistance forwardKey;
+                forwardKey.BatchKey = key.BatchKey;
+                forwardKey.DistanceKey = key.DistanceKey ^ MAX_uint32; // Reverse depth
+                forwardKey.DrawKey = key.DrawKey;
+                forwardKey.SortKey = key.SortKey ^ MAX_uint8; // Reverse sort order
+                sortedKeys[i] = *(uint64*)&forwardKey;
             }
         }
         else
