@@ -417,7 +417,7 @@ public:
     template<typename ItemType>
     bool Add(const ItemType& item)
     {
-        Bucket* bucket = Base::OnAdd(item, false);
+        Bucket* bucket = Base::OnAdd(item, false, true);
         if (bucket)
             bucket->Occupy(item);
         return bucket != nullptr;
@@ -430,7 +430,7 @@ public:
     /// <returns>True if element has been added to the collection, otherwise false if the element is already present.</returns>
     bool Add(T&& item)
     {
-        Bucket* bucket = Base::OnAdd(item, false);
+        Bucket* bucket = Base::OnAdd(item, false, true);
         if (bucket)
             bucket->Occupy(MoveTemp(item));
         return bucket != nullptr;

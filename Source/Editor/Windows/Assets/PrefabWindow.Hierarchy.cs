@@ -431,6 +431,12 @@ namespace FlaxEditor.Windows.Assets
         }
 
         /// <inheritdoc />
+        public void DeleteSelection()
+        {
+            Delete();
+        }
+
+        /// <inheritdoc />
         public void FocusSelection()
         {
             _viewport.FocusSelection();
@@ -488,7 +494,8 @@ namespace FlaxEditor.Windows.Assets
         /// <param name="actor">The actor.</param>
         /// <param name="parent">The parent.</param>
         /// <param name="orderInParent">The order of the actor under the parent.</param>
-        public void Spawn(Actor actor, Actor parent, int orderInParent = -1)
+        /// <param name="autoSelect">True if automatically select the spawned actor, otherwise false.</param>
+        public void Spawn(Actor actor, Actor parent, int orderInParent = -1, bool autoSelect = true)
         {
             if (actor == null)
                 throw new ArgumentNullException(nameof(actor));
@@ -514,8 +521,11 @@ namespace FlaxEditor.Windows.Assets
             // Create undo action
             var action = new CustomDeleteActorsAction(new List<SceneGraphNode>(1) { actorNode }, true);
             Undo.AddAction(action);
-            Focus();
-            Select(actorNode);
+            if (autoSelect)
+            {
+                Focus();
+                Select(actorNode);
+            }
         }
 
         private void OnTreeRightClick(TreeNode node, Float2 location)

@@ -11,6 +11,7 @@
 
 class SceneRenderTask;
 class SceneRendering;
+class IPhysicsDebug;
 struct PostProcessSettings;
 struct RenderContext;
 struct RenderContextBatch;
@@ -74,7 +75,6 @@ public:
 class FLAXENGINE_API SceneRendering
 {
 #if USE_EDITOR
-    typedef Function<void(RenderView&)> PhysicsDebugCallback;
     typedef Function<void(RenderView&)> LightsDebugCallback;
     friend class ViewportIconsRendererService;
 #endif
@@ -106,7 +106,7 @@ public:
 
 private:
 #if USE_EDITOR
-    Array<PhysicsDebugCallback> PhysicsDebug;
+    Array<IPhysicsDebug*> PhysicsDebug;
     Array<LightsDebugCallback> LightsDebug;
     Array<Actor*> ViewportIcons;
 #endif
@@ -150,20 +150,14 @@ public:
     }
 
 #if USE_EDITOR
-    template<class T, void(T::*Method)(RenderView&)>
-    FORCE_INLINE void AddPhysicsDebug(T* obj)
+    FORCE_INLINE void AddPhysicsDebug(IPhysicsDebug* obj)
     {
-        PhysicsDebugCallback f;
-        f.Bind<T, Method>(obj);
-        PhysicsDebug.Add(f);
+        PhysicsDebug.Add(obj);
     }
 
-    template<class T, void(T::*Method)(RenderView&)>
-    void RemovePhysicsDebug(T* obj)
+    FORCE_INLINE void RemovePhysicsDebug(IPhysicsDebug* obj)
     {
-        PhysicsDebugCallback f;
-        f.Bind<T, Method>(obj);
-        PhysicsDebug.Remove(f);
+        PhysicsDebug.Remove(obj);
     }
 
     template<class T, void(T::*Method)(RenderView&)>

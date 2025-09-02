@@ -304,6 +304,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
 {
     for (int32 instanceIndex = 0; instanceIndex < prefabInstancesData.Count(); instanceIndex++)
     {
+        PROFILE_CPU_NAMED("Instance");
         auto& instance = prefabInstancesData[instanceIndex];
         ISerializeModifierCacheType modifier = Cache::ISerializeModifier.Get();
         Scripting::ObjectsLookupIdMapping.Set(&modifier.Value->IdsMapping);
@@ -377,6 +378,10 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
             sceneObjects->Add(obj);
         }
 
+        // Generate nested prefab instances to properly handle Ids Mapping within each nested prefab
+        SceneObjectsFactory::PrefabSyncData prefabSyncData(*sceneObjects.Value, instance.Data, modifier.Value);
+        SceneObjectsFactory::SetupPrefabInstances(context, prefabSyncData);
+
         // Apply modifications
         for (int32 i = existingObjectsCount - 1; i >= 0; i--)
         {
@@ -388,6 +393,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                 if (prefabObjectIdToDiffData.TryGet(obj->GetPrefabObjectID(), data))
                 {
                     // Apply prefab changes
+                    context.SetupIdsMapping(obj, modifier.Value);
                     obj->Deserialize(*(ISerializable::DeserializeStream*)data, modifier.Value);
                 }
                 else
@@ -424,7 +430,6 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
         for (int32 i = 0; i < sceneObjects->Count(); i++)
         {
             SceneObject* obj = sceneObjects->At(i);
-
             int32 dataIndex;
             if (instance.PrefabInstanceIdToDataIndex.TryGet(obj->GetSceneObjectId(), dataIndex))
             {
@@ -440,6 +445,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
                 data.RemoveMember("ParentID");
 #endif
 
+                context.SetupIdsMapping(obj, modifier.Value);
                 obj->Deserialize(data, modifier.Value);
 
                 // Preserve order in parent (values from prefab are used)
@@ -527,6 +533,7 @@ bool PrefabInstanceData::SynchronizePrefabInstances(PrefabInstancesData& prefabI
 {
     if (prefabInstancesData.IsEmpty())
         return false;
+    PROFILE_CPU();
 
     // Fully serialize default instance scene objects (accumulate all prefab and nested prefabs changes into a single linear list of objects)
     rapidjson_flax::Document defaultInstanceData;
@@ -926,7 +933,6 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
         // TODO: what if user applied prefab with references to the other objects from scene? clear them or what?
         JsonTools::ChangeIds(diffDataDocument, objectInstanceIdToPrefabObjectId);
     }
-    dataBuffer.Clear();
     CollectionPoolCache<ActorsCache::SceneObjectsListType>::ScopeCache sceneObjects = ActorsCache::SceneObjectsListCache.Get();
 
     // Destroy default instance and some cache data in Prefab
@@ -1002,6 +1008,32 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
             obj->RegisterObject();
         }
 
+        // Generate nested prefab instances to properly handle Ids Mapping within each nested prefab
+        rapidjson_flax::Document targetDataDocument;
+        if (NestedPrefabs.HasItems())
+        {
+            targetDataDocument.Parse(dataBuffer.GetString(), dataBuffer.GetSize());
+            SceneObjectsFactory::PrefabSyncData prefabSyncData(*sceneObjects.Value, targetDataDocument, modifier.Value);
+            SceneObjectsFactory::SetupPrefabInstances(context, prefabSyncData);
+
+            if (context.Instances.HasItems())
+            {
+                // Only main prefab instance is allowed (in case nested prefab was added to this prefab)
+                for (auto i = context.ObjectToInstance.Begin(); i.IsNotEnd(); ++i)
+                {
+                    if (i->Value != 0)
+                        context.ObjectToInstance.Remove(i);
+                }
+                context.Instances.Resize(1);
+
+                // Trash object mapping to prevent messing up prefab structure when applying hierarchy changes (only nested instances are used)
+                context.Instances[0].IdsMapping.Clear();
+            }
+        }
+
+        dataBuffer.Clear();
+        auto originalIdsMapping = modifier.Value->IdsMapping;
+
         // Deserialize prefab objects and apply modifications
         for (int32 i = 0; i < ObjectsCount; i++)
         {
@@ -1036,6 +1068,9 @@ bool Prefab::ApplyAllInternal(Actor* targetActor, bool linkTargetActorObjectToPr
                 PrefabInstanceData::DeletePrefabObject(obj, i, sceneObjects, false);
             }
         }
+
+        // Use the initial Ids Mapping (SetupIdsMapping overrides it for instanced prefabs)
+        modifier.Value->IdsMapping = originalIdsMapping;
 
         // Deserialize new prefab objects
         newPrefabInstanceIdToDataIndexCounter = 0;
@@ -1282,6 +1317,10 @@ bool Prefab::UpdateInternal(const Array<SceneObject*>& defaultInstanceObjects, r
             ASSERT(!ObjectsDataCache.ContainsKey(objectId));
             ObjectsDataCache.Add(objectId, &objData);
             ObjectsCount++;
+
+            Guid parentID;
+            if (JsonTools::GetGuidIfValid(parentID, objData, "ParentID"))
+                ObjectsHierarchyCache[parentID].Add(objectId);
 
             Guid prefabId = JsonTools::GetGuid(objData, "PrefabID");
             if (prefabId.IsValid() && !NestedPrefabs.Contains(prefabId))

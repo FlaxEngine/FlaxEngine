@@ -145,7 +145,7 @@ void Collider::OnEnable()
     if (EnumHasAnyFlags(_staticFlags, StaticFlags::Navigation) && !_isTrigger)
         GetScene()->Navigation.Actors.Add(this);
 #if USE_EDITOR
-    GetSceneRendering()->AddPhysicsDebug<Collider, &Collider::DrawPhysicsDebug>(this);
+    GetSceneRendering()->AddPhysicsDebug(this);
 #endif
 
     PhysicsColliderActor::OnEnable();
@@ -158,7 +158,7 @@ void Collider::OnDisable()
     if (EnumHasAnyFlags(_staticFlags, StaticFlags::Navigation) && !_isTrigger)
         GetScene()->Navigation.Actors.Remove(this);
 #if USE_EDITOR
-    GetSceneRendering()->RemovePhysicsDebug<Collider, &Collider::DrawPhysicsDebug>(this);
+    GetSceneRendering()->RemovePhysicsDebug(this);
 #endif
 }
 
@@ -283,14 +283,6 @@ void Collider::RemoveStaticActor()
     PhysicsBackend::DestroyActor(_staticActor);
     _staticActor = nullptr;
 }
-
-#if USE_EDITOR
-
-void Collider::DrawPhysicsDebug(RenderView& view)
-{
-}
-
-#endif
 
 void Collider::BeginPlay(SceneBeginData* data)
 {

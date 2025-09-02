@@ -5,6 +5,7 @@
 #include "Engine/Level/Actor.h"
 #include "Engine/Physics/Types.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
+#include "Engine/Physics/Actors/IPhysicsDebug.h"
 
 class IPhysicsActor;
 
@@ -17,6 +18,9 @@ class IPhysicsActor;
 /// </remarks>
 /// <seealso cref="Actor" />
 API_CLASS(Abstract) class FLAXENGINE_API Joint : public Actor
+#if USE_EDITOR
+    , public IPhysicsDebug
+#endif
 {
     DECLARE_SCENE_OBJECT_ABSTRACT(Joint);
 protected:
@@ -174,9 +178,7 @@ protected:
     Vector3 GetTargetPosition() const;
     Quaternion GetTargetOrientation() const;
     virtual void* CreateJoint(const struct PhysicsJointDesc& desc) = 0;
-#if USE_EDITOR
-    virtual void DrawPhysicsDebug(RenderView& view);
-#endif
+    ImplementPhysicsDebug;
 
 private:
     void Delete();

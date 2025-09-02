@@ -356,19 +356,19 @@ void WheeledVehicle::Setup()
 void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
 {
     // Wheels shapes
-    for (const auto& data : _wheelsData)
+    for (const auto& wheel : _wheels)
     {
-        int32 wheelIndex = 0;
-        for (; wheelIndex < _wheels.Count(); wheelIndex++)
-        {
-            if (_wheels[wheelIndex].Collider == data.Collider)
-                break;
-        }
-        if (wheelIndex == _wheels.Count())
-            break;
-        const auto& wheel = _wheels[wheelIndex];
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
         {
+            WheelData data = { wheel.Collider, wheel.Collider->GetLocalOrientation() };
+            for (auto& e : _wheelsData)
+            {
+                if (e.Collider == data.Collider)
+                {
+                    data = e;
+                    break;
+                }
+            }
             const Vector3 currentPos = wheel.Collider->GetPosition();
             const Vector3 basePos = currentPos - Vector3(0, data.State.SuspensionOffset, 0);
             const Quaternion wheelDebugOrientation = GetOrientation() * Quaternion::Euler(-data.State.RotationAngle, data.State.SteerAngle, 0) * Quaternion::Euler(90, 0, 90);
@@ -387,25 +387,28 @@ void WheeledVehicle::DrawPhysicsDebug(RenderView& view)
 void WheeledVehicle::OnDebugDrawSelected()
 {
     // Wheels shapes
-    for (const auto& data : _wheelsData)
+    for (const auto& wheel : _wheels)
     {
-        int32 wheelIndex = 0;
-        for (; wheelIndex < _wheels.Count(); wheelIndex++)
-        {
-            if (_wheels[wheelIndex].Collider == data.Collider)
-                break;
-        }
-        if (wheelIndex == _wheels.Count())
-            break;
-        const auto& wheel = _wheels[wheelIndex];
         if (wheel.Collider && wheel.Collider->GetParent() == this && !wheel.Collider->GetIsTrigger())
         {
+            WheelData data = { wheel.Collider, wheel.Collider->GetLocalOrientation() };
+            for (auto& e : _wheelsData)
+            {
+                if (e.Collider == data.Collider)
+                {
+                    data = e;
+                    break;
+                }
+            }
             const Vector3 currentPos = wheel.Collider->GetPosition();
             const Vector3 basePos = currentPos - Vector3(0, data.State.SuspensionOffset, 0);
             const Quaternion wheelDebugOrientation = GetOrientation() * Quaternion::Euler(-data.State.RotationAngle, data.State.SteerAngle, 0) * Quaternion::Euler(90, 0, 90);
-            Transform actorPose = Transform::Identity, shapePose = Transform::Identity;
-            PhysicsBackend::GetRigidActorPose(_actor, actorPose.Translation, actorPose.Orientation);
-            PhysicsBackend::GetShapeLocalPose(wheel.Collider->GetPhysicsShape(), shapePose.Translation, shapePose.Orientation);
+            Transform actorPose = GetTransform(), shapePose = wheel.Collider->GetLocalTransform();
+            actorPose.Scale = Float3::One;
+            if (_actor)
+                PhysicsBackend::GetRigidActorPose(_actor, actorPose.Translation, actorPose.Orientation);
+            if (wheel.Collider->GetPhysicsShape())
+                PhysicsBackend::GetShapeLocalPose(wheel.Collider->GetPhysicsShape(), shapePose.Translation, shapePose.Orientation);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(basePos, wheel.Radius * 0.07f), Color::Blue * 0.3f, 0, false);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(currentPos, wheel.Radius * 0.08f), Color::Blue * 0.8f, 0, false);
             DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(actorPose.LocalToWorld(shapePose.Translation), wheel.Radius * 0.11f), Color::OrangeRed * 0.8f, 0, false);
@@ -561,14 +564,14 @@ void WheeledVehicle::BeginPlay(SceneBeginData* data)
 #endif
 
 #if USE_EDITOR
-    GetSceneRendering()->AddPhysicsDebug<WheeledVehicle, &WheeledVehicle::DrawPhysicsDebug>(this);
+    GetSceneRendering()->AddPhysicsDebug(this);
 #endif
 }
 
 void WheeledVehicle::EndPlay()
 {
 #if USE_EDITOR
-    GetSceneRendering()->RemovePhysicsDebug<WheeledVehicle, &WheeledVehicle::DrawPhysicsDebug>(this);
+    GetSceneRendering()->RemovePhysicsDebug(this);
 #endif
 
 #if WITH_VEHICLE

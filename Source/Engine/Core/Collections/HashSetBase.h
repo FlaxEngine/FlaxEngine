@@ -365,7 +365,7 @@ protected:
     }
 
     template<typename KeyComparableType>
-    BucketType* OnAdd(const KeyComparableType& key, bool checkUnique = true)
+    BucketType* OnAdd(const KeyComparableType& key, bool checkUnique = true, bool nullIfNonUnique = false)
     {
         // Check if need to rehash elements (prevent many deleted elements that use too much of capacity)
         if (_deletedCount * HASH_SET_DEFAULT_SLACK_SCALE > _size)
@@ -386,6 +386,8 @@ protected:
                 Platform::CheckFailed("That key has been already added to the collection.", __FILE__, __LINE__);
                 return nullptr;
             }
+            if (nullIfNonUnique)
+                return nullptr;
             return &_allocation.Get()[pos.ObjectIndex];
         }
 

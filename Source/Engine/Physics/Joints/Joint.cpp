@@ -298,7 +298,7 @@ void Joint::EndPlay()
 
 void Joint::OnEnable()
 {
-    GetSceneRendering()->AddPhysicsDebug<Joint, &Joint::DrawPhysicsDebug>(this);
+    GetSceneRendering()->AddPhysicsDebug(this);
 
     // Base
     Actor::OnEnable();
@@ -306,7 +306,7 @@ void Joint::OnEnable()
 
 void Joint::OnDisable()
 {
-    GetSceneRendering()->RemovePhysicsDebug<Joint, &Joint::DrawPhysicsDebug>(this);
+    GetSceneRendering()->RemovePhysicsDebug(this);
 
     // Base
     Actor::OnDisable();

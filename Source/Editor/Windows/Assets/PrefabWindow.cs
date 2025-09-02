@@ -91,6 +91,9 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
+        /// <inheritdoc />
+        public ISceneEditingContext SceneContext => this;
+
         /// <summary>
         /// Gets or sets a value indicating whether use live reloading for the prefab changes (applies prefab changes on modification by auto).
         /// </summary>

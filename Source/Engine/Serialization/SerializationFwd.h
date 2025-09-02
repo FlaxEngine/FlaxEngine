@@ -80,7 +80,7 @@ class ISerializeModifier;
 // Explicit auto-cast for object pointer
 
 #define SERIALIZE_OBJ(name) \
-    if (Serialization::ShouldSerialize((const ScriptingObject*&)name, other ? &other->name : nullptr)) \
+    if (Serialization::ShouldSerialize(name, decltype(name)(other ? &other->name : nullptr))) \
 	{ \
 		stream.JKEY(#name); \
 		Serialization::Serialize(stream, (const ScriptingObject*&)name, other ? &other->name : nullptr); \

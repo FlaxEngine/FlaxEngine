@@ -16,6 +16,13 @@
 class FLAXENGINE_API SceneObjectsFactory
 {
 public:
+    struct NestedPrefabInstance
+    {
+        Prefab* Prefab;
+        Guid RootObjectId;
+        Dictionary<Guid, Guid> IdsMapping;
+    };
+
     struct PrefabInstance
     {
         int32 StatIndex;
@@ -24,6 +31,8 @@ public:
         Prefab* Prefab;
         bool FixRootParent = false;
         Dictionary<Guid, Guid> IdsMapping;
+        Array<NestedPrefabInstance> Nested;
+        Dictionary<Guid, int32> ObjectToNested;
     };
 
     struct Context
@@ -136,5 +145,5 @@ public:
 
 private:
     static void SynchronizeNewPrefabInstances(Context& context, PrefabSyncData& data, Prefab* prefab, Actor* actor, const Guid& actorPrefabObjectId, int32 i, const ISerializable::DeserializeStream& stream);
-    static void SynchronizeNewPrefabInstance(Context& context, PrefabSyncData& data, Prefab* prefab, Actor* actor, const Guid& prefabObjectId);
+    static void SynchronizeNewPrefabInstance(Context& context, PrefabSyncData& data, Prefab* prefab, Actor* actor, const Guid& prefabObjectId, const Guid& nestedInstanceId);
 };
