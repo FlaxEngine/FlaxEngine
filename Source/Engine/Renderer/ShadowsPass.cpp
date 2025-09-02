@@ -1368,10 +1368,11 @@ RETRY_ATLAS_SETUP:
                     tile.LinkedRectTile = nullptr;
                     auto& linkedTile = linkedAtlasLight->Tiles[tileIndex];
 
-                    // Check if both lights use the same projections
-                    if (tile.WorldToShadow == linkedTile.WorldToShadow && linkedTile.RectTile)
+                    // Link tile and use its projection
+                    if (linkedTile.RectTile)
                     {
                         tile.LinkedRectTile = linkedTile.RectTile;
+                        tile.WorldToShadow = linkedTile.WorldToShadow;
                     }
                 }
             }
