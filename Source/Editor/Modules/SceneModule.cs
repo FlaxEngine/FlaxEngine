@@ -568,6 +568,10 @@ namespace FlaxEditor.Modules
                 return;
             }
 
+            // Skip if already added
+            if (SceneGraphFactory.Nodes.ContainsKey(actor.ID))
+                return;
+
             var node = SceneGraphFactory.BuildActorNode(actor);
             if (node != null)
             {
