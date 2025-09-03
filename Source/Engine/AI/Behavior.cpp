@@ -108,12 +108,7 @@ void Behavior::UpdateAsync()
         _result = result;
     if (_result != BehaviorUpdateResult::Running && tree->Graph.Root->Loop)
     {
-        // Ensure to have tree loaded on play
-        CHECK(Tree && !Tree->WaitForLoaded());
-        BehaviorTree* tree = Tree.Get();
-        CHECK(tree->Graph.Root);
-
-        // Setup state
+        // Reset State
         _result = BehaviorUpdateResult::Running;
         _accumulatedTime = 0.0f;
         _totalTime = 0;
