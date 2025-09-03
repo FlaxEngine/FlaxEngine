@@ -461,6 +461,25 @@ bool DrawCallsList::IsEmpty() const
     return Indices.Count() + PreBatchedDrawCalls.Count() == 0;
 }
 
+RenderListAlloc::~RenderListAlloc()
+{
+    if (!List && Data) // Render List memory doesn't need free (arena allocator)
+        RendererAllocation::Free(Data, Size);
+}
+
+void* RenderListAlloc::Init(RenderList* list, uintptr size, uintptr alignment)
+{
+    ASSERT_LOW_LAYER(!Data);
+    Size = size;
+    bool useList = alignment <= 16 && size < 1024;
+    List = useList ? list : nullptr;
+    if (useList)
+        Data = list->Memory.Allocate(size, alignment);
+    else
+        Data = RendererAllocation::Allocate(size);
+    return Data;
+}
+
 RenderList::RenderList(const SpawnParams& params)
     : ScriptingObject(params)
     , Memory(4 * 1024 * 1024, RendererAllocation::Allocate, RendererAllocation::Free) // 4MB pages, use page pooling via RendererAllocation
@@ -692,12 +711,10 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     ZoneValue(listSize);
 
     // Use shared memory from renderer allocator
-    Array<uint64, RendererAllocation> SortingKeys[2];
-    Array<int32, RendererAllocation> SortingIndices;
-    SortingKeys[0].Resize(listSize);
-    SortingKeys[1].Resize(listSize);
-    SortingIndices.Resize(listSize);
-    uint64* sortedKeys = SortingKeys[0].Get();
+    RenderListAlloc allocs[3];
+    uint64* sortedKeys = allocs[0].Init<uint64>(this, listSize);
+    uint64* tempKeys = allocs[1].Init<uint64>(this, listSize);
+    int32* tempIndices = allocs[2].Init<int32>(this, listSize);
 
     // Setup sort keys
     if (reverseDistance)
@@ -740,7 +757,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
 
     // Sort draw calls indices
     int32* resultIndices = list.Indices.Get();
-    Sorting::RadixSort(sortedKeys, resultIndices, SortingKeys[1].Get(), SortingIndices.Get(), listSize);
+    Sorting::RadixSort(sortedKeys, resultIndices, tempKeys, tempIndices, listSize);
     if (resultIndices != list.Indices.Get())
         Platform::MemoryCopy(list.Indices.Get(), resultIndices, sizeof(int32) * listSize);
 

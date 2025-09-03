@@ -210,31 +210,10 @@ void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
             const int32 stride = buffer->Stride;
             const int32 listSize = buffer->CPU.Count;
             const int32 indicesByteSize = listSize * buffer->GPU.SortedIndices->GetStride();
-            Array<uint32, RendererAllocation> sortingKeysList[4];
-            Array<byte, RendererAllocation> sortingIndicesList[2];
-            uint32* sortingKeys[2];
-            void* sortingIndices[2];
-            if (listSize < 500)
-            {
-                // Use fast stack allocator from RenderList
-                auto& memory = renderContextBatch.GetMainContext().List->Memory;
-                sortingKeys[0] = memory.Allocate<uint32>(listSize);
-                sortingKeys[1] = memory.Allocate<uint32>(listSize);
-                sortingIndices[0] = memory.Allocate(indicesByteSize, GPU_SHADER_DATA_ALIGNMENT);
-                sortingIndices[1] = memory.Allocate(indicesByteSize, GPU_SHADER_DATA_ALIGNMENT);
-            }
-            else
-            {
-                // Use shared pooled memory from RendererAllocation
-                sortingKeysList[0].Resize(listSize);
-                sortingKeysList[1].Resize(listSize);
-                sortingIndicesList[0].Resize(indicesByteSize);
-                sortingIndicesList[1].Resize(indicesByteSize);
-                sortingKeys[0] = sortingKeysList[0].Get();
-                sortingKeys[1] = sortingKeysList[1].Get();
-                sortingIndices[0] = sortingIndicesList[0].Get();
-                sortingIndices[1] = sortingIndicesList[1].Get();
-            }
+            RenderListAlloc sortingAllocs[4];
+            auto* renderList = renderContextBatch.GetMainContext().List;
+            uint32* sortingKeys[2] = { sortingAllocs[0].Init<uint32>(renderList, listSize), sortingAllocs[1].Init<uint32>(renderList, listSize) };
+            void* sortingIndices[2] = { sortingAllocs[2].Init(renderList, indicesByteSize, GPU_SHADER_DATA_ALIGNMENT), sortingAllocs[3].Init(renderList, indicesByteSize, GPU_SHADER_DATA_ALIGNMENT) };
             uint32* sortedKeys = sortingKeys[0];
             const uint32 sortKeyXor = sortMode != ParticleSortMode::CustomAscending ? MAX_uint32 : 0;
             switch (sortMode)
@@ -321,7 +300,7 @@ void DrawEmitterCPU(RenderContextBatch& renderContextBatch, ParticleBuffer* buff
             {
             case PixelFormat::R16_UInt:
                 for (int32 i = 0; i < listSize; i++)
-                    ((uint16*)sortedIndices)[i] = i;
+                    ((uint16*)sortedIndices)[i] = (uint16)i;
                 break;
             case PixelFormat::R32_UInt:
                 for (int32 i = 0; i < listSize; i++)
