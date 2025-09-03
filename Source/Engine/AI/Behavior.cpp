@@ -106,7 +106,19 @@ void Behavior::UpdateAsync()
     const BehaviorUpdateResult result = tree->Graph.Root->InvokeUpdate(context);
     if (result != BehaviorUpdateResult::Running)
         _result = result;
-    if (_result != BehaviorUpdateResult::Running)
+    if (_result != BehaviorUpdateResult::Running && tree->Graph.Root->Loop)
+    {
+        // Ensure to have tree loaded on play
+        CHECK(Tree && !Tree->WaitForLoaded());
+        BehaviorTree* tree = Tree.Get();
+        CHECK(tree->Graph.Root);
+
+        // Setup state
+        _result = BehaviorUpdateResult::Running;
+        _accumulatedTime = 0.0f;
+        _totalTime = 0;
+    }
+    else if (_result != BehaviorUpdateResult::Running)
     {
         Finished();
     }
