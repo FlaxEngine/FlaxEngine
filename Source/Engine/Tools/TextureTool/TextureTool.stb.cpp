@@ -147,10 +147,10 @@ static TextureData const* stbDecompress(const TextureData& textureData, TextureD
 
     uint8 blockBuffer[DETEX_MAX_BLOCK_SIZE];
 
-    for (int32 arrayIndex = 0; arrayIndex < textureData.Items.Count(); arrayIndex++)
+    for (int32 itemIndex = 0; itemIndex < textureData.Items.Count(); itemIndex++)
     {
-        const auto& srcItem = textureData.Items[arrayIndex];
-        auto& dstItem = decompressed.Items[arrayIndex];
+        const auto& srcItem = textureData.Items[itemIndex];
+        auto& dstItem = decompressed.Items[itemIndex];
         dstItem.Mips.Resize(srcItem.Mips.Count());
 
         for (int32 mipIndex = 0; mipIndex < srcItem.Mips.Count(); mipIndex++)
@@ -528,10 +528,26 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
                 return true;
         }
 
-        textureData.Items.Resize(desc.arraySize);
-        for (int32 arrayIndex = 0; arrayIndex < (int32)desc.arraySize; arrayIndex++)
+        if (desc.arraySize != 1)
         {
-            auto& item = textureData.Items[arrayIndex];
+            // TODO: Implement DDS support for 2D arrays, cubemap arrays or volume textures
+            LOG(Warning, "Unsupported DDS file. Contains {0} Array Slices.", desc.arraySize);
+            return true;
+        }
+        else
+        {
+            if (desc.type == ddspp::Cubemap)
+            {
+                LOG(Info, "Texture is Cubemap.");
+                textureData.Items.Resize(6); // 6 Cubemap faces
+            }
+            else
+                textureData.Items.Resize(1); // 2D Texture
+        }
+        
+        for (int32 itemIndex = 0; itemIndex < textureData.Items.Count(); itemIndex++)
+        {
+            auto& item = textureData.Items[itemIndex];
             item.Mips.Resize(desc.numMips);
 
             for (int32 mipIndex = 0; mipIndex < (int32)desc.numMips; mipIndex++)
@@ -542,7 +558,7 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
                 mip.Lines = ddspp::get_height_pixels_blocks(desc, mipIndex);
                 mip.DepthPitch = mip.RowPitch * mip.Lines;
 
-                int32 offset = ddspp::get_offset(desc, mipIndex, arrayIndex);
+                int32 offset = ddspp::get_offset(desc, mipIndex, itemIndex);
                 mip.Data.Copy(initialData + offset, mip.DepthPitch);
             }
         }
@@ -633,8 +649,8 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     // Check mip levels
     int32 sourceMipLevels = textureDataSrc->GetMipLevels();
     bool hasSourceMipLevels = isPowerOfTwo && sourceMipLevels > 1;
-    bool useMipLevels = isPowerOfTwo && (options.GenerateMipMaps || 
-        hasSourceMipLevels) && (width > 1 || height > 1);
+    bool useMipLevels = isPowerOfTwo && (options.GenerateMipMaps || hasSourceMipLevels) 
+        && (width > 1 || height > 1);
     
     int32 mipLevels = MipLevelsCount(width, height, useMipLevels);
     if (useMipLevels && !options.GenerateMipMaps && mipLevels != sourceMipLevels)
@@ -645,12 +661,15 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
 
     // Decompress if texture is compressed (next steps need decompressed input data, for eg. mip maps generation or format changing)
     if (PixelFormatExtensions::IsCompressed(textureDataSrc->Format))
-    {   
-        if (!stbDecompress(*textureDataSrc, *textureDataSrc))
+    {
+#if USE_EDITOR
+        if (!stbDecompress(*textureDataSrc, *textureDataDst))
         {
-            errorMsg = String::Format(TEXT("Imported texture used compressed format {0}. Not supported for importing on this platform.."), (int32)textureDataSrc->Format);
+            MessageBox::Show(TEXT("Cannot decompress texture."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
+            errorMsg = String::Format(TEXT("Cannot decompress texture. Compressed format: {0}."), (int32)textureDataSrc->Format);
             return true;
         }
+#endif
     }
 
     if (options.FlipX)
