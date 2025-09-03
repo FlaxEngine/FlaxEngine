@@ -14,6 +14,7 @@
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUPipelineState.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/DynamicBuffer.h"
@@ -741,8 +742,11 @@ void Render2D::End()
     }
 
     // Flush geometry buffers
-    VB.Flush(Context);
-    IB.Flush(Context);
+    {
+        GPUMemoryPass pass(Context);
+        VB.Flush(Context);
+        IB.Flush(Context);
+    }
 
     // Set output
     Context->ResetSR();

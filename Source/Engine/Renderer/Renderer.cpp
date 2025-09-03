@@ -2,6 +2,7 @@
 
 #include "Renderer.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -523,6 +524,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         JobSystem::Wait(buildObjectsBufferJob);
         {
             PROFILE_CPU_NAMED("FlushObjectsBuffer");
+            GPUMemoryPass pass(context);
             for (auto& e : renderContextBatch.Contexts)
                 e.List->ObjectBuffer.Flush(context);
         }

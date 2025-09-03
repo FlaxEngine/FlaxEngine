@@ -15,6 +15,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTargetPool.h"
@@ -939,6 +940,7 @@ bool GlobalSurfaceAtlasPass::Render(RenderContext& renderContext, GPUContext* co
     // Send objects data to the GPU
     {
         PROFILE_GPU_CPU_NAMED("Update Objects");
+        GPUMemoryPass pass(context);
         surfaceAtlasData.ObjectsBuffer.Flush(context);
         surfaceAtlasData.ObjectsListBuffer.Flush(context);
     }
