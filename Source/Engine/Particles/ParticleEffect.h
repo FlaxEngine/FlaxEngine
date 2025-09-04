@@ -170,6 +170,9 @@ private:
     Array<ParameterOverride> _parametersOverrides; // Cached parameter modifications to be applied to the parameters
     bool _isPlaying = false;
     bool _isStopped = false;
+#if USE_EDITOR
+    Array<AssetReference<ParticleEmitter>> _cachedEmitters;
+#endif
 
 public:
     /// <summary>
@@ -392,9 +395,10 @@ private:
 #endif
     void CacheModifiedParameters();
     void ApplyModifiedParameters();
-    void OnParticleSystemModified();
-    void OnParticleSystemLoaded();
+#if USE_EDITOR
+    void OnParticleEmittersClear();
     void OnParticleEmitterLoaded();
+#endif
 
     // [IAssetReference]
     void OnAssetChanged(Asset* asset, void* caller) override;

@@ -543,6 +543,9 @@ void ParticleEffect::ApplyModifiedParameters()
 
 void ParticleEffect::OnAssetChanged(Asset* asset, void* caller)
 {
+#if USE_EDITOR
+    OnParticleEmittersClear();
+#endif
     Instance.ClearState();
     _parameters.Resize(0);
     _parametersVersion = 0;
@@ -553,18 +556,29 @@ void ParticleEffect::OnAssetLoaded(Asset* asset, void* caller)
     ApplyModifiedParameters();
 #if USE_EDITOR
     // When one of the emitters gets edited, cached parameters need to be applied
-    auto& emitters = ParticleSystem.Get()->Emitters;
-    for (auto& emitter : emitters)
-    {
-        emitter.Loaded.BindUnique<ParticleEffect, &ParticleEffect::OnParticleEmitterLoaded>(this);
-    }
+    OnParticleEmittersClear();
+    _cachedEmitters = ParticleSystem.Get()->Emitters;
+    for (auto& emitter : _cachedEmitters)
+        emitter.Loaded.Bind<ParticleEffect, &ParticleEffect::OnParticleEmitterLoaded>(this);
+
 #endif
+}
+
+#if USE_EDITOR
+
+void ParticleEffect::OnParticleEmittersClear()
+{
+    for (auto& emitter : _cachedEmitters)
+        emitter.Loaded.Unbind<ParticleEffect, &ParticleEffect::OnParticleEmitterLoaded>(this);
+    _cachedEmitters.Clear();
 }
 
 void ParticleEffect::OnParticleEmitterLoaded()
 {
     ApplyModifiedParameters();
 }
+
+#endif
 
 void ParticleEffect::OnAssetUnloaded(Asset* asset, void* caller)
 {
@@ -807,6 +821,9 @@ void ParticleEffect::Deserialize(DeserializeStream& stream, ISerializeModifier* 
 
 void ParticleEffect::EndPlay()
 {
+#if USE_EDITOR
+    OnParticleEmittersClear();
+#endif
     CacheModifiedParameters();
     Particles::OnEffectDestroy(this);
     Instance.ClearState();
