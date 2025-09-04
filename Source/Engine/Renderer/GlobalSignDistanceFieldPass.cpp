@@ -924,12 +924,6 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 }
             }
 
-#if PLATFORM_WINDOWS
-            // Hack to fix D3D11 bug that doesn't insert UAV barrier after overlap region ends (between two GPUComputePass)
-            if (context->GetDevice()->GetRendererType() == RendererType::DirectX11)
-                context->Dispatch(_csRasterizeModel0, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
-#endif
-
             // Rasterize non-empty chunks (additive layers so need combine with existing chunk data)
             for (uint32 layer = 0; layer <= maxLayer; layer++)
             {

@@ -95,6 +95,7 @@ void GPUContextDX11::FrameBegin()
     GPUContext::FrameBegin();
 
     // Setup
+    _flushOnDispatch = false;
     _omDirtyFlag = false;
     _uaDirtyFlag = false;
     _cbDirtyFlag = false;
@@ -497,50 +498,19 @@ void GPUContextDX11::UpdateCB(GPUConstantBuffer* cb, const void* data)
 
 void GPUContextDX11::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ)
 {
-    CurrentCS = (GPUShaderProgramCSDX11*)shader;
-
-    // Flush
-    flushCBs();
-    flushSRVs();
-    flushUAVs();
-    flushOM();
-
-    // Dispatch
-    auto compute = (ID3D11ComputeShader*)shader->GetBufferHandle();
-    if (_currentCompute != compute)
-    {
-        _currentCompute = compute;
-        _context->CSSetShader(compute, nullptr, 0);
-    }
+    onDispatch(shader);
     _context->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
     RENDER_STAT_DISPATCH_CALL();
-
     CurrentCS = nullptr;
 }
 
 void GPUContextDX11::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
     ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
-    CurrentCS = (GPUShaderProgramCSDX11*)shader;
-
     auto bufferForArgsDX11 = (GPUBufferDX11*)bufferForArgs;
-
-    // Flush
-    flushCBs();
-    flushSRVs();
-    flushUAVs();
-    flushOM();
-
-    // Dispatch
-    auto compute = (ID3D11ComputeShader*)shader->GetBufferHandle();
-    if (_currentCompute != compute)
-    {
-        _currentCompute = compute;
-        _context->CSSetShader(compute, nullptr, 0);
-    }
+    onDispatch(shader);
     _context->DispatchIndirect(bufferForArgsDX11->GetBuffer(), offsetForArgs);
     RENDER_STAT_DISPATCH_CALL();
-
     CurrentCS = nullptr;
 }
 
@@ -921,6 +891,7 @@ void GPUContextDX11::OverlapUA(bool end)
             NvAPI_D3D11_EndUAVOverlap(_context);
         else
             NvAPI_D3D11_BeginUAVOverlap(_context);
+        _flushOnDispatch |= end;
         return;
     }
 #endif
@@ -931,6 +902,7 @@ void GPUContextDX11::OverlapUA(bool end)
             agsDriverExtensionsDX11_EndUAVOverlap(AgsContext, _context);
         else
             agsDriverExtensionsDX11_BeginUAVOverlap(AgsContext, _context);
+        _flushOnDispatch |= end;
         return;
     }
 #endif
@@ -1046,11 +1018,35 @@ void GPUContextDX11::flushIA()
 
 void GPUContextDX11::onDrawCall()
 {
+    _flushOnDispatch = false;
     flushCBs();
     flushSRVs();
     flushUAVs();
     flushIA();
     flushOM();
+}
+
+void GPUContextDX11::onDispatch(GPUShaderProgramCS* shader)
+{
+    CurrentCS = (GPUShaderProgramCSDX11*)shader;
+
+    flushCBs();
+    flushSRVs();
+    flushUAVs();
+    flushOM();
+
+    if (_flushOnDispatch)
+    {
+        _flushOnDispatch = false;
+        _context->Flush();
+    }
+
+    auto compute = (ID3D11ComputeShader*)shader->GetBufferHandle();
+    if (_currentCompute != compute)
+    {
+        _currentCompute = compute;
+        _context->CSSetShader(compute, nullptr, 0);
+    }
 }
 
 #endif

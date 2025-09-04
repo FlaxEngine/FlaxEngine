@@ -30,6 +30,7 @@ private:
     byte _tracyZone[TracyD3D11ZoneSize];
 #endif
     int32 _maxUASlots;
+    bool _flushOnDispatch;
 
     // Output Merger
     bool _omDirtyFlag;
@@ -111,6 +112,7 @@ private:
     void flushOM();
     void flushIA();
     void onDrawCall();
+    void onDispatch(GPUShaderProgramCS* shader);
 
 public:
 
