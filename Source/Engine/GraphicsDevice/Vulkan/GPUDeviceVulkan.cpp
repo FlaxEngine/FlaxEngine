@@ -972,133 +972,6 @@ void HelperResourcesVulkan::Dispose()
     }
 }
 
-StagingManagerVulkan::StagingManagerVulkan(GPUDeviceVulkan* device)
-    : _device(device)
-{
-}
-
-GPUBuffer* StagingManagerVulkan::AcquireBuffer(uint32 size, GPUResourceUsage usage)
-{
-    // Try reuse free buffer
-    {
-        ScopeLock lock(_locker);
-
-        for (int32 i = 0; i < _freeBuffers.Count(); i++)
-        {
-            auto& freeBuffer = _freeBuffers[i];
-            if (freeBuffer.Buffer->GetSize() == size && freeBuffer.Buffer->GetDescription().Usage == usage)
-            {
-                const auto buffer = freeBuffer.Buffer;
-                _freeBuffers.RemoveAt(i);
-                return buffer;
-            }
-        }
-    }
-
-    // Allocate new buffer
-    auto buffer = _device->CreateBuffer(TEXT("Pooled Staging"));
-    if (buffer->Init(GPUBufferDescription::Buffer(size, GPUBufferFlags::None, PixelFormat::Unknown, nullptr, 0, usage)))
-    {
-        LOG(Warning, "Failed to create pooled staging buffer.");
-        return nullptr;
-    }
-
-    // Cache buffer
-    {
-        ScopeLock lock(_locker);
-
-        _allBuffers.Add(buffer);
-#if !BUILD_RELEASE
-        _allBuffersAllocSize += size;
-        _allBuffersTotalSize += size;
-        _allBuffersPeekSize = Math::Max(_allBuffersTotalSize, _allBuffersPeekSize);
-#endif
-    }
-
-    return buffer;
-}
-
-void StagingManagerVulkan::ReleaseBuffer(CmdBufferVulkan* cmdBuffer, GPUBuffer*& buffer)
-{
-    ScopeLock lock(_locker);
-
-    if (cmdBuffer)
-    {
-        // Return to pending pool (need to wait until command buffer will be executed and buffer will be reusable)
-        auto& item = _pendingBuffers.AddOne();
-        item.Buffer = buffer;
-        item.CmdBuffer = cmdBuffer;
-        item.FenceCounter = cmdBuffer->GetFenceSignaledCounter();
-    }
-    else
-    {
-        // Return to pool
-        _freeBuffers.Add({ buffer, Engine::FrameCount });
-    }
-
-    // Clear reference
-    buffer = nullptr;
-}
-
-void StagingManagerVulkan::ProcessPendingFree()
-{
-    ScopeLock lock(_locker);
-
-    // Find staging buffers that has been processed by the GPU and can be reused
-    for (int32 i = _pendingBuffers.Count() - 1; i >= 0; i--)
-    {
-        auto& e = _pendingBuffers[i];
-        if (e.FenceCounter < e.CmdBuffer->GetFenceSignaledCounter())
-        {
-            // Return to pool
-            _freeBuffers.Add({ e.Buffer, Engine::FrameCount });
-            _pendingBuffers.RemoveAt(i);
-        }
-    }
-
-    // Free staging buffers that has not been used for a few frames
-    for (int32 i = _freeBuffers.Count() - 1; i >= 0; i--)
-    {
-        auto& e = _freeBuffers.Get()[i];
-        if (e.FrameNumber + VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT < Engine::FrameCount)
-        {
-            auto buffer = e.Buffer;
-
-            // Remove buffer from lists
-            _allBuffers.Remove(buffer);
-            _freeBuffers.RemoveAt(i);
-
-#if !BUILD_RELEASE
-            // Update stats
-            _allBuffersFreeSize += buffer->GetSize();
-            _allBuffersTotalSize -= buffer->GetSize();
-#endif
-
-            // Release memory
-            buffer->ReleaseGPU();
-            Delete(buffer);
-        }
-    }
-}
-
-void StagingManagerVulkan::Dispose()
-{
-    ScopeLock lock(_locker);
-
-#if BUILD_DEBUG
-    LOG(Info, "Vulkan staging buffers peek memory usage: {0}, allocs: {1}, frees: {2}", Utilities::BytesToText(_allBuffersPeekSize), Utilities::BytesToText(_allBuffersAllocSize), Utilities::BytesToText(_allBuffersFreeSize));
-#endif
-
-    // Release buffers and clear memory
-    for (auto buffer : _allBuffers)
-    {
-        buffer->ReleaseGPU();
-        Delete(buffer);
-    }
-    _allBuffers.Resize(0);
-    _pendingBuffers.Resize(0);
-}
-
 GPUDeviceVulkan::GPUDeviceVulkan(ShaderProfile shaderProfile, GPUAdapterVulkan* adapter)
     : GPUDevice(RendererType::Vulkan, shaderProfile)
     , _renderPasses(512)
@@ -1106,7 +979,7 @@ GPUDeviceVulkan::GPUDeviceVulkan(ShaderProfile shaderProfile, GPUAdapterVulkan* 
     , _layouts(4096)
     , Adapter(adapter)
     , DeferredDeletionQueue(this)
-    , StagingManager(this)
+    , UploadBuffer(this)
     , HelperResources(this)
 {
 }
@@ -2088,8 +1961,8 @@ void GPUDeviceVulkan::DrawBegin()
 
     // Flush resources
     DeferredDeletionQueue.ReleaseResources();
-    StagingManager.ProcessPendingFree();
     DescriptorPoolsManager->GC();
+    UploadBuffer.BeginGeneration(Engine::FrameCount);
 
 #if VULKAN_USE_PIPELINE_CACHE
     // Serialize pipeline cache periodically for less PSO hitches on next app run
@@ -2125,7 +1998,7 @@ void GPUDeviceVulkan::Dispose()
     _renderPasses.ClearDelete();
     _layouts.ClearDelete();
     HelperResources.Dispose();
-    StagingManager.Dispose();
+    UploadBuffer.Dispose();
     TimestampQueryPools.ClearDelete();
     OcclusionQueryPools.ClearDelete();
     SAFE_DELETE_GPU_RESOURCE(UniformBufferUploader);

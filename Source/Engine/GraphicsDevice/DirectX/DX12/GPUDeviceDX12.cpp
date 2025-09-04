@@ -244,7 +244,7 @@ GPUDeviceDX12::GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter)
     , _rootSignature(nullptr)
     , _commandQueue(nullptr)
     , _mainContext(nullptr)
-    , UploadBuffer(nullptr)
+    , UploadBuffer(this)
     , TimestampQueryHeap(this, D3D12_QUERY_HEAP_TYPE_TIMESTAMP, DX12_BACK_BUFFER_COUNT * 1024)
     , Heap_CBV_SRV_UAV(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4 * 1024, false)
     , Heap_RTV(this, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1 * 1024, false)
@@ -701,9 +701,6 @@ bool GPUDeviceDX12::Init()
         VALIDATE_DIRECTX_CALL(_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&_rootSignature)));
     }
 
-    // Upload buffer
-    UploadBuffer = New<UploadBufferDX12>(this);
-
     if (TimestampQueryHeap.Init())
         return true;
 
@@ -740,7 +737,7 @@ void GPUDeviceDX12::DrawBegin()
     GPUDeviceDX::DrawBegin();
 
     updateRes2Dispose();
-    UploadBuffer->BeginGeneration(Engine::FrameCount);
+    UploadBuffer.BeginGeneration(Engine::FrameCount);
 }
 
 void GPUDeviceDX12::RenderEnd()
@@ -811,7 +808,7 @@ void GPUDeviceDX12::Dispose()
     Heap_Sampler.ReleaseGPU();
     RingHeap_CBV_SRV_UAV.ReleaseGPU();
     RingHeap_Sampler.ReleaseGPU();
-    SAFE_DELETE(UploadBuffer);
+    UploadBuffer.ReleaseGPU();
     SAFE_DELETE(DrawIndirectCommandSignature);
     SAFE_DELETE(_mainContext);
     SAFE_DELETE(_commandQueue);

@@ -1386,16 +1386,13 @@ void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
     }
     else
     {
-        auto staging = _device->StagingManager.AcquireBuffer(size, GPUResourceUsage::StagingUpload);
-        staging->SetData(data, size);
+        auto allocation = _device->UploadBuffer.Upload(data, size, 4);
 
         VkBufferCopy region;
         region.size = size;
-        region.srcOffset = 0;
+        region.srcOffset = allocation.Offset;
         region.dstOffset = offset;
-        vkCmdCopyBuffer(cmdBuffer->GetHandle(), ((GPUBufferVulkan*)staging)->GetHandle(), ((GPUBufferVulkan*)buffer)->GetHandle(), 1, &region);
-
-        _device->StagingManager.ReleaseBuffer(cmdBuffer, staging);
+        vkCmdCopyBuffer(cmdBuffer->GetHandle(), allocation.Buffer, ((GPUBufferVulkan*)buffer)->GetHandle(), 1, &region);
     }
 
     // Memory transfer barrier to ensure buffer is ready to read (eg. by Draw or Dispatch)
@@ -1444,14 +1441,14 @@ void GPUContextVulkan::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int3
     AddImageBarrier(textureVulkan, mipIndex, arrayIndex, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     FlushBarriers();
 
-    auto buffer = _device->StagingManager.AcquireBuffer(slicePitch, GPUResourceUsage::StagingUpload);
-    buffer->SetData(data, slicePitch);
+    auto allocation = _device->UploadBuffer.Upload(data, slicePitch, 512);
 
     // Setup buffer copy region
     int32 mipWidth, mipHeight, mipDepth;
     texture->GetMipSize(mipIndex, mipWidth, mipHeight, mipDepth);
     VkBufferImageCopy bufferCopyRegion;
     Platform::MemoryClear(&bufferCopyRegion, sizeof(bufferCopyRegion));
+    bufferCopyRegion.bufferOffset = allocation.Offset;
     bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     bufferCopyRegion.imageSubresource.mipLevel = mipIndex;
     bufferCopyRegion.imageSubresource.baseArrayLayer = arrayIndex;
@@ -1461,9 +1458,7 @@ void GPUContextVulkan::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int3
     bufferCopyRegion.imageExtent.depth = static_cast<uint32_t>(mipDepth);
 
     // Copy mip level from staging buffer
-    vkCmdCopyBufferToImage(cmdBuffer->GetHandle(), ((GPUBufferVulkan*)buffer)->GetHandle(), textureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
-
-    _device->StagingManager.ReleaseBuffer(cmdBuffer, buffer);
+    vkCmdCopyBufferToImage(cmdBuffer->GetHandle(), allocation.Buffer, textureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
 }
 
 void GPUContextVulkan::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource)

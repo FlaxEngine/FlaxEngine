@@ -7,6 +7,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUResource.h"
 #include "DescriptorSetVulkan.h"
+#include "UploadBufferVulkan.h"
 #include "IncludeVulkanHeaders.h"
 #include "Config.h"
 
@@ -327,45 +328,6 @@ public:
 };
 
 /// <summary>
-/// Vulkan staging buffers manager.
-/// </summary>
-class StagingManagerVulkan
-{
-private:
-    struct PendingEntry
-    {
-        GPUBuffer* Buffer;
-        CmdBufferVulkan* CmdBuffer;
-        uint64 FenceCounter;
-    };
-
-    struct FreeEntry
-    {
-        GPUBuffer* Buffer;
-        uint64 FrameNumber;
-    };
-
-    GPUDeviceVulkan* _device;
-    CriticalSection _locker;
-    Array<GPUBuffer*> _allBuffers;
-    Array<FreeEntry> _freeBuffers;
-    Array<PendingEntry> _pendingBuffers;
-#if !BUILD_RELEASE
-    uint64 _allBuffersTotalSize = 0;
-    uint64 _allBuffersPeekSize = 0;
-    uint64 _allBuffersAllocSize = 0;
-    uint64 _allBuffersFreeSize = 0;
-#endif
-
-public:
-    StagingManagerVulkan(GPUDeviceVulkan* device);
-    GPUBuffer* AcquireBuffer(uint32 size, GPUResourceUsage usage);
-    void ReleaseBuffer(CmdBufferVulkan* cmdBuffer, GPUBuffer*& buffer);
-    void ProcessPendingFree();
-    void Dispose();
-};
-
-/// <summary>
 /// Implementation of Graphics Device for Vulkan backend.
 /// </summary>
 class GPUDeviceVulkan : public GPUDevice
@@ -464,9 +426,9 @@ public:
     DeferredDeletionQueueVulkan DeferredDeletionQueue;
 
     /// <summary>
-    /// The staging buffers manager.
+    /// Data uploading utility via pages.
     /// </summary>
-    StagingManagerVulkan StagingManager;
+    UploadBufferVulkan UploadBuffer;
 
     /// <summary>
     /// The helper device resources manager.
