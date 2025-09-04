@@ -530,7 +530,9 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
 
         if (desc.arraySize != 1)
         {
-            // TODO: Implement DDS support for 2D arrays, cubemap arrays or volume textures
+            // TODO: Implement DDS support for 2D arrays or volume textures
+            MessageBox::Show(TEXT("Unsupported DDS file."), TEXT("Import warning"), 
+                MessageBoxButtons::OK, MessageBoxIcon::Warning);
             LOG(Warning, "Unsupported DDS file. Contains {0} Array Slices.", desc.arraySize);
             return true;
         }
@@ -639,19 +641,11 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         ::Swap(textureDataSrc, textureDataDst);
     }
 
-    // Cache data
-    float alphaThreshold = 0.3f;
-    bool isPowerOfTwo = Math::IsPowerOfTwo(width) && Math::IsPowerOfTwo(height);
-    PixelFormat targetFormat = ToPixelFormat(options.Type, width, height, options.Compress);
-    if (options.sRGB)
-        targetFormat = PixelFormatExtensions::TosRGB(targetFormat);
-
     // Check mip levels
-    int32 sourceMipLevels = textureDataSrc->GetMipLevels();
+    bool isPowerOfTwo = Math::IsPowerOfTwo(width) && Math::IsPowerOfTwo(height);
+    auto sourceMipLevels = textureDataSrc->GetMipLevels();
     bool hasSourceMipLevels = isPowerOfTwo && sourceMipLevels > 1;
-    bool useMipLevels = isPowerOfTwo && (options.GenerateMipMaps || hasSourceMipLevels) 
-        && (width > 1 || height > 1);
-    
+    bool useMipLevels = isPowerOfTwo && (options.GenerateMipMaps || hasSourceMipLevels) && (width > 1 || height > 1);
     int32 mipLevels = MipLevelsCount(width, height, useMipLevels);
     if (useMipLevels && !options.GenerateMipMaps && mipLevels != sourceMipLevels)
     {
@@ -669,6 +663,7 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
             errorMsg = String::Format(TEXT("Cannot decompress texture. Compressed format: {0}."), (int32)textureDataSrc->Format);
             return true;
         }
+        ::Swap(textureDataSrc, textureDataDst);
 #endif
     }
 
@@ -720,6 +715,10 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     }
 
     // Compress mip maps or convert image
+    PixelFormat targetFormat = ToPixelFormat(options.Type, width, height, options.Compress);
+    if (options.sRGB)
+        targetFormat = PixelFormatExtensions::TosRGB(targetFormat);
+    
     if (targetFormat != textureDataSrc->Format)
     {
         if (ConvertStb(*textureDataDst, *textureDataSrc, targetFormat))
