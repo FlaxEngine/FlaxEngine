@@ -43,7 +43,7 @@ ParticleEmitterFunction::ParticleEmitterFunction(const SpawnParams& params, cons
 Asset::LoadResult ParticleEmitterFunction::load()
 {
     PROFILE_MEM(Particles);
-    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
+    ScopeWriteLock systemScope(Particles::SystemLocker);
 
     // Load graph
     const auto surfaceChunk = GetChunk(0);
@@ -96,7 +96,7 @@ Asset::LoadResult ParticleEmitterFunction::load()
 
 void ParticleEmitterFunction::unload(bool isReloading)
 {
-    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
+    ScopeWriteLock systemScope(Particles::SystemLocker);
     Graph.Clear();
 #if COMPILE_WITH_PARTICLE_GPU_GRAPH
     GraphGPU.Clear();
@@ -189,7 +189,7 @@ bool ParticleEmitterFunction::SaveSurface(const BytesContainer& data) const
 {
     if (OnCheckSave())
         return true;
-    ConcurrentSystemLocker::WriteScope systemScope(Particles::SystemLocker);
+    ScopeWriteLock systemScope(Particles::SystemLocker);
     ScopeLock lock(Locker);
 
     // Set Visject Surface data

@@ -53,7 +53,7 @@ namespace
 
 AnimationsService AnimationManagerInstance;
 TaskGraphSystem* Animations::System = nullptr;
-ConcurrentSystemLocker Animations::SystemLocker;
+ReadWriteLock Animations::SystemLocker;
 #if USE_EDITOR
 Delegate<Animations::DebugFlowInfo> Animations::DebugFlow;
 #endif
@@ -124,7 +124,7 @@ void AnimationsSystem::Execute(TaskGraph* graph)
     Active = true;
 
     // Ensure no animation assets can be reloaded/modified during async update
-    Animations::SystemLocker.Begin(false);
+    Animations::SystemLocker.ReadLock();
 
     // Setup data for async update
     const auto& tickData = Time::Update;
@@ -165,18 +165,18 @@ void AnimationsSystem::PostExecute(TaskGraph* graph)
 
     // Cleanup
     AnimationManagerInstance.UpdateList.Clear();
-    Animations::SystemLocker.End(false);
+    Animations::SystemLocker.ReadUnlock();
     Active = false;
 }
 
 void Animations::AddToUpdate(AnimatedModel* obj)
 {
-    ConcurrentSystemLocker::WriteScope lock(SystemLocker, true);
+    ScopeWriteLock lock(SystemLocker);
     AnimationManagerInstance.UpdateList.Add(obj);
 }
 
 void Animations::RemoveFromUpdate(AnimatedModel* obj)
 {
-    ConcurrentSystemLocker::WriteScope lock(SystemLocker, true);
+    ScopeWriteLock lock(SystemLocker);
     AnimationManagerInstance.UpdateList.Remove(obj);
 }

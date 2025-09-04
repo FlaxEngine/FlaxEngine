@@ -600,7 +600,7 @@ void Animation::OnScriptingDispose()
 Asset::LoadResult Animation::load()
 {
     PROFILE_MEM(AnimationsData);
-    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+    ScopeWriteLock systemScope(Animations::SystemLocker);
 
     // Get stream with animations data
     const auto dataChunk = GetChunk(0);
@@ -732,7 +732,7 @@ Asset::LoadResult Animation::load()
 
 void Animation::unload(bool isReloading)
 {
-    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+    ScopeWriteLock systemScope(Animations::SystemLocker);
 #if USE_EDITOR
     if (_registeredForScriptingReload)
     {

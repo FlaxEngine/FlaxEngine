@@ -134,7 +134,7 @@ namespace ParticleManagerImpl
 using namespace ParticleManagerImpl;
 
 TaskGraphSystem* Particles::System = nullptr;
-ConcurrentSystemLocker Particles::SystemLocker;
+ReadWriteLock Particles::SystemLocker;
 bool Particles::EnableParticleBufferPooling = true;
 float Particles::ParticleBufferRecycleTimeout = 10.0f;
 
@@ -680,7 +680,7 @@ void CleanupGPUParticlesSorting()
 void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
 {
     PROFILE_GPU_CPU_NAMED("DrawEmittersGPU");
-    ConcurrentSystemLocker::ReadScope systemScope(Particles::SystemLocker);
+    ScopeReadLock systemScope(Particles::SystemLocker);
     GPUContext* context = GPUDevice::Instance->GetMainContext();
 
     // Count draws and sorting passes needed for resources allocation
@@ -1135,7 +1135,7 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
     viewsDrawModes &= effect->DrawModes;
 
     // Setup
-    ConcurrentSystemLocker::ReadScope systemScope(SystemLocker);
+    ScopeReadLock systemScope(SystemLocker);
     Matrix worlds[2];
     Matrix::Translation(-viewOrigin, worlds[0]); // World
     renderContextBatch.GetMainContext().View.GetWorldMatrix(effect->GetTransform(), worlds[1]); // Local
@@ -1277,7 +1277,7 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
 void Particles::DebugDraw(ParticleEffect* effect)
 {
     PROFILE_CPU_NAMED("Particles.DrawDebug");
-    ConcurrentSystemLocker::ReadScope systemScope(SystemLocker);
+    ScopeReadLock systemScope(SystemLocker);
 
     // Draw all emitters
     for (auto& emitterData : effect->Instance.Emitters)
@@ -1304,7 +1304,7 @@ void UpdateGPU(RenderTask* task, GPUContext* context)
     PROFILE_CPU_NAMED("GPUParticles");
     PROFILE_GPU("GPU Particles");
     PROFILE_MEM(Particles);
-    ConcurrentSystemLocker::ReadScope systemScope(Particles::SystemLocker);
+    ScopeReadLock systemScope(Particles::SystemLocker);
 
     // Collect valid emitter tracks to update
     struct GPUSim
@@ -1728,7 +1728,7 @@ void ParticlesSystem::Execute(TaskGraph* graph)
     Active = true;
 
     // Ensure no particle assets can be reloaded/modified during async update
-    Particles::SystemLocker.Begin(false);
+    Particles::SystemLocker.ReadLock();
 
     // Setup data for async update
     const auto& tickData = Time::Update;
@@ -1751,7 +1751,7 @@ void ParticlesSystem::PostExecute(TaskGraph* graph)
     PROFILE_MEM(Particles);
 
     // Cleanup
-    Particles::SystemLocker.End(false);
+    Particles::SystemLocker.ReadUnlock();
     Active = false;
     UpdateList.Clear();
 

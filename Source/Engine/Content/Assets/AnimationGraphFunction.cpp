@@ -22,7 +22,7 @@ AnimationGraphFunction::AnimationGraphFunction(const SpawnParams& params, const 
 Asset::LoadResult AnimationGraphFunction::load()
 {
     PROFILE_MEM(AnimationsData);
-    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+    ScopeWriteLock systemScope(Animations::SystemLocker);
 
     // Get graph data from chunk
     const auto surfaceChunk = GetChunk(0);
@@ -49,7 +49,7 @@ Asset::LoadResult AnimationGraphFunction::load()
 
 void AnimationGraphFunction::unload(bool isReloading)
 {
-    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+    ScopeWriteLock systemScope(Animations::SystemLocker);
     GraphData.Release();
     Inputs.Clear();
     Outputs.Clear();
@@ -98,7 +98,7 @@ bool AnimationGraphFunction::SaveSurface(const BytesContainer& data) const
 {
     if (OnCheckSave())
         return true;
-    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+    ScopeWriteLock systemScope(Animations::SystemLocker);
     ScopeLock lock(Locker);
 
     // Set Visject Surface data

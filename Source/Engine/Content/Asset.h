@@ -7,7 +7,6 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Scripting/ScriptingObject.h"
-#include "Engine/Threading/ConcurrentSystemLocker.h"
 #include "Config.h"
 #include "Types.h"
 

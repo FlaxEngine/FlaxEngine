@@ -198,7 +198,7 @@ public:
     GPUTexture* Texture = nullptr;
     GPUTexture* TextureMip = nullptr;
     Vector3 Origin = Vector3::Zero;
-    ConcurrentSystemLocker Locker;
+    ReadWriteLock Locker;
     Array<CascadeData, FixedAllocation<4>> Cascades;
     HashSet<ScriptingTypeHandle> ObjectTypes;
     HashSet<GPUTexture*> SDFTextures;
@@ -238,7 +238,7 @@ public:
             OnSDFTextureDeleted(texture);
 
             // Clear static chunks cache
-            ConcurrentSystemLocker::WriteScope lock(Locker, true);
+            ScopeWriteLock lock(Locker);
             for (auto& cascade : Cascades)
                 cascade.StaticChunks.Clear();
         }
@@ -398,7 +398,7 @@ public:
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
-            ConcurrentSystemLocker::WriteScope lock(Locker, true);
+            ScopeWriteLock lock(Locker);
             OnSceneRenderingDirty(a->GetBox());
         }
     }
@@ -407,7 +407,7 @@ public:
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
-            ConcurrentSystemLocker::WriteScope lock(Locker, true);
+            ScopeWriteLock lock(Locker);
             OnSceneRenderingDirty(BoundingBox::FromSphere(prevBounds));
             OnSceneRenderingDirty(a->GetBox());
         }
@@ -417,14 +417,14 @@ public:
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
-            ConcurrentSystemLocker::WriteScope lock(Locker, true);
+            ScopeWriteLock lock(Locker);
             OnSceneRenderingDirty(a->GetBox());
         }
     }
 
     void OnSceneRenderingClear(SceneRendering* scene) override
     {
-        ConcurrentSystemLocker::WriteScope lock(Locker, true);
+        ScopeWriteLock lock(Locker);
         for (auto& cascade : Cascades)
             cascade.StaticChunks.Clear();
     }
@@ -583,7 +583,7 @@ void GlobalSignDistanceFieldCustomBuffer::DrawCascadeJob(int32 cascadeIndex)
     if (!cascade.Dirty)
         return;
     PROFILE_CPU();
-    ConcurrentSystemLocker::ReadScope lock(Locker);
+    ScopeReadLock lock(Locker);
     CurrentCascade.Set(&cascade);
     DrawCascadeActors(cascade);
     UpdateCascadeChunks(cascade);
@@ -798,7 +798,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     Current = &sdfData;
     sdfData.StartDrawing(renderContext, false, reset); // (ignored if not started earlier this frame)
     sdfData.WaitForDrawing();
-    ConcurrentSystemLocker::WriteScope lock(sdfData.Locker);
+    ScopeWriteLock lock(sdfData.Locker);
 
     // Rasterize world geometry into Global SDF
     bool anyDraw = false;

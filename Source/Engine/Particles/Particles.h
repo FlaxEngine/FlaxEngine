@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Engine/Scripting/ScriptingType.h"
-#include "Engine/Threading/ConcurrentSystemLocker.h"
 
 class TaskGraphSystem;
 struct RenderContextBatch;
@@ -28,8 +27,8 @@ API_CLASS(Static) class FLAXENGINE_API Particles
     /// </summary>
     API_FIELD(ReadOnly) static TaskGraphSystem* System;
 
-    // Data access locker for animations data.
-    static ConcurrentSystemLocker SystemLocker;
+    // Data access locker for particles data.
+    static ReadWriteLock SystemLocker;
 
 public:
     /// <summary>
