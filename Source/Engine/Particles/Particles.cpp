@@ -970,6 +970,35 @@ void DrawEmittersGPU(RenderContextBatch& renderContextBatch)
             }
         }
     }
+    else
+    {
+        // Initialize with identity sort indices in case the buffer has been allocated
+        for (const GPUEmitterDraw& draw : GPUEmitterDraws)
+        {
+            if (!draw.Sorting || !draw.Buffer->GPU.SortedIndices)
+                continue;
+            const int32 capacity = draw.Buffer->Capacity;
+            const int32 capacityBytes = capacity * draw.Buffer->GPU.SortedIndices->GetStride();
+            const int32 indicesBytes = draw.Buffer->GPU.SortedIndices->GetSize();
+            RenderListAlloc sortedIndicesAlloc;
+            auto* renderList = renderContextBatch.GetMainContext().List;
+            void* indices = sortedIndicesAlloc.Init(renderList, indicesBytes, GPU_SHADER_DATA_ALIGNMENT);
+            switch (draw.Buffer->GPU.SortedIndices->GetFormat())
+            {
+            case PixelFormat::R16_UInt:
+                for (int32 i = 0; i < capacity; i++)
+                    ((uint16*)indices)[i] = (uint16)i;
+                break;
+            case PixelFormat::R32_UInt:
+                for (int32 i = 0; i < capacity; i++)
+                    ((uint32*)indices)[i] = i;
+                break;
+            }
+            for (int32 i = 1; i < draw.Buffer->Emitter->Graph.SortModules.Count(); i++)
+                Platform::MemoryCopy((byte*)indices + i * capacityBytes, indices, capacityBytes);
+            context->UpdateBuffer(draw.Buffer->GPU.SortedIndices, indices, indicesBytes, 0);
+        }
+    }
 
     // TODO: transition here SortedIndices into ShaderReadNonPixel and Buffer into ShaderReadGraphics to reduce barriers during particles rendering
 
