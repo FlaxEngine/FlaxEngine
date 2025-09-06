@@ -58,7 +58,7 @@ struct PipelineBarrierVulkan
 
     FORCE_INLINE bool HasBarrier() const
     {
-        return ImageBarriers.Count() + BufferBarriers.Count() + MemoryBarriers.Count() != 0;
+        return ImageBarriers.Count() + BufferBarriers.Count() + MemoryBarriers.Count() != 0 || SourceStage + DestStage != 0;
     }
 
     void Execute(const CmdBufferVulkan* cmdBuffer);
