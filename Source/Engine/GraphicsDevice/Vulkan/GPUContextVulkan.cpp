@@ -345,7 +345,7 @@ void GPUContextVulkan::AddMemoryBarrier()
     memoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
     _barriers.SourceStage |= VK_PIPELINE_STAGE_TRANSFER_BIT;
-    _barriers.DestStage |= VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    _barriers.DestStage |= VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
 #if !VK_ENABLE_BARRIERS_BATCHING
     // Auto-flush without batching
@@ -1375,6 +1375,8 @@ void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
     const auto bufferVulkan = static_cast<GPUBufferVulkan*>(buffer);
 
     // Transition resource
+    if (_pass == 0)
+        AddMemoryBarrier();
     AddBufferBarrier(bufferVulkan, VK_ACCESS_TRANSFER_WRITE_BIT);
     FlushBarriers();
 
