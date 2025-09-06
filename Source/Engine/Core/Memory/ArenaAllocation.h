@@ -79,7 +79,6 @@ private:
         int64 Size;
     };
 
-    int32 _pageSize;
     volatile int64 _first = 0;
     volatile int64 _totalBytes = 0;
     void*(*_allocate1)(uint64 size, uint64 alignment) = nullptr;
@@ -87,19 +86,20 @@ private:
     void*(*_allocate2)(uint64 size) = nullptr;
     void(*_free2)(void* ptr, uint64 size) = nullptr;
     CriticalSection _locker;
+    int32 _pageSize;
 
 public:
     ConcurrentArenaAllocator(int32 pageSizeBytes, void* (*customAllocate)(uint64 size, uint64 alignment), void(*customFree)(void* ptr))
-        : _pageSize(pageSizeBytes)
-        , _allocate1(customAllocate)
+        : _allocate1(customAllocate)
         , _free1(customFree)
+        , _pageSize(pageSizeBytes)
     {
     }
 
     ConcurrentArenaAllocator(int32 pageSizeBytes, void* (*customAllocate)(uint64 size), void(*customFree)(void* ptr, uint64 size))
-        : _pageSize(pageSizeBytes)
-        , _allocate2(customAllocate)
+        : _allocate2(customAllocate)
         , _free2(customFree)
+        , _pageSize(pageSizeBytes)
     {
     }
 
@@ -120,7 +120,7 @@ public:
     }
 
     // Allocates a chunk of unitialized memory.
-    void* Allocate(uint64 size, uint64 alignment = 1);
+    void* Allocate(uint64 size, uint64 alignment = PLATFORM_MEMORY_ALIGNMENT);
 
     // Frees all memory allocations within allocator.
     void Free();

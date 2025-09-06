@@ -24,6 +24,11 @@ void ArenaAllocator::Free()
 
 void* ArenaAllocator::Allocate(uint64 size, uint64 alignment)
 {
+    if (size == 0)
+        return nullptr;
+    if (alignment < PLATFORM_MEMORY_ALIGNMENT)
+        alignment = PLATFORM_MEMORY_ALIGNMENT;
+
     // Find the first page that has some space left
     Page* page = _first;
     while (page && page->Offset + size + alignment > page->Size)
@@ -79,6 +84,10 @@ void ConcurrentArenaAllocator::Free()
 
 void* ConcurrentArenaAllocator::Allocate(uint64 size, uint64 alignment)
 {
+    if (size == 0)
+        return nullptr;
+    if (alignment < PLATFORM_MEMORY_ALIGNMENT)
+        alignment = PLATFORM_MEMORY_ALIGNMENT;
 RETRY:
 
     // Check if the current page has some space left
@@ -120,6 +129,6 @@ RETRY:
 
     _locker.Unlock();
 
-    // Use a single cde for allocation
+    // Use a single code for allocation
     goto RETRY;
 }

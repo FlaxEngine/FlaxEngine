@@ -281,16 +281,16 @@ struct DrawCallsList
 // Small utility for allocating memory from RenderList arena pool with automatic fallback to shared RendererAllocation for larger memory blocks.
 struct RenderListAlloc
 {
-    RenderList* List;
     void* Data = nullptr;
-    uintptr Size;
+    uint32 Size = 0;
+    bool NeedFree = false;
 
     ~RenderListAlloc();
 
-    void* Init(RenderList* list, uintptr size, uintptr alignment = 1);
+    void* Init(RenderList* list, uint32 size, uint32 alignment = 1);
 
     template<typename T>
-    FORCE_INLINE T* Init(RenderList* list, int32 count, uintptr alignment = 1)
+    FORCE_INLINE T* Init(RenderList* list, int32 count, uint32 alignment = 1)
     {
         return (T*)Init(list, count * sizeof(T), alignment);
     }

@@ -201,6 +201,9 @@ API_ENUM() enum class ArchitectureType
 #ifndef PLATFORM_THREADS_LIMIT
 #define PLATFORM_THREADS_LIMIT 64
 #endif
+#ifndef PLATFORM_MEMORY_ALIGNMENT
+#define PLATFORM_MEMORY_ALIGNMENT 16
+#endif
 #define PLATFORM_32BITS (!PLATFORM_64BITS)
 
 // Platform family defines

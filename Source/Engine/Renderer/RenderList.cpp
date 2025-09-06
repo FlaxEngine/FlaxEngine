@@ -463,20 +463,20 @@ bool DrawCallsList::IsEmpty() const
 
 RenderListAlloc::~RenderListAlloc()
 {
-    if (!List && Data) // Render List memory doesn't need free (arena allocator)
+    if (NeedFree && Data) // Render List memory doesn't need free (arena allocator)
         RendererAllocation::Free(Data, Size);
 }
 
-void* RenderListAlloc::Init(RenderList* list, uintptr size, uintptr alignment)
+void* RenderListAlloc::Init(RenderList* list, uint32 size, uint32 alignment)
 {
     ASSERT_LOW_LAYER(!Data);
     Size = size;
-    bool useList = alignment <= 16 && size < 1024;
-    List = useList ? list : nullptr;
-    if (useList)
-        Data = list->Memory.Allocate(size, alignment);
-    else
-        Data = RendererAllocation::Allocate(size);
+    if (size == 0)
+        return nullptr;
+    if (size < 1024 || (alignment != 16 && alignment != 8 && alignment != 4 && alignment != 1))
+        return (Data = list->Memory.Allocate(size, alignment));
+    NeedFree = true;
+    Data = RendererAllocation::Allocate(size);
     return Data;
 }
 
