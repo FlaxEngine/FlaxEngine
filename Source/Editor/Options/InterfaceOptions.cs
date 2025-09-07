@@ -312,7 +312,7 @@ namespace FlaxEditor.Options
         public bool UseNativeWindowSystem { get; set; } = false;
 #endif
 
-#if PLATFORM_WINDOWS
+#if PLATFORM_SDL || PLATFORM_WINDOWS
         /// <summary>
         /// Gets or sets a value indicating whether a window containing a single tabs hides the tab bar. Editor restart recommended.
         /// </summary>

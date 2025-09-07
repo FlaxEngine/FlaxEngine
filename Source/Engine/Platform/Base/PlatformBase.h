@@ -380,6 +380,11 @@ public:
     API_PROPERTY() static bool SupportsNativeDecorations();
 
     /// <summary>
+    /// Returns true if system provides support for native window dragging events.
+    /// </summary>
+    API_PROPERTY() static bool SupportsNativeDecorationDragging();
+
+    /// <summary>
     /// Returns true if is running 64 bit application (otherwise 32 bit). It's compile-time constant.
     /// </summary>
     API_PROPERTY() static bool Is64BitApp();

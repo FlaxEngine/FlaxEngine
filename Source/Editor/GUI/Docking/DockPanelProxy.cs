@@ -19,11 +19,7 @@ namespace FlaxEditor.GUI.Docking
         private float _tabHeight = Editor.Instance.Options.Options.Interface.TabHeight;
         private bool _useMinimumTabWidth = Editor.Instance.Options.Options.Interface.UseMinimumTabWidth;
         private float _minimumTabWidth = Editor.Instance.Options.Options.Interface.MinimumTabWidth;
-#if PLATFORM_WINDOWS
-        private readonly bool _hideTabForSingleTab = Editor.Instance.Options.Options.Interface.HideSingleTabWindowTabBars;
-#else
-        private readonly bool _hideTabForSingleTab = false;
-#endif
+        private readonly bool _hideTabForSingleTab = Utilities.Utils.HideSingleTabWindowTabBars();
 
         /// <summary>
         /// The is mouse down flag (left button).

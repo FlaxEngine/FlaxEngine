@@ -75,6 +75,7 @@ public:
     static void Tick();
     static String GetDisplayServer();
     static bool SupportsNativeDecorations();
+    static bool SupportsNativeDecorationDragging();
     static void SetHighDpiAwarenessEnabled(bool enable);
     static BatteryInfo GetBatteryInfo();
     static int32 GetDpi();

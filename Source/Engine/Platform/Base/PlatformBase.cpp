@@ -274,6 +274,15 @@ bool PlatformBase::SupportsNativeDecorations()
     return true;
 }
 
+bool PlatformBase::SupportsNativeDecorationDragging()
+{
+#if PLATFORM_LINUX
+    return false;
+#else
+    return true;
+#endif
+}
+
 #endif
 
 bool PlatformBase::Is64BitApp()

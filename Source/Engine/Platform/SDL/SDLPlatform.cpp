@@ -32,6 +32,7 @@ namespace SDLImpl
     int32 SystemDpi = 96;
     String UserLocale("en");
     bool WindowDecorationsSupported = true;
+    bool SupportsDecorationDragging = true;
     String WaylandDisplayEnv;
     String XDGCurrentDesktop;
 }
@@ -63,6 +64,8 @@ bool SDLPlatform::Init()
         SDL_SetHint(SDL_HINT_VIDEO_WAYLAND_ALLOW_LIBDECOR, "0");
         SDLImpl::WindowDecorationsSupported = false;
     }
+    if (waylandSession)
+        SupportsDecorationDragging = false;
 #endif
 
 #if PLATFORM_LINUX
@@ -202,6 +205,11 @@ String SDLPlatform::GetDisplayServer()
 bool SDLPlatform::SupportsNativeDecorations()
 {
     return SDLImpl::WindowDecorationsSupported;
+}
+
+bool SDLPlatform::SupportsNativeDecorationDragging()
+{
+    return SDLImpl::SupportsDecorationDragging;
 }
 
 BatteryInfo SDLPlatform::GetBatteryInfo()

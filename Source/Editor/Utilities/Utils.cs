@@ -1571,5 +1571,19 @@ namespace FlaxEditor.Utilities
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
+
+        internal static bool HideSingleTabWindowTabBars()
+        {
+#if PLATFORM_SDL
+            // We should not hide the tab bars if tab handle is the only way to dock the window
+            bool clientSideDecorations = UseCustomWindowDecorations(false);
+            bool draggableDecorations = clientSideDecorations || Platform.SupportsNativeDecorationDragging;
+            return draggableDecorations && Editor.Instance.Options.Options.Interface.HideSingleTabWindowTabBars;
+#elif PLATFORM_WINDOWS
+            return Editor.Instance.Options.Options.Interface.HideSingleTabWindowTabBars;
+#else
+            return false;
+#endif
+        }
     }
 }
