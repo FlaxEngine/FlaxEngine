@@ -298,6 +298,8 @@ public class Slider : ContainerControl
     public Slider(float width, float height)
     : base(0, 0, width, height)
     {
+        AutoFocus = true;
+
         var style = Style.Current;
         TrackLineColor = style.BackgroundHighlighted;
         TrackFillLineColor = style.LightBackground;

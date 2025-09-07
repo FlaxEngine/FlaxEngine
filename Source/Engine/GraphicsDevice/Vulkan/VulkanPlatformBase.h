@@ -49,6 +49,9 @@ public:
         featuresToEnable.sparseResidency8Samples = VK_FALSE;
         featuresToEnable.sparseResidencyAliased = VK_FALSE;
     }
+
+    static bool LoadCache(const String& folder, const Char* filename, Array<byte>& data);
+    static bool SaveCache(const String& folder, const Char* filename, const Array<byte>& data);
 };
 
 #endif

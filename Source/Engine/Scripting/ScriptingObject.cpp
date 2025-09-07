@@ -745,9 +745,13 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* 
     if (!skipLog)
     {
         if (klass)
+        {
             LOG(Warning, "Unable to find scripting object with ID={0} of type {1}", *id, String(klass->GetFullName()));
+        }
         else
+        {
             LOG(Warning, "Unable to find scripting object with ID={0}", *id);
+        }
         LogContext::Print(LogType::Warning);
     }
     return nullptr;

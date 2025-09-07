@@ -6,6 +6,7 @@
 #include "GPUDeviceDX12.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 FenceDX12::FenceDX12(GPUDeviceDX12* device)
     : _currentValue(1)
@@ -64,12 +65,12 @@ void FenceDX12::WaitCPU(uint64 value)
 {
     if (IsFenceComplete(value))
         return;
-
+    PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
     ScopeLock lock(_locker);
 
     _fence->SetEventOnCompletion(value, _event);
     WaitForSingleObject(_event, INFINITE);
-
     _lastCompletedValue = _fence->GetCompletedValue();
 }
 

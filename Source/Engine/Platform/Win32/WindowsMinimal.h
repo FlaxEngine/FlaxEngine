@@ -65,6 +65,11 @@ namespace Windows
         void* Ptr;
     };
 
+    struct SRWLOCK
+    {
+        void* Ptr;
+    };
+
     struct OVERLAPPED
     {
         void* Data1[3];
@@ -95,6 +100,12 @@ namespace Windows
     WIN_API BOOL WIN_API_CALLCONV SleepConditionVariableCS(CONDITION_VARIABLE* ConditionVariable, CRITICAL_SECTION* CriticalSection, DWORD dwMilliseconds);
     WIN_API void WIN_API_CALLCONV WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable);
     WIN_API void WIN_API_CALLCONV WakeAllConditionVariable(CONDITION_VARIABLE* ConditionVariable);
+
+    WIN_API void WIN_API_CALLCONV InitializeSRWLock(SRWLOCK* SRWLock);
+    WIN_API void WIN_API_CALLCONV AcquireSRWLockShared(SRWLOCK* SRWLock);
+    WIN_API void WIN_API_CALLCONV ReleaseSRWLockShared(SRWLOCK* SRWLock);
+    WIN_API void WIN_API_CALLCONV AcquireSRWLockExclusive(SRWLOCK* SRWLock);
+    WIN_API void WIN_API_CALLCONV ReleaseSRWLockExclusive(SRWLOCK* SRWLock);
 
     class IDataObject;
     typedef GUID IID;

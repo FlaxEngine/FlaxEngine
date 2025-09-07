@@ -177,6 +177,9 @@ API_ENUM() enum class ArchitectureType
 #ifndef PLATFORM_DESKTOP
 #define PLATFORM_DESKTOP 0
 #endif
+#ifndef PLATFORM_CONSOLE
+#define PLATFORM_CONSOLE 0
+#endif
 #ifndef PLATFORM_ARCH_X64
 #define PLATFORM_ARCH_X64 0
 #endif
@@ -201,6 +204,9 @@ API_ENUM() enum class ArchitectureType
 #ifndef PLATFORM_THREADS_LIMIT
 #define PLATFORM_THREADS_LIMIT 64
 #endif
+#ifndef PLATFORM_MEMORY_ALIGNMENT
+#define PLATFORM_MEMORY_ALIGNMENT 16
+#endif
 #define PLATFORM_32BITS (!PLATFORM_64BITS)
 
 // Platform family defines
@@ -210,28 +216,22 @@ API_ENUM() enum class ArchitectureType
 #define PLATFORM_UNIX_FAMILY (PLATFORM_LINUX || PLATFORM_ANDROID || PLATFORM_PS4 || PLATFORM_PS5 || PLATFORM_APPLE_FAMILY)
 
 // SIMD defines
-#if defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64) || defined(__SSE2__)
+#if !defined(PLATFORM_SIMD_SSE2) && (defined(__i386__) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64) || defined(__SSE2__))
 #define PLATFORM_SIMD_SSE2 1
-#if defined(__SSE3__)
+#if !defined(PLATFORM_SIMD_SSE3) && (defined(__SSE3__))
 #define PLATFORM_SIMD_SSE3 1
 #endif
-#if defined(__SSE4__)
-#define PLATFORM_SIMD_SSE4 1
-#endif
-#if defined(__SSE4_1__)
+#if !defined(PLATFORM_SIMD_SSE4_1) && (defined(__SSE4_1__))
 #define PLATFORM_SIMD_SSE4_1 1
 #endif
-#if defined(__SSE4_2__)
+#if !defined(PLATFORM_SIMD_SSE4_2) && (defined(__SSE4_2__))
 #define PLATFORM_SIMD_SSE4_2 1
 #endif
 #endif
-#if defined(_M_ARM) || defined(__ARM_NEON__) || defined(__ARM_NEON)
+#if !defined(PLATFORM_SIMD_NEON) && (defined(_M_ARM) || defined(__ARM_NEON__) || defined(__ARM_NEON))
 #define PLATFORM_SIMD_NEON 1
 #endif
-#if defined(_M_PPC) || defined(__CELLOS_LV2__)
-#define PLATFORM_SIMD_VMX 1
-#endif
-#define PLATFORM_SIMD (PLATFORM_SIMD_SSE2 || PLATFORM_SIMD_SSE3 || PLATFORM_SIMD_SSE4 || PLATFORM_SIMD_NEON || PLATFORM_SIMD_VMX)
+#define PLATFORM_SIMD (PLATFORM_SIMD_SSE2 || PLATFORM_SIMD_SSE3 || PLATFORM_SIMD_SSE4_1 || PLATFORM_SIMD_SSE4_2 || PLATFORM_SIMD_NEON)
 
 // Unicode text macro
 #if !defined(TEXT)

@@ -6,6 +6,8 @@
 
 class Win32CriticalSection;
 typedef Win32CriticalSection CriticalSection;
+class Win32ReadWriteLock;
+typedef Win32ReadWriteLock ReadWriteLock;
 class Win32ConditionVariable;
 typedef Win32ConditionVariable ConditionVariable;
 class WindowsFileSystem;
@@ -35,6 +37,8 @@ typedef WindowsScreenUtilities ScreenUtilities;
 
 class Win32CriticalSection;
 typedef Win32CriticalSection CriticalSection;
+class Win32ReadWriteLock;
+typedef Win32ReadWriteLock ReadWriteLock;
 class Win32ConditionVariable;
 typedef Win32ConditionVariable ConditionVariable;
 class UWPFileSystem;
@@ -62,6 +66,8 @@ typedef ScreenUtilitiesBase ScreenUtilities;
 
 class UnixCriticalSection;
 typedef UnixCriticalSection CriticalSection;
+class UnixReadWriteLock;
+typedef UnixReadWriteLock ReadWriteLock;
 class UnixConditionVariable;
 typedef UnixConditionVariable ConditionVariable;
 class LinuxFileSystem;
@@ -91,6 +97,8 @@ typedef LinuxScreenUtilities ScreenUtilities;
 
 class UnixCriticalSection;
 typedef UnixCriticalSection CriticalSection;
+class UnixReadWriteLock;
+typedef UnixReadWriteLock ReadWriteLock;
 class UnixConditionVariable;
 typedef UnixConditionVariable ConditionVariable;
 class PS4FileSystem;
@@ -118,6 +126,8 @@ typedef ScreenUtilitiesBase ScreenUtilities;
 
 class UnixCriticalSection;
 typedef UnixCriticalSection CriticalSection;
+class UnixReadWriteLock;
+typedef UnixReadWriteLock ReadWriteLock;
 class UnixConditionVariable;
 typedef UnixConditionVariable ConditionVariable;
 class PS5FileSystem;
@@ -145,6 +155,8 @@ typedef ScreenUtilitiesBase ScreenUtilities;
 
 class Win32CriticalSection;
 typedef Win32CriticalSection CriticalSection;
+class Win32ReadWriteLock;
+typedef Win32ReadWriteLock ReadWriteLock;
 class Win32ConditionVariable;
 typedef Win32ConditionVariable ConditionVariable;
 class XboxOneFileSystem;
@@ -172,6 +184,8 @@ typedef ScreenUtilitiesBase ScreenUtilities;
 
 class Win32CriticalSection;
 typedef Win32CriticalSection CriticalSection;
+class Win32ReadWriteLock;
+typedef Win32ReadWriteLock ReadWriteLock;
 class Win32ConditionVariable;
 typedef Win32ConditionVariable ConditionVariable;
 class XboxScarlettFileSystem;
@@ -199,6 +213,8 @@ typedef ScreenUtilitiesBase ScreenUtilities;
 
 class UnixCriticalSection;
 typedef UnixCriticalSection CriticalSection;
+class UnixReadWriteLock;
+typedef UnixReadWriteLock ReadWriteLock;
 class UnixConditionVariable;
 typedef UnixConditionVariable ConditionVariable;
 class AndroidFileSystem;
@@ -226,6 +242,8 @@ typedef ScreenUtilitiesBase ScreenUtilities;
 
 class SwitchCriticalSection;
 typedef SwitchCriticalSection CriticalSection;
+class SwitchReadWriteLock;
+typedef SwitchReadWriteLock ReadWriteLock;
 class SwitchConditionVariable;
 typedef SwitchConditionVariable ConditionVariable;
 class SwitchFileSystem;
@@ -253,6 +271,8 @@ typedef ScreenUtilitiesBase ScreenUtilities;
 
 class UnixCriticalSection;
 typedef UnixCriticalSection CriticalSection;
+class UnixReadWriteLock;
+typedef UnixReadWriteLock ReadWriteLock;
 class UnixConditionVariable;
 typedef UnixConditionVariable ConditionVariable;
 class MacFileSystem;
@@ -282,6 +302,8 @@ typedef MacScreenUtilities ScreenUtilities;
 
 class UnixCriticalSection;
 typedef UnixCriticalSection CriticalSection;
+class UnixReadWriteLock;
+typedef UnixReadWriteLock ReadWriteLock;
 class UnixConditionVariable;
 typedef UnixConditionVariable ConditionVariable;
 class iOSFileSystem;

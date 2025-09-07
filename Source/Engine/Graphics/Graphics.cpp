@@ -9,7 +9,10 @@
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerGPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
+#if !USE_EDITOR
 #include "Engine/Render2D/Font.h"
+#endif
 
 bool Graphics::UseVSync = false;
 Quality Graphics::AAQuality = Quality::Medium;
@@ -25,6 +28,7 @@ Quality Graphics::GIQuality = Quality::High;
 bool Graphics::GICascadesBlending = false;
 PostProcessSettings Graphics::PostProcessSettings;
 bool Graphics::SpreadWorkload = true;
+bool Graphics::PostProcessing::ColorGradingVolumeLUT = true;
 
 #if GRAPHICS_API_NULL
 extern GPUDevice* CreateGPUDeviceNull();
@@ -37,12 +41,6 @@ extern GPUDevice* CreateGPUDeviceDX11();
 #endif
 #if GRAPHICS_API_DIRECTX12
 extern GPUDevice* CreateGPUDeviceDX12();
-#endif
-#if GRAPHICS_API_PS4
-extern GPUDevice* CreateGPUDevicePS4();
-#endif
-#if GRAPHICS_API_PS5
-extern GPUDevice* CreateGPUDevicePS5();
 #endif
 
 class GraphicsService : public EngineService
@@ -97,9 +95,10 @@ void Graphics::DisposeDevice()
 bool GraphicsService::Init()
 {
     ASSERT(GPUDevice::Instance == nullptr);
+    PROFILE_MEM(Graphics);
 
     // Create and initialize graphics device
-    Log::Logger::WriteFloor();
+    LOG_FLOOR();
     LOG(Info, "Creating Graphics Device...");
     PixelFormatExtensions::Init();
     GPUDevice* device = nullptr;
@@ -163,10 +162,12 @@ bool GraphicsService::Init()
             device = CreateGPUDeviceVulkan();
 #endif
 #if GRAPHICS_API_PS4
+        extern GPUDevice* CreateGPUDevicePS4();
         if (!device)
             device = CreateGPUDevicePS4();
 #endif
 #if GRAPHICS_API_PS5
+        extern GPUDevice* CreateGPUDevicePS5();
         if (!device)
             device = CreateGPUDevicePS5();
 #endif
@@ -201,7 +202,7 @@ bool GraphicsService::Init()
 #endif
         )
     {
-#if !USE_EDITOR && BUILD_RELEASE && !PLATFORM_LINUX // IsDebugToolAttached seams to be enabled on many Linux machines via VK_EXT_tooling_info
+#if !USE_EDITOR && BUILD_RELEASE && !PLATFORM_LINUX && !PLATFORM_CONSOLE // IsDebugToolAttached seams to be enabled on many Linux machines via VK_EXT_tooling_info
         // Block graphics debugging to protect contents
         Platform::Fatal(TEXT("Graphics debugger attached."));
 #endif
@@ -214,7 +215,7 @@ bool GraphicsService::Init()
     {
         return true;
     }
-    Log::Logger::WriteFloor();
+    LOG_FLOOR();
 
     return false;
 }

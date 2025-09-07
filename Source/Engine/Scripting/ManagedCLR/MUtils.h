@@ -400,7 +400,7 @@ struct MConverter<Array<T>>
 namespace MUtils
 {
     // Outputs the full typename for the type of the specified object.
-    extern FLAXENGINE_API const StringAnsi& GetClassFullname(MObject* obj);
+    extern FLAXENGINE_API StringAnsiView GetClassFullname(MObject* obj);
 
     // Returns the class of the provided object.
     extern FLAXENGINE_API MClass* GetClass(MObject* object);

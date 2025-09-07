@@ -236,7 +236,7 @@ public:
     /// <summary>
     /// Gets the list with all active GPU resources.
     /// </summary>
-    API_PROPERTY() Array<GPUResource*> GetResources() const;
+    Array<GPUResource*> GetResources() const;
 
     /// <summary>
     /// Gets the GPU asynchronous work manager.
@@ -432,6 +432,12 @@ public:
     /// </summary>
     /// <returns>The GPU tasks executor.</returns>
     virtual GPUTasksExecutor* CreateTasksExecutor();
+
+private:
+    // Internal bindings
+#if !COMPILE_WITHOUT_CSHARP
+    API_FUNCTION(NoProxy) void* GetResourcesInternal();
+#endif
 };
 
 /// <summary>

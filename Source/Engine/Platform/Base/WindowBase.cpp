@@ -10,6 +10,7 @@
 #include "Engine/Platform/IGuiData.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/ManagedCLR/MException.h"
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Scripting/ManagedCLR/MMethod.h"
@@ -213,6 +214,7 @@ void WindowBase::SetRenderingEnabled(bool value)
 void WindowBase::OnCharInput(Char c)
 {
     PROFILE_CPU_NAMED("GUI.OnCharInput");
+    PROFILE_MEM(UI);
     CharInput(c);
     INVOKE_EVENT_PARAMS_1(OnCharInput, &c);
 }
@@ -220,6 +222,7 @@ void WindowBase::OnCharInput(Char c)
 void WindowBase::OnKeyDown(KeyboardKeys key)
 {
     PROFILE_CPU_NAMED("GUI.OnKeyDown");
+    PROFILE_MEM(UI);
     KeyDown(key);
     INVOKE_EVENT_PARAMS_1(OnKeyDown, &key);
 }
@@ -227,6 +230,7 @@ void WindowBase::OnKeyDown(KeyboardKeys key)
 void WindowBase::OnKeyUp(KeyboardKeys key)
 {
     PROFILE_CPU_NAMED("GUI.OnKeyUp");
+    PROFILE_MEM(UI);
     KeyUp(key);
     INVOKE_EVENT_PARAMS_1(OnKeyUp, &key);
 }
@@ -234,6 +238,7 @@ void WindowBase::OnKeyUp(KeyboardKeys key)
 void WindowBase::OnMouseDown(const Float2& mousePosition, MouseButton button)
 {
     PROFILE_CPU_NAMED("GUI.OnMouseDown");
+    PROFILE_MEM(UI);
     MouseDown(mousePosition, button);
     INVOKE_EVENT_PARAMS_2(OnMouseDown, (void*)&mousePosition, &button);
 }
@@ -241,6 +246,7 @@ void WindowBase::OnMouseDown(const Float2& mousePosition, MouseButton button)
 void WindowBase::OnMouseUp(const Float2& mousePosition, MouseButton button)
 {
     PROFILE_CPU_NAMED("GUI.OnMouseUp");
+    PROFILE_MEM(UI);
     MouseUp(mousePosition, button);
     INVOKE_EVENT_PARAMS_2(OnMouseUp, (void*)&mousePosition, &button);
 }
@@ -248,6 +254,7 @@ void WindowBase::OnMouseUp(const Float2& mousePosition, MouseButton button)
 void WindowBase::OnMouseDoubleClick(const Float2& mousePosition, MouseButton button)
 {
     PROFILE_CPU_NAMED("GUI.OnMouseDoubleClick");
+    PROFILE_MEM(UI);
     MouseDoubleClick(mousePosition, button);
     INVOKE_EVENT_PARAMS_2(OnMouseDoubleClick, (void*)&mousePosition, &button);
 }
@@ -255,6 +262,7 @@ void WindowBase::OnMouseDoubleClick(const Float2& mousePosition, MouseButton but
 void WindowBase::OnMouseWheel(const Float2& mousePosition, float delta)
 {
     PROFILE_CPU_NAMED("GUI.OnMouseWheel");
+    PROFILE_MEM(UI);
     MouseWheel(mousePosition, delta);
     INVOKE_EVENT_PARAMS_2(OnMouseWheel, (void*)&mousePosition, &delta);
 }
@@ -262,6 +270,7 @@ void WindowBase::OnMouseWheel(const Float2& mousePosition, float delta)
 void WindowBase::OnMouseMove(const Float2& mousePosition)
 {
     PROFILE_CPU_NAMED("GUI.OnMouseMove");
+    PROFILE_MEM(UI);
     MouseMove(mousePosition);
     INVOKE_EVENT_PARAMS_1(OnMouseMove, (void*)&mousePosition);
 }
@@ -276,6 +285,7 @@ void WindowBase::OnMouseMoveRelative(const Float2& mousePositionRelative)
 void WindowBase::OnMouseLeave()
 {
     PROFILE_CPU_NAMED("GUI.OnMouseLeave");
+    PROFILE_MEM(UI);
     MouseLeave();
     INVOKE_EVENT_PARAMS_0(OnMouseLeave);
 }
@@ -283,6 +293,7 @@ void WindowBase::OnMouseLeave()
 void WindowBase::OnTouchDown(const Float2& pointerPosition, int32 pointerId)
 {
     PROFILE_CPU_NAMED("GUI.OnTouchDown");
+    PROFILE_MEM(UI);
     TouchDown(pointerPosition, pointerId);
     INVOKE_EVENT_PARAMS_2(OnTouchDown, (void*)&pointerPosition, &pointerId);
 }
@@ -290,6 +301,7 @@ void WindowBase::OnTouchDown(const Float2& pointerPosition, int32 pointerId)
 void WindowBase::OnTouchMove(const Float2& pointerPosition, int32 pointerId)
 {
     PROFILE_CPU_NAMED("GUI.OnTouchMove");
+    PROFILE_MEM(UI);
     TouchMove(pointerPosition, pointerId);
     INVOKE_EVENT_PARAMS_2(OnTouchMove, (void*)&pointerPosition, &pointerId);
 }
@@ -297,6 +309,7 @@ void WindowBase::OnTouchMove(const Float2& pointerPosition, int32 pointerId)
 void WindowBase::OnTouchUp(const Float2& pointerPosition, int32 pointerId)
 {
     PROFILE_CPU_NAMED("GUI.OnTouchUp");
+    PROFILE_MEM(UI);
     TouchUp(pointerPosition, pointerId);
     INVOKE_EVENT_PARAMS_2(OnTouchUp, (void*)&pointerPosition, &pointerId);
 }
@@ -407,6 +420,7 @@ bool WindowBase::GetMouseButtonUp(MouseButton button) const
 void WindowBase::OnShow()
 {
     PROFILE_CPU_NAMED("GUI.OnShow");
+    PROFILE_MEM(UI);
     INVOKE_EVENT_PARAMS_0(OnShow);
     Shown();
 }
@@ -414,10 +428,13 @@ void WindowBase::OnShow()
 void WindowBase::OnResize(int32 width, int32 height)
 {
     PROFILE_CPU_NAMED("GUI.OnResize");
+    PROFILE_MEM_BEGIN(Graphics);
     if (_swapChain)
         _swapChain->Resize(width, height);
     if (RenderTask)
         RenderTask->Resize(width, height);
+    PROFILE_MEM_END();
+    PROFILE_MEM(UI);
     Resized({ static_cast<float>(width), static_cast<float>(height) });
     INVOKE_EVENT_PARAMS_2(OnResize, &width, &height);
 }
@@ -469,6 +486,7 @@ void WindowBase::OnLostFocus()
 void WindowBase::OnUpdate(float dt)
 {
     PROFILE_CPU_NAMED("GUI.OnUpdate");
+    PROFILE_MEM(UI);
     Update(dt);
     INVOKE_EVENT_PARAMS_1(OnUpdate, &dt);
 }
@@ -476,6 +494,7 @@ void WindowBase::OnUpdate(float dt)
 void WindowBase::OnDraw()
 {
     PROFILE_CPU_NAMED("GUI.OnDraw");
+    PROFILE_MEM(UI);
     INVOKE_EVENT_PARAMS_0(OnDraw);
     Draw();
 }
@@ -483,6 +502,7 @@ void WindowBase::OnDraw()
 bool WindowBase::InitSwapChain()
 {
     // Setup swapchain
+    PROFILE_MEM(Graphics);
     if (_swapChain == nullptr)
     {
         _swapChain = GPUDevice::Instance->CreateSwapChain((Window*)this);

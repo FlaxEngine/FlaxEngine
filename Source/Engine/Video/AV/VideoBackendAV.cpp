@@ -5,6 +5,7 @@
 #include "VideoBackendAV.h"
 #include "Engine/Platform/Apple/AppleUtils.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/TaskGraph.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/Globals.h"
@@ -39,6 +40,7 @@ namespace AV
     void UpdatePlayer(int32 index)
     {
         PROFILE_CPU();
+        PROFILE_MEM(Video);
         auto& player = *Players[index];
         ZoneText(player.DebugUrl, player.DebugUrlLen);
         auto& playerAV = player.GetBackendState<VideoPlayerAV>();
@@ -152,6 +154,7 @@ namespace AV
 bool VideoBackendAV::Player_Create(const VideoBackendPlayerInfo& info, VideoBackendPlayer& player)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Video);
     player = VideoBackendPlayer();
     auto& playerAV = player.GetBackendState<VideoPlayerAV>();
 
@@ -210,6 +213,7 @@ void VideoBackendAV::Player_Destroy(VideoBackendPlayer& player)
 void VideoBackendAV::Player_UpdateInfo(VideoBackendPlayer& player, const VideoBackendPlayerInfo& info)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Video);
     auto& playerAV = player.GetBackendState<VideoPlayerAV>();
 	playerAV.Player.actionAtItemEnd = info.Loop ? AVPlayerActionAtItemEndNone : AVPlayerActionAtItemEndPause;
     // TODO: spatial audio

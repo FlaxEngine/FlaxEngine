@@ -8,6 +8,7 @@
 #include "Engine/Engine/Time.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "AudioBackend.h"
 #include "Audio.h"
 
@@ -21,9 +22,8 @@ AudioSource::AudioSource(const SpawnParams& params)
     , _playOnStart(false)
     , _startTime(0.0f)
     , _allowSpatialization(true)
+    , Clip(this)
 {
-    Clip.Changed.Bind<AudioSource, &AudioSource::OnClipChanged>(this);
-    Clip.Loaded.Bind<AudioSource, &AudioSource::OnClipLoaded>(this);
 }
 
 void AudioSource::SetVolume(float value)
@@ -121,6 +121,7 @@ void AudioSource::Play()
     auto state = _state;
     if (state == States::Playing)
         return;
+    PROFILE_CPU();
     if (Clip == nullptr || Clip->WaitForLoaded())
     {
         LOG(Warning, "Cannot play audio source without a clip ({0})", GetNamePath());
@@ -189,6 +190,7 @@ void AudioSource::Stop()
 {
     if (_state == States::Stopped)
         return;
+    PROFILE_CPU();
 
     _state = States::Stopped;
     _isActuallyPlayingSth = false;
@@ -264,7 +266,7 @@ void AudioSource::RequestStreamingBuffersUpdate()
     _needToUpdateStreamingBuffers = true;
 }
 
-void AudioSource::OnClipChanged()
+void AudioSource::OnAssetChanged(Asset* asset, void* caller)
 {
     Stop();
 
@@ -276,7 +278,7 @@ void AudioSource::OnClipChanged()
     }
 }
 
-void AudioSource::OnClipLoaded()
+void AudioSource::OnAssetLoaded(Asset* asset, void* caller)
 {
     if (!SourceID)
         return;
@@ -300,6 +302,10 @@ void AudioSource::OnClipLoaded()
             PlayInternal();
         }
     }
+}
+
+void AudioSource::OnAssetUnloaded(Asset* asset, void* caller)
+{
 }
 
 bool AudioSource::UseStreaming() const
@@ -383,6 +389,7 @@ bool AudioSource::IntersectsItself(const Ray& ray, Real& distance, Vector3& norm
 void AudioSource::Update()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Audio);
 
     // Update the velocity
     const Vector3 pos = GetPosition();

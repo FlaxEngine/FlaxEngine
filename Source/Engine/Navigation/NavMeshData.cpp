@@ -4,6 +4,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Serialization/WriteStream.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 void NavMeshData::Save(WriteStream& stream)
 {
@@ -47,6 +48,7 @@ bool NavMeshData::Load(BytesContainer& data, bool copyData)
         return true;
     }
     MemoryReadStream stream(data.Get(), data.Length());
+    PROFILE_MEM(Navigation);
 
     // Read header
     const auto header = stream.Move<NavMeshDataHeader>();

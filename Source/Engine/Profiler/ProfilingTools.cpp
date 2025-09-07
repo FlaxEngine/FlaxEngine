@@ -33,6 +33,7 @@ ProfilingToolsService ProfilingToolsServiceInstance;
 void ProfilingToolsService::Update()
 {
     ZoneScoped;
+    PROFILE_MEM(Profiler);
 
     // Capture stats
     {

@@ -18,6 +18,20 @@
 	public: \
 	explicit type(const SpawnParams& params, const AssetInfo* info)
 
+// Utility interface for objects that reference asset and want to get notified about asset reference changes.
+class FLAXENGINE_API IAssetReference
+{
+public:
+    virtual ~IAssetReference() = default;
+
+    // Asset reference got changed.
+    virtual void OnAssetChanged(Asset* asset, void* caller) = 0;
+    // Asset got loaded.
+    virtual void OnAssetLoaded(Asset* asset, void* caller) = 0;
+    // Asset gets unloaded.
+    virtual void OnAssetUnloaded(Asset* asset, void* caller) = 0;
+};
+
 /// <summary>
 /// Asset objects base class.
 /// </summary>
@@ -47,6 +61,9 @@ protected:
 
     int8 _deleteFileOnUnload : 1; // Indicates that asset source file should be removed on asset unload
     int8 _isVirtual : 1; // Indicates that asset is pure virtual (generated or temporary, has no storage so won't be saved)
+
+    HashSet<IAssetReference*> _references;
+    CriticalSection _referencesLocker; // TODO: convert into a single interlocked exchange for the current thread owning lock
 
 public:
     /// <summary>
@@ -88,24 +105,28 @@ public:
     /// <summary>
     /// Adds reference to that asset.
     /// </summary>
-    FORCE_INLINE void AddReference()
-    {
-        Platform::InterlockedIncrement(&_refCount);
-    }
+    void AddReference();
+
+    /// <summary>
+    /// Adds reference to that asset.
+    /// </summary>
+    void AddReference(IAssetReference* ref, bool week = false);
 
     /// <summary>
     /// Removes reference from that asset.
     /// </summary>
-    FORCE_INLINE void RemoveReference()
-    {
-        Platform::InterlockedDecrement(&_refCount);
-    }
+    void RemoveReference();
+
+    /// <summary>
+    /// Removes reference from that asset.
+    /// </summary>
+    void RemoveReference(IAssetReference* ref, bool week = false);
 
 public:
     /// <summary>
     /// Gets the path to the asset storage file. In Editor, it reflects the actual file, in cooked Game, it fakes the Editor path to be informative for developers.
     /// </summary>
-    API_PROPERTY() virtual const String& GetPath() const = 0;
+    API_PROPERTY() virtual StringView GetPath() const = 0;
 
     /// <summary>
     /// Gets the asset type name.

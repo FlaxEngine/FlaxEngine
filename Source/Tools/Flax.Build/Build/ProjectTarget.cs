@@ -79,6 +79,10 @@ namespace Flax.Build
                 options.CompileEnv.PreprocessorDefinitions.Add("USE_LARGE_WORLDS");
                 options.ScriptingAPI.Defines.Add("USE_LARGE_WORLDS");
             }
+            if (!EngineConfiguration.UseLogInRelease && !IsEditor)
+            {
+                options.CompileEnv.PreprocessorDefinitions.Add("LOG_ENABLE=0");
+            }
             if (EngineConfiguration.WithSDL(options))
             {
                 options.CompileEnv.PreprocessorDefinitions.Add("PLATFORM_SDL");

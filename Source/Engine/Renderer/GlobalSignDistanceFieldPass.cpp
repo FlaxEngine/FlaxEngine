@@ -10,6 +10,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
@@ -197,6 +198,7 @@ public:
     GPUTexture* Texture = nullptr;
     GPUTexture* TextureMip = nullptr;
     Vector3 Origin = Vector3::Zero;
+    ReadWriteLock Locker;
     Array<CascadeData, FixedAllocation<4>> Cascades;
     HashSet<ScriptingTypeHandle> ObjectTypes;
     HashSet<GPUTexture*> SDFTextures;
@@ -236,6 +238,7 @@ public:
             OnSDFTextureDeleted(texture);
 
             // Clear static chunks cache
+            ScopeWriteLock lock(Locker);
             for (auto& cascade : Cascades)
                 cascade.StaticChunks.Clear();
         }
@@ -395,6 +398,7 @@ public:
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
+            ScopeWriteLock lock(Locker);
             OnSceneRenderingDirty(a->GetBox());
         }
     }
@@ -403,6 +407,7 @@ public:
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
+            ScopeWriteLock lock(Locker);
             OnSceneRenderingDirty(BoundingBox::FromSphere(prevBounds));
             OnSceneRenderingDirty(a->GetBox());
         }
@@ -412,12 +417,14 @@ public:
     {
         if (GLOBAL_SDF_ACTOR_IS_STATIC(a) && ObjectTypes.Contains(a->GetTypeHandle()))
         {
+            ScopeWriteLock lock(Locker);
             OnSceneRenderingDirty(a->GetBox());
         }
     }
 
     void OnSceneRenderingClear(SceneRendering* scene) override
     {
+        ScopeWriteLock lock(Locker);
         for (auto& cascade : Cascades)
             cascade.StaticChunks.Clear();
     }
@@ -576,6 +583,7 @@ void GlobalSignDistanceFieldCustomBuffer::DrawCascadeJob(int32 cascadeIndex)
     if (!cascade.Dirty)
         return;
     PROFILE_CPU();
+    ScopeReadLock lock(Locker);
     CurrentCascade.Set(&cascade);
     DrawCascadeActors(cascade);
     UpdateCascadeChunks(cascade);
@@ -790,6 +798,7 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
     Current = &sdfData;
     sdfData.StartDrawing(renderContext, false, reset); // (ignored if not started earlier this frame)
     sdfData.WaitForDrawing();
+    ScopeWriteLock lock(sdfData.Locker);
 
     // Rasterize world geometry into Global SDF
     bool anyDraw = false;
@@ -833,9 +842,10 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
         context->BindCB(1, _cb1);
         constexpr int32 chunkDispatchGroups = GLOBAL_SDF_RASTERIZE_CHUNK_SIZE / GLOBAL_SDF_RASTERIZE_GROUP_SIZE;
         int32 chunkDispatches = 0;
-        if (!reset)
+        if (!reset && cascade.NonEmptyChunks.HasItems())
         {
             PROFILE_GPU_CPU_NAMED("Clear Chunks");
+            GPUComputePass pass(context);
             for (auto it = cascade.NonEmptyChunks.Begin(); it.IsNotEnd(); ++it)
             {
                 auto& key = it->Item;
@@ -848,7 +858,6 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 context->UpdateCB(_cb1, &data);
                 context->Dispatch(_csClearChunk, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
                 chunkDispatches++;
-                // TODO: don't stall with UAV barrier on D3D12/Vulkan if UAVs don't change between dispatches
             }
             ZoneValue(chunkDispatches);
         }
@@ -869,106 +878,96 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
             context->BindSR(0, _objectsBuffer->GetBuffer() ? _objectsBuffer->GetBuffer()->View() : nullptr);
 
             // Rasterize non-empty chunks (first layer so can override existing chunk data)
-            for (const auto& e : cascade.Chunks)
+            uint32 maxLayer = 0;
             {
-                if (e.Key.Layer != 0)
-                    continue;
-                auto& chunk = e.Value;
-                cascade.NonEmptyChunks.Add(e.Key);
-
-                for (int32 i = 0; i < chunk.ModelsCount; i++)
+                GPUComputePass pass(context);
+                for (const auto& e : cascade.Chunks)
                 {
-                    auto objectIndex = objectIndexToDataIndex.At(chunk.Models[i]);
-                    data.Objects[i] = objectIndex;
-                    context->BindSR(i + 1, objectsTextures[objectIndex]);
-                }
-                for (int32 i = chunk.ModelsCount; i < GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT; i++)
-                    context->UnBindSR(i + 1);
-                data.ChunkCoord = e.Key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
-                data.ObjectsCount = chunk.ModelsCount;
-                context->UpdateCB(_cb1, &data);
-                auto cs = data.ObjectsCount != 0 ? _csRasterizeModel0 : _csClearChunk; // Terrain-only chunk can be quickly cleared
-                context->Dispatch(cs, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
-                chunkDispatches++;
-                // TODO: don't stall with UAV barrier on D3D12/Vulkan if UAVs don't change between dispatches (maybe cache per-shader write/read flags for all UAVs?)
+                    if (e.Key.Layer != 0)
+                        continue;
+                    auto& chunk = e.Value;
+                    data.ChunkCoord = e.Key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+                    cascade.NonEmptyChunks.Add(e.Key);
 
-                if (chunk.HeightfieldsCount != 0)
-                {
-                    // Inject heightfield (additive)
-                    for (int32 i = 0; i < chunk.HeightfieldsCount; i++)
-                    {
-                        auto objectIndex = objectIndexToDataIndex.At(chunk.Heightfields[i]);
-                        data.Objects[i] = objectIndex;
-                        context->BindSR(i + 1, objectsTextures[objectIndex]);
-                    }
-                    for (int32 i = chunk.HeightfieldsCount; i < GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT; i++)
-                        context->UnBindSR(i + 1);
-                    data.ObjectsCount = chunk.HeightfieldsCount;
-                    context->UpdateCB(_cb1, &data);
-                    context->Dispatch(_csRasterizeHeightfield, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
-                    chunkDispatches++;
-                }
-
-#if GLOBAL_SDF_DEBUG_CHUNKS
-                // Debug draw chunk bounds in world space with number of models in it
-                if (cascadeIndex + 1 == GLOBAL_SDF_DEBUG_CHUNKS)
-                {
-                    int32 count = chunk.ModelsCount + chunk.HeightfieldsCount;
-                    RasterizeChunkKey tmp = e.Key;
-                    tmp.NextLayer();
-                    while (cascade.Chunks.ContainsKey(tmp))
-                    {
-                        count += cascade.Chunks[tmp].ModelsCount + cascade.Chunks[tmp].HeightfieldsCount;
-                        tmp.NextLayer();
-                    }
-                    Float3 chunkMin = cascade.Bounds.Minimum + Float3(e.Key.Coord) * cascade.ChunkSize;
-                    BoundingBox chunkBounds(chunkMin, chunkMin + cascade.ChunkSize);
-                    DebugDraw::DrawWireBox(chunkBounds, Color::Red, 0, false);
-                    DebugDraw::DrawText(StringUtils::ToString(count), chunkBounds.GetCenter(), Color::Red);
-                }
-#endif
-            }
-
-            // Rasterize non-empty chunks (additive layers so need combine with existing chunk data)
-            for (const auto& e : cascade.Chunks)
-            {
-                if (e.Key.Layer == 0)
-                    continue;
-                auto& chunk = e.Value;
-                data.ChunkCoord = e.Key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
-
-                if (chunk.ModelsCount != 0)
-                {
-                    // Inject models (additive)
                     for (int32 i = 0; i < chunk.ModelsCount; i++)
                     {
                         auto objectIndex = objectIndexToDataIndex.At(chunk.Models[i]);
                         data.Objects[i] = objectIndex;
                         context->BindSR(i + 1, objectsTextures[objectIndex]);
                     }
-                    for (int32 i = chunk.ModelsCount; i < GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT; i++)
+                    for (int32 i = chunk.ModelsCount; i < GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT; i++)
                         context->UnBindSR(i + 1);
                     data.ObjectsCount = chunk.ModelsCount;
                     context->UpdateCB(_cb1, &data);
-                    context->Dispatch(_csRasterizeModel1, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                    auto cs = data.ObjectsCount != 0 ? _csRasterizeModel0 : _csClearChunk; // Terrain-only chunk can be quickly cleared
+                    context->Dispatch(cs, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
                     chunkDispatches++;
-                }
 
-                if (chunk.HeightfieldsCount != 0)
-                {
-                    // Inject heightfields (additive)
-                    for (int32 i = 0; i < chunk.HeightfieldsCount; i++)
+#if GLOBAL_SDF_DEBUG_CHUNKS
+                    // Debug draw chunk bounds in world space with number of models in it
+                    if (cascadeIndex + 1 == GLOBAL_SDF_DEBUG_CHUNKS)
                     {
-                        auto objectIndex = objectIndexToDataIndex.At(chunk.Heightfields[i]);
-                        data.Objects[i] = objectIndex;
-                        context->BindSR(i + 1, objectsTextures[objectIndex]);
+                        int32 count = chunk.ModelsCount + chunk.HeightfieldsCount;
+                        RasterizeChunkKey tmp = e.Key;
+                        tmp.NextLayer();
+                        while (cascade.Chunks.ContainsKey(tmp))
+                        {
+                            count += cascade.Chunks[tmp].ModelsCount + cascade.Chunks[tmp].HeightfieldsCount;
+                            tmp.NextLayer();
+                        }
+                        Float3 chunkMin = cascade.Bounds.Minimum + Float3(e.Key.Coord) * cascade.ChunkSize;
+                        BoundingBox chunkBounds(chunkMin, chunkMin + cascade.ChunkSize);
+                        DebugDraw::DrawWireBox(chunkBounds, Color::Red, 0, false);
+                        DebugDraw::DrawText(StringUtils::ToString(count), chunkBounds.GetCenter(), Color::Red);
                     }
-                    for (int32 i = chunk.HeightfieldsCount; i < GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT; i++)
-                        context->UnBindSR(i + 1);
-                    data.ObjectsCount = chunk.HeightfieldsCount;
-                    context->UpdateCB(_cb1, &data);
-                    context->Dispatch(_csRasterizeHeightfield, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
-                    chunkDispatches++;
+#endif
+                }
+            }
+
+            // Rasterize non-empty chunks (additive layers so need combine with existing chunk data)
+            for (uint32 layer = 0; layer <= maxLayer; layer++)
+            {
+                GPUComputePass pass(context);
+                for (const auto& e : cascade.Chunks)
+                {
+                    if (e.Key.Layer != layer)
+                        continue;
+                    auto& chunk = e.Value;
+                    data.ChunkCoord = e.Key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
+
+                    if (chunk.ModelsCount != 0 && layer != 0) // Models from layer 0 has been already written
+                    {
+                        // Inject models (additive)
+                        for (int32 i = 0; i < chunk.ModelsCount; i++)
+                        {
+                            auto objectIndex = objectIndexToDataIndex.At(chunk.Models[i]);
+                            data.Objects[i] = objectIndex;
+                            context->BindSR(i + 1, objectsTextures[objectIndex]);
+                        }
+                        for (int32 i = chunk.ModelsCount; i < GLOBAL_SDF_RASTERIZE_MODEL_MAX_COUNT; i++)
+                            context->UnBindSR(i + 1);
+                        data.ObjectsCount = chunk.ModelsCount;
+                        context->UpdateCB(_cb1, &data);
+                        context->Dispatch(_csRasterizeModel1, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                        chunkDispatches++;
+                    }
+
+                    if (chunk.HeightfieldsCount != 0)
+                    {
+                        // Inject heightfields (additive)
+                        for (int32 i = 0; i < chunk.HeightfieldsCount; i++)
+                        {
+                            auto objectIndex = objectIndexToDataIndex.At(chunk.Heightfields[i]);
+                            data.Objects[i] = objectIndex;
+                            context->BindSR(i + 1, objectsTextures[objectIndex]);
+                        }
+                        for (int32 i = chunk.HeightfieldsCount; i < GLOBAL_SDF_RASTERIZE_HEIGHTFIELD_MAX_COUNT; i++)
+                            context->UnBindSR(i + 1);
+                        data.ObjectsCount = chunk.HeightfieldsCount;
+                        context->UpdateCB(_cb1, &data);
+                        context->Dispatch(_csRasterizeHeightfield, chunkDispatchGroups, chunkDispatchGroups, chunkDispatchGroups);
+                        chunkDispatches++;
+                    }
                 }
             }
 

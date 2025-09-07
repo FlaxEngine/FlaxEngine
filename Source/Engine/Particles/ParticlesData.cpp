@@ -5,6 +5,7 @@
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/DynamicBuffer.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 int32 ParticleAttribute::GetSize() const
 {
@@ -97,8 +98,7 @@ ParticleBuffer::~ParticleBuffer()
 {
     SAFE_DELETE_GPU_RESOURCE(GPU.Buffer);
     SAFE_DELETE_GPU_RESOURCE(GPU.BufferSecondary);
-    SAFE_DELETE_GPU_RESOURCE(GPU.IndirectDrawArgsBuffer);
-    SAFE_DELETE_GPU_RESOURCE(GPU.SortingKeysBuffer);
+    SAFE_DELETE_GPU_RESOURCE(GPU.SortingKeys);
     SAFE_DELETE_GPU_RESOURCE(GPU.SortedIndices);
     SAFE_DELETE(GPU.RibbonIndexBufferDynamic);
     SAFE_DELETE(GPU.RibbonVertexBufferDynamic);
@@ -106,6 +106,7 @@ ParticleBuffer::~ParticleBuffer()
 
 bool ParticleBuffer::Init(ParticleEmitter* emitter)
 {
+    PROFILE_MEM(Particles);
     ASSERT(emitter && emitter->IsLoaded());
 
     Version = emitter->Graph.Version;
@@ -144,7 +145,6 @@ bool ParticleBuffer::Init(ParticleEmitter* emitter)
         GPU.BufferSecondary = GPUDevice::Instance->CreateBuffer(TEXT("ParticleBuffer B"));
         if (GPU.BufferSecondary->Init(GPU.Buffer->GetDescription()))
             return true;
-        GPU.IndirectDrawArgsBuffer = GPUDevice::Instance->CreateBuffer(TEXT("ParticleIndirectDrawArgsBuffer"));
         GPU.PendingClear = true;
         GPU.HasValidCount = false;
         GPU.ParticleCounterOffset = size;
@@ -161,29 +161,36 @@ bool ParticleBuffer::Init(ParticleEmitter* emitter)
 
 bool ParticleBuffer::AllocateSortBuffer()
 {
-    ASSERT(Emitter && GPU.SortedIndices == nullptr && GPU.SortingKeysBuffer == nullptr);
+    ASSERT(Emitter && GPU.SortedIndices == nullptr && GPU.SortingKeys == nullptr);
     if (Emitter->Graph.SortModules.IsEmpty())
         return false;
+    const int32 sortedIndicesCount = Capacity * Emitter->Graph.SortModules.Count();
+    uint32 indexSize = sizeof(uint32);
+    PixelFormat indexFormat = PixelFormat::R32_UInt;
+    if (Capacity <= MAX_uint16)
+    {
+        // 16-bit indices
+        indexSize = sizeof(uint16);
+        indexFormat = PixelFormat::R16_UInt;
+    }
 
     switch (Mode)
     {
     case ParticlesSimulationMode::CPU:
     {
-        const int32 sortedIndicesSize = Capacity * sizeof(uint32) * Emitter->Graph.SortModules.Count();
-        GPU.SortedIndices = GPUDevice::Instance->CreateBuffer(TEXT("SortedIndices"));
-        if (GPU.SortedIndices->Init(GPUBufferDescription::Buffer(sortedIndicesSize, GPUBufferFlags::ShaderResource, PixelFormat::R32_UInt, nullptr, sizeof(uint32), GPUResourceUsage::Dynamic)))
+        GPU.SortedIndices = GPUDevice::Instance->CreateBuffer(TEXT("ParticleSortedIndices"));
+        if (GPU.SortedIndices->Init(GPUBufferDescription::Buffer(sortedIndicesCount * indexSize, GPUBufferFlags::ShaderResource, indexFormat, nullptr, indexSize, GPUResourceUsage::Dynamic)))
             return true;
         break;
     }
 #if COMPILE_WITH_GPU_PARTICLES
     case ParticlesSimulationMode::GPU:
     {
-        const int32 sortedIndicesSize = Capacity * sizeof(uint32) * Emitter->Graph.SortModules.Count();
-        GPU.SortingKeysBuffer = GPUDevice::Instance->CreateBuffer(TEXT("ParticleSortingKeysBuffer"));
-        if (GPU.SortingKeysBuffer->Init(GPUBufferDescription::Structured(Capacity, sizeof(float) + sizeof(uint32), true)))
+        GPU.SortingKeys = GPUDevice::Instance->CreateBuffer(TEXT("ParticleSortingKeys"));
+        if (GPU.SortingKeys->Init(GPUBufferDescription::Buffer(sortedIndicesCount * sizeof(float), GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_Float, nullptr, sizeof(float))))
             return true;
-        GPU.SortedIndices = GPUDevice::Instance->CreateBuffer(TEXT("SortedIndices"));
-        if (GPU.SortedIndices->Init(GPUBufferDescription::Buffer(sortedIndicesSize, GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, PixelFormat::R32_UInt, nullptr, sizeof(uint32))))
+        GPU.SortedIndices = GPUDevice::Instance->CreateBuffer(TEXT("ParticleSortedIndices"));
+        if (GPU.SortedIndices->Init(GPUBufferDescription::Buffer(sortedIndicesCount * indexSize, GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess, indexFormat, nullptr, indexSize)))
             return true;
         break;
     }

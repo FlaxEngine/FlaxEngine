@@ -748,6 +748,11 @@ void AndroidPlatform::Sleep(int32 milliseconds)
     usleep(milliseconds * 1000);
 }
 
+void AndroidPlatform::Yield()
+{
+    sched_yield();
+}
+
 double AndroidPlatform::GetTimeSeconds()
 {
     struct timespec ts;

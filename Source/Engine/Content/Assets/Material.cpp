@@ -165,9 +165,13 @@ Asset::LoadResult Material::load()
         MaterialGenerator generator;
         generator.Error.Bind(&OnGeneratorError);
         if (_shaderHeader.Material.GraphVersion != MATERIAL_GRAPH_VERSION)
+        {
             LOG(Info, "Converting material \'{0}\', from version {1} to {2}...", name, _shaderHeader.Material.GraphVersion, MATERIAL_GRAPH_VERSION);
+        }
         else
+        {
             LOG(Info, "Updating material \'{0}\'...", name);
+        }
 
         // Load or create material surface
         MaterialLayer* layer;
@@ -410,16 +414,18 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     // Prepare
     auto& info = _shaderHeader.Material.Info;
     const bool isSurfaceOrTerrainOrDeformable = info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Terrain || info.Domain == MaterialDomain::Deformable;
+    const bool isOpaque = info.BlendMode == MaterialBlendMode::Opaque;
     const bool useCustomData = info.ShadingModel == MaterialShadingModel::Subsurface || info.ShadingModel == MaterialShadingModel::Foliage;
-    const bool useForward = ((info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Deformable) && info.BlendMode != MaterialBlendMode::Opaque) || info.Domain == MaterialDomain::Particle;
+    const bool useForward = ((info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Deformable) && !isOpaque) || info.Domain == MaterialDomain::Particle;
     const bool useTess =
             info.TessellationMode != TessellationMethod::None &&
             RenderTools::CanSupportTessellation(options.Profile) && isSurfaceOrTerrainOrDeformable;
     const bool useDistortion =
             (info.Domain == MaterialDomain::Surface || info.Domain == MaterialDomain::Deformable || info.Domain == MaterialDomain::Particle) &&
-            info.BlendMode != MaterialBlendMode::Opaque &&
+            !isOpaque &&
             EnumHasAnyFlags(info.UsageFlags, MaterialUsageFlags::UseRefraction) &&
             (info.FeaturesFlags & MaterialFeaturesFlags::DisableDistortion) == MaterialFeaturesFlags::None;
+    const MaterialShadingModel shadingModel = info.ShadingModel == MaterialShadingModel::CustomLit ? MaterialShadingModel::Unlit : info.ShadingModel;
 
     // @formatter:off
     static const char* Numbers[] =
@@ -431,7 +437,7 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     // Setup shader macros
     options.Macros.Add({ "MATERIAL_DOMAIN", Numbers[(int32)info.Domain] });
     options.Macros.Add({ "MATERIAL_BLEND", Numbers[(int32)info.BlendMode] });
-    options.Macros.Add({ "MATERIAL_SHADING_MODEL", Numbers[(int32)info.ShadingModel] });
+    options.Macros.Add({ "MATERIAL_SHADING_MODEL", Numbers[(int32)shadingModel] });
     options.Macros.Add({ "MATERIAL_MASKED", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsageFlags::UseMask) ? 1 : 0] });
     options.Macros.Add({ "DECAL_BLEND_MODE", Numbers[(int32)info.DecalBlendingMode] });
     options.Macros.Add({ "USE_EMISSIVE", Numbers[EnumHasAnyFlags(info.UsageFlags, MaterialUsageFlags::UseEmissive) ? 1 : 0] });
@@ -488,7 +494,7 @@ void Material::InitCompilationOptions(ShaderCompilationOptions& options)
     options.Macros.Add({ "IS_PARTICLE", Numbers[info.Domain == MaterialDomain::Particle ? 1 : 0] });
     options.Macros.Add({ "IS_DEFORMABLE", Numbers[info.Domain == MaterialDomain::Deformable ? 1 : 0] });
     options.Macros.Add({ "USE_FORWARD", Numbers[useForward ? 1 : 0] });
-    options.Macros.Add({ "USE_DEFERRED", Numbers[isSurfaceOrTerrainOrDeformable && info.BlendMode == MaterialBlendMode::Opaque ? 1 : 0] });
+    options.Macros.Add({ "USE_DEFERRED", Numbers[isSurfaceOrTerrainOrDeformable && isOpaque ? 1 : 0] });
     options.Macros.Add({ "USE_DISTORTION", Numbers[useDistortion ? 1 : 0] });
 #endif
 }

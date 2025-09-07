@@ -71,8 +71,6 @@ namespace FlaxEditor.GUI.Docking
         internal DockPanelProxy(DockPanel panel)
         : base(0, 0, 64, 64)
         {
-            AutoFocus = false;
-
             _panel = panel;
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;

@@ -3,6 +3,7 @@
 #if COMPILE_WITH_PROFILER
 
 #include "ProfilerGPU.h"
+#include "ProfilerMemory.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Graphics/GPUDevice.h"
@@ -45,6 +46,7 @@ void ProfilerGPU::EventBuffer::TryResolve()
     }
 
     // Collect queries results and free them
+    PROFILE_MEM(Profiler);
     for (int32 i = 0; i < _data.Count(); i++)
     {
         auto& e = _data[i];
@@ -58,6 +60,7 @@ void ProfilerGPU::EventBuffer::TryResolve()
 
 int32 ProfilerGPU::EventBuffer::Add(const Event& e)
 {
+    PROFILE_MEM(Profiler);
     const int32 index = _data.Count();
     _data.Add(e);
     return index;
@@ -88,6 +91,7 @@ GPUTimerQuery* ProfilerGPU::GetTimerQuery()
     }
     else
     {
+        PROFILE_MEM(Profiler);
         result = GPUDevice::Instance->CreateTimerQuery();
         _timerQueriesPool.Add(result);
     }

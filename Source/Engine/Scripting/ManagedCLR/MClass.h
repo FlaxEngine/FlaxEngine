@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Memory/ArenaAllocation.h"
 #include "MTypes.h"
 
 /// <summary>
@@ -17,21 +18,20 @@ private:
     mutable void* _attrInfo = nullptr;
 #elif USE_NETCORE
     void* _handle;
-    StringAnsi _name;
-    StringAnsi _namespace;
+    StringAnsiView _name;
+    StringAnsiView _namespace;
+    StringAnsiView _fullname;
     uint32 _types = 0;
     mutable uint32 _size = 0;
 #endif
-    const MAssembly* _assembly;
+    MAssembly* _assembly;
 
-    StringAnsi _fullname;
-
-    mutable Array<MMethod*> _methods;
-    mutable Array<MField*> _fields;
-    mutable Array<MProperty*> _properties;
-    mutable Array<MObject*> _attributes;
-    mutable Array<MEvent*> _events;
-    mutable Array<MClass*> _interfaces;
+    mutable Array<MMethod*, ArenaAllocation> _methods;
+    mutable Array<MField*, ArenaAllocation> _fields;
+    mutable Array<MProperty*, ArenaAllocation> _properties;
+    mutable Array<MObject*, ArenaAllocation> _attributes;
+    mutable Array<MEvent*, ArenaAllocation> _events;
+    mutable Array<MClass*, ArenaAllocation> _interfaces;
 
     MVisibility _visibility;
 
@@ -47,12 +47,13 @@ private:
     int32 _isInterface : 1;
     int32 _isValueType : 1;
     int32 _isEnum : 1;
+    int32 _isGeneric : 1;
 
 public:
 #if USE_MONO
     MClass(const MAssembly* parentAssembly, MonoClass* monoClass, const StringAnsi& fullname);
 #elif USE_NETCORE
-    MClass(const MAssembly* parentAssembly, void* handle, const char* name, const char* fullname, const char* namespace_, MTypeAttributes typeAttributes);
+    MClass(MAssembly* parentAssembly, void* handle, const char* name, const char* fullname, const char* namespace_, MTypeAttributes typeAttributes);
 #endif
 
     /// <summary>
@@ -64,7 +65,7 @@ public:
     /// <summary>
     /// Gets the parent assembly.
     /// </summary>
-    const MAssembly* GetAssembly() const
+    FORCE_INLINE MAssembly* GetAssembly() const
     {
         return _assembly;
     }
@@ -72,7 +73,7 @@ public:
     /// <summary>
     /// Gets the full name of the class (namespace and typename).
     /// </summary>
-    FORCE_INLINE const StringAnsi& GetFullName() const
+    FORCE_INLINE StringAnsiView GetFullName() const
     {
         return _fullname;
     }
@@ -80,12 +81,18 @@ public:
     /// <summary>
     /// Gets the name of the class.
     /// </summary>
-    StringAnsiView GetName() const;
+    FORCE_INLINE StringAnsiView GetName() const
+    {
+        return _name;
+    }
 
     /// <summary>
     /// Gets the namespace of the class.
     /// </summary>
-    StringAnsiView GetNamespace() const;
+    FORCE_INLINE StringAnsiView GetNamespace() const
+    {
+        return _namespace;
+    }
 
 #if USE_MONO
     /// <summary>
@@ -161,9 +168,9 @@ public:
     /// <summary>
     /// Gets if class is generic
     /// </summary>
-    bool IsGeneric() const
+    FORCE_INLINE bool IsGeneric() const
     {
-        return _fullname.FindLast('`') != -1;
+        return _isGeneric != 0;
     }
 
     /// <summary>
@@ -242,7 +249,7 @@ public:
     /// </summary>
     /// <remarks>Be aware this will not include the methods of any base classes.</remarks>
     /// <returns>The list of methods.</returns>
-    const Array<MMethod*>& GetMethods() const;
+    const Array<MMethod*, ArenaAllocation>& GetMethods() const;
 
     /// <summary>
     /// Returns an object referencing a field with the specified name.
@@ -257,7 +264,7 @@ public:
     /// </summary>
     /// <remarks>Be aware this will not include the fields of any base classes.</remarks>
     /// <returns>The list of fields.</returns>
-    const Array<MField*>& GetFields() const;
+    const Array<MField*, ArenaAllocation>& GetFields() const;
 
     /// <summary>
     /// Returns an object referencing a event with the specified name.
@@ -270,7 +277,7 @@ public:
     /// Returns all events belonging to this class.
     /// </summary>
     /// <returns>The list of events.</returns>
-    const Array<MEvent*>& GetEvents() const;
+    const Array<MEvent*, ArenaAllocation>& GetEvents() const;
 
     /// <summary>
     /// Returns an object referencing a property with the specified name.
@@ -285,14 +292,14 @@ public:
     /// </summary>
     /// <remarks>Be aware this will not include the properties of any base classes.</remarks>
     /// <returns>The list of properties.</returns>
-    const Array<MProperty*>& GetProperties() const;
+    const Array<MProperty*, ArenaAllocation>& GetProperties() const;
 
     /// <summary>
     /// Returns all interfaces implemented by this class (excluding interfaces from base classes).
     /// </summary>
     /// <remarks>Be aware this will not include the interfaces of any base classes.</remarks>
     /// <returns>The list of interfaces.</returns>
-    const Array<MClass*>& GetInterfaces() const;
+    const Array<MClass*, ArenaAllocation>& GetInterfaces() const;
 
 public:
     /// <summary>
@@ -326,5 +333,5 @@ public:
     /// Returns an instance of all attributes connected with given class. Returns null if the class doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MObject*>& GetAttributes() const;
+    const Array<MObject*, ArenaAllocation>& GetAttributes() const;
 };

@@ -169,6 +169,7 @@ void RenderEnvironmentProbeData::SetShaderData(ShaderEnvProbeData& data) const
 
 void* RendererAllocation::Allocate(uintptr size)
 {
+    PROFILE_CPU();
     void* result = nullptr;
     MemPoolLocker.Lock();
     for (int32 i = 0; i < MemPool.Count(); i++)
@@ -188,6 +189,7 @@ void* RendererAllocation::Allocate(uintptr size)
 
 void RendererAllocation::Free(void* ptr, uintptr size)
 {
+    PROFILE_CPU();
     MemPoolLocker.Lock();
     MemPool.Add({ ptr, size });
     MemPoolLocker.Unlock();
@@ -251,6 +253,22 @@ void RenderList::AddSettingsBlend(IPostFxSettingsProvider* provider, float weigh
     blend.Priority = priority;
     blend.VolumeSizeSqr = volumeSizeSqr;
     Blendable.Add(blend);
+}
+
+void RenderList::AddDelayedDraw(DelayedDraw&& func)
+{
+    MemPoolLocker.Lock(); // TODO: convert _delayedDraws into RenderListBuffer with usage of arena Memory for fast alloc
+    _delayedDraws.Add(MoveTemp(func));
+    MemPoolLocker.Unlock();
+}
+
+void RenderList::DrainDelayedDraws(RenderContextBatch& renderContextBatch, int32 contextIndex)
+{
+    if (_delayedDraws.IsEmpty())
+        return;
+    for (DelayedDraw& e : _delayedDraws)
+        e(renderContextBatch, contextIndex);
+    _delayedDraws.SetCapacity(0);
 }
 
 void RenderList::BlendSettings()
@@ -418,6 +436,18 @@ bool RenderList::HasAnyPostFx(const RenderContext& renderContext, MaterialPostFx
     return false;
 }
 
+BatchedDrawCall::BatchedDrawCall(RenderList* list)
+    : Instances(&list->Memory)
+{
+}
+
+BatchedDrawCall::BatchedDrawCall(BatchedDrawCall&& other) noexcept
+    : DrawCall(other.DrawCall)
+    , ObjectsStartIndex(other.ObjectsStartIndex)
+    , Instances(MoveTemp(other.Instances))
+{
+}
+
 void DrawCallsList::Clear()
 {
     Indices.Clear();
@@ -431,11 +461,29 @@ bool DrawCallsList::IsEmpty() const
     return Indices.Count() + PreBatchedDrawCalls.Count() == 0;
 }
 
+RenderListAlloc::~RenderListAlloc()
+{
+    if (NeedFree && Data) // Render List memory doesn't need free (arena allocator)
+        RendererAllocation::Free(Data, Size);
+}
+
+void* RenderListAlloc::Init(RenderList* list, uint32 size, uint32 alignment)
+{
+    ASSERT_LOW_LAYER(!Data);
+    Size = size;
+    if (size == 0)
+        return nullptr;
+    if (size < 1024 || (alignment != 16 && alignment != 8 && alignment != 4 && alignment != 1))
+        return (Data = list->Memory.Allocate(size, alignment));
+    NeedFree = true;
+    Data = RendererAllocation::Allocate(size);
+    return Data;
+}
+
 RenderList::RenderList(const SpawnParams& params)
     : ScriptingObject(params)
+    , Memory(4 * 1024 * 1024, RendererAllocation::Allocate, RendererAllocation::Free) // 4MB pages, use page pooling via RendererAllocation
     , DirectionalLights(4)
-    , PointLights(32)
-    , SpotLights(32)
     , SkyLights(4)
     , EnvironmentProbes(32)
     , Decals(64)
@@ -443,9 +491,10 @@ RenderList::RenderList(const SpawnParams& params)
     , AtmosphericFog(nullptr)
     , Fog(nullptr)
     , Blendable(32)
-    , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Bufffer"))
-    , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Bufffer"))
+    , ObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
+    , TempObjectBuffer(0, PixelFormat::R32G32B32A32_Float, false, TEXT("Object Buffer"))
     , _instanceBuffer(0, sizeof(ShaderObjectDrawInstanceData), TEXT("Instance Buffer"), GPUVertexLayout::Get({ { VertexElement::Types::Attribute0, 3, 0, 1, PixelFormat::R32_UInt } }))
+    , _delayedDraws(&Memory)
 {
 }
 
@@ -477,50 +526,56 @@ void RenderList::Clear()
     PostFx.Clear();
     Settings = PostProcessSettings();
     Blendable.Clear();
+    _delayedDraws.Clear();
     _instanceBuffer.Clear();
     ObjectBuffer.Clear();
     TempObjectBuffer.Clear();
+    Memory.Free();
 }
 
-struct PackedSortKey
+// Sorting order: By Sort Order -> By Material -> By Geometry -> By Distance
+PACK_STRUCT(struct PackedSortKey
 {
-    union
-    {
-        uint64 Data;
+    uint32 DistanceKey;
+    uint8 DrawKey;
+    uint16 BatchKey;
+    uint8 SortKey;
+});
 
-        PACK_BEGIN()
+// Sorting order: By Sort Order -> By Material -> By Geometry -> By Distance
+PACK_STRUCT(struct PackedSortKeyDistance
+{
+    uint8 DrawKey;
+    uint16 BatchKey;
+    uint32 DistanceKey;
+    uint8 SortKey;
+});
 
-        struct
-        {
-            // Sorting order: By Sort Order -> By Distance -> By Material -> By Geometry
-            uint8 DrawKey;
-            uint16 BatchKey;
-            uint32 DistanceKey;
-            uint8 SortKey;
-        } PACK_END();
-    };
-};
+static_assert(sizeof(PackedSortKey) == sizeof(uint64), "Invalid sort key size");
+static_assert(sizeof(PackedSortKeyDistance) == sizeof(uint64), "Invalid sort key size");
 
 FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall& drawCall, int8 sortOrder)
 {
     const Float3 planeNormal = renderContext.View.Direction;
     const float planePoint = -Float3::Dot(planeNormal, renderContext.View.Position);
     const float distance = Float3::Dot(planeNormal, drawCall.ObjectPosition) - planePoint;
-    PackedSortKey key;
-    key.DistanceKey = RenderTools::ComputeDistanceSortKey(distance);
+    uint32 distanceKey = RenderTools::ComputeDistanceSortKey(distance);
     uint32 batchKey = GetHash(drawCall.Material);
     IMaterial::InstancingHandler handler;
     if (drawCall.Material->CanUseInstancing(handler))
         handler.GetHash(drawCall, batchKey);
-    key.BatchKey = (uint16)batchKey;
     uint32 drawKey = (uint32)(471 * drawCall.WorldDeterminantSign);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.IndexBuffer);
+
+    PackedSortKey key;
+    key.BatchKey = (uint16)batchKey;
+    key.DistanceKey = distanceKey;
     key.DrawKey = (uint8)drawKey;
     key.SortKey = (uint8)(sortOrder - MIN_int8);
-    drawCall.SortKey = key.Data;
+    drawCall.SortKey = *(uint64*)&key;
 }
 
 void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawModes, StaticFlags staticFlags, DrawCall& drawCall, bool receivesDecals, int8 sortOrder)
@@ -626,6 +681,7 @@ void RenderList::BuildObjectsBuffer()
     if (count == 0)
         return;
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsCommands);
     ObjectBuffer.Data.Resize(count * sizeof(ShaderObjectData));
     auto* src = (const DrawCall*)DrawCalls.Get();
     auto* dst = (ShaderObjectData*)ObjectBuffer.Data.Get();
@@ -645,33 +701,49 @@ void RenderList::BuildObjectsBuffer()
     ZoneValue(ObjectBuffer.Data.Count() / 1024); // Objects Buffer size in kB
 }
 
-void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass, bool stable)
+void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawCallsListType listType, DrawPass pass)
 {
     PROFILE_CPU();
+    PROFILE_MEM(GraphicsCommands);
     const auto* drawCallsData = drawCalls.Get();
     const auto* listData = list.Indices.Get();
     const int32 listSize = list.Indices.Count();
     ZoneValue(listSize);
 
     // Use shared memory from renderer allocator
-    Array<uint64, RendererAllocation> SortingKeys[2];
-    Array<int32, RendererAllocation> SortingIndices;
-    SortingKeys[0].Resize(listSize);
-    SortingKeys[1].Resize(listSize);
-    SortingIndices.Resize(listSize);
-    uint64* sortedKeys = SortingKeys[0].Get();
+    RenderListAlloc allocs[3];
+    uint64* sortedKeys = allocs[0].Init<uint64>(this, listSize);
+    uint64* tempKeys = allocs[1].Init<uint64>(this, listSize);
+    int32* tempIndices = allocs[2].Init<int32>(this, listSize);
 
     // Setup sort keys
     if (reverseDistance)
     {
-        for (int32 i = 0; i < listSize; i++)
+        if (listType == DrawCallsListType::Forward)
         {
-            const DrawCall& drawCall = drawCallsData[listData[i]];
-            PackedSortKey key;
-            key.Data = drawCall.SortKey;
-            key.DistanceKey ^= MAX_uint32; // Reverse depth
-            key.SortKey ^= MAX_uint8; // Reverse sort order
-            sortedKeys[i] = key.Data;
+            // Transparency uses distance to take precedence over batching efficiency for correct draw order
+            for (int32 i = 0; i < listSize; i++)
+            {
+                const DrawCall& drawCall = drawCallsData[listData[i]];
+                PackedSortKey key = *(PackedSortKey*)&drawCall.SortKey;
+                PackedSortKeyDistance forwardKey;
+                forwardKey.BatchKey = key.BatchKey;
+                forwardKey.DistanceKey = key.DistanceKey ^ MAX_uint32; // Reverse depth
+                forwardKey.DrawKey = key.DrawKey;
+                forwardKey.SortKey = key.SortKey ^ MAX_uint8; // Reverse sort order
+                sortedKeys[i] = *(uint64*)&forwardKey;
+            }
+        }
+        else
+        {
+            for (int32 i = 0; i < listSize; i++)
+            {
+                const DrawCall& drawCall = drawCallsData[listData[i]];
+                PackedSortKey key = *(PackedSortKey*)&drawCall.SortKey;
+                key.DistanceKey ^= MAX_uint32; // Reverse depth
+                key.SortKey ^= MAX_uint8; // Reverse sort order
+                sortedKeys[i] = *(uint64*)&key;
+            }
         }
     }
     else
@@ -685,7 +757,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
 
     // Sort draw calls indices
     int32* resultIndices = list.Indices.Get();
-    Sorting::RadixSort(sortedKeys, resultIndices, SortingKeys[1].Get(), SortingIndices.Get(), listSize);
+    Sorting::RadixSort(sortedKeys, resultIndices, tempKeys, tempIndices, listSize);
     if (resultIndices != list.Indices.Get())
         Platform::MemoryCopy(list.Indices.Get(), resultIndices, sizeof(int32) * listSize);
 
@@ -728,7 +800,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     }
 
     // When using depth buffer draw calls are already almost ideally sorted by Radix Sort but transparency needs more stability to prevent flickering
-    if (stable)
+    if (listType == DrawCallsListType::Forward)
     {
         // Sort draw calls batches by depth
         Array<DrawBatch, RendererAllocation> sortingBatches;
@@ -754,6 +826,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     if (list.IsEmpty())
         return;
     PROFILE_GPU_CPU("Drawing");
+    PROFILE_MEM(GraphicsCommands);
     const auto* drawCallsData = drawCallsList->DrawCalls.Get();
     const auto* listData = list.Indices.Get();
     const auto* batchesData = list.Batches.Get();

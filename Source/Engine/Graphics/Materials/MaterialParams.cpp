@@ -15,6 +15,7 @@
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Streaming/Streaming.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 bool MaterialInfo8::operator==(const MaterialInfo8& other) const
 {
@@ -639,6 +640,7 @@ void MaterialParams::Dispose()
 
 bool MaterialParams::Load(ReadStream* stream)
 {
+    PROFILE_MEM(GraphicsMaterials);
     bool result = false;
 
     // Release

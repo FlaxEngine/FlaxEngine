@@ -122,6 +122,7 @@ public:
         static void Collect(int32 generation);
         static void Collect(int32 generation, MGCCollectionMode collectionMode, bool blocking, bool compacting);
         static int32 MaxGeneration();
+        static void MemoryInfo(int64& totalCommitted, int64& heapSize);
         static void WaitForPendingFinalizers();
         static void WriteRef(void* ptr, MObject* ref);
         static void WriteValue(void* dst, void* src, int32 count, const MClass* klass);

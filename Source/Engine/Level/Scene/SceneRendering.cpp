@@ -7,9 +7,24 @@
 #include "Engine/Graphics/RenderView.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Threading/JobSystem.h"
-#include "Engine/Threading/Threading.h"
-#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Physics/Actors/IPhysicsDebug.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
+#if !BUILD_RELEASE
+#include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Core/Log.h"
+#endif
+
+#if BUILD_RELEASE
+#define CHECK_SCENE_EDIT_ACCESS()
+#else
+#define CHECK_SCENE_EDIT_ACCESS() \
+    if (_isRendering && IsInMainThread() && GPUDevice::Instance && GPUDevice::Instance->IsRendering()) \
+    { \
+        LOG(Error, "Adding/removing actors during rendering is not supported ({}, '{}').", a->ToString(), a->GetNamePath()); \
+        return; \
+    }
+#endif
 
 ISceneRenderingListener::~ISceneRenderingListener()
 {
@@ -42,20 +57,22 @@ FORCE_INLINE bool FrustumsListCull(const BoundingSphere& bounds, const Array<Bou
 
 void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory category)
 {
-    ScopeLock lock(Locker);
+    PROFILE_MEM(Graphics);
     if (category == PreRender)
     {
+        // Add additional lock during scene rendering (prevents any Actors cache modifications on content streaming threads - eg. when model residency changes)
+        Locker.ReadLock();
+        _isRendering = true;
+
         // Register scene
         for (const auto& renderContext : renderContextBatch.Contexts)
             renderContext.List->Scenes.Add(this);
-
-        // Add additional lock during scene rendering (prevents any Actors cache modifications on content streaming threads - eg. when model residency changes)
-        Locker.Lock();
     }
     else if (category == PostRender)
     {
         // Release additional lock
-        Locker.Unlock();
+        _isRendering = false;
+        Locker.ReadUnlock();
     }
     auto& view = renderContextBatch.GetMainContext().View;
     auto& list = Actors[(int32)category];
@@ -76,7 +93,7 @@ void SceneRendering::Draw(RenderContextBatch& renderContextBatch, DrawCategory c
         // Run in async via Job System
         Function<void(int32)> func;
         func.Bind<SceneRendering, &SceneRendering::DrawActorsJob>(this);
-        const uint64 waitLabel = JobSystem::Dispatch(func, JobSystem::GetThreadsCount());
+        const int64 waitLabel = JobSystem::Dispatch(func, JobSystem::GetThreadsCount());
         renderContextBatch.WaitLabels.Add(waitLabel);
     }
     else
@@ -126,7 +143,7 @@ void SceneRendering::CollectPostFxVolumes(RenderContext& renderContext)
 
 void SceneRendering::Clear()
 {
-    ScopeLock lock(Locker);
+    ScopeWriteLock lock(Locker);
     for (auto* listener : _listeners)
     {
         listener->OnSceneRenderingClear(this);
@@ -134,6 +151,8 @@ void SceneRendering::Clear()
     }
     _listeners.Clear();
     for (auto& e : Actors)
+        e.Clear();
+    for (auto& e : FreeActors)
         e.Clear();
 #if USE_EDITOR
     PhysicsDebug.Clear();
@@ -144,18 +163,22 @@ void SceneRendering::AddActor(Actor* a, int32& key)
 {
     if (key != -1)
         return;
+    PROFILE_MEM(Graphics);
+    CHECK_SCENE_EDIT_ACCESS();
     const int32 category = a->_drawCategory;
-    ScopeLock lock(Locker);
+    ScopeWriteLock lock(Locker);
     auto& list = Actors[category];
-    // TODO: track removedCount and skip searching for free entry if there is none
-    key = 0;
-    for (; key < list.Count(); key++)
+    if (FreeActors[category].HasItems())
     {
-        if (list.Get()[key].Actor == nullptr)
-            break;
+        // Use existing item
+        key = FreeActors[category].Pop();
     }
-    if (key == list.Count())
+    else
+    {
+        // Add a new item
+        key = list.Count();
         list.AddOne();
+    }
     auto& e = list[key];
     e.Actor = a;
     e.LayerMask = a->GetLayerMask();
@@ -168,9 +191,9 @@ void SceneRendering::AddActor(Actor* a, int32& key)
 void SceneRendering::UpdateActor(Actor* a, int32& key, ISceneRenderingListener::UpdateFlags flags)
 {
     const int32 category = a->_drawCategory;
-    ScopeLock lock(Locker);
+    ScopeReadLock lock(Locker); // Read-access only as list doesn't get resized (like Add/Remove do) so allow updating actors from different threads at once
     auto& list = Actors[category];
-    if (list.Count() <= key) // Ignore invalid key softly
+    if (list.Count() <= key || key < 0) // Ignore invalid key softly
         return;
     auto& e = list[key];
     if (e.Actor == a)
@@ -186,10 +209,11 @@ void SceneRendering::UpdateActor(Actor* a, int32& key, ISceneRenderingListener::
 
 void SceneRendering::RemoveActor(Actor* a, int32& key)
 {
+    CHECK_SCENE_EDIT_ACCESS();
     const int32 category = a->_drawCategory;
-    ScopeLock lock(Locker);
+    ScopeWriteLock lock(Locker);
     auto& list = Actors[category];
-    if (list.Count() > key) // Ignore invalid key softly (eg. list after batch clear during scene unload)
+    if (list.Count() > key || key < 0) // Ignore invalid key softly (eg. list after batch clear during scene unload)
     {
         auto& e = list.Get()[key];
         if (e.Actor == a)
@@ -198,6 +222,7 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
                 listener->OnSceneRenderingRemoveActor(a);
             e.Actor = nullptr;
             e.LayerMask = 0;
+            FreeActors[category].Add(key);
         }
     }
     key = -1;
@@ -215,6 +240,7 @@ void SceneRendering::RemoveActor(Actor* a, int32& key)
 void SceneRendering::DrawActorsJob(int32)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Graphics);
     auto& mainContext = _drawBatch->GetMainContext();
     const auto& view = mainContext.View;
     if (view.StaticFlagsMask != StaticFlags::None)

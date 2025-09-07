@@ -4,8 +4,13 @@
 
 #include "Engine/Core/Config.h"
 
-// Amount of content loading threads per single physical CPU core
+// Amount of content loading threads per single logical CPU core
+#ifndef LOADING_THREAD_PER_LOGICAL_CORE
 #define LOADING_THREAD_PER_LOGICAL_CORE 0.5f
+#endif
+
+// Enables pinning loading threads to the logical CPU cores with affinity mask
+//#define LOADING_THREAD_AFFINITY_MASK(thread) (1 << (thread + 1))
 
 // Enables additional assets metadata verification
 #define ASSETS_LOADING_EXTRA_VERIFICATION (BUILD_DEBUG || USE_EDITOR)

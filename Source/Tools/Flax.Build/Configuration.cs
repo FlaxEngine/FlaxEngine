@@ -277,6 +277,11 @@ namespace Flax.Build
         public static bool UseDotNet = true;
 
         /// <summary>
+        /// True if enable logging in Release game builds.
+        /// </summary>
+        [CommandLine("useLogInRelease", "Can be used to disable logging in Release game builds")]
+        public static bool UseLogInRelease = true;
+
         /// True if SDL support should be enabled.
         /// </summary>
         [CommandLine("useSdl", "1 to enable SDL support in build")]

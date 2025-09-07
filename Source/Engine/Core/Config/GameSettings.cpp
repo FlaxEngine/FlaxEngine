@@ -221,6 +221,7 @@ void GameSettings::Deserialize(DeserializeStream& stream, ISerializeModifier* mo
     ProductName = JsonTools::GetString(stream, "ProductName");
     CompanyName = JsonTools::GetString(stream, "CompanyName");
     CopyrightNotice = JsonTools::GetString(stream, "CopyrightNotice");
+    Version = JsonTools::GetString(stream, "Version");
     Icon = JsonTools::GetGuid(stream, "Icon");
     FirstScene = JsonTools::GetGuid(stream, "FirstScene");
     NoSplashScreen = JsonTools::GetBool(stream, "NoSplashScreen", NoSplashScreen);

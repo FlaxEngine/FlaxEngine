@@ -20,13 +20,6 @@ class PlatformTools;
 #define GAME_BUILD_DOTNET_RUNTIME_MAX_VER 9
 #endif
 
-#if OFFICIAL_BUILD
-// Use the fixed .NET SDK version in packaged builds for compatibility (FlaxGame is precompiled with it)
-#define GAME_BUILD_DOTNET_VER TEXT("-dotnet=" MACRO_TO_STR(GAME_BUILD_DOTNET_RUNTIME_MIN_VER))
-#else
-#define GAME_BUILD_DOTNET_VER TEXT("")
-#endif
-
 /// <summary>
 /// Game building options. Used as flags.
 /// </summary>
@@ -373,6 +366,8 @@ public:
     /// Gets the name of the platform and architecture for the current BuildPlatform.
     /// </summary>
     void GetBuildPlatformName(const Char*& platform, const Char*& architecture) const;
+
+    String GetDotnetCommandArg() const;
 
 public:
 

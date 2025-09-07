@@ -20,6 +20,8 @@
 #define VK_SET_DEBUG_NAME(device, handle, type, name)
 #endif
 
+enum class GPUResourceAccess;
+
 /// <summary>
 /// Set of utilities for rendering on Vulkan platform.
 /// </summary>
@@ -39,6 +41,9 @@ public:
 
     static String GetVkErrorString(VkResult result);
     static void LogVkResult(VkResult result, const char* file = nullptr, uint32 line = 0, bool fatal = false);
+
+    static VkAccessFlags GetAccess(GPUResourceAccess access);
+    static VkImageLayout GetImageLayout(GPUResourceAccess access);
 
     static inline VkPipelineStageFlags GetBufferBarrierFlags(VkAccessFlags accessFlags)
     {
@@ -66,6 +71,9 @@ public:
         case VK_ACCESS_SHADER_READ_BIT:
         case VK_ACCESS_SHADER_WRITE_BIT:
             stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            break;
+        case VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT:
+            stageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
             break;
         case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT:
         case VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT:

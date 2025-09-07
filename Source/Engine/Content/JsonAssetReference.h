@@ -19,6 +19,15 @@ API_STRUCT(NoDefault, Template, MarshalAs=JsonAsset*) struct JsonAssetReference 
         OnSet(asset);
     }
 
+    explicit JsonAssetReference(decltype(__nullptr))
+    {
+    }
+
+    explicit JsonAssetReference(IAssetReference* owner)
+        : AssetReference<JsonAsset>(owner)
+    {
+    }
+
     /// <summary>
     /// Gets the deserialized native object instance of the given type. Returns null if asset is not loaded or loaded object has different type.
     /// </summary>

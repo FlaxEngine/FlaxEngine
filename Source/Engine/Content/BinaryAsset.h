@@ -292,7 +292,7 @@ public:
 #if USE_EDITOR
     void OnDeleteObject() override;
 #endif
-    const String& GetPath() const final override;
+    StringView GetPath() const final override;
     uint64 GetMemoryUsage() const override;
 
 protected:

@@ -16,7 +16,7 @@ class RigidBody;
 /// </summary>
 /// <seealso cref="Actor" />
 /// <seealso cref="PhysicsColliderActor" />
-API_CLASS(Abstract) class FLAXENGINE_API Collider : public PhysicsColliderActor
+API_CLASS(Abstract) class FLAXENGINE_API Collider : public PhysicsColliderActor, protected IAssetReference
 #if USE_EDITOR
     , public IPhysicsDebug
 #endif
@@ -158,9 +158,6 @@ protected:
     /// </summary>
     void RemoveStaticActor();
 
-private:
-    void OnMaterialChanged();
-
 public:
     // [PhysicsColliderActor]
     RigidBody* GetAttachedRigidBody() const override;
@@ -168,7 +165,6 @@ public:
     bool RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, float maxDistance = MAX_float) const final;
     void ClosestPoint(const Vector3& point, Vector3& result) const final;
     bool ContainsPoint(const Vector3& point) const final;
-
 
 protected:
     // [PhysicsColliderActor]
@@ -182,4 +178,9 @@ protected:
     void OnLayerChanged() override;
     void OnStaticFlagsChanged() override;
     void OnPhysicsSceneChanged(PhysicsScene* previous) override;
+
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
 };

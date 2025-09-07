@@ -44,22 +44,11 @@ public:
         FlaxStorage::LockData _dataLock;
 
     public:
-        /// <summary>
-        /// Init
-        /// </summary>
-        /// <param name="asset">Parent asset</param>
-        StreamingTask(AudioClip* asset)
-            : _asset(asset)
-            , _dataLock(asset->Storage->Lock())
-        {
-        }
+        StreamingTask(AudioClip* asset);
 
     public:
         // [ThreadPoolTask]
-        bool HasReference(Object* resource) const override
-        {
-            return _asset == resource;
-        }
+        bool HasReference(Object* resource) const override;
 
     protected:
         // [ThreadPoolTask]

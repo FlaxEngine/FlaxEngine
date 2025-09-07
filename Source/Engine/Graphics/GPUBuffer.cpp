@@ -15,6 +15,7 @@
 #include "Engine/Debug/Exceptions/ArgumentNullException.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Threading/Threading.h"
@@ -173,7 +174,7 @@ GPUBuffer::GPUBuffer()
     : GPUResource(SpawnParams(Guid::New(), TypeInitializer))
 {
     // Buffer with size 0 is considered to be invalid
-    _desc.Size = 0;
+    _desc.Clear();
 }
 
 bool GPUBuffer::IsStaging() const
@@ -188,6 +189,8 @@ bool GPUBuffer::IsDynamic() const
 
 bool GPUBuffer::Init(const GPUBufferDescription& desc)
 {
+    PROFILE_MEM(GraphicsBuffers);
+
     // Validate description
 #if !BUILD_RELEASE
 #define GET_NAME() GetName()
@@ -241,6 +244,15 @@ bool GPUBuffer::Init(const GPUBufferDescription& desc)
         LOG(Warning, "Cannot initialize buffer. Description: {0}", desc.ToString());
         return true;
     }
+
+#if COMPILE_WITH_PROFILER
+    auto group = ProfilerMemory::Groups::GraphicsBuffers;
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::VertexBuffer))
+        group = ProfilerMemory::Groups::GraphicsVertexBuffers;
+    else if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::IndexBuffer))
+        group = ProfilerMemory::Groups::GraphicsIndexBuffers;
+    ProfilerMemory::IncrementGroup(group, _memoryUsage);
+#endif
 
     return false;
 }
@@ -476,6 +488,15 @@ GPUResourceType GPUBuffer::GetResourceType() const
 
 void GPUBuffer::OnReleaseGPU()
 {
+#if COMPILE_WITH_PROFILER
+    auto group = ProfilerMemory::Groups::GraphicsBuffers;
+    if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::VertexBuffer))
+        group = ProfilerMemory::Groups::GraphicsVertexBuffers;
+    else if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::IndexBuffer))
+        group = ProfilerMemory::Groups::GraphicsIndexBuffers;
+    ProfilerMemory::IncrementGroup(group, _memoryUsage);
+#endif
+
     _desc.Clear();
     _isLocked = false;
 }

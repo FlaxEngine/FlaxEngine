@@ -29,6 +29,7 @@
 #include "Engine/Scripting/BinaryModule.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Debug/Exceptions/CLRInnerException.h"
 #if DOTNET_HOST_CORECLR
@@ -182,7 +183,7 @@ Dictionary<void*, MAssembly*> CachedAssemblyHandles;
 /// <summary>
 /// Returns the function pointer to the managed static method in NativeInterop class.
 /// </summary>
-void* GetStaticMethodPointer(const String& methodName);
+void* GetStaticMethodPointer(StringView methodName);
 
 /// <summary>
 /// Calls the managed static method with given parameters.
@@ -211,7 +212,7 @@ MClass* GetClass(MType* typeHandle);
 MClass* GetOrCreateClass(MType* typeHandle);
 MType* GetObjectType(MObject* obj);
 
-void* GetCustomAttribute(const Array<MObject*>& attributes, const MClass* attributeClass)
+void* GetCustomAttribute(const Array<MObject*, ArenaAllocation>& attributes, const MClass* attributeClass)
 {
     for (MObject* attr : attributes)
     {
@@ -222,7 +223,7 @@ void* GetCustomAttribute(const Array<MObject*>& attributes, const MClass* attrib
     return nullptr;
 }
 
-void GetCustomAttributes(Array<MObject*>& result, void* handle, void* getAttributesFunc)
+void GetCustomAttributes(Array<MObject*, ArenaAllocation>& result, void* handle, void* getAttributesFunc)
 {
     MObject** attributes;
     int numAttributes;
@@ -281,6 +282,7 @@ void MCore::UnloadDomain(const StringAnsi& domainName)
 bool MCore::LoadEngine()
 {
     PROFILE_CPU();
+    PROFILE_MEM(ScriptingCSharp);
 
     // Initialize hostfxr
     if (InitHostfxr())
@@ -523,21 +525,18 @@ void MCore::GCHandle::Free(const MGCHandle& handle)
 
 void MCore::GC::Collect()
 {
-    PROFILE_CPU();
-    static void* GCCollectPtr = GetStaticMethodPointer(TEXT("GCCollect"));
-    CallStaticMethod<void, int, int, bool, bool>(GCCollectPtr, MaxGeneration(), (int)MGCCollectionMode::Default, true, false);
+    Collect(MaxGeneration(), MGCCollectionMode::Default, true, false);
 }
 
 void MCore::GC::Collect(int32 generation)
 {
-    PROFILE_CPU();
-    static void* GCCollectPtr = GetStaticMethodPointer(TEXT("GCCollect"));
-    CallStaticMethod<void, int, int, bool, bool>(GCCollectPtr, generation, (int)MGCCollectionMode::Default, true, false);
+    Collect(generation, MGCCollectionMode::Default, true, false);
 }
 
 void MCore::GC::Collect(int32 generation, MGCCollectionMode collectionMode, bool blocking, bool compacting)
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("GC Collect");
+    ZoneColor(0xe3c349);
     static void* GCCollectPtr = GetStaticMethodPointer(TEXT("GCCollect"));
     CallStaticMethod<void, int, int, bool, bool>(GCCollectPtr, generation, (int)collectionMode, blocking, compacting);
 }
@@ -548,9 +547,16 @@ int32 MCore::GC::MaxGeneration()
     return maxGeneration;
 }
 
+void MCore::GC::MemoryInfo(int64& totalCommitted, int64& heapSize)
+{
+    static void* GCMemoryInfoPtr = GetStaticMethodPointer(TEXT("GCMemoryInfo"));
+    CallStaticMethod<void, int64*, int64*>(GCMemoryInfoPtr, &totalCommitted, &heapSize);
+}
+
 void MCore::GC::WaitForPendingFinalizers()
 {
-    PROFILE_CPU();
+    PROFILE_CPU_NAMED("GC WaitForPendingFinalizers");
+    ZoneColor(TracyWaitZoneColor);
     static void* GCWaitForPendingFinalizersPtr = GetStaticMethodPointer(TEXT("GCWaitForPendingFinalizers"));
     CallStaticMethod<void>(GCWaitForPendingFinalizersPtr);
 }
@@ -704,6 +710,13 @@ void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, v
 #if PLATFORM_DESKTOP && !USE_MONO_AOT
     static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectSetInternalValues"));
     CallStaticMethod<void, MObject*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, object, unmanagedPtr, id);
+#elif !USE_EDITOR
+    static MField* monoUnmanagedPtrField = ::ScriptingObject::GetStaticClass()->GetField("__unmanagedPtr");
+    static MField* monoIdField = ::ScriptingObject::GetStaticClass()->GetField("__internalId");
+    if (monoUnmanagedPtrField)
+        monoUnmanagedPtrField->SetValue(object, &unmanagedPtr);
+    if (id != nullptr && monoIdField)
+        monoIdField->SetValue(object, (void*)id);
 #else
     const MField* monoUnmanagedPtrField = klass->GetField("__unmanagedPtr");
     if (monoUnmanagedPtrField)
@@ -735,6 +748,7 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
     if (_hasCachedClasses || !IsLoaded())
         return _classes;
     PROFILE_CPU();
+    PROFILE_MEM(ScriptingCSharp);
     Stopwatch stopwatch;
 
 #if TRACY_ENABLE
@@ -750,12 +764,13 @@ const MAssembly::ClassesDictionary& MAssembly::GetClasses() const
     static void* GetManagedClassesPtr = GetStaticMethodPointer(TEXT("GetManagedClasses"));
     CallStaticMethod<void, void*, NativeClassDefinitions**, int*>(GetManagedClassesPtr, _handle, &managedClasses, &classCount);
     _classes.EnsureCapacity(classCount);
+    MAssembly* assembly = const_cast<MAssembly*>(this);
     for (int32 i = 0; i < classCount; i++)
     {
         NativeClassDefinitions& managedClass = managedClasses[i];
 
         // Create class object
-        MClass* klass = New<MClass>(this, managedClass.typeHandle, managedClass.name, managedClass.fullname, managedClass.namespace_, managedClass.typeAttributes);
+        MClass* klass = assembly->Memory.New<MClass>(assembly, managedClass.typeHandle, managedClass.name, managedClass.fullname, managedClass.namespace_, managedClass.typeAttributes);
         _classes.Add(klass->GetFullName(), klass);
 
         managedClass.nativePointer = klass;
@@ -796,6 +811,7 @@ void GetAssemblyName(void* assemblyHandle, StringAnsi& name, StringAnsi& fullnam
 
 DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* managedClass, void* assemblyHandle)
 {
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     MAssembly* assembly = GetAssembly(assemblyHandle);
     if (assembly == nullptr)
@@ -807,7 +823,7 @@ DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* man
         CachedAssemblyHandles.Add(assemblyHandle, assembly);
     }
 
-    MClass* klass = New<MClass>(assembly, managedClass->typeHandle, managedClass->name, managedClass->fullname, managedClass->namespace_, managedClass->typeAttributes);
+    MClass* klass = assembly->Memory.New<MClass>(assembly, managedClass->typeHandle, managedClass->name, managedClass->fullname, managedClass->namespace_, managedClass->typeAttributes);
     if (assembly != nullptr)
     {
         auto& classes = const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses());
@@ -815,7 +831,7 @@ DEFINE_INTERNAL_CALL(void) NativeInterop_CreateClass(NativeClassDefinitions* man
         if (classes.TryGet(klass->GetFullName(), oldKlass))
         {
             LOG(Warning, "Class '{0}' was already added to assembly '{1}'", String(klass->GetFullName()), String(assembly->GetName()));
-            Delete(klass);
+            Memory::DestructItem(klass);
             klass = oldKlass;
         }
         else
@@ -831,6 +847,7 @@ bool MAssembly::LoadCorlib()
     if (IsLoaded())
         return false;
     PROFILE_CPU();
+    PROFILE_MEM(ScriptingCSharp);
 #if TRACY_ENABLE
     const StringAnsiView name("Corlib");
     ZoneText(*name, name.Length());
@@ -910,12 +927,18 @@ bool MAssembly::UnloadImage(bool isReloading)
     return false;
 }
 
-MClass::MClass(const MAssembly* parentAssembly, void* handle, const char* name, const char* fullname, const char* namespace_, MTypeAttributes attributes)
+MClass::MClass(MAssembly* parentAssembly, void* handle, const char* name, const char* fullname, const char* namespace_, MTypeAttributes attributes)
     : _handle(handle)
-    , _name(name)
-    , _namespace(namespace_)
+    , _name(parentAssembly->AllocString(name))
+    , _namespace(parentAssembly->AllocString(namespace_))
+    , _fullname(parentAssembly->AllocString(fullname))
     , _assembly(parentAssembly)
-    , _fullname(fullname)
+    , _methods(&parentAssembly->Memory)
+    , _fields(&parentAssembly->Memory)
+    , _properties(&parentAssembly->Memory)
+    , _attributes(&parentAssembly->Memory)
+    , _events(&parentAssembly->Memory)
+    , _interfaces(&parentAssembly->Memory)
     , _hasCachedProperties(false)
     , _hasCachedFields(false)
     , _hasCachedMethods(false)
@@ -962,6 +985,8 @@ MClass::MClass(const MAssembly* parentAssembly, void* handle, const char* name, 
     static void* TypeIsEnumPtr = GetStaticMethodPointer(TEXT("TypeIsEnum"));
     _isEnum = CallStaticMethod<bool, void*>(TypeIsEnumPtr, handle);
 
+    _isGeneric = _fullname.FindLast('`') != -1;
+
     CachedClassHandles[handle] = this;
 }
 
@@ -977,22 +1002,12 @@ bool MAssembly::ResolveMissingFile(String& assemblyPath) const
 
 MClass::~MClass()
 {
-    _methods.ClearDelete();
-    _fields.ClearDelete();
-    _properties.ClearDelete();
-    _events.ClearDelete();
+    ArenaAllocator::ClearDelete(_methods);
+    ArenaAllocator::ClearDelete(_fields);
+    ArenaAllocator::ClearDelete(_properties);
+    ArenaAllocator::ClearDelete(_events);
 
     CachedClassHandles.Remove(_handle);
-}
-
-StringAnsiView MClass::GetName() const
-{
-    return _name;
-}
-
-StringAnsiView MClass::GetNamespace() const
-{
-    return _namespace;
 }
 
 MType* MClass::GetType() const
@@ -1052,10 +1067,11 @@ MMethod* MClass::GetMethod(const char* name, int32 numParams) const
     return nullptr;
 }
 
-const Array<MMethod*>& MClass::GetMethods() const
+const Array<MMethod*, ArenaAllocation>& MClass::GetMethods() const
 {
     if (_hasCachedMethods)
         return _methods;
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedMethods)
         return _methods;
@@ -1065,10 +1081,11 @@ const Array<MMethod*>& MClass::GetMethods() const
     static void* GetClassMethodsPtr = GetStaticMethodPointer(TEXT("GetClassMethods"));
     CallStaticMethod<void, void*, NativeMethodDefinitions**, int*>(GetClassMethodsPtr, _handle, &methods, &methodsCount);
     _methods.Resize(methodsCount);
+    MAssembly* assembly = const_cast<MAssembly*>(_assembly);
     for (int32 i = 0; i < methodsCount; i++)
     {
         NativeMethodDefinitions& definition = methods[i];
-        MMethod* method = New<MMethod>(const_cast<MClass*>(this), StringAnsi(definition.name), definition.handle, definition.numParameters, definition.methodAttributes);
+        MMethod* method = assembly->Memory.New<MMethod>(const_cast<MClass*>(this), assembly->AllocString(definition.name), definition.handle, definition.numParameters, definition.methodAttributes);
         _methods[i] = method;
         MCore::GC::FreeMemory((void*)definition.name);
     }
@@ -1089,10 +1106,11 @@ MField* MClass::GetField(const char* name) const
     return nullptr;
 }
 
-const Array<MField*>& MClass::GetFields() const
+const Array<MField*, ArenaAllocation>& MClass::GetFields() const
 {
     if (_hasCachedFields)
         return _fields;
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedFields)
         return _fields;
@@ -1105,7 +1123,7 @@ const Array<MField*>& MClass::GetFields() const
     for (int32 i = 0; i < numFields; i++)
     {
         NativeFieldDefinitions& definition = fields[i];
-        MField* field = New<MField>(const_cast<MClass*>(this), definition.fieldHandle, definition.name, definition.fieldType, definition.fieldOffset, definition.fieldAttributes);
+        MField* field = _assembly->Memory.New<MField>(const_cast<MClass*>(this), definition.fieldHandle, definition.name, definition.fieldType, definition.fieldOffset, definition.fieldAttributes);
         _fields[i] = field;
         MCore::GC::FreeMemory((void*)definition.name);
     }
@@ -1115,10 +1133,11 @@ const Array<MField*>& MClass::GetFields() const
     return _fields;
 }
 
-const Array<MEvent*>& MClass::GetEvents() const
+const Array<MEvent*, ArenaAllocation>& MClass::GetEvents() const
 {
     if (_hasCachedEvents)
         return _events;
+    PROFILE_MEM(ScriptingCSharp);
 
     // TODO: implement MEvent in .NET
 
@@ -1137,10 +1156,11 @@ MProperty* MClass::GetProperty(const char* name) const
     return nullptr;
 }
 
-const Array<MProperty*>& MClass::GetProperties() const
+const Array<MProperty*, ArenaAllocation>& MClass::GetProperties() const
 {
     if (_hasCachedProperties)
         return _properties;
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedProperties)
         return _properties;
@@ -1153,7 +1173,7 @@ const Array<MProperty*>& MClass::GetProperties() const
     for (int i = 0; i < numProperties; i++)
     {
         const NativePropertyDefinitions& definition = foundProperties[i];
-        MProperty* property = New<MProperty>(const_cast<MClass*>(this), definition.name, definition.propertyHandle, definition.getterHandle, definition.setterHandle, definition.getterAttributes, definition.setterAttributes);
+        MProperty* property = _assembly->Memory.New<MProperty>(const_cast<MClass*>(this), definition.name, definition.propertyHandle, definition.getterHandle, definition.setterHandle, definition.getterAttributes, definition.setterAttributes);
         _properties[i] = property;
         MCore::GC::FreeMemory((void*)definition.name);
     }
@@ -1163,10 +1183,11 @@ const Array<MProperty*>& MClass::GetProperties() const
     return _properties;
 }
 
-const Array<MClass*>& MClass::GetInterfaces() const
+const Array<MClass*, ArenaAllocation>& MClass::GetInterfaces() const
 {
     if (_hasCachedInterfaces)
         return _interfaces;
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedInterfaces)
         return _interfaces;
@@ -1202,10 +1223,11 @@ MObject* MClass::GetAttribute(const MClass* klass) const
     return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
-const Array<MObject*>& MClass::GetAttributes() const
+const Array<MObject*, ArenaAllocation>& MClass::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedAttributes)
         return _attributes;
@@ -1230,10 +1252,11 @@ MEvent::MEvent(MClass* parentClass, void* handle, const char* name)
     , _addMethod(nullptr)
     , _removeMethod(nullptr)
     , _parentClass(parentClass)
-    , _name(name)
+    , _name(parentClass->GetAssembly()->AllocString(name))
     , _hasCachedAttributes(false)
     , _hasAddMonoMethod(true)
     , _hasRemoveMonoMethod(true)
+    , _attributes(&parentClass->GetAssembly()->Memory)
 {
 }
 
@@ -1262,7 +1285,7 @@ MObject* MEvent::GetAttribute(const MClass* klass) const
     return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
-const Array<MObject*>& MEvent::GetAttributes() const
+const Array<MObject*, ArenaAllocation>& MEvent::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
@@ -1306,8 +1329,9 @@ MField::MField(MClass* parentClass, void* handle, const char* name, void* type, 
     , _type(type)
     , _fieldOffset(fieldOffset)
     , _parentClass(parentClass)
-    , _name(name)
+    , _name(parentClass->GetAssembly()->AllocString(name))
     , _hasCachedAttributes(false)
+    , _attributes(&parentClass->GetAssembly()->Memory)
 {
     switch (attributes & MFieldAttributes::FieldAccessMask)
     {
@@ -1384,10 +1408,11 @@ MObject* MField::GetAttribute(const MClass* klass) const
     return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
-const Array<MObject*>& MField::GetAttributes() const
+const Array<MObject*, ArenaAllocation>& MField::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedAttributes)
         return _attributes;
@@ -1397,13 +1422,14 @@ const Array<MObject*>& MField::GetAttributes() const
     return _attributes;
 }
 
-MMethod::MMethod(MClass* parentClass, StringAnsi&& name, void* handle, int32 paramsCount, MMethodAttributes attributes)
+MMethod::MMethod(MClass* parentClass, StringAnsiView name, void* handle, int32 paramsCount, MMethodAttributes attributes)
     : _handle(handle)
     , _paramsCount(paramsCount)
     , _parentClass(parentClass)
-    , _name(MoveTemp(name))
+    , _name(name)
     , _hasCachedAttributes(false)
     , _hasCachedSignature(false)
+    , _attributes(&parentClass->GetAssembly()->Memory)
 {
     switch (attributes & MMethodAttributes::MemberAccessMask)
     {
@@ -1431,13 +1457,15 @@ MMethod::MMethod(MClass* parentClass, StringAnsi&& name, void* handle, int32 par
     _isStatic = (attributes & MMethodAttributes::Static) == MMethodAttributes::Static;
 
 #if COMPILE_WITH_PROFILER
-    const StringAnsi& className = parentClass->GetFullName();
-    ProfilerName.Resize(className.Length() + 2 + _name.Length());
-    Platform::MemoryCopy(ProfilerName.Get(), className.Get(), className.Length());
-    ProfilerName.Get()[className.Length()] = ':';
-    ProfilerName.Get()[className.Length() + 1] = ':';
-    Platform::MemoryCopy(ProfilerName.Get() + className.Length() + 2, _name.Get(), _name.Length());
-    ProfilerData.name = ProfilerName.Get();
+    // Setup Tracy profiler entry (use assembly memory)
+    const StringAnsiView className = parentClass->GetFullName();
+    char* profilerName = (char*)parentClass->GetAssembly()->Memory.Allocate(className.Length() + _name.Length() + 3);
+    Platform::MemoryCopy(profilerName, className.Get(), className.Length());
+    profilerName[className.Length()] = ':';
+    profilerName[className.Length() + 1] = ':';
+    Platform::MemoryCopy(profilerName + className.Length() + 2, _name.Get(), _name.Length());
+    profilerName[className.Length() + 2 + _name.Length()] = 0;
+    ProfilerData.name = profilerName;
     ProfilerData.function = _name.Get();
     ProfilerData.file = nullptr;
     ProfilerData.line = 0;
@@ -1450,6 +1478,7 @@ void MMethod::CacheSignature() const
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedSignature)
         return;
+    PROFILE_MEM(ScriptingCSharp);
 
     static void* GetMethodReturnTypePtr = GetStaticMethodPointer(TEXT("GetMethodReturnType"));
     static void* GetMethodParameterTypesPtr = GetStaticMethodPointer(TEXT("GetMethodParameterTypes"));
@@ -1546,10 +1575,11 @@ MObject* MMethod::GetAttribute(const MClass* klass) const
     return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
-const Array<MObject*>& MMethod::GetAttributes() const
+const Array<MObject*, ArenaAllocation>& MMethod::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedAttributes)
         return _attributes;
@@ -1559,20 +1589,31 @@ const Array<MObject*>& MMethod::GetAttributes() const
     return _attributes;
 }
 
+FORCE_INLINE StringAnsiView GetPropertyMethodName(MProperty* property, StringAnsiView prefix)
+{
+    StringAnsiView name = property->GetName();
+    char* mem = (char*)property->GetParentClass()->GetAssembly()->Memory.Allocate(name.Length() + prefix.Length() + 1);
+    Platform::MemoryCopy(mem, prefix.Get(), prefix.Length());
+    Platform::MemoryCopy(mem + prefix.Length(), name.Get(), name.Length());
+    mem[name.Length() + prefix.Length()] = 0;
+    return StringAnsiView(mem, name.Length() + prefix.Length() + 1);
+}
+
 MProperty::MProperty(MClass* parentClass, const char* name, void* handle, void* getterHandle, void* setterHandle, MMethodAttributes getterAttributes, MMethodAttributes setterAttributes)
     : _parentClass(parentClass)
-    , _name(name)
+    , _name(parentClass->GetAssembly()->AllocString(name))
     , _handle(handle)
     , _hasCachedAttributes(false)
+    , _attributes(&parentClass->GetAssembly()->Memory)
 {
     _hasGetMethod = getterHandle != nullptr;
     if (_hasGetMethod)
-        _getMethod = New<MMethod>(parentClass, StringAnsi("get_" + _name), getterHandle, 0, getterAttributes);
+        _getMethod = parentClass->GetAssembly()->Memory.New<MMethod>(parentClass, GetPropertyMethodName(this, StringAnsiView("get_", 4)), getterHandle, 0, getterAttributes);
     else
         _getMethod = nullptr;
     _hasSetMethod = setterHandle != nullptr;
     if (_hasSetMethod)
-        _setMethod = New<MMethod>(parentClass, StringAnsi("set_" + _name), setterHandle, 1, setterAttributes);
+        _setMethod = parentClass->GetAssembly()->Memory.New<MMethod>(parentClass, GetPropertyMethodName(this, StringAnsiView("set_", 4)), setterHandle, 1, setterAttributes);
     else
         _setMethod = nullptr;
 }
@@ -1580,9 +1621,9 @@ MProperty::MProperty(MClass* parentClass, const char* name, void* handle, void* 
 MProperty::~MProperty()
 {
     if (_getMethod)
-        Delete(_getMethod);
+        Memory::DestructItem(_getMethod);
     if (_setMethod)
-        Delete(_setMethod);
+        Memory::DestructItem(_setMethod);
 }
 
 MMethod* MProperty::GetGetMethod() const
@@ -1624,10 +1665,11 @@ MObject* MProperty::GetAttribute(const MClass* klass) const
     return (MObject*)GetCustomAttribute(GetAttributes(), klass);
 }
 
-const Array<MObject*>& MProperty::GetAttributes() const
+const Array<MObject*, ArenaAllocation>& MProperty::GetAttributes() const
 {
     if (_hasCachedAttributes)
         return _attributes;
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     if (_hasCachedAttributes)
         return _attributes;
@@ -1658,6 +1700,7 @@ MClass* GetOrCreateClass(MType* typeHandle)
 {
     if (!typeHandle)
         return nullptr;
+    PROFILE_MEM(ScriptingCSharp);
     ScopeLock lock(BinaryModule::Locker);
     MClass* klass;
     if (!CachedClassHandles.TryGet(typeHandle, klass))
@@ -1667,7 +1710,7 @@ MClass* GetOrCreateClass(MType* typeHandle)
         static void* GetManagedClassFromTypePtr = GetStaticMethodPointer(TEXT("GetManagedClassFromType"));
         CallStaticMethod<void, void*, void*>(GetManagedClassFromTypePtr, typeHandle, &classInfo, &assemblyHandle);
         MAssembly* assembly = GetAssembly(assemblyHandle);
-        klass = New<MClass>(assembly, classInfo.typeHandle, classInfo.name, classInfo.fullname, classInfo.namespace_, classInfo.typeAttributes);
+        klass = assembly->Memory.New<MClass>(assembly, classInfo.typeHandle, classInfo.name, classInfo.fullname, classInfo.namespace_, classInfo.typeAttributes);
         if (assembly != nullptr)
         {
             auto& classes = const_cast<MAssembly::ClassesDictionary&>(assembly->GetClasses());
@@ -1781,9 +1824,13 @@ bool InitHostfxr()
     if (hostfxr == nullptr)
     {
         if (FileSystem::FileExists(path))
+        {
             LOG(Fatal, "Failed to load hostfxr library, possible platform/architecture mismatch with the library. See log for more information. ({0})", path);
+        }
         else
+        {
             LOG(Fatal, "Failed to load hostfxr library ({0})", path);
+        }
         return true;
     }
     hostfxr_initialize_for_runtime_config = (hostfxr_initialize_for_runtime_config_fn)Platform::GetProcAddress(hostfxr, "hostfxr_initialize_for_runtime_config");
@@ -1869,12 +1916,13 @@ void ShutdownHostfxr()
 {
 }
 
-void* GetStaticMethodPointer(const String& methodName)
+void* GetStaticMethodPointer(StringView methodName)
 {
     void* fun;
     if (CachedFunctions.TryGet(methodName, fun))
         return fun;
     PROFILE_CPU();
+    PROFILE_MEM(ScriptingCSharp);
     const int rc = get_function_pointer(NativeInteropTypeName, FLAX_CORECLR_STRING(methodName).Get(), UNMANAGEDCALLERSONLY_METHOD, nullptr, nullptr, &fun);
     if (rc != 0)
         LOG(Fatal, "Failed to get unmanaged function pointer for method '{0}': 0x{1:x}", methodName, (unsigned int)rc);
@@ -1963,6 +2011,9 @@ void OnPrintErrorCallback(const char* string, mono_bool isStdout)
 
 static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
 {
+    PROFILE_CPU();
+    ZoneText(aname, StringUtils::Length(aname));
+
     // Find assembly file
     const String name(aname);
 #if DOTNET_HOST_MONO_DEBUG
@@ -2034,6 +2085,8 @@ static void OnMonoFreeAOT(MonoAssembly* assembly, int size, void* user_data, voi
 
 static void* OnMonoDlFallbackLoad(const char* name, int flags, char** err, void* user_data)
 {
+    PROFILE_CPU();
+    ZoneText(name, StringUtils::Length(name));
     const String fileName = StringUtils::GetFileName(String(name));
 #if DOTNET_HOST_MONO_DEBUG
     LOG(Info, "Loading dynamic library {0}", fileName);
@@ -2236,12 +2289,13 @@ void ShutdownHostfxr()
 #endif
 }
 
-void* GetStaticMethodPointer(const String& methodName)
+void* GetStaticMethodPointer(StringView methodName)
 {
     void* fun;
     if (CachedFunctions.TryGet(methodName, fun))
         return fun;
     PROFILE_CPU();
+    PROFILE_MEM(ScriptingCSharp);
 
     static MonoClass* nativeInteropClass = nullptr;
     if (!nativeInteropClass)

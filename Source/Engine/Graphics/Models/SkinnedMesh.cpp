@@ -158,6 +158,7 @@ void SkeletonData::Swap(SkeletonData& other)
 
 Transform SkeletonData::GetNodeTransform(int32 nodeIndex) const
 {
+    CHECK_RETURN(Nodes.IsValidIndex(nodeIndex), Transform::Identity);
     const int32 parentIndex = Nodes[nodeIndex].ParentIndex;
     if (parentIndex == -1)
     {
@@ -169,6 +170,7 @@ Transform SkeletonData::GetNodeTransform(int32 nodeIndex) const
 
 void SkeletonData::SetNodeTransform(int32 nodeIndex, const Transform& value)
 {
+    CHECK(Nodes.IsValidIndex(nodeIndex));
     const int32 parentIndex = Nodes[nodeIndex].ParentIndex;
     if (parentIndex == -1)
     {

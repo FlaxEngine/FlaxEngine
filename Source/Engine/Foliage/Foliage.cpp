@@ -103,17 +103,17 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
     for (int32 meshIndex = 0; meshIndex < meshes.Count(); meshIndex++)
     {
         auto& drawCall = drawCallsLists[lod][meshIndex];
-        if (!drawCall.DrawCall.Material)
+        if (!drawCall.Material)
             continue;
 
         DrawKey key;
-        key.Mat = drawCall.DrawCall.Material;
+        key.Mat = drawCall.Material;
         key.Geo = &meshes.Get()[meshIndex];
         key.Lightmap = instance.Lightmap.TextureIndex;
         auto* e = result.TryGet(key);
         if (!e)
         {
-            e = &result[key];
+            e = &result.Add(key, BatchedDrawCall(renderContext.List))->Value;
             ASSERT_LOW_LAYER(key.Mat);
             e->DrawCall.Material = key.Mat;
             e->DrawCall.Surface.Lightmap = EnumHasAnyFlags(_staticFlags, StaticFlags::Lightmap) && _scene ? _scene->LightmapsData.GetReadyLightmap(key.Lightmap) : nullptr;
@@ -127,7 +127,7 @@ void Foliage::DrawInstance(RenderContext& renderContext, FoliageInstance& instan
         const Float3 translation = transform.Translation - renderContext.View.Origin;
         Matrix::Transformation(transform.Scale, transform.Orientation, translation, world);
         constexpr float worldDeterminantSign = 1.0f;
-        instanceData.Store(world, world, instance.Lightmap.UVsArea, drawCall.DrawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
+        instanceData.Store(world, world, instance.Lightmap.UVsArea, drawCall.Surface.GeometrySize, instance.Random, worldDeterminantSign, lodDitherFactor);
     }
 }
 
@@ -400,6 +400,7 @@ void Foliage::DrawClusterGlobalSA(GlobalSurfaceAtlasPass* globalSA, const Vector
 void Foliage::DrawFoliageJob(int32 i)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Graphics);
     const FoliageType& type = FoliageTypes[i];
     if (type.IsReady() && type.Model->CanBeRendered())
     {
@@ -429,7 +430,7 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
         {
             const auto& mesh = meshes.Get()[meshIndex];
             auto& drawCall = drawCallsList.Get()[meshIndex];
-            drawCall.DrawCall.Material = nullptr;
+            drawCall.Material = nullptr; // DrawInstance skips draw calls from meshes with unset material
 
             // Check entry visibility
             const auto& entry = type.Entries[mesh.GetMaterialSlotIndex()];
@@ -454,13 +455,13 @@ void Foliage::DrawType(RenderContext& renderContext, const FoliageType& type, Dr
             if (drawModes == DrawPass::None)
                 continue;
 
-            drawCall.DrawCall.Material = material;
-            drawCall.DrawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
+            drawCall.Material = material;
+            drawCall.Surface.GeometrySize = mesh.GetBox().GetSize();
         }
     }
 
     // Draw instances of the foliage type
-    BatchedDrawCalls result;
+    BatchedDrawCalls result(&renderContext.List->Memory);
     DrawCluster(renderContext, type.Root, type, drawCallsLists, result);
 
     // Submit draw calls with valid instances added
@@ -551,6 +552,7 @@ FoliageType* Foliage::GetFoliageType(int32 index)
 void Foliage::AddFoliageType(Model* model)
 {
     PROFILE_CPU();
+    PROFILE_MEM(LevelFoliage);
 
     // Ensure to have unique model
     CHECK(model);
@@ -629,6 +631,7 @@ int32 Foliage::GetFoliageTypeInstancesCount(int32 index) const
 
 void Foliage::AddInstance(const FoliageInstance& instance)
 {
+    PROFILE_MEM(LevelFoliage);
     ASSERT(instance.Type >= 0 && instance.Type < FoliageTypes.Count());
     auto type = &FoliageTypes[instance.Type];
 
@@ -705,6 +708,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
     if (_disableFoliageTypeEvents)
         return;
     PROFILE_CPU();
+    PROFILE_MEM(LevelFoliage);
     auto& type = FoliageTypes[index];
     ASSERT(type.IsReady());
 
@@ -803,6 +807,7 @@ void Foliage::OnFoliageTypeModelLoaded(int32 index)
 void Foliage::RebuildClusters()
 {
     PROFILE_CPU();
+    PROFILE_MEM(LevelFoliage);
 
     // Faster path if foliage is empty or no types is ready
     bool anyTypeReady = false;
@@ -1228,7 +1233,7 @@ void Foliage::Draw(RenderContextBatch& renderContextBatch)
         _renderContextBatch = &renderContextBatch;
         Function<void(int32)> func;
         func.Bind<Foliage, &Foliage::DrawFoliageJob>(this);
-        const uint64 waitLabel = JobSystem::Dispatch(func, FoliageTypes.Count());
+        const int64 waitLabel = JobSystem::Dispatch(func, FoliageTypes.Count());
         renderContextBatch.WaitLabels.Add(waitLabel);
         return;
     }
@@ -1334,6 +1339,7 @@ void Foliage::Deserialize(DeserializeStream& stream, ISerializeModifier* modifie
     Actor::Deserialize(stream, modifier);
 
     PROFILE_CPU();
+    PROFILE_MEM(LevelFoliage);
 
     // Clear
 #if FOLIAGE_USE_SINGLE_QUAD_TREE

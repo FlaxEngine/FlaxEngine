@@ -75,10 +75,39 @@ GPUPipelineState::GPUPipelineState()
 {
 }
 
+#if !BUILD_RELEASE
+
+void GPUPipelineState::GetDebugName(DebugName& name) const
+{
+#define GET_NAME(e) \
+    if (DebugDesc.e) \
+    { \
+        GPUShaderProgram::DebugName n; \
+        DebugDesc.e->GetDebugName(n); \
+        name.Add(n.Get(), n.Count() - 1); \
+        name.Add('+'); \
+    }
+    GET_NAME(VS);
+#if GPU_ALLOW_TESSELLATION_SHADERS
+    GET_NAME(HS);
+    GET_NAME(DS);
+#endif
+#if GPU_ALLOW_GEOMETRY_SHADERS
+    GET_NAME(GS);
+#endif
+    GET_NAME(PS);
+#undef GET_NAME
+    if (name.Count() != 0 && name[name.Count() - 1] == '+')
+        name.RemoveLast();
+    name.Add('\0');
+}
+
+#endif
+
 bool GPUPipelineState::Init(const Description& desc)
 {
-    // Cache description in debug builds
-#if BUILD_DEBUG
+    // Cache description in development builds
+#if !BUILD_RELEASE
     DebugDesc = desc;
 #endif
 
@@ -617,6 +646,7 @@ void GPUDevice::DrawEnd()
     const double presentEnd = Platform::GetTimeSeconds();
     ProfilerGPU::OnPresentTime((float)((presentEnd - presentStart) * 1000.0));
 #endif
+    GetMainContext()->OnPresent();
 
     _wasVSyncUsed = anyVSync;
     _isRendering = false;
@@ -648,8 +678,26 @@ GPUTasksExecutor* GPUDevice::CreateTasksExecutor()
     return New<DefaultGPUTasksExecutor>();
 }
 
+#if !COMPILE_WITHOUT_CSHARP
+
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
+
+void* GPUDevice::GetResourcesInternal()
+{
+    _resourcesLock.Lock();
+    MArray* result = MCore::Array::New(GPUResource::TypeInitializer.GetClass(), _resources.Count());
+    int32 i = 0;
+    for (const auto& e : _resources)
+        MCore::GC::WriteArrayRef(result, e->GetOrCreateManagedInstance(), i++);
+    _resourcesLock.Unlock();
+    return result;
+}
+
+#endif
+
 void GPUDevice::Draw()
 {
+    PROFILE_MEM(Graphics);
     DrawBegin();
 
     auto context = GetMainContext();

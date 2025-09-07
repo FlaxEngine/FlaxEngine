@@ -9,6 +9,7 @@
 #include "Engine/Core/Types/DataContainer.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Serialization/MemoryWriteStream.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Animations/Animations.h"
 #include "Engine/Threading/Threading.h"
@@ -25,7 +26,8 @@ AnimationGraph::AnimationGraph(const SpawnParams& params, const AssetInfo* info)
 
 Asset::LoadResult AnimationGraph::load()
 {
-    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+    PROFILE_MEM(AnimationsData);
+    ScopeWriteLock systemScope(Animations::SystemLocker);
 
     // Get stream with graph data
     const auto surfaceChunk = GetChunk(0);
@@ -51,7 +53,7 @@ Asset::LoadResult AnimationGraph::load()
 
 void AnimationGraph::unload(bool isReloading)
 {
-    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+    ScopeWriteLock systemScope(Animations::SystemLocker);
     Graph.Clear();
 }
 
@@ -83,7 +85,8 @@ bool AnimationGraph::InitAsAnimation(SkinnedModel* baseModel, Animation* anim, b
         Log::ArgumentNullException();
         return true;
     }
-    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+    PROFILE_MEM(AnimationsData);
+    ScopeWriteLock systemScope(Animations::SystemLocker);
 
     // Create Graph data
     MemoryWriteStream writeStream(512);
@@ -169,7 +172,7 @@ bool AnimationGraph::SaveSurface(const BytesContainer& data)
 {
     if (OnCheckSave())
         return true;
-    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+    ScopeWriteLock systemScope(Animations::SystemLocker);
     ScopeLock lock(Locker);
 
     if (IsVirtual())

@@ -105,8 +105,8 @@ namespace Flax.Deps.Dependencies
                     };
                     var envVars = new Dictionary<string, string>
                     {
-                        { "CC", "clang-7" },
-                        { "CC_FOR_BUILD", "clang-7" },
+                        { "CC", "clang-" + Configuration.LinuxClangMinVer },
+                        { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
                     };
                     var buildDir = Path.Combine(root, "build");
                     SetupDirectory(buildDir, true);

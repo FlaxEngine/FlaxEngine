@@ -4,6 +4,7 @@
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/SkinnedModel.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 bool ModelInstanceEntries::HasContentLoaded() const
 {
@@ -41,6 +42,7 @@ void ModelInstanceEntries::Serialize(SerializeStream& stream, const void* otherO
 
 void ModelInstanceEntries::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
+    PROFILE_MEM(Graphics);
     const DeserializeStream& entries = stream["Entries"];
     ASSERT(entries.IsArray());
     Resize(entries.Size());
@@ -85,6 +87,7 @@ void ModelInstanceEntries::Setup(const SkinnedModel* model)
 
 void ModelInstanceEntries::Setup(int32 slotsCount)
 {
+    PROFILE_MEM(Graphics);
     Clear();
     Resize(slotsCount);
 }

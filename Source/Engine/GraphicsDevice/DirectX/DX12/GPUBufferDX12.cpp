@@ -38,7 +38,7 @@ void* GPUBufferDX12::Map(GPUResourceMapMode mode)
 {
     D3D12_RANGE readRange;
     D3D12_RANGE* readRangePtr;
-    switch (mode)
+    switch (mode & GPUResourceMapMode::ReadWrite)
     {
     case GPUResourceMapMode::Read:
         readRangePtr = nullptr;

@@ -71,6 +71,20 @@ public:
     virtual ArchitectureType GetArchitecture() const = 0;
 
     /// <summary>
+    /// Gets the .Net version to use for the cooked game.
+    /// </summary>
+    virtual int32 GetDotnetVersion() const
+    {
+#if OFFICIAL_BUILD
+        // Use the fixed .NET SDK version in packaged builds for compatibility (FlaxGame is precompiled with it)
+        return GAME_BUILD_DOTNET_RUNTIME_MIN_VER;
+#else
+        // Use the highest version found on a system (Flax.Build will decide)
+        return 0;
+#endif
+    }
+
+    /// <summary>
     /// Gets the value indicating whenever platform requires AOT (needs C# assemblies to be precompiled).
     /// </summary>
     virtual DotNetAOTModes UseAOT() const

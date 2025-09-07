@@ -75,7 +75,7 @@ public:
     /// </summary>
     /// <param name="id">The asset id.</param>
     /// <returns>The asset path, or empty if failed to find.</returns>
-    API_FUNCTION() static String GetEditorAssetPath(const Guid& id);
+    API_FUNCTION() static StringView GetEditorAssetPath(const Guid& id);
 
     /// <summary>
     /// Finds all the asset IDs. Uses asset registry.
@@ -122,7 +122,7 @@ public:
     /// Gets the assets (loaded or during load).
     /// </summary>
     /// <returns>The collection of assets.</returns>
-    API_PROPERTY() static Array<Asset*, HeapAllocation> GetAssets();
+    static Array<Asset*, HeapAllocation> GetAssets();
 
     /// <summary>
     /// Gets the raw dictionary of assets (loaded or during load).
@@ -368,4 +368,9 @@ private:
     static void onAssetUnload(Asset* asset);
     static void onAssetChangeId(Asset* asset, const Guid& oldId, const Guid& newId);
     static void deleteFileSafety(const StringView& path, const Guid& id);
+
+    // Internal bindings
+#if !COMPILE_WITHOUT_CSHARP
+    API_FUNCTION(NoProxy) static void* GetAssetsInternal();
+#endif
 };

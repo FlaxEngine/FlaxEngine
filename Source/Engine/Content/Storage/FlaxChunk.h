@@ -182,10 +182,5 @@ public:
     /// Clones this chunk data (doesn't copy location in file).
     /// </summary>
     /// <returns>The cloned chunk.</returns>
-    FlaxChunk* Clone() const
-    {
-        auto chunk = New<FlaxChunk>();
-        chunk->Data.Copy(Data);
-        return chunk;
-    }
+    FlaxChunk* Clone() const;
 };

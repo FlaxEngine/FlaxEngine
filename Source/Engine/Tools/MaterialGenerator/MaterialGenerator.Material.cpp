@@ -263,7 +263,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 
         // Sample scene depth buffer
         auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);
-        auto depthSample = writeLocal(VariantType::Float, String::Format(TEXT("{0}.SampleLevel(SamplerLinearClamp, {1}, 0).x"), sceneDepthTexture.ShaderName, screenUVs.Value), node);
+        auto depthSample = writeLocal(VariantType::Float, String::Format(TEXT("{0}.SampleLevel(SamplerPointClamp, {1}, 0).x"), sceneDepthTexture.ShaderName, screenUVs.Value), node);
 
         // Linearize raw device depth
         Value sceneDepth;

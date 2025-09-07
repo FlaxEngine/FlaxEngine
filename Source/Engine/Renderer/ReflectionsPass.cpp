@@ -281,13 +281,7 @@ bool ReflectionsPass::setupResources()
     if (!_sphereModel->CanBeRendered() || !_preIntegratedGF->IsLoaded() || !_shader->IsLoaded())
         return true;
     const auto shader = _shader->GetShader();
-
-    // Validate shader constant buffer size
-    if (shader->GetCB(0)->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc;
@@ -374,6 +368,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     // Check if no need to render reflection environment
     if (!useReflections || !(renderProbes || useSSR))
         return;
+    PROFILE_GPU_CPU("Reflections");
 
     // Setup data
     Data data;

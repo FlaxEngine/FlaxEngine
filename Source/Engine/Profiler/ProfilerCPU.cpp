@@ -3,6 +3,7 @@
 #if COMPILE_WITH_PROFILER
 
 #include "ProfilerCPU.h"
+#include "ProfilerMemory.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Threading/ThreadRegistry.h"
 
@@ -157,6 +158,7 @@ int32 ProfilerCPU::BeginEvent()
     auto thread = Thread::Current;
     if (thread == nullptr)
     {
+        PROFILE_MEM(Profiler);
         const auto id = Platform::GetCurrentThreadID();
         const auto t = ThreadRegistry::GetThread(id);
         if (t)

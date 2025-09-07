@@ -31,7 +31,8 @@ bool GPUPipelineStateDX11::IsValid() const
 
 bool GPUPipelineStateDX11::Init(const Description& desc)
 {
-    ASSERT(!IsValid());
+    if (IsValid())
+        OnReleaseGPU();
 
     // Cache shaders
     VS = (GPUShaderProgramVSDX11*)desc.VS;

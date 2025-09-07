@@ -22,17 +22,18 @@ struct FLAXENGINE_API ManagedDictionary
 public:
     struct KeyValueType
     {
-        MType* keyType;
-        MType* valueType;
+        MType* KeyType;
+        MType* ValueType;
 
         bool operator==(const KeyValueType& other) const
         {
-            return keyType == other.keyType && valueType == other.valueType;
+            return KeyType == other.KeyType && ValueType == other.ValueType;
         }
     };
 
 private:
-    static Dictionary<KeyValueType, MTypeObject*> CachedDictionaryTypes;
+    friend class Scripting;
+    static Dictionary<KeyValueType, MTypeObject*> CachedTypes;
 
 #if !USE_MONO_AOT
     typedef MTypeObject* (*MakeGenericTypeThunk)(MObject* instance, MTypeObject* genericType, MArray* genericArgs, MObject** exception);
@@ -158,7 +159,7 @@ public:
         // Check if the generic type was generated earlier
         KeyValueType cacheKey = { keyType, valueType };
         MTypeObject* dictionaryType;
-        if (CachedDictionaryTypes.TryGet(cacheKey, dictionaryType))
+        if (CachedTypes.TryGet(cacheKey, dictionaryType))
             return dictionaryType;
 
         MTypeObject* genericType = MUtils::GetType(StdTypesContainer::Instance()->DictionaryClass);
@@ -186,7 +187,7 @@ public:
             ex.Log(LogType::Error, TEXT(""));
             return nullptr;
         }
-        CachedDictionaryTypes.Add(cacheKey, dictionaryType);
+        CachedTypes.Add(cacheKey, dictionaryType);
         return dictionaryType;
     }
 
@@ -264,8 +265,8 @@ public:
 
 inline uint32 GetHash(const ManagedDictionary::KeyValueType& other)
 {
-    uint32 hash = ::GetHash((void*)other.keyType);
-    CombineHash(hash, ::GetHash((void*)other.valueType));
+    uint32 hash = ::GetHash((void*)other.KeyType);
+    CombineHash(hash, ::GetHash((void*)other.ValueType));
     return hash;
 }
 

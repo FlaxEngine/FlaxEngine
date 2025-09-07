@@ -491,6 +491,7 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                       String line((const char*)data.bytes, data.length);
                       if (settings.SaveOutput)
                         settings.Output.Add(line.Get(), line.Length());
+#if LOG_ENABLE
                       if (settings.LogOutput)
                       {
                         StringView lineView(line);
@@ -498,6 +499,7 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                             lineView = StringView(line.Get(), line.Length() - 1);
                         Log::Logger::Write(LogType::Info, lineView);
                       }
+#endif
                     [[stdoutPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
                 }
             }
@@ -518,6 +520,7 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                       String line((const char*)data.bytes, data.length);
                       if (settings.SaveOutput)
                         settings.Output.Add(line.Get(), line.Length());
+#if LOG_ENABLE
                       if (settings.LogOutput)
                       {
                         StringView lineView(line);
@@ -525,6 +528,7 @@ int32 MacPlatform::CreateProcess(CreateProcessSettings& settings)
                             lineView = StringView(line.Get(), line.Length() - 1);
                         Log::Logger::Write(LogType::Error, lineView);
                       }
+#endif
                     [[stderrPipe fileHandleForReading] waitForDataInBackgroundAndNotify];
                 }
             }

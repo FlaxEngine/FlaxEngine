@@ -368,6 +368,8 @@ namespace FlaxEditor.GUI.Input
         public SliderControl(float value, float x = 0, float y = 0, float width = 120, float min = float.MinValue, float max = float.MaxValue)
         : base(x, y, width, TextBox.DefaultHeight)
         {
+            AutoFocus = true;
+
             _min = min;
             _max = max;
             _value = Mathf.Clamp(value, min, max);

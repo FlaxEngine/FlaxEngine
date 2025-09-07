@@ -27,6 +27,7 @@ SpotLight::SpotLight(const SpawnParams& params)
     const float boundsRadius = Math::Sqrt(1.25f * _radius * _radius - _radius * _radius * _cosOuterCone);
     _sphere = BoundingSphere(GetPosition() + 0.5f * GetDirection() * _radius, boundsRadius);
     BoundingBox::FromSphere(_sphere, _box);
+    _drawCategory = SceneRendering::SceneDrawAsync;
 }
 
 float SpotLight::ComputeBrightness() const

@@ -7,6 +7,7 @@
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Collections/Array.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Core/Memory/ArenaAllocation.h"
 #include "Engine/Platform/CriticalSection.h"
 
 /// <summary>
@@ -19,7 +20,7 @@ class FLAXENGINE_API MAssembly
     friend Scripting;
 
 public:
-    typedef Dictionary<StringAnsi, MClass*> ClassesDictionary;
+    typedef Dictionary<StringAnsiView, MClass*> ClassesDictionary;
 
 private:
 #if USE_MONO
@@ -66,6 +67,15 @@ public:
     /// Finalizes an instance of the <see cref="MAssembly"/> class.
     /// </summary>
     ~MAssembly();
+
+public:
+    /// <summary>
+    /// Memory storage with all assembly-related data that shares its lifetime (eg. metadata).
+    /// </summary>
+    ArenaAllocator Memory;
+
+    // Allocates the given string within a memory that has lifetime of assembly.
+    StringAnsiView AllocString(const char* str);
 
 public:
     /// <summary>

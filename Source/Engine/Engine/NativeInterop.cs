@@ -195,14 +195,19 @@ namespace FlaxEngine.Interop
         /// </summary>
         /// <typeparam name="T">Array element type.</typeparam>
         /// <param name="ptrArray">Input array.</param>
+        /// <param name="buffer">Cached memory allocation buffer to use for the result (if size fits).</param>
         /// <returns>Output array.</returns>
-        public static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray) where T : class
+        public static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray, T[] buffer = null) where T : class
         {
             Span<IntPtr> span = ptrArray.ToSpan<IntPtr>();
-            T[] managedArray = new T[ptrArray.Length];
-            for (int i = 0; i < managedArray.Length; i++)
-                managedArray[i] = span[i] != IntPtr.Zero ? (T)ManagedHandle.FromIntPtr(span[i]).Target : default;
-            return managedArray;
+            if (buffer == null || buffer.Length < ptrArray.Length)
+                buffer = new T[ptrArray.Length];
+            for (int i = 0; i < ptrArray.Length; i++)
+            {
+                IntPtr ptr = span[i];
+                buffer[i] = ptr != IntPtr.Zero ? (T)ManagedHandle.FromIntPtr(ptr).Target : default;
+            }
+            return buffer;
         }
 
         /// <summary>

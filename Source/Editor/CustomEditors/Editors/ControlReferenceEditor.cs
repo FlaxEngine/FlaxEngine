@@ -22,7 +22,7 @@ internal class UIControlRefPickerControl : FlaxObjectRefPickerControl
     /// <inheritdoc />
     protected override bool IsValid(Object obj)
     {
-        return obj == null || (obj is UIControl control && control.Control.GetType() == ControlType);
+        return obj == null || (obj is UIControl control && ControlType.IsAssignableFrom(control.Control.GetType()));
     }
 }
 

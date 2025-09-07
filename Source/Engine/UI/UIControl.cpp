@@ -7,6 +7,7 @@
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Serialization/Serialization.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 #if COMPILE_WITHOUT_CSHARP
 #define UICONTROL_INVOKE(event)
@@ -25,6 +26,7 @@ MMethod* UIControl_EndPlay = nullptr;
     auto* managed = GetManagedInstance(); \
     if (managed) \
 	{ \
+        PROFILE_MEM(UI); \
 	    MObject* exception = nullptr; \
 	    UIControl_##event->Invoke(managed, nullptr, &exception); \
 	    if (exception) \
@@ -78,6 +80,7 @@ void UIControl::Serialize(SerializeStream& stream, const void* otherObj)
     SERIALIZE_MEMBER(NavTargetRight, _navTargetRight);
 
 #if !COMPILE_WITHOUT_CSHARP
+    PROFILE_MEM(UI);
     void* params[2];
     MString* controlType = nullptr;
     params[0] = &controlType;
@@ -129,6 +132,7 @@ void UIControl::Deserialize(DeserializeStream& stream, ISerializeModifier* modif
     DESERIALIZE_MEMBER(NavTargetRight, _navTargetRight);
 
 #if !COMPILE_WITHOUT_CSHARP
+    PROFILE_MEM(UI);
     MTypeObject* typeObj = nullptr;
     const auto controlMember = stream.FindMember("Control");
     if (controlMember != stream.MemberEnd())

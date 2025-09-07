@@ -76,9 +76,15 @@ FatalErrorType Engine::FatalError = FatalErrorType::None;
 bool Engine::IsRequestingExit = false;
 int32 Engine::ExitCode = 0;
 Window* Engine::MainWindow = nullptr;
+double EngineIdleTime = 0;
 
 int32 Engine::Main(const Char* cmdLine)
 {
+#if COMPILE_WITH_PROFILER
+    extern void InitProfilerMemory(const Char* cmdLine, int32 stage);
+    InitProfilerMemory(cmdLine, 0);
+#endif
+    PROFILE_MEM_BEGIN(Engine);
     EngineImpl::CommandLine = cmdLine;
     Globals::MainThreadID = Platform::GetCurrentThreadID();
     StartupTime = DateTime::Now();
@@ -106,6 +112,9 @@ int32 Engine::Main(const Char* cmdLine)
         Platform::Fatal(TEXT("Cannot init platform."));
         return -1;
     }
+#if COMPILE_WITH_PROFILER
+    InitProfilerMemory(cmdLine, 1);
+#endif
 
     Time::StartupTime = DateTime::Now();
     Globals::StartupFolder = Globals::BinariesFolder = Platform::GetMainDirectory();
@@ -143,7 +152,9 @@ int32 Engine::Main(const Char* cmdLine)
     {
         // End
         LOG(Warning, "Loading project cancelled. Closing...");
+#if LOG_ENABLE
         Log::Logger::Dispose();
+#endif
         return 0;
     }
 #endif
@@ -161,10 +172,11 @@ int32 Engine::Main(const Char* cmdLine)
 #if !USE_EDITOR && (PLATFORM_WINDOWS || PLATFORM_LINUX || PLATFORM_MAC)
     EngineImpl::RunInBackground = PlatformSettings::Get()->RunInBackground;
 #endif
-    Log::Logger::WriteFloor();
+    LOG_FLOOR();
     LOG_FLUSH();
     Time::Synchronize();
     EngineImpl::IsReady = true;
+    PROFILE_MEM_END();
 
     // Main engine loop
     const bool useSleep = true; // TODO: this should probably be a platform setting
@@ -180,7 +192,10 @@ int32 Engine::Main(const Char* cmdLine)
             if (timeToTick > 0.002)
             {
                 PROFILE_CPU_NAMED("Idle");
+                auto sleepStart = Platform::GetTimeSeconds();
                 Platform::Sleep(1);
+                auto sleepEnd = Platform::GetTimeSeconds();
+                EngineIdleTime += sleepEnd - sleepStart;
             }
         }
 
@@ -205,6 +220,10 @@ int32 Engine::Main(const Char* cmdLine)
         {
             PROFILE_CPU_NAMED("Platform.Tick");
             Platform::Tick();
+#if COMPILE_WITH_PROFILER
+            extern void TickProfilerMemory();
+            TickProfilerMemory();
+#endif
         }
 
         // Update game logic
@@ -213,6 +232,7 @@ int32 Engine::Main(const Char* cmdLine)
             OnUpdate();
             OnLateUpdate();
             Time::OnEndUpdate();
+            EngineIdleTime = 0;
         }
 
         // Start physics simulation
@@ -228,7 +248,6 @@ int32 Engine::Main(const Char* cmdLine)
         {
             OnDraw();
             Time::OnEndDraw();
-            FrameMark;
         }
     }
 
@@ -378,6 +397,11 @@ void Engine::OnLateUpdate()
 
 void Engine::OnDraw()
 {
+#if COMPILE_WITH_PROFILER
+    // Auto-enable GPU events when Tracy got connected
+    if (!ProfilerGPU::EventsEnabled && TracyIsConnected)
+        ProfilerGPU::EventsEnabled = true;
+#endif
     PROFILE_CPU_NAMED("Draw");
 
     // Begin frame rendering
@@ -392,6 +416,7 @@ void Engine::OnDraw()
     device->Draw();
 
     // End frame rendering
+    FrameMark;
 #if COMPILE_WITH_PROFILER
     ProfilerGPU::EndFrame();
 #endif
@@ -541,16 +566,20 @@ void Engine::OnExit()
 #if COMPILE_WITH_PROFILER
     ProfilerCPU::Dispose();
     ProfilerGPU::Dispose();
+    ProfilerMemory::Enabled = false;
 #endif
 
+#if LOG_ENABLE
     // Close logging service
     Log::Logger::Dispose();
+#endif
 
     Platform::Exit();
 }
 
 void EngineImpl::InitLog()
 {
+#if LOG_ENABLE
     // Initialize logger
     Log::Logger::Init();
 
@@ -604,6 +633,7 @@ void EngineImpl::InitLog()
     Platform::LogInfo();
 
     LOG_FLUSH();
+#endif
 }
 
 void EngineImpl::InitPaths()

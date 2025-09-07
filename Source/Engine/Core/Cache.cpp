@@ -3,7 +3,7 @@
 #include "Cache.h"
 #include "FlaxEngine.Gen.h"
 
-CollectionPoolCache<ISerializeModifier, Cache::ISerializeModifierClearCallback> Cache::ISerializeModifier;
+Cache::ISerializeModifierCache Cache::ISerializeModifier;
 
 void Cache::ISerializeModifierClearCallback(::ISerializeModifier* obj)
 {

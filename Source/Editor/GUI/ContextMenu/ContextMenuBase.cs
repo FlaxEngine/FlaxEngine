@@ -117,9 +117,10 @@ namespace FlaxEditor.GUI.ContextMenu
         public ContextMenuBase()
         : base(0, 0, 120, 32)
         {
-            _direction = ContextMenuDirection.RightDown;
             Visible = false;
+            AutoFocus = true;
 
+            _direction = ContextMenuDirection.RightDown;
             _isSubMenu = true;
         }
 
