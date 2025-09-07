@@ -608,8 +608,8 @@ CreateAssetResult ImportModel::Create(CreateAssetContext& context)
 CreateAssetResult ImportModel::CreateModel(CreateAssetContext& context, const ModelData& modelData, const Options* options)
 {
     PROFILE_CPU();
-        IMPORT_SETUP(Model, Model::SerializedVersion);
-        static_assert(Model::SerializedVersion == 30, "Update code.");
+    IMPORT_SETUP(Model, Model::SerializedVersion);
+    static_assert(Model::SerializedVersion == 30, "Update code.");
 
     // Save model header
     MemoryWriteStream stream(4096);
@@ -738,7 +738,7 @@ CreateAssetResult ImportModel::CreatePrefab(CreateAssetContext& context, const M
             {
                 if(e.IsSkinned)
                 {
-                    LOG(Info,"Model {0} is Animated", e.Name);
+                    LOG(Info,"Creating animated model prefab {0}.", e.Name);
                     auto* actor = New<AnimatedModel>();    
                     actor->SetName(e.Name);  
                     if (auto* skinnedModel = Content::LoadAsync<SkinnedModel>(e.AssetPath))
