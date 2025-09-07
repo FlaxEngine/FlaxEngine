@@ -1184,7 +1184,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             }
         }
     }
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton) && data.Skeleton.Bones.HasItems())
     {
         LOG(Info, "Imported skeleton has {0} bones and {1} nodes", data.Skeleton.Bones.Count(), data.Nodes.Count());
 
@@ -1324,7 +1324,7 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
         for (int32 i = 0; i < meshesCount; i++)
         {
             const auto mesh = data.LODs[0].Meshes[i];
-            if (mesh->BlendIndices.IsEmpty() || mesh->BlendWeights.IsEmpty())
+            if ((mesh->BlendIndices.IsEmpty() || mesh->BlendWeights.IsEmpty()) && data.Skeleton.Bones.HasItems())
             {
                 auto indices = Int4::Zero;
                 auto weights = Float4::UnitX;

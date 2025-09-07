@@ -339,7 +339,7 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
             splitOptions.Type = ModelTool::ModelType::Model;
 
             // Search for Skinned Model
-            if (group.First()->BlendShapes.HasItems())
+            if (group.First()->BlendWeights.HasItems() || group.First()->BlendShapes.HasItems() )
             {
                 LOG(Info, "Mesh {0} is Skinned", prefabObject.Name);
                 splitOptions.Type = ModelTool::ModelType::SkinnedModel;
