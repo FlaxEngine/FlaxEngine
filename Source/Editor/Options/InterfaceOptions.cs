@@ -77,6 +77,25 @@ namespace FlaxEditor.Options
         }
 
         /// <summary>
+        /// Options for the visibility status of the tab close button.
+        /// </summary>
+        public enum TabCloseButtonVisibility
+        {
+            /// <summary>
+            /// Never show the close button.
+            /// </summary>
+            Never,
+            /// <summary>
+            /// Show the close button on tabs that are currently selected.
+            /// </summary>
+            SelectedTab,
+            /// <summary>
+            /// Show the close button on all tabs that can be closed.
+            /// </summary>
+            Always
+        }
+
+        /// <summary>
         /// Options for the action taken by the play button.
         /// </summary>
         public enum PlayAction
@@ -194,13 +213,6 @@ namespace FlaxEditor.Options
         [DefaultValue(1.0f), Limit(0.1f, 10.0f)]
         [EditorDisplay("Interface"), EditorOrder(10), Tooltip("Editor User Interface scale. Applied to all UI elements, windows and text. Can be used to scale the interface up on a bigger display. Editor restart required.")]
         public float InterfaceScale { get; set; } = 1.0f;
-        
-        /// <summary>
-        /// Gets or sets a value indicating whether use native window title bar decorations in child windows. Editor restart required.
-        /// </summary>
-        [DefaultValue(WindowDecorationsType.AutoChildOnly)]
-        [EditorDisplay("Interface"), EditorOrder(70), Tooltip("Determines whether use native window title bar decorations. Editor restart required.")]
-        public WindowDecorationsType WindowDecorations { get; set; } = WindowDecorationsType.AutoChildOnly;
 
         /// <summary>
         /// Gets or sets a value indicating whether show selected camera preview in the editor window.
@@ -208,20 +220,6 @@ namespace FlaxEditor.Options
         [DefaultValue(true)]
         [EditorDisplay("Interface"), EditorOrder(80), Tooltip("Determines whether show selected camera preview in the edit window.")]
         public bool ShowSelectedCameraPreview { get; set; } = true;
-
-        /// <summary>
-        /// Gets or sets a value indicating whether center mouse position on window focus in play mode. Helps when working with games that lock mouse cursor.
-        /// </summary>
-        [DefaultValue(false)]
-        [EditorDisplay("Interface", "Center Mouse On Game Window Focus"), EditorOrder(100), Tooltip("Determines whether center mouse position on window focus in play mode. Helps when working with games that lock mouse cursor.")]
-        public bool CenterMouseOnGameWinFocus { get; set; } = false;
-
-        /// <summary>
-        /// Gets or sets the method window opening.
-        /// </summary>
-        [DefaultValue(DockStateProxy.Float)]
-        [EditorDisplay("Interface", "New Window Location"), EditorOrder(150), Tooltip("Define the opening method for new windows, open in a new tab by default.")]
-        public DockStateProxy NewWindowLocation { get; set; } = DockStateProxy.Float;
 
         /// <summary>
         /// Gets or sets the editor icons scale. Editor restart required.
@@ -259,6 +257,13 @@ namespace FlaxEditor.Options
         public bool SeparateValueAndUnit { get; set; }
 
         /// <summary>
+        /// Gets or sets the option to auto size the Properties panel splitter based on the longest property name. Editor restart recommended.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Interface"), EditorOrder(311)]
+        public bool AutoSizePropertiesPanelSplitter { get; set; }
+
+        /// <summary>
         /// Gets or sets tree line visibility.
         /// </summary>
         [DefaultValue(true)]
@@ -290,6 +295,73 @@ namespace FlaxEditor.Options
         [DefaultValue(true)]
         [EditorDisplay("Interface"), EditorOrder(322)]
         public bool ScrollToScriptOnAdd { get; set; } = true;
+
+#if PLATFORM_SDL
+        /// <summary>
+        /// Gets or sets a value indicating whether use native window title bar decorations in child windows. Editor restart required.
+        /// </summary>
+        [DefaultValue(WindowDecorationsType.AutoChildOnly)]
+        [EditorDisplay("Interface"), EditorOrder(70), Tooltip("Determines whether use native window title bar decorations. Editor restart required.")]
+        public WindowDecorationsType WindowDecorations { get; set; } = WindowDecorationsType.AutoChildOnly;
+#elif PLATFORM_WINDOWS
+        /// <summary>
+        /// Gets or sets a value indicating whether use native window title bar. Editor restart required.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Tabs & Windows"), EditorOrder(70), Tooltip("Determines whether use native window title bar. Editor restart required.")]
+        public bool UseNativeWindowSystem { get; set; } = false;
+#endif
+
+#if PLATFORM_WINDOWS
+        /// <summary>
+        /// Gets or sets a value indicating whether a window containing a single tabs hides the tab bar. Editor restart recommended.
+        /// </summary>
+        [DefaultValue(true)]
+        [EditorDisplay("Tabs & Windows", "Hide Single-Tab Window Tab Bars"), EditorOrder(71)]
+        public bool HideSingleTabWindowTabBars { get; set; } = true;
+#endif
+
+        /// <summary>
+        /// Gets or sets a value indicating wether the minum tab width should be used. Editor restart required.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Tabs & Windows"), EditorOrder(99)]
+        public bool UseMinimumTabWidth { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets a value indicating the minimum tab width. If a tab is smaller than this width, its width will be set to this. Editor restart required.
+        /// </summary>
+        [DefaultValue(80.0f), Limit(50.0f, 150.0f)]
+        [EditorDisplay("Tabs & Windows"), EditorOrder(99), VisibleIf(nameof(UseMinimumTabWidth))]
+        public float MinimumTabWidth { get; set; } = 80.0f;
+
+        /// <summary>
+        /// Gets or sets a value indicating the height of window tabs. Editor restart required.
+        /// </summary>
+        [DefaultValue(20.0f), Limit(15.0f, 40.0f)]
+        [EditorDisplay("Tabs & Windows"), EditorOrder(100)]
+        public float TabHeight { get; set; } = 20.0f;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether center mouse position on window focus in play mode. Helps when working with games that lock mouse cursor.
+        /// </summary>
+        [DefaultValue(false)]
+        [EditorDisplay("Tabs & Windows", "Center Mouse On Game Window Focus"), EditorOrder(101), Tooltip("Determines whether center mouse position on window focus in play mode. Helps when working with games that lock mouse cursor.")]
+        public bool CenterMouseOnGameWinFocus { get; set; } = false;
+
+        /// <summary>
+        /// Gets or sets the method window opening.
+        /// </summary>
+        [DefaultValue(DockStateProxy.Float)]
+        [EditorDisplay("Tabs & Windows", "New Window Location"), EditorOrder(150), Tooltip("Define the opening method for new windows, open in a new tab by default.")]
+        public DockStateProxy NewWindowLocation { get; set; } = DockStateProxy.Float;
+
+        /// <summary>
+        /// Gets or sets a value indicating when the tab close button should be visible.
+        /// </summary>
+        [DefaultValue(TabCloseButtonVisibility.SelectedTab)]
+        [EditorDisplay("Tabs & Windows"), EditorOrder(151)]
+        public TabCloseButtonVisibility ShowTabCloseButton { get; set; } = TabCloseButtonVisibility.SelectedTab;
 
         /// <summary>
         /// Gets or sets the timestamps prefix mode for output log messages.

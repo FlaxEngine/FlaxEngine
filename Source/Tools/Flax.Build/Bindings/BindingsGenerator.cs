@@ -245,6 +245,7 @@ namespace Flax.Build.Bindings
                     File = fileInfo,
                     Tokenizer = tokenizer,
                     ScopeInfo = null,
+                    ModuleOptions = moduleOptions,
                     CurrentAccessLevel = AccessLevel.Public,
                     ScopeTypeStack = new Stack<ApiTypeInfo>(),
                     ScopeAccessStack = new Stack<AccessLevel>(),
@@ -380,110 +381,7 @@ namespace Flax.Build.Bindings
                     // Handle preprocessor blocks
                     if (token.Type == TokenType.Preprocessor)
                     {
-                        token = tokenizer.NextToken();
-                        switch (token.Value)
-                        {
-                        case "define":
-                        {
-                            token = tokenizer.NextToken();
-                            var name = token.Value;
-                            var value = string.Empty;
-                            token = tokenizer.NextToken(true);
-                            while (token.Type != TokenType.Newline)
-                            {
-                                value += token.Value;
-                                token = tokenizer.NextToken(true);
-                            }
-                            value = value.Trim();
-                            context.PreprocessorDefines[name] = value;
-                            break;
-                        }
-                        case "if":
-                        case "elif":
-                        {
-                            // Parse condition
-                            var condition = string.Empty;
-                            token = tokenizer.NextToken(true);
-                            while (token.Type != TokenType.Newline)
-                            {
-                                var tokenValue = token.Value.Trim();
-                                if (tokenValue.Length == 0)
-                                {
-                                    token = tokenizer.NextToken(true);
-                                    continue;
-                                }
-
-                                // Very simple defines processing
-                                var negate = tokenValue[0] == '!';
-                                if (negate)
-                                    tokenValue = tokenValue.Substring(1);
-                                tokenValue = ReplacePreProcessorDefines(tokenValue, context.PreprocessorDefines);
-                                tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.PublicDefinitions);
-                                tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.PrivateDefinitions);
-                                tokenValue = ReplacePreProcessorDefines(tokenValue, moduleOptions.CompileEnv.PreprocessorDefinitions);
-                                tokenValue = tokenValue.Replace("false", "0");
-                                tokenValue = tokenValue.Replace("true", "1");
-                                tokenValue = tokenValue.Replace("||", "|");
-                                if (tokenValue.Length != 0 && tokenValue != "1" && tokenValue != "0" && tokenValue != "|")
-                                    tokenValue = "0";
-                                if (negate)
-                                    tokenValue = tokenValue == "1" ? "0" : "1";
-
-                                condition += tokenValue;
-                                token = tokenizer.NextToken(true);
-                            }
-
-                            // Filter condition
-                            bool modified;
-                            do
-                            {
-                                modified = false;
-                                if (condition.Contains("1|1"))
-                                {
-                                    condition = condition.Replace("1|1", "1");
-                                    modified = true;
-                                }
-                                if (condition.Contains("1|0"))
-                                {
-                                    condition = condition.Replace("1|0", "1");
-                                    modified = true;
-                                }
-                                if (condition.Contains("0|1"))
-                                {
-                                    condition = condition.Replace("0|1", "1");
-                                    modified = true;
-                                }
-                            } while (modified);
-
-                            // Skip chunk of code of condition fails
-                            if (condition != "1")
-                            {
-                                ParsePreprocessorIf(fileInfo, tokenizer, ref token);
-                            }
-
-                            break;
-                        }
-                        case "ifdef":
-                        {
-                            // Parse condition
-                            var define = string.Empty;
-                            token = tokenizer.NextToken(true);
-                            while (token.Type != TokenType.Newline)
-                            {
-                                define += token.Value;
-                                token = tokenizer.NextToken(true);
-                            }
-
-                            // Check condition
-                            define = define.Trim();
-                            if (!context.PreprocessorDefines.ContainsKey(define) && !moduleOptions.CompileEnv.PreprocessorDefinitions.Contains(define))
-                            {
-                                ParsePreprocessorIf(fileInfo, tokenizer, ref token);
-                            }
-
-                            break;
-                        }
-                        }
+                        OnPreProcessorToken(ref context, ref token);
                     }
 
                     // Scope tracking
@@ -511,6 +409,120 @@ namespace Flax.Build.Bindings
                 Log.Error($"Failed to parse '{fileInfo.Name}' file to generate bindings.");
                 Log.Exception(ex);
                 throw;
+            }
+        }
+
+        private static void OnPreProcessorToken(ref ParsingContext context, ref Token token)
+        {
+            var tokenizer = context.Tokenizer;
+            token = tokenizer.NextToken();
+            switch (token.Value)
+            {
+                case "define":
+                {
+                    token = tokenizer.NextToken();
+                    var name = token.Value;
+                    var value = string.Empty;
+                    token = tokenizer.NextToken(true);
+                    while (token.Type != TokenType.Newline)
+                    {
+                        value += token.Value;
+                        token = tokenizer.NextToken(true);
+                    }
+                    value = value.Trim();
+                    context.PreprocessorDefines[name] = value;
+                    break;
+                }
+                case "if":
+                case "elif":
+                {
+                    // Parse condition
+                    var condition = string.Empty;
+                    token = tokenizer.NextToken(true);
+                    while (token.Type != TokenType.Newline)
+                    {
+                        var tokenValue = token.Value.Trim();
+                        if (tokenValue.Length == 0)
+                        {
+                            token = tokenizer.NextToken(true);
+                            continue;
+                        }
+
+                        // Very simple defines processing
+                        var negate = tokenValue[0] == '!';
+                        if (negate)
+                            tokenValue = tokenValue.Substring(1);
+                        tokenValue = ReplacePreProcessorDefines(tokenValue, context.PreprocessorDefines);
+                        tokenValue = ReplacePreProcessorDefines(tokenValue, context.ModuleOptions.PublicDefinitions);
+                        tokenValue = ReplacePreProcessorDefines(tokenValue, context.ModuleOptions.PrivateDefinitions);
+                        tokenValue = ReplacePreProcessorDefines(tokenValue, context.ModuleOptions.CompileEnv.PreprocessorDefinitions);
+                        tokenValue = tokenValue.Replace("false", "0");
+                        tokenValue = tokenValue.Replace("true", "1");
+                        tokenValue = tokenValue.Replace("||", "|");
+                        if (tokenValue.Length != 0 && tokenValue != "1" && tokenValue != "0" && tokenValue != "|")
+                            tokenValue = "0";
+                        if (negate)
+                            tokenValue = tokenValue == "1" ? "0" : "1";
+
+                        condition += tokenValue;
+                        token = tokenizer.NextToken(true);
+                    }
+
+                    // Filter condition
+                    bool modified;
+                    do
+                    {
+                        modified = false;
+                        if (condition.Contains("1|1"))
+                        {
+                            condition = condition.Replace("1|1", "1");
+                            modified = true;
+                        }
+                        if (condition.Contains("1|0"))
+                        {
+                            condition = condition.Replace("1|0", "1");
+                            modified = true;
+                        }
+                        if (condition.Contains("0|1"))
+                        {
+                            condition = condition.Replace("0|1", "1");
+                            modified = true;
+                        }
+                    } while (modified);
+
+                    // Skip chunk of code of condition fails
+                    if (condition != "1")
+                    {
+                        ParsePreprocessorIf(context.File, tokenizer, ref token);
+                    }
+
+                    break;
+                }
+                case "ifdef":
+                {
+                    // Parse condition
+                    var define = string.Empty;
+                    token = tokenizer.NextToken(true);
+                    while (token.Type != TokenType.Newline)
+                    {
+                        define += token.Value;
+                        token = tokenizer.NextToken(true);
+                    }
+
+                    // Check condition
+                    define = define.Trim();
+                    if (!context.PreprocessorDefines.ContainsKey(define) && !context.ModuleOptions.CompileEnv.PreprocessorDefinitions.Contains(define))
+                    {
+                        ParsePreprocessorIf(context.File, tokenizer, ref token);
+                    }
+
+                    break;
+                }
+                case "endif":
+                {
+                    token = tokenizer.NextToken(true);
+                    break;
+                }
             }
         }
 

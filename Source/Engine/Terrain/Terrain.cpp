@@ -845,7 +845,7 @@ void Terrain::OnEnable()
     GetScene()->Navigation.Actors.Add(this);
     GetSceneRendering()->AddActor(this, _sceneRenderingKey);
 #if TERRAIN_USE_PHYSICS_DEBUG
-    GetSceneRendering()->AddPhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
+    GetSceneRendering()->AddPhysicsDebug(this);
 #endif
     void* scene = GetPhysicsScene()->GetPhysicsScene();
     for (int32 i = 0; i < _patches.Count(); i++)
@@ -866,7 +866,7 @@ void Terrain::OnDisable()
     GetScene()->Navigation.Actors.Remove(this);
     GetSceneRendering()->RemoveActor(this, _sceneRenderingKey);
 #if TERRAIN_USE_PHYSICS_DEBUG
-    GetSceneRendering()->RemovePhysicsDebug<Terrain, &Terrain::DrawPhysicsDebug>(this);
+    GetSceneRendering()->RemovePhysicsDebug(this);
 #endif
     void* scene = GetPhysicsScene()->GetPhysicsScene();
     for (int32 i = 0; i < _patches.Count(); i++)

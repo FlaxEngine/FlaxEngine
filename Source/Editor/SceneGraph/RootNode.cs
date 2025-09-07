@@ -175,7 +175,7 @@ namespace FlaxEditor.SceneGraph
         public List<SceneGraphNode> Selection => SceneContext.Selection;
 
         /// <summary>
-        /// Gets the list of selected scene graph nodes in the editor context.
+        /// Gets the scene editing context.
         /// </summary>
         public abstract ISceneEditingContext SceneContext { get; }
     }

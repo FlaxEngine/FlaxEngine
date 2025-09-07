@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.Options;
 using FlaxEngine;
 using FlaxEngine.GUI;
 
@@ -13,12 +14,16 @@ namespace FlaxEditor.GUI.Docking
     public class DockPanelProxy : ContainerControl
     {
         private DockPanel _panel;
+        private InterfaceOptions.TabCloseButtonVisibility closeButtonVisibility;
         private double _dragEnterTime = -1;
-    #if PLATFORM_WINDOWS
-        private const bool HideTabForSingleTab = true;
-    #else
-        private const bool HideTabForSingleTab = false;
-    #endif
+        private float _tabHeight = Editor.Instance.Options.Options.Interface.TabHeight;
+        private bool _useMinimumTabWidth = Editor.Instance.Options.Options.Interface.UseMinimumTabWidth;
+        private float _minimumTabWidth = Editor.Instance.Options.Options.Interface.MinimumTabWidth;
+#if PLATFORM_WINDOWS
+        private readonly bool _hideTabForSingleTab = Editor.Instance.Options.Options.Interface.HideSingleTabWindowTabBars;
+#else
+        private readonly bool _hideTabForSingleTab = false;
+#endif
 
         /// <summary>
         /// The is mouse down flag (left button).
@@ -60,8 +65,8 @@ namespace FlaxEditor.GUI.Docking
         /// </summary>
         public DockWindow StartDragAsyncWindow;
 
-        private Rectangle HeaderRectangle => new Rectangle(0, 0, Width, DockPanel.DefaultHeaderHeight);
-        private bool IsSingleFloatingWindow => HideTabForSingleTab && _panel.TabsCount == 1 && _panel.IsFloating && _panel.ChildPanelsCount == 0;
+        private Rectangle HeaderRectangle => new Rectangle(0, 0, Width, _tabHeight);
+        private bool IsSingleFloatingWindow => _hideTabForSingleTab && _panel.TabsCount == 1 && _panel.IsFloating && _panel.ChildPanelsCount == 0;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DockPanelProxy"/> class.
@@ -75,6 +80,14 @@ namespace FlaxEditor.GUI.Docking
             _panel = panel;
             AnchorPreset = AnchorPresets.StretchAll;
             Offsets = Margin.Zero;
+
+            Editor.Instance.Options.OptionsChanged += OnEditorOptionsChanged;
+            OnEditorOptionsChanged(Editor.Instance.Options.Options);
+        }
+
+        private void OnEditorOptionsChanged(EditorOptions options)
+        {
+            closeButtonVisibility = options.Interface.ShowTabCloseButton;
         }
 
         private DockWindow GetTabAtPos(Float2 position, out bool closeButton)
@@ -85,11 +98,11 @@ namespace FlaxEditor.GUI.Docking
             var tabsCount = _panel.TabsCount;
             if (tabsCount == 1)
             {
-                var crossRect = new Rectangle(Width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
+                var crossRect = new Rectangle(Width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (HeaderRectangle.Height - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
                 if (HeaderRectangle.Contains(position))
                 {
-                    closeButton = crossRect.Contains(position);
                     result = _panel.GetTab(0);
+                    closeButton = crossRect.Contains(position) && IsCloseButtonVisible(result, closeButtonVisibility);
                 }
             }
             else
@@ -98,15 +111,17 @@ namespace FlaxEditor.GUI.Docking
                 for (int i = 0; i < tabsCount; i++)
                 {
                     var tab = _panel.GetTab(i);
-                    var titleSize = tab.TitleSize;
-                    var iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
-                    var width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin + iconWidth;
-                    var tabRect = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
+                    float width = CalculateTabWidth(tab, closeButtonVisibility);
+
+                    if (_useMinimumTabWidth && width < _minimumTabWidth)
+                        width = _minimumTabWidth;
+
+                    var tabRect = new Rectangle(x, 0, width, HeaderRectangle.Height);
                     var isMouseOver = tabRect.Contains(position);
                     if (isMouseOver)
                     {
-                        var crossRect = new Rectangle(x + width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
-                        closeButton = crossRect.Contains(position);
+                        var crossRect = new Rectangle(x + width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (HeaderRectangle.Height - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
+                        closeButton = crossRect.Contains(position) && IsCloseButtonVisible(tab, closeButtonVisibility);
                         result = tab;
                         break;
                     }
@@ -115,6 +130,24 @@ namespace FlaxEditor.GUI.Docking
             }
 
             return result;
+        }
+
+        private bool IsCloseButtonVisible(DockWindow win, InterfaceOptions.TabCloseButtonVisibility visibilityMode)
+        {
+            return visibilityMode != InterfaceOptions.TabCloseButtonVisibility.Never &&
+                (visibilityMode == InterfaceOptions.TabCloseButtonVisibility.Always ||
+                (visibilityMode == InterfaceOptions.TabCloseButtonVisibility.SelectedTab && _panel.SelectedTab == win));
+        }
+
+        private float CalculateTabWidth(DockWindow win, InterfaceOptions.TabCloseButtonVisibility visibilityMode)
+        {
+            var iconWidth = win.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
+            var width = win.TitleSize.X + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin + iconWidth;
+
+            if (IsCloseButtonVisible(win, visibilityMode))
+                width += 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultButtonsSize;
+
+            return width;
         }
 
         private void GetTabRect(DockWindow win, out Rectangle bounds)
@@ -134,10 +167,10 @@ namespace FlaxEditor.GUI.Docking
                 {
                     var tab = _panel.GetTab(i);
                     var titleSize = tab.TitleSize;
-                    float width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin;
+                    float width = CalculateTabWidth(tab, closeButtonVisibility);
                     if (tab == win)
                     {
-                        bounds = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
+                        bounds = new Rectangle(x, 0, width, HeaderRectangle.Height);
                         return;
                     }
                     x += width;
@@ -217,7 +250,7 @@ namespace FlaxEditor.GUI.Docking
                 {
                     Render2D.DrawSprite(
                         tab.Icon,
-                        new Rectangle(DockPanel.DefaultLeftTextMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize),
+                        new Rectangle(DockPanel.DefaultLeftTextMargin, (HeaderRectangle.Height - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize),
                         style.Foreground);
 
                 }
@@ -226,17 +259,20 @@ namespace FlaxEditor.GUI.Docking
                 Render2D.DrawText(
                     style.FontMedium,
                     tab.Title,
-                    new Rectangle(DockPanel.DefaultLeftTextMargin + iconWidth, 0, Width - DockPanel.DefaultLeftTextMargin - DockPanel.DefaultButtonsSize - 2 * DockPanel.DefaultButtonsMargin, DockPanel.DefaultHeaderHeight),
+                    new Rectangle(DockPanel.DefaultLeftTextMargin + iconWidth, 0, Width - DockPanel.DefaultLeftTextMargin - DockPanel.DefaultButtonsSize - 2 * DockPanel.DefaultButtonsMargin, HeaderRectangle.Height),
                     style.Foreground,
                     TextAlignment.Near,
                     TextAlignment.Center);
 
-                // Draw cross
-                var crossRect = new Rectangle(Width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
-                bool isMouseOverCross = isMouseOver && crossRect.Contains(MousePosition);
-                if (isMouseOverCross)
-                    Render2D.FillRectangle(crossRect, (containsFocus ? style.BackgroundSelected : style.LightBackground) * 1.3f);
-                Render2D.DrawSprite(style.Cross, crossRect, isMouseOverCross ? style.Foreground : style.ForegroundGrey);
+                if (IsCloseButtonVisible(tab, closeButtonVisibility))
+                {
+                    // Draw cross
+                    var crossRect = new Rectangle(Width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (HeaderRectangle.Height - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
+                    bool isMouseOverCross = isMouseOver && crossRect.Contains(MousePosition);
+                    if (isMouseOverCross)
+                        Render2D.FillRectangle(crossRect, (containsFocus ? style.BackgroundSelected : style.LightBackground) * 1.3f);
+                    Render2D.DrawSprite(style.Cross, crossRect, isMouseOverCross ? style.Foreground : style.ForegroundGrey);
+                }
             }
             else
             {
@@ -250,10 +286,14 @@ namespace FlaxEditor.GUI.Docking
                     // Cache data
                     var tab = _panel.GetTab(i);
                     var tabColor = Color.Black;
-                    var titleSize = tab.TitleSize;
                     var iconWidth = tab.Icon.IsValid ? DockPanel.DefaultButtonsSize + DockPanel.DefaultLeftTextMargin : 0;
-                    var width = titleSize.X + DockPanel.DefaultButtonsSize + 2 * DockPanel.DefaultButtonsMargin + DockPanel.DefaultLeftTextMargin + DockPanel.DefaultRightTextMargin + iconWidth;
-                    var tabRect = new Rectangle(x, 0, width, DockPanel.DefaultHeaderHeight);
+
+                    float width = CalculateTabWidth(tab, closeButtonVisibility);
+
+                    if (_useMinimumTabWidth && width < _minimumTabWidth)
+                        width = _minimumTabWidth;
+
+                    var tabRect = new Rectangle(x, 0, width, headerRect.Height);
                     var isMouseOver = tabRect.Contains(MousePosition);
                     var isSelected = _panel.SelectedTab == tab;
 
@@ -280,7 +320,7 @@ namespace FlaxEditor.GUI.Docking
                     {
                         Render2D.DrawSprite(
                             tab.Icon,
-                            new Rectangle(x + DockPanel.DefaultLeftTextMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize),
+                            new Rectangle(x + DockPanel.DefaultLeftTextMargin, (HeaderRectangle.Height - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize),
                             style.Foreground);
 
                     }
@@ -289,27 +329,27 @@ namespace FlaxEditor.GUI.Docking
                     Render2D.DrawText(
                         style.FontMedium,
                         tab.Title,
-                        new Rectangle(x + DockPanel.DefaultLeftTextMargin + iconWidth, 0, 10000, DockPanel.DefaultHeaderHeight),
+                        new Rectangle(x + DockPanel.DefaultLeftTextMargin + iconWidth, 0, 10000, HeaderRectangle.Height),
                         style.Foreground,
                         TextAlignment.Near,
                         TextAlignment.Center);
 
                     // Draw cross
-                    if (isSelected || isMouseOver)
+                    if (IsCloseButtonVisible(tab, closeButtonVisibility))
                     {
-                        var crossRect = new Rectangle(x + width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (DockPanel.DefaultHeaderHeight - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
+                        var crossRect = new Rectangle(x + width - DockPanel.DefaultButtonsSize - DockPanel.DefaultButtonsMargin, (HeaderRectangle.Height - DockPanel.DefaultButtonsSize) / 2, DockPanel.DefaultButtonsSize, DockPanel.DefaultButtonsSize);
                         bool isMouseOverCross = isMouseOver && crossRect.Contains(MousePosition);
                         if (isMouseOverCross)
                             Render2D.FillRectangle(crossRect, tabColor * 1.3f);
                         Render2D.DrawSprite(style.Cross, crossRect, isMouseOverCross ? style.Foreground : style.ForegroundGrey);
                     }
 
-                    // Move
+                    // Set the start position for the next tab
                     x += width;
                 }
 
                 // Draw selected tab strip
-                Render2D.FillRectangle(new Rectangle(0, DockPanel.DefaultHeaderHeight - 2, Width, 2), containsFocus ? style.BackgroundSelected : style.BackgroundNormal);
+                Render2D.FillRectangle(new Rectangle(0, HeaderRectangle.Height - 2, Width, 2), containsFocus ? style.BackgroundSelected : style.BackgroundNormal);
             }
         }
 
@@ -542,7 +582,7 @@ namespace FlaxEditor.GUI.Docking
             if (IsSingleFloatingWindow)
                 rect = new Rectangle(0, 0, Width, Height);
             else
-                rect = new Rectangle(0, DockPanel.DefaultHeaderHeight, Width, Height - DockPanel.DefaultHeaderHeight);
+                rect = new Rectangle(0, HeaderRectangle.Height, Width, Height - HeaderRectangle.Height);
         }
 
         private DragDropEffect TrySelectTabUnderLocation(ref Float2 location)

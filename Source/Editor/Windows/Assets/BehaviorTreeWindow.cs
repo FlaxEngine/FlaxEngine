@@ -641,5 +641,8 @@ namespace FlaxEditor.Windows.Assets
 
         /// <inheritdoc />
         public bool LockSelection { get; set; }
+
+        /// <inheritdoc />
+        public ISceneEditingContext SceneContext => null;
     }
 }

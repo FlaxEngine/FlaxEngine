@@ -9,6 +9,7 @@
 #include "Engine/Render2D/Font.h"
 #include "Engine/Render2D/TextLayoutOptions.h"
 #include "Engine/Render2D/Render2D.h"
+#include "Engine/Platform/FileSystem.h"
 #include "Engine/Content/Content.h"
 #include "FlaxEngine.Gen.h"
 
@@ -189,8 +190,7 @@ void SplashScreen::Show()
 
     // Setup
     _dpiScale = dpiScale;
-    _width = settings.Size.X;
-    _height = settings.Size.Y;
+    _size = settings.Size;
     _startTime = DateTime::NowUTC();
     auto str = Globals::ProjectFolder;
 #if PLATFORM_WIN32
@@ -215,6 +215,12 @@ void SplashScreen::Show()
             font->OnLoaded.Bind<SplashScreen, &SplashScreen::OnFontLoaded>(this);
     }
 
+    // Load custom image
+    _splashTexture.Loaded.Bind<SplashScreen, &SplashScreen::OnSplashLoaded>(this);
+    String splashImagePath = Globals::ProjectContentFolder / TEXT("SplashImage.flax");
+    if (FileSystem::FileExists(splashImagePath))
+        _splashTexture = Content::LoadAsync<Texture>(splashImagePath);
+    
     _window->Show();
 }
 
@@ -228,6 +234,10 @@ void SplashScreen::Close()
     // Close window
     _window->Close(ClosingReason::CloseEvent);
     _window = nullptr;
+
+    _titleFont = nullptr;
+    _subtitleFont = nullptr;
+    _splashTexture = nullptr;
 }
 
 void SplashScreen::OnShown()
@@ -240,16 +250,29 @@ void SplashScreen::OnShown()
 void SplashScreen::OnDraw()
 {
     const float s = _dpiScale;
-    const float width = _width;
-    const float height = _height;
+    const float width = _size.X;
+    const float height = _size.Y;
 
     // Peek time
     const float time = static_cast<float>((DateTime::NowUTC() - _startTime).GetTotalSeconds());
 
     // Background
-    const float lightBarHeight = 112 * s;
-    Render2D::FillRectangle(Rectangle(0, 0, width, 150 * s), Color::FromRGB(0x1C1C1C));
-    Render2D::FillRectangle(Rectangle(0, lightBarHeight, width, height), Color::FromRGB(0x0C0C0C));
+    float lightBarHeight = 112 * s;
+    if (_splashTexture != nullptr)
+    {
+        if (_splashTexture->IsLoaded())
+        {
+            lightBarHeight = height - lightBarHeight + 20 * s;
+            Render2D::DrawTexture(_splashTexture, Rectangle(0, 0, width, height));
+            Color rectColor = Color::FromRGB(0x0C0C0C);
+            Render2D::FillRectangle(Rectangle(0, lightBarHeight, width, height - lightBarHeight),rectColor.AlphaMultiplied(0.85f), rectColor.AlphaMultiplied(0.85f), rectColor, rectColor);
+        }
+    }
+    else
+    {
+        Render2D::FillRectangle(Rectangle(0, 0, width, 150 * s), Color::FromRGB(0x1C1C1C));
+        Render2D::FillRectangle(Rectangle(0, lightBarHeight, width, height), Color::FromRGB(0x0C0C0C));
+    }
 
     // Animated border
     const float anim = Math::Sin(time * 4.0f) * 0.5f + 0.5f;
@@ -277,15 +300,27 @@ void SplashScreen::OnDraw()
         for (int32 i = 0; i < 4 - static_cast<int32>(time * 2.0f) % 4; i++)
             subtitle += TEXT(' ');
     }
-    layout.Bounds = Rectangle(width - 224 * s, lightBarHeight - 39 * s, 220 * s, 35 * s);
+    if (_splashTexture != nullptr)
+    {
+        layout.Bounds = Rectangle(width - 224 * s, lightBarHeight + 4 * s, 220 * s, 35 * s);
+        layout.VerticalAlignment = TextAlignment::Near;
+    }
+    else
+    {
+        layout.Bounds = Rectangle(width - 224 * s, lightBarHeight - 39 * s, 220 * s, 35 * s);
+        layout.VerticalAlignment = TextAlignment::Far;
+    }
     layout.Scale = 1.0f;
     layout.HorizontalAlignment = TextAlignment::Far;
-    layout.VerticalAlignment = TextAlignment::Far;
     Render2D::DrawText(_subtitleFont, subtitle, Color::FromRGB(0x8C8C8C), layout);
 
     // Additional info
     const float infoMargin = 6 * s;
-    layout.Bounds = Rectangle(infoMargin, lightBarHeight + infoMargin, width - (2 * infoMargin), height - lightBarHeight - (2 * infoMargin));
+    if (_splashTexture != nullptr)
+        layout.Bounds = Rectangle(infoMargin + 4 * s, lightBarHeight + infoMargin, width - (2 * infoMargin), height - lightBarHeight - (2 * infoMargin));
+    else
+        layout.Bounds = Rectangle(infoMargin, lightBarHeight + infoMargin, width - (2 * infoMargin), height - lightBarHeight - (2 * infoMargin));
+    
     layout.HorizontalAlignment = TextAlignment::Near;
     layout.VerticalAlignment = TextAlignment::Center;
     Render2D::DrawText(_subtitleFont, _infoText, Color::FromRGB(0xFFFFFF) * 0.9f, layout);
@@ -307,4 +342,15 @@ void SplashScreen::OnFontLoaded(Asset* asset)
     const float s = _dpiScale;
     _titleFont = font->CreateFont(35 * s);
     _subtitleFont = font->CreateFont(9 * s);
+}
+
+void SplashScreen::OnSplashLoaded()
+{
+    // Resize window to be larger if texture is being used
+    auto desktopSize = Platform::GetDesktopSize();
+    auto xSize = (desktopSize.X / (600.0f * 3.0f)) * 600.0f;
+    auto ySize = (desktopSize.Y / (200.0f * 3.0f)) * 200.0f;
+    _window->SetClientSize(Float2(xSize, ySize));
+    _size = _window->GetSize();
+    _window->SetPosition((desktopSize - _size) * 0.5f);
 }

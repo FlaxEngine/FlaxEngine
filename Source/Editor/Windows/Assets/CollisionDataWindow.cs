@@ -7,6 +7,7 @@ using FlaxEditor.Content.Create;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.CustomEditors.Elements;
+using FlaxEditor.GUI;
 using FlaxEditor.Viewport.Cameras;
 using FlaxEditor.Viewport.Previews;
 using FlaxEngine;
@@ -171,12 +172,48 @@ namespace FlaxEditor.Windows.Assets
         }
 
         private readonly SplitPanel _split;
-        private readonly ModelBasePreview _preview;
+        private readonly CollisionDataPreview _preview;
         private readonly CustomEditorPresenter _propertiesPresenter;
         private readonly PropertiesProxy _properties;
         private Model _collisionWiresModel;
         private StaticModel _collisionWiresShowActor;
         private bool _updateWireMesh;
+
+        private class CollisionDataPreview : ModelBasePreview
+        {
+            public bool ShowCollisionData = false;
+            private int _verticesCount = 0;
+            private int _trianglesCount = 0;
+
+            public void SetVerticesAndTriangleCount(int verticesCount, int triangleCount)
+            {
+                _verticesCount = verticesCount;
+                _trianglesCount = triangleCount;
+            }
+            
+            /// <inheritdoc />
+            public CollisionDataPreview(bool useWidgets) 
+            : base(useWidgets)
+            {
+                ViewportCamera = new FPSCamera();
+                Task.ViewFlags &= ~ViewFlags.Sky & ~ViewFlags.Bloom & ~ViewFlags.EyeAdaptation;
+            }
+
+            /// <inheritdoc />
+            public override void Draw()
+            {
+                base.Draw();
+
+                if (ShowCollisionData)
+                {
+                    var text = string.Format("\nTriangles: {0:N0}\nVertices: {1:N0}\nMemory Size: {2}", _trianglesCount, _verticesCount, Utilities.Utils.FormatBytesCount(Asset.MemoryUsage));
+                    var font = Style.Current.FontMedium;
+                    var pos = new Float2(10, 50);
+                    Render2D.DrawText(font, text, new Rectangle(pos + Float2.One, Size), Color.Black);
+                    Render2D.DrawText(font, text, new Rectangle(pos, Size), Color.White);
+                }
+            }
+        }
 
         /// <inheritdoc />
         public CollisionDataWindow(Editor editor, AssetItem item)
@@ -185,6 +222,12 @@ namespace FlaxEditor.Windows.Assets
             // Toolstrip
             _toolstrip.AddSeparator();
             _toolstrip.AddButton(editor.Icons.CenterView64, () => _preview.ResetCamera()).LinkTooltip("Show whole collision");
+            var infoButton = (ToolStripButton)_toolstrip.AddButton(editor.Icons.Info64).LinkTooltip("Show Collision Data");
+            infoButton.Clicked += () =>
+            {
+                _preview.ShowCollisionData = !_preview.ShowCollisionData;
+                infoButton.Checked = _preview.ShowCollisionData;
+            };
             _toolstrip.AddButton(editor.Icons.Docs64, () => Platform.OpenUrl(Utilities.Constants.DocsUrl + "manual/physics/colliders/collision-data.html")).LinkTooltip("See documentation to learn more");
 
             // Split Panel
@@ -197,12 +240,10 @@ namespace FlaxEditor.Windows.Assets
             };
 
             // Model preview
-            _preview = new ModelBasePreview(true)
+            _preview = new CollisionDataPreview(true)
             {
-                ViewportCamera = new FPSCamera(),
                 Parent = _split.Panel1
             };
-            _preview.Task.ViewFlags &= ~ViewFlags.Sky & ~ViewFlags.Bloom & ~ViewFlags.EyeAdaptation;
 
             // Asset properties
             _propertiesPresenter = new CustomEditorPresenter(null);
@@ -240,7 +281,7 @@ namespace FlaxEditor.Windows.Assets
                 _collisionWiresModel = FlaxEngine.Content.CreateVirtualAsset<Model>();
                 _collisionWiresModel.SetupLODs(new[] { 1 });
             }
-            Editor.Internal_GetCollisionWires(FlaxEngine.Object.GetUnmanagedPtr(Asset), out var triangles, out var indices, out var _, out var _);
+            Editor.Internal_GetCollisionWires(FlaxEngine.Object.GetUnmanagedPtr(Asset), out var triangles, out var indices, out var triangleCount, out var indicesCount);
             if (triangles != null && indices != null)
                 _collisionWiresModel.LODs[0].Meshes[0].UpdateMesh(triangles, indices);
             else
@@ -252,6 +293,7 @@ namespace FlaxEditor.Windows.Assets
             }
             _collisionWiresShowActor.Model = _collisionWiresModel;
             _collisionWiresShowActor.SetMaterial(0, FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.WiresDebugMaterial));
+            _preview.SetVerticesAndTriangleCount(triangleCount, indicesCount / 3);
             _preview.Asset = FlaxEngine.Content.LoadAsync<ModelBase>(_asset.Options.Model);
         }
 

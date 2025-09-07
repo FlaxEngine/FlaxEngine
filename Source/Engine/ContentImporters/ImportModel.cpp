@@ -55,6 +55,27 @@ bool ImportModel::TryGetImportOptions(const StringView& path, Options& options)
             }
         }
     }
+    else
+    {
+        // Try model prefab
+        String pathPrefab = String(StringUtils::GetPathWithoutExtension(path)) + DEFAULT_PREFAB_EXTENSION_DOT;
+        if (FileSystem::FileExists(pathPrefab))
+        {
+            auto prefab = Content::Load<Prefab>(pathPrefab);
+            if (prefab)
+            {
+                for (const auto& e : prefab->ObjectsDataCache)
+                {
+                    auto importOptionsMember = e.Value->FindMember("ImportOptions");
+                    if (importOptionsMember != e.Value->MemberEnd() && importOptionsMember->value.IsObject())
+                    {
+                        options.Deserialize(*(ISerializable::DeserializeStream*)&importOptionsMember->value, nullptr);
+                        return true;
+                    }
+                }
+            }
+        }
+    }
     return false;
 }
 

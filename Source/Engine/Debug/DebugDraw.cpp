@@ -30,6 +30,7 @@
 #include "Editor/Editor.h"
 #include "Engine/Level/Actors/Light.h"
 #include "Engine/Physics/Colliders/Collider.h"
+#include "Engine/Physics/Actors/IPhysicsDebug.h"
 #endif
 
 // Debug draw service configuration
@@ -1027,11 +1028,12 @@ void DebugDraw::DrawActorsTree(Actor* actor)
 
 #if USE_EDITOR
 
-void DebugDraw::DrawColliderDebugPhysics(Collider* collider, RenderView& view)
+void DebugDraw::DrawDebugPhysics(Actor* actor, RenderView& view)
 {
-    if (!collider)
+    if (!actor || !actor->IsActiveInHierarchy())
         return;
-    collider->DrawPhysicsDebug(view);
+    if (auto* physicsDebug = dynamic_cast<IPhysicsDebug*>(actor))
+        physicsDebug->DrawPhysicsDebug(view);
 }
 
 void DebugDraw::DrawLightDebug(Light* light, RenderView& view)

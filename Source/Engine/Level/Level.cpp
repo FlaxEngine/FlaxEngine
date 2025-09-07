@@ -65,6 +65,21 @@ bool LayersMask::HasLayer(const StringView& layerName) const
     return HasLayer(Level::GetLayerIndex(layerName));
 }
 
+LayersMask LayersMask::GetMask(Span<StringView> layerNames)
+{
+    LayersMask mask(0);
+    for (StringView& layerName : layerNames)
+    {
+        // Ignore blank entries
+        if (layerName.Length() == 0)
+            continue;
+        int32 index = Level::GetLayerIndex(layerName);
+        if (index != -1)
+            mask.Mask |= (uint32)(1 << index);
+    }
+    return mask;
+}
+
 enum class SceneEventType
 {
     OnSceneSaving = 0,
@@ -727,6 +742,18 @@ int32 Level::GetLayerIndex(const StringView& layer)
         }
     }
     return result;
+}
+
+StringView Level::GetLayerName(const int32 layerIndex)
+{
+    for (int32 i = 0; i < 32; i++)
+    {
+        if (i == layerIndex)
+        {
+            return Layers[i];
+        }
+    }
+    return TEXT("");
 }
 
 void Level::callActorEvent(ActorEventType eventType, Actor* a, Actor* b)

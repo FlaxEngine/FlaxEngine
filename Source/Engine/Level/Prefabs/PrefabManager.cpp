@@ -172,7 +172,9 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const SpawnOptions& options)
             SceneObjectsFactory::HandleObjectDeserializationError(stream);
     }
     SceneObjectsFactory::PrefabSyncData prefabSyncData(*sceneObjects.Value, data, modifier.Value);
-    if (options.WithSync)
+    bool withSync = options.WithSync || prefab->NestedPrefabs.HasItems(); // Nested prefabs needs prefab instances generation for correct IdsMapping if the same prefab exists multiple times
+    // TODO: let prefab check if has multiple nested prefabs at cook time?
+    if (withSync)
     {
         // Synchronize new prefab instances (prefab may have new objects added so deserialized instances need to synchronize with it)
         // TODO: resave and force sync prefabs during game cooking so this step could be skipped in game
@@ -187,14 +189,14 @@ Actor* PrefabManager::SpawnPrefab(Prefab* prefab, const SpawnOptions& options)
         if (obj)
             SceneObjectsFactory::Deserialize(context, obj, stream);
     }
-    Scripting::ObjectsLookupIdMapping.Set(prevIdMapping);
 
     // Synchronize prefab instances (prefab may have new objects added or some removed so deserialized instances need to synchronize with it)
-    if (options.WithSync)
+    if (withSync)
     {
         // TODO: resave and force sync scenes during game cooking so this step could be skipped in game
         SceneObjectsFactory::SynchronizePrefabInstances(context, prefabSyncData);
     }
+    Scripting::ObjectsLookupIdMapping.Set(prevIdMapping);
 
     // Pick prefab root object
     Actor* root = nullptr;

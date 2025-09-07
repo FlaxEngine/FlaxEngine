@@ -543,11 +543,12 @@ namespace FlaxEditor.Surface
                 nodes.Add(context);
                 context = context.Parent;
             }
+            float margin = 1;
             float x = NavigationBar.DefaultButtonsMargin;
-            float h = toolStrip.ItemsHeight - 2 * ToolStrip.DefaultMarginV;
+            float h = toolStrip.ItemsHeight - 2 * margin;
             for (int i = nodes.Count - 1; i >= 0; i--)
             {
-                var button = new VisjectContextNavigationButton(this, nodes[i].Context, x, ToolStrip.DefaultMarginV, h);
+                var button = new VisjectContextNavigationButton(this, nodes[i].Context, x, margin, h);
                 button.PerformLayout();
                 x += button.Width + NavigationBar.DefaultButtonsMargin;
                 navigationBar.AddChild(button);

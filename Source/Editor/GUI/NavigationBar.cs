@@ -11,6 +11,9 @@ namespace FlaxEditor.GUI
     /// <seealso cref="FlaxEngine.GUI.Panel" />
     public class NavigationBar : Panel
     {
+        private float _toolstripHeight = 0;
+        private Margin _toolstripMargin;
+
         /// <summary>
         /// The default buttons margin.
         /// </summary>
@@ -50,9 +53,42 @@ namespace FlaxEditor.GUI
         {
             if (toolstrip == null)
                 return;
+
+            if (_toolstripHeight <= 0.0f)
+            {
+                // Cache initial toolstrip state
+                _toolstripHeight = toolstrip.Height;
+                _toolstripMargin = toolstrip.ItemsMargin;
+            }
+
+            // Control toolstrip bottom margin to prevent navigation bar scroll going over the buttons
+            var toolstripLocked = toolstrip.IsLayoutLocked;
+            toolstrip.IsLayoutLocked = true;
+            var toolstripHeight = _toolstripHeight;
+            var toolstripMargin = _toolstripMargin;
+            if (HScrollBar.Visible)
+            {
+                float scrollMargin = 8;
+                toolstripHeight += scrollMargin;
+                toolstripMargin.Bottom += scrollMargin;
+            }
+            toolstrip.Height = toolstripHeight;
+            toolstrip.IsLayoutLocked = toolstripLocked;
+            toolstrip.ItemsMargin = toolstripMargin;
+
             var lastToolstripButton = toolstrip.LastButton;
             var parentSize = Parent.Size;
             Bounds = new Rectangle(lastToolstripButton.Right + 8.0f, 0, parentSize.X - X - 8.0f, toolstrip.Height);
+        }
+
+        /// <inheritdoc />
+        public override void PerformLayout(bool force = false)
+        {
+            base.PerformLayout(force);
+
+            // Stretch excluding toolstrip margin to fill the space
+            if (Parent is ToolStrip toolStrip)
+                Height = toolStrip.Height;
         }
     }
 }

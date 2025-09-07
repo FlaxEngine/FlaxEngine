@@ -5,6 +5,7 @@
 #include "Engine/Content/JsonAssetReference.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Physics/Actors/PhysicsColliderActor.h"
+#include "Engine/Physics/Actors/IPhysicsDebug.h"
 
 class Terrain;
 class TerrainChunk;
@@ -38,6 +39,9 @@ struct RenderView;
 /// <seealso cref="Actor" />
 /// <seealso cref="PhysicsColliderActor" />
 API_CLASS(Sealed) class FLAXENGINE_API Terrain : public PhysicsColliderActor
+#if USE_EDITOR
+    , public IPhysicsDebug
+#endif
 {
     DECLARE_SCENE_OBJECT(Terrain);
     friend Terrain;
@@ -441,9 +445,7 @@ public:
     API_FUNCTION() void DrawChunk(API_PARAM(Ref) const RenderContext& renderContext, API_PARAM(Ref) const Int2& patchCoord, API_PARAM(Ref) const Int2& chunkCoord, MaterialBase* material, int32 lodIndex = 0) const;
 
 private:
-#if TERRAIN_USE_PHYSICS_DEBUG
-    void DrawPhysicsDebug(RenderView& view);
-#endif
+    ImplementPhysicsDebug;
     bool DrawSetup(RenderContext& renderContext);
     void DrawImpl(RenderContext& renderContext, HashSet<TerrainChunk*, class RendererAllocation>& drawnChunks);
 

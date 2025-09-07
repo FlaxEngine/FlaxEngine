@@ -141,6 +141,8 @@ namespace FlaxEditor.SceneGraph.Actors
             b.TooltipText = "Add a box collider to every selected model that will auto resize based on the model bounds.";
             b = menu.ContextMenu.AddButton("Sphere", () => OnAddCollider(window, CreateSphere));
             b.TooltipText = "Add a sphere collider to every selected model that will auto resize based on the model bounds.";
+            b = menu.ContextMenu.AddButton("Capsule", () => OnAddCollider(window, CreateCapsule));
+            b.TooltipText = "Add a capsule collider to every selected model that will auto resize based on the model bounds.";
             b = menu.ContextMenu.AddButton("Convex", () => OnAddCollider(window, CreateConvex));
             b.TooltipText = "Generate and add a convex collider for every selected model.";
             b = menu.ContextMenu.AddButton("Triangle Mesh", () => OnAddCollider(window, CreateTriangle));
@@ -263,6 +265,20 @@ namespace FlaxEditor.SceneGraph.Actors
                 // Refit into the sphere bounds that are usually calculated from mesh box bounds
                 Position = bounds.Center,
                 Radius = (float)bounds.Radius / Mathf.Max((float)actor.Scale.MaxValue, 0.0001f) * 0.707f,
+            };
+            spawner(collider);
+        }
+
+        private void CreateCapsule(StaticModel actor, Spawner spawner, bool singleNode)
+        {
+            var collider = new CapsuleCollider
+            {
+                Transform = actor.Transform,
+                Position = actor.Box.Center,
+
+                // Size the capsule to best fit the actor
+                Radius = (float)actor.Sphere.Radius / Mathf.Max((float)actor.Scale.MaxValue, 0.0001f) * 0.707f,
+                Height = 100f,
             };
             spawner(collider);
         }

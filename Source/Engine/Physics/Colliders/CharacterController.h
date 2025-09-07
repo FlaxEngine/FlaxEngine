@@ -267,13 +267,11 @@ public:
 
 protected:
     // [PhysicsActor]
+    ImplementPhysicsDebug;
     void UpdateGeometry() override;
     void GetGeometry(CollisionShape& collision) override;
     void BeginPlay(SceneBeginData* data) override;
     void EndPlay() override;
-#if USE_EDITOR
-    void DrawPhysicsDebug(RenderView& view) override;
-#endif
     void OnActiveInTreeChanged() override;
     void OnEnable() override;
     void OnDisable() override;
