@@ -2276,6 +2276,12 @@ bool InitHostfxr()
     LOG(Info, "Mono runtime version: {0}", String(buildInfo));
     mono_free(buildInfo);
 
+#if PLATFORM_ANDROID
+    // Fix native crashes handling on Android
+    extern void AndroidRegisterCrashHandling();
+    AndroidRegisterCrashHandling();
+#endif
+
     return false;
 }
 
