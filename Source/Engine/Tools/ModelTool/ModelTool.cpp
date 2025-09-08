@@ -1119,6 +1119,12 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             options.ImportTypes |= ImportDataTypes::Textures;
         break;
     case ModelType::SkinnedModel:
+        if (!data.Skeleton.Bones.HasItems())
+        {
+            LOG(Warning, "Model is not Skinned, it will be imported as Static");
+            options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes;
+            options.Type = ModelType::Model;
+        }
         options.ImportTypes = ImportDataTypes::Geometry | ImportDataTypes::Nodes | ImportDataTypes::Skeleton;
         if (options.ImportMaterials)
             options.ImportTypes |= ImportDataTypes::Materials;
@@ -1184,7 +1190,8 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             }
         }
     }
-    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton) && data.Skeleton.Bones.HasItems())
+    if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton) 
+        && (data.Skeleton.Bones.HasItems() || data.LODs[0].Meshes[0]->BlendShapes.HasItems()))
     {
         LOG(Info, "Imported skeleton has {0} bones and {1} nodes", data.Skeleton.Bones.Count(), data.Nodes.Count());
 
