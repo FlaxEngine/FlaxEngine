@@ -710,7 +710,7 @@ void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, v
 #if PLATFORM_DESKTOP && !USE_MONO_AOT
     static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectSetInternalValues"));
     CallStaticMethod<void, MObject*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, object, unmanagedPtr, id);
-#elif !USE_EDITOR
+#elif !USE_EDITOR && PLATFORM_SWITCH // TODO: test this on other AOT platforms (Android with Mono JIT doesn't work)
     static MField* monoUnmanagedPtrField = ::ScriptingObject::GetStaticClass()->GetField("__unmanagedPtr");
     static MField* monoIdField = ::ScriptingObject::GetStaticClass()->GetField("__internalId");
     if (monoUnmanagedPtrField)
