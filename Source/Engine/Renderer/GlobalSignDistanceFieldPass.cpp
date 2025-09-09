@@ -884,7 +884,10 @@ bool GlobalSignDistanceFieldPass::Render(RenderContext& renderContext, GPUContex
                 for (const auto& e : cascade.Chunks)
                 {
                     if (e.Key.Layer != 0)
+                    {
+                        maxLayer = Math::Max(maxLayer, e.Key.Layer);
                         continue;
+                    }
                     auto& chunk = e.Value;
                     data.ChunkCoord = e.Key.Coord * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
                     cascade.NonEmptyChunks.Add(e.Key);
