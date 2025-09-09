@@ -258,7 +258,10 @@ bool MacPlatform::Init()
 
     // Get device id
     {
-        io_registry_entry_t ioRegistryRoot = IORegistryEntryFromPath(kIOMasterPortDefault, "IOService:/");
+#if MAC_OS_X_VERSION_MAX_ALLOWED < 120000
+#define kIOMainPortDefault kIOMasterPortDefault
+#endif
+        io_registry_entry_t ioRegistryRoot = IORegistryEntryFromPath(kIOMainPortDefault, "IOService:/");
         CFStringRef deviceUuid = (CFStringRef)IORegistryEntryCreateCFProperty(ioRegistryRoot, CFSTR(kIOPlatformUUIDKey), kCFAllocatorDefault, 0);
         IOObjectRelease(ioRegistryRoot);
         String uuidStr = AppleUtils::ToString(deviceUuid);

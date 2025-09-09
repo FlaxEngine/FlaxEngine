@@ -12,7 +12,7 @@ public:
     {
     }
 };
-#define ImplementPhysicsDebug void DrawPhysicsDebug(RenderView& view)
+#define ImplementPhysicsDebug void DrawPhysicsDebug(RenderView& view) override
 #else
 #define ImplementPhysicsDebug
 #endif
