@@ -27,7 +27,6 @@ AnimationGraph::AnimationGraph(const SpawnParams& params, const AssetInfo* info)
 Asset::LoadResult AnimationGraph::load()
 {
     PROFILE_MEM(AnimationsData);
-    ScopeWriteLock systemScope(Animations::SystemLocker);
 
     // Get stream with graph data
     const auto surfaceChunk = GetChunk(0);
@@ -86,7 +85,6 @@ bool AnimationGraph::InitAsAnimation(SkinnedModel* baseModel, Animation* anim, b
         return true;
     }
     PROFILE_MEM(AnimationsData);
-    ScopeWriteLock systemScope(Animations::SystemLocker);
 
     // Create Graph data
     MemoryWriteStream writeStream(512);
@@ -172,7 +170,6 @@ bool AnimationGraph::SaveSurface(const BytesContainer& data)
 {
     if (OnCheckSave())
         return true;
-    ScopeWriteLock systemScope(Animations::SystemLocker);
     ScopeLock lock(Locker);
 
     if (IsVirtual())

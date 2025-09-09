@@ -106,7 +106,6 @@ namespace
 Asset::LoadResult ParticleEmitter::load()
 {
     PROFILE_MEM(Particles);
-    ScopeWriteLock systemScope(Particles::SystemLocker);
 
     // Load the graph
     const auto surfaceChunk = GetChunk(SHADER_FILE_CHUNK_VISJECT_SURFACE);
@@ -330,8 +329,6 @@ Asset::LoadResult ParticleEmitter::load()
 
     // Wait for resources used by the emitter to be loaded
     // eg. texture used to place particles on spawn needs to be available
-    // Free Particles::SystemLocker when waiting on asset load to prevent lock-contention.
-    bool waitForAsset = false;
     for (const auto& node : Graph.Nodes)
     {
         if ((node.Type == GRAPH_NODE_MAKE_TYPE(5, 1) || node.Type == GRAPH_NODE_MAKE_TYPE(5, 2)) && node.Assets.Count() > 0)
@@ -339,11 +336,6 @@ Asset::LoadResult ParticleEmitter::load()
             const auto texture = node.Assets[0].As<TextureBase>();
             if (texture)
             {
-                if (!waitForAsset)
-                {
-                    waitForAsset = true;
-                    Particles::SystemLocker.WriteUnlock();
-                }
                 WaitForAsset(texture);
             }
         }
@@ -352,16 +344,9 @@ Asset::LoadResult ParticleEmitter::load()
     {
         if (parameter.Type.Type == VariantType::Asset)
         {
-            if (!waitForAsset)
-            {
-                waitForAsset = true;
-                Particles::SystemLocker.WriteUnlock();
-            }
             WaitForAsset((Asset*)parameter.Value);
         }
     }
-    if (waitForAsset)
-        Particles::SystemLocker.WriteLock();
 
     return LoadResult::Ok;
 }
@@ -459,7 +444,6 @@ bool ParticleEmitter::SaveSurface(const BytesContainer& data)
 {
     if (OnCheckSave())
         return true;
-    ScopeWriteLock systemScope(Particles::SystemLocker);
     ScopeLock lock(Locker);
 
     // Release all chunks

@@ -22,7 +22,6 @@ AnimationGraphFunction::AnimationGraphFunction(const SpawnParams& params, const 
 Asset::LoadResult AnimationGraphFunction::load()
 {
     PROFILE_MEM(AnimationsData);
-    ScopeWriteLock systemScope(Animations::SystemLocker);
 
     // Get graph data from chunk
     const auto surfaceChunk = GetChunk(0);
@@ -98,7 +97,6 @@ bool AnimationGraphFunction::SaveSurface(const BytesContainer& data) const
 {
     if (OnCheckSave())
         return true;
-    ScopeWriteLock systemScope(Animations::SystemLocker);
     ScopeLock lock(Locker);
 
     // Set Visject Surface data
