@@ -159,7 +159,8 @@ bool GPUTextureDX12::OnInit()
         initialState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 
     // Create texture
-    auto result = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, clearValuePtr, IID_PPV_ARGS(&resource));
+    D3D12_HEAP_FLAGS heapFlags = useRTV || useDSV ? D3D12_HEAP_FLAG_CREATE_NOT_ZEROED : D3D12_HEAP_FLAG_NONE;
+    auto result = device->CreateCommittedResource(&heapProperties, heapFlags, &resourceDesc, initialState, clearValuePtr, IID_PPV_ARGS(&resource));
     LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
     // Set state
