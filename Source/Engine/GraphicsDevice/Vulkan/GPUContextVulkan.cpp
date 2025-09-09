@@ -1388,7 +1388,7 @@ void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
     }
     else
     {
-        auto allocation = _device->UploadBuffer.Upload(data, size, 4);
+        auto allocation = _device->UploadBuffer.Upload(data, size, PLATFORM_MEMORY_ALIGNMENT);
 
         VkBufferCopy region;
         region.size = size;

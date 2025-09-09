@@ -422,7 +422,7 @@ namespace FlaxEngine.Interop
                 return fieldOffset;
 #elif DOTNET_HOST_MONO
                 // Get the address from _MonoClassField::offset, source: https://meetemq.com/2023/09/10/nets-fields-and-their-offsets/
-                IntPtr fieldOffsetPtr = (IntPtr*)field.FieldHandle.Value; // Pointer to MonoClassField
+                var fieldOffsetPtr = (IntPtr*)field.FieldHandle.Value; // Pointer to MonoClassField
                 fieldOffsetPtr += 3; // Skip three pointers (type, name, parent_and_flags)
                 return *(int*)fieldOffsetPtr - IntPtr.Size * 2; // Load the value of a pointer (4 bytes, int32), then subtracting 16 bytes from it (2 pointers for vtable and threadsync)
 #endif

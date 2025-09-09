@@ -111,6 +111,7 @@ UploadBufferVulkan::Allocation UploadBufferVulkan::Allocate(uint64 size, uint64 
 
     // Move within a page
     _currentOffset += size;
+    ASSERT_LOW_LAYER(_currentOffset <= _currentPage->Size);
 
     return result;
 }

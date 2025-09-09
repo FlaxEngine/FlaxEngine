@@ -749,10 +749,7 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
     else
     {
         for (int32 i = 0; i < listSize; i++)
-        {
-            const DrawCall& drawCall = drawCallsData[listData[i]];
-            sortedKeys[i] = drawCall.SortKey;
-        }
+            sortedKeys[i] = drawCallsData[listData[i]].SortKey;
     }
 
     // Sort draw calls indices
