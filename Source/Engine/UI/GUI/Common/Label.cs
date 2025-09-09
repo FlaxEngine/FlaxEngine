@@ -344,5 +344,11 @@ namespace FlaxEngine.GUI
 
             base.PerformLayoutBeforeChildren();
         }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return $"{GetType()}, '{ConvertedText()}'";
+        }
     }
 }
