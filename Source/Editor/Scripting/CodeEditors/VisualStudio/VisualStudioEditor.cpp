@@ -43,6 +43,9 @@ VisualStudioEditor::VisualStudioEditor(VisualStudioVersion version, const String
     case VisualStudioVersion::VS2022:
         _type = CodeEditorTypes::VS2022;
         break;
+    case VisualStudioVersion::VS2026:
+        _type = CodeEditorTypes::VS2026;
+        break;
     default: CRASH;
         break;
     }
@@ -70,6 +73,9 @@ void VisualStudioEditor::FindEditors(Array<CodeEditor*>* output)
         VisualStudioVersion version;
         switch (info.VersionMajor)
         {
+        case 18:
+            version = VisualStudioVersion::VS2026;
+            break;
         case 17:
             version = VisualStudioVersion::VS2022;
             break;

@@ -28,6 +28,7 @@ namespace Flax.Build.Projects.VisualStudio
                 case VisualStudioVersion.VisualStudio2017: return "v141";
                 case VisualStudioVersion.VisualStudio2019: return "v142";
                 case VisualStudioVersion.VisualStudio2022: return "v143";
+                case VisualStudioVersion.VisualStudio2026: return "v145";
                 }
                 return string.Empty;
             }

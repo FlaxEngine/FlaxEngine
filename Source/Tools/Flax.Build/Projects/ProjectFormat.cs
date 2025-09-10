@@ -38,6 +38,11 @@ namespace Flax.Build.Projects
         VisualStudio2022,
 
         /// <summary>
+        /// Visual Studio 2026.
+        /// </summary>
+        VisualStudio2026,
+
+        /// <summary>
         /// Visual Studio Code.
         /// </summary>
         VisualStudioCode,
