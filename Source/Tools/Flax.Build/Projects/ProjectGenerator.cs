@@ -84,7 +84,11 @@ namespace Flax.Build.Projects
             // Pick the newest installed Visual Studio version
             if (format == ProjectFormat.VisualStudio)
             {
-                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2022))
+                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2026))
+                {
+                    format = ProjectFormat.VisualStudio2026;
+                }
+                else if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2022))
                 {
                     format = ProjectFormat.VisualStudio2022;
                 }
@@ -113,6 +117,7 @@ namespace Flax.Build.Projects
             case ProjectFormat.VisualStudio2017:
             case ProjectFormat.VisualStudio2019:
             case ProjectFormat.VisualStudio2022:
+            case ProjectFormat.VisualStudio2026:
             {
                 VisualStudioVersion vsVersion;
                 switch (format)
@@ -128,6 +133,9 @@ namespace Flax.Build.Projects
                     break;
                 case ProjectFormat.VisualStudio2022:
                     vsVersion = VisualStudioVersion.VisualStudio2022;
+                    break;
+                case ProjectFormat.VisualStudio2026:
+                    vsVersion = VisualStudioVersion.VisualStudio2026;
                     break;
                 default: throw new ArgumentOutOfRangeException(nameof(format), format, null);
                 }

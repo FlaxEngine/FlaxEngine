@@ -128,6 +128,7 @@ namespace Flax.Build.Projects.VisualStudio
                 case VisualStudioVersion.VisualStudio2017: return "15.0";
                 case VisualStudioVersion.VisualStudio2019: return "16.0";
                 case VisualStudioVersion.VisualStudio2022: return "17.0";
+                case VisualStudioVersion.VisualStudio2026: return "18.0";
                 }
 
                 return string.Empty;
@@ -193,7 +194,7 @@ namespace Flax.Build.Projects.VisualStudio
         }
 
         /// <inheritdoc />
-        public override string SolutionFileExtension => "sln";
+        public override string SolutionFileExtension => /*Version >= VisualStudioVersion.VisualStudio2026 ? "slnx" :*/ "sln";
 
         /// <inheritdoc />
         public override Project CreateProject()
@@ -277,6 +278,20 @@ namespace Flax.Build.Projects.VisualStudio
                 }
             }
 
+            if (Version >= VisualStudioVersion.VisualStudio2026)
+                GenerateXmlSolution(solution);
+            else
+                GenerateAsciiSolution(solution);
+        }
+
+        private void GenerateXmlSolution(Solution solution)
+        {
+            // TODO: Generate the solution file in new format
+            GenerateAsciiSolution(solution);
+        }
+
+        private void GenerateAsciiSolution(Solution solution)
+        {
             // Try to extract solution folder info from the existing solution file to make random IDs stable
             var solutionId = Guid.NewGuid();
             var folderIds = new Dictionary<string, Guid>();
@@ -313,7 +328,7 @@ namespace Flax.Build.Projects.VisualStudio
             var projects = solution.Projects.Cast<VisualStudioProject>().ToArray();
 
             // Header
-            if (Version == VisualStudioVersion.VisualStudio2022)
+            if (Version >= VisualStudioVersion.VisualStudio2022)
             {
                 vcSolutionFileContent.AppendLine("Microsoft Visual Studio Solution File, Format Version 12.00");
                 vcSolutionFileContent.AppendLine("# Visual Studio Version 17");

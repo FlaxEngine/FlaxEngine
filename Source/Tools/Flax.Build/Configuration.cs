@@ -202,6 +202,12 @@ namespace Flax.Build
         public static bool ProjectFormatVS2022 = false;
 
         /// <summary>
+        /// Generates Visual Studio 2026 project format files. Valid only with -genproject option.
+        /// </summary>
+        [CommandLine("vs2026", "Generates Visual Studio 2026 project format files. Valid only with -genproject option.")]
+        public static bool ProjectFormatVS2026 = false;
+
+        /// <summary>
         /// Generates Visual Studio Code project format files. Valid only with -genproject option.
         /// </summary>
         [CommandLine("vscode", "Generates Visual Studio Code project format files. Valid only with -genproject option.")]

@@ -192,6 +192,8 @@ namespace Flax.Build
             {
                 // Pick the project format
                 var projectFormats = new HashSet<ProjectFormat>();
+                if (Configuration.ProjectFormatVS2026)
+                    projectFormats.Add(ProjectFormat.VisualStudio2026);
                 if (Configuration.ProjectFormatVS2022)
                     projectFormats.Add(ProjectFormat.VisualStudio2022);
                 if (Configuration.ProjectFormatVS2019)
@@ -209,8 +211,13 @@ namespace Flax.Build
                 if (projectFormats.Count == 0)
                     projectFormats.Add(Platform.BuildPlatform.DefaultProjectFormat);
 
-                // Always generate VS solution files for project (needed for C# Intellisense support)
-                projectFormats.Add(ProjectFormat.VisualStudio2022);
+                // Always generate VS solution files for project (needed for C# Intellisense support in other IDEs)
+                if (!projectFormats.Contains(ProjectFormat.VisualStudio2026) &&
+                    !projectFormats.Contains(ProjectFormat.VisualStudio2022) &&
+                    !projectFormats.Contains(ProjectFormat.VisualStudio))
+                {
+                    projectFormats.Add(ProjectFormat.VisualStudio2022);
+                }
 
                 foreach (ProjectFormat projectFormat in projectFormats)
                     GenerateProject(projectFormat);
