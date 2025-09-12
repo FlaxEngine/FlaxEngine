@@ -114,6 +114,7 @@ public:
     static void SetSceneOrigin(void* scene, const Vector3& oldOrigin, const Vector3& newOrigin);
     static void AddSceneActor(void* scene, void* actor);
     static void RemoveSceneActor(void* scene, void* actor, bool immediately = false);
+    static bool IsSceneActor(void* scene, void* actor);
     static void AddSceneActorAction(void* scene, void* actor, ActionType action);
 #if COMPILE_WITH_PROFILER
     static void GetSceneStatistics(void* scene, PhysicsStatistics& result);

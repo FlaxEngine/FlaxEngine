@@ -2032,12 +2032,34 @@ void PhysicsBackend::AddSceneActor(void* scene, void* actor)
 void PhysicsBackend::RemoveSceneActor(void* scene, void* actor, bool immediately)
 {
     auto scenePhysX = (ScenePhysX*)scene;
+    bool actorExists = IsSceneActor(scene, actor);
+    if (!actorExists)
+        return;
     FlushLocker.Lock();
     if (immediately)
         scenePhysX->Scene->removeActor(*(PxActor*)actor);
     else
         scenePhysX->RemoveActors.Add((PxActor*)actor);
     FlushLocker.Unlock();
+}
+
+bool PhysicsBackend::IsSceneActor(void* scene, void* actor)
+{
+    auto scenePhysX = (ScenePhysX*)scene;
+    PxActor** actors;
+    PxU32 nbActors = scenePhysX->Scene->getNbActors(PxActorTypeFlag::eRIGID_STATIC | PxActorTypeFlag::eRIGID_DYNAMIC);
+    scenePhysX->Scene->getActors(PxActorTypeFlag::eRIGID_STATIC | PxActorTypeFlag::eRIGID_DYNAMIC, actors, nbActors, 0);
+    bool actorExists = false;
+    for (PxU32 i = 0; i < nbActors; i++)
+    {
+        auto pxActor = actors[i];
+        if (pxActor == actor)
+        {
+            actorExists = true;
+            break;
+        }
+    }
+    return actorExists;
 }
 
 void PhysicsBackend::AddSceneActorAction(void* scene, void* actor, ActionType action)
