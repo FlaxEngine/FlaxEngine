@@ -1,12 +1,14 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
     /// Implementation of <see cref="IBrush"/> for <see cref="FlaxEngine.Sprite"/>.
     /// </summary>
     /// <seealso cref="IBrush" />
-    public sealed class SpriteBrush : IBrush
+    public sealed class SpriteBrush : IBrush, IEquatable<SpriteBrush>
     {
         /// <summary>
         /// The sprite.
@@ -46,6 +48,30 @@ namespace FlaxEngine.GUI
                 Render2D.DrawSpritePoint(Sprite, rect, color);
             else
                 Render2D.DrawSprite(Sprite, rect, color);
+        }
+
+        /// <inheritdoc />
+        public bool Equals(SpriteBrush other)
+        {
+            return other != null && Sprite == other.Sprite && Filter == other.Filter;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is SpriteBrush other && Equals(other);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Sprite, (int)Filter);
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(object obj)
+        {
+            return Equals(obj) ? 1 : 0;
         }
     }
 
@@ -120,6 +146,30 @@ namespace FlaxEngine.GUI
                 Render2D.DrawRectangle(bordersRect, Color.YellowGreen, 2.0f);
             }
 #endif
+        }
+
+        /// <inheritdoc />
+        public bool Equals(Sprite9SlicingBrush other)
+        {
+            return other != null && Sprite == other.Sprite && Filter == other.Filter;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is Sprite9SlicingBrush other && Equals(other);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Sprite, (int)Filter);
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(object obj)
+        {
+            return Equals(obj) ? 1 : 0;
         }
     }
 }

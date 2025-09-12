@@ -1,12 +1,14 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
     /// Implementation of <see cref="IBrush"/> for <see cref="FlaxEngine.MaterialBase"/> rendering.
     /// </summary>
     /// <seealso cref="IBrush" />
-    public sealed class MaterialBrush : IBrush
+    public sealed class MaterialBrush : IBrush, IEquatable<MaterialBrush>
     {
         /// <summary>
         /// The material.
@@ -37,6 +39,30 @@ namespace FlaxEngine.GUI
         public void Draw(Rectangle rect, Color color)
         {
             Render2D.DrawMaterial(Material, rect, color);
+        }
+
+        /// <inheritdoc />
+        public bool Equals(MaterialBrush other)
+        {
+            return other != null && Material == other.Material;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is MaterialBrush other && Equals(other);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Material);
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(object obj)
+        {
+            return Equals(obj) ? 1 : 0;
         }
     }
 }
