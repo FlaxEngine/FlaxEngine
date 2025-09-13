@@ -112,8 +112,9 @@ namespace FlaxEditor.Viewport.Previews
             LinkCanvas(_instance);
 
             // Link UI control to the preview
+            var uiControl = _instance as UIControl;
             if (_uiControlLinked == null &&
-                _instance is UIControl uiControl &&
+                uiControl != null &&
                 uiControl.Control != null &&
                 uiControl.Control.Parent == null)
             {
@@ -126,6 +127,12 @@ namespace FlaxEditor.Viewport.Previews
                 if (_uiControlLinked.Control != null && 
                     _uiControlLinked.Control.Parent == null)
                     _uiControlLinked.Control.Parent = _uiParentLink;
+                _hasUILinked = true;
+            }
+
+            // Use UI mode when root is empty UI Control
+            if (_uiControlLinked == null && uiControl != null && uiControl.Control == null)
+            {
                 _hasUILinked = true;
             }
         }
