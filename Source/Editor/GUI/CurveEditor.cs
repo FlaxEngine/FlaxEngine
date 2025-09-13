@@ -1582,6 +1582,22 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
+        public override void ApplyPreset(CurvePreset preset)
+        {
+            base.ApplyPreset(preset);
+
+            object[] data = PresetValues[preset];
+            for (int i = 1; i < data.Length; i += 4)
+            {
+                float time = (float)data[i];
+                object value = ConvertCurvePresetValueToCurveEditorType((float)data[i + 1]);
+                AddKeyframe(time, value);
+            }
+
+            ShowWholeCurve();
+        }
+
+        /// <inheritdoc />
         protected override void DrawCurve(ref Rectangle viewRect)
         {
             var components = Accessor.GetCurveComponents();
@@ -1634,22 +1650,6 @@ namespace FlaxEditor.GUI
             _keyframes.Clear();
 
             base.OnDestroy();
-        }
-
-        /// <inheritdoc />
-        public override void ApplyPreset(CurvePreset preset)
-        {
-            base.ApplyPreset(preset);
-
-            object[] data = PresetValues[preset];
-            for (int i = 1; i < data.Length; i += 4)
-            {
-                float time = (float)data[i];
-                object value = ConvertCurvePresetValueToCurveEditorType((float)data[i + 1]);
-                AddKeyframe(time, value);
-            }
-
-            ShowWholeCurve();
         }
     }
 
@@ -2384,6 +2384,29 @@ namespace FlaxEditor.GUI
         }
 
         /// <inheritdoc />
+        public override void ApplyPreset(CurvePreset preset)
+        {
+            base.ApplyPreset(preset);
+
+            object[] data = PresetValues[preset];
+            for (int i = 1; i < data.Length; i += 4)
+            {
+                float time = (float)data[i];
+                object value = ConvertCurvePresetValueToCurveEditorType((float)data[i + 1]);
+                object tangentIn = ConvertCurvePresetValueToCurveEditorType((float)data[i + 2]);
+                object tangentOut = ConvertCurvePresetValueToCurveEditorType((float)data[i + 3]);
+
+                AddKeyframe(time, value, tangentIn, tangentOut);
+            }
+
+            SelectAll();
+            if ((bool)data[0])
+                SetTangentsLinear();
+
+            ShowWholeCurve();
+        }
+
+        /// <inheritdoc />
         protected override void SetScaleInternal(ref Float2 scale)
         {
             base.SetScaleInternal(ref scale);
@@ -2466,29 +2489,6 @@ namespace FlaxEditor.GUI
             _keyframes.Clear();
 
             base.OnDestroy();
-        }
-
-        /// <inheritdoc />
-        public override void ApplyPreset(CurvePreset preset)
-        {
-            base.ApplyPreset(preset);
-
-            object[] data = PresetValues[preset];
-            for (int i = 1; i < data.Length; i += 4)
-            {
-                float time = (float)data[i];
-                object value = ConvertCurvePresetValueToCurveEditorType((float)data[i + 1]);
-                object tangentIn = ConvertCurvePresetValueToCurveEditorType((float)data[i + 2]);
-                object tangentOut = ConvertCurvePresetValueToCurveEditorType((float)data[i + 3]);
-
-                AddKeyframe(time, value, tangentIn, tangentOut);
-            }
-
-            SelectAll();
-            if ((bool)data[0])
-                SetTangentsLinear();
-
-            ShowWholeCurve();
         }
     }
 }
