@@ -522,6 +522,16 @@ namespace FlaxEditor.GUI
                             cm.AddButton("Show whole curve", _editor.ShowWholeCurve);
                             cm.AddButton("Reset view", _editor.ResetView);
                         }
+                        cm.AddSeparator();
+                        var presetCm = cm.AddChildMenu("Apply preset");
+                        foreach (var value in Enum.GetValues(typeof(CurvePreset)))
+                        {
+                            CurvePreset preset = (CurvePreset)value;
+                            string name = Utilities.Utils.GetPropertyNameUI(preset.ToString());
+                            var b = presetCm.ContextMenu.AddButton(name, () => _editor.ApplyPreset(preset));
+                            b.Enabled = !(_editor is LinearCurveEditor<T> && (preset != CurvePreset.Constant && preset != CurvePreset.Linear));
+                        }
+                        
                         _editor.OnShowContextMenu(cm, selectionCount);
                         cm.Show(this, location);
                     }
@@ -617,6 +627,33 @@ namespace FlaxEditor.GUI
                                   (point.Y + Location.Y - curveContentAreaBounds.Height) / -UnitsPerSecond
                                  );
             }
+        }
+
+        /// <summary>
+        /// A list of avaliable curve presets for the <see cref="CurveEditor{T}"/>.
+        /// </summary>
+        public enum CurvePreset
+        {
+            /// <summary>
+            /// A curve where every point has the same value.
+            /// </summary>
+            Constant,
+            /// <summary>
+            /// A curve linear curve.
+            /// </summary>
+            Linear,
+            /// <summary>
+            /// A curve that starts a slowly and then accelerates until the end.
+            /// </summary>
+            EaseIn,
+            /// <summary>
+            /// A curve that starts a steep and then flattens until the end.
+            /// </summary>
+            EaseOut,
+            /// <summary>
+            /// A combination of the <see cref="CurvePreset.EaseIn"/> and <see cref="CurvePreset.EaseOut"/> preset.
+            /// </summary>
+            Smoothstep
         }
 
         /// <inheritdoc />
