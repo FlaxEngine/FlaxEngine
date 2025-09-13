@@ -63,6 +63,10 @@
 #undef max
 #include <ThirdParty/tinyexr/tinyexr.h>
 
+// libtiff library
+#define TIFF_DISABLE_DEPRECATED
+#include <ThirdParty/libtiff/tiffio.h>
+
 #endif
 
 static void stbWrite(void* context, void* data, int size)
@@ -451,9 +455,68 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
         LOG(Warning, "DDS format is not supported.");
         break;
     case ImageType::TIFF:
+    {
+#if USE_EDITOR
+        AnsiPathTempFile fileName(path);
+        TIFF* tif = TIFFOpen(fileName.Path.Get(), "r");
+        if (!tif) 
+        {
+            MessageBox::Show(TEXT("Cannot open TIFF file."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
+            LOG(Warning, "Cannot open TIFF file.");
+            return true;
+        }
+
+	    TIFFReadDirectory(tif); // Take first frame
+
+        int width = 0, height = 0, 
+        samplesPerPixel = 0, bitsPerSample = 0;
+        
+	    TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
+        TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
+        //TIFFGetField(tif, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
+        //TIFFGetField(tif, TIFFTAG_BITSPERSAMPLE, &bitsPerSample);
+                
+        size_t pixelsSize = width * height;
+        uint32* buffer = (uint32*)_TIFFmalloc(pixelsSize * sizeof(uint32));
+        if(!buffer)
+        {
+            MessageBox::Show(TEXT("Cannot allocate memory for TIFF file."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
+            LOG(Warning, "Cannot allocate memory for TIFF file.");
+	        TIFFClose(tif);
+            return true;
+        }
+	
+        if(!TIFFReadRGBAImage(tif, width, height, buffer, 0))
+        {
+             MessageBox::Show(TEXT("Cannot read TIFF file."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);           
+            LOG(Warning, "Cannot read TIFF file.");
+            _TIFFfree(buffer);
+            TIFFClose(tif);
+            return true;	
+        }
+        
+        // Setup texture data
+        textureData.Width = width;
+        textureData.Height = height;
+        textureData.Depth = 1;
+        textureData.Format = PixelFormat::R8G8B8A8_UNorm;
+        textureData.Items.Resize(1);
+        textureData.Items[0].Mips.Resize(1);
+        
+        auto& mip = textureData.Items[0].Mips[0];
+        mip.RowPitch = width * 4;   // 4 bytes per pixel
+        mip.DepthPitch = mip.RowPitch * height;
+        mip.Lines = height;
+        mip.Data.Copy((const byte*)buffer, mip.DepthPitch);
+
+	    _TIFFfree(buffer);
+        TIFFClose(tif);
+#else
         MessageBox::Show(TEXT("TIFF format is not supported."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "TIFF format is not supported.");
+#endif
         break;
+    }
     default:
         MessageBox::Show(TEXT("Unknown format."), TEXT("Import warning"), MessageBoxButtons::OK, MessageBoxIcon::Warning);
         LOG(Warning, "Unknown format.");
