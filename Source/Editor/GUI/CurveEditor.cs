@@ -327,6 +327,28 @@ namespace FlaxEditor.GUI
         private Font _labelsFont;
 
         /// <summary>
+        /// Preset values for <see cref="CurvePreset"/> to be applied to a <see cref="CurveEditor{T}"/>.
+        /// </summary>
+        public Dictionary<CurvePreset, object[]> PresetValues = new Dictionary<CurvePreset, object[]>
+        {
+            { CurvePreset.Constant, new object[] { true, // LinearTangent
+                                                0f, 0.5f, 0f, 0f, // Time, value, tangent in, tangent out
+                                                1f, 0.5f, 0f, 0f } },
+            { CurvePreset.EaseIn, new object[] { false,
+                                                0f, 0f, 0f, 0f,
+                                                1f, 1f, -1.4f, 0f } },
+            { CurvePreset.EaseOut, new object[] { false,
+                                                1f, 1f, 0f, 0f,
+                                                0f, 0f, 0f, 1.4f } },
+            { CurvePreset.Linear, new object[] { true,
+                                                0f, 0f, 0f, 0f,
+                                                1f, 1f, 0f, 0f } },
+            { CurvePreset.Smoothstep, new object[] { false,
+                                                0f, 0f, 0f, 0f,
+                                                1f, 1f, 0f, 0f } },
+        };
+
+        /// <summary>
         /// The keyframe UI points.
         /// </summary>
         protected readonly List<KeyframePoint> _points = new List<KeyframePoint>();
@@ -569,6 +591,28 @@ namespace FlaxEditor.GUI
         protected abstract void RemoveKeyframesInternal(HashSet<int> indicesToRemove);
 
         /// <summary>
+        /// Tries to convert a float to the type of the type wildcard of the curve editor.
+        /// </summary>
+        /// <param name="value">The float.</param>
+        /// <returns>The converted value.</returns>
+        public static object ConvertCurvePresetValueToCurveEditorType(float value)
+        {
+            if (typeof(T) == typeof(Float2))
+                return new Float2(value);
+            if (typeof(T) == typeof(Float3))
+                return new Float3(value);
+            if (typeof(T) == typeof(Float4))
+                return new Float4(value);
+            if (typeof(T) == typeof(Vector2))
+                return new Vector2(value);
+            if (typeof(T) == typeof(Vector3))
+                return new Vector3(value);
+            if (typeof(T) == typeof(Vector4))
+                return new Vector4(value);
+            return value;
+        }
+
+        /// <summary>
         /// Called when showing a context menu. Can be used to add custom buttons with actions.
         /// </summary>
         /// <param name="cm">The menu.</param>
@@ -750,6 +794,17 @@ namespace FlaxEditor.GUI
         public override void ShowWholeCurve()
         {
             ShowCurve(false);
+        }
+
+        /// <summary>
+        /// Applies a <see cref="CurvePreset"/> to the curve editor.
+        /// </summary>
+        /// <param name="preset">The preset.</param>
+        public virtual void ApplyPreset(CurvePreset preset)
+        {
+            // Remove existing keyframes
+            SelectAll();
+            RemoveKeyframes();
         }
 
         /// <inheritdoc />
@@ -1580,6 +1635,22 @@ namespace FlaxEditor.GUI
 
             base.OnDestroy();
         }
+
+        /// <inheritdoc />
+        public override void ApplyPreset(CurvePreset preset)
+        {
+            base.ApplyPreset(preset);
+
+            object[] data = PresetValues[preset];
+            for (int i = 1; i < data.Length; i += 4)
+            {
+                float time = (float)data[i];
+                object value = ConvertCurvePresetValueToCurveEditorType((float)data[i + 1]);
+                AddKeyframe(time, value);
+            }
+
+            ShowWholeCurve();
+        }
     }
 
     /// <summary>
@@ -2395,6 +2466,29 @@ namespace FlaxEditor.GUI
             _keyframes.Clear();
 
             base.OnDestroy();
+        }
+
+        /// <inheritdoc />
+        public override void ApplyPreset(CurvePreset preset)
+        {
+            base.ApplyPreset(preset);
+
+            object[] data = PresetValues[preset];
+            for (int i = 1; i < data.Length; i += 4)
+            {
+                float time = (float)data[i];
+                object value = ConvertCurvePresetValueToCurveEditorType((float)data[i + 1]);
+                object tangentIn = ConvertCurvePresetValueToCurveEditorType((float)data[i + 2]);
+                object tangentOut = ConvertCurvePresetValueToCurveEditorType((float)data[i + 3]);
+
+                AddKeyframe(time, value, tangentIn, tangentOut);
+            }
+
+            SelectAll();
+            if ((bool)data[0])
+                SetTangentsLinear();
+
+            ShowWholeCurve();
         }
     }
 }
