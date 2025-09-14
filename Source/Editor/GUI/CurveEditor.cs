@@ -1106,6 +1106,7 @@ namespace FlaxEditor.GUI
                 _contents.OnMoveStart(Float2.Zero);
                 _contents.OnMove(moveDelta);
                 _contents.OnMoveEnd(Float2.Zero);
+                return true;
             }
 
             return false;
