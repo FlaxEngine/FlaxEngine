@@ -102,11 +102,11 @@ API_CLASS(Static) class FLAXENGINE_API DebugDraw
 
 #if USE_EDITOR
     /// <summary>
-    /// Draws the physics debug shapes for the given collider. Editor Only
+    /// Draws the physics debug shapes for the given actor. Editor Only
     /// </summary>
-    /// <param name="collider">The collider to draw.</param>
+    /// <param name="actor">The actor to draw.</param>
     /// <param name="view">The render view to draw in.</param>
-    API_FUNCTION() static void DrawColliderDebugPhysics(Collider* collider, RenderView& view);
+    API_FUNCTION() static void DrawDebugPhysics(Actor* actor, RenderView& view);
 
     /// <summary>
     /// Draws the light debug shapes for the given light. Editor Only

@@ -63,6 +63,11 @@ API_ENUM(Namespace="FlaxEditor", Attributes="HideInEditor") enum class CodeEdito
     VS2022,
 
     /// <summary>
+    /// Visual Studio 2026
+    /// </summary>
+    VS2026,
+
+    /// <summary>
     /// Visual Studio Code
     /// </summary>
     VSCode,

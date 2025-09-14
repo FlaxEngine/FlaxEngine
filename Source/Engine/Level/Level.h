@@ -534,6 +534,13 @@ public:
     /// </summary>
     API_FUNCTION() static int32 GetLayerIndex(const StringView& layer);
 
+    /// <summary>
+    /// Gets the name of the layer based on the index.
+    /// </summary>
+    /// <param name="layerIndex">The index to find the layer string. 0 - 32.</param>
+    /// <returns>The layer string. Returns a blank string if index not found.</returns>
+    API_FUNCTION() static StringView GetLayerName(const int32 layerIndex);
+
 private:
     // Actor API
     enum class ActorEventType

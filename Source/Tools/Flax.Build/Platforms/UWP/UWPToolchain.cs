@@ -29,7 +29,12 @@ namespace Flax.Build.Platforms
         public UWPToolchain(UWPPlatform platform, TargetArchitecture architecture, WindowsPlatformToolset toolsetVer = WindowsPlatformToolset.Latest, WindowsPlatformSDK sdkVer = WindowsPlatformSDK.Latest)
         : base(platform, architecture, toolsetVer, sdkVer)
         {
-            var visualStudio = VisualStudioInstance.GetInstances().FirstOrDefault(x => x.Version == VisualStudioVersion.VisualStudio2017 || x.Version == VisualStudioVersion.VisualStudio2019 || x.Version == VisualStudioVersion.VisualStudio2022);
+            var visualStudio = VisualStudioInstance.GetInstances().FirstOrDefault(x =>
+                x.Version == VisualStudioVersion.VisualStudio2017 ||
+                x.Version == VisualStudioVersion.VisualStudio2019 ||
+                x.Version == VisualStudioVersion.VisualStudio2022 ||
+                x.Version == VisualStudioVersion.VisualStudio2026
+                );
             if (visualStudio == null)
                 throw new Exception("Missing Visual Studio 2017 or newer. It's required to build for UWP.");
             _usingDirs.Add(Path.Combine(visualStudio.Path, "VC", "vcpackages"));

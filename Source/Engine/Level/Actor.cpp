@@ -1124,9 +1124,10 @@ void Actor::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
             }
             else if (!parent && parentId.IsValid())
             {
+                Guid tmpId;
                 if (_prefabObjectID.IsValid())
                     LOG(Warning, "Missing parent actor {0} for \'{1}\', prefab object {2}", parentId, ToString(), _prefabObjectID);
-                else
+                else if (!modifier->IdsMapping.TryGet(parentId, tmpId) || tmpId.IsValid()) // Skip warning if object was mapped to empty id (intentionally ignored)
                     LOG(Warning, "Missing parent actor {0} for \'{1}\'", parentId, ToString());
             }
         }
@@ -1694,7 +1695,7 @@ bool Actor::ToBytes(const Array<Actor*>& actors, MemoryWriteStream& output)
     }
 
     // Collect object ids that exist in the serialized data to allow references mapping later
-    Array<Guid> ids(Math::RoundUpToPowerOf2(actors.Count() * 2));
+    Array<Guid> ids(actors.Count());
     for (int32 i = 0; i < actors.Count(); i++)
     {
         // By default we collect actors and scripts (they are ManagedObjects recognized by the id)
@@ -1997,18 +1998,26 @@ Actor* Actor::Clone()
 
     // Remap object ids into a new ones
     auto modifier = Cache::ISerializeModifier.Get();
-    for (int32 i = 0; i < actors->Count(); i++)
+    for (const Actor* actor : *actors.Value)
     {
-        auto actor = actors->At(i);
         if (!actor)
             continue;
         modifier->IdsMapping.Add(actor->GetID(), Guid::New());
-        for (int32 j = 0; j < actor->Scripts.Count(); j++)
+        for (const Script* script : actor->Scripts)
         {
-            const auto script = actor->Scripts[j];
             if (script)
                 modifier->IdsMapping.Add(script->GetID(), Guid::New());
         }
+    }
+    if (HasPrefabLink() && HasParent() && !IsPrefabRoot())
+    {
+        // When cloning actor that is part of prefab (but not as whole), ignore the prefab hierarchy
+        Actor* parent = GetParent();
+        do
+        {
+            modifier->IdsMapping.Add(parent->GetPrefabObjectID(), Guid::Empty);
+            parent = parent->GetParent();
+        } while (parent && !parent->IsPrefabRoot());
     }
 
     // Deserialize objects

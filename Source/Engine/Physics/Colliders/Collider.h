@@ -6,6 +6,7 @@
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Content/JsonAssetReference.h"
 #include "Engine/Physics/Actors/PhysicsColliderActor.h"
+#include "Engine/Physics/Actors/IPhysicsDebug.h"
 
 struct RayCastHit;
 class RigidBody;
@@ -16,6 +17,9 @@ class RigidBody;
 /// <seealso cref="Actor" />
 /// <seealso cref="PhysicsColliderActor" />
 API_CLASS(Abstract) class FLAXENGINE_API Collider : public PhysicsColliderActor
+#if USE_EDITOR
+    , public IPhysicsDebug
+#endif
 {
     API_AUTO_SERIALIZATION();
     DECLARE_SCENE_OBJECT_ABSTRACT(Collider);
@@ -165,9 +169,6 @@ public:
     void ClosestPoint(const Vector3& point, Vector3& result) const final;
     bool ContainsPoint(const Vector3& point) const final;
 
-#if USE_EDITOR
-    virtual void DrawPhysicsDebug(RenderView& view);
-#endif
 
 protected:
     // [PhysicsColliderActor]

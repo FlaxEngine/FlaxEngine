@@ -1,12 +1,14 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
     /// Implementation of <see cref="IBrush"/> for <see cref="FlaxEngine.Texture"/>.
     /// </summary>
     /// <seealso cref="IBrush" />
-    public sealed class TextureBrush : IBrush
+    public sealed class TextureBrush : IBrush, IEquatable<TextureBrush>
     {
         /// <summary>
         /// The texture.
@@ -47,13 +49,37 @@ namespace FlaxEngine.GUI
             else
                 Render2D.DrawTexture(Texture, rect, color);
         }
+
+        /// <inheritdoc />
+        public bool Equals(TextureBrush other)
+        {
+            return other != null && Texture == other.Texture && Filter == other.Filter;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is TextureBrush other && Equals(other);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Texture, (int)Filter);
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(object obj)
+        {
+            return Equals(obj) ? 1 : 0;
+        }
     }
 
     /// <summary>
     /// Implementation of <see cref="IBrush"/> for <see cref="FlaxEngine.Texture"/> using 9-slicing.
     /// </summary>
     /// <seealso cref="IBrush" />
-    public sealed class Texture9SlicingBrush : IBrush
+    public sealed class Texture9SlicingBrush : IBrush, IEquatable<Texture9SlicingBrush>
     {
         /// <summary>
         /// The texture.
@@ -129,6 +155,30 @@ namespace FlaxEngine.GUI
                 Render2D.DrawRectangle(bordersRect, Color.YellowGreen, 2.0f);
             }
 #endif
+        }
+
+        /// <inheritdoc />
+        public bool Equals(Texture9SlicingBrush other)
+        {
+            return other != null && Texture == other.Texture && Filter == other.Filter && BorderSize == other.BorderSize && Border == other.Border;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is Texture9SlicingBrush other && Equals(other);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Texture, (int)Filter, BorderSize, Border.GetHashCode());
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(object obj)
+        {
+            return Equals(obj) ? 1 : 0;
         }
     }
 }

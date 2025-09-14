@@ -13,6 +13,7 @@ namespace Flax.Build.Bindings
             public FileInfo File;
             public Tokenizer Tokenizer;
             public ApiTypeInfo ScopeInfo;
+            public NativeCpp.BuildOptions ModuleOptions;
             public AccessLevel CurrentAccessLevel;
             public Stack<ApiTypeInfo> ScopeTypeStack;
             public Stack<AccessLevel> ScopeAccessStack;
@@ -534,6 +535,12 @@ namespace Flax.Build.Bindings
                     }
                     if (token.Type == TokenType.LeftCurlyBrace)
                         break;
+                    if (token.Type == TokenType.Preprocessor)
+                    {
+                        OnPreProcessorToken(ref context, ref token);
+                        while (token.Type == TokenType.Newline || token.Value == "endif")
+                            token = context.Tokenizer.NextToken();
+                    }
                     if (token.Type == TokenType.Colon)
                     {
                         token = context.Tokenizer.ExpectToken(TokenType.Colon);

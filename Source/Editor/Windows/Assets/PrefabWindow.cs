@@ -91,6 +91,9 @@ namespace FlaxEditor.Windows.Assets
             }
         }
 
+        /// <inheritdoc />
+        public ISceneEditingContext SceneContext => this;
+
         /// <summary>
         /// Gets or sets a value indicating whether use live reloading for the prefab changes (applies prefab changes on modification by auto).
         /// </summary>
@@ -368,6 +371,7 @@ namespace FlaxEditor.Windows.Assets
             else
                 _viewport.SetInitialUIMode(_viewport._hasUILinked);
             _viewport.UIModeToggled += OnUIModeToggled;
+            _viewport.CreateViewScalingOptions();
             Graph.MainActor = _viewport.Instance;
             Selection.Clear();
             Select(Graph.Main);
@@ -562,6 +566,15 @@ namespace FlaxEditor.Windows.Assets
 
             _undo.Dispose();
             Graph.Dispose();
+        }
+
+        /// <inheritdoc />
+        protected override void OnClose()
+        {
+            // Save current UI view size state.
+            _viewport.SaveActiveUIScalingOption();
+   
+            base.OnClose();
         }
 
         /// <inheritdoc />

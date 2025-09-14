@@ -62,9 +62,7 @@ public:
 
 protected:
     // [Collider]
+    ImplementPhysicsDebug;
     void UpdateBounds() override;
     void GetGeometry(CollisionShape& collision) override;
-#if USE_EDITOR
-    void DrawPhysicsDebug(RenderView& view) override;
-#endif
 };
