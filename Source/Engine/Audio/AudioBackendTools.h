@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Math/Transform.h"
+#include "Engine/Core/Types/String.h"
 
 /// <summary>
 /// The helper class for that handles active audio backend operations.

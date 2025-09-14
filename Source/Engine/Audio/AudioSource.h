@@ -77,6 +77,12 @@ public:
     AssetReference<AudioClip> Clip;
 
     /// <summary>
+    ///  Displays the type of audio group that will be handled by the Audio Mixer
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(10), DefaultValue(\"Master\"), EditorDisplay(\"Audio Source\")")
+    String MixerGroupChannel;
+
+    /// <summary>
     /// Gets the velocity of the source. Determines pitch in relation to AudioListener's position. Only relevant for spatial (3D) sources.
     /// </summary>
     API_PROPERTY() FORCE_INLINE const Vector3& GetVelocity() const
@@ -213,7 +219,7 @@ public:
     /// <summary>
     /// If checked, source can play spatial 3d audio (when audio clip supports it), otherwise will always play as 2d sound.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(80), DefaultValue(true), EditorDisplay(\"Audio Source\")")
+    API_PROPERTY(Attributes="EditorOrder(90), DefaultValue(true), EditorDisplay(\"Audio Source\")")
     FORCE_INLINE bool GetAllowSpatialization() const
     {
         return _allowSpatialization;
