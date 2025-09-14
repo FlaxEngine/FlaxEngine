@@ -82,6 +82,13 @@ namespace FlaxEditor.Options
         public float TransformGizmoOpacity { get; set; } = 1f;
 
         /// <summary>
+        /// Gets or set a value indicating how bright the transform gizmo is when it is disabled, for example when one of the selected actors is static in play mode. Use a value of 0 to make the gizmo fully gray. Value over 1 will result in the gizmo emitting light.
+        /// </summary>
+        [DefaultValue(0.25f), Range(0f, 5f)]
+        [EditorDisplay("Transform Gizmo", "Disabled Gizmo Brightness"), EditorOrder(212)]
+        public float TransformGizmoBrighnessDisabled { get; set; } = 0.25f;
+
+        /// <summary>
         /// Gets or sets a value indicating whether enable MSAA for DebugDraw primitives rendering. Helps with pixel aliasing but reduces performance.
         /// </summary>
         [DefaultValue(true)]
