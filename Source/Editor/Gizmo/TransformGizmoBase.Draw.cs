@@ -1,9 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEditor.Options;
-using FlaxEditor.SceneGraph;
 using FlaxEngine;
-using System;
 
 namespace FlaxEditor.Gizmo
 {
@@ -24,8 +22,8 @@ namespace FlaxEditor.Gizmo
         private MaterialBase _materialSphere;
 
         // Material Parameter Names
-        const String _brightnessParamName = "Brightness";
-        const String _opacityParamName = "Opacity";
+        private const string _brightnessParamName = "Brightness";
+        private const string _opacityParamName = "Opacity";
 
         /// <summary>
         /// Used for example when the selection can't be moved because one actor is static.
@@ -82,7 +80,9 @@ namespace FlaxEditor.Gizmo
         {
             _isDisabled = ShouldGizmoBeLocked();
 
-            float brightness = _isDisabled ? options.Visual.TransformGizmoBrighnessDisabled : options.Visual.TransformGizmoBrightness;
+            float brightness = _isDisabled ? options.Visual.TransformGizmoBrightnessDisabled : options.Visual.TransformGizmoBrightness;
+            if (Mathf.NearEqual(brightness, (float)_materialAxisX.GetParameterValue(_brightnessParamName)))
+                return;
             _materialAxisX.SetParameterValue(_brightnessParamName, brightness);
             _materialAxisY.SetParameterValue(_brightnessParamName, brightness);
             _materialAxisZ.SetParameterValue(_brightnessParamName, brightness);
@@ -91,10 +91,10 @@ namespace FlaxEditor.Gizmo
         private bool ShouldGizmoBeLocked()
         {
             bool gizmoLocked = false;
-
-            if (Editor.Instance.StateMachine.IsPlayMode)
+            if (Editor.Instance.StateMachine.IsPlayMode && Owner is Viewport.EditorGizmoViewport)
             {
-                foreach (SceneGraphNode obj in Editor.Instance.SceneEditing.Selection)
+                // Block editing static scene objects in main view during play mode
+                foreach (var obj in Editor.Instance.SceneEditing.Selection)
                 {
                     if (obj.CanTransform == false)
                     {
@@ -103,7 +103,6 @@ namespace FlaxEditor.Gizmo
                     }
                 }
             }
-
             return gizmoLocked;
         }
 

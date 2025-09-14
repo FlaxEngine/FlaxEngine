@@ -86,7 +86,7 @@ namespace FlaxEditor.Options
         /// </summary>
         [DefaultValue(0.25f), Range(0f, 5f)]
         [EditorDisplay("Transform Gizmo", "Disabled Gizmo Brightness"), EditorOrder(212)]
-        public float TransformGizmoBrighnessDisabled { get; set; } = 0.25f;
+        public float TransformGizmoBrightnessDisabled { get; set; } = 0.25f;
 
         /// <summary>
         /// Gets or sets a value indicating whether enable MSAA for DebugDraw primitives rendering. Helps with pixel aliasing but reduces performance.
