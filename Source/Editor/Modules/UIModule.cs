@@ -1185,5 +1185,267 @@ namespace FlaxEditor.Modules
             MenuTools = null;
             MenuHelp = null;
         }
+
+        internal void CreateViewportSizingContextMenu(ContextMenu vsMenu, int defaultScaleActiveIndex, int customScaleActiveIndex, bool prefabViewport, Action<ViewportScaleOption> changeView, Action<int, int> changeActiveIndices)
+        {
+            // Add default viewport sizing options
+            var defaultOptions = DefaultViewportScaleOptions;
+            for (int i = 0; i < defaultOptions.Count; i++)
+            {
+                var viewportScale = defaultOptions[i];
+                if (prefabViewport && viewportScale.ScaleType == ViewportScaleOption.ViewportScaleType.Aspect)
+                    continue; // Skip aspect ratio types in prefab
+                var button = vsMenu.AddButton(viewportScale.Label);
+                button.CloseMenuOnClick = false;
+                button.Tag = viewportScale;
+
+                // No default index is active
+                if (defaultScaleActiveIndex == -1)
+                {
+                    button.Icon = SpriteHandle.Invalid;
+                }
+                // This is the active index
+                else if (defaultScaleActiveIndex == i)
+                {
+                    button.Icon = Style.Current.CheckBoxTick;
+                    changeView(viewportScale);
+                }
+
+                button.Clicked += () =>
+                {
+                    if (button.Tag == null)
+                        return;
+
+                    // Reset selected icon on all buttons
+                    foreach (var child in vsMenu.Items)
+                    {
+                        if (child is ContextMenuButton cmb && cmb.Tag is UIModule.ViewportScaleOption v)
+                        {
+                            if (cmb == button)
+                            {
+                                button.Icon = Style.Current.CheckBoxTick;
+                                var index = defaultOptions.FindIndex(x => x == v);
+                                changeActiveIndices(index, -1); // Reset custom index because default was chosen
+                                changeView(v);
+                            }
+                            else if (cmb.Icon != SpriteHandle.Invalid)
+                            {
+                                cmb.Icon = SpriteHandle.Invalid;
+                            }
+                        }
+                    }
+                };
+            }
+            if (defaultOptions.Count != 0)
+                vsMenu.AddSeparator();
+
+            // Add custom viewport options
+            var customOptions = CustomViewportScaleOptions;
+            for (int i = 0; i < customOptions.Count; i++)
+            {
+                var viewportScale = customOptions[i];
+                if (prefabViewport && viewportScale.ScaleType == ViewportScaleOption.ViewportScaleType.Aspect)
+                    continue; // Skip aspect ratio types in prefab
+                var childCM = vsMenu.AddChildMenu(viewportScale.Label);
+                childCM.CloseMenuOnClick = false;
+                childCM.Tag = viewportScale;
+
+                // No custom index is active
+                if (customScaleActiveIndex == -1)
+                {
+                    childCM.Icon = SpriteHandle.Invalid;
+                }
+                // This is the active index
+                else if (customScaleActiveIndex == i)
+                {
+                    childCM.Icon = Style.Current.CheckBoxTick;
+                    changeView(viewportScale);
+                }
+
+                var applyButton = childCM.ContextMenu.AddButton("Apply");
+                applyButton.Tag = childCM.Tag = viewportScale;
+                applyButton.CloseMenuOnClick = false;
+                applyButton.Clicked += () =>
+                {
+                    if (childCM.Tag == null)
+                        return;
+
+                    // Reset selected icon on all buttons
+                    foreach (var child in vsMenu.Items)
+                    {
+                        if (child is ContextMenuButton cmb && cmb.Tag is UIModule.ViewportScaleOption v)
+                        {
+                            if (child == childCM)
+                            {
+                                childCM.Icon = Style.Current.CheckBoxTick;
+                                var index = customOptions.FindIndex(x => x == v);
+                                changeActiveIndices(-1, index); // Reset default index because custom was chosen
+                                changeView(v);
+                            }
+                            else if (cmb.Icon != SpriteHandle.Invalid)
+                            {
+                                cmb.Icon = SpriteHandle.Invalid;
+                            }
+                        }
+                    }
+                };
+
+                var deleteButton = childCM.ContextMenu.AddButton("Delete");
+                deleteButton.CloseMenuOnClick = false;
+                deleteButton.Clicked += () =>
+                {
+                    if (childCM.Tag == null)
+                        return;
+
+                    var v = (ViewportScaleOption)childCM.Tag;
+                    if (childCM.Icon != SpriteHandle.Invalid)
+                    {
+                        changeActiveIndices(-1, 0);
+                        changeView(defaultOptions[0]);
+                    }
+                    customOptions.Remove(v);
+                    SaveCustomViewportScalingOptions();
+                    vsMenu.DisposeAllItems();
+                    CreateViewportSizingContextMenu(vsMenu, defaultScaleActiveIndex, customScaleActiveIndex, prefabViewport, changeView, changeActiveIndices);
+                    vsMenu.PerformLayout();
+                };
+            }
+            if (customOptions.Count != 0)
+                vsMenu.AddSeparator();
+
+            // Add button
+            var add = vsMenu.AddButton("Add...");
+            add.CloseMenuOnClick = false;
+            add.Clicked += () =>
+            {
+                var popup = new ContextMenuBase
+                {
+                    Size = new Float2(230, 125),
+                    ClipChildren = false,
+                    CullChildren = false,
+                };
+                popup.Show(add, new Float2(add.Width, 0));
+
+                var nameLabel = new Label
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Name",
+                    HorizontalAlignment = TextAlignment.Near,
+                };
+                nameLabel.LocalX += 10;
+                nameLabel.LocalY += 10;
+
+                var nameTextBox = new TextBox
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    IsMultiline = false,
+                };
+                nameTextBox.LocalX += 100;
+                nameTextBox.LocalY += 10;
+
+                var typeLabel = new Label
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Type",
+                    HorizontalAlignment = TextAlignment.Near,
+                };
+                typeLabel.LocalX += 10;
+                typeLabel.LocalY += 35;
+
+                var typeDropdown = new Dropdown
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Items = { "Aspect", "Resolution" },
+                    SelectedItem = "Aspect",
+                    Visible = !prefabViewport,
+                    Width = nameTextBox.Width
+                };
+                typeDropdown.LocalY += 35;
+                typeDropdown.LocalX += 100;
+
+                var whLabel = new Label
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Width & Height",
+                    HorizontalAlignment = TextAlignment.Near,
+                };
+                whLabel.LocalX += 10;
+                whLabel.LocalY += 60;
+
+                var wValue = new IntValueBox(16)
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    MinValue = 1,
+                    Width = 55,
+                };
+                wValue.LocalY += 60;
+                wValue.LocalX += 100;
+
+                var hValue = new IntValueBox(9)
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    MinValue = 1,
+                    Width = 55,
+                };
+                hValue.LocalY += 60;
+                hValue.LocalX += 165;
+
+                var submitButton = new Button
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Submit",
+                    Width = 70,
+                };
+                submitButton.LocalX += 40;
+                submitButton.LocalY += 90;
+                submitButton.Clicked += () =>
+                {
+                    Enum.TryParse(typeDropdown.SelectedItem, out ViewportScaleOption.ViewportScaleType type);
+                    if (prefabViewport)
+                        type = ViewportScaleOption.ViewportScaleType.Resolution;
+
+                    var combineString = type == ViewportScaleOption.ViewportScaleType.Aspect ? ":" : "x";
+                    var name = nameTextBox.Text + " (" + wValue.Value + combineString + hValue.Value + ") " + typeDropdown.SelectedItem;
+                    var newViewportOption = new ViewportScaleOption
+                    {
+                        ScaleType = type,
+                        Label = name,
+                        Size = new Int2(wValue.Value, hValue.Value),
+                    };
+
+                    customOptions.Add(newViewportOption);
+                    SaveCustomViewportScalingOptions();
+                    vsMenu.DisposeAllItems();
+                    CreateViewportSizingContextMenu(vsMenu, defaultScaleActiveIndex, customScaleActiveIndex, prefabViewport, changeView, changeActiveIndices);
+                    vsMenu.PerformLayout();
+                };
+
+                var cancelButton = new Button
+                {
+                    Parent = popup,
+                    AnchorPreset = AnchorPresets.TopLeft,
+                    Text = "Cancel",
+                    Width = 70,
+                };
+                cancelButton.LocalX += 120;
+                cancelButton.LocalY += 90;
+                cancelButton.Clicked += () =>
+                {
+                    nameTextBox.Clear();
+                    typeDropdown.SelectedItem = "Aspect";
+                    hValue.Value = 9;
+                    wValue.Value = 16;
+                    popup.Hide();
+                };
+            };
+        }
     }
 }

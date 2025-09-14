@@ -73,10 +73,11 @@ namespace FlaxEditor.Viewport
 
         private PrefabUIEditorRoot _uiRoot;
         private bool _showUI = false;
-        
+
         private int _defaultScaleActiveIndex = 0;
         private int _customScaleActiveIndex = -1;
         private ContextMenuButton _uiModeButton;
+        private ContextMenuChildMenu _uiViewOptions;
 
         /// <summary>
         /// Event fired when the UI Mode is toggled.
@@ -142,6 +143,8 @@ namespace FlaxEditor.Viewport
                 UseAutomaticTaskManagement = defaultFeatures;
                 ShowDefaultSceneActors = defaultFeatures;
                 TintColor = defaultFeatures ? Color.White : Color.Transparent;
+                if (_uiViewOptions != null)
+                    _uiViewOptions.Visible = _showUI;
                 UIModeToggled?.Invoke(_showUI);
             }
         }
@@ -215,10 +218,10 @@ namespace FlaxEditor.Viewport
             _uiParentLink = _uiRoot.UIRoot;
 
             // UI mode buton
-            _uiModeButton = ViewWidgetShowMenu.AddButton("UI Mode", (button) => ShowUI = button.Checked);
+            _uiModeButton = ViewWidgetShowMenu.AddButton("UI Mode", button => ShowUI = button.Checked);
             _uiModeButton.AutoCheck = true;
             _uiModeButton.VisibleChanged += control => (control as ContextMenuButton).Checked = ShowUI;
-            
+
             EditorGizmoViewport.AddGizmoViewportWidgets(this, TransformGizmo);
 
             // Setup input actions
@@ -232,261 +235,21 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public void CreateViewScalingOptions()
         {
-            // View Scaling
-            var uiViewCM = ViewWidgetButtonMenu.AddChildMenu("UI View Scaling");
+            if (_uiViewOptions != null)
+                return;
+            _uiViewOptions = ViewWidgetButtonMenu.AddChildMenu("UI View Scaling");
+            _uiViewOptions.Visible = _showUI;
             LoadCustomUIScalingOption();
-            CreateUIViewScalingContextMenu(uiViewCM.ContextMenu);
+            Editor.Instance.UI.CreateViewportSizingContextMenu(_uiViewOptions.ContextMenu, _defaultScaleActiveIndex, _customScaleActiveIndex, true, ChangeUIView, (a, b) =>
+            {
+                _defaultScaleActiveIndex = a;
+                _customScaleActiveIndex = b;
+            });
         }
 
         private void ChangeUIView(UIModule.ViewportScaleOption uiViewScaleOption)
         {
             _uiRoot.SetViewSize((Float2)uiViewScaleOption.Size);
-        }
-
-         private void CreateUIViewScalingContextMenu(ContextMenu vsMenu)
-        {
-            // Add default viewport sizing options
-            var defaultOptions = Editor.Instance.UI.DefaultViewportScaleOptions;
-            for (int i = 0; i < defaultOptions.Count; i++)
-            {
-                var viewportScale = defaultOptions[i];
-
-                // Skip aspect ratio types in prefab
-                if (viewportScale.ScaleType == UIModule.ViewportScaleOption.ViewportScaleType.Aspect)
-                    continue;
-
-                var button = vsMenu.AddButton(viewportScale.Label);
-                button.CloseMenuOnClick = false;
-                button.Tag = viewportScale;
-
-                // No default index is active.
-                if (_defaultScaleActiveIndex == -1)
-                {
-                    button.Icon = SpriteHandle.Invalid;
-                }
-                // This is the active index.
-                else if (_defaultScaleActiveIndex == i)
-                {
-                    button.Icon = Style.Current.CheckBoxTick;
-                    ChangeUIView(viewportScale);
-                }
-
-                button.Clicked += () =>
-                {
-                    if (button.Tag == null)
-                        return;
-
-                    // Reset selected icon on all buttons
-                    foreach (var child in vsMenu.Items)
-                    {
-                        if (child is ContextMenuButton cmb && cmb.Tag is UIModule.ViewportScaleOption v)
-                        {
-                            if (cmb == button)
-                            {
-                                var index = defaultOptions.FindIndex(x => x == v);
-                                _defaultScaleActiveIndex = index;
-                                _customScaleActiveIndex = -1; // Reset custom index because default was chosen.
-                                button.Icon = Style.Current.CheckBoxTick;
-                                ChangeUIView(v);
-                            }
-                            else if (cmb.Icon != SpriteHandle.Invalid)
-                            {
-                                cmb.Icon = SpriteHandle.Invalid;
-                            }
-                        }
-                    }
-                };
-            }
-            if (defaultOptions.Count != 0)
-                vsMenu.AddSeparator();
-
-            // Add custom viewport options
-            var customOptions = Editor.Instance.UI.CustomViewportScaleOptions;
-            for (int i = 0; i < customOptions.Count; i++)
-            {
-                var viewportScale = customOptions[i];
-
-                // Skip aspect ratio types for prefabs
-                if (viewportScale.ScaleType == UIModule.ViewportScaleOption.ViewportScaleType.Aspect)
-                    continue;
-
-                var childCM = vsMenu.AddChildMenu(viewportScale.Label);
-                childCM.CloseMenuOnClick = false;
-                childCM.Tag = viewportScale;
-                
-                // No custom index is active.
-                if (_customScaleActiveIndex == -1)
-                {
-                    childCM.Icon = SpriteHandle.Invalid;
-                }
-                // This is the active index.
-                else if (_customScaleActiveIndex == i)
-                {
-                    childCM.Icon = Style.Current.CheckBoxTick;
-                    ChangeUIView(viewportScale);
-                }
-                
-                var applyButton = childCM.ContextMenu.AddButton("Apply");
-                applyButton.Tag = childCM.Tag = viewportScale;
-                applyButton.CloseMenuOnClick = false;
-                applyButton.Clicked += () =>
-                {
-                    if (childCM.Tag == null)
-                        return;
-
-                    // Reset selected icon on all buttons
-                    foreach (var child in vsMenu.Items)
-                    {
-                        if (child is ContextMenuButton cmb && cmb.Tag is UIModule.ViewportScaleOption v)
-                        {
-                            if (child == childCM)
-                            {
-                                var index = customOptions.FindIndex(x => x == v);
-                                _defaultScaleActiveIndex = -1; // Reset default index because custom was chosen.
-                                _customScaleActiveIndex = index;
-                                childCM.Icon = Style.Current.CheckBoxTick;
-                                ChangeUIView(v);
-                            }
-                            else if (cmb.Icon != SpriteHandle.Invalid)
-                            {
-                                cmb.Icon = SpriteHandle.Invalid;
-                            }
-                        }
-                    }
-                };
-
-                var deleteButton = childCM.ContextMenu.AddButton("Delete");
-                deleteButton.CloseMenuOnClick = false;
-                deleteButton.Clicked += () =>
-                {
-                    if (childCM.Tag == null)
-                        return;
-
-                    var v = (UIModule.ViewportScaleOption)childCM.Tag;
-                    if (childCM.Icon != SpriteHandle.Invalid)
-                    {
-                        _customScaleActiveIndex = -1;
-                        _defaultScaleActiveIndex = 0;
-                        ChangeUIView(defaultOptions[0]);
-                    }
-                    customOptions.Remove(v);
-                    Editor.Instance.UI.SaveCustomViewportScalingOptions();
-                    vsMenu.DisposeAllItems();
-                    CreateUIViewScalingContextMenu(vsMenu);
-                    vsMenu.PerformLayout();
-                };
-            }
-            if (customOptions.Count != 0)
-                vsMenu.AddSeparator();
-
-            // Add button
-            var add = vsMenu.AddButton("Add...");
-            add.CloseMenuOnClick = false;
-            add.Clicked += () =>
-            {
-                var popup = new ContextMenuBase
-                {
-                    Size = new Float2(230, 95),
-                    ClipChildren = false,
-                    CullChildren = false,
-                };
-                popup.Show(add, new Float2(add.Width, 0));
-
-                var nameLabel = new Label
-                {
-                    Parent = popup,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Text = "Name",
-                    HorizontalAlignment = TextAlignment.Near,
-                };
-                nameLabel.LocalX += 10;
-                nameLabel.LocalY += 10;
-
-                var nameTextBox = new TextBox
-                {
-                    Parent = popup,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    IsMultiline = false,
-                };
-                nameTextBox.LocalX += 100;
-                nameTextBox.LocalY += 10;
-
-                var whLabel = new Label
-                {
-                    Parent = popup,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Text = "Width & Height",
-                    HorizontalAlignment = TextAlignment.Near,
-                };
-                whLabel.LocalX += 10;
-                whLabel.LocalY += 30;
-
-                var wValue = new IntValueBox(1920)
-                {
-                    Parent = popup,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    MinValue = 1,
-                    Width = 55,
-                };
-                wValue.LocalY += 30;
-                wValue.LocalX += 100;
-
-                var hValue = new IntValueBox(1080)
-                {
-                    Parent = popup,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    MinValue = 1,
-                    Width = 55,
-                };
-                hValue.LocalY += 30;
-                hValue.LocalX += 165;
-
-                var submitButton = new Button
-                {
-                    Parent = popup,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Text = "Submit",
-                    Width = 70,
-                };
-                submitButton.LocalX += 40;
-                submitButton.LocalY += 60;
-
-                submitButton.Clicked += () =>
-                {
-                    var name = nameTextBox.Text + " (" + wValue.Value + "x" + hValue.Value + ")";
-
-                    var newViewportOption = new UIModule.ViewportScaleOption
-                    {
-                        Label = name,
-                        ScaleType = UIModule.ViewportScaleOption.ViewportScaleType.Resolution,
-                        Size = new Int2(wValue.Value, hValue.Value),
-                    };
-
-                    customOptions.Add(newViewportOption);
-                    Editor.Instance.UI.SaveCustomViewportScalingOptions();
-                    vsMenu.DisposeAllItems();
-                    CreateUIViewScalingContextMenu(vsMenu);
-                    vsMenu.PerformLayout();
-                };
-
-                var cancelButton = new Button
-                {
-                    Parent = popup,
-                    AnchorPreset = AnchorPresets.TopLeft,
-                    Text = "Cancel",
-                    Width = 70,
-                };
-                cancelButton.LocalX += 120;
-                cancelButton.LocalY += 60;
-
-                cancelButton.Clicked += () =>
-                {
-                    nameTextBox.Clear();
-                    hValue.Value = 9;
-                    wValue.Value = 16;
-                    popup.Hide();
-                };
-            };
         }
 
         /// <summary>
@@ -522,7 +285,7 @@ namespace FlaxEditor.Viewport
                     }
                 }
             }
-            
+
             var customKey = $"{Prefab.ID}:CustomViewportScalingIndex";
             if (Editor.Instance.ProjectCache.TryGetCustomData(customKey, out string data))
             {
