@@ -1084,6 +1084,30 @@ namespace FlaxEditor.GUI
                 return true;
             }
 
+            bool left = key == KeyboardKeys.ArrowLeft;
+            bool right = key == KeyboardKeys.ArrowRight;
+            bool up = key == KeyboardKeys.ArrowUp;
+            bool down = key == KeyboardKeys.ArrowDown;
+
+            if (left || right || up || down)
+            {
+                bool shift = Root.GetKey(KeyboardKeys.Shift);
+                bool alt = Root.GetKey(KeyboardKeys.Alt);
+                float deltaValue = 10f;
+                if (shift || alt)
+                    deltaValue = shift ? 2.5f : 5f;
+
+                Float2 moveDelta = Float2.Zero;
+                if (left || right)
+                    moveDelta.X = left ? -deltaValue : deltaValue;
+                if (up || down)
+                    moveDelta.Y = up ? -deltaValue : deltaValue;
+
+                _contents.OnMoveStart(Float2.Zero);
+                _contents.OnMove(moveDelta);
+                _contents.OnMoveEnd(Float2.Zero);
+            }
+
             return false;
         }
 
