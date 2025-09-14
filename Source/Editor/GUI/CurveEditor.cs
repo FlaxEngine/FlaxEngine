@@ -26,11 +26,12 @@ namespace FlaxEditor.GUI
             private List<int> _keyframeIndices;
             private bool _isDirty;
 
-            public Popup(CurveEditor<T> editor, object[] selection, List<int> keyframeIndices = null, float height = 140.0f)
-            : this(editor, height)
+            public Popup(CurveEditor<T> editor, object[] selection, List<int> keyframeIndices = null, float maxHeight = 140.0f)
+            : this(editor, maxHeight)
             {
                 _presenter.Select(selection);
                 _presenter.OpenAllGroups();
+                Size = new Float2(Size.X, Mathf.Min(_presenter.ContainerControl.Size.Y, maxHeight));
                 _keyframeIndices = keyframeIndices;
                 if (keyframeIndices != null && selection.Length != keyframeIndices.Count)
                     throw new Exception();
@@ -169,7 +170,7 @@ namespace FlaxEditor.GUI
                 if (IsSelected)
                     color = Editor.ContainsFocus ? style.SelectionBorder : Color.Lerp(style.ForegroundDisabled, style.SelectionBorder, 0.4f);
                 if (IsMouseOver)
-                    color *= 1.1f;
+                    color *= 1.5f;
                 Render2D.FillRectangle(rect, color);
             }
 
@@ -285,7 +286,7 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// The keyframes size.
         /// </summary>
-        protected static readonly Float2 KeyframesSize = new Float2(7.0f);
+        protected static readonly Float2 KeyframesSize = new Float2(8.0f);
 
         /// <summary>
         /// The colors for the keyframe points.
