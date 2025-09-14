@@ -37,6 +37,53 @@ namespace FlaxEditor.Modules
         private bool _progressFailed;
 
         ContextMenuSingleSelectGroup<int> _numberOfClientsGroup = new ContextMenuSingleSelectGroup<int>();
+        
+        /// <summary>
+        /// Defines a viewport scaling option.
+        /// </summary>
+        public class ViewportScaleOption
+        {
+            /// <summary>
+            /// Defines the viewport scale type.
+            /// </summary>
+            public enum ViewportScaleType
+            {
+                /// <summary>
+                /// Resolution.
+                /// </summary>
+                Resolution = 0,
+
+                /// <summary>
+                /// Aspect Ratio.
+                /// </summary>
+                Aspect = 1,
+            }
+            
+            /// <summary>
+            /// The name.
+            /// </summary>
+            public string Label;
+
+            /// <summary>
+            /// The Type of scaling to do.
+            /// </summary>
+            public ViewportScaleType ScaleType;
+
+            /// <summary>
+            /// The width and height to scale by.
+            /// </summary>
+            public Int2 Size;
+        }
+ 
+        /// <summary>
+        /// The default viewport scaling options.
+        /// </summary>
+        public List<ViewportScaleOption> DefaultViewportScaleOptions = new List<ViewportScaleOption>();
+
+        /// <summary>
+        /// The user defined viewport scaling options.
+        /// </summary>
+        public List<ViewportScaleOption> CustomViewportScaleOptions = new List<ViewportScaleOption>();
 
         private ContextMenuButton _menuFileSaveScenes;
         private ContextMenuButton _menuFileReloadScenes;
@@ -371,6 +418,8 @@ namespace FlaxEditor.Modules
 
             // Update window background
             mainWindow.BackgroundColor = Style.Current.Background;
+            
+            InitViewportScaleOptions();
 
             InitSharedMenus();
             InitMainMenu(mainWindow);
@@ -390,6 +439,57 @@ namespace FlaxEditor.Modules
                     Size = Float2.Zero,
                 });
             }
+        }
+
+        private void InitViewportScaleOptions()
+        {
+            if (DefaultViewportScaleOptions.Count == 0)
+            {
+                DefaultViewportScaleOptions.Add(new ViewportScaleOption
+                {
+                    Label = "Free Aspect",
+                    ScaleType = ViewportScaleOption.ViewportScaleType.Aspect,
+                    Size = new Int2(1, 1),
+                });
+                DefaultViewportScaleOptions.Add(new ViewportScaleOption
+                {
+                    Label = "16:9 Aspect",
+                    ScaleType = ViewportScaleOption.ViewportScaleType.Aspect,
+                    Size = new Int2(16, 9),
+                });
+                DefaultViewportScaleOptions.Add(new ViewportScaleOption
+                {
+                    Label = "16:10 Aspect",
+                    ScaleType = ViewportScaleOption.ViewportScaleType.Aspect,
+                    Size = new Int2(16, 10),
+                });
+                DefaultViewportScaleOptions.Add(new ViewportScaleOption
+                {
+                    Label = "1920x1080 Resolution (Full HD)",
+                    ScaleType = ViewportScaleOption.ViewportScaleType.Resolution,
+                    Size = new Int2(1920, 1080),
+                });
+                DefaultViewportScaleOptions.Add(new ViewportScaleOption
+                {
+                    Label = "2560x1440 Resolution (2K)",
+                    ScaleType = ViewportScaleOption.ViewportScaleType.Resolution,
+                    Size = new Int2(2560, 1440),
+                });
+            }
+            
+            if (Editor.Instance.ProjectCache.TryGetCustomData("CustomViewportScalingOptions", out string data))
+            {
+                CustomViewportScaleOptions = JsonSerializer.Deserialize<List<ViewportScaleOption>>(data);
+            }
+        }
+
+        /// <summary>
+        /// Saves the custom viewport scaling options.
+        /// </summary>
+        public void SaveCustomViewportScalingOptions()
+        {
+            var customOptions = JsonSerializer.Serialize(CustomViewportScaleOptions);
+            Editor.Instance.ProjectCache.SetCustomData("CustomViewportScalingOptions",  customOptions);
         }
 
         /// <inheritdoc />
