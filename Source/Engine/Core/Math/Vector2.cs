@@ -954,6 +954,22 @@ namespace FlaxEngine
             return result;
         }
 
+        
+        public static void Slerp(ref Vector2 start, ref Vector2 end, float amount, out Vector2 result)
+        {
+            float dot = Vector2.Dot(start, end);
+            dot = Mathf.Clamp(dot, -1.0f, 1.0f);
+            float theta = Mathf.Acos(dot) * amount;
+            Vector2 RelativeVector = (end - start * dot).Normalized;
+            result = ((start * Mathf.Cos(theta)) + (end * Mathf.Sin(theta)));
+        }
+
+        public static Vector2 Slerp(Vector2 start, Vector2 end, float amount)
+        {
+            Slerp(ref start, ref end, amount, out Vector2 result);
+            return result;
+        }
+
         /// <summary>
         /// Performs a gradual change of a vector towards a specified target over time
         /// </summary>
