@@ -687,14 +687,23 @@ public:
     }
     
     // Performs a spherical linear interpolation between two vectors.
-    static Vector3Base Slerp(const Vector3Base& start, const Vector3Base& end, T amount)
+    static void Slerp(const Vector3Base& start, const Vector3Base& end, T amount, Vector3Base& result) 
     {
         float dot = Vector3::Dot(start, end);
         dot = Math::Clamp(dot, -1.0f, 1.0f);
         float theta = Math::Acos(dot) * amount;
         Vector3Base RelativeVector = end - start * dot;
         RelativeVector.Normalize();
-        return ((start * Math::Cos(theta)) + (RelativeVector * Math::Sin(theta)));
+        result = ((start * Math::Cos(theta)) + (RelativeVector * Math::Sin(theta)));
+        return result;
+    }
+
+    // Performs a spherical linear interpolation between two vectors.
+    static Vector3Base Slerp(const Vector3Base& start, const Vector3Base& end, T amount)
+    {
+        Vector3Base result;
+        Slerp(start, end, amount, result);
+        return result;
     }
 
     // Performs a cubic interpolation between two vectors.
