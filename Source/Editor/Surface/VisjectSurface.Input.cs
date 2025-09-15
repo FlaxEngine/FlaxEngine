@@ -754,12 +754,13 @@ namespace FlaxEditor.Surface
                     Box selectedBox = GetSelectedBox(SelectedNodes);
                     if (selectedBox != null)
                     {
-                        Box toSelect = (key == KeyboardKeys.ArrowUp) ? selectedBox?.ParentNode.GetPreviousBox(selectedBox) : selectedBox?.ParentNode.GetNextBox(selectedBox);
-                        if (toSelect != null && toSelect.IsOutput == selectedBox.IsOutput)
-                        {
-                            Select(toSelect.ParentNode);
-                            toSelect.ParentNode.SelectBox(toSelect);
-                        }
+                        int delta = key == KeyboardKeys.ArrowDown ? 1 : -1;
+                        List<Box> boxes = selectedBox.ParentNode.GetBoxes().FindAll(b => b.IsOutput == selectedBox.IsOutput);
+                        int selectedIndex = boxes.IndexOf(selectedBox);
+                        Box toSelect = boxes[Mathf.Wrap(selectedIndex + delta, 0, boxes.Count - 1)];
+
+                        Select(toSelect.ParentNode);
+                        toSelect.ParentNode.SelectBox(toSelect);
                     }
                     else if (!IsMovingSelection && CanEdit)
                     {
