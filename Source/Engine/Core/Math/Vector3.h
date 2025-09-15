@@ -694,7 +694,7 @@ public:
         float theta = Math::Acos(dot) * amount;
         Vector3Base RelativeVector = end - start * dot;
         RelativeVector.Normalize();
-        return ((start * Math::Cos(theta) + (RelativeVector * Math::Sin(theta));
+        return ((start * Math::Cos(theta)) + (RelativeVector * Math::Sin(theta)));
     }
 
     // Performs a cubic interpolation between two vectors.
