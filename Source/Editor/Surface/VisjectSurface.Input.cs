@@ -777,11 +777,8 @@ namespace FlaxEditor.Surface
                     if (selectedBox != null)
                     {
                         Box toSelect = null;
-                        if ((key == KeyboardKeys.ArrowRight && selectedBox.IsOutput) || (key == KeyboardKeys.ArrowLeft && !selectedBox.IsOutput))
+                        if (((key == KeyboardKeys.ArrowRight && selectedBox.IsOutput) || (key == KeyboardKeys.ArrowLeft && !selectedBox.IsOutput)) && selectedBox.HasAnyConnection)
                         {
-                            if (_selectedConnectionIndex < 0 || _selectedConnectionIndex >= selectedBox.Connections.Count)
-                                _selectedConnectionIndex = 0;
-
                             toSelect = selectedBox.Connections[_selectedConnectionIndex];
                         }
                         else
