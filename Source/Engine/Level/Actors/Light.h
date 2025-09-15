@@ -63,7 +63,8 @@ protected:
         {
             const float dst2 = (float)Vector3::DistanceSquared(viewPosition, position);
             const float dst = Math::Sqrt(dst2);
-            brightness *= Math::Remap(dst, 0.9f * ViewDistance, ViewDistance, 1.0f, 0.0f);
+            if (dst < ViewDistance && dst > ViewDistance * 0.9f)
+                brightness *= Math::Remap(dst, 0.9f * ViewDistance, ViewDistance, 1.0f, 0.0f);
             return dst < ViewDistance;
         }
         return true;
