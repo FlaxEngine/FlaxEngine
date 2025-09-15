@@ -1,5 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -10,6 +12,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Text block alignments modes.
         /// </summary>
+        [Flags]
         public enum Alignments
         {
             /// <summary>
