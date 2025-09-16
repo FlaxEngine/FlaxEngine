@@ -955,7 +955,7 @@ namespace FlaxEngine
         }
 
         /// <summary>
-        /// Performs a linear interpolation between two vectors.
+        /// Performs a spherical linear interpolation between two vectors.
         /// </summary>
         /// <param name="start">Start vector.</param>
         /// <param name="end">End vector.</param>
@@ -963,11 +963,11 @@ namespace FlaxEngine
         /// <param name="result">>When the method completes, contains the linear interpolation of the two vectors.</param>
         public static void Slerp(ref Vector2 start, ref Vector2 end, float amount, out Vector2 result)
         {
-            float dot = Dot(start, end);
-            dot = Mathf.Clamp(dot, -1.0f, 1.0f);
-            float theta = Mathf.Acos(dot) * amount;
+            var dot = Dot(start, end);
+            dot = Mathr.Clamp(dot, -1.0f, 1.0f);
+            var theta = Mathr.Acos(dot) * amount;
             Vector2 RelativeVector = (end - start * dot).Normalized;
-            result = ((start * Mathf.Cos(theta)) + (end * Mathf.Sin(theta)));
+            result = ((start * Mathr.Cos(theta)) + (end * Mathr.Sin(theta)));
         }
 
         /// <summary>

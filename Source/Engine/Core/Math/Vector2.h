@@ -561,9 +561,9 @@ public:
     // Performs a spherical linear interpolation between two vectors.
     static void Slerp(const Vector2Base& start, const Vector2Base& end, T amount, Vector2Base& result) 
     {
-        float dot = Dot(start,end);
+        T dot = Dot(start,end);
         dot = Math::Clamp(dot, -1.0f, 1.0f);
-        float theta = Math::Acos(dot) * amount;
+        T theta = Math::Acos(dot) * amount;
         Vector3Base RelativeVector = end - start * dot;
         RelativeVector.Normalize();
         result = ((start * Math::Cos(theta)) + (RelativeVector * Math::Sin(theta)));
