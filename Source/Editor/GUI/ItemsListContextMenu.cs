@@ -52,6 +52,11 @@ namespace FlaxEditor.GUI
             public float SortScore;
 
             /// <summary>
+            /// Wether the query highlights should be draw.
+            /// </summary>
+            public bool DrawHighlights = true;
+
+            /// <summary>
             /// Occurs when items gets clicked by the user.
             /// </summary>
             public event Action<Item> Clicked;
@@ -165,7 +170,7 @@ namespace FlaxEditor.GUI
                     Render2D.FillRectangle(new Rectangle(Float2.Zero, Size), style.BackgroundHighlighted);
 
                 // Draw all highlights
-                if (_highlights != null)
+                if (DrawHighlights && _highlights != null)
                 {
                     var color = style.ProgressNormal * 0.6f;
                     for (int i = 0; i < _highlights.Count; i++)
