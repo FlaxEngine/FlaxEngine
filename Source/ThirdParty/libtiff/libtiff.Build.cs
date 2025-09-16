@@ -27,8 +27,7 @@ public class libtiff : ThirdPartyModule
         switch (options.Platform.Target)
         {
             case TargetPlatform.Linux:
-            // TODO: Compile libtiff library for Mac
-            //case TargetPlatform.Mac:
+            case TargetPlatform.Mac:
                 options.OutputFiles.Add(Path.Combine(depsRoot, "libtiff.a"));
                 break;
             default:
