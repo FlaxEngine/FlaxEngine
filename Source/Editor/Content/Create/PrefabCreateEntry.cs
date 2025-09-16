@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using System;
+using System.Linq;
 using FlaxEditor.Scripting;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -117,7 +118,8 @@ namespace FlaxEditor.Content.Create
 
             private static bool IsValid(Type type)
             {
-                return (type.IsPublic || type.IsNestedPublic) && !type.IsAbstract && !type.IsGenericType;
+                var controlTypes = Editor.Instance.CodeEditing.Controls.Get();
+                return (type.IsPublic || type.IsNestedPublic) && !type.IsAbstract && !type.IsGenericType && controlTypes.Any(c => c.Type == type);
             }
         }
 
