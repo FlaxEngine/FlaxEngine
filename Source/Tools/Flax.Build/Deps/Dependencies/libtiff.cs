@@ -79,6 +79,7 @@ namespace Flax.Deps.Dependencies
 
                         var toolchain = UnixToolchain.GetToolchainName(platform, TargetArchitecture.x64);
                         Utilities.Run(Path.Combine(root, "configure"), string.Format("--host={0} {1}", toolchain, globalConfig), null, root, Utilities.RunOptions.Default, envVars);
+
                         Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
                         configHeaderFilePath = Path.Combine(root, "libtiff", "tif_config.h");
 
@@ -90,10 +91,19 @@ namespace Flax.Deps.Dependencies
                     }
                     case TargetPlatform.Mac:
                     {
+                        var envVars = new Dictionary<string, string>
+                        {
+                            { "CC", "clang" },
+                            { "CXX", "clang++" },
+                        };
+                        
+                        Utilities.Run(Path.Combine(root, "autogen.sh"), null, null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+
                         foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                         {
-                            Utilities.Run("./configure " + globalConfig, null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                            Utilities.Run("make -j" + System.Environment.ProcessorCount, null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                            var toolchain = MacToolchain.GetToolchainName(platform, architecture);
+                            Utilities.Run(Path.Combine(root, "configure"), string.Format("--host={0} {1}", toolchain, globalConfig), null, root, Utilities.RunOptions.Default, envVars);
+                            Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
                             configHeaderFilePath = Path.Combine(root, "libtiff", "tif_config.h");
 
                             var depsFolder = GetThirdPartyFolder(options, platform, architecture);
