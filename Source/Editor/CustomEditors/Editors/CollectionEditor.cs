@@ -71,7 +71,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 menu.AddButton("Copy", linkedEditor.Copy);
                 var b = menu.AddButton("Duplicate", () => Editor.Duplicate(Index));
-                b.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
+                b.Enabled = linkedEditor.CanPaste && !Editor._readOnly && Editor._canResize;
                 b = menu.AddButton("Paste", linkedEditor.Paste);
                 b.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
 
