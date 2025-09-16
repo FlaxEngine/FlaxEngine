@@ -117,10 +117,10 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 if (!IsValidScriptName(text))
                 {
                     // Remove NewScriptItems
-                    List<Control> die = cm.ItemsPanel.Children.FindAll(c => c is NewScriptItem);
-                    foreach (var c in die)
+                    List<Control> newScriptItems = cm.ItemsPanel.Children.FindAll(c => c is NewScriptItem);
+                    foreach (var item in newScriptItems)
                     {
-                        cm.ItemsPanel.RemoveChild(c);
+                        cm.ItemsPanel.RemoveChild(item);
                     }
 
                     return;
