@@ -36,6 +36,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             ScriptName = scriptName;
             TooltipText = "Create a new script";
+            DrawHighlights = false;
         }
     }
 
