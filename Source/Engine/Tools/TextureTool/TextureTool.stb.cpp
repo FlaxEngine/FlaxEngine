@@ -468,8 +468,8 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
 
 	    TIFFReadDirectory(tif); // Take first frame
 
-        int width = 0, height = 0, 
-        samplesPerPixel = 0, bitsPerSample = 0;
+        int width = 0, height = 0;
+        //int samplesPerPixel = 0, bitsPerSample = 0;
         
 	    TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &width);
         TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &height);
