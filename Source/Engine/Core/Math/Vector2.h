@@ -564,7 +564,7 @@ public:
         T dot = Dot(start,end);
         dot = Math::Clamp(dot, -1.0f, 1.0f);
         T theta = Math::Acos(dot) * amount;
-        Vector3Base RelativeVector = end - start * dot;
+        Vector2Base RelativeVector = end - start * dot;
         RelativeVector.Normalize();
         result = ((start * Math::Cos(theta)) + (RelativeVector * Math::Sin(theta)));
         return result;
