@@ -100,6 +100,7 @@ namespace FlaxEditor.Windows.Profiler
         /// Timeline track label
         /// </summary>
         /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
+        [HideInEditor]
         public class TrackLabel : ContainerControl
         {
             /// <summary>
