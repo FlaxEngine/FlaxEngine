@@ -1044,6 +1044,35 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// Performs a linear interpolation between two vectors.
+        /// </summary>
+        /// <param name="start">Start vector.</param>
+        /// <param name="end">End vector.</param>
+        /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+        /// <param name="result">When the method completes, contains the linear interpolation of the two vectors.</param>
+        public static void Slerp(ref Vector3 start, ref Vector3 end, float amount, out Vector3 result)
+        {
+            float dot = Dot(start, end);
+            dot = Mathf.Clamp(dot, -1.0f, 1.0f);
+            float theta = Mathf.Acos(dot) * amount;
+            Vector3 RelativeVector = (end - start * dot).Normalized;
+            result = ((start * Mathf.Cos(theta)) + (end * Mathf.Sin(theta)));
+        }
+
+        /// <summary>
+        /// Performs a linear interpolation between two vectors.
+        /// </summary>
+        /// <param name="start">Start vector.</param>
+        /// <param name="end">End vector.</param>
+        /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+        /// <returns></returns>
+        public static Vector3 Slerp(Vector3 start, Vector3 end, float amount)
+        {
+            Slerp(ref start,ref end,amount, out var result);
+            return result;
+        }
+
+        /// <summary>
         /// Performs a gradual change of a vector towards a specified target over time
         /// </summary>
         /// <param name="current">Current vector.</param>
