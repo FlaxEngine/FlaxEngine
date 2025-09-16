@@ -52,7 +52,12 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (texture)
             {
                 var desc = texture.Description;
-                _image.TooltipText = $"{texture.Name}\nType: {texture.ResourceType}\nSize: {desc.Width}x{desc.Height}\nFormat: {desc.Format}\nMemory: {Utilities.Utils.FormatBytesCount(texture.MemoryUsage)}";
+#if BUILD_RELEASE
+                var name = string.Empty;
+#else
+                var name = texture.Name;
+#endif
+                _image.TooltipText = $"{name}\nType: {texture.ResourceType}\nSize: {desc.Width}x{desc.Height}\nFormat: {desc.Format}\nMemory: {Utilities.Utils.FormatBytesCount(texture.MemoryUsage)}";
             }
             else
             {
