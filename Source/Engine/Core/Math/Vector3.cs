@@ -1068,7 +1068,7 @@ namespace FlaxEngine
         /// <returns></returns>
         public static Vector3 Slerp(Vector3 start, Vector3 end, float amount)
         {
-            Slerp(ref start,ref end,amount, out var result);
+            Slerp(ref start, ref end, amount, out var result);
             return result;
         }
 
