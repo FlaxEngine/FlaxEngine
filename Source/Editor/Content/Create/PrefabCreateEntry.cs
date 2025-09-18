@@ -117,7 +117,8 @@ namespace FlaxEditor.Content.Create
 
             private static bool IsValid(Type type)
             {
-                return (type.IsPublic || type.IsNestedPublic) && !type.IsAbstract && !type.IsGenericType;
+                var controlTypes = Editor.Instance.CodeEditing.Controls.Get();
+                return (type.IsPublic || type.IsNestedPublic) && !type.IsAbstract && !type.IsGenericType && controlTypes.Contains(new ScriptType(type));
             }
         }
 
