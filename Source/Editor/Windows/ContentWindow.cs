@@ -1085,6 +1085,8 @@ namespace FlaxEditor.Windows
                 if (Editor.ContentDatabase.Find(_lastViewedFolderBeforeReload) is ContentFolder folder)
                     _tree.Select(folder.Node);
             }
+
+            OnFoldersSearchBoxTextChanged();
         }
 
         private void Refresh()
