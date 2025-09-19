@@ -702,13 +702,21 @@ namespace FlaxEditor.Surface
 
         private void MoveSelectedNodes(Float2 delta)
         {
-            // TODO: undo
+            List<MoveNodesAction> undoActions = new List<MoveNodesAction>();
+
             delta /= _targetScale;
             OnGetNodesToMove();
             foreach (var node in _movingNodes)
+            {
                 node.Location += delta;
+                if (Undo != null)
+                    undoActions.Add(new MoveNodesAction(Context, new[] { node.ID }, delta));
+            }
             _isMovingSelection = false;
             MarkAsEdited(false);
+
+            if (undoActions.Count > 0)
+                Undo?.AddAction(new MultiUndoAction(undoActions, "Moved "));
         }
 
         /// <inheritdoc />
