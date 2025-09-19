@@ -63,7 +63,7 @@ float4 PS_Fog(Quad_VS2PS input) : SV_Target0
 #if VOLUMETRIC_FOG
     // Sample volumetric fog and mix it in
 	float4 volumetricFog = IntegratedLightScattering.SampleLevel(SamplerLinearClamp, volumeUV, 0);
-	fog = float4(volumetricFog.rgb + fog.rgb * volumetricFog.a, volumetricFog.a * fog.a);
+	fog = CombineVolumetricFog(fog, volumetricFog);
 #endif
 
 	return fog;
