@@ -29,6 +29,7 @@ namespace FlaxEditor.Surface
         private HashSet<SurfaceNode> _movingNodes;
         private HashSet<SurfaceNode> _temporarySelectedNodes;
         private readonly Stack<InputBracket> _inputBrackets = new Stack<InputBracket>();
+        private InputBinding _focusSelectedNodeBinding;
 
         private class InputBracket
         {
@@ -844,7 +845,8 @@ namespace FlaxEditor.Surface
 
         private void CurrentInputTextChanged(string currentInputText)
         {
-            if (string.IsNullOrEmpty(currentInputText))
+            // Check if focus selected nodes binding is being pressed to prevent it triggering primary menu 
+            if (string.IsNullOrEmpty(currentInputText) || _focusSelectedNodeBinding.Process(RootWindow))
                 return;
             if (IsPrimaryMenuOpened || !CanEdit)
             {
