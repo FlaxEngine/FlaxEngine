@@ -603,7 +603,7 @@ namespace FlaxEditor.Windows
             _dragHandlers = null;
             _tree = null;
             _searchBox = null;
-            ScriptsBuilder.ScriptsReloadEnd += OnSearchBoxTextChanged;
+            ScriptsBuilder.ScriptsReloadEnd -= OnSearchBoxTextChanged;
 
             base.OnDestroy();
         }
