@@ -25,6 +25,7 @@ namespace FlaxEditor.Viewport
         private readonly Editor _editor;
         private readonly ContextMenuButton _showGridButton;
         private readonly ContextMenuButton _showNavigationButton;
+        private readonly ContextMenuButton _toggleGameViewButton;
         private SelectionOutline _customSelectionOutline;
 
         /// <summary>
@@ -191,6 +192,7 @@ namespace FlaxEditor.Viewport
         : base(Object.New<SceneRenderTask>(), editor.Undo, editor.Scene.Root)
         {
             _editor = editor;
+            var inputOptions = _editor.Options.Options.Input;
             DragHandlers = new ViewportDragHandlers(this, this, ValidateDragItem, ValidateDragActorType, ValidateDragScriptItem);
 
             // Prepare rendering task
@@ -238,8 +240,13 @@ namespace FlaxEditor.Viewport
             _showGridButton.CloseMenuOnClick = false;
 
             // Show navigation widget
-            _showNavigationButton = ViewWidgetShowMenu.AddButton("Navigation", () => ShowNavigation = !ShowNavigation);
+            _showNavigationButton = ViewWidgetShowMenu.AddButton("Navigation", inputOptions.ToggleNavMeshVisibility, () => ShowNavigation = !ShowNavigation);
             _showNavigationButton.CloseMenuOnClick = false;
+
+            // Game View
+            ViewWidgetButtonMenu.AddSeparator();
+            _toggleGameViewButton = ViewWidgetButtonMenu.AddButton("Game View", inputOptions.ToggleGameView, ToggleGameView);
+            _toggleGameViewButton.CloseMenuOnClick = false;
 
             // Create camera widget
             ViewWidgetButtonMenu.AddSeparator();
@@ -268,26 +275,7 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.ToggleNavMeshVisibility, () => ShowNavigation = !ShowNavigation);
 
             // Game View
-            InputActions.Add(options => options.ToggleGameView, () =>
-            {
-                if (!_gameViewActive)
-                {
-                    _preGameViewFlags = Task.ViewFlags;
-                    _gameViewWasGridShown = ShowFpsCounter;
-                    _gameViewWasFpsCounterShown = ShowNavigation;
-                    _gameViewWasNagivationShown = Grid.Enabled;
-                }
-
-                Task.ViewFlags = _gameViewActive ? _preGameViewFlags : ViewFlags.GameView;
-                ShowFpsCounter = _gameViewActive ? _gameViewWasGridShown : false;
-                ShowNavigation = _gameViewActive ? _gameViewWasFpsCounterShown : false;
-                Grid.Enabled = _gameViewActive ? _gameViewWasNagivationShown : false;
-
-                _gameViewActive = !_gameViewActive;
-
-                TransformGizmo.Visible = !_gameViewActive;
-                SelectionOutline.ShowSelectionOutline = !_gameViewActive;
-            });
+            InputActions.Add(options => options.ToggleGameView, ToggleGameView);
         }
 
         /// <inheritdoc />
@@ -501,6 +489,32 @@ namespace FlaxEditor.Viewport
                 obj.Transform = trans;
             }
             TransformGizmo.EndTransforming();
+        }
+
+        /// <summary>
+        /// Toggles game view view mode on or off.
+        /// </summary>
+        public void ToggleGameView()
+        {
+            if (!_gameViewActive)
+            {
+                _preGameViewFlags = Task.ViewFlags;
+                _gameViewWasGridShown = ShowFpsCounter;
+                _gameViewWasFpsCounterShown = ShowNavigation;
+                _gameViewWasNagivationShown = Grid.Enabled;
+            }
+
+            Task.ViewFlags = _gameViewActive ? _preGameViewFlags : ViewFlags.GameView;
+            ShowFpsCounter = _gameViewActive ? _gameViewWasGridShown : false;
+            ShowNavigation = _gameViewActive ? _gameViewWasFpsCounterShown : false;
+            Grid.Enabled = _gameViewActive ? _gameViewWasNagivationShown : false;
+
+            _gameViewActive = !_gameViewActive;
+
+            TransformGizmo.Visible = !_gameViewActive;
+            SelectionOutline.ShowSelectionOutline = !_gameViewActive;
+
+            _toggleGameViewButton.Icon = _gameViewActive ? Style.Current.CheckBoxTick : SpriteHandle.Invalid;
         }
 
         /// <inheritdoc />

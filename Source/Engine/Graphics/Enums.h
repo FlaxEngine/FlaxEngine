@@ -1087,6 +1087,11 @@ API_ENUM(Attributes="Flags") enum class ViewFlags : uint64
     /// Default flags for game view.
     /// </summary>
     GameView = AntiAliasing | Shadows | Reflections | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Sky | Fog | SpecularLight | Decals | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | MotionBlur | ContactShadows | DepthOfField,
+
+    /// <summary>
+    /// All flags enabled.
+    /// </summary>
+    All = None | DebugDraw | EditorSprites | Reflections | SSR | AO | GI | DirectionalLights | PointLights | SpotLights | SkyLights | Shadows | SpecularLight | AntiAliasing | CustomPostProcess | Bloom | ToneMapping | EyeAdaptation | CameraArtifacts | LensFlares | Decals | DepthOfField | PhysicsDebug | Fog | MotionBlur | ContactShadows | GlobalSDF | Sky | LightsDebug,
 };
 
 DECLARE_ENUM_OPERATORS(ViewFlags);
