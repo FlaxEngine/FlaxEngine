@@ -864,7 +864,9 @@ namespace FlaxEditor.Viewport
                         }
                     });
                     viewLayers.AddButton("Reset layers", () => Task.ViewLayersMask = LayersMask.Default).Icon = Editor.Instance.Icons.Rotate32;
-                    viewLayers.AddButton("Disable layers", () => Task.ViewLayersMask = new LayersMask(0)).Icon = Editor.Instance.Icons.Rotate32;
+                    viewLayers.AddSeparator();
+                    viewLayers.AddButton("Enable all", () => Task.ViewLayersMask = new LayersMask(-1)).Icon = Editor.Instance.Icons.CheckBoxTick12;
+                    viewLayers.AddButton("Disable all", () => Task.ViewLayersMask = new LayersMask(0)).Icon = Editor.Instance.Icons.Cross12;
                     viewLayers.AddSeparator();
                     var layers = LayersAndTagsSettings.GetCurrentLayers();
                     if (layers != null && layers.Length > 0)
@@ -905,7 +907,9 @@ namespace FlaxEditor.Viewport
                         }
                     });
                     viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
-                    viewFlags.AddButton("Disable flags", () => Task.ViewFlags = ViewFlags.None).Icon = Editor.Instance.Icons.Rotate32;
+                    viewFlags.AddSeparator();
+                    viewFlags.AddButton("Enable all", () => Task.ViewFlags = ViewFlags.All).Icon = Editor.Instance.Icons.CheckBoxTick12;
+                    viewFlags.AddButton("Disable all", () => Task.ViewFlags = ViewFlags.None).Icon = Editor.Instance.Icons.Cross12;
                     viewFlags.AddSeparator();
                     for (int i = 0; i < ViewFlagsValues.Length; i++)
                     {
