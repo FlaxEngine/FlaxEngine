@@ -108,6 +108,12 @@ namespace FlaxEditor.Viewport
         private EditorSpritesRenderer _editorSpritesRenderer;
         private ViewportRubberBandSelector _rubberBandSelector;
 
+        private bool _gameViewActive;
+        private ViewFlags _preGameViewFlags;
+        private bool _gameViewWasGridShown;
+        private bool _gameViewWasFpsCounterShown;
+        private bool _gameViewWasNagivationShown;
+
         /// <summary>
         /// Drag and drop handlers
         /// </summary>
@@ -259,6 +265,29 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.FocusSelection, FocusSelection);
             InputActions.Add(options => options.RotateSelection, RotateSelection);
             InputActions.Add(options => options.Delete, _editor.SceneEditing.Delete);
+            InputActions.Add(options => options.ToggleNavMeshVisibility, () => ShowNavigation = !ShowNavigation);
+
+            // Game View
+            InputActions.Add(options => options.ToggleGameView, () =>
+            {
+                if (!_gameViewActive)
+                {
+                    _preGameViewFlags = Task.ViewFlags;
+                    _gameViewWasGridShown = ShowFpsCounter;
+                    _gameViewWasFpsCounterShown = ShowNavigation;
+                    _gameViewWasNagivationShown = Grid.Enabled;
+                }
+
+                Task.ViewFlags = _gameViewActive ? _preGameViewFlags : ViewFlags.GameView;
+                ShowFpsCounter = _gameViewActive ? _gameViewWasGridShown : false;
+                ShowNavigation = _gameViewActive ? _gameViewWasFpsCounterShown : false;
+                Grid.Enabled = _gameViewActive ? _gameViewWasNagivationShown : false;
+
+                _gameViewActive = !_gameViewActive;
+
+                TransformGizmo.Visible = !_gameViewActive;
+                SelectionOutline.ShowSelectionOutline = !_gameViewActive;
+            });
         }
 
         /// <inheritdoc />
