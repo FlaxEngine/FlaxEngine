@@ -584,7 +584,7 @@ namespace FlaxEditor.Viewport
                 _cameraButton = new ViewportWidgetButton(string.Format(MovementSpeedTextFormat, _movementSpeed), Editor.Instance.Icons.Camera64, cameraCM, false, cameraSpeedTextWidth)
                 {
                     Tag = this,
-                    TooltipText = "Camera Settings",
+                    TooltipText = "Camera Settings.",
                     Parent = _cameraWidget
                 };
                 _cameraWidget.Parent = this;
@@ -593,7 +593,7 @@ namespace FlaxEditor.Viewport
                 _orthographicModeButton = new ViewportWidgetButton(string.Empty, Editor.Instance.Icons.CamSpeed32, null, true)
                 {
                     Checked = !_isOrtho,
-                    TooltipText = "Toggle Orthographic/Perspective Mode",
+                    TooltipText = "Toggle Orthographic/Perspective Mode.",
                     Parent = _cameraWidget
                 };
                 _orthographicModeButton.Toggled += OnOrthographicModeToggled;
@@ -832,7 +832,7 @@ namespace FlaxEditor.Viewport
                 ViewWidgetButtonMenu = new ContextMenu();
                 var viewModeButton = new ViewportWidgetButton("View", SpriteHandle.Invalid, ViewWidgetButtonMenu)
                 {
-                    TooltipText = "View properties",
+                    TooltipText = "View properties.",
                     Parent = viewMode
                 };
                 viewMode.Parent = this;
