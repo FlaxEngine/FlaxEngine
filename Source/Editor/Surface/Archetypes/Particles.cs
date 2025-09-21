@@ -436,11 +436,11 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 102,
-                Title = "Total Lifetime",
-                Description = "Total particle lifetime (in seconds), assigned when the particle is created. Always the same, no matter the particles age.",
+                Title = "Particle Total Lifetime",
+                Description = "Total particle lifetime (in seconds) at the time when the particle was created. Always the same, no matter the particles age.",
                 AlternativeTitles = new[] { "Age" },
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
-                Size = new Float2(180, 30),
+                Size = new Float2(250, 30),
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, string.Empty, typeof(float), 0),
@@ -535,7 +535,7 @@ namespace FlaxEditor.Surface.Archetypes
             {
                 TypeID = 110,
                 Title = "Particle Normalized Age",
-                Description = "Particle normalized age represented as from 0 (max lifetime) - 1 (max age) (age divided by lifetime).",
+                Description = "The normalized age of the particle, represented as 0 (max lifetime) to 1 (max age). (Same as age divided by lifetime.)",
                 AlternativeTitles = new[] { "Lifetime" },
                 Flags = NodeFlags.MaterialGraph | NodeFlags.ParticleEmitterGraph,
                 Size = new Float2(250, 30),
