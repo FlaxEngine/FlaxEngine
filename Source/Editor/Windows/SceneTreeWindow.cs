@@ -68,6 +68,7 @@ namespace FlaxEditor.Windows
                 TooltipText = "Search the scene tree.\n\nYou can prefix your search with different search operators:\ns: -> Actor with script of type\na: -> Actor type\nc: -> Control type",
             };
             _searchBox.TextChanged += OnSearchBoxTextChanged;
+            ScriptsBuilder.ScriptsReloadEnd += OnSearchBoxTextChanged;
 
             // Scene tree panel
             _sceneTreePanel = new Panel
@@ -112,7 +113,7 @@ namespace FlaxEditor.Windows
             InputActions.Add(options => options.LockFocusSelection, () => Editor.Windows.EditWin.Viewport.LockFocusSelection());
             InputActions.Add(options => options.Rename, RenameSelection);
         }
-        
+
         /// <inheritdoc />
         public override void OnPlayBeginning()
         {
@@ -125,6 +126,7 @@ namespace FlaxEditor.Windows
         {
             base.OnPlayBegin();
             _blockSceneTreeScroll = false;
+            OnSearchBoxTextChanged();
         }
 
         /// <inheritdoc />
@@ -139,6 +141,7 @@ namespace FlaxEditor.Windows
         {
             base.OnPlayEnd();
             _blockSceneTreeScroll = true;
+            OnSearchBoxTextChanged();
         }
 
         /// <summary>
@@ -174,6 +177,7 @@ namespace FlaxEditor.Windows
                 return;
 
             _tree.LockChildrenRecursive();
+            PerformLayout();
 
             // Update tree
             var query = _searchBox.Text;
@@ -599,6 +603,7 @@ namespace FlaxEditor.Windows
             _dragHandlers = null;
             _tree = null;
             _searchBox = null;
+            ScriptsBuilder.ScriptsReloadEnd -= OnSearchBoxTextChanged;
 
             base.OnDestroy();
         }
