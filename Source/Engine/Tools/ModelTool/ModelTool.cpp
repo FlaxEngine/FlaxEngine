@@ -1611,9 +1611,16 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             // Transform the nodes using the import transformation
             if (data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
             {
+                BitArray<> visitedNodes;
+                visitedNodes.Resize(data.Nodes.Count());
+                visitedNodes.SetAll(false);
                 for (int i = 0; i < data.LODs[0].Meshes.Count(); ++i)
                 {
                     auto* meshData = data.LODs[0].Meshes[i];
+                    int32 nodeIndex = meshData->NodeIndex;
+                    if (visitedNodes[nodeIndex])
+                        continue;
+                    visitedNodes.Set(nodeIndex, true);
                     Transform transform = importTransform;
                     if (options.UseLocalOrigin)
                     {
@@ -1627,8 +1634,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                         transform.Translation -= center;
                     }
 
-                    int32 nodeIndex = meshData->NodeIndex;
-                    
                     auto& node = data.Nodes[nodeIndex];
                     node.LocalTransform = transform.LocalToWorld(node.LocalTransform);
                 }
