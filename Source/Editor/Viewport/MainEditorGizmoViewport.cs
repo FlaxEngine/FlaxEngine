@@ -499,12 +499,12 @@ namespace FlaxEditor.Viewport
             if (!_gameViewActive)
             {
                 _preGameViewFlags = Task.ViewFlags;
-                _gameViewWasGridShown = ShowFpsCounter;
-                _gameViewWasFpsCounterShown = ShowNavigation;
-                _gameViewWasNagivationShown = Grid.Enabled;
+                _gameViewWasGridShown = Grid.Enabled;
+                _gameViewWasFpsCounterShown = ShowFpsCounter;
+                _gameViewWasNagivationShown = ShowNavigation;
             }
 
-            Task.ViewFlags = _gameViewActive ? _preGameViewFlags : ViewFlags.GameView;
+            Task.ViewFlags = _gameViewActive ? _preGameViewFlags : ViewFlags.DefaultGame;
             ShowFpsCounter = _gameViewActive ? _gameViewWasGridShown : false;
             ShowNavigation = _gameViewActive ? _gameViewWasFpsCounterShown : false;
             Grid.Enabled = _gameViewActive ? _gameViewWasNagivationShown : false;
