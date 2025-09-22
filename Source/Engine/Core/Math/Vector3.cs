@@ -1064,7 +1064,6 @@ namespace FlaxEngine
         /// <param name="start">Start vector.</param>
         /// <param name="end">End vector.</param>
         /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
-        /// <returns></returns>
         public static Vector3 Slerp(Vector3 start, Vector3 end, float amount)
         {
             Slerp(ref start, ref end, amount, out var result);
