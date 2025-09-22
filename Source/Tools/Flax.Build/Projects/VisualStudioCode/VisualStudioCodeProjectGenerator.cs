@@ -648,6 +648,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.AddField("**/Screenshots", true);
                 json.AddField("**/Output", true);
                 json.AddField("**/*.flax", true);
+                json.AddField("**/Plugins", true);
                 json.EndObject();
 
                 // Extension settings
@@ -683,9 +684,15 @@ namespace Flax.Build.Projects.VisualStudioCode
                     json.EndObject();
 
                     // Referenced projects outside the current project (including engine too)
-                    foreach (var project in Globals.Project.GetAllProjects())
+                    var projects = Globals.Project.GetAllProjects();
+                    // Move Engine to last for organizational purposes.
+                    var engineProject = projects.First(x => x.Name == "Flax");
+                    var projectsWithoutEngine = projects.Where(x => x.Name != "Flax");
+                    projectsWithoutEngine = projectsWithoutEngine.OrderBy(x => x.Name);
+                    var sortedProjects = projectsWithoutEngine.Concat([engineProject]);
+                    foreach (var project in sortedProjects)
                     {
-                        if (!project.ProjectFolderPath.Contains(Globals.Project.ProjectFolderPath))
+                        if (!project.ProjectFolderPath.Equals(Globals.Project.ProjectFolderPath))
                         {
                             json.BeginObject();
                             {
