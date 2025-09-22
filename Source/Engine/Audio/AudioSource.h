@@ -79,12 +79,12 @@ public:
     /// <summary>
     /// Event fired when the audio clip starts.
     /// </summary>
-    API_EVENT() Delegate<> ClipStarted;
+    API_EVENT() Action ClipStarted;
 
     /// <summary>
     /// Event fired when the audio clip finishes.
     /// </summary>
-    API_EVENT() Delegate<> ClipFinished;
+    API_EVENT() Action ClipFinished;
 
     /// <summary>
     /// Gets the velocity of the source. Determines pitch in relation to AudioListener's position. Only relevant for spatial (3D) sources.
@@ -336,5 +336,4 @@ protected:
     void OnDisable() override;
     void OnTransformChanged() override;
     void BeginPlay(SceneBeginData* data) override;
-    void EndPlay() override;
 };

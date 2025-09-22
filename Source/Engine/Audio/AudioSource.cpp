@@ -588,11 +588,3 @@ void AudioSource::BeginPlay(SceneBeginData* data)
             SetTime(GetStartTime());
     }
 }
-
-void AudioSource::EndPlay()
-{
-    Actor::EndPlay();
-
-    ClipStarted.UnbindAll();
-    ClipFinished.UnbindAll();
-}
