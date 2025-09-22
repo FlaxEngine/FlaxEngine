@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System.Collections.Generic;
 using FlaxEditor.Surface.Elements;
 using FlaxEngine;
 
@@ -126,40 +127,45 @@ namespace FlaxEditor.Surface
         /// <remarks>Called only when user is connecting nodes.</remarks>
         protected virtual void DrawConnectingLine()
         {
-            // Get start position
-            var startPos = _connectionInstigator.ConnectionOrigin;
-
-            // Check if mouse is over any of box
             var cmVisible = _activeVisjectCM != null && _activeVisjectCM.Visible;
             var endPos = cmVisible ? _rootControl.PointFromParent(ref _cmStartPos) : _rootControl.PointFromParent(ref _mousePos);
             Color lineColor = Style.Colors.Connecting;
-            if (_lastInstigatorUnderMouse != null && !cmVisible)
-            {
-                // Check if can connect objects
-                bool canConnect = _connectionInstigator.CanConnectWith(_lastInstigatorUnderMouse);
-                lineColor = canConnect ? Style.Colors.ConnectingValid : Style.Colors.ConnectingInvalid;
-                endPos = _lastInstigatorUnderMouse.ConnectionOrigin;
-            }
 
-            Float2 actualStartPos = startPos;
-            Float2 actualEndPos = endPos;
-
-            if (_connectionInstigator is Archetypes.Tools.RerouteNode)
+            List<IConnectionInstigator> instigators = new List<IConnectionInstigator>(_connectionInstigators);
+            for (int i = 0; i < instigators.Count; i++)
             {
-                if (endPos.X < startPos.X && _lastInstigatorUnderMouse is null or Box { IsOutput: true })
+                IConnectionInstigator currentInstigator = instigators[i];
+                Float2 currentStartPosition = currentInstigator.ConnectionOrigin;
+
+                // Check if mouse is over any box
+                if (_lastInstigatorUnderMouse != null && !cmVisible)
+                {
+                    // Check if can connect objects
+                    bool canConnect = currentInstigator.CanConnectWith(_lastInstigatorUnderMouse);
+                    lineColor = canConnect ? Style.Colors.ConnectingValid : Style.Colors.ConnectingInvalid;
+                    endPos = _lastInstigatorUnderMouse.ConnectionOrigin;
+                }
+
+                Float2 actualStartPos = currentStartPosition;
+                Float2 actualEndPos = endPos;
+
+                if (currentInstigator is Archetypes.Tools.RerouteNode)
+                {
+                    if (endPos.X < currentStartPosition.X && _lastInstigatorUnderMouse is null or Box { IsOutput: true })
+                    {
+                        actualStartPos = endPos;
+                        actualEndPos = currentStartPosition;
+                    }
+                }
+                else if (currentInstigator is Box { IsOutput: false })
                 {
                     actualStartPos = endPos;
-                    actualEndPos = startPos;
+                    actualEndPos = currentStartPosition;
                 }
-            }
-            else if (_connectionInstigator is Box { IsOutput: false })
-            {
-                actualStartPos = endPos;
-                actualEndPos = startPos;
-            }
 
-            // Draw connection
-            _connectionInstigator.DrawConnectingLine(ref actualStartPos, ref actualEndPos, ref lineColor);
+                // Draw connection
+                currentInstigator.DrawConnectingLine(ref actualStartPos, ref actualEndPos, ref lineColor);
+            }
         }
 
         /// <summary>
@@ -226,10 +232,10 @@ namespace FlaxEditor.Surface
             _rootControl.DrawComments();
 
             // Reset input flags here because this is the closest to Update we have
-            WasBoxSelecting = IsBoxSelecting;
+            WasSelecting = IsSelecting;
             WasMovingSelection = IsMovingSelection;
 
-            if (IsBoxSelecting)
+            if (IsSelecting)
             {
                 DrawSelection();
             }
