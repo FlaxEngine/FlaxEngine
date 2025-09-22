@@ -49,7 +49,7 @@ public:
     /// <summary>
     /// Gets all available commands.
     /// </summary>
-    /// <param name="matches">The output list of all commands (unsorted).</param>
+    /// <param name="commands">The output list of all commands (unsorted).</param>
     API_FUNCTION() static void GetAllCommands(API_PARAM(Out) Array<StringView, HeapAllocation>& commands);
 
     /// <summary>

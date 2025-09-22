@@ -439,11 +439,8 @@ void DebugCommands::GetAllCommands(Array<StringView>& commands)
 {
     EnsureInited();
     ScopeLock lock(Locker);
-
-    for (auto& command : Commands)
-    {
+    for (const auto& command : Commands)
         commands.Add(command.Name);
-    }
 }
 
 DebugCommands::CommandFlags DebugCommands::GetCommandFlags(StringView command)
