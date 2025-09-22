@@ -18,6 +18,7 @@ class FLAXENGINE_API Skybox : public Actor, public ISkyRenderer
 private:
     AssetReference<MaterialInstance> _proxyMaterial;
     int32 _sceneRenderingKey = -1;
+    Float3 _rotationEuler;
 
 public:
     /// <summary>
