@@ -26,7 +26,6 @@ namespace FlaxEditor.Windows
         private Tree _tree;
         private Panel _sceneTreePanel;
         private bool _isUpdatingSelection;
-        private bool _isMouseDown;
         private bool _blockSceneTreeScroll = false;
 
         private DragAssets _dragAssets;
@@ -378,10 +377,7 @@ namespace FlaxEditor.Windows
                 return true;
 
             if (buttons == MouseButton.Right)
-            {
-                _isMouseDown = true;
                 return true;
-            }
 
             return false;
         }
@@ -392,10 +388,8 @@ namespace FlaxEditor.Windows
             if (base.OnMouseUp(location, buttons))
                 return true;
 
-            if (_isMouseDown && buttons == MouseButton.Right)
+            if (buttons == MouseButton.Right)
             {
-                _isMouseDown = false;
-
                 if (Editor.StateMachine.CurrentState.CanEditScene)
                 {
                     // Show context menu
@@ -418,14 +412,6 @@ namespace FlaxEditor.Windows
             }
 
             return false;
-        }
-
-        /// <inheritdoc />
-        public override void OnLostFocus()
-        {
-            _isMouseDown = false;
-
-            base.OnLostFocus();
         }
 
         /// <inheritdoc />
