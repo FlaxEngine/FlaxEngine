@@ -1044,6 +1044,23 @@ namespace FlaxEngine
         }
 
         /// <summary>
+        /// This function combines linear interpolation with a parabolic curve to create the arc. This parabolic function ensures the arc starts and ends at the base and reaches its peak at the midpoint of the interpolation.
+        /// The vertical offset is calculated using the formula height * 4t(1 - t),  where t is the interpolation amount. This vertical offset is added directly along the Y-axis.
+        /// </summary>
+        /// <param name="start">Start vector.</param>
+        /// <param name="end">End vector.</param>
+        /// <param name="amount">Value between 0 and 1 indicating the weight of <paramref name="end" />.</param>
+        /// <param name="height">The maximum height of the Arc at the value of <paramref name="amount" /> being 0.5.</param>
+        /// <returns>The linear interpolation of the two vectors with a parabolic curve to create the arc.</returns>
+        /// <remarks>Passing <paramref name="amount" /> a value of 0 will cause <paramref name="start" /> to be returned; a value of 1 will cause <paramref name="end" /> to be returned.</remarks>
+        public static Vector3 ArcLerp(Vector3 start, Vector3 end, float amount, float height)
+        {
+            Lerp(ref start, ref end, amount, out var result);
+            result.Y += height * 4 * amount * (1 - amount);
+            return result;
+        }
+
+        /// <summary>
         /// Performs a gradual change of a vector towards a specified target over time
         /// </summary>
         /// <param name="current">Current vector.</param>
