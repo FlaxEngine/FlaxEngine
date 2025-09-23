@@ -14,9 +14,9 @@ body:
     validations:
       required: true
   - type: textarea
-    id: benifits-area
+    id: benefits-area
     attributes:
-      label: Benifits
-      description: Please provide what benifits this feature would provide to the engine!
+      label: Benefits
+      description: Please provide what benefits this feature would provide to the engine!
     validations:
       required: true
