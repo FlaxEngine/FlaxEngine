@@ -1,0 +1,42 @@
+name: Bug Report
+description: File a bug report.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please attach any minimal repoduction projects!
+  - type: textarea
+    id: description-area
+    attributes:
+      label: Description
+      description: Please provide a description and what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: steps-area
+    attributes:
+      label: Steps to reproduce
+      description: Please provide an repoduction steps.
+    validations:
+      required: true
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: What version of Flax are you running?
+      options:
+        - 1.8
+        - 1.9
+        - 1.10
+        - 1.11
+        - master branch
+      default: 2
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
