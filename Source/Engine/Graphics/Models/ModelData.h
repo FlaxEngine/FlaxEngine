@@ -327,7 +327,15 @@ struct FLAXENGINE_API MaterialSlotEntry
     {
         float Value = 0.5f;
         int32 TextureIndex = -1;
+        uint8 Channel = 0;
     } Roughness;
+
+    struct
+    {
+        float Value = 0.0f;
+        int32 TextureIndex = -1;
+        uint8 Channel = 0;
+    } Metalness;
 
     struct
     {
@@ -335,6 +343,7 @@ struct FLAXENGINE_API MaterialSlotEntry
     } Normals;
 
     bool TwoSided = false;
+    bool Wireframe = false;
 
     bool UsesProperties() const;
     static float ShininessToRoughness(float shininess);

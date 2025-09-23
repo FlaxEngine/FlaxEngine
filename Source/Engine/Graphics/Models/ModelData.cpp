@@ -372,6 +372,8 @@ bool MaterialSlotEntry::UsesProperties() const
             Opacity.TextureIndex != -1 ||
             Math::NotNearEqual(Roughness.Value, 0.5f) ||
             Roughness.TextureIndex != -1 ||
+            Math::NotNearEqual(Metalness.Value, 0.5f) ||
+            Metalness.TextureIndex != -1 ||
             Normals.TextureIndex != -1;
 }
 

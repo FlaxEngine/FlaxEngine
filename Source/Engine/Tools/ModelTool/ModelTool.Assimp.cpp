@@ -528,12 +528,24 @@ bool ImportMaterials(ModelData& result, AssimpImporterData& data, String& errorM
             aiColor3D aColor;
             if (aMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, aColor) == AI_SUCCESS)
                 materialSlot.Diffuse.Color = ToColor(aColor);
+            if (aMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, aColor) == AI_SUCCESS)
+                materialSlot.Emissive.Color = ToColor(aColor);
+            if (aMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, aColor) == AI_SUCCESS)
+                materialSlot.Emissive.Color = ToColor(aColor);
             bool aBoolean;
             if (aMaterial->Get(AI_MATKEY_TWOSIDED, aBoolean) == AI_SUCCESS)
                 materialSlot.TwoSided = aBoolean;
-            bool aFloat;
+            if (aMaterial->Get(AI_MATKEY_ENABLE_WIREFRAME, aBoolean) == AI_SUCCESS)
+                materialSlot.Wireframe = aBoolean;
+            float aFloat;
             if (aMaterial->Get(AI_MATKEY_OPACITY, aFloat) == AI_SUCCESS)
                 materialSlot.Opacity.Value = aFloat;
+            if (aMaterial->Get(AI_MATKEY_GLOSSINESS_FACTOR, aFloat) == AI_SUCCESS)
+                materialSlot.Roughness.Value = 1.0f - aFloat;
+            else if (aMaterial->Get(AI_MATKEY_SHININESS, aFloat) == AI_SUCCESS)
+                materialSlot.Roughness.Value = MaterialSlotEntry::ShininessToRoughness(aFloat);
+            if (aMaterial->Get(AI_MATKEY_EMISSIVE_INTENSITY, aFloat) == AI_SUCCESS)
+                materialSlot.Emissive.Color *= aFloat;
 
             if (EnumHasAnyFlags(data.Options.ImportTypes, ImportDataTypes::Textures))
             {
@@ -541,6 +553,15 @@ bool ImportMaterials(ModelData& result, AssimpImporterData& data, String& errorM
                 ImportMaterialTexture(result, data, aMaterial, aiTextureType_EMISSIVE, materialSlot.Emissive.TextureIndex, TextureEntry::TypeHint::ColorRGB);
                 ImportMaterialTexture(result, data, aMaterial, aiTextureType_NORMALS, materialSlot.Normals.TextureIndex, TextureEntry::TypeHint::Normals);
                 ImportMaterialTexture(result, data, aMaterial, aiTextureType_OPACITY, materialSlot.Opacity.TextureIndex, TextureEntry::TypeHint::ColorRGBA);
+                ImportMaterialTexture(result, data, aMaterial, aiTextureType_METALNESS, materialSlot.Metalness.TextureIndex, TextureEntry::TypeHint::ColorRGB);
+                ImportMaterialTexture(result, data, aMaterial, aiTextureType_DIFFUSE_ROUGHNESS, materialSlot.Roughness.TextureIndex, TextureEntry::TypeHint::ColorRGB);
+
+                if (materialSlot.Roughness.TextureIndex != -1 && (data.Path.EndsWith(TEXT(".gltf")) || data.Path.EndsWith(TEXT(".glb"))))
+                {
+                    // glTF specification with a single metallicRoughnessTexture (G = roughness, B = metalness)
+                    materialSlot.Roughness.Channel = 1;
+                    materialSlot.Metalness.Channel = 2;
+                }
 
                 if (materialSlot.Diffuse.TextureIndex != -1)
                 {
