@@ -1,5 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -20,7 +22,7 @@ namespace FlaxEngine.GUI
     /// </summary>
     /// <seealso cref="IBrush" />
     /// <seealso cref="UIBrushAsset" />
-    public sealed class UIBrush : IBrush
+    public sealed class UIBrush : IBrush, IEquatable<UIBrush>
     {
         /// <summary>
         /// The UI Brush asset to use.
@@ -70,6 +72,30 @@ namespace FlaxEngine.GUI
             var asset = (UIBrushAsset)Asset.Asset?.Instance;
             if (asset != null && asset.Brush != null)
                 asset.Brush.Draw(rect, color);
+        }
+
+        /// <inheritdoc />
+        public bool Equals(UIBrush other)
+        {
+            return other != null && Asset == other.Asset;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is UIBrush other && Equals(other);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Asset);
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(object obj)
+        {
+            return Equals(obj) ? 1 : 0;
         }
     }
 }

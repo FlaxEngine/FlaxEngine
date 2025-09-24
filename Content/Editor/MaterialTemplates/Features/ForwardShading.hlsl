@@ -27,6 +27,7 @@ TextureCube EnvProbe : register(t__SRV__);
 TextureCube SkyLightTexture : register(t__SRV__);
 Buffer<float4> ShadowsBuffer : register(t__SRV__);
 Texture2D<float> ShadowMap : register(t__SRV__);
+Texture3D VolumetricFogTexture : register(t__SRV__);
 @4// Forward Shading: Utilities
 // Public accessors for lighting data, use them as data binding might change but those methods will remain.
 LightData GetDirectionalLight() { return DirectionalLight; }
@@ -152,6 +153,18 @@ void PS_Forward(
 #if USE_FOG && MATERIAL_SHADING_MODEL != SHADING_MODEL_UNLIT
 	// Calculate exponential height fog
 	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, 0, gBuffer.ViewPos.z);
+
+	if (ExponentialHeightFog.VolumetricFogMaxDistance > 0)
+	{
+		// Sample volumetric fog and mix it in
+		float2 screenUV = materialInput.SvPosition.xy * ScreenSize.zw;
+		float3 viewVector = materialInput.WorldPosition - ViewPos;
+		float sceneDepth = length(viewVector);
+		float depthSlice = sceneDepth / ExponentialHeightFog.VolumetricFogMaxDistance;
+		float3 volumeUV = float3(screenUV, depthSlice);
+		float4 volumetricFog = VolumetricFogTexture.SampleLevel(SamplerLinearClamp, volumeUV, 0);
+		fog = CombineVolumetricFog(fog, volumetricFog);
+	}
 
 	// Apply fog to the output color
 #if MATERIAL_BLEND == MATERIAL_BLEND_OPAQUE

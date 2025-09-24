@@ -128,6 +128,8 @@ namespace Flax.Build.Projects.VisualStudio
                                 version = VisualStudioVersion.VisualStudio2019;
                             else if (displayName.Contains("2022"))
                                 version = VisualStudioVersion.VisualStudio2022;
+                            else if (displayName.Contains("2026"))
+                                version = VisualStudioVersion.VisualStudio2026;
                             else
                             {
                                 Log.Warning(string.Format("Unknown Visual Studio installation. Display name: {0}", displayName));

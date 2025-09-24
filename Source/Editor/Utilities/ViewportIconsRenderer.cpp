@@ -66,13 +66,14 @@ public:
 
 ViewportIconsRendererService ViewportIconsRendererServiceInstance;
 float ViewportIconsRenderer::Scale = 1.0f;
+Real ViewportIconsRenderer::MinSize = 7.0f;
+Real ViewportIconsRenderer::MaxSize = 30.0f;
+Real ViewportIconsRenderer::MaxSizeDistance = 1000.0f;
 
 void ViewportIconsRenderer::GetBounds(const Vector3& position, const Vector3& viewPosition, BoundingSphere& bounds)
 {
-    constexpr Real minSize = 7.0;
-    constexpr Real maxSize = 30.0;
-    Real scale = Math::Square(Vector3::Distance(position, viewPosition) / 1000.0f);
-    Real radius = minSize + Math::Min<Real>(scale, 1.0f) * (maxSize - minSize);
+    Real scale = Math::Square(Vector3::Distance(position, viewPosition) / MaxSizeDistance);
+    Real radius = MinSize + Math::Min<Real>(scale, 1.0f) * (MaxSize - MinSize);
     bounds = BoundingSphere(position, radius * Scale);
 }
 

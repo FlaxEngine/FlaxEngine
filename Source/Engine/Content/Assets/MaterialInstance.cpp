@@ -90,9 +90,11 @@ void MaterialInstance::OnBaseParamsChanged()
     // Get the newest parameters
     baseParams->Clone(Params);
 
+#if 0
     // Override all public parameters by default
     for (auto& param : Params)
         param.SetIsOverride(param.IsPublic());
+#endif
 
     // Copy previous parameters values
     for (int32 i = 0; i < oldParams.Count(); i++)

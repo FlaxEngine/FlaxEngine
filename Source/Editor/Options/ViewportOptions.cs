@@ -150,5 +150,26 @@ namespace FlaxEditor.Options
         [DefaultValue(typeof(Color), "0.5,0.5,0.5,1.0")]
         [EditorDisplay("Grid"), EditorOrder(310), Tooltip("The color for the viewport grid.")]
         public Color ViewportGridColor { get; set; } = new Color(0.5f, 0.5f, 0.5f, 1.0f);
+
+        /// <summary>
+        /// Gets or sets the minimum size used for viewport icons.
+        /// </summary>
+        [DefaultValue(7.0f), Limit(1.0f, 1000.0f, 5.0f)]
+        [EditorDisplay("Viewport Icons"), EditorOrder(400)]
+        public float IconsMinimumSize { get; set; } = 7.0f;
+
+        /// <summary>
+        /// Gets or sets the maximum size used for viewport icons.
+        /// </summary>
+        [DefaultValue(30.0f), Limit(1.0f, 1000.0f, 5.0f)]
+        [EditorDisplay("Viewport Icons"), EditorOrder(410)]
+        public float IconsMaximumSize { get; set; } = 30.0f;
+
+        /// <summary>
+        /// Gets or sets the distance towards the camera at which the max icon scale will be applied. Set to 0 to disable scaling the icons based on the distance to the camera.
+        /// </summary>
+        [DefaultValue(1000.0f), Limit(0.0f, 20000.0f, 5.0f)]
+        [EditorDisplay("Viewport Icons"), EditorOrder(410)]
+        public float MaxSizeDistance { get; set; } = 1000.0f;
     }
 }

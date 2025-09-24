@@ -54,6 +54,11 @@ namespace Flax.Build.Platforms
         /// Visual Studio 2022 (v17.10 and later)
         /// </summary>
         v144 = 144,
+
+        /// <summary>
+        /// Visual Studio 2026
+        /// </summary>
+        v145 = 145,
     }
 
     /// <summary>
@@ -252,6 +257,8 @@ namespace Flax.Build.Platforms
                         _toolsets[WindowsPlatformToolset.v143] = toolset;
                     else if (version.Major == 14 && version.Minor / 10 == 4)
                         _toolsets[WindowsPlatformToolset.v144] = toolset;
+                    else if (version.Major == 14 && version.Minor / 10 == 5)
+                        _toolsets[WindowsPlatformToolset.v145] = toolset;
                     else
                         Log.Warning("Found Unsupported MSVC toolset version: " + version);
                 }
@@ -287,11 +294,12 @@ namespace Flax.Build.Platforms
                 }
             }
 
-            // Visual Studio 2017-2022 - multiple instances
+            // Visual Studio 2017 or later - multiple instances
             foreach (var vs in vsInstances.Where(x =>
                                                  x.Version == VisualStudioVersion.VisualStudio2017 ||
                                                  x.Version == VisualStudioVersion.VisualStudio2019 ||
-                                                 x.Version == VisualStudioVersion.VisualStudio2022
+                                                 x.Version == VisualStudioVersion.VisualStudio2022 ||
+                                                 x.Version == VisualStudioVersion.VisualStudio2026
                                                 ))
             {
                 FindMsvcToolsets(Path.Combine(vs.Path, "VC", "Tools", "MSVC"));
@@ -469,6 +477,7 @@ namespace Flax.Build.Platforms
             case WindowsPlatformToolset.v142:
             case WindowsPlatformToolset.v143:
             case WindowsPlatformToolset.v144:
+            case WindowsPlatformToolset.v145:
             {
                 string hostFolder = hostArchitecture == TargetArchitecture.x86 ? "HostX86" : $"Host{hostArchitecture.ToString().ToLower()}";
                 string nativeCompilerPath = Path.Combine(vcToolChainDir, "bin", hostFolder, architecture.ToString().ToLower(), "cl.exe");

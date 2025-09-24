@@ -50,7 +50,9 @@ namespace Flax.Build.Projects.VisualStudio
                 projectTypes = ProjectTypeGuids.ToOption(ProjectTypeGuids.FlaxVS) + ';' + projectTypes;
 
             // Try to reuse the existing project guid from solution file
-            vsProject.ProjectGuid = GetProjectGuid(solutionPath, vsProject.Name);
+            vsProject.ProjectGuid = GetProjectGuid(vsProject.Path, vsProject.Name);
+            if (vsProject.ProjectGuid == Guid.Empty)
+                vsProject.ProjectGuid = GetProjectGuid(solutionPath, vsProject.Name);
             if (vsProject.ProjectGuid == Guid.Empty)
                 vsProject.ProjectGuid = Guid.NewGuid();
 

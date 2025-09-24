@@ -93,14 +93,15 @@ namespace
     };
 
     template<typename T>
-    void AddInput(MaterialLayer* layer, Meta11 meta, MaterialGraphBoxes box, const Guid& texture, const T& value, const T& defaultValue, const Float2& pos, ShaderGraphNode<>** outTextureNode = nullptr)
+    void AddInput(MaterialLayer* layer, Meta11 meta, MaterialGraphBoxes box, const Guid& texture, const T& value, const T& defaultValue, const Float2& pos, ShaderGraphNode<>** outTextureNode = nullptr, uint8 channel = MAX_uint8)
     {
         auto textureNode = AddTextureNode(layer, texture);
         auto valueNode = AddValueNode<T>(layer, value, defaultValue);
+        auto textureNodeBox = channel == MAX_uint8 ? 1 : channel + 2; // Color or specific channel (RGBA)
         if (textureNode && valueNode)
         {
             auto diffuseMultiply = AddMultiplyNode(layer);
-            CONNECT(diffuseMultiply->Boxes[0], textureNode->Boxes[1]);
+            CONNECT(diffuseMultiply->Boxes[0], textureNode->Boxes[textureNodeBox]);
             CONNECT(diffuseMultiply->Boxes[1], valueNode->Boxes[0]);
             CONNECT(layer->Root->Boxes[static_cast<int32>(box)], diffuseMultiply->Boxes[2]);
             SET_POS(valueNode, pos + Float2(-467.7404, 91.41332));
@@ -109,7 +110,7 @@ namespace
         }
         else if (textureNode)
         {
-            CONNECT(layer->Root->Boxes[static_cast<int32>(box)], textureNode->Boxes[1]);
+            CONNECT(layer->Root->Boxes[static_cast<int32>(box)], textureNode->Boxes[textureNodeBox]);
             SET_POS(textureNode, pos + Float2(-293.5272f, -2.926111f));
         }
         else if (valueNode)
@@ -178,8 +179,9 @@ CreateAssetResult CreateMaterial::Create(CreateAssetContext& context)
         // Opacity
         AddInput(layer, meta, MaterialGraphBoxes::Opacity, options.Opacity.Texture, options.Opacity.Value, 1.0f, Float2(0, 400));
 
-        // Opacity
-        AddInput(layer, meta, MaterialGraphBoxes::Roughness, options.Roughness.Texture, options.Roughness.Value, 0.5f, Float2(200, 400));
+        // Roughness + Metalness
+        AddInput(layer, meta, MaterialGraphBoxes::Roughness, options.Roughness.Texture, options.Roughness.Value, 0.5f, Float2(200, 400), nullptr, options.Roughness.Channel);
+        AddInput(layer, meta, MaterialGraphBoxes::Metalness, options.Metalness.Texture, options.Metalness.Value, 0.0f, Float2(200, 600), nullptr, options.Metalness.Channel);
 
         // Normal
         auto normalMap = AddTextureNode(layer, options.Normals.Texture, true);

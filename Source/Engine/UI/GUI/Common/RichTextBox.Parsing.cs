@@ -240,11 +240,13 @@ namespace FlaxEngine.GUI
 
             // Organize text blocks within line
             var horizontalAlignments = TextBlockStyle.Alignments.Baseline;
+            var verticalAlignments = TextBlockStyle.Alignments.Baseline;
             for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
             {
                 ref TextBlock textBlock = ref textBlocks[i];
                 var vOffset = lineSize.Y - textBlock.Bounds.Height;
                 horizontalAlignments |= textBlock.Style.Alignment & TextBlockStyle.Alignments.HorizontalMask;
+                verticalAlignments |= textBlock.Style.Alignment & TextBlockStyle.Alignments.VerticalMask;
                 switch (textBlock.Style.Alignment & TextBlockStyle.Alignments.VerticalMask)
                 {
                 case TextBlockStyle.Alignments.Baseline:
@@ -272,14 +274,16 @@ namespace FlaxEngine.GUI
                 }
                 }
             }
-            var hOffset = Width - lineSize.X;
+
+            // Organize blocks within whole container
+            var sizeOffset = Size - lineSize;
             if ((horizontalAlignments & TextBlockStyle.Alignments.Center) == TextBlockStyle.Alignments.Center)
             {
-                hOffset *= 0.5f;
+                sizeOffset.X *= 0.5f;
                 for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
                 {
                     ref TextBlock textBlock = ref textBlocks[i];
-                    textBlock.Bounds.Location.X += hOffset;
+                    textBlock.Bounds.Location.X += sizeOffset.X;
                 }
             }
             else if ((horizontalAlignments & TextBlockStyle.Alignments.Right) == TextBlockStyle.Alignments.Right)
@@ -287,7 +291,24 @@ namespace FlaxEngine.GUI
                 for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
                 {
                     ref TextBlock textBlock = ref textBlocks[i];
-                    textBlock.Bounds.Location.X += hOffset;
+                    textBlock.Bounds.Location.X += sizeOffset.X;
+                }
+            }
+            if ((verticalAlignments & TextBlockStyle.Alignments.Middle) == TextBlockStyle.Alignments.Middle)
+            {
+                sizeOffset.Y *= 0.5f;
+                for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                {
+                    ref TextBlock textBlock = ref textBlocks[i];
+                    textBlock.Bounds.Location.Y += sizeOffset.Y;
+                }
+            }
+            else if ((verticalAlignments & TextBlockStyle.Alignments.Bottom) == TextBlockStyle.Alignments.Bottom)
+            {
+                for (int i = context.LineStartTextBlockIndex; i < _textBlocks.Count; i++)
+                {
+                    ref TextBlock textBlock = ref textBlocks[i];
+                    textBlock.Bounds.Location.Y += sizeOffset.Y;
                 }
             }
 
