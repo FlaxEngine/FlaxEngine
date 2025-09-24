@@ -917,7 +917,7 @@ namespace FlaxEditor.Surface
         /// <inheritdoc />
         public override bool OnTestTooltipOverControl(ref Float2 location)
         {
-            return _headerRect.Contains(ref location) && ShowTooltip && !Surface.IsConnecting && !Surface.IsBoxSelecting;
+            return _headerRect.Contains(ref location) && ShowTooltip && !Surface.IsConnecting && !Surface.IsSelecting;
         }
 
         /// <inheritdoc />
@@ -1075,7 +1075,7 @@ namespace FlaxEditor.Surface
 
             // Header
             var headerColor = style.BackgroundHighlighted;
-            if (_headerRect.Contains(ref _mousePosition) && !Surface.IsConnecting && !Surface.IsBoxSelecting)
+            if (_headerRect.Contains(ref _mousePosition) && !Surface.IsConnecting && !Surface.IsSelecting)
                 headerColor *= 1.07f;
             Render2D.FillRectangle(_headerRect, headerColor);
             Render2D.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
@@ -1083,7 +1083,7 @@ namespace FlaxEditor.Surface
             // Close button
             if ((Archetype.Flags & NodeFlags.NoCloseButton) == 0 && Surface.CanEdit)
             {
-                bool highlightClose = _closeButtonRect.Contains(_mousePosition) && !Surface.IsConnecting && !Surface.IsBoxSelecting;
+                bool highlightClose = _closeButtonRect.Contains(_mousePosition) && !Surface.IsConnecting && !Surface.IsSelecting;
                 Render2D.DrawSprite(style.Cross, _closeButtonRect, highlightClose ? style.Foreground : style.ForegroundGrey);
             }
 
@@ -1133,7 +1133,7 @@ namespace FlaxEditor.Surface
                 return true;
 
             // Close/ delete
-            bool canDelete = !Surface.IsConnecting && !Surface.WasBoxSelecting && !Surface.WasMovingSelection;
+            bool canDelete = !Surface.IsConnecting && !Surface.WasSelecting && !Surface.WasMovingSelection;
             if (button == MouseButton.Left && canDelete && (Archetype.Flags & NodeFlags.NoCloseButton) == 0 && _closeButtonRect.Contains(ref location))
             {
                 Surface.Delete(this);
