@@ -1146,8 +1146,7 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
     bounds.Center -= viewOrigin;
 
     // Cull particles against all views
-    uint64 viewsMask = 0;
-    ASSERT_LOW_LAYER(renderContextBatch.Contexts.Count() <= 64);
+    bool drawAnyView = false, drawMainView = false;
     DrawPass viewsDrawModes = DrawPass::None;
     for (int32 i = 0; i < renderContextBatch.Contexts.Count(); i++)
     {
@@ -1155,11 +1154,12 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
         const bool visible = (view.Pass & effect->DrawModes) != DrawPass::None && (view.IsCullingDisabled || view.CullingFrustum.Intersects(bounds));
         if (visible)
         {
-            viewsMask |= 1ull << (uint64)i;
+            drawAnyView = true;
+            drawMainView |= i == 0;
             viewsDrawModes |= view.Pass;
         }
     }
-    if (viewsMask == 0)
+    if (drawAnyView == false)
         return;
     viewsDrawModes &= effect->DrawModes;
 
@@ -1175,7 +1175,7 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
     const int8 sortOrder = effect->SortOrder;
 
     // Draw lights (only to into the main view)
-    if ((viewsMask & 1) == 1 && renderContextBatch.GetMainContext().View.Pass != DrawPass::Depth)
+    if (drawMainView && renderContextBatch.GetMainContext().View.Pass != DrawPass::Depth)
     {
         for (int32 emitterIndex = 0; emitterIndex < effect->Instance.Emitters.Count(); emitterIndex++)
         {
@@ -1275,7 +1275,7 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
                     !material->IsReady() ||
                     material->GetInfo().Domain != MaterialDomain::VolumeParticle ||
                     (renderContextBatch.GetMainContext().View.Flags & ViewFlags::Fog) == ViewFlags::None ||
-                    (viewsMask & 1) == 0
+                    drawMainView
                 )
                     break;
                 renderModulesIndices |= 1u << moduleIndex;
