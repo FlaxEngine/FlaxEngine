@@ -10,14 +10,14 @@ body:
     id: description-area
     attributes:
       label: Description
-      description: Please provide a description and what you expected to happen.
+      description: Please provide a description of the bug and what you expected to happen.
     validations:
       required: true
   - type: textarea
     id: steps-area
     attributes:
       label: Steps to reproduce
-      description: Please provide an reproduction steps.
+      description: Please provide reproduction steps if possible.
     validations:
       required: true
   - type: dropdown
