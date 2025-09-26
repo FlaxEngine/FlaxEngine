@@ -8,6 +8,7 @@
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/Plane.h"
 #include "Engine/Core/Collections/Sorting.h"
+#include "Engine/Core/Collections/Dictionary.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -41,6 +42,11 @@ Float3 ToFloat3(const ofbx::Vec3& v)
     return Float3((float)v.x, (float)v.y, (float)v.z);
 }
 
+Float3 ToFloat3(const ofbx::DVec3& v)
+{
+    return Float3(static_cast<float>(v.x), static_cast<float>(v.y), static_cast<float>(v.z));
+}
+
 Color ToColor(const ofbx::Vec4& v)
 {
     return Color((float)v.x, (float)v.y, (float)v.z, (float)v.w);
@@ -61,6 +67,46 @@ Matrix ToMatrix(const ofbx::DMatrix& mat)
     Matrix result;
     for (int32 i = 0; i < 16; i++)
         result.Raw[i] = (float)mat.m[i];
+    return result;
+}
+
+Quaternion EulerToQuaternion(const Float3 &eulerAngle, ofbx::RotationOrder order)
+{
+    // Convert euler to radians
+    Float3 radians = eulerAngle * DegreesToRadians;
+
+    Quaternion rx, ry, rz;
+    Quaternion::RotationAxis(Vector3::UnitX, radians.X, rx);
+    Quaternion::RotationAxis(Vector3::UnitY, radians.Y, ry);
+    Quaternion::RotationAxis(Vector3::UnitZ, radians.Z, rz);
+
+    Quaternion result = Quaternion::Identity;
+
+    switch (order)
+    {
+    case ofbx::RotationOrder::EULER_XYZ:
+        result = rx * ry * rz;
+        break;
+    case ofbx::RotationOrder::EULER_XZY:
+        result = rx * rz * ry;
+        break;
+    case ofbx::RotationOrder::EULER_YXZ:
+        result = ry * rx * rz;
+        break;
+    case ofbx::RotationOrder::EULER_YZX:
+        result = ry * rz * rx;
+        break;
+    case ofbx::RotationOrder::EULER_ZXY:
+        result = rz * rx * ry;
+        break;
+    case ofbx::RotationOrder::EULER_ZYX:
+        result = rz * ry * rx;
+        break;
+    default:
+        result = Quaternion::Identity;
+        break;
+    }
+
     return result;
 }
 
@@ -96,62 +142,58 @@ struct AxisSystem
 AxisSystem ParseFbxAxisSystem(const ofbx::GlobalSettings& settings)
 {
 #if OPEN_FBX_CONVERT_SPACE
-        AxisSystem axis;
-        switch (settings.UpAxis)
+    AxisSystem axis;
+    switch (settings.UpAxis)
+    {
+    case 0:
+        axis.Up = Float3((float)settings.UpAxisSign, 0, 0);
+        switch (settings.FrontAxis)
         {
-        case 0:
-            axis.Up = Float3((float)settings.UpAxisSign, 0, 0);
-            switch (settings.FrontAxis)
-            {
-            case 1:
-                // Up: X, Front: Y, Right: Z
-                axis.Front = Float3(0, (float)settings.FrontAxisSign, 0);
-                axis.Right = Float3(0, 0, (float)settings.CoordAxisSign);
-                break;
-            case 2:
-                // Up: X, Front: Z, Right: Y
-                axis.Front = Float3(0, 0, (float)settings.FrontAxisSign);
-                axis.Right = Float3(0, (float)settings.CoordAxisSign, 0);
-                break;
-            default: ;
-            }
-            break;
         case 1:
-            axis.Up = Float3(0, (float)settings.UpAxisSign, 0);
-            switch (settings.FrontAxis)
-            {
-            case 0:
-                // Up: Y, Front: X, Right: Z
-                axis.Front = Float3((float)settings.FrontAxisSign, 0, 0);
-                axis.Right = Float3(0, 0, (float)settings.CoordAxisSign);
-                break;
-            case 2:
-                // Up: Y, Front: Z, Right: X
-                axis.Front = Float3(0, 0, (float)settings.FrontAxisSign);
-                axis.Right = Float3((float)settings.CoordAxisSign, 0, 0);
-                break;
-            default: ;
-            }
+            // Up: X, Front: Y, Right: Z
+            axis.Front = Float3(0, (float)settings.FrontAxisSign, 0);
+            axis.Right = Float3(0, 0, (float)settings.CoordAxisSign);
             break;
         case 2:
-            axis.Up = Float3(0, 0, (float)settings.UpAxisSign);
-            switch (settings.FrontAxis)
-            {
-            case 0:
-                // Up: Z, Front: X, Right: Y
-                axis.Front = Float3((float)settings.FrontAxisSign, 0, 0);
-                axis.Right = Float3(0, (float)settings.CoordAxisSign, 0);
-                break;
-            case 1:
-                // Up: Z, Front: Y, Right: X
-                axis.Front = Float3(0, (float)settings.FrontAxisSign, 0);
-                axis.Right = Float3((float)settings.CoordAxisSign, 0, 0);
-                break;
-            default: ;
-            }
+            // Up: X, Front: Z, Right: Y
+            axis.Front = Float3(0, 0, (float)settings.FrontAxisSign);
+            axis.Right = Float3(0, (float)settings.CoordAxisSign, 0);
             break;
-        default: ;
         }
+        break;
+    case 1:
+        axis.Up = Float3(0, (float)settings.UpAxisSign, 0);
+        switch (settings.FrontAxis)
+        {
+        case 0:
+            // Up: Y, Front: X, Right: Z
+            axis.Front = Float3((float)settings.FrontAxisSign, 0, 0);
+            axis.Right = Float3(0, 0, (float)settings.CoordAxisSign);
+            break;
+        case 2:
+            // Up: Y, Front: Z, Right: X
+            axis.Front = Float3(0, 0, (float)settings.FrontAxisSign);
+            axis.Right = Float3((float)settings.CoordAxisSign, 0, 0);
+            break;
+        }
+        break;
+    case 2:
+        axis.Up = Float3(0, 0, (float)settings.UpAxisSign);
+        switch (settings.FrontAxis)
+        {
+        case 0:
+            // Up: Z, Front: X, Right: Y
+            axis.Front = Float3((float)settings.FrontAxisSign, 0, 0);
+            axis.Right = Float3(0, (float)settings.CoordAxisSign, 0);
+            break;
+        case 1:
+            // Up: Z, Front: Y, Right: X
+            axis.Front = Float3(0, (float)settings.FrontAxisSign, 0);
+            axis.Right = Float3((float)settings.CoordAxisSign, 0, 0);
+            break;
+        }
+        break;
+    }
     return axis;
 #endif
 }
@@ -169,7 +211,7 @@ struct CoordSystem
             0.0f,           0.0f,           0.0f,           1.0f
         );
     }
-    
+
     CoordSystem() = default;
 
     CoordSystem(const AxisSystem& fbxSystem)
@@ -178,7 +220,7 @@ struct CoordSystem
 
         // Flax uses a left-handed coordinate system with identity basis
         // If FBX system differs, set matrix conversion
-        Matrix flaxMatrix = Matrix::Identity;            
+        Matrix flaxMatrix = Matrix::Identity;
         if (fbxMatrix != flaxMatrix)
         {
             //ToFlax = Matrix::Invert(flaxMatrix) * fbxMatrix;
@@ -190,7 +232,7 @@ struct CoordSystem
     {
         Vector3 cross = Vector3::Cross(axis.Right, axis.Up);
         float dot = Vector3::Dot(cross, axis.Front);
-        return dot > 0.0f; 
+        return dot > 0.0f;
     }
 
     Matrix getMatrixtoFlax() const
@@ -514,7 +556,7 @@ bool IsMeshInvalid(const ofbx::Mesh* aMesh)
     return aMesh->getGeometryData().getPositions().count == 0;
 }
 
-bool ImportBones(OpenFbxImporterData& data, String& errorMsg) 
+bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
 {
     // Check all meshes
     const int meshCount = data.Scene.getMeshCount();
@@ -568,7 +610,7 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
                     m.SetColumn3(m.GetColumn3().GetNegative());
                     m.SetRow3(m.GetRow3().GetNegative());
                 }
-                
+
                 // Convert bone matrix is scene requires rotation
                 if (!data.ToFlax.IsIdentity())
                 {
@@ -722,7 +764,7 @@ int Triangulate(OpenFbxImporterData& data, const ofbx::GeometryData& geom, const
     earIndices.Add(indices[0]);
     earIndices.Add(indices[1]);
     earIndices.Add(indices[2]);
-    
+
     // Write any degenerate triangles (eg. if points are duplicated within a list)
     for (int32 i = 3; i < indices.Count(); i += 3)
     {
@@ -842,7 +884,6 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
             {
                 mesh.Tangents.Get()[i].Z *= -1.0f;
             }
-                
         }
     }
 
@@ -854,7 +895,8 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         Float3* meshNormals = mesh.Normals.HasItems() ? mesh.Normals.Get() : nullptr;
         Float3* meshTangents = mesh.Tangents.HasItems() ? mesh.Tangents.Get() : nullptr;
 
-        for (int32 i = 0; i < vertexCount; i += 3) {
+        for (int32 i = 0; i < vertexCount; i += 3)
+        {
             Swap(meshIndices[i + 1], meshIndices[i + 2]);
             Swap(meshPositions[i + 1], meshPositions[i + 2]);
             if (meshNormals)
@@ -955,7 +997,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         mesh.BlendShapes.EnsureCapacity(blendShape->getBlendShapeChannelCount());
         for (int32 channelIndex = 0; channelIndex < blendShape->getBlendShapeChannelCount(); channelIndex++)
         {
-            const ofbx::BlendShapeChannel* channel = blendShape->getBlendShapeChannel(channelIndex);
+            const ofbx::BlendShapeChannel *channel = blendShape->getBlendShapeChannel(channelIndex);
 
             // Use the last shape
             const int targetShapeCount = channel->getShapeCount();
@@ -1000,11 +1042,11 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
 
     if (data.ConvertRH)
     {
-        // Mirror positions along the Z axis        
+        // Mirror positions along the Z axis
         for (int32 i = 0; i < vertexCount; i++)
         {
             mesh.Positions.Get()[i].Z *= -1.0f;
-        }            
+        }
         for (auto& blendShapeData : mesh.BlendShapes)
         {
             for (auto& v : blendShapeData.Vertices)
@@ -1039,13 +1081,13 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         mesh.ImproveCacheLocality();
     }
 
-    // Apply FBX Mesh geometry transformation
+    // Apply Geometry transform
     auto localTransform = ToMatrix(aMesh->getLocalTransform());
     const auto geometryTransform = ToMatrix(aMesh->getGeometricMatrix());
     if (!geometryTransform.IsIdentity())
         localTransform = geometryTransform * localTransform;
 
-    if(data.ConvertRH)
+    if (data.ConvertRH)
     {
         // Mirror all base vectors at the local Z axis
         localTransform.SetRow3(localTransform.GetRow3().GetNegative());
@@ -1053,19 +1095,19 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     }
 
     if (!data.ToFlax.IsIdentity())
-    {   
+    {
         localTransform = localTransform * data.ToFlax;
     }
-    
+
     // Get local transform for origin shifting translation
     Transform transformData;
     localTransform.Decompose(transformData);
-    auto scale = data.UnitScaleFactor;  
+    auto scale = data.UnitScaleFactor;
     auto translation = transformData.Translation;
     mesh.OriginTranslation = scale * Vector3(translation.X, translation.Y, translation.Z);
     mesh.OriginOrientation = transformData.Orientation;
     mesh.Scaling = localTransform.GetScaleVector();
-    
+
     return false;
 }
 
@@ -1214,12 +1256,6 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
     if (takeInfo == nullptr)
         return;
 
-    // Initialize animation animation keyframes sampling
-    const float frameRate = importerData.FrameRate;
-    const double localDuration = takeInfo->local_time_to - takeInfo->local_time_from;
-    if (localDuration <= ZeroTolerance)
-        return;
-
     // Count valid animation channels
     Array<int32> animatedNodes(importerData.Nodes.Count());
     for (int32 nodeIndex = 0; nodeIndex < importerData.Nodes.Count(); nodeIndex++)
@@ -1234,6 +1270,12 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
             animatedNodes.Add(nodeIndex);
     }
     if (animatedNodes.IsEmpty())
+        return;
+
+    // Initialize animation keyframes sampling
+    const float frameRate = importerData.FrameRate;
+    const double localDuration = takeInfo->local_time_to - takeInfo->local_time_from;
+    if (localDuration <= ZeroTolerance)
         return;
 
     // Setup animation descriptor
@@ -1252,6 +1294,30 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
     info.TimeEnd = takeInfo->local_time_to;
     info.Duration = localDuration;
     info.FramesCount = (int32)animation.Duration + 1;
+
+    // Detect if Nodes contain PreRotation or PostRotation
+    Dictionary<int32, Quaternion> NodePreRotations;
+    Dictionary<int32, Quaternion> NodePostRotations;
+    for (int32 i = 0; i < importerData.Nodes.Count(); i++)
+    {
+        auto& node = importerData.Nodes[i];
+
+        auto preRot = node.FbxObj->getPreRotation();
+        if (!Math::IsZero(preRot.x) || !Math::IsZero(preRot.y) || !Math::IsZero(preRot.z))
+        {
+            LOG(Info, "PreRotation found for Node {0}: {1}", i, String(node.FbxObj->name));
+            Quaternion preRotation = EulerToQuaternion(ToFloat3(preRot), node.FbxObj->getRotationOrder());
+            NodePreRotations.Add(i, preRotation);
+        }
+
+        auto posRot = node.FbxObj->getPostRotation();
+        if (!Math::IsZero(posRot.x) || !Math::IsZero(posRot.y) || !Math::IsZero(posRot.z))
+        {
+            LOG(Info, "PostRotation found for Node {0}: {1}", i, String(node.FbxObj->name));
+            Quaternion postRotation = EulerToQuaternion(ToFloat3(posRot), node.FbxObj->getRotationOrder());
+            NodePostRotations.Add(i, postRotation);
+        }
+    }
 
     // Import curves
     for (int32 i = 0; i < animatedNodes.Count(); i++)
@@ -1288,6 +1354,43 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
             {
                 rotKeys[k].Value.X *= -1.0f;
                 rotKeys[k].Value.Y *= -1.0f;
+            }
+        }
+    }
+
+    // Apply PreRotation and PostRotation to Animation Channels
+    // First match for node name, then search for rotations to apply
+    if (NodePreRotations.HasItems() || NodePostRotations.HasItems())
+    {
+        for (auto& anim : animation.Channels)
+        {
+            int32 nodeIndex = -1;
+            for (int32 i = 0; i < importerData.Nodes.Count(); i++)   
+            {
+                if (anim.NodeName == importerData.Nodes[i].Name )
+                {
+                    nodeIndex = i;
+                    break;
+                }
+            }
+
+            if (nodeIndex == -1)
+                continue; // Node name was not found
+            
+            Quaternion preRotation = Quaternion::Identity;
+            Quaternion postRotation = Quaternion::Identity;
+
+            if (NodePreRotations.ContainsKey(nodeIndex))
+                preRotation = NodePreRotations[nodeIndex];
+            
+            if (NodePostRotations.ContainsKey(nodeIndex))
+                postRotation = NodePostRotations[nodeIndex];
+
+            // Apply rotations
+            auto& rotKeys = anim.Rotation.GetKeyframes();
+            for (int32 k = 0; k < rotKeys.Count(); k++)
+            {
+                rotKeys[k].Value = preRotation * rotKeys[k].Value * postRotation;
             }
         }
     }
@@ -1407,7 +1510,7 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
     }
     */
 
-    // Create importerData    
+    // Create importerData
     OpenFbxImporterData context(path, options, *scene);
 
     // Log scene info
@@ -1431,7 +1534,7 @@ bool ModelTool::ImportDataOpenFBX(const String& path, ModelData& data, Options& 
     {
         ExtractEmbeddedTextures(path, context);
     }
-        
+
     // Build final skeleton bones hierarchy before importing meshes
     if (EnumHasAnyFlags(options.ImportTypes, ImportDataTypes::Skeleton))
     {
