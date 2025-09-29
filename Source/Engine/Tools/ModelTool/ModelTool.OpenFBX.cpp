@@ -1081,7 +1081,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
         mesh.ImproveCacheLocality();
     }
 
-    // Apply Geometry transform
+    // Add Geometry transform
     auto localTransform = ToMatrix(aMesh->getLocalTransform());
     const auto geometryTransform = ToMatrix(aMesh->getGeometricMatrix());
     if (!geometryTransform.IsIdentity())
@@ -1104,6 +1104,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     localTransform.Decompose(transformData);
     auto scale = data.UnitScaleFactor;
     auto translation = transformData.Translation;
+    // Apply transformations to mesh
     mesh.OriginTranslation = scale * Vector3(translation.X, translation.Y, translation.Z);
     mesh.OriginOrientation = transformData.Orientation;
     mesh.Scaling = localTransform.GetScaleVector();
@@ -1389,8 +1390,14 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
             // Apply rotations
             auto& rotKeys = anim.Rotation.GetKeyframes();
             for (int32 k = 0; k < rotKeys.Count(); k++)
-            {
                 rotKeys[k].Value = preRotation * rotKeys[k].Value * postRotation;
+
+            // Apply translation correction (root node only)
+            if (nodeIndex == 1)
+            {
+                auto& posKeys = anim.Position.GetKeyframes();
+                for (int32 k = 0; k < posKeys.Count(); k++)
+                    posKeys[k].Value = preRotation * posKeys[k].Value;
             }
         }
     }
