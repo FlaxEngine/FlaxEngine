@@ -191,6 +191,13 @@ DECLARE_SCRIPTING_TYPE_MINIMAL(PlatformBase);
     static void Exit();
 
 public:
+
+    /// <summary>
+    /// Application windows class name.
+    /// </summary>
+    static const Char* ApplicationClassName;
+
+public:
     /// <summary>
     /// Copy memory region
     /// </summary>
@@ -361,6 +368,21 @@ public:
     /// Returns the current runtime platform type. It's compile-time constant.
     /// </summary>
     API_PROPERTY() static PlatformType GetPlatformType();
+
+    /// <summary>
+    /// Returns the display server name on Linux.
+    /// </summary>
+    API_PROPERTY() static String GetDisplayServer();
+
+    /// <summary>
+    /// Returns true if system provides decorations for windows.
+    /// </summary>
+    API_PROPERTY() static bool SupportsNativeDecorations();
+
+    /// <summary>
+    /// Returns true if system provides support for native window dragging events.
+    /// </summary>
+    API_PROPERTY() static bool SupportsNativeDecorationDragging();
 
     /// <summary>
     /// Returns true if is running 64 bit application (otherwise 32 bit). It's compile-time constant.
