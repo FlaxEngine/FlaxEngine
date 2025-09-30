@@ -1390,7 +1390,7 @@ namespace FlaxEditor.Surface.Archetypes
                 Elements = new[]
                 {
                     NodeElementArchetype.Factory.Output(0, "Time", typeof(float), 0),
-                    NodeElementArchetype.Factory.Output(1, "Unscaled Time", typeof(float), 1),
+                    NodeElementArchetype.Factory.Output(1, "Scaled Time", typeof(float), 1),
                 }
             },
             new NodeArchetype
