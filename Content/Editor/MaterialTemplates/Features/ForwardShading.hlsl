@@ -152,7 +152,13 @@ void PS_Forward(
 
 #if USE_FOG && MATERIAL_SHADING_MODEL != SHADING_MODEL_UNLIT
 	// Calculate exponential height fog
-	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, 0, gBuffer.ViewPos.z);
+#if DIRECTX && FEATURE_LEVEL < FEATURE_LEVEL_SM6
+	// TODO: fix D3D11/D3D10 bug with incorrect distance
+	float fogSceneDistance = distance(materialInput.WorldPosition, ViewPos);
+#else
+	float fogSceneDistance = gBuffer.ViewPos.z;
+#endif
+	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, 0, fogSceneDistance);
 
 	if (ExponentialHeightFog.VolumetricFogMaxDistance > 0)
 	{
