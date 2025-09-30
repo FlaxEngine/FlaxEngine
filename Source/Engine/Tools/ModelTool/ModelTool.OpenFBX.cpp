@@ -16,6 +16,7 @@
 
 #define OPEN_FBX_CONVERT_SPACE 1
 #define OPEN_FBX_NAME_SIZE 256
+#define ANGLE_THRESHOLD 15
 #if BUILD_DEBUG
 #define OPEN_FBX_GET_CACHE_LIST(arrayName, varName, size) data.arrayName.Resize(size, false); auto& varName = data.arrayName
 #else
@@ -611,7 +612,7 @@ bool ImportBones(OpenFbxImporterData& data, String& errorMsg)
                     m.SetRow3(m.GetRow3().GetNegative());
                 }
 
-                // Convert bone matrix is scene requires rotation
+                // Convert offset matrices to Flax coord system
                 if (!data.ToFlax.IsIdentity())
                 {
                     bone.OffsetMatrix = data.ToFlax * bone.OffsetMatrix;
@@ -1104,7 +1105,7 @@ bool ProcessMesh(ModelData& result, OpenFbxImporterData& data, const ofbx::Mesh*
     localTransform.Decompose(transformData);
     auto scale = data.UnitScaleFactor;
     auto translation = transformData.Translation;
-    // Apply transformations to mesh
+    // Add local transform to mesh
     mesh.OriginTranslation = scale * Vector3(translation.X, translation.Y, translation.Z);
     mesh.OriginOrientation = transformData.Orientation;
     mesh.Scaling = localTransform.GetScaleVector();
@@ -1299,24 +1300,27 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
     // Detect if Nodes contain PreRotation or PostRotation
     Dictionary<int32, Quaternion> NodePreRotations;
     Dictionary<int32, Quaternion> NodePostRotations;
-    for (int32 i = 0; i < importerData.Nodes.Count(); i++)
+    if (importerData.Options.BakeRotations)
     {
-        auto& node = importerData.Nodes[i];
-
-        auto preRot = node.FbxObj->getPreRotation();
-        if (!Math::IsZero(preRot.x) || !Math::IsZero(preRot.y) || !Math::IsZero(preRot.z))
+        for (int32 i = 0; i < importerData.Nodes.Count(); i++)
         {
-            LOG(Info, "PreRotation found for Node {0}: {1}", i, String(node.FbxObj->name));
-            Quaternion preRotation = EulerToQuaternion(ToFloat3(preRot), node.FbxObj->getRotationOrder());
-            NodePreRotations.Add(i, preRotation);
-        }
+            auto& node = importerData.Nodes[i];
 
-        auto posRot = node.FbxObj->getPostRotation();
-        if (!Math::IsZero(posRot.x) || !Math::IsZero(posRot.y) || !Math::IsZero(posRot.z))
-        {
-            LOG(Info, "PostRotation found for Node {0}: {1}", i, String(node.FbxObj->name));
-            Quaternion postRotation = EulerToQuaternion(ToFloat3(posRot), node.FbxObj->getRotationOrder());
-            NodePostRotations.Add(i, postRotation);
+            auto preRot = node.FbxObj->getPreRotation();
+            if (!Math::IsZero(preRot.x) || !Math::IsZero(preRot.y) || !Math::IsZero(preRot.z))
+            {
+                LOG(Info, "PreRotation found for Node {0}: {1}", i, String(node.FbxObj->name));
+                Quaternion preRotation = EulerToQuaternion(ToFloat3(preRot), node.FbxObj->getRotationOrder());
+                NodePreRotations.Add(i, preRotation);
+            }
+
+            auto posRot = node.FbxObj->getPostRotation();
+            if (!Math::IsZero(posRot.x) || !Math::IsZero(posRot.y) || !Math::IsZero(posRot.z))
+            {
+                LOG(Info, "PostRotation found for Node {0}: {1}", i, String(node.FbxObj->name));
+                Quaternion postRotation = EulerToQuaternion(ToFloat3(posRot), node.FbxObj->getRotationOrder());
+                NodePostRotations.Add(i, postRotation);
+            }
         }
     }
 
@@ -1347,9 +1351,7 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
             auto& rotKeys = anim.Rotation.GetKeyframes();
 
             for (int32 k = 0; k < posKeys.Count(); k++)
-            {
                 posKeys[k].Value.Z *= -1.0f;
-            }
 
             for (int32 k = 0; k < rotKeys.Count(); k++)
             {
@@ -1359,9 +1361,26 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
         }
     }
 
-    // Apply PreRotation and PostRotation to Animation Channels
-    // First match for node name, then search for rotations to apply
-    if (NodePreRotations.HasItems() || NodePostRotations.HasItems())
+    if (!importerData.ToFlax.IsIdentity())
+    {
+        for (auto& anim : animation.Channels)
+        {
+            auto& posKeys = anim.Position.GetKeyframes();
+            auto& rotKeys = anim.Rotation.GetKeyframes();
+            
+            for (int32 k = 0; k < posKeys.Count(); k++)
+                posKeys[k].Value = Vector3::Transform(posKeys[k].Value, importerData.ToFlax);
+
+            for (int32 k = 0; k < rotKeys.Count(); k++)
+            {
+                Quaternion toFlax = Quaternion::Identity;
+                Quaternion::RotationMatrix(importerData.ToFlax, toFlax);
+                rotKeys[k].Value = toFlax * rotKeys[k].Value;          
+            }
+        }
+    }
+
+    if (importerData.Options.BakeRotations)
     {
         for (auto& anim : animation.Channels)
         {
@@ -1392,13 +1411,10 @@ void ImportAnimation(int32 index, ModelData& data, OpenFbxImporterData& importer
             for (int32 k = 0; k < rotKeys.Count(); k++)
                 rotKeys[k].Value = preRotation * rotKeys[k].Value * postRotation;
 
-            // Apply translation correction (root node only)
-            if (nodeIndex == 1)
-            {
-                auto& posKeys = anim.Position.GetKeyframes();
-                for (int32 k = 0; k < posKeys.Count(); k++)
-                    posKeys[k].Value = preRotation * posKeys[k].Value;
-            }
+            // Apply translation correction
+            auto& posKeys = anim.Position.GetKeyframes();
+            for (int32 k = 0; k < posKeys.Count(); k++)
+                posKeys[k].Value = preRotation * posKeys[k].Value;
         }
     }
 }
