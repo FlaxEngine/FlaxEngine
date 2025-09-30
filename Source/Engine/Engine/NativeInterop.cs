@@ -946,7 +946,7 @@ namespace FlaxEngine.Interop
                         fieldSize += (nativeFieldPtr - startPtr).ToInt32();
                     }
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField fieldValue = (TField)field.GetValue(fieldOwner);
 #else
                     ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
