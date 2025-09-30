@@ -27,26 +27,28 @@ bool IsSubsurfaceMode(int shadingModel)
     return shadingModel == SHADING_MODEL_SUBSURFACE || shadingModel == SHADING_MODEL_FOLIAGE;
 }
 
-float3 GetDiffuseColor(in float3 color, in float metalness)
+float3 GetDiffuseColor(float3 color, float metalness)
 {
-    return color - color * metalness;
+    return color * (1.0 - metalness);
 }
 
-float3 GetSpecularColor(in float3 color, in float specular, in float metalness)
+// [https://google.github.io/filament/Filament.md.html]
+float3 GetSpecularColor(float3 color, float specular, float metalness)
 {
-    return lerp(0.08 * specular.xxx, color.rgb, metalness.xxx);
+    float dielectricF0 = 0.16 * specular * specular;
+    return lerp(dielectricF0.xxx, color, metalness.xxx);
 }
 
 // Calculate material diffuse color
-float3 GetDiffuseColor(in GBufferSample gBuffer)
+float3 GetDiffuseColor(GBufferSample gBuffer)
 {
-    return gBuffer.Color - gBuffer.Color * gBuffer.Metalness;
+    return GetDiffuseColor(gBuffer.Color, gBuffer.Metalness);
 }
 
 // Calculate material specular color
-float3 GetSpecularColor(in GBufferSample gBuffer)
+float3 GetSpecularColor(GBufferSample gBuffer)
 {
-    return lerp(0.08 * gBuffer.Specular.xxx, gBuffer.Color.rgb, gBuffer.Metalness.xxx);
+    return GetSpecularColor(gBuffer.Color, gBuffer.Specular, gBuffer.Metalness);
 }
 
 // Compact Normal Storage for Small G-Buffers
