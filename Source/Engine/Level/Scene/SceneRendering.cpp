@@ -191,20 +191,25 @@ void SceneRendering::AddActor(Actor* a, int32& key)
 void SceneRendering::UpdateActor(Actor* a, int32& key, ISceneRenderingListener::UpdateFlags flags)
 {
     const int32 category = a->_drawCategory;
-    ScopeReadLock lock(Locker); // Read-access only as list doesn't get resized (like Add/Remove do) so allow updating actors from different threads at once
+    bool lock = !_isRendering || ((int32)flags & (int32)ISceneRenderingListener::AutoDelayDuringRendering) == 0; // Allow updating actors during rendering
+    if (lock)
+        Locker.ReadLock(); // Read-access only as list doesn't get resized (like Add/Remove do) so allow updating actors from different threads at once
     auto& list = Actors[category];
-    if (list.Count() <= key || key < 0) // Ignore invalid key softly
-        return;
-    auto& e = list[key];
-    if (e.Actor == a)
+    if (list.Count() > key && key >= 0) // Ignore invalid key softly
     {
-        for (auto* listener : _listeners)
-            listener->OnSceneRenderingUpdateActor(a, e.Bounds, flags);
-        if (flags & ISceneRenderingListener::Layer)
-            e.LayerMask = a->GetLayerMask();
-        if (flags & ISceneRenderingListener::Bounds)
-            e.Bounds = a->GetSphere();
+        auto& e = list[key];
+        if (e.Actor == a)
+        {
+            for (auto* listener : _listeners)
+                listener->OnSceneRenderingUpdateActor(a, e.Bounds, flags);
+            if (flags & ISceneRenderingListener::Layer)
+                e.LayerMask = a->GetLayerMask();
+            if (flags & ISceneRenderingListener::Bounds)
+                e.Bounds = a->GetSphere();
+        }
     }
+    if (lock)
+        Locker.ReadUnlock();
 }
 
 void SceneRendering::RemoveActor(Actor* a, int32& key)
