@@ -151,6 +151,8 @@ namespace FlaxEditor.Surface
         /// </summary>
         protected virtual Color FooterColor => GroupArchetype.Color;
 
+        private Float2 mouseDownMousePosition;
+
         /// <summary>
         /// Calculates the size of the node including header, footer, and margins.
         /// </summary>
@@ -1121,7 +1123,7 @@ namespace FlaxEditor.Surface
             if (button == MouseButton.Left && (Archetype.Flags & NodeFlags.NoCloseButton) == 0 && _closeButtonRect.Contains(ref location))
                 return true;
             if (button == MouseButton.Right)
-                return true;
+                mouseDownMousePosition = Input.Mouse.Position;
 
             return false;
         }
@@ -1143,6 +1145,10 @@ namespace FlaxEditor.Surface
             // Secondary Context Menu
             if (button == MouseButton.Right)
             {
+                float distance = Float2.Distance(mouseDownMousePosition, Input.Mouse.Position);
+                if (distance > 2.5f)
+                    return true;
+
                 if (!IsSelected)
                     Surface.Select(this);
                 var tmp = PointToParent(ref location);
