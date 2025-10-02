@@ -20,8 +20,7 @@ class FLAXENGINE_API Sky : public Actor, public IAtmosphericFogRenderer, public 
     DECLARE_SCENE_OBJECT(Sky);
 private:
     AssetReference<Shader> _shader;
-    GPUPipelineState* _psSky;
-    GPUPipelineState* _psFog;
+    GPUPipelineState* _psSky = nullptr;
     int32 _sceneRenderingKey = -1;
 
 public:
@@ -57,7 +56,6 @@ private:
     void OnShaderReloading(Asset* obj)
     {
         _psSky = nullptr;
-        _psFog = nullptr;
     }
 #endif
     void InitConfig(ShaderAtmosphericFogData& config) const;
