@@ -12,6 +12,8 @@ namespace FlaxEditor.GUI.Dialogs
     /// <seealso cref="FlaxEngine.GUI.ContainerControl" />
     public class ColorSelector : ContainerControl
     {
+        private const String GrayedOutParamName = "GrayedOut";
+
         /// <summary>
         /// The color.
         /// </summary>
@@ -22,7 +24,7 @@ namespace FlaxEditor.GUI.Dialogs
         /// </summary>
         protected Rectangle _wheelRect;
 
-        private readonly SpriteHandle _colorWheelSprite;
+        private readonly MaterialBase _hsWheelMaterial;
         private bool _isMouseDownWheel;
 
         /// <summary>
@@ -76,7 +78,8 @@ namespace FlaxEditor.GUI.Dialogs
         public ColorSelector(float wheelSize)
         : base(0, 0, wheelSize, wheelSize)
         {
-            _colorWheelSprite = Editor.Instance.Icons.ColorWheel128;
+            _hsWheelMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.HSWheelMaterial);
+            _hsWheelMaterial = _hsWheelMaterial.CreateVirtualInstance();
             _wheelRect = new Rectangle(0, 0, wheelSize, wheelSize);
         }
 
@@ -100,13 +103,9 @@ namespace FlaxEditor.GUI.Dialogs
                     // y-coordinate is backwards. That is, A positive Y value 
                     // indicates a point BELOW the x-axis.
                     if (delta.Y > 0)
-                    {
                         degrees = 270;
-                    }
                     else
-                    {
                         degrees = 90;
-                    }
                 }
                 else
                 {
@@ -124,9 +123,7 @@ namespace FlaxEditor.GUI.Dialogs
                     // need to add 180 degrees to the angle. ArcTan only
                     // gives you a value on the right-hand side of the circle.
                     if (delta.X < 0)
-                    {
                         degrees += 180;
-                    }
 
                     // Ensure that the return value is between 0 and 360
                     while (degrees > 360)
@@ -146,6 +143,18 @@ namespace FlaxEditor.GUI.Dialogs
                 var color = Color.FromHSV(hsv);
                 color.A = _color.A;
                 Color = color;
+
+                // Clamp mouse position to circle
+                const float distanceOffset = 15f;
+
+                Float2 mousePos = PointFromWindow(Root.MousePosition);
+                float centerMouseDistance = Float2.Distance(mousePos, _wheelRect.Center);
+                float wheelRadius = _wheelRect.Height * 0.5f + distanceOffset;
+                if (wheelRadius < centerMouseDistance)
+                {
+                    Float2 normalizedCenterMouseDirection = (mousePos - _wheelRect.Center).Normalized;
+                    Root.MousePosition = PointToWindow(_wheelRect.Center + normalizedCenterMouseDirection * wheelRadius);
+                }
             }
         }
 
@@ -167,13 +176,25 @@ namespace FlaxEditor.GUI.Dialogs
             bool enabled = EnabledInHierarchy;
 
             // Wheel
-            float boxExpand = (2.0f * 4.0f / 128.0f) * _wheelRect.Width;
-            Render2D.DrawSprite(_colorWheelSprite, _wheelRect.MakeExpanded(boxExpand), enabled ? Color.White : Color.Gray);
+            // TODO: Update this this parameter on some kind of callback when EnabledInHierarchy changed. 
+            _hsWheelMaterial.SetParameterValue(GrayedOutParamName, enabled ? 1.0f : 0.5f);
+            Render2D.DrawMaterial(_hsWheelMaterial, _wheelRect.MakeExpanded(8.0f), enabled ? Color.White : Color.Gray);
             float hAngle = hsv.X * Mathf.DegreesToRadians;
             float hRadius = hsv.Y * _wheelRect.Width * 0.5f;
             var hsPos = new Float2(hRadius * Mathf.Cos(hAngle), -hRadius * Mathf.Sin(hAngle));
-            const float wheelBoxSize = 4.0f;
-            Render2D.DrawRectangle(new Rectangle(hsPos - (wheelBoxSize * 0.5f) + _wheelRect.Center, new Float2(wheelBoxSize)), _isMouseDownWheel ? Color.Gray : Color.Black);
+
+            // Wheel selection box
+            const float wheelSelectionBoxEdgeLenght = 5f;
+
+            Float2 selectionBoxSize = new Float2(_isMouseDownWheel ? wheelSelectionBoxEdgeLenght * 2 : wheelSelectionBoxEdgeLenght);
+            Rectangle selectionBoxFill = new Rectangle(hsPos - (selectionBoxSize * 0.5f) + _wheelRect.Center, selectionBoxSize);
+            Rectangle selectionSecondOutline = new Rectangle(hsPos - ((selectionBoxSize - Float2.One) * 0.5f) + _wheelRect.Center, selectionBoxSize - Float2.One);
+
+            Color rawWheelColor = Color.FromHSV(new Float3(Color.ToHSV().X, Color.ToHSV().Y, 1));
+
+            Render2D.FillRectangle(selectionBoxFill, rawWheelColor);
+            Render2D.DrawRectangle(selectionBoxFill, Color.Black);
+            Render2D.DrawRectangle(selectionSecondOutline, Color.White, 0.5f);
         }
 
         /// <inheritdoc />
@@ -202,6 +223,8 @@ namespace FlaxEditor.GUI.Dialogs
                     _isMouseDownWheel = true;
                     StartMouseCapture();
                     SlidingStart?.Invoke();
+
+                    Cursor = CursorType.Hidden;
                 }
                 UpdateMouse(ref location);
             }
@@ -215,6 +238,8 @@ namespace FlaxEditor.GUI.Dialogs
         {
             if (button == MouseButton.Left && _isMouseDownWheel)
             {
+                Cursor = CursorType.Default;
+
                 EndMouseCapture();
                 EndSliding();
                 return true;
@@ -244,10 +269,16 @@ namespace FlaxEditor.GUI.Dialogs
     /// <seealso cref="ColorSelector" />
     public class ColorSelectorWithSliders : ColorSelector
     {
-        private Rectangle _slider1Rect;
-        private Rectangle _slider2Rect;
-        private bool _isMouseDownSlider1;
-        private bool _isMouseDownSlider2;
+        private const float GridScale = 4f;
+        private const String ScaleParamName = "Scale";
+
+        private Rectangle _valueSliderRect;
+        private Rectangle _valueSliderHitbox;
+        private Rectangle _alphaSliderRect;
+        private Rectangle _alphaSliderHitbox;
+        private MaterialBase _checkerMaterial;
+        private bool _isMouseDownValueSlider;
+        private bool _isMouseDownAlphaSlider;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ColorSelectorWithSliders"/> class.
@@ -257,34 +288,62 @@ namespace FlaxEditor.GUI.Dialogs
         public ColorSelectorWithSliders(float wheelSize, float slidersThickness)
         : base(wheelSize)
         {
+            // Load alpha grid material
+            _checkerMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.AlphaGridMaterial);
+            _checkerMaterial = _checkerMaterial.CreateVirtualInstance();
+            _checkerMaterial.SetParameterValue(ScaleParamName, GridScale);
+
             // Setup dimensions
-            const float slidersMargin = 8.0f;
-            _slider1Rect = new Rectangle(wheelSize + slidersMargin, 0, slidersThickness, wheelSize);
-            _slider2Rect = new Rectangle(_slider1Rect.Right + slidersMargin, _slider1Rect.Y, slidersThickness, _slider1Rect.Height);
-            Size = new Float2(_slider2Rect.Right, wheelSize);
+            const float slidersMargin = 16.0f;
+            const float SliderHitboxExpansion = 12.0f;
+            
+            _valueSliderRect = new Rectangle(wheelSize + slidersMargin, 0, slidersThickness, wheelSize);
+            _valueSliderHitbox = new Rectangle(_valueSliderRect.Location - SliderHitboxExpansion * 0.5f, _valueSliderRect.Size + SliderHitboxExpansion);
+            _alphaSliderRect = new Rectangle(_valueSliderRect.Right + slidersMargin, _valueSliderRect.Y, slidersThickness, _valueSliderRect.Height);
+            _alphaSliderHitbox = new Rectangle(_alphaSliderRect.Location - SliderHitboxExpansion * 0.5f, _alphaSliderRect.Size + SliderHitboxExpansion);
+            
+            Size = new Float2(_alphaSliderRect.Right, wheelSize);
         }
 
         /// <inheritdoc />
         protected override void UpdateMouse(ref Float2 location)
         {
-            if (_isMouseDownSlider1)
+            if (_isMouseDownValueSlider)
             {
                 var hsv = _color.ToHSV();
-                hsv.Z = 1.0f - Mathf.Saturate((location.Y - _slider1Rect.Y) / _slider1Rect.Height);
+                hsv.Z = 1.0f - Mathf.Saturate((location.Y - _valueSliderRect.Y) / _valueSliderRect.Height);
 
                 Color = Color.FromHSV(hsv, _color.A);
+
+                // Clamp mouse cursor to stay in bounds of the slider
+                Root.MousePosition = ClampFloat2WithOffset(Root.MousePosition, _valueSliderRect.UpperLeft, _valueSliderRect.BottomRight);
             }
-            else if (_isMouseDownSlider2)
+            else if (_isMouseDownAlphaSlider)
             {
                 var color = _color;
-                color.A = 1.0f - Mathf.Saturate((location.Y - _slider2Rect.Y) / _slider2Rect.Height);
+                color.A = 1.0f - Mathf.Saturate((location.Y - _alphaSliderRect.Y) / _alphaSliderRect.Height);
 
                 Color = color;
+
+                // Clamp mouse cursor to stay in bounds of the slider
+                Root.MousePosition = ClampFloat2WithOffset(Root.MousePosition, _alphaSliderRect.UpperLeft, _alphaSliderRect.BottomRight);
             }
             else
-            {
                 base.UpdateMouse(ref location);
-            }
+        }
+
+        private static Float2 ClampFloat2WithOffset(Float2 value, Float2 min, Float2 max)
+        {
+            Float2 clampedValue;
+
+            // Add a small offset to prevent "value flickering" from clamping
+            Float2 clampMinMaxOffset = new Float2(3, 12);
+            min -= clampMinMaxOffset;
+            max += clampMinMaxOffset;
+
+            Float2.Clamp(ref value, ref min, ref max, out clampedValue);
+
+            return clampedValue;
         }
 
         /// <inheritdoc />
@@ -298,32 +357,56 @@ namespace FlaxEditor.GUI.Dialogs
             var hs = hsv;
             hs.Z = 1.0f;
             Color hsC = Color.FromHSV(hs);
-            const float slidersOffset = 3.0f;
-            const float slidersThickness = 4.0f;
 
-            // Value
-            float valueY = _slider2Rect.Height * (1 - hsv.Z);
-            var valueR = new Rectangle(_slider1Rect.X - slidersOffset, _slider1Rect.Y + valueY - slidersThickness / 2, _slider1Rect.Width + slidersOffset * 2, slidersThickness);
-            Render2D.FillRectangle(_slider1Rect, hsC, hsC, Color.Black, Color.Black);
-            Render2D.DrawRectangle(_slider1Rect, _isMouseDownSlider1 ? style.BackgroundSelected : Color.Black);
-            Render2D.DrawRectangle(valueR, _isMouseDownSlider1 ? Color.White : Color.Gray);
+            const float knobWidthNormalExpansion = 5;
+            const float knobWidthDragExpansion = 8;
 
-            // Alpha
-            float alphaY = _slider2Rect.Height * (1 - _color.A);
-            var alphaR = new Rectangle(_slider2Rect.X - slidersOffset, _slider2Rect.Y + alphaY - slidersThickness / 2, _slider2Rect.Width + slidersOffset * 2, slidersThickness);
-            var color = _color;
-            color.A = 1; // Keep slider 2 fill rect from changing color alpha while selecting.
-            Render2D.FillRectangle(_slider2Rect, color, color, Color.Transparent, Color.Transparent);
-            Render2D.DrawRectangle(_slider2Rect, _isMouseDownSlider2 ? style.BackgroundSelected : Color.Black);
-            Render2D.DrawRectangle(alphaR, _isMouseDownSlider2 ? Color.White : Color.Gray);
+            // Generate value slider and knob
+            float valueKnobWidth = _isMouseDownValueSlider ? _valueSliderRect.Size.X + knobWidthDragExpansion : _valueSliderRect.Size.X + knobWidthNormalExpansion;
+            float valueKnobHeight = _isMouseDownValueSlider ? 7 : 4;
+            float valueKnobX = _isMouseDownValueSlider ? _valueSliderRect.X - knobWidthDragExpansion * 0.5f : _valueSliderRect.X - knobWidthNormalExpansion * 0.5f;
+            float valueKnobY = _valueSliderRect.Height * (1 - hsv.Z);
+            valueKnobY = Mathf.Clamp(valueKnobY, 0.0f, _valueSliderRect.Height) - valueKnobHeight * 0.5f;
+
+            Color valueKnobColor = Color.FromHSV(new Float3(0, 0, Mathf.Clamp(1f - hsv.Z, 0.45f, 1)));
+            
+            Rectangle valueKnob = new Rectangle(valueKnobX, valueKnobY, valueKnobWidth, valueKnobHeight);
+
+            // Generate alpha slider and knob
+            float alphaKnobWidth = _isMouseDownAlphaSlider ? _alphaSliderRect.Size.X + knobWidthDragExpansion : _alphaSliderRect.Size.X + knobWidthNormalExpansion;
+            float alphaKnobHeight = _isMouseDownAlphaSlider ? 7 : 4;
+            float alphaKnobX = _isMouseDownAlphaSlider ? _alphaSliderRect.X - knobWidthDragExpansion * 0.5f : _alphaSliderRect.X - knobWidthNormalExpansion * 0.5f;
+            float alphaKnobY = _alphaSliderRect.Height * (1 - _color.A);
+            alphaKnobY = Mathf.Clamp(alphaKnobY, 0.0f, _alphaSliderRect.Height) - alphaKnobHeight * 0.5f;
+
+            // Prevent alpha slider fill from being affected by alpha
+            var opaqueColor = _color;
+            opaqueColor.A = 1; 
+            
+            Color alphaKnobColor = Color.FromHSV(new Float3(0, 0, Mathf.Clamp(1f - hsv.Z, 0.35f, 1)));
+
+            Rectangle alphaKnob = new Rectangle(alphaKnobX, alphaKnobY, alphaKnobWidth, alphaKnobHeight);
+
+            // Draw value slider and knob
+            Render2D.FillRectangle(_valueSliderRect, hsC, hsC, Color.Black, Color.Black);
+            Render2D.DrawRectangle(valueKnob, valueKnobColor, _isMouseDownValueSlider ? 3 : 2);
+
+            // Draw alpha slider, grid and knob
+            Render2D.DrawMaterial(_checkerMaterial, _alphaSliderRect);
+            Render2D.FillRectangle(_alphaSliderRect, opaqueColor, opaqueColor, Color.Transparent, Color.Transparent);
+            Render2D.DrawRectangle(alphaKnob, alphaKnobColor, _isMouseDownAlphaSlider ? 3 : 2);
+
+            // Sliders hitbox debug
+            //Render2D.DrawRectangle(_valueSliderHitbox, Color.Green);
+            //Render2D.DrawRectangle(_alphaSliderHitbox, Color.Red);
         }
 
         /// <inheritdoc />
         public override void OnLostFocus()
         {
             // Clear flags
-            _isMouseDownSlider1 = false;
-            _isMouseDownSlider2 = false;
+            _isMouseDownValueSlider = false;
+            _isMouseDownAlphaSlider = false;
 
             base.OnLostFocus();
         }
@@ -331,15 +414,21 @@ namespace FlaxEditor.GUI.Dialogs
         /// <inheritdoc />
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left && _slider1Rect.Contains(location))
+            if (button == MouseButton.Left && _valueSliderHitbox.Contains(location))
             {
-                _isMouseDownSlider1 = true;
+                _isMouseDownValueSlider = true;
+
+                Cursor = CursorType.Hidden;
+
                 StartMouseCapture();
                 UpdateMouse(ref location);
             }
-            if (button == MouseButton.Left && _slider2Rect.Contains(location))
+            if (button == MouseButton.Left && _alphaSliderHitbox.Contains(location))
             {
-                _isMouseDownSlider2 = true;
+                _isMouseDownAlphaSlider = true;
+
+                Cursor = CursorType.Hidden;
+
                 StartMouseCapture();
                 UpdateMouse(ref location);
             }
@@ -350,10 +439,13 @@ namespace FlaxEditor.GUI.Dialogs
         /// <inheritdoc />
         public override bool OnMouseUp(Float2 location, MouseButton button)
         {
-            if (button == MouseButton.Left && (_isMouseDownSlider1 || _isMouseDownSlider2))
+            if (button == MouseButton.Left && (_isMouseDownValueSlider || _isMouseDownAlphaSlider))
             {
-                _isMouseDownSlider1 = false;
-                _isMouseDownSlider2 = false;
+                _isMouseDownValueSlider = false;
+                _isMouseDownAlphaSlider = false;
+
+                Cursor = CursorType.Default;
+
                 EndMouseCapture();
                 return true;
             }
@@ -365,8 +457,8 @@ namespace FlaxEditor.GUI.Dialogs
         public override void OnEndMouseCapture()
         {
             // Clear flags
-            _isMouseDownSlider1 = false;
-            _isMouseDownSlider2 = false;
+            _isMouseDownValueSlider = false;
+            _isMouseDownAlphaSlider = false;
 
             base.OnEndMouseCapture();
         }
