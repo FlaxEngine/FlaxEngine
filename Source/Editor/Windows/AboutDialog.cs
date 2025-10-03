@@ -97,6 +97,7 @@ namespace FlaxEditor.Windows
                 "Jean-Baptiste Perrier",
                 "Chandler Cox",
                 "Ari Vuollet",
+                "Vincent Saarmann",
             });
             authors.Sort();
             var authorsLabel = new Label(4, topParentControl.Bottom + 20, Width - 8, 70)
