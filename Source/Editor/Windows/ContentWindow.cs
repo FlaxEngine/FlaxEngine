@@ -1086,8 +1086,7 @@ namespace FlaxEditor.Windows
                     _tree.Select(folder.Node);
             }
 
-            if (!string.IsNullOrWhiteSpace(_foldersSearchBox.Text))
-                OnFoldersSearchBoxTextChanged();
+            OnFoldersSearchBoxTextChanged();
         }
 
         private void Refresh()
