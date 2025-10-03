@@ -77,7 +77,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 {
                     var time = stream.ReadSingle();
                     stream.Read(dataBuffer, 0, e.ValueSize);
-                    var value = Marshal.PtrToStructure(handle.AddrOfPinnedObject(), propertyType);
+                    var value = Utilities.Utils.ByteArrayToStructure(handle.AddrOfPinnedObject(), propertyType, e.ValueSize);
 
                     keyframes[i] = new KeyframesEditor.Keyframe
                     {
@@ -142,8 +142,7 @@ namespace FlaxEditor.GUI.Timeline.Tracks
                 for (int i = 0; i < keyframes.Count; i++)
                 {
                     var keyframe = keyframes[i];
-                    Marshal.StructureToPtr(keyframe.Value, ptr, true);
-                    Marshal.Copy(ptr, dataBuffer, 0, e.ValueSize);
+                    Utilities.Utils.StructureToByteArray(keyframe.Value, e.ValueSize, ptr, dataBuffer);
                     stream.Write(keyframe.Time);
                     stream.Write(dataBuffer);
                 }

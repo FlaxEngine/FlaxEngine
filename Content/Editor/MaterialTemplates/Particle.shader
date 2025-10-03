@@ -645,7 +645,7 @@ VertexOutput VS_Ribbon(RibbonInput input, uint vertexIndex : SV_VertexID)
 	materialInput.TBN = output.TBN;
 	materialInput.TwoSidedSign = 1;
 	materialInput.SvPosition = output.Position;
-	materialInput.PreSkinnedPosition = Position;
+	materialInput.PreSkinnedPosition = position;
 	materialInput.PreSkinnedNormal = tangentToLocal[2].xyz;
 	materialInput.InstanceOrigin = output.InstanceOrigin;
 	materialInput.InstanceParams = output.InstanceParams;	

@@ -92,4 +92,9 @@ float4 GetExponentialHeightFog(ExponentialHeightFogData exponentialHeightFog, fl
     return GetExponentialHeightFog(exponentialHeightFog, posWS, camWS, skipDistance, distance(posWS, camWS));
 }
 
+float4 CombineVolumetricFog(float4 fog, float4 volumetricFog)
+{
+    return float4(volumetricFog.rgb + fog.rgb * volumetricFog.a, volumetricFog.a * fog.a);
+}
+
 #endif

@@ -180,7 +180,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Show prefab diff when reference value type is different
             var color = Color.Transparent;
-            if (Values.HasReferenceValue && CanRevertReferenceValue && Values[0].GetType() != Values.ReferenceValue.GetType())
+            if (Values.HasReferenceValue && CanRevertReferenceValue && Values[0]?.GetType() != Values.ReferenceValue?.GetType())
                 color = FlaxEngine.GUI.Style.Current.BackgroundSelected;
             _typeItem.Labels[0].HighlightStripColor = color;
 
