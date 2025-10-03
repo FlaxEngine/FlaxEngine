@@ -14,7 +14,7 @@
 #include "Engine/Content/AssetsContainer.h"
 #include "Engine/Animations/Curve.h"
 
-#define SHADER_GRAPH_MAX_CALL_STACK 100
+#define SHADER_GRAPH_MAX_CALL_STACK 50
 
 enum class MaterialSceneTextures;
 template<class BoxType>

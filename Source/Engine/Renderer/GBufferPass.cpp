@@ -19,6 +19,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Level/Actors/Decal.h"
+#include "Engine/Level/Actors/Sky.h"
 #include "Engine/Engine/Engine.h"
 
 GPU_CB_STRUCT(GBufferPassData {
@@ -416,8 +417,17 @@ void GBufferPass::DrawSky(RenderContext& renderContext, GPUContext* context)
 
     // Calculate sphere model transform to cover far plane
     Matrix m1, m2;
-    Matrix::Scaling(renderContext.View.Far / ((float)box.GetSize().Y * 0.5f) * 0.95f, m1); // Scale to fit whole view frustum
-    Matrix::CreateWorld(renderContext.View.Position, Float3::Up, Float3::Backward, m2); // Rotate sphere model
+    float size = renderContext.View.Far;
+    Float3 origin = renderContext.View.Position;
+    if (dynamic_cast<Sky*>(renderContext.List->Sky)) // TODO: refactor sky rendering (eg. let sky draw with custom projection)
+    {
+        BoundingSphere frustumBounds;
+        renderContext.View.CullingFrustum.GetSphere(frustumBounds);
+        origin = frustumBounds.Center;
+        size = frustumBounds.Radius;
+    }
+    Matrix::Scaling(size / ((float)box.GetSize().Y * 0.5f) * 0.95f, m1); // Scale to fit whole view frustum
+    Matrix::CreateWorld(origin, Float3::Up, Float3::Backward, m2); // Rotate sphere model
     m1 *= m2;
 
     // Draw sky

@@ -93,6 +93,7 @@ void MultiBlendBucketInit(AnimGraphInstanceData::Bucket& bucket)
 void BlendPoseBucketInit(AnimGraphInstanceData::Bucket& bucket)
 {
     bucket.BlendPose.TransitionPosition = 0.0f;
+    bucket.BlendPose.BlendPoseIndex = -1;
     bucket.BlendPose.PreviousBlendPoseIndex = -1;
 }
 

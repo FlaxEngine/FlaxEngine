@@ -265,6 +265,14 @@ public:
         return Projection.M44 >= 1.0f;
     }
 
+    /// <summary>
+    /// Determines whether view Origin has been moved in this frame. Old history buffers/data might be invalid.
+    /// </summary>
+    FORCE_INLINE bool IsOriginTeleport() const
+    {
+        return Origin != PrevOrigin;
+    }
+
 public:
     // Ignore deprecation warnings in defaults
     PRAGMA_DISABLE_DEPRECATION_WARNINGS

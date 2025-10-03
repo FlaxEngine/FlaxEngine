@@ -239,7 +239,8 @@ public:
     struct BlendPoseBucket
     {
         float TransitionPosition;
-        int32 PreviousBlendPoseIndex;
+        int16 BlendPoseIndex;
+        int16 PreviousBlendPoseIndex;
     };
 
     struct StateMachineBucket
@@ -810,6 +811,7 @@ public:
     {
         // Copy the node transformations
         Platform::MemoryCopy(dstNodes->Nodes.Get(), srcNodes->Nodes.Get(), sizeof(Transform) * _skeletonNodesCount);
+        dstNodes->RootMotion = srcNodes->RootMotion;
 
         // Copy the animation playback state
         dstNodes->Position = srcNodes->Position;
