@@ -2218,7 +2218,8 @@ void TerrainPatch::DestroyCollision()
 
     void* scene = _terrain->GetPhysicsScene()->GetPhysicsScene();
     PhysicsBackend::RemoveCollider(_terrain);
-    PhysicsBackend::RemoveSceneActor(scene, _physicsActor);
+    if (_terrain->IsDuringPlay() && _terrain->IsActiveInHierarchy())
+        PhysicsBackend::RemoveSceneActor(scene, _physicsActor);
     PhysicsBackend::DestroyActor(_physicsActor);
     PhysicsBackend::DestroyShape(_physicsShape);
     PhysicsBackend::DestroyObject(_physicsHeightField);
