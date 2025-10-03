@@ -239,7 +239,8 @@ public:
     struct BlendPoseBucket
     {
         float TransitionPosition;
-        int32 PreviousBlendPoseIndex;
+        int16 BlendPoseIndex;
+        int16 PreviousBlendPoseIndex;
     };
 
     struct StateMachineBucket
