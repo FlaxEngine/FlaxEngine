@@ -116,6 +116,11 @@ namespace FlaxEditor.Windows
                 if (InputOptions.WindowShortcutsAvaliable)
                     Editor.Windows.VisualScriptDebuggerWin.FocusOrShow();
             });
+            InputActions.Add(options => options.EditorOptionsWindow, () =>
+            {
+                if (InputOptions.WindowShortcutsAvaliable)
+                    Editor.Windows.EditorOptionsWin.FocusOrShow();
+            });
 
             // Register
             Editor.Windows.OnWindowAdd(this);

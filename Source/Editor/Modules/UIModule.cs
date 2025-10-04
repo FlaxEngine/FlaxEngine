@@ -669,7 +669,7 @@ namespace FlaxEditor.Modules
                 if (item != null)
                     Editor.ContentEditing.Open(item);
             });
-            cm.AddButton("Editor Options", () => Editor.Windows.EditorOptionsWin.Show());
+            cm.AddButton("Editor Options", inputOptions.EditorOptionsWindow, () => Editor.Windows.EditorOptionsWin.Show());
 
             // Scene
             MenuScene = MainMenu.AddButton("Scene");
