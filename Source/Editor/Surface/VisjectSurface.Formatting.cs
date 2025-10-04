@@ -176,10 +176,10 @@ namespace FlaxEditor.Surface
             if (connectedNodes.Count == 0)
                 return;
 
-            for (int i = 0; i < connectedNodes.Count - 1; i++)
+            for (int i = 0; i < connectedNodes.Count; i++)
             {
                 SurfaceNode nodeA = connectedNodes[i];
-                List<Box> connectedOutputBoxes = nodeA.GetBoxes().Where(b => b.IsOutput && b.HasAnyConnection).ToList();
+                List<Box> connectedOutputBoxes = nodeA.GetBoxes().Where(b => b.HasAnyConnection).ToList();
 
                 for (int j = 0; j < connectedOutputBoxes.Count; j++)
                 {
