@@ -269,6 +269,9 @@ public:
         // The imported animation channels will be optimized to remove redundant keyframes.
         API_FIELD(Attributes="EditorOrder(1050), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowAnimation))")
         bool OptimizeKeyframes = true;
+        // If enabled, pre and post rotations will be baked into the animation keyframes. Use this option if imported animations appear misaligned or rotated incorrectly.
+        API_FIELD(Attributes="EditorOrder(1051), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowAnimation))")
+        bool BakeRotations = false;
         // If checked, the importer will import scale animation tracks (otherwise scale animation will be ignored).
         API_FIELD(Attributes="EditorOrder(1055), EditorDisplay(\"Animation\"), VisibleIf(nameof(ShowAnimation))")
         bool ImportScaleTracks = false;

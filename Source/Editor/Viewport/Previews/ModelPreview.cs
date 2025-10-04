@@ -274,6 +274,7 @@ namespace FlaxEditor.Viewport.Previews
                 _previewModel.Scale = new Float3(scale);
                 _previewModel.Position = box.Center * (-0.5f * scale) + new Vector3(0, -10, 0);
             }
+            ResetCamera();
         }
 
         /// <inheritdoc />
