@@ -852,9 +852,7 @@ void Terrain::OnEnable()
     {
         auto patch = _patches[i];
         if (patch->_physicsActor)
-        {
             PhysicsBackend::AddSceneActor(scene, patch->_physicsActor);
-        }
     }
 
     // Base
@@ -873,9 +871,7 @@ void Terrain::OnDisable()
     {
         auto patch = _patches[i];
         if (patch->_physicsActor)
-        {
             PhysicsBackend::RemoveSceneActor(scene, patch->_physicsActor);
-        }
     }
 
     // Base

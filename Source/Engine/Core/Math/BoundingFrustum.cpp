@@ -63,9 +63,16 @@ void BoundingFrustum::SetMatrix(const Matrix& matrix)
 
 Plane BoundingFrustum::GetPlane(int32 index) const
 {
-    if (index > 5)
-        return Plane();
-    return _planes[index];
+    switch (index)
+    {
+    case 0: return _pLeft;
+    case 1: return _pRight;
+    case 2: return _pTop;
+    case 3: return _pBottom;
+    case 4: return _pNear;
+    case 5: return _pFar;
+    default: return Plane();
+    }
 }
 
 static Vector3 Get3PlanesInterPoint(const Plane& p1, const Plane& p2, const Plane& p3)

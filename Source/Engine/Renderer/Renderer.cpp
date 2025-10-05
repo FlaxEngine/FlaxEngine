@@ -353,8 +353,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     const bool isGBufferDebug = GBufferPass::IsDebugView(renderContext.View.Mode);
     {
         PROFILE_CPU_NAMED("Setup");
-        if (renderContext.View.Origin != renderContext.View.PrevOrigin)
-            renderContext.Task->CameraCut(); // Cut any temporal effects on rendering origin change
         const int32 screenWidth = renderContext.Buffers->GetWidth();
         const int32 screenHeight = renderContext.Buffers->GetHeight();
         setup.UpscaleLocation = renderContext.Task->UpscaleLocation;

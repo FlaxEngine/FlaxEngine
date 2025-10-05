@@ -182,7 +182,7 @@ namespace FlaxEngine
         /// <summary>
         /// Returns one of the 6 planes related to this frustum.
         /// </summary>
-        /// <param name="index">Plane index where 0 fro Left, 1 for Right, 2 for Top, 3 for Bottom, 4 for Near, 5 for Far</param>
+        /// <param name="index">Plane index where 0 for Left, 1 for Right, 2 for Top, 3 for Bottom, 4 for Near, 5 for Far</param>
         /// <returns>The frustum plane.</returns>
         public Plane GetPlane(int index)
         {

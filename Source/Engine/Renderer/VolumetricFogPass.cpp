@@ -179,7 +179,7 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         (float)_cache.GridSizeZ);
     auto& fogData = renderContext.Buffers->VolumetricFogData;
     fogData.MaxDistance = options.Distance;
-    if (renderContext.Task->IsCameraCut)
+    if (renderContext.Task->IsCameraCut || renderContext.View.IsOriginTeleport())
         _cache.HistoryWeight = 0.0f;
 
     // Init data (partial, without directional light or sky light data);
@@ -313,7 +313,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     PROFILE_GPU_CPU("Volumetric Fog");
 
     // TODO: test exponential depth distribution (should give better quality near the camera)
-    // TODO: use tiled light culling and render unshadowed lights in single pass
+    // TODO: use tiled light culling and render shadowed/unshadowed lights in single pass
 
     // Try to get shadows atlas
     GPUTexture* shadowMap;
