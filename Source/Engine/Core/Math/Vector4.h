@@ -129,6 +129,12 @@ public:
     FLAXENGINE_API String ToString() const;
 
 public:
+    // Gets a value indicting whether this instance is normalized.
+    bool IsNormalized() const 
+    {
+        return Math::Abs((X * X + Y * Y + Z * Z + W * W) - 1.0f) < 1e-4f;
+    }
+
     // Gets a value indicting whether this vector is zero.
     bool IsZero() const
     {
@@ -217,6 +223,35 @@ public:
     Vector4Base GetNegative() const
     {
         return Vector4Base(-X, -Y, -Z, -W);
+    }
+
+public:
+    /// <summary>
+    /// Performs vector normalization (scales vector up to unit length).
+    /// </summary>
+    void Normalize() 
+    {
+        const T length = Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
+        if (length >= ZeroTolerance)
+        {
+            const T inv = (T)1.0f / length;
+            X *= inv;
+            Y *= inv;
+            Z *= inv;
+            W *= inv;
+        }
+    }
+
+    /// <summary>
+    /// Performs fast vector normalization (scales vector up to unit length).
+    /// </summary>
+    void NormalizeFast()
+    {
+        const T inv = 1.0f / Math::Sqrt(X * X + Y * Y + Z * Z + W * W);
+        X *= inv;
+        Y *= inv;
+        Z *= inv;
+        W *= inv;
     }
 
 public:
