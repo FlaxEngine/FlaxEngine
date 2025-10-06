@@ -225,6 +225,16 @@ public:
         return Vector4Base(-X, -Y, -Z, -W);
     }
 
+    /// <summary>
+    /// Calculates a normalized vector that has length equal to 1.
+    /// </summary>
+    Vector4Base GetNormalized() const 
+    {
+        Vector4Base result(X, Y, Z, W);
+        result.Normalize();
+        return result;
+    }
+
 public:
     /// <summary>
     /// Performs vector normalization (scales vector up to unit length).
