@@ -517,7 +517,7 @@ public:
     // Performs vector normalization (scales vector up to unit length).
     static Vector4Base Normalize(const Vector4Base& v)
     {
-        Vector3Base r = v;
+        Vector4Base r = v;
         const T length = Math::Sqrt(r.X * r.X + r.Y * r.Y + r.Z * r.Z + r.W * r.W);
         if (length >= ZeroTolerance)
         {
