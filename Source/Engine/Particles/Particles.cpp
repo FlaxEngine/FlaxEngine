@@ -1272,7 +1272,7 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
                     !material->IsReady() ||
                     material->GetInfo().Domain != MaterialDomain::VolumeParticle ||
                     (renderContextBatch.GetMainContext().View.Flags & ViewFlags::Fog) == ViewFlags::None ||
-                    drawMainView
+                    !drawMainView
                 )
                     break;
                 renderModulesIndices |= 1u << moduleIndex;
