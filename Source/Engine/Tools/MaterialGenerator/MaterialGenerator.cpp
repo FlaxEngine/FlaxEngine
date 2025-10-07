@@ -490,7 +490,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
             srv = 3; // Objects + Skinning Bones + Prev Bones
             break;
         case MaterialDomain::Decal:
-            srv = 1; // Depth buffer
+            srv = 2; // Depth buffer + Stencil buffer
             break;
         case MaterialDomain::Terrain:
             srv = 3; // Heightmap + 2 splatmaps

@@ -167,6 +167,7 @@ struct RenderDecalData
     Matrix World;
     MaterialBase* Material;
     int32 SortOrder;
+    uint32 RenderLayersMask;
 };
 
 /// <summary>
