@@ -91,7 +91,7 @@ public:
     // [IShaderResourceDX12]
     bool IsDepthStencilResource() const override
     {
-        return _dsv.IsValid();
+        return ReadOnlyDepthView || _dsv.IsValid();
     }
     D3D12_CPU_DESCRIPTOR_HANDLE SRV() const override
     {
@@ -117,6 +117,7 @@ private:
     GPUTextureViewDX12 _handleArray;
     GPUTextureViewDX12 _handleVolume;
     GPUTextureViewDX12 _handleReadOnlyDepth;
+    GPUTextureViewDX12 _handleStencil;
     Array<GPUTextureViewDX12> _handlesPerSlice; // [slice]
     Array<Array<GPUTextureViewDX12>> _handlesPerMip; // [slice][mip]
 
@@ -164,6 +165,11 @@ public:
     {
         ASSERT(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView);
         return (GPUTextureView*)&_handleReadOnlyDepth;
+    }
+    GPUTextureView* ViewStencil() const override
+    {
+        ASSERT(_desc.Flags & GPUTextureFlags::DepthStencil);
+        return (GPUTextureView*)&_handleStencil;
     }
     void* GetNativePtr() const override
     {

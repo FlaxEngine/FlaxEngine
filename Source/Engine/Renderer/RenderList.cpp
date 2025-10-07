@@ -564,7 +564,8 @@ FORCE_INLINE void CalculateSortKey(const RenderContext& renderContext, DrawCall&
     IMaterial::InstancingHandler handler;
     if (drawCall.Material->CanUseInstancing(handler))
         handler.GetHash(drawCall, batchKey);
-    uint32 drawKey = (uint32)(471 * drawCall.WorldDeterminantSign);
+    batchKey = (batchKey * 397) ^ drawCall.StencilValue;
+    uint32 drawKey = (uint32)(471 * drawCall.WorldDeterminant);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[0]);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[1]);
     drawKey = (drawKey * 397) ^ GetHash(drawCall.Geometry.VertexBuffers[2]);
@@ -586,8 +587,11 @@ void RenderList::AddDrawCall(const RenderContext& renderContext, DrawPass drawMo
     ASSERT_LOW_LAYER(drawModes != DrawPass::None && ((uint32)drawModes & ~(uint32)materialDrawModes) == 0);
 #endif
 
-    // Append draw call data
+    // Finalize draw call initialization
+    drawCall.WorldDeterminant = drawCall.World.RotDeterminant() < 0 ? 1 : 0;
     CalculateSortKey(renderContext, drawCall, sortOrder);
+
+    // Append draw call data
     const int32 index = DrawCalls.Add(drawCall);
 
     // Add draw call to proper draw lists
@@ -625,8 +629,11 @@ void RenderList::AddDrawCall(const RenderContextBatch& renderContextBatch, DrawP
 #endif
     const RenderContext& mainRenderContext = renderContextBatch.Contexts.Get()[0];
 
-    // Append draw call data
+    // Finalize draw call initialization
+    drawCall.WorldDeterminant = drawCall.World.RotDeterminant() < 0 ? 1 : 0;
     CalculateSortKey(mainRenderContext, drawCall, sortOrder);
+
+    // Append draw call data
     const int32 index = DrawCalls.Add(drawCall);
 
     // Add draw call to proper draw lists
@@ -777,7 +784,8 @@ void RenderList::SortDrawCalls(const RenderContext& renderContext, bool reverseD
                         other.InstanceCount != 0 &&
                         drawCallHandler.CanBatch == otherHandler.CanBatch &&
                         drawCallHandler.CanBatch(drawCall, other, pass) &&
-                        drawCall.WorldDeterminantSign * other.WorldDeterminantSign > 0;
+                        drawCall.WorldDeterminant == other.WorldDeterminant &&
+                        drawCall.StencilValue == other.StencilValue;
                 if (!canBatch)
                     break;
                 batchSize++;

@@ -89,6 +89,7 @@ void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Actor* actor
     draw.Flags = StaticFlags::Transform;
     draw.DrawModes = DrawPass::Forward;
     draw.PerInstanceRandom = 0;
+    draw.StencilValue = 0;
     draw.LODBias = 0;
     draw.ForcedLOD = -1;
     draw.SortOrder = 0;

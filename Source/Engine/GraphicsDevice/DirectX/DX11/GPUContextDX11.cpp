@@ -11,6 +11,7 @@
 #include "GPUSamplerDX11.h"
 #include "GPUVertexLayoutDX11.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Profiler/RenderStats.h"
@@ -216,7 +217,10 @@ void GPUContextDX11::ClearDepth(GPUTextureView* depthBuffer, float depthValue, u
     if (depthBufferDX11)
     {
         ASSERT(depthBufferDX11->DSV());
-        _context->ClearDepthStencilView(depthBufferDX11->DSV(), D3D11_CLEAR_DEPTH, depthValue, stencilValue);
+        UINT clearFlags = D3D11_CLEAR_DEPTH;
+        if (PixelFormatExtensions::HasStencil(depthBufferDX11->GetFormat()))
+            clearFlags |= D3D11_CLEAR_STENCIL;
+        _context->ClearDepthStencilView(depthBufferDX11->DSV(), clearFlags, depthValue, stencilValue);
     }
 }
 

@@ -85,13 +85,10 @@ void DeferredMaterialShader::Bind(BindParameters& params)
     if (IsRunningRadiancePass)
         cullMode = CullMode::TwoSided;
 #endif
-    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminantSign < 0)
+    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminant)
     {
         // Invert culling when scale is negative
-        if (cullMode == CullMode::Normal)
-            cullMode = CullMode::Inverted;
-        else
-            cullMode = CullMode::Normal;
+        cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
     }
     ASSERT_LOW_LAYER(!(useSkinning && params.Instanced)); // No support for instancing skinned meshes
     const auto cache = params.Instanced ? &_cacheInstanced : &_cache;
@@ -101,6 +98,7 @@ void DeferredMaterialShader::Bind(BindParameters& params)
 
     // Bind pipeline
     context->SetState(state);
+    context->SetStencilRef(drawCall.StencilValue);
 }
 
 void DeferredMaterialShader::Unload()
@@ -137,6 +135,10 @@ bool DeferredMaterialShader::Load()
     }
 #endif
 
+    psDesc.StencilEnable = true;
+    psDesc.StencilReadMask = 0;
+    psDesc.StencilPassOp = StencilOperation::Replace;
+
     // GBuffer Pass
     psDesc.VS = _shader->GetVS("VS");
     failed |= psDesc.VS == nullptr;
@@ -159,6 +161,9 @@ bool DeferredMaterialShader::Load()
     psDesc.VS = _shader->GetVS("VS_Skinned");
     psDesc.PS = _shader->GetPS("PS_GBuffer");
     _cache.DefaultSkinned.Init(psDesc);
+
+    psDesc.StencilEnable = false;
+    psDesc.StencilPassOp = StencilOperation::Keep;
 
 #if USE_EDITOR
     if (_shader->HasShader("PS_QuadOverdraw"))

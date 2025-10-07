@@ -150,6 +150,7 @@ void GPUTextureDX11::OnReleaseGPU()
     _handleArray.Release();
     _handleVolume.Release();
     _handleReadOnlyDepth.Release();
+    _handleStencil.Release();
     DX_SAFE_RELEASE_CHECK(_resource, 0);
 
     // Base
@@ -546,6 +547,41 @@ void GPUTextureDX11::initHandles()
             VALIDATE_DIRECTX_CALL(device->CreateShaderResourceView(_resource, &srDesc, &srView));
         }
         _handleReadOnlyDepth.Init(this, rtView, srView, dsView, nullptr, format, msaa);
+    }
+
+    // Stencil view
+    if (useDSV && useSRV && PixelFormatExtensions::HasStencil(format))
+    {
+        PixelFormat stencilFormat;
+        switch (_dxgiFormatDSV)
+        {
+        case PixelFormat::D24_UNorm_S8_UInt:
+            srDesc.Format = DXGI_FORMAT_X24_TYPELESS_G8_UINT;
+            stencilFormat = PixelFormat::X24_Typeless_G8_UInt;
+            break;
+        case PixelFormat::D32_Float_S8X24_UInt:
+            srDesc.Format = DXGI_FORMAT_X32_TYPELESS_G8X24_UINT;
+            stencilFormat = PixelFormat::X32_Typeless_G8X24_UInt;
+            break;
+        }
+        if (isCubeMap)
+        {
+            srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
+            srDesc.TextureCube.MostDetailedMip = 0;
+            srDesc.TextureCube.MipLevels = mipLevels;
+        }
+        else if (isMsaa)
+        {
+            srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2DMS;
+        }
+        else
+        {
+            srDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+            srDesc.Texture2D.MostDetailedMip = 0;
+            srDesc.Texture2D.MipLevels = mipLevels;
+        }
+        VALIDATE_DIRECTX_CALL(device->CreateShaderResourceView(_resource, &srDesc, &srView));
+        _handleStencil.Init(this, nullptr, srView, nullptr, nullptr, stencilFormat, msaa);
     }
 }
 

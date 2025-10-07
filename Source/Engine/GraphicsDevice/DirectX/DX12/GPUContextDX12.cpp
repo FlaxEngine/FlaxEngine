@@ -36,6 +36,7 @@
 #include "CommandSignatureDX12.h"
 #include "Engine/Profiler/RenderStats.h"
 #include "Engine/Graphics/GPUResourceAccess.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Threading/Threading.h"
 
@@ -823,7 +824,10 @@ void GPUContextDX12::ClearDepth(GPUTextureView* depthBuffer, float depthValue, u
         SetResourceState(depthBufferDX12->GetResourceOwner(), D3D12_RESOURCE_STATE_DEPTH_WRITE, depthBufferDX12->SubresourceIndex);
         flushRBs();
 
-        _commandList->ClearDepthStencilView(depthBufferDX12->DSV(), D3D12_CLEAR_FLAG_DEPTH, depthValue, stencilValue, 0, nullptr);
+        D3D12_CLEAR_FLAGS clearFlags = D3D12_CLEAR_FLAG_DEPTH;
+        if (PixelFormatExtensions::HasStencil(depthBufferDX12->GetFormat()))
+            clearFlags |= D3D12_CLEAR_FLAG_STENCIL;
+        _commandList->ClearDepthStencilView(depthBufferDX12->DSV(), clearFlags, depthValue, stencilValue, 0, nullptr);
     }
 }
 

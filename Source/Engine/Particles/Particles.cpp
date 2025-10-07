@@ -1168,9 +1168,6 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
     Matrix worlds[2];
     Matrix::Translation(-viewOrigin, worlds[0]); // World
     renderContextBatch.GetMainContext().View.GetWorldMatrix(effect->GetTransform(), worlds[1]); // Local
-    float worldDeterminantSigns[2];
-    worldDeterminantSigns[0] = Math::FloatSelect(worlds[0].RotDeterminant(), 1, -1);
-    worldDeterminantSigns[1] = Math::FloatSelect(worlds[1].RotDeterminant(), 1, -1);
     const StaticFlags staticFlags = effect->GetStaticFlags();
     const int8 sortOrder = effect->SortOrder;
 
@@ -1194,6 +1191,7 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
     // Setup a draw call common data
     DrawCall drawCall;
     drawCall.PerInstanceRandom = effect->GetPerInstanceRandom();
+    drawCall.SetStencilValue(effect->GetLayer());
     drawCall.ObjectPosition = bounds.Center;
     drawCall.ObjectRadius = (float)bounds.Radius;
 
@@ -1209,7 +1207,6 @@ void Particles::DrawParticles(RenderContextBatch& renderContextBatch, ParticleEf
             continue;
 
         drawCall.World = worlds[(int32)emitter->SimulationSpace];
-        drawCall.WorldDeterminantSign = worldDeterminantSigns[(int32)emitter->SimulationSpace];
         drawCall.Particle.Particles = buffer;
 
         // Check if need to render any module

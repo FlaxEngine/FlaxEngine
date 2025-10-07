@@ -50,8 +50,6 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     context->BindUA(1, overdrawTexture->View());
     context->BindUA(2, liveCountTexture->View());
     DrawCall drawCall;
-    drawCall.WorldDeterminantSign = 1.0f;
-    drawCall.PerInstanceRandom = 0.0f;
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
     bindParams.BindViewData();
     renderContext.View.Pass = DrawPass::QuadOverdraw;
@@ -83,7 +81,6 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
         m1 *= m2;
         drawCall.World = m1;
         drawCall.ObjectPosition = drawCall.World.GetTranslation();
-        drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
         skyMaterial->Bind(bindParams);
         skyModel->Render(context);
     }

@@ -651,13 +651,15 @@ GPU_CB_STRUCT(ShaderObjectData
 
     FORCE_INLINE void Store(const DrawCall& drawCall)
     {
-    Store(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminantSign, drawCall.Surface.LODDitherFactor);
+    Store(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminant ? -1.0f : 1.0f, drawCall.Surface.LODDitherFactor);
     }
 
     FORCE_INLINE void Load(DrawCall& drawCall) const
     {
-    Load(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminantSign, drawCall.Surface.LODDitherFactor);
+    float worldDeterminantSign;
+    Load(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, worldDeterminantSign, drawCall.Surface.LODDitherFactor);
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.WorldDeterminant = worldDeterminantSign < 0 ? 1 : 0;
     }
     });
 
