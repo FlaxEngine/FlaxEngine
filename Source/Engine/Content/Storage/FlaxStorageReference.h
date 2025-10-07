@@ -13,6 +13,11 @@ private:
     FlaxStorage* _storage;
 
 public:
+    FlaxStorageReference()
+        : _storage(nullptr)
+    {
+    }
+
     FlaxStorageReference(FlaxStorage* storage)
         : _storage(storage)
     {

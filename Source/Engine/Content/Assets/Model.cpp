@@ -33,12 +33,14 @@ class StreamModelSDFTask : public GPUUploadTextureMipTask
 {
 private:
     WeakAssetReference<Model> _asset;
+    FlaxStorageReference _dataRef;
     FlaxStorage::LockData _dataLock;
 
 public:
     StreamModelSDFTask(Model* model, GPUTexture* texture, const Span<byte>& data, int32 mipIndex, int32 rowPitch, int32 slicePitch)
         : GPUUploadTextureMipTask(texture, mipIndex, data, rowPitch, slicePitch, false)
         , _asset(model)
+        , _dataRef(model->Storage)
         , _dataLock(model->Storage->Lock())
     {
     }
@@ -59,6 +61,7 @@ public:
     void OnEnd() override
     {
         _dataLock.Release();
+        _dataRef = FlaxStorageReference();
 
         // Base
         GPUUploadTextureMipTask::OnEnd();
