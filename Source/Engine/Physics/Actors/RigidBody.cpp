@@ -159,9 +159,10 @@ void RigidBody::SetCenterOfMassOffset(const Float3& value)
 {
     if (value == _centerOfMassOffset)
         return;
+    Float3 delta = value - _centerOfMassOffset;
     _centerOfMassOffset = value;
     if (_actor)
-        PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
+        PhysicsBackend::AddRigidDynamicActorCenterOfMassOffset(_actor, delta);
 }
 
 void RigidBody::SetConstraints(const RigidbodyConstraints value)
@@ -356,9 +357,7 @@ void RigidBody::OnDebugDrawSelected()
     {
         const auto collider = Cast<Collider>(child);
         if (collider && collider->GetAttachedRigidBody() == this)
-        {
             collider->OnDebugDrawSelf();
-        }
     }
 
     Actor::OnDebugDrawSelected();
@@ -534,7 +533,7 @@ void RigidBody::BeginPlay(SceneBeginData* data)
 
     // Apply the Center Of Mass offset
     if (!_centerOfMassOffset.IsZero())
-        PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
+        PhysicsBackend::AddRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
 
     // Register actor
     PhysicsBackend::AddSceneActor(scene, _actor);
