@@ -36,7 +36,7 @@ bool Texture::Save(const StringView& path)
 
 bool Texture::Save(const StringView& path, const InitData* customData)
 {
-    if (OnCheckSave())
+    if (OnCheckSave(path))
         return true;
     ScopeLock lock(Locker);
 
