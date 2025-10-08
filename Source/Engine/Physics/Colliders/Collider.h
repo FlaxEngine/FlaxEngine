@@ -169,7 +169,6 @@ public:
     void ClosestPoint(const Vector3& point, Vector3& result) const final;
     bool ContainsPoint(const Vector3& point) const final;
 
-
 protected:
     // [PhysicsColliderActor]
     void OnEnable() override;
