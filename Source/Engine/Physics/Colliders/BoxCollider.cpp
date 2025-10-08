@@ -118,7 +118,7 @@ void BoxCollider::OnDebugDrawSelf()
 
     Vector3 corners[8];
     _bounds.GetCorners(corners);
-    const float margin = Math::Min(1.0f, _bounds.GetSize().MinValue() * 0.01f);
+    const float margin = Math::Min(1.0f, (float)_bounds.GetSize().MinValue() * 0.01f);
     const Color wiresColor = color.AlphaMultiplied(0.6f);
     if (margin > 0.05f)
     {
