@@ -338,6 +338,34 @@ void RigidBody::AddMovement(const Vector3& translation, const Quaternion& rotati
     SetTransform(t);
 }
 
+#if USE_EDITOR
+
+#include "Engine/Debug/DebugDraw.h"
+
+void RigidBody::OnDebugDrawSelected()
+{
+    // Draw center of mass
+    if (!_centerOfMassOffset.IsZero())
+    {
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition() + (GetOrientation() * (GetCenterOfMass() - GetCenterOfMassOffset())), 5.0f), Color::Red, 0, false);
+    }
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition() + (GetOrientation() * GetCenterOfMass()), 2.5f), Color::Aqua, 0, false);
+
+    // Draw all attached colliders
+    for (Actor* child : Children)
+    {
+        const auto collider = Cast<Collider>(child);
+        if (collider && collider->GetAttachedRigidBody() == this)
+        {
+            collider->OnDebugDrawSelf();
+        }
+    }
+
+    Actor::OnDebugDrawSelected();
+}
+
+#endif
+
 void RigidBody::OnCollisionEnter(const Collision& c)
 {
     CollisionEnter(c);

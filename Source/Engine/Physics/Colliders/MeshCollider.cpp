@@ -85,13 +85,18 @@ void MeshCollider::DrawPhysicsDebug(RenderView& view)
     }
 }
 
-void MeshCollider::OnDebugDrawSelected()
+void MeshCollider::OnDebugDrawSelf()
 {
     if (CollisionData && CollisionData->IsLoaded())
     {
         const auto& debugLines = CollisionData->GetDebugLines();
         DEBUG_DRAW_LINES(Span<Float3>(debugLines.Get(), debugLines.Count()), _transform.GetWorld(), Color::GreenYellow, 0, false);
     }
+}
+
+void MeshCollider::OnDebugDrawSelected()
+{
+    OnDebugDrawSelf();
 
     // Base
     Collider::OnDebugDrawSelected();

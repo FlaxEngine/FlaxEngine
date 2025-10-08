@@ -160,6 +160,10 @@ protected:
 
 private:
     void OnMaterialChanged();
+    friend RigidBody;
+#if USE_EDITOR
+    virtual void OnDebugDrawSelf() {}
+#endif
 
 public:
     // [PhysicsColliderActor]
