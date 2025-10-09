@@ -160,6 +160,10 @@ protected:
 
 private:
     void OnMaterialChanged();
+    friend RigidBody;
+#if USE_EDITOR
+    virtual void OnDebugDrawSelf() {}
+#endif
 
 public:
     // [PhysicsColliderActor]
@@ -168,7 +172,6 @@ public:
     bool RayCast(const Vector3& origin, const Vector3& direction, RayCastHit& hitInfo, float maxDistance = MAX_float) const final;
     void ClosestPoint(const Vector3& point, Vector3& result) const final;
     bool ContainsPoint(const Vector3& point) const final;
-
 
 protected:
     // [PhysicsColliderActor]

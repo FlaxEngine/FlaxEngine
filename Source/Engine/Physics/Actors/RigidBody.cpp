@@ -159,9 +159,10 @@ void RigidBody::SetCenterOfMassOffset(const Float3& value)
 {
     if (value == _centerOfMassOffset)
         return;
+    Float3 delta = value - _centerOfMassOffset;
     _centerOfMassOffset = value;
     if (_actor)
-        PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
+        PhysicsBackend::AddRigidDynamicActorCenterOfMassOffset(_actor, delta);
 }
 
 void RigidBody::SetConstraints(const RigidbodyConstraints value)
@@ -338,6 +339,32 @@ void RigidBody::AddMovement(const Vector3& translation, const Quaternion& rotati
     SetTransform(t);
 }
 
+#if USE_EDITOR
+
+#include "Engine/Debug/DebugDraw.h"
+
+void RigidBody::OnDebugDrawSelected()
+{
+    // Draw center of mass
+    if (!_centerOfMassOffset.IsZero())
+    {
+        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition() + (GetOrientation() * (GetCenterOfMass() - GetCenterOfMassOffset())), 5.0f), Color::Red, 0, false);
+    }
+    DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(GetPosition() + (GetOrientation() * GetCenterOfMass()), 2.5f), Color::Aqua, 0, false);
+
+    // Draw all attached colliders
+    for (Actor* child : Children)
+    {
+        const auto collider = Cast<Collider>(child);
+        if (collider && collider->GetAttachedRigidBody() == this)
+            collider->OnDebugDrawSelf();
+    }
+
+    Actor::OnDebugDrawSelected();
+}
+
+#endif
+
 void RigidBody::OnCollisionEnter(const Collision& c)
 {
     CollisionEnter(c);
@@ -506,7 +533,7 @@ void RigidBody::BeginPlay(SceneBeginData* data)
 
     // Apply the Center Of Mass offset
     if (!_centerOfMassOffset.IsZero())
-        PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
+        PhysicsBackend::AddRigidDynamicActorCenterOfMassOffset(_actor, _centerOfMassOffset);
 
     // Register actor
     PhysicsBackend::AddSceneActor(scene, _actor);
