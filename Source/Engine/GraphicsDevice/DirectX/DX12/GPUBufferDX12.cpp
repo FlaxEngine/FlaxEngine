@@ -136,7 +136,11 @@ bool GPUBufferDX12::OnInit()
 
     // Create resource
     ID3D12Resource* resource;
+#if PLATFORM_WINDOWS
     D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_CREATE_NOT_ZEROED;
+#else
+    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE;
+#endif
     D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON;
     VALIDATE_DIRECTX_CALL(_device->GetDevice()->CreateCommittedResource(&heapProperties, heapFlags, &resourceDesc, initialState, nullptr, IID_PPV_ARGS(&resource)));
 
