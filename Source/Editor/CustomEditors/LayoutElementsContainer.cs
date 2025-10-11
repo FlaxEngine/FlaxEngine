@@ -332,6 +332,8 @@ namespace FlaxEditor.CustomEditors
         {
             var element = Label(text);
             element.Label.Font = new FontReference(Style.Current.FontLarge);
+            element.Label.HorizontalAlignment = Editor.Instance.Options.Options.Interface.HeaderTextAlignment;
+            element.Label.Margin = new Margin(3);
             return element;
         }
 
@@ -344,6 +346,8 @@ namespace FlaxEditor.CustomEditors
                 element.Label.TextColor = Color.FromRGB(header.Color);
             var size = element.Label.Font.GetFont().MeasureText(header.Text);
             element.Label.Height = size.Y;
+            element.Label.HorizontalAlignment = Editor.Instance.Options.Options.Interface.HeaderTextAlignment;
+            element.Label.Margin = new Margin(3);
             return element;
         }
 
