@@ -100,6 +100,11 @@ namespace FlaxEditor.GUI.Input
         public event Action SlidingEnd;
 
         /// <summary>
+        /// If enabled, pressing the arrow up or down key increments/ decrements the value.
+        /// </summary>
+        public bool ArrowKeysIncrement = true;
+
+        /// <summary>
         /// Gets or sets the slider speed. Use value 0 to disable and hide slider UI.
         /// </summary>
         public float SlideSpeed
@@ -237,6 +242,27 @@ namespace FlaxEditor.GUI.Input
             Cursor = CursorType.Default;
 
             ResetViewOffset();
+        }
+
+        /// <inheritdoc />
+        public override bool OnKeyDown(KeyboardKeys key)
+        {
+            if (ArrowKeysIncrement && (key == KeyboardKeys.ArrowUp || key == KeyboardKeys.ArrowDown))
+            {
+                bool altDown = Root.GetKey(KeyboardKeys.Alt);
+                bool shiftDown = Root.GetKey(KeyboardKeys.Shift);
+                bool controlDown = Root.GetKey(KeyboardKeys.Control);
+                float deltaValue = altDown ? 0.1f : (shiftDown ? 10f : (controlDown ? 100f : 1));
+                float slideDelta = key == KeyboardKeys.ArrowUp ? deltaValue : -deltaValue;
+
+                _startSlideValue = Value;
+                ApplySliding(slideDelta);
+                EndSliding();
+                Focus();
+                return true;
+            }
+
+            return base.OnKeyDown(key);
         }
 
         /// <inheritdoc />
