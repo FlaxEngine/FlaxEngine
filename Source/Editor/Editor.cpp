@@ -266,8 +266,8 @@ bool Editor::CheckProjectUpgrade()
     // Check if last version was older
     else if (lastVersion.Major < FLAXENGINE_VERSION_MAJOR || (lastVersion.Major == FLAXENGINE_VERSION_MAJOR && lastVersion.Minor < FLAXENGINE_VERSION_MINOR))
     {
-        LOG(Warning, "The project was opened with the older editor version last time");
-        const auto result = MessageBox::Show(TEXT("The project was opened with the older editor version last time. Loading it may modify existing data so older editor version won't open it. Do you want to perform a backup before or cancel operation?"), TEXT("Project upgrade"), MessageBoxButtons::YesNoCancel, MessageBoxIcon::Question);
+        LOG(Warning, "The project was last opened with an older editor version");
+        const auto result = MessageBox::Show(TEXT("The project was last opened with an older editor version.\nLoading it may modify existing data, which can result in older editor versions being unable to open it.\n\nDo you want to perform a backup before or cancel the operation?"), TEXT("Project upgrade"), MessageBoxButtons::YesNoCancel, MessageBoxIcon::Question);
         if (result == DialogResult::Yes)
         {
             if (BackupProject())
@@ -289,8 +289,8 @@ bool Editor::CheckProjectUpgrade()
     // Check if last version was newer
     else if (lastVersion.Major > FLAXENGINE_VERSION_MAJOR || (lastVersion.Major == FLAXENGINE_VERSION_MAJOR && lastVersion.Minor > FLAXENGINE_VERSION_MINOR))
     {
-        LOG(Warning, "The project was opened with the newer editor version last time");
-        const auto result = MessageBox::Show(TEXT("The project was opened with the newer editor version last time. Loading it may fail and corrupt existing data. Do you want to perform a backup before or cancel operation?"), TEXT("Project upgrade"), MessageBoxButtons::YesNoCancel, MessageBoxIcon::Warning);
+        LOG(Warning, "The project was last opened with a newer editor version");
+        const auto result = MessageBox::Show(TEXT("The project was last opened with a newer editor version.\nLoading it may fail and corrupt existing data.\n\nDo you want to perform a backup before loading or cancel the operation?"), TEXT("Project upgrade"), MessageBoxButtons::YesNoCancel, MessageBoxIcon::Warning);
         if (result == DialogResult::Yes)
         {
             if (BackupProject())
