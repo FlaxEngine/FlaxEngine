@@ -140,7 +140,7 @@ namespace Flax.Deps.Dependencies
                     // Build for Linux
                     SetupDirectory(buildDir, true);
                     var toolchain = UnixToolchain.GetToolchainName(platform, TargetArchitecture.x64);
-                    Utilities.Run("cmake", string.Format("-G \"Unix Makefiles\" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DFT_WITH_BZIP2=OFF -DFT_WITH_ZLIB=OFF -DFT_WITH_PNG=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_TARGET={0} ..", toolchain), null, buildDir, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+                    Utilities.Run("cmake", string.Format("-G \"Unix Makefiles\" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DFT_WITH_BZIP2=OFF -DFT_WITH_ZLIB=OFF -DFT_WITH_PNG=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_TARGET={0} ..", toolchain), null, buildDir, Utilities.RunOptions.ThrowExceptionOnError, envVars);
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ThrowExceptionOnError, envVars);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
@@ -211,7 +211,7 @@ namespace Flax.Deps.Dependencies
 
                     // Build for Android
                     SetupDirectory(buildDir, true);
-                    RunCmake(buildDir, TargetPlatform.Android, TargetArchitecture.ARM64, ".. -DFT_WITH_BZIP2=OFF -DFT_WITH_ZLIB=OFF -DFT_WITH_PNG=OFF -DCMAKE_BUILD_TYPE=Release");
+                    RunCmake(buildDir, TargetPlatform.Android, TargetArchitecture.ARM64, ".. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DFT_WITH_BZIP2=OFF -DFT_WITH_ZLIB=OFF -DFT_WITH_PNG=OFF -DCMAKE_BUILD_TYPE=Release");
                     BuildCmake(buildDir);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
@@ -221,7 +221,7 @@ namespace Flax.Deps.Dependencies
                 {
                     // Build for Switch
                     SetupDirectory(buildDir, true);
-                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release");
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE=Release");
                     BuildCmake(buildDir);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
@@ -233,7 +233,7 @@ namespace Flax.Deps.Dependencies
                     foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
                         SetupDirectory(buildDir, true);
-                        RunCmake(buildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release");
+                        RunCmake(buildDir, platform, architecture, ".. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE=Release");
                         BuildCmake(buildDir);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));
@@ -250,7 +250,7 @@ namespace Flax.Deps.Dependencies
 
                     // Build for iOS
                     SetupDirectory(buildDir, true);
-                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DIOS_PLATFORM=OS -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_BUILD_TYPE=Release -DFT_WITH_BZIP2=OFF -DFT_WITH_ZLIB=OFF -DFT_WITH_PNG=OFF");
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DIOS_PLATFORM=OS -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_BUILD_TYPE=Release -DFT_WITH_BZIP2=OFF -DFT_WITH_ZLIB=OFF -DFT_WITH_PNG=OFF");
                     BuildCmake(buildDir);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     Utilities.FileCopy(Path.Combine(buildDir, libraryFileName), Path.Combine(depsFolder, libraryFileName));

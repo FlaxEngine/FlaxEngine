@@ -297,7 +297,7 @@ namespace Flax.Deps.Dependencies
             {
                 var solutionPath = Path.Combine(oggBuildDir, "ogg.sln");
 
-                RunCmake(oggRoot, platform, architecture, $"-B\"{oggBuildDir}\" -DBUILD_SHARED_LIBS=OFF");
+                RunCmake(oggRoot, platform, architecture, $"-B\"{oggBuildDir}\" -DBUILD_SHARED_LIBS=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5");
                 Deploy.VCEnvironment.BuildSolution(solutionPath, configurationMsvc, architecture.ToString());
                 foreach (var file in oggBinariesToCopyWindowsCmake)
                     binariesToCopy.Add((Path.Combine(oggBuildDir, configurationMsvc, file.Item1), file.Item2));
@@ -308,7 +308,7 @@ namespace Flax.Deps.Dependencies
                 var oggLibraryPath = Path.Combine(oggBuildDir, configurationMsvc, "ogg" + ext);
                 var solutionPath = Path.Combine(vorbisBuildDir, "vorbis.sln");
 
-                RunCmake(vorbisRoot, platform, architecture, $"-B\"{vorbisBuildDir}\" -DOGG_INCLUDE_DIR=\"{Path.Combine(oggRoot, "include")}\" -DOGG_LIBRARY=\"{oggLibraryPath}\" -DBUILD_SHARED_LIBS=OFF");
+                RunCmake(vorbisRoot, platform, architecture, $"-B\"{vorbisBuildDir}\" -DOGG_INCLUDE_DIR=\"{Path.Combine(oggRoot, "include")}\" -DOGG_LIBRARY=\"{oggLibraryPath}\" -DBUILD_SHARED_LIBS=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5");
                 Deploy.VCEnvironment.BuildSolution(solutionPath, configurationMsvc, architecture.ToString());
                 foreach (var file in vorbisBinariesToCopyWindowsCmake)
                     binariesToCopy.Add((Path.Combine(vorbisBuildDir, "lib", configurationMsvc, file.Item1), file.Item2));

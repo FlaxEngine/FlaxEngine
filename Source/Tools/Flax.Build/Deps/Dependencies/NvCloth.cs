@@ -110,7 +110,7 @@ namespace Flax.Deps.Dependencies
             // Peek options
             var binariesPrefix = string.Empty;
             var binariesPostfix = string.Empty;
-            var cmakeArgs = "-DNV_CLOTH_ENABLE_DX11=0 -DNV_CLOTH_ENABLE_CUDA=0 -DPX_GENERATE_GPU_PROJECTS=0";
+            var cmakeArgs = "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DNV_CLOTH_ENABLE_DX11=0 -DNV_CLOTH_ENABLE_CUDA=0 -DPX_GENERATE_GPU_PROJECTS=0";
             var cmakeName = string.Empty;
             var buildFolder = Path.Combine(nvCloth, "compiler", platform.ToString() + '_' + architecture.ToString());
             var envVars = new Dictionary<string, string>();
