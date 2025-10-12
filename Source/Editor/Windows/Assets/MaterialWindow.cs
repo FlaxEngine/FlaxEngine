@@ -359,7 +359,6 @@ namespace FlaxEditor.Windows.Assets
                     Editor.LogError("Failed to save surface data");
                 }
                 _asset.Reload();
-                _asset.WaitForLoaded();
             }
         }
 
