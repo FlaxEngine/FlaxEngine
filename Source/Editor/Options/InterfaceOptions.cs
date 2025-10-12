@@ -2,6 +2,7 @@
 
 using System;
 using System.ComponentModel;
+using FlaxEditor.Content.Create;
 using FlaxEditor.GUI.Docking;
 using FlaxEngine;
 using FlaxEngine.GUI;
@@ -565,5 +566,11 @@ namespace FlaxEditor.Options
                     _smallFont = value;
             }
         }
+
+        /// <summary>
+        /// Gets or sets the default value used when creating a new widget.
+        /// </summary>
+        [EditorDisplay("Defaults"), EditorOrder(1000)]
+        public WidgetCreateEntry.Options.WidgetMode DefaultWidgetInitializationMode = WidgetCreateEntry.Options.WidgetMode.Control;
     }
 }

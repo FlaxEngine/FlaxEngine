@@ -97,8 +97,8 @@ namespace FlaxEditor.Content.Create
             /// <summary>
             /// The mode used to initialize the widget.
             /// </summary>
-            [Tooltip("Whether to initialize the widget with a canvas or a control.")]
-            public WidgetMode WidgetInitializationMode = WidgetMode.Canvas;
+            [Tooltip("Whether to initialize the widget with a canvas or a control. Default value can be changed in the Interface Editor Options.")]
+            public WidgetMode WidgetInitializationMode = Editor.Instance.Options.Options.Interface.DefaultWidgetInitializationMode;
 
             bool ShowRoot => WidgetInitializationMode == WidgetMode.Control;
 
