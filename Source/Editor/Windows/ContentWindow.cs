@@ -278,11 +278,31 @@ namespace FlaxEditor.Windows
             }
 
             var menu = new ContextMenu();
-            CreateNewFolderMenu(menu, CurrentViewFolder, true);
-            CreateNewModuleMenu(menu, CurrentViewFolder, true);
+            
+            InterfaceOptions interfaceOptions = Editor.Instance.Options.Options.Interface;
+            bool disableUnavaliable = interfaceOptions.UnavaliableContentCreateOptions == InterfaceOptions.DisabledHidden.Disabled;
+
+            CreateNewFolderMenu(menu, CurrentViewFolder, disableUnavaliable);
+            CreateNewModuleMenu(menu, CurrentViewFolder, disableUnavaliable);
             menu.AddSeparator();
-            CreateNewContentItemMenu(menu, CurrentViewFolder, false, true);
-            menu.Show(this, _createNewButton.UpperLeft, ContextMenuDirection.RightUp);
+            CreateNewContentItemMenu(menu, CurrentViewFolder, false, disableUnavaliable);
+            // Hack: Show the menu once to get the direction, then show it above or below the button depending on the direction.
+            menu.Show(this, _createNewButton.UpperLeft);
+            var direction = menu.Direction;
+            menu.Hide();
+            bool below = false;
+            switch (direction)
+            {
+                case ContextMenuDirection.RightDown:
+                case ContextMenuDirection.LeftDown:
+                    below = true;
+                    break;
+                case ContextMenuDirection.RightUp:
+                case ContextMenuDirection.LeftUp:
+                    below = false;
+                    break;
+            }
+            menu.Show(this, below ? _createNewButton.BottomLeft : _createNewButton.UpperLeft, direction);
         }
 
         private ContextMenu OnViewDropdownPopupCreate(ComboBox comboBox)
