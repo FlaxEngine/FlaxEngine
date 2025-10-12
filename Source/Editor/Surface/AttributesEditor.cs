@@ -2,11 +2,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Loader;
-using System.Runtime.Serialization.Formatters.Binary;
 using FlaxEditor.CustomEditors;
 using FlaxEditor.CustomEditors.Editors;
 using FlaxEditor.GUI.ContextMenu;
@@ -18,6 +15,7 @@ namespace FlaxEditor.Surface
     class AttributesEditor : ContextMenuBase
     {
         private CustomEditorPresenter _presenter;
+        private Proxy _proxy;
         private byte[] _oldData;
 
         private class Proxy
@@ -72,11 +70,11 @@ namespace FlaxEditor.Surface
         /// Initializes a new instance of the <see cref="AttributesEditor"/> class.
         /// </summary>
         /// <param name="attributes">The attributes list to edit.</param>
-        /// <param name="attributeType">The allowed attribute types to use.</param>
-        public AttributesEditor(Attribute[] attributes, IList<Type> attributeType)
+        /// <param name="attributeTypes">The allowed attribute types to use.</param>
+        public AttributesEditor(Attribute[] attributes, IList<Type> attributeTypes)
         {
             // Context menu dimensions
-            const float width = 340.0f;
+            const float width = 375.0f;
             const float height = 370.0f;
             Size = new Float2(width, height);
 
@@ -91,58 +89,65 @@ namespace FlaxEditor.Surface
             // Buttons
             float buttonsWidth = (width - 16.0f) * 0.5f;
             float buttonsHeight = 20.0f;
-            var cancelButton = new Button(4.0f, title.Bottom + 4.0f, buttonsWidth, buttonsHeight)
+            var okButton = new Button(4.0f, Bottom - 4.0f - buttonsHeight, buttonsWidth, buttonsHeight)
+            {
+                Text = "Ok",
+                Parent = this
+            };
+            okButton.Clicked += OnOkButtonClicked;
+            var cancelButton = new Button(okButton.Right + 4.0f, okButton.Y, buttonsWidth, buttonsHeight)
             {
                 Text = "Cancel",
                 Parent = this
             };
             cancelButton.Clicked += Hide;
-            var okButton = new Button(cancelButton.Right + 4.0f, cancelButton.Y, buttonsWidth, buttonsHeight)
-            {
-                Text = "OK",
-                Parent = this
-            };
-            okButton.Clicked += OnOkButtonClicked;
 
-            // Actual panel
+            // Actual panel used to display attributes
             var panel1 = new Panel(ScrollBars.Vertical)
             {
-                Bounds = new Rectangle(0, okButton.Bottom + 4.0f, width, height - okButton.Bottom - 2.0f),
+                Bounds = new Rectangle(0, title.Bottom + 4.0f, width, height - buttonsHeight - title.Height - 14.0f),
                 Parent = this
             };
             var editor = new CustomEditorPresenter(null);
             editor.Panel.AnchorPreset = AnchorPresets.HorizontalStretchTop;
             editor.Panel.IsScrollable = true;
             editor.Panel.Parent = panel1;
-            editor.Panel.Tag = attributeType;
+            editor.Panel.Tag = attributeTypes;
             _presenter = editor;
 
             // Cache 'previous' state to check if attributes were edited after operation
             _oldData = SurfaceMeta.GetAttributesData(attributes);
 
-            editor.Select(new Proxy
+            _proxy = new Proxy
             {
                 Value = attributes,
-            });
+            };
+            editor.Select(_proxy);
+
+            _presenter.Modified += OnPresenterModified;
+            OnPresenterModified();
+        }
+
+        private void OnPresenterModified()
+        {
+            if (_proxy.Value.Length == 0)
+            {
+                var label = _presenter.Label("No attributes.\nPress the \"+\" button to add a new one and then select an attribute type using the \"Type\" dropdown.", TextAlignment.Center);
+                label.Label.Wrapping = TextWrapping.WrapWords;
+                label.Control.Height = 35f;
+                label.Label.Margin = new Margin(10f);
+                label.Label.TextColor = label.Label.TextColorHighlighted = Style.Current.ForegroundGrey;
+            }
         }
 
         private void OnOkButtonClicked()
         {
             var newValue = ((Proxy)_presenter.Selection[0]).Value;
-            for (int i = 0; i < newValue.Length; i++)
-            {
-                if (newValue[i] == null)
-                {
-                    MessageBox.Show("One of the attributes is null. Please set it to the valid object.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-            }
+            newValue = newValue.Where(v => v != null).ToArray();
 
             var newData = SurfaceMeta.GetAttributesData(newValue);
             if (!_oldData.SequenceEqual(newData))
-            {
                 Edited?.Invoke(newValue);
-            }
 
             Hide();
         }
@@ -183,7 +188,9 @@ namespace FlaxEditor.Surface
         {
             _presenter = null;
             _oldData = null;
+            _proxy = null;
             Edited = null;
+            _presenter.Modified -= OnPresenterModified;
 
             base.OnDestroy();
         }
