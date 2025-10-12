@@ -14,12 +14,7 @@ namespace FlaxEditor.GUI.Input
     [HideInEditor]
     public class ColorValueBox : Control
     {
-        private const String ScaleParamName = "Scale";
-        // 4.8 is a magic number that makes the grid fit perfect in the color value box
-        private const float GridScale = 4.8f;
-
         private bool _isMouseDown;
-        private MaterialBase checkerMaterial;
 
         /// <summary>
         /// Delegate function used for the color picker events handling.
@@ -106,9 +101,6 @@ namespace FlaxEditor.GUI.Input
         public ColorValueBox()
         : base(0, 0, 32, 18)
         {
-            checkerMaterial = FlaxEngine.Content.LoadAsyncInternal<MaterialBase>(EditorAssets.ColorAlphaBackgroundGrid);
-            checkerMaterial = checkerMaterial.CreateVirtualInstance();
-            checkerMaterial.SetParameterValue(ScaleParamName, GridScale);
         }
 
         /// <summary>
@@ -146,7 +138,25 @@ namespace FlaxEditor.GUI.Input
             if (isTransparent)
             {
                 var alphaRect = new Rectangle(colorRect.Right, 0, Width - colorRect.Right, Height);
-                Render2D.DrawMaterial(checkerMaterial, alphaRect);
+
+                // Draw checkerboard pattern to part of the color value box
+                Render2D.FillRectangle(alphaRect, Color.White);
+                var smallRectSize = 7.9f;
+                var numHor = Mathf.CeilToInt(alphaRect.Width / smallRectSize);
+                var numVer = Mathf.CeilToInt(alphaRect.Height / smallRectSize);
+                for (int i = 0; i < numHor; i++)
+                {
+                    for (int j = 0; j < numVer; j++)
+                    {
+                        if ((i + j) % 2 == 0)
+                        {
+                            var rect = new Rectangle(alphaRect.X + smallRectSize * i, alphaRect.Y + smallRectSize * j, new Float2(smallRectSize));
+                            Render2D.PushClip(alphaRect);
+                            Render2D.FillRectangle(rect, Color.Gray);
+                            Render2D.PopClip();
+                        }
+                    }
+                }
                 Render2D.FillRectangle(alphaRect, _value);
             }
 
