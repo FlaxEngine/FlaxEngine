@@ -15,11 +15,12 @@ public:
     static void ISerializeModifierClearCallback(ISerializeModifier* obj);
 
 public:
+    typedef CollectionPoolCache<ISerializeModifier, ISerializeModifierClearCallback> ISerializeModifierCache;
 
     /// <summary>
     /// Gets the ISerializeModifier lookup cache. Safe allocation, per thread, uses caching.
     /// </summary>
-    static CollectionPoolCache<ISerializeModifier, ISerializeModifierClearCallback> ISerializeModifier;
+    static ISerializeModifierCache ISerializeModifier;
 
 public:
 

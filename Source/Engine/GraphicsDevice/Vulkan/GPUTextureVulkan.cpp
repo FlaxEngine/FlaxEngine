@@ -11,7 +11,7 @@
 #include "Engine/Graphics/Textures/TextureData.h"
 #include "Engine/Scripting/Enums.h"
 
-void GPUTextureViewVulkan::Init(GPUDeviceVulkan* device, ResourceOwnerVulkan* owner, VkImage image, int32 totalMipLevels, PixelFormat format, MSAALevel msaa, VkExtent3D extent, VkImageViewType viewType, int32 mipLevels, int32 firstMipIndex, int32 arraySize, int32 firstArraySlice, bool readOnlyDepth)
+void GPUTextureViewVulkan::Init(GPUDeviceVulkan* device, ResourceOwnerVulkan* owner, VkImage image, int32 totalMipLevels, PixelFormat format, MSAALevel msaa, VkExtent3D extent, VkImageViewType viewType, int32 mipLevels, int32 firstMipIndex, int32 arraySize, int32 firstArraySlice, bool readOnlyDepth, bool stencilView)
 {
     ASSERT(View == VK_NULL_HANDLE);
 
@@ -57,7 +57,13 @@ void GPUTextureViewVulkan::Init(GPUDeviceVulkan* device, ResourceOwnerVulkan* ow
         SubresourceIndex = RenderTools::CalcSubresourceIndex(firstMipIndex, firstArraySlice, totalMipLevels);
     }
 
-    if (PixelFormatExtensions::IsDepthStencil(format))
+    if (stencilView)
+    {
+        range.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
+        LayoutRTV = readOnlyDepth ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        LayoutSRV = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+    }
+    else if (PixelFormatExtensions::IsDepthStencil(format))
     {
         range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 #if 0
@@ -157,13 +163,23 @@ void GPUTextureViewVulkan::DescriptorAsImage(GPUContextVulkan* context, VkImageV
     imageView = View;
     layout = LayoutSRV;
     const VkImageAspectFlags aspectMask = Info.subresourceRange.aspectMask;
-    if (aspectMask == (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT))
+    if (aspectMask & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT))
     {
-        // Transition depth-only when binding depth buffer with stencil
+        // Transition depth-only when binding depth buffer with stencil (or stencil-only without depth)
         if (ViewSRV == VK_NULL_HANDLE)
         {
             VkImageViewCreateInfo createInfo = Info;
-            createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            if (aspectMask == VK_IMAGE_ASPECT_STENCIL_BIT)
+            {
+                // Stencil
+                createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
+                createInfo.components.g = VK_COMPONENT_SWIZZLE_R; // Map .g component in shader to .r of stencil plane
+            }
+            else
+            {
+                // Depth
+                createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            }
             VALIDATE_VULKAN_RESULT(vkCreateImageView(Device->Device, &createInfo, nullptr, &ViewSRV));
         }
         imageView = ViewSRV;
@@ -434,6 +450,26 @@ void GPUTextureVulkan::initHandles()
     {
         _handleReadOnlyDepth.Init(_device, this, _image, mipLevels, format, msaa, extent, VK_IMAGE_VIEW_TYPE_2D, mipLevels, 0, 1, 0, true);
     }
+
+    // Stencil view
+    if (IsDepthStencil() && IsShaderResource() && PixelFormatExtensions::HasStencil(format))
+    {
+        PixelFormat stencilFormat;
+        switch (format)
+        {
+        case PixelFormat::D24_UNorm_S8_UInt:
+        case PixelFormat::R24_UNorm_X8_Typeless:
+        case PixelFormat::R24G8_Typeless:
+            stencilFormat = PixelFormat::X24_Typeless_G8_UInt;
+            break;
+        case PixelFormat::D32_Float_S8X24_UInt:
+        case PixelFormat::R32_Float_X8X24_Typeless:
+        case PixelFormat::R32G8X24_Typeless:
+            stencilFormat = PixelFormat::X32_Typeless_G8X24_UInt;
+            break;
+        }
+        _handleStencil.Init(_device, this, _image, mipLevels, stencilFormat, msaa, extent, VK_IMAGE_VIEW_TYPE_2D, mipLevels, 0, 1, 0, true, true);
+    }
 }
 
 void GPUTextureVulkan::OnResidentMipsChanged()
@@ -457,6 +493,7 @@ void GPUTextureVulkan::OnReleaseGPU()
     _handleVolume.Release();
     _handleUAV.Release();
     _handleReadOnlyDepth.Release();
+    _handleStencil.Release();
     for (int32 i = 0; i < _handlesPerMip.Count(); i++)
     {
         for (int32 j = 0; j < _handlesPerMip[i].Count(); j++)

@@ -5,6 +5,7 @@
 #include "Engine/Content/Assets/Model.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Actors/PointLight.h"
@@ -88,6 +89,7 @@ void ViewportIconsRenderer::DrawIcons(RenderContext& renderContext, Actor* actor
     draw.Flags = StaticFlags::Transform;
     draw.DrawModes = DrawPass::Forward;
     draw.PerInstanceRandom = 0;
+    draw.StencilValue = 0;
     draw.LODBias = 0;
     draw.ForcedLOD = -1;
     draw.SortOrder = 0;
@@ -264,6 +266,7 @@ void ViewportIconsRendererService::DrawIcons(RenderContext& renderContext, Actor
 
 bool ViewportIconsRendererService::Init()
 {
+    PROFILE_MEM(Editor);
     QuadModel = Content::LoadAsyncInternal<Model>(TEXT("Engine/Models/Quad"));
 #define INIT(type, path) \
     InstanceBuffers[static_cast<int32>(IconTypes::type)].Setup(1); \

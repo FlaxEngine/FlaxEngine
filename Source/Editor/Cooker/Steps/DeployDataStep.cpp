@@ -88,7 +88,7 @@ bool DeployDataStep::Perform(CookingData& data)
             {
                 // Ask Flax.Build to provide .NET SDK location for the current platform
                 String sdks;
-                bool failed = ScriptsBuilder::RunBuildTool(String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printSDKs {}"), GAME_BUILD_DOTNET_VER), data.CacheDirectory);
+                bool failed = ScriptsBuilder::RunBuildTool(String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printSDKs {}"), data.GetDotnetCommandArg()), data.CacheDirectory);
                 failed |= File::ReadAllText(data.CacheDirectory / TEXT("SDKs.txt"), sdks);
                 int32 idx = sdks.Find(TEXT("DotNetSdk, "), StringSearchCase::CaseSensitive);
                 if (idx != -1)
@@ -200,7 +200,7 @@ bool DeployDataStep::Perform(CookingData& data)
                 String sdks;
                 const Char *platformName, *archName;
                 data.GetBuildPlatformName(platformName, archName);
-                String args = String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printDotNetRuntime -platform={} -arch={} {}"), platformName, archName, GAME_BUILD_DOTNET_VER);
+                String args = String::Format(TEXT("-log -logMessagesOnly -logFileWithConsole -logfile=SDKs.txt -printDotNetRuntime -platform={} -arch={} {}"), platformName, archName, data.GetDotnetCommandArg());
                 bool failed = ScriptsBuilder::RunBuildTool(args, data.CacheDirectory);
                 failed |= File::ReadAllText(data.CacheDirectory / TEXT("SDKs.txt"), sdks);
                 Array<String> parts;
@@ -244,10 +244,13 @@ bool DeployDataStep::Perform(CookingData& data)
                     }
                     if (version.IsEmpty())
                     {
+                        int32 minVer = GAME_BUILD_DOTNET_RUNTIME_MIN_VER, maxVer = GAME_BUILD_DOTNET_RUNTIME_MAX_VER;
                         if (srcDotnetFromEngine)
                         {
                             // Detect version from runtime files inside Engine Platform folder
-                            for (int32 i = GAME_BUILD_DOTNET_RUNTIME_MAX_VER; i >= GAME_BUILD_DOTNET_RUNTIME_MIN_VER; i--)
+                            if (data.Tools->GetDotnetVersion() != 0)
+                                minVer = maxVer = data.Tools->GetDotnetVersion();
+                            for (int32 i = maxVer; i >= minVer; i--)
                             {
                                 // Check runtime files inside Engine Platform folder
                                 String testPath1 = srcDotnet / String::Format(TEXT("lib/net{}.0"), i);
@@ -262,7 +265,7 @@ bool DeployDataStep::Perform(CookingData& data)
                         }
                         if (version.IsEmpty())
                         {
-                            data.Error(String::Format(TEXT("Failed to find supported .NET {} version for the current host platform."), GAME_BUILD_DOTNET_RUNTIME_MIN_VER));
+                            data.Error(String::Format(TEXT("Failed to find supported .NET {} version (min {}) for the current host platform."), maxVer, minVer));
                             return true;
                         }
                     }
@@ -364,7 +367,7 @@ bool DeployDataStep::Perform(CookingData& data)
             const String logFile = data.CacheDirectory / TEXT("StripDotnetLibs.txt");
             String args = String::Format(
                 TEXT("-log -logfile=\"{}\" -runDotNetClassLibStripping -mutex -binaries=\"{}\" {}"),
-                logFile, data.DataOutputPath, GAME_BUILD_DOTNET_VER);
+                logFile, data.DataOutputPath, data.GetDotnetCommandArg());
             for (const String& define : data.CustomDefines)
             {
                 args += TEXT(" -D");

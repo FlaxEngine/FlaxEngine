@@ -103,6 +103,11 @@ API_ENUM() enum class MaterialShadingModel : byte
     /// The foliage material. Intended for foliage materials like leaves and grass that need light scattering to transport simulation through the thin object.
     /// </summary>
     Foliage = 3,
+
+    /// <summary>
+    /// The custom lit shader that calculates own lighting such as Cel Shading. It has access to the scene lights data during both GBuffer and Forward pass rendering.
+    /// </summary>
+    CustomLit = 5,
 };
 
 /// <summary>
@@ -439,6 +444,16 @@ API_ENUM() enum class MaterialSceneTextures
     /// The scene world-space position (relative to the render view origin).
     /// </summary>
     WorldPosition = 11,
+
+    /// <summary>
+    /// The scene stencil.
+    /// </summary>
+    SceneStencil = 12,
+
+    /// <summary>
+    /// The object layer index.
+    /// </summary>
+    ObjectLayer = 13,
 };
 
 /// <summary>

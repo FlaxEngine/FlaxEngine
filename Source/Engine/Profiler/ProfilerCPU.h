@@ -412,3 +412,6 @@ struct TIsPODType<ProfilerCPU::Event>
 #define PROFILE_CPU_ACTOR(actor)
 
 #endif
+
+// CPU-wait zones can be marked with red color for better readability
+#define TracyWaitZoneColor 0xba1904

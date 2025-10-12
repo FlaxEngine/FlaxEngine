@@ -73,7 +73,12 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
 #endif
         return state;
     }
-    PROFILE_CPU_NAMED("Create Pipeline State");
+    PROFILE_CPU();
+#if !BUILD_RELEASE
+    DebugName name;
+    GetDebugName(name);
+    ZoneText(name.Get(), name.Count() - 1);
+#endif
 
     // Update description to match the pipeline
     _desc.NumRenderTargets = key.RTsCount;
@@ -103,41 +108,13 @@ ID3D12PipelineState* GPUPipelineStateDX12::GetState(GPUTextureViewDX12* depth, i
     const HRESULT result = _device->GetDevice()->CreateGraphicsPipelineState(&_desc, IID_PPV_ARGS(&state));
     LOG_DIRECTX_RESULT(result);
     if (FAILED(result))
+    {
+#if !BUILD_RELEASE
+        LOG(Error, "CreateGraphicsPipelineState failed for {}", String(name.Get(), name.Count() - 1));
+#endif
         return nullptr;
-#if GPU_ENABLE_RESOURCE_NAMING && BUILD_DEBUG
-    Array<char, InlinedAllocation<200>> name;
-    if (DebugDesc.VS)
-    {
-        name.Add(*DebugDesc.VS->GetName(), DebugDesc.VS->GetName().Length());
-        name.Add('+');
     }
-#if GPU_ALLOW_TESSELLATION_SHADERS
-    if (DebugDesc.HS)
-    {
-        name.Add(*DebugDesc.HS->GetName(), DebugDesc.HS->GetName().Length());
-        name.Add('+');
-    }
-    if (DebugDesc.DS)
-    {
-        name.Add(*DebugDesc.DS->GetName(), DebugDesc.DS->GetName().Length());
-        name.Add('+');
-    }
-#endif
-#if GPU_ALLOW_GEOMETRY_SHADERS
-    if (DebugDesc.GS)
-    {
-        name.Add(*DebugDesc.GS->GetName(), DebugDesc.GS->GetName().Length());
-        name.Add('+');
-    }
-#endif
-    if (DebugDesc.PS)
-    {
-        name.Add(*DebugDesc.PS->GetName(), DebugDesc.PS->GetName().Length());
-        name.Add('+');
-    }
-    if (name.Count() != 0 && name[name.Count() - 1] == '+')
-        name.RemoveLast();
-    name.Add('\0');
+#if GPU_ENABLE_RESOURCE_NAMING && !BUILD_RELEASE
     SetDebugObjectName(state, name.Get(), name.Count() - 1);
 #endif
 
@@ -158,7 +135,8 @@ void GPUPipelineStateDX12::OnReleaseGPU()
 
 bool GPUPipelineStateDX12::Init(const Description& desc)
 {
-    ASSERT(!IsValid());
+    if (IsValid())
+        OnReleaseGPU();
 
     // Create description
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psDesc;

@@ -62,8 +62,8 @@ void GetRadialLightAttenuation(
     float distanceBiasSqr,
     float3 toLight,
     float3 L,
-    inout float NoL,
-    inout float attenuation)
+    out float NoL,
+    out float attenuation)
 {
     // Distance attenuation
     if (lightData.InverseSquared)
@@ -102,6 +102,20 @@ void GetRadialLightAttenuation(
         float invCosConeDifference = lightData.SpotAngles.y;
         attenuation *= Square(saturate((dot(normalize(-L), lightData.Direction) - cosOuterCone) * invCosConeDifference));
     }
+}
+
+// Calculates radial light (point or spot) attenuation factors (distance, spot and radius mask)
+void GetRadialLightAttenuation(
+    LightData lightData,
+    bool isSpotLight,
+    float3 toLight,
+    float3 N,
+    out float NoL,
+    out float attenuation)
+{
+    float distanceSqr = dot(toLight, toLight);
+    float3 L = toLight * rsqrt(distanceSqr);
+    GetRadialLightAttenuation(lightData, isSpotLight, N, distanceSqr, 1, toLight, L, NoL, attenuation);
 }
 
 // Find representative incoming light direction and energy modification

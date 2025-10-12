@@ -12,7 +12,7 @@ namespace Flax.Build
         /// Specifies the minimum iOS version to use (eg. 14).
         /// </summary>
         [CommandLine("iOSMinVer", "<version>", "Specifies the minimum iOS version to use (eg. 14).")]
-        public static string iOSMinVer = "14";
+        public static string iOSMinVer = "15";
     }
 }
 

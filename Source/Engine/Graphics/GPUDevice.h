@@ -54,7 +54,40 @@ public:
     };
 
     /// <summary>
-    /// Describes a video output display mode.
+    /// Describes a video output display (monitor).
+    /// </summary>
+    API_STRUCT() struct VideoOutput
+    {
+        DECLARE_SCRIPTING_TYPE_NO_SPAWN(VideoOutputMode);
+
+        /// <summary>
+        /// The display name.
+        /// </summary>
+        API_FIELD() String Name;
+
+        /// <summary>
+        /// The native screen resolution width (in pixel).
+        /// </summary>
+        API_FIELD() uint32 Width = 0;
+
+        /// <summary>
+        /// The native screen resolution height (in pixel).
+        /// </summary>
+        API_FIELD() uint32 Height = 0;
+
+        /// <summary>
+        /// The maximum screen refresh rate (in hertz).
+        /// </summary>
+        API_FIELD() float RefreshRate = 0;
+
+        /// <summary>
+        /// Flag that indicates that monitor supports displaying High Dynamic Range colors.
+        /// </summary>
+        API_FIELD() bool HDR = false;
+    };
+
+    /// <summary>
+    /// Describes a video output display mode (monitor screen mode).
     /// </summary>
     API_STRUCT() struct VideoOutputMode
     {
@@ -73,7 +106,12 @@ public:
         /// <summary>
         /// The screen refresh rate (in hertz).
         /// </summary>
-        API_FIELD() uint32 RefreshRate;
+        API_FIELD() float RefreshRate;
+
+        /// <summary>
+        /// The index of the VideoOutput from the device monitors list.
+        /// </summary>
+        API_FIELD() int32 VideoOutputIndex;
     };
 
     /// <summary>
@@ -133,6 +171,11 @@ public:
     /// The GPU limits.
     /// </summary>
     API_FIELD(ReadOnly) GPULimits Limits;
+
+    /// <summary>
+    /// The available video outputs (monitors).
+    /// </summary>
+    API_FIELD(ReadOnly) Array<VideoOutput> VideoOutputs;
 
     /// <summary>
     /// The available video output modes.
@@ -236,7 +279,7 @@ public:
     /// <summary>
     /// Gets the list with all active GPU resources.
     /// </summary>
-    API_PROPERTY() Array<GPUResource*> GetResources() const;
+    Array<GPUResource*> GetResources() const;
 
     /// <summary>
     /// Gets the GPU asynchronous work manager.
@@ -432,6 +475,12 @@ public:
     /// </summary>
     /// <returns>The GPU tasks executor.</returns>
     virtual GPUTasksExecutor* CreateTasksExecutor();
+
+private:
+    // Internal bindings
+#if !COMPILE_WITHOUT_CSHARP
+    API_FUNCTION(NoProxy) void* GetResourcesInternal();
+#endif
 };
 
 /// <summary>

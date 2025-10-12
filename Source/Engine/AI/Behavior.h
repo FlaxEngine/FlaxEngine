@@ -11,7 +11,7 @@
 /// <summary>
 /// Behavior instance script that runs Behavior Tree execution.
 /// </summary>
-API_CLASS(Attributes="Category(\"Flax Engine\")") class FLAXENGINE_API Behavior : public Script
+API_CLASS(Attributes="Category(\"Flax Engine\")") class FLAXENGINE_API Behavior : public Script, private IAssetReference
 {
     API_AUTO_SERIALIZATION();
     DECLARE_SCRIPTING_TYPE(Behavior);
@@ -92,6 +92,11 @@ public:
     void OnDisable() override;
 
 private:
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
+
 #if USE_EDITOR
     // Editor-only utilities to debug nodes state.
     API_FUNCTION(Internal) static bool GetNodeDebugRelevancy(const BehaviorTreeNode* node, const Behavior* behavior);

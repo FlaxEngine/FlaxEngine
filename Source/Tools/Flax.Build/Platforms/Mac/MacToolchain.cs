@@ -11,7 +11,7 @@ namespace Flax.Build
         /// Specifies the minimum Mac OSX version to use (eg. 10.14).
         /// </summary>
         [CommandLine("macOSXMinVer", "<version>", "Specifies the minimum Mac OSX version to use (eg. 10.14).")]
-        public static string MacOSXMinVer = "10.15";
+        public static string MacOSXMinVer = "13";
     }
 }
 

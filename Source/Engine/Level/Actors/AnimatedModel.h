@@ -13,7 +13,7 @@
 /// Performs an animation and renders a skinned model.
 /// </summary>
 API_CLASS(Attributes="ActorContextMenu(\"New/Animation/Animated Model\"), ActorToolbox(\"Visuals\")")
-class FLAXENGINE_API AnimatedModel : public ModelInstanceActor
+class FLAXENGINE_API AnimatedModel : public ModelInstanceActor, IAssetReference
 {
     DECLARE_SCENE_OBJECT(AnimatedModel);
     friend class AnimationsSystem;
@@ -230,6 +230,12 @@ public:
     /// <param name="nodesTransformation">The output per-node final transformation matrices.</param>
     /// <param name="worldSpace">True if convert matrices into world-space, otherwise returned values will be in local-space of the actor.</param>
     API_FUNCTION() void GetCurrentPose(API_PARAM(Out) Array<Matrix>& nodesTransformation, bool worldSpace = false) const;
+
+    /// <summary>
+    /// Gets the per-node final transformations (skeleton pose).
+    /// </summary>
+    /// <param name="nodesTransformation">The output per-node final transformation matrices.</param>
+    void GetCurrentPose(Span<Matrix>& nodesTransformation) const;
 
     /// <summary>
     /// Sets the per-node final transformations (skeleton pose).
@@ -449,6 +455,11 @@ private:
 
     void OnGraphChanged();
     void OnGraphLoaded();
+
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
 
 public:
     // [ModelInstanceActor]

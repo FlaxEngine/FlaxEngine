@@ -7,6 +7,7 @@
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUResource.h"
 #include "DescriptorSetVulkan.h"
+#include "UploadBufferVulkan.h"
 #include "IncludeVulkanHeaders.h"
 #include "Config.h"
 
@@ -327,45 +328,6 @@ public:
 };
 
 /// <summary>
-/// Vulkan staging buffers manager.
-/// </summary>
-class StagingManagerVulkan
-{
-private:
-    struct PendingEntry
-    {
-        GPUBuffer* Buffer;
-        CmdBufferVulkan* CmdBuffer;
-        uint64 FenceCounter;
-    };
-
-    struct FreeEntry
-    {
-        GPUBuffer* Buffer;
-        uint64 FrameNumber;
-    };
-
-    GPUDeviceVulkan* _device;
-    CriticalSection _locker;
-    Array<GPUBuffer*> _allBuffers;
-    Array<FreeEntry> _freeBuffers;
-    Array<PendingEntry> _pendingBuffers;
-#if !BUILD_RELEASE
-    uint64 _allBuffersTotalSize = 0;
-    uint64 _allBuffersPeekSize = 0;
-    uint64 _allBuffersAllocSize = 0;
-    uint64 _allBuffersFreeSize = 0;
-#endif
-
-public:
-    StagingManagerVulkan(GPUDeviceVulkan* device);
-    GPUBuffer* AcquireBuffer(uint32 size, GPUResourceUsage usage);
-    void ReleaseBuffer(CmdBufferVulkan* cmdBuffer, GPUBuffer*& buffer);
-    void ProcessPendingFree();
-    void Dispose();
-};
-
-/// <summary>
 /// Implementation of Graphics Device for Vulkan backend.
 /// </summary>
 class GPUDeviceVulkan : public GPUDevice
@@ -464,9 +426,9 @@ public:
     DeferredDeletionQueueVulkan DeferredDeletionQueue;
 
     /// <summary>
-    /// The staging buffers manager.
+    /// Data uploading utility via pages.
     /// </summary>
-    StagingManagerVulkan StagingManager;
+    UploadBufferVulkan UploadBuffer;
 
     /// <summary>
     /// The helper device resources manager.
@@ -502,6 +464,11 @@ public:
     /// The pipeline cache.
     /// </summary>
     VkPipelineCache PipelineCache = VK_NULL_HANDLE;
+#if VULKAN_USE_PIPELINE_CACHE
+    uint32 PipelineCacheUsage = 0;
+    double PipelineCacheSaveTime = 0.0f;
+    Array<byte> PipelineCacheSaveData;
+#endif
 
 #if VULKAN_USE_VALIDATION_CACHE
     /// <summary>
@@ -531,37 +498,13 @@ public:
     VkPhysicalDeviceFeatures PhysicalDeviceFeatures;
 
     Array<BufferedQueryPoolVulkan*> TimestampQueryPools;
+    Array<BufferedQueryPoolVulkan*> OcclusionQueryPools;
 
 #if VULKAN_RESET_QUERY_POOLS
     Array<QueryPoolVulkan*> QueriesToReset;
 #endif
 
-    inline BufferedQueryPoolVulkan* FindAvailableQueryPool(Array<BufferedQueryPoolVulkan*>& pools, VkQueryType queryType)
-    {
-        // Try to use pool with available space inside
-        for (int32 i = 0; i < pools.Count(); i++)
-        {
-            auto pool = pools.Get()[i];
-            if (pool->HasRoom())
-                return pool;
-        }
-
-        // Create new pool
-        enum
-        {
-            NUM_OCCLUSION_QUERIES_PER_POOL = 4096,
-            NUM_TIMESTAMP_QUERIES_PER_POOL = 1024,
-        };
-        const auto pool = New<BufferedQueryPoolVulkan>(this, queryType == VK_QUERY_TYPE_OCCLUSION ? NUM_OCCLUSION_QUERIES_PER_POOL : NUM_TIMESTAMP_QUERIES_PER_POOL, queryType);
-        pools.Add(pool);
-        return pool;
-    }
-
-    inline BufferedQueryPoolVulkan* FindAvailableTimestampQueryPool()
-    {
-        return FindAvailableQueryPool(TimestampQueryPools, VK_QUERY_TYPE_TIMESTAMP);
-    }
-
+    BufferedQueryPoolVulkan* FindAvailableQueryPool(VkQueryType queryType);
     RenderPassVulkan* GetOrCreateRenderPass(RenderTargetLayoutVulkan& layout);
     FramebufferVulkan* GetOrCreateFramebuffer(FramebufferVulkan::Key& key, VkExtent2D& extent, uint32 layers);
     PipelineLayoutVulkan* GetOrCreateLayout(DescriptorSetLayoutInfoVulkan& key);
@@ -586,7 +529,9 @@ public:
     /// <summary>
     /// Saves the pipeline cache.
     /// </summary>
-    bool SavePipelineCache();
+    /// <param name="async">Enables async writing to file to reduce stuttering of main thread.</param>
+    /// <param name="cached">Uses cached results from the last call to vkGetPipelineCacheData, used to just save cached data when running in async.</param>
+    bool SavePipelineCache(bool async = false, bool cached = false);
 
 #if VK_EXT_validation_cache
     /// <summary>

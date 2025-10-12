@@ -13,6 +13,7 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Platform/Platform.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Engine/Globals.h"
 #include "ImportTexture.h"
 #include "ImportModel.h"
@@ -151,6 +152,7 @@ bool CreateAssetContext::AllocateChunk(int32 index)
     }
 
     // Create new chunk
+    PROFILE_MEM(ContentFiles);
     Data.Header.Chunks[index] = New<FlaxChunk>();
     return false;
 }

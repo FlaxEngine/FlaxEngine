@@ -4,6 +4,7 @@
 #include "INetworkSerializable.h"
 #include "Engine/Core/Math/Quaternion.h"
 #include "Engine/Core/Math/Transform.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 // Quaternion quantized for optimized network data size.
 struct NetworkQuaternion
@@ -119,6 +120,7 @@ void NetworkStream::Initialize(uint32 minCapacity)
             Allocator::Free(_buffer);
 
         // Allocate new one
+        PROFILE_MEM(Networking);
         _buffer = (byte*)Allocator::Allocate(minCapacity);
         _length = minCapacity;
         _allocated = true;
@@ -246,6 +248,7 @@ void NetworkStream::WriteBytes(const void* data, uint32 bytes)
         uint32 newLength = _length != 0 ? _length * 2 : 256;
         while (newLength < position + bytes)
             newLength *= 2;
+        PROFILE_MEM(Networking);
         byte* newBuf = (byte*)Allocator::Allocate(newLength);
         if (_buffer && _length)
             Platform::MemoryCopy(newBuf, _buffer, _length);

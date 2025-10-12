@@ -28,6 +28,7 @@
 #include "Engine/Engine/Globals.h"
 #include "Engine/Level/Types.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/Scripting.h"
 #if USE_EDITOR
@@ -117,6 +118,8 @@ ContentService ContentServiceInstance;
 
 bool ContentService::Init()
 {
+    PROFILE_MEM(Content);
+
     // Load assets registry
     Cache.Init();
 
@@ -126,17 +129,17 @@ bool ContentService::Init()
     LOG(Info, "Creating {0} content loading threads...", count);
     MainLoadThread = New<LoadingThread>();
     ThisLoadThread = MainLoadThread;
-    LoadThreads.EnsureCapacity(count);
+    LoadThreads.Resize(count);
     for (int32 i = 0; i < count; i++)
     {
         auto thread = New<LoadingThread>();
+        LoadThreads[i] = thread;
         if (thread->Start(String::Format(TEXT("Load Thread {0}"), i)))
         {
             LOG(Fatal, "Cannot spawn content thread {0}/{1}", i, count);
             Delete(thread);
             return true;
         }
-        LoadThreads.Add(thread);
     }
 
     return false;
@@ -159,6 +162,7 @@ void ContentService::Update()
 void ContentService::LateUpdate()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Content);
 
     // Check if need to perform an update of unloading assets
     const TimeSpan timeNow = Time::Update.UnscaledTime;
@@ -324,6 +328,7 @@ String LoadingThread::ToString() const
 
 int32 LoadingThread::Run()
 {
+    PROFILE_MEM(Content);
 #if USE_EDITOR && PLATFORM_WINDOWS
     // Initialize COM
     // TODO: maybe add sth to Thread::Create to indicate that thread will use COM stuff
@@ -333,6 +338,9 @@ int32 LoadingThread::Run()
         LOG(Error, "Failed to init COM for WIC texture importing! Result: {0:x}", static_cast<uint32>(result));
         return -1;
     }
+#endif
+#ifdef LOADING_THREAD_AFFINITY_MASK
+    Platform::SetThreadAffinityMask(LOADING_THREAD_AFFINITY_MASK(LoadThreads.Find(this)));
 #endif
 
     ContentLoadTask* task;
@@ -416,6 +424,7 @@ bool Content::GetAssetInfo(const Guid& id, AssetInfo& info)
     if (Cache.FindAsset(id, info))
         return true;
     PROFILE_CPU();
+    PROFILE_MEM(Content);
 
     // Locking injects some stalls but we need to make it safe (only one thread can pass though it at once)
     ScopeLock lock(WorkspaceDiscoveryLocker);
@@ -465,6 +474,7 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
     if (!FileSystem::FileExists(path))
         return false;
     PROFILE_CPU();
+    PROFILE_MEM(Content);
 
     const auto extension = FileSystem::GetExtension(path).ToLower();
 
@@ -511,7 +521,7 @@ bool Content::GetAssetInfo(const StringView& path, AssetInfo& info)
 #endif
 }
 
-String Content::GetEditorAssetPath(const Guid& id)
+StringView Content::GetEditorAssetPath(const Guid& id)
 {
     return Cache.GetEditorAssetPath(id);
 }
@@ -593,6 +603,7 @@ Asset* Content::LoadAsyncInternal(const StringView& internalPath, const MClass* 
 
 Asset* Content::LoadAsyncInternal(const StringView& internalPath, const ScriptingTypeHandle& type)
 {
+    PROFILE_MEM(Content);
 #if USE_EDITOR
     const String path = Globals::EngineContentFolder / internalPath + ASSET_FILES_EXTENSION_WITH_DOT;
     if (!FileSystem::FileExists(path))
@@ -635,6 +646,8 @@ Asset* Content::LoadAsync(const StringView& path, const MClass* type)
 
 Asset* Content::LoadAsync(const StringView& path, const ScriptingTypeHandle& type)
 {
+    PROFILE_MEM(Content);
+
     // Ensure path is in a valid format
     String pathNorm(path);
     ContentStorageManager::FormatPath(pathNorm);
@@ -687,7 +700,6 @@ Asset* Content::GetAsset(const StringView& outputPath)
 {
     if (outputPath.IsEmpty())
         return nullptr;
-
     ScopeLock lock(AssetsLocker);
     for (auto i = Assets.Begin(); i.IsNotEnd(); ++i)
     {
@@ -737,6 +749,7 @@ void Content::DeleteAsset(const StringView& path)
         return;
     }
 
+#if USE_EDITOR
     ScopeLock locker(AssetsLocker);
 
     // Remove from registry
@@ -753,6 +766,7 @@ void Content::DeleteAsset(const StringView& path)
 
     // Delete file
     deleteFileSafety(path, info.ID);
+#endif
 }
 
 void Content::deleteFileSafety(const StringView& path, const Guid& id)
@@ -790,6 +804,23 @@ void Content::deleteFileSafety(const StringView& path, const Guid& id)
     }
 #endif
 }
+
+#if !COMPILE_WITHOUT_CSHARP
+
+#include "Engine/Scripting/ManagedCLR/MUtils.h"
+
+void* Content::GetAssetsInternal()
+{
+    AssetsLocker.Lock();
+    MArray* result = MCore::Array::New(Asset::TypeInitializer.GetClass(), Assets.Count());
+    int32 i = 0;
+    for (const auto& e : Assets)
+        MCore::GC::WriteArrayRef(result, e.Value->GetOrCreateManagedInstance(), i++);
+    AssetsLocker.Unlock();
+    return result;
+}
+
+#endif
 
 #if USE_EDITOR
 
@@ -977,7 +1008,7 @@ bool Content::CloneAssetFile(const StringView& dstPath, const StringView& srcPat
             FileSystem::DeleteFile(tmpPath);
 
             // Reload storage
-            if (auto storage = ContentStorageManager::GetStorage(dstPath))
+            if (auto storage = ContentStorageManager::GetStorage(dstPath, false))
             {
                 storage->Reload();
             }
@@ -1023,6 +1054,7 @@ Asset* Content::CreateVirtualAsset(const MClass* type)
 Asset* Content::CreateVirtualAsset(const ScriptingTypeHandle& type)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Content);
     auto& assetType = type.GetType();
 
     // Init mock asset info
@@ -1045,7 +1077,9 @@ Asset* Content::CreateVirtualAsset(const ScriptingTypeHandle& type)
     }
 
     // Create asset object
+    PROFILE_MEM_BEGIN(ContentAssets);
     auto asset = factory->NewVirtual(info);
+    PROFILE_MEM_END();
     if (asset == nullptr)
     {
         LOG(Error, "Cannot create virtual asset object.");
@@ -1054,7 +1088,9 @@ Asset* Content::CreateVirtualAsset(const ScriptingTypeHandle& type)
     asset->RegisterObject();
 
     // Call initializer function
+    PROFILE_MEM_BEGIN(ContentAssets);
     asset->InitAsVirtual();
+    PROFILE_MEM_END();
 
     // Register asset
     AssetsLocker.Lock();
@@ -1076,11 +1112,21 @@ void Content::WaitForTask(ContentLoadTask* loadingTask, double timeoutInMillisec
 
         const double timeoutInSeconds = timeoutInMilliseconds * 0.001;
         const double startTime = Platform::GetTimeSeconds();
+        int32 loopCounter = 0;
         Task* task = loadingTask;
         Array<ContentLoadTask*, InlinedAllocation<64>> localQueue;
 #define CHECK_CONDITIONS() (!Engine::ShouldExit() && (timeoutInSeconds <= 0.0 || Platform::GetTimeSeconds() - startTime < timeoutInSeconds))
         do
         {
+            // Give opportunity for other threads to use the current core
+            if (loopCounter == 0)
+                ; // First run is fast
+            else if (loopCounter < 10)
+                Platform::Yield();
+            else
+                Platform::Sleep(1);
+            loopCounter++;
+
             // Try to execute content tasks
             while (task->IsQueued() && CHECK_CONDITIONS())
             {
@@ -1097,6 +1143,8 @@ void Content::WaitForTask(ContentLoadTask* loadingTask, double timeoutInMillisec
                             localQueue.Clear();
                         }
 
+                        PROFILE_CPU_NAMED("Inline");
+                        ZoneColor(0xffaaaaaa);
                         thread->Run(tmp);
                     }
                     else
@@ -1209,6 +1257,7 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
 {
     if (!id.IsValid())
         return nullptr;
+    PROFILE_MEM(Content);
 
     // Check if asset has been already loaded
     Asset* result = nullptr;
@@ -1277,7 +1326,9 @@ Asset* Content::LoadAsync(const Guid& id, const ScriptingTypeHandle& type)
     }
 
     // Create asset object
+    PROFILE_MEM_BEGIN(ContentAssets);
     result = factory->New(assetInfo);
+    PROFILE_MEM_END();
     if (result == nullptr)
     {
         LOG(Error, "Cannot create asset object. Info: {0}", assetInfo.ToString());

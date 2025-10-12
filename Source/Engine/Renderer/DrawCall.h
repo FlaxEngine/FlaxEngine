@@ -266,14 +266,21 @@ struct DrawCall
     float ObjectRadius;
 
     /// <summary>
-    /// The world matrix determinant sign (used for geometry that is two sided or has inverse scale - needs to flip normal vectors and change triangles culling).
-    /// </summary>
-    float WorldDeterminantSign;
-
-    /// <summary>
     /// The random per-instance value (normalized to range 0-1).
     /// </summary>
     float PerInstanceRandom;
+
+    /// <summary>
+    /// The 8-bit stencil value to write into Depth-Stencil Buffer.
+    /// </summary>
+    uint8 StencilValue;
+
+    /// <summary>
+    /// The world matrix determinant sign (used for geometry that is two sided or has inverse scale - needs to flip normal vectors and change triangles culling).
+    /// 0 - sign is positive
+    /// 1 - sign is negative (flips object surfaces)
+    /// </summary>
+    uint8 WorldDeterminant : 1;
 
     /// <summary>
     /// The sorting key for the draw call calculate by RenderList.
@@ -286,6 +293,12 @@ struct DrawCall
     FORCE_INLINE DrawCall()
     {
         Platform::MemoryClear(this, sizeof(DrawCall));
+    }
+
+    // Packs object layer into the stencil bits.
+    FORCE_INLINE void SetStencilValue(int32 layer)
+    {
+        StencilValue = uint8(layer & 0x1f);
     }
 };
 

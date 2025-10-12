@@ -70,13 +70,6 @@ public:
     void Setup(int32 bonesCount);
 
     /// <summary>
-    /// Sets the bone matrices data for the GPU buffer. Ensure to call Flush before rendering.
-    /// </summary>
-    /// <param name="bones">The bones data.</param>
-    /// <param name="dropHistory">True if drop previous update bones used for motion blur, otherwise will keep them and do the update.</param>
-    void SetData(const Matrix* bones, bool dropHistory);
-
-    /// <summary>
     /// After bones Data has been modified externally. Updates the bone matrices data for the GPU buffer. Ensure to call Flush before rendering.
     /// </summary>
     /// <param name="dropHistory">True if drop previous update bones used for motion blur, otherwise will keep them and do the update.</param>

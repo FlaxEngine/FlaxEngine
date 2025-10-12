@@ -18,6 +18,7 @@
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Config/PlatformSettings.h"
 #include "UploadBufferDX12.h"
@@ -243,7 +244,7 @@ GPUDeviceDX12::GPUDeviceDX12(IDXGIFactory4* dxgiFactory, GPUAdapterDX* adapter)
     , _rootSignature(nullptr)
     , _commandQueue(nullptr)
     , _mainContext(nullptr)
-    , UploadBuffer(nullptr)
+    , UploadBuffer(this)
     , TimestampQueryHeap(this, D3D12_QUERY_HEAP_TYPE_TIMESTAMP, DX12_BACK_BUFFER_COUNT * 1024)
     , Heap_CBV_SRV_UAV(this, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 4 * 1024, false)
     , Heap_RTV(this, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1 * 1024, false)
@@ -306,6 +307,32 @@ bool GPUDeviceDX12::Init()
     LOG(Info, "Hardware Version: {0}", hwVer);
     updateFrameEvents();
 
+    // Setup display output
+    auto& videoOutput = VideoOutputs.AddOne();
+    videoOutput.Name = hwVer;
+    ComPtr<IDXGIDevice1> dxgiDevice;
+    VALIDATE_DIRECTX_CALL(_device->QueryInterface(IID_GRAPHICS_PPV_ARGS(&dxgiDevice)));
+    ComPtr<IDXGIAdapter> dxgiAdapter;
+    VALIDATE_DIRECTX_CALL(dxgiDevice->GetAdapter(dxgiAdapter.GetAddressOf()));
+    ComPtr<IDXGIOutput> dxgiOutput;
+    VALIDATE_DIRECTX_CALL(dxgiAdapter->EnumOutputs(0, dxgiOutput.GetAddressOf()));
+    DXGI_FORMAT backbufferFormat = RenderToolsDX::ToDxgiFormat(GPU_BACK_BUFFER_PIXEL_FORMAT);
+    UINT modesCount = 0;
+    VALIDATE_DIRECTX_CALL(dxgiOutput->GetDisplayModeList(backbufferFormat, 0, &modesCount, NULL));
+    Array<DXGIXBOX_MODE_DESC> modes;
+    modes.Resize((int32)modesCount);
+    VALIDATE_DIRECTX_CALL(dxgiOutput->GetDisplayModeListX(backbufferFormat, 0, &modesCount, modes.Get()));
+    for (const DXGIXBOX_MODE_DESC& mode : modes)
+    {
+        if (mode.Width > videoOutput.Width)
+        {
+            videoOutput.Width = mode.Width;
+            videoOutput.Height = mode.Height;
+        }
+        videoOutput.RefreshRate = Math::Max(videoOutput.RefreshRate, mode.RefreshRate.Numerator / (float)mode.RefreshRate.Denominator);
+    }
+    modes.Resize(0);
+
 #if PLATFORM_GDK
     GDKPlatform::Suspended.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnSuspended>(this);
     GDKPlatform::Resumed.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnResumed>(this);
@@ -334,10 +361,10 @@ bool GPUDeviceDX12::Init()
         IsDebugToolAttached = true;
         unknown->Release();
     }
-    if (!IsDebugToolAttached && GetModuleHandleA("renderdoc.dll") != nullptr)
-    {
+    if (!IsDebugToolAttached && GetModuleHandleA("renderdoc.dll"))
         IsDebugToolAttached = true;
-    }
+    if (!IsDebugToolAttached && (GetModuleHandleA("Nvda.Graphics.Interception.dll") || GetModuleHandleA("WarpViz.Injection.dll") || GetModuleHandleA("nvperf_grfx_target.dll")))
+        IsDebugToolAttached = true;
 #endif
 
     // Check if can use screen tearing on a swapchain
@@ -358,7 +385,8 @@ bool GPUDeviceDX12::Init()
     // Debug Layer
 #if GPU_ENABLE_DIAGNOSTICS
     ComPtr<ID3D12InfoQueue> infoQueue;
-    VALIDATE_DIRECTX_CALL(_device->QueryInterface(IID_PPV_ARGS(&infoQueue)));
+    HRESULT result = _device->QueryInterface(IID_PPV_ARGS(&infoQueue));
+    LOG_DIRECTX_RESULT(result);
     if (infoQueue)
     {
         D3D12_INFO_QUEUE_FILTER filter;
@@ -699,9 +727,6 @@ bool GPUDeviceDX12::Init()
         VALIDATE_DIRECTX_CALL(_device->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&_rootSignature)));
     }
 
-    // Upload buffer
-    UploadBuffer = New<UploadBufferDX12>(this);
-
     if (TimestampQueryHeap.Init())
         return true;
 
@@ -738,7 +763,7 @@ void GPUDeviceDX12::DrawBegin()
     GPUDeviceDX::DrawBegin();
 
     updateRes2Dispose();
-    UploadBuffer->BeginGeneration(Engine::FrameCount);
+    UploadBuffer.BeginGeneration(Engine::FrameCount);
 }
 
 void GPUDeviceDX12::RenderEnd()
@@ -809,7 +834,7 @@ void GPUDeviceDX12::Dispose()
     Heap_Sampler.ReleaseGPU();
     RingHeap_CBV_SRV_UAV.ReleaseGPU();
     RingHeap_Sampler.ReleaseGPU();
-    SAFE_DELETE(UploadBuffer);
+    UploadBuffer.ReleaseGPU();
     SAFE_DELETE(DrawIndirectCommandSignature);
     SAFE_DELETE(_mainContext);
     SAFE_DELETE(_commandQueue);
@@ -833,16 +858,19 @@ void GPUDeviceDX12::WaitForGPU()
 
 GPUTexture* GPUDeviceDX12::CreateTexture(const StringView& name)
 {
+    PROFILE_MEM(GraphicsTextures);
     return New<GPUTextureDX12>(this, name);
 }
 
 GPUShader* GPUDeviceDX12::CreateShader(const StringView& name)
 {
+    PROFILE_MEM(GraphicsShaders);
     return New<GPUShaderDX12>(this, name);
 }
 
 GPUPipelineState* GPUDeviceDX12::CreatePipelineState()
 {
+    PROFILE_MEM(GraphicsCommands);
     return New<GPUPipelineStateDX12>(this);
 }
 
@@ -853,6 +881,7 @@ GPUTimerQuery* GPUDeviceDX12::CreateTimerQuery()
 
 GPUBuffer* GPUDeviceDX12::CreateBuffer(const StringView& name)
 {
+    PROFILE_MEM(GraphicsBuffers);
     return New<GPUBufferDX12>(this, name);
 }
 
@@ -873,6 +902,7 @@ GPUSwapChain* GPUDeviceDX12::CreateSwapChain(Window* window)
 
 GPUConstantBuffer* GPUDeviceDX12::CreateConstantBuffer(uint32 size, const StringView& name)
 {
+    PROFILE_MEM(GraphicsShaders);
     return New<GPUConstantBufferDX12>(this, size, name);
 }
 
@@ -939,6 +969,7 @@ void GPUDeviceDX12::updateFrameEvents()
     dxgiAdapter->GetDesc(&_adapter->Description);
     ComPtr<IDXGIOutput> dxgiOutput;
     VALIDATE_DIRECTX_CALL(dxgiAdapter->EnumOutputs(0, dxgiOutput.GetAddressOf()));
+    // TODO: support 120/40/30/24 fps
     VALIDATE_DIRECTX_CALL(_device->SetFrameIntervalX(dxgiOutput.Get(), D3D12XBOX_FRAME_INTERVAL_60_HZ, DX12_BACK_BUFFER_COUNT - 1u, D3D12XBOX_FRAME_INTERVAL_FLAG_NONE));
     VALIDATE_DIRECTX_CALL(_device->ScheduleFrameEventX(D3D12XBOX_FRAME_EVENT_ORIGIN, 0U, nullptr, D3D12XBOX_SCHEDULE_FRAME_EVENT_FLAG_NONE));
 }

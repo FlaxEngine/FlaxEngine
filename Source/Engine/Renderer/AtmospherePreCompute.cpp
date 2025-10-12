@@ -166,11 +166,7 @@ bool init()
     }
     auto shader = _shader->GetShader();
     ASSERT(shader->GetCB(0) != nullptr);
-    if (shader->GetCB(0)->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stages
     _psTransmittance = GPUDevice::Instance->CreatePipelineState();
@@ -342,6 +338,9 @@ void AtmospherePreComputeService::Update()
     }
     else if (_isUpdatePending && (_task == nullptr || !_task->Enabled))
     {
+        PROFILE_CPU();
+        PROFILE_MEM(Graphics);
+
         // TODO: init but without a stalls, just wait for resources loaded and then start rendering
 
         // Init service

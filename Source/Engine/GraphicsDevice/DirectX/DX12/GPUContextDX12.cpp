@@ -35,11 +35,13 @@
 #include "GPUShaderProgramDX12.h"
 #include "CommandSignatureDX12.h"
 #include "Engine/Profiler/RenderStats.h"
+#include "Engine/Graphics/GPUResourceAccess.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
 #include "Engine/Threading/Threading.h"
 
 #define DX12_ENABLE_RESOURCE_BARRIERS_BATCHING 1
-#define DX12_ENABLE_RESOURCE_BARRIERS_DEBUGGING 0
+#define DX12_ENABLE_RESOURCE_BARRIERS_DEBUGGING (0 && LOG_ENABLE)
 
 inline bool operator!=(const D3D12_VERTEX_BUFFER_VIEW& l, const D3D12_VERTEX_BUFFER_VIEW& r)
 {
@@ -49,6 +51,47 @@ inline bool operator!=(const D3D12_VERTEX_BUFFER_VIEW& l, const D3D12_VERTEX_BUF
 inline bool operator!=(const D3D12_INDEX_BUFFER_VIEW& l, const D3D12_INDEX_BUFFER_VIEW& r)
 {
     return l.SizeInBytes != r.SizeInBytes || l.Format != r.Format || l.BufferLocation != r.BufferLocation;
+}
+
+FORCE_INLINE D3D12_RESOURCE_STATES GetResourceState(GPUResourceAccess access)
+{
+    switch (access)
+    {
+    case GPUResourceAccess::None:
+        return D3D12_RESOURCE_STATE_COMMON;
+    case GPUResourceAccess::CopyRead:
+        return D3D12_RESOURCE_STATE_COPY_SOURCE;
+    case GPUResourceAccess::CopyWrite:
+        return D3D12_RESOURCE_STATE_COPY_DEST;
+    case GPUResourceAccess::CpuRead:
+        return D3D12_RESOURCE_STATE_GENERIC_READ;
+    case GPUResourceAccess::CpuWrite:
+        return D3D12_RESOURCE_STATE_COMMON;
+    case GPUResourceAccess::DepthRead:
+        return D3D12_RESOURCE_STATE_DEPTH_READ;
+    case GPUResourceAccess::DepthWrite:
+        return D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    case GPUResourceAccess::DepthBuffer:
+        return D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_DEPTH_WRITE;
+    case GPUResourceAccess::RenderTarget:
+        return D3D12_RESOURCE_STATE_RENDER_TARGET;
+    case GPUResourceAccess::UnorderedAccess:
+        return D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+    case GPUResourceAccess::IndirectArgs:
+        return D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
+    case GPUResourceAccess::ShaderReadPixel:
+        //return D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; // TODO: optimize SRV states in flushSRVs to be based on current binding usage slots
+    case GPUResourceAccess::ShaderReadCompute:
+    case GPUResourceAccess::ShaderReadNonPixel:
+        //return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE; // TODO: optimize SRV states in flushSRVs to be based on current binding usage slots
+    case GPUResourceAccess::ShaderReadGraphics:
+        return D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+#if !BUILD_RELEASE
+    default:
+        LOG(Error, "Unsupported GPU Resource Access: {}", (uint32)access);
+#endif
+    }
+    return D3D12_RESOURCE_STATE_COMMON;
 }
 
 // Ensure to match the indirect commands arguments layout
@@ -99,10 +142,16 @@ GPUContextDX12::GPUContextDX12(GPUDeviceDX12* device, D3D12_COMMAND_LIST_TYPE ty
 #if GPU_ENABLE_RESOURCE_NAMING
     _commandList->SetName(TEXT("GPUContextDX12::CommandList"));
 #endif
+#if GPU_ENABLE_TRACY
+    _tracyContext = tracy::CreateD3D12Context(device->GetDevice(), _device->GetCommandQueue()->GetCommandQueue());
+#endif
 }
 
 GPUContextDX12::~GPUContextDX12()
 {
+#if GPU_ENABLE_TRACY
+    tracy::DestroyD3D12Context(_tracyContext);
+#endif
     DX_SAFE_RELEASE_CHECK(_commandList, 0);
 }
 
@@ -336,7 +385,7 @@ void GPUContextDX12::flushSRVs()
     ASSERT(srCount <= GPU_MAX_SR_BINDED);
 
     // Fill table with source descriptors
-    DxShaderHeader& header = _currentCompute ? ((GPUShaderProgramCSDX12*)_currentCompute)->Header : _currentState->Header;
+    DxShaderHeader& header = _isCompute ? ((GPUShaderProgramCSDX12*)_currentCompute)->Header : _currentState->Header;
     D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptorRangeStarts[GPU_MAX_SR_BINDED];
     for (uint32 i = 0; i < srCount; i++)
     {
@@ -706,6 +755,15 @@ void GPUContextDX12::FrameEnd()
     FrameFenceValues[0] = Execute(false);
 }
 
+void GPUContextDX12::OnPresent()
+{
+    GPUContext::OnPresent();
+
+#if GPU_ENABLE_TRACY
+    tracy::CollectD3D12Context(_tracyContext);
+#endif
+}
+
 #if GPU_ALLOW_PROFILE_EVENTS
 
 void GPUContextDX12::EventBegin(const Char* name)
@@ -713,10 +771,22 @@ void GPUContextDX12::EventBegin(const Char* name)
 #if USE_PIX
     PIXBeginEvent(_commandList, 0, name);
 #endif
+
+#if GPU_ENABLE_TRACY
+    char buffer[60];
+    int32 bufferSize = StringUtils::Copy(buffer, name, sizeof(buffer));
+    auto& zone = _tracyZones.AddOne();
+    tracy::BeginD3D12ZoneScope(zone.Data, _tracyContext, _commandList, buffer, bufferSize);
+#endif
 }
 
 void GPUContextDX12::EventEnd()
 {
+#if GPU_ENABLE_TRACY
+    tracy::EndD3D12ZoneScope(_tracyZones.Last().Data);
+    _tracyZones.RemoveLast();
+#endif
+
 #if USE_PIX
     PIXEndEvent(_commandList);
 #endif
@@ -754,7 +824,10 @@ void GPUContextDX12::ClearDepth(GPUTextureView* depthBuffer, float depthValue, u
         SetResourceState(depthBufferDX12->GetResourceOwner(), D3D12_RESOURCE_STATE_DEPTH_WRITE, depthBufferDX12->SubresourceIndex);
         flushRBs();
 
-        _commandList->ClearDepthStencilView(depthBufferDX12->DSV(), D3D12_CLEAR_FLAG_DEPTH, depthValue, stencilValue, 0, nullptr);
+        D3D12_CLEAR_FLAGS clearFlags = D3D12_CLEAR_FLAG_DEPTH;
+        if (PixelFormatExtensions::HasStencil(depthBufferDX12->GetFormat()))
+            clearFlags |= D3D12_CLEAR_FLAG_STENCIL;
+        _commandList->ClearDepthStencilView(depthBufferDX12->DSV(), clearFlags, depthValue, stencilValue, 0, nullptr);
     }
 }
 
@@ -977,7 +1050,7 @@ void GPUContextDX12::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
 {
     ASSERT(vertexBuffers.Length() >= 0 && vertexBuffers.Length() <= GPU_MAX_VB_BINDED);
     bool vbEdited = _vbCount != vertexBuffers.Length();
-    D3D12_VERTEX_BUFFER_VIEW views[GPU_MAX_VB_BINDED];
+    __declspec(align(16)) D3D12_VERTEX_BUFFER_VIEW views[GPU_MAX_VB_BINDED];
     for (int32 i = 0; i < vertexBuffers.Length(); i++)
     {
         const auto vbDX12 = static_cast<GPUBufferDX12*>(vertexBuffers[i]);
@@ -1050,7 +1123,7 @@ void GPUContextDX12::UpdateCB(GPUConstantBuffer* cb, const void* data)
         return;
 
     // Allocate bytes for the buffer
-    DynamicAllocation allocation = _device->UploadBuffer->Allocate(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+    auto allocation = _device->UploadBuffer.Allocate(size, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 
     // Copy data
     Platform::MemoryCopy(allocation.CPUAddress, data, allocation.Size);
@@ -1072,6 +1145,7 @@ void GPUContextDX12::UpdateCB(GPUConstantBuffer* cb, const void* data)
 
 void GPUContextDX12::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ)
 {
+    bool bindPipelineState = _currentCompute != shader;
     _isCompute = 1;
     _currentCompute = shader;
 
@@ -1084,24 +1158,28 @@ void GPUContextDX12::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCoun
     auto shaderDX12 = (GPUShaderProgramCSDX12*)shader;
     auto computeState = shaderDX12->GetOrCreateState();
 
-    _commandList->SetPipelineState(computeState);
-    RENDER_STAT_PS_STATE_CHANGE();
+    if (bindPipelineState)
+    {
+        _commandList->SetPipelineState(computeState);
+        RENDER_STAT_PS_STATE_CHANGE();
+    }
 
     _commandList->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
     RENDER_STAT_DISPATCH_CALL();
 
     _isCompute = 0;
-    _currentCompute = nullptr;
 
     // Restore previous state on next draw call
     _psDirtyFlag = true;
 
     // Insert UAV barrier to ensure proper memory access for multiple sequential dispatches
-    AddUAVBarrier();
+    if (_pass == 0)
+        AddUAVBarrier();
 }
 
 void GPUContextDX12::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
+    bool bindPipelineState = _currentCompute != shader;
     _isCompute = 1;
     _currentCompute = shader;
 
@@ -1117,21 +1195,24 @@ void GPUContextDX12::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* buf
     auto shaderDX12 = (GPUShaderProgramCSDX12*)shader;
     auto computeState = shaderDX12->GetOrCreateState();
 
-    _commandList->SetPipelineState(computeState);
-    RENDER_STAT_PS_STATE_CHANGE();
+    if (bindPipelineState)
+    {
+        _commandList->SetPipelineState(computeState);
+        RENDER_STAT_PS_STATE_CHANGE();
+    }
 
     auto signature = _device->DispatchIndirectCommandSignature->GetSignature();
     _commandList->ExecuteIndirect(signature, 1, bufferForArgsDX12->GetResource(), (UINT64)offsetForArgs, nullptr, 0);
     RENDER_STAT_DISPATCH_CALL();
 
     _isCompute = 0;
-    _currentCompute = nullptr;
 
     // Restore previous state on next draw call
     _psDirtyFlag = true;
 
     // Insert UAV barrier to ensure proper memory access for multiple sequential dispatches
-    AddUAVBarrier();
+    if (_pass == 0)
+        AddUAVBarrier();
 }
 
 void GPUContextDX12::ResolveMultisample(GPUTexture* sourceMultisampleTexture, GPUTexture* destTexture, int32 sourceSubResource, int32 destSubResource, PixelFormat format)
@@ -1266,7 +1347,7 @@ void GPUContextDX12::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 si
     SetResourceState(bufferDX12, D3D12_RESOURCE_STATE_COPY_DEST);
     flushRBs();
 
-    _device->UploadBuffer->UploadBuffer(this, bufferDX12->GetResource(), offset, data, size);
+    _device->UploadBuffer.UploadBuffer(GetCommandList(), bufferDX12->GetResource(), offset, data, size);
 }
 
 void GPUContextDX12::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset, uint32 srcOffset)
@@ -1292,7 +1373,7 @@ void GPUContextDX12::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int32 
     SetResourceState(textureDX12, D3D12_RESOURCE_STATE_COPY_DEST);
     flushRBs();
 
-    _device->UploadBuffer->UploadTexture(this, textureDX12->GetResource(), data, rowPitch, slicePitch, mipIndex, arrayIndex);
+    _device->UploadBuffer.UploadTexture(GetCommandList(), textureDX12->GetResource(), data, rowPitch, slicePitch, mipIndex, arrayIndex);
 }
 
 void GPUContextDX12::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource)
@@ -1347,7 +1428,7 @@ void GPUContextDX12::ResetCounter(GPUBuffer* buffer)
     flushRBs();
 
     uint32 value = 0;
-    _device->UploadBuffer->UploadBuffer(this, counter->GetResource(), 0, &value, 4);
+    _device->UploadBuffer.UploadBuffer(GetCommandList(), counter->GetResource(), 0, &value, 4);
 
     SetResourceState(counter, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 }
@@ -1520,6 +1601,17 @@ void GPUContextDX12::ForceRebindDescriptors()
     // Bind heaps
     ID3D12DescriptorHeap* ppHeaps[] = { _device->RingHeap_CBV_SRV_UAV.GetHeap(), _device->RingHeap_Sampler.GetHeap() };
     _commandList->SetDescriptorHeaps(ARRAY_COUNT(ppHeaps), ppHeaps);
+}
+
+void GPUContextDX12::Transition(GPUResource* resource, GPUResourceAccess access)
+{
+    SetResourceState(dynamic_cast<ResourceOwnerDX12*>(resource), GetResourceState(access));
+}
+
+void GPUContextDX12::OverlapUA(bool end)
+{
+    if (end)
+        AddUAVBarrier();
 }
 
 #endif

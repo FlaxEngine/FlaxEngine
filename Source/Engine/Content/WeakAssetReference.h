@@ -7,7 +7,7 @@
 /// <summary>
 /// Asset reference utility that doesn't add reference to that asset. Handles asset unload event.
 /// </summary>
-API_CLASS(InBuild) class WeakAssetReferenceBase
+API_CLASS(InBuild) class WeakAssetReferenceBase : public IAssetReference
 {
 public:
     typedef Delegate<> EventType;
@@ -56,9 +56,14 @@ public:
     /// </summary>
     String ToString() const;
 
+public:
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
+
 protected:
     void OnSet(Asset* asset);
-    void OnUnloaded(Asset* asset);
 };
 
 /// <summary>
@@ -72,7 +77,13 @@ public:
     /// Initializes a new instance of the <see cref="WeakAssetReference"/> class.
     /// </summary>
     WeakAssetReference()
-        : WeakAssetReferenceBase()
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WeakAssetReference"/> class.
+    /// </summary>
+    explicit WeakAssetReference(decltype(__nullptr))
     {
     }
 
@@ -81,7 +92,6 @@ public:
     /// </summary>
     /// <param name="asset">The asset to set.</param>
     WeakAssetReference(T* asset)
-        : WeakAssetReferenceBase()
     {
         OnSet(asset);
     }

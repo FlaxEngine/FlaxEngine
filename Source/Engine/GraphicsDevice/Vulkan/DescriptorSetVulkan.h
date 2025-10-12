@@ -65,7 +65,7 @@ public:
 
     uint32 Hash = 0;
     uint32 SetLayoutsHash = 0;
-    uint32 LayoutTypes[VULKAN_DESCRIPTOR_TYPE_END];
+    uint32 LayoutTypes[VULKAN_DESCRIPTOR_TYPE_END + 1];
     Array<SetLayout> SetLayouts;
 
 public:

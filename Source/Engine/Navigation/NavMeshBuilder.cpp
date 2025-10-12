@@ -19,9 +19,11 @@
 #include "Engine/Physics/Colliders/MeshCollider.h"
 #include "Engine/Physics/Colliders/SplineCollider.h"
 #include "Engine/Threading/ThreadPoolTask.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Terrain/TerrainPatch.h"
 #include "Engine/Terrain/Terrain.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Level/Level.h"
 #include <ThirdParty/recastnavigation/Recast.h>
@@ -731,6 +733,7 @@ public:
     bool Run() override
     {
         PROFILE_CPU_NAMED("BuildNavMeshTile");
+        PROFILE_MEM(Navigation);
         const auto navMesh = NavMesh.Get();
         if (!navMesh)
             return false;
@@ -1153,6 +1156,7 @@ void ClearNavigation(Scene* scene)
 
 void NavMeshBuilder::Update()
 {
+    PROFILE_MEM(Navigation);
     ScopeLock lock(NavBuildQueueLocker);
 
     // Process nav mesh building requests and kick the tasks
@@ -1203,7 +1207,7 @@ void NavMeshBuilder::Build(Scene* scene, float timeoutMs)
     }
 
     PROFILE_CPU_NAMED("NavMeshBuilder");
-
+    PROFILE_MEM(Navigation);
     ScopeLock lock(NavBuildQueueLocker);
 
     BuildRequest req;
@@ -1240,7 +1244,7 @@ void NavMeshBuilder::Build(Scene* scene, const BoundingBox& dirtyBounds, float t
     }
 
     PROFILE_CPU_NAMED("NavMeshBuilder");
-
+    PROFILE_MEM(Navigation);
     ScopeLock lock(NavBuildQueueLocker);
 
     BuildRequest req;

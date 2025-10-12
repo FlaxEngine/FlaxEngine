@@ -76,6 +76,8 @@ namespace FlaxEditor.GUI.Dialogs
         public ColorSelector(float wheelSize)
         : base(0, 0, wheelSize, wheelSize)
         {
+            AutoFocus = true;
+
             _colorWheelSprite = Editor.Instance.Icons.ColorWheel128;
             _wheelRect = new Rectangle(0, 0, wheelSize, wheelSize);
         }

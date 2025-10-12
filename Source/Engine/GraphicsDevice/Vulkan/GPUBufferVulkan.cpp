@@ -19,7 +19,7 @@ void GPUBufferViewVulkan::Init(GPUDeviceVulkan* device, GPUBufferVulkan* owner, 
     Buffer = buffer;
     Size = size;
 
-    if ((owner->IsShaderResource() && !(owner->GetDescription().Flags & GPUBufferFlags::Structured)) || (usage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
+    if ((EnumHasAnyFlags(owner->GetDescription().Flags, GPUBufferFlags::ShaderResource | GPUBufferFlags::UnorderedAccess) && !(owner->GetDescription().Flags & GPUBufferFlags::Structured)) || (usage & VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT) == VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT)
     {
         VkBufferViewCreateInfo viewInfo;
         RenderToolsVulkan::ZeroStruct(viewInfo, VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO);
@@ -103,7 +103,7 @@ bool GPUBufferVulkan::OnInit()
         bufferInfo.usage |= VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
     if (useUAV || EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::RawBuffer | GPUBufferFlags::Structured))
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    if (useUAV && useSRV)
+    if (useUAV)
         bufferInfo.usage |= VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
     if (EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::Argument))
         bufferInfo.usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;

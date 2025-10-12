@@ -11,6 +11,7 @@
 #include "Engine/Platform/ConditionVariable.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Threading/JobSystem.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUBuffer.h"
 #include "Engine/Graphics/RenderTools.h"

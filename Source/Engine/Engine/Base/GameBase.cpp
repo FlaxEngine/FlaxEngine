@@ -211,7 +211,7 @@ void GameBaseImpl::OnPostRender(GPUContext* context, RenderContext& renderContex
     }
 
     // Wait for texture loaded before showing splash screen
-    if (!SplashScreen->IsLoaded() || SplashScreen.Get()->GetTexture()->MipLevels() != SplashScreen.Get()->StreamingTexture()->TotalMipLevels())
+    if (!SplashScreen->IsLoaded() || SplashScreen.Get()->GetResidentMipLevels() != SplashScreen.Get()->GetMipLevels())
     {
         return;
     }

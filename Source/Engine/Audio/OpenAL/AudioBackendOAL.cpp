@@ -9,6 +9,7 @@
 #include "Engine/Tools/AudioTool/AudioTool.h"
 #include "Engine/Engine/Units.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Audio/Audio.h"
 #include "Engine/Audio/AudioListener.h"
 #include "Engine/Audio/AudioSource.h"
@@ -321,6 +322,8 @@ void AudioBackendOAL::Listener_ReinitializeAll()
 
 uint32 AudioBackendOAL::Source_Add(const AudioDataInfo& format, const Vector3& position, const Quaternion& orientation, float volume, float pitch, float pan, bool loop, bool spatial, float attenuation, float minDistance, float doppler)
 {
+    PROFILE_MEM(Audio);
+
     uint32 sourceID = 0;
     ALC::Source::Rebuild(sourceID, position, orientation, volume, pitch, pan, loop, spatial, attenuation, minDistance, doppler);
 
@@ -516,6 +519,7 @@ void AudioBackendOAL::Buffer_Delete(uint32 bufferID)
 void AudioBackendOAL::Buffer_Write(uint32 bufferID, byte* samples, const AudioDataInfo& info)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Audio);
 
     // Pick the format for the audio data (it might not be supported natively)
     ALenum format = GetOpenALBufferFormat(info.NumChannels, info.BitDepth);
@@ -625,6 +629,8 @@ AudioBackend::FeatureFlags AudioBackendOAL::Base_Features()
 
 void AudioBackendOAL::Base_OnActiveDeviceChanged()
 {
+    PROFILE_MEM(Audio);
+
     // Cleanup
     Array<ALC::AudioSourceState> states;
     states.EnsureCapacity(Audio::Sources.Count());

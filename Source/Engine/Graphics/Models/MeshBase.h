@@ -405,6 +405,11 @@ public:
         float PerInstanceRandom;
 
         /// <summary>
+        /// The 8-bit stencil value to write into Depth-Stencil Buffer.
+        /// </summary>
+        uint8 StencilValue;
+
+        /// <summary>
         /// The LOD bias value.
         /// </summary>
         char LODBias;
@@ -422,6 +427,12 @@ public:
 #if USE_EDITOR
         float LightmapScale = -1.0f;
 #endif
+
+        // Packs object layer into the stencil bits.
+        FORCE_INLINE void SetStencilValue(int32 layer)
+        {
+            StencilValue = uint8(layer & 0x1f);
+        }
     };
 
     /// <summary>

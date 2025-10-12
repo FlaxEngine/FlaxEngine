@@ -40,14 +40,14 @@ void TestsRunnerService::Update()
         return;
 
     // Runs tests
-    Log::Logger::WriteFloor();
+    LOG_FLOOR();
     LOG(Info, "Running Flax Tests...");
     const int result = Catch::Session().run();
     if (result == 0)
         LOG(Info, "Flax Tests result: {0}", result);
     else
         LOG(Error, "Flax Tests result: {0}", result);
-    Log::Logger::WriteFloor();
+    LOG_FLOOR();
     Engine::RequestExit(result);
 }
 

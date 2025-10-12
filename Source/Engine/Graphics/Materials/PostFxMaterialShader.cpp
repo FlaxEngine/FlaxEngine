@@ -22,7 +22,7 @@ PACK_STRUCT(struct PostFxMaterialShaderData {
     Float4 TemporalAAJitter;
     Matrix InverseViewProjectionMatrix;
     Float3 ViewPadding0;
-    float UnscaledTimeParam;
+    float ScaledTimeParam;
     });
 
 void PostFxMaterialShader::Bind(BindParameters& params)
@@ -54,7 +54,7 @@ void PostFxMaterialShader::Bind(BindParameters& params)
         materialData->ViewFar = view.Far;
         materialData->ViewDir = view.Direction;
         materialData->TimeParam = params.Time;
-        materialData->UnscaledTimeParam = params.UnscaledTime;
+        materialData->ScaledTimeParam = params.ScaledTime;
         materialData->ViewInfo = view.ViewInfo;
         materialData->ScreenSize = view.ScreenSize;
         materialData->TemporalAAJitter = view.TemporalAAJitter;

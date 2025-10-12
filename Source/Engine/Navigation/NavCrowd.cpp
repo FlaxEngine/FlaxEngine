@@ -7,12 +7,14 @@
 #include "Engine/Level/Level.h"
 #include "Engine/Level/Scene/Scene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/Threading.h"
 #include <ThirdParty/recastnavigation/DetourCrowd.h>
 
 NavCrowd::NavCrowd(const SpawnParams& params)
     : ScriptingObject(params)
 {
+    PROFILE_MEM(Navigation);
     _crowd = dtAllocCrowd();
 }
 
@@ -34,9 +36,13 @@ bool NavCrowd::Init(const NavAgentProperties& agentProperties, int32 maxAgents)
     if (!navMeshRuntime)
     {
         if (NavMeshRuntime::Get())
+        {
             LOG(Error, "Cannot create crowd. Failed to find a navmesh that matches a given agent properties.");
+        }
         else
+        {
             LOG(Error, "Cannot create crowd. No navmesh is loaded.");
+        }
     }
 #endif
     return Init(agentProperties.Radius * 3.0f, maxAgents, navMeshRuntime);
@@ -47,6 +53,7 @@ bool NavCrowd::Init(float maxAgentRadius, int32 maxAgents, NavMeshRuntime* navMe
     if (!_crowd || !navMesh)
         return true;
     PROFILE_CPU();
+    PROFILE_MEM(Navigation);
 
     // This can happen on game start when no navmesh is loaded yet (eg. navmesh tiles data is during streaming) so wait for navmesh
     if (navMesh->GetNavMesh() == nullptr)
@@ -171,6 +178,7 @@ void NavCrowd::RemoveAgent(int32 id)
 void NavCrowd::Update(float dt)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Navigation);
     _crowd->update(Math::Max(dt, ZeroTolerance), nullptr);
 }
 

@@ -24,6 +24,7 @@
 #include "Engine/Level/Prefabs/Prefab.h"
 #include "Engine/Level/Prefabs/PrefabManager.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/Script.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ScriptingObjectReference.h"
@@ -1112,6 +1113,7 @@ void NetworkReplicator::AddSerializer(const ScriptingTypeHandle& typeHandle, Ser
 {
     if (!typeHandle)
         return;
+    PROFILE_MEM(Networking);
     const Serializer serializer{ { serialize, deserialize }, { serializeTag, deserializeTag } };
     SerializersTable[typeHandle] = serializer;
 }
@@ -1145,6 +1147,7 @@ bool NetworkReplicator::InvokeSerializer(const ScriptingTypeHandle& typeHandle, 
                 serializer.Methods[1] = INetworkSerializable_Script_Deserialize;
                 serializer.Tags[0] = serializer.Tags[1] = nullptr;
             }
+            PROFILE_MEM(Networking);
             SerializersTable.Add(typeHandle, serializer);
         }
         else if (const ScriptingTypeHandle baseTypeHandle = typeHandle.GetType().GetBaseType())
@@ -1166,6 +1169,7 @@ void NetworkReplicator::AddObject(ScriptingObject* obj, const ScriptingObject* p
 {
     if (!obj || NetworkManager::IsOffline())
         return;
+    PROFILE_MEM(Networking);
     ScopeLock lock(ObjectsLock);
     if (Objects.Contains(obj))
         return;
@@ -1235,6 +1239,7 @@ void NetworkReplicator::SpawnObject(ScriptingObject* obj, const DataContainer<ui
 {
     if (!obj || NetworkManager::IsOffline())
         return;
+    PROFILE_MEM(Networking);
     ScopeLock lock(ObjectsLock);
     const auto it = Objects.Find(obj->GetID());
     if (it != Objects.End() && it->Item.Spawned)
@@ -1250,6 +1255,7 @@ void NetworkReplicator::DespawnObject(ScriptingObject* obj)
 {
     if (!obj || NetworkManager::IsOffline())
         return;
+    PROFILE_MEM(Networking);
     ScopeLock lock(ObjectsLock);
     const auto it = Objects.Find(obj->GetID());
     if (it == Objects.End())
@@ -1524,6 +1530,7 @@ Dictionary<NetworkRpcName, NetworkRpcInfo> NetworkRpcInfo::RPCsTable;
 
 NetworkStream* NetworkReplicator::BeginInvokeRPC()
 {
+    PROFILE_MEM(Networking);
     if (CachedWriteStream == nullptr)
         CachedWriteStream = New<NetworkStream>();
     CachedWriteStream->Initialize();
@@ -1540,6 +1547,7 @@ bool NetworkReplicator::EndInvokeRPC(ScriptingObject* obj, const ScriptingTypeHa
     const NetworkRpcInfo* info = NetworkRpcInfo::RPCsTable.TryGet(NetworkRpcName(type, name));
     if (!info || !obj || NetworkManager::IsOffline())
         return false;
+    PROFILE_MEM(Networking);
     ObjectsLock.Lock();
     auto& rpc = RpcQueue.AddOne();
     rpc.Object = obj;

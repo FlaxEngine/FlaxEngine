@@ -36,7 +36,7 @@ public:
     // [ContentLoadTask]
     String ToString() const override
     {
-        return String::Format(TEXT("Load Asset Data Task ({}, {}, {})"), (int32)GetState(), _chunks, _asset ? _asset->GetPath() : String::Empty);
+        return String::Format(TEXT("Load Asset Data Task ({}, {}, {})"), (int32)GetState(), _chunks, _asset ? _asset->GetPath() : StringView::Empty);
     }
     bool HasReference(Object* obj) const override
     {

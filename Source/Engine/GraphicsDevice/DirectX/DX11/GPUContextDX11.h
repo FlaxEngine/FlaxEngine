@@ -6,6 +6,7 @@
 #include "GPUDeviceDX11.h"
 #include "GPUPipelineStateDX11.h"
 #include "../IncludeDirectXHeaders.h"
+#include <ThirdParty/tracy/tracy/TracyD3D11.hpp>
 
 #if GRAPHICS_API_DIRECTX11
 
@@ -24,7 +25,12 @@ private:
 #if GPU_ALLOW_PROFILE_EVENTS
     ID3DUserDefinedAnnotation* _userDefinedAnnotations;
 #endif
+#if COMPILE_WITH_PROFILER
+    void* _tracyContext;
+    byte _tracyZone[TracyD3D11ZoneSize];
+#endif
     int32 _maxUASlots;
+    bool _flushOnDispatch;
 
     // Output Merger
     bool _omDirtyFlag;
@@ -54,6 +60,7 @@ private:
     bool _iaInputLayoutDirtyFlag;
 
     // Pipeline State
+    ID3D11ComputeShader* _currentCompute;
     GPUPipelineStateDX11* _currentState;
     ID3D11BlendState* CurrentBlendState;
     ID3D11RasterizerState* CurrentRasterizerState;
@@ -105,11 +112,13 @@ private:
     void flushOM();
     void flushIA();
     void onDrawCall();
+    void onDispatch(GPUShaderProgramCS* shader);
 
 public:
 
     // [GPUContext]
     void FrameBegin() override;
+    void OnPresent() override;
 #if GPU_ALLOW_PROFILE_EVENTS
     void EventBegin(const Char* name) override;
     void EventEnd() override;
@@ -160,6 +169,7 @@ public:
     void CopyCounter(GPUBuffer* dstBuffer, uint32 dstOffset, GPUBuffer* srcBuffer) override;
     void CopyResource(GPUResource* dstResource, GPUResource* srcResource) override;
     void CopySubresource(GPUResource* dstResource, uint32 dstSubresource, GPUResource* srcResource, uint32 srcSubresource) override;
+    void OverlapUA(bool end) override;
 };
 
 #endif

@@ -11,30 +11,19 @@
 class ColorGradingPass : public RendererPass<ColorGradingPass>
 {
 private:
-
-    bool _useVolumeTexture;
-    PixelFormat _lutFormat;
+    int32 _use3D = -1;
     AssetReference<Shader> _shader;
     GPUPipelineStatePermutationsPs<4> _psLut;
 
 public:
-
     /// <summary>
-    /// Init
-    /// </summary>
-    ColorGradingPass();
-
-public:
-
-    /// <summary>
-    /// Performs Look Up Table rendering for the input task.
+    /// Renders Look Up table with color grading parameters mixed in.
     /// </summary>
     /// <param name="renderContext">The rendering context.</param>
-    /// <returns>Allocated temp render target with a rendered LUT. Can be 2d or 3d based on current graphics hardware caps. Release after usage.</returns>
+    /// <returns>Allocated temp render target with a rendered LUT - cached within Render Buffers, released automatically.</returns>
     GPUTexture* RenderLUT(RenderContext& renderContext);
 
 private:
-
 #if COMPILE_WITH_DEV_ENV
     void OnShaderReloading(Asset* obj)
     {
@@ -44,14 +33,12 @@ private:
 #endif
 
 public:
-
     // [RendererPass]
     String ToString() const override;
     bool Init() override;
     void Dispose() override;
 
 protected:
-
     // [RendererPass]
     bool setupResources() override;
 };

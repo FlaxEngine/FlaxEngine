@@ -122,8 +122,8 @@ void TerrainChunk::Draw(const RenderContext& renderContext) const
         drawCall.Terrain.Lightmap = nullptr;
         drawCall.Terrain.LightmapUVsArea = Rectangle::Empty;
     }
-    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = _perInstanceRandom;
+    drawCall.SetStencilValue(_patch->_terrain->GetLayer());
 #if USE_EDITOR
     if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
         drawCall.Surface.LODDitherFactor = 1.0f; // See LightmapUVsDensityMaterialShader
@@ -183,8 +183,8 @@ void TerrainChunk::Draw(const RenderContext& renderContext, MaterialBase* materi
         drawCall.Terrain.Lightmap = nullptr;
         drawCall.Terrain.LightmapUVsArea = Rectangle::Empty;
     }
-    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = _perInstanceRandom;
+    drawCall.SetStencilValue(_patch->_terrain->GetLayer());
 #if USE_EDITOR
     if (renderContext.View.Mode == ViewMode::LightmapUVsDensity)
         drawCall.Surface.LODDitherFactor = 1.0f; // See LightmapUVsDensityMaterialShader

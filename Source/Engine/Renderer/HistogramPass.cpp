@@ -113,13 +113,7 @@ bool HistogramPass::setupResources()
     if (!_shader->IsLoaded())
         return true;
     const auto shader = _shader->GetShader();
-
-    // Validate shader constant buffer size
-    if (shader->GetCB(0)->GetSize() != sizeof(HistogramData))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, HistogramData);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, HistogramData);
 
     _csClearHistogram = shader->GetCS("CS_ClearHistogram");
     _csGenerateHistogram = shader->GetCS("CS_GenerateHistogram");

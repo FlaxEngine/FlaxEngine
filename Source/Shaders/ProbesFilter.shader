@@ -50,18 +50,16 @@ float4 PS_FilterFace(Quad_VS2PS input) : SV_Target
 	float2 uv = input.TexCoord * 2 - 1;
 	float3 cubeCoordinates = UvToCubeMapUv(uv);
 
-#define NUM_FILTER_SAMPLES 512
-
 	float3 N = normalize(cubeCoordinates);
 	float roughness = ProbeRoughnessFromMip(SourceMipIndex);
 
+	const uint samplesCount = roughness > 0.1 ? 64 : 32;
 	float4 filteredColor = 0;
 	float weight = 0;
-
 	LOOP
-	for (int i = 0; i < NUM_FILTER_SAMPLES; i++)
+	for (int i = 0; i < samplesCount; i++)
 	{
-		float2 E = Hammersley(i, NUM_FILTER_SAMPLES, 0);
+		float2 E = Hammersley(i, samplesCount, 0);
 		float3 H = TangentToWorld(ImportanceSampleGGX(E, roughness).xyz, N);
 		float3 L = 2 * dot(N, H) * H - N;
 		float NoL = saturate(dot(N, L));

@@ -121,8 +121,8 @@ namespace Flax.Deps.Dependencies
                     };
                     var envVars = new Dictionary<string, string>
                     {
-                        { "CC", "clang-7" },
-                        { "CC_FOR_BUILD", "clang-7" }
+                        { "CC", "clang-" + Configuration.LinuxClangMinVer },
+                        { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer }
                     };
                     var config = "-DALSOFT_REQUIRE_ALSA=ON -DALSOFT_REQUIRE_OSS=ON -DALSOFT_REQUIRE_PORTAUDIO=ON -DALSOFT_REQUIRE_PULSEAUDIO=ON -DALSOFT_REQUIRE_JACK=ON -DALSOFT_EMBED_HRTF_DATA=YES";
 

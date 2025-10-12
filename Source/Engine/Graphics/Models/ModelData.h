@@ -443,7 +443,8 @@ public:
     {
         Float32,
         Float16,
-    } PositionFormat = PositionFormats::Float32;
+        Automatic,
+    } PositionFormat = PositionFormats::Automatic;
 
     // See ModelTool::TexCoordFormats
     enum class TexCoordFormats

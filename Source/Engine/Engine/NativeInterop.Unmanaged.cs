@@ -835,7 +835,7 @@ namespace FlaxEngine.Interop
         {
             object fieldOwner = fieldOwnerHandle.Target;
             IntPtr fieldRef;
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
             FieldHolder field = Unsafe.As<FieldHolder>(fieldHandle.Target);
             fieldRef = IntPtr.Zero;
             Debug.LogError("Not supported FieldGetValueReference");
@@ -1275,6 +1275,14 @@ namespace FlaxEngine.Interop
         internal static int GCMaxGeneration()
         {
             return GC.MaxGeneration;
+        }
+
+        [UnmanagedCallersOnly]
+        internal static void GCMemoryInfo(long* totalCommitted, long* heapSize)
+        {
+            GCMemoryInfo gcMemoryInfo = GC.GetGCMemoryInfo();
+            *totalCommitted = gcMemoryInfo.TotalCommittedBytes;
+            *heapSize = gcMemoryInfo.HeapSizeBytes;
         }
 
         [UnmanagedCallersOnly]

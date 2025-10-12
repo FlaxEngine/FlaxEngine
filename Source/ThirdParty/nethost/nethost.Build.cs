@@ -112,6 +112,7 @@ public class nethost : ThirdPartyModule
         {
             // Use CoreCLR for runtime hosting
             options.PublicDefinitions.Add("DOTNET_HOST_CORECLR");
+            options.ScriptingAPI.Defines.Add("DOTNET_HOST_CORECLR");
             options.PublicIncludePaths.Add(hostRuntime.Path);
             break;
         }
@@ -119,6 +120,7 @@ public class nethost : ThirdPartyModule
         {
             // Use Mono for runtime hosting
             options.PublicDefinitions.Add("DOTNET_HOST_MONO");
+            options.ScriptingAPI.Defines.Add("DOTNET_HOST_MONO");
             options.PublicIncludePaths.Add(Path.Combine(hostRuntime.Path, "include", "mono-2.0"));
             break;
         }

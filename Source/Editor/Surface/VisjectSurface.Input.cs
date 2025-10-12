@@ -120,6 +120,8 @@ namespace FlaxEditor.Surface
 
         private void UpdateSelectionRectangle()
         {
+            if (Root == null)
+                return;
             var p1 = _rootControl.PointFromParent(ref _leftMouseDownPos);
             var p2 = _rootControl.PointFromParent(ref _mousePos);
             var selectionRect = Rectangle.FromPoints(p1, p2);

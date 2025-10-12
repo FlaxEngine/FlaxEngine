@@ -329,7 +329,12 @@ namespace FlaxEditor.Viewport
                     _tempDebugDrawContext = DebugDraw.AllocateContext();
                 DebugDraw.SetContext(_tempDebugDrawContext);
                 DebugDraw.UpdateContext(_tempDebugDrawContext, 1.0f);
-
+                if (task is SceneRenderTask sceneRenderTask)
+                {
+                    // Sync debug view to avoid lag on culling/LODing
+                    var view = sceneRenderTask.View;
+                    DebugDraw.SetView(ref view);
+                }
                 for (int i = 0; i < selectedParents.Count; i++)
                 {
                     if (selectedParents[i].IsActiveInHierarchy)

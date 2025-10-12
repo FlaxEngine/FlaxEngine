@@ -59,17 +59,11 @@ namespace FlaxEditor.Windows
                 GameCookerWin = win;
                 Selector = platformSelector;
 
-                PerPlatformOptions[PlatformType.Windows].Init("Output/Windows", "Windows");
-                PerPlatformOptions[PlatformType.XboxOne].Init("Output/XboxOne", "XboxOne");
-                PerPlatformOptions[PlatformType.UWP].Init("Output/UWP", "UWP");
-                PerPlatformOptions[PlatformType.Linux].Init("Output/Linux", "Linux");
-                PerPlatformOptions[PlatformType.PS4].Init("Output/PS4", "PS4");
-                PerPlatformOptions[PlatformType.XboxScarlett].Init("Output/XboxScarlett", "XboxScarlett");
-                PerPlatformOptions[PlatformType.Android].Init("Output/Android", "Android");
-                PerPlatformOptions[PlatformType.Switch].Init("Output/Switch", "Switch");
-                PerPlatformOptions[PlatformType.PS5].Init("Output/PS5", "PS5");
-                PerPlatformOptions[PlatformType.Mac].Init("Output/Mac", "Mac");
-                PerPlatformOptions[PlatformType.iOS].Init("Output/iOS", "iOS");
+                foreach (var e in PerPlatformOptions)
+                {
+                    var str = e.Key.ToString();
+                    e.Value.Init("Output/" + str, str);
+                }
             }
 
             [HideInEditor]
@@ -196,12 +190,14 @@ namespace FlaxEditor.Windows
                     var label = layout.Label(text, TextAlignment.Center);
                     label.Label.AutoHeight = true;
                 }
-                
+
                 /// <summary>
                 /// Used to add platform specific tools if available.
                 /// </summary>
                 /// <param name="layout">The layout to start the tools at.</param>
-                public virtual void OnCustomToolsLayout(LayoutElementsContainer layout) { }
+                public virtual void OnCustomToolsLayout(LayoutElementsContainer layout)
+                {
+                }
 
                 public virtual void Build()
                 {
@@ -256,7 +252,7 @@ namespace FlaxEditor.Windows
                     if (string.IsNullOrEmpty(sdkPath))
                         sdkPath = Environment.GetEnvironmentVariable("ANDROID_SDK");
                     emulatorGroup.Label($"SDK path: {sdkPath}");
-                    
+
                     // AVD and starting emulator
                     var avdGroup = emulatorGroup.Group("AVD Emulator");
                     avdGroup.Label("Note: Create AVDs using Android Studio.");
@@ -273,7 +269,7 @@ namespace FlaxEditor.Windows
                     {
                         if (avdListTree.Children.Count > 0)
                             avdListTree.DisposeChildren();
-                        
+
                         var processStartInfo = new System.Diagnostics.ProcessStartInfo
                         {
                             FileName = Path.Combine(sdkPath, "emulator", "emulator.exe"),
@@ -299,7 +295,7 @@ namespace FlaxEditor.Windows
                         };
                         //processSettings.ShellExecute = true;
                         FlaxEngine.Platform.CreateProcess(ref processSettings);
-                        
+
                         var output = new string(processSettings.Output);*/
                         if (output.Length == 0)
                         {
@@ -345,9 +341,9 @@ namespace FlaxEditor.Windows
                         processSettings.ShellExecute = true;
                         FlaxEngine.Platform.CreateProcess(ref processSettings);
                     };
-                    
+
                     emulatorGroup.Space(2);
-                    
+
                     // Device
                     var installGroup = emulatorGroup.Group("Install");
                     installGroup.Panel.IsClosed = false;
@@ -391,10 +387,10 @@ namespace FlaxEditor.Windows
                         processSettings.SaveOutput = true;
                         processSettings.ShellExecute = false;
                         FlaxEngine.Platform.CreateProcess(ref processSettings);
-                        
+
                         var output = new string(processSettings.Output);
                         */
-                        
+
                         if (output.Length > 0 && !output.Equals("List of devices attached", StringComparison.Ordinal))
                         {
                             noDevicesLabel.Visible = false;
@@ -403,7 +399,7 @@ namespace FlaxEditor.Windows
                             {
                                 if (line.Trim().Equals("List of devices attached", StringComparison.Ordinal) || string.IsNullOrEmpty(line.Trim()))
                                     continue;
-                                
+
                                 var tab = line.Split("device ");
                                 if (tab.Length < 2)
                                     continue;
@@ -430,7 +426,7 @@ namespace FlaxEditor.Windows
                     {
                         if (deviceListTree.Selection.Count == 0)
                             return;
-                        
+
                         // Get built APK at output path
                         string output = StringUtils.ConvertRelativePathToAbsolute(Globals.ProjectFolder, StringUtils.NormalizePath(Output));
                         if (!Directory.Exists(output))
@@ -438,7 +434,7 @@ namespace FlaxEditor.Windows
                             FlaxEditor.Editor.LogWarning("Can not copy APK because output folder does not exist.");
                             return;
                         }
-                        
+
                         var apkFiles = Directory.GetFiles(output, "*.apk");
                         if (apkFiles.Length == 0)
                         {
@@ -457,7 +453,7 @@ namespace FlaxEditor.Windows
                             }
                             apkFilesString += $" \"{file}\"";
                         }
-                        
+
                         CreateProcessSettings processSettings = new CreateProcessSettings
                         {
                             FileName = Path.Combine(sdkPath, "platform-tools", "adb.exe"),

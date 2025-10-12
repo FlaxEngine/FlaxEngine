@@ -4,6 +4,7 @@
 
 #include "GPUContextVulkan.h"
 #include "CmdBufferVulkan.h"
+#include "GPUAdapterVulkan.h"
 #include "RenderToolsVulkan.h"
 #include "Engine/Core/Math/Color.h"
 #include "Engine/Core/Math/Rectangle.h"
@@ -15,6 +16,7 @@
 #include "Engine/Profiler/RenderStats.h"
 #include "GPUShaderProgramVulkan.h"
 #include "GPUTextureVulkan.h"
+#include "QueueVulkan.h"
 #include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Debug/Exceptions/NotImplementedException.h"
 
@@ -76,13 +78,14 @@ const Char* ToString(VkImageLayout layout)
 void PipelineBarrierVulkan::Execute(const CmdBufferVulkan* cmdBuffer)
 {
     ASSERT(cmdBuffer->IsOutsideRenderPass());
-    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), SourceStage, DestStage, 0, 0, nullptr, BufferBarriers.Count(), BufferBarriers.Get(), ImageBarriers.Count(), ImageBarriers.Get());
+    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), SourceStage, DestStage, 0, MemoryBarriers.Count(), MemoryBarriers.Get(), BufferBarriers.Count(), BufferBarriers.Get(), ImageBarriers.Count(), ImageBarriers.Get());
 
     // Reset
     SourceStage = 0;
     DestStage = 0;
     ImageBarriers.Clear();
     BufferBarriers.Clear();
+    MemoryBarriers.Clear();
 #if VK_ENABLE_BARRIERS_DEBUG
 	ImageBarriersDebug.Clear();
 #endif
@@ -107,10 +110,37 @@ GPUContextVulkan::GPUContextVulkan(GPUDeviceVulkan* device, QueueVulkan* queue)
     _handlesSizes[(int32)SpirvShaderResourceBindingType::SRV] = GPU_MAX_SR_BINDED;
     _handlesSizes[(int32)SpirvShaderResourceBindingType::UAV] = GPU_MAX_UA_BINDED;
 #endif
+
+#if GPU_ENABLE_TRACY
+#if VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset && !PLATFORM_SWITCH
+    // Use calibrated timestamps extension
+    if (vkResetQueryPoolEXT && vkGetCalibratedTimestampsEXT)
+    {
+        _tracyContext = tracy::CreateVkContext(_device->Adapter->Gpu, _device->Device, vkResetQueryPoolEXT, vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, vkGetCalibratedTimestampsEXT);
+    }
+    else
+#endif
+    {
+        // Use immediate command buffer for timestamps calibration
+        VkCommandBufferAllocateInfo cmdInfo;
+        RenderToolsVulkan::ZeroStruct(cmdInfo, VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+        cmdInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        cmdInfo.commandPool = _cmdBufferManager->GetHandle();
+        cmdInfo.commandBufferCount = 1;
+        VkCommandBuffer tracyCmdBuffer;
+        vkAllocateCommandBuffers(_device->Device, &cmdInfo, &tracyCmdBuffer);
+        _tracyContext = tracy::CreateVkContext(_device->Adapter->Gpu, _device->Device, _queue->GetHandle(), tracyCmdBuffer, vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, vkGetCalibratedTimestampsEXT);
+        vkQueueWaitIdle(_queue->GetHandle());
+        vkFreeCommandBuffers(_device->Device, _cmdBufferManager->GetHandle(), 1, &tracyCmdBuffer);
+    }
+#endif
 }
 
 GPUContextVulkan::~GPUContextVulkan()
 {
+#if GPU_ENABLE_TRACY
+    tracy::DestroyVkContext(_tracyContext);
+#endif
     for (int32 i = 0; i < _descriptorPools.Count(); i++)
     {
         _descriptorPools[i].ClearDelete();
@@ -124,12 +154,7 @@ void GPUContextVulkan::AddImageBarrier(VkImage image, VkImageLayout srcLayout, V
 #if VK_ENABLE_BARRIERS_BATCHING
     // Auto-flush on overflow
     if (_barriers.IsFull())
-    {
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-        if (cmdBuffer->IsInsideRenderPass())
-            EndRenderPass();
-        _barriers.Execute(cmdBuffer);
-    }
+        FlushBarriers();
 #endif
 
     // Insert barrier
@@ -161,10 +186,7 @@ void GPUContextVulkan::AddImageBarrier(VkImage image, VkImageLayout srcLayout, V
 
 #if !VK_ENABLE_BARRIERS_BATCHING
     // Auto-flush without batching
-    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    if (cmdBuffer->IsInsideRenderPass())
-        EndRenderPass();
-    _barriers.Execute(cmdBuffer);
+    FlushBarriers();
 #endif
 }
 
@@ -286,12 +308,7 @@ void GPUContextVulkan::AddBufferBarrier(GPUBufferVulkan* buffer, VkAccessFlags d
 #if VK_ENABLE_BARRIERS_BATCHING
     // Auto-flush on overflow
     if (_barriers.IsFull())
-    {
-        const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-        if (cmdBuffer->IsInsideRenderPass())
-            EndRenderPass();
-        _barriers.Execute(cmdBuffer);
-    }
+        FlushBarriers();
 #endif
 
     // Insert barrier
@@ -310,11 +327,36 @@ void GPUContextVulkan::AddBufferBarrier(GPUBufferVulkan* buffer, VkAccessFlags d
 
 #if !VK_ENABLE_BARRIERS_BATCHING
     // Auto-flush without batching
-    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    if (cmdBuffer->IsInsideRenderPass())
-        EndRenderPass();
-    _barriers.Execute(cmdBuffer);
+    FlushBarriers();
 #endif
+}
+
+void GPUContextVulkan::AddMemoryBarrier()
+{
+#if VK_ENABLE_BARRIERS_BATCHING
+    // Auto-flush on overflow
+    if (_barriers.IsFull())
+        FlushBarriers();
+#endif
+
+    // Insert barrier
+    VkMemoryBarrier& memoryBarrier = _barriers.MemoryBarriers.AddOne();
+    RenderToolsVulkan::ZeroStruct(memoryBarrier, VK_STRUCTURE_TYPE_MEMORY_BARRIER);
+    memoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    memoryBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+    _barriers.SourceStage |= VK_PIPELINE_STAGE_TRANSFER_BIT;
+    _barriers.DestStage |= VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+#if !VK_ENABLE_BARRIERS_BATCHING
+    // Auto-flush without batching
+    FlushBarriers();
+#endif
+}
+
+void GPUContextVulkan::AddUABarrier()
+{
+    _barriers.SourceStage |= VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    _barriers.DestStage |= VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 }
 
 void GPUContextVulkan::FlushBarriers()
@@ -446,7 +488,7 @@ void GPUContextVulkan::EndRenderPass()
     cmdBuffer->EndRenderPass();
     _renderPass = nullptr;
 
-    // Place a barrier between RenderPasses, so that color / depth outputs can be read in subsequent passes
+    // Place a barrier between RenderPasses, so that color/depth outputs can be read in subsequent passes
     // TODO: remove it in future and use proper barriers without whole pipeline stalls
     vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
 }
@@ -679,15 +721,9 @@ void GPUContextVulkan::OnDrawCall()
     // Bind descriptors sets to the graphics pipeline
     if (pipelineState->HasDescriptorsPerStageMask)
     {
-        vkCmdBindDescriptorSets(
-            cmdBuffer->GetHandle(),
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            pipelineState->GetLayout()->Handle,
-            0,
-            pipelineState->DescriptorSetHandles.Count(),
-            pipelineState->DescriptorSetHandles.Get(),
-            pipelineState->DynamicOffsets.Count(),
-            pipelineState->DynamicOffsets.Get());
+        auto& descriptorSets = pipelineState->DescriptorSetHandles;
+        auto& dynamicOffsets = pipelineState->DynamicOffsets;
+        vkCmdBindDescriptorSets(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineState->GetLayout()->Handle, 0, descriptorSets.Count(), descriptorSets.Get(), dynamicOffsets.Count(), dynamicOffsets.Get());
     }
 
     _rtDirtyFlag = false;
@@ -710,6 +746,7 @@ void GPUContextVulkan::FrameBegin()
     _stencilRef = 0;
     _renderPass = nullptr;
     _currentState = nullptr;
+    _currentCompute = nullptr;
     _vertexLayout = nullptr;
     _rtDepth = nullptr;
     Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
@@ -748,6 +785,11 @@ void GPUContextVulkan::FrameEnd()
     // Execute any queued layout transitions that weren't already handled by the render pass
     FlushBarriers();
 
+#if GPU_ENABLE_TRACY
+    if (cmdBuffer)
+        tracy::CollectVkContext(_tracyContext, cmdBuffer->GetHandle());
+#endif
+
     // Base
     GPUContext::FrameEnd();
 }
@@ -757,7 +799,12 @@ void GPUContextVulkan::FrameEnd()
 void GPUContextVulkan::EventBegin(const Char* name)
 {
     const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
-    cmdBuffer->BeginEvent(name);
+#if COMPILE_WITH_PROFILER
+    void* tracyContext = _tracyContext;
+#else
+    void* tracyContext = nullptr;
+#endif
+    cmdBuffer->BeginEvent(name, tracyContext);
 }
 
 void GPUContextVulkan::EventEnd()
@@ -988,9 +1035,7 @@ void GPUContextVulkan::ResetCB()
 void GPUContextVulkan::BindCB(int32 slot, GPUConstantBuffer* cb)
 {
     ASSERT(slot >= 0 && slot < GPU_MAX_CB_BINDED);
-
     const auto cbVulkan = static_cast<GPUConstantBufferVulkan*>(cb);
-
     if (_cbHandles[slot] != cbVulkan)
     {
         _cbDirtyFlag = true;
@@ -1077,7 +1122,6 @@ void GPUContextVulkan::UpdateCB(GPUConstantBuffer* cb, const void* data)
     const uint32 size = cbVulkan->GetSize();
     if (size == 0)
         return;
-    const auto cmdBuffer = _cmdBufferManager->GetCmdBuffer();
 
     // Allocate bytes for the buffer
     const auto allocation = _device->UniformBufferUploader->Allocate(size, 0, this);
@@ -1114,8 +1158,12 @@ void GPUContextVulkan::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCo
     FlushBarriers();
 
     // Bind pipeline
-    vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, pipelineState->GetHandle());
-    RENDER_STAT_PS_STATE_CHANGE();
+    if (_currentCompute != shaderVulkan)
+    {
+        _currentCompute = shaderVulkan;
+        vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, pipelineState->GetHandle());
+        RENDER_STAT_PS_STATE_CHANGE();
+    }
 
     // Bind descriptors sets to the compute pipeline
     pipelineState->Bind(cmdBuffer);
@@ -1125,8 +1173,8 @@ void GPUContextVulkan::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCo
     RENDER_STAT_DISPATCH_CALL();
 
     // Place a barrier between dispatches, so that UAVs can be read+write in subsequent passes
-    // TODO: optimize it by moving inputs/outputs into higher-layer so eg. Global SDF can manually optimize it
-    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+    if (_pass == 0)
+        AddUABarrier();
 
 #if VK_ENABLE_BARRIERS_DEBUG
     LOG(Warning, "Dispatch");
@@ -1150,8 +1198,12 @@ void GPUContextVulkan::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* b
     FlushBarriers();
 
     // Bind pipeline
-    vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, pipelineState->GetHandle());
-    RENDER_STAT_PS_STATE_CHANGE();
+    if (_currentCompute != shaderVulkan)
+    {
+        _currentCompute = shaderVulkan;
+        vkCmdBindPipeline(cmdBuffer->GetHandle(), VK_PIPELINE_BIND_POINT_COMPUTE, pipelineState->GetHandle());
+        RENDER_STAT_PS_STATE_CHANGE();
+    }
 
     // Bind descriptors sets to the compute pipeline
     pipelineState->Bind(cmdBuffer);
@@ -1161,8 +1213,8 @@ void GPUContextVulkan::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* b
     RENDER_STAT_DISPATCH_CALL();
 
     // Place a barrier between dispatches, so that UAVs can be read+write in subsequent passes
-    // TODO: optimize it by moving inputs/outputs into higher-layer so eg. Global SDF can manually optimize it
-    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 0, nullptr);
+    if (_pass == 0)
+        AddUABarrier();
 
 #if VK_ENABLE_BARRIERS_DEBUG
     LOG(Warning, "DispatchIndirect");
@@ -1303,6 +1355,7 @@ void GPUContextVulkan::Flush()
     // Flush remaining and buffered commands
     FlushState();
     _currentState = nullptr;
+    _currentCompute = nullptr;
 
     // Execute commands
     _cmdBufferManager->SubmitActiveCmdBuffer();
@@ -1321,38 +1374,32 @@ void GPUContextVulkan::UpdateBuffer(GPUBuffer* buffer, const void* data, uint32 
 
     const auto bufferVulkan = static_cast<GPUBufferVulkan*>(buffer);
 
-    // Memory transfer barrier
-    // TODO: batch pipeline barriers
-    const VkMemoryBarrier barrierBefore = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_MEMORY_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT };
-    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &barrierBefore, 0, nullptr, 0, nullptr);
+    // Transition resource
+    if (_pass == 0)
+        AddMemoryBarrier();
+    AddBufferBarrier(bufferVulkan, VK_ACCESS_TRANSFER_WRITE_BIT);
+    FlushBarriers();
 
     // Use direct update for small buffers
     const uint32 alignedSize = Math::AlignUp<uint32>(size, 4);
-    if (size <= 16 * 1024 && alignedSize <= buffer->GetSize())
+    if (size <= 4 * 1024 && alignedSize <= buffer->GetSize())
     {
-        //AddBufferBarrier(bufferVulkan, VK_ACCESS_TRANSFER_WRITE_BIT);
-        //FlushBarriers();
-
         vkCmdUpdateBuffer(cmdBuffer->GetHandle(), bufferVulkan->GetHandle(), offset, alignedSize, data);
     }
     else
     {
-        auto staging = _device->StagingManager.AcquireBuffer(size, GPUResourceUsage::StagingUpload);
-        staging->SetData(data, size);
+        auto allocation = _device->UploadBuffer.Upload(data, size, PLATFORM_MEMORY_ALIGNMENT);
 
         VkBufferCopy region;
         region.size = size;
-        region.srcOffset = 0;
+        region.srcOffset = allocation.Offset;
         region.dstOffset = offset;
-        vkCmdCopyBuffer(cmdBuffer->GetHandle(), ((GPUBufferVulkan*)staging)->GetHandle(), ((GPUBufferVulkan*)buffer)->GetHandle(), 1, &region);
-
-        _device->StagingManager.ReleaseBuffer(cmdBuffer, staging);
+        vkCmdCopyBuffer(cmdBuffer->GetHandle(), allocation.Buffer, ((GPUBufferVulkan*)buffer)->GetHandle(), 1, &region);
     }
 
-    // Memory transfer barrier
-    // TODO: batch pipeline barriers
-    const VkMemoryBarrier barrierAfter = { VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT };
-    vkCmdPipelineBarrier(cmdBuffer->GetHandle(), VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 1, &barrierAfter, 0, nullptr, 0, nullptr);
+    // Memory transfer barrier to ensure buffer is ready to read (eg. by Draw or Dispatch)
+    if (_pass == 0)
+        AddMemoryBarrier();
 }
 
 void GPUContextVulkan::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, uint32 size, uint32 dstOffset, uint32 srcOffset)
@@ -1377,6 +1424,10 @@ void GPUContextVulkan::CopyBuffer(GPUBuffer* dstBuffer, GPUBuffer* srcBuffer, ui
     bufferCopy.dstOffset = dstOffset;
     bufferCopy.size = size;
     vkCmdCopyBuffer(cmdBuffer->GetHandle(), srcBufferVulkan->GetHandle(), dstBufferVulkan->GetHandle(), 1, &bufferCopy);
+
+    // Memory transfer barrier to ensure buffer is ready to read (eg. by Draw or Dispatch)
+    if (_pass == 0)
+        AddMemoryBarrier();
 }
 
 void GPUContextVulkan::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int32 mipIndex, const void* data, uint32 rowPitch, uint32 slicePitch)
@@ -1392,14 +1443,14 @@ void GPUContextVulkan::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int3
     AddImageBarrier(textureVulkan, mipIndex, arrayIndex, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     FlushBarriers();
 
-    auto buffer = _device->StagingManager.AcquireBuffer(slicePitch, GPUResourceUsage::StagingUpload);
-    buffer->SetData(data, slicePitch);
+    auto allocation = _device->UploadBuffer.Upload(data, slicePitch, 512);
 
     // Setup buffer copy region
     int32 mipWidth, mipHeight, mipDepth;
     texture->GetMipSize(mipIndex, mipWidth, mipHeight, mipDepth);
     VkBufferImageCopy bufferCopyRegion;
     Platform::MemoryClear(&bufferCopyRegion, sizeof(bufferCopyRegion));
+    bufferCopyRegion.bufferOffset = allocation.Offset;
     bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     bufferCopyRegion.imageSubresource.mipLevel = mipIndex;
     bufferCopyRegion.imageSubresource.baseArrayLayer = arrayIndex;
@@ -1409,9 +1460,7 @@ void GPUContextVulkan::UpdateTexture(GPUTexture* texture, int32 arrayIndex, int3
     bufferCopyRegion.imageExtent.depth = static_cast<uint32_t>(mipDepth);
 
     // Copy mip level from staging buffer
-    vkCmdCopyBufferToImage(cmdBuffer->GetHandle(), ((GPUBufferVulkan*)buffer)->GetHandle(), textureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
-
-    _device->StagingManager.ReleaseBuffer(cmdBuffer, buffer);
+    vkCmdCopyBufferToImage(cmdBuffer->GetHandle(), allocation.Buffer, textureVulkan->GetHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferCopyRegion);
 }
 
 void GPUContextVulkan::CopyTexture(GPUTexture* dstResource, uint32 dstSubresource, uint32 dstX, uint32 dstY, uint32 dstZ, GPUTexture* srcResource, uint32 srcSubresource)
@@ -1784,6 +1833,29 @@ void GPUContextVulkan::CopySubresource(GPUResource* dstResource, uint32 dstSubre
     {
         Log::NotImplementedException(TEXT("Cannot copy data between buffer and texture."));
     }
+}
+
+void GPUContextVulkan::Transition(GPUResource* resource, GPUResourceAccess access)
+{
+    if (auto buffer = dynamic_cast<GPUBufferVulkan*>(resource))
+    {
+        AddBufferBarrier(buffer, RenderToolsVulkan::GetAccess(access));
+    }
+    else if (auto texture = dynamic_cast<GPUTextureVulkan*>(resource))
+    {
+        AddImageBarrier(texture, RenderToolsVulkan::GetImageLayout(access));
+    }
+}
+
+void GPUContextVulkan::MemoryBarrier()
+{
+    AddMemoryBarrier();
+}
+
+void GPUContextVulkan::OverlapUA(bool end)
+{
+    if (end)
+        AddUABarrier();
 }
 
 #endif

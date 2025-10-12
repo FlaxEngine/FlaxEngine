@@ -859,5 +859,17 @@ namespace Flax.Build
                 return 0;
             });
         }
+
+        internal static bool ParseVersion(string text, out Version ver)
+        {
+            if (Version.TryParse(text, out ver))
+                return true;
+            if (int.TryParse(text, out var major))
+            {
+                ver = new Version(major, 0);
+                return true;
+            }
+            return false;
+        }
     }
 }
