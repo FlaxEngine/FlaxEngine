@@ -337,13 +337,27 @@ namespace FlaxEngine.GUI
             var selection = new TextRange(SelectionLeft, SelectionRight);
             var viewRect = new Rectangle(_viewOffset, Size).MakeExpanded(10.0f);
             var firstTextBlock = textBlocksCount;
-            for (int i = 0; i < textBlocksCount; i++)
+            if (textBlocksCount > 0)
             {
-                ref TextBlock textBlock = ref textBlocks[i];
-                if (textBlock.Bounds.Intersects(ref viewRect))
+                // Try to estimate the rough location of the first line
+                float lineHeight = textBlocks[0].Bounds.Height;
+                firstTextBlock = Math.Clamp((int)Math.Floor(viewRect.Y / lineHeight) + 1, 0, textBlocksCount - 1);
+                if (textBlocks[firstTextBlock].Bounds.Top > viewRect.Top)
                 {
-                    firstTextBlock = i;
-                    break;
+                    // Overshoot...
+                    for (; firstTextBlock > 0; firstTextBlock--)
+                    {
+                        ref TextBlock textBlock = ref textBlocks[firstTextBlock];
+                        if (textBlocks[firstTextBlock].Bounds.Top < viewRect.Top)
+                            break;
+                    }
+                }
+
+                for (; firstTextBlock < textBlocksCount; firstTextBlock++)
+                {
+                    ref TextBlock textBlock = ref textBlocks[firstTextBlock];
+                    if (textBlock.Bounds.Intersects(ref viewRect))
+                        break;
                 }
             }
             var endTextBlock = Mathf.Min(firstTextBlock + 1, textBlocksCount);
@@ -397,6 +411,9 @@ namespace FlaxEngine.GUI
                 if (!font)
                     continue;
 
+                TextRange textBlockRange = new TextRange(0, textBlock.Range.EndIndex - textBlock.Range.StartIndex);
+                string textBlockText = _text.Substring(textBlock.Range.StartIndex, textBlockRange.Length);
+
                 // Shadow
                 Color color;
                 if (!textBlock.Style.ShadowOffset.IsZero && textBlock.Style.ShadowColor != Color.Transparent)
@@ -404,14 +421,14 @@ namespace FlaxEngine.GUI
                     color = textBlock.Style.ShadowColor;
                     if (!enabled)
                         color *= 0.6f;
-                    Render2D.DrawText(font, _text, ref textBlock.Range, color, textBlock.Bounds.Location + textBlock.Style.ShadowOffset, textBlock.Style.CustomMaterial);
+                    Render2D.DrawText(font, textBlockText, ref textBlockRange, color, textBlock.Bounds.Location + textBlock.Style.ShadowOffset, textBlock.Style.CustomMaterial);
                 }
 
                 // Text
                 color = textBlock.Style.Color;
                 if (!enabled)
                     color *= 0.6f;
-                Render2D.DrawText(font, _text, ref textBlock.Range, color, textBlock.Bounds.Location, textBlock.Style.CustomMaterial);
+                Render2D.DrawText(font, textBlockText, ref textBlockRange, color, textBlock.Bounds.Location, textBlock.Style.CustomMaterial);
             }
 
             // Draw underline
