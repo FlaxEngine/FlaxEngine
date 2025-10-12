@@ -252,7 +252,7 @@ namespace FlaxEditor.GUI.Input
                 bool altDown = Root.GetKey(KeyboardKeys.Alt);
                 bool shiftDown = Root.GetKey(KeyboardKeys.Shift);
                 bool controlDown = Root.GetKey(KeyboardKeys.Control);
-                float deltaValue = altDown ? 0.1f : (shiftDown ? 10f : (controlDown ? 100f : 1));
+                float deltaValue = altDown ? 0.1f : (shiftDown ? 10f : (controlDown ? 100f : 1f));
                 float slideDelta = key == KeyboardKeys.ArrowUp ? deltaValue : -deltaValue;
 
                 _startSlideValue = Value;
