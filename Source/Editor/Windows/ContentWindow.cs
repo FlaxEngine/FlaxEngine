@@ -155,7 +155,7 @@ namespace FlaxEditor.Windows
                 Parent = this,
             };
             _importButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Import64, () => Editor.ContentImporting.ShowImportFileDialog(CurrentViewFolder)).LinkTooltip("Import content.");
-            _createNewButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Add64, OnCreateNewItemButtonClicked).LinkTooltip("Create a new asset.");
+            _createNewButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Add64, OnCreateNewItemButtonClicked).LinkTooltip("Create a new asset. Shift + left click to create a new folder.");
             _toolStrip.AddSeparator();
             _navigateBackwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Left64, NavigateBackward).LinkTooltip("Navigate backward.");
             _navigateForwardButton = (ToolStripButton)_toolStrip.AddButton(Editor.Icons.Right64, NavigateForward).LinkTooltip("Navigate forward.");
