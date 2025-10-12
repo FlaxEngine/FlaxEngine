@@ -4,6 +4,7 @@
 
 #include "Engine/Core/Types/String.h"
 #include "Engine/Core/Types/Nullable.h"
+#include "Engine/Core/Collections/Array.h"
 
 /// <summary>
 /// Command line options helper.
@@ -194,10 +195,24 @@ public:
 
 public:
 
+#if PLATFORM_LINUX | PLATFORM_MAC
+    /// <summary>
+    /// Parses the input command line.
+    /// </summary>
+    /// <param name="arg">The argument values</param>
+    /// <returns>True if failed, otherwise false.</returns>
+    static bool Parse(const Array<String>& arg);
+    static bool HasOption(const String& name, const Array<String>& arg);
+    static Nullable<bool> GetOption(const String& name, const Array<String>& arg);
+    static String GetOptionValue(const String& name, const Array<String>& arg);
+    static Nullable<String> GetOptionalValue(const String& name, const Array<String>& arg);
+
+#else
     /// <summary>
     /// Parses the input command line.
     /// </summary>
     /// <param name="cmdLine">The command line.</param>
     /// <returns>True if failed, otherwise false.</returns>
     static bool Parse(const Char* cmdLine);
+#endif
 };
