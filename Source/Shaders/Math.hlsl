@@ -3,8 +3,10 @@
 #ifndef __MATH__
 #define __MATH__
 
+#define PI 3.1415926535897932
 #define RadiansToDegrees (180.0f / PI)
 #define DegreesToRadians (PI / 180.0f)
+#define PI_HALF (PI / 2)
 
 uint NextPow2(uint value)
 {
@@ -217,6 +219,15 @@ float3 ClampedPow(float3 x, float3 y)
 float4 ClampedPow(float4 x, float4 y)
 {
     return pow(max(abs(x), float4(0.000001f, 0.000001f, 0.000001f, 0.000001f)), y);
+}
+
+// [Eberly2014] GPGPU Programming for Games and Science
+float AcosFast(float x)
+{
+    float absX = abs(x);
+    float res = -0.156583 * absX + PI_HALF;
+    res *= sqrt(1.0 - absX);
+    return x >= 0 ? res : PI - res;
 }
 
 float4 FindQuatBetween(float3 from, float3 to)

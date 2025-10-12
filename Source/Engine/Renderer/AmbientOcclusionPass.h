@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Engine/Graphics/GPUPipelineStatePermutations.h"
 #include "RendererPass.h"
 
 // Config
@@ -20,7 +21,7 @@ class AmbientOcclusionPass : public RendererPass<AmbientOcclusionPass>
 private:
 
     // Packed shader constant buffer structure (this MUST match shader code)
-    GPU_CB_STRUCT(ASSAOConstants {
+    GPU_CB_STRUCT(SSAOConstants {
         ShaderGBufferData GBuffer;
 
         Float2 ViewportPixelSize;
@@ -49,14 +50,22 @@ private:
         float InvSharpness;
         float DetailAOStrength;
 
-        Float4 PatternRotScaleMatrices[5];
+        // GTAO Constants
+        float GTAOThickness;
+        float GTAOAdjustedRadius;
+        float GTAOAttenFactor;
+        // Reserved for 32-byte alignment
+        float GTAOReserved;
 
+        // MUST BE 32-aligned
+        Float4 PatternRotScaleMatrices[5];
         Matrix ViewMatrix;
         });
 
     // Effect visual settings
-    struct ASSAO_Settings
+    struct SSAO_Settings
     {
+        int Method; // The SSAO algorithm to use, see enum [SSAOMethod]
         float Radius; // [0.0,  ~ ] World (view) space size of the occlusion sphere.
         float ShadowMultiplier; // [0.0, 5.0] Effect strength linear multiplier
         float ShadowPower; // [0.5, 5.0] Effect strength pow modifier
@@ -68,8 +77,10 @@ private:
         float Sharpness; // [0.0, 1.0] (How much to bleed over edges; 1: not at all, 0.5: half-half; 0.0: completely ignore edges)
         float DetailShadowStrength; // [0.0, 5.0] Used for high-res detail AO using neighboring depth pixels: adds a lot of detail but also reduces temporal stability (adds aliasing).
         bool SkipHalfPixels; // [true/false] Use half of the pixels (checkerboard pattern)
-
-        ASSAO_Settings();
+        float GTAORadius; // [0.0,  ~ ] The radius of GTAO effect in world space units. 
+        float GTAOThickness; // [0.0, 1.0] How thick is the GTAO effect, only applicable to GTAO
+        
+        SSAO_Settings();
     };
 
 private:
@@ -80,7 +91,7 @@ private:
     GPUPipelineState* _psPrepareDepths;
     GPUPipelineState* _psPrepareDepthsHalf;
     GPUPipelineState* _psPrepareDepthMip[SSAO_DEPTH_MIP_LEVELS - 1];
-    GPUPipelineState* _psGenerate[4];
+    GPUPipelineStatePermutationsPs<2> _psGenerate[4];
     GPUPipelineState* _psSmartBlur;
     GPUPipelineState* _psSmartBlurWide;
     GPUPipelineState* _psNonSmartBlur;
@@ -98,8 +109,8 @@ private:
     float m_sizeY;
     float m_halfSizeX;
     float m_halfSizeY;
-    ASSAOConstants _constantsBufferData;
-    ASSAO_Settings settings;
+    SSAOConstants _constantsBufferData;
+    SSAO_Settings settings;
 
 public:
 
@@ -131,7 +142,7 @@ private:
         for (int32 i = 0; i < ARRAY_COUNT(_psPrepareDepthMip); i++)
             _psPrepareDepthMip[i]->ReleaseGPU();
         for (int32 i = 0; i < ARRAY_COUNT(_psGenerate); i++)
-            _psGenerate[i]->ReleaseGPU();
+            _psGenerate[i].Release();
         _psSmartBlur->ReleaseGPU();
         _psSmartBlurWide->ReleaseGPU();
         _psNonSmartBlur->ReleaseGPU();
