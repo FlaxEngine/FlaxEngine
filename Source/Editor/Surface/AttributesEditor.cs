@@ -86,8 +86,8 @@ namespace FlaxEditor.Surface
                 Parent = this
             };
 
-            // Buttons
-            float buttonsWidth = (width - 16.0f) * 0.5f;
+            // Ok and Cancel Buttons
+            float buttonsWidth = (width - 12.0f) * 0.5f;
             float buttonsHeight = 20.0f;
             var okButton = new Button(4.0f, Bottom - 4.0f - buttonsHeight, buttonsWidth, buttonsHeight)
             {
