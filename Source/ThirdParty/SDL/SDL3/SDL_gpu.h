@@ -224,8 +224,8 @@
  * - `drawIndirectFirstInstance`
  *
  * **D3D12:** Supported on Windows 10 or newer, Xbox One (GDK), and Xbox
- * Series X|S (GDK). Requires a GPU that supports DirectX 12 Feature Level
- * 11_1.
+ * Series X|S (GDK). Requires a GPU that supports DirectX 12 Feature Level 11_0 and
+ * Resource Binding Tier 2 or above.
  *
  * **Metal:** Supported on macOS 10.14+ and iOS/tvOS 13.0+. Hardware
  * requirements vary by operating system:
@@ -1091,7 +1091,7 @@ typedef enum SDL_GPUCompareOp
     SDL_GPU_COMPAREOP_LESS_OR_EQUAL,     /**< The comparison evaluates reference <= test. */
     SDL_GPU_COMPAREOP_GREATER,           /**< The comparison evaluates reference > test. */
     SDL_GPU_COMPAREOP_NOT_EQUAL,         /**< The comparison evaluates reference != test. */
-    SDL_GPU_COMPAREOP_GREATER_OR_EQUAL,  /**< The comparison evalutes reference >= test. */
+    SDL_GPU_COMPAREOP_GREATER_OR_EQUAL,  /**< The comparison evaluates reference >= test. */
     SDL_GPU_COMPAREOP_ALWAYS             /**< The comparison always evaluates true. */
 } SDL_GPUCompareOp;
 
@@ -2648,7 +2648,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_InsertGPUDebugLabel(
     const char *text);
 
 /**
- * Begins a debug group with an arbitary name.
+ * Begins a debug group with an arbitrary name.
  *
  * Used for denoting groups of calls when viewing the command buffer
  * callstream in a graphics debugging tool.

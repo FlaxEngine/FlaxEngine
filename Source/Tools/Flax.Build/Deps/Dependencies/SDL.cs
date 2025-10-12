@@ -90,7 +90,7 @@ namespace Flax.Deps.Dependencies
 
             CloneGitRepo(root, "https://github.com/libsdl-org/SDL");
             GitFetch(root);
-            GitResetToCommit(root, "96292a5b464258a2b926e0a3d72f8b98c2a81aa6");  // 3.2.20
+            GitResetToCommit(root, "a8589a84226a6202831a3d49ff4edda4acab9acd");  // 3.2.24
 
             foreach (var platform in options.Platforms)
             {
