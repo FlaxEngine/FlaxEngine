@@ -50,8 +50,7 @@ namespace Flax.Deps.Dependencies
         {
             var root = options.IntermediateFolder;
             var version = "1.24.3";
-            string configuration = "Release";
-            int concurrency = Math.Min(Math.Max(1, (int)(Environment.ProcessorCount * Configuration.ConcurrencyProcessorScale)), Configuration.MaxConcurrency);
+            var configuration = "Release";
             var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "OpenAL");
 
             foreach (var platform in options.Platforms)
@@ -123,7 +122,7 @@ namespace Flax.Deps.Dependencies
                     {
                         { "CC", "clang-" + Configuration.LinuxClangMinVer },
                         { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
-                        { "CMAKE_BUILD_PARALLEL_LEVEL", concurrency.ToString() },
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
                     };
                     var config = $"-DALSOFT_REQUIRE_ALSA=ON " +
                                  $"-DALSOFT_REQUIRE_OSS=ON " +
@@ -158,7 +157,11 @@ namespace Flax.Deps.Dependencies
                     {
                         "libopenal.a",
                     };
-                    var config = "-DALSOFT_REQUIRE_OBOE=OFF -DALSOFT_REQUIRE_OPENSL=ON -DALSOFT_EMBED_HRTF_DATA=YES";
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                    };
+                    var config = " -DALSOFT_REQUIRE_OBOE=OFF -DALSOFT_REQUIRE_OPENSL=ON -DALSOFT_EMBED_HRTF_DATA=YES";
 
                     // Get the source
                     var packagePath = Path.Combine(root, "package.zip");
@@ -181,8 +184,8 @@ namespace Flax.Deps.Dependencies
                     SetupDirectory(buildDir, true);
 
                     // Build
-                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
-                    BuildCmake(buildDir);
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
+                    BuildCmake(buildDir, envVars);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     foreach (var file in binariesToCopy)
                         Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
@@ -194,7 +197,11 @@ namespace Flax.Deps.Dependencies
                     {
                         "libopenal.a",
                     };
-                    var config = "-DALSOFT_REQUIRE_COREAUDIO=ON -DALSOFT_EMBED_HRTF_DATA=YES";
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                    };
+                    var config = " -DALSOFT_REQUIRE_COREAUDIO=ON -DALSOFT_EMBED_HRTF_DATA=YES";
 
                     // Get the source
                     var packagePath = Path.Combine(root, "package.zip");
@@ -210,8 +217,8 @@ namespace Flax.Deps.Dependencies
                     foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
                         SetupDirectory(buildDir, true);
-                        RunCmake(buildDir, platform, architecture, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
-                        BuildCmake(buildDir);
+                        RunCmake(buildDir, platform, architecture, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
+                        BuildCmake(buildDir, envVars);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopy)
                             Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
@@ -224,7 +231,11 @@ namespace Flax.Deps.Dependencies
                     {
                         "libopenal.a",
                     };
-                    var config = "-DALSOFT_REQUIRE_COREAUDIO=ON -DALSOFT_EMBED_HRTF_DATA=YES";
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                    };
+                    var config = " -DALSOFT_REQUIRE_COREAUDIO=ON -DALSOFT_EMBED_HRTF_DATA=YES";
 
                     // Get the source
                     var packagePath = Path.Combine(root, "package.zip");
@@ -240,8 +251,8 @@ namespace Flax.Deps.Dependencies
 
                     // Build for iOS
                     SetupDirectory(buildDir, true);
-                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_SYSTEM_NAME=iOS -DALSOFT_OSX_FRAMEWORK=ON -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
-                    BuildCmake(buildDir);
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_SYSTEM_NAME=iOS -DALSOFT_OSX_FRAMEWORK=ON -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
+                    BuildCmake(buildDir, envVars);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     foreach (var file in binariesToCopy)
                         Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));

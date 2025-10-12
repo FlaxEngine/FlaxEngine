@@ -4,8 +4,6 @@
 
 #include "Config.h"
 #include "Types.h"
-
-#include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Types/BaseTypes.h"
 
 /// <summary>
@@ -85,8 +83,7 @@ public:
 
         FORCE_INLINE static void VelocityChanged(const Vector3& velocity)
         {
-            if (!velocity.IsNanOrInfinity())
-                Instance->Listener_VelocityChanged(velocity);
+            Instance->Listener_VelocityChanged(velocity);
         }
 
         FORCE_INLINE static void TransformChanged(const Vector3& position, const Quaternion& orientation)

@@ -14,6 +14,7 @@ namespace Flax.Deps
     /// </summary>
     static class Downloader
     {
+        private static bool IgnoreSSL = false;
         private const string GoogleDriveDomain = "drive.google.com";
         private const string GoogleDriveDomain2 = "https://drive.google.com";
 
@@ -54,7 +55,7 @@ namespace Flax.Deps
             {
                 if (httpClient == null)
                 {
-                    using (httpClient = new HttpClient())
+                    using (httpClient = GetHttpClient())
                     {
                         return DownloadFileFromUrlToPathRaw(url, path, httpClient);
                     }
@@ -130,7 +131,7 @@ namespace Flax.Deps
             // You can comment the statement below if the provided url is guaranteed to be in the following format:
             // https://drive.google.com/uc?id=FILEID&export=download
             url = GetGoogleDriveDownloadLinkFromUrl(url);
-            using (var httpClient = new HttpClient())
+            using (var httpClient = GetHttpClient())
             {
                 FileInfo downloadedFile;
 
@@ -208,6 +209,19 @@ namespace Flax.Deps
             }
 
             return string.Format("https://drive.google.com/uc?id={0}&export=download", url.Substring(index, closingIndex - index));
+        }
+
+        private static HttpClient GetHttpClient()
+        {
+            if (IgnoreSSL)
+            {
+                Log.Warning("Accessing HTTP with SSL certificate validation disabled!");
+                var handler = new HttpClientHandler();
+                handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true;
+                return new HttpClient(handler);
+            }
+            return new HttpClient();
         }
     }
 }

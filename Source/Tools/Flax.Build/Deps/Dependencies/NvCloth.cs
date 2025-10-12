@@ -195,7 +195,7 @@ namespace Flax.Deps.Dependencies
             RunCmake(cmakeFolder, platform, architecture, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + cmakeArgs, envVars);
 
             // Run build
-            BuildCmake(cmakeFolder, envVars: envVars);
+            BuildCmake(cmakeFolder, envVars);
 
             // Deploy binaries
             var libs = new[]

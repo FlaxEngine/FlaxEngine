@@ -23,11 +23,11 @@ void AudioListener::Update()
 {
     // Update the velocity
     const Vector3 pos = GetPosition();
-    const float dt = Time::Update.UnscaledDeltaTime.GetTotalSeconds();
+    const float dt = Math::Max(Time::Update.UnscaledDeltaTime.GetTotalSeconds(), 0.00001f);
     const auto prevVelocity = _velocity;
     _velocity = (pos - _prevPos) / dt;
     _prevPos = pos;
-    if (_velocity != prevVelocity)
+    if (_velocity != prevVelocity && !_velocity.IsNanOrInfinity())
     {
         AudioBackend::Listener::VelocityChanged(_velocity);
     }
