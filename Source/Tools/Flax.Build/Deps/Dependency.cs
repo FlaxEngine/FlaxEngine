@@ -249,13 +249,29 @@ namespace Flax.Deps
         }
 
         /// <summary>
+        /// Gets the maximum concurrency level for a cmake command. See CMAKE_BUILD_PARALLEL_LEVEL or -j docs.
+        /// </summary>
+        public static string CmakeBuildParallel => Math.Min(Math.Max(1, (int)(Environment.ProcessorCount * Configuration.ConcurrencyProcessorScale)), Configuration.MaxConcurrency).ToString();
+
+        /// <summary>
         /// Builds the cmake project.
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="envVars">Custom environment variables to pass to the child process.</param>
-        public static void BuildCmake(string path, Dictionary<string, string> envVars = null)
+        public static void BuildCmake(string path, Dictionary<string, string> envVars)
         {
-            Utilities.Run("cmake", "--build .  --config Release", null, path, Utilities.RunOptions.DefaultTool, envVars);
+            BuildCmake(path, "Release", envVars);
+        }
+
+        /// <summary>
+        /// Builds the cmake project.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="config">The configuration preset.</param>
+        /// <param name="envVars">Custom environment variables to pass to the child process.</param>
+        public static void BuildCmake(string path, string config = "Release", Dictionary<string, string> envVars = null)
+        {
+            Utilities.Run("cmake", $"--build .  --config {config}", null, path, Utilities.RunOptions.DefaultTool, envVars);
         }
 
         /// <summary>
