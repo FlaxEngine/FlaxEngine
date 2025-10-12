@@ -94,7 +94,7 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.Windows:
                 if (architecture == TargetArchitecture.ARM64)
                 {
-                    // Windows ARM64 doesn't have GPU support, so avoid copying those DLLs around
+                    // Windows ARM64 doesn't have precompiled files for GPU support, so avoid copying those DLLs around
                     ConfigureCmakeSwitch(cmakeSwitches, "PX_COPY_EXTERNAL_DLL", "OFF");
                     ConfigureCmakeSwitch(cmakeParams, "PX_COPY_EXTERNAL_DLL", "OFF");
                 }
@@ -122,7 +122,7 @@ namespace Flax.Deps.Dependencies
             string bits;
             string arch;
             string binariesSubDir;
-            string buildPlatform;
+            string buildPlatform = architecture == TargetArchitecture.x86 ? "Win32" : architecture.ToString();
             bool suppressBitsPostfix = false;
             string binariesPrefix = string.Empty;
             var envVars = new Dictionary<string, string>();
@@ -145,15 +145,6 @@ namespace Flax.Deps.Dependencies
                 bits = "64";
                 break;
             default: throw new InvalidArchitectureException(architecture);
-            }
-            switch (architecture)
-            {
-            case TargetArchitecture.x86:
-                buildPlatform = "Win32";
-                break;
-            default:
-                buildPlatform = architecture.ToString();
-                break;
             }
             var msBuildProps = new Dictionary<string, string>();
             switch (targetPlatform)
@@ -390,8 +381,17 @@ namespace Flax.Deps.Dependencies
                 {
                 case TargetPlatform.Windows:
                 {
-                    Build(options, "vc17win64", platform, TargetArchitecture.x64);
-                    Build(options, "vc17win-arm64", platform, TargetArchitecture.ARM64);
+                    try
+                    {
+                        Build(options, "vc18win64", platform, architecture);
+                        Build(options, "vc18win-arm64", platform, architecture);
+                    }
+                    catch
+                    {
+                        Log.Verbose("Failed to generate VS2026 solution for PhysX, fallback to VS2022");
+                        Build(options, "vc17win64", platform, architecture);
+                        Build(options, "vc17win-arm64", platform, architecture);
+                    }
                     break;
                 }
                 case TargetPlatform.Linux:
