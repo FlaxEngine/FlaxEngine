@@ -257,16 +257,23 @@ namespace FlaxEditor.Viewport
         /// </summary>
         public void SaveActiveUIScalingOption()
         {
-            var defaultKey = $"{Prefab.ID}:DefaultViewportScalingIndex";
+            if (!Prefab)
+                return;
+            var id = Prefab.ID;
+            var defaultKey = $"{id}:DefaultViewportScalingIndex";
             Editor.Instance.ProjectCache.SetCustomData(defaultKey, _defaultScaleActiveIndex.ToString());
-            var customKey = $"{Prefab.ID}:CustomViewportScalingIndex";
+            var customKey = $"{id}:CustomViewportScalingIndex";
             Editor.Instance.ProjectCache.SetCustomData(customKey, _customScaleActiveIndex.ToString());
         }
 
         private void LoadCustomUIScalingOption()
         {
+            if (!Prefab)
+                return;
+            var id = Prefab.ID;
             Prefab.WaitForLoaded();
-            var defaultKey = $"{Prefab.ID}:DefaultViewportScalingIndex";
+
+            var defaultKey = $"{id}:DefaultViewportScalingIndex";
             if (Editor.Instance.ProjectCache.TryGetCustomData(defaultKey, out string defaultData))
             {
                 if (int.TryParse(defaultData, out var index))
@@ -286,7 +293,7 @@ namespace FlaxEditor.Viewport
                 }
             }
 
-            var customKey = $"{Prefab.ID}:CustomViewportScalingIndex";
+            var customKey = $"{id}:CustomViewportScalingIndex";
             if (Editor.Instance.ProjectCache.TryGetCustomData(customKey, out string data))
             {
                 if (int.TryParse(data, out var index))
