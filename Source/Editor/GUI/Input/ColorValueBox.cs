@@ -129,11 +129,39 @@ namespace FlaxEditor.GUI.Input
         {
             base.Draw();
 
-            var style = Style.Current;
-            var r = new Rectangle(0, 0, Width, Height);
+            bool isTransparent = _value.A < 1;
 
-            Render2D.FillRectangle(r, _value);
-            Render2D.DrawRectangle(r, IsMouseOver || IsNavFocused ? style.BackgroundSelected : Color.Black);
+            var style = Style.Current;
+            var fullRect = new Rectangle(0, 0, Width, Height);
+            var colorRect = new Rectangle(0, 0, isTransparent ? Width * 0.7f : Width, Height);
+
+            if (isTransparent)
+            {
+                var alphaRect = new Rectangle(colorRect.Right, 0, Width - colorRect.Right, Height);
+
+                // Draw checkerboard pattern to part of the color value box
+                Render2D.FillRectangle(alphaRect, Color.White);
+                var smallRectSize = 7.9f;
+                var numHor = Mathf.CeilToInt(alphaRect.Width / smallRectSize);
+                var numVer = Mathf.CeilToInt(alphaRect.Height / smallRectSize);
+                for (int i = 0; i < numHor; i++)
+                {
+                    for (int j = 0; j < numVer; j++)
+                    {
+                        if ((i + j) % 2 == 0)
+                        {
+                            var rect = new Rectangle(alphaRect.X + smallRectSize * i, alphaRect.Y + smallRectSize * j, new Float2(smallRectSize));
+                            Render2D.PushClip(alphaRect);
+                            Render2D.FillRectangle(rect, Color.Gray);
+                            Render2D.PopClip();
+                        }
+                    }
+                }
+                Render2D.FillRectangle(alphaRect, _value);
+            }
+
+            Render2D.FillRectangle(colorRect, _value with { A = 1 });
+            Render2D.DrawRectangle(fullRect, IsMouseOver || IsNavFocused ? style.BackgroundSelected : Color.Black);
         }
 
         /// <inheritdoc />
