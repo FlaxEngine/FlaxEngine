@@ -44,7 +44,8 @@ namespace FlaxEditor.CustomEditors.Elements
         {
             var style = Style.Current;
             var settingsButtonSize = Panel.HeaderHeight;
-            return new Image
+            Panel.HeaderTextMargin = Panel.HeaderTextMargin with { Right = settingsButtonSize + Utilities.Constants.UIMargin };
+;           return new Image
             {
                 TooltipText = "Settings",
                 AutoFocus = true,
