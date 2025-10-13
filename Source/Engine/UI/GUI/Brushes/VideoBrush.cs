@@ -1,12 +1,14 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
     /// Implementation of <see cref="IBrush"/> for <see cref="FlaxEngine.VideoPlayer"/> frame displaying.
     /// </summary>
     /// <seealso cref="IBrush" />
-    public sealed class VideoBrush : IBrush
+    public sealed class VideoBrush : IBrush, IEquatable<VideoBrush>
     {
         /// <summary>
         /// The video player to display frame from it.
@@ -56,6 +58,30 @@ namespace FlaxEngine.GUI
                 Render2D.DrawTexturePoint(texture, rect, color);
             else
                 Render2D.DrawTexture(texture, rect, color);
+        }
+
+        /// <inheritdoc />
+        public bool Equals(VideoBrush other)
+        {
+            return other != null && Player == other.Player && Filter == other.Filter;
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is VideoBrush other && Equals(other);
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Player, (int)Filter);
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(object obj)
+        {
+            return Equals(obj) ? 1 : 0;
         }
     }
 }

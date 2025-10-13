@@ -10,7 +10,7 @@
 /// <summary>
 /// Microsoft Visual Studio version types
 /// </summary>
-DECLARE_ENUM_8(VisualStudioVersion, VS2008, VS2010, VS2012, VS2013, VS2015, VS2017, VS2019, VS2022);
+DECLARE_ENUM_9(VisualStudioVersion, VS2008, VS2010, VS2012, VS2013, VS2015, VS2017, VS2019, VS2022, VS2026);
 
 /// <summary>
 /// Implementation of code editor utility that is using Microsoft Visual Studio.

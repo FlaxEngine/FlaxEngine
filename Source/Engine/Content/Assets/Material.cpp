@@ -190,16 +190,55 @@ Asset::LoadResult Material::load()
 
             // Load layer
             layer = MaterialLayer::Load(GetID(), &stream, _shaderHeader.Material.Info, name);
-            if (ContentDeprecated::Clear())
+            const bool upgradeOldSpecular = _shaderHeader.Material.GraphVersion < 177;
+            if (ContentDeprecated::Clear() || upgradeOldSpecular)
             {
                 // If encountered any deprecated data when loading graph then serialize it
                 MaterialGraph graph;
                 MemoryWriteStream writeStream(1024);
                 stream.SetPosition(0);
-                if (!graph.Load(&stream, true) && !graph.Save(&writeStream, true))
+                if (!graph.Load(&stream, true))
                 {
-                    surfaceChunk->Data.Copy(ToSpan(writeStream));
-                    ContentDeprecated::Clear();
+                    if (upgradeOldSpecular)
+                    {
+                        // [Deprecated in 1.11]
+                        // Specular calculations were changed to support up to 16% of reflectance via ^2 curve instead of linear up to 8%
+                        // Insert Custom Code node that converts old materials into a new system to ensure they look the same
+                        MaterialGraph::Node* rootNode = nullptr;
+                        for (auto& e : graph.Nodes)
+                        {
+                            if (e.Type == ROOT_NODE_TYPE)
+                            {
+                                rootNode = &e;
+                                break;
+                            }
+                        }
+                        const auto& specularBoxInfo = MaterialGenerator::GetMaterialRootNodeBox(MaterialGraphBoxes::Specular);
+                        auto specularBox = rootNode ? rootNode->GetBox(specularBoxInfo.ID) : nullptr;
+                        if (specularBox && specularBox->HasConnection())
+                        {
+                            auto& customCodeNode = graph.Nodes.AddOne();
+                            customCodeNode.ID = graph.Nodes.Count() + 1000;
+                            customCodeNode.Type = GRAPH_NODE_MAKE_TYPE(1, 8);
+                            customCodeNode.Boxes.Resize(2);
+                            customCodeNode.Boxes[0] = MaterialGraphBox(&customCodeNode, 0, VariantType::Float4); // Input0
+                            customCodeNode.Boxes[1] = MaterialGraphBox(&customCodeNode, 8, VariantType::Float4); // Output0
+                            customCodeNode.Values.Resize(1);
+                            customCodeNode.Values[0] = TEXT("// Convert old Specular value to a new range\nOutput0.x = min(Input0.x * 0.5f, 0.6f);");
+                            auto specularSourceBox = specularBox->Connections[0];
+                            specularBox->Connections.Clear();
+                            specularSourceBox->Connections.Clear();
+#define CONNECT(boxA, boxB) boxA->Connections.Add(boxB); boxB->Connections.Add(boxA)
+                            CONNECT(specularSourceBox, (&customCodeNode.Boxes[0])); // Specular -> Input0
+                            CONNECT((&customCodeNode.Boxes[1]), specularBox); // Output0 -> Specular
+#undef CONNECT
+                        }
+                    }
+                    if (!graph.Save(&writeStream, true))
+                    {
+                        surfaceChunk->Data.Copy(ToSpan(writeStream));
+                        ContentDeprecated::Clear();
+                    }
                 }
             }
         }

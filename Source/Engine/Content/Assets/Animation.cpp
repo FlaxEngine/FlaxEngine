@@ -600,7 +600,6 @@ void Animation::OnScriptingDispose()
 Asset::LoadResult Animation::load()
 {
     PROFILE_MEM(AnimationsData);
-    ScopeWriteLock systemScope(Animations::SystemLocker);
 
     // Get stream with animations data
     const auto dataChunk = GetChunk(0);

@@ -352,7 +352,7 @@ void TextRender::UpdateLayout()
     BoundingBox::Transform(_localBox, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Auto | ISceneRenderingListener::AutoDelayDuringRendering);
 }
 
 bool TextRender::HasContentLoaded() const
@@ -390,8 +390,8 @@ void TextRender::Draw(RenderContext& renderContext)
         drawCall.ObjectRadius = (float)_sphere.Radius;
         drawCall.Surface.GeometrySize = _localBox.GetSize();
         drawCall.Surface.PrevWorld = _drawState.PrevWorld;
-        drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
         drawCall.PerInstanceRandom = GetPerInstanceRandom();
+        drawCall.SetStencilValue(_layer);
         drawCall.Geometry.IndexBuffer = _ib.GetBuffer();
         drawCall.Geometry.VertexBuffers[0] = _vb.GetBuffer();
         drawCall.InstanceCount = 1;

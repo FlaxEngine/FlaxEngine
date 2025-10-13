@@ -76,7 +76,7 @@ void TerrainMaterialShader::Bind(BindParameters& params)
             scaleX > 0.00001f ? 1.0f / scaleX : 0.0f,
             scaleY > 0.00001f ? 1.0f / scaleY : 0.0f,
             scaleZ > 0.00001f ? 1.0f / scaleZ : 0.0f);
-        materialData->WorldDeterminantSign = drawCall.WorldDeterminantSign;
+        materialData->WorldDeterminantSign = drawCall.WorldDeterminant ? -1.0f : 1.0f;
         materialData->PerInstanceRandom = drawCall.PerInstanceRandom;
         materialData->CurrentLOD = drawCall.Terrain.CurrentLOD;
         materialData->ChunkSizeNextLOD = drawCall.Terrain.ChunkSizeNextLOD;
@@ -109,13 +109,10 @@ void TerrainMaterialShader::Bind(BindParameters& params)
     if (IsRunningRadiancePass)
         cullMode = CullMode::TwoSided;
 #endif
-    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminantSign < 0)
+    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminant)
     {
         // Invert culling when scale is negative
-        if (cullMode == CullMode::Normal)
-            cullMode = CullMode::Inverted;
-        else
-            cullMode = CullMode::Normal;
+        cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
     }
     const PipelineStateCache* psCache = _cache.GetPS(view.Pass, useLightmap);
     ASSERT(psCache);
@@ -123,6 +120,7 @@ void TerrainMaterialShader::Bind(BindParameters& params)
 
     // Bind pipeline
     context->SetState(state);
+    context->SetStencilRef(drawCall.StencilValue);
 }
 
 void TerrainMaterialShader::Unload()
@@ -138,6 +136,10 @@ bool TerrainMaterialShader::Load()
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::Default;
     psDesc.DepthEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthTest) == MaterialFeaturesFlags::None;
     psDesc.DepthWriteEnable = (_info.FeaturesFlags & MaterialFeaturesFlags::DisableDepthWrite) == MaterialFeaturesFlags::None;
+
+    psDesc.StencilEnable = true;
+    psDesc.StencilReadMask = 0;
+    psDesc.StencilPassOp = StencilOperation::Replace;
 
 #if GPU_ALLOW_TESSELLATION_SHADERS
     // Check if use tessellation (both material and runtime supports it)

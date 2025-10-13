@@ -307,6 +307,32 @@ bool GPUDeviceDX12::Init()
     LOG(Info, "Hardware Version: {0}", hwVer);
     updateFrameEvents();
 
+    // Setup display output
+    auto& videoOutput = VideoOutputs.AddOne();
+    videoOutput.Name = hwVer;
+    ComPtr<IDXGIDevice1> dxgiDevice;
+    VALIDATE_DIRECTX_CALL(_device->QueryInterface(IID_GRAPHICS_PPV_ARGS(&dxgiDevice)));
+    ComPtr<IDXGIAdapter> dxgiAdapter;
+    VALIDATE_DIRECTX_CALL(dxgiDevice->GetAdapter(dxgiAdapter.GetAddressOf()));
+    ComPtr<IDXGIOutput> dxgiOutput;
+    VALIDATE_DIRECTX_CALL(dxgiAdapter->EnumOutputs(0, dxgiOutput.GetAddressOf()));
+    DXGI_FORMAT backbufferFormat = RenderToolsDX::ToDxgiFormat(GPU_BACK_BUFFER_PIXEL_FORMAT);
+    UINT modesCount = 0;
+    VALIDATE_DIRECTX_CALL(dxgiOutput->GetDisplayModeList(backbufferFormat, 0, &modesCount, NULL));
+    Array<DXGIXBOX_MODE_DESC> modes;
+    modes.Resize((int32)modesCount);
+    VALIDATE_DIRECTX_CALL(dxgiOutput->GetDisplayModeListX(backbufferFormat, 0, &modesCount, modes.Get()));
+    for (const DXGIXBOX_MODE_DESC& mode : modes)
+    {
+        if (mode.Width > videoOutput.Width)
+        {
+            videoOutput.Width = mode.Width;
+            videoOutput.Height = mode.Height;
+        }
+        videoOutput.RefreshRate = Math::Max(videoOutput.RefreshRate, mode.RefreshRate.Numerator / (float)mode.RefreshRate.Denominator);
+    }
+    modes.Resize(0);
+
 #if PLATFORM_GDK
     GDKPlatform::Suspended.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnSuspended>(this);
     GDKPlatform::Resumed.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnResumed>(this);
@@ -943,6 +969,7 @@ void GPUDeviceDX12::updateFrameEvents()
     dxgiAdapter->GetDesc(&_adapter->Description);
     ComPtr<IDXGIOutput> dxgiOutput;
     VALIDATE_DIRECTX_CALL(dxgiAdapter->EnumOutputs(0, dxgiOutput.GetAddressOf()));
+    // TODO: support 120/40/30/24 fps
     VALIDATE_DIRECTX_CALL(_device->SetFrameIntervalX(dxgiOutput.Get(), D3D12XBOX_FRAME_INTERVAL_60_HZ, DX12_BACK_BUFFER_COUNT - 1u, D3D12XBOX_FRAME_INTERVAL_FLAG_NONE));
     VALIDATE_DIRECTX_CALL(_device->ScheduleFrameEventX(D3D12XBOX_FRAME_EVENT_ORIGIN, 0U, nullptr, D3D12XBOX_SCHEDULE_FRAME_EVENT_FLAG_NONE));
 }

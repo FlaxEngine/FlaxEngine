@@ -541,7 +541,7 @@ namespace FlaxEditor.Viewport
 
             // Setup options
             {
-                Editor.Instance.Options.OptionsChanged += OnEditorOptionsChanged;
+                _editor.Options.OptionsChanged += OnEditorOptionsChanged;
                 SetupViewportOptions();
             }
 
@@ -587,7 +587,7 @@ namespace FlaxEditor.Viewport
 
                 // Camera Settings Menu
                 var cameraCM = new ContextMenu();
-                _cameraButton = new ViewportWidgetButton(string.Format(MovementSpeedTextFormat, _movementSpeed), Editor.Instance.Icons.Camera64, cameraCM, false, cameraSpeedTextWidth)
+                _cameraButton = new ViewportWidgetButton(string.Format(MovementSpeedTextFormat, _movementSpeed), _editor.Icons.Camera64, cameraCM, false, cameraSpeedTextWidth)
                 {
                     Tag = this,
                     TooltipText = "Camera Settings",
@@ -596,7 +596,7 @@ namespace FlaxEditor.Viewport
                 _cameraWidget.Parent = this;
 
                 // Orthographic/Perspective Mode Widget
-                _orthographicModeButton = new ViewportWidgetButton(string.Empty, Editor.Instance.Icons.CamSpeed32, null, true)
+                _orthographicModeButton = new ViewportWidgetButton(string.Empty, _editor.Icons.CamSpeed32, null, true)
                 {
                     Checked = !_isOrtho,
                     TooltipText = "Toggle Orthographic/Perspective Mode",
@@ -869,8 +869,8 @@ namespace FlaxEditor.Viewport
                         {
                         }
                     });
-                    viewLayers.AddButton("Reset layers", () => Task.ViewLayersMask = LayersMask.Default).Icon = Editor.Instance.Icons.Rotate32;
-                    viewLayers.AddButton("Disable layers", () => Task.ViewLayersMask = new LayersMask(0)).Icon = Editor.Instance.Icons.Rotate32;
+                    viewLayers.AddButton("Reset layers", () => Task.ViewLayersMask = LayersMask.Default).Icon = _editor.Icons.Rotate32;
+                    viewLayers.AddButton("Disable layers", () => Task.ViewLayersMask = new LayersMask(0));
                     viewLayers.AddSeparator();
                     var layers = LayersAndTagsSettings.GetCurrentLayers();
                     if (layers != null && layers.Length > 0)
@@ -910,8 +910,8 @@ namespace FlaxEditor.Viewport
                         {
                         }
                     });
-                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = Editor.Instance.Icons.Rotate32;
-                    viewFlags.AddButton("Disable flags", () => Task.ViewFlags = ViewFlags.None).Icon = Editor.Instance.Icons.Rotate32;
+                    viewFlags.AddButton("Reset flags", () => Task.ViewFlags = ViewFlags.DefaultEditor).Icon = _editor.Icons.Rotate32;
+                    viewFlags.AddButton("Disable flags", () => Task.ViewFlags = ViewFlags.None);
                     viewFlags.AddSeparator();
                     for (int i = 0; i < ViewFlagsValues.Length; i++)
                     {
@@ -1091,7 +1091,7 @@ namespace FlaxEditor.Viewport
         /// </summary>
         private void SetupViewportOptions()
         {
-            var options = Editor.Instance.Options.Options;
+            var options = _editor.Options.Options;
             _minMovementSpeed = options.Viewport.MinMovementSpeed;
             MovementSpeed = options.Viewport.MovementSpeed;
             _maxMovementSpeed = options.Viewport.MaxMovementSpeed;
@@ -1298,6 +1298,11 @@ namespace FlaxEditor.Viewport
             _mouseSensitivity = options.Viewport.MouseSensitivity;
             _maxSpeedSteps = options.Viewport.TotalCameraSpeedSteps;
             _cameraEasingDegree = options.Viewport.CameraEasingDegree;
+
+            ViewportIconsRenderer.MinSize = options.Viewport.IconsMinimumSize;
+            ViewportIconsRenderer.MaxSize = options.Viewport.IconsMaximumSize;
+            ViewportIconsRenderer.MaxSizeDistance = options.Viewport.MaxSizeDistance;
+
             OnCameraMovementProgressChanged();
         }
 
@@ -1711,7 +1716,7 @@ namespace FlaxEditor.Viewport
 
             // Check if update mouse
             var size = Size;
-            var options = Editor.Instance.Options.Options;
+            var options = _editor.Options.Options;
             if (_isControllingMouse)
             {
                 var rmbWheel = false;
@@ -1952,7 +1957,7 @@ namespace FlaxEditor.Viewport
                 return true;
 
             // Custom input events
-            return InputActions.Process(Editor.Instance, this, key);
+            return InputActions.Process(_editor, this, key);
         }
 
         /// <inheritdoc />
@@ -1969,7 +1974,7 @@ namespace FlaxEditor.Viewport
             base.Draw();
 
             // Add overlay during debugger breakpoint hang
-            if (Editor.Instance.Simulation.IsDuringBreakpointHang)
+            if (_editor.Simulation.IsDuringBreakpointHang)
             {
                 var bounds = new Rectangle(Float2.Zero, Size);
                 Render2D.FillRectangle(bounds, new Color(0.0f, 0.0f, 0.0f, 0.2f));
@@ -1994,7 +1999,7 @@ namespace FlaxEditor.Viewport
         /// <inheritdoc />
         public override void OnDestroy()
         {
-            Editor.Instance.Options.OptionsChanged -= OnEditorOptionsChanged;
+            _editor.Options.OptionsChanged -= OnEditorOptionsChanged;
 
             base.OnDestroy();
         }

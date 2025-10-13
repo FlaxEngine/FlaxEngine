@@ -5,6 +5,7 @@
 #include "MaterialGenerator.h"
 #include "Engine/Visject/ShaderGraphUtilities.h"
 #include "Engine/Platform/File.h"
+#include "Engine/Platform/FileSystem.h"
 #include "Engine/Graphics/Materials/MaterialShader.h"
 #include "Engine/Graphics/Materials/MaterialShaderFeatures.h"
 #include "Engine/Engine/Globals.h"
@@ -47,9 +48,11 @@ enum class FeatureTemplateInputsMapping
 struct FeatureData
 {
     MaterialShaderFeature::GeneratorData Data;
+    DateTime FileTime;
     String Inputs[(int32)FeatureTemplateInputsMapping::MAX];
 
     bool Init();
+    void CheckReload();
 };
 
 namespace
@@ -69,6 +72,7 @@ bool FeatureData::Init()
         LOG(Error, "Cannot open file {0}", path);
         return true;
     }
+    FileTime = FileSystem::GetFileLastEditTime(path);
 
     int32 i = 0;
     const int32 length = contents.Length();
@@ -105,9 +109,23 @@ bool FeatureData::Init()
     return false;
 }
 
+void FeatureData::CheckReload()
+{
+#if COMPILE_WITH_DEV_ENV
+    // Reload if template has been modified
+    const String path = Globals::EngineContentFolder / TEXT("Editor/MaterialTemplates/") + Data.Template;
+    if (FileTime < FileSystem::GetFileLastEditTime(path))
+    {
+        for (auto& e : Inputs)
+            e.Clear();
+        Init();
+    }
+#endif
+}
+
 MaterialValue MaterialGenerator::getUVs(VariantType::Float2, TEXT("input.TexCoord"));
 MaterialValue MaterialGenerator::getTime(VariantType::Float, TEXT("TimeParam"));
-MaterialValue MaterialGenerator::getUnscaledTime(VariantType::Float, TEXT("UnscaledTimeParam"));
+MaterialValue MaterialGenerator::getScaledTime(VariantType::Float, TEXT("ScaledTimeParam"));
 MaterialValue MaterialGenerator::getNormal(VariantType::Float3, TEXT("input.TBN[2]"));
 MaterialValue MaterialGenerator::getNormalZero(VariantType::Float3, TEXT("float3(0, 0, 1)"));
 MaterialValue MaterialGenerator::getVertexColor(VariantType::Float4, TEXT("GetVertexColor(input)"));
@@ -183,7 +201,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
             type::Generate(feature.Data); \
             if (feature.Init()) \
                 return true; \
-        } \
+        } else if (COMPILE_WITH_DEV_ENV) Features[typeName].CheckReload(); \
     }
     const bool isOpaque = materialInfo.BlendMode == MaterialBlendMode::Opaque;
     switch (baseLayer->Domain)
@@ -472,7 +490,7 @@ bool MaterialGenerator::Generate(WriteStream& source, MaterialInfo& materialInfo
             srv = 3; // Objects + Skinning Bones + Prev Bones
             break;
         case MaterialDomain::Decal:
-            srv = 1; // Depth buffer
+            srv = 2; // Depth buffer + Stencil buffer
             break;
         case MaterialDomain::Terrain:
             srv = 3; // Heightmap + 2 splatmaps

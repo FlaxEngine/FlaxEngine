@@ -460,6 +460,14 @@ void DebugCommands::InitAsync()
     AsyncTask = Task::StartNew(InitCommands);
 }
 
+void DebugCommands::GetAllCommands(Array<StringView>& commands)
+{
+    EnsureInited();
+    ScopeLock lock(Locker);
+    for (const auto& command : Commands)
+        commands.Add(command.Name);
+}
+
 DebugCommands::CommandFlags DebugCommands::GetCommandFlags(StringView command)
 {
     CommandFlags result = CommandFlags::None;

@@ -26,6 +26,7 @@
 #include "Engine/Utilities/RectPack.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Editor/Utilities/EditorUtilities.h"
 #include "AssetsImportingManager.h"
 
 bool ImportModel::TryGetImportOptions(const StringView& path, Options& options)
@@ -281,13 +282,19 @@ CreateAssetResult ImportModel::Import(CreateAssetContext& context)
 
         // Import all of the objects recursive but use current model data to skip loading file again
         options.Cached = &cached;
-        Function<bool(Options& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)> splitImport = [&context, &autoImportOutput](Options& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)
+        HashSet<String> objectNames;
+        Function<bool(Options& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)> splitImport = [&context, &autoImportOutput, &objectNames](Options& splitOptions, const StringView& objectName, String& outputPath, MeshData* meshData)
         {
             // Recursive importing of the split object
             String postFix = objectName;
             const int32 splitPos = postFix.FindLast(TEXT('|'));
-            if (splitPos != -1)
+            if (splitPos != -1 && splitPos + 1 < postFix.Length())
                 postFix = postFix.Substring(splitPos + 1);
+            EditorUtilities::ValidatePathChars(postFix); // Ensure name is valid path
+            int32 duplicate = 0;
+            String postFixPre = postFix;
+            while (!objectNames.Add(postFix)) // Ensure name is unique
+                postFix = String::Format(TEXT("{} {}"), postFixPre, duplicate++);
             // TODO: check for name collisions with material/texture assets
             outputPath = autoImportOutput / String(StringUtils::GetFileNameWithoutExtension(context.TargetAssetPath)) + TEXT(" ") + postFix + TEXT(".flax");
             splitOptions.SubAssetFolder = TEXT(" "); // Use the same folder as asset as they all are imported to the subdir for the prefab (see SubAssetFolder usage above)

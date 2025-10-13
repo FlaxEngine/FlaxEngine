@@ -414,8 +414,9 @@ Variant MUtils::UnboxVariant(MObject* value)
             // Array of Enums
             for (int32 i = 0; i < array.Count(); i++)
             {
-                array[i].SetType(VariantType(VariantType::Enum, elementTypename));
-                Platform::MemoryCopy(&array[i].AsUint64, (byte*)ptr + elementSize * i, elementSize);
+                auto& a = array.Get()[i];
+                a.SetType(VariantType(VariantType::Enum, elementTypename));
+                Platform::MemoryCopy(&a.AsUint64, (byte*)ptr + elementSize * i, elementSize);
             }
         }
         else if (elementClass->IsValueType())

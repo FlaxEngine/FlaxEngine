@@ -353,7 +353,7 @@ bool VideoBackendAndroid::Player_Create(const VideoBackendPlayerInfo& info, Vide
     {
         // File (AAsset* or Unix handle)
 #if VIDEO_API_ANDROID_DEBUG
-        LOG(Info, "[VideoBackendAndroid] Loading local file");
+        LOG(Info, "[VideoBackendAndroid] Loading local file '{}'", info.Url);
 #endif
         auto* mediaSource = AMediaDataSource_new();
         AMediaDataSource_setUserdata(mediaSource, fileStream);
@@ -366,7 +366,7 @@ bool VideoBackendAndroid::Player_Create(const VideoBackendPlayerInfo& info, Vide
     {
         // Url
 #if VIDEO_API_ANDROID_DEBUG
-        LOG(Info, "[VideoBackendAndroid] Loading url");
+        LOG(Info, "[VideoBackendAndroid] Loading url '{}'", info.Url);
 #endif
         const StringAsANSI<> url(info.Url.Get(), info.Url.Length());
         status = AMediaExtractor_setDataSource(playerAndroid.Extractor, url.Get());

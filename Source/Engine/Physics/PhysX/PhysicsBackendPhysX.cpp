@@ -2518,7 +2518,7 @@ Vector3 PhysicsBackend::GetRigidDynamicActorCenterOfMass(void* actor)
     return P2C(actorPhysX->getCMassLocalPose().p);
 }
 
-void PhysicsBackend::SetRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value)
+void PhysicsBackend::AddRigidDynamicActorCenterOfMassOffset(void* actor, const Float3& value)
 {
     auto actorPhysX = (PxRigidDynamic*)actor;
     auto pose = actorPhysX->getCMassLocalPose();

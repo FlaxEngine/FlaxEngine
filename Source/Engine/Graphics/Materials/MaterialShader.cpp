@@ -38,14 +38,14 @@ GPU_CB_STRUCT(MaterialShaderDataPerView {
     Float3 LargeWorldsChunkIndex;
     float LargeWorldsChunkSize;
     Float3 ViewPadding0;
-    float UnscaledTimeParam;
+    float ScaledTimeParam;
     });
 
 IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderContext& renderContext)
     : GPUContext(context)
     , RenderContext(renderContext)
-    , Time(Time::Draw.Time.GetTotalSeconds())
-    , UnscaledTime(Time::Draw.UnscaledTime.GetTotalSeconds())
+    , Time(Time::Draw.UnscaledTime.GetTotalSeconds())
+    , ScaledTime(Time::Draw.Time.GetTotalSeconds())
 {
 }
 
@@ -53,8 +53,8 @@ IMaterial::BindParameters::BindParameters(::GPUContext* context, const ::RenderC
     : GPUContext(context)
     , RenderContext(renderContext)
     , DrawCall(&drawCall)
-    , Time(Time::Draw.Time.GetTotalSeconds())
-    , UnscaledTime(Time::Draw.UnscaledTime.GetTotalSeconds())
+    , Time(Time::Draw.UnscaledTime.GetTotalSeconds())
+    , ScaledTime(Time::Draw.Time.GetTotalSeconds())
     , Instanced(instanced)
 {
 }
@@ -83,7 +83,7 @@ void IMaterial::BindParameters::BindViewData()
     cb.ViewFar = view.Far;
     cb.ViewDir = view.Direction;
     cb.TimeParam = Time;
-    cb.UnscaledTimeParam = UnscaledTime;
+    cb.ScaledTimeParam = ScaledTime;
     cb.ViewInfo = view.ViewInfo;
     cb.ScreenSize = view.ScreenSize;
     cb.TemporalAAJitter = view.TemporalAAJitter;

@@ -444,6 +444,16 @@ API_ENUM() enum class MaterialSceneTextures
     /// The scene world-space position (relative to the render view origin).
     /// </summary>
     WorldPosition = 11,
+
+    /// <summary>
+    /// The scene stencil.
+    /// </summary>
+    SceneStencil = 12,
+
+    /// <summary>
+    /// The object layer index.
+    /// </summary>
+    ObjectLayer = 13,
 };
 
 /// <summary>

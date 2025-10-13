@@ -35,6 +35,7 @@
 #include <sys/ioctl.h>
 #include <linux/unistd.h>
 #include <pthread.h>
+#include <signal.h>
 #include <unistd.h>
 #include <dlfcn.h>
 #include <sched.h>
@@ -79,6 +80,57 @@ _Unwind_Reason_Code AndroidUnwindCallback(struct _Unwind_Context* context, void*
 }
 
 #endif
+
+static void CrashHandler(int32 signal, siginfo_t* info, void* context)
+{
+    // Skip if engine already crashed
+    if (Engine::FatalError != FatalErrorType::None)
+        return;
+
+    // Get exception info
+    String errorMsg(TEXT("Unhandled exception: "));
+    switch (signal)
+    {
+#define CASE(x) case x: errorMsg += TEXT(#x); break
+        CASE(SIGABRT);
+        CASE(SIGILL);
+        CASE(SIGSEGV);
+        CASE(SIGQUIT);
+        CASE(SIGFPE);
+        CASE(SIGBUS);
+        CASE(SIGSYS);
+#undef CASE
+    default:
+        errorMsg += StringUtils::ToString(signal);
+    }
+
+    // Log exception and return to the crash location when using debugger
+    if (Platform::IsDebuggerPresent())
+    {
+        LOG_STR(Error, errorMsg);
+        const String stackTrace = Platform::GetStackTrace(3, 60, nullptr);
+        LOG_STR(Error, stackTrace);
+        return;
+    }
+
+    // Crash engine
+    Platform::Fatal(errorMsg.Get(), nullptr, FatalErrorType::Exception);
+}
+
+void AndroidRegisterCrashHandling()
+{
+    struct sigaction action;
+    Platform::MemoryClear(&action, sizeof(action));
+    action.sa_sigaction = CrashHandler;
+    action.sa_flags = SA_SIGINFO | SA_ONSTACK;
+    sigaction(SIGABRT, &action, nullptr);
+    sigaction(SIGILL, &action, nullptr);
+    sigaction(SIGSEGV, &action, nullptr);
+    sigaction(SIGQUIT, &action, nullptr);
+    sigaction(SIGFPE, &action, nullptr);
+    sigaction(SIGBUS, &action, nullptr);
+    sigaction(SIGSYS, &action, nullptr);
+}
 
 struct AndroidKeyEventType
 {
@@ -874,6 +926,8 @@ bool AndroidPlatform::Init()
         // D - cpuid
         DeviceId.D = (uint32)AndroidCpu.ClockSpeed * AndroidCpu.LogicalProcessorCount * AndroidCpu.ProcessorCoreCount * AndroidCpu.CacheLineSize;
     }
+
+    AndroidRegisterCrashHandling();
 
     // Setup native platform input devices
     Input::Keyboard = KeyboardImpl = New<AndroidKeyboard>();

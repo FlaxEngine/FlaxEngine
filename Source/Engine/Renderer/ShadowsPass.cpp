@@ -944,7 +944,10 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
         Matrix shadowView, shadowProjection, shadowVP, cullingVP;
 
         // Create view matrix
-        Matrix::LookAt(frustumCenter + light.Direction * minExtents.Z, frustumCenter, Float3::Up, shadowView);
+        Float3 up = Float3::Up;
+        if (Math::Abs(Float3::Dot(light.Direction, up)) > 0.9f)
+            up = Float3::Right;
+        Matrix::LookAt(frustumCenter + light.Direction * minExtents.Z, frustumCenter, up, shadowView);
 
         // Create viewport for culling with extended near/far planes due to culling issues (aka pancaking)
         const float cullRangeExtent = 100000.0f;

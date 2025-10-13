@@ -1521,6 +1521,9 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 const Char* roughnessNames[] = { TEXT("roughness"), TEXT("rough") };
                 TrySetupMaterialParameter(materialInstance, ToSpan(roughnessNames, ARRAY_COUNT(roughnessNames)), material.Roughness.Value, MaterialParameterType::Float);
                 TRY_SETUP_TEXTURE_PARAM(Roughness, roughnessNames, Texture);
+                const Char* metalnessNames[] = { TEXT("metalness"), TEXT("metallic") };
+                TrySetupMaterialParameter(materialInstance, ToSpan(metalnessNames, ARRAY_COUNT(metalnessNames)), material.Metalness.Value, MaterialParameterType::Float);
+                TRY_SETUP_TEXTURE_PARAM(Metalness, metalnessNames, Texture);
 #undef TRY_SETUP_TEXTURE_PARAM
 
                 materialInstance->Save();
@@ -1546,11 +1549,22 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                 materialOptions.Opacity.Texture = data.Textures[material.Opacity.TextureIndex].AssetID;
             materialOptions.Roughness.Value = material.Roughness.Value;
             if (material.Roughness.TextureIndex != -1)
+            {
                 materialOptions.Roughness.Texture = data.Textures[material.Roughness.TextureIndex].AssetID;
+                materialOptions.Roughness.Channel = material.Roughness.Channel;
+            }
+            materialOptions.Metalness.Value = material.Metalness.Value;
+            if (material.Metalness.TextureIndex != -1)
+            {
+                materialOptions.Metalness.Texture = data.Textures[material.Metalness.TextureIndex].AssetID;
+                materialOptions.Metalness.Channel = material.Metalness.Channel;
+            }
             if (material.Normals.TextureIndex != -1)
                 materialOptions.Normals.Texture = data.Textures[material.Normals.TextureIndex].AssetID;
             if (material.TwoSided || material.Diffuse.HasAlphaMask)
                 materialOptions.Info.CullMode = CullMode::TwoSided;
+            if (material.Wireframe)
+                materialOptions.Info.FeaturesFlags |= MaterialFeaturesFlags::Wireframe;
             if (!Math::IsOne(material.Opacity.Value) || material.Opacity.TextureIndex != -1)
                 materialOptions.Info.BlendMode = MaterialBlendMode::Transparent;
             AssetsImportingManager::Create(AssetsImportingManager::CreateMaterialTag, assetPath, material.AssetID, &materialOptions);
@@ -1612,9 +1626,16 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
             // Transform the nodes using the import transformation
             if (data.LODs.HasItems() && data.LODs[0].Meshes.HasItems())
             {
+                BitArray<> visitedNodes;
+                visitedNodes.Resize(data.Nodes.Count());
+                visitedNodes.SetAll(false);
                 for (int i = 0; i < data.LODs[0].Meshes.Count(); ++i)
                 {
                     auto* meshData = data.LODs[0].Meshes[i];
+                    int32 nodeIndex = meshData->NodeIndex;
+                    if (visitedNodes[nodeIndex])
+                        continue;
+                    visitedNodes.Set(nodeIndex, true);
                     Transform transform = importTransform;
                     if (options.UseLocalOrigin)
                     {
@@ -1628,8 +1649,6 @@ bool ModelTool::ImportModel(const String& path, ModelData& data, Options& option
                         transform.Translation -= center;
                     }
 
-                    int32 nodeIndex = meshData->NodeIndex;
-                    
                     auto& node = data.Nodes[nodeIndex];
                     node.LocalTransform = transform.LocalToWorld(node.LocalTransform);
                 }

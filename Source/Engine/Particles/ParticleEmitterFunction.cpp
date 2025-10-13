@@ -43,7 +43,6 @@ ParticleEmitterFunction::ParticleEmitterFunction(const SpawnParams& params, cons
 Asset::LoadResult ParticleEmitterFunction::load()
 {
     PROFILE_MEM(Particles);
-    ScopeWriteLock systemScope(Particles::SystemLocker);
 
     // Load graph
     const auto surfaceChunk = GetChunk(0);
@@ -189,7 +188,6 @@ bool ParticleEmitterFunction::SaveSurface(const BytesContainer& data) const
 {
     if (OnCheckSave())
         return true;
-    ScopeWriteLock systemScope(Particles::SystemLocker);
     ScopeLock lock(Locker);
 
     // Set Visject Surface data

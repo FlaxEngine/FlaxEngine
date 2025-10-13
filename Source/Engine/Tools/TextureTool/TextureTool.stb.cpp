@@ -527,6 +527,8 @@ bool TextureTool::ImportTextureStb(ImageType type, const StringView& path, Textu
     PixelFormat targetFormat = ToPixelFormat(options.Type, width, height, options.Compress);
     if (options.sRGB)
         targetFormat = PixelFormatExtensions::TosRGB(targetFormat);
+    if (options.InternalFormat != PixelFormat::Unknown)
+        targetFormat = options.InternalFormat;
 
     // Check mip levels
     int32 sourceMipLevels = textureDataSrc->GetMipLevels();

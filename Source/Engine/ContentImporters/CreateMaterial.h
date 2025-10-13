@@ -40,8 +40,16 @@ public:
         struct
         {
             float Value = 0.5f;
+            uint8 Channel = 0;
             Guid Texture = Guid::Empty;
         } Roughness;
+
+        struct
+        {
+            float Value = 0.0f;
+            uint8 Channel = 0;
+            Guid Texture = Guid::Empty;
+        } Metalness;
 
         struct
         {

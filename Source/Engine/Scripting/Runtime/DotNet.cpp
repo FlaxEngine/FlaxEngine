@@ -710,7 +710,7 @@ void MCore::ScriptingObject::SetInternalValues(MClass* klass, MObject* object, v
 #if PLATFORM_DESKTOP && !USE_MONO_AOT
     static void* ScriptingObjectSetInternalValuesPtr = GetStaticMethodPointer(TEXT("ScriptingObjectSetInternalValues"));
     CallStaticMethod<void, MObject*, void*, const Guid*>(ScriptingObjectSetInternalValuesPtr, object, unmanagedPtr, id);
-#elif !USE_EDITOR
+#elif !USE_EDITOR && PLATFORM_SWITCH // TODO: test this on other AOT platforms (Android with Mono JIT doesn't work)
     static MField* monoUnmanagedPtrField = ::ScriptingObject::GetStaticClass()->GetField("__unmanagedPtr");
     static MField* monoIdField = ::ScriptingObject::GetStaticClass()->GetField("__internalId");
     if (monoUnmanagedPtrField)
@@ -2275,6 +2275,12 @@ bool InitHostfxr()
     char* buildInfo = mono_get_runtime_build_info();
     LOG(Info, "Mono runtime version: {0}", String(buildInfo));
     mono_free(buildInfo);
+
+#if PLATFORM_ANDROID
+    // Fix native crashes handling on Android
+    extern void AndroidRegisterCrashHandling();
+    AndroidRegisterCrashHandling();
+#endif
 
     return false;
 }

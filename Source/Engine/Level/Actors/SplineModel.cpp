@@ -407,12 +407,12 @@ void SplineModel::Draw(RenderContext& renderContext)
     drawCall.Deformable.MeshMaxZ = _meshMaxZ;
     drawCall.Deformable.GeometrySize = _box.GetSize();
     drawCall.PerInstanceRandom = GetPerInstanceRandom();
+    drawCall.SetStencilValue(_layer);
     _preTransform.GetWorld(drawCall.Deformable.LocalMatrix);
     const Transform splineTransform = GetTransform();
     renderContext.View.GetWorldMatrix(splineTransform, drawCall.World);
     drawCall.ObjectPosition = drawCall.World.GetTranslation() + drawCall.Deformable.LocalMatrix.GetTranslation();
     drawCall.ObjectRadius = (float)_sphere.Radius; // TODO: use radius for the spline chunk rather than whole spline
-    const float worldDeterminantSign = drawCall.World.RotDeterminant() * drawCall.Deformable.LocalMatrix.RotDeterminant();
     for (int32 segment = 0; segment < _instances.Count(); segment++)
     {
         auto& instance = _instances[segment];
@@ -468,7 +468,6 @@ void SplineModel::Draw(RenderContext& renderContext)
             // Submit draw call
             mesh->GetDrawCallGeometry(drawCall);
             drawCall.Material = material;
-            drawCall.WorldDeterminantSign = Math::FloatSelect(worldDeterminantSign * instance.RotDeterminant, 1, -1);
             renderContext.List->AddDrawCall(renderContext, drawModes, _staticFlags, drawCall, entry.ReceiveDecals);
         }
     }

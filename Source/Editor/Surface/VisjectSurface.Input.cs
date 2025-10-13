@@ -292,7 +292,7 @@ namespace FlaxEditor.Surface
             if (_leftMouseDown)
             {
                 // Connecting
-                if (_connectionInstigator != null)
+                if (_connectionInstigators.Count > 0)
                 {
                 }
                 // Moving
@@ -462,7 +462,7 @@ namespace FlaxEditor.Surface
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             // Check if user is connecting boxes
-            if (_connectionInstigator != null)
+            if (_connectionInstigators.Count > 0)
                 return true;
 
             // Base
@@ -608,7 +608,7 @@ namespace FlaxEditor.Surface
                     _movingNodesDelta = Float2.Zero;
                 }
                 // Connecting
-                else if (_connectionInstigator != null)
+                else if (_connectionInstigators.Count > 0)
                 {
                 }
                 // Selecting
@@ -680,7 +680,7 @@ namespace FlaxEditor.Surface
                 ShowPrimaryMenu(_cmStartPos);
             }
             // Letting go of a connection or right clicking while creating a connection
-            else if (!_isMovingSelection && _connectionInstigator != null && !IsPrimaryMenuOpened)
+            else if (!_isMovingSelection && _connectionInstigators.Count > 0 && !IsPrimaryMenuOpened)
             {
                 _cmStartPos = location;
                 Cursor = CursorType.Default;

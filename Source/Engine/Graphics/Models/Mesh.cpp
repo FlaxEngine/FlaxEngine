@@ -218,7 +218,7 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* 
     return Init(vertices, triangles, vbData, ib, use16BitIndexBuffer, vbLayout);
 }
 
-void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int8 sortOrder) const
+void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int8 sortOrder, uint8 stencilValue) const
 {
     if (!material || !material->IsSurface() || !IsInitialized())
         return;
@@ -240,8 +240,8 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.ObjectRadius = (float)_sphere.Radius * drawCall.World.GetScaleVector().GetAbsolute().MaxValue();
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = world;
-    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = perInstanceRandom;
+    drawCall.StencilValue = stencilValue;
 #if USE_EDITOR
     const ViewMode viewMode = renderContext.View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
@@ -307,8 +307,8 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
-    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
+    drawCall.StencilValue = info.StencilValue;
 #if USE_EDITOR
     const ViewMode viewMode = renderContext.View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
@@ -370,8 +370,8 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
-    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
+    drawCall.StencilValue = info.StencilValue;
 #if USE_EDITOR
     const ViewMode viewMode = renderContextBatch.GetMainContext().View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)

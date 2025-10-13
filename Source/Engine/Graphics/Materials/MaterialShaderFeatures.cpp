@@ -2,6 +2,7 @@
 
 #include "MaterialShaderFeatures.h"
 #include "Engine/Graphics/RenderTask.h"
+#include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Renderer/ShadowsPass.h"
@@ -24,18 +25,30 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     const int32 skyLightShaderRegisterIndex = srv + 1;
     const int32 shadowsBufferRegisterIndex = srv + 2;
     const int32 shadowMapShaderRegisterIndex = srv + 3;
+    const int32 volumetricFogTextureRegisterIndex = srv + 4;
     const bool canUseShadow = view.Pass != DrawPass::Depth;
 
     // Set fog input
+    GPUTextureView* volumetricFogTexture = nullptr;
     if (cache->Fog)
     {
         cache->Fog->GetExponentialHeightFogData(view, data.ExponentialHeightFog);
+        VolumetricFogOptions volumetricFog;
+        cache->Fog->GetVolumetricFogOptions(volumetricFog);
+        if (volumetricFog.UseVolumetricFog() && params.RenderContext.Buffers->VolumetricFog)
+            volumetricFogTexture = params.RenderContext.Buffers->VolumetricFog->ViewVolume();
+        else
+            data.ExponentialHeightFog.VolumetricFogMaxDistance = -1.0f;
     }
     else
     {
         data.ExponentialHeightFog.FogMinOpacity = 1.0f;
+        data.ExponentialHeightFog.FogDensity = 0.0f;
+        data.ExponentialHeightFog.FogCutoffDistance = 0.1f;
+        data.ExponentialHeightFog.StartDistance = 0.0f;
         data.ExponentialHeightFog.ApplyDirectionalInscattering = 0.0f;
     }
+    params.GPUContext->BindSR(volumetricFogTextureRegisterIndex, volumetricFogTexture);
 
     // Set directional light input
     if (cache->DirectionalLights.HasItems())

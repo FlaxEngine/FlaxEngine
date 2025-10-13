@@ -158,6 +158,12 @@ protected:
     /// </summary>
     void RemoveStaticActor();
 
+private:
+    friend RigidBody;
+#if USE_EDITOR
+    virtual void OnDebugDrawSelf() {}
+#endif
+
 public:
     // [PhysicsColliderActor]
     RigidBody* GetAttachedRigidBody() const override;

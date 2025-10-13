@@ -31,6 +31,7 @@ public:
     bool CanAttach(RigidBody* rigidBody) const override;
     bool CanBeTrigger() const override;
 #if USE_EDITOR
+    void OnDebugDrawSelf() override;
     void OnDebugDrawSelected() override;
 #endif
     bool IntersectsItself(const Ray& ray, Real& distance, Vector3& normal) override;

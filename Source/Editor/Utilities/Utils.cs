@@ -212,6 +212,10 @@ namespace FlaxEditor.Utilities
             if (value is FlaxEngine.Object)
                 return value;
 
+            // For custom types use interface
+            if (value is ICloneable clonable)
+                return clonable.Clone();
+
             // For objects (eg. arrays) we need to clone them to prevent editing default/reference value within editor
             if (value != null && (!value.GetType().IsValueType || !value.GetType().IsClass))
             {
@@ -546,6 +550,26 @@ namespace FlaxEditor.Utilities
             Marshal.Copy(ptr, arr, 0, size);
             Marshal.FreeHGlobal(ptr);
             return arr;
+        }
+
+        internal static void StructureToByteArray(object value, int valueSize, IntPtr tempBuffer, byte[] dataBuffer)
+        {
+            var valueType = value.GetType();
+            if (valueType.IsEnum)
+            {
+                var ptr = FlaxEngine.Interop.NativeInterop.ValueTypeUnboxer.GetPointer(value, valueType);
+                FlaxEngine.Utils.MemoryCopy(tempBuffer, ptr, (ulong)valueSize);
+            }
+            else
+                Marshal.StructureToPtr(value, tempBuffer, true);
+            Marshal.Copy(tempBuffer, dataBuffer, 0, valueSize);
+        }
+
+        internal static object ByteArrayToStructure(IntPtr valuePtr, Type valueType, int valueSize)
+        {
+            if (valueType.IsEnum)
+                return FlaxEngine.Interop.NativeInterop.MarshalToManaged(valuePtr, valueType);
+            return Marshal.PtrToStructure(valuePtr, valueType);
         }
 
         internal static unsafe string ReadStr(this BinaryReader stream, int check)

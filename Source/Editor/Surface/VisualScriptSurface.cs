@@ -212,7 +212,7 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Float2 location, Box startBox)
+        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Float2 location, List<Box> startBoxes)
         {
             // Update nodes for method overrides
             Profiler.BeginEvent("Overrides");
@@ -268,7 +268,7 @@ namespace FlaxEditor.Surface
             // Update nodes for invoke methods (async)
             _nodesCache.Get(activeCM);
 
-            base.OnShowPrimaryMenu(activeCM, location, startBox);
+            base.OnShowPrimaryMenu(activeCM, location, startBoxes);
 
             activeCM.VisibleChanged += OnActiveContextMenuVisibleChanged;
         }

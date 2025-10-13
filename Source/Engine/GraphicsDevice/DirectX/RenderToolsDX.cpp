@@ -7,6 +7,7 @@
 #include "GPUDeviceDX.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/StringBuilder.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "IncludeDirectXHeaders.h"
 #include <winerror.h>
@@ -20,6 +21,9 @@ typedef void* LPCDLGTEMPLATE;
 #include <SetupAPI.h>
 #pragma comment(lib, "SetupAPI.lib")
 #endif
+
+#define DISPLAY_DEVICE_ACTIVE 0x00000001
+#define DISPLAY_DEVICE_MIRRORING_DRIVER 0x00000008
 
 namespace Windows
 {
@@ -84,7 +88,18 @@ namespace Windows
         DWORD dmPanningHeight;
     } DEVMODEW, *PDEVMODEW, *NPDEVMODEW, *LPDEVMODEW;
 
+    typedef struct _DISPLAY_DEVICEW
+    {
+        DWORD cb;
+        WCHAR DeviceName[32];
+        WCHAR DeviceString[128];
+        DWORD StateFlags;
+        WCHAR DeviceID[128];
+        WCHAR DeviceKey[128];
+    } DISPLAY_DEVICEW, *PDISPLAY_DEVICEW, *LPDISPLAY_DEVICEW;
+
     WIN_API BOOL WIN_API_CALLCONV EnumDisplaySettingsW(LPCWSTR lpszDeviceName, DWORD iModeNum, DEVMODEW* lpDevMode);
+    WIN_API BOOL WIN_API_CALLCONV EnumDisplayDevicesW(LPCWSTR lpDevice, DWORD iDevNum, PDISPLAY_DEVICEW lpDisplayDevice, DWORD dwFlags);
 }
 
 // @formatter:off
@@ -590,13 +605,14 @@ void GPUAdapterDX::SetDriverVersion(Version& ver)
     DriverVersion = ver;
 }
 
+#if PLATFORM_WINDOWS
+
 void GPUDeviceDX::UpdateOutputs(IDXGIAdapter* adapter)
 {
-#if PLATFORM_WINDOWS
-    // Collect output devices
+    PROFILE_CPU();
     uint32 outputIdx = 0;
     ComPtr<IDXGIOutput> output;
-    DXGI_FORMAT defaultBackbufferFormat = RenderToolsDX::ToDxgiFormat(GPU_BACK_BUFFER_PIXEL_FORMAT);
+    DXGI_FORMAT backbufferFormat = RenderToolsDX::ToDxgiFormat(GPU_BACK_BUFFER_PIXEL_FORMAT);
     Array<DXGI_MODE_DESC> modeDesc;
     while (adapter->EnumOutputs(outputIdx, &output) != DXGI_ERROR_NOT_FOUND)
     {
@@ -606,7 +622,7 @@ void GPUDeviceDX::UpdateOutputs(IDXGIAdapter* adapter)
         output->GetDesc(&outputDX11.Desc);
 
         uint32 numModes = 0;
-        HRESULT hr = output->GetDisplayModeList(defaultBackbufferFormat, 0, &numModes, nullptr);
+        HRESULT hr = output->GetDisplayModeList(backbufferFormat, 0, &numModes, nullptr);
         if (FAILED(hr))
         {
             LOG(Warning, "Error while enumerating adapter output video modes.");
@@ -614,7 +630,7 @@ void GPUDeviceDX::UpdateOutputs(IDXGIAdapter* adapter)
         }
 
         modeDesc.Resize(numModes, false);
-        hr = output->GetDisplayModeList(defaultBackbufferFormat, 0, &numModes, modeDesc.Get());
+        hr = output->GetDisplayModeList(backbufferFormat, 0, &numModes, modeDesc.Get());
         if (FAILED(hr))
         {
             LOG(Warning, "Error while enumerating adapter output video modes.");
@@ -635,16 +651,10 @@ void GPUDeviceDX::UpdateOutputs(IDXGIAdapter* adapter)
                     break;
                 }
             }
-
             if (!foundVideoMode)
             {
                 outputDX11.VideoModes.Add(mode);
-
-                // Collect only from the main monitor
-                if (Outputs.Count() == 1)
-                {
-                    VideoOutputModes.Add({ mode.Width, mode.Height, (uint32)(mode.RefreshRate.Numerator / (float)mode.RefreshRate.Denominator) });
-                }
+                VideoOutputModes.Add({ mode.Width, mode.Height, mode.RefreshRate.Numerator / (float)mode.RefreshRate.Denominator, VideoOutputs.Count() });
             }
         }
 
@@ -659,24 +669,57 @@ void GPUDeviceDX::UpdateOutputs(IDXGIAdapter* adapter)
         devMode.dmDriverExtra = 0;
         Windows::EnumDisplaySettingsW(monitorInfo.szDevice, ((DWORD)-1), &devMode);
 
+        // Initialize display mode for Desktop
         DXGI_MODE_DESC currentMode;
         currentMode.Width = devMode.dmPelsWidth;
         currentMode.Height = devMode.dmPelsHeight;
         bool useDefaultRefreshRate = 1 == devMode.dmDisplayFrequency || 0 == devMode.dmDisplayFrequency;
         currentMode.RefreshRate.Numerator = useDefaultRefreshRate ? 0 : devMode.dmDisplayFrequency;
         currentMode.RefreshRate.Denominator = useDefaultRefreshRate ? 0 : 1;
-        currentMode.Format = defaultBackbufferFormat;
+        currentMode.Format = backbufferFormat;
         currentMode.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
         currentMode.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-
         if (output->FindClosestMatchingMode(&currentMode, &outputDX11.DesktopViewMode, nullptr) != S_OK)
             outputDX11.DesktopViewMode = currentMode;
 
-        float refreshRate = outputDX11.DesktopViewMode.RefreshRate.Numerator / (float)outputDX11.DesktopViewMode.RefreshRate.Denominator;
-        LOG(Info, "Video output '{0}' {1}x{2} {3} Hz", outputDX11.Desc.DeviceName, devMode.dmPelsWidth, devMode.dmPelsHeight, refreshRate);
+        // Add video output
+        auto& videoOutput = VideoOutputs.AddOne();
+        videoOutput.Width = devMode.dmPelsWidth;
+        videoOutput.Height = devMode.dmPelsHeight;
+        videoOutput.RefreshRate = outputDX11.DesktopViewMode.RefreshRate.Numerator / (float)outputDX11.DesktopViewMode.RefreshRate.Denominator;
+
+        // Query display device name
+        Windows::DISPLAY_DEVICEW displayDevice;
+        displayDevice.cb = sizeof(displayDevice);
+        DWORD monitorIndex = 0;
+        while (Windows::EnumDisplayDevicesW(outputDX11.Desc.DeviceName, monitorIndex, &displayDevice, 0))
+        {
+            if (displayDevice.StateFlags & DISPLAY_DEVICE_ACTIVE && !(displayDevice.StateFlags & DISPLAY_DEVICE_MIRRORING_DRIVER))
+            {
+                StringView id(displayDevice.DeviceID);
+                videoOutput.Name = id.Substring(8, id.Substring(9).Find(TEXT('\\')) + 1);
+                break;
+            }
+            monitorIndex++;
+        }
+        if (videoOutput.Name.IsEmpty())
+            videoOutput.Name = outputDX11.Desc.DeviceName;
+
+#ifdef __IDXGIOutput6_INTERFACE_DEFINED__
+        // Query HDR support
+        ComPtr<IDXGIOutput6> output6;
+        if (SUCCEEDED(output->QueryInterface(IID_PPV_ARGS(&output6))))
+        {
+            DXGI_OUTPUT_DESC1 outputDesc;
+            output6->GetDesc1(&outputDesc);
+            videoOutput.HDR = outputDesc.ColorSpace == DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+        }
+#endif
+
         outputIdx++;
     }
-#endif
 }
+
+#endif
 
 #endif

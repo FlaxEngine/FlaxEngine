@@ -1,5 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
+
 namespace FlaxEngine.GUI
 {
     /// <summary>
@@ -23,7 +25,7 @@ namespace FlaxEngine.GUI
     /// <summary>
     /// Interface that unifies input source textures, sprites, render targets, and any other brushes to be used in a more generic way.
     /// </summary>
-    public interface IBrush
+    public interface IBrush : IComparable
     {
         /// <summary>
         /// Gets the size of the image brush in pixels (if relevant).

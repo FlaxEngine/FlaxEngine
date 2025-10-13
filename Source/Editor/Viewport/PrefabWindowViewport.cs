@@ -6,6 +6,8 @@ using System.Linq;
 using FlaxEditor.Content;
 using FlaxEditor.Gizmo;
 using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Input;
+using FlaxEditor.Modules;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.Scripting;
 using FlaxEditor.Viewport.Cameras;
@@ -13,6 +15,7 @@ using FlaxEditor.Viewport.Previews;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
 using FlaxEngine.GUI;
+using FlaxEngine.Json;
 using Utils = FlaxEditor.Utilities.Utils;
 
 namespace FlaxEditor.Viewport
@@ -70,8 +73,11 @@ namespace FlaxEditor.Viewport
 
         private PrefabUIEditorRoot _uiRoot;
         private bool _showUI = false;
-        
+
+        private int _defaultScaleActiveIndex = 0;
+        private int _customScaleActiveIndex = -1;
         private ContextMenuButton _uiModeButton;
+        private ContextMenuChildMenu _uiViewOptions;
 
         /// <summary>
         /// Event fired when the UI Mode is toggled.
@@ -137,6 +143,8 @@ namespace FlaxEditor.Viewport
                 UseAutomaticTaskManagement = defaultFeatures;
                 ShowDefaultSceneActors = defaultFeatures;
                 TintColor = defaultFeatures ? Color.White : Color.Transparent;
+                if (_uiViewOptions != null)
+                    _uiViewOptions.Visible = _showUI;
                 UIModeToggled?.Invoke(_showUI);
             }
         }
@@ -210,7 +218,7 @@ namespace FlaxEditor.Viewport
             _uiParentLink = _uiRoot.UIRoot;
 
             // UI mode buton
-            _uiModeButton = ViewWidgetShowMenu.AddButton("UI Mode", (button) => ShowUI = button.Checked);
+            _uiModeButton = ViewWidgetShowMenu.AddButton("UI Mode", button => ShowUI = button.Checked);
             _uiModeButton.AutoCheck = true;
             _uiModeButton.VisibleChanged += control => (control as ContextMenuButton).Checked = ShowUI;
 
@@ -220,6 +228,84 @@ namespace FlaxEditor.Viewport
             InputActions.Add(options => options.FocusSelection, ShowSelectedActors);
 
             SetUpdate(ref _update, OnUpdate);
+        }
+
+        /// <summary>
+        /// Creates the view scaling options. Needs to be called after a Prefab is valid and loaded.
+        /// </summary>
+        public void CreateViewScalingOptions()
+        {
+            if (_uiViewOptions != null)
+                return;
+            _uiViewOptions = ViewWidgetButtonMenu.AddChildMenu("UI View Scaling");
+            _uiViewOptions.Visible = _showUI;
+            LoadCustomUIScalingOption();
+            Editor.Instance.UI.CreateViewportSizingContextMenu(_uiViewOptions.ContextMenu, _defaultScaleActiveIndex, _customScaleActiveIndex, true, ChangeUIView, (a, b) =>
+            {
+                _defaultScaleActiveIndex = a;
+                _customScaleActiveIndex = b;
+            });
+        }
+
+        private void ChangeUIView(UIModule.ViewportScaleOption uiViewScaleOption)
+        {
+            _uiRoot.SetViewSize((Float2)uiViewScaleOption.Size);
+        }
+
+        /// <summary>
+        /// Saves the active ui scaling option.
+        /// </summary>
+        public void SaveActiveUIScalingOption()
+        {
+            var defaultKey = $"{Prefab.ID}:DefaultViewportScalingIndex";
+            Editor.Instance.ProjectCache.SetCustomData(defaultKey, _defaultScaleActiveIndex.ToString());
+            var customKey = $"{Prefab.ID}:CustomViewportScalingIndex";
+            Editor.Instance.ProjectCache.SetCustomData(customKey, _customScaleActiveIndex.ToString());
+        }
+
+        private void LoadCustomUIScalingOption()
+        {
+            Prefab.WaitForLoaded();
+            var defaultKey = $"{Prefab.ID}:DefaultViewportScalingIndex";
+            if (Editor.Instance.ProjectCache.TryGetCustomData(defaultKey, out string defaultData))
+            {
+                if (int.TryParse(defaultData, out var index))
+                {
+                    var options = Editor.Instance.UI.DefaultViewportScaleOptions;
+                    if (options.Count > index)
+                    {
+                        _defaultScaleActiveIndex = index;
+                        if (index != -1)
+                            ChangeUIView(Editor.Instance.UI.DefaultViewportScaleOptions[index]);
+                    }
+                    // Assume option does not exist anymore so move to default.
+                    else if (index != -1)
+                    {
+                        _defaultScaleActiveIndex = 0;
+                    }
+                }
+            }
+
+            var customKey = $"{Prefab.ID}:CustomViewportScalingIndex";
+            if (Editor.Instance.ProjectCache.TryGetCustomData(customKey, out string data))
+            {
+                if (int.TryParse(data, out var index))
+                {
+                    var options = Editor.Instance.UI.CustomViewportScaleOptions;
+                    if (options.Count > index)
+                    {
+                        _customScaleActiveIndex = index;
+                        if (index != -1)
+                            ChangeUIView(options[index]);
+                    }
+                    // Assume option does not exist anymore so move to default.
+                    else if (index != -1)
+                    {
+                        _defaultScaleActiveIndex = 0;
+                        _customScaleActiveIndex = -1;
+                    }
+                }
+            }
         }
 
         private void OnUpdate(float deltaTime)

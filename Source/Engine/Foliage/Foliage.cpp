@@ -323,6 +323,7 @@ void Foliage::DrawCluster(RenderContext& renderContext, FoliageCluster* cluster,
                 draw.Bounds = sphere;
                 draw.PerInstanceRandom = instance.Random;
                 draw.DrawModes = type._drawModes;
+                draw.SetStencilValue(_layer);
                 type.Model->Draw(renderContext, draw);
 
                 //DebugDraw::DrawSphere(instance.Bounds, Color::YellowGreen);
@@ -1182,6 +1183,7 @@ void Foliage::Draw(RenderContext& renderContext)
         draw.Bounds = instance.Bounds;
         draw.PerInstanceRandom = instance.Random;
         draw.DrawModes = type.DrawModes & view.Pass & view.GetShadowsDrawPassMask(type.ShadowsMode);
+        draw.SetStencilValue(_layer);
         type.Model->Draw(renderContext, draw);
         return;
     }

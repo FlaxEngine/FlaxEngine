@@ -101,12 +101,12 @@ namespace FlaxEditor.Surface
         }
 
         /// <inheritdoc />
-        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Float2 location, Box startBox)
+        protected override void OnShowPrimaryMenu(VisjectCM activeCM, Float2 location, List<Box> startBoxes)
         {
             activeCM.ShowExpanded = true;
             _nodesCache.Get(activeCM);
 
-            base.OnShowPrimaryMenu(activeCM, location, startBox);
+            base.OnShowPrimaryMenu(activeCM, location, startBoxes);
 
             activeCM.VisibleChanged += OnActiveContextMenuVisibleChanged;
         }

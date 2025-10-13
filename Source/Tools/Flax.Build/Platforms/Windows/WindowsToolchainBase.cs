@@ -89,7 +89,11 @@ namespace Flax.Build.Platforms
             // Pick the newest installed Visual Studio version if using the default toolset
             if (toolsetVer == WindowsPlatformToolset.Default)
             {
-                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2022))
+                if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2026))
+                {
+                    toolsetVer = WindowsPlatformToolset.v145;
+                }
+                else if (VisualStudioInstance.HasIDE(VisualStudioVersion.VisualStudio2022))
                 {
                     if (toolsets.Keys.Contains(WindowsPlatformToolset.v144))
                     {
@@ -206,6 +210,7 @@ namespace Flax.Build.Platforms
             case WindowsPlatformToolset.v142:
             case WindowsPlatformToolset.v143:
             case WindowsPlatformToolset.v144:
+            case WindowsPlatformToolset.v145:
             {
                 switch (Architecture)
                 {
@@ -392,6 +397,7 @@ namespace Flax.Build.Platforms
             var vcToolChainDir = toolsets[Toolset];
             switch (Toolset)
             {
+            case WindowsPlatformToolset.v145:
             case WindowsPlatformToolset.v144:
             case WindowsPlatformToolset.v143:
             case WindowsPlatformToolset.v142:

@@ -673,6 +673,7 @@ namespace FlaxEditor.Modules
                 pasteAction.Do(out _, out var nodeParents);
 
                 // Select spawned objects (parents only)
+                newSelection.Clear();
                 newSelection.AddRange(nodeParents);
                 var selectAction = new SelectionChangeAction(Selection.ToArray(), newSelection.ToArray(), OnSelectionUndo);
                 selectAction.Do();

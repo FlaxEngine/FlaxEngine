@@ -168,8 +168,8 @@ void AudioSource::Play()
     }
     else
     {
-        // Source was nt properly added to the Audio Backend
-        LOG(Warning, "Cannot play unitialized audio source.");
+        // Source was not properly added to the Audio Backend
+        LOG(Warning, "Cannot play uninitialized audio source.");
     }
 }
 
@@ -408,6 +408,9 @@ void AudioSource::Update()
         _startingToPlay = false;
     }
 
+    if (Math::NearEqual(GetTime(), _startTime) && _isActuallyPlayingSth && _startingToPlay)
+        ClipStarted();
+
     if (!UseStreaming() && Math::NearEqual(GetTime(), 0.0f) && _isActuallyPlayingSth && !_startingToPlay)
     {
         int32 queuedBuffers;
@@ -423,6 +426,7 @@ void AudioSource::Update()
             {
                 Stop();
             }
+            ClipFinished();
         }
     }
 
@@ -493,6 +497,7 @@ void AudioSource::Update()
                 {
                     Stop();
                 }
+                ClipFinished();
             }
             ASSERT(_streamingFirstChunk < clip->Buffers.Count());
 

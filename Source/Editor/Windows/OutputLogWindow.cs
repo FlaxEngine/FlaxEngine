@@ -246,7 +246,7 @@ namespace FlaxEditor.Windows
                     });
                     var flags = DebugCommands.GetCommandFlags(command);
                     if (flags.HasFlag(DebugCommands.CommandFlags.Exec))
-                        lastItem.TintColor = new Color(0.85f, 0.85f, 1.0f, 1.0f);
+                        lastItem.TintColor = new Color(0.75f, 0.75f, 1.0f, 1.0f);
                     else if (flags.HasFlag(DebugCommands.CommandFlags.Read) && !flags.HasFlag(DebugCommands.CommandFlags.Write))
                         lastItem.TintColor = new Color(0.85f, 0.85f, 0.85f, 1.0f);
                     lastItem.Focused += item =>
@@ -320,12 +320,25 @@ namespace FlaxEditor.Windows
 
                 // Show commands search popup based on current text input
                 var text = Text.Trim();
-                if (text.Length != 0)
+                bool isWhitespaceOnly = string.IsNullOrWhiteSpace(Text) && !string.IsNullOrEmpty(Text);
+                if (text.Length != 0 || isWhitespaceOnly)
                 {
                     DebugCommands.Search(text, out var matches);
-                    if (matches.Length != 0)
+                    if (matches.Length != 0 || isWhitespaceOnly)
                     {
-                        ShowPopup(ref _searchPopup, matches, text);
+                        string[] commands = [];
+                        if (isWhitespaceOnly)
+                            DebugCommands.GetAllCommands(out commands);
+
+                        ShowPopup(ref _searchPopup, isWhitespaceOnly ? commands : matches, text);
+                        
+                        if (isWhitespaceOnly)
+                        {
+                            // Scroll to and select first item for consistent behaviour
+                            var firstItem = _searchPopup.ItemsPanel.Children[0] as Item;
+                            _searchPopup.ScrollToAndHighlightItemByName(firstItem.Name);
+                        }
+
                         return;
                     }
                 }

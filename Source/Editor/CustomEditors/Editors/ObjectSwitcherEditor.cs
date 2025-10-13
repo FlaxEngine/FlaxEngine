@@ -3,6 +3,7 @@
 using System;
 using FlaxEditor.GUI;
 using FlaxEditor.Scripting;
+using FlaxEngine;
 using FlaxEngine.Utilities;
 
 namespace FlaxEditor.CustomEditors.Editors
@@ -81,8 +82,12 @@ namespace FlaxEditor.CustomEditors.Editors
 
         private OptionType[] _options;
         private ScriptType _type;
+        private Elements.PropertiesListElement _typeItem;
 
         private ScriptType Type => Values[0] == null ? Values.Type : TypeUtils.GetObjectType(Values[0]);
+
+        /// <inheritdoc />
+        public override bool RevertValueWithChildren => false; // Always revert value for a whole object
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -98,7 +103,8 @@ namespace FlaxEditor.CustomEditors.Editors
             _type = type;
 
             // Type
-            var typeEditor = layout.ComboBox(TypeComboBoxName, "Type of the object value. Use it to change the object.");
+            _typeItem = layout.AddPropertyItem(TypeComboBoxName, "Type of the object value. Use it to change the object.");
+            var typeEditor = _typeItem.ComboBox();
             for (int i = 0; i < _options.Length; i++)
             {
                 typeEditor.ComboBox.AddItem(_options[i].Name);
@@ -126,6 +132,8 @@ namespace FlaxEditor.CustomEditors.Editors
 
             // Value
             var values = new CustomValueContainer(type, (instance, index) => instance);
+            if (Values.HasReferenceValue)
+                values.SetReferenceValue(Values.ReferenceValue);
             values.AddRange(Values);
             var editor = CustomEditorsUtil.CreateEditor(type);
             var style = editor.Style;
@@ -169,6 +177,12 @@ namespace FlaxEditor.CustomEditors.Editors
         public override void Refresh()
         {
             base.Refresh();
+
+            // Show prefab diff when reference value type is different
+            var color = Color.Transparent;
+            if (Values.HasReferenceValue && CanRevertReferenceValue && Values[0]?.GetType() != Values.ReferenceValue?.GetType())
+                color = FlaxEngine.GUI.Style.Current.BackgroundSelected;
+            _typeItem.Labels[0].HighlightStripColor = color;
 
             // Check if type has been modified outside the editor (eg. from code)
             if (Type != _type)

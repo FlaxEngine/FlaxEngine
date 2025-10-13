@@ -55,6 +55,7 @@ public:
         Bounds = 2,
         Layer = 4,
         StaticFlags = 8,
+        AutoDelayDuringRendering = 16, // Conditionally allow updating data during rendering when writes are locked
         Auto = Visual | Bounds | Layer,
     };
 
@@ -67,6 +68,8 @@ public:
     virtual void OnSceneRenderingRemoveActor(Actor* a) = 0;
     virtual void OnSceneRenderingClear(SceneRendering* scene) = 0;
 };
+
+DECLARE_ENUM_OPERATORS(ISceneRenderingListener::UpdateFlags);
 
 /// <summary>
 /// Scene rendering helper subsystem that boosts the level rendering by providing efficient objects cache and culling implementation.

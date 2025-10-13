@@ -853,7 +853,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     auto vb = DebugDrawVB->GetBuffer();
 
     // Draw with depth test
-    if (depthTestLines.VertexCount + depthTestTriangles.VertexCount + depthTestWireTriangles.VertexCount > 0)
+    if (depthTestLines.VertexCount + depthTestTriangles.VertexCount + depthTestWireTriangles.VertexCount + Context->DebugDrawDepthTest.GeometryBuffers.Count() > 0)
     {
         if (data.EnableDepthTest)
             context->BindSR(0, renderContext.Buffers->DepthBuffer);
@@ -909,7 +909,7 @@ void DebugDraw::Draw(RenderContext& renderContext, GPUTextureView* target, GPUTe
     }
 
     // Draw without depth
-    if (defaultLines.VertexCount + defaultTriangles.VertexCount + defaultWireTriangles.VertexCount > 0)
+    if (defaultLines.VertexCount + defaultTriangles.VertexCount + defaultWireTriangles.VertexCount + Context->DebugDrawDefault.GeometryBuffers.Count() > 0)
     {
         context->SetRenderTarget(target);
 

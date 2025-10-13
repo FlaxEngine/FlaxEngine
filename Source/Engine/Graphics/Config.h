@@ -70,7 +70,7 @@
 
 // Default depth buffer pixel format
 #ifndef GPU_DEPTH_BUFFER_PIXEL_FORMAT
-#define GPU_DEPTH_BUFFER_PIXEL_FORMAT PixelFormat::D32_Float
+#define GPU_DEPTH_BUFFER_PIXEL_FORMAT PixelFormat::D24_UNorm_S8_UInt
 #endif
 
 // Enable/disable gpu resources naming

@@ -244,7 +244,11 @@ void Collider::UpdateGeometry()
         if (actor)
         {
             const auto rigidBody = dynamic_cast<RigidBody*>(GetParent());
-            if (_staticActor != nullptr || (rigidBody && CanAttach(rigidBody)))
+            if (rigidBody && CanAttach(rigidBody))
+            {
+                Attach(rigidBody);
+            }
+            else if (_staticActor != nullptr)
             {
                 PhysicsBackend::AttachShape(_shape, actor);
             }

@@ -916,6 +916,8 @@ ScriptingObject* Scripting::FindObject(Guid id, const MClass* type)
     if (idsMapping)
     {
         idsMapping->TryGet(id, id);
+        if (!id.IsValid())
+            return nullptr; // Skip warning if object was mapped to empty id (intentionally ignored)
     }
 
     // Try to find it

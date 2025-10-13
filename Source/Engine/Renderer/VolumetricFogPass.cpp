@@ -167,6 +167,8 @@ bool VolumetricFogPass::Init(RenderContext& renderContext, GPUContext* context, 
         (float)_cache.GridSizeZ);
     auto& fogData = renderContext.Buffers->VolumetricFogData;
     fogData.MaxDistance = options.Distance;
+    if (renderContext.Task->IsCameraCut || renderContext.View.IsOriginTeleport())
+        _cache.HistoryWeight = 0.0f;
 
     // Init data (partial, without directional light or sky light data);
     GBufferPass::SetInputs(renderContext.View, _cache.Data.GBuffer);
@@ -299,7 +301,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     PROFILE_GPU_CPU("Volumetric Fog");
 
     // TODO: test exponential depth distribution (should give better quality near the camera)
-    // TODO: use tiled light culling and render unshadowed lights in single pass
+    // TODO: use tiled light culling and render shadowed/unshadowed lights in single pass
 
     // Try to get shadows atlas
     GPUTexture* shadowMap;
@@ -516,7 +518,7 @@ void VolumetricFogPass::Render(RenderContext& renderContext)
     {
         PROFILE_GPU("Light Scattering");
 
-        const bool temporalHistoryIsValid = renderContext.Buffers->VolumetricFogHistory && !renderContext.Task->IsCameraCut && Float3::NearEqual(renderContext.Buffers->VolumetricFogHistory->Size3(), cache.GridSize);
+        const bool temporalHistoryIsValid = renderContext.Buffers->VolumetricFogHistory && Float3::NearEqual(renderContext.Buffers->VolumetricFogHistory->Size3(), cache.GridSize);
         const auto lightScatteringHistory = temporalHistoryIsValid ? renderContext.Buffers->VolumetricFogHistory : nullptr;
 
         context->BindUA(0, lightScattering->ViewVolume());
