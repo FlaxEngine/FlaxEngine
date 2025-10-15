@@ -219,7 +219,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     var size = Size;
                     var textHeight = 30.0f;
                     // Make icons smaller when tabs get thinner
-                    var iconSize = Mathf.Clamp(Mathf.Min(size.Y - textHeight, size.X), 15.0f, float.MaxValue);
+                    var iconSize = size.Y - textHeight;
                     var iconRect = new Rectangle((Width - iconSize) / 2, 0, iconSize, iconSize);
                     if (tab._mirrorIcon)
                     {
@@ -232,7 +232,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     var textRect = new Rectangle(0, size.Y - textHeight, size.X, textHeight);
                     Render2D.PushClip(new Rectangle(Float2.Zero, Size));
                     Render2D.DrawSprite(tab._customIcon, iconRect, color);
-                    Render2D.DrawText(style.FontMedium, tab._customText, textRect, color, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords);
+                    Render2D.DrawText(style.FontMedium, tab._customText, textRect, color, TextAlignment.Center, TextAlignment.Center, TextWrapping.WrapWords, 0.65f);
                     Render2D.PopClip();
                 }
             }
