@@ -462,7 +462,7 @@ namespace FlaxEditor.Surface.ContextMenu
                             Parent = group
                         };
                     }
-                    if (_contextSensitiveSearchEnabled)
+                    if (_contextSensitiveSearchEnabled && _selectedBoxes.Count > 0)
                         group.EvaluateVisibilityWithBox(_selectedBoxes[0]);
                     group.SortChildren();
                     if (ShowExpanded)
@@ -476,7 +476,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
                 if (!isLayoutLocked)
                 {
-                    if (_contextSensitiveSearchEnabled && _selectedBoxes[0] != null)
+                    if (_contextSensitiveSearchEnabled && _selectedBoxes.Count != 0 && _selectedBoxes[0] != null)
                         UpdateFilters();
                     else
                         SortGroups();
