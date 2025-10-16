@@ -379,7 +379,10 @@ void CharacterController::AddMovement(const Vector3& translation, const Quaterni
         displacement += GetPhysicsScene()->GetGravity() * deltaTime;
     }
 
-    Move(displacement);
+    if (!displacement.IsZero())
+    {
+        Move(displacement);
+    }
 
     if (!rotation.IsIdentity())
     {
