@@ -342,6 +342,8 @@ namespace Flax.Build.Projects.VisualStudioCode
 
                                         json.BeginArray("args");
                                         {
+                                            if (configuration.Platform == TargetPlatform.Linux || configuration.Platform == TargetPlatform.Mac)
+                                                json.AddUnnamedField("-std");
                                             json.AddUnnamedField("-project");
                                             json.AddUnnamedField(buildToolWorkspace);
                                             json.AddUnnamedField("-skipCompile");
@@ -395,6 +397,8 @@ namespace Flax.Build.Projects.VisualStudioCode
                                         json.AddField("program", Path.Combine(Globals.EngineRoot, "Binaries", "Editor", editorFolder, configuration.ConfigurationName, "FlaxEditor"));
                                         json.BeginArray("args");
                                         {
+                                            if (configuration.Platform == TargetPlatform.Linux || configuration.Platform == TargetPlatform.Mac)
+                                                json.AddUnnamedField("-std");
                                             json.AddUnnamedField("-project");
                                             json.AddUnnamedField(buildToolWorkspace);
                                             json.AddUnnamedField("-skipCompile");

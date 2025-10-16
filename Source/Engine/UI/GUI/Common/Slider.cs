@@ -390,7 +390,7 @@ public class Slider : ContainerControl
         }
 
         // Draw thumb
-        var thumbColorV = _isSliding ? ThumbColorSelected : (_mouseOverThumb ? ThumbColorHighlighted : ThumbColor);
+        var thumbColorV = _isSliding ? ThumbColorSelected : (_mouseOverThumb || IsNavFocused ? ThumbColorHighlighted : ThumbColor);
         if (ThumbBrush != null)
             ThumbBrush.Draw(_thumbRect, thumbColorV);
         else

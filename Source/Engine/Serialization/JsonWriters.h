@@ -32,6 +32,7 @@ public:
     }
 
 public:
+    using JsonWriter::Key;
 
     // [JsonWriter]
     void Key(const char* str, int32 length) override
