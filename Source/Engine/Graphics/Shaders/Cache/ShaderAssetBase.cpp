@@ -217,7 +217,7 @@ bool ShaderAssetBase::LoadShaderCache(ShaderCacheResult& result)
         && parent->HasChunk(SHADER_FILE_CHUNK_SOURCE))
     {
         result.Data.Release();
-        const String parentPath = parent->GetPath();
+        const StringView parentPath = parent->GetPath();
         const Guid parentID = parent->GetID();
         LOG(Info, "Compiling shader '{0}':{1}...", parentPath, parentID);
 

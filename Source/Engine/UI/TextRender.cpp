@@ -13,6 +13,8 @@
 #include "Engine/Render2D/FontManager.h"
 #include "Engine/Render2D/FontTextureAtlas.h"
 #include "Engine/Renderer/RenderList.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Content/Assets/MaterialInstance.h"
 #include "Engine/Content/Content.h"
@@ -120,6 +122,9 @@ void TextRender::SetLayoutOptions(TextLayoutOptions& value)
 
 void TextRender::UpdateLayout()
 {
+    PROFILE_CPU();
+    PROFILE_MEM(UI);
+
     // Clear
     _ib.Clear();
     _vb.Clear();
@@ -185,6 +190,10 @@ void TextRender::UpdateLayout()
     _buffersDirty = true;
 
     // Init draw chunks data
+    Array<MaterialInstance*, InlinedAllocation<8>> materials;
+    materials.Resize(_drawChunks.Count());
+    for (int32 i = 0; i < materials.Count(); i++)
+        materials[i] = _drawChunks[i].Material;
     DrawChunk drawChunk;
     drawChunk.Actor = this;
     drawChunk.StartIndex = 0;
@@ -237,10 +246,12 @@ void TextRender::UpdateLayout()
                     }
 
                     // Setup material
-                    drawChunk.Material = Content::CreateVirtualAsset<MaterialInstance>();
+                    if (_drawChunks.Count() < materials.Count())
+                        drawChunk.Material = materials[_drawChunks.Count()];
+                    else
+                        drawChunk.Material = Content::CreateVirtualAsset<MaterialInstance>();
                     drawChunk.Material->SetBaseMaterial(Material.Get());
-                    for (auto& param : drawChunk.Material->Params)
-                        param.SetIsOverride(false);
+                    drawChunk.Material->ResetParameters();
 
                     // Set the font parameter
                     static StringView FontParamName = TEXT("Font");
@@ -341,7 +352,7 @@ void TextRender::UpdateLayout()
     BoundingBox::Transform(_localBox, _transform, _box);
     BoundingSphere::FromBox(_box, _sphere);
     if (_sceneRenderingKey != -1)
-        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey);
+        GetSceneRendering()->UpdateActor(this, _sceneRenderingKey, ISceneRenderingListener::Auto | ISceneRenderingListener::AutoDelayDuringRendering);
 }
 
 bool TextRender::HasContentLoaded() const
@@ -379,8 +390,8 @@ void TextRender::Draw(RenderContext& renderContext)
         drawCall.ObjectRadius = (float)_sphere.Radius;
         drawCall.Surface.GeometrySize = _localBox.GetSize();
         drawCall.Surface.PrevWorld = _drawState.PrevWorld;
-        drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
         drawCall.PerInstanceRandom = GetPerInstanceRandom();
+        drawCall.SetStencilValue(_layer);
         drawCall.Geometry.IndexBuffer = _ib.GetBuffer();
         drawCall.Geometry.VertexBuffers[0] = _vb.GetBuffer();
         drawCall.InstanceCount = 1;

@@ -8,6 +8,7 @@
 
 // Platform description
 #define PLATFORM_TYPE PlatformType::UWP
+#define PLATFORM_DESKTOP 1
 
 // Use AOT for Mono
 #define USE_MONO_AOT 1

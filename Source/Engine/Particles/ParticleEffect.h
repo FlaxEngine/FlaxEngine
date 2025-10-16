@@ -118,7 +118,7 @@ public:
 /// The particle system instance that plays the particles simulation in the game.
 /// </summary>
 API_CLASS(Attributes="ActorContextMenu(\"New/Visuals/Particle Effect\"), ActorToolbox(\"Visuals\")")
-class FLAXENGINE_API ParticleEffect : public Actor
+class FLAXENGINE_API ParticleEffect : public Actor, IAssetReference
 {
     DECLARE_SCENE_OBJECT(ParticleEffect);
 public:
@@ -170,6 +170,9 @@ private:
     Array<ParameterOverride> _parametersOverrides; // Cached parameter modifications to be applied to the parameters
     bool _isPlaying = false;
     bool _isStopped = false;
+#if USE_EDITOR
+    Array<AssetReference<ParticleEmitter>> _cachedEmitters;
+#endif
 
 public:
     /// <summary>
@@ -392,14 +395,21 @@ private:
 #endif
     void CacheModifiedParameters();
     void ApplyModifiedParameters();
-    void OnParticleSystemModified();
-    void OnParticleSystemLoaded();
+#if USE_EDITOR
+    void OnParticleEmittersClear();
     void OnParticleEmitterLoaded();
+#endif
+
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
 
 public:
     // [Actor]
     bool HasContentLoaded() const override;
     void Draw(RenderContext& renderContext) override;
+    void Draw(RenderContextBatch& renderContextBatch) override;
 #if USE_EDITOR
     void OnDebugDrawSelected() override;
     void OnDebugDraw() override;

@@ -43,9 +43,6 @@ namespace Flax.Deps.Dependencies
             }
         }
 
-        /// <inheritdoc />
-        public override bool BuildByDefault => false;
-
         private string root;
         private bool cleanArtifacts;
 
@@ -296,9 +293,19 @@ namespace Flax.Deps.Dependencies
         {
             root = options.IntermediateFolder;
 
+            // On Windows MAX_PATH=260 might cause some build issues with CMake+Ninja, even when LongPathsEnabled=1
+            // To solve this, simply use a drive root folder instead of Deps directory
+            if (BuildPlatform == TargetPlatform.Windows && root.Length > 30)
+            {
+                root = Path.Combine(Path.GetPathRoot(root), "nethost");
+                Log.Info($"Using custom rooted build directory: {root} (due to path size limit)");
+                SetupDirectory(root, false);
+            }
+
             // Ensure to have dependencies installed
             Utilities.Run("ninja", "--version", null, null, Utilities.RunOptions.ThrowExceptionOnError);
             Utilities.Run("cmake", "--version", null, null, Utilities.RunOptions.ThrowExceptionOnError);
+            Utilities.Run("python", "--version", null, null, Utilities.RunOptions.ThrowExceptionOnError);
 
             // Get the source
             if (!Directory.Exists(Path.Combine(root, ".git")))

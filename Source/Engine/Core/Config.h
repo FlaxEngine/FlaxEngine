@@ -30,13 +30,17 @@
 #endif
 
 // Enable logging service (saving log to file, can be disabled using -nolog command line)
+#ifndef LOG_ENABLE
 #define LOG_ENABLE 1
+#endif
 
 // Enable crash reporting service (stack trace and crash dump collecting)
 #define CRASH_LOG_ENABLE (!BUILD_RELEASE)
 
 // Enable/disable assertion
+#ifndef ENABLE_ASSERTION
 #define ENABLE_ASSERTION (!BUILD_RELEASE)
+#endif
 
 // Enable/disable assertion for Engine low layers
 #define ENABLE_ASSERTION_LOW_LAYERS ENABLE_ASSERTION && (BUILD_DEBUG || FLAX_TESTS)

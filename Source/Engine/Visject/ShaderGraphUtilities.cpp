@@ -157,7 +157,10 @@ const Char* ShaderGraphUtilities::GenerateShaderResources(TextWriterUnicode& wri
         case MaterialParameterType::GPUTexture:
         case MaterialParameterType::SceneTexture:
         case MaterialParameterType::Texture:
-            format = TEXT("Texture2D {0} : register(t{1});");
+            if (param.AsInteger == (int32)MaterialSceneTextures::SceneStencil)
+                format = TEXT("Texture2D<uint2> {0} : register(t{1});");
+            else
+                format = TEXT("Texture2D {0} : register(t{1});");
             break;
         case MaterialParameterType::GPUTextureCube:
         case MaterialParameterType::CubeTexture:

@@ -25,219 +25,123 @@ GPU_CB_STRUCT(Data {
 // https://blog.selfshadow.com/publications/s2015-shading-course/
 // https://blog.selfshadow.com/publications/s2012-shading-course/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#define _USE_MATH_DEFINES
-#include <math.h>
+#define COMPILE_WITH_ASSETS_IMPORTER 1
+#define COMPILE_WITH_TEXTURE_TOOL 1
+#include "Engine/Engine/Globals.h"
+#include "Engine/Core/Math/Math.h"
+#include "Engine/Graphics/Textures/TextureData.h"
+#include "Engine/ContentImporters/ImportTexture.h"
+#include "Engine/ContentImporters/AssetsImportingManager.h"
 
 namespace PreIntegratedGF
 {
-	static const int Resolution = 128;
-	static const int NumSamples = 512;
+	static const int ResolutionX = 128;
+	static const int ResolutionY = 32;
+	static const int NumSamples = 256;
 
-	struct vec2 {
-		double x, y;
-		vec2(double _x, double _y) :x(_x), y(_y) { };
+	Float2 Hammersley(int32 i, int32 sampleCount)
+	{
+		float E1 = (float)i / (float)sampleCount;
+        float E2 = (float)((double)ReverseBits((uint32)i) * 2.3283064365386963e-10);
+		return Float2(E1, E2);
+	}
 
-		vec2& operator /=(const double& b)
+	Float3 ImportanceSampleGGX(Float2 E, float roughness)
+	{
+        float m = roughness * roughness;
+        float m2 = m * m;
+
+        float phi = 2 * PI * E.X;
+        float cosTheta = sqrtf((1 - E.Y) / (1 + (m2 - 1) * E.Y));
+        float sinTheta = sqrtf(1 - cosTheta * cosTheta);
+
+        return Float3(sinTheta * cosf(phi), sinTheta * sinf(phi), cosTheta);
+	}
+
+    float Vis_SmithJointApprox(float roughness, float NoV, float NoL)
+	{
+        float a = roughness * roughness;
+        float Vis_SmithV = NoL * (NoV * (1 - a) + a);
+        float Vis_SmithL = NoV * (NoL * (1 - a) + a);
+		return 0.5f / (Vis_SmithV + Vis_SmithL);
+	}
+
+    Float2 IntegrateBRDF(float roughness, float NoV)
+	{
+		if (roughness < 0.04f) roughness = 0.04f;
+
+        Float3 V(sqrtf(1 - NoV * NoV), 0, NoV);
+        float a = 0, b = 0;
+		for (int32 i = 0; i < NumSamples; i++)
 		{
-			x /= b;
-			y /= b;
-			return *this;
-		}
-	};
+            Float2 E = Hammersley(i, NumSamples);
+            Float3 H = ImportanceSampleGGX(E, roughness);
+            Float3 L = 2 * Float3::Dot(V, H) * H - V;
 
-	struct ivec2 {
-		int x, y;
-	};
-
-	struct vec3 {
-		double x, y, z;
-		vec3(double _x, double _y, double _z) :x(_x), y(_y), z(_z) { };
-
-		double dot(const vec3& b)
-		{
-			return x*b.x + y*b.y + z*b.z;
-		}
-	};
-
-	vec3 operator*(const double& a, const vec3& b)
-	{
-		return vec3(b.x * a, b.y * a, b.z * a);
-	}
-	vec3 operator-(const vec3& a, const vec3& b)
-	{
-		return vec3(a.x - b.x, a.y - b.y, a.z - b.z);
-	}
-
-	inline double saturate(double x)
-	{
-		if (x < 0) x = 0;
-		if (x > 1) x = 1;
-		return x;
-	}
-
-	unsigned int ReverseBits32(unsigned int bits)
-	{
-		bits = (bits << 16) | (bits >> 16);
-		bits = ((bits & 0x00ff00ff) << 8) | ((bits & 0xff00ff00) >> 8);
-		bits = ((bits & 0x0f0f0f0f) << 4) | ((bits & 0xf0f0f0f0) >> 4);
-		bits = ((bits & 0x33333333) << 2) | ((bits & 0xcccccccc) >> 2);
-		bits = ((bits & 0x55555555) << 1) | ((bits & 0xaaaaaaaa) >> 1);
-		return bits;
-	}
-
-	inline double rand_0_1()
-	{
-		return 1.0 * rand() / RAND_MAX;
-	}
-
-	inline unsigned int rand_32bit()
-	{
-		unsigned int x = rand() & 0xff;
-		x |= (rand() & 0xff) << 8;
-		x |= (rand() & 0xff) << 16;
-		x |= (rand() & 0xff) << 24;
-		return x;
-	}
-
-	// using uniform randomness :(
-	double t1 = rand_0_1();
-	unsigned int t2 = rand_32bit();
-	vec2 Hammersley(int Index, int NumSamples)
-	{
-		double E1 = 1.0 * Index / NumSamples + t1;
-		E1 = E1 - int(E1);
-		double E2 = double(ReverseBits32(Index) ^ t2) * 2.3283064365386963e-10;
-		return vec2(E1, E2);
-	}
-
-	vec3 ImportanceSampleGGX(vec2 E, double Roughness)
-	{
-		double m = Roughness * Roughness;
-		double m2 = m * m;
-
-		double phi = 2 * PI * E.x;
-		double cosTheta = sqrt((1 - E.y) / (1 + (m2 - 1) * E.y));
-		double sinTheta = sqrt(1 - cosTheta * cosTheta);
-
-		vec3 H(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
-
-		double d = (cosTheta * m2 - cosTheta) * cosTheta + 1;
-		double D = m2 / (M_PI*d*d);
-		double PDF = D * cosTheta;
-
-		return H;
-	}
-
-	double Vis_SmithJointApprox(double Roughness, double NoV, double NoL)
-	{
-		double a = Roughness * Roughness;
-		double Vis_SmithV = NoL * (NoV * (1 - a) + a);
-		double Vis_SmithL = NoV * (NoL * (1 - a) + a);
-		return 0.5 / (Vis_SmithV + Vis_SmithL);
-	}
-
-	vec2 IntegrateBRDF(double Roughness, double NoV)
-	{
-		if (Roughness < 0.04) Roughness = 0.04;
-
-		vec3 V(sqrt(1 - NoV*NoV), 0, NoV);
-		double A = 0, B = 0;
-		for (int i = 0; i < NumSamples; i++)
-		{
-			vec2 E = Hammersley(i, NumSamples);
-			vec3 H = ImportanceSampleGGX(E, Roughness);
-			vec3 L = 2 * V.dot(H) * H - V;
-
-			double NoL = saturate(L.z);
-			double NoH = saturate(H.z);
-			double VoH = saturate(V.dot(H));
+            float NoL = Math::Saturate(L.Z);
+            float NoH = Math::Saturate(H.Z);
+            float VoH = Math::Saturate(Float3::Dot(V, H));
 
 			if (NoL > 0)
 			{
-				double Vis = Vis_SmithJointApprox(Roughness, NoV, NoL);
+                float Vis = Vis_SmithJointApprox(roughness, NoV, NoL);
+                float NoL_Vis_PDF = NoL * Vis * (4 * VoH / NoH);
 
-				double a = Roughness * Roughness;
-				double a2 = a*a;
-				double Vis_SmithV = NoL * sqrt(NoV * (NoV - NoV * a2) + a2);
-				double Vis_SmithL = NoV * sqrt(NoL * (NoL - NoL * a2) + a2);
-
-				double NoL_Vis_PDF = NoL * Vis * (4 * VoH / NoH);
-
-				double Fc = pow(1 - VoH, 5);
-				A += (1 - Fc) * NoL_Vis_PDF;
-				B += Fc * NoL_Vis_PDF;
+                float Fc = powf(1 - VoH, 5);
+				a += NoL_Vis_PDF * (1 - Fc);
+				b += NoL_Vis_PDF * Fc;
 			}
 		}
-		vec2 res(A, B);
-		res /= NumSamples;
-		return res;
+		return Float2(a, b) / (float)NumSamples;
+	}
+
+    bool OnGenerate(TextureData& image)
+	{
+        // Setup image
+        image.Width = ResolutionX;
+        image.Height = ResolutionY;
+        image.Depth = 1;
+        image.Format = PixelFormat::R16G16_UNorm;
+        image.Items.Resize(1);
+        image.Items[0].Mips.Resize(1);
+        auto& mip = image.Items[0].Mips[0];
+        mip.RowPitch = 4 * image.Width;
+        mip.DepthPitch = mip.RowPitch * image.Height;
+        mip.Lines = image.Height;
+        mip.Data.Allocate(mip.DepthPitch);
+
+        // Generate GF pairs to be sampled in [NoV, roughness] space
+        auto pos = (uint16*)mip.Data.Get();
+        for (int32 y = 0; y < image.Height; y++)
+        {
+            float roughness = ((float)y + 0.5f) / (float)image.Height;
+            for (int32 x = 0; x < image.Width; x++)
+            {
+                float NoV = ((float)x + 0.5f) / (float)image.Width;
+                Float2 brdf = IntegrateBRDF(roughness, NoV);
+                *pos++ = (uint16)(Math::Saturate(brdf.X) * MAX_uint16 + 0.5f);
+                *pos++ = (uint16)(Math::Saturate(brdf.Y) * MAX_uint16 + 0.5f);
+            }
+        }
+
+        return false;
 	}
 
 	void Generate()
 	{
-		String path = Globals::TemporaryFolder / TEXT("PreIntegratedGF.bmp");
-
-		FILE* pFile = fopen(path.ToSTD().c_str(), "wb");
-
-		byte data[Resolution * 3 * Resolution];
-		int c = 0;
-		for (int x = 0; x < Resolution; x++)
-		{
-			for (int y = 0; y < Resolution; y++)
-			{
-				vec2 brdf = IntegrateBRDF(1 - 1.0 * x / (Resolution - 1), 1.0 * y / (Resolution - 1));
-				data[c + 2] = byte(brdf.x * 255);
-				data[c + 1] = byte(brdf.y * 255);
-				data[c + 0] = 0;
-				c += 3;
-			}
-		}
-
-		BITMAPINFOHEADER BMIH;
-		BMIH.biSize = sizeof(BITMAPINFOHEADER);
-		BMIH.biSizeImage = Resolution * Resolution * 3;
-		BMIH.biSize = sizeof(BITMAPINFOHEADER);
-		BMIH.biWidth = Resolution;
-		BMIH.biHeight = Resolution;
-		BMIH.biPlanes = 1;
-		BMIH.biBitCount = 24;
-		BMIH.biCompression = BI_RGB;
-		BMIH.biSizeImage = Resolution * Resolution * 3;
-
-		BITMAPFILEHEADER bmfh;
-		int nBitsOffset = sizeof(BITMAPFILEHEADER) + BMIH.biSize;
-		LONG lImageSize = BMIH.biSizeImage;
-		LONG lFileSize = nBitsOffset + lImageSize;
-
-		bmfh.bfType = 'B' + ('M' << 8);
-		bmfh.bfOffBits = nBitsOffset;
-		bmfh.bfSize = lFileSize;
-		bmfh.bfReserved1 = bmfh.bfReserved2 = 0;
-
-		//Write the bitmap file header
-		UINT nWrittenFileHeaderSize = fwrite(&bmfh, 1, sizeof(BITMAPFILEHEADER), pFile);
-
-		//And then the bitmap info header
-		UINT nWrittenInfoHeaderSize = fwrite(&BMIH, 1, sizeof(BITMAPINFOHEADER), pFile);
-
-		//Finally, write the image data itself 
-
-		//-- the data represents our drawing
-		UINT nWrittenDIBDataSize = fwrite(data, 1, lImageSize, pFile);
-
-		fclose(pFile);
-
-		Guid id;
-		Importers::TextureImportArgument arg;
-		arg.Options.Type = FormatType::HdrRGB;
-		arg.Options.IndependentChannels = true;
-		arg.Options.IsAtlas = false;
-		arg.Options.IsSRGB = false;
-		arg.Options.NeverStream = true;
-		Content::Import(path, Globals:... + PRE_INTEGRATED_GF_ASSET_NAME, &id, &arg);
+        Guid id = Guid::Empty;
+        ImportTexture::Options options;
+        options.Type = TextureFormatType::HdrRGB;
+        options.InternalFormat = PixelFormat::R16G16_UNorm;
+        options.IndependentChannels = true;
+        options.IsAtlas = false;
+        options.sRGB = false;
+        options.NeverStream = true;
+        options.GenerateMipMaps = false;
+        options.Compress = false;
+        options.InternalLoad.Bind(&OnGenerate);
+        const String path = Globals::EngineContentFolder / PRE_INTEGRATED_GF_ASSET_NAME + ASSET_FILES_EXTENSION_WITH_DOT;
+        AssetsImportingManager::Create(AssetsImportingManager::CreateTextureTag, path, id, &options);
 	}
 };
 
@@ -281,13 +185,7 @@ bool ReflectionsPass::setupResources()
     if (!_sphereModel->CanBeRendered() || !_preIntegratedGF->IsLoaded() || !_shader->IsLoaded())
         return true;
     const auto shader = _shader->GetShader();
-
-    // Validate shader constant buffer size
-    if (shader->GetCB(0)->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc;
@@ -374,6 +272,7 @@ void ReflectionsPass::Render(RenderContext& renderContext, GPUTextureView* light
     // Check if no need to render reflection environment
     if (!useReflections || !(renderProbes || useSSR))
         return;
+    PROFILE_GPU_CPU("Reflections");
 
     // Setup data
     Data data;

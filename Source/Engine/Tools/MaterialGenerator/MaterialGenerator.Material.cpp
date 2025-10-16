@@ -106,7 +106,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         Value values[OutputsMax];
         for (int32 i = 0; i < OutputsMax; i++)
         {
-            const auto outputBox = node->GetBox(Output0BoxID + i);
+            const auto outputBox = node->TryGetBox(Output0BoxID + i);
             if (outputBox && outputBox->HasConnection())
             {
                 values[i] = writeLocal(VariantType::Float4, node);
@@ -119,7 +119,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         for (int32 i = 0; i < InputsMax; i++)
         {
             auto inputName = TEXT("Input") + StringUtils::ToString(i);
-            const auto inputBox = node->GetBox(Input0BoxID + i);
+            const auto inputBox = node->TryGetBox(Input0BoxID + i);
             if (inputBox && inputBox->HasConnection())
             {
                 auto inputValue = tryGetValue(inputBox, Value::Zero);
@@ -131,7 +131,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         for (int32 i = 0; i < OutputsMax; i++)
         {
             auto outputName = TEXT("Output") + StringUtils::ToString(i);
-            const auto outputBox = node->GetBox(Output0BoxID + i);
+            const auto outputBox = node->TryGetBox(Output0BoxID + i);
             if (outputBox && outputBox->HasConnection())
             {
                 code.Replace(*outputName, *values[i].Value, StringSearchCase::CaseSensitive);
@@ -146,7 +146,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
         // Link output values to boxes
         for (int32 i = 0; i < OutputsMax; i++)
         {
-            const auto outputBox = node->GetBox(Output0BoxID + i);
+            const auto outputBox = node->TryGetBox(Output0BoxID + i);
             if (outputBox && outputBox->HasConnection())
             {
                 outputBox->Cache = values[i];
@@ -263,7 +263,7 @@ void MaterialGenerator::ProcessGroupMaterial(Box* box, Node* node, Value& value)
 
         // Sample scene depth buffer
         auto sceneDepthTexture = findOrAddSceneTexture(MaterialSceneTextures::SceneDepth);
-        auto depthSample = writeLocal(VariantType::Float, String::Format(TEXT("{0}.SampleLevel(SamplerLinearClamp, {1}, 0).x"), sceneDepthTexture.ShaderName, screenUVs.Value), node);
+        auto depthSample = writeLocal(VariantType::Float, String::Format(TEXT("{0}.SampleLevel(SamplerPointClamp, {1}, 0).x"), sceneDepthTexture.ShaderName, screenUVs.Value), node);
 
         // Linearize raw device depth
         Value sceneDepth;

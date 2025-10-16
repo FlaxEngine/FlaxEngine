@@ -23,6 +23,7 @@ public:
     static bool Init();
     static void Exit();
     static void MemoryBarrier();
+    static void MemoryPrefetch(void const* ptr);
     static int64 InterlockedExchange(int64 volatile* dst, int64 exchange)
     {
 #if WIN64
@@ -83,7 +84,6 @@ public:
         _interlockedexchange64(dst, value);
 #endif
     }
-    static void Prefetch(void const* ptr);
     static void* Allocate(uint64 size, uint64 alignment);
     static void Free(void* ptr);
     static void* AllocatePages(uint64 numPages, uint64 pageSize);
@@ -100,6 +100,7 @@ public:
     static void SetThreadPriority(ThreadPriority priority);
     static void SetThreadAffinityMask(uint64 affinityMask);
     static void Sleep(int32 milliseconds);
+    static void Yield();
     static double GetTimeSeconds();
     static uint64 GetTimeCycles();
     static uint64 GetClockFrequency();

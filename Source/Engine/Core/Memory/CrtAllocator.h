@@ -11,14 +11,13 @@
 class CrtAllocator
 {
 public:
-
     /// <summary>
     /// Allocates memory on a specified alignment boundary.
     /// </summary>
     /// <param name="size">The size of the allocation (in bytes).</param>
     /// <param name="alignment">The memory alignment (in bytes). Must be an integer power of 2.</param>
     /// <returns>The pointer to the allocated chunk of the memory. The pointer is a multiple of alignment.</returns>
-    FORCE_INLINE static void* Allocate(uint64 size, uint64 alignment = 16)
+    FORCE_INLINE static void* Allocate(uint64 size, uint64 alignment = PLATFORM_MEMORY_ALIGNMENT)
     {
         return Platform::Allocate(size, alignment);
     }

@@ -4,6 +4,9 @@
 
 #include "Engine/Core/Types/BaseTypes.h"
 #include "Engine/Core/Types/String.h"
+#if !BUILD_RELEASE
+#include "Engine/Core/Collections/Array.h"
+#endif
 #include "Config.h"
 
 class GPUShader;
@@ -92,6 +95,11 @@ public:
     {
         return _flags;
     }
+
+#if !BUILD_RELEASE
+    typedef Array<char, InlinedAllocation<60>> DebugName;
+    void GetDebugName(DebugName& name) const;
+#endif
 
 public:
     /// <summary>

@@ -707,6 +707,8 @@ bool TextureTool::ImportTextureDirectXTex(ImageType type, const StringView& path
     PixelFormat targetFormat = TextureTool::ToPixelFormat(options.Type, width, height, options.Compress);
     if (options.sRGB)
         targetFormat = PixelFormatExtensions::TosRGB(targetFormat);
+    if (options.InternalFormat != PixelFormat::Unknown)
+        targetFormat = options.InternalFormat;
     DXGI_FORMAT targetDxgiFormat = ToDxgiFormat(targetFormat);
 
     // Check mip levels

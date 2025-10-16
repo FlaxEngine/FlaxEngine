@@ -29,6 +29,13 @@ Buffer<float4> ShadowsBuffer : register(t__SRV__);
 Texture2D<float> ShadowMap : register(t__SRV__);
 Texture3D VolumetricFogTexture : register(t__SRV__);
 @4// Forward Shading: Utilities
+// Public accessors for lighting data, use them as data binding might change but those methods will remain.
+LightData GetDirectionalLight() { return DirectionalLight; }
+LightData GetSkyLight() { return SkyLight; }
+ProbeData GetEnvironmentProbe() { return EnvironmentProbe; }
+ExponentialHeightFogData GetExponentialHeightFog() { return ExponentialHeightFog; }
+uint GetLocalLightsCount() { return LocalLightsCount; }
+LightData GetLocalLight(uint i) { return LocalLights[i]; }
 @5// Forward Shading: Shaders
 
 // Pixel Shader function for Forward Pass
@@ -77,9 +84,8 @@ void PS_Forward(
 	gBuffer.ShadingModel = MATERIAL_SHADING_MODEL;
 
 	// Calculate lighting from a single directional light
-	float4 shadowMask = 1.0f;
 	ShadowSample shadow = SampleDirectionalLightShadow(DirectionalLight, ShadowsBuffer, ShadowMap, gBuffer);
-	shadowMask = GetShadowMask(shadow);
+	float4 shadowMask = GetShadowMask(shadow);
 	float4 light = GetLighting(ViewPos, DirectionalLight, gBuffer, shadowMask, false, false);
 
 	// Calculate lighting from sky light
@@ -146,7 +152,13 @@ void PS_Forward(
 
 #if USE_FOG && MATERIAL_SHADING_MODEL != SHADING_MODEL_UNLIT
 	// Calculate exponential height fog
-	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, 0, gBuffer.ViewPos.z);
+#if DIRECTX && FEATURE_LEVEL < FEATURE_LEVEL_SM6
+	// TODO: fix D3D11/D3D10 bug with incorrect distance
+	float fogSceneDistance = distance(materialInput.WorldPosition, ViewPos);
+#else
+	float fogSceneDistance = gBuffer.ViewPos.z;
+#endif
+	float4 fog = GetExponentialHeightFog(ExponentialHeightFog, materialInput.WorldPosition, ViewPos, 0, fogSceneDistance);
 
 	if (ExponentialHeightFog.VolumetricFogMaxDistance > 0)
 	{

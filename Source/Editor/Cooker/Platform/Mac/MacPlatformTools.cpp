@@ -186,7 +186,7 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
         ADD_ENTRY("CFBundlePackageType", "APPL");
         ADD_ENTRY("NSPrincipalClass", "NSApplication");
         ADD_ENTRY("LSApplicationCategoryType", "public.app-category.games");
-        ADD_ENTRY("LSMinimumSystemVersion", "10.15");
+        ADD_ENTRY("LSMinimumSystemVersion", "13");
         ADD_ENTRY("CFBundleIconFile", "icon.icns");
         ADD_ENTRY_STR("CFBundleExecutable", executableName);
         ADD_ENTRY_STR("CFBundleIdentifier", appIdentifier);
@@ -231,6 +231,8 @@ bool MacPlatformTools::OnPostProcess(CookingData& data)
     LOG(Info, "Building app package...");
     {
         const String dmgPath = data.OriginalOutputPath / appName + TEXT(".dmg");
+        if (FileSystem::FileExists(dmgPath))
+            FileSystem::DeleteFile(dmgPath);
         CreateProcessSettings procSettings;
         procSettings.HiddenWindow = true;
         procSettings.WorkingDirectory = data.OriginalOutputPath;

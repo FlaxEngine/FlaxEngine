@@ -121,6 +121,10 @@ API_CLASS(Namespace="FlaxEngine.Tools", Static) class FLAXENGINE_API TextureTool
         API_FIELD(Attributes="HideInEditor")
         Array<Sprite> Sprites;
 
+        // The custom format to use. Can be used to override default format from texture Type.
+        API_FIELD(Attributes="HideInEditor")
+        PixelFormat InternalFormat = PixelFormat::Unknown;
+
         // Function used for fast importing textures used by internal parts of the engine
         Function<bool(TextureData&)> InternalLoad;
 

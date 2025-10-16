@@ -90,6 +90,8 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
 {
     if (_pipelineState)
         return _pipelineState;
+    PROFILE_CPU();
+    ZoneText(*_name, _name.Length());
 
     // Create pipeline layout
     DescriptorSetLayoutInfoVulkan descriptorSetLayoutInfo;
@@ -110,7 +112,8 @@ ComputePipelineStateVulkan* GPUShaderProgramCSVulkan::GetOrCreateState()
 
     // Create pipeline object
     VkPipeline pipeline;
-    const VkResult result = vkCreateComputePipelines(_device->Device, _device->PipelineCache, 1, &desc, nullptr, &pipeline);
+    VkResult result = vkCreateComputePipelines(_device->Device, _device->PipelineCache, 1, &desc, nullptr, &pipeline);
+    _device->PipelineCacheUsage++;
     LOG_VULKAN_RESULT(result);
     if (result != VK_SUCCESS)
         return nullptr;
@@ -220,7 +223,12 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
 #endif
         return pipeline;
     }
-    PROFILE_CPU_NAMED("Create Pipeline");
+    PROFILE_CPU();
+#if !BUILD_RELEASE
+    DebugName name;
+    GetDebugName(name);
+    ZoneText(name.Get(), name.Count() - 1);
+#endif
 
     // Bind vertex input
 	VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo;
@@ -306,14 +314,13 @@ VkPipeline GPUPipelineStateVulkan::GetState(RenderPassVulkan* renderPass, GPUVer
     auto depthWrite = _descDepthStencil.depthWriteEnable;
     _descDepthStencil.depthWriteEnable &= renderPass->CanDepthWrite ? 1 : 0;
     const VkResult result = vkCreateGraphicsPipelines(_device->Device, _device->PipelineCache, 1, &_desc, nullptr, &pipeline);
+    _device->PipelineCacheUsage++;
     _descDepthStencil.depthWriteEnable = depthWrite;
     LOG_VULKAN_RESULT(result);
     if (result != VK_SUCCESS)
     {
-#if BUILD_DEBUG
-        const StringAnsi vsName = DebugDesc.VS ? DebugDesc.VS->GetName() : StringAnsi::Empty;
-        const StringAnsi psName = DebugDesc.PS ? DebugDesc.PS->GetName() : StringAnsi::Empty;
-        LOG(Error, "vkCreateGraphicsPipelines failed for VS={0}, PS={1}", String(vsName), String(psName));
+#if !BUILD_RELEASE
+        LOG(Error, "vkCreateGraphicsPipelines failed for {}", String(name.Get(), name.Count() - 1));
 #endif
         return VK_NULL_HANDLE;
     }
@@ -350,7 +357,8 @@ bool GPUPipelineStateVulkan::IsValid() const
 
 bool GPUPipelineStateVulkan::Init(const Description& desc)
 {
-    ASSERT(!IsValid());
+    if (IsValid())
+        OnReleaseGPU();
 
     // Reset description
     RenderToolsVulkan::ZeroStruct(_desc, VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);

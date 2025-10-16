@@ -4,6 +4,7 @@
 #include "AnimEvent.h"
 #include "Engine/Engine/Engine.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
@@ -52,7 +53,7 @@ namespace
 
 AnimationsService AnimationManagerInstance;
 TaskGraphSystem* Animations::System = nullptr;
-ConcurrentSystemLocker Animations::SystemLocker;
+ReadWriteLock Animations::SystemLocker;
 #if USE_EDITOR
 Delegate<Animations::DebugFlowInfo> Animations::DebugFlow;
 #endif
@@ -69,6 +70,7 @@ AnimContinuousEvent::AnimContinuousEvent(const SpawnParams& params)
 
 bool AnimationsService::Init()
 {
+    PROFILE_MEM(Animations);
     Animations::System = New<AnimationsSystem>();
     Engine::UpdateGraph->AddSystem(Animations::System);
     return false;
@@ -83,6 +85,7 @@ void AnimationsService::Dispose()
 void AnimationsSystem::Job(int32 index)
 {
     PROFILE_CPU_NAMED("Animations.Job");
+    PROFILE_MEM(Animations);
     auto animatedModel = AnimationManagerInstance.UpdateList[index];
     if (CanUpdateModel(animatedModel))
     {
@@ -121,7 +124,7 @@ void AnimationsSystem::Execute(TaskGraph* graph)
     Active = true;
 
     // Ensure no animation assets can be reloaded/modified during async update
-    Animations::SystemLocker.Begin(false);
+    Animations::SystemLocker.ReadLock();
 
     // Setup data for async update
     const auto& tickData = Time::Update;
@@ -147,6 +150,7 @@ void AnimationsSystem::PostExecute(TaskGraph* graph)
     if (!Active)
         return;
     PROFILE_CPU_NAMED("Animations.PostExecute");
+    PROFILE_MEM(Animations);
 
     // Update gameplay
     for (int32 index = 0; index < AnimationManagerInstance.UpdateList.Count(); index++)
@@ -161,16 +165,18 @@ void AnimationsSystem::PostExecute(TaskGraph* graph)
 
     // Cleanup
     AnimationManagerInstance.UpdateList.Clear();
-    Animations::SystemLocker.End(false);
+    Animations::SystemLocker.ReadUnlock();
     Active = false;
 }
 
 void Animations::AddToUpdate(AnimatedModel* obj)
 {
+    ScopeWriteLock lock(SystemLocker);
     AnimationManagerInstance.UpdateList.Add(obj);
 }
 
 void Animations::RemoveFromUpdate(AnimatedModel* obj)
 {
+    ScopeWriteLock lock(SystemLocker);
     AnimationManagerInstance.UpdateList.Remove(obj);
 }

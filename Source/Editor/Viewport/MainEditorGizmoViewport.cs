@@ -340,6 +340,13 @@ namespace FlaxEditor.Viewport
         {
             _debugDrawData.Clear();
 
+            if (task is SceneRenderTask sceneRenderTask)
+            {
+                // Sync debug view to avoid lag on culling/LODing
+                var view = sceneRenderTask.View;
+                DebugDraw.SetView(ref view);
+            }
+
             // Collect selected objects debug shapes and visuals
             var selectedParents = TransformGizmo.SelectedParents;
             if (selectedParents.Count > 0)

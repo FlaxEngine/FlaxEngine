@@ -195,4 +195,9 @@ bool GDKPlatformTools::OnPostProcess(CookingData& data, GDKPlatformSettings* pla
     return false;
 }
 
+int32 GDKPlatformTools::GetDotnetVersion() const
+{
+    return GAME_BUILD_DOTNET_RUNTIME_MIN_VER;
+}
+
 #endif

@@ -30,6 +30,7 @@
 #include "Engine/Scripting/ManagedCLR/MAssembly.h"
 #include "Engine/Content/JsonAsset.h"
 #include "Engine/Content/AssetReference.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if PLATFORM_TOOLS_WINDOWS
 #include "Platform/Windows/WindowsPlatformTools.h"
 #include "Engine/Platform/Windows/WindowsPlatformSettings.h"
@@ -311,6 +312,14 @@ void CookingData::GetBuildPlatformName(const Char*& platform, const Char*& archi
     }
 }
 
+String CookingData::GetDotnetCommandArg() const
+{
+    int32 version = Tools->GetDotnetVersion();
+    if (version == 0)
+        return String::Empty;
+    return String::Format(TEXT("-dotnet={}"), version);
+}
+
 void CookingData::StepProgress(const String& info, const float stepProgress) const
 {
     const float singleStepProgress = 1.0f / (StepsCount + 1);
@@ -380,6 +389,7 @@ bool GameCooker::IsCancelRequested()
 
 PlatformTools* GameCooker::GetTools(BuildPlatform platform)
 {
+    PROFILE_MEM(Editor);
     PlatformTools* result = nullptr;
     if (!Tools.TryGet(platform, result))
     {
@@ -471,6 +481,7 @@ bool GameCooker::Build(BuildPlatform platform, BuildConfiguration configuration,
         LOG(Error, "Build platform {0} is not supported.", ::ToString(platform));
         return true;
     }
+    PROFILE_MEM(Editor);
 
     // Setup
     CancelFlag = 0;
@@ -624,6 +635,7 @@ void GameCookerImpl::ReportProgress(const String& info, float totalProgress)
 
 void GameCookerImpl::OnCollectAssets(HashSet<Guid>& assets)
 {
+    PROFILE_MEM(Editor);
     if (Internal_OnCollectAssets == nullptr)
     {
         auto c = GameCooker::GetStaticClass();
@@ -651,6 +663,7 @@ void GameCookerImpl::OnCollectAssets(HashSet<Guid>& assets)
 
 bool GameCookerImpl::Build()
 {
+    PROFILE_MEM(Editor);
     CookingData& data = *Data;
     LOG(Info, "Starting Game Cooker...");
     LOG(Info, "Platform: {0}, Configuration: {2}, Options: {1}", ::ToString(data.Platform), (int32)data.Options, ::ToString(data.Configuration));
@@ -670,8 +683,7 @@ bool GameCookerImpl::Build()
 
     MCore::Thread::Attach();
 
-    // Build Started
-    if (!EnumHasAnyFlags(data.Options, BuildOptions::NoCook))
+    // Build start
     {
         CallEvent(GameCooker::EventType::BuildStarted);
         data.Tools->OnBuildStarted(data);
@@ -744,8 +756,8 @@ bool GameCookerImpl::Build()
     }
     IsRunning = false;
     CancelFlag = 0;
-    if (!EnumHasAnyFlags(data.Options, BuildOptions::NoCook))
     {
+        // Build end
         for (int32 stepIndex = 0; stepIndex < Steps.Count(); stepIndex++)
             Steps[stepIndex]->OnBuildEnded(data, failed);
         data.Tools->OnBuildEnded(data, failed);
@@ -778,6 +790,8 @@ int32 GameCookerImpl::ThreadFunction()
 
 bool GameCookerService::Init()
 {
+    PROFILE_MEM(Editor);
+
     auto editorAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     editorAssembly->Unloading.Bind(OnEditorAssemblyUnloading);
     GameCooker::OnCollectAssets.Bind(OnCollectAssets);
@@ -789,6 +803,7 @@ void GameCookerService::Update()
 {
     if (IsRunning)
     {
+        PROFILE_MEM(Editor);
         ScopeLock lock(ProgressLocker);
 
         if (ProgressMsg.HasChars())

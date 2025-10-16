@@ -43,6 +43,9 @@ void ForwardShadingFeature::Bind(MaterialShader::BindParameters& params, Span<by
     else
     {
         data.ExponentialHeightFog.FogMinOpacity = 1.0f;
+        data.ExponentialHeightFog.FogDensity = 0.0f;
+        data.ExponentialHeightFog.FogCutoffDistance = 0.1f;
+        data.ExponentialHeightFog.StartDistance = 0.0f;
         data.ExponentialHeightFog.ApplyDirectionalInscattering = 0.0f;
     }
     params.GPUContext->BindSR(volumetricFogTextureRegisterIndex, volumetricFogTexture);

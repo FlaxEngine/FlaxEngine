@@ -14,4 +14,5 @@ struct FLAXENGINE_API RenderSetup
     bool UseTemporalAAJitter = false;
     bool UseGlobalSDF = false;
     bool UseGlobalSurfaceAtlas = false;
+    bool UseVolumetricFog = false;
 };

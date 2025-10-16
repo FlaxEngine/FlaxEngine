@@ -6,6 +6,7 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Random.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/Threading.h"
 #include <ThirdParty/recastnavigation/DetourNavMesh.h>
 #include <ThirdParty/recastnavigation/DetourNavMeshQuery.h>
@@ -325,6 +326,7 @@ void NavMeshRuntime::EnsureCapacity(int32 tilesToAddCount)
     if (newTilesCount <= capacity)
         return;
     PROFILE_CPU_NAMED("NavMeshRuntime.EnsureCapacity");
+    PROFILE_MEM(Navigation);
 
     // Navmesh tiles capacity growing rule
     int32 newCapacity = capacity ? capacity : 32;
@@ -385,6 +387,7 @@ void NavMeshRuntime::AddTiles(NavMesh* navMesh)
         return;
     auto& data = navMesh->Data;
     PROFILE_CPU_NAMED("NavMeshRuntime.AddTiles");
+    PROFILE_MEM(Navigation);
     ScopeLock lock(Locker);
 
     // Validate data (must match navmesh) or init navmesh to match the tiles options
@@ -416,6 +419,7 @@ void NavMeshRuntime::AddTile(NavMesh* navMesh, NavMeshTileData& tileData)
     ASSERT(navMesh);
     auto& data = navMesh->Data;
     PROFILE_CPU_NAMED("NavMeshRuntime.AddTile");
+    PROFILE_MEM(Navigation);
     ScopeLock lock(Locker);
 
     // Validate data (must match navmesh) or init navmesh to match the tiles options

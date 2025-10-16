@@ -4,6 +4,10 @@
 #include "Engine/Core/Log.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/Shaders/GPUShader.h"
+#if GPU_ENABLE_RESOURCE_NAMING && !USE_EDITOR
+#include "Engine/Content/Content.h"
+#include "Engine/Content/Cache/AssetsCache.h"
+#endif
 #include "Engine/Content/Upgraders/ShaderAssetUpgrader.h"
 #include "Engine/Content/Factories/BinaryAssetFactory.h"
 #include "Engine/Serialization/MemoryReadStream.h"
@@ -14,7 +18,11 @@ Shader::Shader(const SpawnParams& params, const AssetInfo* info)
     : ShaderAssetTypeBase<BinaryAsset>(params, info)
 {
     ASSERT(GPUDevice::Instance);
-    _shader = GPUDevice::Instance->CreateShader(info->Path);
+    StringView name = info->Path;
+#if GPU_ENABLE_RESOURCE_NAMING && !USE_EDITOR
+    name = Content::GetRegistry()->GetEditorAssetPath(info->ID);
+#endif
+    _shader = GPUDevice::Instance->CreateShader(name);
     ASSERT(_shader);
     GPU = _shader;
 }

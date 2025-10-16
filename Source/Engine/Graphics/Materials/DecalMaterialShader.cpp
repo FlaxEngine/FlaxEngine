@@ -17,6 +17,8 @@ PACK_STRUCT(struct DecalMaterialShaderData {
     Matrix WorldMatrix;
     Matrix InvWorld;
     Matrix SvPositionToWorld;
+    Float3 Padding0;
+    uint32 RenderLayersMask;
     });
 
 DrawPass DecalMaterialShader::GetDrawModes() const
@@ -50,6 +52,7 @@ void DecalMaterialShader::Bind(BindParameters& params)
     GPUTexture* depthBuffer = params.RenderContext.Buffers->DepthBuffer;
     GPUTextureView* depthBufferView = EnumHasAnyFlags(depthBuffer->Flags(), GPUTextureFlags::ReadOnlyDepthView) ? depthBuffer->ViewReadOnlyDepth() : depthBuffer->View();
     context->BindSR(0, depthBufferView);
+    context->BindSR(1, depthBuffer->ViewStencil());
 
     // Setup material constants
     {
@@ -68,6 +71,7 @@ void DecalMaterialShader::Bind(BindParameters& params)
             -1.0f, 1.0f, 0, 1);
         const Matrix svPositionToWorld = offsetMatrix * view.IVP;
         Matrix::Transpose(svPositionToWorld, materialData->SvPositionToWorld);
+        materialData->RenderLayersMask = (uint32)drawCall.SortKey; // Provided by GBufferPass::DrawDecals
     }
 
     // Bind constants

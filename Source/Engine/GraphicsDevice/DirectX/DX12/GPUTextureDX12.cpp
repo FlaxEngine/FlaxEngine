@@ -159,7 +159,12 @@ bool GPUTextureDX12::OnInit()
         initialState = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
 
     // Create texture
-    auto result = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, clearValuePtr, IID_PPV_ARGS(&resource));
+#if PLATFORM_WINDOWS
+    D3D12_HEAP_FLAGS heapFlags = useRTV || useDSV ? D3D12_HEAP_FLAG_CREATE_NOT_ZEROED : D3D12_HEAP_FLAG_NONE;
+#else
+    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE;
+#endif
+    auto result = device->CreateCommittedResource(&heapProperties, heapFlags, &resourceDesc, initialState, clearValuePtr, IID_PPV_ARGS(&resource));
     LOG_DIRECTX_RESULT_WITH_RETURN(result, true);
 
     // Set state
@@ -226,6 +231,8 @@ void GPUTextureDX12::OnReleaseGPU()
     _handlesPerSlice.Resize(0, false);
     _handleArray.Release();
     _handleVolume.Release();
+    _handleReadOnlyDepth.Release();
+    _handleStencil.Release();
     _srv.Release();
     _uav.Release();
     releaseResource();
@@ -719,6 +726,45 @@ void GPUTextureDX12::initHandles()
             }
             _handleReadOnlyDepth.SetSRV(srDesc);
         }
+    }
+
+    // Stencil view
+    if (useDSV && useSRV && PixelFormatExtensions::HasStencil(format))
+    {
+        PixelFormat stencilFormat;
+        switch (_dxgiFormatDSV)
+        {
+        case PixelFormat::D24_UNorm_S8_UInt:
+            srDesc.Format = DXGI_FORMAT_X24_TYPELESS_G8_UINT;
+            stencilFormat = PixelFormat::X24_Typeless_G8_UInt;
+            break;
+        case PixelFormat::D32_Float_S8X24_UInt:
+            srDesc.Format = DXGI_FORMAT_X32_TYPELESS_G8X24_UINT;
+            stencilFormat = PixelFormat::X32_Typeless_G8X24_UInt;
+            break;
+        }
+        if (isCubeMap)
+        {
+            srDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+            srDesc.TextureCube.MostDetailedMip = 0;
+            srDesc.TextureCube.MipLevels = mipLevels;
+            srDesc.TextureCube.ResourceMinLODClamp = 0;
+        }
+        else if (isMsaa)
+        {
+            srDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2DMS;
+        }
+        else
+        {
+            srDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+            srDesc.Texture2D.MostDetailedMip = 0;
+            srDesc.Texture2D.MipLevels = mipLevels;
+            srDesc.Texture2D.ResourceMinLODClamp = 0;
+            srDesc.Texture2D.PlaneSlice = 1;
+        }
+        _handleStencil.Init(this, _device, this, stencilFormat, msaa);
+        _handleStencil.ReadOnlyDepthView = true;
+        _handleStencil.SetSRV(srDesc);
     }
 }
 

@@ -10,15 +10,28 @@
 #include "Engine/Serialization/FileWriteStream.h"
 #include "Engine/Serialization/FileReadStream.h"
 #include "Engine/Content/Content.h"
-#include "Engine/Content/Storage/ContentStorageManager.h"
-#include "Engine/Content/Storage/JsonStorageProxy.h"
 #include "Engine/Profiler/ProfilerCPU.h"
-#include "Engine/Threading/Threading.h"
 #include "Engine/Engine/Globals.h"
 #include "FlaxEngine.Gen.h"
+#if ASSETS_CACHE_EDITABLE
+#include "Engine/Content/Storage/ContentStorageManager.h"
+#include "Engine/Content/Storage/JsonStorageProxy.h"
+#include "Engine/Threading/Threading.h"
+#define ASSETS_CACHE_LOCK() ScopeLock lock(_locker)
+#else
+#define ASSETS_CACHE_LOCK()
+#endif
+
+int32 AssetsCache::Size() const
+{
+    ASSETS_CACHE_LOCK();
+    const int32 result = _registry.Count();
+    return result;
+}
 
 void AssetsCache::Init()
 {
+    PROFILE_CPU();
     Entry e;
     int32 count;
     Stopwatch stopwatch;
@@ -71,7 +84,7 @@ void AssetsCache::Init()
         return;
     }
 
-    ScopeLock lock(_locker);
+    ASSETS_CACHE_LOCK();
     _isDirty = false;
 
     // Load elements count
@@ -126,6 +139,16 @@ void AssetsCache::Init()
         _pathsMapping.Add(mappedPath, id);
     }
 
+#if !USE_EDITOR && !BUILD_RELEASE
+    // Build inverse path mapping in development builds for faster GetEditorAssetPath (eg. used by PROFILE_CPU_ASSET)
+    _pathsMappingInv.Clear();
+    _pathsMappingInv.EnsureCapacity(count);
+    for (auto& mapping : _pathsMapping)
+    {
+        _pathsMappingInv.Add(mapping.Value, StringView(mapping.Key));
+    }
+#endif
+
     // Check errors
     const bool hasError = stream->HasError();
     deleteStream.Delete();
@@ -153,7 +176,7 @@ bool AssetsCache::Save()
     if (!_isDirty && FileSystem::FileExists(_path))
         return false;
 
-    ScopeLock lock(_locker);
+    ASSETS_CACHE_LOCK();
 
     if (Save(_path, _registry, _pathsMapping))
         return true;
@@ -222,12 +245,16 @@ bool AssetsCache::Save(const StringView& path, const Registry& entries, const Pa
     return false;
 }
 
-const String& AssetsCache::GetEditorAssetPath(const Guid& id) const
+StringView AssetsCache::GetEditorAssetPath(const Guid& id) const
 {
-    ScopeLock lock(_locker);
+    ASSETS_CACHE_LOCK();
 #if USE_EDITOR
     auto e = _registry.TryGet(id);
     return e ? e->Info.Path : String::Empty;
+#elif !BUILD_RELEASE
+    StringView result;
+    _pathsMappingInv.TryGet(id, result);
+    return result;
 #else
     for (auto& e : _pathsMapping)
     {
@@ -241,10 +268,8 @@ const String& AssetsCache::GetEditorAssetPath(const Guid& id) const
 bool AssetsCache::FindAsset(const StringView& path, AssetInfo& info)
 {
     PROFILE_CPU();
-
     bool result = false;
-
-    ScopeLock lock(_locker);
+    ASSETS_CACHE_LOCK();
 
     // Check if asset has direct mapping to id (used for some cooked assets)
     Guid id;
@@ -293,7 +318,7 @@ bool AssetsCache::FindAsset(const Guid& id, AssetInfo& info)
 {
     PROFILE_CPU();
     bool result = false;
-    ScopeLock lock(_locker);
+    ASSETS_CACHE_LOCK();
     auto e = _registry.TryGet(id);
     if (e != nullptr)
     {
@@ -315,20 +340,22 @@ bool AssetsCache::FindAsset(const Guid& id, AssetInfo& info)
 void AssetsCache::GetAll(Array<Guid>& result) const
 {
     PROFILE_CPU();
-    ScopeLock lock(_locker);
+    ASSETS_CACHE_LOCK();
     _registry.GetKeys(result);
 }
 
 void AssetsCache::GetAllByTypeName(const StringView& typeName, Array<Guid>& result) const
 {
     PROFILE_CPU();
-    ScopeLock lock(_locker);
+    ASSETS_CACHE_LOCK();
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
         if (i->Value.Info.TypeName == typeName)
             result.Add(i->Key);
     }
 }
+
+#if ASSETS_CACHE_EDITABLE
 
 void AssetsCache::RegisterAssets(FlaxStorage* storage)
 {
@@ -341,7 +368,7 @@ void AssetsCache::RegisterAssets(FlaxStorage* storage)
     storage->GetEntries(entries);
     ASSERT(entries.HasItems());
 
-    ScopeLock lock(_locker);
+    ASSETS_CACHE_LOCK();
     auto storagePath = storage->GetPath();
 
     // Remove all old entries from that location
@@ -439,7 +466,7 @@ void AssetsCache::RegisterAssets(const FlaxStorageReference& storage)
 void AssetsCache::RegisterAsset(const Guid& id, const String& typeName, const StringView& path)
 {
     PROFILE_CPU();
-    ScopeLock lock(_locker);
+    ASSETS_CACHE_LOCK();
 
     // Check if asset has been already added to the registry
     bool isMissing = true;
@@ -491,8 +518,7 @@ void AssetsCache::RegisterAsset(const Guid& id, const String& typeName, const St
 bool AssetsCache::DeleteAsset(const StringView& path, AssetInfo* info)
 {
     bool result = false;
-    _locker.Lock();
-
+    ASSETS_CACHE_LOCK();
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
         if (i->Value.Info.Path == path)
@@ -505,16 +531,13 @@ bool AssetsCache::DeleteAsset(const StringView& path, AssetInfo* info)
             break;
         }
     }
-
-    _locker.Unlock();
     return result;
 }
 
 bool AssetsCache::DeleteAsset(const Guid& id, AssetInfo* info)
 {
     bool result = false;
-    _locker.Lock();
-
+    ASSETS_CACHE_LOCK();
     const auto e = _registry.TryGet(id);
     if (e != nullptr)
     {
@@ -524,16 +547,13 @@ bool AssetsCache::DeleteAsset(const Guid& id, AssetInfo* info)
         _isDirty = true;
         result = true;
     }
-
-    _locker.Unlock();
     return result;
 }
 
 bool AssetsCache::RenameAsset(const StringView& oldPath, const StringView& newPath)
 {
     bool result = false;
-    _locker.Lock();
-
+    ASSETS_CACHE_LOCK();
     for (auto i = _registry.Begin(); i.IsNotEnd(); ++i)
     {
         if (i->Value.Info.Path == oldPath)
@@ -544,10 +564,10 @@ bool AssetsCache::RenameAsset(const StringView& oldPath, const StringView& newPa
             break;
         }
     }
-
-    _locker.Unlock();
     return result;
 }
+
+#endif
 
 bool AssetsCache::IsEntryValid(Entry& e)
 {

@@ -249,7 +249,7 @@ ScriptingObject* ScriptingObject::ToNative(MObject* obj)
 #if USE_CSHARP
     if (obj)
     {
-#if USE_MONO || USE_MONO_AOT
+#if USE_MONO || USE_MONO_AOT || DOTNET_HOST_MONO
         const auto ptrField = MCore::Object::GetClass(obj)->GetField(ScriptingObject_unmanagedPtr);
         CHECK_RETURN(ptrField, nullptr);
         ptrField->GetValue(obj, &ptr);
@@ -745,9 +745,13 @@ DEFINE_INTERNAL_CALL(MObject*) ObjectInternal_FindObject(Guid* id, MTypeObject* 
     if (!skipLog)
     {
         if (klass)
+        {
             LOG(Warning, "Unable to find scripting object with ID={0} of type {1}", *id, String(klass->GetFullName()));
+        }
         else
+        {
             LOG(Warning, "Unable to find scripting object with ID={0}", *id);
+        }
         LogContext::Print(LogType::Warning);
     }
     return nullptr;

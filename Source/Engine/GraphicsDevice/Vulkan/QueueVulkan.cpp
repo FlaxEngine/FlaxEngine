@@ -6,6 +6,7 @@
 #include "GPUDeviceVulkan.h"
 #include "CmdBufferVulkan.h"
 #include "RenderToolsVulkan.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 
 QueueVulkan::QueueVulkan(GPUDeviceVulkan* device, uint32 familyIndex)
     : _queue(VK_NULL_HANDLE)
@@ -20,6 +21,7 @@ QueueVulkan::QueueVulkan(GPUDeviceVulkan* device, uint32 familyIndex)
 
 void QueueVulkan::Submit(CmdBufferVulkan* cmdBuffer, uint32 signalSemaphoresCount, const VkSemaphore* signalSemaphores)
 {
+    PROFILE_CPU_NAMED("vkQueueSubmit");
     ASSERT(cmdBuffer->HasEnded());
     auto fence = cmdBuffer->GetFence();
     ASSERT(!fence->IsSignaled);

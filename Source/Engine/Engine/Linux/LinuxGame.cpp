@@ -16,8 +16,6 @@
 
 void LinuxGame::InitMainWindowSettings(CreateWindowSettings& settings)
 {
-    // TODO: restore window size and fullscreen mode from the cached local settings saved after previous session
-
     const auto platformSettings = LinuxPlatformSettings::Get();
     auto windowMode = platformSettings->WindowMode;
 
@@ -50,7 +48,6 @@ void LinuxGame::InitMainWindowSettings(CreateWindowSettings& settings)
     settings.HasBorder = windowMode == GameWindowMode::Windowed || windowMode == GameWindowMode::Fullscreen;
     settings.AllowMaximize = true;
     settings.AllowMinimize = platformSettings->ResizableWindow;
-
 }
 
 bool LinuxGame::Init()

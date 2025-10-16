@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Memory/ArenaAllocation.h"
 #include "MTypes.h"
 
 /// <summary>
@@ -17,21 +18,22 @@ protected:
 #if USE_MONO
     MonoClassField* _monoField;
     MonoType* _monoType;
+    StringAnsi _name;
 #elif USE_NETCORE
     void* _handle;
     void* _type;
     int32 _fieldOffset;
+    StringAnsiView _name;
 #endif
 
     MClass* _parentClass;
-    StringAnsi _name;
 
     MVisibility _visibility;
 
     mutable int32 _hasCachedAttributes : 1;
     int32 _isStatic : 1;
 
-    mutable Array<MObject*> _attributes;
+    mutable Array<MObject*, ArenaAllocation> _attributes;
 
 public:
 #if USE_MONO
@@ -44,7 +46,7 @@ public:
     /// <summary>
     /// Gets field name.
     /// </summary>
-    FORCE_INLINE const StringAnsi& GetName() const
+    FORCE_INLINE StringAnsiView GetName() const
     {
         return _name;
     }
@@ -156,5 +158,5 @@ public:
     /// Returns an instance of all attributes connected with given field. Returns null if the field doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MObject*>& GetAttributes() const;
+    const Array<MObject*, ArenaAllocation>& GetAttributes() const;
 };

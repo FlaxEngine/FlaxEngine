@@ -6,6 +6,8 @@
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Core/Types/Stopwatch.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/BinaryModule.h"
@@ -69,6 +71,7 @@ MTypeObject* CustomEditorsUtil::GetCustomEditor(MTypeObject* refType)
 
 bool CustomEditorsUtilService::Init()
 {
+    PROFILE_MEM(Editor);
     TRACK_ASSEMBLY(((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly);
     Scripting::BinaryModuleLoaded.Bind(&OnBinaryModuleLoaded);
 
@@ -77,6 +80,8 @@ bool CustomEditorsUtilService::Init()
 
 void OnAssemblyLoaded(MAssembly* assembly)
 {
+    PROFILE_CPU_NAMED("CustomEditors.OnAssemblyLoaded");
+    PROFILE_MEM(Editor);
     Stopwatch stopwatch;
 
     // Prepare FlaxEngine

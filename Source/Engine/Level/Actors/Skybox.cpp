@@ -107,7 +107,6 @@ void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const M
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.ObjectRadius = (float)_sphere.Radius;
     drawCall.Surface.GeometrySize = _box.GetSize();
-    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = GetPerInstanceRandom();
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
     bindParams.BindViewData();

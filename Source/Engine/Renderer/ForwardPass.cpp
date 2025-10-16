@@ -14,8 +14,7 @@
 #include "Engine/Graphics/Shaders/GPUShader.h"
 
 ForwardPass::ForwardPass()
-    : _shader(nullptr)
-    , _psApplyDistortion(nullptr)
+    : _psApplyDistortion(nullptr)
 {
 }
 

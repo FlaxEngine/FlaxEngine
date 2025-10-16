@@ -761,8 +761,15 @@ void SceneObjectsFactory::SynchronizePrefabInstances(Context& context, PrefabSyn
         if (instance.FixRootParent && JsonTools::GetGuidIfValid(prefabStartParentId, prefabStartData, "ParentID"))
         {
             auto* root = data.SceneObjects[instance.RootIndex];
-            const auto rootParent = Scripting::FindObject<Actor>(prefabStartParentId);
-            root->SetParent(rootParent, false);
+            if (root)
+            {
+                const auto rootParent = Scripting::FindObject<Actor>(prefabStartParentId);
+                root->SetParent(rootParent, false);
+            }
+            else
+            {
+                LOG(Warning, "Missing root actor at index {} for prefab instance at actor {} ({})", instance.RootIndex, instance.RootId, instance.Prefab->ToString());
+            }
         }
     }
 

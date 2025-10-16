@@ -3,8 +3,10 @@
 #include "Spline.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Animations/CurveSerialization.h"
+#include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
+#include "Engine/Engine/Units.h"
 
 Spline::Spline(const SpawnParams& params)
     : Actor(params)
@@ -464,6 +466,7 @@ void Spline::UpdateSpline()
     Matrix world;
     GetLocalToWorldMatrix(world);
     BoundingBox::Transform(_localBounds, world, _box);
+    BoundingSphere::FromBox(_box, _sphere);
 
     SplineUpdated();
 }
@@ -504,23 +507,41 @@ namespace
             return;
         Spline::Keyframe* prev = spline->Curve.GetKeyframes().Get();
         Vector3 prevPos = transform.LocalToWorld(prev->Value.Translation);
-        DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(prevPos, NodeSizeByDistance(prevPos, scaleByDistance)), color, 0.0f, depthTest);
-        for (int32 i = 1; i < count; i++)
+        float distance = Vector3::Distance(prevPos, DebugDraw::GetViewPos());
+        if (distance < METERS_TO_UNITS(800)) // 800m
         {
-            Spline::Keyframe* next = prev + 1;
-            Vector3 nextPos = transform.LocalToWorld(next->Value.Translation);
-            DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(nextPos, NodeSizeByDistance(nextPos, scaleByDistance)), color, 0.0f, depthTest);
-            const float d = (next->Time - prev->Time) / 3.0f;
-            DEBUG_DRAW_BEZIER(prevPos, prevPos + prev->TangentOut.Translation * d, nextPos + next->TangentIn.Translation * d, nextPos, color, 0.0f, depthTest);
-            prev = next;
-            prevPos = nextPos;
+            // Bezier curve
+            DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(prevPos, NodeSizeByDistance(prevPos, scaleByDistance)), color, 0.0f, depthTest);
+            for (int32 i = 1; i < count; i++)
+            {
+                Spline::Keyframe* next = prev + 1;
+                Vector3 nextPos = transform.LocalToWorld(next->Value.Translation);
+                DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(nextPos, NodeSizeByDistance(nextPos, scaleByDistance)), color, 0.0f, depthTest);
+                const float d = (next->Time - prev->Time) / 3.0f;
+                DEBUG_DRAW_BEZIER(prevPos, prevPos + prev->TangentOut.Translation * d, nextPos + next->TangentIn.Translation * d, nextPos, color, 0.0f, depthTest);
+                prev = next;
+                prevPos = nextPos;
+            }
+        }
+        else
+        {
+            // Simplified
+            for (int32 i = 1; i < count; i++)
+            {
+                Spline::Keyframe* next = prev + 1;
+                Vector3 nextPos = transform.LocalToWorld(next->Value.Translation);
+                DEBUG_DRAW_LINE(prevPos, nextPos, color, 0.0f, depthTest);
+                prev = next;
+                prevPos = nextPos;
+            }
         }
     }
 }
 
 void Spline::OnDebugDraw()
 {
-    DrawSpline(this, GetSplineColor().AlphaMultiplied(0.7f), _transform, true);
+    if (DebugDraw::GetViewFrustum().Intersects(_sphere))
+        DrawSpline(this, GetSplineColor().AlphaMultiplied(0.7f), _transform, true);
 
     // Base
     Actor::OnDebugDraw();
@@ -562,6 +583,7 @@ void Spline::Initialize()
     Matrix world;
     GetLocalToWorldMatrix(world);
     BoundingBox::Transform(_localBounds, world, _box);
+    BoundingSphere::FromBox(_box, _sphere);
 }
 
 void Spline::Serialize(SerializeStream& stream, const void* otherObj)

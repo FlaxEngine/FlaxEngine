@@ -177,7 +177,7 @@ cbuffer ViewData : register(b1)
     float3 LargeWorldsChunkIndex;
     float LargeWorldsChunkSize;
     float3 ViewPadding0;
-    float UnscaledTimeParam;
+    float ScaledTimeParam;
 };
 #endif
 

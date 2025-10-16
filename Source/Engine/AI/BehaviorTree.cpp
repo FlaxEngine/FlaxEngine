@@ -10,6 +10,7 @@
 #include "Engine/Serialization/JsonSerializer.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "FlaxEngine.Gen.h"
 #if USE_EDITOR
 #include "Engine/Level/Level.h"
@@ -275,6 +276,7 @@ Asset::LoadResult BehaviorTree::load()
     if (surfaceChunk == nullptr)
         return LoadResult::MissingDataChunk;
     MemoryReadStream surfaceStream(surfaceChunk->Get(), surfaceChunk->Size());
+    PROFILE_MEM(AI);
     if (Graph.Load(&surfaceStream, true))
     {
         LOG(Warning, "Failed to load graph \'{0}\'", ToString());

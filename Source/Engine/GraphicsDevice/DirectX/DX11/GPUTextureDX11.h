@@ -158,6 +158,7 @@ private:
     GPUTextureViewDX11 _handleArray;
     GPUTextureViewDX11 _handleVolume;
     GPUTextureViewDX11 _handleReadOnlyDepth;
+    GPUTextureViewDX11 _handleStencil;
     Array<GPUTextureViewDX11> _handlesPerSlice; // [slice]
     Array<Array<GPUTextureViewDX11>> _handlesPerMip; // [slice][mip]
 
@@ -224,6 +225,11 @@ public:
     {
         ASSERT(_desc.Flags & GPUTextureFlags::ReadOnlyDepthView);
         return (GPUTextureView*)&_handleReadOnlyDepth;
+    }
+    GPUTextureView* ViewStencil() const override
+    {
+        ASSERT(_desc.Flags & GPUTextureFlags::DepthStencil);
+        return (GPUTextureView*)&_handleStencil;
     }
     void* GetNativePtr() const override
     {

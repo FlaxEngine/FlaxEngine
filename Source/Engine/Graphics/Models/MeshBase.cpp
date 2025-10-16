@@ -16,6 +16,7 @@
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include "Engine/Threading/Task.h"
+#include "Engine/Threading/Threading.h"
 
 static_assert(MODEL_MAX_VB == 3, "Update code in mesh to match amount of vertex buffers.");
 
@@ -443,7 +444,7 @@ bool MeshBase::Init(uint32 vertices, uint32 triangles, const Array<const void*, 
 
     // Create GPU buffers
 #if GPU_ENABLE_RESOURCE_NAMING
-    const String& modelPath = _model->GetPath();
+    const String modelPath = _model->GetPath();
 #define MESH_BUFFER_NAME(postfix) modelPath + TEXT(postfix)
 #else
 #define MESH_BUFFER_NAME(postfix) String::Empty

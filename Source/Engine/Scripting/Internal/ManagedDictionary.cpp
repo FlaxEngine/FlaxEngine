@@ -3,7 +3,7 @@
 #include "ManagedDictionary.h"
 
 #if USE_CSHARP
-Dictionary<ManagedDictionary::KeyValueType, MTypeObject*> ManagedDictionary::CachedDictionaryTypes;
+Dictionary<ManagedDictionary::KeyValueType, MTypeObject*> ManagedDictionary::CachedTypes;
 #if !USE_MONO_AOT
 ManagedDictionary::MakeGenericTypeThunk ManagedDictionary::MakeGenericType;
 ManagedDictionary::CreateInstanceThunk ManagedDictionary::CreateInstance;

@@ -9,6 +9,7 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Content/Content.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
 #include <locale>
 
@@ -171,6 +172,7 @@ String LocalizedString::ToStringPlural(int32 n) const
 void LocalizationService::OnLocalizationChanged()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Localization);
 
     Instance.LocalizedStringTables.Clear();
     Instance.FallbackStringTables.Clear();
@@ -279,6 +281,8 @@ void LocalizationService::OnLocalizationChanged()
 
 bool LocalizationService::Init()
 {
+    PROFILE_MEM(Localization);
+
     // Use system language as default
     CurrentLanguage = CurrentCulture = CultureInfo(Platform::GetUserLocaleName());
 

@@ -14,6 +14,7 @@
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Debug/Exceptions/FileNotFoundException.h"
 #include "Engine/Debug/Exceptions/InvalidOperationException.h"
 
@@ -70,6 +71,17 @@ MAssembly::~MAssembly()
     Unload();
 }
 
+StringAnsiView MAssembly::AllocString(const char* str)
+{
+    if (!str)
+        return StringAnsiView::Empty;
+    int32 len = StringUtils::Length(str);
+    char* mem = (char*)Memory.Allocate(len + 1);
+    Platform::MemoryCopy(mem, str, len);
+    mem[len] = 0;
+    return StringAnsiView(mem, len);
+}
+
 String MAssembly::ToString() const
 {
     return _name.ToString();
@@ -80,6 +92,7 @@ bool MAssembly::Load(const String& assemblyPath, const StringView& nativePath)
     if (IsLoaded())
         return false;
     PROFILE_CPU();
+    PROFILE_MEM(ScriptingCSharp);
     ZoneText(*assemblyPath, assemblyPath.Length());
     Stopwatch stopwatch;
 
@@ -125,7 +138,12 @@ void MAssembly::Unload(bool isReloading)
     _isLoading = false;
     _isLoaded = false;
     _hasCachedClasses = false;
+#if USE_NETCORE
+    ArenaAllocator::ClearDelete(_classes);
+#else
     _classes.ClearDelete();
+#endif
+    Memory.Free();
 
     Unloaded(this);
 }
@@ -228,6 +246,7 @@ MType* MEvent::GetType() const
 
 void MException::Log(const LogType type, const Char* target)
 {
+#if LOG_ENABLE
     // Log inner exceptions chain
     MException* inner = InnerException;
     while (inner)
@@ -242,6 +261,7 @@ void MException::Log(const LogType type, const Char* target)
     const String info = target && *target ? String::Format(TEXT("Exception has been thrown during {0}."), target) : TEXT("Exception has been thrown.");
     Log::Logger::Write(LogType::Warning, String::Format(TEXT("{0} {1}\nStack strace:\n{2}"), info, Message, stackTrace));
     Log::Logger::Write(type, String::Format(TEXT("{0}\n{1}"), info, Message));
+#endif
 }
 
 MType* MProperty::GetType() const

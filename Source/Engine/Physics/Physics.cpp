@@ -10,6 +10,7 @@
 #include "Engine/Engine/Time.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Threading/Threading.h"
 
@@ -117,6 +118,8 @@ PhysicalMaterial::~PhysicalMaterial()
 
 bool PhysicsService::Init()
 {
+    PROFILE_MEM(Physics);
+
     // Initialize backend
     if (PhysicsBackend::Init())
         return true;
@@ -153,6 +156,7 @@ void PhysicsService::Dispose()
 
 PhysicsScene* Physics::FindOrCreateScene(const StringView& name)
 {
+    PROFILE_MEM(Physics);
     auto scene = FindScene(name);
     if (scene == nullptr)
     {
@@ -244,6 +248,7 @@ bool Physics::IsDuringSimulation()
 void Physics::FlushRequests()
 {
     PROFILE_CPU_NAMED("Physics.FlushRequests");
+    PROFILE_MEM(Physics);
     for (PhysicsScene* scene : Scenes)
         PhysicsBackend::FlushRequests(scene->GetPhysicsScene());
     PhysicsBackend::FlushRequests();
@@ -492,6 +497,7 @@ PhysicsStatistics PhysicsScene::GetStatistics() const
 
 bool PhysicsScene::Init(const StringView& name, const PhysicsSettings& settings)
 {
+    PROFILE_MEM(Physics);
     if (_scene)
     {
         PhysicsBackend::DestroyScene(_scene);

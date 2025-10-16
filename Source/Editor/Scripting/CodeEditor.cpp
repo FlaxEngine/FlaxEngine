@@ -13,6 +13,7 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Platform/Thread.h"
 #include "Engine/Threading/IRunnable.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 void OnAsyncBegin(Thread* thread);
 void OnAsyncEnd();
@@ -232,6 +233,8 @@ void OnAsyncEnd()
 
 bool CodeEditingManagerService::Init()
 {
+    PROFILE_MEM(Editor);
+
     // Try get editors
 #if USE_VISUAL_STUDIO_DTE
     VisualStudioEditor::FindEditors(&CodeEditors);

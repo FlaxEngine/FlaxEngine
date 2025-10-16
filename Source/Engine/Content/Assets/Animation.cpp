@@ -9,6 +9,7 @@
 #include "Engine/Animations/Animations.h"
 #include "Engine/Animations/SceneAnimations/SceneAnimation.h"
 #include "Engine/Scripting/Scripting.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #if USE_EDITOR
@@ -598,7 +599,7 @@ void Animation::OnScriptingDispose()
 
 Asset::LoadResult Animation::load()
 {
-    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+    PROFILE_MEM(AnimationsData);
 
     // Get stream with animations data
     const auto dataChunk = GetChunk(0);
@@ -730,7 +731,7 @@ Asset::LoadResult Animation::load()
 
 void Animation::unload(bool isReloading)
 {
-    ConcurrentSystemLocker::WriteScope systemScope(Animations::SystemLocker);
+    ScopeWriteLock systemScope(Animations::SystemLocker);
 #if USE_EDITOR
     if (_registeredForScriptingReload)
     {

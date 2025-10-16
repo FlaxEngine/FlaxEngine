@@ -27,7 +27,7 @@ namespace FlaxEditor.SceneGraph
         /// <summary>
         /// The parent node.
         /// </summary>
-        protected SceneGraphNode parentNode;
+        internal SceneGraphNode parentNode;
 
         /// <summary>
         /// Gets the children list.

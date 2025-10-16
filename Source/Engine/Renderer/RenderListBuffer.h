@@ -324,7 +324,7 @@ private:
             // Wait for all threads to stop adding items before resizing can happen
         RETRY:
             while (Platform::AtomicRead(&_threadsAdding))
-                Platform::Sleep(0);
+                Platform::Yield();
 
             // Thread-safe resizing
             _locker.Lock();
