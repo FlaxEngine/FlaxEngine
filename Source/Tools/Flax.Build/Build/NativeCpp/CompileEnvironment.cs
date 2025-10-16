@@ -56,6 +56,16 @@ namespace Flax.Build.NativeCpp
         /// Undefined behavior (UB) detector.
         /// </summary>
         Undefined = 8,
+
+        /// <summary>
+        /// Thread stack memory checks.
+        /// </summary>
+        Stack = 16,
+
+        /// <summary>
+        /// Enables all available sanitizers for full compiler security.
+        /// </summary>
+        All = Address | Thread | Memory | Undefined | Stack,
     }
 
     /// <summary>
@@ -85,6 +95,47 @@ namespace Flax.Build.NativeCpp
     }
 
     /// <summary>
+    /// The SIMD architecture to use for code generation.
+    /// </summary>
+    public enum CpuArchitecture
+    {
+        /// <summary>
+        /// No specific architecture set.
+        /// </summary>
+        None,
+
+        /// <summary>
+        /// Intel Advanced Vector Extensions.
+        /// </summary>
+        AVX,
+
+        /// <summary>
+        /// Enables Intel Advanced Vector Extensions 2.
+        /// </summary>
+        AVX2,
+
+        /// <summary>
+        /// Intel Advanced Vector Extensions 512.
+        /// </summary>
+        AVX512,
+
+        /// <summary>
+        /// Intel Streaming SIMD Extensions 2.
+        /// </summary>
+        SSE2,
+
+        /// <summary>
+        /// Intel Streaming SIMD Extensions 4.2.
+        /// </summary>
+        SSE4_2,
+
+        /// <summary>
+        /// ARM Neon.
+        /// </summary>
+        NEON,
+    }
+
+    /// <summary>
     /// The C++ compilation environment required to build source files in the native modules.
     /// </summary>
     public class CompileEnvironment : ICloneable
@@ -103,6 +154,11 @@ namespace Flax.Build.NativeCpp
         /// Selects a sanitizers to use (as flags).
         /// </summary>
         public Sanitizer Sanitizers = Sanitizer.None;
+
+        /// <summary>
+        /// SIMD architecture to use.
+        /// </summary>
+        public CpuArchitecture CpuArchitecture = CpuArchitecture.None;
 
         /// <summary>
         /// Enables exceptions support.
@@ -222,6 +278,7 @@ namespace Flax.Build.NativeCpp
                 CppVersion = CppVersion,
                 FavorSizeOrSpeed = FavorSizeOrSpeed,
                 Sanitizers = Sanitizers,
+                CpuArchitecture = CpuArchitecture,
                 EnableExceptions = EnableExceptions,
                 RuntimeTypeInfo = RuntimeTypeInfo,
                 Inlining = Inlining,

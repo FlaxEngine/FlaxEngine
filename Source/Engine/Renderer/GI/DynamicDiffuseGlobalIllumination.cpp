@@ -15,6 +15,7 @@
 #include "Engine/Debug/DebugDraw.h"
 #include "Engine/Graphics/GPUContext.h"
 #include "Engine/Graphics/GPUDevice.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/Graphics.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/Graphics/RenderBuffers.h"
@@ -618,6 +619,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
                 // Update probes irradiance and distance textures (one thread-group per probe)
                 {
                     PROFILE_GPU_CPU_NAMED("Update Probes");
+                    GPUComputePass pass(context);
 
                     // Distance
                     context->BindSR(0, ddgiData.Result.ProbesData);
@@ -649,7 +651,7 @@ bool DynamicDiffuseGlobalIlluminationPass::RenderInner(RenderContext& renderCont
         // Update stats
         {
             StatsData stats;
-            if (void* mapped = ddgiData.StatsRead->Map(GPUResourceMapMode::Read))
+            if (void* mapped = ddgiData.StatsRead->Map(GPUResourceMapMode::Read | GPUResourceMapMode::NoWait))
             {
                 Platform::MemoryCopy(&stats, mapped, sizeof(stats));
                 ddgiData.StatsRead->Unmap();

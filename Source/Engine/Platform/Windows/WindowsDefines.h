@@ -9,5 +9,6 @@
 // Platform description
 #define PLATFORM_TYPE PlatformType::Windows
 #define PLATFORM_HAS_HEADLESS_MODE 1
+#define PLATFORM_DESKTOP 1
 
 #endif

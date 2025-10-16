@@ -7,10 +7,11 @@
 /// <summary>
 /// Asset reference utility. Keeps reference to the linked asset object and handles load/unload events.
 /// </summary>
-class FLAXENGINE_API AssetReferenceBase
+class FLAXENGINE_API AssetReferenceBase : public IAssetReference
 {
 protected:
     Asset* _asset = nullptr;
+    IAssetReference* _owner = nullptr;
 
 public:
     /// <summary>
@@ -35,6 +36,12 @@ public:
     /// Initializes a new instance of the <see cref="AssetReferenceBase"/> class.
     /// </summary>
     AssetReferenceBase() = default;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AssetReferenceBase"/> class.
+    /// </summary>
+    /// <param name="owner">The reference owner to keep notified about asset changes.</param>
+    AssetReferenceBase(IAssetReference* owner);
 
     /// <summary>
     /// Finalizes an instance of the <see cref="AssetReferenceBase"/> class.
@@ -63,10 +70,14 @@ public:
     /// </summary>
     String ToString() const;
 
+public:
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
+
 protected:
     void OnSet(Asset* asset);
-    void OnLoaded(Asset* asset);
-    void OnUnloaded(Asset* asset);
 };
 
 /// <summary>
@@ -90,10 +101,26 @@ public:
     /// <summary>
     /// Initializes a new instance of the <see cref="AssetReference"/> class.
     /// </summary>
+    explicit AssetReference(decltype(__nullptr))
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AssetReference"/> class.
+    /// </summary>
     /// <param name="asset">The asset to set.</param>
     AssetReference(T* asset)
     {
         OnSet((Asset*)asset);
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AssetReference"/> class.
+    /// </summary>
+    /// <param name="owner">The reference owner to keep notified about asset changes.</param>
+    explicit AssetReference(IAssetReference* owner)
+        : AssetReferenceBase(owner)
+    {
     }
 
     /// <summary>

@@ -4,6 +4,9 @@
 
 #include "SceneObject.h"
 #include "Engine/Core/Collections/Dictionary.h"
+#if USE_EDITOR
+#include "Engine/Core/Collections/HashSet.h"
+#endif
 #include "Engine/Platform/CriticalSection.h"
 #include "Engine/Threading/ThreadLocal.h"
 

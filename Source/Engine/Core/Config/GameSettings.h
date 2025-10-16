@@ -34,6 +34,12 @@ public:
     String CopyrightNotice;
 
     /// <summary>
+    /// The game version number. Usually in format: MAJOR.MINOR.BUILD.REVISION
+    /// </summary>
+    API_FIELD(Attributes="EditorOrder(20), EditorDisplay(\"General\")")
+    String Version;
+
+    /// <summary>
     /// The default application icon.
     /// </summary>
     Guid Icon = Guid::Empty;

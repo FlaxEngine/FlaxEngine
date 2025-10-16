@@ -233,11 +233,10 @@ namespace FlaxEditor.Windows
                 else
                     cm.ClearItems();
 
-                float longestItemWidth = 0.0f;
-
                 // Add items
-                var font = Style.Current.FontMedium;
                 ItemsListContextMenu.Item lastItem = null;
+                var itemFont = Style.Current.FontSmall;
+                var maxWidth = 0.0f;
                 foreach (var command in commands)
                 {
                     cm.AddItem(lastItem = new Item
@@ -255,10 +254,7 @@ namespace FlaxEditor.Windows
                         // Set command
                         Set(item.Name);
                     };
-
-                    float width = font.MeasureText(command).X;
-                    if (width > longestItemWidth)
-                        longestItemWidth = width;
+                    maxWidth = Mathf.Max(maxWidth, itemFont.MeasureText(command).X);
                 }
                 cm.ItemClicked += item =>
                 {
@@ -269,13 +265,12 @@ namespace FlaxEditor.Windows
                 // Setup popup
                 var count = commands.Count();
                 var totalHeight = count * lastItem.Height + cm.ItemsPanel.Margin.Height + cm.ItemsPanel.Spacing * (count - 1);
-
-                // Account for scroll bars taking up a part of the width
-                longestItemWidth += 25f;
-                cm.Width = longestItemWidth;
                 cm.Height = 220;
                 if (cm.Height > totalHeight)
                     cm.Height = totalHeight; // Limit popup height if list is small
+                maxWidth += 8.0f + ScrollBar.DefaultSize; // Margin
+                if (cm.Width < maxWidth)
+                    cm.Width = maxWidth;
                 if (searchText != null)
                 {
                     cm.SortItems();
@@ -368,8 +363,8 @@ namespace FlaxEditor.Windows
                     // Update history buffer
                     if (_window._commandHistory == null)
                         _window._commandHistory = new List<string>();
-                    else if (_window._commandHistory.Count != 0 && _window._commandHistory.Last() == command)
-                        _window._commandHistory.RemoveAt(_window._commandHistory.Count - 1);
+                    else if (_window._commandHistory.Count != 0 && _window._commandHistory.Contains(command))
+                        _window._commandHistory.Remove(command);
                     _window._commandHistory.Add(command);
                     if (_window._commandHistory.Count > CommandHistoryLimit)
                         _window._commandHistory.RemoveAt(0);

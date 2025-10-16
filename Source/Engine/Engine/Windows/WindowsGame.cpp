@@ -9,8 +9,6 @@
 
 void WindowsGame::InitMainWindowSettings(CreateWindowSettings& settings)
 {
-    // TODO: restore window size and fullscreen mode from the cached local settings saved after previous session
-
     const auto platformSettings = WindowsPlatformSettings::Get();
     auto windowMode = platformSettings->WindowMode;
 

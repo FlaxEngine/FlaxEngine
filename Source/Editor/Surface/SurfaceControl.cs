@@ -59,6 +59,7 @@ namespace FlaxEditor.Surface
         protected SurfaceControl(VisjectSurfaceContext context, float width, float height)
         : base(0, 0, width, height)
         {
+            AutoFocus = true;
             ClipChildren = false;
 
             Surface = context.Surface;

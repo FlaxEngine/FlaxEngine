@@ -34,6 +34,7 @@ namespace FlaxEditor.Windows.Profiler
         private List<ClickableRow> _tableRowsCache;
         private Dictionary<Guid, Resource> _resourceCache;
         private StringBuilder _stringBuilder;
+        private Asset[] _assetsCache;
 
         public Assets()
         : base("Assets")
@@ -138,12 +139,12 @@ namespace FlaxEditor.Windows.Profiler
                 _stringBuilder = new StringBuilder();
 
             // Capture current assets usage info
-            var assets = FlaxEngine.Content.Assets;
-            var resources = new Resource[assets.Length];
+            FlaxEngine.Content.GetAssets(ref _assetsCache, out var count);
+            var resources = new Resource[count];
             ulong totalMemoryUsage = 0;
-            for (int i = 0; i < resources.Length; i++)
+            for (int i = 0; i < count; i++)
             {
-                var asset = assets[i];
+                var asset = _assetsCache[i];
                 ref var resource = ref resources[i];
                 if (!asset)
                     continue;
@@ -179,6 +180,7 @@ namespace FlaxEditor.Windows.Profiler
             if (_resources == null)
                 _resources = new SamplesBuffer<Resource[]>();
             _resources.Add(resources);
+            Array.Clear(_assetsCache);
         }
 
         /// <inheritdoc />
@@ -200,6 +202,7 @@ namespace FlaxEditor.Windows.Profiler
             _resourceCache?.Clear();
             _tableRowsCache?.Clear();
             _stringBuilder?.Clear();
+            _assetsCache = null;
 
             base.OnDestroy();
         }

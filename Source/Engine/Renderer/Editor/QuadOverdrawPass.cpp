@@ -50,8 +50,6 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     context->BindUA(1, overdrawTexture->View());
     context->BindUA(2, liveCountTexture->View());
     DrawCall drawCall;
-    drawCall.WorldDeterminantSign = 1.0f;
-    drawCall.PerInstanceRandom = 0.0f;
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
     bindParams.BindViewData();
     renderContext.View.Pass = DrawPass::QuadOverdraw;
@@ -62,11 +60,12 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     if (boxModel && boxModel->CanBeRendered() && defaultMaterial && defaultMaterial->IsReady())
     {
         // Draw decals
-        for (int32 i = 0; i < renderContext.List->Decals.Count(); i++)
+        PROFILE_GPU_CPU_NAMED("Decals");
+        for (const RenderDecalData& decal : renderContext.List->Decals)
         {
-            const RenderDecalData& decal = renderContext.List->Decals.Get()[i];
             drawCall.World = decal.World;
             defaultMaterial->Bind(bindParams);
+            bindParams.BindDrawData();
             boxModel->Render(context);
         }
     }
@@ -76,6 +75,7 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
     if (renderContext.List->Sky && skyModel && skyModel->CanBeRendered() && skyMaterial && skyMaterial->IsReady())
     {
         // Draw sky
+        PROFILE_GPU_CPU_NAMED("Sky");
         auto box = skyModel->GetBox();
         Matrix m1, m2;
         Matrix::Scaling(renderContext.View.Far / ((float)box.GetSize().Y * 0.5f) * 0.95f, m1);
@@ -83,7 +83,7 @@ void QuadOverdrawPass::Render(RenderContext& renderContext, GPUContext* context,
         m1 *= m2;
         drawCall.World = m1;
         drawCall.ObjectPosition = drawCall.World.GetTranslation();
-        drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
+        bindParams.BindDrawData();
         skyMaterial->Bind(bindParams);
         skyModel->Render(context);
     }

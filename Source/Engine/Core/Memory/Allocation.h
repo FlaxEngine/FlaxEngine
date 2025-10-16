@@ -36,6 +36,17 @@ namespace AllocationUtils
         capacity++;
         return capacity;
     }
+
+    inline int32 CalculateCapacityGrow(int32 capacity, int32 minCapacity)
+    {
+        if (capacity < minCapacity)
+            capacity = minCapacity;
+        if (capacity < 8)
+            capacity = 8;
+        else
+            capacity = RoundUpToPowerOf2(capacity);
+        return capacity;
+    }
 }
 
 /// <summary>
@@ -46,6 +57,7 @@ class FixedAllocation
 {
 public:
     enum { HasSwap = false };
+    typedef void* Tag;
 
     template<typename T>
     class alignas(sizeof(void*)) Data
@@ -55,6 +67,10 @@ public:
 
     public:
         FORCE_INLINE Data()
+        {
+        }
+
+        FORCE_INLINE Data(Tag tag)
         {
         }
 
@@ -106,6 +122,7 @@ class HeapAllocation
 {
 public:
     enum { HasSwap = true };
+    typedef void* Tag;
 
     template<typename T>
     class Data
@@ -115,6 +132,10 @@ public:
 
     public:
         FORCE_INLINE Data()
+        {
+        }
+
+        FORCE_INLINE Data(Tag tag)
         {
         }
 
@@ -135,13 +156,7 @@ public:
 
         FORCE_INLINE int32 CalculateCapacityGrow(int32 capacity, const int32 minCapacity) const
         {
-            if (capacity < minCapacity)
-                capacity = minCapacity;
-            if (capacity < 8)
-                capacity = 8;
-            else
-                capacity = AllocationUtils::RoundUpToPowerOf2(capacity);
-            return capacity;
+            return AllocationUtils::CalculateCapacityGrow(capacity, minCapacity);
         }
 
         FORCE_INLINE void Allocate(const int32 capacity)
@@ -184,6 +199,7 @@ class InlinedAllocation
 {
 public:
     enum { HasSwap = false };
+    typedef void* Tag;
 
     template<typename T>
     class alignas(sizeof(void*)) Data
@@ -197,6 +213,10 @@ public:
 
     public:
         FORCE_INLINE Data()
+        {
+        }
+
+        FORCE_INLINE Data(Tag tag)
         {
         }
 

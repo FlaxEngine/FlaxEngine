@@ -35,6 +35,7 @@ namespace FlaxEditor.Windows.Profiler
         private Dictionary<string, Guid> _assetPathToId;
         private Dictionary<Guid, Resource> _resourceCache;
         private StringBuilder _stringBuilder;
+        private GPUResource[] _gpuResourcesCached;
 
         public MemoryGPU()
         : base("GPU Memory")
@@ -138,13 +139,15 @@ namespace FlaxEditor.Windows.Profiler
 
             // Capture current GPU resources usage info
             var contentDatabase = Editor.Instance.ContentDatabase;
-            var gpuResources = GPUDevice.Instance.Resources;
-            var resources = new Resource[gpuResources.Length];
+            GPUDevice.Instance.GetResources(ref _gpuResourcesCached, out var count);
+            var resources = new Resource[count];
             var sb = _stringBuilder;
-            for (int i = 0; i < resources.Length; i++)
+            for (int i = 0; i < count; i++)
             {
-                var gpuResource = gpuResources[i];
+                var gpuResource = _gpuResourcesCached[i];
                 ref var resource = ref resources[i];
+                if (!gpuResource)
+                    continue;
 
                 // Try to reuse cached resource info
                 var gpuResourceId = gpuResource.ID;
@@ -219,6 +222,7 @@ namespace FlaxEditor.Windows.Profiler
             if (_resources == null)
                 _resources = new SamplesBuffer<Resource[]>();
             _resources.Add(resources);
+            Array.Clear(_gpuResourcesCached);
         }
 
         /// <inheritdoc />
@@ -255,6 +259,7 @@ namespace FlaxEditor.Windows.Profiler
             _assetPathToId?.Clear();
             _tableRowsCache?.Clear();
             _stringBuilder?.Clear();
+            _gpuResourcesCached = null;
 
             base.OnDestroy();
         }

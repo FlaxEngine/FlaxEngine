@@ -20,6 +20,7 @@
 #include "Engine/Engine/Engine.h"
 #include "Engine/ShadowsOfMordor/Builder.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "FlaxEngine.Gen.h"
 #if PLATFORM_LINUX
 #include "Engine/Tools/TextureTool/TextureTool.h"
@@ -47,6 +48,7 @@ void Editor::CloseSplashScreen()
 
 bool Editor::CheckProjectUpgrade()
 {
+    PROFILE_MEM(Editor);
     const auto versionFilePath = Globals::ProjectCacheFolder / TEXT("version");
 
     // Load version cache file
@@ -266,8 +268,8 @@ bool Editor::CheckProjectUpgrade()
     // Check if last version was older
     else if (lastVersion.Major < FLAXENGINE_VERSION_MAJOR || (lastVersion.Major == FLAXENGINE_VERSION_MAJOR && lastVersion.Minor < FLAXENGINE_VERSION_MINOR))
     {
-        LOG(Warning, "The project was opened with the older editor version last time");
-        const auto result = MessageBox::Show(TEXT("The project was opened with the older editor version last time. Loading it may modify existing data so older editor version won't open it. Do you want to perform a backup before or cancel operation?"), TEXT("Project upgrade"), MessageBoxButtons::YesNoCancel, MessageBoxIcon::Question);
+        LOG(Warning, "The project was last opened with an older editor version");
+        const auto result = MessageBox::Show(TEXT("The project was last opened with an older editor version.\nLoading it may modify existing data, which can result in older editor versions being unable to open it.\n\nDo you want to perform a backup before or cancel the operation?"), TEXT("Project upgrade"), MessageBoxButtons::YesNoCancel, MessageBoxIcon::Question);
         if (result == DialogResult::Yes)
         {
             if (BackupProject())
@@ -289,8 +291,8 @@ bool Editor::CheckProjectUpgrade()
     // Check if last version was newer
     else if (lastVersion.Major > FLAXENGINE_VERSION_MAJOR || (lastVersion.Major == FLAXENGINE_VERSION_MAJOR && lastVersion.Minor > FLAXENGINE_VERSION_MINOR))
     {
-        LOG(Warning, "The project was opened with the newer editor version last time");
-        const auto result = MessageBox::Show(TEXT("The project was opened with the newer editor version last time. Loading it may fail and corrupt existing data. Do you want to perform a backup before or cancel operation?"), TEXT("Project upgrade"), MessageBoxButtons::YesNoCancel, MessageBoxIcon::Warning);
+        LOG(Warning, "The project was last opened with a newer editor version");
+        const auto result = MessageBox::Show(TEXT("The project was last opened with a newer editor version.\nLoading it may fail and corrupt existing data.\n\nDo you want to perform a backup before loading or cancel the operation?"), TEXT("Project upgrade"), MessageBoxButtons::YesNoCancel, MessageBoxIcon::Warning);
         if (result == DialogResult::Yes)
         {
             if (BackupProject())
@@ -366,6 +368,8 @@ bool Editor::BackupProject()
 
 int32 Editor::LoadProduct()
 {
+    PROFILE_MEM(Editor);
+
     // Flax Editor product
     Globals::ProductName = TEXT("Flax Editor");
     Globals::CompanyName = TEXT("Flax");
@@ -626,6 +630,7 @@ int32 Editor::LoadProduct()
 
 Window* Editor::CreateMainWindow()
 {
+    PROFILE_MEM(Editor);
     Window* window = Managed->GetMainWindow();
 
 #if PLATFORM_LINUX
@@ -662,6 +667,7 @@ bool Editor::Init()
         return true;
     }
     PROFILE_CPU();
+    PROFILE_MEM(Editor);
 
     // If during last lightmaps baking engine crashed we could try to restore the progress
     ShadowsOfMordor::Builder::Instance()->CheckIfRestoreState();
@@ -693,11 +699,13 @@ bool Editor::Init()
 
 void Editor::BeforeRun()
 {
+    PROFILE_MEM(Editor);
     Managed->BeforeRun();
 }
 
 void Editor::BeforeExit()
 {
+    PROFILE_MEM(Editor);
     CloseSplashScreen();
 
     Managed->Exit();
@@ -708,6 +716,8 @@ void Editor::BeforeExit()
 
 void EditorImpl::OnUpdate()
 {
+    PROFILE_MEM(Editor);
+
     // Update c# editor
     Editor::Managed->Update();
 

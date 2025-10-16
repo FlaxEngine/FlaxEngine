@@ -6,6 +6,7 @@
 @3
 
 #include "./Flax/Common.hlsl"
+#include "./Flax/Stencil.hlsl"
 #include "./Flax/MaterialCommon.hlsl"
 #include "./Flax/GBufferCommon.hlsl"
 @7
@@ -14,10 +15,13 @@ META_CB_BEGIN(0, Data)
 float4x4 WorldMatrix;
 float4x4 InvWorld;
 float4x4 SvPositionToWorld;
+float3 Padding0;
+uint RenderLayersMask;
 @1META_CB_END
 
 // Use depth buffer for per-pixel decal layering
 Texture2D DepthBuffer : register(t0);
+Texture2D<uint2> StencilBuffer : register(t1);
 
 // Material shader resources
 @2
@@ -200,6 +204,14 @@ void PS_Decal(
 #endif
 	)
 {
+	// Stencil masking
+	uint stencilObjectLayer = STENCIL_BUFFER_OBJECT_LAYER(STENCIL_BUFFER_LOAD(StencilBuffer, SvPosition.xy));
+	if ((RenderLayersMask & (1 << stencilObjectLayer)) == 0)
+	{
+		clip(-1);
+		return;
+	}
+
 	float2 screenUV = SvPosition.xy * ScreenSize.zw;
 	SvPosition.z = SAMPLE_RT(DepthBuffer, screenUV).r;
 

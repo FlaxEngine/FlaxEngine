@@ -68,6 +68,7 @@
 #undef CreateMutex
 #undef DrawState
 #undef LoadLibrary
+#undef Yield
 #undef GetEnvironmentVariable
 #undef SetEnvironmentVariable
 

@@ -59,6 +59,7 @@ class HashSetBase
 public:
     // Type of allocation data used to store hash set buckets.
     using AllocationData = typename AllocationType::template Data<BucketType>;
+    using AllocationTag = typename AllocationType::Tag;
 
 protected:
     int32 _elementsCount = 0;
@@ -67,6 +68,11 @@ protected:
     AllocationData _allocation;
 
     HashSetBase()
+    {
+    }
+
+    HashSetBase(AllocationTag tag)
+        : _allocation(tag)
     {
     }
 

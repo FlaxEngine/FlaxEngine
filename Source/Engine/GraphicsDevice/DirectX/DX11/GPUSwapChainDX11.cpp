@@ -3,10 +3,12 @@
 #if GRAPHICS_API_DIRECTX11
 
 #include "GPUSwapChainDX11.h"
+#include "GPUContextDX11.h"
 #include "Engine/Platform/Window.h"
 #include "Engine/Graphics/RenderTools.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
-#include "GPUContextDX11.h"
+#include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 GPUSwapChainDX11::GPUSwapChainDX11(GPUDeviceDX11* device, Window* window)
     : GPUResourceDX11(device, StringView::Empty)
@@ -60,9 +62,11 @@ void GPUSwapChainDX11::OnReleaseGPU()
 #endif
 
     // Release data
+    PROFILE_MEM_DEC(Graphics, _memoryUsage);
     releaseBackBuffer();
     DX_SAFE_RELEASE_CHECK(_swapChain, 0);
     _width = _height = 0;
+    _memoryUsage = 0;
 }
 
 ID3D11Resource* GPUSwapChainDX11::GetResource()
@@ -137,6 +141,9 @@ GPUTextureView* GPUSwapChainDX11::GetBackBufferView()
 
 void GPUSwapChainDX11::Present(bool vsync)
 {
+    PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
+
     // Present frame
     ASSERT(_swapChain);
     UINT presentFlags = 0;
@@ -262,6 +269,7 @@ bool GPUSwapChainDX11::Resize(int32 width, int32 height)
     _width = width;
     _height = height;
     _memoryUsage = RenderTools::CalculateTextureMemoryUsage(_format, _width, _height, 1) * swapChainDesc.BufferCount;
+    PROFILE_MEM_INC(Graphics, _memoryUsage);
 
     getBackBuffer();
 

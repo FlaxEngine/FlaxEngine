@@ -133,6 +133,8 @@ public:
     }
 };
 
+#define TO_UTF16(str) StringAsUTF16<>(str).Get()
+
 template<typename CharType = Char>
 class StringAsTerminated
 {

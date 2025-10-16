@@ -148,9 +148,11 @@ public:
     API_ENUM(Attributes="HideInEditor") enum class PositionFormat
     {
         // XYZ channels with 32-bit precision (12 bytes per vertex).
-        Float32,
-        // XYZ(W) channels with 12-bit precision (8 bytes per vertex).
-        Float16,
+        Float32 = 0,
+        // XYZ(W) channels with 16-bit precision (8 bytes per vertex).
+        Float16 = 1,
+        // Selects the most memory-efficient format that can represent positions within a max error defined in project Build Settings.
+        Automatic = 2,
     };
 
     /// <summary>
@@ -159,9 +161,9 @@ public:
     API_ENUM(Attributes="HideInEditor") enum class TexCoordFormats
     {
         // XY channels with 16-bit precision (4 bytes per vertex).
-        Float16,
+        Float16 = 0,
         // XY channels with 8-bit precision (2 bytes per vertex). Valid only for normalized UVs within range [0; 1], scaled or negative UVs won't work.
-        UNorm8,
+        UNorm8 = 1,
     };
 
     /// <summary>
@@ -226,7 +228,7 @@ public:
     public:
         // The imported vertex positions data format to use by meshes. Changing this affects memory usage of the mesh data, performance and overall quality.
         API_FIELD(Attributes = "EditorOrder(200), EditorDisplay(\"Data Format\"), VisibleIf(nameof(ShowGeometry))")
-        PositionFormat PositionFormat = PositionFormat::Float32;
+        PositionFormat PositionFormat = PositionFormat::Automatic;
         // The imported vertex texture coordinates data format to use by meshes. Changing this affects memory usage of the mesh data, performance and overall quality.
         API_FIELD(Attributes = "EditorOrder(205), EditorDisplay(\"Data Format\"), VisibleIf(nameof(ShowGeometry))")
         TexCoordFormats TexCoordFormat = TexCoordFormats::Float16;

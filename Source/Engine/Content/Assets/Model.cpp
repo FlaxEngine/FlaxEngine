@@ -18,6 +18,7 @@
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Textures/GPUTexture.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Renderer/DrawCall.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Tools/ModelTool/ModelTool.h"
@@ -32,12 +33,14 @@ class StreamModelSDFTask : public GPUUploadTextureMipTask
 {
 private:
     WeakAssetReference<Model> _asset;
+    FlaxStorageReference _dataRef;
     FlaxStorage::LockData _dataLock;
 
 public:
     StreamModelSDFTask(Model* model, GPUTexture* texture, const Span<byte>& data, int32 mipIndex, int32 rowPitch, int32 slicePitch)
         : GPUUploadTextureMipTask(texture, mipIndex, data, rowPitch, slicePitch, false)
         , _asset(model)
+        , _dataRef(model->Storage)
         , _dataLock(model->Storage->Lock())
     {
     }
@@ -58,6 +61,7 @@ public:
     void OnEnd() override
     {
         _dataLock.Release();
+        _dataRef = FlaxStorageReference();
 
         // Base
         GPUUploadTextureMipTask::OnEnd();
@@ -304,6 +308,7 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
         Log::ArgumentOutOfRangeException();
         return true;
     }
+    PROFILE_MEM(GraphicsMeshes);
 
     // Dispose previous data and disable streaming (will start data uploading tasks manually)
     StopStreaming();
@@ -343,6 +348,7 @@ bool Model::Init(const Span<int32>& meshesCountPerLod)
 
 bool Model::LoadHeader(ReadStream& stream, byte& headerVersion)
 {
+    PROFILE_MEM(GraphicsMeshes);
     if (ModelBase::LoadHeader(stream, headerVersion))
         return true;
     
@@ -509,6 +515,7 @@ bool Model::Save(bool withMeshDataFromGpu, Function<FlaxChunk*(int32)>& getChunk
 
 void Model::SetupMaterialSlots(int32 slotsCount)
 {
+    PROFILE_MEM(GraphicsMeshes);
     ModelBase::SetupMaterialSlots(slotsCount);
 
     // Adjust meshes indices for slots
@@ -584,6 +591,8 @@ int32 Model::GetAllocatedResidency() const
 
 Asset::LoadResult Model::load()
 {
+    PROFILE_MEM(GraphicsMeshes);
+
     // Get header chunk
     auto chunk0 = GetChunk(0);
     if (chunk0 == nullptr || chunk0->IsMissing())
@@ -613,7 +622,7 @@ Asset::LoadResult Model::load()
             {
                 String name;
 #if !BUILD_RELEASE
-                name = GetPath() + TEXT(".SDF");
+                name = String(GetPath()) + TEXT(".SDF");
 #endif
                 SDF.Texture = GPUDevice::Instance->CreateTexture(name);
             }

@@ -20,6 +20,7 @@
 #include "Engine/Core/Cache.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/Scripting.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
 #include "Engine/Scripting/ManagedCLR/MField.h"
@@ -39,6 +40,7 @@ String JsonAssetBase::GetData() const
     if (Data == nullptr)
         return String::Empty;
     PROFILE_CPU_NAMED("JsonAsset.GetData");
+    PROFILE_MEM(ContentAssets);
     rapidjson_flax::StringBuffer buffer;
     OnGetData(buffer);
     return String((const char*)buffer.GetString(), (int32)buffer.GetSize());
@@ -49,6 +51,7 @@ void JsonAssetBase::SetData(const StringView& value)
     if (!IsLoaded())
         return;
     PROFILE_CPU_NAMED("JsonAsset.SetData");
+    PROFILE_MEM(ContentAssets);
     const StringAnsi dataJson(value);
     ScopeLock lock(Locker);
     const StringView dataTypeName = DataTypeName;
@@ -60,6 +63,7 @@ void JsonAssetBase::SetData(const StringView& value)
 
 bool JsonAssetBase::Init(const StringView& dataTypeName, const StringAnsiView& dataJson)
 {
+    PROFILE_MEM(ContentAssets);
     unload(true);
     DataTypeName = dataTypeName;
     DataEngineBuild = FLAXENGINE_VERSION_BUILD;
@@ -87,7 +91,7 @@ void JsonAssetBase::OnGetData(rapidjson_flax::StringBuffer& buffer) const
     Data->Accept(writerObj.GetWriter());
 }
 
-const String& JsonAssetBase::GetPath() const
+StringView JsonAssetBase::GetPath() const
 {
 #if USE_EDITOR
     return _path;
@@ -176,7 +180,7 @@ bool JsonAssetBase::Save(const StringView& path)
     _isResaving = false;
 
     // Save json to file
-    if (File::WriteAllBytes(path.HasChars() ? path : StringView(GetPath()), (byte*)buffer.GetString(), (int32)buffer.GetSize()))
+    if (File::WriteAllBytes(path.HasChars() ? path : GetPath(), (byte*)buffer.GetString(), (int32)buffer.GetSize()))
     {
         LOG(Error, "Cannot save \'{0}\'", ToString());
         return true;
@@ -239,6 +243,7 @@ Asset::LoadResult JsonAssetBase::loadAsset()
 {
     if (IsVirtual() || _isVirtualDocument)
         return LoadResult::Ok;
+    PROFILE_MEM(ContentAssets);
 
     // Load data (raw json file in editor, cooked asset in build game)
 #if USE_EDITOR
@@ -305,6 +310,7 @@ Asset::LoadResult JsonAssetBase::loadAsset()
 
 void JsonAssetBase::unload(bool isReloading)
 {
+    PROFILE_MEM(ContentAssets);
     ISerializable::SerializeDocument tmp;
     Document.Swap(tmp);
     Data = nullptr;
@@ -453,6 +459,7 @@ bool JsonAsset::CreateInstance()
     ScopeLock lock(Locker);
     if (Instance)
         return false;
+    PROFILE_MEM(ContentAssets);
 
     // Try to scripting type for this data
     const StringAsANSI<> dataTypeNameAnsi(DataTypeName.Get(), DataTypeName.Length());

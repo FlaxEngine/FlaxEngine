@@ -15,6 +15,7 @@
 #include "Engine/Renderer/GlobalSignDistanceFieldPass.h"
 #include "Engine/Scripting/Enums.h"
 #include "Engine/Streaming/Streaming.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 bool MaterialInfo8::operator==(const MaterialInfo8& other) const
 {
@@ -392,6 +393,10 @@ void MaterialParameter::Bind(BindMeta& meta) const
             case MaterialSceneTextures::Specular:
                 view = meta.CanSampleGBuffer ? meta.Buffers->GBuffer2->View() : nullptr;
                 break;
+            case MaterialSceneTextures::SceneStencil:
+            case MaterialSceneTextures::ObjectLayer:
+                view = meta.CanSampleDepth ? meta.Buffers->DepthBuffer->ViewStencil() : nullptr;
+                break;
             default: ;
             }
         }
@@ -639,6 +644,7 @@ void MaterialParams::Dispose()
 
 bool MaterialParams::Load(ReadStream* stream)
 {
+    PROFILE_MEM(GraphicsMaterials);
     bool result = false;
 
     // Release

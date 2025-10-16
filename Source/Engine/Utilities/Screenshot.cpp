@@ -13,6 +13,7 @@
 #include "Engine/Graphics/GPUSwapChain.h"
 #include "Engine/Threading/ThreadPoolTask.h"
 #include "Engine/Engine/Globals.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if COMPILE_WITH_TEXTURE_TOOL
 #include "Engine/Tools/TextureTool/TextureTool.h"
 #endif
@@ -82,6 +83,7 @@ bool CaptureScreenshot::Run()
         LOG(Warning, "Missing target render task.");
         return true;
     }
+    PROFILE_MEM(Graphics);
 
     // TODO: how about a case two or more screenshots at the same second? update counter and check files
 
@@ -147,6 +149,7 @@ void Screenshot::Capture(GPUTexture* target, const StringView& path)
         LOG(Warning, "Cannot take screenshot. Graphics device is not ready.");
         return;
     }
+    PROFILE_MEM(Graphics);
 
     // Faster path for staging textures that contents are ready to access on a CPU
     if (target->IsStaging())
@@ -211,6 +214,7 @@ void Screenshot::Capture(SceneRenderTask* target, const StringView& path)
         LOG(Warning, "Cannot take screenshot. Graphics device is not ready.");
         return;
     }
+    PROFILE_MEM(Graphics);
 
     // Create tasks
     auto saveTask = New<CaptureScreenshot>(target, path);

@@ -12,7 +12,7 @@
 void PrecompileAssembliesStep::OnBuildStarted(CookingData& data)
 {
     const DotNetAOTModes aotMode = data.Tools->UseAOT();
-    if (aotMode == DotNetAOTModes::None)
+    if (aotMode == DotNetAOTModes::None || EnumHasAllFlags(data.Options, BuildOptions::NoCook))
         return;
     const auto& buildSettings = *BuildSettings::Get();
 
@@ -69,7 +69,7 @@ bool PrecompileAssembliesStep::Perform(CookingData& data)
     const String logFile = data.CacheDirectory / TEXT("AOTLog.txt");
     String args = String::Format(
         TEXT("-log -logfile=\"{}\" -runDotNetAOT -mutex -platform={} -arch={} -configuration={} -aotMode={} -binaries=\"{}\" -intermediate=\"{}\" {}"),
-        logFile, platform, architecture, configuration, ToString(aotMode), data.DataOutputPath, data.ManagedCodeOutputPath, GAME_BUILD_DOTNET_VER);
+        logFile, platform, architecture, configuration, ToString(aotMode), data.DataOutputPath, data.ManagedCodeOutputPath, data.GetDotnetCommandArg());
     if (!buildSettings.SkipUnusedDotnetLibsPackaging)
         args += TEXT(" -skipUnusedDotnetLibs=false"); // Run AOT on whole class library (not just used libs)
     for (const String& define : data.CustomDefines)

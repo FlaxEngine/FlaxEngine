@@ -186,6 +186,34 @@ namespace
     Task* AsyncTask = nullptr;
     Array<CommandData> Commands;
 
+    void BuildName(CommandData& cmd, const MClass* mclass, const StringAnsiView& itemName)
+    {
+        StringAnsiView mclassName = mclass->GetName();
+        StringAnsiView mclassFullname = mclass->GetFullName();
+        StringAnsiView mclassNamespace = mclass->GetNamespace();
+
+        Array<Char, InlinedAllocation<200>> buffer; // Stack-based but with option to alloc in case of very long commands
+        buffer.Resize(mclassFullname.Length() - mclassNamespace.Length() + itemName.Length() + 1);
+        Char* bufferPtr = buffer.Get();
+
+        // Check if class is nested, then include outer class name for hierarchy
+        if (mclassNamespace.Length() + mclassName.Length() + 1 != mclassFullname.Length())
+        {
+            StringAnsiView outerName(mclassFullname.Get() + mclassNamespace.Length() + 1, mclassFullname.Length() - mclassNamespace.Length() - 2 - mclassName.Length());
+            StringUtils::Copy(bufferPtr, outerName.Get(), outerName.Length());
+            bufferPtr += outerName.Length();
+            *bufferPtr++ = '.';
+        }
+        StringUtils::Copy(bufferPtr, mclassName.Get(), mclassName.Length());
+        bufferPtr += mclassName.Length();
+        *bufferPtr++ = '.';
+        StringUtils::Copy(bufferPtr, itemName.Get(), itemName.Length());
+        bufferPtr += itemName.Length();
+        *bufferPtr = 0;
+
+        cmd.Name.Set(buffer.Get(), (int32)(bufferPtr - buffer.Get()));
+    }
+
     void FindDebugCommands(BinaryModule* module)
     {
         if (module == GetBinaryModuleCorlib())
@@ -206,8 +234,6 @@ namespace
                     mclass->IsEnum())
                     continue;
                 const bool useClass = mclass->HasAttribute(attribute);
-                // TODO: optimize this via stack-based format buffer and then convert Ansi to UTF16
-#define BUILD_NAME(commandData, itemName) commandData.Name = String(mclass->GetName()) + TEXT(".") + String(itemName)
 
                 // Process methods
                 const auto& methods = mclass->GetMethods();
@@ -215,7 +241,7 @@ namespace
                 {
                     if (!method->IsStatic())
                         continue;
-                    const StringAnsi& name = method->GetName();
+                    const StringAnsiView name = method->GetName();
                     if (name.Contains("Internal_") ||
                         mclass->GetFullName().Contains(".Interop."))
                         continue;
@@ -231,7 +257,7 @@ namespace
                         continue;
 
                     auto& commandData = Commands.AddOne();
-                    BUILD_NAME(commandData, method->GetName());
+                    BuildName(commandData, mclass, method->GetName());
                     commandData.Module = module;
                     commandData.Method = method;
                 }
@@ -248,7 +274,7 @@ namespace
                         continue;
 
                     auto& commandData = Commands.AddOne();
-                    BUILD_NAME(commandData, field->GetName());
+                    BuildName(commandData, mclass, field->GetName());
                     commandData.Module = module;
                     commandData.Field = field;
                 }
@@ -265,13 +291,12 @@ namespace
                         continue;
 
                     auto& commandData = Commands.AddOne();
-                    BUILD_NAME(commandData, property->GetName());
+                    BuildName(commandData, mclass, property->GetName());
                     commandData.Module = module;
                     commandData.MethodGet = property->GetGetMethod();
                     commandData.MethodSet = property->GetSetMethod();
                 }
             }
-#undef BUILD_NAME
         }
         else
 #endif
@@ -446,6 +471,8 @@ void DebugCommands::GetAllCommands(Array<StringView>& commands)
 DebugCommands::CommandFlags DebugCommands::GetCommandFlags(StringView command)
 {
     CommandFlags result = CommandFlags::None;
+    if (command.FindLast(' ') != -1)
+        command = command.Left(command.Find(' '));
     // TODO: fix missing string handle on 1st command execution (command gets invalid after InitCommands due to dotnet GC or dotnet interop handles flush)
     String commandCopy = command;
     command = commandCopy;

@@ -7,6 +7,7 @@
 #include "Engine/Content/Content.h"
 #include "Engine/Content/Deprecated.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Audio/AudioClip.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 #if USE_EDITOR
@@ -249,6 +250,7 @@ bool SceneAnimation::Save(const StringView& path)
 Asset::LoadResult SceneAnimation::load()
 {
     TrackStatesCount = 0;
+    PROFILE_MEM(AnimationsData);
 
     // Get the data chunk
     if (LoadChunk(0))

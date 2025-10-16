@@ -118,7 +118,7 @@ VariantType::VariantType(Types type, const MClass* klass)
 #if USE_CSHARP
     if (klass)
     {
-        const StringAnsi& typeName = klass->GetFullName();
+        const StringAnsiView typeName = klass->GetFullName();
         const int32 length = typeName.Length();
         TypeName = static_cast<char*>(Allocator::Allocate(length + 1));
         Platform::MemoryCopy(TypeName, typeName.Get(), length);
@@ -632,6 +632,7 @@ Variant::Variant(ScriptingObject* v)
     AsObject = v;
     if (v)
     {
+        // TODO: optimize VariantType to support statically linked typename of ScriptingType (via 1 bit flag within Types enum, only in game as editor might hot-reload types)
         Type.SetTypeName(v->GetType().Fullname);
         v->Deleted.Bind<Variant, &Variant::OnObjectDeleted>(this);
     }
@@ -643,6 +644,7 @@ Variant::Variant(Asset* v)
     AsAsset = v;
     if (v)
     {
+        // TODO: optimize VariantType to support statically linked typename of ScriptingType (via 1 bit flag within Types enum, only in game as editor might hot-reload types)
         Type.SetTypeName(v->GetType().Fullname);
         v->AddReference();
         v->OnUnloaded.Bind<Variant, &Variant::OnAssetUnloaded>(this);

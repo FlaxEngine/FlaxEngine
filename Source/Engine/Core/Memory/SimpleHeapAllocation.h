@@ -11,6 +11,7 @@ class SimpleHeapAllocation
 {
 public:
     enum { HasSwap = true };
+    typedef void* Tag;
 
     template<typename T>
     class Data
@@ -20,6 +21,10 @@ public:
 
     public:
         FORCE_INLINE Data()
+        {
+        }
+
+        FORCE_INLINE Data(Tag tag)
         {
         }
 

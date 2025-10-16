@@ -78,8 +78,6 @@ float4 PS_CombinePass(Quad_VS2PS input) : SV_Target0
 
 	// Calculate specular color
 	float3 specularColor = GetSpecularColor(gBuffer);
-	if (gBuffer.Metalness < 0.001)
-		specularColor = 0.04f * gBuffer.Specular;
 
 	// Calculate reflecion color
 	float3 V = normalize(gBufferData.ViewPos - gBuffer.WorldPos);

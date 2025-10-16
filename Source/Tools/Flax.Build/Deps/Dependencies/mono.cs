@@ -19,6 +19,9 @@ namespace Flax.Deps.Dependencies
     class mono : Dependency
     {
         /// <inheritdoc />
+        public override bool BuildByDefault => false; // Unused in favor of nethost
+
+        /// <inheritdoc />
         public override TargetPlatform[] Platforms
         {
             get
@@ -546,8 +549,8 @@ namespace Flax.Deps.Dependencies
                 {
                     var envVars = new Dictionary<string, string>
                     {
-                        { "CC", "clang-7" },
-                        { "CXX", "clang++-7" }
+                        { "CC", "clang-" + Configuration.LinuxClangMinVer },
+                        { "CXX", "clang++-" + Configuration.LinuxClangMinVer }
                     };
                     var monoOptions = new[]
                     {

@@ -14,6 +14,7 @@
 #include "Engine/Platform/WindowsManager.h"
 #include "Engine/Content/Assets/VisualScript.h"
 #include "Engine/Content/Content.h"
+#include "Engine/Level/Actor.h"
 #include "Engine/CSG/CSGBuilder.h"
 #include "Engine/Engine/CommandLine.h"
 #include "Engine/Renderer/ProbesRenderer.h"
@@ -75,7 +76,7 @@ void OnLightmapsBuildFinished(bool failed)
         OnLightmapsBake(ShadowsOfMordor::BuildProgressStep::GenerateLightmapCharts, 0, 0, false);
 }
 
-void OnBakeEvent(bool started, const ProbesRenderer::Entry& e)
+void OnBakeEvent(bool started, Actor* e)
 {
     if (Internal_EnvProbeBake == nullptr)
     {
@@ -83,7 +84,7 @@ void OnBakeEvent(bool started, const ProbesRenderer::Entry& e)
         ASSERT(Internal_EnvProbeBake);
     }
 
-    MObject* probeObj = e.Actor ? e.Actor->GetManagedInstance() : nullptr;
+    MObject* probeObj = e ? e->GetManagedInstance() : nullptr;
 
     MainThreadManagedInvokeAction::ParamsBuilder params;
     params.AddParam(started);
@@ -91,12 +92,12 @@ void OnBakeEvent(bool started, const ProbesRenderer::Entry& e)
     MainThreadManagedInvokeAction::Invoke(Internal_EnvProbeBake, params);
 }
 
-void OnRegisterBake(const ProbesRenderer::Entry& e)
+void OnRegisterBake(Actor* e)
 {
     OnBakeEvent(true, e);
 }
 
-void OnFinishBake(const ProbesRenderer::Entry& e)
+void OnFinishBake(Actor* e)
 {
     OnBakeEvent(false, e);
 }
@@ -157,7 +158,9 @@ ManagedEditor::ManagedEditor()
     lightmapsBuilder->OnBuildProgress.Bind<OnLightmapsBuildProgress>();
     lightmapsBuilder->OnBuildFinished.Bind<OnLightmapsBuildFinished>();
     CSG::Builder::OnBrushModified.Bind<OnBrushModified>();
+#if LOG_ENABLE
     Log::Logger::OnMessage.Bind<OnLogMessage>();
+#endif
     VisualScripting::DebugFlow.Bind<OnVisualScriptingDebugFlow>();
 }
 
@@ -173,7 +176,9 @@ ManagedEditor::~ManagedEditor()
     lightmapsBuilder->OnBuildProgress.Unbind<OnLightmapsBuildProgress>();
     lightmapsBuilder->OnBuildFinished.Unbind<OnLightmapsBuildFinished>();
     CSG::Builder::OnBrushModified.Unbind<OnBrushModified>();
+#if LOG_ENABLE
     Log::Logger::OnMessage.Unbind<OnLogMessage>();
+#endif
     VisualScripting::DebugFlow.Unbind<OnVisualScriptingDebugFlow>();
 }
 

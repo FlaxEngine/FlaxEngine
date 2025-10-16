@@ -518,6 +518,7 @@ void GBufferPass::DrawDecals(RenderContext& renderContext, GPUTextureView* light
 
         // Draw decal
         drawCall.World = decal.World;
+        drawCall.SortKey = (uint64)decal.RenderLayersMask;
         decal.Material->Bind(bindParams);
         // TODO: use hardware instancing
         context->DrawIndexed(drawCall.Draw.IndicesCount);

@@ -197,7 +197,20 @@ public:
 
     ~StreamTextureResizeTask()
     {
+        OnResourceReleased2();
         SAFE_DELETE_GPU_RESOURCE(_newTexture);
+    }
+
+private:
+    void OnResourceReleased2()
+    {
+        // Unlink texture
+        if (_streamingTexture)
+        {
+            ScopeLock lock(_streamingTexture->GetOwner()->GetOwnerLocker());
+            _streamingTexture->_streamingTasks.Remove(this);
+            _streamingTexture = nullptr;
+        }
     }
 
 protected:
@@ -225,11 +238,7 @@ protected:
 
     void OnEnd() override
     {
-        if (_streamingTexture)
-        {
-            ScopeLock lock(_streamingTexture->GetOwner()->GetOwnerLocker());
-            _streamingTexture->_streamingTasks.Remove(this);
-        }
+        OnResourceReleased2();
 
         // Base
         GPUTask::OnEnd();
@@ -336,6 +345,11 @@ public:
         _texture.Released.Bind<StreamTextureMipTask, &StreamTextureMipTask::OnResourceReleased2>(this);
     }
 
+    ~StreamTextureMipTask()
+    {
+        OnResourceReleased2();
+    }
+
 private:
     void OnResourceReleased2()
     {
@@ -392,12 +406,7 @@ protected:
     void OnEnd() override
     {
         _dataLock.Release();
-        if (_streamingTexture)
-        {
-            ScopeLock lock(_streamingTexture->GetOwner()->GetOwnerLocker());
-            _streamingTexture->_streamingTasks.Remove(_rootTask);
-            _streamingTexture = nullptr;
-        }
+        OnResourceReleased2();
 
         // Base
         GPUUploadTextureMipTask::OnEnd();

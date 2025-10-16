@@ -5,6 +5,7 @@
 #include "Engine/Physics/Physics.h"
 #include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Physics/PhysicsScene.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Engine/Time.h"
 
 #define CC_MIN_SIZE 0.001f
@@ -178,6 +179,7 @@ CharacterController::CollisionFlags CharacterController::SimpleMove(const Vector
 
 CharacterController::CollisionFlags CharacterController::Move(const Vector3& displacement)
 {
+    PROFILE_CPU();
     CollisionFlags result = CollisionFlags::None;
     if (_controller && !_isUpdatingTransform)
     {
@@ -377,7 +379,10 @@ void CharacterController::AddMovement(const Vector3& translation, const Quaterni
         displacement += GetPhysicsScene()->GetGravity() * deltaTime;
     }
 
-    Move(displacement);
+    if (!displacement.IsZero())
+    {
+        Move(displacement);
+    }
 
     if (!rotation.IsIdentity())
     {

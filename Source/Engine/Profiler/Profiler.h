@@ -4,6 +4,7 @@
 
 #include "ProfilerCPU.h"
 #include "ProfilerGPU.h"
+#include "ProfilerMemory.h"
 
 #if COMPILE_WITH_PROFILER
 

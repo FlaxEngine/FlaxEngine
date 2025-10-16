@@ -14,7 +14,9 @@
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Engine/Time.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/Scripting.h"
+#include "Engine/Threading/Threading.h"
 
 float NetworkManager::NetworkFPS = 60.0f;
 NetworkPeer* NetworkManager::Peer = nullptr;
@@ -414,6 +416,7 @@ NetworkManagerService NetworkManagerServiceInstance;
 bool StartPeer()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Networking);
     ASSERT_LOW_LAYER(!NetworkManager::Peer);
     NetworkManager::State = NetworkConnectionState::Connecting;
     NetworkManager::StateChanged();
@@ -504,6 +507,7 @@ NetworkClient* NetworkManager::GetClient(uint32 clientId)
 bool NetworkManager::StartServer()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Networking);
     Stop();
 
     LOG(Info, "Starting network manager as server");
@@ -529,6 +533,7 @@ bool NetworkManager::StartServer()
 bool NetworkManager::StartClient()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Networking);
     Stop();
 
     LOG(Info, "Starting network manager as client");
@@ -553,6 +558,7 @@ bool NetworkManager::StartClient()
 bool NetworkManager::StartHost()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Networking);
     Stop();
 
     LOG(Info, "Starting network manager as host");
@@ -586,6 +592,7 @@ void NetworkManager::Stop()
     if (Mode == NetworkManagerMode::Offline && State == NetworkConnectionState::Offline)
         return;
     PROFILE_CPU();
+    PROFILE_MEM(Networking);
 
     LOG(Info, "Stopping network manager");
     State = NetworkConnectionState::Disconnecting;
@@ -632,6 +639,7 @@ void NetworkManager::Stop()
 void NetworkKeys::SendPending()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Networking);
     ScopeLock lock(Lock);
 
     // Add new keys
@@ -718,6 +726,7 @@ void NetworkManagerService::Update()
     if (NetworkManager::Mode == NetworkManagerMode::Offline || (float)(currentTime - LastUpdateTime) < minDeltaTime || !peer)
         return;
     PROFILE_CPU();
+    PROFILE_MEM(Networking);
     LastUpdateTime = currentTime;
     NetworkManager::Frame++;
     NetworkInternal::NetworkReplicatorPreUpdate();

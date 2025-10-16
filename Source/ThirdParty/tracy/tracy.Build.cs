@@ -15,6 +15,31 @@ public class tracy : ThirdPartyModule
     /// </summary>
     public static bool OnDemand = true;
 
+    /// <summary>
+    /// Enables GPU profiling.
+    /// </summary>
+    public static bool GPU = true;
+
+    /// <summary>
+    /// Determinates whenever performance Tracy supports a given platform.
+    /// </summary>
+    /// <param name="options">The options.</param>
+    /// <returns>True if use profiler, otherwise false.</returns>
+    public static bool Use(BuildOptions options)
+    {
+        switch (options.Platform.Target)
+        {
+            case TargetPlatform.Android:
+            case TargetPlatform.Linux:
+            case TargetPlatform.Windows:
+            case TargetPlatform.Switch:
+            case TargetPlatform.Mac:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     /// <inheritdoc />
     public override void Init()
     {
@@ -47,12 +72,37 @@ public class tracy : ThirdPartyModule
         switch (options.Platform.Target)
         {
         case TargetPlatform.Windows:
+        case TargetPlatform.XboxOne:
+        case TargetPlatform.XboxScarlett:
             options.PrivateDefinitions.Add("TRACY_DBGHELP_LOCK=FlaxDbgHelp");
+            options.PrivateDefinitions.Add("TRACY_NO_PIPE");
             break;
         case TargetPlatform.Switch:
             options.PrivateDefinitions.Add("TRACY_USE_MALLOC");
             options.PrivateDefinitions.Add("TRACY_ONLY_IPV4");
+            options.PrivateDefinitions.Add("TRACY_NO_PIPE");
+            options.PrivateDefinitions.Add("TRACY_NO_CODE_TRANSFER");
             break;
+        }
+
+        if (GPU)
+        {
+            // Ask Graphics module which graphics backends are active
+            var graphics = new Graphics();
+            graphics.FilePath = FilePath;
+            graphics.FolderPath = FolderPath;
+            var graphicsOptions = (BuildOptions)options.Clone();
+            graphics.Setup(graphicsOptions);
+            if (graphicsOptions.PrivateDependencies.Contains("GraphicsDeviceDX11"))
+                options.PrivateDefinitions.Add("TRACY_GPU_D3D11");
+            if (graphicsOptions.PrivateDependencies.Contains("GraphicsDeviceDX12"))
+                options.PrivateDefinitions.Add("TRACY_GPU_D3D12");
+            if (graphicsOptions.PrivateDependencies.Contains("GraphicsDeviceVulkan"))
+            {
+                options.PrivateDefinitions.Add("TRACY_GPU_VULKAN");
+                if (VulkanSdk.Instance.TryGetIncludePath(options.Platform.Target, out var includesFolderPath))
+                    options.PrivateIncludePaths.Add(includesFolderPath);
+            }
         }
     }
 

@@ -11,7 +11,7 @@
 /// Renders model on the screen.
 /// </summary>
 API_CLASS(Attributes="ActorContextMenu(\"New/Model\"), ActorToolbox(\"Visuals\")")
-class FLAXENGINE_API StaticModel : public ModelInstanceActor
+class FLAXENGINE_API StaticModel : public ModelInstanceActor, IAssetReference
 {
     DECLARE_SCENE_OBJECT(StaticModel);
 private:
@@ -154,10 +154,13 @@ public:
     API_FUNCTION() void RemoveVertexColors();
 
 private:
-    void OnModelChanged();
-    void OnModelLoaded();
     void OnModelResidencyChanged();
     void FlushVertexColors();
+
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
 
 public:
     // [ModelInstanceActor]

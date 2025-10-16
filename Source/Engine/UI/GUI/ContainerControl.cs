@@ -38,6 +38,7 @@ namespace FlaxEngine.GUI
         public ContainerControl()
         {
             _isLayoutLocked = true;
+            AutoFocus = false;
         }
 
         /// <summary>
@@ -47,6 +48,7 @@ namespace FlaxEngine.GUI
         : base(x, y, width, height)
         {
             _isLayoutLocked = true;
+            AutoFocus = false;
         }
 
         /// <summary>
@@ -56,6 +58,7 @@ namespace FlaxEngine.GUI
         : base(location, size)
         {
             _isLayoutLocked = true;
+            AutoFocus = false;
         }
 
         /// <inheritdoc />
@@ -63,6 +66,7 @@ namespace FlaxEngine.GUI
         : base(bounds)
         {
             _isLayoutLocked = true;
+            AutoFocus = false;
         }
 
         /// <summary>
@@ -173,7 +177,7 @@ namespace FlaxEngine.GUI
             // Delete children
             while (_children.Count > 0)
             {
-                _children[0].Dispose();
+                _children[^1].Dispose();
             }
 
             _isLayoutLocked = wasLayoutLocked;

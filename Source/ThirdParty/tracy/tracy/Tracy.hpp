@@ -119,6 +119,8 @@
 
 namespace tracy
 {
+TRACY_API bool IsConnected();
+
 class TRACY_API Profiler
 {
 public:
@@ -143,7 +145,6 @@ public:
     static void MemAllocCallstackNamed( const void* ptr, size_t size, int depth, bool secure, const char* name );
     static void MemFreeCallstackNamed( const void* ptr, int depth, bool secure, const char* name );
     static void SendCallstack( int depth );
-    static void ParameterRegister( ParameterCallback cb );
     static void ParameterRegister( ParameterCallback cb, void* data );
     static void ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val );
 };
@@ -255,7 +256,7 @@ public:
 #define TracySourceCallbackRegister( cb, data ) tracy::Profiler::SourceCallbackRegister( cb, data )
 #define TracyParameterRegister( cb, data ) tracy::Profiler::ParameterRegister( cb, data )
 #define TracyParameterSetup( idx, name, isBool, val ) tracy::Profiler::ParameterSetup( idx, name, isBool, val )
-#define TracyIsConnected tracy::GetProfiler().IsConnected()
+#define TracyIsConnected tracy::IsConnected()
 #define TracySetProgramName( name ) tracy::GetProfiler().SetProgramName( name );
 
 #ifdef TRACY_FIBERS

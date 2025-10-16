@@ -6,6 +6,7 @@
 #include "Engine/Physics/Colliders/Collider.h"
 #include "Engine/Physics/Joints/Joint.h"
 #include "Engine/Physics/Actors/RigidBody.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include <ThirdParty/PhysX/extensions/PxJoint.h>
 #include <ThirdParty/PhysX/PxShape.h>
 
@@ -91,6 +92,7 @@ void SimulationEventCallback::OnJointRemoved(Joint* joint)
 
 void SimulationEventCallback::onConstraintBreak(PxConstraintInfo* constraints, PxU32 count)
 {
+    PROFILE_MEM(Physics);
     for (uint32 i = 0; i < count; i++)
     {
         PxJoint* joint = reinterpret_cast<PxJoint*>(constraints[i].externalReference);
@@ -114,6 +116,7 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
     // Skip sending events to removed actors
     if (pairHeader.flags & (PxContactPairHeaderFlag::eREMOVED_ACTOR_0 | PxContactPairHeaderFlag::eREMOVED_ACTOR_1))
         return;
+    PROFILE_MEM(Physics);
 
     Collision c;
     PxContactPairExtraDataIterator j(pairHeader.extraDataStream, pairHeader.extraDataStreamSize);
@@ -185,6 +188,7 @@ void SimulationEventCallback::onContact(const PxContactPairHeader& pairHeader, c
 
 void SimulationEventCallback::onTrigger(PxTriggerPair* pairs, PxU32 count)
 {
+    PROFILE_MEM(Physics);
     for (PxU32 i = 0; i < count; i++)
     {
         const PxTriggerPair& pair = pairs[i];

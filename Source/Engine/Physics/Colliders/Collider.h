@@ -16,7 +16,7 @@ class RigidBody;
 /// </summary>
 /// <seealso cref="Actor" />
 /// <seealso cref="PhysicsColliderActor" />
-API_CLASS(Abstract) class FLAXENGINE_API Collider : public PhysicsColliderActor
+API_CLASS(Abstract) class FLAXENGINE_API Collider : public PhysicsColliderActor, protected IAssetReference
 #if USE_EDITOR
     , public IPhysicsDebug
 #endif
@@ -159,7 +159,6 @@ protected:
     void RemoveStaticActor();
 
 private:
-    void OnMaterialChanged();
     friend RigidBody;
 #if USE_EDITOR
     virtual void OnDebugDrawSelf() {}
@@ -185,4 +184,9 @@ protected:
     void OnLayerChanged() override;
     void OnStaticFlagsChanged() override;
     void OnPhysicsSceneChanged(PhysicsScene* previous) override;
+
+    // [IAssetReference]
+    void OnAssetChanged(Asset* asset, void* caller) override;
+    void OnAssetLoaded(Asset* asset, void* caller) override;
+    void OnAssetUnloaded(Asset* asset, void* caller) override;
 };

@@ -412,7 +412,7 @@ namespace FlaxEditor.Surface.ContextMenu
                 {
                     group.UnlockChildrenRecursive();
                     // TODO: Improve filtering to be based on boxes with the most common things instead of first box
-                    if (_contextSensitiveSearchEnabled && _selectedBoxes[0] != null)
+                    if (_contextSensitiveSearchEnabled && _selectedBoxes.Count > 0 && _selectedBoxes[0] != null)
                         UpdateFilters();
                     else
                         SortGroups();
@@ -424,7 +424,7 @@ namespace FlaxEditor.Surface.ContextMenu
                         OnSearchFilterChanged();
                     }
                 }
-                else if (_contextSensitiveSearchEnabled)
+                else if (_contextSensitiveSearchEnabled && _selectedBoxes.Count > 0)
                 {
                     // TODO: Filtering could be improved here as well
                     group.EvaluateVisibilityWithBox(_selectedBoxes[0]);
@@ -462,7 +462,7 @@ namespace FlaxEditor.Surface.ContextMenu
                             Parent = group
                         };
                     }
-                    if (_contextSensitiveSearchEnabled)
+                    if (_contextSensitiveSearchEnabled && _selectedBoxes.Count > 0)
                         group.EvaluateVisibilityWithBox(_selectedBoxes[0]);
                     group.SortChildren();
                     if (ShowExpanded)
@@ -476,7 +476,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
                 if (!isLayoutLocked)
                 {
-                    if (_contextSensitiveSearchEnabled && _selectedBoxes[0] != null)
+                    if (_contextSensitiveSearchEnabled && _selectedBoxes.Count != 0 && _selectedBoxes[0] != null)
                         UpdateFilters();
                     else
                         SortGroups();

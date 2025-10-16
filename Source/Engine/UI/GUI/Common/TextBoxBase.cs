@@ -511,6 +511,8 @@ namespace FlaxEngine.GUI
         protected TextBoxBase(bool isMultiline, float x, float y, float width = 120)
         : base(x, y, width, DefaultHeight)
         {
+            AutoFocus = true;
+
             _isMultiline = isMultiline;
             _maxLength = 2147483646;
             _selectionStart = _selectionEnd = -1;

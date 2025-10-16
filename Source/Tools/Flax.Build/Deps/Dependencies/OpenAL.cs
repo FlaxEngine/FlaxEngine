@@ -49,8 +49,10 @@ namespace Flax.Deps.Dependencies
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
-            var version = "1.23.1";
+            var version = "1.24.3";
+            var configuration = "Release";
             var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "OpenAL");
+            var noSSL = true; // OpenAL Soft website has broken certs
 
             foreach (var platform in options.Platforms)
             {
@@ -65,11 +67,9 @@ namespace Flax.Deps.Dependencies
                         "OpenAL32.dll",
                     };
 
-                    string configuration = "Release";
-
                     // Get the source
                     CloneGitRepo(root, "https://github.com/kcat/openal-soft.git");
-                    GitCheckout(root, "master", "d3875f333fb6abe2f39d82caca329414871ae53b"); // 1.23.1
+                    GitCheckout(root, "master", "dc7d7054a5b4f3bec1dc23a42fd616a0847af948"); // 1.24.3
 
                     // Build for Win64 and ARM64
                     foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
@@ -88,7 +88,7 @@ namespace Flax.Deps.Dependencies
                     // Get the binaries
                     var packagePath = Path.Combine(root, "package.zip");
                     if (!File.Exists(packagePath))
-                        Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-binaries/openal-soft-" + version + "-bin.zip", packagePath);
+                        Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-binaries/openal-soft-" + version + "-bin.zip", packagePath, noSSL);
                     using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
                     {
                         if (!Directory.Exists(root))
@@ -121,15 +121,22 @@ namespace Flax.Deps.Dependencies
                     };
                     var envVars = new Dictionary<string, string>
                     {
-                        { "CC", "clang-7" },
-                        { "CC_FOR_BUILD", "clang-7" }
+                        { "CC", "clang-" + Configuration.LinuxClangMinVer },
+                        { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
                     };
-                    var config = "-DALSOFT_REQUIRE_ALSA=ON -DALSOFT_REQUIRE_OSS=ON -DALSOFT_REQUIRE_PORTAUDIO=ON -DALSOFT_REQUIRE_PULSEAUDIO=ON -DALSOFT_REQUIRE_JACK=ON -DALSOFT_EMBED_HRTF_DATA=YES";
+                    var config = $"-DALSOFT_REQUIRE_ALSA=ON " +
+                                 $"-DALSOFT_REQUIRE_OSS=ON " +
+                                 $"-DALSOFT_REQUIRE_PORTAUDIO=ON " +
+                                 $"-DALSOFT_REQUIRE_PULSEAUDIO=ON " +
+                                 $"-DALSOFT_REQUIRE_JACK=ON " +
+                                 $"-DALSOFT_REQUIRE_PIPEWIRE=ON " +
+                                 $"-DALSOFT_EMBED_HRTF_DATA=YES ";
 
                     // Get the source
                     var packagePath = Path.Combine(root, "package.zip");
                     File.Delete(packagePath);
-                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath);
+                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath, noSSL);
                     Utilities.Run("tar", "xjf " + packagePath.Replace('\\', '/'), null, root, Utilities.RunOptions.ConsoleLogOutput);
 
                     // Use separate build directory
@@ -138,8 +145,8 @@ namespace Flax.Deps.Dependencies
                     SetupDirectory(buildDir, true);
 
                     // Build for Linux
-                    Utilities.Run("cmake", "-G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE=Release -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLIBTYPE=STATIC " + config + " ..", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
+                    Utilities.Run("cmake", $"-G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE={configuration} -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLIBTYPE=STATIC {config} ..", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
+                    BuildCmake(buildDir, configuration, envVars);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     foreach (var file in binariesToCopy)
                         Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
@@ -151,12 +158,16 @@ namespace Flax.Deps.Dependencies
                     {
                         "libopenal.a",
                     };
-                    var config = "-DALSOFT_REQUIRE_OBOE=OFF -DALSOFT_REQUIRE_OPENSL=ON -DALSOFT_EMBED_HRTF_DATA=YES";
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                    };
+                    var config = " -DALSOFT_REQUIRE_OBOE=OFF -DALSOFT_REQUIRE_OPENSL=ON -DALSOFT_EMBED_HRTF_DATA=YES";
 
                     // Get the source
                     var packagePath = Path.Combine(root, "package.zip");
                     File.Delete(packagePath);
-                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath);
+                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath, noSSL);
                     if (Platform.BuildTargetPlatform == TargetPlatform.Windows)
                     {
                         var sevenZip = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "7-Zip", "7z.exe");
@@ -174,8 +185,8 @@ namespace Flax.Deps.Dependencies
                     SetupDirectory(buildDir, true);
 
                     // Build
-                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
-                    BuildCmake(buildDir);
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
+                    BuildCmake(buildDir, envVars);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     foreach (var file in binariesToCopy)
                         Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
@@ -187,12 +198,16 @@ namespace Flax.Deps.Dependencies
                     {
                         "libopenal.a",
                     };
-                    var config = "-DALSOFT_REQUIRE_COREAUDIO=ON -DALSOFT_EMBED_HRTF_DATA=YES";
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                    };
+                    var config = " -DALSOFT_REQUIRE_COREAUDIO=ON -DALSOFT_EMBED_HRTF_DATA=YES";
 
                     // Get the source
                     var packagePath = Path.Combine(root, "package.zip");
                     File.Delete(packagePath);
-                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath);
+                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath, noSSL);
                     Utilities.Run("tar", "xjf " + packagePath.Replace('\\', '/'), null, root, Utilities.RunOptions.ConsoleLogOutput);
 
                     // Use separate build directory
@@ -203,8 +218,8 @@ namespace Flax.Deps.Dependencies
                     foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
                         SetupDirectory(buildDir, true);
-                        RunCmake(buildDir, platform, architecture, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
-                        BuildCmake(buildDir);
+                        RunCmake(buildDir, platform, architecture, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
+                        BuildCmake(buildDir, envVars);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopy)
                             Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
@@ -217,13 +232,17 @@ namespace Flax.Deps.Dependencies
                     {
                         "libopenal.a",
                     };
-                    var config = "-DALSOFT_REQUIRE_COREAUDIO=ON -DALSOFT_EMBED_HRTF_DATA=YES";
+                    var envVars = new Dictionary<string, string>
+                    {
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                    };
+                    var config = " -DALSOFT_REQUIRE_COREAUDIO=ON -DALSOFT_EMBED_HRTF_DATA=YES";
 
                     // Get the source
                     var packagePath = Path.Combine(root, "package.zip");
                     if (!File.Exists(packagePath))
                     {
-                        Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath);
+                        Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath, noSSL);
                         Utilities.Run("tar", "xjf " + packagePath.Replace('\\', '/'), null, root, Utilities.RunOptions.ConsoleLogOutput);
                     }
 
@@ -233,8 +252,8 @@ namespace Flax.Deps.Dependencies
 
                     // Build for iOS
                     SetupDirectory(buildDir, true);
-                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_SYSTEM_NAME=iOS -DALSOFT_OSX_FRAMEWORK=ON -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=Release " + config);
-                    BuildCmake(buildDir);
+                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_SYSTEM_NAME=iOS -DALSOFT_OSX_FRAMEWORK=ON -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
+                    BuildCmake(buildDir, envVars);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                     foreach (var file in binariesToCopy)
                         Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));

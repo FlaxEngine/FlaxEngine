@@ -2,6 +2,13 @@
 
 #if PLATFORM_MAC || PLATFORM_IOS
 
+#if PLATFORM_MAC
+#define PLATFORM_MAC_CACHED 1
+#endif
+#if PLATFORM_IOS
+#define PLATFORM_IOS_CACHED 1
+#endif
+
 #include "ApplePlatform.h"
 #include "AppleUtils.h"
 #include "Engine/Core/Log.h"
@@ -48,6 +55,25 @@
 #if CRASH_LOG_ENABLE
 #include <execinfo.h>
 #include <cxxabi.h>
+#endif
+
+// System includes break those defines
+#undef PLATFORM_MAC
+#if PLATFORM_MAC_CACHED
+#define PLATFORM_MAC 1
+#else
+#define PLATFORM_MAC 0
+#endif
+#undef PLATFORM_IOS
+#if PLATFORM_IOS_CACHED
+#define PLATFORM_IOS 1
+#else
+#define PLATFORM_IOS 0
+#endif
+
+#if PLATFORM_IOS
+#include <sys/resource.h>
+extern "C" int proc_pid_rusage(int pid, int flavor, rusage_info_t *buffer) __OSX_AVAILABLE_STARTING(__MAC_10_9, __IPHONE_7_0);
 #endif
 
 CPUInfo Cpu;
@@ -224,8 +250,17 @@ MemoryStats ApplePlatform::GetMemoryStats()
 ProcessMemoryStats ApplePlatform::GetProcessMemoryStats()
 {
     ProcessMemoryStats result;
-    result.UsedPhysicalMemory = 1024;
-    result.UsedVirtualMemory = 1024;
+#if PLATFORM_IOS
+    rusage_info_current rusage_payload;
+    proc_pid_rusage(getpid(), RUSAGE_INFO_CURRENT, (rusage_info_t*)&rusage_payload);
+    result.UsedPhysicalMemory = rusage_payload.ri_phys_footprint;
+#else
+	mach_task_basic_info_data_t taskInfo;
+	mach_msg_type_number_t count = MACH_TASK_BASIC_INFO_COUNT;
+	task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t)&taskInfo, &count);
+    result.UsedPhysicalMemory = taskInfo.resident_size;
+#endif
+    result.UsedVirtualMemory = result.UsedPhysicalMemory;
     return result;
 }
 
@@ -256,6 +291,15 @@ void ApplePlatform::SetThreadAffinityMask(uint64 affinityMask)
 void ApplePlatform::Sleep(int32 milliseconds)
 {
     usleep(milliseconds * 1000);
+}
+
+void ApplePlatform::Yield()
+{
+#if PLATFORM_ARCH_ARM64
+    __builtin_arm_yield();
+#else
+    _mm_pause();
+#endif
 }
 
 double ApplePlatform::GetTimeSeconds()

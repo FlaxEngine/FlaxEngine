@@ -107,7 +107,7 @@ namespace Flax.Build.NativeCpp
     /// <summary>
     /// The native C++ module build settings container.
     /// </summary>
-    public sealed class BuildOptions
+    public sealed class BuildOptions : ICloneable
     {
         /// <summary>
         /// The target that builds this module.
@@ -480,6 +480,27 @@ namespace Flax.Build.NativeCpp
                 }
                 SourcePaths.Clear();
             }
+        }
+
+        /// <inheritdoc />
+        public object Clone()
+        {
+            var clone = new BuildOptions
+            {
+                Target = Target,
+                Platform = Platform,
+                Toolchain = Toolchain,
+                Architecture = Architecture,
+                Configuration = Configuration,
+                CompileEnv = (CompileEnvironment)CompileEnv.Clone(),
+                LinkEnv = (LinkEnvironment)LinkEnv.Clone(),
+                IntermediateFolder = IntermediateFolder,
+                OutputFolder = OutputFolder,
+                WorkingDirectory = WorkingDirectory,
+                HotReloadPostfix = HotReloadPostfix,
+                Flags = Flags,
+            };
+            return clone;
         }
     }
 }
