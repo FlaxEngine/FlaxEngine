@@ -123,7 +123,7 @@ namespace Flax.Deps.Dependencies
                         var settings = new[]
                         {
                             "--without-librtmp",
-                            "--without-ssl",
+                            //"--without-ssl",
                             "--with-gnutls",
                             "--disable-ipv6",
                             "--disable-manual",
