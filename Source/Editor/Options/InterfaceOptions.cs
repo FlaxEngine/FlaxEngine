@@ -475,7 +475,7 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets a value indicating what should happen to unavaliable options in the content create menu.
         /// </summary>
-        [DefaultValue(true)]
+        [DefaultValue(DisabledHidden.Hidden)]
         [EditorDisplay("Content"), EditorOrder(600)]
         public DisabledHidden UnavaliableContentCreateOptions { get; set; } = DisabledHidden.Hidden;
 
