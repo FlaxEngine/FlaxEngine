@@ -52,6 +52,7 @@ namespace Flax.Deps.Dependencies
             var version = "1.24.3";
             var configuration = "Release";
             var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "OpenAL");
+            var noSSL = true; // OpenAL Soft website has broken certs
 
             foreach (var platform in options.Platforms)
             {
@@ -87,7 +88,7 @@ namespace Flax.Deps.Dependencies
                     // Get the binaries
                     var packagePath = Path.Combine(root, "package.zip");
                     if (!File.Exists(packagePath))
-                        Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-binaries/openal-soft-" + version + "-bin.zip", packagePath);
+                        Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-binaries/openal-soft-" + version + "-bin.zip", packagePath, noSSL);
                     using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
                     {
                         if (!Directory.Exists(root))
@@ -135,7 +136,7 @@ namespace Flax.Deps.Dependencies
                     // Get the source
                     var packagePath = Path.Combine(root, "package.zip");
                     File.Delete(packagePath);
-                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath);
+                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath, noSSL);
                     Utilities.Run("tar", "xjf " + packagePath.Replace('\\', '/'), null, root, Utilities.RunOptions.ConsoleLogOutput);
 
                     // Use separate build directory
@@ -166,7 +167,7 @@ namespace Flax.Deps.Dependencies
                     // Get the source
                     var packagePath = Path.Combine(root, "package.zip");
                     File.Delete(packagePath);
-                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath);
+                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath, noSSL);
                     if (Platform.BuildTargetPlatform == TargetPlatform.Windows)
                     {
                         var sevenZip = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "7-Zip", "7z.exe");
@@ -206,7 +207,7 @@ namespace Flax.Deps.Dependencies
                     // Get the source
                     var packagePath = Path.Combine(root, "package.zip");
                     File.Delete(packagePath);
-                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath);
+                    Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath, noSSL);
                     Utilities.Run("tar", "xjf " + packagePath.Replace('\\', '/'), null, root, Utilities.RunOptions.ConsoleLogOutput);
 
                     // Use separate build directory
@@ -241,7 +242,7 @@ namespace Flax.Deps.Dependencies
                     var packagePath = Path.Combine(root, "package.zip");
                     if (!File.Exists(packagePath))
                     {
-                        Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath);
+                        Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath, noSSL);
                         Utilities.Run("tar", "xjf " + packagePath.Replace('\\', '/'), null, root, Utilities.RunOptions.ConsoleLogOutput);
                     }
 

@@ -192,6 +192,7 @@ void GPUContextVulkan::AddImageBarrier(VkImage image, VkImageLayout srcLayout, V
 
 void GPUContextVulkan::AddImageBarrier(GPUTextureViewVulkan* handle, VkImageLayout dstLayout)
 {
+    ASSERT(handle->Owner);
     auto& state = handle->Owner->State;
     const auto subresourceIndex = handle->SubresourceIndex;
     if (subresourceIndex == -1)
@@ -516,7 +517,7 @@ void GPUContextVulkan::UpdateDescriptorSets(const SpirvShaderDescriptorInfo& des
             case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
             {
                 auto handle = (GPUTextureViewVulkan*)handles[slot];
-                if (!handle)
+                if (!handle || !handle->Owner)
                 {
                     const auto dummy = _device->HelperResources.GetDummyTexture(descriptor.ResourceType);
                     switch (descriptor.ResourceType)

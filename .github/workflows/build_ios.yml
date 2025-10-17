@@ -19,7 +19,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 9.0.x
     - name: Setup .NET Workload
       run: |
         dotnet workload install ios
@@ -33,4 +33,4 @@ jobs:
         git lfs pull
     - name: Build
       run: |
-        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -dotnet=8 -arch=ARM64 -platform=iOS -configuration=Release -buildtargets=FlaxGame
+        ./Development/Scripts/Mac/CallBuildTool.sh -build -log -dotnet=9 -arch=ARM64 -platform=iOS -configuration=Release -buildtargets=FlaxGame
