@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using System.IO;
 using Flax.Build;
 
@@ -82,7 +83,8 @@ namespace Flax.Deps.Dependencies
 
             // Setup the external sources
             // Requires distutils (pip install setuptools)
-            Utilities.Run("python", "update_glslang_sources.py", null, root, Utilities.RunOptions.ConsoleLogOutput);
+            if (Utilities.Run(BuildPlatform != TargetPlatform.Mac ? "python" : "python3", "update_glslang_sources.py", null, root, Utilities.RunOptions.ConsoleLogOutput) != 0)
+                throw new Exception("Failed to update glslang sources, make sure setuptools python package is installed.");
 
             foreach (var platform in options.Platforms)
             {
