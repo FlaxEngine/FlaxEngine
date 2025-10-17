@@ -29,6 +29,24 @@ namespace Flax.Deps.Dependencies
         }
 
         /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
@@ -46,12 +64,12 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Windows:
-                {
-                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    BuildStarted(platform, architecture);
+                    switch (platform)
+                    {
+                    case TargetPlatform.Windows:
                     {
                         Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
                         var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Windows, architecture);
@@ -61,7 +79,7 @@ namespace Flax.Deps.Dependencies
                         }
                     }
                     break;
-                }
+                    }
                 }
             }
 

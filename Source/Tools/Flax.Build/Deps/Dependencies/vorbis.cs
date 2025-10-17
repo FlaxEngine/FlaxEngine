@@ -49,6 +49,36 @@ namespace Flax.Deps.Dependencies
             }
         }
 
+        /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        //TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
         private struct Binary
         {
             public string Filename;
@@ -337,97 +367,98 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Windows:
-                {
-                    BuildCmake(options, TargetPlatform.Windows, TargetArchitecture.x64);
-                    BuildCmake(options, TargetPlatform.Windows, TargetArchitecture.ARM64);
-                    break;
-                }
-                case TargetPlatform.UWP:
-                {
-                    BuildMsbuild(options, TargetPlatform.UWP, TargetArchitecture.x64);
-                    break;
-                }
-                case TargetPlatform.XboxOne:
-                {
-                    BuildMsbuild(options, TargetPlatform.XboxOne, TargetArchitecture.x64);
-                    break;
-                }
-                case TargetPlatform.Linux:
-                {
-                    // Note: assumes the libogg-dev package is pre-installed on the system
-
-                    // Get the source
-                    CloneGitRepoFast(root, "https://github.com/xiph/vorbis.git");
-
-                    var envVars = new Dictionary<string, string>
+                    BuildStarted(platform, architecture);
+                    switch (platform)
                     {
-                        { "CC", "clang-" + Configuration.LinuxClangMinVer },
-                        { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
-                        { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
-                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
-                    };
-                    var buildDir = Path.Combine(root, "build");
+                    case TargetPlatform.Windows:
+                    {
+                        BuildCmake(options, TargetPlatform.Windows, architecture);
+                        break;
+                    }
+                    case TargetPlatform.UWP:
+                    {
+                        BuildMsbuild(options, TargetPlatform.UWP, architecture);
+                        break;
+                    }
+                    case TargetPlatform.XboxOne:
+                    {
+                        BuildMsbuild(options, TargetPlatform.XboxOne, architecture);
+                        break;
+                    }
+                    case TargetPlatform.Linux:
+                    {
+                        // Note: assumes the libogg-dev package is pre-installed on the system
 
-                    Utilities.Run(Path.Combine(root, "autogen.sh"), null, null, root, Utilities.RunOptions.DefaultTool, envVars);
+                        // Get the source
+                        CloneGitRepoFast(root, "https://github.com/xiph/vorbis.git");
 
-                    // Build for Linux
-                    var toolchain = UnixToolchain.GetToolchainName(platform, TargetArchitecture.x64);
-                    Utilities.Run(Path.Combine(root, "configure"), string.Format("--host={0}", toolchain), null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
-                    SetupDirectory(buildDir, true);
-                    Utilities.Run("cmake", "-G \"Unix Makefiles\" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release ..", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
-                    Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var file in binariesToCopyUnix)
-                        Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
-                    break;
-                }
-                case TargetPlatform.PS4:
-                {
-                    BuildMsbuild(options, TargetPlatform.PS4, TargetArchitecture.x64);
-                    break;
-                }
-                case TargetPlatform.PS5:
-                {
-                    BuildMsbuild(options, TargetPlatform.PS5, TargetArchitecture.x64);
-                    break;
-                }
-                case TargetPlatform.XboxScarlett:
-                {
-                    BuildMsbuild(options, TargetPlatform.XboxScarlett, TargetArchitecture.x64);
-                    break;
-                }
-                case TargetPlatform.Android:
-                {
-                    var oggRoot = Path.Combine(root, "ogg");
-                    var oggBuildDir = Path.Combine(oggRoot, "build");
-                    var buildDir = Path.Combine(root, "build");
+                        var envVars = new Dictionary<string, string>
+                        {
+                            { "CC", "clang-" + Configuration.LinuxClangMinVer },
+                            { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
+                            { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
+                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                        };
+                        var buildDir = Path.Combine(root, "build");
 
-                    // Get the source
-                    CloneGitRepoFast(root, "https://github.com/xiph/vorbis.git");
-                    CloneGitRepo(oggRoot, "https://github.com/xiph/ogg.git");
-                    GitCheckout(oggRoot, "master", "4380566a44b8d5e85ad511c9c17eb04197863ec5");
+                        Utilities.Run(Path.Combine(root, "autogen.sh"), null, null, root, Utilities.RunOptions.DefaultTool, envVars);
 
-                    // Build for Android
-                    SetupDirectory(oggBuildDir, true);
-                    RunCmake(oggBuildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\"../install\"");
-                    Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
-                    SetupDirectory(buildDir, true);
-                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release  -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
-                    BuildCmake(buildDir);
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
-                    foreach (var file in binariesToCopyUnix)
-                        Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
-                    break;
-                }
-                case TargetPlatform.Switch:
-                {
-                    var oggRoot = Path.Combine(root, "ogg");
-                    var oggBuildDir = Path.Combine(oggRoot, "build");
-                    var buildDir = Path.Combine(root, "build");
+                        // Build for Linux
+                        var toolchain = UnixToolchain.GetToolchainName(platform, architecture);
+                        Utilities.Run(Path.Combine(root, "configure"), string.Format("--host={0}", toolchain), null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+                        SetupDirectory(buildDir, true);
+                        Utilities.Run("cmake", "-G \"Unix Makefiles\" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release ..", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
+                        Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        foreach (var file in binariesToCopyUnix)
+                            Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
+                        break;
+                    }
+                    case TargetPlatform.PS4:
+                    {
+                        BuildMsbuild(options, TargetPlatform.PS4, TargetArchitecture.x64);
+                        break;
+                    }
+                    case TargetPlatform.PS5:
+                    {
+                        BuildMsbuild(options, TargetPlatform.PS5, TargetArchitecture.x64);
+                        break;
+                    }
+                    case TargetPlatform.XboxScarlett:
+                    {
+                        BuildMsbuild(options, TargetPlatform.XboxScarlett, TargetArchitecture.x64);
+                        break;
+                    }
+                    case TargetPlatform.Android:
+                    {
+                        var oggRoot = Path.Combine(root, "ogg");
+                        var oggBuildDir = Path.Combine(oggRoot, "build");
+                        var buildDir = Path.Combine(root, "build");
+
+                        // Get the source
+                        CloneGitRepoFast(root, "https://github.com/xiph/vorbis.git");
+                        CloneGitRepo(oggRoot, "https://github.com/xiph/ogg.git");
+                        GitCheckout(oggRoot, "master", "4380566a44b8d5e85ad511c9c17eb04197863ec5");
+
+                        // Build for Android
+                        SetupDirectory(oggBuildDir, true);
+                        RunCmake(oggBuildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\"../install\"");
+                        Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        SetupDirectory(buildDir, true);
+                        RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release  -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
+                        BuildCmake(buildDir);
+                        var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
+                        foreach (var file in binariesToCopyUnix)
+                            Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
+                        break;
+                    }
+                    case TargetPlatform.Switch:
+                    {
+                        var oggRoot = Path.Combine(root, "ogg");
+                        var oggBuildDir = Path.Combine(oggRoot, "build");
+                        var buildDir = Path.Combine(root, "build");
 
                     // Get the source
                     SetupDirectory(oggRoot, false);
@@ -457,14 +488,12 @@ namespace Flax.Deps.Dependencies
                     var oggBuildDir = Path.Combine(oggRoot, "build");
                     var buildDir = Path.Combine(root, "build");
 
-                    // Get the source
-                    CloneGitRepoFast(root, "https://github.com/xiph/vorbis.git");
-                    CloneGitRepo(oggRoot, "https://github.com/xiph/ogg.git");
-                    GitCheckout(oggRoot, "master", "4380566a44b8d5e85ad511c9c17eb04197863ec5");
+                        // Get the source
+                        CloneGitRepoFast(root, "https://github.com/xiph/vorbis.git");
+                        CloneGitRepo(oggRoot, "https://github.com/xiph/ogg.git");
+                        GitCheckout(oggRoot, "master", "4380566a44b8d5e85ad511c9c17eb04197863ec5");
 
-                    // Build for Mac
-                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
-                    {
+                        // Build for Mac
                         SetupDirectory(oggBuildDir, true);
                         RunCmake(oggBuildDir, platform, architecture, ".. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\"../install\"");
                         Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
@@ -474,32 +503,32 @@ namespace Flax.Deps.Dependencies
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopyUnix)
                             Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
+                        break;
                     }
-                    break;
-                }
-                case TargetPlatform.iOS:
-                {
-                    var oggRoot = Path.Combine(root, "ogg");
-                    var oggBuildDir = Path.Combine(oggRoot, "build");
-                    var buildDir = Path.Combine(root, "build");
+                    case TargetPlatform.iOS:
+                    {
+                        var oggRoot = Path.Combine(root, "ogg");
+                        var oggBuildDir = Path.Combine(oggRoot, "build");
+                        var buildDir = Path.Combine(root, "build");
 
-                    // Get the source
-                    CloneGitRepoFast(root, "https://github.com/xiph/vorbis.git");
-                    CloneGitRepo(oggRoot, "https://github.com/xiph/ogg.git");
-                    GitCheckout(oggRoot, "master", "4380566a44b8d5e85ad511c9c17eb04197863ec5");
+                        // Get the source
+                        CloneGitRepoFast(root, "https://github.com/xiph/vorbis.git");
+                        CloneGitRepo(oggRoot, "https://github.com/xiph/ogg.git");
+                        GitCheckout(oggRoot, "master", "4380566a44b8d5e85ad511c9c17eb04197863ec5");
 
-                    // Build for Mac
-                    SetupDirectory(oggBuildDir, true);
-                    RunCmake(oggBuildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\"../install\"");
-                    Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
-                    SetupDirectory(buildDir, true);
-                    RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release  -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
-                    BuildCmake(buildDir);
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
-                    foreach (var file in binariesToCopyUnix)
-                        Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
-                    break;
-                }
+                        // Build for Mac
+                        SetupDirectory(oggBuildDir, true);
+                        RunCmake(oggBuildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\"../install\"");
+                        Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        SetupDirectory(buildDir, true);
+                        RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release  -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
+                        BuildCmake(buildDir);
+                        var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
+                        foreach (var file in binariesToCopyUnix)
+                            Utilities.FileCopy(Path.Combine(buildDir, file.SrcFolder, file.Filename), Path.Combine(depsFolder, file.Filename));
+                        break;
+                    }
+                    }
                 }
             }
 

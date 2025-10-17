@@ -51,6 +51,36 @@ namespace Flax.Deps.Dependencies
             }
         }
 
+        /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        //TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
         private string root;
         private string projectGenDir;
         private string projectGenPath;
@@ -376,69 +406,79 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Windows:
-                {
-                    try
+                    BuildStarted(platform, architecture);
+                    switch (platform)
                     {
-                        Build(options, "vc18win64", platform, architecture);
-                        Build(options, "vc18win-arm64", platform, architecture);
-                    }
-                    catch
+                    case TargetPlatform.Windows:
                     {
-                        Log.Verbose("Failed to generate VS2026 solution for PhysX, fallback to VS2022");
-                        Build(options, "vc17win64", platform, architecture);
-                        Build(options, "vc17win-arm64", platform, architecture);
+                        if (architecture == TargetArchitecture.x64 || architecture == TargetArchitecture.ARM64)
+                        {
+                            try
+                            {
+                                Build(options, architecture == TargetArchitecture.x64 ? "vc18win64" : "vc18win-arm64", platform, architecture);
+                            }
+                            catch
+                            {
+                                Log.Verbose("Failed to generate VS2026 solution for PhysX, fallback to VS2022");
+                                Build(options, architecture == TargetArchitecture.x64 ? "vc17win64" : "vc17win-arm64", platform, architecture);
+                            }
+                        }
+                        else
+                            throw new InvalidArchitectureException(architecture);
+                        break;
                     }
-                    break;
-                }
-                case TargetPlatform.Linux:
-                {
-                    Build(options, "linux", platform, TargetArchitecture.x64);
-                    break;
-                }
-                case TargetPlatform.PS4:
-                {
-                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "PhysX"), root, true, true);
-                    Build(options, "ps4", platform, TargetArchitecture.x64);
-                    break;
-                }
-                case TargetPlatform.PS5:
-                {
-                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "PhysX"), root, true, true);
-                    Build(options, "ps5", platform, TargetArchitecture.x64);
-                    break;
-                }
-                case TargetPlatform.XboxScarlett:
-                case TargetPlatform.XboxOne:
-                {
-                    Build(options, "vc16win64", platform, TargetArchitecture.x64);
-                    break;
-                }
-                case TargetPlatform.Android:
-                {
-                    Build(options, "android", platform, TargetArchitecture.ARM64);
-                    break;
-                }
-                case TargetPlatform.Switch:
-                {
-                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "PhysX"), root, true, true);
-                    Build(options, "switch64", platform, TargetArchitecture.ARM64);
-                    break;
-                }
-                case TargetPlatform.Mac:
-                {
-                    Build(options, "mac64", platform, TargetArchitecture.x64);
-                    Build(options, "mac-arm64", platform, TargetArchitecture.ARM64);
-                    break;
-                }
-                case TargetPlatform.iOS:
-                {
-                    Build(options, "ios64", platform, TargetArchitecture.ARM64);
-                    break;
-                }
+                    case TargetPlatform.Linux:
+                    {
+                        Build(options, "linux", platform, architecture);
+                        break;
+                    }
+                    case TargetPlatform.PS4:
+                    {
+                        Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "PhysX"), root, true, true);
+                        Build(options, "ps4", platform, TargetArchitecture.x64);
+                        break;
+                    }
+                    case TargetPlatform.PS5:
+                    {
+                        Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "PhysX"), root, true, true);
+                        Build(options, "ps5", platform, TargetArchitecture.x64);
+                        break;
+                    }
+                    case TargetPlatform.XboxScarlett:
+                    case TargetPlatform.XboxOne:
+                    {
+                        Build(options, "vc16win64", platform, TargetArchitecture.x64);
+                        break;
+                    }
+                    case TargetPlatform.Android:
+                    {
+                        Build(options, "android", platform, TargetArchitecture.ARM64);
+                        break;
+                    }
+                    case TargetPlatform.Switch:
+                    {
+                        Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "PhysX"), root, true, true);
+                        Build(options, "switch64", platform, TargetArchitecture.ARM64);
+                        break;
+                    }
+                    case TargetPlatform.Mac:
+                    {
+                        if (architecture == TargetArchitecture.x64)
+                            Build(options, "mac64", platform, architecture);
+                        else if (architecture == TargetArchitecture.ARM64)
+                            Build(options, "mac-arm64", platform, architecture);
+                        else
+                            throw new InvalidArchitectureException(architecture);
+                        break;
+                    }
+                    case TargetPlatform.iOS:
+                    {
+                        Build(options, "ios64", platform, TargetArchitecture.ARM64);
+                        break;
+                    }
+                    }
                 }
             }
 

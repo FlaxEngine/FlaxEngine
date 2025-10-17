@@ -40,6 +40,11 @@ namespace Flax.Deps
             /// The target platforms to build dependency for (contains only platforms supported by the dependency itself).
             /// </summary>
             public TargetPlatform[] Platforms;
+
+            /// <summary>
+            /// The target architectures to build dependency for (contains only platforms supported by the dependency itself).
+            /// </summary>
+            public TargetArchitecture[] Architectures;
         }
 
         /// <summary>
@@ -71,6 +76,11 @@ namespace Flax.Deps
         public abstract TargetPlatform[] Platforms { get; }
 
         /// <summary>
+        /// Gets the architectures list supported by this dependency to build on the current build platform (based on <see cref="Platform.BuildPlatform"/>).
+        /// </summary>
+        public abstract TargetArchitecture[] Architectures { get; }
+
+        /// <summary>
         /// True if build dependency by default, otherwise only when explicitly specified via command line.
         /// </summary>
         public virtual bool BuildByDefault => true;
@@ -85,9 +95,9 @@ namespace Flax.Deps
         /// Logs build process start.
         /// </summary>
         /// <param name="platform">Target platform.</param>
-        protected void BuildStarted(TargetPlatform platform)
+        protected void BuildStarted(TargetPlatform platform, TargetArchitecture architecture)
         {
-            Log.Info($"Building {GetType().Name} for {platform}");
+            Log.Info($"Building {GetType().Name} for {platform}{(architecture != TargetArchitecture.AnyCPU ? $" ({architecture})" : "")}");
         }
 
         /// <summary>

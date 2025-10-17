@@ -32,21 +32,39 @@ namespace Flax.Deps.Dependencies
         }
 
         /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Windows:
-                {
-                    var sdk = WindowsPlatformBase.GetSDKs().Last();
-                    var sdkLibLocation = Path.Combine(sdk.Value, "Lib", WindowsPlatformBase.GetSDKVersion(sdk.Key).ToString(), "um");
-                    string binLocation = Path.Combine(sdk.Value, "bin", WindowsPlatformBase.GetSDKVersion(sdk.Key).ToString());
-
-                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    BuildStarted(platform, architecture);
+                    switch (platform)
                     {
+                    case TargetPlatform.Windows:
+                    {
+                        var sdk = WindowsPlatformBase.GetSDKs().Last();
+                        var sdkLibLocation = Path.Combine(sdk.Value, "Lib", WindowsPlatformBase.GetSDKVersion(sdk.Key).ToString(), "um");
+                        string binLocation = Path.Combine(sdk.Value, "bin", WindowsPlatformBase.GetSDKVersion(sdk.Key).ToString());
+
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
 
                         string dxilLocation = @$"{binLocation}\{architecture}\dxil.dll";
@@ -60,9 +78,9 @@ namespace Flax.Deps.Dependencies
                         string d3dcompilerLibLocation = @$"{sdkLibLocation}\{architecture}\d3dcompiler.lib";
                         Utilities.FileCopy(dxcompilerLibLocation, Path.Combine(depsFolder, Path.GetFileName(dxcompilerLibLocation)));
                         Utilities.FileCopy(d3dcompilerLibLocation, Path.Combine(depsFolder, "d3dcompiler_47.lib"));
+                        break;
                     }
-                    break;
-                }
+                    }
                 }
             }
         }

@@ -43,6 +43,39 @@ namespace Flax.Deps.Dependencies
             }
         }
 
+        /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        //TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool BuildByDefault => false;
+
         private string root;
         private bool cleanArtifacts;
 
@@ -331,24 +364,27 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                var platformData = Path.Combine(GetBinariesFolder(options, platform), "Data", "nethost");
-                if (Directory.Exists(platformData))
-                    Utilities.DirectoryCopy(platformData, root, true, true);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.PS4:
-                case TargetPlatform.PS5:
-                case TargetPlatform.XboxOne:
-                case TargetPlatform.XboxScarlett:
-                    Build(options, platform, TargetArchitecture.x64);
+                    BuildStarted(platform, architecture);
+                    var platformData = Path.Combine(GetBinariesFolder(options, platform), "Data", "nethost");
+                    if (Directory.Exists(platformData))
+                        Utilities.DirectoryCopy(platformData, root, true, true);
+                    switch (platform)
+                    {
+                    case TargetPlatform.PS4:
+                    case TargetPlatform.PS5:
+                    case TargetPlatform.XboxOne:
+                    case TargetPlatform.XboxScarlett:
+                        Build(options, platform, TargetArchitecture.x64);
                     break;
-                case TargetPlatform.Android:
-                    Build(options, platform, TargetArchitecture.ARM64);
+                    case TargetPlatform.Android:
+                        Build(options, platform, TargetArchitecture.ARM64);
                     break;
-                case TargetPlatform.Switch:
-                    Build(options, platform, TargetArchitecture.ARM64);
+                    case TargetPlatform.Switch:
+                        Build(options, platform, TargetArchitecture.ARM64);
                     break;
+                    }
                 }
             }
 

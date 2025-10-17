@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Flax.Build;
 
 namespace Flax.Deps.Dependencies
@@ -35,6 +36,36 @@ namespace Flax.Deps.Dependencies
                         TargetPlatform.Mac,
                     };
                 default: return new TargetPlatform[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        //TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
                 }
             }
         }
@@ -91,22 +122,22 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Windows:
-                {
-                    var configuration = "Release";
-                    var binariesWin = new[]
+                    BuildStarted(platform, architecture);
+                    switch (platform)
                     {
-                        Path.Combine("bin", configuration, "assimp-vc140-md.dll"),
-                        Path.Combine("lib", configuration, "assimp-vc140-md.lib"),
-                    };
+                    case TargetPlatform.Windows:
+                    {
+                        var configuration = "Release";
+                        var binariesWin = new[]
+                        {
+                            Path.Combine("bin", configuration, "assimp-vc140-md.dll"),
+                            Path.Combine("lib", configuration, "assimp-vc140-md.lib"),
+                        };
 
-                    // Build for Windows
-                    File.Delete(Path.Combine(root, "CMakeCache.txt"));
-                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
-                    {
+                        // Build for Windows
+                        File.Delete(Path.Combine(root, "CMakeCache.txt"));
                         var buildDir = Path.Combine(root, "build-" + architecture);
                         var solutionPath = Path.Combine(buildDir, "Assimp.sln");
                         SetupDirectory(buildDir, true);
@@ -116,42 +147,38 @@ namespace Flax.Deps.Dependencies
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesWin)
                             Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, Path.GetFileName(file)));
+                        break;
                     }
-
-                    break;
-                }
-                case TargetPlatform.Linux:
-                {
-                    var envVars = new Dictionary<string, string>
+                    case TargetPlatform.Linux:
                     {
-                        { "CC", "clang-" + Configuration.LinuxClangMinVer },
-                        { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
-                        { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
-                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
-                    };
+                        var envVars = new Dictionary<string, string>
+                        {
+                            { "CC", "clang-" + Configuration.LinuxClangMinVer },
+                            { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
+                            { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
+                            { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
+                        };
 
-                    // Build for Linux
-                    RunCmake(root, platform, TargetArchitecture.x64, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig, envVars);
-                    Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool, envVars);
-                    configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
-                    break;
-                }
-                case TargetPlatform.Mac:
-                {
-                    // Build for Mac
-                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                        // Build for Linux
+                        RunCmake(root, platform, architecture, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig, envVars);
+                        Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool, envVars);
+                        configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
+                        break;
+                    }
+                    case TargetPlatform.Mac:
                     {
+                        // Build for Mac
                         RunCmake(root, platform, architecture, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig);
                         Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool);
                         configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
                         Utilities.Run("make", "clean", null, root, Utilities.RunOptions.DefaultTool);
+                        break;
                     }
-                    break;
-                }
+                    }
                 }
             }
 

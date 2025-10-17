@@ -35,6 +35,30 @@ namespace Flax.Deps.Dependencies
         }
 
         /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
@@ -45,12 +69,12 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Windows:
-
-                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    BuildStarted(platform, architecture);
+                    switch (platform)
+                    {
+                    case TargetPlatform.Windows:
                     {
                         string buildDir = Path.Combine(root, "build-" + architecture.ToString());
                         var isa = architecture == TargetArchitecture.ARM64 ? "-DASTCENC_ISA_NEON=ON" : "-DASTCENC_ISA_SSE2=ON";
@@ -62,8 +86,7 @@ namespace Flax.Deps.Dependencies
                         Utilities.FileCopy(Path.Combine(buildDir, "Source/Release", lib), Path.Combine(depsFolder, "astcenc.lib"));
                     }
                     break;
-                case TargetPlatform.Mac:
-                    foreach (var architecture in new []{ TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    case TargetPlatform.Mac:
                     {
                         string buildDir = Path.Combine(root, "build-" + architecture.ToString());
                         var isa = architecture == TargetArchitecture.ARM64 ? "-DASTCENC_ISA_NEON=ON" : "-DASTCENC_ISA_SSE2=ON";
@@ -75,6 +98,7 @@ namespace Flax.Deps.Dependencies
                         Utilities.FileCopy(Path.Combine(buildDir, "Source", lib), Path.Combine(depsFolder, "libastcenc.a"));
                     }
                     break;
+                    }
                 }
             }
 
