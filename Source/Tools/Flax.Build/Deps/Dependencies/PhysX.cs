@@ -95,8 +95,13 @@ namespace Flax.Deps.Dependencies
                 if (cmakeSwitch.HasAttribute("name") && cmakeSwitch.Attributes["name"].Value == name)
                 {
                     cmakeSwitch.Attributes["value"].Value = value;
+                    return;
                 }
             }
+            var child = cmakeSwitches.OwnerDocument.CreateElement(cmakeSwitches.ChildNodes[0].Name);
+            child.SetAttribute("name", name);
+            child.SetAttribute("value", value);
+            cmakeSwitches.AppendChild(child);
         }
 
         private void Build(BuildOptions options, string preset, TargetPlatform targetPlatform, TargetArchitecture architecture)
@@ -129,6 +134,10 @@ namespace Flax.Deps.Dependencies
                     ConfigureCmakeSwitch(cmakeParams, "PX_COPY_EXTERNAL_DLL", "OFF");
                 }
                 break;
+            case TargetPlatform.Linux:
+                ConfigureCmakeSwitch(cmakeParams, "CMAKE_C_FLAGS", "&quot;-Wno-error=format -Wno-error=unused-but-set-variable -Wno-error=switch-default -Wno-error=invalid-offsetof -Wno-error=unsafe-buffer-usage -Wno-error=unsafe-buffer-usage-in-libc-call -Wno-error=missing-include-dirs&quot;");
+                ConfigureCmakeSwitch(cmakeParams, "CMAKE_CXX_FLAGS", "&quot;-Wno-error=format -Wno-error=unused-but-set-variable -Wno-error=switch-default -Wno-error=invalid-offsetof -Wno-error=unsafe-buffer-usage -Wno-error=unsafe-buffer-usage-in-libc-call -Wno-error=missing-include-dirs&quot;");
+                break;
             case TargetPlatform.Android:
                 ConfigureCmakeSwitch(cmakeParams, "CMAKE_INSTALL_PREFIX", $"install/android-{Configuration.AndroidPlatformApi}/PhysX");
                 ConfigureCmakeSwitch(cmakeParams, "ANDROID_NATIVE_API_LEVEL", $"android-{Configuration.AndroidPlatformApi}");
@@ -136,6 +145,8 @@ namespace Flax.Deps.Dependencies
                 break;
             case TargetPlatform.Mac:
                 ConfigureCmakeSwitch(cmakeParams, "CMAKE_OSX_DEPLOYMENT_TARGET", Configuration.MacOSXMinVer);
+                ConfigureCmakeSwitch(cmakeParams, "CMAKE_C_FLAGS", "&quot;-Wno-error=format -Wno-error=unused-but-set-variable -Wno-error=switch-default -Wno-error=invalid-offsetof -Wno-error=unsafe-buffer-usage -Wno-error=unsafe-buffer-usage-in-libc-call -Wno-error=missing-include-dirs&quot;");
+                ConfigureCmakeSwitch(cmakeParams, "CMAKE_CXX_FLAGS", "&quot;-Wno-error=format -Wno-error=unused-but-set-variable -Wno-error=switch-default -Wno-error=invalid-offsetof -Wno-error=unsafe-buffer-usage -Wno-error=unsafe-buffer-usage-in-libc-call -Wno-error=missing-include-dirs&quot;");
                 break;
             case TargetPlatform.iOS:
                 ConfigureCmakeSwitch(cmakeParams, "CMAKE_OSX_DEPLOYMENT_TARGET", Configuration.iOSMinVer);
@@ -156,6 +167,7 @@ namespace Flax.Deps.Dependencies
             bool suppressBitsPostfix = false;
             string binariesPrefix = string.Empty;
             var envVars = new Dictionary<string, string>();
+            envVars.Add("CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel);
             switch (architecture)
             {
             case TargetArchitecture.x86:
