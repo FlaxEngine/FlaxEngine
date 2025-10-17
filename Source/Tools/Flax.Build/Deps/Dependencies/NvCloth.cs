@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -88,6 +89,15 @@ namespace Flax.Deps.Dependencies
 
             // Get the source
             CloneGitRepoSingleBranch(root, "https://github.com/FlaxEngine/NvCloth.git", "master");
+
+            // Patch the CMakeLists.txt to support custom compilation flags
+            foreach (var os in new[] { "android", "ios", "linux", "mac", "windows", })
+            {
+                var filePath = Path.Combine(nvCloth, "compiler", "cmake", os, "CMakeLists.txt");
+                var appendLine = "SET(CMAKE_CXX_FLAGS \"${CMAKE_CXX_FLAGS} ${NVCLOTH_CXX_FLAGS}\")";
+                if (!File.ReadAllText(filePath).Contains(appendLine))
+                    File.AppendAllText(filePath, Environment.NewLine + appendLine + Environment.NewLine);
+            }
 
             foreach (var platform in options.Platforms)
             {
@@ -185,7 +195,7 @@ namespace Flax.Deps.Dependencies
                 }
                 break;
             case TargetPlatform.Mac:
-                cmakeArgs += " -DTARGET_BUILD_PLATFORM=mac";
+                cmakeArgs += " -DTARGET_BUILD_PLATFORM=mac -DNVCLOTH_CXX_FLAGS=\"-Wno-error=poison-system-directories -Wno-error=missing-include-dirs\"";
                 cmakeName = "mac";
                 binariesPrefix = "lib";
                 break;
@@ -195,7 +205,7 @@ namespace Flax.Deps.Dependencies
                 binariesPrefix = "lib";
                 break;
             case TargetPlatform.Linux:
-                cmakeArgs += " -DTARGET_BUILD_PLATFORM=linux";
+                cmakeArgs += " -DTARGET_BUILD_PLATFORM=linux -DNVCLOTH_CXX_FLAGS=\"-Wno-error=poison-system-directories -Wno-error=missing-include-dirs\"";
                 cmakeName = "linux";
                 binariesPrefix = "lib";
                 envVars.Add("CC", "clang-" + Configuration.LinuxClangMinVer);
