@@ -135,8 +135,7 @@ namespace Flax.Deps.Dependencies
                 }
                 break;
             case TargetPlatform.Linux:
-                ConfigureCmakeSwitch(cmakeParams, "CMAKE_C_FLAGS", "&quot;-Wno-error=format -Wno-error=unused-but-set-variable -Wno-error=switch-default -Wno-error=invalid-offsetof -Wno-error=unsafe-buffer-usage -Wno-error=unsafe-buffer-usage-in-libc-call -Wno-error=missing-include-dirs&quot;");
-                ConfigureCmakeSwitch(cmakeParams, "CMAKE_CXX_FLAGS", "&quot;-Wno-error=format -Wno-error=unused-but-set-variable -Wno-error=switch-default -Wno-error=invalid-offsetof -Wno-error=unsafe-buffer-usage -Wno-error=unsafe-buffer-usage-in-libc-call -Wno-error=missing-include-dirs&quot;");
+                ConfigureCmakeSwitch(cmakeParams, "PHYSX_CXX_FLAGS", "\"-Wno-error=format -Wno-error=unused-but-set-variable -Wno-error=switch-default -Wno-error=invalid-offsetof -Wno-error=unsafe-buffer-usage -Wno-error=unsafe-buffer-usage-in-libc-call -Wno-error=missing-include-dirs\"");
                 break;
             case TargetPlatform.Android:
                 ConfigureCmakeSwitch(cmakeParams, "CMAKE_INSTALL_PREFIX", $"install/android-{Configuration.AndroidPlatformApi}/PhysX");
@@ -145,8 +144,7 @@ namespace Flax.Deps.Dependencies
                 break;
             case TargetPlatform.Mac:
                 ConfigureCmakeSwitch(cmakeParams, "CMAKE_OSX_DEPLOYMENT_TARGET", Configuration.MacOSXMinVer);
-                ConfigureCmakeSwitch(cmakeParams, "CMAKE_C_FLAGS", "&quot;-Wno-error=format -Wno-error=unused-but-set-variable -Wno-error=switch-default -Wno-error=invalid-offsetof -Wno-error=unsafe-buffer-usage -Wno-error=unsafe-buffer-usage-in-libc-call -Wno-error=missing-include-dirs&quot;");
-                ConfigureCmakeSwitch(cmakeParams, "CMAKE_CXX_FLAGS", "&quot;-Wno-error=format -Wno-error=unused-but-set-variable -Wno-error=switch-default -Wno-error=invalid-offsetof -Wno-error=unsafe-buffer-usage -Wno-error=unsafe-buffer-usage-in-libc-call -Wno-error=missing-include-dirs&quot;");
+                ConfigureCmakeSwitch(cmakeParams, "PHYSX_CXX_FLAGS", "\"-Wno-error=format -Wno-error=unused-but-set-variable -Wno-error=switch-default -Wno-error=invalid-offsetof -Wno-error=unsafe-buffer-usage -Wno-error=unsafe-buffer-usage-in-libc-call -Wno-error=missing-include-dirs\"");
                 break;
             case TargetPlatform.iOS:
                 ConfigureCmakeSwitch(cmakeParams, "CMAKE_OSX_DEPLOYMENT_TARGET", Configuration.iOSMinVer);
@@ -498,7 +496,7 @@ namespace Flax.Deps.Dependencies
             var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "PhysX");
             Directory.GetFiles(dstIncludePath, "*.h", SearchOption.AllDirectories).ToList().ForEach(File.Delete);
             Utilities.FileCopy(Path.Combine(root, "LICENSE.md"), Path.Combine(dstIncludePath, "License.txt"));
-            Utilities.DirectoryCopy(Path.Combine(root, "physx", "include"), dstIncludePath);
+            Utilities.DirectoryCopy(Path.Combine(root, "physx", "include"), dstIncludePath, true, true);
         }
     }
 }
