@@ -1,5 +1,5 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
-
+//#define USE_GIT_REPOSITORY
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -85,12 +85,15 @@ namespace Flax.Deps.Dependencies
             var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "OpenAL");
             var noSSL = true; // OpenAL Soft website has broken certs
 
+#if !USE_GIT_REPOSITORY
             if (options.Platforms.Contains(TargetPlatform.Windows))
+#endif
             {
                 // Get the source
                 CloneGitRepo(root, "https://github.com/kcat/openal-soft.git");
-                GitCheckout(root, "master", "d3875f333fb6abe2f39d82caca329414871ae53b"); // 1.23.1
+                GitCheckout(root, "master", "dc7d7054a5b4f3bec1dc23a42fd616a0847af948"); // 1.24.3
             }
+#if !USE_GIT_REPOSITORY
             else
             {
                 // Get the source
@@ -98,25 +101,20 @@ namespace Flax.Deps.Dependencies
                 if (!File.Exists(packagePath))
                 {
                     Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-releases/openal-soft-" + version + ".tar.bz2", packagePath, noSSL);
-                    using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
+                    if (Platform.BuildTargetPlatform == TargetPlatform.Windows)
                     {
-                        if (!Directory.Exists(root))
-                            archive.ExtractToDirectory(root);
-                        root = Path.Combine(root, archive.Entries.First().FullName);
+                        // TODO: Maybe use PowerShell Expand-Archive instead?
+                        var sevenZip = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "7-Zip", "7z.exe");
+                        Utilities.Run(sevenZip, "x package.zip", null, root);
+                        Utilities.Run(sevenZip, "x package", null, root);
+                    }
+                    else
+                    {
+                        Utilities.Run("tar", "xjf " + packagePath.Replace('\\', '/'), null, root, Utilities.RunOptions.ConsoleLogOutput);
                     }
                 }
-                /*if (Platform.BuildTargetPlatform == TargetPlatform.Windows)
-                {
-                    // TODO: Maybe use PowerShell Expand-Archive instead?
-                    var sevenZip = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "7-Zip", "7z.exe");
-                    Utilities.Run(sevenZip, "x package.zip", null, root);
-                    Utilities.Run(sevenZip, "x package", null, root);
-                }
-                else
-                {
-                    Utilities.Run("tar", "xjf " + packagePath.Replace('\\', '/'), null, root, Utilities.RunOptions.ConsoleLogOutput);
-                }*/
             }
+#endif
 
             foreach (var platform in options.Platforms)
             {
@@ -136,40 +134,12 @@ namespace Flax.Deps.Dependencies
                         // Build for Windows
                         var buildDir = Path.Combine(root, "build-" + architecture.ToString());
                         var solutionPath = Path.Combine(buildDir, "OpenAL.sln");
-
+                        SetupDirectory(buildDir, true);
                         RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DBUILD_SHARED_LIBS=OFF -DCMAKE_C_FLAGS=\"/D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR /EHsc\" -DCMAKE_CXX_FLAGS=\"/D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR /EHsc\" " + cmakeArgs);
                         Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopy)
                             Utilities.FileCopy(Path.Combine(buildDir, configuration, file), Path.Combine(depsFolder, Path.GetFileName(file)));
-
-#if false
-                        // Get the binaries
-                        var packagePath = Path.Combine(root, "package.zip");
-                        if (!File.Exists(packagePath))
-                            Downloader.DownloadFileFromUrlToPath("https://openal-soft.org/openal-binaries/openal-soft-" + version + "-bin.zip", packagePath, noSSL);
-                        using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
-                        {
-                            if (!Directory.Exists(root))
-                                archive.ExtractToDirectory(root);
-                            root = Path.Combine(root, archive.Entries.First().FullName);
-                        }
-
-                        // Deploy Win64 binaries
-                        var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                        Utilities.FileCopy(Path.Combine(root, "bin", "Win64", "soft_oal.dll"), Path.Combine(depsFolder, "OpenAL32.dll"));
-                        Utilities.FileCopy(Path.Combine(root, "libs", "Win64", "OpenAL32.lib"), Path.Combine(depsFolder, "OpenAL32.lib"));
-
-                        // Deploy license
-                        Utilities.FileCopy(Path.Combine(root, "COPYING"), Path.Combine(dstIncludePath, "COPYING"), true);
-
-                        // Deploy header files
-                        var files = Directory.GetFiles(Path.Combine(root, "include", "AL"));
-                        foreach (var file in files)
-                        {
-                            Utilities.FileCopy(file, Path.Combine(dstIncludePath, Path.GetFileName(file)));
-                        }
-#endif
                         break;
                     }
                     case TargetPlatform.Linux:
@@ -195,14 +165,16 @@ namespace Flax.Deps.Dependencies
                                      + cmakeArgs;
 
                         // Use separate build directory
+#if !USE_GIT_REPOSITORY
                         root = Path.Combine(root, "openal-soft-" + version);
-                        var buildDir = Path.Combine(root, "build");
+#endif
+                        var buildDir = Path.Combine(root, "build-" + architecture.ToString());
                         SetupDirectory(buildDir, true);
 
                         // Build for Linux
-                        Utilities.Run("cmake", $"-G \"Unix Makefiles\" -DCMAKE_BUILD_TYPE={configuration} -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DLIBTYPE=STATIC {config} ..", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DLIBTYPE=STATIC -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
                         BuildCmake(buildDir, configuration, envVars);
-                        var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopy)
                             Utilities.FileCopy(Path.Combine(buildDir, file), Path.Combine(depsFolder, file));
                         break;
@@ -220,12 +192,14 @@ namespace Flax.Deps.Dependencies
                         var config = "-DALSOFT_REQUIRE_OBOE=OFF -DALSOFT_REQUIRE_OPENSL=ON -DALSOFT_EMBED_HRTF_DATA=YES " + cmakeArgs;
 
                         // Use separate build directory
+#if !USE_GIT_REPOSITORY
                         root = Path.Combine(root, "openal-soft-" + version);
-                        var buildDir = Path.Combine(root, "build");
+#endif
+                        var buildDir = Path.Combine(root, "build-" + architecture.ToString());
                         SetupDirectory(buildDir, true);
 
                         // Build
-                        RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
+                        RunCmake(root, platform, TargetArchitecture.ARM64, $"-B\"{buildDir}\" -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
                         BuildCmake(buildDir, envVars);
                         var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                         foreach (var file in binariesToCopy)
@@ -245,12 +219,14 @@ namespace Flax.Deps.Dependencies
                         var config = " -DALSOFT_REQUIRE_COREAUDIO=ON -DALSOFT_EMBED_HRTF_DATA=YES " + cmakeArgs;
 
                         // Use separate build directory
+#if !USE_GIT_REPOSITORY
                         root = Path.Combine(root, "openal-soft-" + version);
-                        var buildDir = Path.Combine(root, "build");
+#endif
+                        var buildDir = Path.Combine(root, "build-" + architecture.ToString());
+                        SetupDirectory(buildDir, true);
 
                         // Build for Mac
-                        SetupDirectory(buildDir, true);
-                        RunCmake(buildDir, platform, architecture, ".. -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
                         BuildCmake(buildDir, envVars);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in binariesToCopy)
@@ -270,12 +246,14 @@ namespace Flax.Deps.Dependencies
                         var config = " -DALSOFT_REQUIRE_COREAUDIO=ON -DALSOFT_EMBED_HRTF_DATA=YES " + cmakeArgs;
 
                         // Use separate build directory
+#if !USE_GIT_REPOSITORY
                         root = Path.Combine(root, "openal-soft-" + version);
-                        var buildDir = Path.Combine(root, "build");
+#endif
+                        var buildDir = Path.Combine(root, "build-" + architecture.ToString());
+                        SetupDirectory(buildDir, true);
 
                         // Build for iOS
-                        SetupDirectory(buildDir, true);
-                        RunCmake(buildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_SYSTEM_NAME=iOS -DALSOFT_OSX_FRAMEWORK=ON -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
+                        RunCmake(root, platform, TargetArchitecture.ARM64, $"-B\"{buildDir}\" -DCMAKE_SYSTEM_NAME=iOS -DALSOFT_OSX_FRAMEWORK=ON -DLIBTYPE=STATIC -DCMAKE_BUILD_TYPE=" + configuration + config, envVars);
                         BuildCmake(buildDir, envVars);
                         var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.ARM64);
                         foreach (var file in binariesToCopy)
@@ -284,6 +262,16 @@ namespace Flax.Deps.Dependencies
                     }
                     }
                 }
+            }
+
+            // Deploy license
+            Utilities.FileCopy(Path.Combine(root, "COPYING"), Path.Combine(dstIncludePath, "COPYING"), true);
+
+            // Deploy header files
+            var files = Directory.GetFiles(Path.Combine(root, "include", "AL"));
+            foreach (var file in files)
+            {
+                Utilities.FileCopy(file, Path.Combine(dstIncludePath, Path.GetFileName(file)));
             }
         }
     }
