@@ -155,11 +155,12 @@ namespace Flax.Deps.Dependencies
                         {
                             { "CC", "clang-" + Configuration.LinuxClangMinVer },
                             { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
-                            { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
+                            { "CXX", "clang-" + Configuration.LinuxClangMinVer },
                             { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
                         };
 
                         // Build for Linux
+                        File.Delete(Path.Combine(root, "CMakeCache.txt"));
                         RunCmake(root, platform, architecture, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig, envVars);
                         Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool, envVars);
                         configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
@@ -170,6 +171,7 @@ namespace Flax.Deps.Dependencies
                     case TargetPlatform.Mac:
                     {
                         // Build for Mac
+                        File.Delete(Path.Combine(root, "CMakeCache.txt"));
                         RunCmake(root, platform, architecture, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig);
                         Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool);
                         configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
