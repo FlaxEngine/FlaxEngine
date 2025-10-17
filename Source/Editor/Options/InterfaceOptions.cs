@@ -264,7 +264,7 @@ namespace FlaxEditor.Options
         /// <summary>
         /// Gets or sets header text alignment.
         /// </summary>
-        [DefaultValue(TextAlignment.Center)]
+        [DefaultValue(TextAlignment.Near)]
         [EditorDisplay("Interface"), EditorOrder(322)]
         public TextAlignment HeaderTextAlignment = TextAlignment.Near;
 
