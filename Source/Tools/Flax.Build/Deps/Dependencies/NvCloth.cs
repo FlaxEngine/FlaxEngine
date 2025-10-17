@@ -51,6 +51,36 @@ namespace Flax.Deps.Dependencies
         }
 
         /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        //TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
             root = options.IntermediateFolder;
@@ -61,39 +91,40 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Windows:
-                    Build(options, platform, TargetArchitecture.x64);
-                    Build(options, platform, TargetArchitecture.ARM64);
-                    break;
-                case TargetPlatform.XboxOne:
-                case TargetPlatform.XboxScarlett:
-                    Build(options, platform, TargetArchitecture.x64);
-                    break;
-                case TargetPlatform.PS4:
-                case TargetPlatform.PS5:
-                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "NvCloth"), root, true, true);
-                    Build(options, platform, TargetArchitecture.x64);
-                    break;
-                case TargetPlatform.Switch:
-                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "NvCloth"), root, true, true);
-                    Build(options, platform, TargetArchitecture.ARM64);
-                    break;
-                case TargetPlatform.Android:
-                    Build(options, platform, TargetArchitecture.ARM64);
-                    break;
-                case TargetPlatform.Mac:
-                    Build(options, platform, TargetArchitecture.x64);
-                    Build(options, platform, TargetArchitecture.ARM64);
-                    break;
-                case TargetPlatform.iOS:
-                    Build(options, platform, TargetArchitecture.ARM64);
-                    break;
-                case TargetPlatform.Linux:
-                    Build(options, platform, TargetArchitecture.x64);
-                    break;
+                    BuildStarted(platform, architecture);
+                    switch (platform)
+                    {
+                    case TargetPlatform.Windows:
+                        Build(options, platform, architecture);
+                        break;
+                    case TargetPlatform.XboxOne:
+                    case TargetPlatform.XboxScarlett:
+                        Build(options, platform, TargetArchitecture.x64);
+                        break;
+                    case TargetPlatform.PS4:
+                    case TargetPlatform.PS5:
+                        Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "NvCloth"), root, true, true);
+                        Build(options, platform, TargetArchitecture.x64);
+                        break;
+                    case TargetPlatform.Switch:
+                        Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data", "NvCloth"), root, true, true);
+                        Build(options, platform, TargetArchitecture.ARM64);
+                        break;
+                    case TargetPlatform.Android:
+                        Build(options, platform, TargetArchitecture.ARM64);
+                        break;
+                    case TargetPlatform.Mac:
+                        Build(options, platform, architecture);
+                        break;
+                    case TargetPlatform.iOS:
+                        Build(options, platform, TargetArchitecture.ARM64);
+                        break;
+                    case TargetPlatform.Linux:
+                        Build(options, platform, architecture);
+                        break;
+                    }
                 }
             }
 

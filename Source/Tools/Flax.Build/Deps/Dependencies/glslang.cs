@@ -39,12 +39,42 @@ namespace Flax.Deps.Dependencies
         }
 
         /// <inheritdoc />
+        public override TargetArchitecture[] Architectures
+        {
+            get
+            {
+                switch (BuildPlatform)
+                {
+                case TargetPlatform.Windows:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Linux:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        //TargetArchitecture.ARM64,
+                    };
+                case TargetPlatform.Mac:
+                    return new[]
+                    {
+                        TargetArchitecture.x64,
+                        TargetArchitecture.ARM64,
+                    };
+                default: return new TargetArchitecture[0];
+                }
+            }
+        }
+
+        /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
             var installDir = Path.Combine(root, "install");
             var configuration = "Release";
-            var cmakeArgs = string.Format("-DCMAKE_INSTALL_PREFIX=\"{0}\" -DCMAKE_BUILD_TYPE={1} -DENABLE_RTTI=ON -DENABLE_CTEST=OFF -DENABLE_HLSL=ON -DENABLE_SPVREMAPPER=ON -DENABLE_GLSLANG_BINARIES=OFF", installDir, configuration);
+            var cmakeArgs = $"-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=\"{installDir}\" -DCMAKE_BUILD_TYPE={configuration} -DENABLE_RTTI=ON -DENABLE_CTEST=OFF -DENABLE_HLSL=ON -DENABLE_SPVREMAPPER=ON -DENABLE_GLSLANG_BINARIES=OFF";
             var libsRoot = Path.Combine(installDir, "lib");
 
             // Get the source
@@ -56,93 +86,88 @@ namespace Flax.Deps.Dependencies
 
             foreach (var platform in options.Platforms)
             {
-                BuildStarted(platform);
-                switch (platform)
+                foreach (var architecture in options.Architectures)
                 {
-                case TargetPlatform.Windows:
-                {
-                    var outputFiles = new[]
-                    {
-                        Path.Combine(libsRoot, "GenericCodeGen.lib"),
-                        Path.Combine(libsRoot, "MachineIndependent.lib"),
-                        Path.Combine(libsRoot, "HLSL.lib"),
-                        Path.Combine(libsRoot, "OSDependent.lib"),
-                        Path.Combine(libsRoot, "OGLCompiler.lib"),
-                        Path.Combine(libsRoot, "SPIRV-Tools-opt.lib"),
-                        Path.Combine(libsRoot, "SPIRV-Tools.lib"),
-                        Path.Combine(libsRoot, "SPIRV.lib"),
-                        Path.Combine(libsRoot, "glslang.lib"),
-                    };
+                    BuildStarted(platform, architecture);
 
-                    // Build for Windows
-                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
+                    var buildDir = Path.Combine(root, "build-" + architecture.ToString());
+                    switch (platform)
                     {
-                        var buildDir = Path.Combine(root, "build-" + architecture.ToString());
+                    case TargetPlatform.Windows:
+                    {
+                        var outputFiles = new[]
+                        {
+                            Path.Combine(libsRoot, "GenericCodeGen.lib"),
+                            Path.Combine(libsRoot, "MachineIndependent.lib"),
+                            Path.Combine(libsRoot, "HLSL.lib"),
+                            Path.Combine(libsRoot, "OSDependent.lib"),
+                            Path.Combine(libsRoot, "OGLCompiler.lib"),
+                            Path.Combine(libsRoot, "SPIRV-Tools-opt.lib"),
+                            Path.Combine(libsRoot, "SPIRV-Tools.lib"),
+                            Path.Combine(libsRoot, "SPIRV.lib"),
+                            Path.Combine(libsRoot, "glslang.lib"),
+                        };
+
+                        // Build for Windows
                         var solutionPath = Path.Combine(buildDir, "glslang.sln");
-
                         SetupDirectory(buildDir, false);
-                        RunCmake(root, platform, architecture, cmakeArgs + $" -B\"{buildDir}\"");
-                        Utilities.Run("cmake", string.Format("--build . --config {0} --target install", configuration), null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" " + cmakeArgs);
                         Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
+                        Utilities.Run("cmake", $"--build \"{buildDir}\" --config {configuration} --target install", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in outputFiles)
                         {
                             Utilities.FileCopy(file, Path.Combine(depsFolder, Path.GetFileName(file)));
                         }
+                        break;
                     }
-                    break;
-                }
-                case TargetPlatform.Linux:
-                {
-                    var outputFiles = new[]
+                    case TargetPlatform.Linux:
                     {
-                        Path.Combine(libsRoot, "libGenericCodeGen.a"),
-                        Path.Combine(libsRoot, "libMachineIndependent.a"),
-                        Path.Combine(libsRoot, "libHLSL.a"),
-                        Path.Combine(libsRoot, "libOSDependent.a"),
-                        Path.Combine(libsRoot, "libOGLCompiler.a"),
-                        Path.Combine(libsRoot, "libSPIRV-Tools-opt.a"),
-                        Path.Combine(libsRoot, "libSPIRV-Tools.a"),
-                        Path.Combine(libsRoot, "libSPIRV.a"),
-                        Path.Combine(libsRoot, "libglslang.a"),
-                    };
-                    var buildDir = root;
+                        var outputFiles = new[]
+                        {
+                            Path.Combine(libsRoot, "libGenericCodeGen.a"),
+                            Path.Combine(libsRoot, "libMachineIndependent.a"),
+                            Path.Combine(libsRoot, "libHLSL.a"),
+                            Path.Combine(libsRoot, "libOSDependent.a"),
+                            Path.Combine(libsRoot, "libOGLCompiler.a"),
+                            Path.Combine(libsRoot, "libSPIRV-Tools-opt.a"),
+                            Path.Combine(libsRoot, "libSPIRV-Tools.a"),
+                            Path.Combine(libsRoot, "libSPIRV.a"),
+                            Path.Combine(libsRoot, "libglslang.a"),
+                        };
 
-                    // Build for Linux
-                    RunCmake(root, platform, TargetArchitecture.x64, cmakeArgs);
-                    Utilities.Run("cmake", string.Format("--build . --config {0} --target install", configuration), null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
-                    Utilities.Run("make", null, null, root, Utilities.RunOptions.ConsoleLogOutput);
-                    var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                    foreach (var file in outputFiles)
-                    {
-                        var dst = Path.Combine(depsFolder, Path.GetFileName(file));
-                        Utilities.FileCopy(file, dst);
-                        //Utilities.Run("strip", string.Format("-s \"{0}\"", dst), null, null, Utilities.RunOptions.ConsoleLogOutput);
+                        // Build for Linux
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" " + cmakeArgs);
+                        Utilities.Run("make", null, null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        Utilities.Run("cmake", $"--build \"{buildDir}\" --config {configuration} --target install", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        foreach (var file in outputFiles)
+                        {
+                            var dst = Path.Combine(depsFolder, Path.GetFileName(file));
+                            Utilities.FileCopy(file, dst);
+                            //Utilities.Run("strip", string.Format("-s \"{0}\"", dst), null, null, Utilities.RunOptions.ConsoleLogOutput);
+                        }
+                        break;
                     }
-                    break;
-                }
-                case TargetPlatform.Mac:
-                {
-                    var outputFiles = new[]
+                    case TargetPlatform.Mac:
                     {
-                        Path.Combine(libsRoot, "libGenericCodeGen.a"),
-                        Path.Combine(libsRoot, "libMachineIndependent.a"),
-                        Path.Combine(libsRoot, "libHLSL.a"),
-                        Path.Combine(libsRoot, "libOSDependent.a"),
-                        Path.Combine(libsRoot, "libOGLCompiler.a"),
-                        Path.Combine(libsRoot, "libSPIRV-Tools-opt.a"),
-                        Path.Combine(libsRoot, "libSPIRV-Tools.a"),
-                        Path.Combine(libsRoot, "libSPIRV.a"),
-                        Path.Combine(libsRoot, "libglslang.a"),
-                    };
-                    var buildDir = root;
+                        var outputFiles = new[]
+                        {
+                            Path.Combine(libsRoot, "libGenericCodeGen.a"),
+                            Path.Combine(libsRoot, "libMachineIndependent.a"),
+                            Path.Combine(libsRoot, "libHLSL.a"),
+                            Path.Combine(libsRoot, "libOSDependent.a"),
+                            Path.Combine(libsRoot, "libOGLCompiler.a"),
+                            Path.Combine(libsRoot, "libSPIRV-Tools-opt.a"),
+                            Path.Combine(libsRoot, "libSPIRV-Tools.a"),
+                            Path.Combine(libsRoot, "libSPIRV.a"),
+                            Path.Combine(libsRoot, "libglslang.a"),
+                        };
 
-                    // Build for Mac
-                    foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
-                    {
-                        RunCmake(root, platform, architecture, cmakeArgs);
-                        Utilities.Run("cmake", string.Format("--build . --config {0} --target install", configuration), null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
-                        Utilities.Run("make", null, null, root, Utilities.RunOptions.ConsoleLogOutput);
+                        // Build for Mac
+                        RunCmake(root, platform, architecture, $"-B\"{buildDir}\" " + cmakeArgs);
+                        Utilities.Run("make", null, null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        Utilities.Run("cmake", $"--build \"{buildDir}\" --config {configuration} --target install", null, buildDir, Utilities.RunOptions.ConsoleLogOutput);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         foreach (var file in outputFiles)
                         {
@@ -150,9 +175,9 @@ namespace Flax.Deps.Dependencies
                             Utilities.FileCopy(file, dst);
                             Utilities.Run("strip", string.Format("\"{0}\"", dst), null, null, Utilities.RunOptions.ConsoleLogOutput);
                         }
+                        break;
                     }
-                    break;
-                }
+                    }
                 }
             }
 
