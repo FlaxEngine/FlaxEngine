@@ -425,15 +425,20 @@ namespace Flax.Deps.Dependencies
                     {
                         if (architecture == TargetArchitecture.x64 || architecture == TargetArchitecture.ARM64)
                         {
-                            try
+                            if (WindowsPlatform.GetToolsets().Any(x => x.Key == WindowsPlatformToolset.v145))
                             {
-                                Build(options, architecture == TargetArchitecture.x64 ? "vc18win64" : "vc18win-arm64", platform, architecture);
+                                try
+                                {
+                                    Build(options, architecture == TargetArchitecture.x64 ? "vc18win64" : "vc18win-arm64", platform, architecture);
+                                }
+                                catch (Exception e)
+                                {
+                                    Log.Warning($"Failed to generate VS2026 solution for PhysX, fallback to VS2022: {e.Message}");
+                                    Build(options, architecture == TargetArchitecture.x64 ? "vc17win64" : "vc17win-arm64", platform, architecture);
+                                }
                             }
-                            catch
-                            {
-                                Log.Verbose("Failed to generate VS2026 solution for PhysX, fallback to VS2022");
+                            else
                                 Build(options, architecture == TargetArchitecture.x64 ? "vc17win64" : "vc17win-arm64", platform, architecture);
-                            }
                         }
                         else
                             throw new InvalidArchitectureException(architecture);
