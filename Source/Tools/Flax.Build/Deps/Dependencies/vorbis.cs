@@ -295,6 +295,7 @@ namespace Flax.Deps.Dependencies
             string ext;
             string oggConfig = $"-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE={_configuration} -DCMAKE_INSTALL_PREFIX=\"{installDir}\"";
             string vorbisConfig = $"-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE={_configuration} -DCMAKE_INSTALL_PREFIX=\"{installDir}\"";
+            string liboggFilename = "libogg";
             Dictionary<string, string> envVars = new Dictionary<string, string>();
             (string, string)[] oggBinariesToCopy;
             Binary[] vorbisBinariesToCopy;
@@ -306,6 +307,7 @@ namespace Flax.Deps.Dependencies
                 oggConfig += " -DBUILD_SHARED_LIBS=OFF";
                 vorbisConfig += " -DBUILD_SHARED_LIBS=OFF";
                 ext = ".lib";
+                liboggFilename = "ogg";
                 break;
             case TargetPlatform.Linux:
                 oggConfig += " -DCMAKE_POSITION_INDEPENDENT_CODE=ON";
@@ -357,7 +359,7 @@ namespace Flax.Deps.Dependencies
             default: throw new InvalidPlatformException(platform);
             }
 
-            vorbisConfig += $" -DOGG_INCLUDE_DIR=\"{Path.Combine(installDir, "include")}\" -DOGG_LIBRARY=\"{Path.Combine(installDir, "lib", "libogg" + ext)}\"";
+            vorbisConfig += $" -DOGG_INCLUDE_DIR=\"{Path.Combine(installDir, "include")}\" -DOGG_LIBRARY=\"{Path.Combine(installDir, "lib", liboggFilename + ext)}\"";
 
             var binariesToCopy = new List<(string, string)>();
 
