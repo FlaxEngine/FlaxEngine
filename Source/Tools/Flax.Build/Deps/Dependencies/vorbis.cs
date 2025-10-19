@@ -370,9 +370,9 @@ namespace Flax.Deps.Dependencies
                 RunCmake(oggRoot, platform, architecture, $"-B\"{oggBuildDir}\" " + oggConfig, envVars);
                 if (platform == TargetPlatform.Windows)
                     Deploy.VCEnvironment.BuildSolution(Path.Combine(oggBuildDir, "ogg.sln"), _configuration, architecture.ToString());
-                else if (platform == TargetPlatform.Mac || platform == TargetPlatform.Linux)
+                else
                     BuildCmake(oggBuildDir);
-                Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.DefaultTool);
+                Utilities.Run("cmake", $"--build . --config {_configuration} --target install", null, oggBuildDir, Utilities.RunOptions.DefaultTool);
             }
             // Build vorbis
             {
@@ -380,9 +380,9 @@ namespace Flax.Deps.Dependencies
                 RunCmake(vorbisRoot, platform, architecture, $"-B\"{vorbisBuildDir}\" " + vorbisConfig);
                 if (platform == TargetPlatform.Windows)
                     Deploy.VCEnvironment.BuildSolution(Path.Combine(vorbisBuildDir, "vorbis.sln"), _configuration, architecture.ToString());
-                else if (platform == TargetPlatform.Mac || platform == TargetPlatform.Linux)
+                else
                     BuildCmake(vorbisBuildDir);
-                Utilities.Run("cmake", "--build . --target install", null, vorbisBuildDir, Utilities.RunOptions.DefaultTool);
+                Utilities.Run("cmake", $"--build . --config {_configuration} --target install", null, vorbisBuildDir, Utilities.RunOptions.DefaultTool);
             }
 
             // Copy binaries
@@ -467,7 +467,7 @@ namespace Flax.Deps.Dependencies
                         // Build for Android
                         SetupDirectory(oggBuildDir, true);
                         RunCmake(oggBuildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\"../install\"");
-                        Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        Utilities.Run("cmake", "--build . --config Release --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
                         SetupDirectory(buildDir, true);
                         RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release  -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
                         BuildCmake(buildDir);
@@ -494,7 +494,7 @@ namespace Flax.Deps.Dependencies
                         // Build for Switch
                         SetupDirectory(oggBuildDir, true);
                         RunCmake(oggBuildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\"../install\"");
-                        Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        Utilities.Run("cmake", "--build . --config Release --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
                         Utilities.FileCopy(Path.Combine(GetBinariesFolder(options, platform), "Data/ogg", "include", "ogg", "config_types.h"), Path.Combine(oggRoot, "install", "include", "ogg", "config_types.h"));
                         SetupDirectory(buildDir, true);
                         RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
@@ -523,7 +523,7 @@ namespace Flax.Deps.Dependencies
                         // Build for Mac
                         SetupDirectory(oggBuildDir, true);
                         RunCmake(oggBuildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\"../install\"");
-                        Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
+                        Utilities.Run("cmake", "--build . --config Release --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
                         SetupDirectory(buildDir, true);
                         RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release  -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
                         BuildCmake(buildDir);
