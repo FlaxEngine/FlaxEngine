@@ -563,8 +563,8 @@ FORCE_INLINE int32 GetVTableIndex(void** vtable, int32 entriesCount, void* func)
             offset = ((*op & 0x3FFC00) >> 10) * ((*op & 0x40000000) != 0 ? 8 : 4);
             return offset / sizeof(void*);
         }
-        CRASH;
     }
+    CRASH;
 #elif defined(__clang__)
     // On Clang member function pointer represents the offset from the vtable begin.
     return (int32)(intptr)func / sizeof(void*);
