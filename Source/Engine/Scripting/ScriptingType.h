@@ -5,6 +5,9 @@
 #include "Types.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/Guid.h"
+#if PLATFORM_ARCH_ARM64
+#include "Engine/Core/Core.h"
+#endif
 
 class MMethod;
 class BinaryModule;
