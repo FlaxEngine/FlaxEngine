@@ -71,7 +71,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 menu.AddButton("Copy", linkedEditor.Copy);
                 var b = menu.AddButton("Duplicate", () => Editor.Duplicate(Index));
-                b.Enabled = linkedEditor.CanPaste && !Editor._readOnly && Editor._canResize;
+                b.Enabled = !Editor._readOnly && Editor._canResize;
                 b = menu.AddButton("Paste", linkedEditor.Paste);
                 b.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
 
@@ -407,7 +407,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 menu.AddButton("Copy", linkedEditor.Copy);
                 var b = menu.AddButton("Duplicate", () => Editor.Duplicate(Index));
-                b.Enabled = linkedEditor.CanPaste && !Editor._readOnly && Editor._canResize;
+                b.Enabled = !Editor._readOnly && Editor._canResize;
                 var paste = menu.AddButton("Paste", linkedEditor.Paste);
                 paste.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
 
