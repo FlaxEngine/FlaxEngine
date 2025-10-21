@@ -30,6 +30,9 @@ GPU_CB_STRUCT(Data {
 
     Float2 Input0SizeInv;
     Float2 Input2SizeInv;
+
+    Float3 PrevWorldOriginOffset;
+    float Dummy1;
     });
 
 MotionBlurPass::MotionBlurPass()
@@ -194,6 +197,7 @@ void MotionBlurPass::RenderMotionVectors(RenderContext& renderContext)
     Matrix::Transpose(renderContext.View.ViewProjection(), data.CurrentVP);
     Matrix::Transpose(renderContext.View.PrevViewProjection, data.PreviousVP);
     data.TemporalAAJitter = renderContext.View.TemporalAAJitter;
+    data.PrevWorldOriginOffset = renderContext.View.Origin - renderContext.View.PrevOrigin;
     auto cb = _shader->GetShader()->GetCB(0);
     context->UpdateCB(cb, &data);
     context->BindCB(0, cb);
