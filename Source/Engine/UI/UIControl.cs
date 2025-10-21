@@ -299,6 +299,8 @@ namespace FlaxEngine
 
         private void OnControlLocationChanged(Control control)
         {
+            if (control == null || !this)
+                return;
             _blockEvents = true;
             LocalPosition = new Vector3(control.Location, LocalPosition.Z);
             _blockEvents = false;
