@@ -496,6 +496,11 @@ namespace FlaxEngine.GUI
         public bool IsNavFocused => _isNavFocused;
 
         /// <summary>
+        /// Event fired when control gets focus.
+        /// </summary>
+        public event Action Focused;
+
+        /// <summary>
         /// Sets input focus to the control
         /// </summary>
         public virtual void Focus()
@@ -523,18 +528,17 @@ namespace FlaxEngine.GUI
         [NoAnimate]
         public virtual void OnGotFocus()
         {
-            // Cache flag
             _isFocused = true;
             _isNavFocused = false;
+            Focused?.Invoke();
         }
 
         /// <summary>
-        /// When control losts input focus
+        /// When control looses input focus
         /// </summary>
         [NoAnimate]
         public virtual void OnLostFocus()
         {
-            // Clear flag
             _isFocused = false;
             _isNavFocused = false;
         }
@@ -681,7 +685,7 @@ namespace FlaxEngine.GUI
         /// <param name="location">The navigation start location (in the control-space).</param>
         /// <param name="caller">The control that calls the event.</param>
         /// <param name="visited">The list with visited controls. Used to skip recursive navigation calls when doing traversal across the UI hierarchy.</param>
-        /// <returns>The target navigation control or null if didn't performed any navigation.</returns>
+        /// <returns>The target navigation control or null if didn't perform any navigation.</returns>
         public virtual Control OnNavigate(NavDirection direction, Float2 location, Control caller, List<Control> visited)
         {
             if (caller == _parent && AutoFocus && Visible)
