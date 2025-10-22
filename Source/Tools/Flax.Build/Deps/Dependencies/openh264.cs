@@ -23,12 +23,10 @@ namespace Flax.Deps.Dependencies
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
-            var repoPath = Path.Combine(root, "openh264");
 
             // Note: assumes the nasm package is installed on the system
-
             // Get the source
-            CloneGitRepoFast(repoPath, "https://github.com/cisco/openh264.git");
+            CloneGitRepoFast(root, "https://github.com/cisco/openh264.git");
 
             string buildArgs = "ARCH=x86_64 OS=linux BUILDTYPE=Release";
 
@@ -46,15 +44,15 @@ namespace Flax.Deps.Dependencies
                             { "CXX", "clang++" }
                         };
 
-                        Utilities.Run("make", buildArgs, null, repoPath, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+                        Utilities.Run("make", buildArgs, null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
 
                         // Copy library
-                        var libFile = Path.Combine(repoPath, "libopenh264.a");
+                        var libFile = Path.Combine(root, "libopenh264.a");
                         var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                         SetupDirectory(depsFolder, true);
                         Utilities.FileCopy(libFile, Path.Combine(depsFolder, "libopenh264.a"));
 
-                        Utilities.Run("make", "clean", null, repoPath, Utilities.RunOptions.Default, envVars);
+                        Utilities.Run("make", "clean", null, root, Utilities.RunOptions.Default, envVars);
 
                         break;
                     }
@@ -62,13 +60,13 @@ namespace Flax.Deps.Dependencies
             }
 
             // Copy headers
-            var includeSrc = Path.Combine(repoPath, "codec", "api", "wels");
+            var includeSrc = Path.Combine(root, "codec", "api", "wels");
             var includeDst = Path.Combine(options.ThirdPartyFolder, "openh264");
             SetupDirectory(includeDst, true);
             Utilities.DirectoryCopy(includeSrc, includeDst, true, true);
 
             // Copy license
-            var licenseSrc = Path.Combine(repoPath, "LICENSE");
+            var licenseSrc = Path.Combine(root, "LICENSE");
             if (File.Exists(licenseSrc))
                 Utilities.FileCopy(licenseSrc, Path.Combine(includeDst, "LICENSE"));
         }

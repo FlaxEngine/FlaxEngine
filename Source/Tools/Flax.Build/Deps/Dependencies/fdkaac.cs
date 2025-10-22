@@ -24,11 +24,11 @@ namespace Flax.Deps.Dependencies
         public override void Build(BuildOptions options)
         {
             var root = options.IntermediateFolder;
-            var repoPath = Path.Combine(root, "fdk-aac");
-            var buildDir = Path.Combine(repoPath, "build");
 
             // Get the source
-            CloneGitRepoFast(repoPath, "https://github.com/mstorsjo/fdk-aac.git");
+            CloneGitRepoFast(root, "https://github.com/mstorsjo/fdk-aac.git");
+            
+            var buildDir = Path.Combine(root, "build");
 
             SetupDirectory(buildDir, true);
 
@@ -72,16 +72,16 @@ namespace Flax.Deps.Dependencies
 
             String[] includeDirs =
             {
-                Path.Combine(repoPath, "libSYS", "include"),
-                Path.Combine(repoPath, "libAACenc", "include"),
-                Path.Combine(repoPath, "libAACdec", "include"),
+                Path.Combine(root, "libSYS", "include"),
+                Path.Combine(root, "libAACenc", "include"),
+                Path.Combine(root, "libAACdec", "include"),
             };
 
             foreach (var dir in includeDirs)
                 Utilities.DirectoryCopy(dir, includeDst, true, true);
 
             // License
-            var licenseSrc = Path.Combine(repoPath, "NOTICE");
+            var licenseSrc = Path.Combine(root, "NOTICE");
             if (File.Exists(licenseSrc))
                 Utilities.FileCopy(licenseSrc, Path.Combine(includeDst, "NOTICE"));
         }
