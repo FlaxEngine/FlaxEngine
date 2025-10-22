@@ -46,44 +46,50 @@ namespace Flax.Deps.Dependencies
                 switch (platform)
                 {
                     case TargetPlatform.Linux:
-                    {
-                        var env = new Dictionary<string, string>
+                        {
+                            var env = new Dictionary<string, string>
                         {
                             { "CC", "clang" },
                             { "CXX", "clang++" }
                         };
 
-                        Utilities.Run("cmake", $".. {cmakeFlags}", null, buildDir, Utilities.RunOptions.ThrowExceptionOnError, env);
-                        Utilities.Run("make", null, null, buildDir, Utilities.RunOptions.ThrowExceptionOnError, env);
+                            Utilities.Run("cmake", $".. {cmakeFlags}", null, buildDir, Utilities.RunOptions.ThrowExceptionOnError, env);
+                            Utilities.Run("make", null, null, buildDir, Utilities.RunOptions.ThrowExceptionOnError, env);
 
-                        // Copy library
-                        var libFile = Path.Combine(buildDir, "libfdk-aac.a");
-                        var depsLibDir = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                        Utilities.FileCopy(libFile, Path.Combine(depsLibDir, "libfdk-aac.a"));
+                            // Copy library
+                            var libFile = Path.Combine(buildDir, "libfdk-aac.a");
+                            var depsLibDir = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                            Utilities.FileCopy(libFile, Path.Combine(depsLibDir, "libfdk-aac.a"));
 
-                        break;
-                    }
+                            break;
+                        }
                 }
             }
 
-            // Copy headers
-            var includeDst = Path.Combine(options.ThirdPartyFolder, "fdkaac");
-            SetupDirectory(includeDst, true);
+            // Deploy headers and license (preserve module build rules file)
+            var moduleFilename = "fdkaac.Build.cs";
 
-            String[] includeDirs =
+            String[] srcIncludePath =
             {
                 Path.Combine(root, "libSYS", "include"),
                 Path.Combine(root, "libAACenc", "include"),
                 Path.Combine(root, "libAACdec", "include"),
             };
 
-            foreach (var dir in includeDirs)
-                Utilities.DirectoryCopy(dir, includeDst, true, true);
+            var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "fdkaac");
 
-            // License
-            var licenseSrc = Path.Combine(root, "NOTICE");
-            if (File.Exists(licenseSrc))
-                Utilities.FileCopy(licenseSrc, Path.Combine(includeDst, "NOTICE"));
+            // Backup Build file
+            var moduleFile = Path.Combine(dstIncludePath, moduleFilename);
+            var moduleFileBackup = Path.Combine(root, moduleFilename);
+            if (File.Exists(moduleFile))
+                Utilities.FileCopy(moduleFile, moduleFileBackup);
+
+            // Clean folder and copy files
+            SetupDirectory(dstIncludePath, true);
+            Utilities.FileCopy(moduleFileBackup, moduleFile);
+            foreach (var dir in srcIncludePath)
+                Utilities.DirectoryCopy(dir, dstIncludePath, true, true);
+            Utilities.FileCopy(Path.Combine(root, "NOTICE"), Path.Combine(dstIncludePath, "NOTICE"));
         }
     }
 }

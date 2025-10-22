@@ -1,4 +1,6 @@
+using System.IO;
 using Flax.Build;
+using Flax.Build.NativeCpp;
 
 /// <summary>
 /// https://github.com/mstorsjo/fdk-aac

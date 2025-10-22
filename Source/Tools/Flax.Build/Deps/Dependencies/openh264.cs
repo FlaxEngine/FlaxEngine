@@ -37,38 +37,44 @@ namespace Flax.Deps.Dependencies
                 switch (platform)
                 {
                     case TargetPlatform.Linux:
-                    {
-                        var envVars = new Dictionary<string, string>
+                        {
+                            var envVars = new Dictionary<string, string>
                         {
                             { "CC", "clang" },
                             { "CXX", "clang++" }
                         };
 
-                        Utilities.Run("make", buildArgs, null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+                            Utilities.Run("make", buildArgs, null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
 
-                        // Copy library
-                        var libFile = Path.Combine(root, "libopenh264.a");
-                        var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
-                        SetupDirectory(depsFolder, true);
-                        Utilities.FileCopy(libFile, Path.Combine(depsFolder, "libopenh264.a"));
+                            // Copy library
+                            var libFile = Path.Combine(root, "libopenh264.a");
+                            var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
+                            SetupDirectory(depsFolder, true);
+                            Utilities.FileCopy(libFile, Path.Combine(depsFolder, "libopenh264.a"));
 
-                        Utilities.Run("make", "clean", null, root, Utilities.RunOptions.Default, envVars);
+                            Utilities.Run("make", "clean", null, root, Utilities.RunOptions.Default, envVars);
 
-                        break;
-                    }
+                            break;
+                        }
                 }
             }
+            
+            // Deploy headers and license (preserve module build rules file)
+            var moduleFilename = "openh264.Build.cs";
+            var srcIncludePath = Path.Combine(root, "codec", "api", "wels");
+            var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "openh264");
 
-            // Copy headers
-            var includeSrc = Path.Combine(root, "codec", "api", "wels");
-            var includeDst = Path.Combine(options.ThirdPartyFolder, "openh264");
-            SetupDirectory(includeDst, true);
-            Utilities.DirectoryCopy(includeSrc, includeDst, true, true);
+            // Backup Build file
+            var moduleFile = Path.Combine(dstIncludePath, moduleFilename);
+            var moduleFileBackup = Path.Combine(root, moduleFilename);
+            if (File.Exists(moduleFile))
+                Utilities.FileCopy(moduleFile, moduleFileBackup);
 
-            // Copy license
-            var licenseSrc = Path.Combine(root, "LICENSE");
-            if (File.Exists(licenseSrc))
-                Utilities.FileCopy(licenseSrc, Path.Combine(includeDst, "LICENSE"));
+            // Clean folder and copy files
+            SetupDirectory(dstIncludePath, true);
+            Utilities.FileCopy(moduleFileBackup, moduleFile);
+            Utilities.DirectoryCopy(srcIncludePath, dstIncludePath, true, true);
+            Utilities.FileCopy(Path.Combine(root, "LICENSE"), Path.Combine(dstIncludePath, "LICENSE"));
         }
     }
 }

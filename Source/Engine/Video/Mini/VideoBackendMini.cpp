@@ -19,8 +19,11 @@
 #define MINIMP4_IMPLEMENTATION
 #include <ThirdParty/minimp4/minimp4.h>
 #include <ThirdParty/openh264/codec_api.h>
+#define ENABLE_FDK_AAC 0
+#if ENABLE_FDK_AAC
 #include <ThirdParty/fdkaac/aacenc_lib.h>
 #include <ThirdParty/fdkaac/aacdecoder_lib.h>
+#endif
 
 #define VIDEO_API_MINI_ERROR(api, err) LOG(Warning, "[VideoBackendMini] {} failed with error 0x{:x}", TEXT(#api), (uint64)err)
 #define SHORT_SYNC 0
@@ -38,7 +41,9 @@ struct VideoPlayerMini
 {
     FileReadStream* Stream;
     ISVCDecoder* VideoDecoder = nullptr;
+#if ENABLE_FDK_AAC
     HANDLE_AACDECODER AudioDecoder;
+#endif
     std::vector<SampleInfo> VideoSamplesInfo;
     std::vector<SampleInfo> AudioSamplesInfo;
     std::vector<uint8_t> InitialBuffer;
@@ -113,6 +118,7 @@ namespace Mini
         player.AudioInfo.NumChannels = track.SampleDescription.audio.channelcount;
         player.AudioInfo.BitDepth = 16;
 
+#if ENABLE_FDK_AAC
         // Initalize Audio Decoder
         playerMini.AudioDecoder = aacDecoder_Open(TT_MP4_RAW, 1);
         if (!playerMini.AudioDecoder)
@@ -142,7 +148,7 @@ namespace Mini
         }            
         LOG(Info, "Audio track: samplerate: {0}hz, bitdepth: {1}, channels: {2}", 
             player.AudioInfo.SampleRate, player.AudioInfo.BitDepth, player.AudioInfo.NumChannels);
-        
+#endif
         return false;
     }
 
@@ -316,6 +322,7 @@ namespace Mini
         
         auto& sample = playerMini.AudioSamplesInfo[index];
 
+#if ENABLE_FDK_AAC
         std::vector<UCHAR> frame(sample.size);
         playerMini.Stream->SetPosition(sample.offset);
         playerMini.Stream->ReadBytes(frame.data(), sample.size);
@@ -323,6 +330,7 @@ namespace Mini
 
         unsigned frame_size = sample.size;
         unsigned valid = frame_size;
+
         if (AAC_DEC_OK != aacDecoder_Fill(playerMini.AudioDecoder, &dataPtr, &frame_size, &valid))
         {
             LOG(Warning, "Error: aac decode fail");
@@ -352,7 +360,7 @@ namespace Mini
         
         // Send decoded sample to queue
         audioBuffer.push_back(buffer);
-
+#endif
         return false;
     }
 
@@ -597,8 +605,9 @@ void VideoBackendMini::Player_Destroy(VideoBackendPlayer& player)
     
     playerMini.VideoDecoder->Uninitialize();
     WelsDestroyDecoder(playerMini.VideoDecoder);
+#if ENABLE_FDK_AAC
     aacDecoder_Close(playerMini.AudioDecoder);
-    
+#endif
     Mini::Players.Remove(&player);
     player = VideoBackendPlayer();
     LOG(Info, "player destroyed");
