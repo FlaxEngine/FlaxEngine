@@ -398,7 +398,6 @@ namespace FlaxEditor
                 var moveLocation = _mouseMovesPos + delta;
                 var control = _activeWidget.UIControl.Control;
                 var uiControlDelta = GetControlDelta(control, ref _mouseMovesPos, ref moveLocation);
-                control.LocalLocation += uiControlDelta * resizeAxisNeg;
                 control.Size += uiControlDelta * resizeAxisPos - uiControlDelta * resizeAxisNeg;
 
                 // Don't move if layout doesn't allow it
