@@ -115,7 +115,7 @@ namespace Flax.Build
             /// Init with a proper message.
             /// </summary>
             public MissingException()
-            : base(string.IsNullOrEmpty(Configuration.Dotnet) ? $"Missing .NET SDK {MinimumVersion} (or higher)." : $"Missing .NET SDK {Configuration.Dotnet}.")
+            : base(string.IsNullOrEmpty(Configuration.Dotnet) ? $"Missing .NET SDK {MinimumVersion} (or higher) for {Platform.BuildTargetPlatform} {Platform.BuildTargetArchitecture}." : $"Missing .NET SDK {Configuration.Dotnet}.")
             {
             }
         }
