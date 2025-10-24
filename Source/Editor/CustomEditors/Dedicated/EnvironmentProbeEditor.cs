@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -11,7 +12,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
     [CustomEditor(typeof(EnvironmentProbe)), DefaultEditor]
     public class EnvironmentProbeEditor : ActorEditor
     {
-        private FlaxEngine.GUI.Button _bake;
+        private Button _bake;
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -20,8 +21,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
             if (Values.HasDifferentTypes == false)
             {
-                layout.Space(10);
-                _bake = layout.Button("Bake").Button;
+                var group = layout.Group("Bake");
+                group.Panel.ItemsMargin = new Margin(Utilities.Constants.UIMargin * 2);
+                _bake = group.Button("Bake").Button;
                 _bake.Clicked += BakeButtonClicked;
             }
         }

@@ -42,38 +42,38 @@ public:
     /// <summary>
     /// The reflections texture resolution.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Probe\")")
+    API_FIELD(Attributes="EditorOrder(0), EditorDisplay(\"Quality\")")
     ProbeCubemapResolution CubemapResolution = ProbeCubemapResolution::UseGraphicsSettings;
+
+    /// <summary>
+    /// The probe update mode.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(10), EditorDisplay(\"Quality\")")
+    ProbeUpdateMode UpdateMode = ProbeUpdateMode::Manual;
 
     /// <summary>
     /// The reflections brightness.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(10), Limit(0, 1000, 0.01f), EditorDisplay(\"Probe\")")
+    API_FIELD(Attributes="EditorOrder(0), Limit(0, 1000, 0.01f), EditorDisplay(\"Probe\")")
     float Brightness = 1.0f;
 
     /// <summary>
     /// The probe rendering order. The higher values are render later (on top).
     /// </summary>
-    API_FIELD(Attributes = "EditorOrder(25), EditorDisplay(\"Probe\")")
+    API_FIELD(Attributes = "EditorOrder(20), EditorDisplay(\"Probe\")")
     int32 SortOrder = 0;
-
-    /// <summary>
-    /// The probe update mode.
-    /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), EditorDisplay(\"Probe\")")
-    ProbeUpdateMode UpdateMode = ProbeUpdateMode::Manual;
 
     /// <summary>
     /// The probe capture camera near plane distance.
     /// </summary>
-    API_FIELD(Attributes="EditorOrder(30), Limit(0, float.MaxValue, 0.01f), EditorDisplay(\"Probe\")")
+    API_FIELD(Attributes="EditorOrder(25), Limit(0, float.MaxValue, 0.01f), EditorDisplay(\"Probe\")")
     float CaptureNearPlane = 10.0f;
 
 public:
     /// <summary>
     /// Gets the probe radius.
     /// </summary>
-    API_PROPERTY(Attributes="EditorOrder(20), DefaultValue(3000.0f), Limit(0), EditorDisplay(\"Probe\")")
+    API_PROPERTY(Attributes="EditorOrder(15), DefaultValue(3000.0f), Limit(0), EditorDisplay(\"Probe\")")
     float GetRadius() const;
 
     /// <summary>
