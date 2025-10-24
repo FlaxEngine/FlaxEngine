@@ -218,8 +218,8 @@ namespace Flax.Build
                     using RegistryKey runtimeKey = baseKey.OpenSubKey(@$"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{arch}\sharedfx\Microsoft.NETCore.App");
                     using RegistryKey hostKey = baseKey.OpenSubKey(@$"SOFTWARE\dotnet\Setup\InstalledVersions\{arch}\sharedhost");
                     dotnetPath = (string)hostKey.GetValue("Path");
-                    dotnetSdkVersions = sdkVersionsKey.GetValueNames();
-                    dotnetRuntimeVersions = runtimeKey.GetValueNames();
+                    dotnetSdkVersions = sdkVersionsKey?.GetValueNames() ?? Enumerable.Empty<string>();
+                    dotnetRuntimeVersions = runtimeKey?.GetValueNames() ?? Enumerable.Empty<string>();
                 }
 #pragma warning restore CA1416
                 break;
