@@ -361,7 +361,7 @@ namespace FlaxEngine.GUI
             var style = Style.Current;
             var enabled = EnabledInHierarchy;
 
-            // Paint Background
+            // Draw Background
             var backgroundColor = BackgroundColor;
             if (backgroundColor.A > 0.0f)
             {
@@ -388,7 +388,7 @@ namespace FlaxEngine.GUI
                     ArrowImageOpened?.Draw(dropDownRect, arrowColor);
             }
 
-            // Text
+            // Header text
             var textRect = new Rectangle(textLeft, 0, Width - textLeft, HeaderHeight);
             _headerTextMargin.ShrinkRectangle(ref textRect);
             var textColor = HeaderTextColor;
@@ -397,7 +397,9 @@ namespace FlaxEngine.GUI
                 textColor *= 0.6f;
             }
 
+            Render2D.PushClip(textRect);
             Render2D.DrawText(HeaderTextFont.GetFont(), HeaderTextMaterial, HeaderText, textRect, textColor, TextAlignment.Near, TextAlignment.Center);
+            Render2D.PopClip();
 
             if (!_isClosed && EnableContainmentLines)
             {
