@@ -20,7 +20,7 @@ namespace Flax.Build
         /// Specifies the minimum CPU architecture type to support (on x86/x64).
         /// </summary>
         [CommandLine("winCpuArch", "<arch>", "Specifies the minimum CPU architecture type to support (om x86/x64).")]
-        public static CpuArchitecture WindowsCpuArch = CpuArchitecture.AVX2; // 94.48% support on PC according to Steam Hardware & Software Survey: May 2025 (https://store.steampowered.com/hwsurvey/)
+        public static CpuArchitecture WindowsCpuArch = CpuArchitecture.SSE4_2; // 99.78% support on PC according to Steam Hardware & Software Survey: September 2025 (https://store.steampowered.com/hwsurvey/)
     }
 }
 

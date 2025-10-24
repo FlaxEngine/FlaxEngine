@@ -208,7 +208,7 @@ public:
         typedef typename FallbackAllocation::template Data<T> FallbackData;
 
         bool _useFallback = false;
-        byte _data[Capacity * sizeof(T)];
+        alignas(sizeof(void*)) byte _data[Capacity * sizeof(T)];
         FallbackData _fallback;
 
     public:
