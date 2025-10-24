@@ -26,6 +26,9 @@
 #if VIDEO_API_AV
 #include "AV/VideoBackendAV.h"
 #endif
+#if VIDEO_API_MINI
+#include "Mini/VideoBackendMini.h"
+#endif
 #if VIDEO_API_ANDROID
 #include "Android/VideoBackendAndroid.h"
 #endif
@@ -45,29 +48,28 @@
 class GPUUploadVideoFrameTask : public GPUTask
 {
 private:
-    VideoBackendPlayer* _player;
+    VideoBackendPlayer *_player;
 
 public:
-    GPUUploadVideoFrameTask(VideoBackendPlayer* player)
-        : GPUTask(Type::UploadTexture, 0)
-        , _player(player)
+    GPUUploadVideoFrameTask(VideoBackendPlayer *player)
+        : GPUTask(Type::UploadTexture, 0), _player(player)
     {
     }
 
 public:
     // [GPUTask]
-    bool HasReference(Object* resource) const override
+    bool HasReference(Object *resource) const override
     {
         return _player && _player->Frame == resource;
     }
 
 protected:
     // [GPUTask]
-    Result run(GPUTasksContext* context) override
+    Result run(GPUTasksContext *context) override
     {
         if (!_player || _player->VideoFrameMemory.IsInvalid())
             return Result::MissingResources;
-        GPUTexture* frame = _player->Frame;
+        GPUTexture *frame = _player->Frame;
         if (!frame->IsAllocated())
             return Result::MissingResources;
         PROFILE_CPU();
@@ -99,7 +101,7 @@ protected:
             context->GPU->SetViewportAndScissors((float)_player->Width, (float)_player->Height);
             context->GPU->SetRenderTarget(frame->View());
             context->GPU->BindSR(0, _player->FrameUpload->View());
-            GPUPipelineState* pso;
+            GPUPipelineState *pso;
             switch (_player->Format)
             {
             case PixelFormat::YUY2:
@@ -146,7 +148,7 @@ protected:
 class VideoSystem : public TaskGraphSystem
 {
 public:
-    void Execute(TaskGraph* graph) override;
+    void Execute(TaskGraph *graph) override;
 };
 
 class VideoService : public EngineService
@@ -157,9 +159,9 @@ public:
     {
     }
 
-    VideoBackend* Backends[4] = {};
+    VideoBackend *Backends[4] = {};
 
-    void InitBackend(int32 index, VideoBackend* backend)
+    void InitBackend(int32 index, VideoBackend *backend)
     {
         PROFILE_MEM(Video);
         LOG(Info, "Video initialization... (backend: {0})", backend->Base_Name());
@@ -175,15 +177,15 @@ public:
 };
 
 VideoService VideoServiceInstance;
-TaskGraphSystem* Video::System = nullptr;
+TaskGraphSystem *Video::System = nullptr;
 
-void VideoSystem::Execute(TaskGraph* graph)
+void VideoSystem::Execute(TaskGraph *graph)
 {
     PROFILE_CPU_NAMED("Video.Update");
     PROFILE_MEM(Video);
 
     // Update backends
-    for (VideoBackend*& backend : VideoServiceInstance.Backends)
+    for (VideoBackend *&backend : VideoServiceInstance.Backends)
     {
         if (backend)
             backend->Base_Update(graph);
@@ -201,8 +203,12 @@ void VideoService::Dispose()
 {
     PROFILE_CPU_NAMED("Video.Dispose");
 
+    // Remove video system from update graph
+    if (Video::System)
+        Engine::UpdateGraph->RemoveSystem(Video::System);
+    
     // Dispose backends
-    for (VideoBackend*& backend : VideoServiceInstance.Backends)
+    for (VideoBackend *&backend : VideoServiceInstance.Backends)
     {
         if (backend)
         {
@@ -214,22 +220,25 @@ void VideoService::Dispose()
     SAFE_DELETE(Video::System);
 }
 
-bool Video::CreatePlayerBackend(const VideoBackendPlayerInfo& info, VideoBackendPlayer& player)
+bool Video::CreatePlayerBackend(const VideoBackendPlayerInfo &info, VideoBackendPlayer &player)
 {
     // Pick the first backend to support the player info
     int32 index = 0;
-    VideoBackend* backend;
-#define TRY_USE_BACKEND(type) \
-        backend = VideoServiceInstance.Backends[index]; \
-        if (!backend) \
-            VideoServiceInstance.InitBackend(index, backend = new type()); \
-        if (!backend->Player_Create(info, player)) \
-            return false;
+    VideoBackend *backend;
+#define TRY_USE_BACKEND(type)                                          \
+    backend = VideoServiceInstance.Backends[index];                    \
+    if (!backend)                                                      \
+        VideoServiceInstance.InitBackend(index, backend = new type()); \
+    if (!backend->Player_Create(info, player))                         \
+        return false;
 #if VIDEO_API_MF
     TRY_USE_BACKEND(VideoBackendMF);
 #endif
 #if VIDEO_API_AV
     TRY_USE_BACKEND(VideoBackendAV);
+#endif
+#if VIDEO_API_MINI
+    TRY_USE_BACKEND(VideoBackendMini);
 #endif
 #if VIDEO_API_ANDROID
     TRY_USE_BACKEND(VideoBackendAndroid);
@@ -249,17 +258,34 @@ bool Video::CreatePlayerBackend(const VideoBackendPlayerInfo& info, VideoBackend
     return true;
 }
 
-void VideoBackendPlayer::Created(const VideoBackendPlayerInfo& info)
+void VideoBackendPlayer::Created(const VideoBackendPlayerInfo &info)
 {
 #ifdef TRACY_ENABLE
     DebugUrlLen = info.Url.Length();
-    DebugUrl = (Char*)Allocator::Allocate(DebugUrlLen * sizeof(Char) + 2);
+    DebugUrl = (Char *)Allocator::Allocate(DebugUrlLen * sizeof(Char) + 2);
     Platform::MemoryCopy(DebugUrl, *info.Url, DebugUrlLen * 2 + 2);
 #endif
+
+    // Setup audio source
+    IsAudioSpatial = info.Spatial;
+    AudioVolume = info.Volume;
+    AudioPan = info.Pan;
+    AudioMinDistance = info.MinDistance;
+    AudioAttenuation = info.Attenuation;
+
+    if (AudioBackend::Instance && AudioSource == 0)
+    {
+        // Create AudioSource
+        AudioSource = AudioBackend::Source::Add(AudioInfo, Vector3::Zero,
+            Quaternion::Identity, AudioVolume, 1.0f, AudioPan, false,
+            IsAudioSpatial, AudioAttenuation, AudioMinDistance, 1.0f);
+    }
+
+    IsAudioPlayPending = 1;
     Updated(info);
 }
 
-void VideoBackendPlayer::Updated(const VideoBackendPlayerInfo& info)
+void VideoBackendPlayer::Updated(const VideoBackendPlayerInfo &info)
 {
     IsAudioSpatial = info.Spatial;
     AudioVolume = info.Volume;
@@ -267,11 +293,13 @@ void VideoBackendPlayer::Updated(const VideoBackendPlayerInfo& info)
     AudioMinDistance = info.MinDistance;
     AudioAttenuation = info.Attenuation;
     Transform = info.Transform;
+
     if (AudioSource)
     {
         AudioBackend::Source::VolumeChanged(AudioSource, AudioVolume);
         AudioBackend::Source::PanChanged(AudioSource, AudioPan);
-        AudioBackend::Source::SpatialSetupChanged(AudioSource, IsAudioSpatial, AudioAttenuation, AudioMinDistance, 1.0f);
+        AudioBackend::Source::SpatialSetupChanged(AudioSource, IsAudioSpatial,
+            AudioAttenuation, AudioMinDistance, 1.0f);
     }
 }
 
@@ -298,6 +326,7 @@ void VideoBackendPlayer::StopAudio()
     if (AudioSource)
     {
         AudioBackend::Source::Stop(AudioSource);
+        AudioBackend::Source::DequeueProcessedBuffers(AudioSource);
         IsAudioPlayPending = 1;
     }
 }
@@ -365,25 +394,19 @@ void VideoBackendPlayer::UpdateAudioBuffer(Span<byte> data, TimeSpan time, TimeS
     ZoneText(DebugUrl, DebugUrlLen);
     AudioBufferTime = time;
     AudioBufferDuration = duration;
-    if (!AudioBackend::Instance)
+    if (!AudioBackend::Instance || AudioSource == 0)
+    {
+        LOG(Warning, "Error: Audio buffer not updated: AudioSource not created");
         return;
-
-    // Setup audio source
-    if (AudioSource == 0)
-    {
-        AudioSource = AudioBackend::Source::Add(AudioInfo, Vector3::Zero, Quaternion::Identity, AudioVolume, 1.0f, AudioPan, false, IsAudioSpatial, AudioAttenuation, AudioMinDistance, 1.0f);
-        IsAudioPlayPending = 1;
     }
-    else
+
+    // Get the processed buffers count
+    int32 numProcessedBuffers = 0;
+    AudioBackend::Source::GetProcessedBuffersCount(AudioSource, numProcessedBuffers);
+    if (numProcessedBuffers > 0)
     {
-        // Get the processed buffers count
-        int32 numProcessedBuffers = 0;
-        AudioBackend::Source::GetProcessedBuffersCount(AudioSource, numProcessedBuffers);
-        if (numProcessedBuffers > 0)
-        {
-            // Unbind processed buffers from the source
-            AudioBackend::Source::DequeueProcessedBuffers(AudioSource);
-        }
+        // Unbind processed buffers from the source
+        AudioBackend::Source::DequeueProcessedBuffers(AudioSource);
     }
 
     // Get audio buffer
@@ -428,7 +451,7 @@ void VideoBackendPlayer::ReleaseResources()
         AudioBackend::Source::Remove(AudioSource);
         AudioSource = 0;
     }
-    for (uint32& bufferId : AudioBuffers)
+    for (uint32 &bufferId : AudioBuffers)
     {
         if (bufferId)
         {

@@ -40,6 +40,13 @@ public class Video : EngineModule
             options.SourcePaths.Add(Path.Combine(FolderPath, "AV"));
             options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_AV");
             break;
+        case TargetPlatform.Linux:
+            // Minimp4 + openh264 + fdk-aac
+            options.SourcePaths.Add(Path.Combine(FolderPath, "Mini"));
+            options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_MINI");
+            options.PublicDependencies.Add("openh264");
+            options.PublicDependencies.Add("fdkaac");
+            break;
         case TargetPlatform.PS4:
             options.SourcePaths.Add(Path.Combine(Globals.EngineRoot, "Source", "Platforms", "PS4", "Engine", "Video"));
             options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_PS4");
