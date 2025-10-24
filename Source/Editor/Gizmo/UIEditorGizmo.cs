@@ -634,29 +634,23 @@ namespace FlaxEditor
                 // Draw sizing widgets
                 if (_widgets == null)
                     _widgets = new List<Widget>();
-                var widgetSize = 10.0f;
-                var sideWidgetSize = new Float2(5.0f, 20.0f);
-                var topWidgetSize = new Float2(20.0f, 5.0f);
+                var widgetSize = 8.0f;
                 var viewScale = ViewScale;
                 if (viewScale < 0.7f)
-                {
                     widgetSize *= viewScale;
-                    sideWidgetSize *= viewScale;
-                    topWidgetSize *= viewScale;
-                }
-                var cornerWidgetHandleSize = new Float2(widgetSize);
-                DrawControlWidget(uiControl, ref ul, ref mousePos, ref cornerWidgetHandleSize, viewScale, new Float2(-1, -1), CursorType.SizeNWSE);
-                DrawControlWidget(uiControl, ref ur, ref mousePos, ref cornerWidgetHandleSize, viewScale, new Float2(1, -1), CursorType.SizeNESW);
-                DrawControlWidget(uiControl, ref bl, ref mousePos, ref cornerWidgetHandleSize, viewScale, new Float2(-1, 1), CursorType.SizeNESW);
-                DrawControlWidget(uiControl, ref br, ref mousePos, ref cornerWidgetHandleSize, viewScale, new Float2(1, 1), CursorType.SizeNWSE);
+                var widgetHandleSize = new Float2(widgetSize);
+                DrawControlWidget(uiControl, ref ul, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, -1), CursorType.SizeNWSE);
+                DrawControlWidget(uiControl, ref ur, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, -1), CursorType.SizeNESW);
+                DrawControlWidget(uiControl, ref bl, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, 1), CursorType.SizeNESW);
+                DrawControlWidget(uiControl, ref br, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, 1), CursorType.SizeNWSE);
                 Float2.Lerp(ref ul, ref bl, 0.5f, out var el);
                 Float2.Lerp(ref ur, ref br, 0.5f, out var er);
                 Float2.Lerp(ref ul, ref ur, 0.5f, out var eu);
                 Float2.Lerp(ref bl, ref br, 0.5f, out var eb);
-                DrawControlWidget(uiControl, ref el, ref mousePos, ref sideWidgetSize, viewScale, new Float2(-1, 0), CursorType.SizeWE);
-                DrawControlWidget(uiControl, ref er, ref mousePos, ref sideWidgetSize, viewScale, new Float2(1, 0), CursorType.SizeWE);
-                DrawControlWidget(uiControl, ref eu, ref mousePos, ref topWidgetSize, viewScale, new Float2(0, -1), CursorType.SizeNS);
-                DrawControlWidget(uiControl, ref eb, ref mousePos, ref topWidgetSize, viewScale, new Float2(0, 1), CursorType.SizeNS);
+                DrawControlWidget(uiControl, ref el, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, 0), CursorType.SizeWE);
+                DrawControlWidget(uiControl, ref er, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, 0), CursorType.SizeWE);
+                DrawControlWidget(uiControl, ref eu, ref mousePos, ref widgetHandleSize, viewScale, new Float2(0, -1), CursorType.SizeNS);
+                DrawControlWidget(uiControl, ref eb, ref mousePos, ref widgetHandleSize, viewScale, new Float2(0, 1), CursorType.SizeNS);
 
                 // Draw pivot
                 var pivotSize = 8.0f;
@@ -736,7 +730,8 @@ namespace FlaxEditor
             var control = uiControl.Control;
             var rotation = GetTotalRotation(control);
             var rotationInRadians = rotation * Mathf.DegreesToRadians;
-            var position = (pos);
+            var position = (pos + new Float2(resizeAxis.X * Mathf.Cos(rotationInRadians) - resizeAxis.Y * Mathf.Sin(rotationInRadians), 
+                                             resizeAxis.Y * Mathf.Cos(rotationInRadians) + resizeAxis.X * Mathf.Sin(rotationInRadians)) * 4 * (scale < 0.7f ? scale : 1));
             var halfSize = size * 0.5f;
             // Keep at 0, 0 rect position until later to correctly render rotation.
             var rect = new Rectangle(0, 0, size);
