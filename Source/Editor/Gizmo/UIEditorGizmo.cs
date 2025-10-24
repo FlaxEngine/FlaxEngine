@@ -635,22 +635,28 @@ namespace FlaxEditor
                 if (_widgets == null)
                     _widgets = new List<Widget>();
                 var widgetSize = 10.0f;
+                var sideWidgetSize = new Float2(5.0f, 20.0f);
+                var topWidgetSize = new Float2(20.0f, 5.0f);
                 var viewScale = ViewScale;
                 if (viewScale < 0.7f)
+                {
                     widgetSize *= viewScale;
-                var widgetHandleSize = new Float2(widgetSize);
-                DrawControlWidget(uiControl, ref ul, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, -1), CursorType.SizeNWSE);
-                DrawControlWidget(uiControl, ref ur, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, -1), CursorType.SizeNESW);
-                DrawControlWidget(uiControl, ref bl, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, 1), CursorType.SizeNESW);
-                DrawControlWidget(uiControl, ref br, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, 1), CursorType.SizeNWSE);
+                    sideWidgetSize *= viewScale;
+                    topWidgetSize *= viewScale;
+                }
+                var cornerWidgetHandleSize = new Float2(widgetSize);
+                DrawControlWidget(uiControl, ref ul, ref mousePos, ref cornerWidgetHandleSize, viewScale, new Float2(-1, -1), CursorType.SizeNWSE);
+                DrawControlWidget(uiControl, ref ur, ref mousePos, ref cornerWidgetHandleSize, viewScale, new Float2(1, -1), CursorType.SizeNESW);
+                DrawControlWidget(uiControl, ref bl, ref mousePos, ref cornerWidgetHandleSize, viewScale, new Float2(-1, 1), CursorType.SizeNESW);
+                DrawControlWidget(uiControl, ref br, ref mousePos, ref cornerWidgetHandleSize, viewScale, new Float2(1, 1), CursorType.SizeNWSE);
                 Float2.Lerp(ref ul, ref bl, 0.5f, out var el);
                 Float2.Lerp(ref ur, ref br, 0.5f, out var er);
                 Float2.Lerp(ref ul, ref ur, 0.5f, out var eu);
                 Float2.Lerp(ref bl, ref br, 0.5f, out var eb);
-                DrawControlWidget(uiControl, ref el, ref mousePos, ref widgetHandleSize, viewScale, new Float2(-1, 0), CursorType.SizeWE);
-                DrawControlWidget(uiControl, ref er, ref mousePos, ref widgetHandleSize, viewScale, new Float2(1, 0), CursorType.SizeWE);
-                DrawControlWidget(uiControl, ref eu, ref mousePos, ref widgetHandleSize, viewScale, new Float2(0, -1), CursorType.SizeNS);
-                DrawControlWidget(uiControl, ref eb, ref mousePos, ref widgetHandleSize, viewScale, new Float2(0, 1), CursorType.SizeNS);
+                DrawControlWidget(uiControl, ref el, ref mousePos, ref sideWidgetSize, viewScale, new Float2(-1, 0), CursorType.SizeWE);
+                DrawControlWidget(uiControl, ref er, ref mousePos, ref sideWidgetSize, viewScale, new Float2(1, 0), CursorType.SizeWE);
+                DrawControlWidget(uiControl, ref eu, ref mousePos, ref topWidgetSize, viewScale, new Float2(0, -1), CursorType.SizeNS);
+                DrawControlWidget(uiControl, ref eb, ref mousePos, ref topWidgetSize, viewScale, new Float2(0, 1), CursorType.SizeNS);
 
                 // Draw pivot
                 var pivotSize = 8.0f;
@@ -685,7 +691,7 @@ namespace FlaxEditor
                         anchorRectSize *= viewScale;
 
                     // Make anchor rects and rotate if parent is rotated.
-                    var parentRotation = controlParent.Rotation * Mathf.DegreesToRadians;
+                    var parentRotation = GetTotalRotation(controlParent) * Mathf.DegreesToRadians;
 
                     var rect1Axis = new Float2(-1, -1);
                     var rect1 = new Rectangle(anchorUpperLeft + 
@@ -717,17 +723,24 @@ namespace FlaxEditor
             }
         }
 
+        private float GetTotalRotation(Control control)
+        {
+            if (control.Parent != null)
+                return control.Rotation + GetTotalRotation(control.Parent);
+            return control.Rotation;
+        }
+
         private void DrawControlWidget(UIControl uiControl, ref Float2 pos, ref Float2 mousePos, ref Float2 size, float scale, Float2 resizeAxis, CursorType cursor)
         {
             var style = Style.Current;
             var control = uiControl.Control;
-            var rotation = control.Rotation;
+            var rotation = GetTotalRotation(control);
             var rotationInRadians = rotation * Mathf.DegreesToRadians;
-            var rect = new Rectangle((pos + 
-                                      new Float2(resizeAxis.X * Mathf.Cos(rotationInRadians) - resizeAxis.Y * Mathf.Sin(rotationInRadians), 
-                                                 resizeAxis.Y * Mathf.Cos(rotationInRadians) + resizeAxis.X * Mathf.Sin(rotationInRadians)) * 10 * scale) - size * 0.5f,
-                                     size);
-            
+            var position = (pos);
+            var halfSize = size * 0.5f;
+            // Keep at 0, 0 rect position until later to correctly render rotation.
+            var rect = new Rectangle(0, 0, size);
+
             // Find more correct cursor at different angles
             var unwindRotation = Mathf.UnwindDegrees(rotation);
             if (unwindRotation is (>= 45 and < 135) or (> -135 and <= -45) )
@@ -749,6 +762,10 @@ namespace FlaxEditor
                 default: break;
                 }
             }
+
+            Render2D.PushTransform(Matrix3x3.Translation2D(position));
+            Render2D.PushTransform(Matrix3x3.RotationZ(rotationInRadians));
+            Render2D.PushTransform(Matrix3x3.Translation2D(-1 * halfSize));
             if (rect.Contains(ref mousePos))
             {
                 Render2D.FillRectangle(rect, style.Foreground);
@@ -759,9 +776,14 @@ namespace FlaxEditor
                 Render2D.FillRectangle(rect, style.ForegroundGrey);
                 Render2D.DrawRectangle(rect, style.Foreground);
             }
+            Render2D.PopTransform();
+            Render2D.PopTransform();
+            Render2D.PopTransform();
+
             if (!_mouseMovesWidget && uiControl != null)
             {
                 // Collect widget
+                rect.Location = position - halfSize;
                 _widgets.Add(new Widget
                 {
                     UIControl = uiControl,
