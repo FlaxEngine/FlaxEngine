@@ -12,6 +12,11 @@ namespace FlaxEngine.GUI
     public class DropPanel : ContainerControl
     {
         /// <summary>
+        /// Size of the drop down icon. 
+        /// </summary>
+        public const float DropDownIconSize = 14.0f;
+
+        /// <summary>
         /// The header height.
         /// </summary>
         protected float _headerHeight = 14.0f;
@@ -379,7 +384,7 @@ namespace FlaxEngine.GUI
             float textLeft = 0;
             if (EnableDropDownIcon)
             {
-                textLeft += 14;
+                textLeft += DropDownIconSize;
                 var dropDownRect = new Rectangle(2, (HeaderHeight - 12) / 2, 12, 12);
                 var arrowColor = _mouseOverHeader ? style.Foreground : style.ForegroundGrey;
                 if (_isClosed)
