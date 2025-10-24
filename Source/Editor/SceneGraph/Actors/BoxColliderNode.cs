@@ -37,10 +37,26 @@ namespace FlaxEditor.SceneGraph.Actors
 
         private void OnResizeClicked()
         {
-            foreach (var value in Values)
+            if (Values.IsSingleObject)
             {
+                var value = Values[0];
                 if (value is BoxCollider collider)
                     collider.AutoResize(!_keepLocalOrientation);
+
+                SetValue(value);
+            }
+            else
+            {
+                object[] objects = new object[Values.Count];
+                for (int i = 0; i < Values.Count; i++)
+                {
+                    var value = Values[i];
+                    if (value is BoxCollider collider)
+                        collider.AutoResize(!_keepLocalOrientation);
+
+                    objects[i] = value;
+                }
+                SetValue(objects);
             }
         }
     }
