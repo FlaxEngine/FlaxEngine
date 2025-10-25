@@ -25,6 +25,9 @@ namespace Flax.Build.Bindings
         public override void Init(Builder.BuildData buildData)
         {
             base.Init(buildData);
+            
+            foreach (var functionInfo in Functions)
+                ProcessAndValidate(functionInfo);
 
             if (ForceNoPod || (Interfaces != null && Interfaces.Count != 0) || IsTemplate)
             {
@@ -65,9 +68,6 @@ namespace Flax.Build.Bindings
 
                 throw new Exception($"Unknown field type '{fieldInfo.Type} {fieldInfo.Name}' in structure '{Name}'.");
             }
-
-            foreach (var functionInfo in Functions)
-                ProcessAndValidate(functionInfo);
         }
 
         public override void Write(BinaryWriter writer)

@@ -131,6 +131,9 @@ API_STRUCT(NoDefault) struct TestStruct : public ISerializable
     // Scene Ref
     API_FIELD() SceneReference SceneRef;
 
+    // Member function in a structure
+    API_FUNCTION() int32 TryMe(int32 num) { return num; }
+
     friend bool operator==(const TestStruct& lhs, const TestStruct& rhs)
     {
         return lhs.Vector == rhs.Vector && 
