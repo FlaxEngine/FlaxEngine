@@ -447,8 +447,8 @@ namespace FlaxEditor.GUI.Tree
                                 // Select previous parent child
                                 var select = nodeParent.GetChild(myIndex - 1) as TreeNode;
 
-                                // Select last child if is valid and expanded and has any children
-                                if (select != null && select.IsExpanded && select.HasAnyVisibleChild)
+                                // Get bottom most child node
+                                while (select != null && select.IsExpanded && select.HasAnyVisibleChild)
                                 {
                                     select = select.GetChild(select.ChildrenCount - 1) as TreeNode;
                                 }
