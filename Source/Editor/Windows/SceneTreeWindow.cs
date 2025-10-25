@@ -504,7 +504,9 @@ namespace FlaxEditor.Windows
                         }
                         var actor = item.OnEditorDrop(this);
                         actor.Name = item.ShortName;
-                        Level.SpawnActor(actor);
+                        var scene = Level.Scenes[0];
+                        if (scene != null)
+                            Editor.SceneEditing.Spawn(actor, scene);
                         var graphNode = Editor.Scene.GetActorNode(actor.ID);
                         if (graphNode != null)
                             graphNodes.Add(graphNode);
@@ -527,7 +529,9 @@ namespace FlaxEditor.Windows
                             continue;
                         }
                         actor.Name = item.Name;
-                        Level.SpawnActor(actor);
+                        var scene = Level.Scenes[0];
+                        if (scene != null)
+                            Editor.SceneEditing.Spawn(actor, scene);
                         Editor.Scene.MarkSceneEdited(actor.Scene);
                     }
                     result = DragDropEffect.Move;
@@ -549,7 +553,9 @@ namespace FlaxEditor.Windows
                             Control = control,
                             Name = item.Name,
                         };
-                        Level.SpawnActor(uiControl);
+                        var scene = Level.Scenes[0];
+                        if (scene != null)
+                            Editor.SceneEditing.Spawn(uiControl, scene);
                         Editor.Scene.MarkSceneEdited(uiControl.Scene);
                     }
                     result = DragDropEffect.Move;
@@ -571,7 +577,9 @@ namespace FlaxEditor.Windows
                                 continue;
                             }
                             actor.Name = actorType.Name;
-                            Level.SpawnActor(actor);
+                            var scene = Level.Scenes[0];
+                            if (scene != null)
+                                Editor.SceneEditing.Spawn(actor, scene);
                             var graphNode = Editor.Scene.GetActorNode(actor.ID);
                             if (graphNode != null)
                                 graphNodes.Add(graphNode);
