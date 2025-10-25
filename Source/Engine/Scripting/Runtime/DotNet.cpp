@@ -1798,6 +1798,33 @@ bool InitHostfxr()
         get_hostfxr_params.dotnet_root = dotnetRoot.Get();
     }
 #endif
+    String platformStr;
+    switch (PLATFORM_TYPE)
+    {
+    case PlatformType::Windows:
+    case PlatformType::UWP:
+        if (PLATFORM_ARCH == ArchitectureType::x64)
+            platformStr = "Windows x64";
+        else if (PLATFORM_ARCH == ArchitectureType::ARM64)
+            platformStr = "Windows ARM64";
+        else
+            platformStr = "Windows x86";
+        break;
+    case PlatformType::Linux:
+        platformStr = PLATFORM_ARCH_ARM64 ? "Linux ARM64" : PLATFORM_ARCH_ARM ? "Linux Arm32" : PLATFORM_64BITS ? "Linux x64" : "Linux x86";
+        break;
+    case PlatformType::Mac:
+        platformStr = PLATFORM_ARCH_ARM || PLATFORM_ARCH_ARM64 ? "macOS ARM64" : PLATFORM_64BITS ? "macOS x64" : "macOS x86";
+        break;
+    default:
+        if (PLATFORM_ARCH == ArchitectureType::x64)
+            platformStr = "x64";
+        else if (PLATFORM_ARCH == ArchitectureType::ARM64)
+            platformStr = "ARM64";
+        else
+            platformStr = "x86";
+    }
+
     char_t hostfxrPath[1024];
     size_t hostfxrPathSize = sizeof(hostfxrPath) / sizeof(char_t);
     int rc = get_hostfxr_path(hostfxrPath, &hostfxrPathSize, &get_hostfxr_params);
@@ -1810,9 +1837,9 @@ bool InitHostfxr()
         Platform::OpenUrl(TEXT("https://dotnet.microsoft.com/en-us/download/dotnet"));
 #endif
 #if USE_EDITOR
-        LOG(Fatal, "Missing .NET 8 or later SDK installation required to run Flax Editor.");
+        LOG(Fatal, "Missing .NET 8 or later SDK installation for {0} is required to run Flax Editor.", platformStr);
 #else
-        LOG(Fatal, "Missing .NET 8 or later Runtime installation required to run this application.");
+        LOG(Fatal, "Missing .NET 8 or later Runtime installation for {0} is required to run this application.", platformStr);
 #endif
         return true;
     }
@@ -1870,27 +1897,6 @@ bool InitHostfxr()
         hostfxr_close(handle);
         if (rc == 0x80008096) // FrameworkMissingFailure
         {
-            String platformStr;
-            switch (PLATFORM_TYPE)
-            {
-            case PlatformType::Windows:
-            case PlatformType::UWP:
-                if (PLATFORM_ARCH == ArchitectureType::x64)
-                    platformStr = "Windows x64";
-                else if (PLATFORM_ARCH == ArchitectureType::ARM64)
-                    platformStr = "Windows ARM64";
-                else
-                    platformStr = "Windows x86";
-                break;
-            case PlatformType::Linux:
-                platformStr = PLATFORM_ARCH_ARM64 ? "Linux ARM64" : PLATFORM_ARCH_ARM ? "Linux Arm32" : PLATFORM_64BITS ? "Linux x64" : "Linux x86";
-                break;
-            case PlatformType::Mac:
-                platformStr = PLATFORM_ARCH_ARM || PLATFORM_ARCH_ARM64 ? "macOS ARM64" : PLATFORM_64BITS ? "macOS x64" : "macOS x86";
-                break;
-            default:;
-                platformStr = "";
-            }
             LOG(Fatal, "Failed to resolve compatible .NET runtime version in '{0}'. Make sure the correct platform version for runtime is installed ({1})", platformStr, String(init_params.dotnet_root));
         }
         else
