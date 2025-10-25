@@ -68,9 +68,6 @@ namespace Flax.Build.Bindings
 
                 throw new Exception($"Unknown field type '{fieldInfo.Type} {fieldInfo.Name}' in structure '{Name}'.");
             }
-
-            foreach (var functionInfo in Functions)
-                ProcessAndValidate(functionInfo);
         }
 
         public override void Write(BinaryWriter writer)
