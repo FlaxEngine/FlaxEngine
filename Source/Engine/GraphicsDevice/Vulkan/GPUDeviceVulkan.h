@@ -496,6 +496,7 @@ public:
     /// The physical device enabled features.
     /// </summary>
     VkPhysicalDeviceFeatures PhysicalDeviceFeatures;
+    VkPhysicalDeviceVulkan12Features PhysicalDeviceFeatures12;
 
     Array<BufferedQueryPoolVulkan*> TimestampQueryPools;
     Array<BufferedQueryPoolVulkan*> OcclusionQueryPools;
