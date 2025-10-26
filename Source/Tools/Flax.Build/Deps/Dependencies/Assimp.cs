@@ -127,11 +127,12 @@ namespace Flax.Deps.Dependencies
                         { "CC", "clang-" + Configuration.LinuxClangMinVer },
                         { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
                         { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
                     };
 
                     // Build for Linux
                     RunCmake(root, platform, TargetArchitecture.x64, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig, envVars);
-                    Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+                    Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool, envVars);
                     configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
@@ -143,11 +144,11 @@ namespace Flax.Deps.Dependencies
                     foreach (var architecture in new[] { TargetArchitecture.x64, TargetArchitecture.ARM64 })
                     {
                         RunCmake(root, platform, architecture, " -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF " + globalConfig);
-                        Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                        Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool);
                         configHeaderFilePath = Path.Combine(root, "include", "assimp", "config.h");
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         Utilities.FileCopy(Path.Combine(root, "lib", "libassimp.a"), Path.Combine(depsFolder, "libassimp.a"));
-                        Utilities.Run("make", "clean", null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                        Utilities.Run("make", "clean", null, root, Utilities.RunOptions.DefaultTool);
                     }
                     break;
                 }
