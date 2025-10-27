@@ -14,7 +14,7 @@ namespace Flax.Build
         /// Specifies the minimum Clang compiler version to use on Linux (eg. 10).
         /// </summary>
         [CommandLine("linuxClangMinVer", "<version>", "Specifies the minimum Clang compiler version to use on Linux (eg. 10).")]
-        public static string LinuxClangMinVer = "13";
+        public static string LinuxClangMinVer = "14";
     }
 }
 
