@@ -123,6 +123,7 @@ namespace Flax.Deps.Dependencies
                     {
                         { "CC", "clang-" + Configuration.LinuxClangMinVer },
                         { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
+                        { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
                         { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
                     };
                     var config = $"-DALSOFT_REQUIRE_ALSA=ON " +

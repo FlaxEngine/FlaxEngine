@@ -1568,7 +1568,15 @@ bool GPUDeviceVulkan::Init()
     vkGetPhysicalDeviceQueueFamilyProperties(gpu, &queueCount, QueueFamilyProps.Get());
 
     // Query device features
+    RenderToolsVulkan::ZeroStruct(PhysicalDeviceFeatures12, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES);
     vkGetPhysicalDeviceFeatures(gpu, &PhysicalDeviceFeatures);
+    if (vkGetPhysicalDeviceFeatures2)
+    {
+        VkPhysicalDeviceFeatures2 features2;
+        RenderToolsVulkan::ZeroStruct(features2, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+        features2.pNext = &PhysicalDeviceFeatures12;
+        vkGetPhysicalDeviceFeatures2(gpu, &features2);
+    }
 
     // Get extensions and layers
     Array<const char*> deviceExtensions;
@@ -1670,6 +1678,16 @@ bool GPUDeviceVulkan::Init()
     VkPhysicalDeviceFeatures enabledFeatures;
     VulkanPlatform::RestrictEnabledPhysicalDeviceFeatures(PhysicalDeviceFeatures, enabledFeatures);
     deviceInfo.pEnabledFeatures = &enabledFeatures;
+
+#if GPU_ENABLE_TRACY && VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset
+    VkPhysicalDeviceHostQueryResetFeatures resetFeatures;
+    if (PhysicalDeviceFeatures12.hostQueryReset)
+    {
+        RenderToolsVulkan::ZeroStruct(resetFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES);
+        resetFeatures.hostQueryReset = VK_TRUE;
+        deviceInfo.pNext = &resetFeatures;
+    }
+#endif
 
     // Create the device
     VALIDATE_VULKAN_RESULT(vkCreateDevice(gpu, &deviceInfo, nullptr, &Device));
