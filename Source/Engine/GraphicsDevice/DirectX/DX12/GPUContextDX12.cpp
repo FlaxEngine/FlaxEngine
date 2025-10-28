@@ -491,7 +491,7 @@ void GPUContextDX12::flushUAVs()
     ASSERT(uaCount <= GPU_MAX_UA_BINDED);
 
     // Fill table with source descriptors
-    DxShaderHeader& header = _currentCompute ? ((GPUShaderProgramCSDX12*)_currentCompute)->Header : _currentState->Header;
+    DxShaderHeader& header = _isCompute ? ((GPUShaderProgramCSDX12*)_currentCompute)->Header : _currentState->Header;
     D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptorRangeStarts[GPU_MAX_UA_BINDED];
     for (uint32 i = 0; i < uaCount; i++)
     {

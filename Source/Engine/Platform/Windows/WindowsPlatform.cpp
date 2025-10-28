@@ -543,11 +543,9 @@ void WindowsPlatform::ReleaseMutex()
     }
 }
 
-void WindowsPlatform::PreInit(void* hInstance)
+PRAGMA_DISABLE_OPTIMIZATION;
+void CheckInstructionSet()
 {
-    ASSERT(hInstance);
-    Instance = hInstance;
-
 #if PLATFORM_ARCH_X86 || PLATFORM_ARCH_X64
     // Check the minimum vector instruction set support
     int32 cpuInfo[4] = { -1 };
@@ -597,10 +595,19 @@ void WindowsPlatform::PreInit(void* hInstance)
     {
         // Not supported CPU
         CPUBrand cpu;
-        Error(String::Format(TEXT("Cannot start program due to lack of CPU feature {}.\n\n{}"), missingFeature, String(cpu.Buffer)));
+        Platform::Error(String::Format(TEXT("Cannot start program due to lack of CPU feature {}.\n\n{}"), missingFeature, String(cpu.Buffer)));
         exit(-1);
     }
 #endif
+}
+PRAGMA_ENABLE_OPTIMIZATION;
+
+void WindowsPlatform::PreInit(void* hInstance)
+{
+    ASSERT(hInstance);
+    Instance = hInstance;
+
+    CheckInstructionSet();
 
     // Disable the process from being showing "ghosted" while not responding messages during slow tasks
     DisableProcessWindowsGhosting();
