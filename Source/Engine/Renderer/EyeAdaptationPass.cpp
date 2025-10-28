@@ -98,6 +98,7 @@ void EyeAdaptationPass::Render(RenderContext& renderContext, GPUTexture* colorBu
     if (mode == EyeAdaptationMode::Manual)
     {
         // Apply fixed manual exposure
+        context->ResetSR();
         context->SetRenderTarget(*colorBuffer);
         context->SetViewportAndScissors((float)colorBuffer->Width(), (float)colorBuffer->Height());
         context->SetState(_psManual);
