@@ -40,10 +40,11 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             var codeEditing = Editor.Instance.CodeEditing;
             var vsCode = codeEditing.GetInBuildEditor(CodeEditorTypes.VSCode);
             var rider = codeEditing.GetInBuildEditor(CodeEditorTypes.Rider);
+            var zed = codeEditing.GetInBuildEditor(CodeEditorTypes.Zed);
 
 #if PLATFORM_WINDOW
             // Favor the newest Visual Studio
-            for (int i = (int)CodeEditorTypes.VS2019; i >= (int)CodeEditorTypes.VS2008; i--)
+            for (int i = (int)CodeEditorTypes.VS2026; i >= (int)CodeEditorTypes.VS2008; i--)
             {
                 var visualStudio = codeEditing.GetInBuildEditor((CodeEditorTypes)i);
                 if (visualStudio != null)
@@ -66,6 +67,8 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                 _currentEditor = vsCode;
             else if (rider != null)
                 _currentEditor = rider;
+            else if (zed != null)
+                _currentEditor = zed;
             else
                 _currentEditor = codeEditing.GetInBuildEditor(CodeEditorTypes.SystemDefault);
         }
