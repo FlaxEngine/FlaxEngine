@@ -115,6 +115,7 @@ namespace Flax.Deps.Dependencies
             var buildFolder = Path.Combine(nvCloth, "compiler", platform.ToString() + '_' + architecture.ToString());
             var envVars = new Dictionary<string, string>();
             envVars["GW_DEPS_ROOT"] = root;
+            envVars["CMAKE_BUILD_PARALLEL_LEVEL"] = CmakeBuildParallel;
             switch (platform)
             {
             case TargetPlatform.Windows:
@@ -166,6 +167,8 @@ namespace Flax.Deps.Dependencies
                 cmakeArgs += " -DTARGET_BUILD_PLATFORM=linux";
                 cmakeName = "linux";
                 binariesPrefix = "lib";
+                envVars.Add("CC", "clang-" + Configuration.LinuxClangMinVer);
+                envVars.Add("CXX", "clang++-" + Configuration.LinuxClangMinVer);
                 break;
             default: throw new InvalidPlatformException(platform);
             }

@@ -107,13 +107,14 @@ namespace Flax.Deps.Dependencies
                     {
                         { "CC", "clang-" + Configuration.LinuxClangMinVer },
                         { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
                     };
                     var buildDir = Path.Combine(root, "build");
                     SetupDirectory(buildDir, true);
-                    Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                    Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
-                    Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                    Utilities.Run("make", "install", null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                    Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.DefaultTool);
+                    Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.DefaultTool, envVars);
+                    Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool);
+                    Utilities.Run("make", "install", null, root, Utilities.RunOptions.DefaultTool);
                     var depsFolder = GetThirdPartyFolder(options, platform, TargetArchitecture.x64);
                     var filename = "libcurl.a";
                     Utilities.FileCopy(Path.Combine(buildDir, "lib", filename), Path.Combine(depsFolder, filename));
@@ -153,11 +154,11 @@ namespace Flax.Deps.Dependencies
                         };
                         var buildDir = Path.Combine(root, "build");
                         SetupDirectory(buildDir, true);
-                        Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                        Utilities.Run("chmod", "+x install-sh", null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                        Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --host=" + archName + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
-                        Utilities.Run("make", null, null, root, Utilities.RunOptions.ThrowExceptionOnError);
-                        Utilities.Run("make", "install", null, root, Utilities.RunOptions.ThrowExceptionOnError);
+                        Utilities.Run("chmod", "+x configure", null, root, Utilities.RunOptions.DefaultTool);
+                        Utilities.Run("chmod", "+x install-sh", null, root, Utilities.RunOptions.DefaultTool);
+                        Utilities.Run(Path.Combine(root, "configure"), string.Join(" ", settings) + " --host=" + archName + " --prefix=\"" + buildDir + "\"", null, root, Utilities.RunOptions.DefaultTool, envVars);
+                        Utilities.Run("make", null, null, root, Utilities.RunOptions.DefaultTool);
+                        Utilities.Run("make", "install", null, root, Utilities.RunOptions.DefaultTool);
                         var depsFolder = GetThirdPartyFolder(options, platform, architecture);
                         var filename = "libcurl.a";
                         Utilities.FileCopy(Path.Combine(buildDir, "lib", filename), Path.Combine(depsFolder, filename));

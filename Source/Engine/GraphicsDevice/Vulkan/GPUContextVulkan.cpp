@@ -114,7 +114,7 @@ GPUContextVulkan::GPUContextVulkan(GPUDeviceVulkan* device, QueueVulkan* queue)
 #if GPU_ENABLE_TRACY
 #if VK_EXT_calibrated_timestamps && VK_EXT_host_query_reset && !PLATFORM_SWITCH
     // Use calibrated timestamps extension
-    if (vkResetQueryPoolEXT && vkGetCalibratedTimestampsEXT)
+    if (vkResetQueryPoolEXT && vkGetCalibratedTimestampsEXT && _device->PhysicalDeviceFeatures12.hostQueryReset)
     {
         _tracyContext = tracy::CreateVkContext(_device->Adapter->Gpu, _device->Device, vkResetQueryPoolEXT, vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, vkGetCalibratedTimestampsEXT);
     }

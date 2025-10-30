@@ -498,7 +498,7 @@ namespace Flax.Deps
             case TargetPlatform.Mac: break;
             default: throw new InvalidPlatformException(BuildPlatform);
             }
-            Utilities.Run(path, args, null, workspace, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+            Utilities.Run(path, args, null, workspace, Utilities.RunOptions.DefaultTool, envVars);
         }
 
         internal bool GetMsBuildForPlatform(TargetPlatform targetPlatform, out VisualStudioVersion vsVersion, out string msBuildPath)

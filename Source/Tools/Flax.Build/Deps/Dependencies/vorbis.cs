@@ -366,15 +366,17 @@ namespace Flax.Deps.Dependencies
                     var envVars = new Dictionary<string, string>
                     {
                         { "CC", "clang-" + Configuration.LinuxClangMinVer },
-                        { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer }
+                        { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
+                        { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
                     };
                     var buildDir = Path.Combine(root, "build");
 
-                    Utilities.Run(Path.Combine(root, "autogen.sh"), null, null, root, Utilities.RunOptions.Default, envVars);
+                    Utilities.Run(Path.Combine(root, "autogen.sh"), null, null, root, Utilities.RunOptions.DefaultTool, envVars);
 
                     // Build for Linux
                     var toolchain = UnixToolchain.GetToolchainName(platform, TargetArchitecture.x64);
-                    Utilities.Run(Path.Combine(root, "configure"), string.Format("--host={0}", toolchain), null, root, Utilities.RunOptions.Default, envVars);
+                    Utilities.Run(Path.Combine(root, "configure"), string.Format("--host={0}", toolchain), null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
                     SetupDirectory(buildDir, true);
                     Utilities.Run("cmake", "-G \"Unix Makefiles\" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release ..", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);

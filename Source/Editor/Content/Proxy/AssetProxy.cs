@@ -130,6 +130,11 @@ namespace FlaxEditor.Content
             eyeAdaptation.Mode = EyeAdaptationMode.None;
             eyeAdaptation.OverrideFlags |= EyeAdaptationSettingsOverride.Mode;
             preview.PostFxVolume.EyeAdaptation = eyeAdaptation;
+
+            var antiAliasing = preview.PostFxVolume.AntiAliasing;
+            antiAliasing.Mode = AntialiasingMode.FastApproximateAntialiasing;
+            antiAliasing.OverrideFlags |= AntiAliasingSettingsOverride.Mode;
+            preview.PostFxVolume.AntiAliasing = antiAliasing;
         }
     }
 }

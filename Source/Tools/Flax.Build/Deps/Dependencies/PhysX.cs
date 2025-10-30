@@ -238,6 +238,8 @@ namespace Flax.Deps.Dependencies
             case TargetPlatform.Linux:
                 envVars.Add("CC", "clang-" + Configuration.LinuxClangMinVer);
                 envVars.Add("CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer);
+                envVars.Add("CXX", "clang++-" + Configuration.LinuxClangMinVer);
+                envVars.Add("CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel);
                 break;
             case TargetPlatform.Mac: break;
             default: throw new InvalidPlatformException(BuildPlatform);
@@ -258,7 +260,7 @@ namespace Flax.Deps.Dependencies
             Log.Info("Building PhysX version " + File.ReadAllText(Path.Combine(root, "physx", "version.txt")) + " to " + binariesSubDir);
 
             // Generate project files
-            Utilities.Run(projectGenPath, preset, null, projectGenDir, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+            Utilities.Run(projectGenPath, preset, null, projectGenDir, Utilities.RunOptions.DefaultTool, envVars);
 
             switch (targetPlatform)
             {
@@ -304,10 +306,10 @@ namespace Flax.Deps.Dependencies
                 }
                 break;
             case TargetPlatform.Linux:
-                Utilities.Run("make", null, null, Path.Combine(projectGenDir, "compiler", "linux-" + configuration), Utilities.RunOptions.ConsoleLogOutput);
+                Utilities.Run("make", null, null, Path.Combine(projectGenDir, "compiler", "linux-" + configuration), Utilities.RunOptions.ConsoleLogOutput, envVars);
                 break;
             case TargetPlatform.Mac:
-                Utilities.Run("xcodebuild", "-project PhysXSDK.xcodeproj -alltargets -configuration " + configuration, null, Path.Combine(projectGenDir, "compiler", preset), Utilities.RunOptions.ConsoleLogOutput);
+                Utilities.Run("xcodebuild", "-project PhysXSDK.xcodeproj -alltargets -configuration " + configuration, null, Path.Combine(projectGenDir, "compiler", preset), Utilities.RunOptions.ConsoleLogOutput, envVars);
                 break;
             default: throw new InvalidPlatformException(BuildPlatform);
             }

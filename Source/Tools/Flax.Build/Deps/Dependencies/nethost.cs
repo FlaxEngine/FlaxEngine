@@ -303,9 +303,9 @@ namespace Flax.Deps.Dependencies
             }
 
             // Ensure to have dependencies installed
-            Utilities.Run("ninja", "--version", null, null, Utilities.RunOptions.ThrowExceptionOnError);
-            Utilities.Run("cmake", "--version", null, null, Utilities.RunOptions.ThrowExceptionOnError);
-            Utilities.Run("python", "--version", null, null, Utilities.RunOptions.ThrowExceptionOnError);
+            Utilities.Run("ninja", "--version", null, null, Utilities.RunOptions.DefaultTool);
+            Utilities.Run("cmake", "--version", null, null, Utilities.RunOptions.DefaultTool);
+            Utilities.Run("python", "--version", null, null, Utilities.RunOptions.DefaultTool);
 
             // Get the source
             if (!Directory.Exists(Path.Combine(root, ".git")))

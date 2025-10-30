@@ -318,22 +318,22 @@ namespace FlaxEditor.Windows
         {
             if (assetItem.IsOfType<SceneAsset>())
                 return true;
-            return assetItem.OnEditorDrag(this);
+            return assetItem.OnEditorDrag(this) && Level.IsAnySceneLoaded;
         }
 
         private static bool ValidateDragActorType(ScriptType actorType)
         {
-            return Editor.Instance.CodeEditing.Actors.Get().Contains(actorType);
+            return Editor.Instance.CodeEditing.Actors.Get().Contains(actorType) && Level.IsAnySceneLoaded;
         }
 
         private static bool ValidateDragControlType(ScriptType controlType)
         {
-            return Editor.Instance.CodeEditing.Controls.Get().Contains(controlType);
+            return Editor.Instance.CodeEditing.Controls.Get().Contains(controlType) && Level.IsAnySceneLoaded;
         }
 
         private static bool ValidateDragScriptItem(ScriptItem script)
         {
-            return Editor.Instance.CodeEditing.Actors.Get(script) != ScriptType.Null;
+            return Editor.Instance.CodeEditing.Actors.Get(script) != ScriptType.Null && Level.IsAnySceneLoaded;
         }
 
         /// <inheritdoc />
@@ -476,6 +476,7 @@ namespace FlaxEditor.Windows
             if (result == DragDropEffect.None)
             {
                 _isDropping = true;
+
                 // Drag assets
                 if (_dragAssets != null && _dragAssets.HasValidDrag)
                 {
@@ -490,7 +491,7 @@ namespace FlaxEditor.Windows
                         }
                         var actor = item.OnEditorDrop(this);
                         actor.Name = item.ShortName;
-                        Level.SpawnActor(actor);
+                        Editor.SceneEditing.Spawn(actor);
                         var graphNode = Editor.Scene.GetActorNode(actor.ID);
                         if (graphNode != null)
                             graphNodes.Add(graphNode);
@@ -513,7 +514,7 @@ namespace FlaxEditor.Windows
                             continue;
                         }
                         actor.Name = item.Name;
-                        Level.SpawnActor(actor);
+                        Editor.SceneEditing.Spawn(actor);
                         Editor.Scene.MarkSceneEdited(actor.Scene);
                     }
                     result = DragDropEffect.Move;
@@ -535,7 +536,7 @@ namespace FlaxEditor.Windows
                             Control = control,
                             Name = item.Name,
                         };
-                        Level.SpawnActor(uiControl);
+                        Editor.SceneEditing.Spawn(uiControl);
                         Editor.Scene.MarkSceneEdited(uiControl.Scene);
                     }
                     result = DragDropEffect.Move;
@@ -557,7 +558,7 @@ namespace FlaxEditor.Windows
                                 continue;
                             }
                             actor.Name = actorType.Name;
-                            Level.SpawnActor(actor);
+                            Editor.SceneEditing.Spawn(actor);
                             var graphNode = Editor.Scene.GetActorNode(actor.ID);
                             if (graphNode != null)
                                 graphNodes.Add(graphNode);

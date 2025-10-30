@@ -65,6 +65,8 @@
 
 #endif
 
+#undef MessageBox
+
 static void stbWrite(void* context, void* data, int size)
 {
     auto file = (FileWriteStream*)context;
