@@ -450,6 +450,7 @@ namespace FlaxEditor.CustomEditors.Editors
         protected bool NotNullItems;
 
         private IntValueBox _sizeBox;
+        private Label _label;
         private Color _background;
         private int _elementsCount, _minCount, _maxCount;
         private bool _readOnly;
@@ -566,7 +567,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Parent = dropPanel,
                 };
 
-                var label = new Label
+                _label = new Label
                 {
                     Text = "Size",
                     AnchorPreset = AnchorPresets.TopRight,
@@ -650,7 +651,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 panel.Panel.Size = new Float2(0, 18);
                 panel.Panel.Margin = new Margin(0, 0, Utilities.Constants.UIMargin, 0);
 
-                var removeButton = panel.Button("-", "Remove the last item");
+                var removeButton = panel.Button("-", "Remove the last item.");
                 removeButton.Button.Size = new Float2(16, 16);
                 removeButton.Button.Enabled = size > _minCount;
                 removeButton.Button.AnchorPreset = AnchorPresets.TopRight;
@@ -661,7 +662,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Resize(Count - 1);
                 };
 
-                var addButton = panel.Button("+", "Add a new item");
+                var addButton = panel.Button("+", "Add a new item.");
                 addButton.Button.Size = new Float2(16, 16);
                 addButton.Button.Enabled = (!NotNullItems || size > 0) && size < _maxCount;
                 addButton.Button.AnchorPreset = AnchorPresets.TopRight;
@@ -672,8 +673,10 @@ namespace FlaxEditor.CustomEditors.Editors
                     Resize(Count + 1);
                 };
             }
-        }
 
+            Layout.ContainerControl.SizeChanged += OnLayoutSizeChanged;
+        }
+        
         private void OnSetupContextMenu(ContextMenu menu, DropPanel panel)
         {
             if (menu.Items.Any(x => x is ContextMenuButton b && b.Text.Equals("Open All", StringComparison.Ordinal)))
@@ -696,10 +699,24 @@ namespace FlaxEditor.CustomEditors.Editors
             });
         }
 
+        private void OnLayoutSizeChanged(Control control)
+        {
+            if (Layout.ContainerControl is DropPanel dropPanel)
+            {
+                // Hide "Size" text when array editor title overlaps
+                var headerTextSize = dropPanel.HeaderTextFont.GetFont().MeasureText(dropPanel.HeaderText);
+                if (headerTextSize.X + DropPanel.DropDownIconSize >= _label.Left)
+                    _label.TextColor = _label.TextColorHighlighted = Color.Transparent;
+                else
+                    _label.TextColor = _label.TextColorHighlighted = FlaxEngine.GUI.Style.Current.Foreground;
+            }
+        }
+
         /// <inheritdoc />
         protected override void Deinitialize()
         {
             _sizeBox = null;
+            Layout.ContainerControl.SizeChanged -= OnLayoutSizeChanged;
 
             base.Deinitialize();
         }
