@@ -51,5 +51,10 @@ namespace Flax.Build.Projects
         /// XCode.
         /// </summary>
         XCode,
+
+        /// <summary>
+        /// Omnisharp.
+        /// </summary>
+        Omnisharp,
     }
 }

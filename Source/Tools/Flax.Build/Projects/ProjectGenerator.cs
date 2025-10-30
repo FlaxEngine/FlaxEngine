@@ -12,6 +12,94 @@ namespace Flax.Build.Projects
     /// </summary>
     public abstract class ProjectGenerator
     {
+        protected class JsonWriter : IDisposable
+        {
+            private readonly List<string> _lines = new List<string>();
+            private string _tabs = "";
+
+            public void BeginRootObject()
+            {
+                BeginObject();
+            }
+
+            public void EndRootObject()
+            {
+                EndObject();
+                if (_tabs.Length > 0)
+                {
+                    throw new Exception("Invalid EndRootObject call before all objects and arrays have been closed.");
+                }
+            }
+
+            public void BeginObject(string name = null)
+            {
+                string prefix = name == null ? "" : Quoted(name) + ": ";
+                _lines.Add(_tabs + prefix + "{");
+                _tabs += "\t";
+            }
+
+            public void EndObject()
+            {
+                _lines[_lines.Count - 1] = _lines[_lines.Count - 1].TrimEnd(',');
+                _tabs = _tabs.Remove(_tabs.Length - 1);
+                _lines.Add(_tabs + "},");
+            }
+
+            public void BeginArray(string name = null)
+            {
+                string prefix = name == null ? "" : Quoted(name) + ": ";
+                _lines.Add(_tabs + prefix + "[");
+                _tabs += "\t";
+            }
+
+            public void EndArray()
+            {
+                _lines[_lines.Count - 1] = _lines[_lines.Count - 1].TrimEnd(',');
+                _tabs = _tabs.Remove(_tabs.Length - 1);
+                _lines.Add(_tabs + "],");
+            }
+
+            public void AddField(string name, bool value)
+            {
+                _lines.Add(_tabs + Quoted(name) + ": " + value.ToString().ToLower() + ",");
+            }
+
+            public void AddField(string name, int value)
+            {
+                _lines.Add(_tabs + Quoted(name) + ": " + value + ",");
+            }
+
+            public void AddField(string name, string value)
+            {
+                _lines.Add(_tabs + Quoted(name) + ": " + Quoted(value) + ",");
+            }
+
+            public void AddUnnamedField(string value)
+            {
+                _lines.Add(_tabs + Quoted(value) + ",");
+            }
+
+            private string Quoted(string value)
+            {
+                value = value.Replace("\\", "\\\\");
+                value = value.Replace("\"", "\\\"");
+                return "\"" + value + "\"";
+            }
+
+            public void Save(string path)
+            {
+                _lines[_lines.Count - 1] = _lines[_lines.Count - 1].TrimEnd(',');
+                Utilities.WriteFileIfChanged(path, string.Join(Environment.NewLine, _lines.ToArray()));
+            }
+
+            /// <inheritdoc />
+            public void Dispose()
+            {
+                _lines.Clear();
+                _tabs = null;
+            }
+        }
+
         /// <summary>
         /// Gets the project file extension (excluding the leading dot).
         /// </summary>
@@ -151,6 +239,7 @@ namespace Flax.Build.Projects
                 ? (ProjectGenerator)new CSProjectGenerator(VisualStudioVersion.VisualStudio2015)
                 : (ProjectGenerator)new VisualStudioCodeProjectGenerator();
             case ProjectFormat.XCode: return new XCodeProjectGenerator();
+            case ProjectFormat.Omnisharp: return new OmnisharpProjectGenerator();
             case ProjectFormat.Custom:
                 if (CustomProjectTypes.TryGetValue(Configuration.ProjectFormatCustom, out var factory))
                     return factory(type);

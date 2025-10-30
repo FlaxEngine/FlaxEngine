@@ -84,9 +84,9 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                 switch (Type)
                 {
                 case CodeEditorTypes.VSCodeInsiders:
-                case CodeEditorTypes.VSCode: return "-vscode -vs2022";
+                case CodeEditorTypes.VSCode: return "-vscode -vs2022 -omnisharp";
                 case CodeEditorTypes.Rider: return "-vs2022";
-                case CodeEditorTypes.Zed: return "-vs2022";
+                case CodeEditorTypes.Zed: return "-vs2022 -omnisharp";
                 default: return null;
                 }
             }
