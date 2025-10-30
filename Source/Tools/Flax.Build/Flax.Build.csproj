@@ -37,22 +37,22 @@
 
   <ItemGroup>
     <Reference Include="Ionic.Zip.Reduced">
-      <HintPath>..\..\..\Source\Platforms\DotNet\Ionic.Zip.Reduced.dll</HintPath>
+      <HintPath>..\..\Platforms\DotNet\Ionic.Zip.Reduced.dll</HintPath>
     </Reference>
     <Reference Include="System.Text.Encoding.CodePages">
-      <HintPath>..\..\..\Source\Platforms\DotNet\System.Text.Encoding.CodePages.dll</HintPath>
+      <HintPath>..\..\Platforms\DotNet\System.Text.Encoding.CodePages.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Cecil">
-      <HintPath>..\..\..\Source\Platforms\DotNet\Mono.Cecil.dll</HintPath>
+      <HintPath>..\..\Platforms\DotNet\Mono.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.VisualStudio.Setup.Configuration.Interop">
-      <HintPath>..\..\..\Source\Platforms\DotNet\Microsoft.VisualStudio.Setup.Configuration.Interop.dll</HintPath>
+      <HintPath>..\..\Platforms\DotNet\Microsoft.VisualStudio.Setup.Configuration.Interop.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis.CSharp">
-      <HintPath>..\..\..\Source\Platforms\DotNet\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
+      <HintPath>..\..\Platforms\DotNet\Microsoft.CodeAnalysis.CSharp.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CodeAnalysis">
-      <HintPath>..\..\..\Source\Platforms\DotNet\Microsoft.CodeAnalysis.dll</HintPath>
+      <HintPath>..\..\Platforms\DotNet\Microsoft.CodeAnalysis.dll</HintPath>
     </Reference>
   </ItemGroup>
 </Project>
