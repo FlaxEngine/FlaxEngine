@@ -54,7 +54,6 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.BeginObject("msbuild");
                 {
                     json.AddField("enabled", true);
-                    json.AddField("Configuration", "Editor.Debug");
                 }
                 json.EndObject();
 
