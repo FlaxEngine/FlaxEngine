@@ -588,6 +588,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.AddField("grunt.autoDetect", "off");
                 json.AddField("omnisharp.defaultLaunchSolution", solution.Name + ".sln");
                 json.AddField("omnisharp.useModernNet", true);
+                json.AddField("dotnet.server.useOmnisharp", false);
                 json.EndObject();
 
                 // Folders
