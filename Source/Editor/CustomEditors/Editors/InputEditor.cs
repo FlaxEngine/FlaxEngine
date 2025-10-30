@@ -47,6 +47,8 @@ namespace FlaxEditor.CustomEditors.Editors
                 return inputEvent;
             if (Values[0] is string str)
                 return str;
+            if (Values.Type.Type == typeof(InputEvent))
+                return new InputEvent();
             if (Values.Type.Type == typeof(string))
                 return string.Empty;
             return null;
