@@ -130,7 +130,7 @@ String VisualStudioCodeEditor::GetName() const
 
 String VisualStudioCodeEditor::GetGenerateProjectCustomArgs() const
 {
-    return TEXT("-vs2026 -vscode");
+    return TEXT("-vs2026 -vscode -omnisharp");
 }
 
 void VisualStudioCodeEditor::OpenFile(const String& path, int32 line)

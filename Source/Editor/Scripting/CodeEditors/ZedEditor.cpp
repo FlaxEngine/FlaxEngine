@@ -165,7 +165,7 @@ String ZedEditor::GetName() const
 
 String ZedEditor::GetGenerateProjectCustomArgs() const
 {
-    return TEXT("-vs2026");
+    return TEXT("-vs2026 -omnisharp");
 }
 
 void ZedEditor::OpenFile(const String& path, int32 line)
