@@ -585,6 +585,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                 bool isLegacySln = !Configuration.ProjectFormatVS2026 && (Configuration.ProjectFormatVS2022 || Configuration.ProjectFormatVS2019 || Configuration.ProjectFormatVS2017 || Configuration.ProjectFormatVS2015);
                 json.AddField("omnisharp.defaultLaunchSolution", solution.Name + (isLegacySln ? ".sln" : ".slnx"));
                 json.AddField("omnisharp.useModernNet", true);
+                json.AddField("dotnet.server.useOmnisharp", false);
                 json.EndObject();
 
                 // Folders
