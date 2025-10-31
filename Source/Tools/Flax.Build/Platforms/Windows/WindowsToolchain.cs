@@ -19,7 +19,7 @@ namespace Flax.Build
         /// <summary>
         /// Specifies the minimum CPU architecture type to support (on x86/x64).
         /// </summary>
-        [CommandLine("winCpuArch", "<arch>", "Specifies the minimum CPU architecture type to support (om x86/x64).")]
+        [CommandLine("winCpuArch", "<arch>", "Specifies the minimum CPU architecture type to support (on x86/x64).")]
         public static CpuArchitecture WindowsCpuArch = CpuArchitecture.SSE4_2; // 99.78% support on PC according to Steam Hardware & Software Survey: September 2025 (https://store.steampowered.com/hwsurvey/)
     }
 }
@@ -76,22 +76,27 @@ namespace Flax.Build.Platforms
             options.LinkEnv.InputLibraries.Add("oleaut32.lib");
             options.LinkEnv.InputLibraries.Add("delayimp.lib");
 
-            if (options.Architecture == TargetArchitecture.ARM64)
+            options.CompileEnv.CpuArchitecture = Configuration.WindowsCpuArch;
+
+            if (options.Architecture == TargetArchitecture.x64)
+            {
+                if (_minVersion.Major <= 7 && options.CompileEnv.CpuArchitecture == CpuArchitecture.AVX2)
+                {
+                    // Old Windows had lower support ratio for latest CPU features
+                    options.CompileEnv.CpuArchitecture = CpuArchitecture.AVX;
+                }
+                if (_minVersion.Major >= 11 && options.CompileEnv.CpuArchitecture == CpuArchitecture.AVX)
+                {
+                    // Windows 11 has hard requirement on SSE4.2
+                    options.CompileEnv.CpuArchitecture = CpuArchitecture.SSE4_2;
+                }
+            }
+            else if (options.Architecture == TargetArchitecture.ARM64)
             {
                 options.CompileEnv.PreprocessorDefinitions.Add("USE_SOFT_INTRINSICS");
                 options.LinkEnv.InputLibraries.Add("softintrin.lib");
-            }
-
-            options.CompileEnv.CpuArchitecture = Configuration.WindowsCpuArch;
-            if (_minVersion.Major <= 7 && options.CompileEnv.CpuArchitecture == CpuArchitecture.AVX2)
-            {
-                // Old Windows had lower support ratio for latest CPU features
-                options.CompileEnv.CpuArchitecture = CpuArchitecture.AVX;
-            }
-            if (_minVersion.Major >= 11 && options.CompileEnv.CpuArchitecture == CpuArchitecture.AVX)
-            {
-                // Windows 11 has hard requirement on SSE4.2
-                options.CompileEnv.CpuArchitecture = CpuArchitecture.SSE4_2;
+                if (options.CompileEnv.CpuArchitecture != CpuArchitecture.None)
+                    options.CompileEnv.CpuArchitecture = CpuArchitecture.NEON;
             }
         }
 
