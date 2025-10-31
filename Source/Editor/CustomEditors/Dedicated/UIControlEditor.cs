@@ -701,8 +701,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 valueBox = floatEditorElement.ValueBox;
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
-                valueBox.BorderColor = Color.Lerp(borderColor, back, ActorTransformEditor.AxisGreyOutFactor);
-                valueBox.BorderSelectedColor = borderColor;
+                valueBox.HighlightColor = borderColor;
             }
             return grid;
         }
