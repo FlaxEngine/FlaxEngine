@@ -214,22 +214,25 @@ namespace FlaxEditor.Surface
             if (!_isRenaming)
                 Render2D.DrawText(style.FontLarge, Title, _headerRect, style.Foreground, TextAlignment.Center, TextAlignment.Center);
 
-            // Close button
-            Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
-
-            // Color button
-            Render2D.DrawSprite(style.Settings, _colorButtonRect, _colorButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
-
-            // Check if is resizing
-            if (_isResizing)
+            if (Surface.CanEdit)
             {
-                // Draw overlay
-                Render2D.FillRectangle(_resizeButtonRect, style.Selection);
-                Render2D.DrawRectangle(_resizeButtonRect, style.SelectionBorder);
-            }
+                // Close button
+                Render2D.DrawSprite(style.Cross, _closeButtonRect, _closeButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
 
-            // Resize button
-            Render2D.DrawSprite(style.Scale, _resizeButtonRect, _resizeButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
+                // Color button
+                Render2D.DrawSprite(style.Settings, _colorButtonRect, _colorButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
+
+                // Check if is resizing
+                if (_isResizing)
+                {
+                    // Draw overlay
+                    Render2D.FillRectangle(_resizeButtonRect, style.Selection);
+                    Render2D.DrawRectangle(_resizeButtonRect, style.SelectionBorder);
+                }
+
+                // Resize button
+                Render2D.DrawSprite(style.Scale, _resizeButtonRect, _resizeButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
+            }
 
             // Selection outline
             if (_isSelected)
