@@ -142,7 +142,6 @@ namespace FlaxEditor.Windows
         private string _cacheFolder;
         private AssetItem _item;
         private Surface _surface;
-        private AssetNode _rootAssetNode;
         private Label _loadingLabel;
         private CancellationTokenSource _token;
         private Task _task;
@@ -195,9 +194,6 @@ namespace FlaxEditor.Windows
             _nodesAssets.Add(assetId);
             var node = new AssetNode((uint)_nodes.Count + 1, _surface.Context, GraphNodes[0], GraphGroups[0], assetId);
             _nodes.Add(node);
-
-            if (assetId == _item.ID)
-                _rootAssetNode = node;
 
             return node;
         }
@@ -406,12 +402,9 @@ namespace FlaxEditor.Windows
                 return;
             _progress = 100.0f;
 
-            if (_rootAssetNode != null)
-            {
-                var commentRect = _rootAssetNode.EditorBounds;
-                commentRect.Expand(80f);
-                _surface.Context.CreateComment(ref commentRect, _item.ShortName, Color.Green);
-            }
+            var commentRect = assetNode.EditorBounds;
+            commentRect.Expand(80f);
+            _surface.Context.CreateComment(ref commentRect, _item.ShortName, Color.Green);
 
             // Update UI
             FlaxEngine.Scripting.InvokeOnUpdate(() =>
