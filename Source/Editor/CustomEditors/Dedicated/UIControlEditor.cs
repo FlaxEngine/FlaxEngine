@@ -690,7 +690,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             return grid;
         }
 
-        private CustomElementsContainer<UniformGridPanel> UniformPanelCapsuleForObjectWithText(LayoutElementsContainer el, string text, ValueContainer values, Color borderColor, out FloatValueBox valueBox)
+        private CustomElementsContainer<UniformGridPanel> UniformPanelCapsuleForObjectWithText(LayoutElementsContainer el, string text, ValueContainer values, Color highlightColor, out FloatValueBox valueBox)
         {
             valueBox = null;
             var grid = UniformGridTwoByOne(el);
@@ -701,7 +701,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 valueBox = floatEditorElement.ValueBox;
                 var back = FlaxEngine.GUI.Style.Current.TextBoxBackground;
-                valueBox.HighlightColor = borderColor;
+                valueBox.HighlightColor = highlightColor;
+                valueBox.BorderSelectedColor = highlightColor;
             }
             return grid;
         }
