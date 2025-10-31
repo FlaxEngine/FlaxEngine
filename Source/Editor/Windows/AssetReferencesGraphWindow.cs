@@ -140,8 +140,9 @@ namespace FlaxEditor.Windows
         }
 
         private string _cacheFolder;
-        private Guid _assetId;
+        private AssetItem _item;
         private Surface _surface;
+        private AssetNode _rootAssetNode;
         private Label _loadingLabel;
         private CancellationTokenSource _token;
         private Task _task;
@@ -163,13 +164,13 @@ namespace FlaxEditor.Windows
         public AssetReferencesGraphWindow(Editor editor, AssetItem assetItem)
         : base(editor, false, ScrollBars.None)
         {
-            Title = assetItem.ShortName + " References";
+            _item = assetItem;
+            Title = _item.ShortName + " References";
 
             _tempFolder = StringUtils.NormalizePath(Path.GetDirectoryName(Globals.TemporaryFolder));
             _cacheFolder = Path.Combine(Globals.ProjectCacheFolder, "References");
             if (!Directory.Exists(_cacheFolder))
                 Directory.CreateDirectory(_cacheFolder);
-            _assetId = assetItem.ID;
             _surface = new Surface(this)
             {
                 AnchorPreset = AnchorPresets.StretchAll,
@@ -194,6 +195,10 @@ namespace FlaxEditor.Windows
             _nodesAssets.Add(assetId);
             var node = new AssetNode((uint)_nodes.Count + 1, _surface.Context, GraphNodes[0], GraphGroups[0], assetId);
             _nodes.Add(node);
+
+            if (assetId == _item.ID)
+                _rootAssetNode = node;
+
             return node;
         }
 
@@ -392,8 +397,7 @@ namespace FlaxEditor.Windows
             _nodesAssets = new HashSet<Guid>();
             var searchLevel = 4; // TODO: make it as an option (somewhere in window UI)
             // TODO: add option to filter assets by type (eg. show only textures as leaf nodes)
-            var assetNode = SpawnNode(_assetId);
-            // TODO: add some outline or tint color to the main node
+            var assetNode = SpawnNode(_item.ID);
             BuildGraph(assetNode, searchLevel, false);
             ArrangeGraph(assetNode, false);
             BuildGraph(assetNode, searchLevel, true);
@@ -401,6 +405,13 @@ namespace FlaxEditor.Windows
             if (_token.IsCancellationRequested)
                 return;
             _progress = 100.0f;
+
+            if (_rootAssetNode != null)
+            {
+                var commentRect = _rootAssetNode.EditorBounds;
+                commentRect.Expand(80f);
+                _surface.Context.CreateComment(ref commentRect, _item.ShortName, Color.Green);
+            }
 
             // Update UI
             FlaxEngine.Scripting.InvokeOnUpdate(() =>
