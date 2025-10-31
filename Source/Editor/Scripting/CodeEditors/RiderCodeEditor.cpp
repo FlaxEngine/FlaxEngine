@@ -14,6 +14,9 @@
 
 #if PLATFORM_WINDOWS
 #include "Engine/Platform/Win32/IncludeWindowsHeaders.h"
+#elif PLATFORM_MAC
+#include "Engine/Platform/Apple/AppleUtils.h"
+#include <AppKit/AppKit.h>
 #endif
 
 namespace
@@ -218,6 +221,15 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
 #endif
 
 #if PLATFORM_MAC
+    // System installed app
+    NSURL* AppURL = [[NSWorkspace sharedWorkspace]URLForApplicationWithBundleIdentifier:@"com.jetbrains.rider"];
+    if (AppURL != nullptr)
+    {
+        const String path = AppleUtils::ToString((CFStringRef)[AppURL path]);
+        SearchDirectory(&installations, path / TEXT("/Contents/Resources"));
+    }
+
+    // JetBrains Toolbox installations
     String applicationSupportFolder;
     FileSystem::GetSpecialFolderPath(SpecialFolder::ProgramData, applicationSupportFolder);
 
@@ -232,6 +244,7 @@ void RiderCodeEditor::FindEditors(Array<CodeEditor*>* output)
 
     // Check the local installer version
     SearchDirectory(&installations, TEXT("/Applications/Rider.app/Contents/Resources"));
+    SearchDirectory(&installations, TEXT("/Applications/Rider EAP.app/Contents/Resources"));
 #endif
 
     for (const String& directory : subDirectories)
