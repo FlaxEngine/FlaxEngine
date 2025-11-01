@@ -39,6 +39,8 @@ namespace FlaxEditor.Surface
             if (nodes.Count <= 1)
                 return;
 
+            List<MoveNodesAction> undoActions = new List<MoveNodesAction>();
+
             var nodesToVisit = new HashSet<SurfaceNode>(nodes);
 
             // While we haven't formatted every node
@@ -73,18 +75,23 @@ namespace FlaxEditor.Surface
                     }
                 }
 
-                FormatConnectedGraph(connectedNodes);
+                undoActions.AddRange(FormatConnectedGraph(connectedNodes));
             }
+
+            Undo?.AddAction(new MultiUndoAction(undoActions, "Format nodes"));
+            MarkAsEdited(false);
         }
 
         /// <summary>
         /// Formats a graph where all nodes are connected.
         /// </summary>
         /// <param name="nodes">List of connected nodes.</param>
-        protected void FormatConnectedGraph(List<SurfaceNode> nodes)
+        private List<MoveNodesAction> FormatConnectedGraph(List<SurfaceNode> nodes)
         {
+            List<MoveNodesAction> undoActions = new List<MoveNodesAction>();
+
             if (nodes.Count <= 1)
-                return;
+                return undoActions;
 
             var boundingBox = GetNodesBounds(nodes);
 
@@ -140,7 +147,6 @@ namespace FlaxEditor.Surface
             }
 
             // Set the node positions
-            var undoActions = new List<MoveNodesAction>();
             var topRightPosition = endNodes[0].Location;
             for (int i = 0; i < nodes.Count; i++)
             {
@@ -155,14 +161,14 @@ namespace FlaxEditor.Surface
                 }
             }
 
-            MarkAsEdited(false);
-            Undo?.AddAction(new MultiUndoAction(undoActions, "Format nodes"));
+            return undoActions;
         }
 
         /// <summary>
         /// Straightens every connection between nodes in <paramref name="nodes"/>.
         /// </summary>
         /// <param name="nodes">List of nodes.</param>
+        /// <returns>List of undo actions.</returns>
         public void StraightenGraphConnections(List<SurfaceNode> nodes)
         { 
             nodes = nodes.Where(n => !n.Archetype.Flags.HasFlag(NodeFlags.NoMove)).ToList();
