@@ -52,6 +52,7 @@ namespace FlaxEditor.Surface.Archetypes
             },
             new NodeArchetype
             {
+                // [Deprecated]
                 TypeID = 3,
                 Title = "Pack Material Layer",
                 Description = "Pack material properties",
@@ -75,6 +76,7 @@ namespace FlaxEditor.Surface.Archetypes
             },
             new NodeArchetype
             {
+                // [Deprecated]
                 TypeID = 4,
                 Title = "Unpack Material Layer",
                 Description = "Unpack material properties",
@@ -120,6 +122,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 6,
                 Title = "Pack Material Layer",
                 Description = "Pack material properties",
+                AlternativeTitles = new[] { "Make Material Layer", "Construct Material Layer", "Compose Material Layer" },
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(200, 280),
                 Elements = new[]
@@ -146,6 +149,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 7,
                 Title = "Unpack Material Layer",
                 Description = "Unpack material properties",
+                AlternativeTitles = new[] { "Break Material Layers", "Deconstruct Material Layers", "Decompose Material Layers" },
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(210, 280),
                 Elements = new[]
