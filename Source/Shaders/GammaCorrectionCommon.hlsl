@@ -37,7 +37,7 @@ float4 FastTonemapInvert(float4 c)
     return float4(FastTonemapInvert(c.rgb), c.a);
 }
 
-float LinearToSrgbChannel(float linearColor)
+float LinearToSrgb(float linearColor)
 {
     if (linearColor < 0.00313067)
         return linearColor * 12.92;
@@ -46,10 +46,7 @@ float LinearToSrgbChannel(float linearColor)
 
 float3 LinearToSrgb(float3 linearColor)
 {
-    return float3(
-        LinearToSrgbChannel(linearColor.r),
-        LinearToSrgbChannel(linearColor.g),
-        LinearToSrgbChannel(linearColor.b));
+    return float3(LinearToSrgb(linearColor.r), LinearToSrgb(linearColor.g), LinearToSrgb(linearColor.b));
 }
 
 float3 sRGBToLinear(float3 color)
