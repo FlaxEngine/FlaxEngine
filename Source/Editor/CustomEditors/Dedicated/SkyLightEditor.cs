@@ -1,6 +1,7 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -19,8 +20,9 @@ namespace FlaxEditor.CustomEditors.Dedicated
             if (Values.HasDifferentTypes == false)
             {
                 // Add 'Bake' button
-                layout.Space(10);
-                var button = layout.Button("Bake");
+                var group = layout.Group("Bake");
+                group.Panel.ItemsMargin = new Margin(Utilities.Constants.UIMargin * 2);
+                var button = group.Button("Bake");
                 button.Button.Clicked += BakeButtonClicked;
             }
         }
