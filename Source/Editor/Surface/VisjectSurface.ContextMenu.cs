@@ -410,8 +410,11 @@ namespace FlaxEditor.Surface
             }
             menu.AddSeparator();
 
-            _cmFormatNodesMenu = menu.AddChildMenu("Format node(s)");
-            _cmFormatNodesMenu.Enabled = CanEdit && HasNodesSelection;
+            bool allNodesNoMove = SelectedNodes.All(n => n.Archetype.Flags.HasFlag(NodeFlags.NoMove));
+            bool clickedNodeNoMove = ((SelectedNodes.Count == 1 && controlUnderMouse is SurfaceNode n && n.Archetype.Flags.HasFlag(NodeFlags.NoMove)));
+
+            _cmFormatNodesMenu = menu.AddChildMenu("Format nodes");
+            _cmFormatNodesMenu.Enabled = CanEdit && HasNodesSelection && !(allNodesNoMove || clickedNodeNoMove);
 
             _cmFormatNodesConnectionButton = _cmFormatNodesMenu.ContextMenu.AddButton("Auto format", Editor.Instance.Options.Options.Input.NodesAutoFormat, () => { FormatGraph(SelectedNodes); });
             _cmFormatNodesConnectionButton = _cmFormatNodesMenu.ContextMenu.AddButton("Straighten connections", Editor.Instance.Options.Options.Input.NodesStraightenConnections, () => { StraightenGraphConnections(SelectedNodes); });
