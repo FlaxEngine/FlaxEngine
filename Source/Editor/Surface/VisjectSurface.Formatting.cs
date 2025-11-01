@@ -164,7 +164,9 @@ namespace FlaxEditor.Surface
         /// </summary>
         /// <param name="nodes">List of nodes.</param>
         public void StraightenGraphConnections(List<SurfaceNode> nodes)
-        {
+        { 
+            nodes = nodes.Where(n => !n.Archetype.Flags.HasFlag(NodeFlags.NoMove)).ToList();
+
             if (nodes.Count <= 1)
                 return;
 
@@ -350,8 +352,10 @@ namespace FlaxEditor.Surface
         /// <param name="nodes">List of nodes.</param>
         /// <param name="alignmentType">Alignemnt type.</param>
         public void AlignNodes(List<SurfaceNode> nodes, NodeAlignmentType alignmentType)
-        {  
-            if(nodes.Count <= 1)
+        {
+            nodes = nodes.Where(n => !n.Archetype.Flags.HasFlag(NodeFlags.NoMove)).ToList();
+
+            if (nodes.Count <= 1)
                 return;
 
             var undoActions = new List<MoveNodesAction>();
@@ -392,6 +396,8 @@ namespace FlaxEditor.Surface
         /// <param name="vertically">If false will be done horizontally, if true will be done vertically.</param>
         public void DistributeNodes(List<SurfaceNode> nodes, bool vertically)
         {
+            nodes = nodes.Where(n => !n.Archetype.Flags.HasFlag(NodeFlags.NoMove)).ToList();
+
             if(nodes.Count <= 1)
                 return;
 
