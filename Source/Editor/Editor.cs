@@ -1587,7 +1587,7 @@ namespace FlaxEditor
                 if (dockedTo != null && dockedTo.SelectedTab != gameWin && dockedTo.SelectedTab != null)
                     result = dockedTo.SelectedTab.Size;
                 else
-                    result = gameWin.Viewport.Size;
+                    result = gameWin.Viewport.ContentSize;
 
                 result *= root.DpiScale;
                 result = Float2.Round(result);
