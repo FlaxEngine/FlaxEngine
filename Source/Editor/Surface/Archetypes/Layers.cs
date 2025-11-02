@@ -149,7 +149,7 @@ namespace FlaxEditor.Surface.Archetypes
                 TypeID = 7,
                 Title = "Unpack Material Layer",
                 Description = "Unpack material properties",
-                AlternativeTitles = new[] { "Break Material Layers", "Deconstruct Material Layers", "Decompose Material Layers" },
+                AlternativeTitles = new[] { "Break Material Layer", "Deconstruct Material Layer", "Decompose Material Layer", "Split Material Layer" },
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(210, 280),
                 Elements = new[]
