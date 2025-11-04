@@ -52,6 +52,14 @@ uint IFloatFlip3(uint f2)
 
 float DistancePointToEdge(float3 p, float3 x0, float3 x1, out float3 n)
 {
+    // Hack to swap to ensure the order is correct (.x only for simplicity)
+	if (x0.x > x1.x)
+	{
+		float3 temp = x0;
+		x0 = x1;
+		x1 = temp;
+	}
+
     float3 x10 = x1 - x0;
 
     float t = dot(x1 - p, x10) / dot(x10, x10);

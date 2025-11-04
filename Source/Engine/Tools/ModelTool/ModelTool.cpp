@@ -366,9 +366,11 @@ bool ModelTool::GenerateModelSDF(Model* inputModel, const ModelData* modelData, 
         return true;
     ModelBase::SDFData sdf;
     sdf.WorldUnitsPerVoxel = METERS_TO_UNITS(0.1f) / Math::Max(resolutionScale, 0.0001f); // 1 voxel per 10 centimeters
+#if 0
     const float boundsMargin = sdf.WorldUnitsPerVoxel * 0.5f; // Add half-texel margin around the mesh
     bounds.Minimum -= boundsMargin;
     bounds.Maximum += boundsMargin;
+#endif
     const Float3 size = bounds.GetSize();
     Int3 resolution(Float3::Ceil(Float3::Clamp(size / sdf.WorldUnitsPerVoxel, 4, 256)));
     Float3 uvwToLocalMul = size;

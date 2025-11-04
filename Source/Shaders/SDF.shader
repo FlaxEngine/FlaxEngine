@@ -142,8 +142,10 @@ void CS_RasterizeTriangle(uint3 DispatchThreadId : SV_DispatchThreadID)
                 int voxelIndex = GetVoxelIndex(voxelCoord);
                 float3 voxelPos = GetVoxelPos(voxelCoord);
                 float distance = SignedDistancePointToTriangle(voxelPos, v0, v1, v2);
+#if 0
                 if (distance < -10.0f) // TODO: find a better way to reject negative distance from degenerate triangles that break SDF shape
                     distance = abs(distance);
+#endif
                 InterlockedMin(SDF[voxelIndex], FloatFlip3(distance));
             }
         }
