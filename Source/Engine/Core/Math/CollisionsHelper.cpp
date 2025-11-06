@@ -620,14 +620,9 @@ bool Collision::RayIntersectsTriangle(const Ray& ray, const Vector3& a, const Ve
     Real rayDistance = edge2.X * distanceCrossEdge1.X + edge2.Y * distanceCrossEdge1.Y + edge2.Z * distanceCrossEdge1.Z;
     rayDistance *= inverseDeterminant;
 
-    // Check if the triangle is behind the ray origin
-    if (rayDistance < 0.0f)
-    {
-        return false;
-    }
-
+    // Check if the triangle is in front the ray origin
     distance = rayDistance;
-    return true;
+    return rayDistance >= 0.0f;
 }
 
 bool CollisionsHelper::RayIntersectsTriangle(const Ray& ray, const Vector3& vertex1, const Vector3& vertex2, const Vector3& vertex3, Real& distance, Vector3& normal)
