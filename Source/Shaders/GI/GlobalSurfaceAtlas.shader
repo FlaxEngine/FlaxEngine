@@ -165,11 +165,19 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 		BRANCH
 		if (NoL > 0)
 		{
+#if RADIAL_LIGHT
+			// Shot a ray from light to the texel to see if there is any occluder
+			GlobalSDFTrace trace;
+			trace.Init(Light.Position, -L, bias, toLightDst);
+			GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace, 1.0f);
+			shadowMask = hit.IsHit() && hit.HitTime < toLightDst - bias * 3 ? LightShadowsStrength : 1;
+#else
 			// Shot a ray from texel into the light to see if there is any occluder
 			GlobalSDFTrace trace;
 			trace.Init(gBuffer.WorldPos + gBuffer.Normal * shadowBias, L, bias, toLightDst - bias);
 			GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace, 2.0f);
 			shadowMask = hit.IsHit() ? LightShadowsStrength : 1;
+#endif
 		}
 		else
 		{
