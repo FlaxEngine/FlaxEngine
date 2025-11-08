@@ -104,7 +104,7 @@ namespace FlaxEditor.CustomEditors.Editors
         public event Action<TypePickerControl> TypePickerValueChanged;
 
         /// <summary>
-        /// The custom callback for types validation. Cane be used to implement a rule for types to pick.
+        /// The custom callback for types validation. Can be used to implement a rule for types to pick.
         /// </summary>
         public Func<ScriptType, bool> CheckValid;
 
@@ -353,7 +353,13 @@ namespace FlaxEditor.CustomEditors.Editors
                     }
                     if (!string.IsNullOrEmpty(typeReference.CheckMethod))
                     {
-                        var parentType = ParentEditor.Values[0].GetType();
+                        var parentEditor = ParentEditor;
+                        // Find actual parent editor if parent editor is collection editor
+                        while (parentEditor.GetType().IsAssignableTo(typeof(CollectionEditor)))
+                            parentEditor = parentEditor.ParentEditor;
+                            
+                        var parentType = parentEditor.Values[0].GetType();
+
                         var method = parentType.GetMethod(typeReference.CheckMethod, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
                         if (method != null)
                         {
