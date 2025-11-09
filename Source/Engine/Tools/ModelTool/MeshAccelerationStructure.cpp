@@ -288,6 +288,15 @@ bool MeshAccelerationStructure::RayCastBVH(int32 node, const Ray& ray, Real& hit
     return hit;
 }
 
+MeshAccelerationStructure::~MeshAccelerationStructure()
+{
+    for (auto& e : _meshes)
+    {
+        if (e.Asset)
+            e.Asset->RemoveReference();
+    }
+}
+
 void MeshAccelerationStructure::Add(Model* model, int32 lodIndex)
 {
     PROFILE_CPU();
@@ -307,6 +316,8 @@ void MeshAccelerationStructure::Add(Model* model, int32 lodIndex)
         }
 
         auto& meshData = _meshes.AddOne();
+        meshData.Asset = model;
+        model->AddReference();
         if (model->IsVirtual())
         {
             meshData.Indices = mesh.GetTriangleCount() * 3;
@@ -350,6 +361,7 @@ void MeshAccelerationStructure::Add(const ModelData* modelData, int32 lodIndex, 
         }
 
         auto& meshData = _meshes.AddOne();
+        meshData.Asset = nullptr;
         meshData.Indices = mesh->Indices.Count();
         meshData.Vertices = mesh->Positions.Count();
         if (copy)
@@ -370,6 +382,7 @@ void MeshAccelerationStructure::Add(const ModelData* modelData, int32 lodIndex, 
 void MeshAccelerationStructure::Add(Float3* vb, int32 vertices, void* ib, int32 indices, bool use16BitIndex, bool copy)
 {
     auto& meshData = _meshes.AddOne();
+    meshData.Asset = nullptr;
     if (copy)
     {
         meshData.VertexBuffer.Copy((const byte*)vb, vertices * sizeof(Float3));

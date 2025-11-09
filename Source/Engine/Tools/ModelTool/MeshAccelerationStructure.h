@@ -20,6 +20,7 @@ class FLAXENGINE_API MeshAccelerationStructure
 private:
     struct Mesh
     {
+        Model* Asset;
         BytesContainer IndexBuffer, VertexBuffer;
         int32 Indices, Vertices;
         bool Use16BitIndexBuffer;
@@ -57,6 +58,8 @@ private:
     bool RayCastBVH(int32 node, const Ray& ray, Real& hitDistance, Vector3& hitNormal, Triangle& hitTriangle) const;
 
 public:
+    ~MeshAccelerationStructure();
+
     // Adds the model geometry for the build to the structure.
     void Add(Model* model, int32 lodIndex);
 
