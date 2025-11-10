@@ -771,7 +771,7 @@ Task* TextureBase::RequestMipDataAsync(int32 mipIndex)
 
 FlaxStorage::LockData TextureBase::LockData()
 {
-    return _parent->Storage ? _parent->Storage->Lock() : FlaxStorage::LockData::Invalid;
+    return _parent->Storage ? _parent->Storage->Lock() : FlaxStorage::LockData();
 }
 
 void TextureBase::GetMipData(int32 mipIndex, BytesContainer& data) const

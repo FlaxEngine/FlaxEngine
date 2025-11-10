@@ -146,7 +146,6 @@ public:
     struct LockData
     {
         friend FlaxStorage;
-        static LockData Invalid;
 
     private:
         FlaxStorage* _storage;
@@ -159,6 +158,11 @@ public:
         }
 
     public:
+        LockData()
+            : _storage(nullptr)
+        {
+        }
+
         LockData(const LockData& other)
             : _storage(other._storage)
         {

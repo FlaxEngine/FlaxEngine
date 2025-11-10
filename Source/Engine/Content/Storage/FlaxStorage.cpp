@@ -75,8 +75,6 @@ FlaxChunk* FlaxChunk::Clone() const
 
 const int32 FlaxStorage::MagicCode = 1180124739;
 
-FlaxStorage::LockData FlaxStorage::LockData::Invalid(nullptr);
-
 struct Header
 {
     int32 MagicCode;
