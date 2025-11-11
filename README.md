@@ -1,5 +1,5 @@
 <img align="left" src="Development/Images/Logo.png" width="100px"/>
-<h1>Flax Engine</h1>
+<h1>Hazel 3D</h1>
 <a href="https://marketplace.visualstudio.com/items?itemName=Flax.FlaxVS"><img src="https://img.shields.io/badge/vs-extension-green.svg"/></a>
 <a href="https://flaxengine.com/discord"><img src="https://discordapp.com/api/guilds/437989205315158016/widget.png"/></a>
 
