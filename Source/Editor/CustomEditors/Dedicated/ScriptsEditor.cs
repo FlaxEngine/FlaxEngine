@@ -914,9 +914,11 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 // Remove drop down arrows and containment lines if no objects in the group
                 if (group.Children.Count == 0)
                 {
+                    group.Panel.Close();
                     group.Panel.ArrowImageOpened = null;
                     group.Panel.ArrowImageClosed = null;
                     group.Panel.EnableContainmentLines = false;
+                    group.Panel.CanOpenClose = false;
                 }
 
                 // Scripts arrange bar

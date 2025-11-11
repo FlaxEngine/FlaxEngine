@@ -391,6 +391,7 @@ namespace
         NetworkInternal::OnNetworkMessageObjectDespawn,
         NetworkInternal::OnNetworkMessageObjectRole,
         NetworkInternal::OnNetworkMessageObjectRpc,
+        NetworkInternal::OnNetworkMessageObjectRpcPart,
     };
 }
 
