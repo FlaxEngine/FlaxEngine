@@ -1,15 +1,19 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using System;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using Flax.Build;
+using Flax.Build.Platforms;
 
 namespace Flax.Deps.Dependencies
 {
     /// <summary>
-    /// DirectXMesh geometry processing library https://walbourn.github.io/directxmesh/
+    /// WinPixEventRuntime. https://github.com/microsoft/PixEvents
     /// </summary>
     /// <seealso cref="Flax.Deps.Dependency" />
-    class DirectXMesh : Dependency
+    class WinPixEventRuntime : Dependency
     {
         /// <inheritdoc />
         public override TargetPlatform[] Platforms
@@ -49,18 +53,20 @@ namespace Flax.Deps.Dependencies
         /// <inheritdoc />
         public override void Build(BuildOptions options)
         {
-            var root = options.IntermediateFolder;
-            var solutionPath = Path.Combine(root, "DirectXMesh_Desktop_2022_Win10.sln");
-            var configuration = "Release";
-            var outputFileNames = new[]
-            {
-                "DirectXMesh.lib",
-                "DirectXMesh.pdb",
-            };
-            var binFolder = Path.Combine(root, "DirectXMesh", "Bin", "Desktop_2022_Win10");
-
             // Get the source
-            CloneGitRepoFast(root, "https://github.com/Microsoft/DirectXMesh.git");
+            var root = options.IntermediateFolder;
+            var packagePath = Path.Combine(root, $"package.zip");
+            if (!File.Exists(packagePath))
+            {
+                Downloader.DownloadFileFromUrlToPath("https://www.nuget.org/api/v2/package/WinPixEventRuntime/1.0.240308001", packagePath);
+            }
+            var extractedPath = Path.Combine(root, "extracted");
+            if (!Directory.Exists(extractedPath))
+            {
+                using (ZipArchive archive = ZipFile.Open(packagePath, ZipArchiveMode.Read))
+                    archive.ExtractToDirectory(extractedPath);
+            }
+            root = extractedPath;
 
             foreach (var platform in options.Platforms)
             {
@@ -71,28 +77,14 @@ namespace Flax.Deps.Dependencies
                     {
                     case TargetPlatform.Windows:
                     {
-                        Deploy.VCEnvironment.BuildSolution(solutionPath, configuration, architecture.ToString());
-                        var depsFolder = GetThirdPartyFolder(options, TargetPlatform.Windows, architecture);
-                        foreach (var file in outputFileNames)
-                        {
-                            Utilities.FileCopy(Path.Combine(binFolder, architecture.ToString(), "Release", file), Path.Combine(depsFolder, file));
-                        }
+                        var bin = Path.Combine(root, "bin", architecture.ToString());
+                        var depsFolder = GetThirdPartyFolder(options, platform, architecture);
+                        Utilities.FileCopy(Path.Combine(bin, "WinPixEventRuntime.dll"), Path.Combine(depsFolder, "WinPixEventRuntime.dll"));
+                        Utilities.FileCopy(Path.Combine(bin, "WinPixEventRuntime.lib"), Path.Combine(depsFolder, "WinPixEventRuntime.lib"));
+                        break;
                     }
-                    break;
                     }
                 }
-            }
-
-            // Deploy header files and license file
-            var dstIncludePath = Path.Combine(options.ThirdPartyFolder, "DirectXMesh");
-            foreach (var file in new[]
-            {
-                "DirectXMesh/DirectXMesh.h",
-                "DirectXMesh/DirectXMesh.inl",
-                "LICENSE",
-            })
-            {
-                Utilities.FileCopy(Path.Combine(root, file), Path.Combine(dstIncludePath, Path.GetFileName(file)));
             }
         }
     }
