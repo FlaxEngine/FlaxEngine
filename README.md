@@ -1,2 +1,2 @@
 # Hazel 3D
-Hazel 3D Engine (H3E)
+Hazel 3D Engine (HZ3E)
