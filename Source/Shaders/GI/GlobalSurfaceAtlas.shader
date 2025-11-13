@@ -242,7 +242,7 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupId 
 		if (BoxIntersectsSphere(groupMin, groupMax, objectBounds.xyz, objectBounds.w))
 		{
             uint sharedIndex;
-            InterlockedAdd(SharedCulledObjectsCount, 1, sharedIndex);
+            InterlockedAdd(SharedCulledObjectsCount, 1u, sharedIndex);
             if (sharedIndex < GLOBAL_SURFACE_ATLAS_SHARED_CULL_SIZE)
                 SharedCulledObjects[sharedIndex] = objectAddress;
 		}
@@ -271,7 +271,7 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupId 
 	// Allocate object data size in the buffer
 	uint objectsStart;
 	uint objectsSize = objectsCount + 1; // Include objects count before actual objects data
-	RWGlobalSurfaceAtlasCulledObjects.InterlockedAdd(0, objectsSize, objectsStart); // Counter at 0
+	RWGlobalSurfaceAtlasCulledObjects.InterlockedAdd(0u, objectsSize, objectsStart); // Counter at 0
 	if (objectsStart + objectsSize > CulledObjectsCapacity)
 	{
 		// Not enough space in the buffer
