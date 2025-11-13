@@ -19,6 +19,48 @@ namespace FlaxEditor.GUI
     /// <seealso cref="CurveEditorBase" />
     public abstract partial class CurveEditor<T> : CurveEditorBase where T : new()
     {
+        /// <summary>
+        /// Represents a single point in a <see cref="CurveEditorPreset"/>.
+        /// </summary>
+        protected struct CurvePresetPoint
+        {
+            /// <summary>
+            /// The time.
+            /// </summary>
+            public float Time;
+
+            /// <summary>
+            /// The value.
+            /// </summary>
+            public float Value;
+
+            /// <summary>
+            /// The in tangent. Will be ignored in <see cref="LinearCurveEditor{T}"/>
+            /// </summary>
+            public float TangentIn;
+
+            /// <summary>
+            /// The out tangent. Will be ignored in <see cref="LinearCurveEditor{T}"/>
+            /// </summary>
+            public float TangentOut;
+        }
+
+        /// <summary>
+        /// A curve preset.
+        /// </summary>
+        protected struct CurveEditorPreset()
+        {
+            /// <summary>
+            /// If the tangents will be linear or smooth.
+            /// </summary>
+            public bool LinearTangents;
+
+            /// <summary>
+            /// The points of the preset.
+            /// </summary>
+            public List<CurvePresetPoint> Points;
+        }
+
         private class Popup : ContextMenuBase
         {
             private CustomEditorPresenter _presenter;
@@ -330,23 +372,58 @@ namespace FlaxEditor.GUI
         /// <summary>
         /// Preset values for <see cref="CurvePreset"/> to be applied to a <see cref="CurveEditor{T}"/>.
         /// </summary>
-        public Dictionary<CurvePreset, object[]> PresetValues = new Dictionary<CurvePreset, object[]>
+        protected Dictionary<CurvePreset, CurveEditorPreset> Presets = new Dictionary<CurvePreset, CurveEditorPreset>
         {
-            { CurvePreset.Constant, new object[] { true, // LinearTangent
-                                                0f, 0.5f, 0f, 0f, // Time, value, tangent in, tangent out
-                                                1f, 0.5f, 0f, 0f } },
-            { CurvePreset.EaseIn, new object[] { false,
-                                                0f, 0f, 0f, 0f,
-                                                1f, 1f, -1.4f, 0f } },
-            { CurvePreset.EaseOut, new object[] { false,
-                                                1f, 1f, 0f, 0f,
-                                                0f, 0f, 0f, 1.4f } },
-            { CurvePreset.Linear, new object[] { true,
-                                                0f, 0f, 0f, 0f,
-                                                1f, 1f, 0f, 0f } },
-            { CurvePreset.Smoothstep, new object[] { false,
-                                                0f, 0f, 0f, 0f,
-                                                1f, 1f, 0f, 0f } },
+            { CurvePreset.Constant, new CurveEditorPreset
+                {
+                    LinearTangents = true,
+                    Points = new List<CurvePresetPoint>
+                    {
+                        new CurvePresetPoint { Time = 0f, Value = 0.5f, TangentIn = 0f, TangentOut = 0f },
+                        new CurvePresetPoint { Time = 1f, Value = 0.5f, TangentIn = 0f, TangentOut = 0f },
+                    }
+                }
+            },
+            { CurvePreset.EaseIn, new CurveEditorPreset
+                {
+                    LinearTangents = false,
+                    Points = new List<CurvePresetPoint>
+                    {
+                        new CurvePresetPoint { Time = 0f, Value = 0f, TangentIn = 0f, TangentOut = 0f },
+                        new CurvePresetPoint { Time = 1f, Value = 1f, TangentIn = -1.4f, TangentOut = 0f },
+                    }
+                }
+            },
+            { CurvePreset.EaseOut, new CurveEditorPreset
+                {
+                    LinearTangents = false,
+                    Points = new List<CurvePresetPoint>
+                    {
+                        new CurvePresetPoint { Time = 1f, Value = 1f, TangentIn = 0f, TangentOut = 0f },
+                        new CurvePresetPoint { Time = 0f, Value = 0f, TangentIn = 0f, TangentOut = 1.4f },
+                    }
+                }
+            },
+            { CurvePreset.Linear, new CurveEditorPreset
+                {
+                    LinearTangents = true,
+                    Points = new List<CurvePresetPoint>
+                    {
+                        new CurvePresetPoint { Time = 0f, Value = 0f, TangentIn = 0f, TangentOut = 0f },
+                        new CurvePresetPoint { Time = 1f, Value = 1f, TangentIn = 0f, TangentOut = 0f },
+                    }
+                }
+            },
+            { CurvePreset.Smoothstep, new CurveEditorPreset
+                {
+                    LinearTangents = false,
+                    Points = new List<CurvePresetPoint>
+                    {
+                        new CurvePresetPoint { Time = 0f, Value = 0f, TangentIn = 0f, TangentOut = 0f },
+                        new CurvePresetPoint { Time = 1f, Value = 1f, TangentIn = 0f, TangentOut = 0f },
+                    }
+                }
+            },
         };
 
         /// <summary>
@@ -1612,11 +1689,11 @@ namespace FlaxEditor.GUI
         {
             base.ApplyPreset(preset);
 
-            object[] data = PresetValues[preset];
-            for (int i = 1; i < data.Length; i += 4)
+            CurveEditorPreset data = Presets[preset];
+            foreach (var point in data.Points)
             {
-                float time = (float)data[i];
-                object value = ConvertCurvePresetValueToCurveEditorType((float)data[i + 1]);
+                float time = point.Time;
+                object value = ConvertCurvePresetValueToCurveEditorType((float)point.Value);
                 AddKeyframe(time, value);
             }
 
@@ -2414,19 +2491,20 @@ namespace FlaxEditor.GUI
         {
             base.ApplyPreset(preset);
 
-            object[] data = PresetValues[preset];
-            for (int i = 1; i < data.Length; i += 4)
+            CurveEditorPreset data = Presets[preset];
+
+            foreach (var point in data.Points)
             {
-                float time = (float)data[i];
-                object value = ConvertCurvePresetValueToCurveEditorType((float)data[i + 1]);
-                object tangentIn = ConvertCurvePresetValueToCurveEditorType((float)data[i + 2]);
-                object tangentOut = ConvertCurvePresetValueToCurveEditorType((float)data[i + 3]);
+                float time = point.Time;
+                object value = ConvertCurvePresetValueToCurveEditorType((float)point.Value);
+                object tangentIn = ConvertCurvePresetValueToCurveEditorType((float)point.TangentIn);
+                object tangentOut = ConvertCurvePresetValueToCurveEditorType((float)point.TangentOut);
 
                 AddKeyframe(time, value, tangentIn, tangentOut);
             }
 
             SelectAll();
-            if ((bool)data[0])
+            if (data.LinearTangents)
                 SetTangentsLinear();
 
             ShowWholeCurve();
