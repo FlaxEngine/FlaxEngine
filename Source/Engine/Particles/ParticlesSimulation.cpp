@@ -156,7 +156,7 @@ void ParticleSystemInstance::Sync(ParticleSystem* system)
         if (GPUParticlesCountReadback)
             GPUParticlesCountReadback->ReleaseGPU();
     }
-    ASSERT(Emitters.Count() == system->Emitters.Count());
+    CHECK(Emitters.Count() == system->Emitters.Count());
 }
 
 bool ParticleSystemInstance::ContainsEmitter(ParticleEmitter* emitter) const
