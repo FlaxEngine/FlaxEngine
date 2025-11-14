@@ -307,6 +307,7 @@ void GPUContextDX12::Reset()
         _device->DummyVB = _device->CreateBuffer(TEXT("DummyVertexBuffer"));
         auto* layout = GPUVertexLayout::Get({ { VertexElement::Types::Attribute3, 0, 0, 0, PixelFormat::R32G32B32A32_Float } });
         _device->DummyVB->Init(GPUBufferDescription::Vertex(layout, sizeof(Color), 1, &Color::Transparent));
+        SetResourceState(_device->DummyVB, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, 0);
     }
     ((GPUBufferDX12*)_device->DummyVB)->GetVBView(dummyVBView);
     _commandList->IASetVertexBuffers(GPU_MAX_VB_BINDED, 1, &dummyVBView);
