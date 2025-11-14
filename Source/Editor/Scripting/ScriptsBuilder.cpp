@@ -121,9 +121,13 @@ void ScriptsBuilderImpl::sourceDirEvent(const String& path, FileSystemAction act
     // Discard non-source files or generated files
     if ((!path.EndsWith(TEXT(".cs")) &&
         !path.EndsWith(TEXT(".cpp")) &&
+        !path.EndsWith(TEXT(".c")) &&
+        !path.EndsWith(TEXT(".hpp")) &&
         !path.EndsWith(TEXT(".h"))) ||
         path.EndsWith(TEXT(".Gen.cs")))
+    {
         return;
+    }
 
     ScopeLock scopeLock(_locker);
     _lastSourceCodeEdited = DateTime::Now();

@@ -79,6 +79,7 @@ Delegate<const Float2&, MouseButton> Input::MouseUp;
 Delegate<const Float2&, MouseButton> Input::MouseDoubleClick;
 Delegate<const Float2&, float> Input::MouseWheel;
 Delegate<const Float2&> Input::MouseMove;
+Delegate<const Float2&> Input::MouseMoveRelative;
 Action Input::MouseLeave;
 Delegate<const Float2&, int32> Input::TouchDown;
 Delegate<const Float2&, int32> Input::TouchMove;
@@ -215,6 +216,14 @@ void Mouse::OnMouseMove(const Float2& position, Window* target)
     e.MouseData.Position = position;
 }
 
+void Mouse::OnMouseMoveRelative(const Float2& positionRelative, Window* target)
+{
+    Event& e = _queue.AddOne();
+    e.Type = EventType::MouseMoveRelative;
+    e.Target = target;
+    e.MouseMovementData.PositionRelative = positionRelative;
+}
+
 void Mouse::OnMouseLeave(Window* target)
 {
     PROFILE_MEM(Input);
@@ -280,6 +289,11 @@ bool Mouse::Update(EventQueue& queue)
         case EventType::MouseMove:
         {
             _state.MousePosition = e.MouseData.Position;
+            break;
+        }
+        case EventType::MouseMoveRelative:
+        {
+            _state.MousePosition += e.MouseMovementData.PositionRelative;
             break;
         }
         case EventType::MouseLeave:
@@ -922,11 +936,10 @@ void InputService::Update()
     WindowsManager::WindowsLocker.Unlock();
 
     // Send input events for the focused window
-    WindowsManager::WindowsLocker.Lock();
     for (const auto& e : InputEvents)
     {
         auto window = e.Target ? e.Target : defaultWindow;
-        if (!window || !WindowsManager::Windows.Contains(window))
+        if (!window || window->IsClosed())
             continue;
         switch (e.Type)
         {
@@ -956,6 +969,9 @@ void InputService::Update()
         case InputDevice::EventType::MouseMove:
             window->OnMouseMove(window->ScreenToClient(e.MouseData.Position));
             break;
+        case InputDevice::EventType::MouseMoveRelative:
+            window->OnMouseMoveRelative(e.MouseMovementData.PositionRelative);
+            break;
         case InputDevice::EventType::MouseLeave:
             window->OnMouseLeave();
             break;
@@ -971,7 +987,6 @@ void InputService::Update()
             break;
         }
     }
-    WindowsManager::WindowsLocker.Unlock();
 
     // Skip if game has no focus to handle the input
     if (!Engine::HasGameViewportFocus())
@@ -1011,6 +1026,9 @@ void InputService::Update()
             break;
         case InputDevice::EventType::MouseMove:
             Input::MouseMove(e.MouseData.Position);
+            break;
+        case InputDevice::EventType::MouseMoveRelative:
+            Input::MouseMoveRelative(e.MouseMovementData.PositionRelative);
             break;
         case InputDevice::EventType::MouseLeave:
             Input::MouseLeave();
@@ -1225,6 +1243,7 @@ void InputService::Update()
         }
     }
 
+#if !PLATFORM_SDL
     // Lock mouse if need to
     const auto lockMode = Screen::GetCursorLock();
     if (lockMode == CursorLockMode::Locked)
@@ -1233,6 +1252,7 @@ void InputService::Update()
                            Screen::ScreenToGameViewport(Float2::Zero);
         Input::SetMousePosition(pos);
     }
+#endif
 
     // Send events for the active actions and axes (send events only in play mode)
     if (!Time::GetGamePaused())
