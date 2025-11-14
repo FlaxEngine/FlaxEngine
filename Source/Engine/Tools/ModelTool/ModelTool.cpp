@@ -8,6 +8,7 @@
 #include "Engine/Core/RandomStream.h"
 #include "Engine/Core/Math/Vector3.h"
 #include "Engine/Core/Math/Ray.h"
+#include "Engine/Core/Utilities.h"
 #include "Engine/Platform/ConditionVariable.h"
 #include "Engine/Profiler/Profiler.h"
 #include "Engine/Threading/JobSystem.h"
@@ -27,7 +28,6 @@
 #include "Engine/Serialization/MemoryWriteStream.h"
 #include "Engine/Engine/Units.h"
 #if USE_EDITOR
-#include "Engine/Core/Utilities.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/DateTime.h"
 #include "Engine/Core/Types/TimeSpan.h"
