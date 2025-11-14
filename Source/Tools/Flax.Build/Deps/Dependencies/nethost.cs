@@ -89,7 +89,10 @@ namespace Flax.Deps.Dependencies
                 os = "windows";
                 runtimeFlavor = "Mono";
                 buildMonoAotCross = true;
-                buildArgs = $" -subset mono+libs -cmakeargs \"-DDISABLE_JIT=1-DENABLE_PERFTRACING=0-DDISABLE_REFLECTION_EMIT=1-DDISABLE_EVENTPIPE=1-DDISABLE_COM=1-DDISABLE_PROFILER=1-DDISABLE_COMPONENTS=1\" /p:FeaturePerfTracing=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false /p:ApiCompatValidateAssemblies=false";
+                var defines = "-D_GAMING_XBOX=1-DDISABLE_JIT=1-DENABLE_PERFTRACING=0-DDISABLE_REFLECTION_EMIT=1-DDISABLE_EVENTPIPE=1-DDISABLE_COM=1-DDISABLE_PROFILER=1-DDISABLE_COMPONENTS=1";
+                defines += targetPlatform == TargetPlatform.XboxScarlett ? "-D_GAMING_XBOX_SCARLETT=1" : "-D_GAMING_XBOX_XBOXONE=1";
+                defines += "-DDISABLE_EXECUTABLES=1-DDISABLE_SHARED_LIBS=1";
+                buildArgs = $" -subset mono+libs -cmakeargs \"{defines}\" /p:FeaturePerfTracing=false /p:FeatureWin32Registry=false /p:FeatureCominteropApartmentSupport=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false /p:ApiCompatValidateAssemblies=false";
                 break;
             case TargetPlatform.Linux:
                 os = "linux";
@@ -241,8 +244,13 @@ namespace Flax.Deps.Dependencies
                 case TargetPlatform.XboxScarlett:
                     libs1 = new[]
                     {
-                        "lib/coreclr.dll",
-                        "lib/coreclr.import.lib",
+                        // When using shared library:
+                        //"lib/coreclr.dll",
+                        //"lib/coreclr.import.lib",
+
+                        // When using static library:
+                        "lib/monosgen-2.0.lib",
+                        "lib/mono-profiler-aot.lib",
                     };
                     libs2 = new string[]
                     {
