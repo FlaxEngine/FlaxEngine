@@ -32,7 +32,8 @@ struct BVHHit
 
 float3 LoadVertexBVH(BVHBuffers bvh, uint index)
 {
-    uint vertexIndex = bvh.IndexBuffer.Load(index << 2u);
+    int addr = index << 2u;
+    uint vertexIndex = bvh.IndexBuffer.Load(addr);
     return asfloat(bvh.VertexBuffer.Load3(vertexIndex * bvh.VertexStride));
 }
 
