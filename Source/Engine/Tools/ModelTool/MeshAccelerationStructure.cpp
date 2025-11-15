@@ -21,9 +21,9 @@ static_assert(sizeof(GPUBVH) == sizeof(Float4) * 2, "Invalid BVH structure size 
 
 void MeshAccelerationStructure::BuildBVH(int32 node, BVHBuild& build)
 {
-    auto& root = _bvh[node];
-    ASSERT_LOW_LAYER(root.Leaf.IsLeaf);
-    if (build.MaxLeafSize > 0 && root.Leaf.TriangleCount <= build.MaxLeafSize)
+    auto* root = &_bvh[node];
+    ASSERT_LOW_LAYER(root->Leaf.IsLeaf);
+    if (build.MaxLeafSize > 0 && root->Leaf.TriangleCount <= build.MaxLeafSize)
         return;
     if (build.MaxDepth > 0 && build.NodeDepth >= build.MaxDepth)
         return;
@@ -31,15 +31,16 @@ void MeshAccelerationStructure::BuildBVH(int32 node, BVHBuild& build)
     // Spawn two leaves
     const int32 childIndex = _bvh.Count();
     _bvh.AddDefault(2);
+    root = &_bvh[node];
     auto& left = _bvh.Get()[childIndex];
     auto& right = _bvh.Get()[childIndex + 1];
     left.Leaf.IsLeaf = 1;
     right.Leaf.IsLeaf = 1;
-    left.Leaf.MeshIndex = root.Leaf.MeshIndex;
-    right.Leaf.MeshIndex = root.Leaf.MeshIndex;
+    left.Leaf.MeshIndex = root->Leaf.MeshIndex;
+    right.Leaf.MeshIndex = root->Leaf.MeshIndex;
 
     // Mid-point splitting based on the largest axis
-    const Float3 boundsSize = root.Bounds.GetSize();
+    const Float3 boundsSize = root->Bounds.GetSize();
     int32 axisCount = 0;
     int32 axis = 0;
 RETRY:
@@ -63,11 +64,11 @@ RETRY:
         // Go to the next axis
         axis = (axis + 1) % 3;
     }
-    const float midPoint = (float)(root.Bounds.Minimum.Raw[axis] + boundsSize.Raw[axis] * 0.5f);
-    const Mesh& meshData = _meshes[root.Leaf.MeshIndex];
+    const float midPoint = (float)(root->Bounds.Minimum.Raw[axis] + boundsSize.Raw[axis] * 0.5f);
+    const Mesh& meshData = _meshes[root->Leaf.MeshIndex];
     const Float3* vb = meshData.VertexBuffer.Get<Float3>();
-    int32 indexStart = root.Leaf.TriangleIndex * 3;
-    int32 indexEnd = indexStart + root.Leaf.TriangleCount * 3;
+    int32 indexStart = root->Leaf.TriangleIndex * 3;
+    int32 indexEnd = indexStart + root->Leaf.TriangleCount * 3;
     left.Leaf.TriangleCount = 0;
     right.Leaf.TriangleCount = 0;
     if (meshData.Use16BitIndexBuffer)
@@ -76,7 +77,7 @@ RETRY:
         {
             uint16 I0, I1, I2;
         };
-        build.Scratch.Resize(root.Leaf.TriangleCount * sizeof(Tri));
+        build.Scratch.Resize(root->Leaf.TriangleCount * sizeof(Tri));
         auto dst = (Tri*)build.Scratch.Get();
         auto ib16 = meshData.IndexBuffer.Get<uint16>();
         for (int32 i = indexStart; i < indexEnd;)
@@ -89,9 +90,9 @@ RETRY:
             if (centroid <= midPoint)
                 dst[left.Leaf.TriangleCount++] = tri; // Left
             else
-                dst[root.Leaf.TriangleCount - ++right.Leaf.TriangleCount] = tri; // Right
+                dst[root->Leaf.TriangleCount - ++right.Leaf.TriangleCount] = tri; // Right
         }
-        Platform::MemoryCopy(ib16 + indexStart, dst, root.Leaf.TriangleCount * 3 * sizeof(uint16));
+        Platform::MemoryCopy(ib16 + indexStart, dst, root->Leaf.TriangleCount * 3 * sizeof(uint16));
         if (left.Leaf.TriangleCount == 0 || right.Leaf.TriangleCount == 0)
         {
             axisCount++;
@@ -104,9 +105,9 @@ RETRY:
         for (int32 i = indexStart; i < indexEnd; i++)
             left.Bounds.Merge(vb[((uint16*)build.Scratch.Get())[i]]);
 
-        right.Bounds = BoundingBox(vb[dst[root.Leaf.TriangleCount - 1].I0]);
+        right.Bounds = BoundingBox(vb[dst[root->Leaf.TriangleCount - 1].I0]);
         indexStart = left.Leaf.TriangleCount;
-        indexEnd = root.Leaf.TriangleCount * 3;
+        indexEnd = root->Leaf.TriangleCount * 3;
         for (int32 i = indexStart; i < indexEnd; i++)
             right.Bounds.Merge(vb[((uint16*)build.Scratch.Get())[i]]);
     }
@@ -116,7 +117,7 @@ RETRY:
         {
             uint32 I0, I1, I2;
         };
-        build.Scratch.Resize(root.Leaf.TriangleCount * sizeof(Tri));
+        build.Scratch.Resize(root->Leaf.TriangleCount * sizeof(Tri));
         auto dst = (Tri*)build.Scratch.Get();
         auto ib32 = meshData.IndexBuffer.Get<uint32>();
         for (int32 i = indexStart; i < indexEnd;)
@@ -129,9 +130,9 @@ RETRY:
             if (centroid <= midPoint)
                 dst[left.Leaf.TriangleCount++] = tri; // Left
             else
-                dst[root.Leaf.TriangleCount - ++right.Leaf.TriangleCount] = tri; // Right
+                dst[root->Leaf.TriangleCount - ++right.Leaf.TriangleCount] = tri; // Right
         }
-        Platform::MemoryCopy(ib32 + indexStart, dst, root.Leaf.TriangleCount * 3 * sizeof(uint32));
+        Platform::MemoryCopy(ib32 + indexStart, dst, root->Leaf.TriangleCount * 3 * sizeof(uint32));
         if (left.Leaf.TriangleCount == 0 || right.Leaf.TriangleCount == 0)
         {
             axisCount++;
@@ -144,22 +145,22 @@ RETRY:
         for (int32 i = indexStart; i < indexEnd; i++)
             left.Bounds.Merge(vb[((uint32*)build.Scratch.Get())[i]]);
 
-        right.Bounds = BoundingBox(vb[dst[root.Leaf.TriangleCount - 1].I0]);
+        right.Bounds = BoundingBox(vb[dst[root->Leaf.TriangleCount - 1].I0]);
         indexStart = left.Leaf.TriangleCount;
-        indexEnd = root.Leaf.TriangleCount * 3;
+        indexEnd = root->Leaf.TriangleCount * 3;
         for (int32 i = indexStart; i < indexEnd; i++)
             right.Bounds.Merge(vb[((uint32*)build.Scratch.Get())[i]]);
     }
-    ASSERT_LOW_LAYER(left.Leaf.TriangleCount + right.Leaf.TriangleCount == root.Leaf.TriangleCount);
-    left.Leaf.TriangleIndex = root.Leaf.TriangleIndex;
+    ASSERT_LOW_LAYER(left.Leaf.TriangleCount + right.Leaf.TriangleCount == root->Leaf.TriangleCount);
+    left.Leaf.TriangleIndex = root->Leaf.TriangleIndex;
     right.Leaf.TriangleIndex = left.Leaf.TriangleIndex + left.Leaf.TriangleCount;
     build.MaxNodeTriangles = Math::Max(build.MaxNodeTriangles, (int32)right.Leaf.TriangleCount);
     build.MaxNodeTriangles = Math::Max(build.MaxNodeTriangles, (int32)right.Leaf.TriangleCount);
 
     // Convert into a node
-    root.Node.IsLeaf = 0;
-    root.Node.ChildIndex = childIndex;
-    root.Node.ChildrenCount = 2;
+    root->Node.IsLeaf = 0;
+    root->Node.ChildIndex = childIndex;
+    root->Node.ChildrenCount = 2;
 
     // Split children
     build.NodeDepth++;
