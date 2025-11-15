@@ -32,8 +32,8 @@ struct BVHHit
 
 float3 LoadVertexBVH(BVHBuffers bvh, uint index)
 {
-    index = bvh.IndexBuffer.Load(index << 2u);
-    return asfloat(bvh.VertexBuffer.Load3(index * bvh.VertexStride));
+    uint vertexIndex = bvh.IndexBuffer.Load(index << 2u);
+    return asfloat(bvh.VertexBuffer.Load3(vertexIndex * bvh.VertexStride));
 }
 
 // [https://tavianator.com/2011/ray_box.html]
