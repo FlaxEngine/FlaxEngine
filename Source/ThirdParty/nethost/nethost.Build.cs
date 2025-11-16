@@ -64,6 +64,7 @@ public class nethost : ThirdPartyModule
         case TargetPlatform.XboxScarlett:
             options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "monosgen-2.0.lib"));
             options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "mono-profiler-aot.lib"));
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "System.Globalization.Native-Static.lib"));
             break;
         case TargetPlatform.Linux:
             options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libnethost.a"));
