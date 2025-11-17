@@ -92,9 +92,8 @@ float GPUTimerQueryDX11::GetResult()
 {
     if (!_finalized)
     {
-#if BUILD_DEBUG
-        ASSERT(HasResult());
-#endif
+        if (!HasResult())
+            return 0;
 
         UINT64 timeStart, timeEnd;
         auto context = _device->GetIM();

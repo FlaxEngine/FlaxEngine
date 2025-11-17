@@ -43,32 +43,15 @@ void MaterialGenerator::AddLayer(MaterialLayer* layer)
 MaterialLayer* MaterialGenerator::GetLayer(const Guid& id, Node* caller)
 {
     // Find layer first
-    for (int32 i = 0; i < _layers.Count(); i++)
+    for (MaterialLayer* layer : _layers)
     {
-        if (_layers[i]->ID == id)
-        {
-            // Found
-            return _layers[i];
-        }
+        if (layer->ID == id)
+            return layer;
     }
 
     // Load asset
     Asset* asset = Assets.LoadAsync<MaterialBase>(id);
-    if (asset == nullptr || asset->WaitForLoaded(30000))
-    {
-        OnError(caller, nullptr, TEXT("Failed to load material asset."));
-        return nullptr;
-    }
-
-    // Special case for engine exit event
-    if (Engine::ShouldExit())
-    {
-        // End
-        return nullptr;
-    }
-
-    // Check if load failed
-    if (!asset->IsLoaded())
+    if (asset == nullptr || asset->WaitForLoaded(10 * 1000))
     {
         OnError(caller, nullptr, TEXT("Failed to load material asset."));
         return nullptr;
@@ -79,13 +62,11 @@ MaterialLayer* MaterialGenerator::GetLayer(const Guid& id, Node* caller)
     Asset* iterator = asset;
     while (material == nullptr)
     {
-        // Wait for material to be loaded
         if (iterator->WaitForLoaded())
         {
             OnError(caller, nullptr, TEXT("Material asset load failed."));
             return nullptr;
         }
-
         if (iterator->GetTypeName() == MaterialInstance::TypeName)
         {
             auto instance = ((MaterialInstance*)iterator);

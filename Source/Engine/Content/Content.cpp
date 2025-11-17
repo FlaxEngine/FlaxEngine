@@ -700,6 +700,7 @@ Asset* Content::GetAsset(const StringView& outputPath)
 {
     if (outputPath.IsEmpty())
         return nullptr;
+    PROFILE_CPU();
     ScopeLock lock(AssetsLocker);
     for (auto i = Assets.Begin(); i.IsNotEnd(); ++i)
     {

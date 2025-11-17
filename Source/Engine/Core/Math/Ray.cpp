@@ -12,11 +12,6 @@ String Ray::ToString() const
     return String::Format(TEXT("{}"), *this);
 }
 
-Vector3 Ray::GetPoint(Real distance) const
-{
-    return Position + Direction * distance;
-}
-
 Ray Ray::GetPickRay(float x, float y, const Viewport& viewport, const Matrix& vp)
 {
     Vector3 nearPoint(x, y, 0.0f);

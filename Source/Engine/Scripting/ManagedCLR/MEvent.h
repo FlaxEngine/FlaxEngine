@@ -19,6 +19,8 @@ protected:
 #elif USE_NETCORE
     void* _handle;
     StringAnsiView _name;
+#else
+    StringAnsiView _name;
 #endif
 
     mutable MMethod* _addMethod;
