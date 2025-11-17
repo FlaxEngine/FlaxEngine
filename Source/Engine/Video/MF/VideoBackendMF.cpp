@@ -12,6 +12,12 @@
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #endif
+#if PLATFORM_XBOX_ONE || PLATFORM_XBOX_SCARLETT
+#define USE_STOCKD3D 0
+#include <mf_x/mfapi.h>
+#include <mf_x/mfidl.h>
+#include <mf_x/mfreadwrite.h>
+#else
 #include <sdkddkver.h>
 #if WINVER >= _WIN32_WINNT_WINBLUE && WINVER < _WIN32_WINNT_WIN10
 // Fix compilation for Windows 8.1 on the latest Windows SDK
@@ -24,6 +30,7 @@ typedef enum _MFVideoSphericalFormat { } MFVideoSphericalFormat;
 #include <mfapi.h>
 #include <mfidl.h>
 #include <mfreadwrite.h>
+#endif
 
 #define VIDEO_API_MF_ERROR(api, err) LOG(Warning, "[VideoBackendMF] {} failed with error 0x{:x}", TEXT(#api), (uint64)err)
 
@@ -111,7 +118,7 @@ namespace MF
                 player.Format = PixelFormat::NV12;
             else if (subtype == MFVideoFormat_YUY2)
                 player.Format = PixelFormat::YUY2;
-#if (WDK_NTDDI_VERSION >= NTDDI_WIN10)
+#if (WDK_NTDDI_VERSION >= NTDDI_WIN10) && PLATFORM_WINDOWS
             else if (subtype == MFVideoFormat_A2R10G10B10)
                 player.Format = PixelFormat::R10G10B10A2_UNorm;
             else if (subtype == MFVideoFormat_A16B16G16R16F)
@@ -150,6 +157,7 @@ namespace MF
         }
         else if (majorType == MFMediaType_Audio)
         {
+#if !(PLATFORM_XBOX_ONE || PLATFORM_XBOX_SCARLETT) // TODO: fix missing MFAudioFormat_PCM/MFAudioFormat_Float convertion on Xbox (bug?)
             player.AudioInfo.SampleRate = MFGetAttributeUINT32(mediaType, MF_MT_AUDIO_SAMPLES_PER_SECOND, 0);
             player.AudioInfo.NumChannels = MFGetAttributeUINT32(mediaType, MF_MT_AUDIO_NUM_CHANNELS, 0);
             player.AudioInfo.BitDepth = MFGetAttributeUINT32(mediaType, MF_MT_AUDIO_BITS_PER_SAMPLE, 16);
@@ -173,6 +181,7 @@ namespace MF
                 }
                 customType->Release();
             }
+#endif
         }
 
         result = false;

@@ -22,8 +22,6 @@ public class Video : EngineModule
         {
         case TargetPlatform.Windows:
         case TargetPlatform.UWP:
-        case TargetPlatform.XboxOne:
-        case TargetPlatform.XboxScarlett:
             // Media Foundation
             options.SourcePaths.Add(Path.Combine(FolderPath, "MF"));
             options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_MF");
@@ -31,6 +29,15 @@ public class Video : EngineModule
             options.OutputFiles.Add("mfcore.lib");
             options.OutputFiles.Add("mfplat.lib");
             options.OutputFiles.Add("mfplay.lib");
+            options.OutputFiles.Add("mfreadwrite.lib");
+            options.OutputFiles.Add("mfuuid.lib");
+            break;
+        case TargetPlatform.XboxOne:
+        case TargetPlatform.XboxScarlett:
+            // Media Foundation
+            options.SourcePaths.Add(Path.Combine(FolderPath, "MF"));
+            options.CompileEnv.PreprocessorDefinitions.Add("VIDEO_API_MF");
+            options.OutputFiles.Add("mfplat.lib");
             options.OutputFiles.Add("mfreadwrite.lib");
             options.OutputFiles.Add("mfuuid.lib");
             break;
