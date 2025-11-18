@@ -1416,12 +1416,12 @@ namespace FlaxEngine.Interop
             public int GetHashCode(Type obj) => obj.GetHashCode();
         }
 
-        internal class TypeHolder
+        public class TypeHolder
         {
             internal Type type;
             internal Type wrappedType;
             internal ConstructorInfo ctor;
-            internal IntPtr managedClassPointer; // MClass*
+            public IntPtr managedClassPointer; // MClass*
 
             internal TypeHolder(Type type)
             {
@@ -1629,7 +1629,7 @@ namespace FlaxEngine.Interop
             return types;
         }
 
-        internal static TypeHolder GetTypeHolder(Type type)
+        public static TypeHolder GetTypeHolder(Type type)
         {
             if (managedTypes.TryGetValue(type, out (TypeHolder typeHolder, ManagedHandle handle) tuple))
                 return tuple.typeHolder;
