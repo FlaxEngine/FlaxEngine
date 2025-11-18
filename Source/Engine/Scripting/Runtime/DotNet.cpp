@@ -2028,13 +2028,13 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
     String fileName = name;
     if (!name.EndsWith(TEXT(".dll")) && !name.EndsWith(TEXT(".exe")))
         fileName += TEXT(".dll");
-    String path = fileName;
+    String path = Globals::ProjectFolder / String(TEXT("/Dotnet/")) / fileName;
     if (!FileSystem::FileExists(path))
     {
         path = Globals::ProjectFolder / String(TEXT("/Dotnet/shared/Microsoft.NETCore.App/")) / fileName;
         if (!FileSystem::FileExists(path))
         {
-            path = Globals::ProjectFolder / String(TEXT("/Dotnet/")) / fileName;
+            path = fileName;
         }
     }
 

@@ -93,6 +93,7 @@ namespace Flax.Deps.Dependencies
                 defines += targetPlatform == TargetPlatform.XboxScarlett ? "-D_GAMING_XBOX_SCARLETT=1" : "-D_GAMING_XBOX_XBOXONE=1";
                 defines += "-DDISABLE_EXECUTABLES=1-DDISABLE_SHARED_LIBS=1";
                 buildArgs = $" -subset mono+libs -cmakeargs \"{defines}\" /p:FeaturePerfTracing=false /p:FeatureWin32Registry=false /p:FeatureCominteropApartmentSupport=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false /p:ApiCompatValidateAssemblies=false";
+                envVars.Add("_GAMING_XBOX", "1");
                 break;
             case TargetPlatform.Linux:
                 os = "linux";
@@ -240,20 +241,28 @@ namespace Flax.Deps.Dependencies
                 switch (targetPlatform)
                 {
                 case TargetPlatform.Windows:
+                    libs1 = new[]
+                    {
+                        "lib/coreclr.dll",
+                        "lib/coreclr.import.lib",
+                    };
+                    libs2 = new[]
+                    {
+                        "System.Globalization.Native.dll",
+                        "System.IO.Compression.Native.dll",
+                    };
+                    break;
                 case TargetPlatform.XboxOne:
                 case TargetPlatform.XboxScarlett:
                     libs1 = new[]
                     {
-                        // When using shared library:
-                        //"lib/coreclr.dll",
-                        //"lib/coreclr.import.lib",
-
-                        // When using static library:
                         "lib/monosgen-2.0.lib",
                         "lib/mono-profiler-aot.lib",
                     };
-                    libs2 = new string[]
+                    libs2 = new[]
                     {
+                        "lib/System.Globalization.Native-Static.lib",
+                        "lib/System.IO.Compression.Native-Static.lib",
                     };
                     break;
                 default:

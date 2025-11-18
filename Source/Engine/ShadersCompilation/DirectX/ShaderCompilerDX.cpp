@@ -59,7 +59,8 @@ public:
         *ppIncludeSource = nullptr;
         const char* source;
         int32 sourceLength;
-        const StringAnsi filename(pFilename);
+        StringAnsi filename(pFilename);
+        filename.Replace('\\', '/');
         if (ShaderCompiler::GetIncludedFileSource(_context, "", filename.Get(), source, sourceLength))
             return E_FAIL;
         IDxcBlobEncoding* textBlob;
@@ -70,25 +71,25 @@ public:
     }
 };
 
-ShaderCompilerDX::ShaderCompilerDX(ShaderProfile profile)
-    : ShaderCompiler(profile)
+ShaderCompilerDX::ShaderCompilerDX(ShaderProfile profile, PlatformType platform, void* dxcCreateInstanceProc)
+    : ShaderCompiler(profile, platform)
 {
     IDxcCompiler3* compiler = nullptr;
     IDxcLibrary* library = nullptr;
     IDxcContainerReflection* containerReflection = nullptr;
-    if (FAILED(DxcCreateInstance(CLSID_DxcCompiler, __uuidof(compiler), reinterpret_cast<void**>(&compiler))) ||
-        FAILED(DxcCreateInstance(CLSID_DxcLibrary, __uuidof(library), reinterpret_cast<void**>(&library))) ||
-        FAILED(DxcCreateInstance(CLSID_DxcContainerReflection, __uuidof(containerReflection), reinterpret_cast<void**>(&containerReflection))))
+    DxcCreateInstanceProc createInstance = dxcCreateInstanceProc ? (DxcCreateInstanceProc)dxcCreateInstanceProc : &DxcCreateInstance;
+    if (FAILED(createInstance(CLSID_DxcCompiler, __uuidof(compiler), reinterpret_cast<void**>(&compiler))) ||
+        FAILED(createInstance(CLSID_DxcLibrary, __uuidof(library), reinterpret_cast<void**>(&library))) ||
+        FAILED(createInstance(CLSID_DxcContainerReflection, __uuidof(containerReflection), reinterpret_cast<void**>(&containerReflection))))
     {
         LOG(Error, "DxcCreateInstance failed");
     }
     _compiler = compiler;
     _library = library;
     _containerReflection = containerReflection;
-    static bool PrintVersion = true;
-    if (PrintVersion)
+    static HashSet<void*> PrintVersions;
+    if (PrintVersions.Add(createInstance))
     {
-        PrintVersion = false;
         IDxcVersionInfo* version = nullptr;
         if (compiler && SUCCEEDED(compiler->QueryInterface(__uuidof(version), reinterpret_cast<void**>(&version))))
         {
@@ -221,6 +222,7 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
             argsFull.Add(TEXT("-D"));
             argsFull.Add(*d);
         }
+        GetArgs(argsFull);
 
         // Compile
         ComPtr<IDxcResult> results;

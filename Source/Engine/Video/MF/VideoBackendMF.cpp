@@ -120,6 +120,14 @@ namespace MF
             else
             {
                 // Reconfigure decoder to output supported format by force
+#if PLATFORM_XBOX_ONE || PLATFORM_XBOX_SCARLETT
+                // Xbox supports NV12 via HV decoder
+                auto fallbackFormat = PixelFormat::NV12;
+                GUID fallbackFormatGuid = MFVideoFormat_NV12;
+#else
+                auto fallbackFormat = PixelFormat::YUY2;
+                GUID fallbackFormatGuid = MFVideoFormat_YUY2;
+#endif
                 IMFMediaType* customType = nullptr;
                 hr = MFCreateMediaType(&customType);
                 if (FAILED(hr))
@@ -128,7 +136,7 @@ namespace MF
                     goto END;
                 }
                 customType->SetGUID(MF_MT_MAJOR_TYPE, majorType);
-                customType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_YUY2);
+                customType->SetGUID(MF_MT_SUBTYPE, fallbackFormatGuid);
                 MFSetAttributeSize(customType, MF_MT_FRAME_SIZE, width, height);
                 hr = playerMF.SourceReader->SetCurrentMediaType(streamIndex, nullptr, customType);
                 if (FAILED(hr))
@@ -136,7 +144,7 @@ namespace MF
                     VIDEO_API_MF_ERROR(SetCurrentMediaType, hr);
                     goto END;
                 }
-                player.Format = PixelFormat::YUY2;
+                player.Format = fallbackFormat;
                 customType->Release();
             }
         }
