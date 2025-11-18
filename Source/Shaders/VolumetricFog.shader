@@ -341,7 +341,7 @@ void CS_LightScattering(uint3 GroupId : SV_GroupID, uint3 DispatchThreadId : SV_
 	
 	if (all(gridCoordinate < GridSizeInt))
 	{
-		scatteringAndExtinction = isnan(scatteringAndExtinction) || isinf(scatteringAndExtinction) ? 0 : scatteringAndExtinction;
+		scatteringAndExtinction = select(or(isnan(scatteringAndExtinction), isinf(scatteringAndExtinction)), 0, scatteringAndExtinction);
 		RWLightScattering[gridCoordinate] = max(scatteringAndExtinction, 0);
 	}
 }
