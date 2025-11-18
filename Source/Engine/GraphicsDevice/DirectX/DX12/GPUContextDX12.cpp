@@ -29,6 +29,7 @@
 #include "GPUVertexLayoutDX12.h"
 #include "CommandQueueDX12.h"
 #include "DescriptorHeapDX12.h"
+#include "RootSignatureDX12.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Debug/Exceptions/NotImplementedException.h"
