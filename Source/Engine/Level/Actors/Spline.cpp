@@ -518,7 +518,7 @@ namespace
                 Vector3 nextPos = transform.LocalToWorld(next->Value.Translation);
                 DEBUG_DRAW_WIRE_SPHERE(BoundingSphere(nextPos, NodeSizeByDistance(nextPos, scaleByDistance)), color, 0.0f, depthTest);
                 const float d = (next->Time - prev->Time) / 3.0f;
-                DEBUG_DRAW_BEZIER(prevPos, prevPos + prev->TangentOut.Translation * d, nextPos + next->TangentIn.Translation * d, nextPos, color, 0.0f, depthTest);
+                DEBUG_DRAW_BEZIER(prevPos, transform.LocalToWorld(prev->Value.Translation + prev->TangentOut.Translation * d), transform.LocalToWorld(next->Value.Translation + next->TangentIn.Translation * d), nextPos, color, 0.0f, depthTest);
                 prev = next;
                 prevPos = nextPos;
             }
