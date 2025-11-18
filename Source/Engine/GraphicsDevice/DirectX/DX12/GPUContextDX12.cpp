@@ -630,7 +630,9 @@ void GPUContextDX12::flushPS()
             LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
         }
 #endif
-        _commandList->SetPipelineState(_currentState->GetState(_rtDepth, _rtCount, _rtHandles, _vertexLayout));
+        ID3D12PipelineState* pso = _currentState->GetState(_rtDepth, _rtCount, _rtHandles, _vertexLayout);
+        ASSERT(pso);
+        _commandList->SetPipelineState(pso);
         if (_primitiveTopology != _currentState->PrimitiveTopology)
         {
             _primitiveTopology = _currentState->PrimitiveTopology;

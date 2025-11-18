@@ -32,7 +32,7 @@ public:
     ~ShaderCompilerDX();
 
 protected:
-    virtual void GetArgs(Array<const Char*, InlinedAllocation<250>> args)
+    virtual void GetArgs(ShaderFunctionMeta& meta, Array<const Char*, InlinedAllocation<250>>& args)
     {
     }
 
