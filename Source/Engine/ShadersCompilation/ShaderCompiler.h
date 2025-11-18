@@ -23,10 +23,11 @@ public:
     };
 
 private:
+    ShaderProfile _profile;
+    PlatformType _platform;
     Array<char> _funcNameDefineBuffer;
 
 protected:
-    ShaderProfile _profile;
     ShaderCompilationContext* _context = nullptr;
     Array<ShaderMacro> _globalMacros;
     Array<ShaderMacro> _macros;
@@ -37,8 +38,10 @@ public:
     /// Initializes a new instance of the <see cref="ShaderCompiler"/> class.
     /// </summary>
     /// <param name="profile">The profile.</param>
-    ShaderCompiler(ShaderProfile profile)
+    /// <param name="platform">The platform.</param>
+    ShaderCompiler(ShaderProfile profile, PlatformType platform = (PlatformType)0)
         : _profile(profile)
+        , _platform(platform)
     {
     }
 
@@ -51,10 +54,17 @@ public:
     /// <summary>
     /// Gets shader profile supported by this compiler.
     /// </summary>
-    /// <returns>The shader profile.</returns>
     FORCE_INLINE ShaderProfile GetProfile() const
     {
         return _profile;
+    }
+
+    /// <summary>
+    /// Gets target platform supported by this compiler. Returns invalid value of '0' if any platform works.
+    /// </summary>
+    FORCE_INLINE PlatformType GetPlatform() const
+    {
+        return _platform;
     }
 
     /// <summary>

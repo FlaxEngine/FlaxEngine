@@ -15,26 +15,32 @@
 #include "Editor/ProjectInfo.h"
 #include "Editor/Utilities/EditorUtilities.h"
 
-GDKPlatformTools::GDKPlatformTools()
+String GetGDK()
 {
-    // Find GDK
-    Platform::GetEnvironmentVariable(TEXT("GameDKLatest"), _gdkPath);
-    if (_gdkPath.IsEmpty() || !FileSystem::DirectoryExists(_gdkPath))
+    String gdk;
+    Platform::GetEnvironmentVariable(TEXT("GameDKLatest"), gdk);
+    if (gdk.IsEmpty() || !FileSystem::DirectoryExists(gdk))
     {
-        _gdkPath.Clear();
-        Platform::GetEnvironmentVariable(TEXT("GRDKLatest"), _gdkPath);
-        if (_gdkPath.IsEmpty() || !FileSystem::DirectoryExists(_gdkPath))
+        gdk.Clear();
+        Platform::GetEnvironmentVariable(TEXT("GRDKLatest"), gdk);
+        if (gdk.IsEmpty() || !FileSystem::DirectoryExists(gdk))
         {
-            _gdkPath.Clear();
+            gdk.Clear();
         }
         else
         {
-            if (_gdkPath.EndsWith(TEXT("GRDK\\")))
-                _gdkPath.Remove(_gdkPath.Length() - 6);
-            else if (_gdkPath.EndsWith(TEXT("GRDK")))
-                _gdkPath.Remove(_gdkPath.Length() - 5);
+            if (gdk.EndsWith(TEXT("GRDK\\")))
+                gdk.Remove(gdk.Length() - 6);
+            else if (gdk.EndsWith(TEXT("GRDK")))
+                gdk.Remove(gdk.Length() - 5);
         }
     }
+    return gdk;
+}
+
+GDKPlatformTools::GDKPlatformTools()
+{
+    _gdkPath = GetGDK();
 }
 
 DotNetAOTModes GDKPlatformTools::UseAOT() const
