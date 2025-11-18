@@ -127,7 +127,7 @@ bool GDKPlatformTools::OnPostProcess(CookingData& data, GDKPlatformSettings* pla
         validName.Add('\0');
 
         sb.Append(TEXT("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"));
-        sb.Append(TEXT("<Game configVersion=\"0\">\n"));
+        sb.Append(TEXT("<Game configVersion=\"1\">\n"));
         sb.AppendFormat(TEXT("  <Identity Name=\"{0}\" Publisher=\"{1}\" Version=\"{2}\"/>\n"),
                         validName.Get(),
                         platformSettings->PublisherName.HasChars() ? platformSettings->PublisherName : TEXT("CN=") + gameSettings->CompanyName,
