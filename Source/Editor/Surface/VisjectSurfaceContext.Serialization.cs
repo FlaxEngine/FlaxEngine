@@ -178,19 +178,31 @@ namespace FlaxEditor.Surface
 
                 // Update boxes types for nodes that dependant box types based on incoming connections
                 {
-                    bool keepUpdating = false;
-                    int updateLimit = 100;
+                    bool keepUpdating = true;
+                    int updatesMin = 2, updatesMax = 100;
                     do
                     {
+                        keepUpdating = false;
                         for (int i = 0; i < RootControl.Children.Count; i++)
                         {
-                            if (RootControl.Children[i] is SurfaceNode node && !node.HasDependentBoxesSetup)
+                            if (RootControl.Children[i] is SurfaceNode node)
                             {
                                 node.UpdateBoxesTypes();
-                                keepUpdating = true;
+                                var arch = node.Archetype;
+                                if (arch.DependentBoxes != null && arch.IndependentBoxes != null)
+                                {
+                                    foreach (var boxId in arch.DependentBoxes)
+                                    {
+                                        var b = node.GetBox(boxId);
+                                        if (b != null && b.CurrentType == b.DefaultType)
+                                        {
+                                            keepUpdating = true;
+                                        }
+                                    }
+                                }
                             }
                         }
-                    } while (keepUpdating && updateLimit-- > 0);
+                    } while ((keepUpdating && --updatesMax > 0) || --updatesMin > 0);
                 }
 
                 Loaded?.Invoke(this);

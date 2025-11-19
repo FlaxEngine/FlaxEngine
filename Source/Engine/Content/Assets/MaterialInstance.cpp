@@ -243,7 +243,8 @@ Asset::LoadResult MaterialInstance::load()
         ParamsChanged();
     }
 
-    baseMaterial->RemoveReference();
+    if (baseMaterial)
+        baseMaterial->RemoveReference();
     return LoadResult::Ok;
 }
 

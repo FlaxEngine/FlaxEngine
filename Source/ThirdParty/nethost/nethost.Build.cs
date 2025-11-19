@@ -48,9 +48,6 @@ public class nethost : ThirdPartyModule
         switch (options.Platform.Target)
         {
         case TargetPlatform.Windows:
-        case TargetPlatform.XboxOne:
-        case TargetPlatform.XboxScarlett:
-        case TargetPlatform.UWP:
             if (hostRuntime.Type == DotNetSdk.HostType.CoreCLR)
             {
                 options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "nethost.lib"));
@@ -62,6 +59,12 @@ public class nethost : ThirdPartyModule
                 options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "coreclr.import.lib"));
                 options.DependencyFiles.Add(Path.Combine(hostRuntime.Path, "coreclr.dll"));
             }
+            break;
+        case TargetPlatform.XboxOne:
+        case TargetPlatform.XboxScarlett:
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "monosgen-2.0.lib"));
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "mono-profiler-aot.lib"));
+            options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "System.Globalization.Native-Static.lib"));
             break;
         case TargetPlatform.Linux:
             options.OutputFiles.Add(Path.Combine(hostRuntime.Path, "libnethost.a"));
