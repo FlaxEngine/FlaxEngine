@@ -74,7 +74,7 @@ namespace FlaxEditor.Viewport
         private PrefabUIEditorRoot _uiRoot;
         private bool _showUI = false;
 
-        private int _defaultScaleActiveIndex = 0;
+        private int _defaultScaleActiveIndex = -1;
         private int _customScaleActiveIndex = -1;
         private ContextMenuButton _uiModeButton;
         private ContextMenuChildMenu _uiViewOptions;

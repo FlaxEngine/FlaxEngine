@@ -49,7 +49,7 @@ Follow the instructions below to compile and run the engine from source.
   * Fedora: `sudo dnf install dotnet-sdk-8.0`
   * Arch: `sudo pacman -S dotnet-sdk-8.0 dotnet-runtime-8.0 dotnet-targeting-pack-8.0 dotnet-host`
 * Install Vulkan SDK ([https://vulkan.lunarg.com/](https://vulkan.lunarg.com/))
-  * Ubuntu: `sudo apt install vulkan-sdk`
+  * Ubuntu: `sudo apt install vulkan-sdk` (deprecated, follow official docs)
   * Fedora: `sudo dnf install vulkan-headers vulkan-tools vulkan-validation-layers`
   * Arch: `sudo pacman -S vulkan-headers vulkan-tools vulkan-validation-layers`
 * Install Git with LFS
@@ -60,7 +60,7 @@ Follow the instructions below to compile and run the engine from source.
   * Ubuntu: `sudo apt-get install libx11-dev libxcursor-dev libxinerama-dev zlib1g-dev`
   * Fedora: `sudo dnf install libX11-devel libXcursor-devel  libXinerama-devel ghc-zlib-devel`
   * Arch: `sudo pacman -S base-devel libx11 libxcursor libxinerama zlib`
-* Install Clang compiler (version 6 or later):
+* Install Clang compiler (version 14 or later):
   * Ubuntu: `sudo apt-get install clang lldb lld`
   * Fedora: `sudo dnf install clang llvm lldb lld`
   * Arch: `sudo pacman -S clang lldb lld`

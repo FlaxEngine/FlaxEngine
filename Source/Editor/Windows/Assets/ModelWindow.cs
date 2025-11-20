@@ -90,24 +90,14 @@ namespace FlaxEditor.Windows.Assets
 
                     var gpu = group.Checkbox("Bake on GPU", "If checked, SDF generation will be calculated using GPU on Compute Shader, otherwise CPU will use Job System. GPU generation is fast but result in artifacts in various meshes (eg. foliage).");
                     gpu.CheckBox.Checked = sdfOptions.GPU;
+                    gpu.CheckBox.StateChanged += c => { Window._sdfOptions.GPU = c.Checked; };
 
                     var backfacesThresholdProp = group.AddPropertyItem("Backfaces Threshold", "Custom threshold (in range 0-1) for adjusting mesh internals detection based on the percentage of test rays hit triangle backfaces. Use lower value for more dense mesh.");
                     var backfacesThreshold = backfacesThresholdProp.FloatValue();
-                    var backfacesThresholdLabel = backfacesThresholdProp.Labels.Last();
                     backfacesThreshold.ValueBox.MinValue = 0.001f;
                     backfacesThreshold.ValueBox.MaxValue = 1.0f;
                     backfacesThreshold.ValueBox.Value = sdfOptions.BackfacesThreshold;
                     backfacesThreshold.ValueBox.BoxValueChanged += b => { Window._sdfOptions.BackfacesThreshold = b.Value; };
-
-                    // Toggle Backfaces Threshold visibility (CPU-only option)
-                    gpu.CheckBox.StateChanged += c =>
-                    {
-                        Window._sdfOptions.GPU = c.Checked;
-                        backfacesThresholdLabel.Visible = !c.Checked;
-                        backfacesThreshold.ValueBox.Visible = !c.Checked;
-                    };
-                    backfacesThresholdLabel.Visible = !gpu.CheckBox.Checked;
-                    backfacesThreshold.ValueBox.Visible = !gpu.CheckBox.Checked;
 
                     var lodIndex = group.IntegerValue("LOD Index", "Index of the model Level of Detail to use for SDF data building. By default uses the lowest quality LOD for fast building.");
                     lodIndex.IntValue.MinValue = 0;

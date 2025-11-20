@@ -47,12 +47,26 @@ public:
     Data CachedData;
     ToneMappingMode Mode = ToneMappingMode::None;
     Texture* LutTexture = nullptr;
+#if COMPILE_WITH_DEV_ENV
+    uint64 FrameRendered = 0;
+#endif
 
     ~ColorGradingCustomBuffer()
     {
         RenderTargetPool::Release(LUT);
     }
 };
+
+#if COMPILE_WITH_DEV_ENV
+
+void ColorGradingPass::OnShaderReloading(Asset* obj)
+{
+    _psLut.Release();
+    invalidateResources();
+    _reloadedFrame = Engine::FrameCount;
+}
+
+#endif
 
 String ColorGradingPass::ToString() const
 {
@@ -194,6 +208,9 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     // Check if LUT parameter hasn't been changed since the last time
     if (Platform::MemoryCompare(&colorGradingBuffer.CachedData , &data, sizeof(Data)) == 0 &&
         colorGradingBuffer.Mode == toneMapping.Mode &&
+#if COMPILE_WITH_DEV_ENV
+        colorGradingBuffer.FrameRendered > _reloadedFrame &&
+#endif
         Engine::FrameCount > 30 && // Skip caching when engine is starting TODO: find why this hack is needed
         colorGradingBuffer.LutTexture == lutTexture)
     {
@@ -203,6 +220,9 @@ GPUTexture* ColorGradingPass::RenderLUT(RenderContext& renderContext)
     colorGradingBuffer.CachedData = data;
     colorGradingBuffer.Mode = toneMapping.Mode;
     colorGradingBuffer.LutTexture = lutTexture;
+#if COMPILE_WITH_DEV_ENV
+    colorGradingBuffer.FrameRendered = Engine::FrameCount;
+#endif
 
     // Render LUT
     PROFILE_GPU("Color Grading LUT");

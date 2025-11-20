@@ -5,6 +5,9 @@
 #include "Types.h"
 #include "Engine/Core/Types/StringView.h"
 #include "Engine/Core/Types/Guid.h"
+#if PLATFORM_ARCH_ARM64
+#include "Engine/Core/Core.h"
+#endif
 
 class MMethod;
 class BinaryModule;
@@ -563,8 +566,8 @@ FORCE_INLINE int32 GetVTableIndex(void** vtable, int32 entriesCount, void* func)
             offset = ((*op & 0x3FFC00) >> 10) * ((*op & 0x40000000) != 0 ? 8 : 4);
             return offset / sizeof(void*);
         }
-        CRASH;
     }
+    CRASH;
 #elif defined(__clang__)
     // On Clang member function pointer represents the offset from the vtable begin.
     return (int32)(intptr)func / sizeof(void*);

@@ -6,6 +6,10 @@
 
 #include "../common/TracyYield.hpp"
 
+#if PLATFORM_WINDOWS
+extern void CheckInstructionSet();
+#endif
+
 namespace tracy
 {
 
@@ -18,6 +22,10 @@ tracy_no_inline static void InitRpmallocPlumbing()
     const auto done = RpInitDone.load( std::memory_order_acquire );
     if( !done )
     {
+#if PLATFORM_WINDOWS
+        // Check instruction set before executing any code (Tracy init static vars before others)
+        CheckInstructionSet();
+#endif
         int expected = 0;
         while( !RpInitLock.compare_exchange_weak( expected, 1, std::memory_order_release, std::memory_order_relaxed ) ) { expected = 0; YieldThread(); }
         const auto done = RpInitDone.load( std::memory_order_acquire );

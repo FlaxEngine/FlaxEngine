@@ -25,11 +25,8 @@ public:
 
 private:
 #if COMPILE_WITH_DEV_ENV
-    void OnShaderReloading(Asset* obj)
-    {
-        _psLut.Release();
-        invalidateResources();
-    }
+    uint64 _reloadedFrame = 0;
+    void OnShaderReloading(Asset* obj);
 #endif
 
 public:

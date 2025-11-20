@@ -74,11 +74,6 @@ struct TextureDataResult
     PixelFormat Format;
     Int2 Mip0Size;
     BytesContainer* Mip0DataPtr;
-
-    TextureDataResult()
-        : Lock(FlaxStorage::LockData::Invalid)
-    {
-    }
 };
 
 bool GetTextureDataForSampling(Texture* texture, TextureDataResult& data, bool hdr = false)

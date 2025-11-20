@@ -311,6 +311,7 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	float3 viewRay = lerp(lerp(ViewFrustumWorldRays[3], ViewFrustumWorldRays[0], input.TexCoord.x), lerp(ViewFrustumWorldRays[2], ViewFrustumWorldRays[1], input.TexCoord.x), 1 - input.TexCoord.y).xyz;
 	viewRay = normalize(viewRay - ViewWorldPos);
 	trace.Init(ViewWorldPos, viewRay, ViewNearPlane, ViewFarPlane);
+	trace.NeedsHitNormal = true;
 	GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace);
 
 	// Debug draw
@@ -321,9 +322,14 @@ float4 PS_Debug(Quad_VS2PS input) : SV_Target
 	else
 	{
 		// Debug draw SDF normals
-		float dst;
-		color.rgb = normalize(SampleGlobalSDFGradient(GlobalSDF, GlobalSDFTex, hit.GetHitPosition(trace), dst)) * 0.5f + 0.5f;
+		color.rgb = normalize(hit.HitNormal) * 0.5f + 0.5f;
 	}
+#elif 1
+    else
+    {
+        // Composite with SDF normals
+		color.rgb *= saturate(normalize(hit.HitNormal) * 0.5f + 0.7f) + 0.1f;
+    }
 #endif
 	return float4(color, 1);
 }

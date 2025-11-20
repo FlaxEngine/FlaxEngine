@@ -165,11 +165,19 @@ float4 PS_Lighting(AtlasVertexOutput input) : SV_Target
 		BRANCH
 		if (NoL > 0)
 		{
+#if RADIAL_LIGHT
+			// Shot a ray from light to the texel to see if there is any occluder
+			GlobalSDFTrace trace;
+			trace.Init(Light.Position, -L, bias, toLightDst);
+			GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace, 1.0f);
+			shadowMask = hit.IsHit() && hit.HitTime < toLightDst - bias * 3 ? LightShadowsStrength : 1;
+#else
 			// Shot a ray from texel into the light to see if there is any occluder
 			GlobalSDFTrace trace;
 			trace.Init(gBuffer.WorldPos + gBuffer.Normal * shadowBias, L, bias, toLightDst - bias);
 			GlobalSDFHit hit = RayTraceGlobalSDF(GlobalSDF, GlobalSDFTex, GlobalSDFMip, trace, 2.0f);
 			shadowMask = hit.IsHit() ? LightShadowsStrength : 1;
+#endif
 		}
 		else
 		{
@@ -234,7 +242,7 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupId 
 		if (BoxIntersectsSphere(groupMin, groupMax, objectBounds.xyz, objectBounds.w))
 		{
             uint sharedIndex;
-            InterlockedAdd(SharedCulledObjectsCount, 1, sharedIndex);
+            InterlockedAdd(SharedCulledObjectsCount, 1u, sharedIndex);
             if (sharedIndex < GLOBAL_SURFACE_ATLAS_SHARED_CULL_SIZE)
                 SharedCulledObjects[sharedIndex] = objectAddress;
 		}
@@ -263,7 +271,7 @@ void CS_CullObjects(uint3 DispatchThreadId : SV_DispatchThreadID, uint3 GroupId 
 	// Allocate object data size in the buffer
 	uint objectsStart;
 	uint objectsSize = objectsCount + 1; // Include objects count before actual objects data
-	RWGlobalSurfaceAtlasCulledObjects.InterlockedAdd(0, objectsSize, objectsStart); // Counter at 0
+	RWGlobalSurfaceAtlasCulledObjects.InterlockedAdd(0u, objectsSize, objectsStart); // Counter at 0
 	if (objectsStart + objectsSize > CulledObjectsCapacity)
 	{
 		// Not enough space in the buffer

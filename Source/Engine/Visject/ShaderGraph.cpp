@@ -704,8 +704,8 @@ void ShaderGenerator::ProcessGroupTools(Box* box, Node* node, Value& value)
     case 16:
     {
         // Get the variable type
-        auto asset = Assets.LoadAsync<GameplayGlobals>((Guid)node->Values[0]);
-        if (!asset || asset->WaitForLoaded())
+        auto asset = Assets.Load<GameplayGlobals>((Guid)node->Values[0]);
+        if (!asset)
         {
             OnError(node, box, TEXT("Failed to load Gameplay Global asset."));
             value = Value::Zero;

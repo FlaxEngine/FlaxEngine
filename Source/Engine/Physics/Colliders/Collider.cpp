@@ -194,7 +194,6 @@ void Collider::UpdateLayerBits()
     // Own layer mask
     const uint32 mask1 = Physics::LayerMasks[GetLayer()];
 
-    ASSERT(_shape);
     PhysicsBackend::SetShapeFilterMask(_shape, mask0, mask1);
 }
 
@@ -244,9 +243,13 @@ void Collider::UpdateGeometry()
         if (actor)
         {
             const auto rigidBody = dynamic_cast<RigidBody*>(GetParent());
-            if (_staticActor != nullptr || (rigidBody && CanAttach(rigidBody)))
+            if (rigidBody && CanAttach(rigidBody))
             {
                 Attach(rigidBody);
+            }
+            else if (_staticActor != nullptr)
+            {
+                PhysicsBackend::AttachShape(_shape, actor);
             }
             else
             {

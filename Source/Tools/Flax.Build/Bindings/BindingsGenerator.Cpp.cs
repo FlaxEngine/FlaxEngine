@@ -2043,6 +2043,7 @@ namespace Flax.Build.Bindings
                     contents.Append(')').AppendLine();
                     contents.Append("    {").AppendLine();
                     contents.Append("        static MMethod* method = nullptr;").AppendLine();
+                    contents.AppendFormat("        if (!MCore::Ready) {{ MCore::OnManagedEventAfterShutdown(\"{0}.{1}\"); return; }}", classTypeNameManaged, eventInfo.Name).AppendLine();
                     contents.AppendFormat("        if (!method) {{ method = {1}::TypeInitializer.GetClass()->GetMethod(\"Internal_{0}_Invoke\", {2}); CHECK(method); }}", eventInfo.Name, classTypeNameNative, paramsCount).AppendLine();
                     contents.Append("        MObject* exception = nullptr;").AppendLine();
                     if (paramsCount == 0)

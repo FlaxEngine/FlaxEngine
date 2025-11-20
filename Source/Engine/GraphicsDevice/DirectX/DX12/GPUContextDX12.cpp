@@ -29,6 +29,7 @@
 #include "GPUVertexLayoutDX12.h"
 #include "CommandQueueDX12.h"
 #include "DescriptorHeapDX12.h"
+#include "RootSignatureDX12.h"
 #include "Engine/Graphics/RenderTask.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
 #include "Engine/Debug/Exceptions/NotImplementedException.h"
@@ -307,6 +308,7 @@ void GPUContextDX12::Reset()
         _device->DummyVB = _device->CreateBuffer(TEXT("DummyVertexBuffer"));
         auto* layout = GPUVertexLayout::Get({ { VertexElement::Types::Attribute3, 0, 0, 0, PixelFormat::R32G32B32A32_Float } });
         _device->DummyVB->Init(GPUBufferDescription::Vertex(layout, sizeof(Color), 1, &Color::Transparent));
+        SetResourceState(_device->DummyVB, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, 0);
     }
     ((GPUBufferDX12*)_device->DummyVB)->GetVBView(dummyVBView);
     _commandList->IASetVertexBuffers(GPU_MAX_VB_BINDED, 1, &dummyVBView);
@@ -491,7 +493,7 @@ void GPUContextDX12::flushUAVs()
     ASSERT(uaCount <= GPU_MAX_UA_BINDED);
 
     // Fill table with source descriptors
-    DxShaderHeader& header = _currentCompute ? ((GPUShaderProgramCSDX12*)_currentCompute)->Header : _currentState->Header;
+    DxShaderHeader& header = _isCompute ? ((GPUShaderProgramCSDX12*)_currentCompute)->Header : _currentState->Header;
     D3D12_CPU_DESCRIPTOR_HANDLE srcDescriptorRangeStarts[GPU_MAX_UA_BINDED];
     for (uint32 i = 0; i < uaCount; i++)
     {
@@ -628,7 +630,9 @@ void GPUContextDX12::flushPS()
             LOG(Error, "Missing Vertex Layout (not assigned to GPUBuffer). Vertex Shader won't read valid data resulting incorrect visuals.");
         }
 #endif
-        _commandList->SetPipelineState(_currentState->GetState(_rtDepth, _rtCount, _rtHandles, _vertexLayout));
+        ID3D12PipelineState* pso = _currentState->GetState(_rtDepth, _rtCount, _rtHandles, _vertexLayout);
+        ASSERT(pso);
+        _commandList->SetPipelineState(pso);
         if (_primitiveTopology != _currentState->PrimitiveTopology)
         {
             _primitiveTopology = _currentState->PrimitiveTopology;
