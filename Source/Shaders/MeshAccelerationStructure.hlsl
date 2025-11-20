@@ -16,13 +16,10 @@ struct BVHNode
     int Count; // Negative for non-leaf nodes
 };
 
-struct BVHBuffers
-{
-    StructuredBuffer<BVHNode> BVHBuffer;
-    ByteAddressBuffer VertexBuffer;
-    ByteAddressBuffer IndexBuffer;
-    uint VertexStride;
-};
+// Pass all data via separate params (SPIR-V doesn't support buffers in structures)
+#define BVHBuffers_Param StructuredBuffer<BVHNode> BVHBuffer, ByteAddressBuffer VertexBuffer, ByteAddressBuffer IndexBuffer, uint VertexStride
+#define BVHBuffers_Init(BVHBuffer, VertexBuffer, IndexBuffer, VertexStride) BVHBuffer, VertexBuffer, IndexBuffer, VertexStride
+#define BVHBuffers_Pass BVHBuffers_Init(BVHBuffer, VertexBuffer, IndexBuffer, VertexStride)
 
 struct BVHHit
 {
@@ -30,11 +27,11 @@ struct BVHHit
     bool IsBackface;
 };
 
-float3 LoadVertexBVH(BVHBuffers bvh, uint index)
+float3 LoadVertexBVH(BVHBuffers_Param, uint index)
 {
     int addr = index << 2u;
-    uint vertexIndex = bvh.IndexBuffer.Load(addr);
-    return asfloat(bvh.VertexBuffer.Load3(vertexIndex * bvh.VertexStride));
+    uint vertexIndex = IndexBuffer.Load(addr);
+    return asfloat(VertexBuffer.Load3(vertexIndex * VertexStride));
 }
 
 // [https://tavianator.com/2011/ray_box.html]
@@ -52,7 +49,7 @@ float RayTestBoxBVH(float3 rayPos, float3 rayDir, float3 boxMin, float3 boxMax)
 }
 
 // Performs raytracing against the BVH acceleration structure to find the closest intersection with a triangle.
-bool RayCastBVH(BVHBuffers bvh, float3 rayPos, float3 rayDir, out BVHHit hit, float maxDistance = 1000000.0f)
+bool RayCastBVH(BVHBuffers_Param, float3 rayPos, float3 rayDir, out BVHHit hit, float maxDistance = 1000000.0f)
 {
     hit = (BVHHit)0;
     hit.Distance = maxDistance;
@@ -66,7 +63,7 @@ bool RayCastBVH(BVHBuffers bvh, float3 rayPos, float3 rayDir, out BVHHit hit, fl
     LOOP
     while (stackCount > 0)
     {
-        BVHNode node = bvh.BVHBuffer[stack[--stackCount]];
+        BVHNode node = BVHBuffer[stack[--stackCount]];
 
         // Raytrace bounds
         float boundsHit = RayTestBoxBVH(rayPos, rayDir, node.BoundsMin, node.BoundsMax);
@@ -82,9 +79,9 @@ bool RayCastBVH(BVHBuffers bvh, float3 rayPos, float3 rayDir, out BVHHit hit, fl
                 for (uint i = indexStart; i < indexEnd;)
                 {
                     // Load triangle
-                    float3 v0 = LoadVertexBVH(bvh, i++);
-                    float3 v1 = LoadVertexBVH(bvh, i++);
-                    float3 v2 = LoadVertexBVH(bvh, i++);
+                    float3 v0 = LoadVertexBVH(BVHBuffers_Pass, i++);
+                    float3 v1 = LoadVertexBVH(BVHBuffers_Pass, i++);
+                    float3 v2 = LoadVertexBVH(BVHBuffers_Pass, i++);
 
                     // Raytrace triangle
                     float distance;
@@ -109,7 +106,7 @@ bool RayCastBVH(BVHBuffers bvh, float3 rayPos, float3 rayDir, out BVHHit hit, fl
 }
 
 // Performs a query against the BVH acceleration structure to find the closest distance to a triangle from a given point.
-bool PointQueryBVH(BVHBuffers bvh, float3 pos, out BVHHit hit, float maxDistance = 1000000.0f)
+bool PointQueryBVH(BVHBuffers_Param, float3 pos, out BVHHit hit, float maxDistance = 1000000.0f)
 {
     hit = (BVHHit)0;
     hit.Distance = maxDistance;
@@ -123,7 +120,7 @@ bool PointQueryBVH(BVHBuffers bvh, float3 pos, out BVHHit hit, float maxDistance
     LOOP
     while (stackCount > 0)
     {
-        BVHNode node = bvh.BVHBuffer[stack[--stackCount]];
+        BVHNode node = BVHBuffer[stack[--stackCount]];
 
         // Skip too far nodes
         if (PointDistanceBox(node.BoundsMin, node.BoundsMax, pos) >= hit.Distance)
@@ -138,9 +135,9 @@ bool PointQueryBVH(BVHBuffers bvh, float3 pos, out BVHHit hit, float maxDistance
             for (uint i = indexStart; i < indexEnd;)
             {
                 // Load triangle
-                float3 v0 = LoadVertexBVH(bvh, i++);
-                float3 v1 = LoadVertexBVH(bvh, i++);
-                float3 v2 = LoadVertexBVH(bvh, i++);
+                float3 v0 = LoadVertexBVH(BVHBuffers_Pass, i++);
+                float3 v1 = LoadVertexBVH(BVHBuffers_Pass, i++);
+                float3 v2 = LoadVertexBVH(BVHBuffers_Pass, i++);
 
                 // Check triangle
                 float distance = sqrt(DistancePointToTriangle2(pos, v0, v1, v2));

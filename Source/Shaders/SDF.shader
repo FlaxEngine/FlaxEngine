@@ -77,15 +77,9 @@ void CS_RasterizeTriangles(uint3 GroupId : SV_GroupID, uint3 GroupThreadID : SV_
     int3 voxelCoord = GetVoxelCoord(voxelIndex);
     float3 voxelPos = GetVoxelPos(voxelCoord);
 
-    BVHBuffers bvh;
-    bvh.BVHBuffer = BVHBuffer;
-    bvh.VertexBuffer = VertexBuffer;
-    bvh.IndexBuffer = IndexBuffer;
-    bvh.VertexStride = VertexStride;
-
     // Point query to find the distance to the closest surface
     BVHHit hit;
-    PointQueryBVH(bvh, voxelPos, hit, MaxDistance);
+    PointQueryBVH(BVHBuffers_Init(BVHBuffer, VertexBuffer, IndexBuffer, VertexStride), voxelPos, hit, MaxDistance);
     float sdf = hit.Distance;
 
     // Raycast triangles around voxel to count triangle backfaces hit
@@ -104,7 +98,7 @@ void CS_RasterizeTriangles(uint3 GroupId : SV_GroupID, uint3 GroupThreadID : SV_
     for (uint i = 0; i < CLOSEST_CACHE_SIZE; i++)
     {
         float3 rayDir = closestDirections[i];
-        if (RayCastBVH(bvh, voxelPos, rayDir, hit, MaxDistance))
+        if (RayCastBVH(BVHBuffers_Init(BVHBuffer, VertexBuffer, IndexBuffer, VertexStride), voxelPos, rayDir, hit, MaxDistance))
         {
             sdf = min(sdf, hit.Distance);
             if (hit.IsBackface)
