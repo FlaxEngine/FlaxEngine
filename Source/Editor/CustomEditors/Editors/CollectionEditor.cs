@@ -328,7 +328,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 for (int i = 0; i < (container.Children.Count + 1) / 2; i++) // Add 1 to pretend there is a spacer at the end.
                 {
-                    var containerChild = container.Children[i * 2]; // times 2 to skip the value editor
+                    var containerChild = container.Children[i * 2]; // Times 2 to skip the value editor
                     if (Mathf.IsInRange(pos, containerChild.Top, containerChild.Top + barCheckAreaHeight) || (i == 0 && pos < containerChild.Top))
                     {
                         index = i;
@@ -425,6 +425,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 b = menu.AddButton("Remove", OnRemoveClicked);
                 b.Enabled = !Editor._readOnly && Editor._canResize;
 
+                Editor.OnSetupItemContextMenu(menu, panel.IndexInParent);
                 menu.Show(panel, location);
             }
 
@@ -477,6 +478,15 @@ namespace FlaxEditor.CustomEditors.Editors
 
         /// <inheritdoc />
         public override bool RevertValueWithChildren => false; // Always revert value for a whole collection
+
+        /// <summary>
+        /// Can be used to inject custom options into collection item context menu.
+        /// </summary>
+        /// <param name="menu">The context menu.</param>
+        /// <param name="itemIndex">The index in the collection of the item that the menu belongs to.</param>
+        public virtual void OnSetupItemContextMenu(ContextMenu menu, int itemIndex)
+        {
+        }
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)

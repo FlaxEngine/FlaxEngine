@@ -4,9 +4,11 @@ using System;
 using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEditor.Actions;
+using FlaxEditor.CustomEditors.Editors;
+using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Tabs;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
-using FlaxEditor.GUI.Tabs;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -24,6 +26,30 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             public Spline Spline;
             public BezierCurve<Transform>.Keyframe[] BeforeKeyframes;
+        }
+
+        /// <summary>
+        /// Custom implementation of <see cref="ArrayEditor"/> for <see cref="Spline"/>.
+        /// </summary>
+        public class SplineElementEditor : ArrayEditor
+        {
+            /// <inheritdoc/>
+            public override void OnSetupItemContextMenu(ContextMenu menu, int itemIndex)
+            {
+                menu.AddSeparator();
+                var b = menu.AddButton("Select & Focus point");
+                b.Clicked += () =>
+                {
+                    if (Presenter.Root.ChildrenEditors[0] is SplineEditor splineEditor)
+                    {
+                        splineEditor.SetSelectSplinePointNode(splineEditor._selectedSpline, itemIndex);
+                        if (Presenter.Owner is Windows.Assets.PrefabWindow prefabWindow)
+                            prefabWindow.FocusSelection();
+                        else
+                            Editor.Instance.Windows.EditWin.FocusSelection();
+                    }
+                };
+            }
         }
 
         /// <summary>
@@ -107,7 +133,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 SetKeyframeLinear(spline, index);
 
-                // change the selection to tangent parent (a spline point / keyframe)
+                // Change the selection to tangent parent (a spline point / keyframe)
                 Editor.SetSelectSplinePointNode(spline, index);
             }
         }
@@ -155,7 +181,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var referenceTangent = alignWithIn ? keyframe.TangentIn : keyframe.TangentOut;
                 var otherTangent = !alignWithIn ? keyframe.TangentIn : keyframe.TangentOut;
 
-                // inverse of reference tangent
+                // Inverse of reference tangent
                 otherTangent.Translation = -referenceTangent.Translation.Normalized * otherTangent.Translation.Length;
 
                 if (alignWithIn)
@@ -531,7 +557,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void UpdateSelectedPoint()
         {
-            // works only if select one spline
+            // Works only if select one spline
             if (_selectedSpline)
             {
                 var selection = GetSelection();
@@ -818,8 +844,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var nextKeyframe = !isLastKeyframe ? spline.GetSplineKeyframe(index + 1) : keyframe;
             var previousKeyframe = !isFirstKeyframe ? spline.GetSplineKeyframe(index - 1) : keyframe;
 
-            // calc form from Spline.cpp -> SetTangentsSmooth
-            // get tangent direction
+            // Calc from to Spline.cpp -> SetTangentsSmooth
+            // Get tangent direction
             var tangentDirection = (keyframe.Value.Translation - previousKeyframe.Value.Translation + nextKeyframe.Value.Translation - keyframe.Value.Translation).Normalized;
 
             keyframe.TangentIn.Translation = -tangentDirection;
@@ -843,7 +869,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var tangentIn = spline.GetSplineTangent(index, true);
             var tangentNodes = point.ChildNodes;
 
-            // find tangent in node comparing all child nodes position
+            // Find tangent in node comparing all child nodes position
             for (int i = 0; i < tangentNodes.Count; i++)
             {
                 if (tangentNodes[i].Transform.Translation == tangentIn.Translation)
@@ -861,7 +887,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var tangentOut = spline.GetSplineTangent(index, false);
             var tangentNodes = point.ChildNodes;
 
-            // find tangent out node comparing all child nodes position
+            // Find tangent out node comparing all child nodes position
             for (int i = 0; i < tangentNodes.Count; i++)
             {
                 if (tangentNodes[i].Transform.Translation == tangentOut.Translation)
