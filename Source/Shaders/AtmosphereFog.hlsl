@@ -329,7 +329,7 @@ float3 GetInscatteredLight(AtmosphericFogData atmosphericFog, in float3 viewPosi
     if (intersectAtmosphere(viewPosition, viewDir, offset, maxPathLength))
     {
         return float3(offset / 10, 0, 0);
-
+#if 0
         float pathLength = distance(viewPosition, surfacePos);
         //return pathLength.xxx;
 
@@ -413,6 +413,7 @@ float3 GetInscatteredLight(AtmosphericFogData atmosphericFog, in float3 viewPosi
             float sunIntensity = 10;
             inscatteredLight *= sunIntensity;
         }
+#endif
     }
 
     return inscatteredLight;
@@ -420,8 +421,6 @@ float3 GetInscatteredLight(AtmosphericFogData atmosphericFog, in float3 viewPosi
 
 float4 GetAtmosphericFog(AtmosphericFogData atmosphericFog, float viewFar, float3 viewPosition, float3 viewVector, float sceneDepth, float3 sceneColor)
 {
-    float4 result = float4(1, 0, 0, 1);
-
 #if 0
 	
 	float scale = 0.00001f * atmosphericFog.AtmosphericFogDistanceScale;// convert cm to km
@@ -536,8 +535,6 @@ float4 GetAtmosphericFog(AtmosphericFogData atmosphericFog, float viewFar, float
     //return float4(sun + groundColor + inscatterColor, 1);
 
 #endif
-
-    return result;
 }
 
 float4 GetAtmosphericFog(AtmosphericFogData atmosphericFog, float viewFar, float3 worldPosition, float3 cameraPosition)
