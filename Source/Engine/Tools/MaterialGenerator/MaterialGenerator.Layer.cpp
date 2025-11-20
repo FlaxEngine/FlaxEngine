@@ -50,8 +50,8 @@ MaterialLayer* MaterialGenerator::GetLayer(const Guid& id, Node* caller)
     }
 
     // Load asset
-    Asset* asset = Assets.LoadAsync<MaterialBase>(id);
-    if (asset == nullptr || asset->WaitForLoaded(10 * 1000))
+    Asset* asset = Assets.Load<MaterialBase>(id);
+    if (asset == nullptr)
     {
         OnError(caller, nullptr, TEXT("Failed to load material asset."));
         return nullptr;

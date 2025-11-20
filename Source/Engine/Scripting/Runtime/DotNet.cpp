@@ -316,7 +316,8 @@ bool MCore::LoadEngine()
 
     char* buildInfo = CallStaticMethod<char*>(GetStaticMethodPointer(TEXT("GetRuntimeInformation")));
     LOG(Info, ".NET runtime version: {0}", ::String(buildInfo));
-    MCore::GC::FreeMemory(buildInfo);
+    GC::FreeMemory(buildInfo);
+    Ready = true;
 
     return false;
 }
@@ -327,6 +328,7 @@ void MCore::UnloadEngine()
         return;
     PROFILE_CPU();
     CallStaticMethod<void>(GetStaticMethodPointer(TEXT("Exit")));
+    Ready = false;
     MDomains.ClearDelete();
     MRootDomain = nullptr;
     ShutdownHostfxr();
