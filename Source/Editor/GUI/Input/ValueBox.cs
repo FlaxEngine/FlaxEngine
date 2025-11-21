@@ -90,6 +90,11 @@ namespace FlaxEditor.GUI.Input
         public bool IsSliding => _isSliding;
 
         /// <summary>
+        /// The color of the highlight to the left of the value box.
+        /// </summary>
+        public Color HighlightColor;
+
+        /// <summary>
         /// Occurs when sliding starts.
         /// </summary>
         public event Action SlidingStart;
@@ -205,6 +210,12 @@ namespace FlaxEditor.GUI.Input
                     Render2D.FillRectangle(bounds, style.Selection);
                     Render2D.DrawRectangle(bounds, style.SelectionBorder);
                 }
+            }
+
+            if (HighlightColor != Color.Transparent)
+            {
+                var highlightRect = new Rectangle(-3.0f, 0.0f, 3.0f, Height);
+                Render2D.FillRectangle(highlightRect, HighlightColor);
             }
         }
 
