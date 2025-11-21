@@ -50,6 +50,16 @@ namespace FlaxEditor.CustomEditors.Dedicated
                     }
                 };
             }
+
+            /// <inheritdoc/>
+            protected override object CloneLastValue(object lastValue, int cloneIndex)
+            {
+                BezierCurve<Transform>.Keyframe newValue = (BezierCurve<Transform>.Keyframe)base.CloneLastValue(lastValue, cloneIndex);
+                // Place new keyframes further down on the spline to avoid overlapping
+                newValue.Time += 0.25f * (cloneIndex + 1);
+                newValue.Value.Translation += Vector3.Forward * 25f * (cloneIndex + 1);
+                return newValue;
+            }
         }
 
         /// <summary>

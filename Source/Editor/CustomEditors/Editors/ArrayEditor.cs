@@ -48,7 +48,7 @@ namespace FlaxEditor.CustomEditors.Editors
                         // Fill new entries with the last value
                         var lastValue = array.GetValue(oldSize - 1);
                         for (int i = oldSize; i < newSize; i++)
-                            newValues.SetValue(Utilities.Utils.CloneValue(lastValue), i);
+                            newValues.SetValue(CloneLastValue(lastValue, i - oldSize), i);
                     }
                     else
                     {
@@ -68,6 +68,17 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 SetValue(newValues);
             }
+        }
+
+        /// <summary>
+        /// Clones the last value in the array. Can be used to modify cloned value before adding it back to the array.
+        /// </summary>
+        /// <param name="lastValue">The last value in the array.</param>
+        /// <param name="cloneCount">The count of elements that have already been cloned before this.</param>
+        /// <returns>The cloned value.</returns>
+        protected virtual object CloneLastValue(object lastValue, int cloneCount)
+        {
+            return Utilities.Utils.CloneValue(lastValue);
         }
 
         /// <inheritdoc />

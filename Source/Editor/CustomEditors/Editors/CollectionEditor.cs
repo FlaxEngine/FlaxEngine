@@ -653,7 +653,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             _elementsCount = size;
 
-            // Add/Remove buttons
+            // Add/ Remove buttons
             if (_canResize && !_readOnly)
             {
                 var panel = dragArea.HorizontalPanel();
