@@ -48,14 +48,17 @@ namespace FlaxEditor.CustomEditors.Editors
                         // Fill new entries with the last value
                         var lastValue = array.GetValue(oldSize - 1);
                         for (int i = oldSize; i < newSize; i++)
-                            newValues.SetValue(CloneLastValue(lastValue, i - oldSize), i);
+                        {
+                            var newValue = Utilities.Utils.CloneValue(lastValue);
+                            newValues.SetValue(PostProcessNewValue(newValue, i - oldSize, oldSize), i);
+                        }
                     }
                     else
                     {
                         // Initialize new entries with default values
                         var defaultValue = TypeUtils.GetDefaultValue(elementType);
                         for (int i = oldSize; i < newSize; i++)
-                            newValues.SetValue(defaultValue, i);
+                            newValues.SetValue(PostProcessNewValue(defaultValue, i - oldSize, oldSize), i);
                     }
                 }
                 else if (newSize > 0)
@@ -63,7 +66,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     // Initialize new entries with default values
                     var defaultValue = TypeUtils.GetDefaultValue(elementType);
                     for (int i = 0; i < newSize; i++)
-                        newValues.SetValue(defaultValue, i);
+                        newValues.SetValue(PostProcessNewValue(defaultValue, i - oldSize, oldSize), i);
                 }
 
                 SetValue(newValues);
@@ -71,14 +74,15 @@ namespace FlaxEditor.CustomEditors.Editors
         }
 
         /// <summary>
-        /// Clones the last value in the array. Can be used to modify cloned value before adding it back to the array.
+        /// Can be used to manipulate a new value before it gets added to the array.
         /// </summary>
-        /// <param name="lastValue">The last value in the array.</param>
-        /// <param name="cloneCount">The count of elements that have already been cloned before this.</param>
-        /// <returns>The cloned value.</returns>
-        protected virtual object CloneLastValue(object lastValue, int cloneCount)
+        /// <param name="value">The new value.</param>
+        /// <param name="elementCount">The count of elements that have already been added before this.</param>
+        /// <param name="oldSize">The old size of the array before size changed.</param>
+        /// <returns>The manipulated value.</returns>
+        protected virtual object PostProcessNewValue(object value, int elementCount, int oldSize)
         {
-            return Utilities.Utils.CloneValue(lastValue);
+            return value;
         }
 
         /// <inheritdoc />

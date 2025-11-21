@@ -52,12 +52,15 @@ namespace FlaxEditor.CustomEditors.Dedicated
             }
 
             /// <inheritdoc/>
-            protected override object CloneLastValue(object lastValue, int cloneIndex)
+            protected override object PostProcessNewValue(object lastValue, int valueIndex, int oldSize)
             {
-                BezierCurve<Transform>.Keyframe newValue = (BezierCurve<Transform>.Keyframe)base.CloneLastValue(lastValue, cloneIndex);
+                BezierCurve<Transform>.Keyframe newValue = (BezierCurve<Transform>.Keyframe)base.PostProcessNewValue(lastValue, valueIndex, oldSize);
+
                 // Place new keyframes further down on the spline to avoid overlapping
-                newValue.Time += 0.25f * (cloneIndex + 1);
-                newValue.Value.Translation += Vector3.Forward * 25f * (cloneIndex + 1);
+                var realValueIndex = oldSize == 0 ? valueIndex : valueIndex + 1; // Prevent first keyframe in array from getting processed
+                newValue.Time += 0.25f * realValueIndex;
+                newValue.Value.Translation += Vector3.Forward * 25f * realValueIndex;
+
                 return newValue;
             }
         }
