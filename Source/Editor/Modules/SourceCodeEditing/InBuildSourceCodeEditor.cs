@@ -66,6 +66,9 @@ namespace FlaxEditor.Modules.SourceCodeEditing
             case CodeEditorTypes.Rider:
                 Name = "Rider";
                 break;
+            case CodeEditorTypes.Zed:
+                Name = "Zed";
+                break;
             default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
         }
@@ -81,8 +84,9 @@ namespace FlaxEditor.Modules.SourceCodeEditing
                 switch (Type)
                 {
                 case CodeEditorTypes.VSCodeInsiders:
-                case CodeEditorTypes.VSCode: return "-vscode -vs2022";
+                case CodeEditorTypes.VSCode: return "-vscode -vs2022 -omnisharp";
                 case CodeEditorTypes.Rider: return "-vs2022";
+                case CodeEditorTypes.Zed: return "-vs2022 -omnisharp";
                 default: return null;
                 }
             }
