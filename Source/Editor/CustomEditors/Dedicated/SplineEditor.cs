@@ -9,6 +9,7 @@ using FlaxEditor.GUI.ContextMenu;
 using FlaxEditor.GUI.Tabs;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -51,13 +52,51 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 };
             }
 
+            internal override void OnSetupContextMenu(ContextMenu menu, DropPanel panel)
+            {
+                base.OnSetupContextMenu(menu, panel);
+
+                CollectionDropPanel pointPanel = null;
+                Panel scrollPanel = null;
+
+                if (Presenter.Owner is Windows.Assets.PrefabWindow prefabWindow)
+                {
+                    if (prefabWindow.Selection.Count > 0 && prefabWindow.Selection[0] is SplineNode.SplinePointNode prefabPointNode)
+                    {
+                        var pointIndex = prefabPointNode.OrderInParent;
+                        pointPanel = CachedDropPanels[pointIndex];
+                        scrollPanel = (Panel)(prefabWindow.Presenter.ContainerControl.Parent);
+                    }
+                }
+
+                List<SceneGraphNode> selection = Editor.Instance.MainTransformGizmo.Selection;
+                if (selection.Count > 0 && selection[0] is SplineNode.SplinePointNode pointNode)
+                {
+                    var pointIndex = pointNode.OrderInParent;
+                    pointPanel = CachedDropPanels[pointIndex];
+                    scrollPanel = Editor.Instance.Windows.PropertiesWin;
+                }
+
+                if (scrollPanel != null && pointPanel != null)
+                {
+                    menu.AddSeparator();
+                    var b = menu.AddButton("Scroll to selected");
+
+                    b.Clicked += () =>
+                    {
+                        panel.Open();
+                        scrollPanel.ScrollViewTo(pointPanel);
+                    };
+                }
+            }
+
             /// <inheritdoc/>
             protected override object PostProcessNewValue(object lastValue, int valueIndex, int oldSize)
             {
                 BezierCurve<Transform>.Keyframe newValue = (BezierCurve<Transform>.Keyframe)base.PostProcessNewValue(lastValue, valueIndex, oldSize);
 
                 // Place new keyframes further down on the spline to avoid overlapping
-                var realValueIndex = oldSize == 0 ? valueIndex : valueIndex + 1; // Prevent first keyframe in array from getting processed
+                var realValueIndex = oldSize == 0 ? valueIndex : valueIndex + 1; // Prevent processing first keyframe in (fomer empty) array
                 newValue.Time += 0.25f * realValueIndex;
                 newValue.Value.Translation += Vector3.Forward * 25f * realValueIndex;
 
