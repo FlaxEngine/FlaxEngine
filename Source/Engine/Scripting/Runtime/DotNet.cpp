@@ -2155,9 +2155,9 @@ bool InitHostfxr()
 #endif
     
     // Platform-specific setup
-#if PLATFORM_IOS || PLATFORM_SWITCH
-    setenv("MONO_AOT_MODE", "aot", 1);
-    setenv("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 1);
+#if PLATFORM_IOS || PLATFORM_SWITCH || PLATFORM_PS4 || PLATFORM_PS5
+    Platform::SetEnvironmentVariable(TEXT("MONO_AOT_MODE"), TEXT("aot"));
+    Platform::SetEnvironmentVariable(TEXT("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"), TEXT("1"));
 #endif
 
 #ifdef USE_MONO_AOT_MODULE
