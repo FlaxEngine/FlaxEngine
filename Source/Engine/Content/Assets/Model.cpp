@@ -71,13 +71,23 @@ public:
 REGISTER_BINARY_ASSET_WITH_UPGRADER(Model, "FlaxEngine.Model", ModelAssetUpgrader, true);
 
 static byte EnableModelSDF = 0;
+#if !USE_EDITOR
+#include "Engine/Core/Config/GraphicsSettings.h"
+#endif
 
 Model::Model(const SpawnParams& params, const AssetInfo* info)
     : ModelBase(params, info, StreamingGroups::Instance()->Models())
 {
     if (EnableModelSDF == 0 && GPUDevice::Instance)
     {
-        const bool enable = GPUDevice::Instance->GetFeatureLevel() >= FeatureLevel::SM5;
+        bool enable = GPUDevice::Instance->GetFeatureLevel() >= FeatureLevel::SM5;
+#if !USE_EDITOR
+        enable &= GraphicsSettings::Get()->EnableGlobalSDF;
+#if !BUILD_RELEASE
+        if (!enable)
+            LOG(Info, "Not using Model SDFs");
+#endif
+#endif
         EnableModelSDF = enable ? 1 : 2;
     }
 }
@@ -684,7 +694,10 @@ void Model::unload(bool isReloading)
 AssetChunksFlag Model::getChunksToPreload() const
 {
     // Note: we don't preload any LODs here because it's done by the Streaming Manager
-    return GET_CHUNK_FLAG(0) | GET_CHUNK_FLAG(15);
+    AssetChunksFlag result = GET_CHUNK_FLAG(0);
+    if (EnableModelSDF == 1)
+        result |= GET_CHUNK_FLAG(15);
+    return result;
 }
 
 bool ModelLOD::Intersects(const Ray& ray, const Matrix& world, Real& distance, Vector3& normal, Mesh** mesh)
