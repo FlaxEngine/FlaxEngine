@@ -327,10 +327,10 @@ bool FileSystemBase::PathFilterHelper(const char* path, const char* searchPatter
         // All files
         return true;
     }
-    else if (searchPattern[0] == '*' && searchPatternLength < pathLength && StringUtils::Compare(path + pathLength - searchPatternLength + 1, searchPattern + 1, searchPatternLength - 1) == 0)
+    else if (searchPattern[0] == '*' && StringUtils::Find(searchPattern + 1, "*") == nullptr)
     {
         // Path ending
-        return true;
+        return searchPatternLength < pathLength && StringUtils::Compare(path + pathLength - searchPatternLength + 1, searchPattern + 1, searchPatternLength - 1) == 0;
     }
     else if (searchPattern[0] == '*' && searchPatternLength > 2 && searchPattern[searchPatternLength - 1] == '*')
     {
@@ -346,7 +346,7 @@ bool FileSystemBase::PathFilterHelper(const char* path, const char* searchPatter
     else
     {
         // TODO: implement all cases in a generic way
-        LOG(Warning, "DirectoryGetFiles: Wildcard filter is not implemented");
+        LOG(Warning, "DirectoryGetFiles: Wildcard filter is not implemented ({})", String(searchPattern));
     }
     return false;
 }
