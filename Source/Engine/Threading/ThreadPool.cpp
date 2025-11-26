@@ -15,6 +15,7 @@
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/Thread.h"
 #include "Engine/Profiler/ProfilerMemory.h"
+#include "Engine/Scripting/Internal/InternalCalls.h"
 
 FLAXENGINE_API bool IsInMainThread()
 {
@@ -117,6 +118,7 @@ int32 ThreadPool::ThreadProc()
     Platform::SetThreadAffinityMask(THREAD_POOL_AFFINITY_MASK((int32)index));
 #endif
     ThreadPoolTask* task;
+    MONO_THREAD_INFO_TYPE* monoThreadInfo = nullptr;
 
     // Work until end
     while (Platform::AtomicRead(&ThreadPoolImpl::ExitFlag) == 0)
@@ -125,12 +127,15 @@ int32 ThreadPool::ThreadProc()
         if (ThreadPoolImpl::Jobs.try_dequeue(task))
         {
             task->Execute();
+            MONO_THREAD_INFO_GET(monoThreadInfo);
         }
         else
         {
+            MONO_ENTER_GC_SAFE_WITH_INFO(monoThreadInfo);
             ThreadPoolImpl::JobsMutex.Lock();
             ThreadPoolImpl::JobsSignal.Wait(ThreadPoolImpl::JobsMutex);
             ThreadPoolImpl::JobsMutex.Unlock();
+            MONO_EXIT_GC_SAFE_WITH_INFO;
         }
     }
 

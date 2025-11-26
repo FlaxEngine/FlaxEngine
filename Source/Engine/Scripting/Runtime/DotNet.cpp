@@ -2147,7 +2147,13 @@ bool InitHostfxr()
 #endif
 
     // Adjust GC threads suspending mode to not block attached native threads (eg. Job System)
+    // https://www.mono-project.com/docs/advanced/runtime/docs/coop-suspend/
+#if USE_MONO_AOT_COOP
+    Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("coop"));
+    Platform::SetEnvironmentVariable(TEXT("MONO_SLEEP_ABORT_LIMIT"), TEXT("5000")); // in ms
+#else
     Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("preemptive"));
+#endif
 
 #if defined(USE_MONO_AOT_MODE)
     // Enable AOT mode (per-platform)

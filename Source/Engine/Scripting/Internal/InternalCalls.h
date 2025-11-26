@@ -9,7 +9,7 @@
 
 #if defined(__clang__)
 // Helper utility to override vtable entry with automatic restore
-// See BindingsGenerator.Cpp.cs that generates virtuall method wrappers for scripting to properly call overriden base method
+// See BindingsGenerator.Cpp.cs that generates virtual method wrappers for scripting to properly call overriden base method
 struct FLAXENGINE_API VTableFunctionInjector
 {
     void** VTableAddr;
@@ -100,3 +100,49 @@ T& InternalGetReference(T* obj)
         DebugLog::ThrowNullReference();
     return *obj;
 }
+
+#ifdef USE_MONO_AOT_COOP
+
+// Cooperative Suspend - where threads suspend themselves when the runtime requests it.
+// https://www.mono-project.com/docs/advanced/runtime/docs/coop-suspend/
+typedef struct _MonoStackData {
+    void* stackpointer;
+    const char* function_name;
+} MonoStackData;
+#if BUILD_DEBUG
+#define MONO_STACKDATA(x) MonoStackData x = { &x, __func__ }
+#else
+#define MONO_STACKDATA(x) MonoStackData x = { &x, NULL }
+#endif
+#define MONO_THREAD_INFO_TYPE struct MonoThreadInfo
+DLLIMPORT extern "C" MONO_THREAD_INFO_TYPE* mono_thread_info_attach(void);
+DLLIMPORT extern "C" void* mono_threads_enter_gc_safe_region_with_info(MONO_THREAD_INFO_TYPE* info, MonoStackData* stackdata);
+DLLIMPORT extern "C" void mono_threads_exit_gc_safe_region_internal(void* cookie, MonoStackData* stackdata);
+#ifndef _MONO_UTILS_FORWARD_
+typedef struct _MonoDomain MonoDomain;
+DLLIMPORT extern "C" MonoDomain* mono_domain_get(void);
+#endif
+#define MONO_ENTER_GC_SAFE	\
+	do {	\
+		MONO_STACKDATA(__gc_safe_dummy); \
+		void* __gc_safe_cookie = mono_threads_enter_gc_safe_region_internal(&__gc_safe_dummy)
+#define MONO_EXIT_GC_SAFE	\
+		mono_threads_exit_gc_safe_region_internal(__gc_safe_cookie, &__gc_safe_dummy);	\
+	} while (0)
+#define MONO_ENTER_GC_SAFE_WITH_INFO(info)	\
+	do {	\
+		MONO_STACKDATA(__gc_safe_dummy); \
+		void* __gc_safe_cookie = mono_threads_enter_gc_safe_region_with_info((info), &__gc_safe_dummy)
+#define MONO_EXIT_GC_SAFE_WITH_INFO	MONO_EXIT_GC_SAFE
+#define MONO_THREAD_INFO_GET(info) if (!info && mono_domain_get()) info = mono_thread_info_attach()
+
+#else
+
+#define MONO_ENTER_GC_SAFE
+#define MONO_EXIT_GC_SAFE
+#define MONO_ENTER_GC_SAFE_WITH_INFO(info)
+#define MONO_EXIT_GC_SAFE_WITH_INFO
+#define MONO_THREAD_INFO_GET(info)
+#define mono_thread_info_attach() nullptr
+
+#endif
