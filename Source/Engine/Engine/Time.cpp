@@ -6,12 +6,29 @@
 #include "Engine/Platform/Platform.h"
 #include "Engine/Core/Config/TimeSettings.h"
 #include "Engine/Serialization/Serialization.h"
+#if !USE_EDITOR
+#include "Engine/Engine/Engine.h"
+#endif
 
 namespace
 {
     bool FixedDeltaTimeEnable;
     float FixedDeltaTimeValue;
     float MaxUpdateDeltaTime = 0.1f;
+#if USE_EDITOR
+    constexpr bool _gamePausedUnfocsed = false;
+    #define GetFps(fps) fps
+#else
+    bool _gamePausedUnfocsed = false;
+    float UnfocusedMaxFPS = 0.0f;
+    bool UnfocusedPause = false;
+    float GetFps(float fps)
+    {
+        if (UnfocusedMaxFPS > 0 && !Engine::HasFocus && fps > UnfocusedMaxFPS)
+            fps = UnfocusedMaxFPS;
+        return fps;
+    }
+#endif
 }
 
 bool Time::_gamePaused = false;
@@ -52,15 +69,16 @@ void TimeSettings::Apply()
     Time::DrawFPS = DrawFPS;
     Time::TimeScale = TimeScale;
     ::MaxUpdateDeltaTime = MaxUpdateDeltaTime;
+#if !USE_EDITOR
+    ::UnfocusedMaxFPS = UnfocusedMaxFPS;
+    ::UnfocusedPause = UnfocusedPause;
+#endif
 }
 
 void Time::TickData::Synchronize(float targetFps, double currentTime)
 {
+    OnReset(targetFps, currentTime);
     Time = UnscaledTime = TimeSpan::Zero();
-    DeltaTime = UnscaledDeltaTime = targetFps > ZeroTolerance ? TimeSpan::FromSeconds(1.0f / targetFps) : TimeSpan::Zero();
-    LastLength = static_cast<double>(DeltaTime.Ticks) / TimeSpan::TicksPerSecond;
-    LastBegin = currentTime - LastLength;
-    LastEnd = currentTime;
     NextBegin = targetFps > ZeroTolerance ? LastBegin + (1.0f / targetFps) : 0.0;
 }
 
@@ -115,7 +133,7 @@ void Time::TickData::OnTickEnd()
 void Time::TickData::Advance(double time, double deltaTime)
 {
     float timeScale = TimeScale;
-    if (_gamePaused)
+    if (_gamePaused || _gamePausedUnfocsed)
         timeScale = 0.0f;
     LastBegin = time;
     UnscaledDeltaTime = TimeSpan::FromSeconds(deltaTime);
@@ -194,9 +212,11 @@ void Time::SetGamePaused(bool value)
 {
     if (_gamePaused == value)
         return;
-
     _gamePaused = value;
+    if (_gamePausedUnfocsed)
+        return;
 
+    // Reset ticking
     const double time = Platform::GetTimeSeconds();
     Update.OnReset(UpdateFPS, time);
     Physics.OnReset(PhysicsFPS, time);
@@ -249,7 +269,24 @@ void Time::Synchronize()
 
 bool Time::OnBeginUpdate(double time)
 {
-    if (Update.OnTickBegin(time, UpdateFPS, MaxUpdateDeltaTime))
+#if !USE_EDITOR
+    // Pause game if window lost focus (based on game settings)
+    bool gamePausedUnfocsed = !Engine::HasFocus && UnfocusedPause;
+    if (gamePausedUnfocsed != _gamePausedUnfocsed)
+    {
+        _gamePausedUnfocsed = gamePausedUnfocsed;
+        if (!gamePausedUnfocsed)
+        {
+            // Reset ticking
+            const double time = Platform::GetTimeSeconds();
+            Update.OnReset(UpdateFPS, time);
+            Physics.OnReset(PhysicsFPS, time);
+            Draw.OnReset(DrawFPS, time);
+        }
+    }
+#endif
+
+    if (Update.OnTickBegin(time, GetFps(UpdateFPS), MaxUpdateDeltaTime))
     {
         Current = &Update;
         return true;
@@ -259,7 +296,7 @@ bool Time::OnBeginUpdate(double time)
 
 bool Time::OnBeginPhysics(double time)
 {
-    if (Physics.OnTickBegin(time, PhysicsFPS, _physicsMaxDeltaTime))
+    if (Physics.OnTickBegin(time, GetFps(PhysicsFPS), _physicsMaxDeltaTime))
     {
         Current = &Physics;
         return true;
@@ -269,7 +306,7 @@ bool Time::OnBeginPhysics(double time)
 
 bool Time::OnBeginDraw(double time)
 {
-    if (Draw.OnTickBegin(time, DrawFPS, 1.0f))
+    if (Draw.OnTickBegin(time, GetFps(DrawFPS), 1.0f))
     {
         Current = &Draw;
         return true;
