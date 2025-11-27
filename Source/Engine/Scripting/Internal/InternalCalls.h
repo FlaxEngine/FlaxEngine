@@ -138,6 +138,7 @@ DLLIMPORT extern "C" MonoDomain* mono_domain_get(void);
 
 #else
 
+#define MONO_THREAD_INFO_TYPE void
 #define MONO_ENTER_GC_SAFE
 #define MONO_EXIT_GC_SAFE
 #define MONO_ENTER_GC_SAFE_WITH_INFO(info)
