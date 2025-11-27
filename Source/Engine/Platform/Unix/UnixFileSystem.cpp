@@ -367,7 +367,7 @@ bool UnixFileSystem::getFilesFromDirectoryTop(Array<String>& results, const char
         if (S_ISREG(statEntry.st_mode) != 0)
         {
             // Validate with filter
-            if (FileSystem::PathFilterHelper(fullPath, searchPattern))
+            if (FileSystemBase::PathFilterHelper(fullPath, searchPattern))
                 results.Add(String(fullPath));
         }
     }
