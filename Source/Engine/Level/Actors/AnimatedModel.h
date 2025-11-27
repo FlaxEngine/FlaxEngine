@@ -414,6 +414,12 @@ public:
     /// <param name="slotName">The name of the slot.</param>
     /// <param name="anim">The animation to stop.</param>
     API_FUNCTION() void StopSlotAnimation(const StringView& slotName, Animation* anim);
+    
+    /// <summary>
+    /// Stops the animation playback on the slot in Anim Graph.
+    /// </summary>
+    /// <param name="slotName">The name of the slot.</param>
+    API_FUNCTION() void StopSlotAnimation(const StringView& slotName);
 
     /// <summary>
     /// Pauses all the animations playback on the all slots in Anim Graph.
@@ -438,6 +444,12 @@ public:
     /// <param name="slotName">The name of the slot.</param>
     /// <param name="anim">The animation to check.</param>
     API_FUNCTION() bool IsPlayingSlotAnimation(const StringView& slotName, Animation* anim);
+
+    /// <summary>
+    /// Checks if the animation playback is active on the slot in Anim Graph (not paused).
+    /// </summary>
+    /// <param name="slotName">The name of the slot.</param>
+    API_FUNCTION() bool IsPlayingSlotAnimation(const StringView& slotName);
 
 private:
     void ApplyRootMotion(const Transform& rootMotionDelta);
