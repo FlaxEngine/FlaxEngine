@@ -408,6 +408,7 @@ protected:
         }
         else
         {
+            const int32 elementsCount = _elementsCount;
             // Rebuild entire table completely
             const int32 oldSize = _size;
             AllocationData oldAllocation;
@@ -437,6 +438,7 @@ protected:
             }
             for (int32 i = 0; i < oldSize; ++i)
                 oldData[i].Free();
+            _elementsCount = elementsCount;
         }
         _deletedCount = 0;
     }
