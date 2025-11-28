@@ -65,7 +65,7 @@ bool SDLPlatform::Init()
         SDLImpl::WindowDecorationsSupported = false;
     }
     if (waylandSession)
-        SupportsDecorationDragging = false;
+        SDLImpl::SupportsDecorationDragging = false;
 #endif
 
 #if PLATFORM_LINUX
