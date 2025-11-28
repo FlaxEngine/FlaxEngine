@@ -2147,7 +2147,13 @@ bool InitHostfxr()
 #endif
 
     // Adjust GC threads suspending mode to not block attached native threads (eg. Job System)
+    // https://www.mono-project.com/docs/advanced/runtime/docs/coop-suspend/
+#if USE_MONO_AOT_COOP
+    Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("coop"));
+    Platform::SetEnvironmentVariable(TEXT("MONO_SLEEP_ABORT_LIMIT"), TEXT("5000")); // in ms
+#else
     Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("preemptive"));
+#endif
 
 #if defined(USE_MONO_AOT_MODE)
     // Enable AOT mode (per-platform)
@@ -2155,9 +2161,9 @@ bool InitHostfxr()
 #endif
     
     // Platform-specific setup
-#if PLATFORM_IOS || PLATFORM_SWITCH
-    setenv("MONO_AOT_MODE", "aot", 1);
-    setenv("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 1);
+#if PLATFORM_IOS || PLATFORM_SWITCH || PLATFORM_PS4 || PLATFORM_PS5
+    Platform::SetEnvironmentVariable(TEXT("MONO_AOT_MODE"), TEXT("aot"));
+    Platform::SetEnvironmentVariable(TEXT("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"), TEXT("1"));
 #endif
 
 #ifdef USE_MONO_AOT_MODULE

@@ -198,7 +198,7 @@ namespace FlaxEngine
         private static void OnLocalizationChanged()
         {
             // Invariant-globalization only (see InitHostfxr with Mono)
-#if !(PLATFORM_IOS || PLATFORM_SWITCH)
+#if !(PLATFORM_IOS || PLATFORM_SWITCH || PLATFORM_PS4 || PLATFORM_PS5)
             var currentThread = Thread.CurrentThread;
             var language = Localization.CurrentLanguage;
             if (language != null)
@@ -261,7 +261,7 @@ namespace FlaxEngine
 
         internal static ManagedHandle CultureInfoToManaged(int lcid)
         {
-#if PLATFORM_IOS || PLATFORM_SWITCH
+#if PLATFORM_IOS || PLATFORM_SWITCH || PLATFORM_PS4 || PLATFORM_PS5
             // Invariant-globalization only (see InitHostfxr with Mono)
             lcid = 0;
 #endif

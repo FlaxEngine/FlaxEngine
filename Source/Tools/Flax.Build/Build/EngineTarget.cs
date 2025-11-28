@@ -142,7 +142,7 @@ namespace Flax.Build
         }
 
         /// <summary>
-        /// Returns true if this build target should use separate (aka main-only) executable file and separate runtime (in shared library). Used on platforms that don't support linking again executable file but only shared library (see HasExecutableFileReferenceSupport).
+        /// Returns true if this build target should use separate (aka main-only) executable file and separate runtime (in shared library). Used on platforms that don't support linking (or symbol lookup) against executable file but only shared library (see HasExecutableFileReferenceSupport).
         /// </summary>
         public virtual bool UseSeparateMainExecutable(BuildOptions buildOptions)
         {
