@@ -261,6 +261,19 @@ namespace FlaxEngine
         public bool IsNormalized => Mathr.Abs((X * X + Y * Y + Z * Z + W * W) - 1.0f) < 1e-4f;
 
         /// <summary>
+        /// Gets the normalized vector. Returned vector has length equal 1.
+        /// </summary>
+        public Vector4 Normalized
+        {
+            get
+            {
+                Vector4 vector4 = this;
+                vector4.Normalize();
+                return vector4;
+            }
+        }
+
+        /// <summary>
         /// Gets a value indicting whether this vector is zero
         /// </summary>
         public bool IsZero => Mathr.IsZero(X) && Mathr.IsZero(Y) && Mathr.IsZero(Z) && Mathr.IsZero(W);
