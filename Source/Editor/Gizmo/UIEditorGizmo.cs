@@ -413,21 +413,27 @@ namespace FlaxEditor
                     Mathf.Abs(scale.X) > Mathf.Epsilon ? dSizeScaled.X / scale.X : 0,
                     Mathf.Abs(scale.Y) > Mathf.Epsilon ? dSizeScaled.Y / scale.Y : 0);
 
-                // Calculate pivot offset to keep the opposite edge stationary
-                var pivotOffset = Float2.Zero;
-                if (Mathf.Abs(dSizeScaled.X) > Mathf.Epsilon)
-                    pivotOffset.X = (_activeWidget.ResizeAxis.X < 0 ? control.Pivot.X - 1.0f : control.Pivot.X) * dSizeScaled.X;
-                if (Mathf.Abs(dSizeScaled.Y) > Mathf.Epsilon)
-                    pivotOffset.Y = (_activeWidget.ResizeAxis.Y < 0 ? control.Pivot.Y - 1.0f : control.Pivot.Y) * dSizeScaled.Y;
-
-                // Transform pivot offset back to parent space
-                var dLocationX = pivotOffset.X * cos - pivotOffset.Y * sin;
-                var dLocationY = pivotOffset.X * sin + pivotOffset.Y * cos;
-                var dLocation = new Float2(dLocationX, dLocationY);
-
-                // Apply changes
+                // Apply size change
                 control.Size += dSize;
-                control.LocalLocation += dLocation;
+
+                // Calculate location offset to keep the opposite edge stationary
+                // When PivotRelative is false, resizing keeps Top-Left (Location) constant,
+                // so we only need to slide back if we are resizing Left or Top edges.
+                if (!control.PivotRelative)
+                {
+                    var pivotOffset = Float2.Zero;
+                    if (_activeWidget.ResizeAxis.X < 0 && Mathf.Abs(dSize.X) > Mathf.Epsilon)
+                        pivotOffset.X = -dSize.X * scale.X;
+                    if (_activeWidget.ResizeAxis.Y < 0 && Mathf.Abs(dSize.Y) > Mathf.Epsilon)
+                        pivotOffset.Y = -dSize.Y * scale.Y;
+
+                    // Transform offset back to parent space and apply
+                    var dLocationX = pivotOffset.X * cos - pivotOffset.Y * sin;
+                    var dLocationY = pivotOffset.X * sin + pivotOffset.Y * cos;
+                    var dLocation = new Float2(dLocationX, dLocationY);
+                    
+                    control.LocalLocation += dLocation;
+                }
 
                 // Don't move if layout doesn't allow it
                 if (control.Parent != null)
