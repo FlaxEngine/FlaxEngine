@@ -245,7 +245,7 @@ namespace FlaxEditor.Viewport
                 // Use the actual content size (resolution) of the game viewport
                 _guiRoot.SetViewSize(gameViewport.ContentSize);
                 if (_guiRoot.ExternalRoot == null)
-                    _guiRoot.ExternalRoot = RootControl.GameRoot;
+                    _guiRoot.ExternalRoot = RootControl.CanvasRoot;
             }
 
             // Link UI canvases to the viewport
