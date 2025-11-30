@@ -355,9 +355,9 @@ namespace FlaxEditor.Windows
         }
 
         /// <summary>
-        /// Root control for game UI preview in Editor. Supports basic UI editing via <see cref="UIEditorRoot"/>.
+        /// Root control for game UI preview in Editor.
         /// </summary>
-        private class GameRoot /*: UIEditorRoot*/ : ContainerControl
+        private class GameRoot : ContainerControl
         {
             public bool EnableEvents => !Time.GamePaused;
 

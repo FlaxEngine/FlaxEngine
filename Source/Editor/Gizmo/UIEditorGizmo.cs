@@ -116,7 +116,7 @@ namespace FlaxEditor
                 if (RayCastChildren(ref location, out hit))
                     return true;
 
-                // Check external roots
+                // Check external root
                 var uiRoot = (UIEditorRoot)Parent;
                 if (uiRoot.ExternalRoot != null)
                 {
