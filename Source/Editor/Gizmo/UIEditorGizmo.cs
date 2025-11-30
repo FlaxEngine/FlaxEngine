@@ -113,13 +113,40 @@ namespace FlaxEditor
             public override bool RayCast(ref Float2 location, out Control hit)
             {
                 // Ignore self
-                return RayCastChildren(ref location, out hit);
+                if (RayCastChildren(ref location, out hit))
+                    return true;
+
+                // Check external roots
+                var uiRoot = (UIEditorRoot)Parent;
+                if (uiRoot.ExternalRoot != null)
+                {
+                    var root = uiRoot.ExternalRoot;
+                    if (root.RayCast(ref location, out hit))
+                        return true;
+                }
+
+                return false;
             }
 
             public override bool IntersectsContent(ref Float2 locationParent, out Float2 location)
             {
                 location = PointFromParent(ref locationParent);
                 return true;
+            }
+            
+            public override void Draw()
+            {
+                base.Draw();
+
+                // Draw external roots
+                var uiRoot = (UIEditorRoot)Parent;
+                if (!uiRoot.EnableBackground)
+                    return;
+
+                if (uiRoot.ExternalRoot != null)
+                {
+                    uiRoot.ExternalRoot.Draw();
+                }
             }
 
             public override void DrawSelf()
@@ -154,6 +181,11 @@ namespace FlaxEditor
         private float[] _gridTickStrengths;
         private List<Widget> _widgets;
         private Widget _activeWidget;
+        
+        /// <summary>
+        /// External control to be managed by this editor root (drawn and interacted with) without being children.
+        /// </summary>
+        public ContainerControl ExternalRoot;
 
         /// <summary>
         /// Sets the view size.
@@ -554,6 +586,7 @@ namespace FlaxEditor
         {
             if (IsDisposing)
                 return;
+            ExternalRoot = null;
             EndMovingControls();
             EndMovingView();
             EndMovingWidget();
@@ -563,6 +596,28 @@ namespace FlaxEditor
 
         private Float2 GetControlDelta(Control control, ref Float2 start, ref Float2 end)
         {
+            // Handle external controls
+            if (control.Parent != this && _view != null)
+            {
+                // Find the external root this control belongs to
+                var root = control as ContainerControl;
+                while (root != null && ExternalRoot != root)
+                    root = root.Parent;
+
+                if (root != null)
+                {
+                    // Map UIEditorRoot space (start/end) to View space (which aligns with ExternalRoot space)
+                    var startInView = _view.PointFromParent(this, start);
+                    var endInView = _view.PointFromParent(this, end);
+
+                    // Now convert from Root space to Control's Parent space
+                    var parent = control.Parent ?? control;
+                    var startInParent = parent.PointFromParent(root, startInView);
+                    var endInParent = parent.PointFromParent(root, endInView);
+                    return endInParent - startInParent;
+                }
+            }
+
             var pointOrigin = control.Parent ?? control;
             var startPos = pointOrigin.PointFromParent(this, start);
             var endPos = pointOrigin.PointFromParent(this, end);
@@ -599,6 +654,23 @@ namespace FlaxEditor
                 Render2D.DrawText(style.FontSmall, label, labelRect, labelsColor.AlphaMultiplied(strength), TextAlignment.Near, TextAlignment.Center, TextWrapping.NoWrap, 1.0f, 0.7f);
             }, _gridTickSteps, ref _gridTickStrengths, min, max, pixelRange);
         }
+        
+        // Helper to transform points from control space to editor root space (handling external roots)
+        Float2 TransformPoint(Control c, Float2 p)
+        {
+            if (c.Parent != this && _view != null)
+            {
+                var root = c as ContainerControl;
+                while (root != null && ExternalRoot != root)
+                    root = root.Parent;
+                if (root != null)
+                {
+                    var pInRoot = c.PointToParent(root, p);
+                    return _view.PointToParent(this, pInRoot);
+                }
+            }
+            return c.PointToParent(this, p);
+        }
 
         private void DrawControl(UIControl uiControl, Control control, bool selection, ref Float2 mousePos, ref bool drawAnySelectedControl, bool withWidgets = false)
         {
@@ -611,10 +683,11 @@ namespace FlaxEditor
 
             // Draw bounds
             var bounds = control.EditorBounds;
-            var ul = control.PointToParent(this, bounds.UpperLeft);
-            var ur = control.PointToParent(this, bounds.UpperRight);
-            var bl = control.PointToParent(this, bounds.BottomLeft);
-            var br = control.PointToParent(this, bounds.BottomRight);
+            var ul = TransformPoint(control, bounds.UpperLeft);
+            var ur = TransformPoint(control, bounds.UpperRight);
+            var bl = TransformPoint(control, bounds.BottomLeft);
+            var br = TransformPoint(control, bounds.BottomRight);
+            
             var color = selection ? options.SelectionOutlineColor0 : Style.Current.SelectionBorder;
 #if false
             // AABB
@@ -658,7 +731,7 @@ namespace FlaxEditor
                     pivotSize *= viewScale;
                 var pivotX = Mathf.Remap(control.Pivot.X, 0, 1, bounds.Location.X, bounds.Location.X + bounds.Width);
                 var pivotY = Mathf.Remap(control.Pivot.Y, 0, 1, bounds.Location.Y, bounds.Location.Y + bounds.Height);
-                var pivotLoc = control.PointToParent(this, new Float2(pivotX, pivotY));
+                var pivotLoc = TransformPoint(control, new Float2(pivotX, pivotY));
                 var pivotRect = new Rectangle(pivotLoc - pivotSize * 0.5f, new Float2(pivotSize));
                 var pivotColor = options.UIPivotColor;
                 Render2D.FillRectangle(pivotRect, pivotColor);
@@ -675,10 +748,10 @@ namespace FlaxEditor
                     var newMaxX = Mathf.Remap(anchorMax.X, 0, 1, parentBounds.UpperLeft.X, parentBounds.UpperRight.X);
                     var newMaxY = Mathf.Remap(anchorMax.Y, 0, 1, parentBounds.UpperLeft.Y, parentBounds.LowerLeft.Y);
 
-                    var anchorUpperLeft = controlParent.PointToParent(this, new Float2(newMinX, newMinY));
-                    var anchorUpperRight = controlParent.PointToParent(this, new Float2(newMaxX, newMinY));
-                    var anchorLowerLeft = controlParent.PointToParent(this, new Float2(newMinX, newMaxY));
-                    var anchorLowerRight = controlParent.PointToParent(this, new Float2(newMaxX, newMaxY));
+                    var anchorUpperLeft = TransformPoint(controlParent, new Float2(newMinX, newMinY));
+                    var anchorUpperRight = TransformPoint(controlParent, new Float2(newMaxX, newMinY));
+                    var anchorLowerLeft = TransformPoint(controlParent, new Float2(newMinX, newMaxY));
+                    var anchorLowerRight = TransformPoint(controlParent, new Float2(newMaxX, newMaxY));
 
                     var anchorRectSize = 8.0f;
                     if (viewScale < 0.7f)
