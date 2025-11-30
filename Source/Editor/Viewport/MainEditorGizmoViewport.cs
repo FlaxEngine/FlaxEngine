@@ -234,9 +234,6 @@ namespace FlaxEditor.Viewport
 
         private void UpdateLinkage()
         {
-            //if (Editor.IsPlayMode)
-                //return;
-
             // Clear flag
             _hasUILinked = false;
             _guiRoot.ExternalRoot = null;
@@ -264,13 +261,6 @@ namespace FlaxEditor.Viewport
             {
                 if (uiCanvas.IsActiveInHierarchy && uiCanvas.GUI.Visible && uiCanvas.GUI.Parent != null)
                 {
-                    /*
-                    if (_guiRoot.ExternalRoot == uiCanvas.GUI.Parent)
-                    {
-                        _guiRoot.ExternalRoot = uiCanvas.GUI.Parent;
-                    }
-                    */
-                    //_guiRoot.ExternalRoots.Add(uiCanvas.GUI);
                     _hasUILinked = true;
                 }
             }
