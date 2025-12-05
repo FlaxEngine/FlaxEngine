@@ -2244,6 +2244,13 @@ void WriteSubRect(const Rectangle& subRect, const Rectangle& mainRect, const Col
     );
 }
 
+struct Corner
+{
+    Float2 Center; 
+    float Radius; 
+    float StartAngle;
+};
+
  void Render2D::DrawRoundedRectangle(const Rectangle& rect, const Color& color, float radius, float thickness)
     {
         DrawRoundedRectangle(rect, color, Float4(radius), thickness);
@@ -2274,7 +2281,7 @@ void WriteSubRect(const Rectangle& subRect, const Rectangle& mainRect, const Col
         const float leftX = rect.Location.X;
 
         // Corner data: Center, Radius, StartAngle
-        const struct { Float2 Center; float Radius; float StartAngle; } corners[] = {
+        const Corner corners[] = {
             { { rightX - radial.Y, topY + radial.Y }, radial.Y, -PI * 0.5f },     // TR
             { { rightX - radial.Z, bottomY - radial.Z }, radial.Z, 0.0f },        // BR
             { { leftX + radial.W, bottomY - radial.W }, radial.W, PI * 0.5f },    // BL
@@ -2423,7 +2430,7 @@ void WriteSubRect(const Rectangle& subRect, const Rectangle& mainRect, const Col
         }
 
         // Corners (Fans)
-        const struct { Float2 Center; float Radius; float StartAngle; } corners[] = {
+        const Corner corners[] = {
             { rect.Location + Float2(r_tl, r_tl), r_tl, PI },
             { rect.Location + Float2(rect.Size.X - r_tr, r_tr), r_tr, -PI * 0.5f },
             { rect.Location + rect.Size - Float2(r_br, r_br), r_br, 0 },
@@ -2555,7 +2562,7 @@ void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color1, 
     }
 
     // Corners (Fans)
-    const struct { Float2 Center; float Radius; float StartAngle; } corners[] = {
+    const Corner corners[] = {
         { rect.Location + Float2(r_tl, r_tl), r_tl, PI },
         { rect.Location + Float2(rect.Size.X - r_tr, r_tr), r_tr, -PI * 0.5f },
         { rect.Location + rect.Size - Float2(r_br, r_br), r_br, 0 },
