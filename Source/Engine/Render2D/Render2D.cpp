@@ -2252,220 +2252,55 @@ struct Corner
 };
 
  void Render2D::DrawRoundedRectangle(const Rectangle& rect, const Color& color, float radius, float thickness)
+{
+    DrawRoundedRectangle(rect, color, Float4(radius), thickness);
+}
+
+void Render2D::DrawRoundedRectangle(const Rectangle& rect, const Color& color, Float4 radial, float thickness)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    // Clamp radii to half size to prevent overlap artifacts
+    const float minSize = Math::Min(rect.GetWidth(), rect.GetHeight());
+    const float maxRadius = minSize * 0.5f;
+    radial = Float4::Clamp(radial, Float4::Zero, Float4(maxRadius));
+
+    if (radial.IsZero())
     {
-        DrawRoundedRectangle(rect, color, Float4(radius), thickness);
+        DrawRectangle(rect, color, color, color, color, thickness);
+        return;
     }
 
-    void Render2D::DrawRoundedRectangle(const Rectangle& rect, const Color& color, Float4 radial, float thickness)
+    // Use global lines buffer
+    Lines2.Clear();
+
+    // Top edge
+    const float topY = rect.Location.Y;
+    const float rightX = rect.Location.X + rect.Size.X;
+    const float bottomY = rect.Location.Y + rect.Size.Y;
+    const float leftX = rect.Location.X;
+
+    // Corners
+    const Corner corners[] = {
+        { { rightX - radial.Y, topY + radial.Y }, radial.Y, -PI * 0.5f },     // TR
+        { { rightX - radial.Z, bottomY - radial.Z }, radial.Z, 0.0f },        // BR
+        { { leftX + radial.W, bottomY - radial.W }, radial.W, PI * 0.5f },    // BL
+        { { leftX + radial.X, topY + radial.X }, radial.X, PI }               // TL
+    };
+
+    for (const auto& corner : corners)
     {
-        RENDER2D_CHECK_RENDERING_STATE;
-
-        // Clamp radii to half size to prevent overlap artifacts
-        const float minSize = Math::Min(rect.GetWidth(), rect.GetHeight());
-        const float maxRadius = minSize * 0.5f;
-        radial = Float4::Clamp(radial, Float4::Zero, Float4(maxRadius));
-
-        if (radial.IsZero())
+        const int32 resolution = Math::Clamp(Math::CeilToInt(corner.Radius * 0.5f), 1, 64);
+        if (resolution > 1)
         {
-            DrawRectangle(rect, color, color, color, color, thickness);
-            return;
-        }
-
-        // Use global lines buffer
-        Lines2.Clear();
-
-        // Top edge
-        const float topY = rect.Location.Y;
-        const float rightX = rect.Location.X + rect.Size.X;
-        const float bottomY = rect.Location.Y + rect.Size.Y;
-        const float leftX = rect.Location.X;
-
-        // Corners
-        const Corner corners[] = {
-            { { rightX - radial.Y, topY + radial.Y }, radial.Y, -PI * 0.5f },     // TR
-            { { rightX - radial.Z, bottomY - radial.Z }, radial.Z, 0.0f },        // BR
-            { { leftX + radial.W, bottomY - radial.W }, radial.W, PI * 0.5f },    // BL
-            { { leftX + radial.X, topY + radial.X }, radial.X, PI }               // TL
-        };
-
-        for (const auto& corner : corners)
-        {
-            const int32 resolution = Math::Clamp(Math::CeilToInt(corner.Radius * 0.5f), 1, 64);
-            if (resolution > 1)
-            {
-                const float angleStep = PI * 0.5f / resolution;
-                const float cosStep = Math::Cos(angleStep);
-                const float sinStep = Math::Sin(angleStep);
-
-                float x = Math::Cos(corner.StartAngle) * corner.Radius;
-                float y = Math::Sin(corner.StartAngle) * corner.Radius;
-
-                Lines2.Add(corner.Center + Float2(x, y));
-
-                for (int32 i = 0; i < resolution; i++)
-                {
-                    // Rotate the vector
-                    const float nx = x * cosStep - y * sinStep;
-                    const float ny = x * sinStep + y * cosStep;
-                    x = nx;
-                    y = ny;
-                    Lines2.Add(corner.Center + Float2(x, y));
-                }
-            }
-            else
-            {
-                Lines2.Add(corner.Center + Float2(Math::Cos(corner.StartAngle), Math::Sin(corner.StartAngle)) * corner.Radius);
-                const float endAngle = corner.StartAngle + PI * 0.5f;
-                Lines2.Add(corner.Center + Float2(Math::Cos(endAngle), Math::Sin(endAngle)) * corner.Radius);
-            }
-        }
-
-        // Close loop (connect back to start)
-        Lines2.Add(Lines2[0]);
-
-        DrawLines(Lines2.Get(), Lines2.Count(), color, color, thickness);
-    }
-
-    void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color, float radius)
-    {
-        FillRoundedRectangle(rect, color, Float4(radius), Float2::Zero, Float2::One);
-    }
-
-    void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color, float radius, const Float2& uv1, const Float2& uv2)
-    {
-        FillRoundedRectangle(rect, color, Float4(radius), uv1, uv2);
-    }
-
-    void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color, Float4 radial)
-    {
-        FillRoundedRectangle(rect, color, radial, Float2::Zero, Float2::One);
-    }
-
-    void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color, Float4 radial, const Float2& uv1, const Float2& uv2)
-    {
-        RENDER2D_CHECK_RENDERING_STATE;
-
-        const float minSize = Math::Min(rect.GetWidth(), rect.GetHeight());
-        const float maxRadius = minSize * 0.5f;
-        radial = Float4::Clamp(radial, Float4::Zero, Float4(maxRadius));
-
-        if (radial.IsZero())
-        {
-            Render2DDrawCall& drawCall = DrawCalls.AddOne();
-            drawCall.Type = NeedAlphaWithTint(color) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
-            drawCall.StartIB = IBIndex;
-            drawCall.CountIB = 6;
-            WriteRect(rect, color, uv1, uv2);
-            return;
-        }
-
-        Render2DDrawCall& drawCall = DrawCalls.AddOne();
-        drawCall.Type = NeedAlphaWithTint(color) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
-        drawCall.StartIB = IBIndex;
-
-        // Calculate UV mapping helper
-        const Float2 uvScale = (uv2 - uv1) / rect.Size;
-
-        // Radii: X=TL, Y=TR, Z=BR, W=BL
-        const float r_tl = radial.X;
-        const float r_tr = radial.Y;
-        const float r_br = radial.Z;
-        const float r_bl = radial.W;
-
-        const float max_l = Math::Max(r_tl, r_bl);
-        const float max_r = Math::Max(r_tr, r_br);
-
-        // Center Rect (vertical strip in the middle)
-        const Rectangle centerRect(
-            rect.Location.X + max_l,
-            rect.Location.Y,
-            rect.Size.X - max_l - max_r,
-            rect.Size.Y
-        );
-        if (centerRect.Size.X > 0)
-            WriteRect(centerRect, color, uv1 + (centerRect.GetUpperLeft() - rect.Location) * uvScale, uv1 + (centerRect.GetBottomRight() - rect.Location) * uvScale);
-
-        // Left Side Construction
-        {
-            // Left Body (vertical strip excluding corners vertical span)
-            const Rectangle leftBody(
-                rect.Location.X,
-                rect.Location.Y + r_tl,
-                max_l,
-                rect.Size.Y - r_tl - r_bl
-            );
-            if (leftBody.Size.Y > 0 && leftBody.Size.X > 0)
-                WriteRect(leftBody, color, uv1 + (leftBody.GetUpperLeft() - rect.Location) * uvScale, uv1 + (leftBody.GetBottomRight() - rect.Location) * uvScale);
-
-            // TL Filler (if TL radius is smaller than max left width)
-            if (r_tl < max_l)
-            {
-                const Rectangle filler(rect.Location.X + r_tl, rect.Location.Y, max_l - r_tl, r_tl);
-                WriteRect(filler, color, uv1 + (filler.GetUpperLeft() - rect.Location) * uvScale, uv1 + (filler.GetBottomRight() - rect.Location) * uvScale);
-            }
-
-            // BL Filler (if BL radius is smaller than max left width)
-            if (r_bl < max_l)
-            {
-                const Rectangle filler(rect.Location.X + r_bl, rect.Location.Y + rect.Size.Y - r_bl, max_l - r_bl, r_bl);
-                WriteRect(filler, color, uv1 + (filler.GetUpperLeft() - rect.Location) * uvScale, uv1 + (filler.GetBottomRight() - rect.Location) * uvScale);
-            }
-        }
-
-        // Right Side Construction
-        {
-            const float rightX = rect.Location.X + rect.Size.X - max_r;
-
-            // Right Body
-            const Rectangle rightBody(
-                rightX,
-                rect.Location.Y + r_tr,
-                max_r,
-                rect.Size.Y - r_tr - r_br
-            );
-            if (rightBody.Size.Y > 0 && rightBody.Size.X > 0)
-                WriteRect(rightBody, color, uv1 + (rightBody.GetUpperLeft() - rect.Location) * uvScale, uv1 + (rightBody.GetBottomRight() - rect.Location) * uvScale);
-
-            // TR Filler
-            if (r_tr < max_r)
-            {
-                const Rectangle filler(rightX, rect.Location.Y, max_r - r_tr, r_tr);
-                WriteRect(filler, color, uv1 + (filler.GetUpperLeft() - rect.Location) * uvScale, uv1 + (filler.GetBottomRight() - rect.Location) * uvScale);
-            }
-
-            // BR Filler
-            if (r_br < max_r)
-            {
-                const Rectangle filler(rightX, rect.Location.Y + rect.Size.Y - r_br, max_r - r_br, r_br);
-                WriteRect(filler, color, uv1 + (filler.GetUpperLeft() - rect.Location) * uvScale, uv1 + (filler.GetBottomRight() - rect.Location) * uvScale);
-            }
-        }
-
-        // Corners (Fans)
-        const Corner corners[] = {
-            { rect.Location + Float2(r_tl, r_tl), r_tl, PI },
-            { rect.Location + Float2(rect.Size.X - r_tr, r_tr), r_tr, -PI * 0.5f },
-            { rect.Location + rect.Size - Float2(r_br, r_br), r_br, 0 },
-            { rect.Location + Float2(r_bl, rect.Size.Y - r_bl), r_bl, PI * 0.5f }
-        };
-
-        for (const auto& corner : corners)
-        {
-            if (corner.Radius <= ZeroTolerance)
-                continue;
-
-            const int32 resolution = Math::Clamp(Math::CeilToInt(corner.Radius * 0.5f), 1, 64);
             const float angleStep = PI * 0.5f / resolution;
-            const Float2 uvCenter = uv1 + (corner.Center - rect.Location) * uvScale;
-
             const float cosStep = Math::Cos(angleStep);
             const float sinStep = Math::Sin(angleStep);
 
             float x = Math::Cos(corner.StartAngle) * corner.Radius;
             float y = Math::Sin(corner.StartAngle) * corner.Radius;
 
-            Float2 pPrev = corner.Center + Float2(x, y);
-            Float2 uvPrev = uv1 + (pPrev - rect.Location) * uvScale;
+            Lines2.Add(corner.Center + Float2(x, y));
 
             for (int32 i = 0; i < resolution; i++)
             {
@@ -2474,19 +2309,184 @@ struct Corner
                 const float ny = x * sinStep + y * cosStep;
                 x = nx;
                 y = ny;
-
-                const Float2 pNext = corner.Center + Float2(x, y);
-                const Float2 uvNext = uv1 + (pNext - rect.Location) * uvScale;
-
-                WriteTri(corner.Center, pPrev, pNext, uvCenter, uvPrev, uvNext, color, color, color);
-
-                pPrev = pNext;
-                uvPrev = uvNext;
+                Lines2.Add(corner.Center + Float2(x, y));
             }
         }
-
-        drawCall.CountIB = IBIndex - drawCall.StartIB;
+        else
+        {
+            Lines2.Add(corner.Center + Float2(Math::Cos(corner.StartAngle), Math::Sin(corner.StartAngle)) * corner.Radius);
+            const float endAngle = corner.StartAngle + PI * 0.5f;
+            Lines2.Add(corner.Center + Float2(Math::Cos(endAngle), Math::Sin(endAngle)) * corner.Radius);
+        }
     }
+
+    // Close loop (connect back to start)
+    Lines2.Add(Lines2[0]);
+
+    DrawLines(Lines2.Get(), Lines2.Count(), color, color, thickness);
+}
+
+void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color, float radius)
+{
+    FillRoundedRectangle(rect, color, Float4(radius), Float2::Zero, Float2::One);
+}
+
+void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color, float radius, const Float2& uv1, const Float2& uv2)
+{
+    FillRoundedRectangle(rect, color, Float4(radius), uv1, uv2);
+}
+
+void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color, Float4 radial)
+{
+    FillRoundedRectangle(rect, color, radial, Float2::Zero, Float2::One);
+}
+
+void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color, Float4 radial, const Float2& uv1, const Float2& uv2)
+{
+    RENDER2D_CHECK_RENDERING_STATE;
+
+    const float minSize = Math::Min(rect.GetWidth(), rect.GetHeight());
+    const float maxRadius = minSize * 0.5f;
+    radial = Float4::Clamp(radial, Float4::Zero, Float4(maxRadius));
+
+    if (radial.IsZero())
+    {
+        Render2DDrawCall& drawCall = DrawCalls.AddOne();
+        drawCall.Type = NeedAlphaWithTint(color) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+        drawCall.StartIB = IBIndex;
+        drawCall.CountIB = 6;
+        WriteRect(rect, color, uv1, uv2);
+        return;
+    }
+
+    Render2DDrawCall& drawCall = DrawCalls.AddOne();
+    drawCall.Type = NeedAlphaWithTint(color) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+    drawCall.StartIB = IBIndex;
+
+    // Calculate UV mapping helper
+    const Float2 uvScale = (uv2 - uv1) / rect.Size;
+
+    // Radii: X=TL, Y=TR, Z=BR, W=BL
+    const float r_tl = radial.X;
+    const float r_tr = radial.Y;
+    const float r_br = radial.Z;
+    const float r_bl = radial.W;
+
+    const float max_l = Math::Max(r_tl, r_bl);
+    const float max_r = Math::Max(r_tr, r_br);
+
+    // Center Rect (vertical strip in the middle)
+    const Rectangle centerRect(
+        rect.Location.X + max_l,
+        rect.Location.Y,
+        rect.Size.X - max_l - max_r,
+        rect.Size.Y
+    );
+    if (centerRect.Size.X > 0)
+        WriteRect(centerRect, color, uv1 + (centerRect.GetUpperLeft() - rect.Location) * uvScale, uv1 + (centerRect.GetBottomRight() - rect.Location) * uvScale);
+
+    // Left Side Construction
+    {
+        // Left Body (vertical strip excluding corners vertical span)
+        const Rectangle leftBody(
+            rect.Location.X,
+            rect.Location.Y + r_tl,
+            max_l,
+            rect.Size.Y - r_tl - r_bl
+        );
+        if (leftBody.Size.Y > 0 && leftBody.Size.X > 0)
+            WriteRect(leftBody, color, uv1 + (leftBody.GetUpperLeft() - rect.Location) * uvScale, uv1 + (leftBody.GetBottomRight() - rect.Location) * uvScale);
+
+        // TL Filler (if TL radius is smaller than max left width)
+        if (r_tl < max_l)
+        {
+            const Rectangle filler(rect.Location.X + r_tl, rect.Location.Y, max_l - r_tl, r_tl);
+            WriteRect(filler, color, uv1 + (filler.GetUpperLeft() - rect.Location) * uvScale, uv1 + (filler.GetBottomRight() - rect.Location) * uvScale);
+        }
+
+        // BL Filler (if BL radius is smaller than max left width)
+        if (r_bl < max_l)
+        {
+            const Rectangle filler(rect.Location.X + r_bl, rect.Location.Y + rect.Size.Y - r_bl, max_l - r_bl, r_bl);
+            WriteRect(filler, color, uv1 + (filler.GetUpperLeft() - rect.Location) * uvScale, uv1 + (filler.GetBottomRight() - rect.Location) * uvScale);
+        }
+    }
+
+    // Right Side Construction
+    {
+        const float rightX = rect.Location.X + rect.Size.X - max_r;
+
+        // Right Body
+        const Rectangle rightBody(
+            rightX,
+            rect.Location.Y + r_tr,
+            max_r,
+            rect.Size.Y - r_tr - r_br
+        );
+        if (rightBody.Size.Y > 0 && rightBody.Size.X > 0)
+            WriteRect(rightBody, color, uv1 + (rightBody.GetUpperLeft() - rect.Location) * uvScale, uv1 + (rightBody.GetBottomRight() - rect.Location) * uvScale);
+
+        // TR Filler
+        if (r_tr < max_r)
+        {
+            const Rectangle filler(rightX, rect.Location.Y, max_r - r_tr, r_tr);
+            WriteRect(filler, color, uv1 + (filler.GetUpperLeft() - rect.Location) * uvScale, uv1 + (filler.GetBottomRight() - rect.Location) * uvScale);
+        }
+
+        // BR Filler
+        if (r_br < max_r)
+        {
+            const Rectangle filler(rightX, rect.Location.Y + rect.Size.Y - r_br, max_r - r_br, r_br);
+            WriteRect(filler, color, uv1 + (filler.GetUpperLeft() - rect.Location) * uvScale, uv1 + (filler.GetBottomRight() - rect.Location) * uvScale);
+        }
+    }
+
+    // Corners (Fans)
+    const Corner corners[] = {
+        { rect.Location + Float2(r_tl, r_tl), r_tl, PI },
+        { rect.Location + Float2(rect.Size.X - r_tr, r_tr), r_tr, -PI * 0.5f },
+        { rect.Location + rect.Size - Float2(r_br, r_br), r_br, 0 },
+        { rect.Location + Float2(r_bl, rect.Size.Y - r_bl), r_bl, PI * 0.5f }
+    };
+
+    for (const auto& corner : corners)
+    {
+        if (corner.Radius <= ZeroTolerance)
+            continue;
+
+        const int32 resolution = Math::Clamp(Math::CeilToInt(corner.Radius * 0.5f), 1, 64);
+        const float angleStep = PI * 0.5f / resolution;
+        const Float2 uvCenter = uv1 + (corner.Center - rect.Location) * uvScale;
+
+        const float cosStep = Math::Cos(angleStep);
+        const float sinStep = Math::Sin(angleStep);
+
+        float x = Math::Cos(corner.StartAngle) * corner.Radius;
+        float y = Math::Sin(corner.StartAngle) * corner.Radius;
+
+        Float2 pPrev = corner.Center + Float2(x, y);
+        Float2 uvPrev = uv1 + (pPrev - rect.Location) * uvScale;
+
+        for (int32 i = 0; i < resolution; i++)
+        {
+            // Rotate the vector
+            const float nx = x * cosStep - y * sinStep;
+            const float ny = x * sinStep + y * cosStep;
+            x = nx;
+            y = ny;
+
+            const Float2 pNext = corner.Center + Float2(x, y);
+            const Float2 uvNext = uv1 + (pNext - rect.Location) * uvScale;
+
+            WriteTri(corner.Center, pPrev, pNext, uvCenter, uvPrev, uvNext, color, color, color);
+
+            pPrev = pNext;
+            uvPrev = uvNext;
+        }
+    }
+
+    drawCall.CountIB = IBIndex - drawCall.StartIB;
+}
 
 void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color1, const Color& color2, const Color& color3, const Color& color4, float radius)
 {
