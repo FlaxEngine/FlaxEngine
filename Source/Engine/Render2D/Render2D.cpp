@@ -2280,7 +2280,7 @@ struct Corner
         const float bottomY = rect.Location.Y + rect.Size.Y;
         const float leftX = rect.Location.X;
 
-        // Corner data: Center, Radius, StartAngle
+        // Corners
         const Corner corners[] = {
             { { rightX - radial.Y, topY + radial.Y }, radial.Y, -PI * 0.5f },     // TR
             { { rightX - radial.Z, bottomY - radial.Z }, radial.Z, 0.0f },        // BR
@@ -2304,7 +2304,7 @@ struct Corner
 
                 for (int32 i = 0; i < resolution; i++)
                 {
-                    // Rotate the vector iteratively to avoid expensive sin/cos calls in the loop
+                    // Rotate the vector
                     const float nx = x * cosStep - y * sinStep;
                     const float ny = x * sinStep + y * cosStep;
                     x = nx;
