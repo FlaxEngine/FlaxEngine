@@ -2137,6 +2137,53 @@ static void* OnMonoDlFallbackClose(void* handle, void* user_data)
 
 #endif
 
+#ifdef USE_MONO_AOT_MODULE
+
+#include "Engine/Threading/ThreadPoolTask.h"
+#include "Engine/Engine/EngineService.h"
+
+class MonoAotPreloadTask : public ThreadPoolTask
+{
+public:
+    bool Run() override;
+};
+
+// Preloads in-build AOT dynamic module in async 
+class MonoAotPreloadService : public EngineService
+{
+public:
+    volatile int64 Ready = 0;
+    void* Library = nullptr;
+
+    MonoAotPreloadService()
+        : EngineService(TEXT("AOT Preload"), -800)
+    {
+    }
+
+    bool Init() override
+    {
+        New<MonoAotPreloadTask>()->Start();
+        return false;
+    }
+};
+
+MonoAotPreloadService MonoAotPreloadServiceInstance;
+
+bool MonoAotPreloadTask::Run()
+{
+    // Load AOT module
+    Stopwatch aotModuleLoadStopwatch;
+    LOG(Info, "Loading Mono AOT module...");
+    MonoAotPreloadServiceInstance.Library = Platform::LoadLibrary(TEXT(USE_MONO_AOT_MODULE));
+    aotModuleLoadStopwatch.Stop();
+    LOG(Info, "Mono AOT module loaded in {0}ms", aotModuleLoadStopwatch.GetMilliseconds());
+
+    Platform::AtomicStore(&MonoAotPreloadServiceInstance.Ready, 1);
+    return false;
+}
+
+#endif
+
 bool InitHostfxr()
 {
 #if DOTNET_HOST_MONO_DEBUG
@@ -2167,10 +2214,12 @@ bool InitHostfxr()
 #endif
 
 #ifdef USE_MONO_AOT_MODULE
-    // Load AOT module
-    Stopwatch aotModuleLoadStopwatch;
-    LOG(Info, "Loading Mono AOT module...");
-    void* libAotModule = Platform::LoadLibrary(TEXT(USE_MONO_AOT_MODULE));
+    // Wait for AOT module preloading
+    while (Platform::AtomicRead(&MonoAotPreloadServiceInstance.Ready) == 0)
+        Platform::Yield();
+
+    // Initialize AOT module
+    void* libAotModule = MonoAotPreloadServiceInstance.Library;
     if (libAotModule == nullptr)
     {
         LOG(Error, "Failed to laod Mono AOT module (" TEXT(USE_MONO_AOT_MODULE) ")");
@@ -2193,8 +2242,6 @@ bool InitHostfxr()
         mono_aot_register_module((void**)modules[i]);
     }
     Allocator::Free(modules);
-    aotModuleLoadStopwatch.Stop();
-    LOG(Info, "Mono AOT module loaded in {0}ms", aotModuleLoadStopwatch.GetMilliseconds());
 #endif
 
     // Setup debugger
