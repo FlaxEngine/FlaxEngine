@@ -2294,10 +2294,22 @@ struct Corner
             if (resolution > 1)
             {
                 const float angleStep = PI * 0.5f / resolution;
-                for (int32 i = 0; i <= resolution; i++)
+                const float cosStep = Math::Cos(angleStep);
+                const float sinStep = Math::Sin(angleStep);
+
+                float x = Math::Cos(corner.StartAngle) * corner.Radius;
+                float y = Math::Sin(corner.StartAngle) * corner.Radius;
+
+                Lines2.Add(corner.Center + Float2(x, y));
+
+                for (int32 i = 0; i < resolution; i++)
                 {
-                    const float a = corner.StartAngle + (float)i * angleStep;
-                    Lines2.Add(corner.Center + Float2(Math::Cos(a), Math::Sin(a)) * corner.Radius);
+                    // Rotate the vector iteratively to avoid expensive sin/cos calls in the loop
+                    const float nx = x * cosStep - y * sinStep;
+                    const float ny = x * sinStep + y * cosStep;
+                    x = nx;
+                    y = ny;
+                    Lines2.Add(corner.Center + Float2(x, y));
                 }
             }
             else
@@ -2439,24 +2451,37 @@ struct Corner
 
         for (const auto& corner : corners)
         {
-            if (corner.Radius <= ZeroTolerance) continue;
+            if (corner.Radius <= ZeroTolerance)
+                continue;
 
             const int32 resolution = Math::Clamp(Math::CeilToInt(corner.Radius * 0.5f), 1, 64);
             const float angleStep = PI * 0.5f / resolution;
             const Float2 uvCenter = uv1 + (corner.Center - rect.Location) * uvScale;
 
+            const float cosStep = Math::Cos(angleStep);
+            const float sinStep = Math::Sin(angleStep);
+
+            float x = Math::Cos(corner.StartAngle) * corner.Radius;
+            float y = Math::Sin(corner.StartAngle) * corner.Radius;
+
+            Float2 pPrev = corner.Center + Float2(x, y);
+            Float2 uvPrev = uv1 + (pPrev - rect.Location) * uvScale;
+
             for (int32 i = 0; i < resolution; i++)
             {
-                const float a1 = corner.StartAngle + (float)i * angleStep;
-                const float a2 = corner.StartAngle + (float)(i + 1) * angleStep;
+                // Rotate the vector
+                const float nx = x * cosStep - y * sinStep;
+                const float ny = x * sinStep + y * cosStep;
+                x = nx;
+                y = ny;
 
-                const Float2 p1 = corner.Center + Float2(Math::Cos(a1), Math::Sin(a1)) * corner.Radius;
-                const Float2 p2 = corner.Center + Float2(Math::Cos(a2), Math::Sin(a2)) * corner.Radius;
+                const Float2 pNext = corner.Center + Float2(x, y);
+                const Float2 uvNext = uv1 + (pNext - rect.Location) * uvScale;
 
-                const Float2 uvP1 = uv1 + (p1 - rect.Location) * uvScale;
-                const Float2 uvP2 = uv1 + (p2 - rect.Location) * uvScale;
+                WriteTri(corner.Center, pPrev, pNext, uvCenter, uvPrev, uvNext, color, color, color);
 
-                WriteTri(corner.Center, p1, p2, uvCenter, uvP1, uvP2, color, color, color);
+                pPrev = pNext;
+                uvPrev = uvNext;
             }
         }
 
@@ -2571,21 +2596,37 @@ void Render2D::FillRoundedRectangle(const Rectangle& rect, const Color& color1, 
 
     for (const auto& corner : corners)
     {
-        if (corner.Radius <= ZeroTolerance) continue;
+        if (corner.Radius <= ZeroTolerance)
+            continue;
 
         const int32 resolution = Math::Clamp(Math::CeilToInt(corner.Radius * 0.5f), 1, 64);
         const float angleStep = PI * 0.5f / resolution;
         const Color centerColor = BilinearLerp(rect, color1, color2, color3, color4, corner.Center);
 
+        const float cosStep = Math::Cos(angleStep);
+        const float sinStep = Math::Sin(angleStep);
+
+        float x = Math::Cos(corner.StartAngle) * corner.Radius;
+        float y = Math::Sin(corner.StartAngle) * corner.Radius;
+
+        Float2 pPrev = corner.Center + Float2(x, y);
+        Color cPrev = BilinearLerp(rect, color1, color2, color3, color4, pPrev);
+
         for (int32 i = 0; i < resolution; i++)
         {
-            const float a1 = corner.StartAngle + (float)i * angleStep;
-            const float a2 = corner.StartAngle + (float)(i + 1) * angleStep;
+            // Rotate the vector
+            const float nx = x * cosStep - y * sinStep;
+            const float ny = x * sinStep + y * cosStep;
+            x = nx;
+            y = ny;
 
-            const Float2 p1 = corner.Center + Float2(Math::Cos(a1), Math::Sin(a1)) * corner.Radius;
-            const Float2 p2 = corner.Center + Float2(Math::Cos(a2), Math::Sin(a2)) * corner.Radius;
+            const Float2 pNext = corner.Center + Float2(x, y);
+            const Color cNext = BilinearLerp(rect, color1, color2, color3, color4, pNext);
 
-            WriteTri(corner.Center, p1, p2, Float2::Zero, Float2::Zero, Float2::Zero, centerColor, BilinearLerp(rect, color1, color2, color3, color4, p1), BilinearLerp(rect, color1, color2, color3, color4, p2));
+            WriteTri(corner.Center, pPrev, pNext, Float2::Zero, Float2::Zero, Float2::Zero, centerColor, cPrev, cNext);
+
+            pPrev = pNext;
+            cPrev = cNext;
         }
     }
 
