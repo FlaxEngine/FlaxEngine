@@ -114,7 +114,7 @@ namespace Flax.Build.Projects.VisualStudio
             vcProjectFileContent.AppendLine("    <Keyword>MakeFileProj</Keyword>");
             if (Version >= VisualStudioVersion.VisualStudio2022)
                 vcProjectFileContent.AppendLine("    <ResolveNuGetPackages>false</ResolveNuGetPackages>");
-            vcProjectFileContent.AppendLine("    <VCTargetsPath Condition=\"$(Configuration.Contains('Linux'))\">./</VCTargetsPath>");
+            vcProjectFileContent.AppendLine("    <VCTargetsPath Condition=\"$(Configuration.Contains('Linux')) or $(Configuration.Contains('Mac'))\">./</VCTargetsPath>");
             vcProjectFileContent.AppendLine("  </PropertyGroup>");
 
             // Default properties
