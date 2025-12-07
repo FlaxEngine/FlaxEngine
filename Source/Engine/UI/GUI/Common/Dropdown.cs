@@ -306,7 +306,7 @@ namespace FlaxEngine.GUI
         /// <summary>
         /// Gets or sets the color used to display highlighted text.
         /// </summary>
-        [EditorDisplay("Text Style"), EditorOrder(2023), ExpandGroups]
+        [EditorDisplay("Text Style"), EditorOrder(2024), ExpandGroups]
         public Color TextColorHighlighted { get; set; }
 
         /// <summary>
