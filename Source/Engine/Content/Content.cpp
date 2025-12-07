@@ -30,6 +30,7 @@
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Scripting/ManagedCLR/MClass.h"
+#include "Engine/Scripting/Internal/InternalCalls.h"
 #include "Engine/Scripting/Scripting.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
@@ -346,17 +347,21 @@ int32 LoadingThread::Run()
     ContentLoadTask* task;
     ThisLoadThread = this;
 
+    MONO_THREAD_INFO_TYPE* monoThreadInfo = nullptr;
     while (Platform::AtomicRead(&_exitFlag) == 0)
     {
         if (LoadTasks.try_dequeue(task))
         {
             Run(task);
+            MONO_THREAD_INFO_GET(monoThreadInfo);
         }
         else
         {
+            MONO_ENTER_GC_SAFE_WITH_INFO(monoThreadInfo);
             LoadTasksMutex.Lock();
             LoadTasksSignal.Wait(LoadTasksMutex);
             LoadTasksMutex.Unlock();
+            MONO_EXIT_GC_SAFE_WITH_INFO;
         }
     }
 

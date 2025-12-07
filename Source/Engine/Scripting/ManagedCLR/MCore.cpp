@@ -21,6 +21,7 @@
 MDomain* MRootDomain = nullptr;
 MDomain* MActiveDomain = nullptr;
 Array<MDomain*, FixedAllocation<4>> MDomains;
+bool MCore::Ready = false;
 
 MClass* MCore::TypeCache::Void = nullptr;
 MClass* MCore::TypeCache::Object = nullptr;
@@ -299,6 +300,11 @@ bool MProperty::IsStatic() const
         return GetSetMethod()->IsStatic();
     }
     return false;
+}
+
+void MCore::OnManagedEventAfterShutdown(const char* eventName)
+{
+    LOG(Error, "Found a binding leak on '{}' event used by C# scripting after shutdown. Ensure to unregister scripting events from objects during disposing.", ::String(eventName));
 }
 
 MDomain* MCore::GetRootDomain()

@@ -246,11 +246,19 @@ void AnimGraphExecutor::ProcessAnimEvents(AnimGraphNode* node, bool loop, float 
             const float duration = k.Value.Duration > 1 ? k.Value.Duration : 0.0f;
 #define ADD_OUTGOING_EVENT(type) context.Data->OutgoingEvents.Add({ k.Value.Instance, (AnimatedModel*)context.Data->Object, anim, eventTime, eventDeltaTime, AnimGraphInstanceData::OutgoingEvent::type })
             if ((k.Time <= eventTimeMax && eventTimeMin <= k.Time + duration
-                && (Math::FloorToInt(animPos) != 0 && Math::CeilToInt(animPrevPos) != Math::CeilToInt(anim->GetDuration()) && Math::FloorToInt(animPrevPos) != 0 && Math::CeilToInt(animPos) != Math::CeilToInt(anim->GetDuration())))
+                && (Math::FloorToInt(animPos) != 0 && Math::CeilToInt(animPrevPos) != Math::CeilToInt(anim->GetDuration())
+                    && Math::FloorToInt(animPrevPos) != 0 && Math::CeilToInt(animPos) != Math::CeilToInt(anim->GetDuration())))
                 // Handle the edge case of an event on 0 or on max animation duration during looping
-                || (loop && duration == 0.0f && Math::CeilToInt(animPos) == Math::CeilToInt(anim->GetDuration()) && k.Time == anim->GetDuration())
+                || (!loop && duration == 0.0f && Math::CeilToInt(animPos) == Math::CeilToInt(anim->GetDuration()) && Math::CeilToInt(animPrevPos) == Math::CeilToInt(anim->GetDuration()) - 1 && Math::NearEqual(k.Time, anim->GetDuration()))
                 || (loop && Math::FloorToInt(animPos) == 0 && Math::CeilToInt(animPrevPos) == Math::CeilToInt(anim->GetDuration()) && k.Time == 0.0f)
                 || (loop && Math::FloorToInt(animPrevPos) == 0 && Math::CeilToInt(animPos) == Math::CeilToInt(anim->GetDuration()) && k.Time == 0.0f)
+                || (loop && Math::FloorToInt(animPos) == 0 && Math::CeilToInt(animPrevPos) == Math::CeilToInt(anim->GetDuration()) && Math::NearEqual(k.Time, anim->GetDuration()))
+                || (loop && Math::FloorToInt(animPrevPos) == 0 && Math::CeilToInt(animPos) == Math::CeilToInt(anim->GetDuration()) && Math::NearEqual(k.Time, anim->GetDuration()))
+                || (Math::FloorToInt(animPos) == 1 && Math::FloorToInt(animPrevPos) == 0 && k.Time == 1.0f)
+                || (Math::FloorToInt(animPos) == 0 && Math::FloorToInt(animPrevPos) == 1 && k.Time == 1.0f)
+                || (Math::CeilToInt(animPos) == Math::CeilToInt(anim->GetDuration()) && Math::CeilToInt(animPrevPos) == Math::CeilToInt(anim->GetDuration()) - 1 && Math::NearEqual(k.Time, anim->GetDuration() - 1.0f))
+                || (Math::CeilToInt(animPos) == Math::CeilToInt(anim->GetDuration()) - 1 && Math::CeilToInt(animPrevPos) == Math::CeilToInt(anim->GetDuration()) && Math::NearEqual(k.Time, anim->GetDuration() - 1.0f))
+                || (Math::FloorToInt(animPos) == 0 && Math::FloorToInt(animPrevPos) == 0 && k.Time == 0.0f)
                 )
             {
                 int32 stateIndex = -1;

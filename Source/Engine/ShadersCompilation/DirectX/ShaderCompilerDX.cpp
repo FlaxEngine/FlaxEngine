@@ -222,7 +222,7 @@ bool ShaderCompilerDX::CompileShader(ShaderFunctionMeta& meta, WritePermutationD
             argsFull.Add(TEXT("-D"));
             argsFull.Add(*d);
         }
-        GetArgs(argsFull);
+        GetArgs(meta, argsFull);
 
         // Compile
         ComPtr<IDxcResult> results;

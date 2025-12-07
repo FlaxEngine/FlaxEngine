@@ -96,34 +96,9 @@
 // Compiler support for HLSL 2021 that is stricter (need to use or/and/select for vector-based logical operators)
 #if !defined(__DXC_VERSION_MAJOR) || (__DXC_VERSION_MAJOR <= 1 && __DXC_VERSION_MINOR < 7)
 
-bool InternalAnd(bool a, bool b) { return bool(a && b); }
-bool2 InternalAnd(bool2 a, bool2 b) { return bool2(a.x && b.x, a.y && b.y); }
-bool3 InternalAnd(bool3 a, bool3 b) { return bool3(a.x && b.x, a.y && b.y, a.z && b.z); }
-bool4 InternalAnd(bool4 a, bool4 b) { return bool4(a.x && b.x, a.y && b.y, a.z && b.z, a.w && b.w); }
-
-bool InternalOr(bool a, bool b) { return bool(a || b); }
-bool2 InternalOr(bool2 a, bool2 b) { return bool2(a.x || b.x, a.y || b.y); }
-bool3 InternalOr(bool3 a, bool3 b) { return bool3(a.x || b.x, a.y || b.y, a.z || b.z); }
-bool4 InternalOr(bool4 a, bool4 b) { return bool4(a.x || b.x, a.y || b.y, a.z || b.z, a.w || b.w); }
-
-#define SELECT_INTERNAL(type) \
-    type InternalSelect(bool c, type a, type b) { return type (c ? a.x : b.x); } \
-    type##2 InternalSelect(bool c, type##2 a, type##2 b) { return type##2(c ? a.x : b.x, c ? a.y : b.y); } \
-    type##2 InternalSelect(bool2 c, type a, type b) { return type##2(c.x ? a : b, c.y ? a : b); } \
-    type##2 InternalSelect(bool2 c, type##2 a, type##2 b) { return type##2(c.x ? a.x : b.x, c.y ? a.y : b.y); } \
-    type##3 InternalSelect(bool c, type##3 a, type##3 b) { return type##3(c ? a.x : b.x, c ? a.y : b.y, c ? a.z : b.z); } \
-    type##3 InternalSelect(bool3 c, type a, type b) { return type##3(c.x ? a : b, c.y ? a : b, c.z ? a : b); } \
-    type##3 InternalSelect(bool3 c, type##3 a, type##3 b) { return type##3(c.x ? a.x : b.x, c.y ? a.y : b.y, c.z ? a.z : b.z); } \
-    type##4 InternalSelect(bool c, type##4 a, type##4 b) { return type##4(c ? a.x : b.x, c ? a.y : b.y, c ? a.z : b.z, c ? a.w : b.w); } \
-    type##4 InternalSelect(bool4 c, type a, type b) { return type##4(c.x ? a : b, c.y ? a : b, c.z ? a : b, c.w ? a : b); } \
-    type##4 InternalSelect(bool4 c, type##4 a, type##4 b) { return type##4(c.x ? a.x : b.x, c.y ? a.y : b.y, c.z ? a.z : b.z, c.w ? a.w : b.w); }
-SELECT_INTERNAL(uint)
-SELECT_INTERNAL(float)
-#undef SELECT_INTERNAL
-
-#define and(a, b) InternalAnd(a, b)
-#define or(a, b) InternalOr(a, b)
-#define select(c, a, b) InternalSelect(c, a, b)
+#define and(a, b) (a) && (b)
+#define or(a, b) (a) || (b)
+#define select(c, a, b) (c) ? (a) : (b)
 
 #endif
 
