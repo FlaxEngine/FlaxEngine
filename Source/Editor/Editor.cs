@@ -1390,6 +1390,7 @@ namespace FlaxEditor
         public void BuildAllMeshesSDF()
         {
             var models = new List<Model>();
+            var forceRebuild = Input.GetKey(KeyboardKeys.F);
             Scene.ExecuteOnGraph(node =>
             {
                 if (node is StaticModelNode staticModelNode && staticModelNode.Actor is StaticModel staticModel)
@@ -1399,7 +1400,7 @@ namespace FlaxEditor
                         model != null &&
                         !models.Contains(model) &&
                         !model.IsVirtual &&
-                        model.SDF.Texture == null)
+                        (forceRebuild || model.SDF.Texture == null))
                     {
                         models.Add(model);
                     }
@@ -1412,7 +1413,17 @@ namespace FlaxEditor
                 {
                     var model = models[i];
                     Log($"[{i}/{models.Count}] Generating SDF for {model}");
-                    if (!model.GenerateSDF())
+                    float resolutionScale = 1.0f, backfacesThreshold = 0.6f;
+                    int lodIndex = 6;
+                    bool useGPU = true;
+                    var sdf = model.SDF;
+                    if (sdf.Texture != null)
+                    {
+                        // Preserve options set on this model
+                        resolutionScale = sdf.ResolutionScale;
+                        lodIndex = sdf.LOD;
+                    }
+                    if (!model.GenerateSDF(resolutionScale, lodIndex, true, backfacesThreshold, useGPU))
                         model.Save();
                 }
             });

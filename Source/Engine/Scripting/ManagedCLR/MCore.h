@@ -57,6 +57,10 @@ public:
     static void UnloadScriptingAssemblyLoadContext();
 #endif
 
+    // Utility for guarding against using C# scripting runtime after shutdown (eg. when asset delegate is not properly disposed).
+    static bool Ready;
+    static void OnManagedEventAfterShutdown(const char* eventName);
+
 public:
     /// <summary>
     /// Utilities for C# object management.

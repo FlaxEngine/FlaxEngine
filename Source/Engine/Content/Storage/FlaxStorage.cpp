@@ -5,6 +5,7 @@
 #include "FlaxPackage.h"
 #include "ContentStorageManager.h"
 #include "Engine/Core/Log.h"
+#include "Engine/Core/ScopeExit.h"
 #include "Engine/Core/Types/TimeSpan.h"
 #include "Engine/Platform/File.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -73,8 +74,6 @@ FlaxChunk* FlaxChunk::Clone() const
 }
 
 const int32 FlaxStorage::MagicCode = 1180124739;
-
-FlaxStorage::LockData FlaxStorage::LockData::Invalid(nullptr);
 
 struct Header
 {
@@ -246,6 +245,7 @@ FlaxStorage::~FlaxStorage()
     ASSERT(IsDisposed());
     CHECK(_chunksLock == 0);
     CHECK(_refCount == 0);
+    CHECK(_isUnloadingData == 0);
     ASSERT(_chunks.IsEmpty());
 
 #if USE_EDITOR
@@ -259,6 +259,22 @@ FlaxStorage::~FlaxStorage()
     }
     Platform::AtomicStore(&_files, 0);
 #endif
+}
+
+void FlaxStorage::LockChunks()
+{
+RETRY:
+    Platform::InterlockedIncrement(&_chunksLock);
+    if (Platform::AtomicRead(&_isUnloadingData) != 0)
+    {
+        // Someone else is closing file handles or freeing chunks so wait for it to finish and retry
+        Platform::InterlockedDecrement(&_chunksLock);
+        do
+        {
+            Platform::Sleep(1);
+        } while (Platform::AtomicRead(&_isUnloadingData) != 0);
+        goto RETRY;
+    }
 }
 
 FlaxStorage::LockData FlaxStorage::LockSafe()
@@ -689,7 +705,6 @@ bool FlaxStorage::LoadAssetHeader(const Guid& id, AssetInitData& data)
         return true;
     }
 
-    // Load header
     return LoadAssetHeader(e, data);
 }
 
@@ -699,7 +714,10 @@ bool FlaxStorage::LoadAssetChunk(FlaxChunk* chunk)
     ASSERT(IsLoaded());
     ASSERT(chunk != nullptr && _chunks.Contains(chunk));
 
-    // Check if already loaded
+    // Protect against loading the same chunk from multiple threads at once
+    while (Platform::InterlockedCompareExchange(&chunk->IsLoading, 1, 0) != 0)
+        Platform::Sleep(1);
+    SCOPE_EXIT{ Platform::AtomicStore(&chunk->IsLoading, 0); };
     if (chunk->IsLoaded())
         return false;
 
@@ -776,12 +794,10 @@ bool FlaxStorage::LoadAssetChunk(FlaxChunk* chunk)
             // Raw data
             chunk->Data.Read(stream, size);
         }
-        ASSERT(chunk->IsLoaded());
         chunk->RegisterUsage();
     }
 
     UnlockChunks();
-
     return failed;
 }
 
@@ -1420,10 +1436,12 @@ FileReadStream* FlaxStorage::OpenFile()
 
 bool FlaxStorage::CloseFileHandles()
 {
+    // Guard the whole process so if new thread wants to lock the chunks will need to wait for this to end
+    Platform::InterlockedIncrement(&_isUnloadingData);
+    SCOPE_EXIT{ Platform::InterlockedDecrement(&_isUnloadingData); };
+
     if (Platform::AtomicRead(&_chunksLock) == 0 && Platform::AtomicRead(&_files) == 0)
-    {
-        return false;
-    }
+        return false; // Early out when no files are opened
     PROFILE_CPU();
     PROFILE_MEM(ContentFiles);
 
@@ -1496,9 +1514,21 @@ void FlaxStorage::Tick(double time)
     {
         auto chunk = _chunks.Get()[i];
         const bool wasUsed = (time - chunk->LastAccessTime) < unusedDataChunksLifetime;
-        if (!wasUsed && chunk->IsLoaded() && EnumHasNoneFlags(chunk->Flags, FlaxChunkFlags::KeepInMemory))
+        if (!wasUsed && 
+            chunk->IsLoaded() && 
+            EnumHasNoneFlags(chunk->Flags, FlaxChunkFlags::KeepInMemory) && 
+            Platform::AtomicRead(&chunk->IsLoading) == 0)
         {
+            // Guard the unloading so if other thread wants to lock the chunks will need to wait for this to end
+            Platform::InterlockedIncrement(&_isUnloadingData);
+            if (Platform::AtomicRead(&_chunksLock) != 0 || Platform::AtomicRead(&chunk->IsLoading) != 0)
+            {
+                // Someone started loading so skip ticking
+                Platform::InterlockedDecrement(&_isUnloadingData);
+                return;
+            }
             chunk->Unload();
+            Platform::InterlockedDecrement(&_isUnloadingData);
         }
         wasAnyUsed |= wasUsed;
     }

@@ -316,7 +316,8 @@ bool MCore::LoadEngine()
 
     char* buildInfo = CallStaticMethod<char*>(GetStaticMethodPointer(TEXT("GetRuntimeInformation")));
     LOG(Info, ".NET runtime version: {0}", ::String(buildInfo));
-    MCore::GC::FreeMemory(buildInfo);
+    GC::FreeMemory(buildInfo);
+    Ready = true;
 
     return false;
 }
@@ -327,6 +328,7 @@ void MCore::UnloadEngine()
         return;
     PROFILE_CPU();
     CallStaticMethod<void>(GetStaticMethodPointer(TEXT("Exit")));
+    Ready = false;
     MDomains.ClearDelete();
     MRootDomain = nullptr;
     ShutdownHostfxr();
@@ -2028,13 +2030,13 @@ static MonoAssembly* OnMonoAssemblyLoad(const char* aname)
     String fileName = name;
     if (!name.EndsWith(TEXT(".dll")) && !name.EndsWith(TEXT(".exe")))
         fileName += TEXT(".dll");
-    String path = fileName;
+    String path = Globals::ProjectFolder / String(TEXT("/Dotnet/")) / fileName;
     if (!FileSystem::FileExists(path))
     {
         path = Globals::ProjectFolder / String(TEXT("/Dotnet/shared/Microsoft.NETCore.App/")) / fileName;
         if (!FileSystem::FileExists(path))
         {
-            path = Globals::ProjectFolder / String(TEXT("/Dotnet/")) / fileName;
+            path = fileName;
         }
     }
 
@@ -2145,7 +2147,13 @@ bool InitHostfxr()
 #endif
 
     // Adjust GC threads suspending mode to not block attached native threads (eg. Job System)
+    // https://www.mono-project.com/docs/advanced/runtime/docs/coop-suspend/
+#if USE_MONO_AOT_COOP
+    Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("coop"));
+    Platform::SetEnvironmentVariable(TEXT("MONO_SLEEP_ABORT_LIMIT"), TEXT("5000")); // in ms
+#else
     Platform::SetEnvironmentVariable(TEXT("MONO_THREADS_SUSPEND"), TEXT("preemptive"));
+#endif
 
 #if defined(USE_MONO_AOT_MODE)
     // Enable AOT mode (per-platform)
@@ -2153,9 +2161,9 @@ bool InitHostfxr()
 #endif
     
     // Platform-specific setup
-#if PLATFORM_IOS || PLATFORM_SWITCH
-    setenv("MONO_AOT_MODE", "aot", 1);
-    setenv("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", 1);
+#if PLATFORM_IOS || PLATFORM_SWITCH || PLATFORM_PS4 || PLATFORM_PS5
+    Platform::SetEnvironmentVariable(TEXT("MONO_AOT_MODE"), TEXT("aot"));
+    Platform::SetEnvironmentVariable(TEXT("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"), TEXT("1"));
 #endif
 
 #ifdef USE_MONO_AOT_MODULE

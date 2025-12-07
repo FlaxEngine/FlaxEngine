@@ -15,6 +15,7 @@
 #include "Engine/Profiler/ProfilerMemory.h"
 #if USE_CSHARP
 #include "Engine/Scripting/ManagedCLR/MCore.h"
+#include "Engine/Scripting/Internal/InternalCalls.h"
 #endif
 
 #define JOB_SYSTEM_ENABLED 1
@@ -184,6 +185,7 @@ int32 JobSystemThread::Run()
     JobData data;
     Function<void(int32)> job;
     bool attachCSharpThread = true;
+    MONO_THREAD_INFO_TYPE* monoThreadInfo = nullptr;
     while (Platform::AtomicRead(&ExitFlag) == 0)
     {
         // Try to get a job
@@ -205,6 +207,7 @@ int32 JobSystemThread::Run()
             {
                 MCore::Thread::Attach();
                 attachCSharpThread = false;
+                monoThreadInfo = mono_thread_info_attach();
             }
 #endif
 
@@ -244,9 +247,11 @@ int32 JobSystemThread::Run()
         else
         {
             // Wait for signal
+            MONO_ENTER_GC_SAFE_WITH_INFO(monoThreadInfo);
             JobsMutex.Lock();
             JobsSignal.Wait(JobsMutex);
             JobsMutex.Unlock();
+            MONO_EXIT_GC_SAFE_WITH_INFO;
         }
     }
     return 0;
