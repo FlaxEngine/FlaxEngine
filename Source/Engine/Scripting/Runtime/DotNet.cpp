@@ -2173,7 +2173,7 @@ bool MonoAotPreloadTask::Run()
 {
     // Load AOT module
     Stopwatch aotModuleLoadStopwatch;
-    LOG(Info, "Loading Mono AOT module...");
+    //LOG(Info, "Loading Mono AOT module...");
     MonoAotPreloadServiceInstance.Library = Platform::LoadLibrary(TEXT(USE_MONO_AOT_MODULE));
     aotModuleLoadStopwatch.Stop();
     LOG(Info, "Mono AOT module loaded in {0}ms", aotModuleLoadStopwatch.GetMilliseconds());

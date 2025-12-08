@@ -917,6 +917,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     perDraw.DrawPadding = Float3::Zero;
     GPUConstantBuffer* perDrawCB = IMaterial::BindParameters::PerDrawConstants;
     context->BindCB(2, perDrawCB); // TODO: use rootSignature/pushConstants on D3D12/Vulkan
+    context->UpdateCB(perDrawCB, &perDraw);
     constexpr int32 vbMax = ARRAY_COUNT(DrawCall::Geometry.VertexBuffers);
     if (useInstancing)
     {
@@ -1057,7 +1058,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
         materialBinds += list.PreBatchedDrawCalls.Count();
         if (list.Batches.IsEmpty() && list.Indices.Count() != 0)
         {
-            // Draw calls list has bot been batched so execute draw calls separately
+            // Draw calls list has not been batched so execute draw calls separately
             for (int32 j = 0; j < list.Indices.Count(); j++)
             {
                 perDraw.DrawObjectIndex = listData[j];
