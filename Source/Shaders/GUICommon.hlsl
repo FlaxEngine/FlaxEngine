@@ -14,6 +14,7 @@ struct Render2DVertex
     float4 Color : COLOR0;
     float4 CustomDataAndClipOrigin : TEXCOORD1; // x-per-geometry type, y-features mask, zw-clip origin
     float4 ClipExtents : TEXCOORD2;
+    float4 CustomData2 : TEXCOORD3;
 };
 
 struct VS2PS
@@ -24,6 +25,7 @@ struct VS2PS
     float2 CustomData : TEXCOORD1;
     float4 ClipExtents : TEXCOORD2;
     float4 ClipOriginAndPos : TEXCOORD3;
+    float4 CustomData2 : TEXCOORD4;
 };
 
 float cross2(float2 a, float2 b)
