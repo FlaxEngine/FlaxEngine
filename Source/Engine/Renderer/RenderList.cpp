@@ -917,10 +917,10 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     perDraw.DrawPadding = Float3::Zero;
     GPUConstantBuffer* perDrawCB = IMaterial::BindParameters::PerDrawConstants;
     context->BindCB(2, perDrawCB); // TODO: use rootSignature/pushConstants on D3D12/Vulkan
-    context->UpdateCB(perDrawCB, &perDraw);
     constexpr int32 vbMax = ARRAY_COUNT(DrawCall::Geometry.VertexBuffers);
     if (useInstancing)
     {
+        context->UpdateCB(perDrawCB, &perDraw);
         GPUBuffer* vb[vbMax + 1];
         uint32 vbOffsets[vbMax + 1];
         vb[3] = _instanceBuffer.GetBuffer(); // Pass object index in a vertex stream at slot 3 (used by VS in Surface.shader)
