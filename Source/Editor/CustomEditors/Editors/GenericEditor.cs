@@ -247,7 +247,7 @@ namespace FlaxEditor.CustomEditors.Editors
         /// <returns>The items.</returns>
         protected virtual List<ItemInfo> GetItemsForType(ScriptType type)
         {
-            return GetItemsForType(type, type.IsClass, true);
+            return GetItemsForType(type, type.IsClass, true, true);
         }
 
         /// <summary>
@@ -275,6 +275,10 @@ namespace FlaxEditor.CustomEditors.Editors
 
                     // Skip properties without getter or setter
                     if (!p.HasGet || (!p.HasSet && !showInEditor && !usePropertiesWithoutSetter))
+                        continue;
+
+                    // Skip getter-only properties declared in built-in types
+                    if (!p.HasSet && usePropertiesWithoutSetter && p.Type.DeclaringType.Assembly == typeof(Editor).Assembly)
                         continue;
 
                     // Skip hidden fields, handle special attributes
