@@ -71,6 +71,7 @@ enum class DrawCallType : byte
     FillRect,
     FillRectNoAlpha,
     FillRoundedRect,
+    FillCircle,
     FillRT,
     FillTexture,
     FillTexturePoint,
@@ -166,6 +167,7 @@ struct CachedPSO
     GPUPipelineState* PS_Color_NoAlpha;
     
     GPUPipelineState* PS_RoundedRect;
+    GPUPipelineState* PS_Circle;
 
     GPUPipelineState* PS_Font;
 
@@ -458,6 +460,7 @@ CanDrawCallCallback CanDrawCallBatch[] =
     CanDrawCallCallbackTrue, // FillRect,
     CanDrawCallCallbackTrue,  // FillRectNoAlpha,
     CanDrawCallCallbackTrue, // FillRoundedRect,
+    CanDrawCallCallbackTrue, // FillCircle,
     CanDrawCallCallbackRT, // FillRT,
     CanDrawCallCallbackTexture, // FillTexture,
     CanDrawCallCallbackTexture, // FillTexturePoint,
@@ -525,6 +528,12 @@ bool CachedPSO::Init(GPUShader* shader, bool useDepth)
         return true;
     //
     desc.BlendMode = BlendingMode::AlphaBlend;
+    desc.PS = shader->GetPS("PS_Circle");
+    PS_Circle = GPUDevice::Instance->CreatePipelineState();
+    if (PS_Circle->Init(desc))
+        return true;
+    //
+    desc.BlendMode = BlendingMode::AlphaBlend;
     desc.PS = shader->GetPS("PS_Font");
     PS_Font = GPUDevice::Instance->CreatePipelineState();
     if (PS_Font->Init(desc))
@@ -567,6 +576,7 @@ void CachedPSO::Dispose()
     SAFE_DELETE_GPU_RESOURCE(PS_Color);
     SAFE_DELETE_GPU_RESOURCE(PS_Color_NoAlpha);
     SAFE_DELETE_GPU_RESOURCE(PS_RoundedRect);
+    SAFE_DELETE_GPU_RESOURCE(PS_Circle);
     SAFE_DELETE_GPU_RESOURCE(PS_Font);
     SAFE_DELETE_GPU_RESOURCE(PS_BlurH);
     SAFE_DELETE_GPU_RESOURCE(PS_BlurV);
@@ -995,6 +1005,9 @@ void DrawBatch(int32 startIndex, int32 count)
         break;
     case DrawCallType::FillRoundedRect:
         Context->SetState(CurrentPso->PS_RoundedRect);
+        break;
+    case DrawCallType::FillCircle:
+        Context->SetState(CurrentPso->PS_Circle);
         break;
     case DrawCallType::FillRT:
         Context->BindSR(0, d.AsRT.Ptr);
@@ -2176,70 +2189,51 @@ void Render2D::DrawCircle(const Float2& center, float radius, const Color& color
     DrawLines(Lines2.Get(), Lines2.Count(), color, color, thickness);
 }
 
-void Render2D::FillCircle(const Float2& center, float radius, const Color& color, int32 segments)
+void Render2D::FillCircle(const Float2& center, float radius, const Color& color)
 {
-    RENDER2D_CHECK_RENDERING_STATE;
-    if (radius <= 0.0f)
-        return;
-
-    if (segments <= 0)
-    {
-        segments = Math::Clamp(Math::CeilToInt(radius * 2.0f), 16, 256);
-    }
-
-    Render2DDrawCall& drawCall = DrawCalls.AddOne();
-    drawCall.Type = NeedAlphaWithTint(color) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
-    drawCall.StartIB = IBIndex;
-
-    const float angleStep = 2.0f * PI / (float)segments;
-    Float2 pPrev = center + Float2(radius, 0);
-
-    for (int32 i = 1; i <= segments; i++)
-    {
-        const float angle = (float)i * angleStep;
-        Float2 pNext = center + Float2(Math::Cos(angle), Math::Sin(angle)) * radius;
-        WriteTri(center, pPrev, pNext, color, color, color);
-        pPrev = pNext;
-    }
-
-    drawCall.CountIB = IBIndex - drawCall.StartIB;
+    FillCircle(center, radius, color, Float2::Zero, Float2::One);
 }
 
-void Render2D::FillCircle(const Float2& center, float radius, const Color& color, const Float2& uv1, const Float2& uv2, int32 segments)
+void Render2D::FillCircle(const Float2& center, float radius, const Color& color, const Float2& uv1, const Float2& uv2)
 {
     RENDER2D_CHECK_RENDERING_STATE;
-    if (radius <= 0.0f)
-        return;
-
-    if (segments <= 0)
-    {
-        segments = Math::Clamp(Math::CeilToInt(radius * 2.0f), 16, 256);
-    }
 
     Render2DDrawCall& drawCall = DrawCalls.AddOne();
-    drawCall.Type = NeedAlphaWithTint(color) ? DrawCallType::FillRect : DrawCallType::FillRectNoAlpha;
+    drawCall.Type = DrawCallType::FillCircle;
     drawCall.StartIB = IBIndex;
-
-    const float angleStep = 2.0f * PI / (float)segments;
-    const Float2 topLeft = center - radius;
-    const Float2 size(radius * 2.0f);
-    const Float2 uvScale = (uv2 - uv1) / size;
-
-    Float2 pPrev = center + Float2(radius, 0);
-    Float2 uvPrev = uv1 + (pPrev - topLeft) * uvScale;
-    const Float2 uvCenter = uv1 + (center - topLeft) * uvScale;
-
-    for (int32 i = 1; i <= segments; i++)
+    drawCall.CountIB = 6;
+     
+    Rectangle rect { center - Float2(radius), Float2(radius * 2.0f)};
+    if (EnumHasAnyFlags(Features, RenderingFeatures::VertexSnapping))
     {
-        const float angle = (float)i * angleStep;
-        Float2 pNext = center + Float2(Math::Cos(angle), Math::Sin(angle)) * radius;
-        Float2 uvNext = uv1 + (pNext - topLeft) * uvScale;
-        WriteTri(center, pPrev, pNext, uvCenter, uvPrev, uvNext, color, color, color);
-        pPrev = pNext;
-        uvPrev = uvNext;
+        rect.Location = Float2::Round(rect.Location);
+        rect.Size = Float2::Round(rect.Size);
     }
 
-    drawCall.CountIB = IBIndex - drawCall.StartIB;
+    Float2 points[5];
+    ApplyTransform(rect.GetBottomRight(), points[0]);
+    ApplyTransform(rect.GetBottomLeft(), points[1]);
+    ApplyTransform(rect.GetUpperLeft(), points[2]);
+    ApplyTransform(rect.GetUpperRight(), points[3]);
+
+    // Pass in 0.5f to fill full circle, size is adjusted based on size of the rectangle
+    Float4 customData(0.5f, 0.0f, 0.0f, 0.0f);
+     
+    const auto& mask = ClipLayersStack.Peek().Mask;
+
+    Render2DVertex quad[4];
+    quad[0] = MakeVertex(points[0], uv2, color, mask, { 0.0f, (float)Render2D::Features }, customData);
+    quad[1] = MakeVertex(points[1], Float2(uv1.X, uv2.Y), color, mask, { 0.0f, (float)Render2D::Features }, customData);
+    quad[2] = MakeVertex(points[2], uv1, color, mask, { 0.0f, (float)Render2D::Features }, customData);
+    quad[3] = MakeVertex(points[3], Float2(uv2.X, uv1.Y), color, mask, { 0.0f, (float)Render2D::Features }, customData);
+    VB.Write(quad, sizeof(quad));
+
+    uint32 indices[6];
+    RENDER2D_WRITE_IB_QUAD(indices);
+
+    VBIndex += 4;
+    IBIndex += 6;
+    
 }
 
 struct Corner

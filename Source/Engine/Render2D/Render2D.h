@@ -508,8 +508,7 @@ public:
     /// <param name="center">The center location.</param>
     /// <param name="radius">The radius.</param>
     /// <param name="color">The color.</param>
-    /// <param name="segments">The segments count. If 0, it will be calculated automatically.</param>
-    API_FUNCTION() static void FillCircle(const Float2& center, float radius, const Color& color, int32 segments = 0);
+    API_FUNCTION() static void FillCircle(const Float2& center, float radius, const Color& color);
     
     /// <summary>
     /// Fills a circle area.
@@ -519,8 +518,7 @@ public:
     /// <param name="color">The color.</param>
     /// <param name="uv1">The upper-left UV coordinate.</param>
     /// <param name="uv2">The bottom-right UV coordinate.</param>
-    /// <param name="segments">The segments count. If 0, it will be calculated automatically.</param>
-    API_FUNCTION() static void FillCircle(const Float2& center, float radius, const Color& color, const Float2& uv1, const Float2& uv2, int32 segments = 0);
+    API_FUNCTION() static void FillCircle(const Float2& center, float radius, const Color& color, const Float2& uv1, const Float2& uv2);
 
     /// <summary>
     /// Draws a rounded rectangle borders.

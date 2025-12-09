@@ -50,6 +50,23 @@ float4 PS_Image(VS2PS input) : SV_Target0
 	return Image.Sample(SamplerLinearClamp, input.TexCoord) * input.Color;
 }
 
+META_PS(true, FEATURE_LEVEL_ES2)
+float4 PS_Circle(VS2PS input) : SV_Target0
+{
+    PerformClipping(input);
+
+    float2 displacement = input.TexCoord - float2(0.5, 0.5);
+
+    float distance = length(displacement);
+
+    float radius = input.CustomData2.x;
+
+    float width = fwidth(distance);
+    float opacity = saturate(1.0 - (distance - radius) / width);
+   
+    return float4(input.Color.rgb, input.Color.a * opacity);
+}
+
 // SDF for Box with 4 radii
 // p: centered position
 // b: half-size of box
