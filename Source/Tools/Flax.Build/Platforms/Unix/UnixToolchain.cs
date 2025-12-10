@@ -518,7 +518,7 @@ namespace Flax.Build.Platforms
             var args = new List<string>();
             args.AddRange(options.LinkEnv.CustomArgs);
             {
-                args.Add(string.Format("-o \"{0}\"", outputFilePath));
+                args.Add(string.Format("-o \"{0}\"", outputFilePath.Replace('\\', '/')));
 
                 if (!options.LinkEnv.DebugInformation)
                 {
@@ -605,8 +605,7 @@ namespace Flax.Build.Platforms
         /// <inheritdoc />
         public override void LinkFiles(TaskGraph graph, BuildOptions options, string outputFilePath)
         {
-            //outputFilePath = outputFilePath.Replace('\\', '/');
-            outputFilePath = Utilities.NormalizePath(outputFilePath.Replace('\\', '/'));
+            outputFilePath = Utilities.NormalizePath(outputFilePath);
 
             Task linkTask;
             switch (options.LinkEnv.Output)
