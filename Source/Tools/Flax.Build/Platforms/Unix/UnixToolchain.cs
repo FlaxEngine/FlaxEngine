@@ -605,7 +605,8 @@ namespace Flax.Build.Platforms
         /// <inheritdoc />
         public override void LinkFiles(TaskGraph graph, BuildOptions options, string outputFilePath)
         {
-            outputFilePath = outputFilePath.Replace('\\', '/');
+            //outputFilePath = outputFilePath.Replace('\\', '/');
+            outputFilePath = Utilities.NormalizePath(outputFilePath.Replace('\\', '/'));
 
             Task linkTask;
             switch (options.LinkEnv.Output)
