@@ -619,6 +619,7 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 	float4 color;
 
 	// Chromatic Abberation
+    BRANCH
 	if (ChromaticDistortion > 0)
 	{
 		const float MAX_DIST_PX = 24.0;
@@ -649,7 +650,7 @@ float4 PS_Composite(Quad_VS2PS input) : SV_Target
 	}
 	else
 	{
-		color = Input0.Sample(SamplerLinearClamp, uv);
+		color = Input0.Sample(SamplerPointClamp, uv);
 	}
 
 	// Lens Flares

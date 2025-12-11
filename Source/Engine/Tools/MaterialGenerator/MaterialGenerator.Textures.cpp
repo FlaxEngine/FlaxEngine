@@ -474,6 +474,23 @@ void MaterialGenerator::ProcessGroupTextures(Box* box, Node* node, Value& value)
             value = writeLocal(VariantType::Float3, String::Format(TEXT("GetWorldPos({1}, {0}.rgb)"), depthSample->Value, uv), node);
             break;
         }
+        case MaterialSceneTextures::SceneStencil:
+        case MaterialSceneTextures::ObjectLayer:
+        {
+            auto stencilParam = findOrAddSceneTexture(MaterialSceneTextures::SceneStencil);
+            const auto parent = box->GetParent<ShaderGraphNode<>>();
+            MaterialGraphBox* uvBox = parent->GetBox(0);
+            bool useCustomUVs = uvBox->HasConnection();
+            String uv;
+            if (useCustomUVs)
+                uv = MaterialValue::Cast(tryGetValue(uvBox, getUVs), VariantType::Float2).Value;
+            else
+                uv = TEXT("input.TexCoord.xy");
+            const Char* func = type == MaterialSceneTextures::ObjectLayer ? TEXT("STENCIL_BUFFER_OBJECT_LAYER") : TEXT("");
+            value = writeLocal(VariantType::Int, String::Format(TEXT("{2}(STENCIL_BUFFER_LOAD({0}, {1} * ScreenSize.xy))"), stencilParam.ShaderName, uv, func), node);
+            _includes.Add(TEXT("./Flax/Stencil.hlsl"));
+            break;
+        }
         default:
         {
             // Sample single texture

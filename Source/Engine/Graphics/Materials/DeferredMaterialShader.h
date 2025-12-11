@@ -65,6 +65,7 @@ private:
 private:
     Cache _cache;
     Cache _cacheInstanced;
+    bool _instanced;
 
 public:
     DeferredMaterialShader(const StringView& name)

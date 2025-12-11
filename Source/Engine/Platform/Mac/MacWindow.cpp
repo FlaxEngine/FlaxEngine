@@ -715,6 +715,11 @@ MacWindow::MacWindow(const CreateWindowSettings& settings)
         styleMask |= NSWindowStyleMaskTitled;
         styleMask &= ~NSWindowStyleMaskFullSizeContentView;
     }
+    else
+    {
+        styleMask |= NSWindowStyleMaskBorderless;
+        styleMask &= ~NSWindowStyleMaskTitled;
+    }
 
     const float screenScale = MacPlatform::ScreenScale;
     frame.origin.x /= screenScale;

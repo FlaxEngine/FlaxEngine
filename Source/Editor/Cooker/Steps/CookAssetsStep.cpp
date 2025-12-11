@@ -36,6 +36,7 @@
 #include "Engine/Engine/Base/GameBase.h"
 #include "Engine/Engine/Globals.h"
 #include "Engine/Tools/TextureTool/TextureTool.h"
+#include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Scripting/Enums.h"
 #if PLATFORM_TOOLS_WINDOWS
@@ -525,6 +526,7 @@ bool ProcessShaderBase(CookAssetsStep::AssetCookData& data, ShaderAssetBase* ass
 #if PLATFORM_TOOLS_XBOX_SCARLETT
     case BuildPlatform::XboxScarlett:
     {
+        options.Platform = PlatformType::XboxScarlett;
         const char* platformDefineName = "PLATFORM_XBOX_SCARLETT";
         COMPILE_PROFILE(DirectX_SM6, SHADER_FILE_CHUNK_INTERNAL_D3D_SM6_CACHE);
         break;
@@ -1366,7 +1368,10 @@ bool CookAssetsStep::Perform(CookingData& data)
             {
                 typeName = e.TypeName;
             }
-            LOG(Info, "{0}: {1:>4} assets of total size {2}", typeName, e.Count, Utilities::BytesToText(e.ContentSize));
+            if (e.Count == 1)
+                LOG(Info, "{0}:    1 asset  of total size {1}", typeName, Utilities::BytesToText(e.ContentSize));
+            else
+                LOG(Info, "{0}: {1:>4} assets of total size {2}", typeName, e.Count, Utilities::BytesToText(e.ContentSize));
         }
         LOG(Info, "");
     }

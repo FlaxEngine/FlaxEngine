@@ -20,6 +20,7 @@ void GPUContext::LogInvalidResourceUsage(int32 slot, const GPUResourceView* view
     GPUResource* resource = view ? view->GetParent() : nullptr;
     const Char* resourceType = TEXT("resource");
     const Char* flagType = TEXT("flags");
+    StringView resourceName;
     if (resource)
     {
         switch (resource->GetResourceType())
@@ -36,6 +37,7 @@ void GPUContext::LogInvalidResourceUsage(int32 slot, const GPUResourceView* view
             flagType = TEXT("GPUBufferFlags");
             break;
         }
+        resourceName = resource->GetName();
     }
     const Char* usage = TEXT("-");
     switch (bindPoint)
@@ -53,7 +55,7 @@ void GPUContext::LogInvalidResourceUsage(int32 slot, const GPUResourceView* view
         usage = TEXT("render target");
         break;
     }
-    LOG(Error, "Incorrect {} bind at slot {} as {} (ensure to setup correct {} when creating that resource)", resourceType, slot, usage, flagType);
+    LOG(Error, "Incorrect {} '{}' bind at slot {} as {} (ensure to setup correct {} when creating that resource)", resourceType, resourceName, slot, usage, flagType);
 }
 
 #endif
@@ -65,8 +67,12 @@ void GPUContext::FrameBegin()
 
 void GPUContext::FrameEnd()
 {
-    ClearState();
+    ResetState();
     FlushState();
+}
+
+void GPUContext::OnPresent()
+{
 }
 
 void GPUContext::BindSR(int32 slot, GPUTexture* t)

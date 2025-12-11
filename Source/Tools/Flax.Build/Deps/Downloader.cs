@@ -14,19 +14,20 @@ namespace Flax.Deps
     /// </summary>
     static class Downloader
     {
+        private static bool NoSSL = false;
         private const string GoogleDriveDomain = "drive.google.com";
         private const string GoogleDriveDomain2 = "https://drive.google.com";
 
         // Normal example: FileDownloader.DownloadFileFromURLToPath( "http://example.com/file/download/link", @"C:\file.txt" );
         // Drive example: FileDownloader.DownloadFileFromURLToPath( "http://drive.google.com/file/d/FILEID/view?usp=sharing", @"C:\file.txt" );
-        public static FileInfo DownloadFileFromUrlToPath(string url, string path)
+        public static FileInfo DownloadFileFromUrlToPath(string url, string path, bool noSSL = false)
         {
             Log.Info(string.Format("Downloading {0} to {1}", url, path));
             if (File.Exists(path))
                 File.Delete(path);
             if (url.StartsWith(GoogleDriveDomain) || url.StartsWith(GoogleDriveDomain2))
-                return DownloadGoogleDriveFileFromUrlToPath(url, path);
-            return DownloadFileFromUrlToPath(url, path, null);
+                return DownloadGoogleDriveFileFromUrlToPath(url, path, noSSL);
+            return DownloadFileFromUrlToPath(url, path, null, noSSL);
         }
 
         private static FileInfo DownloadFileFromUrlToPathRaw(string url, string path, HttpClient httpClient)
@@ -48,16 +49,14 @@ namespace Flax.Deps
             return new FileInfo(path);
         }
 
-        private static FileInfo DownloadFileFromUrlToPath(string url, string path, HttpClient httpClient)
+        private static FileInfo DownloadFileFromUrlToPath(string url, string path, HttpClient httpClient, bool noSSL)
         {
             try
             {
                 if (httpClient == null)
                 {
-                    using (httpClient = new HttpClient())
-                    {
+                    using (httpClient = GetHttpClient(noSSL))
                         return DownloadFileFromUrlToPathRaw(url, path, httpClient);
-                    }
                 }
                 return DownloadFileFromUrlToPathRaw(url, path, httpClient);
             }
@@ -125,12 +124,12 @@ namespace Flax.Deps
         // Downloading large files from Google Drive prompts a warning screen and
         // requires manual confirmation. Consider that case and try to confirm the download automatically
         // if warning prompt occurs
-        private static FileInfo DownloadGoogleDriveFileFromUrlToPath(string url, string path)
+        private static FileInfo DownloadGoogleDriveFileFromUrlToPath(string url, string path, bool noSSL)
         {
             // You can comment the statement below if the provided url is guaranteed to be in the following format:
             // https://drive.google.com/uc?id=FILEID&export=download
             url = GetGoogleDriveDownloadLinkFromUrl(url);
-            using (var httpClient = new HttpClient())
+            using (var httpClient = GetHttpClient(noSSL))
             {
                 FileInfo downloadedFile;
 
@@ -138,7 +137,7 @@ namespace Flax.Deps
                 // but works in the second attempt
                 for (int i = 0; i < 2; i++)
                 {
-                    downloadedFile = DownloadFileFromUrlToPath(url, path, httpClient);
+                    downloadedFile = DownloadFileFromUrlToPath(url, path, httpClient, noSSL);
                     if (downloadedFile == null)
                         return null;
 
@@ -171,7 +170,7 @@ namespace Flax.Deps
                     url = "https://drive.google.com" + content.Substring(linkIndex, linkEnd - linkIndex).Replace("&amp;", "&");
                 }
 
-                downloadedFile = DownloadFileFromUrlToPath(url, path, httpClient);
+                downloadedFile = DownloadFileFromUrlToPath(url, path, httpClient, noSSL);
                 return downloadedFile;
             }
         }
@@ -208,6 +207,18 @@ namespace Flax.Deps
             }
 
             return string.Format("https://drive.google.com/uc?id={0}&export=download", url.Substring(index, closingIndex - index));
+        }
+
+        private static HttpClient GetHttpClient(bool noSSL)
+        {
+            if (noSSL || NoSSL)
+            {
+                var handler = new HttpClientHandler();
+                handler.ClientCertificateOptions = ClientCertificateOption.Manual;
+                handler.ServerCertificateCustomValidationCallback = (httpRequestMessage, cert, cetChain, policyErrors) => true;
+                return new HttpClient(handler);
+            }
+            return new HttpClient();
         }
     }
 }

@@ -5,6 +5,7 @@
 #include "OggVorbisDecoder.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Math.h"
+#include "Engine/Profiler/ProfilerCPU.h"
 #include "Engine/Serialization/MemoryReadStream.h"
 #include <vorbis/codec.h>
 
@@ -42,10 +43,25 @@ long oggTell(void* data)
     return static_cast<long>(decoderData->Stream->GetPosition() - decoderData->Offset);
 }
 
+OggVorbisDecoder::OggVorbisDecoder()
+{
+    Stream = nullptr;
+    Offset = 0;
+    ChannelCount = 0;
+    OggVorbisFile.datasource = nullptr;
+}
+
+OggVorbisDecoder::~OggVorbisDecoder()
+{
+    if (OggVorbisFile.datasource != nullptr)
+        ov_clear(&OggVorbisFile);
+}
+
 bool OggVorbisDecoder::Open(ReadStream* stream, AudioDataInfo& info, uint32 offset)
 {
     if (stream == nullptr)
         return false;
+    PROFILE_CPU();
 
     stream->SetPosition(offset);
     Stream = stream;
@@ -71,11 +87,13 @@ bool OggVorbisDecoder::Open(ReadStream* stream, AudioDataInfo& info, uint32 offs
 
 void OggVorbisDecoder::Seek(uint32 offset)
 {
+    PROFILE_CPU();
     ov_pcm_seek(&OggVorbisFile, offset / ChannelCount);
 }
 
 void OggVorbisDecoder::Read(byte* samples, uint32 numSamples)
 {
+    PROFILE_CPU();
     uint32 numReadSamples = 0;
     while (numReadSamples < numSamples)
     {

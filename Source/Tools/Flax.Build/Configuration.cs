@@ -282,6 +282,12 @@ namespace Flax.Build
         [CommandLine("useDotNet", "1 to enable .NET support in build, 0 to enable Mono support in build")]
         public static bool UseDotNet = true;
 
+        /// <summary>
+        /// True if enable logging in Release game builds.
+        /// </summary>
+        [CommandLine("useLogInRelease", "Can be used to disable logging in Release game builds")]
+        public static bool UseLogInRelease = true;
+
         public static bool WithCSharp(NativeCpp.BuildOptions options)
         {
             return UseCSharp || options.Target.IsEditor;

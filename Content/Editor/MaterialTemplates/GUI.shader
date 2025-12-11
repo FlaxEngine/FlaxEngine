@@ -21,7 +21,7 @@ float4 ViewInfo;
 float4 ScreenSize;
 float4 ViewSize;
 float3 ViewPadding0;
-float UnscaledTimeParam;
+float ScaledTimeParam;
 @1META_CB_END
 
 // Shader resources

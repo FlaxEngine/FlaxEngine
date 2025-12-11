@@ -120,6 +120,8 @@ namespace FlaxEditor.Surface
 
         private void UpdateSelectionRectangle()
         {
+            if (Root == null)
+                return;
             var p1 = _rootControl.PointFromParent(ref _leftMouseDownPos);
             var p2 = _rootControl.PointFromParent(ref _mousePos);
             var selectionRect = Rectangle.FromPoints(p1, p2);
@@ -290,7 +292,7 @@ namespace FlaxEditor.Surface
             if (_leftMouseDown)
             {
                 // Connecting
-                if (_connectionInstigator != null)
+                if (_connectionInstigators.Count > 0)
                 {
                 }
                 // Moving
@@ -460,14 +462,15 @@ namespace FlaxEditor.Surface
         public override bool OnMouseDown(Float2 location, MouseButton button)
         {
             // Check if user is connecting boxes
-            if (_connectionInstigator != null)
+            if (_connectionInstigators.Count > 0)
                 return true;
 
             // Base
             bool handled = base.OnMouseDown(location, button);
             if (!handled)
                 CustomMouseDown?.Invoke(ref location, button, ref handled);
-            if (handled)
+            var root = Root;
+            if (handled || root == null)
             {
                 // Clear flags
                 _isMovingSelection = false;
@@ -521,11 +524,11 @@ namespace FlaxEditor.Surface
                 if (_leftMouseDown && controlUnderMouse.CanSelect(ref cLocation))
                 {
                     // Check if user is pressing control
-                    if (Root.GetKey(KeyboardKeys.Control))
+                    if (root.GetKey(KeyboardKeys.Control))
                     {
                         AddToSelection(controlUnderMouse);
                     }
-                    else if (Root.GetKey(KeyboardKeys.Shift))
+                    else if (root.GetKey(KeyboardKeys.Shift))
                     {
                         RemoveFromSelection(controlUnderMouse);
                     }
@@ -537,7 +540,7 @@ namespace FlaxEditor.Surface
                     }
 
                     // Start moving selected nodes
-                    if (!Root.GetKey(KeyboardKeys.Shift))
+                    if (!root.GetKey(KeyboardKeys.Shift))
                     {
                         StartMouseCapture();
                         _movingSelectionViewPos = _rootControl.Location;
@@ -557,7 +560,7 @@ namespace FlaxEditor.Surface
                     // Start selecting or commenting
                     StartMouseCapture();
 
-                    if (!Root.GetKey(KeyboardKeys.Control) && !Root.GetKey(KeyboardKeys.Shift))
+                    if (!root.GetKey(KeyboardKeys.Control) && !root.GetKey(KeyboardKeys.Shift))
                     {
                         ClearSelection();
                     }
@@ -606,7 +609,7 @@ namespace FlaxEditor.Surface
                     _movingNodesDelta = Float2.Zero;
                 }
                 // Connecting
-                else if (_connectionInstigator != null)
+                else if (_connectionInstigators.Count > 0)
                 {
                 }
                 // Selecting
@@ -678,7 +681,7 @@ namespace FlaxEditor.Surface
                 ShowPrimaryMenu(_cmStartPos);
             }
             // Letting go of a connection or right clicking while creating a connection
-            else if (!_isMovingSelection && _connectionInstigator != null && !IsPrimaryMenuOpened)
+            else if (!_isMovingSelection && _connectionInstigators.Count > 0 && !IsPrimaryMenuOpened)
             {
                 _cmStartPos = location;
                 Cursor = CursorType.Default;

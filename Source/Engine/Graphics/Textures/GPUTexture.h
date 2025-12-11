@@ -438,6 +438,12 @@ public:
     API_FUNCTION() virtual GPUTextureView* ViewReadOnlyDepth() const = 0;
 
     /// <summary>
+    /// Gets the view to the texture as stencil buffer.
+    /// </summary>
+    /// <returns>The view to the stencil resource descriptor.</returns>
+    API_FUNCTION() virtual GPUTextureView* ViewStencil() const = 0;
+
+    /// <summary>
     /// Implicit conversion to the first surface (only for 2D textures).
     /// </summary>
     /// <returns>The view to the main texture surface.</returns>

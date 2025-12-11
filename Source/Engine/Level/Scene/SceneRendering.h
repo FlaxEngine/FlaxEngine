@@ -7,7 +7,6 @@
 #include "Engine/Core/Math/BoundingSphere.h"
 #include "Engine/Core/Math/BoundingFrustum.h"
 #include "Engine/Level/Actor.h"
-#include "Engine/Platform/CriticalSection.h"
 
 class SceneRenderTask;
 class SceneRendering;
@@ -56,6 +55,7 @@ public:
         Bounds = 2,
         Layer = 4,
         StaticFlags = 8,
+        AutoDelayDuringRendering = 16, // Conditionally allow updating data during rendering when writes are locked
         Auto = Visual | Bounds | Layer,
     };
 
@@ -68,6 +68,8 @@ public:
     virtual void OnSceneRenderingRemoveActor(Actor* a) = 0;
     virtual void OnSceneRenderingClear(SceneRendering* scene) = 0;
 };
+
+DECLARE_ENUM_OPERATORS(ISceneRenderingListener::UpdateFlags);
 
 /// <summary>
 /// Scene rendering helper subsystem that boosts the level rendering by providing efficient objects cache and culling implementation.
@@ -100,10 +102,12 @@ public:
     };
 
     Array<DrawActor> Actors[MAX];
+    Array<int32> FreeActors[MAX];
     Array<IPostFxSettingsProvider*> PostFxProviders;
-    CriticalSection Locker;
+    ReadWriteLock Locker;
 
 private:
+    bool _isRendering = false;
 #if USE_EDITOR
     Array<IPhysicsDebug*> PhysicsDebug;
     Array<LightsDebugCallback> LightsDebug;

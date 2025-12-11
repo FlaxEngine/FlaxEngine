@@ -115,7 +115,7 @@ namespace Flax.Build
             /// Init with a proper message.
             /// </summary>
             public MissingException()
-            : base(string.IsNullOrEmpty(Configuration.Dotnet) ? $"Missing .NET SDK {MinimumVersion} (or higher)." : $"Missing .NET SDK {Configuration.Dotnet}.")
+            : base(string.IsNullOrEmpty(Configuration.Dotnet) ? $"Missing .NET SDK {MinimumVersion} (or higher) for {Platform.BuildTargetPlatform} {Platform.BuildTargetArchitecture}." : $"Missing .NET SDK {Configuration.Dotnet}.")
             {
             }
         }
@@ -135,7 +135,7 @@ namespace Flax.Build
         /// <summary>
         /// The maximum SDK version.
         /// </summary>
-        public static Version MaximumVersion => new Version(9, 0);
+        public static Version MaximumVersion => new Version(10, 0);
 
         /// <inheritdoc />
         public override TargetPlatform[] Platforms
@@ -217,9 +217,17 @@ namespace Flax.Build
                     using RegistryKey sdkVersionsKey = baseKey.OpenSubKey($@"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{arch}\sdk");
                     using RegistryKey runtimeKey = baseKey.OpenSubKey(@$"SOFTWARE\WOW6432Node\dotnet\Setup\InstalledVersions\{arch}\sharedfx\Microsoft.NETCore.App");
                     using RegistryKey hostKey = baseKey.OpenSubKey(@$"SOFTWARE\dotnet\Setup\InstalledVersions\{arch}\sharedhost");
-                    dotnetPath = (string)hostKey.GetValue("Path");
-                    dotnetSdkVersions = sdkVersionsKey.GetValueNames();
-                    dotnetRuntimeVersions = runtimeKey.GetValueNames();
+                    dotnetPath = (string)hostKey?.GetValue("Path");
+                    dotnetSdkVersions = sdkVersionsKey?.GetValueNames() ?? Enumerable.Empty<string>();
+                    dotnetRuntimeVersions = runtimeKey?.GetValueNames() ?? Enumerable.Empty<string>();
+
+                    if (string.IsNullOrEmpty(dotnetPath))
+                    {
+                        // The sharedhost registry key seems to be deprecated, assume the default installation location instead
+                        var defaultPath = Path.Combine(Path.GetPathRoot(Environment.SystemDirectory), "Program Files", "dotnet");
+                        if (File.Exists(Path.Combine(defaultPath, "dotnet.exe")))
+                            dotnetPath = defaultPath;
+                    }
                 }
 #pragma warning restore CA1416
                 break;

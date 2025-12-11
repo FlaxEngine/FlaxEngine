@@ -14,6 +14,8 @@
 #include "Engine/Platform/ConditionVariable.h"
 #include "Engine/Platform/CPUInfo.h"
 #include "Engine/Platform/Thread.h"
+#include "Engine/Profiler/ProfilerMemory.h"
+#include "Engine/Scripting/Internal/InternalCalls.h"
 
 FLAXENGINE_API bool IsInMainThread()
 {
@@ -27,6 +29,9 @@ namespace ThreadPoolImpl
     ConcurrentTaskQueue<ThreadPoolTask> Jobs; // Hello Steve!
     ConditionVariable JobsSignal;
     CriticalSection JobsMutex;
+#ifdef THREAD_POOL_AFFINITY_MASK
+    volatile int64 ThreadIndex = 0;
+#endif
 }
 
 String ThreadPoolTask::ToString() const
@@ -36,6 +41,7 @@ String ThreadPoolTask::ToString() const
 
 void ThreadPoolTask::Enqueue()
 {
+    PROFILE_MEM(EngineThreading);
     ThreadPoolImpl::Jobs.Add(this);
     ThreadPoolImpl::JobsSignal.NotifyOne();
 }
@@ -58,12 +64,15 @@ ThreadPoolService ThreadPoolServiceInstance;
 
 bool ThreadPoolService::Init()
 {
+    PROFILE_MEM(EngineThreading);
+
     // Spawn threads
-    const int32 numThreads = Math::Clamp<int32>(Platform::GetCPUInfo().ProcessorCoreCount - 1, 2, PLATFORM_THREADS_LIMIT / 2);
-    LOG(Info, "Spawning {0} Thread Pool workers", numThreads);
-    for (int32 i = ThreadPoolImpl::Threads.Count(); i < numThreads; i++)
+    const CPUInfo cpuInfo = Platform::GetCPUInfo();
+    const int32 count = Math::Clamp<int32>(cpuInfo.ProcessorCoreCount - 1, 2, PLATFORM_THREADS_LIMIT / 2);
+    LOG(Info, "Spawning {0} Thread Pool workers", count);
+    ThreadPoolImpl::Threads.Resize(count);
+    for (int32 i = 0; i < count; i++)
     {
-        // Create tread
         auto runnable = New<SimpleRunnable>(true);
         runnable->OnWork.Bind(ThreadPool::ThreadProc);
         auto thread = Thread::Create(runnable, String::Format(TEXT("Thread Pool {0}"), i));
@@ -72,9 +81,7 @@ bool ThreadPoolService::Init()
             LOG(Error, "Failed to spawn {0} thread in the Thread Pool", i + 1);
             return true;
         }
-
-        // Add to the list
-        ThreadPoolImpl::Threads.Add(thread);
+        ThreadPoolImpl::Threads[i] = thread;
     }
 
     return false;
@@ -106,7 +113,12 @@ void ThreadPoolService::Dispose()
 
 int32 ThreadPool::ThreadProc()
 {
+#ifdef THREAD_POOL_AFFINITY_MASK
+    const int64 index = Platform::InterlockedIncrement(&ThreadPoolImpl::ThreadIndex) - 1;
+    Platform::SetThreadAffinityMask(THREAD_POOL_AFFINITY_MASK((int32)index));
+#endif
     ThreadPoolTask* task;
+    MONO_THREAD_INFO_TYPE* monoThreadInfo = nullptr;
 
     // Work until end
     while (Platform::AtomicRead(&ThreadPoolImpl::ExitFlag) == 0)
@@ -115,12 +127,15 @@ int32 ThreadPool::ThreadProc()
         if (ThreadPoolImpl::Jobs.try_dequeue(task))
         {
             task->Execute();
+            MONO_THREAD_INFO_GET(monoThreadInfo);
         }
         else
         {
+            MONO_ENTER_GC_SAFE_WITH_INFO(monoThreadInfo);
             ThreadPoolImpl::JobsMutex.Lock();
             ThreadPoolImpl::JobsSignal.Wait(ThreadPoolImpl::JobsMutex);
             ThreadPoolImpl::JobsMutex.Unlock();
+            MONO_EXIT_GC_SAFE_WITH_INFO;
         }
     }
 

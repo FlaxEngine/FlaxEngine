@@ -365,16 +365,18 @@ namespace Flax.Deps.Dependencies
 
                     var envVars = new Dictionary<string, string>
                     {
-                        { "CC", "clang-7" },
-                        { "CC_FOR_BUILD", "clang-7" }
+                        { "CC", "clang-" + Configuration.LinuxClangMinVer },
+                        { "CC_FOR_BUILD", "clang-" + Configuration.LinuxClangMinVer },
+                        { "CXX", "clang++-" + Configuration.LinuxClangMinVer },
+                        { "CMAKE_BUILD_PARALLEL_LEVEL", CmakeBuildParallel },
                     };
                     var buildDir = Path.Combine(root, "build");
 
-                    Utilities.Run(Path.Combine(root, "autogen.sh"), null, null, root, Utilities.RunOptions.Default, envVars);
+                    Utilities.Run(Path.Combine(root, "autogen.sh"), null, null, root, Utilities.RunOptions.DefaultTool, envVars);
 
                     // Build for Linux
                     var toolchain = UnixToolchain.GetToolchainName(platform, TargetArchitecture.x64);
-                    Utilities.Run(Path.Combine(root, "configure"), string.Format("--host={0}", toolchain), null, root, Utilities.RunOptions.Default, envVars);
+                    Utilities.Run(Path.Combine(root, "configure"), string.Format("--host={0}", toolchain), null, root, Utilities.RunOptions.ThrowExceptionOnError, envVars);
                     SetupDirectory(buildDir, true);
                     Utilities.Run("cmake", "-G \"Unix Makefiles\" -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_BUILD_TYPE=Release ..", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
                     Utilities.Run("cmake", "--build .", null, buildDir, Utilities.RunOptions.ConsoleLogOutput, envVars);
@@ -428,18 +430,19 @@ namespace Flax.Deps.Dependencies
                     var buildDir = Path.Combine(root, "build");
 
                     // Get the source
+                    SetupDirectory(oggRoot, false);
                     CloneGitRepo(root, "https://github.com/xiph/vorbis.git");
                     GitCheckout(root, "master", "98eddc72d36e3421519d54b101c09b57e4d4d10d");
                     CloneGitRepo(oggRoot, "https://github.com/xiph/ogg.git");
                     GitCheckout(oggRoot, "master", "4380566a44b8d5e85ad511c9c17eb04197863ec5");
-                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "ogg"), oggRoot, true, true);
-                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "vorbis"), buildDir, true, true);
+                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data/ogg"), oggRoot, true, true);
+                    Utilities.DirectoryCopy(Path.Combine(GetBinariesFolder(options, platform), "Data/vorbis"), buildDir, true, true);
 
                     // Build for Switch
                     SetupDirectory(oggBuildDir, true);
                     RunCmake(oggBuildDir, platform, TargetArchitecture.ARM64, ".. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\"../install\"");
                     Utilities.Run("cmake", "--build . --target install", null, oggBuildDir, Utilities.RunOptions.ConsoleLogOutput);
-                    Utilities.FileCopy(Path.Combine(GetBinariesFolder(options, platform), "ogg", "include", "ogg", "config_types.h"), Path.Combine(oggRoot, "install", "include", "ogg", "config_types.h"));
+                    Utilities.FileCopy(Path.Combine(GetBinariesFolder(options, platform), "Data/ogg", "include", "ogg", "config_types.h"), Path.Combine(oggRoot, "install", "include", "ogg", "config_types.h"));
                     SetupDirectory(buildDir, true);
                     RunCmake(buildDir, platform, TargetArchitecture.ARM64, string.Format(".. -DCMAKE_BUILD_TYPE=Release -DOGG_INCLUDE_DIR=\"{0}/install/include\" -DOGG_LIBRARY=\"{0}/install/lib\"", oggRoot));
                     BuildCmake(buildDir);

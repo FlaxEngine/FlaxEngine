@@ -673,6 +673,7 @@ namespace FlaxEditor.Modules
                 pasteAction.Do(out _, out var nodeParents);
 
                 // Select spawned objects (parents only)
+                newSelection.Clear();
                 newSelection.AddRange(nodeParents);
                 var selectAction = new SelectionChangeAction(Selection.ToArray(), newSelection.ToArray(), OnSelectionUndo);
                 selectAction.Do();
@@ -711,7 +712,11 @@ namespace FlaxEditor.Modules
 
         private void OnActorChildNodesDispose(ActorNode node)
         {
+            if (Selection.Count == 0)
+                return;
+
             // TODO: cache if selection contains any actor child node and skip this loop if no need to iterate
+            // TODO: or build a hash set with selected nodes for quick O(1) checks (cached until selection changes)
 
             // Deselect child nodes
             for (int i = 0; i < node.ChildNodes.Count; i++)

@@ -2,6 +2,7 @@
 
 #include "Renderer.h"
 #include "Engine/Graphics/GPUContext.h"
+#include "Engine/Graphics/GPUPass.h"
 #include "Engine/Graphics/RenderTargetPool.h"
 #include "Engine/Graphics/RenderBuffers.h"
 #include "Engine/Graphics/RenderTask.h"
@@ -36,6 +37,7 @@
 #include "Engine/Level/Scene/SceneRendering.h"
 #include "Engine/Core/Config/GraphicsSettings.h"
 #include "Engine/Threading/JobSystem.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "Editor/Editor.h"
 #include "Editor/QuadOverdrawPass.h"
@@ -68,6 +70,8 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
 bool RendererService::Init()
 {
+    PROFILE_MEM(Graphics);
+
     // Register passes
     PassList.Add(GBufferPass::Instance());
     PassList.Add(ShadowsPass::Instance());
@@ -196,7 +200,7 @@ void Renderer::Render(SceneRenderTask* task)
 
     // Prepare GPU context
     auto context = GPUDevice::Instance->GetMainContext();
-    context->ClearState();
+    context->ResetState();
     context->FlushState();
     const Viewport viewport = task->GetViewport();
     context->SetViewportAndScissors(viewport);
@@ -353,8 +357,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     const bool isGBufferDebug = GBufferPass::IsDebugView(renderContext.View.Mode);
     {
         PROFILE_CPU_NAMED("Setup");
-        if (renderContext.View.Origin != renderContext.View.PrevOrigin)
-            renderContext.Task->CameraCut(); // Cut any temporal effects on rendering origin change
         const int32 screenWidth = renderContext.Buffers->GetWidth();
         const int32 screenHeight = renderContext.Buffers->GetHeight();
         setup.UpscaleLocation = renderContext.Task->UpscaleLocation;
@@ -367,7 +369,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
             setup.UseMotionVectors =
                     (EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::MotionBlur) && motionBlurSettings.Enabled && motionBlurSettings.Scale > ZeroTolerance) ||
                     renderContext.View.Mode == ViewMode::MotionVectors ||
-                    (ssrSettings.TemporalEffect && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::SSR)) ||
+                    (ssrSettings.Intensity > ZeroTolerance && ssrSettings.TemporalEffect && EnumHasAnyFlags(renderContext.View.Flags, ViewFlags::SSR)) ||
                     renderContext.List->Settings.AntiAliasing.Mode == AntialiasingMode::TemporalAntialiasing;
         }
         setup.UseTemporalAAJitter = aaMode == AntialiasingMode::TemporalAntialiasing;
@@ -376,6 +378,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         setup.UseGlobalSDF = (graphicsSettings->EnableGlobalSDF && EnumHasAnyFlags(view.Flags, ViewFlags::GlobalSDF)) ||
                 renderContext.View.Mode == ViewMode::GlobalSDF ||
                 setup.UseGlobalSurfaceAtlas;
+        setup.UseVolumetricFog = (view.Flags & ViewFlags::Fog) != ViewFlags::None;
 
         // Disable TAA jitter in debug modes
         switch (renderContext.View.Mode)
@@ -450,9 +453,13 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
 
         // Wait for async jobs to finish
         JobSystem::SetJobStartingOnDispatch(true);
-        for (const uint64 label : renderContextBatch.WaitLabels)
+        for (const int64 label : renderContextBatch.WaitLabels)
             JobSystem::Wait(label);
         renderContextBatch.WaitLabels.Clear();
+
+        // Perform custom post-scene drawing (eg. GPU dispatches used by VFX)
+        for (int32 i = 0; i < renderContextBatch.Contexts.Count(); i++)
+            renderContextBatch.Contexts[i].List->DrainDelayedDraws(renderContextBatch, i);
 
 #if USE_EDITOR
         GBufferPass::Instance()->OverrideDrawCalls(renderContext);
@@ -499,7 +506,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
                     // Shadow context sorting
                     auto& shadowContext = RenderContextBatch.Contexts[index - ARRAY_COUNT(MainContextSorting)];
                     shadowContext.List->SortDrawCalls(shadowContext, false, DrawCallsListType::Depth, DrawPass::Depth);
-                    shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, DrawPass::Depth);
+                    shadowContext.List->SortDrawCalls(shadowContext, false, shadowContext.List->ShadowDepthDrawCallsList, renderContext.List->DrawCalls, DrawCallsListType::Depth, DrawPass::Depth);
                 }
             }
         } processor = { renderContextBatch };
@@ -515,6 +522,7 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         JobSystem::Wait(buildObjectsBufferJob);
         {
             PROFILE_CPU_NAMED("FlushObjectsBuffer");
+            GPUMemoryPass pass(context);
             for (auto& e : renderContextBatch.Contexts)
                 e.List->ObjectBuffer.Flush(context);
         }
@@ -620,7 +628,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
         RENDER_TARGET_POOL_SET_NAME(tempBuffer, "TempBuffer");
         EyeAdaptationPass::Instance()->Render(renderContext, lightBuffer);
         PostProcessingPass::Instance()->Render(renderContext, lightBuffer, tempBuffer, colorGradingLUT);
-        RenderTargetPool::Release(colorGradingLUT);
         context->ResetRenderTarget();
         if (aaMode == AntialiasingMode::TemporalAntialiasing)
         {
@@ -741,7 +748,6 @@ void RenderInner(SceneRenderTask* task, RenderContext& renderContext, RenderCont
     // Post-processing
     EyeAdaptationPass::Instance()->Render(renderContext, frameBuffer);
     PostProcessingPass::Instance()->Render(renderContext, frameBuffer, tempBuffer, colorGradingLUT);
-    RenderTargetPool::Release(colorGradingLUT);
     Swap(frameBuffer, tempBuffer);
 
     // Cleanup

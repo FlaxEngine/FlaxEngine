@@ -10,6 +10,7 @@
 #include "Engine/Serialization/JsonTools.h"
 #include "Engine/Debug/Exceptions/JsonParseException.h"
 #include "Engine/Threading/ThreadPoolTask.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Threading/Threading.h"
@@ -463,10 +464,10 @@ void BinaryAsset::OnDeleteObject()
 
 #endif
 
-const String& BinaryAsset::GetPath() const
+StringView BinaryAsset::GetPath() const
 {
 #if USE_EDITOR
-    return Storage ? Storage->GetPath() : String::Empty;
+    return Storage ? StringView(Storage->GetPath()) : StringView::Empty;
 #else
     // In build all assets are packed into packages so use ID for original path lookup
     return Content::GetRegistry()->GetEditorAssetPath(_id);
@@ -527,6 +528,7 @@ protected:
         auto storage = ref->Storage;
         auto factory = (BinaryAssetFactoryBase*)Content::GetAssetFactory(ref->GetTypeName());
         ASSERT(factory);
+        PROFILE_MEM(ContentAssets);
 
         // Here we should open storage and extract AssetInitData
         // This would also allow to convert/upgrade data

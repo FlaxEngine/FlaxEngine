@@ -251,7 +251,7 @@ void Win32Platform::MemoryBarrier()
 #endif
 }
 
-void Win32Platform::Prefetch(void const* ptr)
+void Win32Platform::MemoryPrefetch(void const* ptr)
 {
 #if _M_ARM64
     __prefetch((char const*)ptr);
@@ -283,14 +283,23 @@ void* Win32Platform::AllocatePages(uint64 numPages, uint64 pageSize)
 {
     const uint64 numBytes = numPages * pageSize;
 #if PLATFORM_UWP
-    return VirtualAllocFromApp(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    void* ptr = VirtualAllocFromApp(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 #else
-    return VirtualAlloc(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    void* ptr = VirtualAlloc(nullptr, (SIZE_T)numBytes, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 #endif
+    if (!ptr)
+        OutOfMemory();
+#if COMPILE_WITH_PROFILER
+    OnMemoryAlloc(ptr, numBytes);
+#endif
+    return ptr;
 }
 
 void Win32Platform::FreePages(void* ptr)
 {
+#if COMPILE_WITH_PROFILER
+    OnMemoryFree(ptr);
+#endif
     VirtualFree(ptr, 0, MEM_RELEASE);
 }
 
@@ -389,6 +398,11 @@ void Win32Platform::Sleep(int32 milliseconds)
 
     SetWaitableTimerEx(timer, &dueTime, 0, NULL, NULL, NULL, 0);
     WaitForSingleObject(timer, INFINITE);
+}
+
+void Win32Platform::Yield()
+{
+    SwitchToThread();
 }
 
 double Win32Platform::GetTimeSeconds()

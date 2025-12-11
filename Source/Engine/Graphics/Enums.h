@@ -340,7 +340,14 @@ API_ENUM(Attributes="Flags") enum class GPUResourceMapMode
     /// The resource is mapped for reading and writing.
     /// </summary>
     ReadWrite = Read | Write,
+
+    /// <summary>
+    /// Flag that indicates mapping should fail with no data if the resource is still used by the GPU. Otherwise, CPU will wait for the GPU execution.
+    /// </summary>
+    NoWait = 0x04,
 };
+
+DECLARE_ENUM_OPERATORS(GPUResourceMapMode);
 
 /// <summary>
 /// Primitives types.

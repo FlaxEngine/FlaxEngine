@@ -14,5 +14,9 @@ public class GraphicsDeviceDX11 : GraphicsDeviceBaseModule
 
         options.PublicDefinitions.Add("GRAPHICS_API_DIRECTX11");
         options.OutputFiles.Add("d3d11.lib");
+        if (nvapi.Use(options))
+            options.PrivateDependencies.Add("nvapi");
+        if (AGS.Use(options))
+            options.PrivateDependencies.Add("AGS");
     }
 }

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../Actor.h"
+#include "Engine/Core/Types/LayersMask.h"
 #include "Engine/Core/Math/Matrix.h"
 #include "Engine/Core/Math/OrientedBoundingBox.h"
 #include "Engine/Content/Assets/MaterialBase.h"
@@ -32,6 +33,12 @@ public:
     /// </summary>
     API_FIELD(Attributes="EditorOrder(20), EditorDisplay(\"Decal\")")
     int32 SortOrder = 0;
+
+    /// <summary>
+    /// The layers mask used for render composition. Can be used to include or exclude specific actor layers from the drawing on top of them.
+    /// </summary>
+    API_FIELD(Attributes = "EditorOrder(25), EditorDisplay(\"Decal\")")
+    LayersMask RenderLayersMask;
 
     /// <summary>
     /// The minimum screen size for the decal drawing. If the decal size on the screen is smaller than this value then decal will be culled. Set it to higher value to make culling more aggressive.

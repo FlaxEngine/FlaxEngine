@@ -137,6 +137,9 @@ namespace Flax.Build.Platforms
             args.Add("-Wl,--build-id=sha1");
             args.Add("-Wl,-gc-sections");
 
+            // Support 16kb pages
+            args.Add("-Wl,-z,max-page-size=16384");
+
             if (options.LinkEnv.Output == LinkerOutput.Executable)
             {
                 // Prevent linker from stripping the entry point for the Android Native Activity

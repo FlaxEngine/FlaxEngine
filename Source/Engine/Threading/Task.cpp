@@ -40,6 +40,7 @@ void Task::Cancel()
 bool Task::Wait(double timeoutMilliseconds) const
 {
     PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
     const double startTime = Platform::GetTimeSeconds();
 
     do
@@ -74,6 +75,7 @@ bool Task::Wait(double timeoutMilliseconds) const
 bool Task::WaitAll(const Span<Task*>& tasks, double timeoutMilliseconds)
 {
     PROFILE_CPU();
+    ZoneColor(TracyWaitZoneColor);
     for (int32 i = 0; i < tasks.Length(); i++)
     {
         if (tasks[i]->Wait())
@@ -224,6 +226,27 @@ void Task::OnEnd()
 {
     ASSERT(!IsRunning());
 
-    // Add to delete
-    DeleteObject(30.0f, false);
+    if (_continueWith && !_continueWith->IsEnded())
+    {
+        // Let next task do the cleanup (to ensure whole tasks chain shares the lifetime)
+        _continueWith->_rootForRemoval = _rootForRemoval ? _rootForRemoval : this;
+    }
+    else
+    {
+        constexpr float timeToLive = 30.0f;
+
+        // Remove task chain starting from the root
+        if (_rootForRemoval)
+        {
+            auto task = _rootForRemoval;
+            while (task != this)
+            {
+                task->DeleteObject(timeToLive, false);
+                task = task->_continueWith;
+            }
+        }
+
+        // Add to delete
+        DeleteObject(timeToLive, false);
+    }
 }

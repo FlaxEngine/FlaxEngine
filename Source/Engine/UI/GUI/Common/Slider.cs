@@ -298,6 +298,8 @@ public class Slider : ContainerControl
     public Slider(float width, float height)
     : base(0, 0, width, height)
     {
+        AutoFocus = true;
+
         var style = Style.Current;
         TrackLineColor = style.BackgroundHighlighted;
         TrackFillLineColor = style.LightBackground;
@@ -388,7 +390,7 @@ public class Slider : ContainerControl
         }
 
         // Draw thumb
-        var thumbColorV = _isSliding ? ThumbColorSelected : (_mouseOverThumb ? ThumbColorHighlighted : ThumbColor);
+        var thumbColorV = _isSliding ? ThumbColorSelected : (_mouseOverThumb || IsNavFocused ? ThumbColorHighlighted : ThumbColor);
         if (ThumbBrush != null)
             ThumbBrush.Draw(_thumbRect, thumbColorV);
         else

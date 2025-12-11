@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Flax.Build;
 using Flax.Build.Platforms;
 using Flax.Build.Projects.VisualStudio;
@@ -248,13 +249,29 @@ namespace Flax.Deps
         }
 
         /// <summary>
+        /// Gets the maximum concurrency level for a cmake command. See CMAKE_BUILD_PARALLEL_LEVEL or -j docs.
+        /// </summary>
+        public static string CmakeBuildParallel => Math.Min(Math.Max(1, (int)(Environment.ProcessorCount * Configuration.ConcurrencyProcessorScale)), Configuration.MaxConcurrency).ToString();
+
+        /// <summary>
         /// Builds the cmake project.
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="envVars">Custom environment variables to pass to the child process.</param>
-        public static void BuildCmake(string path, Dictionary<string, string> envVars = null)
+        public static void BuildCmake(string path, Dictionary<string, string> envVars)
         {
-            Utilities.Run("cmake", "--build .  --config Release", null, path, Utilities.RunOptions.DefaultTool, envVars);
+            BuildCmake(path, "Release", envVars);
+        }
+
+        /// <summary>
+        /// Builds the cmake project.
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="config">The configuration preset.</param>
+        /// <param name="envVars">Custom environment variables to pass to the child process.</param>
+        public static void BuildCmake(string path, string config = "Release", Dictionary<string, string> envVars = null)
+        {
+            Utilities.Run("cmake", $"--build .  --config {config}", null, path, Utilities.RunOptions.DefaultTool, envVars);
         }
 
         /// <summary>
@@ -305,8 +322,12 @@ namespace Flax.Deps
                 cmdLine = "CMakeLists.txt";
                 break;
             case TargetPlatform.Switch:
-                cmdLine = string.Format("-DCMAKE_TOOLCHAIN_FILE=\"{1}\\Source\\Platforms\\Switch\\Binaries\\Data\\Switch.cmake\" -G \"NMake Makefiles\" -DCMAKE_MAKE_PROGRAM=\"{0}..\\..\\VC\\bin\\nmake.exe\"", Environment.GetEnvironmentVariable("VS140COMNTOOLS"), Globals.EngineRoot);
+            {
+                var nmakeSubdir = "bin\\Hostx64\\x64\\nmake.exe";
+                var toolset = WindowsPlatform.GetToolsets().First(e => File.Exists(Path.Combine(e.Value, nmakeSubdir)));
+                cmdLine = string.Format("-DCMAKE_TOOLCHAIN_FILE=\"{1}\\Source\\Platforms\\Switch\\Binaries\\Data\\Switch.cmake\" -G \"NMake Makefiles\" -DCMAKE_MAKE_PROGRAM=\"{0}\"", Path.Combine(toolset.Value, nmakeSubdir), Globals.EngineRoot);
                 break;
+            }
             case TargetPlatform.Android:
             {
                 var ndk = AndroidNdk.Instance.RootPath;
@@ -435,7 +456,7 @@ namespace Flax.Deps
             case TargetPlatform.Mac: break;
             default: throw new InvalidPlatformException(BuildPlatform);
             }
-            Utilities.Run(path, args, null, workspace, Utilities.RunOptions.ThrowExceptionOnError, envVars);
+            Utilities.Run(path, args, null, workspace, Utilities.RunOptions.DefaultTool, envVars);
         }
 
         internal bool GetMsBuildForPlatform(TargetPlatform targetPlatform, out VisualStudioVersion vsVersion, out string msBuildPath)

@@ -11,6 +11,7 @@
 #include "Engine/Scripting/ManagedCLR/MUtils.h"
 #include "Engine/Platform/FileSystem.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Engine/EngineService.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Scripting/ManagedCLR/MField.h"
@@ -186,6 +187,7 @@ void PluginManagerService::InvokeDeinitialize(Plugin* plugin)
 void PluginManagerImpl::OnAssemblyLoaded(MAssembly* assembly)
 {
     PROFILE_CPU_NAMED("Load Assembly Plugins");
+    PROFILE_MEM(Scripting);
 
     const auto gamePluginClass = GamePlugin::GetStaticClass();
     if (gamePluginClass == nullptr)
@@ -318,6 +320,7 @@ void PluginManagerImpl::InitializePlugins()
     if (EditorPlugins.Count() + GamePlugins.Count() == 0)
         return;
     PROFILE_CPU_NAMED("InitializePlugins");
+    PROFILE_MEM(Scripting);
 
     auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
@@ -345,6 +348,7 @@ void PluginManagerImpl::DeinitializePlugins()
     if (EditorPlugins.Count() + GamePlugins.Count() == 0)
         return;
     PROFILE_CPU_NAMED("DeinitializePlugins");
+    PROFILE_MEM(Scripting);
 
     auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
@@ -375,6 +379,7 @@ void PluginManagerImpl::DeinitializePlugins()
 bool PluginManagerService::Init()
 {
     Initialized = false;
+    PROFILE_MEM(Scripting);
 
     // Process already loaded modules
     for (auto module : BinaryModule::GetModules())
@@ -472,6 +477,7 @@ Plugin* PluginManager::GetPlugin(const ScriptingTypeHandle& type)
 void PluginManager::InitializeGamePlugins()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Scripting);
 
     auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");
@@ -488,6 +494,7 @@ void PluginManager::InitializeGamePlugins()
 void PluginManager::DeinitializeGamePlugins()
 {
     PROFILE_CPU();
+    PROFILE_MEM(Scripting);
 
     auto engineAssembly = ((NativeBinaryModule*)GetBinaryModuleFlaxEngine())->Assembly;
     auto pluginLoadOrderAttribute = engineAssembly->GetClass("FlaxEngine.PluginLoadOrderAttribute");

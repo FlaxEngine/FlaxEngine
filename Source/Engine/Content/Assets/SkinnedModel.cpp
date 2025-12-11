@@ -18,6 +18,7 @@
 #include "Engine/Content/Upgraders/SkinnedModelAssetUpgrader.h"
 #include "Engine/Debug/Exceptions/ArgumentOutOfRangeException.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Renderer/DrawCall.h"
 #if USE_EDITOR
 #include "Engine/Graphics/Models/ModelData.h"
@@ -458,6 +459,7 @@ bool SkinnedModel::Init(const Span<int32>& meshesCountPerLod)
         Log::ArgumentOutOfRangeException();
         return true;
     }
+    PROFILE_MEM(GraphicsMeshes);
 
     // Dispose previous data and disable streaming (will start data uploading tasks manually)
     StopStreaming();
@@ -501,6 +503,7 @@ void BlendShape::LoadHeader(ReadStream& stream, byte headerVersion)
 
 void BlendShape::Load(ReadStream& stream, byte meshVersion)
 {
+    PROFILE_MEM(GraphicsMeshes);
     UseNormals = stream.ReadBool();
     stream.ReadUint32(&MinVertexIndex);
     stream.ReadUint32(&MaxVertexIndex);
@@ -531,6 +534,7 @@ void BlendShape::Save(WriteStream& stream) const
 
 bool SkinnedModel::LoadMesh(MemoryReadStream& stream, byte meshVersion, MeshBase* mesh, MeshData* dataIfReadOnly)
 {
+    PROFILE_MEM(GraphicsMeshes);
     if (ModelBase::LoadMesh(stream, meshVersion, mesh, dataIfReadOnly))
         return true;
     static_assert(MODEL_MESH_VERSION == 2, "Update code");
@@ -560,6 +564,7 @@ bool SkinnedModel::LoadMesh(MemoryReadStream& stream, byte meshVersion, MeshBase
 
 bool SkinnedModel::LoadHeader(ReadStream& stream, byte& headerVersion)
 {
+    PROFILE_MEM(GraphicsMeshes);
     if (ModelBase::LoadHeader(stream, headerVersion))
         return true;
     static_assert(MODEL_HEADER_VERSION == 2, "Update code");
@@ -861,6 +866,7 @@ uint64 SkinnedModel::GetMemoryUsage() const
 
 void SkinnedModel::SetupMaterialSlots(int32 slotsCount)
 {
+    PROFILE_MEM(GraphicsMeshes);
     ModelBase::SetupMaterialSlots(slotsCount);
 
     // Adjust meshes indices for slots
@@ -954,6 +960,7 @@ Asset::LoadResult SkinnedModel::load()
     if (chunk0 == nullptr || chunk0->IsMissing())
         return LoadResult::MissingDataChunk;
     MemoryReadStream headerStream(chunk0->Get(), chunk0->Size());
+    PROFILE_MEM(GraphicsMeshes);
 
     // Load asset data (anything but mesh contents that use streaming)
     byte headerVersion;

@@ -79,10 +79,11 @@ namespace FlaxEngine.Interop
             NativeLibrary.SetDllImportResolver(Assembly.GetExecutingAssembly(), NativeLibraryImportResolver);
 
             // Change default culture to match with Mono runtime default culture
-            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
-            CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
-            System.Threading.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-            System.Threading.Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+            var culture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentUICulture = culture;
+            System.Threading.Thread.CurrentThread.CurrentCulture = culture;
+            System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
 
         }
 
@@ -107,16 +108,12 @@ namespace FlaxEngine.Interop
         {
         }
 
-#if !USE_AOT
+#if !USE_AOT && !DOTNET_HOST_MONO
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "__unmanagedPtr")]
         extern static ref IntPtr GetUnmanagedPtrFieldReference(Object obj);
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "__internalId")]
         extern static ref Guid GetInternalIdFieldReference(Object obj);
-
-        // Cache offsets to frequently accessed fields of FlaxEngine.Object
-        private static int unmanagedPtrFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(FlaxEngine.Object).GetField("__unmanagedPtr", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF);
-        private static int internalIdFieldOffset = IntPtr.Size + (Unsafe.Read<int>((typeof(FlaxEngine.Object).GetField("__internalId", BindingFlags.Instance | BindingFlags.NonPublic).FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF);
 
         [UnmanagedCallersOnly]
         internal static void ScriptingObjectSetInternalValues(ManagedHandle objectHandle, IntPtr unmanagedPtr, IntPtr idPtr)
@@ -195,14 +192,19 @@ namespace FlaxEngine.Interop
         /// </summary>
         /// <typeparam name="T">Array element type.</typeparam>
         /// <param name="ptrArray">Input array.</param>
+        /// <param name="buffer">Cached memory allocation buffer to use for the result (if size fits).</param>
         /// <returns>Output array.</returns>
-        public static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray) where T : class
+        public static T[] GCHandleArrayToManagedArray<T>(ManagedArray ptrArray, T[] buffer = null) where T : class
         {
             Span<IntPtr> span = ptrArray.ToSpan<IntPtr>();
-            T[] managedArray = new T[ptrArray.Length];
-            for (int i = 0; i < managedArray.Length; i++)
-                managedArray[i] = span[i] != IntPtr.Zero ? (T)ManagedHandle.FromIntPtr(span[i]).Target : default;
-            return managedArray;
+            if (buffer == null || buffer.Length < ptrArray.Length)
+                buffer = new T[ptrArray.Length];
+            for (int i = 0; i < ptrArray.Length; i++)
+            {
+                IntPtr ptr = span[i];
+                buffer[i] = ptr != IntPtr.Zero ? (T)ManagedHandle.FromIntPtr(ptr).Target : default;
+            }
+            return buffer;
         }
 
         /// <summary>
@@ -413,14 +415,23 @@ namespace FlaxEngine.Interop
                 if (field.IsLiteral)
                     return 0;
 
+#if DOTNET_HOST_CORECLR
                 // Get the address of the field, source: https://stackoverflow.com/a/56512720
                 int fieldOffset = Unsafe.Read<int>((field.FieldHandle.Value + 4 + IntPtr.Size).ToPointer()) & 0xFFFFFF;
                 if (!type.IsValueType)
                     fieldOffset += IntPtr.Size;
                 return fieldOffset;
+#elif DOTNET_HOST_MONO
+                // Get the address from _MonoClassField::offset, source: https://meetemq.com/2023/09/10/nets-fields-and-their-offsets/
+                var fieldOffsetPtr = (IntPtr*)field.FieldHandle.Value; // Pointer to MonoClassField
+                fieldOffsetPtr += 3; // Skip three pointers (type, name, parent_and_flags)
+                return *(int*)fieldOffsetPtr - IntPtr.Size * 2; // Load the value of a pointer (4 bytes, int32), then subtracting 16 bytes from it (2 pointers for vtable and threadsync)
+#else
+                throw new NotImplementedException();
+#endif
             }
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
             /// <summary>
             /// Helper utility to set field of the referenced value via reflection.
             /// </summary>
@@ -751,12 +762,12 @@ namespace FlaxEngine.Interop
                         }
                     }
                 }
-                throw new NativeInteropException($"Invalid field with offset {fieldOffset} to marshal for type {typeof(T).Name}");
+                throw new NativeInteropException($"Invalid field with offset {fieldOffset} to marshal for type {typeof(T).FullName}");
             }
 
             private static void ToManagedFieldPointerValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
             {
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                 IntPtr fieldValue = Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer());
                 FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #else
@@ -768,7 +779,7 @@ namespace FlaxEngine.Interop
 
             private static void ToManagedFieldPointerReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
             {
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                 IntPtr fieldValue = Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer());
                 FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #else
@@ -780,7 +791,7 @@ namespace FlaxEngine.Interop
 
             private static void ToNativeFieldPointerValueType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : struct
             {
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                 object boxed = field.GetValue(fieldOwner);
                 IntPtr fieldValue = new IntPtr(Pointer.Unbox(boxed));
 #else
@@ -792,7 +803,7 @@ namespace FlaxEngine.Interop
 
             private static void ToNativeFieldPointerReferenceType(FieldInfo field, int fieldOffset, ref T fieldOwner, IntPtr nativeFieldPtr, out int fieldSize) // where T : class
             {
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                 object boxed = field.GetValue(fieldOwner);
                 IntPtr fieldValue = new IntPtr(Pointer.Unbox(boxed));
 #else
@@ -840,13 +851,13 @@ namespace FlaxEngine.Interop
                         fieldSize += (nativeFieldPtr - fieldStartPtr).ToInt32();
                     }
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField fieldValue = default;
 #else
                     ref TField fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
 #endif
                     MarshalHelper<TField>.ToManaged(ref fieldValue, nativeFieldPtr, false);
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
@@ -861,13 +872,13 @@ namespace FlaxEngine.Interop
                         fieldSize += (nativeFieldPtr - fieldStartPtr).ToInt32();
                     }
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField fieldValue = default;
 #else
                     ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
 #endif
                     MarshalHelper<TField>.ToManaged(ref fieldValue, nativeFieldPtr, false);
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
@@ -880,13 +891,13 @@ namespace FlaxEngine.Interop
                     nativeFieldPtr = EnsureAlignment(nativeFieldPtr, IntPtr.Size);
                     fieldSize += (nativeFieldPtr - fieldStartPtr).ToInt32();
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField[] fieldValue = (TField[])field.GetValue(fieldOwner);
 #else
                     ref TField[] fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField[]>(fieldOffset, ref fieldOwner);
 #endif
                     MarshalHelper<TField[]>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
@@ -899,13 +910,13 @@ namespace FlaxEngine.Interop
                     nativeFieldPtr = EnsureAlignment(nativeFieldPtr, IntPtr.Size);
                     fieldSize += (nativeFieldPtr - fieldStartPtr).ToInt32();
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField[] fieldValue = null;
 #else
                     ref TField[] fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField[]>(fieldOffset, ref fieldOwner);
 #endif
                     MarshalHelper<TField[]>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
@@ -920,7 +931,7 @@ namespace FlaxEngine.Interop
                         fieldSize += (nativeFieldPtr - startPtr).ToInt32();
                     }
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField fieldValue = (TField)field.GetValue(fieldOwner);
 #else
                     ref TField fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
@@ -938,7 +949,7 @@ namespace FlaxEngine.Interop
                         fieldSize += (nativeFieldPtr - startPtr).ToInt32();
                     }
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField fieldValue = (TField)field.GetValue(fieldOwner);
 #else
                     ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
@@ -973,13 +984,13 @@ namespace FlaxEngine.Interop
                     nativeFieldPtr = EnsureAlignment(nativeFieldPtr, IntPtr.Size);
                     fieldSize += (nativeFieldPtr - fieldStartPtr).ToInt32();
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField fieldValue = null;
 #else
                     ref TField fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
 #endif
                     MarshalHelper<TField>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
@@ -991,13 +1002,13 @@ namespace FlaxEngine.Interop
                     nativeFieldPtr = EnsureAlignment(nativeFieldPtr, IntPtr.Size);
                     fieldSize += (nativeFieldPtr - fieldStartPtr).ToInt32();
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField fieldValue = default;
 #else
                     ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
 #endif
                     MarshalHelper<TField>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
@@ -1009,13 +1020,13 @@ namespace FlaxEngine.Interop
                     nativeFieldPtr = EnsureAlignment(nativeFieldPtr, IntPtr.Size);
                     fieldSize += (nativeFieldPtr - fieldStartPtr).ToInt32();
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField[] fieldValue = null;
 #else
                     ref TField[] fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField[]>(fieldOffset, ref fieldOwner);
 #endif
                     MarshalHelper<TField[]>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
@@ -1027,13 +1038,13 @@ namespace FlaxEngine.Interop
                     nativeFieldPtr = EnsureAlignment(nativeFieldPtr, IntPtr.Size);
                     fieldSize += (nativeFieldPtr - fieldStartPtr).ToInt32();
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField[] fieldValue = null;
 #else
                     ref TField[] fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField[]>(fieldOffset, ref fieldOwner);
 #endif
                     MarshalHelper<TField[]>.ToManaged(ref fieldValue, Unsafe.Read<IntPtr>(nativeFieldPtr.ToPointer()), false);
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     FieldHelper.SetReferenceTypeField(field, ref fieldOwner, fieldValue);
 #endif
                 }
@@ -1045,7 +1056,7 @@ namespace FlaxEngine.Interop
                     nativeFieldPtr = EnsureAlignment(nativeFieldPtr, IntPtr.Size);
                     fieldSize += (nativeFieldPtr - fieldStartPtr).ToInt32();
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField fieldValue = (TField)field.GetValue(fieldOwner);
 #else
                     ref TField fieldValue = ref FieldHelper.GetValueTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
@@ -1060,7 +1071,7 @@ namespace FlaxEngine.Interop
                     nativeFieldPtr = EnsureAlignment(nativeFieldPtr, IntPtr.Size);
                     fieldSize += (nativeFieldPtr - fieldStartPtr).ToInt32();
 
-#if USE_AOT
+#if USE_AOT || DOTNET_HOST_MONO
                     TField fieldValue = (TField)field.GetValue(fieldOwner);
 #else
                     ref TField fieldValue = ref FieldHelper.GetReferenceTypeFieldReference<T, TField>(fieldOffset, ref fieldOwner);
@@ -1434,7 +1445,7 @@ namespace FlaxEngine.Interop
                 return RuntimeHelpers.GetUninitializedObject(wrappedType);
             }
 
-#if !USE_AOT
+#if !USE_AOT && !DOTNET_HOST_MONO
             internal object CreateScriptingObject(IntPtr unmanagedPtr, IntPtr idPtr)
             {
                 object obj = RuntimeHelpers.GetUninitializedObject(wrappedType);

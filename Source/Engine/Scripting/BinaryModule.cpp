@@ -6,6 +6,7 @@
 #include "Engine/Core/Utilities.h"
 #include "Engine/Threading/Threading.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "ManagedCLR/MAssembly.h"
 #include "ManagedCLR/MClass.h"
 #include "ManagedCLR/MMethod.h"
@@ -762,6 +763,8 @@ ManagedBinaryModule* ManagedBinaryModule::GetModule(const MAssembly* assembly)
 
 ScriptingObject* ManagedBinaryModule::ManagedObjectSpawn(const ScriptingObjectSpawnParams& params)
 {
+    PROFILE_MEM(ScriptingCSharp);
+
     // Create native object
     ScriptingTypeHandle managedTypeHandle = params.Type;
     const ScriptingType* managedTypePtr = &managedTypeHandle.GetType();
@@ -812,7 +815,7 @@ namespace
 {
     MMethod* FindMethod(MClass* mclass, const MMethod* referenceMethod)
     {
-        const Array<MMethod*>& methods = mclass->GetMethods();
+        const auto& methods = mclass->GetMethods();
         for (int32 i = 0; i < methods.Count(); i++)
         {
             MMethod* method = methods[i];
@@ -932,6 +935,7 @@ void ManagedBinaryModule::OnLoaded(MAssembly* assembly)
 {
 #if !COMPILE_WITHOUT_CSHARP
     PROFILE_CPU();
+    PROFILE_MEM(ScriptingCSharp);
     ASSERT(ClassToTypeIndex.IsEmpty());
     ScopeLock lock(Locker);
 
@@ -1025,9 +1029,10 @@ void ManagedBinaryModule::InitType(MClass* mclass)
 {
 #if !COMPILE_WITHOUT_CSHARP
     // Skip if already initialized
-    const StringAnsi& typeName = mclass->GetFullName();
+    const StringAnsiView typeName = mclass->GetFullName();
     if (TypeNameToTypeIndex.ContainsKey(typeName))
         return;
+    PROFILE_MEM(ScriptingCSharp);
 
     // Find first native base C++ class of this C# class
     MClass* baseClass = mclass->GetBaseClass();
@@ -1057,9 +1062,13 @@ void ManagedBinaryModule::InitType(MClass* mclass)
     if (baseType.TypeIndex == -1 || baseType.Module == nullptr)
     {
         if (baseType.Module)
+        {
             LOG(Error, "Missing base class for managed class {0} from assembly {1}.", String(baseClass->GetFullName()), baseType.Module->GetName().ToString());
+        }
         else
+        {
             LOG(Error, "Missing base class for managed class {0} from unknown assembly.", String(baseClass->GetFullName()));
+        }
         return;
     }
 
@@ -1086,7 +1095,7 @@ void ManagedBinaryModule::InitType(MClass* mclass)
     // Initialize scripting interfaces implemented in C#
     int32 interfacesCount = 0;
     MClass* klass = mclass;
-    const Array<MClass*>& interfaceClasses = klass->GetInterfaces();
+    const auto& interfaceClasses = klass->GetInterfaces();
     for (const MClass* interfaceClass : interfaceClasses)
     {
         const ScriptingTypeHandle interfaceType = FindType(interfaceClass);
@@ -1175,14 +1184,14 @@ void ManagedBinaryModule::OnUnloading(MAssembly* assembly)
     for (int32 i = _firstManagedTypeIndex; i < Types.Count(); i++)
     {
         const ScriptingType& type = Types[i];
-        const StringAnsi typeName(type.Fullname.Get(), type.Fullname.Length());
-        TypeNameToTypeIndex.Remove(typeName);
+        TypeNameToTypeIndex.Remove(type.Fullname);
     }
 }
 
 void ManagedBinaryModule::OnUnloaded(MAssembly* assembly)
 {
     PROFILE_CPU();
+    PROFILE_MEM(ScriptingCSharp);
 
     // Clear managed-only types
     Types.Resize(_firstManagedTypeIndex);
@@ -1495,9 +1504,13 @@ bool ManagedBinaryModule::GetFieldValue(void* field, const Variant& instance, Va
         if (!instanceObject || !MCore::Object::GetClass(instanceObject)->IsSubClassOf(parentClass))
         {
             if (!instanceObject)
+            {
                 LOG(Error, "Failed to get '{0}.{1}' without object instance", String(parentClass->GetFullName()), String(name));
+            }
             else
+            {
                 LOG(Error, "Failed to get '{0}.{1}' with invalid object instance of type '{2}'", String(parentClass->GetFullName()), String(name), String(MUtils::GetClassFullname(instanceObject)));
+            }
             return true;
         }
     }
@@ -1553,9 +1566,13 @@ bool ManagedBinaryModule::SetFieldValue(void* field, const Variant& instance, Va
         if (!instanceObject || !MCore::Object::GetClass(instanceObject)->IsSubClassOf(parentClass))
         {
             if (!instanceObject)
+            {
                 LOG(Error, "Failed to set '{0}.{1}' without object instance", String(parentClass->GetFullName()), String(name));
+            }
             else
+            {
                 LOG(Error, "Failed to set '{0}.{1}' with invalid object instance of type '{2}'", String(parentClass->GetFullName()), String(name), String(MUtils::GetClassFullname(instanceObject)));
+            }
             return true;
         }
     }

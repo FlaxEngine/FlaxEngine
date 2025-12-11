@@ -90,6 +90,7 @@ protected:
     int64 _refCount = 0;
     int64 _chunksLock = 0;
     int64 _files = 0;
+    int64 _isUnloadingData = 0;
     double _lastRefLostTime;
     CriticalSection _loadLocker;
 
@@ -129,10 +130,7 @@ public:
     /// <summary>
     /// Locks the storage chunks data to prevent disposing them. Also ensures that file handles won't be closed while chunks are locked.
     /// </summary>
-    FORCE_INLINE void LockChunks()
-    {
-        Platform::InterlockedIncrement(&_chunksLock);
-    }
+    void LockChunks();
 
     /// <summary>
     /// Unlocks the storage chunks data.
@@ -148,7 +146,6 @@ public:
     struct LockData
     {
         friend FlaxStorage;
-        static LockData Invalid;
 
     private:
         FlaxStorage* _storage;
@@ -161,6 +158,11 @@ public:
         }
 
     public:
+        LockData()
+            : _storage(nullptr)
+        {
+        }
+
         LockData(const LockData& other)
             : _storage(other._storage)
         {

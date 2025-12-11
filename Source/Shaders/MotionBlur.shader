@@ -21,6 +21,8 @@ int MaxBlurSamples;
 uint VariableTileLoopCount;
 float2 Input0SizeInv;
 float2 Input2SizeInv;
+float3 PrevWorldOriginOffset;
+float Dummy1;
 META_CB_END
 
 DECLARE_GBUFFERDATA_ACCESS(GBuffer)
@@ -39,7 +41,7 @@ float4 PS_CameraMotionVectors(Quad_VS2PS input) : SV_Target
 	GBufferData gBufferData = GetGBufferData();
 	float4 worldPos = float4(GetWorldPos(gBufferData, input.TexCoord, deviceDepth), 1);
 
-	float4 prevClipPos = mul(worldPos, PreviousVP);
+	float4 prevClipPos = mul(worldPos + float4(PrevWorldOriginOffset, 0), PreviousVP);
 	float4 curClipPos = mul(worldPos, CurrentVP);
 	float2 prevHPos = prevClipPos.xy / prevClipPos.w;
 	float2 curHPos = curClipPos.xy / curClipPos.w;

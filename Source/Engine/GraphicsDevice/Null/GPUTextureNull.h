@@ -33,6 +33,10 @@ public:
     {
         return nullptr;
     }
+    GPUTextureView* ViewStencil() const override
+    {
+        return nullptr;
+    }
     void* GetNativePtr() const override
     {
         return nullptr;

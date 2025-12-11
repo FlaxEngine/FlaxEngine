@@ -192,11 +192,18 @@ namespace Flax.Build
             {
                 if (string.IsNullOrEmpty(path))
                     return string.Empty;
-                if (path.StartsWith(Globals.EngineRoot))
+                path = Utilities.NormalizePath(path);
+                if (IsMacroPath(path, Globals.EngineRoot))
                     path = "$(EnginePath)" + path.Substring(Globals.EngineRoot.Length);
-                else if (path.StartsWith(projectPath))
+                else if (IsMacroPath(path, projectPath)) 
                     path = "$(ProjectPath)" + path.Substring(projectPath.Length);
-                return Utilities.NormalizePath(path);
+                return path;
+            }
+
+            private static bool IsMacroPath(string path, string root)
+            {
+                root = Utilities.NormalizePath(root);
+                return path == root || path.StartsWith(root + '/');
             }
         }
 

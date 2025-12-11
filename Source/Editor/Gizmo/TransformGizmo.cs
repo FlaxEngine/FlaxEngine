@@ -161,6 +161,7 @@ namespace FlaxEditor.Gizmo
             // Ensure player is not moving objects
             if (ActiveAxis != Axis.None)
                 return;
+            Profiler.BeginEvent("Pick");
 
             // Get mouse ray and try to hit any object
             var ray = Owner.MouseRay;
@@ -249,6 +250,8 @@ namespace FlaxEditor.Gizmo
             {
                 sceneEditing.Deselect();
             }
+
+            Profiler.EndEvent();
         }
 
         /// <inheritdoc />

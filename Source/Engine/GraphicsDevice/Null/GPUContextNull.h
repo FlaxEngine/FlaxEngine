@@ -177,7 +177,7 @@ public:
     {
     }
 
-    void ClearState() override
+    void ResetState() override
     {
     }
 

@@ -15,26 +15,32 @@
 #include "Editor/ProjectInfo.h"
 #include "Editor/Utilities/EditorUtilities.h"
 
-GDKPlatformTools::GDKPlatformTools()
+String GetGDK()
 {
-    // Find GDK
-    Platform::GetEnvironmentVariable(TEXT("GameDKLatest"), _gdkPath);
-    if (_gdkPath.IsEmpty() || !FileSystem::DirectoryExists(_gdkPath))
+    String gdk;
+    Platform::GetEnvironmentVariable(TEXT("GameDKLatest"), gdk);
+    if (gdk.IsEmpty() || !FileSystem::DirectoryExists(gdk))
     {
-        _gdkPath.Clear();
-        Platform::GetEnvironmentVariable(TEXT("GRDKLatest"), _gdkPath);
-        if (_gdkPath.IsEmpty() || !FileSystem::DirectoryExists(_gdkPath))
+        gdk.Clear();
+        Platform::GetEnvironmentVariable(TEXT("GRDKLatest"), gdk);
+        if (gdk.IsEmpty() || !FileSystem::DirectoryExists(gdk))
         {
-            _gdkPath.Clear();
+            gdk.Clear();
         }
         else
         {
-            if (_gdkPath.EndsWith(TEXT("GRDK\\")))
-                _gdkPath.Remove(_gdkPath.Length() - 6);
-            else if (_gdkPath.EndsWith(TEXT("GRDK")))
-                _gdkPath.Remove(_gdkPath.Length() - 5);
+            if (gdk.EndsWith(TEXT("GRDK\\")))
+                gdk.Remove(gdk.Length() - 6);
+            else if (gdk.EndsWith(TEXT("GRDK")))
+                gdk.Remove(gdk.Length() - 5);
         }
     }
+    return gdk;
+}
+
+GDKPlatformTools::GDKPlatformTools()
+{
+    _gdkPath = GetGDK();
 }
 
 DotNetAOTModes GDKPlatformTools::UseAOT() const
@@ -121,7 +127,7 @@ bool GDKPlatformTools::OnPostProcess(CookingData& data, GDKPlatformSettings* pla
         validName.Add('\0');
 
         sb.Append(TEXT("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"));
-        sb.Append(TEXT("<Game configVersion=\"0\">\n"));
+        sb.Append(TEXT("<Game configVersion=\"1\">\n"));
         sb.AppendFormat(TEXT("  <Identity Name=\"{0}\" Publisher=\"{1}\" Version=\"{2}\"/>\n"),
                         validName.Get(),
                         platformSettings->PublisherName.HasChars() ? platformSettings->PublisherName : TEXT("CN=") + gameSettings->CompanyName,
@@ -193,6 +199,11 @@ bool GDKPlatformTools::OnPostProcess(CookingData& data, GDKPlatformSettings* pla
     }
 
     return false;
+}
+
+int32 GDKPlatformTools::GetDotnetVersion() const
+{
+    return GAME_BUILD_DOTNET_RUNTIME_MIN_VER;
 }
 
 #endif

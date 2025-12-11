@@ -107,7 +107,6 @@ void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const M
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
     drawCall.ObjectRadius = (float)_sphere.Radius;
     drawCall.Surface.GeometrySize = _box.GetSize();
-    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = GetPerInstanceRandom();
     MaterialBase::BindParameters bindParams(context, renderContext, drawCall);
     bindParams.BindViewData();
@@ -129,6 +128,7 @@ void Skybox::ApplySky(GPUContext* context, RenderContext& renderContext, const M
             material->SetParameterValue(TEXT("PanoramicTexture"), PanoramicTexture.Get(), false);
             material->SetParameterValue(TEXT("Color"), Color * Math::Exp2(Exposure), false);
             material->SetParameterValue(TEXT("IsPanoramic"), PanoramicTexture != nullptr, false);
+            material->SetParameterValue(TEXT("RotationEuler"), _rotationEuler, false);
             material->Bind(bindParams);
         }
     }
@@ -163,4 +163,5 @@ void Skybox::OnTransformChanged()
 
     _box = BoundingBox(_transform.Translation);
     _sphere = BoundingSphere(_transform.Translation, 0.0f);
+    _rotationEuler = GetOrientation().GetEuler() * DegreesToRadians;
 }

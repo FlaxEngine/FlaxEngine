@@ -49,10 +49,19 @@ void CmdBufferVulkan::End()
     PROFILE_CPU();
     ASSERT(IsOutsideRenderPass());
 
-#if GPU_ALLOW_PROFILE_EVENTS && VK_EXT_debug_utils
+#if GPU_ALLOW_PROFILE_EVENTS
     // End remaining events
     while (_eventsBegin--)
-        vkCmdEndDebugUtilsLabelEXT(GetHandle());
+    {
+#if VK_EXT_debug_utils
+        if (vkCmdEndDebugUtilsLabelEXT)
+            vkCmdEndDebugUtilsLabelEXT(GetHandle());
+#endif
+#if GPU_ENABLE_TRACY
+        tracy::EndVkZoneScope(_tracyZones.Last().Data);
+        _tracyZones.RemoveLast();
+#endif
+    }
 #endif
 
     VALIDATE_VULKAN_RESULT(vkEndCommandBuffer(GetHandle()));
@@ -85,39 +94,43 @@ void CmdBufferVulkan::EndRenderPass()
 
 #if GPU_ALLOW_PROFILE_EVENTS
 
-void CmdBufferVulkan::BeginEvent(const Char* name)
+void CmdBufferVulkan::BeginEvent(const Char* name, void* tracyContext)
 {
-#if VK_EXT_debug_utils
-    if (!vkCmdBeginDebugUtilsLabelEXT)
-        return;
-
     _eventsBegin++;
 
-    // Convert to ANSI
-    char buffer[101];
-    int32 i = 0;
-    while (i < 100 && name[i])
-    {
-        buffer[i] = (char)name[i];
-        i++;
-    }
-    buffer[i] = 0;
+    char buffer[60];
+    int32 bufferSize = StringUtils::Copy(buffer, name, sizeof(buffer));
 
-    VkDebugUtilsLabelEXT label;
-    RenderToolsVulkan::ZeroStruct(label, VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT);
-    label.pLabelName = buffer;
-    vkCmdBeginDebugUtilsLabelEXT(GetHandle(), &label);
+#if GPU_ENABLE_TRACY
+    auto& zone = _tracyZones.AddOne();
+    tracy::BeginVkZoneScope(zone.Data, tracyContext, GetHandle(), buffer, bufferSize);
+#endif
+
+#if VK_EXT_debug_utils
+    if (vkCmdBeginDebugUtilsLabelEXT)
+    {
+        VkDebugUtilsLabelEXT label;
+        RenderToolsVulkan::ZeroStruct(label, VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT);
+        label.pLabelName = buffer;
+        vkCmdBeginDebugUtilsLabelEXT(GetHandle(), &label);
+    }
 #endif
 }
 
 void CmdBufferVulkan::EndEvent()
 {
-#if VK_EXT_debug_utils
-    if (_eventsBegin == 0 || !vkCmdEndDebugUtilsLabelEXT)
+    if (_eventsBegin == 0)
         return;
     _eventsBegin--;
 
-    vkCmdEndDebugUtilsLabelEXT(GetHandle());
+#if VK_EXT_debug_utils
+    if (vkCmdEndDebugUtilsLabelEXT)
+        vkCmdEndDebugUtilsLabelEXT(GetHandle());
+#endif
+
+#if GPU_ENABLE_TRACY
+    tracy::EndVkZoneScope(_tracyZones.Last().Data);
+    _tracyZones.RemoveLast();
 #endif
 }
 

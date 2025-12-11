@@ -14,6 +14,7 @@
 #include "Engine/Renderer/RenderList.h"
 #include "Engine/Scripting/ManagedCLR/MCore.h"
 #include "Engine/Threading/Threading.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "Engine/Renderer/GBufferPass.h"
 #endif
@@ -48,6 +49,7 @@ namespace
 {
     bool UpdateMesh(MeshBase* mesh, uint32 vertexCount, uint32 triangleCount, PixelFormat indexFormat, const Float3* vertices, const void* triangles, const Float3* normals, const Float3* tangents, const Float2* uvs, const Color32* colors)
     {
+        PROFILE_MEM(GraphicsMeshes);
         auto model = mesh->GetModelBase();
         CHECK_RETURN(model && model->IsVirtual(), true);
         CHECK_RETURN(triangles && vertices, true);
@@ -172,6 +174,7 @@ bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0Element
 
 bool Mesh::UpdateMesh(uint32 vertexCount, uint32 triangleCount, const VB0ElementType* vb0, const VB1ElementType* vb1, const VB2ElementType* vb2, const void* ib, bool use16BitIndices)
 {
+    PROFILE_MEM(GraphicsMeshes);
     Release();
 
     // Setup GPU resources
@@ -215,7 +218,7 @@ bool Mesh::Load(uint32 vertices, uint32 triangles, const void* vb0, const void* 
     return Init(vertices, triangles, vbData, ib, use16BitIndexBuffer, vbLayout);
 }
 
-void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int8 sortOrder) const
+void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, const Matrix& world, StaticFlags flags, bool receiveDecals, DrawPass drawModes, float perInstanceRandom, int8 sortOrder, uint8 stencilValue) const
 {
     if (!material || !material->IsSurface() || !IsInitialized())
         return;
@@ -237,8 +240,8 @@ void Mesh::Draw(const RenderContext& renderContext, MaterialBase* material, cons
     drawCall.ObjectRadius = (float)_sphere.Radius * drawCall.World.GetScaleVector().GetAbsolute().MaxValue();
     drawCall.Surface.GeometrySize = _box.GetSize();
     drawCall.Surface.PrevWorld = world;
-    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = perInstanceRandom;
+    drawCall.StencilValue = stencilValue;
 #if USE_EDITOR
     const ViewMode viewMode = renderContext.View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
@@ -304,8 +307,8 @@ void Mesh::Draw(const RenderContext& renderContext, const DrawInfo& info, float 
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
-    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
+    drawCall.StencilValue = info.StencilValue;
 #if USE_EDITOR
     const ViewMode viewMode = renderContext.View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)
@@ -367,8 +370,8 @@ void Mesh::Draw(const RenderContextBatch& renderContextBatch, const DrawInfo& in
     drawCall.Surface.Lightmap = (info.Flags & StaticFlags::Lightmap) != StaticFlags::None ? info.Lightmap : nullptr;
     drawCall.Surface.LightmapUVsArea = info.LightmapUVs ? *info.LightmapUVs : Rectangle::Empty;
     drawCall.Surface.LODDitherFactor = lodDitherFactor;
-    drawCall.WorldDeterminantSign = RenderTools::GetWorldDeterminantSign(drawCall.World);
     drawCall.PerInstanceRandom = info.PerInstanceRandom;
+    drawCall.StencilValue = info.StencilValue;
 #if USE_EDITOR
     const ViewMode viewMode = renderContextBatch.GetMainContext().View.Mode;
     if (viewMode == ViewMode::LightmapUVsDensity || viewMode == ViewMode::LODPreview)

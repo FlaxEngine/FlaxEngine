@@ -98,18 +98,8 @@ bool PostProcessingPass::setupResources()
     if (!_shader->IsLoaded())
         return true;
     auto shader = _shader->GetShader();
-
-    // Validate shader constant buffer size
-    if (shader->GetCB(0)->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
-    if (shader->GetCB(1)->GetSize() != sizeof(GaussianBlurData))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 1, GaussianBlurData);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 1, GaussianBlurData);
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc = GPUPipelineState::Description::DefaultFullscreenTriangle;
@@ -377,19 +367,25 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     // Bloom
 
     auto tempDesc = GPUTextureDescription::New2D(w2, h2, bloomMipCount, output->Format(), GPUTextureFlags::ShaderResource | GPUTextureFlags::RenderTarget | GPUTextureFlags::PerMipViews);
-    auto bloomBuffer1 = RenderTargetPool::Get(tempDesc);
-    RENDER_TARGET_POOL_SET_NAME(bloomBuffer1, "PostProcessing.Bloom");
-    auto bloomBuffer2 = RenderTargetPool::Get(tempDesc);
-    RENDER_TARGET_POOL_SET_NAME(bloomBuffer2, "PostProcessing.Bloom");
-
-    for (int32 mip = 0; mip < bloomMipCount; mip++)
+    GPUTexture* bloomBuffer1 = nullptr, *bloomBuffer2 = nullptr;
+    if (useBloom || useLensFlares)
     {
-        context->Clear(bloomBuffer1->View(0, mip), Color::Transparent);
-        context->Clear(bloomBuffer2->View(0, mip), Color::Transparent);
+        bloomBuffer1 = RenderTargetPool::Get(tempDesc);
+        bloomBuffer2 = RenderTargetPool::Get(tempDesc);
+        RENDER_TARGET_POOL_SET_NAME(bloomBuffer1, "PostProcessing.Bloom");
+        RENDER_TARGET_POOL_SET_NAME(bloomBuffer2, "PostProcessing.Bloom");
+
+        // TODO: skip this clear? or do it at once for the whole textures (2 calls instead of per-mip)
+        for (int32 mip = 0; mip < bloomMipCount; mip++)
+        {
+            context->Clear(bloomBuffer1->View(0, mip), Color::Transparent);
+            context->Clear(bloomBuffer2->View(0, mip), Color::Transparent);
+        }
     }
 
     if (useBloom)
     {
+        PROFILE_GPU("Bloom");
         context->SetRenderTarget(bloomBuffer1->View(0, 0));
         context->SetViewportAndScissors((float)w2, (float)h2);
         context->BindSR(0, input->View());
@@ -450,6 +446,8 @@ void PostProcessingPass::Render(RenderContext& renderContext, GPUTexture* input,
     // Check if use lens flares
     if (useLensFlares)
     {
+        PROFILE_GPU("Lens Flares");
+
         // Prepare lens flares helper textures
         context->BindSR(5, GetCustomOrDefault(settings.LensFlares.LensStar, _defaultLensStar, TEXT("Engine/Textures/DefaultLensStarburst")));
         context->BindSR(6, GetCustomOrDefault(settings.LensFlares.LensColor, _defaultLensColor, TEXT("Engine/Textures/DefaultLensColor")));

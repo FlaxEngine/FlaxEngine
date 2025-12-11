@@ -150,32 +150,32 @@ API_ENUM() enum class GamepadButton
     Back = 6,
 
     /// <summary>
-    /// Left thumbstick button.
+    /// Left thumbstick button (L).
     /// </summary>
     LeftThumb = 7,
 
     /// <summary>
-    /// Right thumbstick button.
+    /// Right thumbstick button (R).
     /// </summary>
     RightThumb = 8,
 
     /// <summary>
-    /// Left shoulder button.
+    /// Left shoulder button (LB).
     /// </summary>
     LeftShoulder = 9,
 
     /// <summary>
-    /// Right shoulder button.
+    /// Right shoulder button (RB).
     /// </summary>
     RightShoulder = 10,
 
     /// <summary>
-    /// Left trigger button.
+    /// Left trigger button (LT).
     /// </summary>
     LeftTrigger = 11,
 
     /// <summary>
-    /// Right trigger button.
+    /// Right trigger button (RT).
     /// </summary>
     RightTrigger = 12,
 

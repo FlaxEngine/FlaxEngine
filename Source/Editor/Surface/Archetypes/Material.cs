@@ -6,6 +6,7 @@ using FlaxEditor.Scripting;
 using FlaxEditor.Surface.Elements;
 using FlaxEditor.Windows.Assets;
 using FlaxEngine;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.Surface.Archetypes
 {
@@ -123,7 +124,8 @@ namespace FlaxEditor.Surface.Archetypes
                 case MaterialDomain.Particle:
                 case MaterialDomain.Deformable:
                 {
-                    bool isNotUnlit = info.ShadingModel != MaterialShadingModel.Unlit;
+                    bool isNotUnlit = info.ShadingModel != MaterialShadingModel.Unlit && info.ShadingModel != MaterialShadingModel.CustomLit;
+                    bool isOpaque = info.BlendMode == MaterialBlendMode.Opaque;
                     bool withTess = info.TessellationMode != TessellationMethod.None;
 
                     GetBox(MaterialNodeBoxes.Color).IsActive = isNotUnlit;
@@ -134,8 +136,8 @@ namespace FlaxEditor.Surface.Archetypes
                     GetBox(MaterialNodeBoxes.Roughness).IsActive = isNotUnlit;
                     GetBox(MaterialNodeBoxes.AmbientOcclusion).IsActive = isNotUnlit;
                     GetBox(MaterialNodeBoxes.Normal).IsActive = isNotUnlit;
-                    GetBox(MaterialNodeBoxes.Opacity).IsActive = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage || info.BlendMode != MaterialBlendMode.Opaque;
-                    GetBox(MaterialNodeBoxes.Refraction).IsActive = info.BlendMode != MaterialBlendMode.Opaque;
+                    GetBox(MaterialNodeBoxes.Opacity).IsActive = info.ShadingModel == MaterialShadingModel.Subsurface || info.ShadingModel == MaterialShadingModel.Foliage || !isOpaque;
+                    GetBox(MaterialNodeBoxes.Refraction).IsActive = !isOpaque;
                     GetBox(MaterialNodeBoxes.PositionOffset).IsActive = true;
                     GetBox(MaterialNodeBoxes.TessellationMultiplier).IsActive = withTess;
                     GetBox(MaterialNodeBoxes.WorldDisplacement).IsActive = withTess;
@@ -257,6 +259,211 @@ namespace FlaxEditor.Surface.Archetypes
                 if (function)
                     function.GetSignature(out types, out names);
                 return function;
+            }
+        }
+
+#if false // TODO: finish code editor based on RichTextBoxBase with text block parsing for custom styling
+        internal sealed class CustomCodeTextBox : RichTextBoxBase
+        {
+            protected override void OnParseTextBlocks()
+            {
+                base.OnParseTextBlocks();
+
+                // Single block for a whole text
+                // TODO: implement code parsing with HLSL syntax
+                var font = Style.Current.FontMedium;
+                var style = new TextBlockStyle
+                {
+                    Font = new FontReference(font),
+                    Color = Style.Current.Foreground,
+                    BackgroundSelectedBrush = new SolidColorBrush(Style.Current.BackgroundSelected),
+                };
+                _textBlocks.Clear();
+                _textBlocks.Add(new TextBlock
+                {
+                    Range = new TextRange
+                    {
+                        StartIndex = 0,
+                        EndIndex = TextLength,
+                    },
+                    Style = style,
+                    Bounds = new Rectangle(Float2.Zero, font.MeasureText(Text)),
+                });
+            }
+#else
+        internal sealed class CustomCodeTextBox : TextBox
+        {
+#endif
+            public override void Draw()
+            {
+                base.Draw();
+
+                // Draw border
+                if (!IsFocused)
+                    Render2D.DrawRectangle(new Rectangle(Float2.Zero, Size), Style.Current.BorderNormal);
+            }
+        }
+
+        internal sealed class CustomCodeNode : SurfaceNode
+        {
+            private Rectangle _resizeButtonRect;
+            private Float2 _startResizingSize;
+            private Float2 _startResizingCornerOffset;
+            private bool _isResizing;
+            private CustomCodeTextBox _textBox;
+
+            private int SizeValueIndex => Archetype.TypeID == 8 ? 1 : 3; // Index of the Size stored in Values array
+
+            private Float2 SizeValue
+            {
+                get => (Float2)Values[SizeValueIndex];
+                set => SetValue(SizeValueIndex, value, false);
+            }
+
+            public CustomCodeNode(uint id, VisjectSurfaceContext context, NodeArchetype nodeArch, GroupArchetype groupArch)
+            : base(id, context, nodeArch, groupArch)
+            {
+                Float2 pos = new Float2(FlaxEditor.Surface.Constants.NodeMarginX, FlaxEditor.Surface.Constants.NodeMarginY + FlaxEditor.Surface.Constants.NodeHeaderSize), size;
+                if (nodeArch.TypeID == 8)
+                {
+                    pos += new Float2(60, 0);
+                    size = new Float2(172, 200);
+                }
+                else
+                {
+                    pos += new Float2(0, 40);
+                    size = new Float2(300, 200);
+                }
+                _textBox = new CustomCodeTextBox
+                {
+                    IsMultiline = true,
+                    Location = pos,
+                    Size = size,
+                    Parent = this,
+                    AnchorMax = Float2.One,
+                };
+                _textBox.EditEnd += () => SetValue(0, _textBox.Text);
+            }
+
+            public override bool CanSelect(ref Float2 location)
+            {
+                return base.CanSelect(ref location) && !_resizeButtonRect.MakeOffsetted(Location).Contains(ref location);
+            }
+
+            public override void OnSurfaceLoaded(SurfaceNodeActions action)
+            {
+                base.OnSurfaceLoaded(action);
+
+                _textBox.Text = (string)Values[0];
+
+                var size = SizeValue;
+                if (Surface != null && Surface.GridSnappingEnabled)
+                    size = Surface.SnapToGrid(size, true);
+                Resize(size.X, size.Y);
+            }
+
+            public override void OnValuesChanged()
+            {
+                base.OnValuesChanged();
+
+                var size = SizeValue;
+                Resize(size.X, size.Y);
+                _textBox.Text = (string)Values[0];
+            }
+
+            protected override void UpdateRectangles()
+            {
+                base.UpdateRectangles();
+
+                const float buttonMargin = FlaxEditor.Surface.Constants.NodeCloseButtonMargin;
+                const float buttonSize = FlaxEditor.Surface.Constants.NodeCloseButtonSize;
+                _resizeButtonRect = new Rectangle(_closeButtonRect.Left, Height - buttonSize - buttonMargin - 4, buttonSize, buttonSize);
+            }
+
+            public override void Draw()
+            {
+                base.Draw();
+
+                var style = Style.Current;
+                if (_isResizing)
+                {
+                    Render2D.FillRectangle(_resizeButtonRect, style.Selection);
+                    Render2D.DrawRectangle(_resizeButtonRect, style.SelectionBorder);
+                }
+                Render2D.DrawSprite(style.Scale, _resizeButtonRect, _resizeButtonRect.Contains(_mousePosition) && Surface.CanEdit ? style.Foreground : style.ForegroundGrey);
+            }
+
+            public override void OnLostFocus()
+            {
+                if (_isResizing)
+                    EndResizing();
+
+                base.OnLostFocus();
+            }
+
+            public override void OnEndMouseCapture()
+            {
+                if (_isResizing)
+                    EndResizing();
+
+                base.OnEndMouseCapture();
+            }
+
+            public override bool OnMouseDown(Float2 location, MouseButton button)
+            {
+                if (base.OnMouseDown(location, button))
+                    return true;
+
+                if (button == MouseButton.Left && _resizeButtonRect.Contains(ref location) && Surface.CanEdit)
+                {
+                    // Start sliding
+                    _isResizing = true;
+                    _startResizingSize = Size;
+                    _startResizingCornerOffset = Size - location;
+                    StartMouseCapture();
+                    Cursor = CursorType.SizeNWSE;
+                    return true;
+                }
+
+                return false;
+            }
+
+            public override void OnMouseMove(Float2 location)
+            {
+                if (_isResizing)
+                {
+                    var emptySize = CalculateNodeSize(0, 0);
+                    var size = Float2.Max(location - emptySize + _startResizingCornerOffset, new Float2(240, 160));
+                    Resize(size.X, size.Y);
+                }
+                else
+                {
+                    base.OnMouseMove(location);
+                }
+            }
+
+            public override bool OnMouseUp(Float2 location, MouseButton button)
+            {
+                if (button == MouseButton.Left && _isResizing)
+                {
+                    EndResizing();
+                    return true;
+                }
+
+                return base.OnMouseUp(location, button);
+            }
+
+            private void EndResizing()
+            {
+                Cursor = CursorType.Default;
+                EndMouseCapture();
+                _isResizing = false;
+                if (_startResizingSize != Size)
+                {
+                    var emptySize = CalculateNodeSize(0, 0);
+                    SizeValue = Size - emptySize;
+                    Surface.MarkAsEdited(false);
+                }
             }
         }
 
@@ -410,13 +617,15 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 8,
+                Create = (id, context, arch, groupArch) => new CustomCodeNode(id, context, arch, groupArch),
                 Title = "Custom Code",
                 Description = "Custom HLSL shader code expression",
                 Flags = NodeFlags.MaterialGraph,
                 Size = new Float2(300, 200),
                 DefaultValues = new object[]
                 {
-                    "// Here you can add HLSL code\nOutput0 = Input0;"
+                    "// Here you can add HLSL code\nOutput0 = Input0;",
+                    new Float2(300, 200),
                 },
                 Elements = new[]
                 {
@@ -433,8 +642,6 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Output(1, "Output1", typeof(Float4), 9),
                     NodeElementArchetype.Factory.Output(2, "Output2", typeof(Float4), 10),
                     NodeElementArchetype.Factory.Output(3, "Output3", typeof(Float4), 11),
-
-                    NodeElementArchetype.Factory.TextBox(60, 0, 175, 200, 0),
                 }
             },
             new NodeArchetype
@@ -874,6 +1081,7 @@ namespace FlaxEditor.Surface.Archetypes
             new NodeArchetype
             {
                 TypeID = 38,
+                Create = (id, context, arch, groupArch) => new CustomCodeNode(id, context, arch, groupArch),
                 Title = "Custom Global Code",
                 Description = "Custom global HLSL shader code expression (placed before material shader code). Can contain includes to shader utilities or declare functions to reuse later.",
                 Flags = NodeFlags.MaterialGraph,
@@ -883,6 +1091,7 @@ namespace FlaxEditor.Surface.Archetypes
                     "// Here you can add HLSL code\nfloat4 GetCustomColor()\n{\n\treturn float4(1, 0, 0, 1);\n}",
                     true,
                     (int)MaterialTemplateInputsMapping.Utilities,
+                    new Float2(300, 240),
                 },
                 Elements = new[]
                 {
@@ -890,7 +1099,6 @@ namespace FlaxEditor.Surface.Archetypes
                     NodeElementArchetype.Factory.Text(20, 0, "Enabled"),
                     NodeElementArchetype.Factory.Text(0, 20, "Location"),
                     NodeElementArchetype.Factory.Enum(50, 20, 120, 2, typeof(MaterialTemplateInputsMapping)),
-                    NodeElementArchetype.Factory.TextBox(0, 40, 300, 200, 0),
                 }
             },
             new NodeArchetype

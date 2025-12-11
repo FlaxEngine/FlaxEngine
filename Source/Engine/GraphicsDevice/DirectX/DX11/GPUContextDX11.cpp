@@ -11,9 +11,18 @@
 #include "GPUSamplerDX11.h"
 #include "GPUVertexLayoutDX11.h"
 #include "Engine/GraphicsDevice/DirectX/RenderToolsDX.h"
+#include "Engine/Graphics/PixelFormatExtensions.h"
 #include "Engine/Core/Math/Viewport.h"
 #include "Engine/Core/Math/Rectangle.h"
 #include "Engine/Profiler/RenderStats.h"
+#if COMPILE_WITH_NVAPI
+#include <ThirdParty/nvapi/nvapi.h>
+extern bool EnableNvapi;
+#endif
+#if COMPILE_WITH_AGS
+#include <ThirdParty/AGS/amd_ags.h>
+extern AGSContext* AgsContext;
+#endif
 
 #define DX11_CLEAR_SR_ON_STAGE_DISABLE 0
 
@@ -65,10 +74,17 @@ GPUContextDX11::GPUContextDX11(GPUDeviceDX11* device, ID3D11DeviceContext* conte
     _maxUASlots = GPU_MAX_UA_BINDED;
     if (_device->GetRendererType() != RendererType::DirectX11)
         _maxUASlots = 1;
+
+#if GPU_ENABLE_TRACY
+    _tracyContext = tracy::CreateD3D11Context(device->GetDevice(), context);
+#endif
 }
 
 GPUContextDX11::~GPUContextDX11()
 {
+#if GPU_ENABLE_TRACY
+    tracy::DestroyD3D11Context(_tracyContext);
+#endif
 #if GPU_ALLOW_PROFILE_EVENTS
     SAFE_RELEASE(_userDefinedAnnotations);
 #endif
@@ -80,6 +96,7 @@ void GPUContextDX11::FrameBegin()
     GPUContext::FrameBegin();
 
     // Setup
+    _flushOnDispatch = false;
     _omDirtyFlag = false;
     _uaDirtyFlag = false;
     _cbDirtyFlag = false;
@@ -88,6 +105,7 @@ void GPUContextDX11::FrameBegin()
     _srMaskDirtyCompute = 0;
     _rtCount = 0;
     _vertexLayout = nullptr;
+    _currentCompute = nullptr;
     _currentState = nullptr;
     _rtDepth = nullptr;
     Platform::MemoryClear(_rtHandles, sizeof(_rtHandles));
@@ -139,16 +157,35 @@ void GPUContextDX11::FrameBegin()
     _context->CSSetSamplers(0, ARRAY_COUNT(samplers), samplers);
 }
 
+void GPUContextDX11::OnPresent()
+{
+    GPUContext::OnPresent();
+
+#if GPU_ENABLE_TRACY
+    tracy::CollectD3D11Context(_tracyContext);
+#endif
+}
+
 #if GPU_ALLOW_PROFILE_EVENTS
 
 void GPUContextDX11::EventBegin(const Char* name)
 {
     if (_userDefinedAnnotations)
         _userDefinedAnnotations->BeginEvent(name);
+
+#if GPU_ENABLE_TRACY
+    char buffer[60];
+    int32 bufferSize = StringUtils::Copy(buffer, name, sizeof(buffer));
+    tracy::BeginD3D11ZoneScope(_tracyZone, _tracyContext, buffer, bufferSize);
+#endif
 }
 
 void GPUContextDX11::EventEnd()
 {
+#if GPU_ENABLE_TRACY
+    tracy::EndD3D11ZoneScope(_tracyZone);
+#endif
+
     if (_userDefinedAnnotations)
         _userDefinedAnnotations->EndEvent();
 }
@@ -180,7 +217,10 @@ void GPUContextDX11::ClearDepth(GPUTextureView* depthBuffer, float depthValue, u
     if (depthBufferDX11)
     {
         ASSERT(depthBufferDX11->DSV());
-        _context->ClearDepthStencilView(depthBufferDX11->DSV(), D3D11_CLEAR_DEPTH, depthValue, stencilValue);
+        UINT clearFlags = D3D11_CLEAR_DEPTH;
+        if (PixelFormatExtensions::HasStencil(depthBufferDX11->GetFormat()))
+            clearFlags |= D3D11_CLEAR_STENCIL;
+        _context->ClearDepthStencilView(depthBufferDX11->DSV(), clearFlags, depthValue, stencilValue);
     }
 }
 
@@ -267,10 +307,10 @@ void GPUContextDX11::SetRenderTarget(GPUTextureView* depthBuffer, const Span<GPU
     auto depthBufferDX11 = static_cast<GPUTextureViewDX11*>(depthBuffer);
     ID3D11DepthStencilView* dsv = depthBufferDX11 ? depthBufferDX11->DSV() : nullptr;
 
-    ID3D11RenderTargetView* rtvs[GPU_MAX_RT_BINDED];
+    __declspec(align(16)) ID3D11RenderTargetView* rtvs[GPU_MAX_RT_BINDED];
     for (int32 i = 0; i < rts.Length(); i++)
     {
-        auto rtDX11 = reinterpret_cast<GPUTextureViewDX11*>(rts[i]);
+        auto rtDX11 = reinterpret_cast<GPUTextureViewDX11*>(rts.Get()[i]);
         rtvs[i] = rtDX11 ? rtDX11->RTV() : nullptr;
     }
     int32 rtvsSize = sizeof(ID3D11RenderTargetView*) * rts.Length();
@@ -404,7 +444,7 @@ void GPUContextDX11::BindVB(const Span<GPUBuffer*>& vertexBuffers, const uint32*
     bool vbEdited = false;
     for (int32 i = 0; i < vertexBuffers.Length(); i++)
     {
-        const auto vbDX11 = static_cast<GPUBufferDX11*>(vertexBuffers[i]);
+        const auto vbDX11 = static_cast<GPUBufferDX11*>(vertexBuffers.Get()[i]);
         const auto vb = vbDX11 ? vbDX11->GetBuffer() : nullptr;
         vbEdited |= vb != _vbHandles[i];
         _vbHandles[i] = vb;
@@ -462,40 +502,19 @@ void GPUContextDX11::UpdateCB(GPUConstantBuffer* cb, const void* data)
 
 void GPUContextDX11::Dispatch(GPUShaderProgramCS* shader, uint32 threadGroupCountX, uint32 threadGroupCountY, uint32 threadGroupCountZ)
 {
-    CurrentCS = (GPUShaderProgramCSDX11*)shader;
-
-    // Flush
-    flushCBs();
-    flushSRVs();
-    flushUAVs();
-    flushOM();
-
-    // Dispatch
-    _context->CSSetShader((ID3D11ComputeShader*)shader->GetBufferHandle(), nullptr, 0);
+    onDispatch(shader);
     _context->Dispatch(threadGroupCountX, threadGroupCountY, threadGroupCountZ);
     RENDER_STAT_DISPATCH_CALL();
-
     CurrentCS = nullptr;
 }
 
 void GPUContextDX11::DispatchIndirect(GPUShaderProgramCS* shader, GPUBuffer* bufferForArgs, uint32 offsetForArgs)
 {
     ASSERT(bufferForArgs && EnumHasAnyFlags(bufferForArgs->GetFlags(), GPUBufferFlags::Argument));
-    CurrentCS = (GPUShaderProgramCSDX11*)shader;
-
     auto bufferForArgsDX11 = (GPUBufferDX11*)bufferForArgs;
-
-    // Flush
-    flushCBs();
-    flushSRVs();
-    flushUAVs();
-    flushOM();
-
-    // Dispatch
-    _context->CSSetShader((ID3D11ComputeShader*)shader->GetBufferHandle(), nullptr, 0);
+    onDispatch(shader);
     _context->DispatchIndirect(bufferForArgsDX11->GetBuffer(), offsetForArgs);
     RENDER_STAT_DISPATCH_CALL();
-
     CurrentCS = nullptr;
 }
 
@@ -705,7 +724,7 @@ void GPUContextDX11::SetState(GPUPipelineState* state)
     }
 }
 
-void GPUContextDX11::ClearState()
+void GPUContextDX11::ResetState()
 {
     if (!_context)
         return;
@@ -866,6 +885,34 @@ void GPUContextDX11::CopySubresource(GPUResource* dstResource, uint32 dstSubreso
     _context->CopySubresourceRegion(dstResourceDX11->GetResource(), dstSubresource, 0, 0, 0, srcResourceDX11->GetResource(), srcSubresource, nullptr);
 }
 
+void GPUContextDX11::OverlapUA(bool end)
+{
+    // DirectX 11 doesn't support UAV barriers control but custom GPU driver extensions allow to manually specify overlap sections.
+#if COMPILE_WITH_NVAPI
+    if (EnableNvapi)
+    {
+        if (end)
+            NvAPI_D3D11_EndUAVOverlap(_context);
+        else
+            NvAPI_D3D11_BeginUAVOverlap(_context);
+        _flushOnDispatch |= end;
+        return;
+    }
+#endif
+#if COMPILE_WITH_AGS
+    if (AgsContext)
+    {
+        if (end)
+            agsDriverExtensionsDX11_EndUAVOverlap(AgsContext, _context);
+        else
+            agsDriverExtensionsDX11_BeginUAVOverlap(AgsContext, _context);
+        _flushOnDispatch |= end;
+        return;
+    }
+#endif
+    // TODO: add support for Intel extensions to overlap UAV writes (INTC_D3D11_BeginUAVOverlap/INTC_D3D11_EndUAVOverlap)
+}
+
 void GPUContextDX11::flushSRVs()
 {
 #define FLUSH_STAGE(STAGE) if (Current##STAGE) _context->STAGE##SetShaderResources(0, ARRAY_COUNT(_srHandles), _srHandles)
@@ -975,11 +1022,35 @@ void GPUContextDX11::flushIA()
 
 void GPUContextDX11::onDrawCall()
 {
+    _flushOnDispatch = false;
     flushCBs();
     flushSRVs();
     flushUAVs();
     flushIA();
     flushOM();
+}
+
+void GPUContextDX11::onDispatch(GPUShaderProgramCS* shader)
+{
+    CurrentCS = (GPUShaderProgramCSDX11*)shader;
+
+    flushCBs();
+    flushSRVs();
+    flushUAVs();
+    flushOM();
+
+    if (_flushOnDispatch)
+    {
+        _flushOnDispatch = false;
+        _context->Flush();
+    }
+
+    auto compute = (ID3D11ComputeShader*)shader->GetBufferHandle();
+    if (_currentCompute != compute)
+    {
+        _currentCompute = compute;
+        _context->CSSetShader(compute, nullptr, 0);
+    }
 }
 
 #endif

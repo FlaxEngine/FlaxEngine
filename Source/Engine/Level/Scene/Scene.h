@@ -19,6 +19,7 @@ API_CLASS() class FLAXENGINE_API Scene : public Actor
 {
     friend class Level;
     friend class ReloadScriptsAction;
+    friend class SceneLoader;
     DECLARE_SCENE_OBJECT(Scene);
 
     /// <summary>

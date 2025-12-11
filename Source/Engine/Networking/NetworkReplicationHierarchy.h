@@ -69,7 +69,7 @@ API_STRUCT(NoDefault, Namespace="FlaxEngine.Networking") struct FLAXENGINE_API N
     API_FIELD() uint64 Word1 = 0;
 
     // All bits set for all clients.
-    API_FIELD() static NetworkClientsMask All;
+    API_FIELD(ReadOnly) static NetworkClientsMask All;
 
     FORCE_INLINE bool HasBit(int32 bitIndex) const
     {

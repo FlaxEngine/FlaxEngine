@@ -4,8 +4,56 @@
 
 #include "UploadBufferDX12.h"
 #include "GPUTextureDX12.h"
-#include "GPUContextDX12.h"
 #include "../RenderToolsDX.h"
+#include "Engine/Graphics/GPUResource.h"
+#include "Engine/Profiler/ProfilerMemory.h"
+
+/// <summary>
+/// Single page for the upload buffer
+/// </summary>
+class UploadBufferPageDX12 : public GPUResourceBase<GPUDeviceDX12, GPUResource>, public ResourceOwnerDX12
+{
+public:
+    UploadBufferPageDX12(GPUDeviceDX12* device, uint64 size);
+
+public:
+    /// <summary>
+    /// Last generation that has been using that page
+    /// </summary>
+    uint64 LastGen;
+
+    /// <summary>
+    /// CPU memory address of the page
+    /// </summary>
+    void* CPUAddress;
+
+    /// <summary>
+    /// GPU memory address of the page
+    /// </summary>
+    D3D12_GPU_VIRTUAL_ADDRESS GPUAddress;
+
+    /// <summary>
+    /// Page size in bytes
+    /// </summary>
+    uint64 Size;
+
+public:
+    // [GPUResourceDX12]
+    GPUResourceType GetResourceType() const final override
+    {
+        return GPUResourceType::Buffer;
+    }
+
+    // [ResourceOwnerDX12]
+    GPUResource* AsGPUResource() const override
+    {
+        return (GPUResource*)this;
+    }
+
+protected:
+    // [GPUResourceDX12]
+    void OnReleaseGPU() final override;
+};
 
 UploadBufferDX12::UploadBufferDX12(GPUDeviceDX12* device)
     : _device(device)
@@ -15,24 +63,11 @@ UploadBufferDX12::UploadBufferDX12(GPUDeviceDX12* device)
 {
 }
 
-UploadBufferDX12::~UploadBufferDX12()
-{
-    _freePages.Add(_usedPages);
-    for (auto page : _freePages)
-    {
-        page->ReleaseGPU();
-        Delete(page);
-    }
-}
-
-DynamicAllocation UploadBufferDX12::Allocate(uint64 size, uint64 align)
+UploadBufferDX12::Allocation UploadBufferDX12::Allocate(uint64 size, uint64 align)
 {
     const uint64 alignmentMask = align - 1;
-    ASSERT((alignmentMask & align) == 0);
-
-    // Check if use default or bigger page
-    const bool useDefaultSize = size <= DX12_DEFAULT_UPLOAD_PAGE_SIZE;
-    const uint64 pageSize = useDefaultSize ? DX12_DEFAULT_UPLOAD_PAGE_SIZE : size;
+    ASSERT_LOW_LAYER((alignmentMask & align) == 0);
+    const uint64 pageSize = Math::Max<uint64>(size, DX12_DEFAULT_UPLOAD_PAGE_SIZE);
     const uint64 alignedSize = Math::AlignUpWithMask(size, alignmentMask);
 
     // Align the allocation
@@ -40,14 +75,26 @@ DynamicAllocation UploadBufferDX12::Allocate(uint64 size, uint64 align)
 
     // Check if there is enough space for that chunk of the data in the current page
     if (_currentPage && _currentOffset + alignedSize > _currentPage->Size)
-    {
         _currentPage = nullptr;
-    }
 
     // Check if need to get new page
     if (_currentPage == nullptr)
     {
-        _currentPage = requestPage(pageSize);
+        // Try reusing existing page
+        for (int32 i = 0; i < _freePages.Count(); i++)
+        {
+            UploadBufferPageDX12* page = _freePages.Get()[i];
+            if (page->Size == pageSize)
+            {
+                _freePages.RemoveAt(i);
+                _currentPage = page;
+                break;
+            }
+        }
+        if (_currentPage == nullptr)
+            _currentPage = New<UploadBufferPageDX12>(_device, pageSize);
+        _usedPages.Add(_currentPage);
+        ASSERT_LOW_LAYER(_currentPage->GetResource());
         _currentOffset = 0;
     }
 
@@ -55,32 +102,27 @@ DynamicAllocation UploadBufferDX12::Allocate(uint64 size, uint64 align)
     _currentPage->LastGen = _currentGeneration;
 
     // Create allocation result
-    const DynamicAllocation result(static_cast<byte*>(_currentPage->CPUAddress) + _currentOffset, _currentOffset, size, _currentPage->GPUAddress + _currentOffset, _currentPage, _currentGeneration);
+    const Allocation result { (byte*)_currentPage->CPUAddress + _currentOffset, _currentOffset, size, _currentPage->GPUAddress + _currentOffset, _currentPage->GetResource(), _currentGeneration };
 
-    // Move in the page
+    // Move within a page
     _currentOffset += size;
 
-    ASSERT(_currentPage->GetResource());
     return result;
 }
 
-bool UploadBufferDX12::UploadBuffer(GPUContextDX12* context, ID3D12Resource* buffer, uint32 bufferOffset, const void* data, uint64 size)
+void UploadBufferDX12::UploadBuffer(ID3D12GraphicsCommandList* commandList, ID3D12Resource* buffer, uint32 bufferOffset, const void* data, uint64 size)
 {
     // Allocate data
-    const DynamicAllocation allocation = Allocate(size, 4);
-    if (allocation.IsInvalid())
-        return true;
+    const auto allocation = Allocate(size, GPU_SHADER_DATA_ALIGNMENT);
 
     // Copy data
-    Platform::MemoryCopy(allocation.CPUAddress, data, static_cast<size_t>(size));
+    Platform::MemoryCopy(allocation.CPUAddress, data, size);
 
     // Copy buffer region
-    context->GetCommandList()->CopyBufferRegion(buffer, bufferOffset, allocation.Page->GetResource(), allocation.Offset, size);
-
-    return false;
+    commandList->CopyBufferRegion(buffer, bufferOffset, allocation.Resource, allocation.Offset, size);
 }
 
-bool UploadBufferDX12::UploadTexture(GPUContextDX12* context, ID3D12Resource* texture, const void* srcData, uint32 srcRowPitch, uint32 srcSlicePitch, int32 mipIndex, int32 arrayIndex)
+void UploadBufferDX12::UploadTexture(ID3D12GraphicsCommandList* commandList, ID3D12Resource* texture, const void* srcData, uint32 srcRowPitch, uint32 srcSlicePitch, int32 mipIndex, int32 arrayIndex)
 {
     D3D12_RESOURCE_DESC resourceDesc = texture->GetDesc();
     const UINT subresourceIndex = RenderToolsDX::CalcSubresourceIndex(mipIndex, arrayIndex, resourceDesc.MipLevels);
@@ -94,9 +136,7 @@ bool UploadBufferDX12::UploadTexture(GPUContextDX12* context, ID3D12Resource* te
     const uint64 sliceSizeAligned = numSlices * mipSizeAligned;
 
     // Allocate data
-    const DynamicAllocation allocation = Allocate(sliceSizeAligned, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
-    if (allocation.Size != sliceSizeAligned)
-        return true;
+    const auto allocation = Allocate(sliceSizeAligned, D3D12_TEXTURE_DATA_PLACEMENT_ALIGNMENT);
 
     byte* ptr = (byte*)srcData;
     ASSERT(srcSlicePitch <= sliceSizeAligned);
@@ -127,15 +167,13 @@ bool UploadBufferDX12::UploadTexture(GPUContextDX12* context, ID3D12Resource* te
 
     // Source buffer copy location description
     D3D12_TEXTURE_COPY_LOCATION srcLocation;
-    srcLocation.pResource = allocation.Page->GetResource();
+    srcLocation.pResource = allocation.Resource;
     srcLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
     srcLocation.PlacedFootprint.Offset = allocation.Offset;
     srcLocation.PlacedFootprint.Footprint = footprint.Footprint;
 
     // Copy texture region
-    context->GetCommandList()->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
-
-    return false;
+    commandList->CopyTextureRegion(&dstLocation, 0, 0, 0, &srcLocation, nullptr);
 }
 
 void UploadBufferDX12::BeginGeneration(uint64 generation)
@@ -169,41 +207,18 @@ void UploadBufferDX12::BeginGeneration(uint64 generation)
     _currentGeneration = generation;
 }
 
-UploadBufferPageDX12* UploadBufferDX12::requestPage(uint64 size)
+void UploadBufferDX12::ReleaseGPU()
 {
-    // Try to find valid page
-    int32 freePageIndex = -1;
-    for (int32 i = 0; i < _freePages.Count(); i++)
+    _freePages.Add(_usedPages);
+    for (auto page : _freePages)
     {
-        if (_freePages[i]->Size == size)
-        {
-            freePageIndex = i;
-            break;
-        }
+        page->ReleaseGPU();
+        Delete(page);
     }
-
-    // Check if create a new page
-    UploadBufferPageDX12* page;
-    if (freePageIndex == -1)
-    {
-        // Get a new page to use
-        page = New<UploadBufferPageDX12>(_device, size);
-    }
-    else
-    {
-        // Remove from free pages
-        page = _freePages[freePageIndex];
-        _freePages.RemoveAt(freePageIndex);
-    }
-
-    // Mark page as used
-    _usedPages.Add(page);
-
-    return page;
 }
 
 UploadBufferPageDX12::UploadBufferPageDX12(GPUDeviceDX12* device, uint64 size)
-    : GPUResourceDX12(device, TEXT("Upload Buffer Page"))
+    : GPUResourceBase(device, TEXT("Upload Buffer Page"))
     , LastGen(0)
     , CPUAddress(nullptr)
     , GPUAddress(0)
@@ -233,8 +248,9 @@ UploadBufferPageDX12::UploadBufferPageDX12(GPUDeviceDX12* device, uint64 size)
 
     // Set state
     initResource(resource, D3D12_RESOURCE_STATE_GENERIC_READ, 1);
-    DX_SET_DEBUG_NAME(_resource, GPUResourceDX12::GetName());
+    DX_SET_DEBUG_NAME(_resource, GetName());
     _memoryUsage = size;
+    PROFILE_MEM_INC(GraphicsCommands, _memoryUsage);
     GPUAddress = _resource->GetGPUVirtualAddress();
 
     // Map buffer
@@ -243,11 +259,11 @@ UploadBufferPageDX12::UploadBufferPageDX12(GPUDeviceDX12* device, uint64 size)
 
 void UploadBufferPageDX12::OnReleaseGPU()
 {
+    PROFILE_MEM_DEC(GraphicsCommands, _memoryUsage);
+
     // Unmap
     if (_resource && CPUAddress)
-    {
         _resource->Unmap(0, nullptr);
-    }
     GPUAddress = 0;
     CPUAddress = nullptr;
 

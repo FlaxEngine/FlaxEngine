@@ -292,7 +292,7 @@ DescriptorPoolSetContainerVulkan* DescriptorPoolsManagerVulkan::AcquirePoolSetCo
     ScopeLock lock(_locker);
     for (auto* poolSet : _poolSets)
     {
-        if (poolSet->Refs == 0 && Engine::FrameCount - poolSet->LastFrameUsed > VULKAN_RESOURCE_DELETE_SAFE_FRAMES_COUNT)
+        if (poolSet->Refs == 0 && Engine::FrameCount != poolSet->LastFrameUsed)
         {
             poolSet->LastFrameUsed = Engine::FrameCount;
             poolSet->Reset();

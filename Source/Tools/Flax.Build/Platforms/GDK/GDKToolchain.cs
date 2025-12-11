@@ -14,6 +14,11 @@ namespace Flax.Build.Platforms
     public abstract class GDKToolchain : WindowsToolchainBase
     {
         /// <summary>
+        /// Enables OpenMP library as dynamic dependency.
+        /// </summary>
+        protected bool OpenMP = false;
+
+        /// <summary>
         /// Gets the version of Xbox Services toolset.
         /// </summary>
         public WindowsPlatformToolset XboxServicesToolset => Toolset > WindowsPlatformToolset.v142 ? WindowsPlatformToolset.v142 : Toolset;
@@ -74,6 +79,12 @@ namespace Flax.Build.Platforms
             options.DependencyFiles.Add(Path.Combine(redistToolsPath, "vccorlib140.dll"));
             options.DependencyFiles.Add(Path.Combine(redistToolsPath, "vcruntime140.dll"));
             options.DependencyFiles.Add(Path.Combine(redistToolsPath, "vcruntime140_1.dll"));
+            if (OpenMP)
+            {
+                redistToolsPath = Path.Combine(paths[0], "x64", "Microsoft.VC" + (int)crtToolset + ".OpenMP");
+                redistToolsPath = Utilities.RemovePathRelativeParts(redistToolsPath);
+                options.DependencyFiles.Add(Path.Combine(redistToolsPath, "vcomp140.dll"));
+            }
         }
     }
 }

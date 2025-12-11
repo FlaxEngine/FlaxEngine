@@ -4,6 +4,9 @@
 
 #include "UnixThread.h"
 #include "Engine/Core/Log.h"
+#if PLATFORM_APPLE_FAMILY
+#include "Engine/Utilities/StringConverter.h"
+#endif
 #include "Engine/Threading/IRunnable.h"
 #include "Engine/Threading/ThreadRegistry.h"
 
@@ -29,7 +32,8 @@ void* UnixThread::ThreadProc(void* pThis)
 #if PLATFORM_APPLE_FAMILY
     // Apple doesn't support creating named thread so assign name here
     {
-        pthread_setname_np(StringAnsi(thread->GetName()).Get());
+        const String& name = thread->GetName();
+        pthread_setname_np(StringAsANSI<>(name.Get(), name.Length()).Get());
     }
 #endif
     const int32 exitCode = thread->Run();

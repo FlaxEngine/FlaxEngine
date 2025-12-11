@@ -142,7 +142,8 @@ public:
     /// <param name="drawModes">The draw passes to use for rendering this object.</param>
     /// <param name="perInstanceRandom">The random per-instance value (normalized to range 0-1).</param>
     /// <param name="sortOrder">Object sorting key.</param>
-    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, DrawPass drawModes = DrawPass::Default, float perInstanceRandom = 0.0f, int8 sortOrder = 0) const;
+    /// <param name="stencilValue">Object stencil value.</param>
+    API_FUNCTION() void Draw(API_PARAM(Ref) const RenderContext& renderContext, MaterialBase* material, API_PARAM(Ref) const Matrix& world, StaticFlags flags = StaticFlags::None, bool receiveDecals = true, DrawPass drawModes = DrawPass::Default, float perInstanceRandom = 0.0f, int8 sortOrder = 0, uint8 stencilValue = 0) const;
 
     /// <summary>
     /// Draws the mesh.

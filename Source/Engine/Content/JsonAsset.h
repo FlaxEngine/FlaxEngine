@@ -88,7 +88,7 @@ protected:
 
 public:
     // [Asset]
-    const String& GetPath() const override;
+    StringView GetPath() const override;
     uint64 GetMemoryUsage() const override;
 #if USE_EDITOR
     void GetReferences(Array<Guid, HeapAllocation>& assets, Array<String, HeapAllocation>& files) const override;

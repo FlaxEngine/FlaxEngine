@@ -11,6 +11,7 @@
 #define GLOBAL_SDF_WORLD_SIZE 60000.0f
 #define GLOBAL_SDF_MIN_VALID 0.9f
 #define GLOBAL_SDF_CHUNK_MARGIN_SCALE 4.0f
+#define GLOBAL_SDF_SAMPLER SamplerLinearClamp
 
 // Global SDF data for a constant buffer
 struct GlobalSDFData
@@ -74,6 +75,15 @@ void GetGlobalSDFCascadeUV(const GlobalSDFData data, uint cascade, float3 worldP
     textureUV = float3(((float)cascade + cascadeUV.x) / (float)data.CascadesCount, cascadeUV.y, cascadeUV.z); // Cascades are placed next to each other on X axis
 }
 
+// Clamps Global SDF cascade UV to ensure it can be sued for gradient sampling (clamps first and last pixels).
+void ClampGlobalSDFTextureGradientUV(const GlobalSDFData data, uint cascade, float texelOffset, inout float3 textureUV)
+{
+    float cascadeSizeUV = 1.0f / data.CascadesCount;
+    float cascadeUVStart = cascadeSizeUV * cascade + texelOffset;
+    float cascadeUVEnd = cascadeUVStart + cascadeSizeUV - texelOffset * 3;
+    textureUV.x = clamp(textureUV.x, cascadeUVStart, cascadeUVEnd);
+}
+
 // Gets the Global SDF cascade index for the given world location.
 uint GetGlobalSDFCascade(const GlobalSDFData data, float3 worldPosition)
 {
@@ -96,7 +106,7 @@ float SampleGlobalSDFCascade(const GlobalSDFData data, Texture3D<snorm float> te
     float voxelSize = data.CascadeVoxelSize[cascade];
     float chunkMargin = voxelSize * (GLOBAL_SDF_CHUNK_MARGIN_SCALE * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN);
     float maxDistanceTex = data.CascadeMaxDistanceTex[cascade];
-    float distanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0) * maxDistanceTex;
+    float distanceTex = tex.SampleLevel(GLOBAL_SDF_SAMPLER, textureUV, 0) * maxDistanceTex;
     if (distanceTex < chunkMargin && all(cascadeUV > 0) && all(cascadeUV < 1))
         distance = distanceTex;
     return distance;
@@ -115,7 +125,7 @@ float SampleGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> tex, floa
         float voxelSize = data.CascadeVoxelSize[cascade];
         float chunkMargin = voxelSize * (GLOBAL_SDF_CHUNK_MARGIN_SCALE * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN);
         float maxDistanceTex = data.CascadeMaxDistanceTex[cascade];
-        float distanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0);
+        float distanceTex = tex.SampleLevel(GLOBAL_SDF_SAMPLER, textureUV, 0);
         if (distanceTex < chunkMargin && all(cascadeUV > 0) && all(cascadeUV < 1))
         {
             distance = distanceTex * maxDistanceTex;
@@ -140,12 +150,12 @@ float SampleGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> tex, Text
         float chunkSize = voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
         float chunkMargin = voxelSize * (GLOBAL_SDF_CHUNK_MARGIN_SCALE * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN);
         float maxDistanceMip = data.CascadeMaxDistanceMip[cascade];
-        float distanceMip = mip.SampleLevel(SamplerLinearClamp, textureUV, 0);
+        float distanceMip = mip.SampleLevel(GLOBAL_SDF_SAMPLER, textureUV, 0);
         if (distanceMip < chunkSize && all(cascadeUV > 0) && all(cascadeUV < 1))
         {
             distance = distanceMip * maxDistanceMip;
             float maxDistanceTex = data.CascadeMaxDistanceTex[cascade];
-            float distanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0) * maxDistanceTex;
+            float distanceTex = tex.SampleLevel(GLOBAL_SDF_SAMPLER, textureUV, 0) * maxDistanceTex;
             if (distanceTex < chunkMargin)
                 distance = distanceTex;
             break;
@@ -169,16 +179,17 @@ float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<snorm float> 
         float voxelSize = data.CascadeVoxelSize[cascade];
         float chunkMargin = voxelSize * (GLOBAL_SDF_CHUNK_MARGIN_SCALE * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN);
         float maxDistanceTex = data.CascadeMaxDistanceTex[cascade];
-        float distanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0);
+        float distanceTex = tex.SampleLevel(GLOBAL_SDF_SAMPLER, textureUV, 0);
         if (distanceTex < chunkMargin && all(cascadeUV > 0) && all(cascadeUV < 1))
         {
             float texelOffset = 1.0f / data.Resolution;
-            float xp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
-            float xn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x - texelOffset, textureUV.y, textureUV.z), 0).x;
-            float yp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y + texelOffset, textureUV.z), 0).x;
-            float yn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y - texelOffset, textureUV.z), 0).x;
-            float zp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y, textureUV.z + texelOffset), 0).x;
-            float zn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y, textureUV.z - texelOffset), 0).x;
+            ClampGlobalSDFTextureGradientUV(data, cascade, texelOffset, textureUV);
+            float xp = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
+            float xn = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x - texelOffset, textureUV.y, textureUV.z), 0).x;
+            float yp = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y + texelOffset, textureUV.z), 0).x;
+            float yn = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y - texelOffset, textureUV.z), 0).x;
+            float zp = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y, textureUV.z + texelOffset), 0).x;
+            float zn = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y, textureUV.z - texelOffset), 0).x;
             gradient = float3(xp - xn, yp - yn, zp - zn) * maxDistanceTex;
             distance = distanceTex * maxDistanceTex;
             break;
@@ -203,33 +214,35 @@ float3 SampleGlobalSDFGradient(const GlobalSDFData data, Texture3D<snorm float> 
         float chunkSize = voxelSize * GLOBAL_SDF_RASTERIZE_CHUNK_SIZE;
         float chunkMargin = voxelSize * (GLOBAL_SDF_CHUNK_MARGIN_SCALE * GLOBAL_SDF_RASTERIZE_CHUNK_MARGIN);
         float maxDistanceMip = data.CascadeMaxDistanceMip[cascade];
-        float distanceMip = mip.SampleLevel(SamplerLinearClamp, textureUV, 0) * maxDistanceMip;
+        float distanceMip = mip.SampleLevel(GLOBAL_SDF_SAMPLER, textureUV, 0) * maxDistanceMip;
         if (distanceMip < chunkSize && all(cascadeUV > 0) && all(cascadeUV < 1))
         {
             float maxDistanceTex = data.CascadeMaxDistanceTex[cascade];
-            float distanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0) * maxDistanceTex;
+            float distanceTex = tex.SampleLevel(GLOBAL_SDF_SAMPLER, textureUV, 0) * maxDistanceTex;
             if (distanceTex < chunkMargin)
             {
                 distance = distanceTex;
                 float texelOffset = 1.0f / data.Resolution;
-                float xp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
-                float xn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x - texelOffset, textureUV.y, textureUV.z), 0).x;
-                float yp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y + texelOffset, textureUV.z), 0).x;
-                float yn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y - texelOffset, textureUV.z), 0).x;
-                float zp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y, textureUV.z + texelOffset), 0).x;
-                float zn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y, textureUV.z - texelOffset), 0).x;
+                ClampGlobalSDFTextureGradientUV(data, cascade, texelOffset, textureUV);
+                float xp = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
+                float xn = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x - texelOffset, textureUV.y, textureUV.z), 0).x;
+                float yp = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y + texelOffset, textureUV.z), 0).x;
+                float yn = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y - texelOffset, textureUV.z), 0).x;
+                float zp = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y, textureUV.z + texelOffset), 0).x;
+                float zn = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y, textureUV.z - texelOffset), 0).x;
                 gradient = float3(xp - xn, yp - yn, zp - zn) * maxDistanceTex;
             }
             else
             {
                 distance = distanceMip;
                 float texelOffset = (float)GLOBAL_SDF_RASTERIZE_MIP_FACTOR / data.Resolution;
-                float xp = mip.SampleLevel(SamplerLinearClamp, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
-                float xn = mip.SampleLevel(SamplerLinearClamp, float3(textureUV.x - texelOffset, textureUV.y, textureUV.z), 0).x;
-                float yp = mip.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y + texelOffset, textureUV.z), 0).x;
-                float yn = mip.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y - texelOffset, textureUV.z), 0).x;
-                float zp = mip.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y, textureUV.z + texelOffset), 0).x;
-                float zn = mip.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y, textureUV.z - texelOffset), 0).x;
+                ClampGlobalSDFTextureGradientUV(data, cascade, texelOffset, textureUV);
+                float xp = mip.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
+                float xn = mip.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x - texelOffset, textureUV.y, textureUV.z), 0).x;
+                float yp = mip.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y + texelOffset, textureUV.z), 0).x;
+                float yn = mip.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y - texelOffset, textureUV.z), 0).x;
+                float zp = mip.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y, textureUV.z + texelOffset), 0).x;
+                float zn = mip.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y, textureUV.z - texelOffset), 0).x;
                 gradient = float3(xp - xn, yp - yn, zp - zn) * maxDistanceMip;
             }
             break;
@@ -253,15 +266,14 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> 
         float4 cascadePosDistance = data.CascadePosDistance[cascade];
         float voxelSize = data.CascadeVoxelSize[cascade];
         float voxelExtent = voxelSize * 0.5f;
-        float3 worldPosition = trace.WorldPosition;
 
         // Skip until cascade that contains the start location
-        if (any(abs(worldPosition - cascadePosDistance.xyz) > cascadePosDistance.w))
+        if (any(abs(trace.WorldPosition - cascadePosDistance.xyz) > cascadePosDistance.w))
             continue;
 
         // Hit the cascade bounds to find the intersection points
         float traceStartBias = voxelSize * cascadeTraceStartBias;
-        float2 intersections = LineHitBox(worldPosition, traceEndPosition, cascadePosDistance.xyz - cascadePosDistance.www, cascadePosDistance.xyz + cascadePosDistance.www);
+        float2 intersections = LineHitBox(trace.WorldPosition, traceEndPosition, cascadePosDistance.xyz - cascadePosDistance.www, cascadePosDistance.xyz + cascadePosDistance.www);
         intersections.xy *= traceMaxDistance;
         intersections.x = max(intersections.x, traceStartBias);
         intersections.x = max(intersections.x, nextIntersectionStart);
@@ -280,18 +292,18 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> 
             LOOP
             for (; step < 250 && stepTime < intersections.y && hit.HitTime < 0.0f; step++)
             {
-                float3 stepPosition = worldPosition + trace.WorldDirection * stepTime;
+                float3 stepPosition = trace.WorldPosition + trace.WorldDirection * stepTime;
                 float stepScale = trace.StepScale;
 
                 // Sample SDF
                 float stepDistance, voxelSizeScale = (float)GLOBAL_SDF_RASTERIZE_MIP_FACTOR;
                 float3 cascadeUV, textureUV;
                 GetGlobalSDFCascadeUV(data, cascade, stepPosition, cascadeUV, textureUV);
-                float distanceMip = mip.SampleLevel(SamplerLinearClamp, textureUV, 0) * maxDistanceMip;
+                float distanceMip = mip.SampleLevel(GLOBAL_SDF_SAMPLER, textureUV, 0) * maxDistanceMip;
                 if (distanceMip < chunkSize)
                 {
                     stepDistance = distanceMip;
-                    float distanceTex = tex.SampleLevel(SamplerLinearClamp, textureUV, 0) * maxDistanceTex;
+                    float distanceTex = tex.SampleLevel(GLOBAL_SDF_SAMPLER, textureUV, 0) * maxDistanceTex;
                     if (distanceTex < chunkMargin)
                     {
                         stepDistance = distanceTex;
@@ -301,7 +313,7 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> 
                 }
                 else
                 {
-                    // Assume no SDF nearby so perform a jump tto the next chunk
+                    // Assume no SDF nearby so perform a jump to the next chunk
                     stepDistance = chunkSize;
                     voxelSizeScale = 1.0f;
                 }
@@ -318,12 +330,13 @@ GlobalSDFHit RayTraceGlobalSDF(const GlobalSDFData data, Texture3D<snorm float> 
                     {
                         // Calculate hit normal from SDF gradient
                         float texelOffset = 1.0f / data.Resolution;
-                        float xp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
-                        float xn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x - texelOffset, textureUV.y, textureUV.z), 0).x;
-                        float yp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y + texelOffset, textureUV.z), 0).x;
-                        float yn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y - texelOffset, textureUV.z), 0).x;
-                        float zp = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y, textureUV.z + texelOffset), 0).x;
-                        float zn = tex.SampleLevel(SamplerLinearClamp, float3(textureUV.x, textureUV.y, textureUV.z - texelOffset), 0).x;
+                        ClampGlobalSDFTextureGradientUV(data, cascade, texelOffset, textureUV);
+                        float xp = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x + texelOffset, textureUV.y, textureUV.z), 0).x;
+                        float xn = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x - texelOffset, textureUV.y, textureUV.z), 0).x;
+                        float yp = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y + texelOffset, textureUV.z), 0).x;
+                        float yn = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y - texelOffset, textureUV.z), 0).x;
+                        float zp = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y, textureUV.z + texelOffset), 0).x;
+                        float zn = tex.SampleLevel(GLOBAL_SDF_SAMPLER, float3(textureUV.x, textureUV.y, textureUV.z - texelOffset), 0).x;
                         hit.HitNormal = normalize(float3(xp - xn, yp - yn, zp - zn));
                     }
                 }

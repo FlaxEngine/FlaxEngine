@@ -24,8 +24,8 @@ namespace FlaxEditor.Surface.ContextMenu
         /// Visject context menu item clicked delegate.
         /// </summary>
         /// <param name="clickedItem">The item that was clicked</param>
-        /// <param name="selectedBox">The currently user-selected box. Can be null.</param>
-        public delegate void ItemClickedDelegate(VisjectCMItem clickedItem, Elements.Box selectedBox);
+        /// <param name="selectedBoxes">The currently user-selected boxes. Can be empty/ null.</param>
+        public delegate void ItemClickedDelegate(VisjectCMItem clickedItem, List<Elements.Box> selectedBoxes);
 
         /// <summary>
         /// Visject Surface node archetype spawn ability checking delegate.
@@ -53,7 +53,7 @@ namespace FlaxEditor.Surface.ContextMenu
         private Panel _panel1;
         private VerticalPanel _groupsPanel;
         private readonly ParameterGetterDelegate _parametersGetter;
-        private Elements.Box _selectedBox;
+        private List<Elements.Box> _selectedBoxes = new List<Elements.Box>();
         private NodeArchetype _parameterGetNodeArchetype;
         private NodeArchetype _parameterSetNodeArchetype;
 
@@ -411,7 +411,8 @@ namespace FlaxEditor.Surface.ContextMenu
                 if (!IsLayoutLocked)
                 {
                     group.UnlockChildrenRecursive();
-                    if (_contextSensitiveSearchEnabled && _selectedBox != null)
+                    // TODO: Improve filtering to be based on boxes with the most common things instead of first box
+                    if (_contextSensitiveSearchEnabled && _selectedBoxes.Count > 0 && _selectedBoxes[0] != null)
                         UpdateFilters();
                     else
                         SortGroups();
@@ -423,9 +424,10 @@ namespace FlaxEditor.Surface.ContextMenu
                         OnSearchFilterChanged();
                     }
                 }
-                else if (_contextSensitiveSearchEnabled)
+                else if (_contextSensitiveSearchEnabled && _selectedBoxes.Count > 0)
                 {
-                    group.EvaluateVisibilityWithBox(_selectedBox);
+                    // TODO: Filtering could be improved here as well
+                    group.EvaluateVisibilityWithBox(_selectedBoxes[0]);
                 }
 
                 Profiler.EndEvent();
@@ -460,8 +462,8 @@ namespace FlaxEditor.Surface.ContextMenu
                             Parent = group
                         };
                     }
-                    if (_contextSensitiveSearchEnabled)
-                        group.EvaluateVisibilityWithBox(_selectedBox);
+                    if (_contextSensitiveSearchEnabled && _selectedBoxes.Count > 0)
+                        group.EvaluateVisibilityWithBox(_selectedBoxes[0]);
                     group.SortChildren();
                     if (ShowExpanded)
                         group.Open(false);
@@ -474,7 +476,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
                 if (!isLayoutLocked)
                 {
-                    if (_contextSensitiveSearchEnabled && _selectedBox != null)
+                    if (_contextSensitiveSearchEnabled && _selectedBoxes.Count != 0 && _selectedBoxes[0] != null)
                         UpdateFilters();
                     else
                         SortGroups();
@@ -583,7 +585,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
         private void UpdateFilters()
         {
-            if (string.IsNullOrEmpty(_searchBox.Text) && _selectedBox == null)
+            if (string.IsNullOrEmpty(_searchBox.Text) && _selectedBoxes[0] == null)
             {
                 ResetView();
                 Profiler.EndEvent();
@@ -592,7 +594,7 @@ namespace FlaxEditor.Surface.ContextMenu
 
             // Update groups
             LockChildrenRecursive();
-            var contextSensitiveSelectedBox = _contextSensitiveSearchEnabled ? _selectedBox : null;
+            var contextSensitiveSelectedBox = _contextSensitiveSearchEnabled && _selectedBoxes.Count > 0 ? _selectedBoxes[0] : null;
             for (int i = 0; i < _groups.Count; i++)
             {
                 _groups[i].UpdateFilter(_searchBox.Text, contextSensitiveSelectedBox);
@@ -640,7 +642,7 @@ namespace FlaxEditor.Surface.ContextMenu
         public void OnClickItem(VisjectCMItem item)
         {
             Hide();
-            ItemClicked?.Invoke(item, _selectedBox);
+            ItemClicked?.Invoke(item, _selectedBoxes);
         }
 
         /// <summary>
@@ -666,12 +668,12 @@ namespace FlaxEditor.Surface.ContextMenu
             for (int i = 0; i < _groups.Count; i++)
             {
                 _groups[i].ResetView();
-                if (_contextSensitiveSearchEnabled)
-                    _groups[i].EvaluateVisibilityWithBox(_selectedBox);
+                if (_contextSensitiveSearchEnabled && _selectedBoxes.Count > 0)
+                    _groups[i].EvaluateVisibilityWithBox(_selectedBoxes[0]);
             }
             UnlockChildrenRecursive();
 
-            if (_contextSensitiveSearchEnabled && _selectedBox != null)
+            if (_contextSensitiveSearchEnabled && _selectedBoxes.Count > 0 && _selectedBoxes[0] != null)
                 UpdateFilters();
             else
                 SortGroups();
@@ -772,10 +774,10 @@ namespace FlaxEditor.Surface.ContextMenu
         /// </summary>
         /// <param name="parent">Parent control to attach to it.</param>
         /// <param name="location">Popup menu origin location in parent control coordinates.</param>
-        /// <param name="startBox">The currently selected box that the new node will get connected to. Can be null</param>
-        public void Show(Control parent, Float2 location, Elements.Box startBox)
+        /// <param name="startBoxes">The currently selected boxes that the new node will get connected to. Can be empty/ null</param>
+        public void Show(Control parent, Float2 location, List<Elements.Box> startBoxes)
         {
-            _selectedBox = startBox;
+            _selectedBoxes = startBoxes;
             base.Show(parent, location);
         }
 

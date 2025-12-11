@@ -181,8 +181,8 @@ namespace FlaxEngine.GUI
             ImageColor = style.BorderSelected * 1.2f;
             BorderColor = style.BorderNormal;
             BorderColorHighlighted = style.BorderSelected;
-            CheckedImage = new SpriteBrush(style.CheckBoxTick);
-            IntermediateImage = new SpriteBrush(style.CheckBoxIntermediate);
+            CheckedImage = style.CheckBoxTick.IsValid ? new SpriteBrush(style.CheckBoxTick) : new SolidColorBrush(style.Foreground);
+            IntermediateImage = style.CheckBoxIntermediate.IsValid ? new SpriteBrush(style.CheckBoxIntermediate) : new SolidColorBrush(style.ForegroundGrey);
 
             CacheBox();
         }

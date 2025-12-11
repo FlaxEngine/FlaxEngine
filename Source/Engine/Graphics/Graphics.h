@@ -85,6 +85,16 @@ public:
     API_FIELD() static bool SpreadWorkload;
 
 public:
+    // Post Processing effects rendering configuration.
+    API_CLASS(Static, Attributes = "DebugCommand") class FLAXENGINE_API PostProcessing
+    {
+        DECLARE_SCRIPTING_TYPE_MINIMAL(PostProcessing);
+
+        // Toggles between 2D and 3D LUT texture for Color Grading.
+        API_FIELD() static bool ColorGradingVolumeLUT;
+    };
+
+public:
     /// <summary>
     /// Disposes the device.
     /// </summary>

@@ -5,6 +5,7 @@
 #include "Engine/Serialization/JsonWriters.h"
 #include "Engine/Serialization/SerializationFwd.h"
 #include "Engine/Content/Factories/JsonAssetFactory.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #if USE_EDITOR
 #include "Engine/Threading/Threading.h"
 #include "Engine/Core/Log.h"
@@ -20,6 +21,7 @@ LocalizedStringTable::LocalizedStringTable(const SpawnParams& params, const Asse
 
 void LocalizedStringTable::AddString(const StringView& id, const StringView& value)
 {
+    PROFILE_MEM(Localization);
     auto& values = Entries[id];
     values.Resize(1);
     values[0] = value;
@@ -27,6 +29,7 @@ void LocalizedStringTable::AddString(const StringView& id, const StringView& val
 
 void LocalizedStringTable::AddPluralString(const StringView& id, const StringView& value, int32 n)
 {
+    PROFILE_MEM(Localization);
     CHECK(n >= 0 && n < 1024);
     auto& values = Entries[id];
     values.Resize(Math::Max(values.Count(), n + 1));
@@ -57,6 +60,8 @@ String LocalizedStringTable::GetPluralString(const String& id, int32 n) const
 
 Asset::LoadResult LocalizedStringTable::loadAsset()
 {
+    PROFILE_MEM(Localization);
+
     // Base
     auto result = JsonAssetBase::loadAsset();
     if (result != LoadResult::Ok || IsInternalType())

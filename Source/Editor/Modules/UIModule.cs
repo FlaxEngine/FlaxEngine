@@ -638,6 +638,7 @@ namespace FlaxEditor.Modules
             _menuFileGenerateScriptsProjectFiles = cm.AddButton("Generate scripts project files", inputOptions.GenerateScriptsProject, Editor.ProgressReporting.GenerateScriptsProjectFiles.RunAsync);
             _menuFileRecompileScripts = cm.AddButton("Recompile scripts", inputOptions.RecompileScripts, ScriptsBuilder.Compile);
             cm.AddSeparator();
+            cm.AddButton("New project", NewProject);
             cm.AddButton("Open project...", OpenProject);
             cm.AddButton("Reload project", ReloadProject);
             cm.AddButton("Open project folder", () => FileSystem.ShowFileExplorer(Editor.Instance.GameProject.ProjectFolderPath));
@@ -668,7 +669,7 @@ namespace FlaxEditor.Modules
                 if (item != null)
                     Editor.ContentEditing.Open(item);
             });
-            cm.AddButton("Editor Options", () => Editor.Windows.EditorOptionsWin.Show());
+            cm.AddButton("Editor Options", inputOptions.EditorOptionsWindow, () => Editor.Windows.EditorOptionsWin.Show());
 
             // Scene
             MenuScene = MainMenu.AddButton("Scene");
@@ -713,6 +714,7 @@ namespace FlaxEditor.Modules
             _menuToolsBuildCSGMesh = cm.AddButton("Build CSG mesh", inputOptions.BuildCSG, Editor.BuildCSG);
             _menuToolsBuildNavMesh = cm.AddButton("Build Nav Mesh", inputOptions.BuildNav, Editor.BuildNavMesh);
             _menuToolsBuildAllMeshesSDF = cm.AddButton("Build all meshes SDF", inputOptions.BuildSDF, Editor.BuildAllMeshesSDF);
+            _menuToolsBuildAllMeshesSDF.LinkTooltip("Generates Sign Distance Field texture for all meshes used in loaded scenes. Use with 'F' key pressed to force rebuild SDF for meshes with existing one.");
             cm.AddSeparator();
             cm.AddButton("Game Cooker", Editor.Windows.GameCookerWin.FocusOrShow);
             _menuToolsCancelBuilding = cm.AddButton("Cancel building game", () => GameCooker.Cancel());
@@ -927,6 +929,17 @@ namespace FlaxEditor.Modules
             MasterPanel.AnchorPreset = AnchorPresets.StretchAll;
             MasterPanel.Parent = mainWindow;
             MasterPanel.Offsets = new Margin(0, 0, ToolStrip.Bottom, StatusBar.Height);
+        }
+
+        private void NewProject()
+        {
+            // Ask user to create project file
+            if (FileSystem.ShowSaveFileDialog(Editor.Windows.MainWindow, null, "Project files (*.flaxproj)\0*.flaxproj\0All files (*.*)\0*.*\0", false, "Create project file", out var files))
+                return;
+            if (files != null && files.Length > 0)
+            {
+                Editor.NewProject(files[0]);
+            }
         }
 
         private void OpenProject()

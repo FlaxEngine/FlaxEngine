@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Memory/ArenaAllocation.h"
 #include "Engine/Core/Math/Half.h"
 #include "Engine/Graphics/PostProcessSettings.h"
 #include "Engine/Graphics/DynamicBuffer.h"
@@ -166,6 +167,7 @@ struct RenderDecalData
     Matrix World;
     MaterialBase* Material;
     int32 SortOrder;
+    uint32 RenderLayersMask;
 };
 
 /// <summary>
@@ -241,7 +243,11 @@ struct BatchedDrawCall
 {
     DrawCall DrawCall;
     uint16 ObjectsStartIndex = 0; // Index of the instances start in the ObjectsBuffer (set internally).
-    Array<struct ShaderObjectData, RendererAllocation> Instances;
+    Array<struct ShaderObjectData, ConcurrentArenaAllocation> Instances;
+
+    BatchedDrawCall() { CRASH; } // Don't use it
+    BatchedDrawCall(RenderList* list);
+    BatchedDrawCall(BatchedDrawCall&& other) noexcept;
 };
 
 /// <summary>
@@ -267,10 +273,34 @@ struct DrawCallsList
     /// <summary>
     /// True if draw calls batches list can be rendered using hardware instancing, otherwise false.
     /// </summary>
-    bool CanUseInstancing;
+    bool CanUseInstancing = true;
 
     void Clear();
     bool IsEmpty() const;
+};
+
+// Small utility for allocating memory from RenderList arena pool with automatic fallback to shared RendererAllocation for larger memory blocks.
+struct RenderListAlloc
+{
+    void* Data = nullptr;
+    uint32 Size = 0;
+    bool NeedFree = false;
+
+    ~RenderListAlloc();
+
+    void* Init(RenderList* list, uint32 size, uint32 alignment = 1);
+
+    template<typename T>
+    FORCE_INLINE T* Init(RenderList* list, int32 count, uint32 alignment = 1)
+    {
+        return (T*)Init(list, count * sizeof(T), alignment);
+    }
+
+    template<typename T>
+    FORCE_INLINE T* Get()
+    {
+        return (T*)Data;
+    }
 };
 
 /// <summary>
@@ -298,6 +328,11 @@ API_CLASS(Sealed) class FLAXENGINE_API RenderList : public ScriptingObject
     static void CleanupCache();
 
 public:
+    /// <summary>
+    /// Memory storage with all draw-related data that lives during a single frame rendering time. Thread-safe to allocate memory during rendering jobs.
+    /// </summary>
+    ConcurrentArenaAllocator Memory;
+
     /// <summary>
     /// All scenes for rendering.
     /// </summary>
@@ -331,12 +366,12 @@ public:
     /// <summary>
     /// Light pass members - point lights
     /// </summary>
-    Array<RenderPointLightData> PointLights;
+    RenderListBuffer<RenderPointLightData> PointLights;
 
     /// <summary>
     /// Light pass members - spot lights
     /// </summary>
-    Array<RenderSpotLightData> SpotLights;
+    RenderListBuffer<RenderSpotLightData> SpotLights;
 
     /// <summary>
     /// Light pass members - sky lights
@@ -356,7 +391,7 @@ public:
     /// <summary>
     /// Local volumetric fog particles registered for the rendering.
     /// </summary>
-    Array<DrawCall> VolumetricFogParticles;
+    RenderListBuffer<DrawCall> VolumetricFogParticles;
 
     /// <summary>
     /// Sky/skybox renderer proxy to use (only one per frame)
@@ -425,8 +460,24 @@ public:
     /// </summary>
     DynamicTypedBuffer TempObjectBuffer;
 
+    typedef Function<void(RenderContextBatch& renderContextBatch, int32 contextIndex)> DelayedDraw;
+    void AddDelayedDraw(DelayedDraw&& func);
+    void DrainDelayedDraws(RenderContextBatch& renderContextBatch, int32 contextIndex);
+
+    /// <summary>
+    /// Adds custom callback (eg. lambda) to invoke after scene draw calls are collected on a main thread (some async draw tasks might be active). Allows for safe usage of GPUContext for draw preparations or to perform GPU-driven drawing.
+    /// </summary>
+    template<typename T>
+    FORCE_INLINE void AddDelayedDraw(const T& lambda)
+    {
+        DelayedDraw func;
+        func.Bind<ConcurrentArenaAllocation>(&Memory, lambda);
+        AddDelayedDraw(MoveTemp(func));
+    }
+
 private:
     DynamicVertexBuffer _instanceBuffer;
+    Array<DelayedDraw, ConcurrentArenaAllocation> _delayedDraws;
 
 public:
     /// <summary>
@@ -543,8 +594,7 @@ public:
     /// <param name="pass">The draw pass (optional).</param>
     API_FUNCTION() FORCE_INLINE void SortDrawCalls(API_PARAM(Ref) const RenderContext& renderContext, bool reverseDistance, DrawCallsListType listType, DrawPass pass = DrawPass::All)
     {
-        const bool stable = listType == DrawCallsListType::Forward;
-        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, pass, stable);
+        SortDrawCalls(renderContext, reverseDistance, DrawCallsLists[(int32)listType], DrawCalls, listType);
     }
 
     /// <summary>
@@ -554,9 +604,9 @@ public:
     /// <param name="reverseDistance">If set to <c>true</c> reverse draw call distance to the view. Results in back to front sorting.</param>
     /// <param name="list">The collected draw calls indices list.</param>
     /// <param name="drawCalls">The collected draw calls list.</param>
+    /// <param name="listType">The hint about draw calls list type (optional).</param>
     /// <param name="pass">The draw pass (optional).</param>
-    /// <param name="stable">If set to <c>true</c> draw batches will be additionally sorted to prevent any flickering, otherwise Depth Buffer will smooth out any non-stability in sorting.</param>
-    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawPass pass = DrawPass::All, bool stable = false);
+    void SortDrawCalls(const RenderContext& renderContext, bool reverseDistance, DrawCallsList& list, const RenderListBuffer<DrawCall>& drawCalls, DrawCallsListType listType = DrawCallsListType::GBuffer, DrawPass pass = DrawPass::All);
 
     /// <summary>
     /// Executes the collected draw calls.
@@ -602,13 +652,15 @@ GPU_CB_STRUCT(ShaderObjectData
 
     FORCE_INLINE void Store(const DrawCall& drawCall)
     {
-    Store(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminantSign, drawCall.Surface.LODDitherFactor);
+    Store(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminant ? -1.0f : 1.0f, drawCall.Surface.LODDitherFactor);
     }
 
     FORCE_INLINE void Load(DrawCall& drawCall) const
     {
-    Load(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, drawCall.WorldDeterminantSign, drawCall.Surface.LODDitherFactor);
+    float worldDeterminantSign;
+    Load(drawCall.World, drawCall.Surface.PrevWorld, drawCall.Surface.LightmapUVsArea, drawCall.Surface.GeometrySize, drawCall.PerInstanceRandom, worldDeterminantSign, drawCall.Surface.LODDitherFactor);
     drawCall.ObjectPosition = drawCall.World.GetTranslation();
+    drawCall.WorldDeterminant = worldDeterminantSign < 0 ? 1 : 0;
     }
     });
 

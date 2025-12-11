@@ -3,12 +3,15 @@
 #include "ModelBase.h"
 #include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Transform.h"
+#include "Engine/Core/Config/BuildSettings.h"
 #include "Engine/Content/WeakAssetReference.h"
 #include "Engine/Serialization/MemoryReadStream.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Graphics/Config.h"
 #include "Engine/Graphics/Models/MeshBase.h"
 #include "Engine/Graphics/Models/MeshDeformation.h"
 #include "Engine/Graphics/Shaders/GPUVertexLayout.h"
+#include "Engine/Threading/Threading.h"
 #if GPU_ENABLE_ASYNC_RESOURCES_CREATION
 #include "Engine/Threading/ThreadPoolTask.h"
 #define STREAM_TASK_BASE ThreadPoolTask
@@ -51,13 +54,14 @@ public:
         AssetReference<ModelBase> model = _model.Get();
         if (model == nullptr)
             return true;
+        PROFILE_MEM(GraphicsMeshes);
 
         // Get data
         BytesContainer data;
         model->GetLODData(_lodIndex, data);
         if (data.IsInvalid())
         {
-            LOG(Warning, "Missing data chunk");
+            LOG(Warning, "Missing data chunk with LOD{} for model '{}'", _lodIndex, model->ToString());
             return true;
         }
         MemoryReadStream stream(data.Get(), data.Length());
@@ -230,6 +234,7 @@ bool ModelBase::Save(bool withMeshDataFromGpu, const StringView& path)
         LOG(Error, "To save virtual model asset you need to specify 'withMeshDataFromGpu' (it has no other storage container to get data).");
         return true;
     }
+    auto chunkLocks = Storage ? Storage->Lock() : FlaxStorage::LockData();
     ScopeLock lock(Locker);
 
     // Use a temporary chunks for data storage for virtual assets
@@ -334,6 +339,8 @@ bool ModelBase::LoadHeader(ReadStream& stream, byte& headerVersion)
 
 bool ModelBase::LoadMesh(MemoryReadStream& stream, byte meshVersion, MeshBase* mesh, MeshData* dataIfReadOnly)
 {
+    PROFILE_MEM(GraphicsMeshes);
+
     // Load descriptor
     static_assert(MODEL_MESH_VERSION == 2, "Update code");
     uint32 vertices, triangles;
@@ -661,11 +668,42 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
             return true;
         }
 
+        // Process mesh data if need to decide vertex buffer on format dynamically
+        auto positionFormat = modelData.PositionFormat;
+        if (positionFormat == ModelData::PositionFormats::Automatic)
+        {
+            const float maxPositionError = BuildSettings::Get()->MaxMeshPositionError; // In world-units
+            const float maxPositionErrorSq = maxPositionError * maxPositionError;
+            if (maxPositionErrorSq > 0.0f)
+            {
+                positionFormat = ModelData::PositionFormats::Float16;
+                const Float3* positions = mesh.Positions.Get();
+                for (int32 i = 0; i < mesh.Positions.Count(); i++)
+                {
+                    // Encode to Half3 and decode back to see the position error
+                    Float3 position = positions[i];
+                    Half3 encoded(position);
+                    Float3 decoded = encoded.ToFloat3();
+                    if (Float3::DistanceSquared(position, decoded) > maxPositionErrorSq)
+                    {
+                        // Cannot use lower quality so go back to full precision
+                        positionFormat = ModelData::PositionFormats::Float32;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                // Full precision as default
+                positionFormat = ModelData::PositionFormats::Float32;
+            }
+        }
+
         // Define vertex buffers layout and packing
         Array<GPUVertexLayout::Elements, FixedAllocation<MODEL_MAX_VB>> vbElements;
         const bool useSeparatePositions = !isSkinned;
         const bool useSeparateColors = !isSkinned;
-        PixelFormat positionsFormat = modelData.PositionFormat == ModelData::PositionFormats::Float32 ? PixelFormat::R32G32B32_Float : PixelFormat::R16G16B16A16_Float;
+        PixelFormat positionsFormat = positionFormat == ModelData::PositionFormats::Float32 ? PixelFormat::R32G32B32_Float : PixelFormat::R16G16B16A16_Float;
         PixelFormat texCoordsFormat = modelData.TexCoordFormat == ModelData::TexCoordFormats::Float16 ? PixelFormat::R16G16_Float : PixelFormat::R8G8_UNorm;
         PixelFormat blendIndicesFormat = PixelFormat::R8G8B8A8_UInt;
         PixelFormat blendWeightsFormat = PixelFormat::R8G8B8A8_UNorm;
@@ -679,7 +717,6 @@ bool ModelBase::SaveLOD(WriteStream& stream, const ModelData& modelData, int32 l
         }
         {
             byte vbIndex = 0;
-            // TODO: add option to quantize vertex attributes (eg. 8-bit blend weights, 8-bit texcoords)
 
             // Position
             if (useSeparatePositions)

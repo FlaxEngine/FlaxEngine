@@ -26,6 +26,7 @@ public:
 public:
 
     // [PlatformTools]
+    int32 GetDotnetVersion() const override;
     DotNetAOTModes UseAOT() const override;
     bool OnDeployBinaries(CookingData& data) override;
 };

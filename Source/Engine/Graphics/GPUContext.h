@@ -9,6 +9,11 @@
 #include "PixelFormat.h"
 #include "Config.h"
 
+#if PLATFORM_WIN32
+// Fix nasty Win32 define garbage
+#undef MemoryBarrier
+#endif
+
 class GPUConstantBuffer;
 class GPUShaderProgramCS;
 class GPUBuffer;
@@ -21,6 +26,8 @@ class GPUResourceView;
 class GPUTextureView;
 class GPUBufferView;
 class GPUVertexLayout;
+struct GPUPass;
+enum class GPUResourceAccess;
 
 // Gets the GPU texture view. Checks if pointer is not null and texture has one or more mip levels loaded.
 #define GET_TEXTURE_VIEW_SAFE(t) (t && t->ResidentMipLevels() > 0 ? t->View() : nullptr)
@@ -147,6 +154,11 @@ public:
     /// Ends the current frame rendering.
     /// </summary>
     virtual void FrameEnd();
+
+    /// <summary>
+    /// Called after performing final swapchain presentation and submitting all GPU commands.
+    /// </summary>
+    virtual void OnPresent();
 
 public:
 #if GPU_ALLOW_PROFILE_EVENTS
@@ -606,7 +618,16 @@ public:
     /// <summary>
     /// Clears the context state.
     /// </summary>
-    API_FUNCTION() virtual void ClearState() = 0;
+    DEPRECATED("Use ResetState instead")
+    API_FUNCTION() void ClearState()
+    {
+        ResetState();
+    }
+
+    /// <summary>
+    /// Resets the context state.
+    /// </summary>
+    API_FUNCTION() virtual void ResetState() = 0;
 
     /// <summary>
     /// Flushes the internal cached context state with a command buffer.
@@ -627,4 +648,24 @@ public:
     /// Forces graphics backend to rebind descriptors after command list was used by external graphics library.
     /// </summary>
     virtual void ForceRebindDescriptors();
+
+protected:
+    friend GPUPass;
+    int32 _pass = 0;
+
+public:
+    // Performs resource state transition into a specific access (mask).
+    virtual void Transition(GPUResource* resource, GPUResourceAccess access)
+    {
+    }
+
+    // Inserts a global memory barrier on data copies between resources.
+    virtual void MemoryBarrier()
+    {
+    }
+
+    // Begins or ends unordered access resource overlap region that allows running different compute shader dispatches simultaneously.
+    virtual void OverlapUA(bool end)
+    {
+    }
 };

@@ -11,6 +11,7 @@
 #include "Engine/Physics/PhysicsBackend.h"
 #include "Engine/Physics/PhysicsScene.h"
 #include "Engine/Profiler/ProfilerCPU.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 #include "Engine/Serialization/Serialization.h"
 #include "Engine/Level/Actors/AnimatedModel.h"
 #include "Engine/Level/Scene/SceneRendering.h"
@@ -132,6 +133,7 @@ Array<Float3> Cloth::GetParticles() const
     if (_cloth)
     {
         PROFILE_CPU();
+        PROFILE_MEM(Physics);
         PhysicsBackend::LockClothParticles(_cloth);
         const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
         result.Resize(particles.Length());
@@ -148,6 +150,7 @@ Array<Float3> Cloth::GetParticles() const
 void Cloth::SetParticles(Span<const Float3> value)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Physics);
 #if USE_CLOTH_SANITY_CHECKS
     {
         // Sanity check
@@ -177,6 +180,7 @@ Span<float> Cloth::GetPaint() const
 void Cloth::SetPaint(Span<const float> value)
 {
     PROFILE_CPU();
+    PROFILE_MEM(Physics);
 #if USE_CLOTH_SANITY_CHECKS
     {
         // Sanity check
@@ -302,6 +306,7 @@ void Cloth::Deserialize(DeserializeStream& stream, ISerializeModifier* modifier)
 {
     Actor::Deserialize(stream, modifier);
 
+    PROFILE_MEM(Physics);
     DESERIALIZE_MEMBER(Mesh, _mesh);
     _mesh.Actor = nullptr; // Don't store this reference
     DESERIALIZE_MEMBER(Force, _forceSettings);
@@ -537,6 +542,7 @@ bool Cloth::CreateCloth()
 {
 #if WITH_CLOTH
     PROFILE_CPU();
+    PROFILE_MEM(Physics);
 
     // Skip if all vertices are fixed so cloth sim doesn't make sense
     if (_paint.HasItems())
@@ -632,6 +638,7 @@ void Cloth::CalculateInvMasses(Array<float>& invMasses)
     if (_paint.IsEmpty())
         return;
     PROFILE_CPU();
+    PROFILE_MEM(Physics);
 
     // Get mesh data
     const ModelInstanceActor::MeshReference mesh = GetMesh();
@@ -808,8 +815,7 @@ bool Cloth::OnPreUpdate()
         Array<Float4> particlesSkinned;
         particlesSkinned.Set(particles.Get(), particles.Length());
 
-        // TODO: optimize memory allocs (eg. get pose as Span<Matrix> for readonly)
-        Array<Matrix> pose;
+        Span<Matrix> pose;
         animatedModel->GetCurrentPose(pose);
         const SkeletonData& skeleton = animatedModel->SkinnedModel->Skeleton;
         const SkeletonBone* bones = skeleton.Bones.Get();
@@ -919,6 +925,7 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
         return;
 #if WITH_CLOTH
     PROFILE_CPU_NAMED("Cloth");
+    PROFILE_MEM(Physics);
     PhysicsBackend::LockClothParticles(_cloth);
     const Span<const Float4> particles = PhysicsBackend::GetClothParticles(_cloth);
     auto vbCount = (uint32)mesh->GetVertexCount();
@@ -991,8 +998,7 @@ void Cloth::RunClothDeformer(const MeshBase* mesh, MeshDeformationData& deformat
             return;
         }
 
-        // TODO: optimize memory allocs (eg. get pose as Span<Matrix> for readonly)
-        Array<Matrix> pose;
+        Span<Matrix> pose;
         animatedModel->GetCurrentPose(pose);
         const SkeletonData& skeleton = animatedModel->SkinnedModel->Skeleton;
 

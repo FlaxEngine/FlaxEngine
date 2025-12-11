@@ -510,13 +510,7 @@ bool ShadowsPass::setupResources()
     if (!_sphereModel->CanBeRendered() || !_shader->IsLoaded())
         return true;
     auto shader = _shader->GetShader();
-
-    // Validate shader constant buffers sizes
-    if (shader->GetCB(0)->GetSize() != sizeof(Data))
-    {
-        REPORT_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
-        return true;
-    }
+    CHECK_INVALID_SHADER_PASS_CB_SIZE(shader, 0, Data);
 
     // Create pipeline stages
     GPUPipelineState::Description psDesc;
@@ -634,6 +628,10 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
     atlasLight.Distance = Math::Min(renderContext.View.Far, light.ShadowsDistance);
     atlasLight.Bounds.Center = light.Position + renderContext.View.Origin; // Keep bounds in world-space to properly handle DirtyStaticBounds
     atlasLight.Bounds.Radius = 0.0f;
+
+    // Adjust bias to account for lower shadow quality
+    if (shadows.MaxShadowsQuality == 0)
+        atlasLight.Bias *= 1.5f;
 }
 
 bool ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& renderContext, RenderContextBatch& renderContextBatch, RenderLocalLightData& light, ShadowAtlasLight& atlasLight)
@@ -946,7 +944,10 @@ void ShadowsPass::SetupLight(ShadowsCustomBuffer& shadows, RenderContext& render
         Matrix shadowView, shadowProjection, shadowVP, cullingVP;
 
         // Create view matrix
-        Matrix::LookAt(frustumCenter + light.Direction * minExtents.Z, frustumCenter, Float3::Up, shadowView);
+        Float3 up = Float3::Up;
+        if (Math::Abs(Float3::Dot(light.Direction, up)) > 0.9f)
+            up = Float3::Right;
+        Matrix::LookAt(frustumCenter + light.Direction * minExtents.Z, frustumCenter, up, shadowView);
 
         // Create viewport for culling with extended near/far planes due to culling issues (aka pancaking)
         const float cullRangeExtent = 100000.0f;

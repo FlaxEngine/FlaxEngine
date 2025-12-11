@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Engine/Core/Collections/Array.h"
+#include "Engine/Core/Memory/ArenaAllocation.h"
 #include "MTypes.h"
 
 /// <summary>
@@ -17,21 +18,23 @@ class FLAXENGINE_API MProperty
 protected:
 #if USE_MONO
     MonoProperty* _monoProperty;
+    StringAnsi _name;
 #elif USE_NETCORE
     void* _handle;
+    StringAnsiView _name;
+#else
+    StringAnsiView _name;
 #endif
 
     mutable MMethod* _getMethod;
     mutable MMethod* _setMethod;
     MClass* _parentClass;
 
-    StringAnsi _name;
-
     mutable int32 _hasCachedAttributes : 1;
     mutable int32 _hasSetMethod : 1;
     mutable int32 _hasGetMethod : 1;
 
-    mutable Array<MObject*> _attributes;
+    mutable Array<MObject*, ArenaAllocation> _attributes;
 
 public:
 #if USE_MONO
@@ -49,7 +52,7 @@ public:
     /// <summary>
     /// Gets the property name.
     /// </summary>
-    FORCE_INLINE const StringAnsi& GetName() const
+    FORCE_INLINE StringAnsiView GetName() const
     {
         return _name;
     }
@@ -135,5 +138,5 @@ public:
     /// Returns an instance of all attributes connected with given property. Returns null if the property doesn't have any attributes.
     /// </summary>
     /// <returns>The array of attribute objects.</returns>
-    const Array<MObject*>& GetAttributes() const;
+    const Array<MObject*, ArenaAllocation>& GetAttributes() const;
 };

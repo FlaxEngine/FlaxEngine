@@ -5,16 +5,17 @@
 #include "Engine/Threading/Threading.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Graphics/GPUBuffer.h"
+#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
+#include "Engine/Core/Log.h"
 #include "Engine/Core/Math/Color32.h"
 #include "Engine/Core/Collections/ChunkedArray.h"
 #include "Engine/Core/Collections/Dictionary.h"
-#include "Engine/Content/Content.h"
 #include "Engine/Engine/EngineService.h"
+#include "Engine/Content/Content.h"
 #include "Engine/Content/Assets/MaterialBase.h"
 #include "Engine/Content/AssetReference.h"
-#include "Engine/Core/Log.h"
-#include "Engine/Graphics/Shaders/GPUVertexLayout.h"
 #include "Engine/Renderer/DrawCall.h"
+#include "Engine/Profiler/ProfilerMemory.h"
 
 // Must match structure defined in Terrain.shader
 struct TerrainVertex
@@ -94,6 +95,7 @@ bool TerrainManager::GetChunkGeometry(DrawCall& drawCall, int32 chunkSize, int32
         data->GetChunkGeometry(drawCall);
         return false;
     }
+    PROFILE_MEM(LevelTerrain);
 
     // Prepare
     const int32 vertexCount = (chunkSize + 1) >> lodIndex;

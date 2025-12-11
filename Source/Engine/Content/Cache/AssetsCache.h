@@ -16,6 +16,9 @@ struct AssetHeader;
 struct FlaxStorageReference;
 class FlaxStorage;
 
+// In cooked game all assets are there and all access to registry is read-only so can be multithreaded
+#define ASSETS_CACHE_EDITABLE (USE_EDITOR)
+
 /// <summary>
 /// Assets cache flags.
 /// </summary>
@@ -75,22 +78,21 @@ public:
 
 private:
     bool _isDirty = false;
+#if ASSETS_CACHE_EDITABLE
     CriticalSection _locker;
+#endif
     Registry _registry;
     PathsMapping _pathsMapping;
+#if !USE_EDITOR && !BUILD_RELEASE
+    Dictionary<Guid, StringView> _pathsMappingInv;
+#endif
     String _path;
 
 public:
     /// <summary>
     /// Gets amount of registered assets.
     /// </summary>
-    int32 Size() const
-    {
-        _locker.Lock();
-        const int32 result = _registry.Count();
-        _locker.Unlock();
-        return result;
-    }
+    int32 Size() const;
 
 public:
     /// <summary>
@@ -116,11 +118,11 @@ public:
 
 public:
     /// <summary>
-    /// Finds the asset path by id. In editor it returns the actual asset path, at runtime it returns the mapped asset path.
+    /// Finds the asset path by id. In editor, it returns the actual asset path, at runtime it returns the mapped asset path.
     /// </summary>
     /// <param name="id">The asset id.</param>
     /// <returns>The asset path, or empty if failed to find.</returns>
-    const String& GetEditorAssetPath(const Guid& id) const;
+    StringView GetEditorAssetPath(const Guid& id) const;
 
     /// <summary>
     /// Finds the asset info by path.
@@ -173,6 +175,7 @@ public:
     /// <param name="result">The result array.</param>
     void GetAllByTypeName(const StringView& typeName, Array<Guid, HeapAllocation>& result) const;
 
+#if ASSETS_CACHE_EDITABLE
     /// <summary>
     /// Register assets in the cache
     /// </summary>
@@ -223,6 +226,7 @@ public:
     /// <param name="newPath">New path</param>
     /// <returns>True if has been deleted, otherwise false</returns>
     bool RenameAsset(const StringView& oldPath, const StringView& newPath);
+#endif
 
     /// <summary>
     /// Determines whether cached asset entry is valid.

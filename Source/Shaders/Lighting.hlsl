@@ -31,6 +31,7 @@ LightSample StandardShading(GBufferSample gBuffer, float energy, float3 L, float
     float3 F = F_Schlick(specularColor, VoH);
     float D = D_GGX(gBuffer.Roughness, NoH) * energy;
     float Vis = Vis_SmithJointApprox(gBuffer.Roughness, NoV, NoL);
+    // TODO: apply energy compensation to specular (1.0 + specularColor * (1.0 / PreIntegratedGF.y - 1.0))
     lighting.Specular = (D * Vis) * F;
 #endif
     lighting.Transmission = 0;

@@ -58,6 +58,12 @@ float3 F_Schlick(float3 specularColor, float VoH)
     return saturate(50.0 * specularColor.g) * fc + (1 - fc) * specularColor;
 }
 
+float3 F_Schlick(float3 f0, float3 f90, float VoH)
+{
+	float fc = Pow5(1 - VoH);
+	return f90 * fc + (1 - fc) * f0;
+}
+
 #define REFLECTION_CAPTURE_NUM_MIPS 7
 #define REFLECTION_CAPTURE_ROUGHEST_MIP 1
 #define REFLECTION_CAPTURE_ROUGHNESS_MIP_SCALE 1.2

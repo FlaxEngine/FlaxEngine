@@ -71,7 +71,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 menu.AddButton("Copy", linkedEditor.Copy);
                 var b = menu.AddButton("Duplicate", () => Editor.Duplicate(Index));
-                b.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
+                b.Enabled = !Editor._readOnly && Editor._canResize;
                 b = menu.AddButton("Paste", linkedEditor.Paste);
                 b.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
 
@@ -407,7 +407,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 menu.AddButton("Copy", linkedEditor.Copy);
                 var b = menu.AddButton("Duplicate", () => Editor.Duplicate(Index));
-                b.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
+                b.Enabled = !Editor._readOnly && Editor._canResize;
                 var paste = menu.AddButton("Paste", linkedEditor.Paste);
                 paste.Enabled = linkedEditor.CanPaste && !Editor._readOnly;
 
@@ -422,7 +422,8 @@ namespace FlaxEditor.CustomEditors.Editors
                     moveDownButton.Enabled = Index + 1 < Editor.Count;
                 }
 
-                menu.AddButton("Remove", OnRemoveClicked);
+                b = menu.AddButton("Remove", OnRemoveClicked);
+                b.Enabled = !Editor._readOnly && Editor._canResize;
 
                 menu.Show(panel, location);
             }
@@ -649,7 +650,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 panel.Panel.Size = new Float2(0, 18);
                 panel.Panel.Margin = new Margin(0, 0, Utilities.Constants.UIMargin, 0);
 
-                var removeButton = panel.Button("-", "Remove the last item");
+                var removeButton = panel.Button("-", "Remove the last item.");
                 removeButton.Button.Size = new Float2(16, 16);
                 removeButton.Button.Enabled = size > _minCount;
                 removeButton.Button.AnchorPreset = AnchorPresets.TopRight;
@@ -660,7 +661,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     Resize(Count - 1);
                 };
 
-                var addButton = panel.Button("+", "Add a new item");
+                var addButton = panel.Button("+", "Add a new item.");
                 addButton.Button.Size = new Float2(16, 16);
                 addButton.Button.Enabled = (!NotNullItems || size > 0) && size < _maxCount;
                 addButton.Button.AnchorPreset = AnchorPresets.TopRight;

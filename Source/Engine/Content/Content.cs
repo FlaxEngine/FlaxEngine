@@ -1,5 +1,6 @@
 // Copyright (c) Wojciech Figat. All rights reserved.
 
+using FlaxEngine.Interop;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -7,6 +8,33 @@ namespace FlaxEngine
 {
     partial class Content
     {
+        /// <summary>
+        /// Gets the assets (loaded or during load).
+        /// </summary>
+        public static Asset[] Assets
+        {
+            get
+            {
+                IntPtr ptr = Internal_GetAssetsInternal();
+                ManagedArray array = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(ptr).Target);
+                return NativeInterop.GCHandleArrayToManagedArray<Asset>(array);
+            }
+        }
+
+        /// <summary>
+        /// Gets the assets (loaded or during load).
+        /// </summary>
+        /// <param name="buffer">Output buffer to fill with asset pointers. Can be provided by a user to avoid memory allocation. Buffer might be larger than actual list size. Use <paramref name="count"/> for actual item count.></param>
+        /// <param name="count">Amount of valid items inside <paramref name="buffer"/>.</param>
+        public static void GetAssets(ref Asset[] buffer, out int count)
+        {
+            count = 0;
+            IntPtr ptr = Internal_GetAssetsInternal();
+            ManagedArray array = Unsafe.As<ManagedArray>(ManagedHandle.FromIntPtr(ptr).Target);
+            buffer = NativeInterop.GCHandleArrayToManagedArray<Asset>(array, buffer);
+            count = buffer.Length;
+        }
+
         /// <summary>
         /// Loads asset to the Content Pool and holds it until it won't be referenced by any object. Returns null if asset is missing. Actual asset data loading is performed on a other thread in async.
         /// </summary>

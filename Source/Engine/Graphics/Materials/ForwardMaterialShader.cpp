@@ -25,7 +25,7 @@ DrawPass ForwardMaterialShader::GetDrawModes() const
 bool ForwardMaterialShader::CanUseInstancing(InstancingHandler& handler) const
 {
     handler = { SurfaceDrawCallHandler::GetHash, SurfaceDrawCallHandler::CanBatch, };
-    return true;
+    return false; // TODO: support instancing when using ForwardShadingFeature
 }
 
 void ForwardMaterialShader::Bind(BindParameters& params)
@@ -80,13 +80,10 @@ void ForwardMaterialShader::Bind(BindParameters& params)
     if (IsRunningRadiancePass)
         cullMode = CullMode::TwoSided;
 #endif
-    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminantSign < 0)
+    if (cullMode != CullMode::TwoSided && drawCall.WorldDeterminant)
     {
         // Invert culling when scale is negative
-        if (cullMode == CullMode::Normal)
-            cullMode = CullMode::Inverted;
-        else
-            cullMode = CullMode::Normal;
+        cullMode = cullMode == CullMode::Normal ? CullMode::Inverted : CullMode::Normal;
     }
     ASSERT_LOW_LAYER(!(useSkinning && params.Instanced)); // No support for instancing skinned meshes
     const auto cacheObj = params.Instanced ? &_cacheInstanced : &_cache;
@@ -197,6 +194,11 @@ bool ForwardMaterialShader::Load()
     _cacheInstanced.Depth.Init(psDesc);
     psDesc.VS = _shader->GetVS("VS_Skinned");
     _cache.DepthSkinned.Init(psDesc);
+
+#if PLATFORM_PS5
+    // Fix shader binding issues on forward shading materials on PS5
+    _drawModes = DrawPass::None;
+#endif
 
     return false;
 }
