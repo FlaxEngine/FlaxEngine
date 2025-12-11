@@ -189,7 +189,7 @@ public:
     /// [Deprecated in v1.10]
     /// </summary>
     /// <returns><c>true</c> if  depth buffer is binded; otherwise, <c>false</c>.</returns>
-    DEPRECATED("IsDepthBufferBinded has been deprecated and will be removed in ")
+    DEPRECATED("IsDepthBufferBinded has been deprecated and will be removed in future")
     virtual bool IsDepthBufferBinded() = 0;
 
 public:
@@ -617,9 +617,9 @@ public:
 
     /// <summary>
     /// Clears the context state.
+    /// [Deprecated in v1.12]
     /// </summary>
-    DEPRECATED("Use ResetState instead")
-    API_FUNCTION() void ClearState()
+    API_FUNCTION() DEPRECATED("Use ResetState instead") void ClearState()
     {
         ResetState();
     }
