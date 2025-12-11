@@ -31,6 +31,7 @@ namespace FlaxEditor.Gizmo
 
         private readonly List<SceneGraphNode> _selection = new List<SceneGraphNode>();
         private readonly List<SceneGraphNode> _selectionParents = new List<SceneGraphNode>();
+        private bool _visible = true;
 
         /// <summary>
         /// The event to apply objects transformation.
@@ -51,6 +52,11 @@ namespace FlaxEditor.Gizmo
         /// Gets the array of selected parent objects (as actors).
         /// </summary>
         public List<SceneGraphNode> SelectedParents => _selectionParents;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="TransformGizmo"/> is visible.
+        /// </summary>
+        public bool Visible { get { return _visible; } set { _visible = value; } }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TransformGizmo" /> class.
@@ -273,6 +279,13 @@ namespace FlaxEditor.Gizmo
             SceneGraphTools.BuildNodesParents(_selection, _selectionParents);
 
             base.OnSelectionChanged(newSelection);
+        }
+
+        /// <inheritdoc />
+        public override void Draw(ref RenderContext renderContext)
+        {
+            if (Visible)
+                base.Draw(ref renderContext);
         }
 
         /// <inheritdoc />
