@@ -423,8 +423,8 @@ namespace FlaxEditor.SceneGraph.Actors
 
             for (int i = 1; i < spline.SplinePointsCount; i++)
             {
-                // check all elements to don't left keyframe has invalid time
-                // because points can be added on start or on middle of spline
+                // Check all elements to don't left keyframe has invalid time
+                // because points can be added on start or on middle of spline,
                 // conflicting with time of another keyframes
                 spline.SetSplinePointTime(i, i, false);
             }

@@ -308,7 +308,7 @@ namespace FlaxEditor.CustomEditors
         public event Action<LayoutElementsContainer> AfterLayout;
 
         /// <summary>
-        /// The Editor context that owns this presenter. Can be <see cref="FlaxEditor.Windows.PropertiesWindow"/> or <see cref="FlaxEditor.Windows.Assets.PrefabWindow"/> or other window/panel - custom editor scan use it for more specific features.
+        /// The Editor context that owns this presenter. Can be <see cref="FlaxEditor.Windows.PropertiesWindow"/> or <see cref="FlaxEditor.Windows.Assets.PrefabWindow"/> or other window/panel - custom editors can use it for more specific features.
         /// </summary>
         public IPresenterOwner Owner;
 

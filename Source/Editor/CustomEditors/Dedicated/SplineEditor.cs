@@ -4,9 +4,12 @@ using System;
 using System.Collections.Generic;
 using FlaxEngine;
 using FlaxEditor.Actions;
+using FlaxEditor.CustomEditors.Editors;
+using FlaxEditor.GUI.ContextMenu;
+using FlaxEditor.GUI.Tabs;
 using FlaxEditor.SceneGraph;
 using FlaxEditor.SceneGraph.Actors;
-using FlaxEditor.GUI.Tabs;
+using FlaxEngine.GUI;
 
 namespace FlaxEditor.CustomEditors.Dedicated
 {
@@ -24,6 +27,81 @@ namespace FlaxEditor.CustomEditors.Dedicated
         {
             public Spline Spline;
             public BezierCurve<Transform>.Keyframe[] BeforeKeyframes;
+        }
+
+        /// <summary>
+        /// Custom implementation of <see cref="ArrayEditor"/> for <see cref="Spline"/>.
+        /// </summary>
+        public class SplineElementEditor : ArrayEditor
+        {
+            /// <inheritdoc/>
+            public override void OnSetupItemContextMenu(ContextMenu menu, int itemIndex)
+            {
+                menu.AddSeparator();
+                var b = menu.AddButton("Select & Focus point");
+                b.Clicked += () =>
+                {
+                    if (Presenter.Root.ChildrenEditors[0] is SplineEditor splineEditor)
+                    {
+                        splineEditor.SetSelectSplinePointNode(splineEditor._selectedSpline, itemIndex);
+                        if (Presenter.Owner is Windows.Assets.PrefabWindow prefabWindow)
+                            prefabWindow.FocusSelection();
+                        else
+                            Editor.Instance.Windows.EditWin.FocusSelection();
+                    }
+                };
+            }
+
+            internal override void OnSetupContextMenu(ContextMenu menu, DropPanel panel)
+            {
+                base.OnSetupContextMenu(menu, panel);
+
+                CollectionDropPanel pointPanel = null;
+                Panel scrollPanel = null;
+
+                if (Presenter.Owner is Windows.Assets.PrefabWindow prefabWindow)
+                {
+                    if (prefabWindow.Selection.Count > 0 && prefabWindow.Selection[0] is SplineNode.SplinePointNode prefabPointNode)
+                    {
+                        var pointIndex = prefabPointNode.OrderInParent;
+                        pointPanel = CachedDropPanels[pointIndex];
+                        scrollPanel = (Panel)(prefabWindow.Presenter.ContainerControl.Parent);
+                    }
+                }
+
+                List<SceneGraphNode> selection = Editor.Instance.MainTransformGizmo.Selection;
+                if (selection.Count > 0 && selection[0] is SplineNode.SplinePointNode pointNode)
+                {
+                    var pointIndex = pointNode.OrderInParent;
+                    pointPanel = CachedDropPanels[pointIndex];
+                    scrollPanel = Editor.Instance.Windows.PropertiesWin;
+                }
+
+                if (scrollPanel != null && pointPanel != null)
+                {
+                    menu.AddSeparator();
+                    var b = menu.AddButton("Scroll to selected");
+
+                    b.Clicked += () =>
+                    {
+                        panel.Open();
+                        scrollPanel.ScrollViewTo(pointPanel);
+                    };
+                }
+            }
+
+            /// <inheritdoc/>
+            protected override object PostProcessNewValue(object lastValue, int valueIndex, int oldSize)
+            {
+                BezierCurve<Transform>.Keyframe newValue = (BezierCurve<Transform>.Keyframe)base.PostProcessNewValue(lastValue, valueIndex, oldSize);
+
+                // Place new keyframes further down on the spline to avoid overlapping
+                var realValueIndex = oldSize == 0 ? valueIndex : valueIndex + 1; // Prevent processing first keyframe in (fomer empty) array
+                newValue.Time += 0.25f * realValueIndex;
+                newValue.Value.Translation += Vector3.Forward * 25f * realValueIndex;
+
+                return newValue;
+            }
         }
 
         /// <summary>
@@ -107,7 +185,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             {
                 SetKeyframeLinear(spline, index);
 
-                // change the selection to tangent parent (a spline point / keyframe)
+                // Change the selection to tangent parent (a spline point / keyframe)
                 Editor.SetSelectSplinePointNode(spline, index);
             }
         }
@@ -155,7 +233,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
                 var referenceTangent = alignWithIn ? keyframe.TangentIn : keyframe.TangentOut;
                 var otherTangent = !alignWithIn ? keyframe.TangentIn : keyframe.TangentOut;
 
-                // inverse of reference tangent
+                // Inverse of reference tangent
                 otherTangent.Translation = -referenceTangent.Translation.Normalized * otherTangent.Translation.Length;
 
                 if (alignWithIn)
@@ -531,7 +609,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
 
         private void UpdateSelectedPoint()
         {
-            // works only if select one spline
+            // Works only if select one spline
             if (_selectedSpline)
             {
                 var selection = GetSelection();
@@ -818,8 +896,8 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var nextKeyframe = !isLastKeyframe ? spline.GetSplineKeyframe(index + 1) : keyframe;
             var previousKeyframe = !isFirstKeyframe ? spline.GetSplineKeyframe(index - 1) : keyframe;
 
-            // calc form from Spline.cpp -> SetTangentsSmooth
-            // get tangent direction
+            // Calc from to Spline.cpp -> SetTangentsSmooth
+            // Get tangent direction
             var tangentDirection = (keyframe.Value.Translation - previousKeyframe.Value.Translation + nextKeyframe.Value.Translation - keyframe.Value.Translation).Normalized;
 
             keyframe.TangentIn.Translation = -tangentDirection;
@@ -843,7 +921,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var tangentIn = spline.GetSplineTangent(index, true);
             var tangentNodes = point.ChildNodes;
 
-            // find tangent in node comparing all child nodes position
+            // Find tangent in node comparing all child nodes position
             for (int i = 0; i < tangentNodes.Count; i++)
             {
                 if (tangentNodes[i].Transform.Translation == tangentIn.Translation)
@@ -861,7 +939,7 @@ namespace FlaxEditor.CustomEditors.Dedicated
             var tangentOut = spline.GetSplineTangent(index, false);
             var tangentNodes = point.ChildNodes;
 
-            // find tangent out node comparing all child nodes position
+            // Find tangent out node comparing all child nodes position
             for (int i = 0; i < tangentNodes.Count; i++)
             {
                 if (tangentNodes[i].Transform.Translation == tangentOut.Translation)

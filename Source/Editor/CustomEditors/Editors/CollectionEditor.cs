@@ -210,7 +210,10 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
-        private class CollectionDropPanel : DropPanel
+        /// <summary>
+        /// <seealso cref="DropPanel" /> used to display elements of the collection.
+        /// </summary>
+        protected class CollectionDropPanel : DropPanel
         {
             /// <summary>
             /// The collection editor.
@@ -328,7 +331,7 @@ namespace FlaxEditor.CustomEditors.Editors
 
                 for (int i = 0; i < (container.Children.Count + 1) / 2; i++) // Add 1 to pretend there is a spacer at the end.
                 {
-                    var containerChild = container.Children[i * 2]; // times 2 to skip the value editor
+                    var containerChild = container.Children[i * 2]; // Times 2 to skip the value editor
                     if (Mathf.IsInRange(pos, containerChild.Top, containerChild.Top + barCheckAreaHeight) || (i == 0 && pos < containerChild.Top))
                     {
                         index = i;
@@ -425,6 +428,7 @@ namespace FlaxEditor.CustomEditors.Editors
                 b = menu.AddButton("Remove", OnRemoveClicked);
                 b.Enabled = !Editor._readOnly && Editor._canResize;
 
+                Editor.OnSetupItemContextMenu(menu, panel.IndexInParent);
                 menu.Show(panel, location);
             }
 
@@ -449,6 +453,11 @@ namespace FlaxEditor.CustomEditors.Editors
         /// </summary>
         protected bool NotNullItems;
 
+        /// <summary>
+        /// Cached <seealso cref="CollectionDropPanel" />s.
+        /// </summary>
+        protected List<CollectionDropPanel> CachedDropPanels = new List<CollectionDropPanel>();
+
         private IntValueBox _sizeBox;
         private Color _background;
         private int _elementsCount, _minCount, _maxCount;
@@ -456,7 +465,6 @@ namespace FlaxEditor.CustomEditors.Editors
         private bool _canResize;
         private bool _canReorderItems;
         private CollectionAttribute.DisplayType _displayType;
-        private List<CollectionDropPanel> _cachedDropPanels = new List<CollectionDropPanel>();
 
         /// <summary>
         /// Gets the length of the collection.
@@ -477,6 +485,15 @@ namespace FlaxEditor.CustomEditors.Editors
 
         /// <inheritdoc />
         public override bool RevertValueWithChildren => false; // Always revert value for a whole collection
+
+        /// <summary>
+        /// Can be used to inject custom options into collection item context menu.
+        /// </summary>
+        /// <param name="menu">The context menu.</param>
+        /// <param name="itemIndex">The index in the collection of the item that the menu belongs to.</param>
+        public virtual void OnSetupItemContextMenu(ContextMenu menu, int itemIndex)
+        {
+        }
 
         /// <inheritdoc />
         public override void Initialize(LayoutElementsContainer layout)
@@ -599,10 +616,10 @@ namespace FlaxEditor.CustomEditors.Editors
                               (elementType.GetProperties().Length == 1 && elementType.GetFields().Length == 0) ||
                               elementType.Equals(new ScriptType(typeof(JsonAsset))) ||
                               elementType.Equals(new ScriptType(typeof(SettingsBase)));
-                if (_cachedDropPanels == null)
-                    _cachedDropPanels = new List<CollectionDropPanel>();
+                if (CachedDropPanels == null)
+                    CachedDropPanels = new List<CollectionDropPanel>();
                 else
-                    _cachedDropPanels.Clear();
+                    CachedDropPanels.Clear();
                 for (int i = 0; i < size; i++)
                 {
                     // Apply spacing
@@ -626,7 +643,7 @@ namespace FlaxEditor.CustomEditors.Editors
                     else if (_displayType == CollectionAttribute.DisplayType.Header || (_displayType == CollectionAttribute.DisplayType.Default && !single))
                     {
                         var cdp = panel.CustomContainer<CollectionDropPanel>();
-                        _cachedDropPanels.Add(cdp.CustomControl);
+                        CachedDropPanels.Add(cdp.CustomControl);
                         cdp.CustomControl.Setup(this, i, _canReorderItems);
                         var itemLayout = cdp.VerticalPanel();
                         cdp.CustomControl.LinkedEditor = itemLayout.Object(new ListValueContainer(elementType, i, Values, attributes), overrideEditor);
@@ -643,7 +660,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
             _elementsCount = size;
 
-            // Add/Remove buttons
+            // Add/ Remove buttons
             if (_canResize && !_readOnly)
             {
                 var panel = dragArea.HorizontalPanel();
@@ -674,7 +691,7 @@ namespace FlaxEditor.CustomEditors.Editors
             }
         }
 
-        private void OnSetupContextMenu(ContextMenu menu, DropPanel panel)
+        internal virtual void OnSetupContextMenu(ContextMenu menu, DropPanel panel)
         {
             if (menu.Items.Any(x => x is ContextMenuButton b && b.Text.Equals("Open All", StringComparison.Ordinal)))
                 return;
@@ -682,14 +699,14 @@ namespace FlaxEditor.CustomEditors.Editors
             menu.AddSeparator();
             menu.AddButton("Open All", () =>
             {
-                foreach (var cachedPanel in _cachedDropPanels)
+                foreach (var cachedPanel in CachedDropPanels)
                 {
                     cachedPanel.IsClosed = false;
                 }
             });
             menu.AddButton("Close All", () =>
             {
-                foreach (var cachedPanel in _cachedDropPanels)
+                foreach (var cachedPanel in CachedDropPanels)
                 {
                     cachedPanel.IsClosed = true;
                 }
