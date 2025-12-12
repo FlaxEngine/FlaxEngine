@@ -71,7 +71,7 @@ float4 PS_Circle(VS2PS input) : SV_Target0
 // p: centered position
 // b: half-size of box
 // r: radii (TL, TR, BR, BL)
-float sdRoundedBox(float2 p, float2 b, float4 r)
+float RoundedBox(float2 p, float2 b, float4 r)
 {
     // Select X side radii pair
     // If Right (x>0): use yz (TR, BR)
@@ -115,7 +115,7 @@ float4 PS_RoundedRect(VS2PS input) : SV_Target0
     float4 clampedRadii = clamp(radii, 0.0, maxRadius);
 
     float2 p = (input.TexCoord * rectSize) - halfSize;
-    float dist = sdRoundedBox(p, halfSize, clampedRadii);
+    float dist = RoundedBox(p, halfSize, clampedRadii);
 
     float aaf = fwidth(dist);
     float opacity = 1.0 - smoothstep(-aaf, aaf, dist);
