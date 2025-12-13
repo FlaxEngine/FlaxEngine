@@ -7,6 +7,8 @@
 #include "Engine/Graphics/GPUSwapChain.h"
 #include "Engine/Graphics/GPUDevice.h"
 #include "Engine/Input/Input.h"
+#include "Engine/Input/Keyboard.h"
+#include "Engine/Input/Mouse.h"
 #include "Engine/Platform/IGuiData.h"
 #include "Engine/Scripting/ScriptingType.h"
 #include "Engine/Profiler/ProfilerCPU.h"
@@ -442,6 +444,10 @@ void WindowBase::OnClosed()
     // Disable rendering
     if (RenderTask)
         RenderTask->Enabled = false;
+    
+    // Reset input state when closing window to remove any stuck inputs.
+    Input::Mouse->ResetState();
+    Input::Keyboard->ResetState();
 
     // Delete object
     DeleteObject(1);
