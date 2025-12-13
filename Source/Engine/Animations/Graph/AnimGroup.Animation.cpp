@@ -2441,10 +2441,14 @@ void AnimGraphExecutor::ProcessGroupAnimation(Box* boxBase, Node* nodeBase, Valu
         {
             if (bucket.LoopsLeft == 0)
             {
-                // End playing animation
+                // End playing animation and reset bucket params
                 value = tryGetValue(node->GetBox(1), Value::Null);
                 bucket.Index = -1;
                 slot.Animation = nullptr;
+                bucket.TimePosition = 0.0f;
+                bucket.BlendInPosition = 0.0f;
+                bucket.BlendOutPosition = 0.0f;
+                bucket.LoopsDone = 0;
                 return;
             }
 
