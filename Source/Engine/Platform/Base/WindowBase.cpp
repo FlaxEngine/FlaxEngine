@@ -446,8 +446,10 @@ void WindowBase::OnClosed()
         RenderTask->Enabled = false;
     
     // Reset input state when closing window to remove any stuck inputs.
-    Input::Mouse->ResetState();
-    Input::Keyboard->ResetState();
+    if (Input::Mouse)
+        Input::Mouse->ResetState();
+    if (Input::Keyboard)
+        Input::Keyboard->ResetState();
 
     // Delete object
     DeleteObject(1);
