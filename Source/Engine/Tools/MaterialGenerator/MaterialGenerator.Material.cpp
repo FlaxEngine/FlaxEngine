@@ -790,7 +790,7 @@ void MaterialGenerator::ProcessGroupFunction(Box* box, Node* node, Value& value)
     // Function Input
     case 1:
     {
-        // Check the stack count.If only 1 graph is present,
+        // Check the stack count. If only 1 graph is present,
         // we are processing the graph in isolation (e.g., in the Editor Preview).
         // In this case, we skip the caller-finding logic and use the node's default value.
         if (_graphStack.Count() < 2)
@@ -802,9 +802,6 @@ void MaterialGenerator::ProcessGroupFunction(Box* box, Node* node, Value& value)
 
         // Find the function call
         Node* functionCallNode = nullptr;
-        
-        // The original ASSERT has been effectively replaced by the 'if' above.
-        //ASSERT(_graphStack.Count() >= 2);
         Graph* graph;
         for (int32 i = _callStack.Count() - 1; i >= 0; i--)
         {
