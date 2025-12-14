@@ -703,14 +703,11 @@ void SendReplication(ScriptingObject* obj, NetworkClientsMask targetClients)
         return;
     auto& item = it->Item;
     const bool isClient = NetworkManager::IsClient();
+    const NetworkClientsMask fullTargetClients = targetClients;
 
-    // Skip serialization of objects that none will receive
-    if (!isClient)
-    {
-        BuildCachedTargets(item, targetClients);
-        if (CachedTargets.Count() == 0)
-            return;
-    }
+    // If server has no recipients, skip early.
+    if (!isClient && !targetClients)
+        return;
 
     if (item.AsNetworkObject)
         item.AsNetworkObject->OnNetworkSerialize();
@@ -732,18 +729,32 @@ void SendReplication(ScriptingObject* obj, NetworkClientsMask targetClients)
     }
 
 #if USE_NETWORK_REPLICATOR_CACHE
+    // Check if only newly joined clients are missing this data to avoid resending it to everyone
+    NetworkClientsMask missingClients;
+    missingClients.Word0 = targetClients.Word0 & ~item.RepCache.Mask.Word0;
+    missingClients.Word1 = targetClients.Word1 & ~item.RepCache.Mask.Word1;
+
     // Process replication cache to skip sending object data if it didn't change
-    if (item.RepCache.Data.Length() == size &&
-        item.RepCache.Mask == targetClients &&
-        Platform::MemoryCompare(item.RepCache.Data.Get(), stream->GetBuffer(), size) == 0)
+    if (item.RepCache.Data.Length() == size && Platform::MemoryCompare(item.RepCache.Data.Get(), stream->GetBuffer(), size) == 0)
     {
-        return;
+        // If data is the same and only the client set changed, replicate to missing clients only
+        if (!missingClients)
+            return;
+        targetClients = missingClients;
     }
-    item.RepCache.Mask = targetClients;
+    item.RepCache.Mask = fullTargetClients;
     item.RepCache.Data.Copy(stream->GetBuffer(), size);
 #endif
     // TODO: use Unreliable for dynamic objects that are replicated every frame? (eg. player state)
     constexpr NetworkChannelType repChannel = NetworkChannelType::Reliable;
+
+    // Skip serialization of objects that none will receive
+    if (!isClient)
+    {
+        BuildCachedTargets(item, targetClients);
+        if (CachedTargets.Count() == 0)
+            return;
+    }
 
     // Send object to clients
     NetworkMessageObjectReplicate msgData;
@@ -1535,7 +1546,21 @@ void NetworkReplicator::DespawnObject(ScriptingObject* obj)
     // Register for despawning (batched during update)
     auto& despawn = DespawnQueue.AddOne();
     despawn.Id = obj->GetID();
-    despawn.Targets = item.TargetClientIds;
+    if (item.TargetClientIds.IsValid())
+    {
+        despawn.Targets = item.TargetClientIds;
+    }
+    else
+    {
+        // Snapshot current recipients to avoid sending despawn to clients that connect later (and never got the spawn)
+        Array<uint32, InlinedAllocation<8>> clientIds;
+        for (const NetworkClient* client : NetworkManager::Clients)
+        {
+            if (client->State == NetworkConnectionState::Connected && client->ClientId != item.OwnerClientId)
+                clientIds.Add(client->ClientId);
+        }
+        despawn.Targets.Copy(clientIds);
+    }
 
     // Prevent spawning
     for (int32 i = 0; i < SpawnQueue.Count(); i++)
@@ -1828,6 +1853,31 @@ void NetworkInternal::NetworkReplicatorClientConnected(NetworkClient* client)
 {
     ScopeLock lock(ObjectsLock);
     NewClients.Add(client);
+
+    // Ensure cached replication acknowledges the new client without resending to others.
+    // Clear the new client's bit in RepCache and schedule a near-term replication.
+    const int32 clientIndex = NetworkManager::Clients.Find(client);
+    if (clientIndex != -1)
+    {
+        const uint64 bitMask = 1ull << (uint64)(clientIndex % 64);
+        const int32 wordIndex = clientIndex / 64;
+        for (auto it = Objects.Begin(); it.IsNotEnd(); ++it)
+        {
+            auto& item = it->Item;
+            ScriptingObject* obj = item.Object.Get();
+            if (!obj || !item.Spawned || item.Role != NetworkObjectRole::OwnedAuthoritative)
+                continue;
+
+            // Mark this client as missing cached data
+            uint64* word = wordIndex == 0 ? &item.RepCache.Mask.Word0 : &item.RepCache.Mask.Word1;
+            *word &= ~bitMask;
+
+            // Force next replication tick for this object so the new client gets data promptly
+            if (Hierarchy)
+                Hierarchy->DirtyObject(obj);
+        }
+    }
+
     ASSERT(sizeof(NetworkClientsMask) * 8 >= (uint32)NetworkManager::Clients.Count()); // Ensure that clients mask can hold all of clients
 }
 
@@ -2280,7 +2330,9 @@ void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, Network
     }
     else
     {
-        NETWORK_REPLICATOR_LOG(Error, "[NetworkReplicator] Failed to despawn object {}", objectId);
+        // If this client never had the object (eg. it was targeted to other clients only), drop the message quietly.
+        DespawnedObjects.Add(objectId);
+        NETWORK_REPLICATOR_LOG(Warning, "[NetworkReplicator] Failed to despawn object {}", objectId);
     }
 }
 
