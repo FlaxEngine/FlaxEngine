@@ -16,7 +16,7 @@ const Char* GetCommandLine(int argc, char* argv[])
     const Char* cmdLine;
     if (length != 0)
     {
-        Char* str = (Char*)malloc(length * sizeof(Char));
+        Char* str = (Char*)malloc((length + 1) * sizeof(Char));
         cmdLine = str;
         for (int i = 1; i < argc; i++)
         {
