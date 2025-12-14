@@ -166,6 +166,7 @@ namespace Flax.Build
         /// </summary>
         public string CSharpLanguageVersion => Version.Major switch
         {
+            _ when Version.Major >= 10 => "14.0",
             _ when Version.Major >= 9 => "13.0",
             _ when Version.Major >= 8 => "12.0",
             _ when Version.Major >= 7 => "11.0",
