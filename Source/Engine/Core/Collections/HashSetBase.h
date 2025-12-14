@@ -408,14 +408,14 @@ protected:
         }
         else
         {
-            const int32 elementsCount = _elementsCount;
             // Rebuild entire table completely
+            const int32 elementsCount = _elementsCount;
             const int32 oldSize = _size;
             AllocationData oldAllocation;
             AllocationUtils::MoveToEmpty<BucketType, AllocationType>(oldAllocation, _allocation, oldSize, oldSize);
             _allocation.Allocate(_size);
             BucketType* data = _allocation.Get();
-            for (int32 i = 0; i < _size; ++i)
+            for (int32 i = 0; i < oldSize; ++i)
                 data[i]._state = HashSetBucketState::Empty;
             BucketType* oldData = oldAllocation.Get();
             FindPositionResult pos;
@@ -430,8 +430,8 @@ protected:
                         // Grow and retry to handle pathological cases (eg. heavy collisions)
                         EnsureCapacity(_size + 1, true);
                         FindPosition(oldBucket.GetKey(), pos);
+                        ASSERT(pos.FreeSlotIndex != -1);
                     }
-                    ASSERT(pos.FreeSlotIndex != -1);
                     BucketType& bucket = _allocation.Get()[pos.FreeSlotIndex];
                     bucket = MoveTemp(oldBucket);
                 }
