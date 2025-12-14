@@ -152,12 +152,12 @@ struct NetworkReplicatedObject
 
     bool operator==(const NetworkReplicatedObject& other) const
     {
-        return Object == other.Object;
+        return ObjectId == other.ObjectId;
     }
 
     bool operator==(const ScriptingObject* other) const
     {
-        return Object == other;
+        return other && ObjectId == other->GetID();
     }
 
     bool operator==(const Guid& other) const
@@ -174,6 +174,11 @@ struct NetworkReplicatedObject
 inline uint32 GetHash(const NetworkReplicatedObject& key)
 {
     return GetHash(key.ObjectId);
+}
+
+inline uint32 GetHash(const ScriptingObject* key)
+{
+    return key ? GetHash(key->GetID()) : 0;
 }
 
 struct Serializer
