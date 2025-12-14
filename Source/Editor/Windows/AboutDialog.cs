@@ -98,6 +98,7 @@ namespace FlaxEditor.Windows
                 "Chandler Cox",
                 "Ari Vuollet",
                 "Vincent Saarmann",
+                "Michael Salvini",
             });
             authors.Sort();
             var authorsLabel = new Label(4, topParentControl.Bottom + 20, Width - 8, 70)
