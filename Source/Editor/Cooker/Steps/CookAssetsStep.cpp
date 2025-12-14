@@ -1368,7 +1368,10 @@ bool CookAssetsStep::Perform(CookingData& data)
             {
                 typeName = e.TypeName;
             }
-            LOG(Info, "{0}: {1:>4} assets of total size {2}", typeName, e.Count, Utilities::BytesToText(e.ContentSize));
+            if (e.Count == 1)
+                LOG(Info, "{0}:    1 asset  of total size {1}", typeName, Utilities::BytesToText(e.ContentSize));
+            else
+                LOG(Info, "{0}: {1:>4} assets of total size {2}", typeName, e.Count, Utilities::BytesToText(e.ContentSize));
         }
         LOG(Info, "");
     }

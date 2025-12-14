@@ -94,6 +94,7 @@ namespace Flax.Deps.Dependencies
                 defines += "-DDISABLE_EXECUTABLES=1-DDISABLE_SHARED_LIBS=1";
                 buildArgs = $" -subset mono+libs -cmakeargs \"{defines}\" /p:FeaturePerfTracing=false /p:FeatureWin32Registry=false /p:FeatureCominteropApartmentSupport=false /p:FeatureManagedEtw=false /p:FeatureManagedEtwChannels=false /p:FeatureEtw=false /p:ApiCompatValidateAssemblies=false";
                 envVars.Add("_GAMING_XBOX", "1");
+                envVars.Add(targetPlatform == TargetPlatform.XboxScarlett ? "_GAMING_XBOX_SCARLETT" : "_GAMING_XBOX_XBOXONE", "1");
                 break;
             case TargetPlatform.Linux:
                 os = "linux";

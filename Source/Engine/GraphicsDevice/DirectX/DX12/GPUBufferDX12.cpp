@@ -137,7 +137,7 @@ bool GPUBufferDX12::OnInit()
     // Create resource
     ID3D12Resource* resource;
 #if PLATFORM_WINDOWS
-    D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_CREATE_NOT_ZEROED;
+    D3D12_HEAP_FLAGS heapFlags = EnumHasAnyFlags(_desc.Flags, GPUBufferFlags::VertexBuffer | GPUBufferFlags::IndexBuffer) || _desc.InitData ? D3D12_HEAP_FLAG_CREATE_NOT_ZEROED : D3D12_HEAP_FLAG_NONE;
 #else
     D3D12_HEAP_FLAGS heapFlags = D3D12_HEAP_FLAG_NONE;
 #endif

@@ -920,6 +920,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
     constexpr int32 vbMax = ARRAY_COUNT(DrawCall::Geometry.VertexBuffers);
     if (useInstancing)
     {
+        context->UpdateCB(perDrawCB, &perDraw);
         GPUBuffer* vb[vbMax + 1];
         uint32 vbOffsets[vbMax + 1];
         vb[3] = _instanceBuffer.GetBuffer(); // Pass object index in a vertex stream at slot 3 (used by VS in Surface.shader)
@@ -1057,7 +1058,7 @@ void RenderList::ExecuteDrawCalls(const RenderContext& renderContext, DrawCallsL
         materialBinds += list.PreBatchedDrawCalls.Count();
         if (list.Batches.IsEmpty() && list.Indices.Count() != 0)
         {
-            // Draw calls list has bot been batched so execute draw calls separately
+            // Draw calls list has not been batched so execute draw calls separately
             for (int32 j = 0; j < list.Indices.Count(); j++)
             {
                 perDraw.DrawObjectIndex = listData[j];

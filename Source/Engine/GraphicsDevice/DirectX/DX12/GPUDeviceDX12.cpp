@@ -628,6 +628,7 @@ bool GPUDeviceDX12::Init()
     VALIDATE_DIRECTX_CALL(dxgiAdapter->EnumOutputs(0, dxgiOutput.GetAddressOf()));
     DXGI_FORMAT backbufferFormat = RenderToolsDX::ToDxgiFormat(GPU_BACK_BUFFER_PIXEL_FORMAT);
     UINT modesCount = 0;
+#ifdef _GAMING_XBOX_SCARLETT
     VALIDATE_DIRECTX_CALL(dxgiOutput->GetDisplayModeList(backbufferFormat, 0, &modesCount, NULL));
     Array<DXGIXBOX_MODE_DESC> modes;
     modes.Resize((int32)modesCount);
@@ -642,6 +643,11 @@ bool GPUDeviceDX12::Init()
         videoOutput.RefreshRate = Math::Max(videoOutput.RefreshRate, mode.RefreshRate.Numerator / (float)mode.RefreshRate.Denominator);
     }
     modes.Resize(0);
+#else
+    videoOutput.Width = 1920;
+    videoOutput.Height = 1080;
+    videoOutput.RefreshRate = 60;
+#endif
 
 #if PLATFORM_GDK
     GDKPlatform::Suspended.Bind<GPUDeviceDX12, &GPUDeviceDX12::OnSuspended>(this);
