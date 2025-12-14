@@ -729,14 +729,12 @@ void SendReplication(ScriptingObject* obj, NetworkClientsMask targetClients)
     }
 
 #if USE_NETWORK_REPLICATOR_CACHE
-    // Check if only newly joined clients are missing this data to avoid resending it to everyone
-    NetworkClientsMask missingClients;
-    missingClients.Word0 = targetClients.Word0 & ~item.RepCache.Mask.Word0;
-    missingClients.Word1 = targetClients.Word1 & ~item.RepCache.Mask.Word1;
-
     // Process replication cache to skip sending object data if it didn't change
     if (item.RepCache.Data.Length() == size && Platform::MemoryCompare(item.RepCache.Data.Get(), stream->GetBuffer(), size) == 0)
     {
+        // Check if only newly joined clients are missing this data to avoid resending it to everyone
+        NetworkClientsMask missingClients = targetClients & ~item.RepCache.Mask;
+
         // If data is the same and only the client set changed, replicate to missing clients only
         if (!missingClients)
             return;
@@ -2330,7 +2328,7 @@ void NetworkInternal::OnNetworkMessageObjectDespawn(NetworkEvent& event, Network
     }
     else
     {
-        // If this client never had the object (eg. it was targeted to other clients only), drop the message quietly.
+        // If this client never had the object (eg. it was targeted to other clients only), drop the message quietly
         DespawnedObjects.Add(objectId);
         NETWORK_REPLICATOR_LOG(Warning, "[NetworkReplicator] Failed to despawn object {}", objectId);
     }
