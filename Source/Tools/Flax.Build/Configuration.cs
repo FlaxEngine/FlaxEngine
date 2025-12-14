@@ -220,6 +220,12 @@ namespace Flax.Build
         public static bool ProjectFormatRider = false;
 
         /// <summary>
+        /// Generates Omnisharp configuration file. Valid only with -genproject option.
+        /// </summary>
+        [CommandLine("vscode", "Generates Omnisharp configuration file. Valid only with -genproject option.")]
+        public static bool ProjectFormatOmnisharp = false;
+
+        /// <summary>
         /// Generates code project files for a custom project format type. Valid only with -genproject option.
         /// </summary>
         [CommandLine("customProjectFormat", "<type>", "Generates code project files for a custom project format type. Valid only with -genproject option.")]

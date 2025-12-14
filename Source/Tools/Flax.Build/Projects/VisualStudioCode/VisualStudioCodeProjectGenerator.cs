@@ -43,94 +43,6 @@ namespace Flax.Build.Projects.VisualStudioCode
             // Not used, solution contains all projects definitions
         }
 
-        private class JsonWriter : IDisposable
-        {
-            private readonly List<string> _lines = new List<string>();
-            private string _tabs = "";
-
-            public void BeginRootObject()
-            {
-                BeginObject();
-            }
-
-            public void EndRootObject()
-            {
-                EndObject();
-                if (_tabs.Length > 0)
-                {
-                    throw new Exception("Invalid EndRootObject call before all objects and arrays have been closed.");
-                }
-            }
-
-            public void BeginObject(string name = null)
-            {
-                string prefix = name == null ? "" : Quoted(name) + ": ";
-                _lines.Add(_tabs + prefix + "{");
-                _tabs += "\t";
-            }
-
-            public void EndObject()
-            {
-                _lines[_lines.Count - 1] = _lines[_lines.Count - 1].TrimEnd(',');
-                _tabs = _tabs.Remove(_tabs.Length - 1);
-                _lines.Add(_tabs + "},");
-            }
-
-            public void BeginArray(string name = null)
-            {
-                string prefix = name == null ? "" : Quoted(name) + ": ";
-                _lines.Add(_tabs + prefix + "[");
-                _tabs += "\t";
-            }
-
-            public void EndArray()
-            {
-                _lines[_lines.Count - 1] = _lines[_lines.Count - 1].TrimEnd(',');
-                _tabs = _tabs.Remove(_tabs.Length - 1);
-                _lines.Add(_tabs + "],");
-            }
-
-            public void AddField(string name, bool value)
-            {
-                _lines.Add(_tabs + Quoted(name) + ": " + value.ToString().ToLower() + ",");
-            }
-
-            public void AddField(string name, int value)
-            {
-                _lines.Add(_tabs + Quoted(name) + ": " + value + ",");
-            }
-
-            public void AddField(string name, string value)
-            {
-                _lines.Add(_tabs + Quoted(name) + ": " + Quoted(value) + ",");
-            }
-
-            public void AddUnnamedField(string value)
-            {
-                _lines.Add(_tabs + Quoted(value) + ",");
-            }
-
-            private string Quoted(string value)
-            {
-                value = value.Replace("\\", "\\\\");
-                value = value.Replace("\"", "\\\"");
-                return "\"" + value + "\"";
-            }
-
-            public void Save(string path)
-            {
-                _lines[_lines.Count - 1] = _lines[_lines.Count - 1].TrimEnd(',');
-                Utilities.WriteFileIfChanged(path, string.Join(Environment.NewLine, _lines.ToArray()));
-            }
-
-            /// <inheritdoc />
-            public void Dispose()
-            {
-                _lines.Clear();
-                _tabs = null;
-            }
-        }
-
         /// <inheritdoc />
         public override void GenerateSolution(Solution solution)
         {
@@ -676,6 +588,7 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.AddField("grunt.autoDetect", "off");
                 json.AddField("omnisharp.defaultLaunchSolution", solution.Name + ".sln");
                 json.AddField("omnisharp.useModernNet", true);
+                json.AddField("dotnet.server.useOmnisharp", false);
                 json.EndObject();
 
                 // Folders
@@ -721,6 +634,8 @@ namespace Flax.Build.Projects.VisualStudioCode
                 json.BeginArray("recommendations");
                 {
                     json.AddUnnamedField("ms-dotnettools.csharp");
+                    json.AddUnnamedField("free-csharp-vscode");
+                    json.AddUnnamedField("ms-dotnettools.csdevkit");
 
                     if (!Globals.Project.IsCSharpOnlyProject)
                     {
@@ -731,22 +646,6 @@ namespace Flax.Build.Projects.VisualStudioCode
 
                 json.EndRootObject();
                 json.Save(Path.Combine(vsCodeFolder, "extensions.json"));
-            }
-
-            // Create OmniSharp configuration file
-            using (var json = new JsonWriter())
-            {
-                json.BeginRootObject();
-
-                json.BeginObject("msbuild");
-                {
-                    json.AddField("enabled", true);
-                    json.AddField("Configuration", "Editor.Debug");
-                }
-                json.EndObject();
-
-                json.EndRootObject();
-                json.Save(Path.Combine(solution.WorkspaceRootPath, "omnisharp.json"));
             }
         }
     }
