@@ -282,7 +282,7 @@ namespace Flax.Build
             dotnetRuntimeVersions = MergeVersions(dotnetRuntimeVersions, GetVersions(Path.Combine(dotnetPath, "shared", "Microsoft.NETCore.App")));
 
             dotnetSdkVersions = dotnetSdkVersions.Where(x => File.Exists(Path.Combine(dotnetPath, "sdk", x, ".version")));
-            dotnetRuntimeVersions = dotnetRuntimeVersions.Where(x => File.Exists(Path.Combine(dotnetPath, "shared", "Microsoft.NETCore.App", x, ".version")));
+            dotnetRuntimeVersions = dotnetRuntimeVersions.Where(x => File.Exists(Path.Combine(dotnetPath, "shared", "Microsoft.NETCore.App", x, "System.dll")));
             dotnetRuntimeVersions = dotnetRuntimeVersions.Where(x => Directory.Exists(Path.Combine(dotnetPath, "packs", "Microsoft.NETCore.App.Ref", x)));
 
             dotnetSdkVersions = dotnetSdkVersions.OrderByDescending(ParseVersion);
