@@ -1123,6 +1123,32 @@ SceneResult SceneLoader::OnBegin(Args& args)
     _lastSceneLoadTime = DateTime::Now();
     StartFrame = Engine::UpdateCount;
 
+    // Validate arguments
+    if (!args.Data.IsArray())
+    {
+        LOG(Error, "Invalid Data member.");
+        CallSceneEvent(SceneEventType::OnSceneLoadError, nullptr, Guid::Empty);
+        return SceneResult::Failed;
+    }
+
+    // Peek scene node value (it's the first actor serialized)
+    SceneId = JsonTools::GetGuid(args.Data[0], "ID");
+    if (!SceneId.IsValid())
+    {
+        LOG(Error, "Invalid scene id.");
+        CallSceneEvent(SceneEventType::OnSceneLoadError, nullptr, SceneId);
+        return SceneResult::Failed;
+    }
+
+    // Peek meta
+    if (args.EngineBuild < 6000)
+    {
+        LOG(Error, "Invalid serialized engine build.");
+        CallSceneEvent(SceneEventType::OnSceneLoadError, nullptr, SceneId);
+        return SceneResult::Failed;
+    }
+    Modifier->EngineBuild = args.EngineBuild;
+
     // Scripting backend should be loaded for the current project before loading scene
     if (!Scripting::HasGameModulesLoaded())
     {
@@ -1136,27 +1162,7 @@ SceneResult SceneLoader::OnBegin(Args& args)
                 MessageBox::Show(TEXT("Failed to load scripts.\n\nCannot load scene without game script modules.\n\nSee logs for more info."), TEXT("Missing game modules"), MessageBoxButtons::OK, MessageBoxIcon::Error);
         }
 #endif
-        return SceneResult::Failed;
-    }
-
-    // Peek meta
-    if (args.EngineBuild < 6000)
-    {
-        LOG(Error, "Invalid serialized engine build.");
-        return SceneResult::Failed;
-    }
-    if (!args.Data.IsArray())
-    {
-        LOG(Error, "Invalid Data member.");
-        return SceneResult::Failed;
-    }
-    Modifier->EngineBuild = args.EngineBuild;
-
-    // Peek scene node value (it's the first actor serialized)
-    SceneId = JsonTools::GetGuid(args.Data[0], "ID");
-    if (!SceneId.IsValid())
-    {
-        LOG(Error, "Invalid scene id.");
+        CallSceneEvent(SceneEventType::OnSceneLoadError, nullptr, SceneId);
         return SceneResult::Failed;
     }
 
@@ -1164,6 +1170,7 @@ SceneResult SceneLoader::OnBegin(Args& args)
     if (Level::FindScene(SceneId) != nullptr)
     {
         LOG(Info, "Scene {0} is already loaded.", SceneId);
+        CallSceneEvent(SceneEventType::OnSceneLoadError, nullptr, SceneId);
         return SceneResult::Failed;
     }
 
