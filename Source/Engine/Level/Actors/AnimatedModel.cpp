@@ -574,7 +574,7 @@ void AnimatedModel::PauseSlotAnimation(const StringView& slotName, Animation* an
 {
     for (auto& slot : GraphInstance.Slots)
     {
-        if (slot.Animation == anim && slot.Name == slotName)
+        if ((slot.Animation == anim || anim == nullptr) && slot.Name == slotName)
         {
             slot.Pause = true;
             break;

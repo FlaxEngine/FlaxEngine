@@ -412,7 +412,7 @@ public:
     /// Stops the animation playback on the slot in Anim Graph.
     /// </summary>
     /// <param name="slotName">The name of the slot.</param>
-    /// <param name="anim">The animation to stop.</param>
+    /// <param name="anim">The animation to check. Null to use slot name only.</param>
     API_FUNCTION() void StopSlotAnimation(const StringView& slotName, Animation* anim = nullptr);
 
     /// <summary>
@@ -424,8 +424,8 @@ public:
     /// Pauses the animation playback on the slot in Anim Graph.
     /// </summary>
     /// <param name="slotName">The name of the slot.</param>
-    /// <param name="anim">The animation to pause.</param>
-    API_FUNCTION() void PauseSlotAnimation(const StringView& slotName, Animation* anim);
+    /// <param name="anim">The animation to check. Null to use slot name only.</param>
+    API_FUNCTION() void PauseSlotAnimation(const StringView& slotName, Animation* anim = nullptr);
 
     /// <summary>
     /// Checks if any  animation playback is active on any  slot in Anim Graph (not paused).
@@ -436,7 +436,7 @@ public:
     /// Checks if the animation playback is active on the slot in Anim Graph (not paused).
     /// </summary>
     /// <param name="slotName">The name of the slot.</param>
-    /// <param name="anim">The animation to check.</param>
+    /// <param name="anim">The animation to check. Null to use slot name only.</param>
     API_FUNCTION() bool IsPlayingSlotAnimation(const StringView& slotName, Animation* anim = nullptr);
 
 private:
