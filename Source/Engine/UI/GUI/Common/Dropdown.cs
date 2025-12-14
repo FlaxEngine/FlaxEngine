@@ -588,6 +588,7 @@ namespace FlaxEngine.GUI
                 AutoFocus = false,
                 Size = size,
             };
+            float brightness = TextColorHighlighted.R * 0.299f + TextColorHighlighted.G * 0.587f + TextColorHighlighted.B * 0.114f;
             var label = new DropdownLabel
             {
                 AutoFocus = true,
@@ -595,7 +596,7 @@ namespace FlaxEngine.GUI
                 Size = new Float2(size.X - margin, size.Y),
                 Font = Font,
                 TextColor = TextColor * 0.9f,
-                TextColorHighlighted = TextColorHighlighted,
+                TextColorHighlighted = brightness < 0.05f ? Color.Lerp(TextColorHighlighted, Color.White, 0.3f) : TextColorHighlighted,
                 HorizontalAlignment = HorizontalAlignment,
                 VerticalAlignment = VerticalAlignment,
                 Text = _items[i],
